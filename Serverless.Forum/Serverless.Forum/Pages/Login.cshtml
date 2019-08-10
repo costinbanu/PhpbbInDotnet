@@ -1,0 +1,17 @@
+﻿@page
+@model Serverless.Forum.Pages.LoginModel
+@{
+    ViewData["Title"] = "Login";
+    Layout = "~/Pages/_Layout.cshtml";
+}
+
+<h2>Login</h2>
+<form method="post">
+    <div asp-validation-summary="All" class="text-danger"></div>
+    Username: <input name="username" value="" /><br />
+    Password: <input name="password" value="" type="password" /><br />
+    Remember me: <input name="rememberMe" type="checkbox" /><br />
+    <input name="returnUrl" type="hidden" value='@ViewData["ReturnUrl"]'/>
+    <input type="submit" value="Login" />
+    @Html.AntiForgeryToken()
+</form>
