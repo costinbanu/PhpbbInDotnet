@@ -30,17 +30,15 @@
                 <a asp-page="/Index" class="navbar-brand">Serverless.Forum</a>
             </div>
             <div class="navbar-collapse collapse">
-                <ul class="nav navbar-nav">
-                    <li><a asp-page="/Index">Home</a></li>
-                    <li><a asp-page="/Help">Help</a></li>
-                    <li>
-                        <form action="/Login" method="get" name="loginForm">
-                            <input name="ReturnUrl" type="hidden" value="@HttpUtility.UrlEncode(Context.Request.Path)" />
-                            <a href="#" onclick="loginForm.submit()">Login</a>
-                        </form>
-                    </li>
-                    <li><a asp-page="/Login?ReturnUrl=@HttpUtility.UrlEncode(Context.Request.Path)">Login</a></li>
-                </ul>
+                <form action="/Login" method="get" name="loginForm">
+                    <input name="ReturnUrl" type="hidden" value="@HttpUtility.UrlEncode(Context.Request.Path)" />
+                    <ul class="nav navbar-nav">
+                        <li><a asp-page="/Index">Home</a></li>
+                        <li><a asp-page="/Help">Help</a></li>
+                        <li><a href="#" onclick="loginForm.submit()">Login</a></li>
+                    </ul>
+                </form>
+
             </div>
         </div>
     </nav>

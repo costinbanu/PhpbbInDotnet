@@ -8,10 +8,21 @@
 <h2>Login</h2>
 <form method="post">
     <div asp-validation-summary="All" class="text-danger"></div>
-    Username: <input name="username" value="" /><br />
-    Password: <input name="password" value="" type="password" /><br />
-    Remember me: <input name="rememberMe" type="checkbox" /><br />
-    <input name="returnUrl" type="hidden" value='@ViewData["ReturnUrl"]'/>
+    <table border="0">
+        <tr>
+            <td width="100px" height="30px" valign="middle">Username:</td>
+            <td width="100px" height="30px" valign="middle"><input name="username" value="" /></td>
+        </tr>
+        <tr>
+            <td width="100px" height="30px" valign="middle">Password:</td>
+            <td width="100px" height="30px" valign="middle"><input name="password" value="" type="password" /></td>
+        </tr>
+        <tr>
+            <td width="100px" height="30px" valign="middle">Remember me:</td>
+            <td width="100px" height="30px" valign="middle"><input name="rememberMe" type="checkbox" value="true" /></td>
+        </tr>
+    </table>
+    <input name="returnUrl" type="hidden" value='@Model.returnUrl' />
     <input type="submit" value="Login" />
     @Html.AntiForgeryToken()
 </form>

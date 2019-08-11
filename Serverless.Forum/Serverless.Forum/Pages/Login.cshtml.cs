@@ -19,7 +19,7 @@ namespace Serverless.Forum.Pages
             returnUrl = ReturnUrl;
         }
 
-        public void OnPost(string username, string password, string returnUrl, bool rememberMe)
+        public void OnPost(string username, string password, string returnUrl, bool rememberMe = false)
         {
             var x = HttpContext.Request.Query["ReturnUrl"];
         }
