@@ -1,4 +1,8 @@
 ﻿@using System.Web
+@using Microsoft.AspNetCore.Http
+@using Newtonsoft.Json
+@using Serverless.Forum.forum
+@inject IHttpContextAccessor _httpContext
 <!DOCTYPE html>
 <html>
 <head>
@@ -16,6 +20,20 @@
               asp-fallback-test-class="sr-only" asp-fallback-test-property="position" asp-fallback-test-value="absolute" />
         <link rel="stylesheet" href="~/css/site.min.css" asp-append-version="true" />
     </environment>
+
+    <!-- Begin Cookie Consent plugin by Silktide - https://silktide.com/cookieconsent -->
+    <script type="text/javascript">
+        window.cookieconsent_options = {
+            "message": "Acest site folosește cookie-uri pentru personalizarea conținutului afișat, autentificare și altele. Prin utilizarea site-ului nostru acceptați folosirea acestora.",
+            "dismiss": "Am înțeles, sunt de acord.",
+            "learnMore": "Mai multe detalii",
+            "link": "./about_cookies.html",
+            "theme": "dark-floating"
+        };
+    </script>
+
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/1.0.9/cookieconsent.min.js"></script>
+    <!-- End Cookie Consent plugin -->
 </head>
 <body>
     <nav class="navbar navbar-inverse navbar-fixed-top">
@@ -32,12 +50,24 @@
             <div class="navbar-collapse collapse">
                 <form action="/Login" method="get" name="loginForm">
                     <input name="ReturnUrl" type="hidden" value="@HttpUtility.UrlEncode(Context.Request.Path)" />
-                    <ul class="nav navbar-nav">
-                        <li><a asp-page="/Index">Home</a></li>
-                        <li><a asp-page="/Help">Help</a></li>
-                        <li><a href="#" onclick="loginForm.submit()">Login</a></li>
-                    </ul>
                 </form>
+                <form action="/Logout" method="get" name="logoutForm">
+                    <input name="ReturnUrl" type="hidden" value="@HttpUtility.UrlEncode(Context.Request.Path)" />
+                </form>
+                <ul class="nav navbar-nav">
+                    <li><a asp-page="/Index">Home</a></li>
+                    <li><a asp-page="/Help">Help</a></li>
+                    @if (_httpContext.HttpContext.Session.Get("user") == null)
+                    {
+                        <li><a href="#" onclick="loginForm.submit()">Login</a></li>
+                    }
+                    else
+                    {
+                        var userName = JsonConvert.DeserializeObject<PhpbbUsers>(_httpContext.HttpContext.Session.GetString("user")).Username;
+                        <li><a asp-page="/User">Welcome, @userName!</a></li>
+                        <li><a href="#" onclick="logoutForm.submit()">Logout</a></li>
+                    }
+                </ul>
 
             </div>
         </div>

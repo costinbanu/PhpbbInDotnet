@@ -1,0 +1,43 @@
+﻿@page
+@model Serverless.Forum.Pages.ViewForumModel
+@{
+    ViewData["Title"] = "ViewForum";
+    Layout = "~/Pages/_Layout.cshtml";
+}
+@if (Model.Forums.Any())
+{
+    <h3>Forumuri</h3>
+    <table border="0" width="100%">
+        @foreach (var forum in Model.Forums)
+        {
+            <tr>
+                <td width="70%">
+                    <a asp-page="/ViewForum" asp-route-ForumId="@forum.Id" class="nav-link">@forum.Name</a>
+                </td>
+                <td width="30%">
+                    Ultimul mesaj: @forum.LastPostTime?.ToString(Model.LoggedUser?.UserDateformat ?? "dddd, dd.MM.yyyy, HH:mm")
+                    <br />
+                    de @forum.LastPosterName
+                </td>
+            </tr>
+        }
+    </table>
+    <p>&nbsp;</p>
+}
+<h3>Subiecte</h3>
+<table border="0" width="100%">
+    @foreach (var topic in Model.Topics)
+    {
+        <tr>
+            <td width="70%">
+                <a asp-page="/ViewTopic" asp-route-TopicId="@topic.Id" asp-route-Start="CEVA" class="nav-link">@topic.Title</a>
+            </td>
+            <td width="30%">
+                Ultimul mesaj: @topic.LastPostTime?.ToString(Model.LoggedUser?.UserDateformat ?? "dddd, dd.MM.yyyy, HH:mm")
+                <br />
+                de @topic.LastPosterName
+            </td>
+        </tr>
+    }
+</table>
+
