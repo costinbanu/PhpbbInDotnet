@@ -5,5 +5,25 @@
     Layout = "~/Pages/_Layout.cshtml";
 }
 
-<h2>ViewTopic</h2>
+<h2>@Model.TopicTitle</h2>
+@foreach (var post in Model.Posts)
+{
+    <div class="ForumListRow">
+        <span class="ForumListLeft">
+            @Html.Raw(post.PostText)
+        </span>
+        <span class="ForumListRight">
+            @if (post.AuthorId == default(int))
+            {
+                @Html.Raw(@post.AuthorName)
+            }
+            else
+            {
+                <span>Autor: <a asp-page="/User" asp-route-UserId="@post.AuthorId">@post.AuthorName</a></span>
+                <br/>
+                <span>Scris la: @post.PostCreationTime?.ToString(Model.LoggedUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")</span>
+            }
+        </span>
+    </div>
+}
 

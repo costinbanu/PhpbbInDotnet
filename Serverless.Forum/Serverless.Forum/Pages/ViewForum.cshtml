@@ -4,40 +4,53 @@
     ViewData["Title"] = "ViewForum";
     Layout = "~/Pages/_Layout.cshtml";
 }
+
 @if (Model.Forums.Any())
 {
     <h3>Forumuri</h3>
-    <table border="0" width="100%">
-        @foreach (var forum in Model.Forums)
-        {
-            <tr>
-                <td width="70%">
-                    <a asp-page="/ViewForum" asp-route-ForumId="@forum.Id" class="nav-link">@forum.Name</a>
-                </td>
-                <td width="30%">
-                    Ultimul mesaj: @forum.LastPostTime?.ToString(Model.LoggedUser?.UserDateformat ?? "dddd, dd.MM.yyyy, HH:mm")
-                    <br />
-                    de @forum.LastPosterName
-                </td>
-            </tr>
-        }
-    </table>
+    @foreach (var forum in Model.Forums)
+    {
+        <div class="ForumListRow">
+            <span class="ForumListLeft">
+                <a asp-page="/ViewForum" asp-route-ForumId="@forum.Id" class="nav-link">@forum.Name</a>
+            </span>
+            <span class="ForumListRight">
+                Ultimul mesaj: @forum.LastPostTime?.ToString(Model.LoggedUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
+                <br />
+                de @forum.LastPosterName
+            </span>
+        </div>
+    }
+
     <p>&nbsp;</p>
 }
-<h3>Subiecte</h3>
-<table border="0" width="100%">
-    @foreach (var topic in Model.Topics)
+@if (Model.Topics.Any())
+{
+    var topicsDisplayed = false;
+    foreach (var topicGroup in Model.Topics)
     {
-        <tr>
-            <td width="70%">
-                <a asp-page="/ViewTopic" asp-route-TopicId="@topic.Id" asp-route-Start="CEVA" class="nav-link">@topic.Title</a>
-            </td>
-            <td width="30%">
-                Ultimul mesaj: @topic.LastPostTime?.ToString(Model.LoggedUser?.UserDateformat ?? "dddd, dd.MM.yyyy, HH:mm")
-                <br />
-                de @topic.LastPosterName
-            </td>
-        </tr>
+        @if ((topicGroup.TopicType ?? 0) == 2)
+        {
+            <h3>Anunțuri</h3>
+        }
+        else if(!topicsDisplayed)
+        {
+            <h3>Subiecte</h3>
+            topicsDisplayed = true;
+        }
+        foreach (var topic in topicGroup.Topics)
+        {
+            <div class="ForumListRow">
+                <span class="ForumListLeft">
+                    <a asp-page="/ViewTopic" asp-route-TopicId="@topic.Id" class="nav-link">@Html.Raw(@topic.Title)</a>
+                </span>
+                <span class="ForumListRight">
+                    Ultimul mesaj: @topic.LastPostTime?.ToString(Model.LoggedUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
+                    <br/>
+                    de @topic.LastPosterName
+                </span>
+            </div>
+        }
     }
-</table>
+}
 

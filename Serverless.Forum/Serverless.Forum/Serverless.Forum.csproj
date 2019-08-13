@@ -11,6 +11,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="3.1.0" />
+    <PackageReference Include="CodeKicker.BBCode-NETStandard" Version="5.0.0" />
     <PackageReference Include="CryptSharpOfficial" Version="2.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.App" Version="2.2.6" />
     <PackageReference Include="Microsoft.AspNetCore.Session" Version="2.2.0" />

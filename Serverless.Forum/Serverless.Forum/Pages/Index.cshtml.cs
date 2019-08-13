@@ -13,7 +13,7 @@ namespace Serverless.Forum.Pages
     public class IndexModel : PageModel
     {
         public IEnumerable<ForumDisplay> Forums;
-        public PhpbbUsers LoggedUser;
+        public LoggedUser LoggedUser;
 
         forumContext _dbContext;
         IHttpContextAccessor _httpContext;
@@ -22,13 +22,22 @@ namespace Serverless.Forum.Pages
         {
             _dbContext = context;
             _httpContext = httpContext;
-            LoggedUser = JsonConvert.DeserializeObject<PhpbbUsers>(_httpContext.HttpContext.Session.GetString("user") ?? "{}");
+            if (_httpContext.HttpContext.Session.GetString("user") == null)
+            {
+                LoggedUser = Acl.Instance.GetAnonymousUser(_dbContext);
+                _httpContext.HttpContext.Session.SetString("user", JsonConvert.SerializeObject(LoggedUser));
+            }
+            else
+            {
+                LoggedUser = JsonConvert.DeserializeObject<LoggedUser>(_httpContext.HttpContext.Session.GetString("user"));
+            }
         }
 
         public void OnGet()
         {
             Forums = from f1 in _dbContext.PhpbbForums
                      where f1.ForumType == 0
+                        && !LoggedUser.UserPermissions.Any(fp => fp.ForumId == f1.ForumId && fp.AuthRoleId == 16)
                      let firstChildren = from f2 in _dbContext.PhpbbForums
                                          where f2.ParentId == f1.ForumId
                                          orderby f2.LeftId
@@ -45,10 +54,6 @@ namespace Serverless.Forum.Pages
                          Name = HttpUtility.HtmlDecode(f1.ForumName),
                          Children = firstChildren
                      };
-
-            //Usr = _httpContext.HttpContext.Session.GetString("user");
         }
-
-
     }
 }

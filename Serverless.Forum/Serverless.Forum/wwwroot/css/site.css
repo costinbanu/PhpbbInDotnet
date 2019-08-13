@@ -33,3 +33,36 @@ body {
         display: none;
     }
 }
+
+.ForumListRow {
+    width: 100%;
+    border-radius: 5px;
+    border: solid 1px black;
+    display: block;
+    vertical-align: top;
+    padding: 0.5em;
+    display: table;
+    margin-top:5px;
+}
+
+.ForumListLeft {
+    width: 70%;
+    /*float: left;*/
+    height: 2.5em;
+    display: inline-block;
+    vertical-align: top;
+    display: table-cell;
+}
+
+.ForumListRight {
+    width: 25%;
+    /*float: right;*/
+    height: 2.5em;
+    display: inline-block;
+    vertical-align: top;
+    display: table-cell;
+}
+
+.clear {
+    clear: both;
+}

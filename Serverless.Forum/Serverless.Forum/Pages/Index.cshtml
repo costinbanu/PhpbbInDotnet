@@ -5,31 +5,25 @@
 }
 
 @using Microsoft.AspNetCore.Http
-@using Serverless.Forum.Utilities
-@inject IHttpContextAccessor _httpContext
 
 <h2>Forumul Metrou Ușor</h2>
-<table border="0" width="100%">
+
     @foreach (var category in Model.Forums)
     {
-        <tr>
-            <td colspan="3">
-                @category.Name
-            </td>
-        </tr>
+        <div class="ForumListRow">
+            @category.Name
+        </div>
         @foreach (var forum in category.Children)
         {
-            <tr>
-                <td width="3%">&nbsp;</td>
-                <td width="66%">
+            <div class="ForumListRow">
+                <span class="ForumListLeft" style="padding-left:20px">
                     <a asp-page="/ViewForum" asp-route-ForumId="@forum.Id" class="nav-link">@forum.Name</a>
-                </td>
-                <td width="31%">
-                    Ultimul mesaj: @forum.LastPostTime?.ToString(Model.LoggedUser?.UserDateformat ?? "dddd, dd.MM.yyyy, HH:mm") 
-                    <br/>
+                </span>
+                <span class="ForumListRight">
+                    Ultimul mesaj: @forum.LastPostTime?.ToString(Model.LoggedUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
+                    <br />
                     de @forum.LastPosterName
-                </td>
-            </tr>
+                </span>
+            </div>
         }
     }
-</table>

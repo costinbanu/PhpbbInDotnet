@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Newtonsoft.Json;
 using Serverless.Forum.forum;
+using Serverless.Forum.Utilities;
 using System.Linq;
 using System.Web;
 
@@ -11,9 +12,6 @@ namespace Serverless.Forum.Pages
 {
     public class LoginModel : PageModel
     {
-        //public string username;
-        //public string password;
-        //public bool rememberMe;
         public string returnUrl;
         public string errorMessage;
 
@@ -34,9 +32,9 @@ namespace Serverless.Forum.Pages
         public IActionResult OnPost(string username, string password, string returnUrl, bool rememberMe = false)
         {
             var user = from u in _dbContext.PhpbbUsers
-                       let cryptedPass = Crypter.Phpass.Crypt(password, u.UserPassword)
-                       where u.UsernameClean == username && cryptedPass == u.UserPassword
-                       select u;
+                      let cryptedPass = Crypter.Phpass.Crypt(password, u.UserPassword)
+                      where u.UsernameClean == username && cryptedPass == u.UserPassword
+                      select u;
 
             if (user.Count() != 1)
             {
@@ -45,7 +43,12 @@ namespace Serverless.Forum.Pages
             }
             else
             {
-                _httpContext.HttpContext.Session.SetString("user", JsonConvert.SerializeObject(user.First()));
+                _httpContext.HttpContext.Session.SetString(
+                    "user", 
+                    JsonConvert.SerializeObject(
+                        Acl.Instance.LoggedUserFromDbUser(user.First(), _dbContext)
+                    )
+                );
                 return Redirect(HttpUtility.UrlDecode(returnUrl));
             }
         }

@@ -20,14 +20,17 @@ namespace Serverless.Forum.forum
             _config = config;
         }
 
+        public virtual DbSet<PhpbbAclGroups> PhpbbAclGroups { get; set; }
         public virtual DbSet<PhpbbAclOptions> PhpbbAclOptions { get; set; }
         public virtual DbSet<PhpbbAclRoles> PhpbbAclRoles { get; set; }
         public virtual DbSet<PhpbbAclRolesData> PhpbbAclRolesData { get; set; }
+        public virtual DbSet<PhpbbAclUsers> PhpbbAclUsers { get; set; }
         public virtual DbSet<PhpbbAttachments> PhpbbAttachments { get; set; }
         public virtual DbSet<PhpbbBanlist> PhpbbBanlist { get; set; }
         public virtual DbSet<PhpbbBbcodes> PhpbbBbcodes { get; set; }
         public virtual DbSet<PhpbbBookmarks> PhpbbBookmarks { get; set; }
         public virtual DbSet<PhpbbBots> PhpbbBots { get; set; }
+        public virtual DbSet<PhpbbCaptchaAnswers> PhpbbCaptchaAnswers { get; set; }
         public virtual DbSet<PhpbbCaptchaQuestions> PhpbbCaptchaQuestions { get; set; }
         public virtual DbSet<PhpbbConfig> PhpbbConfig { get; set; }
         public virtual DbSet<PhpbbConfirm> PhpbbConfirm { get; set; }
@@ -38,15 +41,20 @@ namespace Serverless.Forum.forum
         public virtual DbSet<PhpbbForums> PhpbbForums { get; set; }
         public virtual DbSet<PhpbbForumsAccess> PhpbbForumsAccess { get; set; }
         public virtual DbSet<PhpbbForumsTrack> PhpbbForumsTrack { get; set; }
+        public virtual DbSet<PhpbbForumsWatch> PhpbbForumsWatch { get; set; }
         public virtual DbSet<PhpbbGroups> PhpbbGroups { get; set; }
         public virtual DbSet<PhpbbIcons> PhpbbIcons { get; set; }
         public virtual DbSet<PhpbbLang> PhpbbLang { get; set; }
         public virtual DbSet<PhpbbLog> PhpbbLog { get; set; }
+        public virtual DbSet<PhpbbModeratorCache> PhpbbModeratorCache { get; set; }
         public virtual DbSet<PhpbbModules> PhpbbModules { get; set; }
+        public virtual DbSet<PhpbbPollOptions> PhpbbPollOptions { get; set; }
+        public virtual DbSet<PhpbbPollVotes> PhpbbPollVotes { get; set; }
         public virtual DbSet<PhpbbPosts> PhpbbPosts { get; set; }
         public virtual DbSet<PhpbbPrivmsgs> PhpbbPrivmsgs { get; set; }
         public virtual DbSet<PhpbbPrivmsgsFolder> PhpbbPrivmsgsFolder { get; set; }
         public virtual DbSet<PhpbbPrivmsgsRules> PhpbbPrivmsgsRules { get; set; }
+        public virtual DbSet<PhpbbPrivmsgsTo> PhpbbPrivmsgsTo { get; set; }
         public virtual DbSet<PhpbbProfileFields> PhpbbProfileFields { get; set; }
         public virtual DbSet<PhpbbProfileFieldsData> PhpbbProfileFieldsData { get; set; }
         public virtual DbSet<PhpbbProfileFieldsLang> PhpbbProfileFieldsLang { get; set; }
@@ -57,6 +65,7 @@ namespace Serverless.Forum.forum
         public virtual DbSet<PhpbbReportsReasons> PhpbbReportsReasons { get; set; }
         public virtual DbSet<PhpbbSearchResults> PhpbbSearchResults { get; set; }
         public virtual DbSet<PhpbbSearchWordlist> PhpbbSearchWordlist { get; set; }
+        public virtual DbSet<PhpbbSearchWordmatch> PhpbbSearchWordmatch { get; set; }
         public virtual DbSet<PhpbbSessions> PhpbbSessions { get; set; }
         public virtual DbSet<PhpbbSessionsKeys> PhpbbSessionsKeys { get; set; }
         public virtual DbSet<PhpbbSitelist> PhpbbSitelist { get; set; }
@@ -65,28 +74,18 @@ namespace Serverless.Forum.forum
         public virtual DbSet<PhpbbStylesImageset> PhpbbStylesImageset { get; set; }
         public virtual DbSet<PhpbbStylesImagesetData> PhpbbStylesImagesetData { get; set; }
         public virtual DbSet<PhpbbStylesTemplate> PhpbbStylesTemplate { get; set; }
+        public virtual DbSet<PhpbbStylesTemplateData> PhpbbStylesTemplateData { get; set; }
         public virtual DbSet<PhpbbStylesTheme> PhpbbStylesTheme { get; set; }
         public virtual DbSet<PhpbbTopics> PhpbbTopics { get; set; }
         public virtual DbSet<PhpbbTopicsPosted> PhpbbTopicsPosted { get; set; }
         public virtual DbSet<PhpbbTopicsTrack> PhpbbTopicsTrack { get; set; }
-        public virtual DbSet<PhpbbUsers> PhpbbUsers { get; set; }
+        public virtual DbSet<PhpbbTopicsWatch> PhpbbTopicsWatch { get; set; }
+        public virtual DbSet<PhpbbUserGroup> PhpbbUserGroup { get; set; }
         public virtual DbSet<PhpbbUserTopicPostNumber> PhpbbUserTopicPostNumber { get; set; }
+        public virtual DbSet<PhpbbUsers> PhpbbUsers { get; set; }
         public virtual DbSet<PhpbbWarnings> PhpbbWarnings { get; set; }
         public virtual DbSet<PhpbbWords> PhpbbWords { get; set; }
         public virtual DbSet<PhpbbZebra> PhpbbZebra { get; set; }
-
-        // Unable to generate entity type for table 'forum.phpbb_acl_groups'. Please see the warning messages.
-        // Unable to generate entity type for table 'forum.phpbb_acl_users'. Please see the warning messages.
-        // Unable to generate entity type for table 'forum.phpbb_captcha_answers'. Please see the warning messages.
-        // Unable to generate entity type for table 'forum.phpbb_forums_watch'. Please see the warning messages.
-        // Unable to generate entity type for table 'forum.phpbb_moderator_cache'. Please see the warning messages.
-        // Unable to generate entity type for table 'forum.phpbb_poll_options'. Please see the warning messages.
-        // Unable to generate entity type for table 'forum.phpbb_poll_votes'. Please see the warning messages.
-        // Unable to generate entity type for table 'forum.phpbb_privmsgs_to'. Please see the warning messages.
-        // Unable to generate entity type for table 'forum.phpbb_search_wordmatch'. Please see the warning messages.
-        // Unable to generate entity type for table 'forum.phpbb_styles_template_data'. Please see the warning messages.
-        // Unable to generate entity type for table 'forum.phpbb_topics_watch'. Please see the warning messages.
-        // Unable to generate entity type for table 'forum.phpbb_user_group'. Please see the warning messages.
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -98,6 +97,49 @@ namespace Serverless.Forum.forum
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.HasAnnotation("ProductVersion", "2.2.6-servicing-10079");
+
+            modelBuilder.Entity<PhpbbAclGroups>(entity =>
+            {
+                entity.HasKey(e => new { e.GroupId, e.ForumId, e.AuthOptionId, e.AuthRoleId });
+
+                entity.ToTable("phpbb_acl_groups", "forum");
+
+                entity.HasIndex(e => e.AuthOptionId)
+                    .HasName("auth_opt_id");
+
+                entity.HasIndex(e => e.AuthRoleId)
+                    .HasName("auth_role_id");
+
+                entity.HasIndex(e => e.GroupId)
+                    .HasName("group_id");
+
+                entity.Property(e => e.GroupId)
+                    .HasColumnName("group_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.ForumId)
+                    .HasColumnName("forum_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.AuthOptionId)
+                    .HasColumnName("auth_option_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.AuthRoleId)
+                    .HasColumnName("auth_role_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.AuthSetting)
+                    .HasColumnName("auth_setting")
+                    .HasColumnType("tinyint(2)")
+                    .HasDefaultValueSql("0");
+            });
+
             modelBuilder.Entity<PhpbbAclOptions>(entity =>
             {
                 entity.HasKey(e => e.AuthOptionId);
@@ -189,6 +231,47 @@ namespace Serverless.Forum.forum
 
                 entity.Property(e => e.AuthOptionId)
                     .HasColumnName("auth_option_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.AuthSetting)
+                    .HasColumnName("auth_setting")
+                    .HasColumnType("tinyint(2)")
+                    .HasDefaultValueSql("0");
+            });
+
+            modelBuilder.Entity<PhpbbAclUsers>(entity =>
+            {
+                entity.HasKey(e => new { e.UserId, e.ForumId, e.AuthOptionId, e.AuthRoleId });
+
+                entity.ToTable("phpbb_acl_users", "forum");
+
+                entity.HasIndex(e => e.AuthOptionId)
+                    .HasName("auth_option_id");
+
+                entity.HasIndex(e => e.AuthRoleId)
+                    .HasName("auth_role_id");
+
+                entity.HasIndex(e => e.UserId)
+                    .HasName("user_id");
+
+                entity.Property(e => e.UserId)
+                    .HasColumnName("user_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.ForumId)
+                    .HasColumnName("forum_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.AuthOptionId)
+                    .HasColumnName("auth_option_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.AuthRoleId)
+                    .HasColumnName("auth_role_id")
                     .HasColumnType("mediumint(8) unsigned")
                     .HasDefaultValueSql("0");
 
@@ -482,6 +565,29 @@ namespace Serverless.Forum.forum
 
                 entity.Property(e => e.UserId)
                     .HasColumnName("user_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+            });
+
+            modelBuilder.Entity<PhpbbCaptchaAnswers>(entity =>
+            {
+                entity.ToTable("phpbb_captcha_answers", "forum");
+
+                entity.HasIndex(e => e.QuestionId)
+                    .HasName("question_id");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("int(11)");
+
+                entity.Property(e => e.AnswerText)
+                    .IsRequired()
+                    .HasColumnName("answer_text")
+                    .HasMaxLength(255)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.QuestionId)
+                    .HasColumnName("question_id")
                     .HasColumnType("mediumint(8) unsigned")
                     .HasDefaultValueSql("0");
             });
@@ -1008,6 +1114,37 @@ namespace Serverless.Forum.forum
                     .HasDefaultValueSql("0");
             });
 
+            modelBuilder.Entity<PhpbbForumsWatch>(entity =>
+            {
+                entity.HasKey(e => new { e.ForumId, e.UserId });
+
+                entity.ToTable("phpbb_forums_watch", "forum");
+
+                entity.HasIndex(e => e.ForumId)
+                    .HasName("forum_id");
+
+                entity.HasIndex(e => e.NotifyStatus)
+                    .HasName("notify_stat");
+
+                entity.HasIndex(e => e.UserId)
+                    .HasName("user_id");
+
+                entity.Property(e => e.ForumId)
+                    .HasColumnName("forum_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.UserId)
+                    .HasColumnName("user_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.NotifyStatus)
+                    .HasColumnName("notify_status")
+                    .HasColumnType("tinyint(1) unsigned")
+                    .HasDefaultValueSql("0");
+            });
+
             modelBuilder.Entity<PhpbbGroups>(entity =>
             {
                 entity.HasKey(e => e.GroupId);
@@ -1289,6 +1426,51 @@ namespace Serverless.Forum.forum
                     .HasDefaultValueSql("0");
             });
 
+            modelBuilder.Entity<PhpbbModeratorCache>(entity =>
+            {
+                entity.HasKey(e => new { e.ForumId, e.UserId, e.GroupId });
+
+                entity.ToTable("phpbb_moderator_cache", "forum");
+
+                entity.HasIndex(e => e.DisplayOnIndex)
+                    .HasName("disp_idx");
+
+                entity.HasIndex(e => e.ForumId)
+                    .HasName("forum_id");
+
+                entity.Property(e => e.ForumId)
+                    .HasColumnName("forum_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.UserId)
+                    .HasColumnName("user_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.GroupId)
+                    .HasColumnName("group_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.DisplayOnIndex)
+                    .HasColumnName("display_on_index")
+                    .HasColumnType("tinyint(1) unsigned")
+                    .HasDefaultValueSql("1");
+
+                entity.Property(e => e.GroupName)
+                    .IsRequired()
+                    .HasColumnName("group_name")
+                    .HasMaxLength(255)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.Username)
+                    .IsRequired()
+                    .HasColumnName("username")
+                    .HasMaxLength(255)
+                    .IsUnicode(false);
+            });
+
             modelBuilder.Entity<PhpbbModules>(entity =>
             {
                 entity.HasKey(e => e.ModuleId);
@@ -1362,6 +1544,82 @@ namespace Serverless.Forum.forum
                     .HasColumnName("right_id")
                     .HasColumnType("mediumint(8) unsigned")
                     .HasDefaultValueSql("0");
+            });
+
+            modelBuilder.Entity<PhpbbPollOptions>(entity =>
+            {
+                entity.ToTable("phpbb_poll_options", "forum");
+
+                entity.HasIndex(e => e.PollOptionId)
+                    .HasName("poll_opt_id");
+
+                entity.HasIndex(e => e.TopicId)
+                    .HasName("topic_id");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("bigint(20)")
+                    .ValueGeneratedNever();
+
+                entity.Property(e => e.PollOptionId)
+                    .HasColumnName("poll_option_id")
+                    .HasColumnType("tinyint(4)")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.PollOptionText)
+                    .IsRequired()
+                    .HasColumnName("poll_option_text")
+                    .IsUnicode(false);
+
+                entity.Property(e => e.PollOptionTotal)
+                    .HasColumnName("poll_option_total")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.TopicId)
+                    .HasColumnName("topic_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+            });
+
+            modelBuilder.Entity<PhpbbPollVotes>(entity =>
+            {
+                entity.ToTable("phpbb_poll_votes", "forum");
+
+                entity.HasIndex(e => e.TopicId)
+                    .HasName("topic_id");
+
+                entity.HasIndex(e => e.VoteUserId)
+                    .HasName("vote_user_id");
+
+                entity.HasIndex(e => e.VoteUserIp)
+                    .HasName("vote_user_ip");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("bigint(20)")
+                    .ValueGeneratedNever();
+
+                entity.Property(e => e.PollOptionId)
+                    .HasColumnName("poll_option_id")
+                    .HasColumnType("tinyint(4)")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.TopicId)
+                    .HasColumnName("topic_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.VoteUserId)
+                    .HasColumnName("vote_user_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.VoteUserIp)
+                    .IsRequired()
+                    .HasColumnName("vote_user_ip")
+                    .HasMaxLength(40)
+                    .IsUnicode(false);
             });
 
             modelBuilder.Entity<PhpbbPosts>(entity =>
@@ -1748,6 +2006,74 @@ namespace Serverless.Forum.forum
                     .HasColumnName("rule_user_id")
                     .HasColumnType("mediumint(8) unsigned")
                     .HasDefaultValueSql("0");
+
+                entity.Property(e => e.UserId)
+                    .HasColumnName("user_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+            });
+
+            modelBuilder.Entity<PhpbbPrivmsgsTo>(entity =>
+            {
+                entity.ToTable("phpbb_privmsgs_to", "forum");
+
+                entity.HasIndex(e => e.AuthorId)
+                    .HasName("author_id");
+
+                entity.HasIndex(e => e.MsgId)
+                    .HasName("msg_id");
+
+                entity.HasIndex(e => new { e.UserId, e.FolderId })
+                    .HasName("usr_flder_id");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("bigint(20)");
+
+                entity.Property(e => e.AuthorId)
+                    .HasColumnName("author_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.FolderId)
+                    .HasColumnName("folder_id")
+                    .HasColumnType("int(11)")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.MsgId)
+                    .HasColumnName("msg_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.PmDeleted)
+                    .HasColumnName("pm_deleted")
+                    .HasColumnType("tinyint(1) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.PmForwarded)
+                    .HasColumnName("pm_forwarded")
+                    .HasColumnType("tinyint(1) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.PmMarked)
+                    .HasColumnName("pm_marked")
+                    .HasColumnType("tinyint(1) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.PmNew)
+                    .HasColumnName("pm_new")
+                    .HasColumnType("tinyint(1) unsigned")
+                    .HasDefaultValueSql("1");
+
+                entity.Property(e => e.PmReplied)
+                    .HasColumnName("pm_replied")
+                    .HasColumnType("tinyint(1) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.PmUnread)
+                    .HasColumnName("pm_unread")
+                    .HasColumnType("tinyint(1) unsigned")
+                    .HasDefaultValueSql("1");
 
                 entity.Property(e => e.UserId)
                     .HasColumnName("user_id")
@@ -2167,6 +2493,40 @@ namespace Serverless.Forum.forum
                     .IsUnicode(false);
             });
 
+            modelBuilder.Entity<PhpbbSearchWordmatch>(entity =>
+            {
+                entity.ToTable("phpbb_search_wordmatch", "forum");
+
+                entity.HasIndex(e => e.PostId)
+                    .HasName("post_id");
+
+                entity.HasIndex(e => e.WordId)
+                    .HasName("word_id");
+
+                entity.HasIndex(e => new { e.WordId, e.PostId, e.TitleMatch })
+                    .HasName("unq_mtch")
+                    .IsUnique();
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("bigint(20)");
+
+                entity.Property(e => e.PostId)
+                    .HasColumnName("post_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.TitleMatch)
+                    .HasColumnName("title_match")
+                    .HasColumnType("tinyint(1) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.WordId)
+                    .HasColumnName("word_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+            });
+
             modelBuilder.Entity<PhpbbSessions>(entity =>
             {
                 entity.HasKey(e => e.SessionId);
@@ -2556,6 +2916,47 @@ namespace Serverless.Forum.forum
                     .HasDefaultValueSql("0");
             });
 
+            modelBuilder.Entity<PhpbbStylesTemplateData>(entity =>
+            {
+                entity.ToTable("phpbb_styles_template_data", "forum");
+
+                entity.HasIndex(e => e.TemplateFilename)
+                    .HasName("tfn");
+
+                entity.HasIndex(e => e.TemplateId)
+                    .HasName("tid");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("int(11)");
+
+                entity.Property(e => e.TemplateData)
+                    .IsRequired()
+                    .HasColumnName("template_data")
+                    .HasColumnType("mediumtext");
+
+                entity.Property(e => e.TemplateFilename)
+                    .IsRequired()
+                    .HasColumnName("template_filename")
+                    .HasMaxLength(100)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.TemplateId)
+                    .HasColumnName("template_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.TemplateIncluded)
+                    .IsRequired()
+                    .HasColumnName("template_included")
+                    .IsUnicode(false);
+
+                entity.Property(e => e.TemplateMtime)
+                    .HasColumnName("template_mtime")
+                    .HasColumnType("int(11) unsigned")
+                    .HasDefaultValueSql("0");
+            });
+
             modelBuilder.Entity<PhpbbStylesTheme>(entity =>
             {
                 entity.HasKey(e => e.ThemeId);
@@ -2858,6 +3259,100 @@ namespace Serverless.Forum.forum
                     .HasColumnName("mark_time")
                     .HasColumnType("int(11) unsigned")
                     .HasDefaultValueSql("0");
+            });
+
+            modelBuilder.Entity<PhpbbTopicsWatch>(entity =>
+            {
+                entity.HasKey(e => new { e.TopicId, e.UserId });
+
+                entity.ToTable("phpbb_topics_watch", "forum");
+
+                entity.HasIndex(e => e.NotifyStatus)
+                    .HasName("notify_stat");
+
+                entity.HasIndex(e => e.TopicId)
+                    .HasName("topic_id");
+
+                entity.HasIndex(e => e.UserId)
+                    .HasName("user_id");
+
+                entity.Property(e => e.TopicId)
+                    .HasColumnName("topic_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.UserId)
+                    .HasColumnName("user_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.NotifyStatus)
+                    .HasColumnName("notify_status")
+                    .HasColumnType("tinyint(1) unsigned")
+                    .HasDefaultValueSql("0");
+            });
+
+            modelBuilder.Entity<PhpbbUserGroup>(entity =>
+            {
+                entity.HasKey(e => new { e.GroupId, e.UserId });
+
+                entity.ToTable("phpbb_user_group", "forum");
+
+                entity.HasIndex(e => e.GroupId)
+                    .HasName("group_id");
+
+                entity.HasIndex(e => e.GroupLeader)
+                    .HasName("group_leader");
+
+                entity.HasIndex(e => e.UserId)
+                    .HasName("user_id");
+
+                entity.Property(e => e.GroupId)
+                    .HasColumnName("group_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.UserId)
+                    .HasColumnName("user_id")
+                    .HasColumnType("mediumint(8) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.GroupLeader)
+                    .HasColumnName("group_leader")
+                    .HasColumnType("tinyint(1) unsigned")
+                    .HasDefaultValueSql("0");
+
+                entity.Property(e => e.UserPending)
+                    .HasColumnName("user_pending")
+                    .HasColumnType("tinyint(1) unsigned")
+                    .HasDefaultValueSql("1");
+            });
+
+            modelBuilder.Entity<PhpbbUserTopicPostNumber>(entity =>
+            {
+                entity.ToTable("phpbb_user_topic_post_number", "forum");
+
+                entity.HasIndex(e => e.Id)
+                    .HasName("id_3");
+
+                entity.HasIndex(e => new { e.UserId, e.TopicId })
+                    .HasName("user_id");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("int(11)");
+
+                entity.Property(e => e.PostNo)
+                    .HasColumnName("post_no")
+                    .HasColumnType("int(11)");
+
+                entity.Property(e => e.TopicId)
+                    .HasColumnName("topic_id")
+                    .HasColumnType("int(11)");
+
+                entity.Property(e => e.UserId)
+                    .HasColumnName("user_id")
+                    .HasColumnType("int(11)");
             });
 
             modelBuilder.Entity<PhpbbUsers>(entity =>
@@ -3295,33 +3790,6 @@ namespace Serverless.Forum.forum
                     .HasColumnName("username_clean")
                     .HasMaxLength(255)
                     .IsUnicode(false);
-            });
-
-            modelBuilder.Entity<PhpbbUserTopicPostNumber>(entity =>
-            {
-                entity.ToTable("phpbb_user_topic_post_number", "forum");
-
-                entity.HasIndex(e => e.Id)
-                    .HasName("id_3");
-
-                entity.HasIndex(e => new { e.UserId, e.TopicId })
-                    .HasName("user_id");
-
-                entity.Property(e => e.Id)
-                    .HasColumnName("id")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.PostNo)
-                    .HasColumnName("post_no")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.TopicId)
-                    .HasColumnName("topic_id")
-                    .HasColumnType("int(11)");
-
-                entity.Property(e => e.UserId)
-                    .HasColumnName("user_id")
-                    .HasColumnType("int(11)");
             });
 
             modelBuilder.Entity<PhpbbWarnings>(entity =>

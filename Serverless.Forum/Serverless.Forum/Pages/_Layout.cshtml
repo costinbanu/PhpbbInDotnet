@@ -1,7 +1,8 @@
 ﻿@using System.Web
 @using Microsoft.AspNetCore.Http
 @using Newtonsoft.Json
-@using Serverless.Forum.forum
+@using  Serverless.Forum.Contracts
+
 @inject IHttpContextAccessor _httpContext
 <!DOCTYPE html>
 <html>
@@ -28,7 +29,7 @@
             "dismiss": "Am înțeles, sunt de acord.",
             "learnMore": "Mai multe detalii",
             "link": "./about_cookies.html",
-            "theme": "dark-floating"
+            "theme": "dark-top"
         };
     </script>
 
@@ -57,15 +58,18 @@
                 <ul class="nav navbar-nav">
                     <li><a asp-page="/Index">Home</a></li>
                     <li><a asp-page="/Help">Help</a></li>
-                    @if (_httpContext.HttpContext.Session.Get("user") == null)
-                    {
-                        <li><a href="#" onclick="loginForm.submit()">Login</a></li>
-                    }
-                    else
-                    {
-                        var userName = JsonConvert.DeserializeObject<PhpbbUsers>(_httpContext.HttpContext.Session.GetString("user")).Username;
-                        <li><a asp-page="/User">Welcome, @userName!</a></li>
-                        <li><a href="#" onclick="logoutForm.submit()">Logout</a></li>
+                    @{
+                        var user = JsonConvert.DeserializeObject<LoggedUser>(_httpContext.HttpContext.Session.GetString("user"));
+
+                        if (user == null || user.UserId == 1)
+                        {
+                            <li><a href="#" onclick="loginForm.submit()">Login</a></li>
+                        }
+                        else
+                        {
+                            <li><a asp-page="/User" asp-route-UserId="@user.UserId">Welcome, @user.Username!</a></li>
+                            <li><a href="#" onclick="logoutForm.submit()">Logout</a></li>
+                        }
                     }
                 </ul>
 
@@ -74,11 +78,8 @@
     </nav>
     <div class="container body-content">
         @RenderBody()
-        <hr />
-        <footer>
-            <p>&copy; 2018 - Serverless.Forum</p>
-        </footer>
     </div>
+    <p>&copy; 2018 - Serverless.Forum</p>
 
     <environment include="Development">
         <script src="~/lib/jquery/dist/jquery.js"></script>

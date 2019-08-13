@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Serverless.Forum.Pages
 {
@@ -11,5 +12,14 @@ namespace Serverless.Forum.Pages
         public string LastPosterName { get; set; } = null;
 
         public DateTime? LastPostTime { get; set; } = null;
+
+        public int? PostCount { get; set; } = null;
+    }
+
+    public class TopicTransport
+    {
+        public byte? TopicType { get; set; } = null;
+
+        public IEnumerable<TopicDisplay> Topics { get; set; }
     }
 }
