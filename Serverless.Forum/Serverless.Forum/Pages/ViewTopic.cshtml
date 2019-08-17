@@ -12,13 +12,15 @@
 @foreach (var post in Model.Posts)
 {
     <div class="ForumListRow">
-        <span class="ForumListLeft">
+        <span class="ForumListLeft" id="@post.Id">
             @Html.Raw(post.PostText)
         </span>
         <span class="ForumListRight">
-            @if (post.AuthorId == default(int))
+            @if (post.AuthorId == null)
             {
-                @Html.Raw(@post.AuthorName)
+                <span>Autor: @Html.Raw(post.AuthorName)</span>
+                <br />
+                <span>Scris la: @post.PostCreationTime?.ToString(Model.LoggedUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")</span>
             }
             else
             {
@@ -33,3 +35,40 @@
     Mergi la pagina: @await Html.PartialAsync("_PaginationPartial", Model.Pagination, ViewData)
 </p>
 
+<!-- Begin Media resizer -->
+<!--
+    use this https://stackoverflow.com/questions/4100252/javascript-executing-function-after-full-image-load
+    or just move the logic to the future File class
+-->
+<script type="text/javascript">
+        var posts = document.getElementsByClassName("ForumListLeft");
+        for (var i = 0; i < posts.length; i++) {
+            var imgs = posts[i].getElementsByTagName("img");
+            var w = posts[i].offsetWidth;
+            var h = window.innerHeight;
+            for (var j = 0; j < imgs.length; j++) {
+                var oh = imgs[j].naturalHeight, ow = imgs[j].naturalWidth,
+                    x = h / oh, y = w / ow;
+                if (x < 1 || y < 1) {
+                    imgs[j].style.width = Math.round(0.9 * ow * Math.min(x, y)) + "px";
+                    imgs[j].style.height = Math.round(0.9 * oh * Math.min(x, y)) + "px";
+                    if (imgs[j].parentNode.nodeName != "A") {
+                        imgs[j].setAttribute("onclick", "window.open(this.src);");
+                        imgs[j].setAttribute("title", "Click pentru imaginea marita.");
+                        imgs[j].style.cursor = "pointer";
+                    }
+                }
+            }
+            var frames = posts[i].getElementsByTagName("iframe");
+            for (var j = 0; j < frames.length; j++) {
+                frames[j].width = (w - 20);
+                frames[j].height = Math.max(Math.round(h / 1.8), Math.round((w - 20) * 9 / 16));
+                frames[j].style.width = (w - 20) + "px";
+                frames[j].style.height = Math.max(Math.round(h / 1.8), Math.round((w - 20) * 9 / 16)) + "px";
+                if (frames[j].src.indexOf("imgur") != -1)
+                    frames[j].src += "?w=" + (w - 20);
+            }
+        }
+</script>
+
+<!-- End media resizer-->

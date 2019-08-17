@@ -24,7 +24,15 @@ namespace Serverless.Forum.Pages
         {
             _dbContext = context;
             _httpContext = httpContext;
-            LoggedUser = JsonConvert.DeserializeObject<LoggedUser>(_httpContext.HttpContext.Session.GetString("user"));
+            if (_httpContext.HttpContext.Session.GetString("user") == null)
+            {
+                LoggedUser = Acl.Instance.GetAnonymousUser(_dbContext);
+                _httpContext.HttpContext.Session.SetString("user", JsonConvert.SerializeObject(LoggedUser));
+            }
+            else
+            {
+                LoggedUser = JsonConvert.DeserializeObject<LoggedUser>(_httpContext.HttpContext.Session.GetString("user"));
+            }
         }
 
         public IActionResult OnGet(int ForumId)

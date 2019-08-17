@@ -8,96 +8,41 @@
     var noOfPages = Model.Posts / Model.PostsPerPage + 1;
     var pager = new Pager(Model.Posts, Model.CurrentPage, Model.PostsPerPage, 7);
     var uri = HttpUtility.ParseQueryString(Model.Link);
+    if (pager.TotalPages > 1)
+    {
+        if (pager.StartPage > 1)
+        {
+            uri.Set("PageNum", "1");
+            <span style="display:inline-block; background-color:gainsboro; padding:2px;">
+                <a href="@uri.ToString()">1</a>
+            </span>
+            <span>&nbsp;...</span>
+        }
 
-    if (pager.StartPage > 3)
-    {
-        uri.Set("PageNum", "1");
-        <span style="display:inline-block; background-color:gainsboro; padding:2px;">
-            <a href="@uri.ToString()">1</a>
-        </span>
-        <span>&nbsp;...</span>
-    }
-    foreach (var curPage in pager.Pages)
-    {
-        if (curPage == Model.CurrentPage)
+        foreach (var curPage in pager.Pages)
         {
-            <span style="display:inline-block; padding:2px;">@curPage</span>
+            if (curPage == Model.CurrentPage)
+            {
+                <span style="display:inline-block; padding:2px;">@curPage</span>
+            }
+            else
+            {
+                uri.Set("PageNum", curPage.ToString());
+                <span style="display:inline-block; background-color:gainsboro; padding:2px;">
+                    <a href="@uri.ToString()">@curPage</a>
+                </span>
+            }
         }
-        else
-        {
-            uri.Set("PageNum", curPage.ToString());
-            <span style="display:inline-block; background-color:gainsboro; padding:2px;">
-                <a href="@uri.ToString()">@curPage</a>
-            </span>
-        }
-    }
-    if (pager.EndPage + 3 < pager.TotalPages)
-    {
-        uri.Set("PageNum", pager.TotalPages.ToString());
-        <span>&nbsp;...</span>
-        <span style="display:inline-block; background-color:gainsboro; padding:2px;">
-            <a href="@uri.ToString()">@pager.TotalPages</a>
-        </span>
-    }
 
-    /*if (Model.CurrentPage <= 3)
-    {
-        for (var index = Model.CurrentPage; noOfPages > 1 && index <= noOfPages; index++)
+        if (pager.EndPage + 3 < pager.TotalPages)
         {
-            var uri = HttpUtility.ParseQueryString(Model.Link);
-            var text = string.Empty;
-            if (index == 6)
-            {
-                index = noOfPages;
-                text = $"&nbsp;...&nbsp;";
-            }
-            uri.Set("PageNum", index.ToString());
-            @Html.Raw(text);
+            uri.Set("PageNum", pager.TotalPages.ToString());
+            <span>&nbsp;...</span>
             <span style="display:inline-block; background-color:gainsboro; padding:2px;">
-                <a href="@uri.ToString()">@index</a>
-            </span>
-            if (index == 6)
-            {
-                break;
-            }
-        }
-    }
-    else if (Model.CurrentPage >= noOfPages - 3)
-    {
-        for (var index = Model.CurrentPage; index <= noOfPages; index++)
-        {
-            var uri = HttpUtility.ParseQueryString(Model.Link);
-            var text = string.Empty;
-            if (index == noOfPages - 3)
-            {
-                index = noOfPages;
-                text = $"&nbsp;...&nbsp;";
-            }
-            uri.Set("PageNum", index.ToString());
-            @Html.Raw(text);
-            <span style="display:inline-block; background-color:gainsboro; padding:2px;">
-                <a href="@uri.ToString()">@index</a>
+                <a href="@uri.ToString()">@pager.TotalPages</a>
             </span>
         }
     }
-    else
-    {
-        for (var index = Model.CurrentPage - 3; index <= Model.CurrentPage + 3 && index <= noOfPages; index++)
-        {
-            var uri = HttpUtility.ParseQueryString(Model.Link);
-            var text = string.Empty;
-            if (index == noOfPages - 3)
-            {
-                index = noOfPages;
-                text = $"&nbsp;...&nbsp;";
-            }
-            uri.Set("PageNum", index.ToString());
-            @Html.Raw(text);
-            <span style="display:inline-block; background-color:gainsboro; padding:2px;">
-                <a href="@uri.ToString()">@index</a>
-            </span>
-        }
-    }*/
 }
 
 
