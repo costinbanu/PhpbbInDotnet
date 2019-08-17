@@ -63,7 +63,8 @@ namespace Serverless.Forum.Pages
                                        {
                                            Link = $"/ViewTopic?TopicId={g.TopicId}&PageNum=1",
                                            Posts = postCount,
-                                           PostsPerPage = pageSize
+                                           PostsPerPage = pageSize,
+                                           CurrentPage = 1
                                        }
                                    }
                       });

@@ -45,7 +45,8 @@ namespace Serverless.Forum.Pages
                     new BBTag("u", "<span style=\"text-decoration:underline;\">", "</span>"),
                     new BBTag("code", "<pre class=\"prettyprint\">", "</pre>"),
                     new BBTag("img", "<img src=\"${content}\" />", "", false, true),
-                    new BBTag("quote", "<blockquote>", "</blockquote>"),
+                    new BBTag("quote", "<blockquote>${name}", "</blockquote>",
+                        new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : $"<b>{HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')}</b> a scris:<br/>")),
                     new BBTag("list", "<ul>", "</ul>"),
                     new BBTag("*", "<li>", "</li>", true, false),
                     new BBTag("url", "<a href=\"${href}\">", "</a>", new BBAttribute("href", ""), new BBAttribute("href", "href")),
@@ -63,7 +64,7 @@ namespace Serverless.Forum.Pages
                      from j in joined.DefaultIfEmpty()
                      select new PostDisplay
                      {
-                         PostText = parser.ToHtml(HttpUtility.HtmlDecode(p.PostText.Replace($":{p.BbcodeUid}", ""))),
+                         PostText = HttpUtility.HtmlDecode(parser.ToHtml(p.PostText.Replace($":{p.BbcodeUid}", ""))),
                          AuthorName = j.Username ?? p.PostUsername,
                          AuthorId = j.UserId,
                          PostCreationTime = p.PostTime.TimestampToLocalTime(),
@@ -77,7 +78,8 @@ namespace Serverless.Forum.Pages
             {
                 Link = $"/ViewTopic?TopicId={TopicId}&PageNum=1",
                 Posts = _dbContext.PhpbbPosts.Count(p => p.TopicId == TopicId),
-                PostsPerPage = pageSize
+                PostsPerPage = pageSize,
+                CurrentPage = PageNum
             };
         }
     }

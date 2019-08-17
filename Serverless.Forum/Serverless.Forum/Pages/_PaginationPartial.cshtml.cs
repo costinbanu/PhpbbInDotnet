@@ -17,5 +17,6 @@ namespace Serverless.Forum.Pages
         public string Link;
         public int Posts;
         public int PostsPerPage;
+        public int CurrentPage = 1;
     }
 }
