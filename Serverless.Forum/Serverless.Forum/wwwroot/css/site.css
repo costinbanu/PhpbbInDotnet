@@ -61,6 +61,7 @@ body {
     display: inline-block;
     vertical-align: top;
     display: table-cell;
+    padding-left:30px;
 }
 
 .clear {

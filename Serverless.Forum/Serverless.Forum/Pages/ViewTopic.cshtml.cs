@@ -12,6 +12,9 @@ using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
 using Serverless.Forum.Utilities;
 
+using System.Text;
+using System.Text.RegularExpressions;
+
 namespace Serverless.Forum.Pages
 {
     public class ViewTopicModel : PageModel
@@ -60,7 +63,7 @@ namespace Serverless.Forum.Pages
                      from j in joined.DefaultIfEmpty()
                      select new PostDisplay
                      {
-                         PostText = parser.ToHtml(HttpUtility.HtmlDecode(p.PostText)),
+                         PostText = parser.ToHtml(HttpUtility.HtmlDecode(p.PostText.Replace($":{p.BbcodeUid}", ""))),
                          AuthorName = j.Username ?? p.PostUsername,
                          AuthorId = j.UserId,
                          PostCreationTime = p.PostTime.TimestampToLocalTime(),

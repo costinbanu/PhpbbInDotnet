@@ -11,7 +11,7 @@
         var text = string.Empty;
         if(index == 5)
         {
-            index = Model.Posts - 1;
+            index = noOfPages;
             text = $"&nbsp;...&nbsp;";
         }
         uri.Set("PageNum", index.ToString());
