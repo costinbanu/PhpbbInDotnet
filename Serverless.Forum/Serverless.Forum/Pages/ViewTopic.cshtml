@@ -6,6 +6,9 @@
 }
 
 <h2>@Model.TopicTitle</h2>
+<p style="margin:20px;">
+    Mergi la pagina: @await Html.PartialAsync("_PaginationPartial", Model.Pagination, ViewData)
+</p>
 @foreach (var post in Model.Posts)
 {
     <div class="ForumListRow">
@@ -20,10 +23,13 @@
             else
             {
                 <span>Autor: <a asp-page="/User" asp-route-UserId="@post.AuthorId">@post.AuthorName</a></span>
-                <br/>
+                <br />
                 <span>Scris la: @post.PostCreationTime?.ToString(Model.LoggedUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")</span>
             }
         </span>
     </div>
 }
+<p style="margin:20px;">
+    Mergi la pagina: @await Html.PartialAsync("_PaginationPartial", Model.Pagination, ViewData)
+</p>
 

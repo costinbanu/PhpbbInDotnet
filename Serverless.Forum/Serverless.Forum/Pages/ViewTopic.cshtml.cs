@@ -19,6 +19,7 @@ namespace Serverless.Forum.Pages
         public IEnumerable<PostDisplay> Posts;
         public string TopicTitle;
         public LoggedUser LoggedUser;
+        public _PaginationPartialModel Pagination;
 
         forumContext _dbContext;
         IHttpContextAccessor _httpContext;
@@ -28,7 +29,7 @@ namespace Serverless.Forum.Pages
             _httpContext = httpContext;
             LoggedUser = JsonConvert.DeserializeObject<LoggedUser>(_httpContext.HttpContext.Session.GetString("user") ?? "{}");
         }
-        public void OnGet(int TopicId, int page = 1)
+        public void OnGet(int TopicId, int PageNum)
         {
             var pageSize = LoggedUser.TopicPostsPerPage.ContainsKey(TopicId) ? LoggedUser.TopicPostsPerPage[TopicId] : 14;
             //var customBbCodes = from c in _dbContext.PhpbbBbcodes
@@ -51,21 +52,30 @@ namespace Serverless.Forum.Pages
             Posts = (from p in _dbContext.PhpbbPosts
                      where p.TopicId == TopicId
                      orderby p.PostTime ascending
+
                      join u in _dbContext.PhpbbUsers
                      on p.PosterId equals u.UserId
                      into joined
+
                      from j in joined.DefaultIfEmpty()
                      select new PostDisplay
                      {
                          PostText = parser.ToHtml(HttpUtility.HtmlDecode(p.PostText)),
-                         AuthorName = j.Username == null ? p.PostUsername : j.Username,
+                         AuthorName = j.Username ?? p.PostUsername,
                          AuthorId = j.UserId,
                          PostCreationTime = p.PostTime.TimestampToLocalTime(),
                          PostModifiedTime = p.PostEditTime.TimestampToLocalTime()
                      })
-                    .ToList().Skip(page * pageSize).Take(pageSize).ToList();
+                    .ToList().Skip((PageNum - 1) * pageSize).Take(pageSize).ToList();
 
             TopicTitle = _dbContext.PhpbbTopics.FirstOrDefault(t => t.TopicId == TopicId)?.TopicTitle ?? "untitled";
+
+            Pagination = new _PaginationPartialModel
+            {
+                Link = $"/ViewTopic?TopicId={TopicId}&PageNum=1",
+                Posts = _dbContext.PhpbbPosts.Count(p => p.TopicId == TopicId),
+                PostsPerPage = pageSize
+            };
         }
     }
 }

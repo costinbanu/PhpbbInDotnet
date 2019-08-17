@@ -1,0 +1,28 @@
+﻿@model Serverless.Forum.Pages._PaginationPartialModel
+@using System.Web;
+
+<!DOCTYPE html>
+
+@{ 
+    var noOfPages = Model.Posts / Model.PostsPerPage + 1;
+    for (var index = 1; noOfPages > 1 && index <= noOfPages; index++)
+    {
+        var uri = HttpUtility.ParseQueryString(Model.Link);
+        var text = string.Empty;
+        if(index == 5)
+        {
+            index = Model.Posts - 1;
+            text = $"&nbsp;...&nbsp;";
+        }
+        uri.Set("PageNum", index.ToString());
+        @Html.Raw(text);
+        <span style="display:inline-block; background-color:gainsboro; padding:2px;">
+            <a href="@uri.ToString()">@index</a>
+        </span>
+        if (index == 5)
+        {
+            break;
+        }
+    }
+}
+

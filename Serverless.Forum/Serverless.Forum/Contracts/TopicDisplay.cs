@@ -14,6 +14,8 @@ namespace Serverless.Forum.Pages
         public DateTime? LastPostTime { get; set; } = null;
 
         public int? PostCount { get; set; } = null;
+
+        public _PaginationPartialModel Pagination { get; set; } = null;
     }
 
     public class TopicTransport

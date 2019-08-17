@@ -26,6 +26,8 @@
 }
 @if (Model.Topics.Any())
 {
+    /*https://stackoverflow.com/questions/5144265/an-equally-quick-alternative-to-securityelement-escapestring-to-escape-xml-spe#comment88712318_5144356
+     * use SecurityElement.Escape when using Html.Raw*/
     var topicsDisplayed = false;
     foreach (var topicGroup in Model.Topics)
     {
@@ -43,6 +45,8 @@
             <div class="ForumListRow">
                 <span class="ForumListLeft">
                     <a asp-page="/ViewTopic" asp-route-TopicId="@topic.Id" class="nav-link">@Html.Raw(@topic.Title)</a>
+                    <br/>
+                    @await  Html.PartialAsync("_PaginationPartial", topic.Pagination, ViewData)
                 </span>
                 <span class="ForumListRight">
                     Ultimul mesaj: @topic.LastPostTime?.ToString(Model.LoggedUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")

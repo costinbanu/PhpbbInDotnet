@@ -15,6 +15,7 @@ namespace Serverless.Forum.Pages
     {
         public IEnumerable<ForumDisplay> Forums;
         public IEnumerable<TopicTransport> Topics;
+        public _PaginationPartialModel Pagination;
         public LoggedUser LoggedUser;
 
         forumContext _dbContext;
@@ -42,19 +43,28 @@ namespace Serverless.Forum.Pages
             Topics = (from t in _dbContext.PhpbbTopics
                       where t.ForumId == ForumId
                       orderby t.TopicLastPostTime descending
+
                       group t by t.TopicType into groups
                       orderby groups.Key descending
                       select new TopicTransport
                       {
                           TopicType = groups.Key,
                           Topics = from g in groups
+                                   let postCount = _dbContext.PhpbbPosts.Count(p => p.TopicId == g.TopicId)
+                                   let pageSize = LoggedUser.TopicPostsPerPage.ContainsKey(g.TopicId) ? LoggedUser.TopicPostsPerPage[g.TopicId] : 14
                                    select new TopicDisplay
                                    {
                                        Id = g.TopicId,
                                        Title = HttpUtility.HtmlDecode(g.TopicTitle),
                                        LastPosterName = g.TopicLastPosterName,
                                        LastPostTime = g.TopicLastPostTime.TimestampToLocalTime(),
-                                       PostCount = _dbContext.PhpbbPosts.Count(p => p.TopicId == g.TopicId)
+                                       PostCount = _dbContext.PhpbbPosts.Count(p => p.TopicId == g.TopicId),
+                                       Pagination = new _PaginationPartialModel
+                                       {
+                                           Link = $"/ViewTopic?TopicId={g.TopicId}&PageNum=1",
+                                           Posts = postCount,
+                                           PostsPerPage = pageSize
+                                       }
                                    }
                       });
 
