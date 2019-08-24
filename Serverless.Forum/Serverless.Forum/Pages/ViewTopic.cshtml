@@ -41,23 +41,28 @@
     or just move the logic to the future File class
 -->
 <script type="text/javascript">
-        var posts = document.getElementsByClassName("ForumListLeft");
+        /*var posts = document.getElementsByClassName("ForumListLeft");
         for (var i = 0; i < posts.length; i++) {
             var imgs = posts[i].getElementsByTagName("img");
+            //alert(imgs.length);
             var w = posts[i].offsetWidth;
             var h = window.innerHeight;
             for (var j = 0; j < imgs.length; j++) {
                 var oh = imgs[j].naturalHeight, ow = imgs[j].naturalWidth,
                     x = h / oh, y = w / ow;
-                if (x < 1 || y < 1) {
+                imgs[j].style.maxWidth = w + "px";
+                imgs[j].style.maxHeight = h + "px";
+                //alert(imgs[j].src);
+                /*if (x < 1 || y < 1) {
                     imgs[j].style.width = Math.round(0.9 * ow * Math.min(x, y)) + "px";
                     imgs[j].style.height = Math.round(0.9 * oh * Math.min(x, y)) + "px";
+                    //alert(imgs[j].src);
                     if (imgs[j].parentNode.nodeName != "A") {
                         imgs[j].setAttribute("onclick", "window.open(this.src);");
                         imgs[j].setAttribute("title", "Click pentru imaginea marita.");
                         imgs[j].style.cursor = "pointer";
                     }
-                }
+                }*
             }
             var frames = posts[i].getElementsByTagName("iframe");
             for (var j = 0; j < frames.length; j++) {
@@ -68,7 +73,29 @@
                 if (frames[j].src.indexOf("imgur") != -1)
                     frames[j].src += "?w=" + (w - 20);
             }
+        }*/
+    /*var imgs = document.images,
+        len = imgs.length,
+        counter = 0;
+    //alert('a');
+    [].forEach.call(imgs, function (img) {
+        var w = img.parentNode.offsetWidth;
+        var h = window.innerHeight;
+        var oh = img.naturalHeight,
+            ow = img.naturalWidth,
+            x = h / oh, y = w / ow;
+        if (x < 1 || y < 1) {
+            img.style.width = Math.round(0.9 * ow * Math.min(x, y)) + "px";
+            img.style.height = Math.round(0.9 * oh * Math.min(x, y)) + "px";
+            //alert(img.src);
+            if (img.parentNode.nodeName != "A") {
+                img.setAttribute("onclick", "window.open(this.src);");
+                img.setAttribute("title", "Click pentru imaginea marita.");
+                img.style.cursor = "pointer";
+            }
         }
+    });*/
+    
 </script>
 
 <!-- End media resizer-->
