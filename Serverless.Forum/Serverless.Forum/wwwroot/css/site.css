@@ -71,6 +71,11 @@ body {
     padding-left:30px;
 }
 
+.PostTitle {
+    font-size: 1.2em;
+    font-weight:bold;
+}
+
 .clear {
     clear: both;
 }

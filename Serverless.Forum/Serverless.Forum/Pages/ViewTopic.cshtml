@@ -13,6 +13,10 @@
 {
     <div class="ForumListRow">
         <span class="ForumListLeft" id="@post.Id">
+            <span class="PostTitle">
+                <a href="#@post.Id">@Html.Raw(post.PostTitle)</a>
+            </span>
+            <p>&nbsp;</p>
             @Html.Raw(post.PostText)
         </span>
         <span class="ForumListRight">

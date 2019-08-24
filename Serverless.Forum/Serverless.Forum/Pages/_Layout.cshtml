@@ -1,9 +1,13 @@
-﻿@using System.Web
+﻿@using System.Text;
+@using System.Web
+@using Microsoft.AspNetCore.DataProtection;
 @using Microsoft.AspNetCore.Http
 @using Newtonsoft.Json
 @using  Serverless.Forum.Contracts
 
 @inject IHttpContextAccessor _httpContext
+@inject IDataProtectionProvider _dpProvider
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -35,7 +39,7 @@
 
     <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/1.0.9/cookieconsent.min.js"></script>
     <!-- End Cookie Consent plugin -->
-   
+
 </head>
 <body>
     <nav class="navbar navbar-inverse navbar-fixed-top">
@@ -61,7 +65,21 @@
                     <li><a asp-page="/Help">Help</a></li>
                     @{
                         var user = JsonConvert.DeserializeObject<LoggedUser>(_httpContext.HttpContext.Session.GetString("user"));
-
+                        //var protector = _dpProvider.CreateProtector("Cookie Encryption") as IPersistedDataProtector;
+                        //if (user == null || user.UserId == 1)
+                        //{
+                        //    try
+                        //    {
+                        //        user = JsonConvert.DeserializeObject<LoggedUser>(/*Encoding.UTF8.GetString(
+                        //            protector.DangerousUnprotect(Encoding.UTF8.GetBytes(*/
+                        //                _httpContext.HttpContext.Request.Cookies[/*Encoding.UTF8.GetString(protector.DangerousUnprotect(Encoding.UTF8.GetBytes(*/"user"/*), false, out var _, out var _))*/])/*, 
+                        //                false, out var _, out var _)))*/;
+                        //    }
+                        //    catch (Exception ex)
+                        //    {
+                        //        user = null;
+                        //    }
+                        //}
                         if (user == null || user.UserId == 1)
                         {
                             <li><a href="#" onclick="loginForm.submit()">Login</a></li>

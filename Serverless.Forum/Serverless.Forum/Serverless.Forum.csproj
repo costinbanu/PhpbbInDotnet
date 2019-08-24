@@ -10,7 +10,6 @@
     <WarningsAsErrors />
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="51Degrees.mobi-core" Version="3.2.21.1" />
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="3.1.0" />
     <PackageReference Include="CodeKicker.BBCode-NETStandard" Version="5.0.0" />
     <PackageReference Include="CryptSharpOfficial" Version="2.1.0" />

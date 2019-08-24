@@ -70,6 +70,7 @@ namespace Serverless.Forum.Pages
                      from j in joined
                      select new PostDisplay
                      {
+                         PostTitle = HttpUtility.HtmlDecode(p.PostSubject),
                          PostText = HttpUtility.HtmlDecode(parser.ToHtml(p.PostText.Replace($":{p.BbcodeUid}", ""))),
                          AuthorName = j.UserId == 1 ? p.PostUsername : j.Username,
                          AuthorId = j.UserId == 1 ? null as int? : j.UserId,
