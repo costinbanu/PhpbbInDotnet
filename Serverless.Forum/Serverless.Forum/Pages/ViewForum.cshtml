@@ -1,4 +1,5 @@
 ﻿@page
+@using Serverless.Forum.Utilities;
 @model Serverless.Forum.Pages.ViewForumModel
 @{
     ViewData["Title"] = "ViewForum";
@@ -15,7 +16,7 @@
                 <a asp-page="/ViewForum" asp-route-ForumId="@forum.Id" class="nav-link">@forum.Name</a>
             </span>
             <span class="ForumListRight">
-                Ultimul mesaj: @forum.LastPostTime?.ToString(Model.LoggedUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
+                Ultimul mesaj: @forum.LastPostTime?.ToString(User?.ToLoggedUser()?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
                 <br />
                 de @forum.LastPosterName
             </span>
@@ -40,7 +41,7 @@
             <h3>Subiecte</h3>
             topicsDisplayed = true;
         }
-        foreach (var topic in topicGroup.Topics)
+        foreach (var topic in topicGroup?.Topics ?? new List<TopicDisplay>())
         {
             <div class="ForumListRow">
                 <span class="ForumListLeft">
@@ -49,7 +50,7 @@
                     @await  Html.PartialAsync("_PaginationPartial", topic.Pagination, ViewData)
                 </span>
                 <span class="ForumListRight">
-                    Ultimul mesaj: @topic.LastPostTime?.ToString(Model.LoggedUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
+                    Ultimul mesaj: @topic.LastPostTime?.ToString(User?.ToLoggedUser()?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
                     <br/>
                     de @topic.LastPosterName
                 </span>

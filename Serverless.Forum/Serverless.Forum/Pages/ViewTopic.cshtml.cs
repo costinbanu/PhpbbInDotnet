@@ -1,12 +1,15 @@
 ﻿using CodeKicker.BBCode;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Newtonsoft.Json;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
 using Serverless.Forum.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Web;
 
 namespace Serverless.Forum.Pages
@@ -15,31 +18,28 @@ namespace Serverless.Forum.Pages
     {
         public IEnumerable<PostDisplay> Posts;
         public string TopicTitle;
-        public LoggedUser LoggedUser;
         public _PaginationPartialModel Pagination;
 
         forumContext _dbContext;
-        IHttpContextAccessor _httpContext;
         public ViewTopicModel(forumContext context, IHttpContextAccessor httpContext)
         {
             _dbContext = context;
-            _httpContext = httpContext;
-            LoggedUser = JsonConvert.DeserializeObject<LoggedUser>(_httpContext.HttpContext.Session.GetString("user") ?? "{}");
-            if (_httpContext.HttpContext.Session.GetString("user") == null)
-            {
-                LoggedUser = Acl.Instance.GetAnonymousUser(_dbContext);
-                _httpContext.HttpContext.Session.SetString("user", JsonConvert.SerializeObject(LoggedUser));
-            }
-            else
-            {
-                LoggedUser = JsonConvert.DeserializeObject<LoggedUser>(_httpContext.HttpContext.Session.GetString("user"));
-            }
         }
-        public void OnGet(int TopicId, int PageNum)
+        public async Task OnGet(int TopicId, int PageNum)
         {
-            var pageSize = LoggedUser.TopicPostsPerPage.ContainsKey(TopicId) ? LoggedUser.TopicPostsPerPage[TopicId] : 14;
-            //var customBbCodes = from c in _dbContext.PhpbbBbcodes
-            //                    select 
+            var user = User;
+            if (!user.Identity.IsAuthenticated)
+            {
+                user = Acl.Instance.GetAnonymousUser(_dbContext);
+                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, user, new AuthenticationProperties
+                {
+                    AllowRefresh = true,
+                    ExpiresUtc = DateTimeOffset.Now.AddMonths(1),
+                    IsPersistent = true,
+                });
+            }
+
+            var pageSize = user.ToLoggedUser().TopicPostsPerPage.ContainsKey(TopicId) ? user.ToLoggedUser().TopicPostsPerPage[TopicId] : 14;
 
             var parser = new BBCodeParser(new[]
             {

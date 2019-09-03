@@ -1,11 +1,14 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Newtonsoft.Json;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
 using Serverless.Forum.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Web;
 
 namespace Serverless.Forum.Pages
@@ -13,31 +16,32 @@ namespace Serverless.Forum.Pages
     public class IndexModel : PageModel
     {
         public IEnumerable<ForumDisplay> Forums;
-        public LoggedUser LoggedUser;
 
         forumContext _dbContext;
-        IHttpContextAccessor _httpContext;
 
-        public IndexModel(forumContext context, IHttpContextAccessor httpContext)
+        public IndexModel(forumContext context)
         {
             _dbContext = context;
-            _httpContext = httpContext;
-            if (_httpContext.HttpContext.Session.GetString("user") == null)
-            {
-                LoggedUser = Acl.Instance.GetAnonymousUser(_dbContext);
-                _httpContext.HttpContext.Session.SetString("user", JsonConvert.SerializeObject(LoggedUser));
-            }
-            else
-            {
-                LoggedUser = JsonConvert.DeserializeObject<LoggedUser>(_httpContext.HttpContext.Session.GetString("user"));
-            }
         }
 
-        public void OnGet()
+        public async Task OnGet()
         {
+            var user = User;
+            if (!user.Identity.IsAuthenticated)
+            {
+                user = Acl.Instance.GetAnonymousUser(_dbContext);
+                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, user, new AuthenticationProperties
+                {
+                    AllowRefresh = true,
+                    ExpiresUtc = DateTimeOffset.Now.AddMonths(1),
+                    IsPersistent = true,
+                });
+            }
+
             Forums = from f1 in _dbContext.PhpbbForums
                      where f1.ForumType == 0
-                        && !LoggedUser.UserPermissions.Any(fp => fp.ForumId == f1.ForumId && fp.AuthRoleId == 16)
+                        && user.ToLoggedUser().UserPermissions != null
+                        && !user.ToLoggedUser().UserPermissions.Any(fp => fp.ForumId == f1.ForumId && fp.AuthRoleId == 16)
                      let firstChildren = from f2 in _dbContext.PhpbbForums
                                          where f2.ParentId == f1.ForumId
                                          orderby f2.LeftId

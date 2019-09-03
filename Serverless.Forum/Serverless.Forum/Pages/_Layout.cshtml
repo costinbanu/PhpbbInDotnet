@@ -2,8 +2,8 @@
 @using System.Web
 @using Microsoft.AspNetCore.DataProtection;
 @using Microsoft.AspNetCore.Http
-@using Newtonsoft.Json
 @using  Serverless.Forum.Contracts
+@using Serverless.Forum.Utilities
 
 @inject IHttpContextAccessor _httpContext
 @inject IDataProtectionProvider _dpProvider
@@ -55,16 +55,16 @@
             </div>
             <div class="navbar-collapse collapse">
                 <form action="/Login" method="get" name="loginForm">
-                    <input name="ReturnUrl" type="hidden" value="@HttpUtility.UrlEncode(Context.Request.Path)" />
+                    <input name="ReturnUrl" type="hidden" value="@HttpUtility.UrlEncode(Context.Request.Path + Context.Request.QueryString)" />
                 </form>
                 <form action="/Logout" method="get" name="logoutForm">
-                    <input name="ReturnUrl" type="hidden" value="@HttpUtility.UrlEncode(Context.Request.Path)" />
+                    <input name="ReturnUrl" type="hidden" value="@HttpUtility.UrlEncode(Context.Request.Path + Context.Request.QueryString)" />
                 </form>
                 <ul class="nav navbar-nav">
                     <li><a asp-page="/Index">Home</a></li>
                     <li><a asp-page="/Help">Help</a></li>
                     @{
-                        var user = JsonConvert.DeserializeObject<LoggedUser>(_httpContext.HttpContext.Session.GetString("user"));
+                        //var user = JsonConvert.DeserializeObject<LoggedUser>(_httpContext.HttpContext.Session.GetString("user"));
                         //var protector = _dpProvider.CreateProtector("Cookie Encryption") as IPersistedDataProtector;
                         //if (user == null || user.UserId == 1)
                         //{
@@ -72,7 +72,7 @@
                         //    {
                         //        user = JsonConvert.DeserializeObject<LoggedUser>(/*Encoding.UTF8.GetString(
                         //            protector.DangerousUnprotect(Encoding.UTF8.GetBytes(*/
-                        //                _httpContext.HttpContext.Request.Cookies[/*Encoding.UTF8.GetString(protector.DangerousUnprotect(Encoding.UTF8.GetBytes(*/"user"/*), false, out var _, out var _))*/])/*, 
+                        //                _httpContext.HttpContext.Request.Cookies[/*Encoding.UTF8.GetString(protector.DangerousUnprotect(Encoding.UTF8.GetBytes(*/"user"/*), false, out var _, out var _))*/])/*,
                         //                false, out var _, out var _)))*/;
                         //    }
                         //    catch (Exception ex)
@@ -80,13 +80,13 @@
                         //        user = null;
                         //    }
                         //}
-                        if (user == null || user.UserId == 1)
+                        if (User == null || (User.ToLoggedUser()?.UserId ?? 0) == 1)
                         {
                             <li><a href="#" onclick="loginForm.submit()">Login</a></li>
                         }
                         else
                         {
-                            <li><a asp-page="/User" asp-route-UserId="@user.UserId">Welcome, @user.Username!</a></li>
+                            <li><a asp-page="/User" asp-route-UserId="@User.ToLoggedUser().UserId">Welcome, @User.ToLoggedUser().Username!</a></li>
                             <li><a href="#" onclick="logoutForm.submit()">Logout</a></li>
                         }
                     }

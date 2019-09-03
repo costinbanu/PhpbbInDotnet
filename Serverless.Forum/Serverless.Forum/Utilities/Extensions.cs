@@ -1,7 +1,9 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Serverless.Forum.Contracts;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Security.Claims;
 
 namespace Serverless.Forum.Utilities
 {
@@ -12,6 +14,11 @@ namespace Serverless.Forum.Utilities
             var toReturn = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
             toReturn = toReturn.AddSeconds(timestamp).ToLocalTime();
             return toReturn;
+        }
+
+        public static LoggedUser ToLoggedUser(this ClaimsPrincipal principal)
+        {
+            return JsonConvert.DeserializeObject<LoggedUser>(principal.Claims.FirstOrDefault()?.Value ?? "{}");
         }
     }
 }

@@ -4,7 +4,7 @@
     ViewData["Title"] = "Home page";
 }
 
-@using Microsoft.AspNetCore.Http
+@using Serverless.Forum.Utilities;
 
 <h2>Forumul Metrou Ușor</h2>
 
@@ -20,7 +20,7 @@
                     <a asp-page="/ViewForum" asp-route-ForumId="@forum.Id" class="nav-link">@forum.Name</a>
                 </span>
                 <span class="ForumListRight">
-                    Ultimul mesaj: @forum.LastPostTime?.ToString(Model.LoggedUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
+                    Ultimul mesaj: @forum.LastPostTime?.ToString(User?.ToLoggedUser()?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
                     <br />
                     de @forum.LastPosterName
                 </span>
