@@ -45,6 +45,18 @@ body {
     margin-top:5px;
 }
 
+.ForumListRowCategory {
+    width: 100%;
+    border-radius: 5px;
+    border: solid 1px black;
+    display: block;
+    vertical-align: top;
+    padding: 0.5em;
+    display: table;
+    margin-top: 5px;
+    background-color: beige;
+}
+
 .ForumListLeft {
     width: 70%;
     /*float: left;*/

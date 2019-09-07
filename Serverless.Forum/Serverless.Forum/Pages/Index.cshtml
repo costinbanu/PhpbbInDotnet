@@ -10,7 +10,7 @@
 
     @foreach (var category in Model.Forums)
     {
-        <div class="ForumListRow">
+        <div class="ForumListRowCategory">
             @category.Name
         </div>
         @foreach (var forum in category.Children)

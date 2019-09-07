@@ -45,7 +45,11 @@
         {
             <div class="ForumListRow">
                 <span class="ForumListLeft">
-                    <a asp-page="/ViewTopic" asp-route-TopicId="@topic.Id" asp-route-PageNum="1" class="nav-link">@Html.Raw(@topic.Title)</a>
+                    @if (topicGroup.TopicType == 1)
+                    {
+                        <span>&#x26A0;&#xFE0F;&nbsp;</span>
+                    }
+                    <a asp-page="/ViewTopic" asp-route-TopicId="@topic.Id" asp-route-PageNum="1" class="nav-link">@Html.Raw(topic.Title)</a>
                     <br/>
                     @await  Html.PartialAsync("_PaginationPartial", topic.Pagination, ViewData)
                 </span>
