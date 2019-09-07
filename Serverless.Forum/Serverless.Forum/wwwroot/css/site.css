@@ -34,6 +34,10 @@ body {
     }
 }
 
+blockquote {
+    background-color: #fef6e9 !important;
+}
+
 .ForumListRow {
     width: 100%;
     border-radius: 5px;
@@ -54,7 +58,7 @@ body {
     padding: 0.5em;
     display: table;
     margin-top: 5px;
-    background-color: beige;
+    background-color: #dbf5fe;
 }
 
 .ForumListLeft {

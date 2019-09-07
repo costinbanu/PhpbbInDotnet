@@ -45,11 +45,18 @@ namespace Serverless.Forum.Pages
                      let firstChildren = from f2 in _dbContext.PhpbbForums
                                          where f2.ParentId == f1.ForumId
                                          orderby f2.LeftId
+
+                                         join u in _dbContext.PhpbbUsers
+                                         on f2.ForumLastPosterId equals u.UserId
+                                         into joined
+
+                                         from j in joined.DefaultIfEmpty()
                                          select new ForumDisplay()
                                          {
                                              Id = f2.ForumId,
                                              Name = HttpUtility.HtmlDecode(f2.ForumName),
                                              LastPosterName = f2.ForumLastPosterName,
+                                             LastPosterId = j.UserId == 1 ? null as int? : j.UserId,
                                              LastPostTime = f2.ForumLastPostTime.TimestampToLocalTime()
                                          }
                      orderby f1.LeftId

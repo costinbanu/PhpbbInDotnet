@@ -8,22 +8,30 @@
 
 <h2>Forumul Metrou Ușor</h2>
 
-    @foreach (var category in Model.Forums)
+@foreach (var category in Model.Forums)
+{
+    <div class="ForumListRowCategory">
+        @category.Name
+    </div>
+    @foreach (var forum in category.Children)
     {
-        <div class="ForumListRowCategory">
-            @category.Name
+        <div class="ForumListRow">
+            <span class="ForumListLeft" style="padding-left:20px">
+                <a asp-page="/ViewForum" asp-route-ForumId="@forum.Id" class="nav-link">@forum.Name</a>
+            </span>
+            <span class="ForumListRight">
+                Ultimul mesaj: @forum.LastPostTime?.ToString(User?.ToLoggedUser()?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
+                <br />
+                de&nbsp;
+                @if (forum.LastPosterId == null)
+                {
+                    Html.Raw(forum.LastPosterName);
+                }
+                else
+                {
+                    <a asp-page="/User" asp-route-UserId="@forum.LastPosterId">@forum.LastPosterName</a>
+                }
+            </span>
         </div>
-        @foreach (var forum in category.Children)
-        {
-            <div class="ForumListRow">
-                <span class="ForumListLeft" style="padding-left:20px">
-                    <a asp-page="/ViewForum" asp-route-ForumId="@forum.Id" class="nav-link">@forum.Name</a>
-                </span>
-                <span class="ForumListRight">
-                    Ultimul mesaj: @forum.LastPostTime?.ToString(User?.ToLoggedUser()?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
-                    <br />
-                    de @forum.LastPosterName
-                </span>
-            </div>
-        }
     }
+}

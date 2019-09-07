@@ -19,6 +19,9 @@ namespace Serverless.Forum.Pages
         public IEnumerable<ForumDisplay> Forums;
         public IEnumerable<TopicTransport> Topics;
         public _PaginationPartialModel Pagination;
+        public string ForumTitle;
+        public string ParentForumTitle;
+        public int? ParentForumId;
 
         forumContext _dbContext;
         public ViewForumModel(forumContext context)
@@ -60,6 +63,13 @@ namespace Serverless.Forum.Pages
                 });
             }
 
+            ForumTitle = thisForum.ForumName;
+
+            ParentForumId = thisForum.ParentId;
+            ParentForumTitle = (from pf in _dbContext.PhpbbForums
+                                where pf.ForumId == thisForum.ParentId
+                                select pf.ForumName).FirstOrDefault();
+
             Forums = from f in _dbContext.PhpbbForums
                      where f.ParentId == ForumId
                      orderby f.LeftId
@@ -81,13 +91,20 @@ namespace Serverless.Forum.Pages
                       {
                           TopicType = groups.Key,
                           Topics = from g in groups
+
+                                   join u in _dbContext.PhpbbUsers
+                                   on g.TopicLastPosterId equals u.UserId 
+                                   into joined
+
+                                   from j in joined.DefaultIfEmpty()
                                    let postCount = _dbContext.PhpbbPosts.Count(p => p.TopicId == g.TopicId)
                                    let pageSize = user.ToLoggedUser().TopicPostsPerPage.ContainsKey(g.TopicId) ? user.ToLoggedUser().TopicPostsPerPage[g.TopicId] : 14
                                    select new TopicDisplay
                                    {
                                        Id = g.TopicId,
                                        Title = HttpUtility.HtmlDecode(g.TopicTitle),
-                                       LastPosterName = g.TopicLastPosterName,
+                                       LastPosterId = j.UserId == 1 ? null as int? : j.UserId,
+                                       LastPosterName = HttpUtility.HtmlDecode(g.TopicLastPosterName),
                                        LastPostTime = g.TopicLastPostTime.TimestampToLocalTime(),
                                        PostCount = _dbContext.PhpbbPosts.Count(p => p.TopicId == g.TopicId),
                                        Pagination = new _PaginationPartialModel

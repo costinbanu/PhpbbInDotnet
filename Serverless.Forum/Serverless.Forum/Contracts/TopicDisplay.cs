@@ -9,6 +9,8 @@ namespace Serverless.Forum.Pages
 
         public string Title { get; set; } = null;
 
+        public int? LastPosterId { get; set; } = null;
+
         public string LastPosterName { get; set; } = null;
 
         public DateTime? LastPostTime { get; set; } = null;

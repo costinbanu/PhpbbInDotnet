@@ -2,13 +2,22 @@
 @using Serverless.Forum.Utilities;
 @model Serverless.Forum.Pages.ViewForumModel
 @{
-    ViewData["Title"] = "ViewForum";
+    ViewData["Title"] = Model.ForumTitle;
     Layout = "~/Pages/_Layout.cshtml";
 }
-
+@if (Model.ParentForumId != 0)
+{
+    <h3>Forum părinte: <a asp-page="/ViewForum" asp-route-ForumId="@Model.ParentForumId">@Model.ParentForumTitle</a></h3>
+}
+else
+{
+    <h3><a href="/">Prima pagină</a></h3>
+}
+<h2>Forum: @Model.ForumTitle</h2>
+<p>&nbsp;</p>
 @if (Model.Forums.Any())
 {
-    <h3>Forumuri</h3>
+    <h4>Forumuri</h4>
     @foreach (var forum in Model.Forums)
     {
         <div class="ForumListRow">
@@ -34,11 +43,11 @@
     {
         @if ((topicGroup.TopicType ?? 0) == 2)
         {
-            <h3>Anunțuri</h3>
+            <h4>Anunțuri</h4>
         }
-        else if(!topicsDisplayed)
+        else if (!topicsDisplayed)
         {
-            <h3>Subiecte</h3>
+            <h4>Subiecte</h4>
             topicsDisplayed = true;
         }
         foreach (var topic in topicGroup?.Topics ?? new List<TopicDisplay>())
@@ -50,13 +59,21 @@
                         <span>&#x26A0;&#xFE0F;&nbsp;</span>
                     }
                     <a asp-page="/ViewTopic" asp-route-TopicId="@topic.Id" asp-route-PageNum="1" class="nav-link">@Html.Raw(topic.Title)</a>
-                    <br/>
-                    @await  Html.PartialAsync("_PaginationPartial", topic.Pagination, ViewData)
+                    <br />
+                    @await Html.PartialAsync("_PaginationPartial", topic.Pagination, ViewData)
                 </span>
                 <span class="ForumListRight">
                     Ultimul mesaj: @topic.LastPostTime?.ToString(User?.ToLoggedUser()?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
-                    <br/>
-                    de @topic.LastPosterName
+                    <br />
+                    de&nbsp;
+                    @if (topic.LastPosterId == null)
+                    {
+                        Html.Raw(topic.LastPosterName);
+                    }
+                    else
+                    {
+                        <a asp-page="/User" asp-route-UserId="@topic.LastPosterId">@topic.LastPosterName</a>
+                    }
                 </span>
             </div>
         }

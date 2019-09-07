@@ -13,7 +13,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Forumul Metrou Usor</title>
+    <title>@Constants.FORUM_NAME - @ViewData["Title"]</title>
 
     <environment include="Development">
         <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" />
@@ -51,7 +51,7 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a asp-page="/Index" class="navbar-brand">Serverless.Forum</a>
+                <a asp-page="/Index" class="navbar-brand">@Constants.FORUM_NAME</a>
             </div>
             <div class="navbar-collapse collapse">
                 <form action="/Login" method="get" name="loginForm">

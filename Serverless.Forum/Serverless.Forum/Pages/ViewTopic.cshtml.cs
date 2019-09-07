@@ -21,8 +21,10 @@ namespace Serverless.Forum.Pages
     {
         public IEnumerable<PostDisplay> Posts;
         public string TopicTitle;
+        public string ForumTitle;
+        public int? ForumId;
         public _PaginationPartialModel Pagination;
-        public int? PostId { get; set; }
+        public int? PostId;
 
         forumContext _dbContext;
 
@@ -54,15 +56,31 @@ namespace Serverless.Forum.Pages
             return await OnGet(topicId.Value, pageNum).ConfigureAwait(false);
         }
 
-        public async Task<IActionResult> OnGet(int TopicId, int PageNum)
+        public async Task<IActionResult> OnGet(int TopicId, int PageNum, int? pageSize = null)
         {
-            var user = await GetUser().ConfigureAwait(false);
-            var pageSize = user.ToLoggedUser().TopicPostsPerPage.ContainsKey(TopicId) ? user.ToLoggedUser().TopicPostsPerPage[TopicId] : 14;
+            if (pageSize is null)
+            {
+                var user = await GetUser().ConfigureAwait(false);
+                pageSize = user.ToLoggedUser().TopicPostsPerPage.ContainsKey(TopicId) ? user.ToLoggedUser().TopicPostsPerPage[TopicId] : 14;
+            }
+
+            var parent = (from f in _dbContext.PhpbbForums
+
+                          join t in _dbContext.PhpbbTopics
+                          on f.ForumId equals t.ForumId
+                          into joined
+
+                          from j in joined
+                          where j.TopicId == TopicId
+                          select f).FirstOrDefault();
+
+            ForumTitle = parent?.ForumName;
+            ForumId = parent?.ForumId;
 
             Posts = GetPosts(TopicId)
                         .ToList()
-                        .Skip((PageNum - 1) * pageSize)
-                        .Take(pageSize).ToList();
+                        .Skip((PageNum - 1) * pageSize.Value)
+                        .Take(pageSize.Value).ToList();
 
             TopicTitle = _dbContext.PhpbbTopics.FirstOrDefault(t => t.TopicId == TopicId)?.TopicTitle ?? "untitled";
 
@@ -70,7 +88,7 @@ namespace Serverless.Forum.Pages
             {
                 Link = $"/ViewTopic?TopicId={TopicId}&PageNum=1",
                 Posts = _dbContext.PhpbbPosts.Count(p => p.TopicId == TopicId),
-                PostsPerPage = pageSize,
+                PostsPerPage = pageSize.Value,
                 CurrentPage = PageNum
             };
 
@@ -105,7 +123,7 @@ namespace Serverless.Forum.Pages
                    on p.PosterId equals u.UserId
                    into joined
 
-                   from j in joined
+                   from j in joined.DefaultIfEmpty()
                    select new PostDisplay
                    {
                        PostTitle = HttpUtility.HtmlDecode(p.PostSubject),

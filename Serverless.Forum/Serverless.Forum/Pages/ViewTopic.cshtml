@@ -2,11 +2,15 @@
 @using Serverless.Forum.Utilities;
 @model Serverless.Forum.Pages.ViewTopicModel
 @{
-    ViewData["Title"] = "ViewTopic";
+    ViewData["Title"] = $"{Model.ForumTitle} - {Model.TopicTitle}";
     Layout = "~/Pages/_Layout.cshtml";
 }
-
-<h2>@Model.TopicTitle</h2>
+@if (Model.ForumId != null)
+{
+    <h3>Forum părinte: <a asp-page="/ViewForum" asp-route-ForumId="@Model.ForumId">@Model.ForumTitle</a></h3>
+}
+<h2>Subiect: @Model.TopicTitle</h2>
+<p>&nbsp;</p>
 <p style="margin:20px;">
     @await Html.PartialAsync("_PaginationPartial", Model.Pagination, ViewData)
 </p>
@@ -15,7 +19,6 @@
     <div class="ForumListRow">
         <span class="ForumListLeft" id="@post.Id">
             <span class="PostTitle">
-                <!--<a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-PostId="@post.Id" asp-fragment="@post.Id">@Html.Raw(post.PostTitle)</a>-->
                 <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-PostId="@post.Id">@Html.Raw(post.PostTitle)</a>
             </span>
             <p>&nbsp;</p>
@@ -49,8 +52,10 @@
             var w = posts[i].offsetWidth;
             var h = window.innerHeight;
             for (var j = 0; j < imgs.length; j++) {
-                var oh = imgs[j].naturalHeight, ow = imgs[j].naturalWidth,
-                    x = h / oh, y = w / ow;
+                var oh = imgs[j].naturalHeight,
+                    ow = imgs[j].naturalWidth,
+                    x = h / oh,
+                    y = w / ow;
                 imgs[j].style.maxWidth = w + "px";
                 imgs[j].style.maxHeight = h + "px";
                 if (x < 1 || y < 1) {
@@ -73,7 +78,7 @@
                     frames[j].src += "?w=" + (w - 20);
             }
         }
-        var postId = @(Model.PostId?.ToString() ?? "-1");
+        var postId = @(Model.PostId ?? -1);
         if (postId != -1) {
             element = document.getElementById(postId);
             elementRect = element.getBoundingClientRect();
