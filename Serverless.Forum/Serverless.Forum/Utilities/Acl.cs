@@ -24,7 +24,10 @@ namespace Serverless.Forum.Utilities
                                    select up).ToList();
 
             var groupPermissions = (from gp in _dbContext.PhpbbAclGroups
+                                    let alreadySet = from up in userPermissions
+                                                     select up.ForumId
                                     where groups.Contains(gp.GroupId)
+                                       && !alreadySet.Contains(gp.ForumId)
                                     select gp).ToList();
 
             var topicPostsPerPage = from tpp in _dbContext.PhpbbUserTopicPostNumber

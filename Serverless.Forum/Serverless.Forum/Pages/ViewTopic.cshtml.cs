@@ -1,7 +1,9 @@
 ﻿using CodeKicker.BBCode;
+using JW;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
@@ -9,6 +11,7 @@ using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -19,28 +22,63 @@ namespace Serverless.Forum.Pages
         public IEnumerable<PostDisplay> Posts;
         public string TopicTitle;
         public _PaginationPartialModel Pagination;
+        public int? PostId { get; set; }
 
         forumContext _dbContext;
+
         public ViewTopicModel(forumContext context, IHttpContextAccessor httpContext)
         {
             _dbContext = context;
         }
-        public async Task OnGet(int TopicId, int PageNum)
+
+        public async Task<IActionResult> OnGetByPostId(int PostId)
         {
-            var user = User;
-            if (!user.Identity.IsAuthenticated)
+            var topicId = (from p in _dbContext.PhpbbPosts
+                           where p.PostId == PostId
+                           select (int?)p.TopicId).FirstOrDefault();
+
+            if (topicId == null)
             {
-                user = Acl.Instance.GetAnonymousUser(_dbContext);
-                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, user, new AuthenticationProperties
-                {
-                    AllowRefresh = true,
-                    ExpiresUtc = DateTimeOffset.Now.AddMonths(1),
-                    IsPersistent = true,
-                });
+                return NotFound();
             }
 
+            var user = await GetUser().ConfigureAwait(false);
+            var pageSize = user.ToLoggedUser().TopicPostsPerPage.ContainsKey(topicId.Value) ? user.ToLoggedUser().TopicPostsPerPage[topicId.Value] : 14;
+
+            var posts = GetPosts(topicId.Value).Select(p => p.Id).ToList();
+            var index = posts.IndexOf(PostId) + 1;
+            var pageNum = (index / pageSize) + (index % pageSize == 0 ? 0 : 1);
+
+            this.PostId = PostId;
+
+            return await OnGet(topicId.Value, pageNum).ConfigureAwait(false);
+        }
+
+        public async Task<IActionResult> OnGet(int TopicId, int PageNum)
+        {
+            var user = await GetUser().ConfigureAwait(false);
             var pageSize = user.ToLoggedUser().TopicPostsPerPage.ContainsKey(TopicId) ? user.ToLoggedUser().TopicPostsPerPage[TopicId] : 14;
 
+            Posts = GetPosts(TopicId)
+                        .ToList()
+                        .Skip((PageNum - 1) * pageSize)
+                        .Take(pageSize).ToList();
+
+            TopicTitle = _dbContext.PhpbbTopics.FirstOrDefault(t => t.TopicId == TopicId)?.TopicTitle ?? "untitled";
+
+            Pagination = new _PaginationPartialModel
+            {
+                Link = $"/ViewTopic?TopicId={TopicId}&PageNum=1",
+                Posts = _dbContext.PhpbbPosts.Count(p => p.TopicId == TopicId),
+                PostsPerPage = pageSize,
+                CurrentPage = PageNum
+            };
+
+            return Page();
+        }
+
+        private IEnumerable<PostDisplay> GetPosts(int TopicId)
+        {
             var parser = new BBCodeParser(new[]
             {
                 new BBTag("b", "<b>", "</b>"),
@@ -59,36 +97,41 @@ namespace Serverless.Forum.Pages
             });
 
 
-            Posts = (from p in _dbContext.PhpbbPosts
-                     where p.TopicId == TopicId
-                     orderby p.PostTime ascending
+            return from p in _dbContext.PhpbbPosts
+                   where p.TopicId == TopicId
+                   orderby p.PostTime ascending
 
-                     join u in _dbContext.PhpbbUsers
-                     on p.PosterId equals u.UserId
-                     into joined
+                   join u in _dbContext.PhpbbUsers
+                   on p.PosterId equals u.UserId
+                   into joined
 
-                     from j in joined
-                     select new PostDisplay
-                     {
-                         PostTitle = HttpUtility.HtmlDecode(p.PostSubject),
-                         PostText = HttpUtility.HtmlDecode(parser.ToHtml(p.PostText.Replace($":{p.BbcodeUid}", ""))),
-                         AuthorName = j.UserId == 1 ? p.PostUsername : j.Username,
-                         AuthorId = j.UserId == 1 ? null as int? : j.UserId,
-                         PostCreationTime = p.PostTime.TimestampToLocalTime(),
-                         PostModifiedTime = p.PostEditTime.TimestampToLocalTime(),
-                         Id = p.PostId
-                     })
-                    .ToList().Skip((PageNum - 1) * pageSize).Take(pageSize).ToList();
+                   from j in joined
+                   select new PostDisplay
+                   {
+                       PostTitle = HttpUtility.HtmlDecode(p.PostSubject),
+                       PostText = HttpUtility.HtmlDecode(parser.ToHtml(p.PostText.Replace($":{p.BbcodeUid}", ""))),
+                       AuthorName = j.UserId == 1 ? p.PostUsername : j.Username,
+                       AuthorId = j.UserId == 1 ? null as int? : j.UserId,
+                       PostCreationTime = p.PostTime.TimestampToLocalTime(),
+                       PostModifiedTime = p.PostEditTime.TimestampToLocalTime(),
+                       Id = p.PostId
+                   };
+        }
 
-            TopicTitle = _dbContext.PhpbbTopics.FirstOrDefault(t => t.TopicId == TopicId)?.TopicTitle ?? "untitled";
-
-            Pagination = new _PaginationPartialModel
+        private async Task<ClaimsPrincipal> GetUser()
+        {
+            var user = User;
+            if (!user.Identity.IsAuthenticated)
             {
-                Link = $"/ViewTopic?TopicId={TopicId}&PageNum=1",
-                Posts = _dbContext.PhpbbPosts.Count(p => p.TopicId == TopicId),
-                PostsPerPage = pageSize,
-                CurrentPage = PageNum
-            };
+                user = Acl.Instance.GetAnonymousUser(_dbContext);
+                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, user, new AuthenticationProperties
+                {
+                    AllowRefresh = true,
+                    ExpiresUtc = DateTimeOffset.Now.AddMonths(1),
+                    IsPersistent = true,
+                });
+            }
+            return user;
         }
     }
 }

@@ -8,14 +8,15 @@
 
 <h2>@Model.TopicTitle</h2>
 <p style="margin:20px;">
-    Mergi la pagina: @await Html.PartialAsync("_PaginationPartial", Model.Pagination, ViewData)
+    @await Html.PartialAsync("_PaginationPartial", Model.Pagination, ViewData)
 </p>
 @foreach (var post in Model.Posts)
 {
     <div class="ForumListRow">
         <span class="ForumListLeft" id="@post.Id">
             <span class="PostTitle">
-                <a href="#@post.Id">@Html.Raw(post.PostTitle)</a>
+                <!--<a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-PostId="@post.Id" asp-fragment="@post.Id">@Html.Raw(post.PostTitle)</a>-->
+                <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-PostId="@post.Id">@Html.Raw(post.PostTitle)</a>
             </span>
             <p>&nbsp;</p>
             @Html.Raw(post.PostText)
@@ -37,19 +38,14 @@
     </div>
 }
 <p style="margin:20px;">
-    Mergi la pagina: @await Html.PartialAsync("_PaginationPartial", Model.Pagination, ViewData)
+    @await Html.PartialAsync("_PaginationPartial", Model.Pagination, ViewData)
 </p>
 
-<!-- Begin Media resizer -->
-<!--
-    use this https://stackoverflow.com/questions/4100252/javascript-executing-function-after-full-image-load
-    or just move the logic to the future File class
--->
 <script type="text/javascript">
-        /*var posts = document.getElementsByClassName("ForumListLeft");
+    window.onload = function () {
+        var posts = document.getElementsByClassName("ForumListLeft");
         for (var i = 0; i < posts.length; i++) {
             var imgs = posts[i].getElementsByTagName("img");
-            //alert(imgs.length);
             var w = posts[i].offsetWidth;
             var h = window.innerHeight;
             for (var j = 0; j < imgs.length; j++) {
@@ -57,17 +53,15 @@
                     x = h / oh, y = w / ow;
                 imgs[j].style.maxWidth = w + "px";
                 imgs[j].style.maxHeight = h + "px";
-                //alert(imgs[j].src);
-                /*if (x < 1 || y < 1) {
+                if (x < 1 || y < 1) {
                     imgs[j].style.width = Math.round(0.9 * ow * Math.min(x, y)) + "px";
                     imgs[j].style.height = Math.round(0.9 * oh * Math.min(x, y)) + "px";
-                    //alert(imgs[j].src);
                     if (imgs[j].parentNode.nodeName != "A") {
                         imgs[j].setAttribute("onclick", "window.open(this.src);");
                         imgs[j].setAttribute("title", "Click pentru imaginea marita.");
                         imgs[j].style.cursor = "pointer";
                     }
-                }*
+                }
             }
             var frames = posts[i].getElementsByTagName("iframe");
             for (var j = 0; j < frames.length; j++) {
@@ -78,29 +72,18 @@
                 if (frames[j].src.indexOf("imgur") != -1)
                     frames[j].src += "?w=" + (w - 20);
             }
-        }*/
-    /*var imgs = document.images,
-        len = imgs.length,
-        counter = 0;
-    //alert('a');
-    [].forEach.call(imgs, function (img) {
-        var w = img.parentNode.offsetWidth;
-        var h = window.innerHeight;
-        var oh = img.naturalHeight,
-            ow = img.naturalWidth,
-            x = h / oh, y = w / ow;
-        if (x < 1 || y < 1) {
-            img.style.width = Math.round(0.9 * ow * Math.min(x, y)) + "px";
-            img.style.height = Math.round(0.9 * oh * Math.min(x, y)) + "px";
-            //alert(img.src);
-            if (img.parentNode.nodeName != "A") {
-                img.setAttribute("onclick", "window.open(this.src);");
-                img.setAttribute("title", "Click pentru imaginea marita.");
-                img.style.cursor = "pointer";
-            }
         }
-    });*/
-    
+        var postId = @(Model.PostId?.ToString() ?? "-1");
+        if (postId != -1) {
+            element = document.getElementById(postId);
+            elementRect = element.getBoundingClientRect();
+            absoluteElementTop = elementRect.top + window.pageYOffset;
+            middle = absoluteElementTop - (window.innerHeight / 2);
+            if (element.parentNode) {
+                element.parentNode.style.borderWidth = "5px"
+                element.parentNode.style.borderColor = "#33beff";
+            }
+            window.scrollTo(0, middle);
+        }
+    }
 </script>
-
-<!-- End media resizer-->
