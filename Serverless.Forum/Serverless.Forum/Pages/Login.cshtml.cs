@@ -33,9 +33,9 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnPost(string username, string password, string returnUrl, bool rememberMe = false)
         {
             var user = from u in _dbContext.PhpbbUsers
-                        let cryptedPass = Crypter.Phpass.Crypt(password, u.UserPassword)
-                        where u.UsernameClean == username && cryptedPass == u.UserPassword
-                        select u;
+                       let cryptedPass = Crypter.Phpass.Crypt(password, u.UserPassword)
+                       where u.UsernameClean == username && cryptedPass == u.UserPassword
+                       select u;
 
             if (user.Count() != 1)
             {

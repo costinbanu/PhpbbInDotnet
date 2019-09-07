@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Serverless.Forum.Contracts
 {
@@ -18,6 +19,8 @@ namespace Serverless.Forum.Contracts
 
         public string UserDateFormat { get; set; } = null;
 
+        public IEnumerable<ForumAuthentication> ForumAuthentications { get; set; } = null;
+
         public class Permissions
         {
             public int ForumId { get; set; } = 0;
@@ -27,6 +30,13 @@ namespace Serverless.Forum.Contracts
             public int AuthRoleId { get; set; } = 0;
 
             public int AuthSetting { get; set; } = 0;
+        }
+
+        public class ForumAuthentication
+        {
+            public int ForumId { get; set; }
+
+            public DateTime AcquiredAt { get; set; }
         }
     }
 }

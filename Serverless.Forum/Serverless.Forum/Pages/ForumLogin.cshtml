@@ -1,0 +1,20 @@
+﻿@page
+@model Serverless.Forum.Pages.ForumLoginModel
+@*
+    For more information on enabling MVC for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
+*@
+<h2>Forum Login - @Model.ForumName</h2>
+<form method="post">
+    <div asp-validation-summary="All" class="text-danger"></div>
+    <table border="0">
+        <tr>
+            <td width="100px" height="30px" valign="middle">Password:</td>
+            <td width="100px" height="30px" valign="middle"><input name="password" value="" type="password" /></td>
+        </tr>
+    </table>
+    <input name="returnUrl" type="hidden" value='@Model.ReturnUrl' />
+    <input name="forumId" type="hidden" value='@Model.ForumId' />
+    <input type="submit" value="Login" />
+    @Html.AntiForgeryToken()
+</form>
+<div style="visibility:@string.IsNullOrEmpty(Model.ErrorMessage) ? hidden : visible">@Model.ErrorMessage</div>

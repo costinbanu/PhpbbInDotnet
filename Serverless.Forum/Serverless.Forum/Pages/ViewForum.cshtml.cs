@@ -21,7 +21,7 @@ namespace Serverless.Forum.Pages
         public _PaginationPartialModel Pagination;
 
         forumContext _dbContext;
-        public ViewForumModel(forumContext context, IHttpContextAccessor httpContext)
+        public ViewForumModel(forumContext context)
         {
             _dbContext = context;
         }
@@ -37,6 +37,26 @@ namespace Serverless.Forum.Pages
                     AllowRefresh = true,
                     ExpiresUtc = DateTimeOffset.Now.AddMonths(1),
                     IsPersistent = true,
+                });
+            }
+
+            var thisForum = (from f in _dbContext.PhpbbForums
+                             where f.ForumId == ForumId
+                             select f).FirstOrDefault();
+
+            if (thisForum == null)
+            {
+                return NotFound();
+            }
+
+            if (!string.IsNullOrEmpty(thisForum.ForumPassword) &&
+                (HttpContext.Session.GetInt32("ForumLogin") ?? -1) != ForumId)
+            {
+                return RedirectToPage("ForumLogin", new ForumLoginModel(_dbContext)
+                {
+                    ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString),
+                    ForumId = ForumId,
+                    ForumName = thisForum.ForumName
                 });
             }
 
