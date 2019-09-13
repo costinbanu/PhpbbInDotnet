@@ -88,10 +88,21 @@ namespace Serverless.Forum.Pages
             ForumTitle = parent?.ForumName;
             ForumId = parent?.ForumId;
 
-            Posts = GetPosts(TopicId)
-                        .ToList()
-                        .Skip(Math.Min((PageNum - 1) * pageSize.Value) ceva)
-                        .Take(pageSize.Value).ToList();
+            var tempPosts = GetPosts(TopicId).ToList();
+            var noOfPages = (tempPosts.Count / pageSize) + (tempPosts.Count % pageSize == 0 ? 0 : 1);
+            if (PageNum > noOfPages)
+            {
+                PageNum = noOfPages.Value;
+            }
+            if (PageNum < 1)
+            {
+                PageNum = 1;
+            }
+
+            Posts = tempPosts
+                .Skip((PageNum - 1) * pageSize.Value)
+                .Take(pageSize.Value).ToList();
+
 
             TopicTitle = _dbContext.PhpbbTopics.FirstOrDefault(t => t.TopicId == TopicId)?.TopicTitle ?? "untitled";
 
