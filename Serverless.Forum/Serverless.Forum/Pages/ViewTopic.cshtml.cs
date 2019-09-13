@@ -74,12 +74,23 @@ namespace Serverless.Forum.Pages
                           where j.TopicId == TopicId
                           select f).FirstOrDefault();
 
+            if (!string.IsNullOrEmpty(parent.ForumPassword) &&
+                (HttpContext.Session.GetInt32("ForumLogin") ?? -1) != parent.ForumId)
+            {
+                return RedirectToPage("ForumLogin", new ForumLoginModel(_dbContext)
+                {
+                    ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString),
+                    ForumId = parent.ForumId,
+                    ForumName = parent.ForumName
+                });
+            }
+
             ForumTitle = parent?.ForumName;
             ForumId = parent?.ForumId;
 
             Posts = GetPosts(TopicId)
                         .ToList()
-                        .Skip((PageNum - 1) * pageSize.Value)
+                        .Skip(Math.Min((PageNum - 1) * pageSize.Value) ceva)
                         .Take(pageSize.Value).ToList();
 
             TopicTitle = _dbContext.PhpbbTopics.FirstOrDefault(t => t.TopicId == TopicId)?.TopicTitle ?? "untitled";
