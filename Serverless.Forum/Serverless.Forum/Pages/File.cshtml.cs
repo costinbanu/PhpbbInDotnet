@@ -36,7 +36,7 @@ namespace Serverless.Forum.Pages
                 return NotFound();
             }
 
-            return Renderfile(file);
+            return await Renderfile(file);
         }
 
         private async Task<IActionResult> Renderfile(PhpbbAttachments file)

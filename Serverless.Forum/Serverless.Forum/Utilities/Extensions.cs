@@ -1,5 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Serverless.Forum.Contracts;
+using Serverless.Forum.forum;
+using Serverless.Forum.Pages;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,6 +28,17 @@ namespace Serverless.Forum.Utilities
             return mimeType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase) ||
                    mimeType.StartsWith("video", StringComparison.InvariantCultureIgnoreCase);
                    //mimeType.EndsWith("pdf", StringComparison.InvariantCultureIgnoreCase);
+        }
+
+        public static _AttachmentPartialModel ToModel(this PhpbbAttachments dbAttachmentRecord)
+        {
+            return new _AttachmentPartialModel (null, null, null, null)
+            {
+                FileName = dbAttachmentRecord.RealFilename,
+                Id = dbAttachmentRecord.AttachId,
+                IsRenderedInline = dbAttachmentRecord.Mimetype.IsMimeTypeInline(),
+                MimeType = dbAttachmentRecord.Mimetype
+            };
         }
     }
 }

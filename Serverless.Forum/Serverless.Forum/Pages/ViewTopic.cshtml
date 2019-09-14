@@ -24,11 +24,11 @@
             <p>&nbsp;</p>
             @Html.Raw(post.PostText)
             @foreach (var attachment in from a in post.Attachments
-                                        where !a.IsDisplayedInline
-                                        select a)
+                                       where !a.IsDisplayedInline
+                                       select a)
             {
+                <p>------------------</p>
                 @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
-                <p></p>
             }
         </span>
         <span class="ForumListRight">

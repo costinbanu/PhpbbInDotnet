@@ -20,6 +20,6 @@ namespace Serverless.Forum.Contracts
 
         public DateTime? PostModifiedTime { get; set; } = null;
 
-        public IEnumerable<_AttachmentPartialModel> Attachments { get; set; } = null;
+        public List<_AttachmentPartialModel> Attachments { get; set; } = null;
     }
 }

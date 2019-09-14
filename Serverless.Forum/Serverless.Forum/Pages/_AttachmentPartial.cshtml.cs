@@ -1,11 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc.RazorPages;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Serverless.Forum.forum;
 using Serverless.Forum.Utilities;
 using System.Linq;
 
 namespace Serverless.Forum.Pages
 {
-    public class _AttachmentPartialModel : PageModel
+    public class _AttachmentPartialModel : ViewTopicModel
     {
         public bool IsRenderedInline = false;
         public bool IsDisplayedInline = false;
@@ -13,23 +16,13 @@ namespace Serverless.Forum.Pages
         public string FileName;
         public string MimeType;
 
-        //forumContext _dbContext;
-
-        //public _AttachmentPartialModel(forumContext dbContext)
-        //{
-        //    _dbContext = dbContext;
-        //}
-
-        public void OnGet(/*int Id*/)
+        public _AttachmentPartialModel(forumContext context, IHttpContextAccessor httpContext, ICompositeViewEngine viewEngine, IHtmlHelper<ViewTopicModel> html)
+             : base(context, httpContext, viewEngine, html)
         {
-            //var file = (from a in _dbContext.PhpbbAttachments
-            //            where a.AttachId == Id
-            //            select a).FirstOrDefault();
+        }
 
-            //IsInline = file?.Mimetype?.IsMimeTypeInline() ?? false;
-            //FileName = file?.RealFilename;
-            //MimeType = file?.Mimetype;
-            //this.Id = Id;
+        public void OnGet()
+        {
         }
     }
 }

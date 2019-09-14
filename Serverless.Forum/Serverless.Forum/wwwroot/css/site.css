@@ -102,8 +102,9 @@ blockquote {
 }
 
 .AttachBox {
-    width: 90%;
-    height: 90%;
+
+    text-align:center;
+    vertical-align: central;
     border-radius: 5px;
     border: solid 1px black;
     background-color: aliceblue;
