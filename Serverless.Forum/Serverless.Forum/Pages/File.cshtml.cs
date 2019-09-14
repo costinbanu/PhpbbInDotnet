@@ -36,6 +36,11 @@ namespace Serverless.Forum.Pages
                 return NotFound();
             }
 
+            return Renderfile(file);
+        }
+
+        private async Task<IActionResult> Renderfile(PhpbbAttachments file)
+        {
             var request = new GetObjectRequest
             {
                 BucketName = _config["AwsS3BucketName"],

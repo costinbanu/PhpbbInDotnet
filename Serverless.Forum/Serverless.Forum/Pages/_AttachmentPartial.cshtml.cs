@@ -7,7 +7,8 @@ namespace Serverless.Forum.Pages
 {
     public class _AttachmentPartialModel : PageModel
     {
-        public bool IsInline = false;
+        public bool IsRenderedInline = false;
+        public bool IsDisplayedInline = false;
         public int Id;
         public string FileName;
         public string MimeType;

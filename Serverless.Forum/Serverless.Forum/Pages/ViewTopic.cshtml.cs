@@ -159,14 +159,15 @@ namespace Serverless.Forum.Pages
                        PostCreationTime = p.PostTime.TimestampToLocalTime(),
                        PostModifiedTime = p.PostEditTime.TimestampToLocalTime(),
                        Id = p.PostId,
-                       Attachments = (from ja in joinedAttachments//.DefaultIfEmpty()
-                                      select new _AttachmentPartialModel
-                                      {
-                                          FileName = ja.RealFilename,
-                                          Id = ja.AttachId,
-                                          IsInline = ja.Mimetype.IsMimeTypeInline(),
-                                          MimeType = ja.Mimetype
-                                      }).ToList()
+                       Attachments = from ja in joinedAttachments
+                                     select new _AttachmentPartialModel
+                                     {
+                                         FileName = ja.RealFilename,
+                                         Id = ja.AttachId,
+                                         IsRenderedInline = ja.Mimetype.IsMimeTypeInline(),
+                                         IsDisplayedInline = ja.InMessage == 1,
+                                         MimeType = ja.Mimetype
+                                     }
                    };
         }
 

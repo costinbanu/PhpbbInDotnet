@@ -7,7 +7,7 @@
 
 @if (Model != null)
 {
-    if (Model.IsInline)
+    if (Model.IsRenderedInline)
     {
         if (Model.MimeType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase))
         {

@@ -23,7 +23,9 @@
             </span>
             <p>&nbsp;</p>
             @Html.Raw(post.PostText)
-            @foreach (var attachment in post.Attachments)
+            @foreach (var attachment in from a in post.Attachments
+                                        where !a.IsDisplayedInline
+                                        select a)
             {
                 @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
                 <p></p>
