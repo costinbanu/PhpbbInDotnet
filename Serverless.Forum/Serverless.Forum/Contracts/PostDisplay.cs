@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Serverless.Forum.Pages;
+using System;
+using System.Collections.Generic;
 
 namespace Serverless.Forum.Contracts
 {
@@ -17,5 +19,7 @@ namespace Serverless.Forum.Contracts
         public DateTime? PostCreationTime { get; set; } = null;
 
         public DateTime? PostModifiedTime { get; set; } = null;
+
+        public IEnumerable<_AttachmentPartialModel> Attachments { get; set; } = null;
     }
 }

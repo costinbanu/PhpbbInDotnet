@@ -23,6 +23,11 @@
             </span>
             <p>&nbsp;</p>
             @Html.Raw(post.PostText)
+            @foreach (var attachment in post.Attachments)
+            {
+                @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
+                <p></p>
+            }
         </span>
         <span class="ForumListRight">
             @if (post.AuthorId == null)

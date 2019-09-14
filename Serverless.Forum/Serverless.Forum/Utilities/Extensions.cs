@@ -20,5 +20,12 @@ namespace Serverless.Forum.Utilities
         {
             return JsonConvert.DeserializeObject<LoggedUser>(principal.Claims.FirstOrDefault()?.Value ?? "{}");
         }
+
+        public static bool IsMimeTypeInline(this string mimeType)
+        {
+            return mimeType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase) ||
+                   mimeType.StartsWith("video", StringComparison.InvariantCultureIgnoreCase);
+                   //mimeType.EndsWith("pdf", StringComparison.InvariantCultureIgnoreCase);
+        }
     }
 }

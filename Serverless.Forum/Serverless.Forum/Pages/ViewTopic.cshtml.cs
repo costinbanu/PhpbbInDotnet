@@ -143,18 +143,30 @@ namespace Serverless.Forum.Pages
 
                    join u in _dbContext.PhpbbUsers
                    on p.PosterId equals u.UserId
-                   into joined
+                   into joinedUsers
 
-                   from j in joined.DefaultIfEmpty()
+                   join a in _dbContext.PhpbbAttachments
+                   on p.PostId equals a.PostMsgId
+                   into joinedAttachments
+
+                   from ju in joinedUsers.DefaultIfEmpty()
                    select new PostDisplay
                    {
                        PostTitle = HttpUtility.HtmlDecode(p.PostSubject),
                        PostText = HttpUtility.HtmlDecode(parser.ToHtml(p.PostText.Replace($":{p.BbcodeUid}", ""))),
-                       AuthorName = j.UserId == 1 ? p.PostUsername : j.Username,
-                       AuthorId = j.UserId == 1 ? null as int? : j.UserId,
+                       AuthorName = ju.UserId == 1 ? p.PostUsername : ju.Username,
+                       AuthorId = ju.UserId == 1 ? null as int? : ju.UserId,
                        PostCreationTime = p.PostTime.TimestampToLocalTime(),
                        PostModifiedTime = p.PostEditTime.TimestampToLocalTime(),
-                       Id = p.PostId
+                       Id = p.PostId,
+                       Attachments = (from ja in joinedAttachments//.DefaultIfEmpty()
+                                      select new _AttachmentPartialModel
+                                      {
+                                          FileName = ja.RealFilename,
+                                          Id = ja.AttachId,
+                                          IsInline = ja.Mimetype.IsMimeTypeInline(),
+                                          MimeType = ja.Mimetype
+                                      }).ToList()
                    };
         }
 

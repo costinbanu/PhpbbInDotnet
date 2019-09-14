@@ -1,0 +1,29 @@
+﻿@model Serverless.Forum.Pages._AttachmentPartialModel
+@*
+    For more information on enabling MVC for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
+*@
+
+<!DOCTYPE html>
+
+@if (Model != null)
+{
+    if (Model.IsInline)
+    {
+        if (Model.MimeType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase))
+        {
+            <img src="/File?Id=@Model.Id" />
+        }
+        else
+        {
+            <video>
+                <source src="/File?Id=@Model.Id" type="@Model.MimeType" />
+                <a asp-page="/File" asp-route-Id="@Model.Id">@Model.FileName</a>
+            </video>
+        }
+    }
+    else
+    {
+        <a asp-page="/File" asp-route-Id="@Model.Id">@Model.FileName</a>
+    }
+}
+@Model.FileName
