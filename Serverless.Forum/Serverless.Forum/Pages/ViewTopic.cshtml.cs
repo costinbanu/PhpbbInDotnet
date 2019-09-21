@@ -18,8 +18,6 @@ using System.Security.Claims;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
-using RazorEngine;
-using RazorEngine.Templating;
 
 namespace Serverless.Forum.Pages
 {

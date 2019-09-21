@@ -23,8 +23,6 @@ namespace Serverless.Forum.Pages
 {
     public class PostingModel : PageModel
     {
-        private const string REPLY = "Re: ";
-
         private readonly forumContext _dbContext;
         private readonly IAmazonS3 _s3Client;
         private readonly IConfiguration _config;
@@ -76,6 +74,11 @@ namespace Serverless.Forum.Pages
 
         public IActionResult OnGetForumPost(int forumId, int topicId)
         {
+            if (CurrentUser.UserId == 1)
+            {
+                return Unauthorized();
+            }
+
             ForumId = forumId;
             TopicId = topicId;
             var curTopic = (from t in _dbContext.PhpbbTopics
@@ -88,13 +91,18 @@ namespace Serverless.Forum.Pages
             }
 
             TopicTitle = curTopic.TopicTitle;
-            PostTitle = $"{REPLY}{TopicTitle}";
+            PostTitle = $"{Constants.REPLY}{TopicTitle}";
 
             return Page();
         }
 
         public IActionResult OnGetQuoteForumPost(int postId)
         {
+            if (CurrentUser.UserId == 1)
+            {
+                return Unauthorized();
+            }
+
             var curPost = (from p in _dbContext.PhpbbPosts
                            where p.PostId == postId
                            select p).FirstOrDefault();
@@ -118,8 +126,8 @@ namespace Serverless.Forum.Pages
 
             TopicTitle = curTopic.TopicTitle;
 
-            var subject = curPost.PostSubject.StartsWith(REPLY) ? curPost.PostSubject.Substring(REPLY.Length) : curPost.PostSubject;
-            PostTitle = PostTitle = $"{REPLY}{subject}";
+            var subject = curPost.PostSubject.StartsWith(Constants.REPLY) ? curPost.PostSubject.Substring(Constants.REPLY.Length) : curPost.PostSubject;
+            PostTitle = PostTitle = $"{Constants.REPLY}{subject}";
 
             var curAuthor = curPost.PostUsername;
             if (string.IsNullOrWhiteSpace(curAuthor))
