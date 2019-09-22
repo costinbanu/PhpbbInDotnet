@@ -5,7 +5,14 @@
     Layout = "~/Pages/_Layout.cshtml";
 }
 
-<script type="text/javascript" src="~/js/posting.js"></script>
+@await Html.PartialAsync(
+    "_ScriptsPartial", 
+    new _ScriptsPartialModel
+    {
+        BbCodes = Model.BbCodesForJs.Codes,
+        BbCodeHelpLines = Model.BbCodesForJs.HelpLines
+    }, 
+    ViewData).ConfigureAwait(false)
 
 <h2>Răspunde: </h2>
 <form name="postform" method="post">
@@ -42,36 +49,27 @@
     <input type="button" class="button2" accesskey="b" name="addbbcode0" value=" B " style="font-weight:bold; width: 30px" onclick="bbstyle(0)" title="Text bold: [b]text[/b]">
     <input type="button" class="button2" accesskey="i" name="addbbcode2" value=" i " style="font-style:italic; width: 30px" onclick="bbstyle(2)" title="Text italic: [i]text[/i]">
     <input type="button" class="button2" accesskey="u" name="addbbcode4" value=" u " style="text-decoration: underline; width: 30px" onclick="bbstyle(4)" title="Text subliniat: [u]text[/u]">
-
     <input type="button" class="button2" accesskey="q" name="addbbcode6" value="Quote" style="width: 50px" onclick="bbstyle(6)" title="Citează text: [quote]text[/quote]">
-
     <input type="button" class="button2" accesskey="c" name="addbbcode8" value="Code" style="width: 40px" onclick="bbstyle(8)" title="Afişează cod: [code]cod[/code]">
     <input type="button" class="button2" accesskey="l" name="addbbcode10" value="List" style="width: 40px" onclick="bbstyle(10)" title="Listă: [list]text[/list]">
     <input type="button" class="button2" accesskey="o" name="addbbcode12" value="List=" style="width: 40px" onclick="bbstyle(12)" title="Listă ordonată: [list=]text[/list]">
     <input type="button" class="button2" accesskey="t" name="addlitsitem" value="[*]" style="width: 40px" onclick="bbstyle(-1)" title="Listează articolele: [*]text[/*]">
-
     <input type="button" class="button2" accesskey="p" name="addbbcode14" value="Img" style="width: 40px" onclick="bbstyle(14)" title="Adaugă imagine: [img]http://cale_imagine[/img]">
-
     <input type="button" class="button2" accesskey="w" name="addbbcode16" value="URL" style="text-decoration: underline; width: 40px" onclick="bbstyle(16)" title="Adaugă URL: [url]http://url[/url] sau [url=http://url]text URL[/url]">
-
     <select name="addbbcode20" onchange="bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;" title="Mărime font: [size=85]text mic[/size]">
         <option value="50">Micuţ</option>
         <option value="85">Mic</option>
         <option value="100" selected="selected">Normal</option>
-
         <option value="150">Mare</option>
-
         <option value="200">Imens</option>
-
     </select>
     <input type="button" class="button2" name="bbpalette" id="bbpalette" value="Culoare font" onclick="change_palette();" title="Culoare font: [color=red]text[/color]  Sfat: de asemenea puteţi folosi culorile hexazecimale culoare=#FF0000">
-
-    <input type="button" class="button2" name="addbbcode22" value="imgur-album" onclick="bbstyle(22)" title="Insereaza in mesaj un album gazduit pe www.imgur.com: [imgur-album]COD_ALBUM[/imgur-album]">
-
-    <input type="button" class="button2" name="addbbcode24" value="strike" onclick="bbstyle(24)" title="text taiat: [strike]text care va fi taiat[/strike]">
-
-    <input type="button" class="button2" name="addbbcode26" value="youtube" onclick="bbstyle(26)" title="Insereaza in mesaj un film gazduit pe www.youtube.com: [youtube]COD_FILM[/youtube]">
-
+    @foreach (var code in Model.DbBbCodes.Value)
+    {
+        var index = Model.BbCodes.Value.IndexOf($"[{code.BbcodeTag}]");
+        var name = $"addbbcode{index}";
+        <input type="button" class="button2" name="@name" value="@code.BbcodeTag" onclick="bbstyle(@index)" title="@code.BbcodeHelpline" /> 
+    }
     <textarea name="message" id="message" rows="15" cols="76" tabindex="3" onselect="storeCaret(this);" onclick="storeCaret(this);" onkeyup="storeCaret(this);" onfocus="initInsertions();" class="inputbox">@Model.PostText</textarea>
 
 </form>

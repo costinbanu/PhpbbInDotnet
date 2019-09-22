@@ -18,12 +18,14 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Serverless.Forum.Pages
 {
     public class PostingModel : PageModel
     {
-        private readonly forumContext _dbContext;
+        public readonly forumContext _dbContext;
         private readonly IAmazonS3 _s3Client;
         private readonly IConfiguration _config;
         private bool hasAttachments = false;
@@ -52,6 +54,42 @@ namespace Serverless.Forum.Pages
                 return user.ToLoggedUser();
             }
         }
+
+        public Lazy<List<PhpbbBbcodes>> DbBbCodes => 
+            new Lazy<List<PhpbbBbcodes>>(() =>
+                (from c in _dbContext.PhpbbBbcodes
+                 where c.DisplayOnPosting == 1
+                 select c).ToList()
+        );
+
+        public Lazy<List<string>> BbCodes =>
+            new Lazy<List<string>>(() =>
+            {
+                var codes = new List<string>(Constants.BBCODES);
+                foreach (var bbCode in DbBbCodes.Value)
+                {
+                    codes.Add($"[{bbCode.BbcodeTag}]");
+                    codes.Add($"[/{bbCode.BbcodeTag}]");
+                }
+                return codes;
+            }
+        );
+
+        public Lazy<Dictionary<string, string>> BbCodeHelplines =>
+            new Lazy<Dictionary<string, string>>(() =>
+            {
+                var helplines = new Dictionary<string, string>(Constants.BBCODE_HELPLINES);
+                foreach (var bbCode in DbBbCodes.Value)
+                {
+                    var index = BbCodes.Value.IndexOf($"[{bbCode.BbcodeTag}]");
+                    helplines.Add($"cb_{index}", bbCode.BbcodeHelpline);
+                }
+                return helplines;
+            }
+        );
+
+        public (string Codes, string HelpLines) BbCodesForJs => 
+            (JsonConvert.SerializeObject(BbCodes.Value, Formatting.Indented), JsonConvert.SerializeObject(BbCodeHelplines.Value, Formatting.Indented));
 
         //https://stackoverflow.com/questions/54963951/aws-lambda-file-upload-to-asp-net-core-2-1-razor-page-is-corrupting-binary
         [BindProperty]
@@ -137,7 +175,7 @@ namespace Serverless.Forum.Pages
                               select u.Username).FirstOrDefault();
             }
 
-            PostText = $"[quote=\"{curAuthor}\"]{Environment.NewLine}{HttpUtility.HtmlDecode(curPost.PostText)}{Environment.NewLine}[/quote]";
+            PostText = $"[quote=\"{curAuthor}\"]{Environment.NewLine}{HttpUtility.HtmlDecode(curPost.PostText.RemoveBbCodeUid(curPost.BbcodeUid))}{Environment.NewLine}[/quote]";
 
             return Page();
         }

@@ -1,7 +1,4 @@
 ﻿@model Serverless.Forum.Pages._ScriptsPartialModel
-@*
-    For more information on enabling MVC for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
-*@
 
 <script type="text/javascript">
     // <![CDATA[
@@ -12,37 +9,13 @@
 
     // Define the bbCode tags
     var bbcode = new Array();
-    var bbtags = new Array('[b]', '[/b]', '[i]', '[/i]', '[u]', '[/u]', '[quote]', '[/quote]', '[code]', '[/code]', '[list]', '[/list]', '[list=]', '[/list]', '[img]', '[/img]', '[url]', '[/url]', '[flash=]', '[/flash]', '[size=]', '[/size]', '[imgur-album]', '[/imgur-album]', '[strike]', '[/strike]', '[youtube]', '[/youtube]');
+    var bbtags = @Html.Raw(Model.BbCodes);
     var imageTag = false;
 
     // Helpline messages
-    var help_line = {
-        b: 'Text bold: [b]text[/b]',
-        i: 'Text italic: [i]text[/i]',
-        u: 'Text subliniat: [u]text[/u]',
-        q: 'Citează text: [quote]text[/quote]',
-        c: 'Afişează cod: [code]cod[/code]',
-        l: 'Listă: [list]text[/list]',
-        o: 'Listă ordonată: [list=]text[/list]',
-        p: 'Adaugă imagine: [img]http://cale_imagine[/img]',
-        w: 'Adaugă URL: [url]http://url[/url] sau [url=http://url]text URL[/url]',
-        a: 'Încarcă fişier ataşat în line: [attachment=]numefişier.ext[/attachment]',
-        s: 'Culoare font: [color=red]text[/color]  Sfat: de asemenea puteţi folosi culorile hexazecimale culoare=#FF0000',
-        f: 'Mărime font: [size=85]text mic[/size]',
-        e: 'Listă: Adaugă element de listă',
-        d: 'Flash: [flash=width,height]http://url[/flash]'
-
-        , cb_22: 'Insereaza in mesaj un album gazduit pe www.imgur.com: [imgur-album]COD_ALBUM[/imgur-album]'
-
-        , cb_24: 'text taiat: [strike]text care va fi taiat[/strike]'
-
-        , cb_26: 'Insereaza in mesaj un film gazduit pe www.youtube.com: [youtube]COD_FILM[/youtube]'
-
-    }
-
+    var help_line = @Html.Raw(Model.BbCodeHelpLines);
     var panels = new Array('options-panel', 'attach-panel', 'poll-panel');
     var show_panel = 'options-panel';
-
 
     // ]]>
 

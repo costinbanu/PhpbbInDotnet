@@ -136,8 +136,9 @@ namespace Serverless.Forum.Pages
                 new BBTag("img", "<img src=\"${content}\" />", "", false, true),
                 new BBTag("quote", "<blockquote>${name}", "</blockquote>",
                     new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : $"<b>{HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')}</b> a scris:<br/>")),
-                new BBTag("list", "<ul>", "</ul>"),
-                new BBTag("*", "<li>", "</li>", true, false),
+                new BBTag("*", "<li>", "</li>", true, true), 
+                new BBTag("list", "<${attr}>", "</${attr}>", true, true, 
+                    new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul" : $"ol type=\"{a.AttributeValue}\"")),
                 new BBTag("url", "<a href=\"${href}\">", "</a>", new BBAttribute("href", ""), new BBAttribute("href", "href")),
                 new BBTag("color", "<span style=\"color:${code}\">", "</span>", new BBAttribute("code", ""), new BBAttribute("code", "code")),
                 new BBTag("youtube", "<br/><iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/${content}?html5=1\" frameborder=\"0\" allowfullscreen>", "</iframe><br/>",false, true),
@@ -162,7 +163,7 @@ namespace Serverless.Forum.Pages
                             select new PostDisplay
                             {
                                 PostTitle = HttpUtility.HtmlDecode(p.PostSubject),
-                                PostText = HttpUtility.HtmlDecode(parser.ToHtml(p.PostText.Replace($":{p.BbcodeUid}", ""))),
+                                PostText = HttpUtility.HtmlDecode(parser.ToHtml(p.PostText.RemoveBbCodeUid(p.BbcodeUid))),
                                 AuthorName = ju.UserId == 1 ? p.PostUsername : ju.Username,
                                 AuthorId = ju.UserId == 1 ? null as int? : ju.UserId,
                                 PostCreationTime = p.PostTime.TimestampToLocalTime(),
