@@ -93,7 +93,7 @@ namespace Serverless.Forum.Pages
                 });
             }
 
-            ForumTitle = parent?.ForumName;
+            ForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? "untitled");
             ForumId = parent?.ForumId;
 
             var tempPosts = (await GetPosts(TopicId).ConfigureAwait(false)).ToList();
@@ -112,7 +112,7 @@ namespace Serverless.Forum.Pages
                 .Take(pageSize.Value).ToList();
 
 
-            TopicTitle = _dbContext.PhpbbTopics.FirstOrDefault(t => t.TopicId == TopicId)?.TopicTitle ?? "untitled";
+            TopicTitle = HttpUtility.HtmlDecode(_dbContext.PhpbbTopics.FirstOrDefault(t => t.TopicId == TopicId)?.TopicTitle ?? "untitled");
 
             Pagination = new _PaginationPartialModel
             {

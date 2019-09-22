@@ -63,12 +63,12 @@ namespace Serverless.Forum.Pages
                 });
             }
 
-            ForumTitle = thisForum.ForumName;
+            ForumTitle = HttpUtility.HtmlDecode(thisForum?.ForumName ?? "untitled");
 
             ParentForumId = thisForum.ParentId;
-            ParentForumTitle = (from pf in _dbContext.PhpbbForums
-                                where pf.ForumId == thisForum.ParentId
-                                select pf.ForumName).FirstOrDefault();
+            ParentForumTitle = HttpUtility.HtmlDecode((from pf in _dbContext.PhpbbForums
+                                                       where pf.ForumId == thisForum.ParentId
+                                                       select pf.ForumName).FirstOrDefault() ?? "untitled");
 
             Forums = from f in _dbContext.PhpbbForums
                      where f.ParentId == ForumId
