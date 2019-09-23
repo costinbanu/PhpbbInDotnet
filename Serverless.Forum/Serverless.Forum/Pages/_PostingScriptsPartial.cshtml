@@ -1,4 +1,4 @@
-﻿@model Serverless.Forum.Pages._ScriptsPartialModel
+﻿@model Serverless.Forum.Pages._PostingScriptsPartialModel
 
 <script type="text/javascript">
     // <![CDATA[
@@ -366,5 +366,12 @@
         }
 
         return caretPos;
+    }
+
+    function showAttachPanel() {
+        if (document.forms['attachForm'].style.visibility == 'hidden')
+            document.forms['attachForm'].style.visibility = 'visible'
+        else
+            document.forms['attachForm'].style.visibility = 'hidden'
     }
 </script>

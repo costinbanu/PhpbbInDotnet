@@ -28,7 +28,6 @@ namespace Serverless.Forum.Pages
         public readonly forumContext _dbContext;
         private readonly IAmazonS3 _s3Client;
         private readonly IConfiguration _config;
-        private bool hasAttachments = false;
 
         public LoggedUser CurrentUser
         {
@@ -102,6 +101,7 @@ namespace Serverless.Forum.Pages
         public string PostText { get; set; }
         public int ForumId { get; set; }
         public int TopicId { get; set; }
+        public Lazy<List<PhpbbAttachments>> PostAttachments => new Lazy<List<PhpbbAttachments>>(() => new List<PhpbbAttachments>());
 
         public PostingModel(forumContext context, IConfiguration config)
         {
@@ -180,17 +180,18 @@ namespace Serverless.Forum.Pages
             return Page();
         }
 
-        public async Task<IActionResult> OnPostAttachment()
+        public async Task<IActionResult> OnPostAttachment(string fileComment)
         {
             if (CurrentUser.UserId == 1)
             {
                 return Unauthorized();
             }
 
+            var name = $"{CurrentUser.UserId ?? 0}_{Guid.NewGuid():n}";
             var request = new PutObjectRequest
             {
                 BucketName = _config["AwsS3BucketName"],
-                Key = $"{CurrentUser.UserId ?? 0}_{Guid.NewGuid():n}".ToLowerInvariant(),
+                Key = name,
                 ContentType = Attachment.ContentType,
                 InputStream = Attachment.OpenReadStream()
             };
@@ -201,7 +202,18 @@ namespace Serverless.Forum.Pages
                 throw new Exception("Failed to upload file");
             }
 
-            hasAttachments = true;
+            PostAttachments.Value.Add(new PhpbbAttachments
+            {
+                AttachComment = fileComment,
+                Extension = System.IO.Path.GetExtension(Attachment.FileName),
+                Filetime = DateTime.UtcNow.LocalTimeToTimestamp(),
+                Filesize = Attachment.Length,
+                Mimetype = Attachment.ContentType,
+                PhysicalFilename = name,
+                RealFilename = System.IO.Path.GetFileName(Attachment.FileName),
+                PosterId = CurrentUser.UserId.Value,
+                TopicId = TopicId
+            });
 
             return Page();
         }
@@ -228,7 +240,7 @@ namespace Serverless.Forum.Pages
                 EnableMagicUrl = 1,
                 EnableSig = 1,
                 EnableSmilies = 1,
-                PostAttachment = (byte)(hasAttachments ? 1 : 0),
+                PostAttachment = (byte)(PostAttachments.Value.Any() ? 1 : 0),
                 PostChecksum = CalculateMD5Hash(HttpUtility.HtmlEncode(postText)),
                 PostEditCount = 0,
                 PostEditLocked = 0,

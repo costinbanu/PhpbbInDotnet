@@ -11,7 +11,7 @@ namespace Serverless.Forum.forum
         public int PosterId { get; set; }
         public int IconId { get; set; }
         public string PosterIp { get; set; }
-        public int PostTime { get; set; }
+        public long PostTime { get; set; }
         public byte PostApproved { get; set; }
         public byte PostReported { get; set; }
         public byte EnableBbcode { get; set; }
@@ -26,9 +26,9 @@ namespace Serverless.Forum.forum
         public string BbcodeBitfield { get; set; }
         public string BbcodeUid { get; set; }
         public byte PostPostcount { get; set; }
-        public int PostEditTime { get; set; }
+        public long PostEditTime { get; set; }
         public string PostEditReason { get; set; }
-        public int PostEditUser { get; set; }
+        public long PostEditUser { get; set; }
         public short PostEditCount { get; set; }
         public byte PostEditLocked { get; set; }
     }

@@ -13,8 +13,8 @@ namespace Serverless.Forum.forum
         public byte TopicReported { get; set; }
         public string TopicTitle { get; set; }
         public int TopicPoster { get; set; }
-        public int TopicTime { get; set; }
-        public int TopicTimeLimit { get; set; }
+        public long TopicTime { get; set; }
+        public long TopicTimeLimit { get; set; }
         public int TopicViews { get; set; }
         public int TopicReplies { get; set; }
         public int TopicRepliesReal { get; set; }
@@ -28,8 +28,8 @@ namespace Serverless.Forum.forum
         public string TopicLastPosterName { get; set; }
         public string TopicLastPosterColour { get; set; }
         public string TopicLastPostSubject { get; set; }
-        public int TopicLastPostTime { get; set; }
-        public int TopicLastViewTime { get; set; }
+        public long TopicLastPostTime { get; set; }
+        public long TopicLastViewTime { get; set; }
         public int TopicMovedId { get; set; }
         public byte TopicBumped { get; set; }
         public int TopicBumper { get; set; }

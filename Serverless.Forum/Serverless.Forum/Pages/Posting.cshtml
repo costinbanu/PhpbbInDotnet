@@ -6,12 +6,12 @@
 }
 
 @await Html.PartialAsync(
-    "_ScriptsPartial", 
-    new _ScriptsPartialModel
+    "_PostingScriptsPartial",
+    new _PostingScriptsPartialModel
     {
         BbCodes = Model.BbCodesForJs.Codes,
         BbCodeHelpLines = Model.BbCodesForJs.HelpLines
-    }, 
+    },
     ViewData).ConfigureAwait(false)
 
 <h2>Răspunde: </h2>
@@ -68,8 +68,21 @@
     {
         var index = Model.BbCodes.Value.IndexOf($"[{code.BbcodeTag}]");
         var name = $"addbbcode{index}";
-        <input type="button" class="button2" name="@name" value="@code.BbcodeTag" onclick="bbstyle(@index)" title="@code.BbcodeHelpline" /> 
+        <input type="button" class="button2" name="@name" value="@code.BbcodeTag" onclick="bbstyle(@index)" title="@code.BbcodeHelpline" />
     }
-    <textarea name="message" id="message" rows="15" cols="76" tabindex="3" onselect="storeCaret(this);" onclick="storeCaret(this);" onkeyup="storeCaret(this);" onfocus="initInsertions();" class="inputbox">@Model.PostText</textarea>
-
+    <textarea name="message" id="message" rows="15" cols="76" style="width:100%" tabindex="3" onselect="storeCaret(this);" onclick="storeCaret(this);" onkeyup="storeCaret(this);" onfocus="initInsertions();" class="inputbox">@Model.PostText</textarea>
+</form>
+<input type="button" onclick="showAttachPanel()" value="Adaugă fișier atașat" />
+<form method="post" asp-page-handler="Attachment" name="attachForm" style="visibility:hidden">
+    <div>
+        <dl>
+            <dt class="AttachFieldsetDt">Fișier: </dt>
+            <dd class="AttachFieldsetDd"><input asp-for="Attachment" type="file" /></dd>
+        </dl>
+        <dl>
+            <dt class="AttachFieldsetDt">Comentariu fișier: </dt>
+            <dd class="AttachFieldsetDd"><textarea name="fileComment" id="fileComment" rows="1" cols="40"></textarea></dd>
+        </dl>
+    </div>
+    <input type="submit" value="Încarcă fișier" />
 </form>

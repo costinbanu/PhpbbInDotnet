@@ -10,7 +10,7 @@ using Serverless.Forum.Utilities;
 
 namespace Serverless.Forum.Pages
 {
-    public class _ScriptsPartialModel : PageModel
+    public class _PostingScriptsPartialModel : PageModel
     {
         public string BbCodes { get; set; }
         public string BbCodeHelpLines { get; set; }

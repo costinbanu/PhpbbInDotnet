@@ -12,13 +12,13 @@ namespace Serverless.Forum.Utilities
 {
     public static class Extensions
     {
-        public static DateTime TimestampToLocalTime(this int timestamp)
+        public static DateTime TimestampToLocalTime(this long timestamp)
         {
             var seed = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
             return seed.AddSeconds(timestamp);
         }
 
-        public static int LocalTimeToTimestamp(this DateTime time)
+        public static long LocalTimeToTimestamp(this DateTime time)
         {
             var seed = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
             return (int)time.Subtract(seed).TotalSeconds;

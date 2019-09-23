@@ -17,8 +17,8 @@ namespace Serverless.Forum.forum
         public string AttachComment { get; set; }
         public string Extension { get; set; }
         public string Mimetype { get; set; }
-        public int Filesize { get; set; }
-        public int Filetime { get; set; }
+        public long Filesize { get; set; }
+        public long Filetime { get; set; }
         public byte Thumbnail { get; set; }
     }
 }

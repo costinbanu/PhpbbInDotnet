@@ -163,3 +163,15 @@ textarea {
 .fullwidth {
     width: 100% !important;
 }
+
+.AttachFieldsetDt {
+    float: left;
+    clear: left;
+    margin-right: 5px;
+    font-weight: bold;
+    width: 30%;
+}
+
+.AttachFieldsetDd {
+    margin-left: 0px;
+}

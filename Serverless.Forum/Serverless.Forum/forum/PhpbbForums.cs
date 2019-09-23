@@ -33,7 +33,7 @@ namespace Serverless.Forum.forum
         public int ForumLastPostId { get; set; }
         public int ForumLastPosterId { get; set; }
         public string ForumLastPostSubject { get; set; }
-        public int ForumLastPostTime { get; set; }
+        public long ForumLastPostTime { get; set; }
         public string ForumLastPosterName { get; set; }
         public string ForumLastPosterColour { get; set; }
         public byte ForumFlags { get; set; }
@@ -47,6 +47,6 @@ namespace Serverless.Forum.forum
         public int PruneDays { get; set; }
         public int PruneViewed { get; set; }
         public int PruneFreq { get; set; }
-        public int ForumEditTime { get; set; }
+        public long ForumEditTime { get; set; }
     }
 }
