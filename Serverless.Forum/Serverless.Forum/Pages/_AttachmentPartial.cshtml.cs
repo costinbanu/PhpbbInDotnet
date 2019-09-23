@@ -1,10 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.AspNetCore.Mvc.ViewEngines;
+﻿using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Serverless.Forum.forum;
-using Serverless.Forum.Utilities;
-using System.Linq;
 
 namespace Serverless.Forum.Pages
 {
@@ -16,8 +11,8 @@ namespace Serverless.Forum.Pages
         public string FileName;
         public string MimeType;
 
-        public _AttachmentPartialModel(forumContext context, IHttpContextAccessor httpContext, ICompositeViewEngine viewEngine, IHtmlHelper<ViewTopicModel> html)
-             : base(context, httpContext, viewEngine, html)
+        public _AttachmentPartialModel(forumContext context, ICompositeViewEngine viewEngine)
+             : base(context, viewEngine)
         {
         }
 

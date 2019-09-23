@@ -72,12 +72,14 @@
     }
     <textarea name="message" id="message" rows="15" cols="76" style="width:100%" tabindex="3" onselect="storeCaret(this);" onclick="storeCaret(this);" onkeyup="storeCaret(this);" onfocus="initInsertions();" class="inputbox">@Model.PostText</textarea>
 </form>
+<p>&nbsp;</p>
 <input type="button" onclick="showAttachPanel()" value="Adaugă fișier atașat" />
-<form method="post" asp-page-handler="Attachment" name="attachForm" style="visibility:hidden">
+<p>&nbsp;</p>
+<form method="post" asp-page-handler="Attachment" name="attachForm" style="visibility:hidden" enctype="multipart/form-data">
     <div>
         <dl>
             <dt class="AttachFieldsetDt">Fișier: </dt>
-            <dd class="AttachFieldsetDd"><input asp-for="Attachment" type="file" /></dd>
+            <dd class="AttachFieldsetDd"><!--<input asp-for="Attachment" type="file" />--><input type="file" name="files" multiple /></dd>
         </dl>
         <dl>
             <dt class="AttachFieldsetDt">Comentariu fișier: </dt>

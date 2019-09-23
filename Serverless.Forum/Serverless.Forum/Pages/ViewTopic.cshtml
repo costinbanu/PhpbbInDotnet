@@ -80,8 +80,15 @@
                 <p>------------------</p>
                 @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
             }
-            <br/>
-            <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-postId="@post.Id">Răspunde cu citat</a>
+            <br />
+            @if (!Model.IsLocked)
+            {
+                <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-postId="@post.Id">Răspunde cu citat</a>
+            }
+            else
+            {
+                <a href="#" title="Subiectul este închis, nu se mai pot trimite răspunsuri."><s>Răspunde cu citat</s></a>
+            }
         </span>
         <span class="ForumListRight">
             @if (post.AuthorId == null)
@@ -102,5 +109,12 @@
 <p style="margin:20px;">
     @await Html.PartialAsync("_PaginationPartial", Model.Pagination, ViewData)
 </p>
-<br/>
-<a asp-page="/Posting" asp-page-handler="ForumPost" asp-route-topicTitle="@Model.TopicTitle">Scrie un răspuns</a>
+<br />
+@if (!Model.IsLocked)
+{
+    <a asp-page="/Posting" asp-page-handler="ForumPost" asp-route-topicTitle="@Model.TopicTitle">Scrie un răspuns</a>
+}
+else
+{
+    <a href="#" title="Subiectul este închis, nu se mai pot trimite răspunsuri."><s>Scrie un răspuns</s></a>
+}

@@ -13,35 +13,20 @@ using System.Web;
 
 namespace Serverless.Forum.Pages
 {
-    public class IndexModel : PageModel
+    public class IndexModel : ModelWithLoggedUser
     {
         public IEnumerable<ForumDisplay> Forums;
 
-        forumContext _dbContext;
-
-        public IndexModel(forumContext context)
+        public IndexModel(forumContext context) : base(context)
         {
-            _dbContext = context;
         }
 
-        public async Task OnGet()
+        public void OnGet()
         {
-            var user = User;
-            if (!user.Identity.IsAuthenticated)
-            {
-                user = Acl.Instance.GetAnonymousUser(_dbContext);
-                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, user, new AuthenticationProperties
-                {
-                    AllowRefresh = true,
-                    ExpiresUtc = DateTimeOffset.Now.AddMonths(1),
-                    IsPersistent = true,
-                });
-            }
-
             Forums = from f1 in _dbContext.PhpbbForums
                      where f1.ForumType == 0
-                        && user.ToLoggedUser().UserPermissions != null
-                        && !user.ToLoggedUser().UserPermissions.Any(fp => fp.ForumId == f1.ForumId && fp.AuthRoleId == 16)
+                        && CurrentUser.UserPermissions != null
+                        && !CurrentUser.UserPermissions.Any(fp => fp.ForumId == f1.ForumId && fp.AuthRoleId == 16)
                      let firstChildren = from f2 in _dbContext.PhpbbForums
                                          where f2.ParentId == f1.ForumId
                                          orderby f2.LeftId

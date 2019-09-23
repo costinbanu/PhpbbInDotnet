@@ -38,7 +38,7 @@ namespace Serverless.Forum.Utilities
 
         public static _AttachmentPartialModel ToModel(this PhpbbAttachments dbAttachmentRecord)
         {
-            return new _AttachmentPartialModel (null, null, null, null)
+            return new _AttachmentPartialModel (null, null)
             {
                 FileName = dbAttachmentRecord.RealFilename,
                 Id = dbAttachmentRecord.AttachId,

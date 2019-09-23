@@ -1,9 +1,6 @@
 ﻿using CodeKicker.BBCode;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
@@ -14,14 +11,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Claims;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
 
 namespace Serverless.Forum.Pages
 {
-    public class ViewTopicModel : PageModel
+    public class ViewTopicModel : ModelWithLoggedUser
     {
         public IEnumerable<PostDisplay> Posts;
         public string TopicTitle;
@@ -29,47 +25,59 @@ namespace Serverless.Forum.Pages
         public int? ForumId;
         public _PaginationPartialModel Pagination;
         public int? PostId;
+        public bool IsLocked => (_currentTopic?.TopicStatus ?? 0) == 1;
 
-        forumContext _dbContext;
         ICompositeViewEngine _viewEngine;
-        IHtmlHelper<ViewTopicModel> _html;
+        PhpbbTopics _currentTopic = null;
 
-        public ViewTopicModel(forumContext context, IHttpContextAccessor httpContext, ICompositeViewEngine viewEngine, IHtmlHelper<ViewTopicModel> html)
+        public ViewTopicModel(forumContext context, ICompositeViewEngine viewEngine) : base(context)
         {
-            _dbContext = context;
             _viewEngine = viewEngine;
-            _html = html;
         }
 
         public async Task<IActionResult> OnGetByPostId(int PostId)
         {
-            var topicId = (from p in _dbContext.PhpbbPosts
-                           where p.PostId == PostId
-                           select (int?)p.TopicId).FirstOrDefault();
+            if (_currentTopic == null)
+            {
+                _currentTopic = (from p in _dbContext.PhpbbPosts
+                                 join t in _dbContext.PhpbbTopics
+                                 on p.TopicId equals t.TopicId
+                                 select t).FirstOrDefault();
+            }
 
-            if (topicId == null)
+            if (_currentTopic == null)
             {
                 return NotFound();
             }
 
-            var user = await GetUser().ConfigureAwait(false);
-            var pageSize = user.ToLoggedUser().TopicPostsPerPage.ContainsKey(topicId.Value) ? user.ToLoggedUser().TopicPostsPerPage[topicId.Value] : 14;
+            var pageSize = CurrentUser.TopicPostsPerPage.ContainsKey(_currentTopic.TopicId) ? CurrentUser.TopicPostsPerPage[_currentTopic.TopicId] : 14;
 
-            var posts = (await GetPosts(topicId.Value).ConfigureAwait(false)).Select(p => p.Id).ToList();
+            var posts = (await GetPosts(_currentTopic.TopicId).ConfigureAwait(false)).Select(p => p.Id).ToList();
             var index = posts.IndexOf(PostId) + 1;
             var pageNum = (index / pageSize) + (index % pageSize == 0 ? 0 : 1);
 
             this.PostId = PostId;
 
-            return await OnGet(topicId.Value, pageNum).ConfigureAwait(false);
+            return await OnGet(_currentTopic.TopicId, pageNum).ConfigureAwait(false);
         }
 
         public async Task<IActionResult> OnGet(int TopicId, int PageNum, int? pageSize = null)
         {
+            if (_currentTopic == null)
+            {
+                _currentTopic = (from t in _dbContext.PhpbbTopics
+                                 where t.TopicId == TopicId
+                                 select t).FirstOrDefault();
+            }
+
+            if (_currentTopic == null)
+            {
+                return NotFound();
+            }
+
             if (pageSize is null)
             {
-                var user = await GetUser().ConfigureAwait(false);
-                pageSize = user.ToLoggedUser().TopicPostsPerPage.ContainsKey(TopicId) ? user.ToLoggedUser().TopicPostsPerPage[TopicId] : 14;
+                pageSize = CurrentUser.TopicPostsPerPage.ContainsKey(TopicId) ? CurrentUser.TopicPostsPerPage[TopicId] : 14;
             }
 
             var parent = (from f in _dbContext.PhpbbForums
@@ -83,14 +91,21 @@ namespace Serverless.Forum.Pages
                           select f).FirstOrDefault();
 
             if (!string.IsNullOrEmpty(parent.ForumPassword) &&
-                (HttpContext.Session.GetInt32("ForumLogin") ?? -1) != parent.ForumId)
+                (HttpContext.Session.GetInt32("ForumLogin") ?? -1) != ForumId)
             {
-                return RedirectToPage("ForumLogin", new ForumLoginModel(_dbContext)
+                if (CurrentUser.UserPermissions.Any(fp => fp.ForumId == ForumId && fp.AuthRoleId == 16))
                 {
-                    ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString),
-                    ForumId = parent.ForumId,
-                    ForumName = parent.ForumName
-                });
+                    return RedirectToPage("Unauthorized");
+                }
+                else
+                {
+                    return RedirectToPage("ForumLogin", new ForumLoginModel(_dbContext)
+                    {
+                        ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString),
+                        ForumId = parent.ForumId,
+                        ForumName = parent.ForumName
+                    });
+                }
             }
 
             ForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? "untitled");
@@ -112,7 +127,7 @@ namespace Serverless.Forum.Pages
                 .Take(pageSize.Value).ToList();
 
 
-            TopicTitle = HttpUtility.HtmlDecode(_dbContext.PhpbbTopics.FirstOrDefault(t => t.TopicId == TopicId)?.TopicTitle ?? "untitled");
+            TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
 
             Pagination = new _PaginationPartialModel
             {
@@ -139,10 +154,11 @@ namespace Serverless.Forum.Pages
                 new BBTag("*", "<li>", "</li>", true, true), 
                 new BBTag("list", "<${attr}>", "</${attr}>", true, true, 
                     new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul" : $"ol type=\"{a.AttributeValue}\"")),
-                new BBTag("url", "<a href=\"${href}\">", "</a>", new BBAttribute("href", ""), new BBAttribute("href", "href")),
+                new BBTag("url", "<a href=\"${href}\">", "</a>", new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
                 new BBTag("color", "<span style=\"color:${code}\">", "</span>", new BBAttribute("code", ""), new BBAttribute("code", "code")),
                 new BBTag("youtube", "<br/><iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/${content}?html5=1\" frameborder=\"0\" allowfullscreen>", "</iframe><br/>",false, true),
-                new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>", new BBAttribute("fsize", ""), new BBAttribute("fsize", "fsize")),
+                new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>", 
+                    new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue ?? string.Empty, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
                 new BBTag("attachment", "##AttachmentFileName=${content}##", "", false, true, new BBAttribute("num", ""), new BBAttribute("num", "num"))
             });
 
@@ -207,22 +223,6 @@ namespace Serverless.Forum.Pages
             }
 
             return toReturn;
-        }
-
-        private async Task<ClaimsPrincipal> GetUser()
-        {
-            var user = User;
-            if (!user.Identity.IsAuthenticated)
-            {
-                user = Acl.Instance.GetAnonymousUser(_dbContext);
-                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, user, new AuthenticationProperties
-                {
-                    AllowRefresh = true,
-                    ExpiresUtc = DateTimeOffset.Now.AddMonths(1),
-                    IsPersistent = true,
-                });
-            }
-            return user;
         }
 
         private async Task<string> RenderRazorViewToString(string viewName, _AttachmentPartialModel model)

@@ -23,36 +23,11 @@ using Newtonsoft.Json;
 
 namespace Serverless.Forum.Pages
 {
-    public class PostingModel : PageModel
+    public class PostingModel : ModelWithLoggedUser
     {
-        public readonly forumContext _dbContext;
+        public forumContext DbContext => _dbContext;
         private readonly IAmazonS3 _s3Client;
         private readonly IConfiguration _config;
-
-        public LoggedUser CurrentUser
-        {
-            get
-            {
-                var user = User;
-                if (!user.Identity.IsAuthenticated)
-                {
-                    user = Acl.Instance.GetAnonymousUser(_dbContext);
-                    Task.WaitAll(
-                        HttpContext.SignInAsync(
-                            CookieAuthenticationDefaults.AuthenticationScheme, 
-                            user, 
-                            new AuthenticationProperties
-                            {
-                                AllowRefresh = true,
-                                ExpiresUtc = DateTimeOffset.Now.AddMonths(1),
-                                IsPersistent = true,
-                            }
-                        )
-                    );
-                }
-                return user.ToLoggedUser();
-            }
-        }
 
         public Lazy<List<PhpbbBbcodes>> DbBbCodes => 
             new Lazy<List<PhpbbBbcodes>>(() =>
@@ -90,11 +65,11 @@ namespace Serverless.Forum.Pages
         public (string Codes, string HelpLines) BbCodesForJs => 
             (JsonConvert.SerializeObject(BbCodes.Value, Formatting.Indented), JsonConvert.SerializeObject(BbCodeHelplines.Value, Formatting.Indented));
 
-        //https://stackoverflow.com/questions/54963951/aws-lambda-file-upload-to-asp-net-core-2-1-razor-page-is-corrupting-binary
-        [BindProperty]
-        [Required]
-        [Display(Name = "Attachment")]
-        public IFormFile Attachment { get; set; }
+        ////https://stackoverflow.com/questions/54963951/aws-lambda-file-upload-to-asp-net-core-2-1-razor-page-is-corrupting-binary
+        //[BindProperty]
+        //[Required]
+        //[Display(Name = "Attachment")]
+        //public IFormFile Attachment { get; set; }
 
         public string TopicTitle { get; set; }
         public string PostTitle { get; set; }
@@ -103,9 +78,8 @@ namespace Serverless.Forum.Pages
         public int TopicId { get; set; }
         public Lazy<List<PhpbbAttachments>> PostAttachments => new Lazy<List<PhpbbAttachments>>(() => new List<PhpbbAttachments>());
 
-        public PostingModel(forumContext context, IConfiguration config)
+        public PostingModel(forumContext context, IConfiguration config) : base(context)
         {
-            _dbContext = context;
             _config = config;
             _s3Client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1);
         }
@@ -180,41 +154,43 @@ namespace Serverless.Forum.Pages
             return Page();
         }
 
-        public async Task<IActionResult> OnPostAttachment(string fileComment)
+        public async Task<IActionResult> OnPostAttachment(IList<IFormFile> files, string fileComment)
         {
             if (CurrentUser.UserId == 1)
             {
-                return Unauthorized();
+                return RedirectToPage("Login", new LoginModel(_dbContext));
             }
 
-            var name = $"{CurrentUser.UserId ?? 0}_{Guid.NewGuid():n}";
-            var request = new PutObjectRequest
+            foreach (var file in files)
             {
-                BucketName = _config["AwsS3BucketName"],
-                Key = name,
-                ContentType = Attachment.ContentType,
-                InputStream = Attachment.OpenReadStream()
-            };
+                var name = $"{CurrentUser.UserId ?? 0}_{Guid.NewGuid():n}";
+                var request = new PutObjectRequest
+                {
+                    BucketName = _config["AwsS3BucketName"],
+                    Key = name,
+                    ContentType = file.ContentType,
+                    InputStream = file.OpenReadStream()
+                };
 
-            var response = await _s3Client.PutObjectAsync(request);
-            if (response.HttpStatusCode != HttpStatusCode.OK)
-            {
-                throw new Exception("Failed to upload file");
+                var response = await _s3Client.PutObjectAsync(request);
+                if (response.HttpStatusCode != HttpStatusCode.OK)
+                {
+                    throw new Exception("Failed to upload file");
+                }
+
+                PostAttachments.Value.Add(new PhpbbAttachments
+                {
+                    AttachComment = fileComment,
+                    Extension = System.IO.Path.GetExtension(file.FileName),
+                    Filetime = DateTime.UtcNow.LocalTimeToTimestamp(),
+                    Filesize = file.Length,
+                    Mimetype = file.ContentType,
+                    PhysicalFilename = name,
+                    RealFilename = System.IO.Path.GetFileName(file.FileName),
+                    PosterId = CurrentUser.UserId.Value,
+                    TopicId = TopicId
+                });
             }
-
-            PostAttachments.Value.Add(new PhpbbAttachments
-            {
-                AttachComment = fileComment,
-                Extension = System.IO.Path.GetExtension(Attachment.FileName),
-                Filetime = DateTime.UtcNow.LocalTimeToTimestamp(),
-                Filesize = Attachment.Length,
-                Mimetype = Attachment.ContentType,
-                PhysicalFilename = name,
-                RealFilename = System.IO.Path.GetFileName(Attachment.FileName),
-                PosterId = CurrentUser.UserId.Value,
-                TopicId = TopicId
-            });
-
             return Page();
         }
 

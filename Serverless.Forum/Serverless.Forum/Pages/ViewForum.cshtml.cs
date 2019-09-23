@@ -9,12 +9,13 @@ using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using System.Web;
 
 namespace Serverless.Forum.Pages
 {
-    public class ViewForumModel : PageModel
+    public class ViewForumModel : ModelWithLoggedUser
     {
         public IEnumerable<ForumDisplay> Forums;
         public IEnumerable<TopicTransport> Topics;
@@ -23,26 +24,12 @@ namespace Serverless.Forum.Pages
         public string ParentForumTitle;
         public int? ParentForumId;
 
-        forumContext _dbContext;
-        public ViewForumModel(forumContext context)
+        public ViewForumModel(forumContext context) : base(context)
         {
-            _dbContext = context;
         }
 
-        public async Task<IActionResult> OnGet(int ForumId)
+        public IActionResult OnGet(int ForumId)
         {
-            var user = User;
-            if (!user.Identity.IsAuthenticated)
-            {
-                user = Acl.Instance.GetAnonymousUser(_dbContext);
-                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, user, new AuthenticationProperties
-                {
-                    AllowRefresh = true,
-                    ExpiresUtc = DateTimeOffset.Now.AddMonths(1),
-                    IsPersistent = true,
-                });
-            }
-
             var thisForum = (from f in _dbContext.PhpbbForums
                              where f.ForumId == ForumId
                              select f).FirstOrDefault();
@@ -55,12 +42,19 @@ namespace Serverless.Forum.Pages
             if (!string.IsNullOrEmpty(thisForum.ForumPassword) &&
                 (HttpContext.Session.GetInt32("ForumLogin") ?? -1) != ForumId)
             {
-                return RedirectToPage("ForumLogin", new ForumLoginModel(_dbContext)
+                if (CurrentUser.UserPermissions.Any(fp => fp.ForumId == ForumId && fp.AuthRoleId == 16))
                 {
-                    ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString),
-                    ForumId = ForumId,
-                    ForumName = thisForum.ForumName
-                });
+                    return RedirectToPage("Unauthorized");
+                }
+                else
+                {
+                    return RedirectToPage("ForumLogin", new ForumLoginModel(_dbContext)
+                    {
+                        ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString),
+                        ForumId = ForumId,
+                        ForumName = thisForum.ForumName
+                    });
+                }
             }
 
             ForumTitle = HttpUtility.HtmlDecode(thisForum?.ForumName ?? "untitled");
@@ -98,7 +92,7 @@ namespace Serverless.Forum.Pages
 
                                    from j in joined.DefaultIfEmpty()
                                    let postCount = _dbContext.PhpbbPosts.Count(p => p.TopicId == g.TopicId)
-                                   let pageSize = user.ToLoggedUser().TopicPostsPerPage.ContainsKey(g.TopicId) ? user.ToLoggedUser().TopicPostsPerPage[g.TopicId] : 14
+                                   let pageSize = CurrentUser.TopicPostsPerPage.ContainsKey(g.TopicId) ? CurrentUser.TopicPostsPerPage[g.TopicId] : 14
                                    select new TopicDisplay
                                    {
                                        Id = g.TopicId,
