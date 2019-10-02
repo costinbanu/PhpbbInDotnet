@@ -1,4 +1,4 @@
-﻿using CodeKicker.BBCode;
+﻿using CodeKicker.BBCode.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -8,6 +8,7 @@ using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
 using Serverless.Forum.Utilities;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -29,20 +30,24 @@ namespace Serverless.Forum.Pages
 
         ICompositeViewEngine _viewEngine;
         PhpbbTopics _currentTopic = null;
+        List<dynamic> _dbPosts = null;
 
         public ViewTopicModel(forumContext context, ICompositeViewEngine viewEngine) : base(context)
         {
             _viewEngine = viewEngine;
         }
 
-        public async Task<IActionResult> OnGetByPostId(int PostId)
+        public IActionResult OnGetByPostId(int PostId)
         {
             if (_currentTopic == null)
             {
                 _currentTopic = (from p in _dbContext.PhpbbPosts
+                                 where p.PostId == PostId
                                  join t in _dbContext.PhpbbTopics
                                  on p.TopicId equals t.TopicId
-                                 select t).FirstOrDefault();
+                                 into joined
+                                 from j in joined
+                                 select j).FirstOrDefault();
             }
 
             if (_currentTopic == null)
@@ -52,16 +57,16 @@ namespace Serverless.Forum.Pages
 
             var pageSize = CurrentUser.TopicPostsPerPage.ContainsKey(_currentTopic.TopicId) ? CurrentUser.TopicPostsPerPage[_currentTopic.TopicId] : 14;
 
-            var posts = (await GetPosts(_currentTopic.TopicId).ConfigureAwait(false)).Select(p => p.Id).ToList();
-            var index = posts.IndexOf(PostId) + 1;
+            GetPosts(_currentTopic.TopicId);
+            var index = _dbPosts.Select(p => (int)p.Post.Id).ToList().IndexOf(PostId) + 1;
             var pageNum = (index / pageSize) + (index % pageSize == 0 ? 0 : 1);
 
             this.PostId = PostId;
 
-            return await OnGet(_currentTopic.TopicId, pageNum).ConfigureAwait(false);
+            return OnGet(_currentTopic.TopicId, pageNum);
         }
 
-        public async Task<IActionResult> OnGet(int TopicId, int PageNum, int? pageSize = null)
+        public IActionResult OnGet(int TopicId, int PageNum, int? pageSize = null)
         {
             if (_currentTopic == null)
             {
@@ -111,8 +116,8 @@ namespace Serverless.Forum.Pages
             ForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? "untitled");
             ForumId = parent?.ForumId;
 
-            var tempPosts = (await GetPosts(TopicId).ConfigureAwait(false)).ToList();
-            var noOfPages = (tempPosts.Count / pageSize) + (tempPosts.Count % pageSize == 0 ? 0 : 1);
+            GetPosts(TopicId);
+            var noOfPages = (_dbPosts.Count / pageSize) + (_dbPosts.Count % pageSize == 0 ? 0 : 1);
             if (PageNum > noOfPages)
             {
                 PageNum = noOfPages.Value;
@@ -122,10 +127,70 @@ namespace Serverless.Forum.Pages
                 PageNum = 1;
             }
 
-            Posts = tempPosts
-                .Skip((PageNum - 1) * pageSize.Value)
-                .Take(pageSize.Value).ToList();
+            var postsInPage = _dbPosts.Skip((PageNum - 1) * pageSize.Value).Take(pageSize.Value).ToList();
 
+
+            var bbcodes = new List<BBTag>(from c in _dbContext.PhpbbBbcodes
+                                          select new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false));
+            bbcodes.AddRange(new[]
+            {
+                new BBTag("b", "<b>", "</b>"),
+                new BBTag("i", "<span style=\"font-style:italic;\">", "</span>"),
+                new BBTag("u", "<span style=\"text-decoration:underline;\">", "</span>"),
+                new BBTag("code", "<pre class=\"prettyprint\">", "</pre>"),
+                new BBTag("img", "<br/><img src=\"${content}\" /><br/>", string.Empty, false, false),
+                new BBTag("quote", "<blockquote>${name}", "</blockquote>",
+                    new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : $"<b>{HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')}</b> a scris:<br/>")),
+                new BBTag("*", "<li>", "</li>", true, true),
+                new BBTag("list", "<${attr}>", "</${attr}>", true, true,
+                    new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul" : $"ol type=\"{a.AttributeValue}\"")),
+                new BBTag("url", "<a href=\"${href}\">", "</a>", new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
+                new BBTag("color", "<span style=\"color:${code}\">", "</span>", new BBAttribute("code", ""), new BBAttribute("code", "code")),
+                new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>",
+                    new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
+                new BBTag("attachment", "##AttachmentFileName=${content}##", "", false, true, new BBAttribute("num", ""), new BBAttribute("num", "num"))
+            });
+            var parser = new BBCodeParser(bbcodes);
+            var htmlCommentRegex = new Regex("<!--.*?-->", RegexOptions.Compiled | RegexOptions.Singleline);
+            var notInLIneAttachments = new ConcurrentBag<_AttachmentPartialModel>();
+            var cachedAttachments = (from a in _dbContext.PhpbbAttachments
+                                     join p in from p in postsInPage
+                                               select (PostDisplay)p.Post
+                                     on a.PostMsgId equals p.Id
+                                     into joined
+                                     from j in joined
+                                     select a).ToList();
+
+            Parallel.ForEach(postsInPage, async (p, state) =>
+            {
+                p.Post.PostTitle = HttpUtility.HtmlDecode(p.Post.PostTitle);
+                p.Post.PostText = HttpUtility.HtmlDecode(parser.ToHtml(p.Post.PostText, p.Uid));
+                foreach (var candidate in cachedAttachments)
+                {
+                    p.Post.PostText = htmlCommentRegex.Replace(p.Post.PostText, string.Empty);
+                    if (candidate.PostMsgId == p.Post.Id && p.Post.PostText.Contains($"##AttachmentFileName={candidate.RealFilename}##"))
+                    {
+                        p.Post.PostText = p.Post.PostText.Replace(
+                            $"##AttachmentFileName={candidate.RealFilename}##",
+                            await RenderRazorViewToString(
+                                "_AttachmentPartial",
+                                (from a in cachedAttachments
+                                 where a.PostMsgId == p.Post.Id
+                                    && a.RealFilename == candidate.RealFilename
+                                 select a.ToModel()).FirstOrDefault()
+                            ).ConfigureAwait(false)
+                        );
+                    }
+                    else if (candidate.PostMsgId == p.Post.Id)
+                    {
+                        notInLIneAttachments.Add(candidate.ToModel());
+                    }
+                }
+                p.Post.Attachments.Clear();
+                p.Post.Attachments.AddRange(notInLIneAttachments);
+                notInLIneAttachments.Clear();
+            });
+            Posts = postsInPage.Select(d => (PostDisplay)d.Post).ToList();
 
             TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
 
@@ -138,91 +203,6 @@ namespace Serverless.Forum.Pages
             };
 
             return Page();
-        }
-
-        private async Task<IEnumerable<PostDisplay>> GetPosts(int TopicId)
-        {
-            var parser = new BBCodeParser(new[]
-            {
-                new BBTag("b", "<b>", "</b>"),
-                new BBTag("i", "<span style=\"font-style:italic;\">", "</span>"),
-                new BBTag("u", "<span style=\"text-decoration:underline;\">", "</span>"),
-                new BBTag("code", "<pre class=\"prettyprint\">", "</pre>"),
-                new BBTag("img", "<img src=\"${content}\" />", "", false, true),
-                new BBTag("quote", "<blockquote>${name}", "</blockquote>",
-                    new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : $"<b>{HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')}</b> a scris:<br/>")),
-                new BBTag("*", "<li>", "</li>", true, true), 
-                new BBTag("list", "<${attr}>", "</${attr}>", true, true, 
-                    new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul" : $"ol type=\"{a.AttributeValue}\"")),
-                new BBTag("url", "<a href=\"${href}\">", "</a>", new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
-                new BBTag("color", "<span style=\"color:${code}\">", "</span>", new BBAttribute("code", ""), new BBAttribute("code", "code")),
-                new BBTag("youtube", "<br/><iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/${content}?html5=1\" frameborder=\"0\" allowfullscreen>", "</iframe><br/>",false, true),
-                new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>", 
-                    new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue ?? string.Empty, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
-                new BBTag("attachment", "##AttachmentFileName=${content}##", "", false, true, new BBAttribute("num", ""), new BBAttribute("num", "num"))
-            });
-
-
-            var toReturn = (from p in _dbContext.PhpbbPosts
-                            where p.TopicId == TopicId
-                            orderby p.PostTime ascending
-
-                            join u in _dbContext.PhpbbUsers
-                            on p.PosterId equals u.UserId
-                            into joinedUsers
-
-                            join a in _dbContext.PhpbbAttachments
-                            on p.PostId equals a.PostMsgId
-                            into joinedAttachments
-
-                            from ju in joinedUsers.DefaultIfEmpty()
-                            select new PostDisplay
-                            {
-                                PostTitle = HttpUtility.HtmlDecode(p.PostSubject),
-                                PostText = HttpUtility.HtmlDecode(parser.ToHtml(p.PostText.RemoveBbCodeUid(p.BbcodeUid))),
-                                AuthorName = ju.UserId == 1 ? p.PostUsername : ju.Username,
-                                AuthorId = ju.UserId == 1 ? null as int? : ju.UserId,
-                                PostCreationTime = p.PostTime.TimestampToLocalTime(),
-                                PostModifiedTime = p.PostEditTime.TimestampToLocalTime(),
-                                Id = p.PostId,
-                                Attachments = (from ja in joinedAttachments
-                                               select ja.ToModel()).ToList()
-                            }).ToList();
-
-            var cachedAttachments = (from a in _dbContext.PhpbbAttachments
-                                     where a.TopicId == TopicId
-                                     select a).ToList();
-
-            var notInLIneAttachments = new List<_AttachmentPartialModel>();
-            foreach (var post in toReturn)
-            {
-                foreach (var candidate in cachedAttachments)
-                {
-                    post.PostText = Regex.Replace(post.PostText, "<!--.*?-->", string.Empty, RegexOptions.Singleline);
-                    if (post.PostText.Contains($"##AttachmentFileName={candidate.RealFilename}##"))
-                    {
-                        post.PostText = post.PostText.Replace(
-                            $"##AttachmentFileName={candidate.RealFilename}##",
-                            await RenderRazorViewToString(
-                                "_AttachmentPartial",
-                                (from a in cachedAttachments
-                                 where a.PostMsgId == post.Id
-                                    && a.RealFilename == candidate.RealFilename
-                                 select a.ToModel()).FirstOrDefault()
-                            ).ConfigureAwait(false)
-                        );
-                    }
-                    else if (candidate.PostMsgId == post.Id)
-                    {
-                        notInLIneAttachments.Add(candidate.ToModel());
-                    }
-                }
-                post.Attachments.Clear();
-                post.Attachments.AddRange(notInLIneAttachments);
-                notInLIneAttachments.Clear();
-            }
-
-            return toReturn;
         }
 
         private async Task<string> RenderRazorViewToString(string viewName, _AttachmentPartialModel model)
@@ -249,6 +229,42 @@ namespace Serverless.Forum.Pages
                 await viewResult.View.RenderAsync(viewContext);
 
                 return writer.GetStringBuilder().ToString();
+            }
+        }
+
+        private void GetPosts(int topicId)
+        {
+            if (_dbPosts == null)
+            {
+                _dbPosts = new List<dynamic>(from p in _dbContext.PhpbbPosts
+                                             where p.TopicId == topicId
+                                             orderby p.PostTime ascending
+
+                                             join u in _dbContext.PhpbbUsers
+                                             on p.PosterId equals u.UserId
+                                             into joinedUsers
+
+                                             join a in _dbContext.PhpbbAttachments
+                                             on p.PostId equals a.PostMsgId
+                                             into joinedAttachments
+
+                                             from ju in joinedUsers.DefaultIfEmpty()
+                                             select new
+                                             {
+                                                 Post = new PostDisplay
+                                                 {
+                                                     PostTitle = p.PostSubject, //HttpUtility.HtmlDecode(p.PostSubject),
+                                                     PostText = p.PostText, //HttpUtility.HtmlDecode(parser.ToHtml(p.PostText,p.BbcodeUid)),
+                                                     AuthorName = ju.UserId == 1 ? p.PostUsername : ju.Username,
+                                                     AuthorId = ju.UserId == 1 ? null as int? : ju.UserId,
+                                                     PostCreationTime = p.PostTime.TimestampToLocalTime(),
+                                                     PostModifiedTime = p.PostEditTime.TimestampToLocalTime(),
+                                                     Id = p.PostId,
+                                                     Attachments = (from ja in joinedAttachments
+                                                                    select ja.ToModel()).ToList()
+                                                 },
+                                                 Uid = p.BbcodeUid
+                                             });
             }
         }
     }

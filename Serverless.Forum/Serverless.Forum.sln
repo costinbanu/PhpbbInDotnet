@@ -5,6 +5,10 @@ VisualStudioVersion = 15.0.28307.757
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Serverless.Forum", "Serverless.Forum\Serverless.Forum.csproj", "{147E5805-3F1B-441F-9E01-B78D8ADC5C9C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeKicker.BBCode.Core", "CodeKicker.BBCode.Core\CodeKicker.BBCode.Core.csproj", "{33F8C413-706D-4F8B-9FEE-357A74D129E6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CryptSharp.Core", "CryptSharp.Core\CryptSharp.Core.csproj", "{10A91545-901B-47F2-A4CD-640ABF69F514}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +19,14 @@ Global
 		{147E5805-3F1B-441F-9E01-B78D8ADC5C9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{147E5805-3F1B-441F-9E01-B78D8ADC5C9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{147E5805-3F1B-441F-9E01-B78D8ADC5C9C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{33F8C413-706D-4F8B-9FEE-357A74D129E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{33F8C413-706D-4F8B-9FEE-357A74D129E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{33F8C413-706D-4F8B-9FEE-357A74D129E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{33F8C413-706D-4F8B-9FEE-357A74D129E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10A91545-901B-47F2-A4CD-640ABF69F514}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10A91545-901B-47F2-A4CD-640ABF69F514}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10A91545-901B-47F2-A4CD-640ABF69F514}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10A91545-901B-47F2-A4CD-640ABF69F514}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -46,11 +46,5 @@ namespace Serverless.Forum.Utilities
                 MimeType = dbAttachmentRecord.Mimetype
             };
         }
-
-        public static string RemoveBbCodeUid(this string text, string uid)
-        {
-            var cleanTextTemp = Regex.Replace(text, $":{uid}", string.Empty, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-            return Regex.Replace(cleanTextTemp, @"(:[a-z])(\]|:)", "$2", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-        }
     }
 }

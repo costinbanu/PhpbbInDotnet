@@ -1,16 +1,10 @@
-﻿using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
 using Serverless.Forum.Utilities;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Threading.Tasks;
 using System.Web;
 
 namespace Serverless.Forum.Pages

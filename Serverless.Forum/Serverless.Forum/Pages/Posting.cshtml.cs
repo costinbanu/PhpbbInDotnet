@@ -1,25 +1,21 @@
 ﻿using Amazon;
 using Amazon.S3;
 using Amazon.S3.Model;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Configuration;
-using Serverless.Forum.Contracts;
+using Newtonsoft.Json;
 using Serverless.Forum.forum;
 using Serverless.Forum.Utilities;
 using System;
-using System.ComponentModel.DataAnnotations;
-using System.Net;
+using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
-using System.Collections.Generic;
-using Newtonsoft.Json;
 
 namespace Serverless.Forum.Pages
 {
@@ -149,7 +145,7 @@ namespace Serverless.Forum.Pages
                               select u.Username).FirstOrDefault();
             }
 
-            PostText = $"[quote=\"{curAuthor}\"]{Environment.NewLine}{HttpUtility.HtmlDecode(curPost.PostText.RemoveBbCodeUid(curPost.BbcodeUid))}{Environment.NewLine}[/quote]";
+            PostText = $"[quote=\"{curAuthor}\"]{Environment.NewLine}{HttpUtility.HtmlDecode(RemoveBbCodeUid(curPost.PostText, curPost.BbcodeUid))}{Environment.NewLine}[/quote]";
 
             return Page();
         }
@@ -259,6 +255,14 @@ namespace Serverless.Forum.Pages
                 sb.Append(hash[i].ToString("x2"));
             }
             return sb.ToString();
+        }
+
+        private string RemoveBbCodeUid(string text, string uid)
+        {
+            var uidRegex = new Regex($":{uid}", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            var tagRegex = new Regex(@"(:[a-z])(\]|:)", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            var cleanTextTemp = uidRegex.Replace(text, string.Empty);
+            return tagRegex.Replace(cleanTextTemp, "$2");
         }
     }
 }
