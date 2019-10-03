@@ -30,7 +30,7 @@ namespace Serverless.Forum.Pages
 
             if (thisForum == null)
             {
-                return NotFound();
+                return NotFound($"Forumul {ForumId} nu există.");
             }
 
             if (!string.IsNullOrEmpty(thisForum.ForumPassword) &&

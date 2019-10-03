@@ -8,29 +8,29 @@ using System.Security.Claims;
 
 namespace Serverless.Forum.Utilities
 {
-    public class Acl
+    public class Utils
     {
-        static Acl _instance = null;
+        static Utils _instance = null;
         ClaimsPrincipal _anonymous = null;
 
-        public ClaimsPrincipal LoggedUserFromDbUser(PhpbbUsers user, forumContext _dbContext)
+        public ClaimsPrincipal LoggedUserFromDbUser(PhpbbUsers user, forumContext dbContext)
         {
-            var groups = (from g in _dbContext.PhpbbUserGroup
+            var groups = (from g in dbContext.PhpbbUserGroup
                           where g.UserId == user.UserId
                           select g.GroupId).ToList();
 
-            var userPermissions = (from up in _dbContext.PhpbbAclUsers
+            var userPermissions = (from up in dbContext.PhpbbAclUsers
                                    where up.UserId == user.UserId
                                    select up).ToList();
 
-            var groupPermissions = (from gp in _dbContext.PhpbbAclGroups
+            var groupPermissions = (from gp in dbContext.PhpbbAclGroups
                                     let alreadySet = from up in userPermissions
                                                      select up.ForumId
                                     where groups.Contains(gp.GroupId)
                                        && !alreadySet.Contains(gp.ForumId)
                                     select gp).ToList();
 
-            var topicPostsPerPage = from tpp in _dbContext.PhpbbUserTopicPostNumber
+            var topicPostsPerPage = from tpp in dbContext.PhpbbUserTopicPostNumber
                                     where tpp.UserId == user.UserId
                                     select KeyValuePair.Create(tpp.TopicId, tpp.PostNo);
 
@@ -65,7 +65,7 @@ namespace Serverless.Forum.Utilities
             return new ClaimsPrincipal(identity);
         }
 
-        public static Acl Instance => _instance ?? (_instance = new Acl());
+        public static Utils Instance => _instance ?? (_instance = new Utils());
 
         public ClaimsPrincipal GetAnonymousUser(forumContext _dbContext)
         {
@@ -77,6 +77,14 @@ namespace Serverless.Forum.Utilities
             _anonymous = LoggedUserFromDbUser(_dbContext.PhpbbUsers.First(u => u.UserId == 1), _dbContext);
 
             return _anonymous;
+        }
+
+        public IEnumerable<PhpbbPosts> GetPosts(int topicId, forumContext dbContext)
+        {
+            return from pp in dbContext.PhpbbPosts
+                   where pp.TopicId == topicId
+                   orderby pp.PostTime ascending
+                   select pp;
         }
     }
 }

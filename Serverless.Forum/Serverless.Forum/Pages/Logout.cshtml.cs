@@ -23,7 +23,7 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnGet(string returnUrl)
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, Acl.Instance.GetAnonymousUser(_dbContext), new AuthenticationProperties
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, Utils.Instance.GetAnonymousUser(_dbContext), new AuthenticationProperties
             {
                 AllowRefresh = true,
                 ExpiresUtc = DateTimeOffset.Now.AddMonths(1),

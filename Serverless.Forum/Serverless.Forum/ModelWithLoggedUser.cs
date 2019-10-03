@@ -25,7 +25,7 @@ namespace Serverless.Forum
                 var user = User;
                 if (!user.Identity.IsAuthenticated)
                 {
-                    user = Acl.Instance.GetAnonymousUser(_dbContext);
+                    user = Utils.Instance.GetAnonymousUser(_dbContext);
                     Task.WaitAll(
                         HttpContext.SignInAsync(
                             CookieAuthenticationDefaults.AuthenticationScheme,
