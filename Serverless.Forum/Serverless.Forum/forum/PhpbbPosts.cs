@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Serverless.Forum.forum
 {
     public partial class PhpbbPosts
     {
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int PostId { get; set; }
         public int TopicId { get; set; }
         public int ForumId { get; set; }

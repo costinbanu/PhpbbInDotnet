@@ -1,11 +1,6 @@
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
 using Serverless.Forum.Utilities;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,12 +16,13 @@ namespace Serverless.Forum.Pages
         {
         }
 
-        public void OnGet()
+        public async Task OnGet()
         {
+            var usr = await GetCurrentUserAsync();
             Forums = from f1 in _dbContext.PhpbbForums
                      where f1.ForumType == 0
-                        && CurrentUser.UserPermissions != null
-                        && !CurrentUser.UserPermissions.Any(fp => fp.ForumId == f1.ForumId && fp.AuthRoleId == 16)
+                        && usr.UserPermissions != null
+                        && !usr.UserPermissions.Any(fp => fp.ForumId == f1.ForumId && fp.AuthRoleId == 16)
                      let firstChildren = from f2 in _dbContext.PhpbbForums
                                          where f2.ParentId == f1.ForumId
                                          orderby f2.LeftId

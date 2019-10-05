@@ -7,7 +7,7 @@ namespace Serverless.Forum.Pages
     {
         public IActionResult OnGet(int f)
         {
-            return RedirectToPage("ViewForum", new { ForumId = f });
+            return RedirectToPage("ViewForum", new { forumId = f });
         }
     }
 }

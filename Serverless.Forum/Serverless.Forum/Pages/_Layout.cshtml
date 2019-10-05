@@ -26,7 +26,7 @@
         <link rel="stylesheet" href="~/css/site.min.css" asp-append-version="true" />
     </environment>
 
-    <!-- Begin Cookie Consent plugin by Silktide - https://silktide.com/cookieconsent -->
+    <!-- Begin Cookie Consent plugin by Silktide - https://silktide.com/cookieconsent
     <script type="text/javascript">
         window.cookieconsent_options = {
             "message": "Acest site folosește cookie-uri pentru personalizarea conținutului afișat, autentificare și altele. Prin utilizarea site-ului nostru acceptați folosirea acestora.",
@@ -38,8 +38,8 @@
     </script>
 
     <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/1.0.9/cookieconsent.min.js"></script>
-    <!-- End Cookie Consent plugin -->
-
+     End Cookie Consent plugin -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.css" />
 </head>
 <body>
     <nav class="navbar navbar-inverse navbar-fixed-top">
@@ -82,8 +82,10 @@
     <div class="container body-content">
         @RenderBody()
     </div>
-    <p>&copy; 2018 - Serverless.Forum</p>
-
+    <center>
+        <p>&nbsp;</p>
+        <p>&copy; 2018 - Serverless.Forum</p>
+    </center>
     <environment include="Development">
         <script src="~/lib/jquery/dist/jquery.js"></script>
         <script src="~/lib/bootstrap/dist/js/bootstrap.js"></script>
@@ -106,5 +108,28 @@
     </environment>
 
     @RenderSection("Scripts", required: false)
+
+    <script src="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.js" data-cfasync="false"></script>
+    <script>
+        window.cookieconsent.initialise({
+            "palette": {
+                "popup": {
+                    "background": "#edeff5",
+                    "text": "#838391"
+                },
+                "button": {
+                    "background": "#4b81e8"
+                }
+            },
+            "showLink": true,
+            "theme": "edgeless",
+            "content": {
+                "message": "Acest site folosește cookie-uri pentru personalizarea conținutului afișat, autentificare și altele. Prin utilizarea site-ului nostru acceptați folosirea acestora.",
+                "dismiss": "Am înțeles",
+                "link": "Află mai multe",
+                "href": "./AboutCookies"
+            }
+        });
+    </script>
 </body>
 </html>

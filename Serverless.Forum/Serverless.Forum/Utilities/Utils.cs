@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace Serverless.Forum.Utilities
 {
@@ -13,7 +15,7 @@ namespace Serverless.Forum.Utilities
         static Utils _instance = null;
         ClaimsPrincipal _anonymous = null;
 
-        public ClaimsPrincipal LoggedUserFromDbUser(PhpbbUsers user, forumContext dbContext)
+        public async Task<ClaimsPrincipal> LoggedUserFromDbUser(PhpbbUsers user, forumContext dbContext)
         {
             var groups = (from g in dbContext.PhpbbUserGroup
                           where g.UserId == user.UserId
@@ -30,9 +32,9 @@ namespace Serverless.Forum.Utilities
                                        && !alreadySet.Contains(gp.ForumId)
                                     select gp).ToList();
 
-            var topicPostsPerPage = from tpp in dbContext.PhpbbUserTopicPostNumber
-                                    where tpp.UserId == user.UserId
-                                    select KeyValuePair.Create(tpp.TopicId, tpp.PostNo);
+            var topicPostsPerPage = (from tpp in dbContext.PhpbbUserTopicPostNumber
+                                     where tpp.UserId == user.UserId
+                                     select KeyValuePair.Create(tpp.TopicId, tpp.PostNo)).ToList();
 
             var intermediary = new LoggedUser
             {
@@ -67,14 +69,16 @@ namespace Serverless.Forum.Utilities
 
         public static Utils Instance => _instance ?? (_instance = new Utils());
 
-        public ClaimsPrincipal GetAnonymousUser(forumContext _dbContext)
+        public async Task<ClaimsPrincipal> GetAnonymousUser(forumContext _dbContext)
         {
             if (_anonymous != null)
             {
                 return _anonymous;
             }
 
-            _anonymous = LoggedUserFromDbUser(_dbContext.PhpbbUsers.First(u => u.UserId == 1), _dbContext);
+            _anonymous = await LoggedUserFromDbUser(
+                await _dbContext.PhpbbUsers.FirstAsync(u => u.UserId == 1), 
+                _dbContext);
 
             return _anonymous;
         }

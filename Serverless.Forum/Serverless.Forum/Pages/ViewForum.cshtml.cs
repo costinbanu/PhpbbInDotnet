@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
 using Serverless.Forum.Utilities;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Web;
 
 namespace Serverless.Forum.Pages
@@ -22,21 +24,25 @@ namespace Serverless.Forum.Pages
         {
         }
 
-        public IActionResult OnGet(int ForumId)
+        public async Task<IActionResult> OnGet(int forumId)
         {
-            var thisForum = (from f in _dbContext.PhpbbForums
-                             where f.ForumId == ForumId
-                             select f).FirstOrDefault();
+            var thisForum = await (from f in _dbContext.PhpbbForums
+                                   where f.ForumId == forumId
+                                   select f)
+                             .FirstOrDefaultAsync()
+                             ;
 
             if (thisForum == null)
             {
-                return NotFound($"Forumul {ForumId} nu există.");
+                return NotFound($"Forumul {forumId} nu există.");
             }
 
+            var usr = await GetCurrentUserAsync();
+
             if (!string.IsNullOrEmpty(thisForum.ForumPassword) &&
-                (HttpContext.Session.GetInt32("ForumLogin") ?? -1) != ForumId)
+                (HttpContext.Session.GetInt32("ForumLogin") ?? -1) != forumId)
             {
-                if (CurrentUser.UserPermissions.Any(fp => fp.ForumId == ForumId && fp.AuthRoleId == 16))
+                if (usr.UserPermissions.Any(fp => fp.ForumId == forumId && fp.AuthRoleId == 16))
                 {
                     return RedirectToPage("Unauthorized");
                 }
@@ -45,7 +51,7 @@ namespace Serverless.Forum.Pages
                     return RedirectToPage("ForumLogin", new ForumLoginModel(_dbContext)
                     {
                         ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString),
-                        ForumId = ForumId,
+                        ForumId = forumId,
                         ForumName = thisForum.ForumName
                     });
                 }
@@ -54,12 +60,14 @@ namespace Serverless.Forum.Pages
             ForumTitle = HttpUtility.HtmlDecode(thisForum?.ForumName ?? "untitled");
 
             ParentForumId = thisForum.ParentId;
-            ParentForumTitle = HttpUtility.HtmlDecode((from pf in _dbContext.PhpbbForums
-                                                       where pf.ForumId == thisForum.ParentId
-                                                       select pf.ForumName).FirstOrDefault() ?? "untitled");
+            ParentForumTitle = HttpUtility.HtmlDecode(await (from pf in _dbContext.PhpbbForums
+                                                             where pf.ForumId == thisForum.ParentId
+                                                             select pf.ForumName)
+                                                       .FirstOrDefaultAsync()
+                                                        ?? "untitled");
 
             Forums = from f in _dbContext.PhpbbForums
-                     where f.ParentId == ForumId
+                     where f.ParentId == forumId
                      orderby f.LeftId
                      select new ForumDisplay
                      {
@@ -70,7 +78,7 @@ namespace Serverless.Forum.Pages
                      };
 
             Topics = (from t in _dbContext.PhpbbTopics
-                      where t.ForumId == ForumId
+                      where t.ForumId == forumId
                       orderby t.TopicLastPostTime descending
 
                       group t by t.TopicType into groups
@@ -86,7 +94,7 @@ namespace Serverless.Forum.Pages
 
                                    from j in joined.DefaultIfEmpty()
                                    let postCount = _dbContext.PhpbbPosts.Count(p => p.TopicId == g.TopicId)
-                                   let pageSize = CurrentUser.TopicPostsPerPage.ContainsKey(g.TopicId) ? CurrentUser.TopicPostsPerPage[g.TopicId] : 14
+                                   let pageSize = usr.TopicPostsPerPage.ContainsKey(g.TopicId) ? usr.TopicPostsPerPage[g.TopicId] : 14
                                    select new TopicDisplay
                                    {
                                        Id = g.TopicId,
@@ -97,7 +105,7 @@ namespace Serverless.Forum.Pages
                                        PostCount = _dbContext.PhpbbPosts.Count(p => p.TopicId == g.TopicId),
                                        Pagination = new _PaginationPartialModel
                                        {
-                                           Link = $"/ViewTopic?TopicId={g.TopicId}&PageNum=1",
+                                           Link = $"/ViewTopic?topicId={g.TopicId}&pageNum=1",
                                            Posts = postCount,
                                            PostsPerPage = pageSize,
                                            CurrentPage = 1

@@ -20,15 +20,19 @@ namespace Serverless.Forum.Pages
         {
             _dbContext = context;
         }
+
         public async Task<IActionResult> OnGet(string returnUrl)
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, Utils.Instance.GetAnonymousUser(_dbContext), new AuthenticationProperties
-            {
-                AllowRefresh = true,
-                ExpiresUtc = DateTimeOffset.Now.AddMonths(1),
-                IsPersistent = true,
-            });
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme, 
+                await Utils.Instance.GetAnonymousUser(_dbContext), 
+                new AuthenticationProperties
+                {
+                    AllowRefresh = true,
+                    ExpiresUtc = DateTimeOffset.Now.AddMonths(1),
+                    IsPersistent = true,
+                });
             return Redirect(HttpUtility.UrlDecode(returnUrl));
         }
     }

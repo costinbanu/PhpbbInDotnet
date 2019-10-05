@@ -7,11 +7,11 @@
 }
 @if (Model.ParentForumId != 0)
 {
-    <h3>Forum părinte: <a asp-page="/ViewForum" asp-route-ForumId="@Model.ParentForumId">@Model.ParentForumTitle</a></h3>
+    <h4>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@Model.ParentForumTitle</a></h4>
 }
 else
 {
-    <h3><a href="/">Prima pagină</a></h3>
+    <h4><a href="/">Prima pagină</a></h4>
 }
 <h2>Forum: @Model.ForumTitle</h2>
 <p>&nbsp;</p>
@@ -22,7 +22,7 @@ else
     {
         <div class="ForumListRow">
             <span class="ForumListLeft">
-                <a asp-page="/ViewForum" asp-route-ForumId="@forum.Id" class="nav-link">@forum.Name</a>
+                <a asp-page="/ViewForum" asp-route-forumId="@forum.Id" class="nav-link">@forum.Name</a>
             </span>
             <span class="ForumListRight">
                 Ultimul mesaj: @forum.LastPostTime?.ToString(User?.ToLoggedUser()?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
@@ -58,7 +58,7 @@ else
                     {
                         <span>&#x26A0;&#xFE0F;&nbsp;</span>
                     }
-                    <a asp-page="/ViewTopic" asp-route-TopicId="@topic.Id" asp-route-PageNum="1" class="nav-link">@Html.Raw(topic.Title)</a>
+                    <a asp-page="/ViewTopic" asp-route-topicId="@topic.Id" asp-route-pageNum="1" class="nav-link">@Html.Raw(topic.Title)</a>
                     <br />
                     @await Html.PartialAsync("_PaginationPartial", topic.Pagination, ViewData)
                 </span>
@@ -72,7 +72,7 @@ else
                     }
                     else
                     {
-                        <a asp-page="/User" asp-route-UserId="@topic.LastPosterId">@topic.LastPosterName</a>
+                        <a asp-page="/User" asp-route-userId="@topic.LastPosterId">@topic.LastPosterName</a>
                     }
                 </span>
             </div>

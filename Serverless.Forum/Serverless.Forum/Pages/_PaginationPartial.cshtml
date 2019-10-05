@@ -10,7 +10,7 @@
     var uri = HttpUtility.ParseQueryString(Model.Link);
     if (pager.TotalPages > 1)
     {
-        <span>Mergi la pagina:&nbsp;</span>
+        <label>Mergi la pagina:&nbsp;</label>
         if (pager.StartPage > 1)
         {
             uri.Set("PageNum", "1");

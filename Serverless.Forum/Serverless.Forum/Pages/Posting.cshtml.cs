@@ -3,6 +3,7 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Serverless.Forum.forum;
@@ -80,18 +81,19 @@ namespace Serverless.Forum.Pages
             _s3Client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1);
         }
 
-        public IActionResult OnGetForumPost(int forumId, int topicId)
+        public async Task<IActionResult> OnGetForumPost(int forumId, int topicId)
         {
-            if (CurrentUser.UserId == 1)
+            if ((await GetCurrentUserAsync()).UserId == 1)
             {
                 return Unauthorized();
             }
 
             ForumId = forumId;
             TopicId = topicId;
-            var curTopic = (from t in _dbContext.PhpbbTopics
-                            where t.TopicId == topicId
-                            select t).FirstOrDefault();
+            var curTopic = await (from t in _dbContext.PhpbbTopics
+                                  where t.TopicId == topicId
+                                  select t)
+                            .FirstOrDefaultAsync();
 
             if (curTopic == null)
             {
@@ -104,16 +106,17 @@ namespace Serverless.Forum.Pages
             return Page();
         }
 
-        public IActionResult OnGetQuoteForumPost(int postId)
+        public async Task<IActionResult> OnGetQuoteForumPost(int postId)
         {
-            if (CurrentUser.UserId == 1)
+            if ((await GetCurrentUserAsync()).UserId == 1)
             {
                 return Unauthorized();
             }
 
-            var curPost = (from p in _dbContext.PhpbbPosts
-                           where p.PostId == postId
-                           select p).FirstOrDefault();
+            var curPost = await (from p in _dbContext.PhpbbPosts
+                                 where p.PostId == postId
+                                 select p)
+                           .FirstOrDefaultAsync();
 
             if (curPost == null)
             {
@@ -123,9 +126,10 @@ namespace Serverless.Forum.Pages
             ForumId = curPost.ForumId;
             TopicId = curPost.TopicId;
 
-            var curTopic = (from t in _dbContext.PhpbbTopics
-                            where t.TopicId == TopicId
-                            select t).FirstOrDefault();
+            var curTopic = await (from t in _dbContext.PhpbbTopics
+                                  where t.TopicId == TopicId
+                                  select t)
+                            .FirstOrDefaultAsync();
 
             if (curTopic == null)
             {
@@ -140,9 +144,10 @@ namespace Serverless.Forum.Pages
             var curAuthor = curPost.PostUsername;
             if (string.IsNullOrWhiteSpace(curAuthor))
             {
-                curAuthor = (from u in _dbContext.PhpbbUsers
-                              where u.UserId == curPost.PosterId
-                              select u.Username).FirstOrDefault();
+                curAuthor = await (from u in _dbContext.PhpbbUsers
+                                   where u.UserId == curPost.PosterId
+                                   select u.Username)
+                              .FirstOrDefaultAsync();
             }
 
             PostText = $"[quote=\"{curAuthor}\"]{Environment.NewLine}{HttpUtility.HtmlDecode(RemoveBbCodeUid(curPost.PostText, curPost.BbcodeUid))}{Environment.NewLine}[/quote]";
@@ -152,14 +157,15 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPostAttachment(IList<IFormFile> files, string fileComment)
         {
-            if (CurrentUser.UserId == 1)
+            var usr = await GetCurrentUserAsync();
+            if (usr.UserId == 1)
             {
                 return RedirectToPage("Login", new LoginModel(_dbContext));
             }
 
             foreach (var file in files)
             {
-                var name = $"{CurrentUser.UserId ?? 0}_{Guid.NewGuid():n}";
+                var name = $"{usr.UserId ?? 0}_{Guid.NewGuid():n}";
                 var request = new PutObjectRequest
                 {
                     BucketName = _config["AwsS3BucketName"],
@@ -183,7 +189,7 @@ namespace Serverless.Forum.Pages
                     Mimetype = file.ContentType,
                     PhysicalFilename = name,
                     RealFilename = System.IO.Path.GetFileName(file.FileName),
-                    PosterId = CurrentUser.UserId.Value,
+                    PosterId = usr.UserId.Value,
                     TopicId = TopicId
                 });
             }
@@ -192,7 +198,8 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPostForumPost(int forumId, int topicId, string postSubject, string postText, string returnUrl)
         {
-            if (CurrentUser.UserId == 1)
+            var usr = await GetCurrentUserAsync();
+            if (usr.UserId == 1)
             {
                 return Unauthorized();
             }
@@ -201,7 +208,7 @@ namespace Serverless.Forum.Pages
             {
                 ForumId = forumId,
                 TopicId = topicId,
-                PosterId = CurrentUser.UserId.Value,
+                PosterId = usr.UserId.Value,
                 PostSubject = HttpUtility.HtmlEncode(postSubject),
                 PostText = HttpUtility.HtmlEncode(postText),
                 PostTime = DateTime.UtcNow.LocalTimeToTimestamp(),
@@ -220,9 +227,9 @@ namespace Serverless.Forum.Pages
                 PostEditTime = 0,
                 PostEditUser = 0,
                 PosterIp = HttpContext.Connection.RemoteIpAddress.ToString()
-            }).ConfigureAwait(false);
+            });
 
-            await _dbContext.SaveChangesAsync().ConfigureAwait(false);
+            await _dbContext.SaveChangesAsync();
 
             return RedirectToPage(HttpUtility.UrlDecode(returnUrl));
         }

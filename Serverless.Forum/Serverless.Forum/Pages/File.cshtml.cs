@@ -3,9 +3,11 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.forum;
 using Serverless.Forum.Utilities;
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -27,9 +29,9 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnGet(int Id)
         {
-            var file = (from a in _dbContext.PhpbbAttachments
-                        where a.AttachId == Id
-                        select a).FirstOrDefault();
+            var file = await (from a in _dbContext.PhpbbAttachments
+                              where a.AttachId == Id
+                              select a).FirstOrDefaultAsync();
 
             if (file == null)
             {
@@ -41,20 +43,31 @@ namespace Serverless.Forum.Pages
 
         private async Task<IActionResult> Renderfile(PhpbbAttachments file)
         {
-            var request = new GetObjectRequest
+            try
             {
-                BucketName = _config["AwsS3BucketName"],
-                Key = file.PhysicalFilename
-            };
+                var request = new GetObjectRequest
+                {
+                    BucketName = _config["AwsS3BucketName"],
+                    Key = file.PhysicalFilename
+                };
 
-            using (var response = await _s3Client.GetObjectAsync(request))
-            using (var responseStream = new MemoryStream())
+                using (var response = await _s3Client.GetObjectAsync(request))
+                using (var responseStream = new MemoryStream())
+                {
+                    await response.ResponseStream.CopyToAsync(responseStream);
+
+                    HttpContext.Response.Headers.Add("content-disposition", $"{(file.Mimetype.IsMimeTypeInline() ? "inline" : "attachment")}; filename={file.RealFilename}");
+
+                    return File(responseStream.GetBuffer(), file.Mimetype);
+                }
+            }
+            catch (AmazonS3Exception s3ex) when (s3ex.Message == "The specified key does not exist.")
             {
-                await response.ResponseStream.CopyToAsync(responseStream).ConfigureAwait(false);
-
-                HttpContext.Response.Headers.Add("content-disposition", $"{(file.Mimetype.IsMimeTypeInline() ? "inline" : "attachment")}; filename={file.RealFilename}");
-
-                return File(responseStream.GetBuffer(), file.Mimetype);
+                return NotFound($"Fișierul {file.AttachId} nu a fost găsit.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
             }
         }
     }

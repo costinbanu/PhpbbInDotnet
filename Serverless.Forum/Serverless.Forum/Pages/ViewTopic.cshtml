@@ -40,13 +40,14 @@
                     frames[j].src += "?w=" + (w - 20);
             }
         }
-        var postId = @(Model.PostId ?? -1);
+        var postId = @Json.Serialize(Model.PostId ?? -1);
+        var highlight = @Json.Serialize(Model.Highlight ?? true);
         if (postId != -1) {
             element = document.getElementById(postId);
             elementRect = element.getBoundingClientRect();
             absoluteElementTop = elementRect.top + window.pageYOffset;
             middle = absoluteElementTop - (window.innerHeight / 2);
-            if (element.parentNode) {
+            if (element.parentNode && highlight) {
                 element.parentNode.style.borderWidth = "5px"
                 element.parentNode.style.borderColor = "#33beff";
             }
@@ -57,19 +58,40 @@
 
 @if (Model.ForumId != null)
 {
-    <h3>Forum părinte: <a asp-page="/ViewForum" asp-route-ForumId="@Model.ForumId">@Model.ForumTitle</a></h3>
+    <h4>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@Model.ForumTitle</a></h4>
 }
 <h2>Subiect: @Model.TopicTitle</h2>
-<p>&nbsp;</p>
-<p style="margin:20px;">
-    @await Html.PartialAsync("_PaginationPartial", Model.Pagination, ViewData)
-</p>
+
+<table style="border:none">
+    <tr>
+
+        <td style="padding-right:20px">
+            @await Html.PartialAsync("_PaginationPartial", Model.Pagination, ViewData)
+        </td>
+
+        @if ((await Model.GetCurrentUserAsync()).UserId != 1)
+        {
+            <td>
+                <form method="post">
+                    <label>Mesaje afișate pe pagină:&nbsp;</label>
+                    <input type="hidden" name="topicId" value="@Model.TopicId" />
+                    <input type="hidden" name="postId" value="@Model.Posts.FirstOrDefault()?.Id" />
+                    @Html.DropDownList("userPostsPerPage", Model.PostsPerPage)
+                    &nbsp;
+                    <input type="submit" value="Salvează" />
+                </form>
+            </td>
+        }
+
+    </tr>
+</table>
+
 @foreach (var post in Model.Posts)
 {
     <div class="ForumListRow">
         <span class="ForumListLeft" id="@post.Id">
             <span class="PostTitle">
-                <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-PostId="@post.Id">@Html.Raw(post.PostTitle)</a>
+                <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@post.Id">@Html.Raw(post.PostTitle)</a>
             </span>
             <p>&nbsp;</p>
             @Html.Raw(post.PostText)
@@ -106,15 +128,71 @@
         </span>
     </div>
 }
-<p style="margin:20px;">
-    @await Html.PartialAsync("_PaginationPartial", Model.Pagination, ViewData)
-</p>
-<br />
+<p></p>
 @if (!Model.IsLocked)
 {
     <a asp-page="/Posting" asp-page-handler="ForumPost" asp-route-topicTitle="@Model.TopicTitle">Scrie un răspuns</a>
 }
 else
 {
-    <a href="#" title="Subiectul este închis, nu se mai pot trimite răspunsuri."><s>Scrie un răspuns</s></a>
+    <a title="Subiectul este închis, nu se mai pot trimite răspunsuri."><s>Scrie un răspuns</s></a>
 }
+<p></p>
+
+<table style="border:none;">
+    <tr>
+        @if (!Model.IsFirstPage)
+        {
+            <td style="padding-right:20px">
+                <a asp-page="/ViewTopic" asp-route-topicId="@Model.TopicId" asp-route-pageNum="@(Model.CurrentPage - 1)" style="text-decoration:none">
+                    <table border="0" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td style="font-size:3em; vertical-align:middle; padding-right:10px">
+                                &#x1F880;
+                            </td>
+                            <td style="vertical-align:middle;">
+                                Pagina<br />precedentă
+                            </td>
+                        </tr>
+                    </table>
+                </a>
+            </td>
+        }
+        <td style="padding-right:20px">
+            @await Html.PartialAsync("_PaginationPartial", Model.Pagination, ViewData)
+        </td>
+        @if ((await Model.GetCurrentUserAsync()).UserId != 1)
+        {
+            <td style="padding-right:20px">
+                <form method="post">
+                    <label>Mesaje afișate pe pagină:&nbsp;</label>
+                    <input type="hidden" name="topicId" value="@Model.TopicId" />
+                    <input type="hidden" name="postId" value="@Model.Posts.FirstOrDefault()?.Id" />
+                    @Html.DropDownList("userPostsPerPage", Model.PostsPerPage)
+                    &nbsp;
+                    <input type="submit" value="Salvează" />
+                </form>
+            </td>
+        }
+        @if (!Model.IsLastPage)
+        {
+            <td>
+                <a asp-page="/ViewTopic" asp-route-topicId="@Model.TopicId" asp-route-pageNum="@(Model.CurrentPage + 1)" style="text-decoration:none">
+                    <table border="0" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td style="vertical-align:middle;">
+                                Pagina<br />următoare
+                            </td>
+                            <td style="font-size:3em; vertical-align:middle; padding-left:10px">
+                                &#x1F882;
+                            </td>
+                        </tr>
+                    </table>
+                </a>
+            </td>
+        }
+    </tr>
+</table>
+
+
+

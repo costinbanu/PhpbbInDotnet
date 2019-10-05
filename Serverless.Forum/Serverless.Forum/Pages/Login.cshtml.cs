@@ -44,12 +44,15 @@ namespace Serverless.Forum.Pages
             }
             else
             {
-                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, Utils.Instance.LoggedUserFromDbUser(user.First(), _dbContext), new AuthenticationProperties
-                {
-                    AllowRefresh = true,
-                    ExpiresUtc = DateTimeOffset.Now.AddMonths(1),
-                    IsPersistent = true,
-                });
+                await HttpContext.SignInAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme, 
+                    await Utils.Instance.LoggedUserFromDbUser(user.First(), _dbContext), 
+                    new AuthenticationProperties
+                    {
+                        AllowRefresh = true,
+                        ExpiresUtc = DateTimeOffset.Now.AddMonths(1),
+                        IsPersistent = true,
+                    });
                 return Redirect(HttpUtility.UrlDecode(returnUrl));
             }
         }

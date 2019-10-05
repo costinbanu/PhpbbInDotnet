@@ -3,10 +3,8 @@ using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
 using Serverless.Forum.Pages;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
-using System.Text.RegularExpressions;
 
 namespace Serverless.Forum.Utilities
 {
@@ -38,7 +36,7 @@ namespace Serverless.Forum.Utilities
 
         public static _AttachmentPartialModel ToModel(this PhpbbAttachments dbAttachmentRecord)
         {
-            return new _AttachmentPartialModel (null, null)
+            return new _AttachmentPartialModel()
             {
                 FileName = dbAttachmentRecord.RealFilename,
                 Id = dbAttachmentRecord.AttachId,

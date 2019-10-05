@@ -17,7 +17,7 @@
     {
         <div class="ForumListRow">
             <span class="ForumListLeft" style="padding-left:20px">
-                <a asp-page="/ViewForum" asp-route-ForumId="@forum.Id" class="nav-link">@forum.Name</a>
+                <a asp-page="/ViewForum" asp-route-forumId="@forum.Id" class="nav-link">@forum.Name</a>
             </span>
             <span class="ForumListRight">
                 Ultimul mesaj: @forum.LastPostTime?.ToString(User?.ToLoggedUser()?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
@@ -29,7 +29,7 @@
                 }
                 else
                 {
-                    <a asp-page="/User" asp-route-UserId="@forum.LastPosterId">@forum.LastPosterName</a>
+                    <a asp-page="/User" asp-route-userId="@forum.LastPosterId">@forum.LastPosterName</a>
                 }
             </span>
         </div>

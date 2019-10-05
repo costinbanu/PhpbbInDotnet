@@ -25,11 +25,11 @@ namespace Serverless.Forum.Pages
             _dbContext = dbContext;
         }
 
-        public void OnGet(string ReturnUrl, int ForumId, string ForumName)
+        public void OnGet(string returnUrl, int forumId, string forumName)
         {
-            this.ReturnUrl = ReturnUrl;
-            this.ForumId = ForumId;
-            this.ForumName = ForumName;
+            ReturnUrl = returnUrl;
+            ForumId = forumId;
+            ForumName = forumName;
         }
 
         public IActionResult OnPost(string password, string returnUrl, int forumId)
