@@ -211,7 +211,7 @@ namespace Serverless.Forum.Pages
             {
                 postText = sr.Regex.Replace(postText, sr.Replacement);
             }
-
+            todo: add smiley pane in html
             await _dbContext.PhpbbPosts.AddAsync(new PhpbbPosts
             {
                 ForumId = forumId,
