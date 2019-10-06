@@ -70,12 +70,13 @@ namespace Serverless.Forum.Pages
             {
                 _currentTopic = await (from p in _dbContext.PhpbbPosts
                                        where p.PostId == postId
+
                                        join t in _dbContext.PhpbbTopics
                                        on p.TopicId equals t.TopicId
                                        into joined
+
                                        from j in joined
-                                       select j)
-                                 .FirstOrDefaultAsync();
+                                       select j).FirstOrDefaultAsync();
             }
 
             if (_currentTopic == null)
@@ -101,8 +102,7 @@ namespace Serverless.Forum.Pages
             {
                 _currentTopic = await (from t in _dbContext.PhpbbTopics
                                        where t.TopicId == topicId
-                                       select t)
-                                 .FirstOrDefaultAsync();
+                                       select t).FirstOrDefaultAsync();
             }
 
             if (_currentTopic == null)
@@ -122,8 +122,7 @@ namespace Serverless.Forum.Pages
 
                                 from j in joined
                                 where j.TopicId == topicId
-                                select f)
-                          .FirstOrDefaultAsync();
+                                select f).FirstOrDefaultAsync();
 
             if (!string.IsNullOrEmpty(parent.ForumPassword) &&
                 (HttpContext.Session.GetInt32("ForumLogin") ?? -1) != ForumId)
@@ -181,8 +180,8 @@ namespace Serverless.Forum.Pages
                                    PostCreationTime = p.PostTime.TimestampToLocalTime(),
                                    PostModifiedTime = p.PostEditTime.TimestampToLocalTime(),
                                    Id = p.PostId,
-                                   Attachments = (from ja in joinedAttachments.DefaultIfEmpty()
-                                                  select ja == null ? null : ja.ToModel()).ToList(),
+                                   Attachments = (from ja in joinedAttachments
+                                                  select ja.ToModel()).ToList(),
                                    BbcodeUid = p.BbcodeUid
                                }).ToList();
 
@@ -201,22 +200,23 @@ namespace Serverless.Forum.Pages
                 new BBTag("*", "<li>", "</li>", true, false),
                 new BBTag("list", "<${attr}>", "</${attr}>", true, true,
                     new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul" : $"ol type=\"{a.AttributeValue}\"")),
-                new BBTag("url", "<a href=\"${href}\">", "</a>", new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
-                new BBTag("color", "<span style=\"color:${code}\">", "</span>", new BBAttribute("code", ""), new BBAttribute("code", "code")),
+                new BBTag("url", "<a href=\"${href}\">", "</a>", 
+                    new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
+                new BBTag("color", "<span style=\"color:${code}\">", "</span>", 
+                    new BBAttribute("code", ""), 
+                    new BBAttribute("code", "code")),
                 new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>",
                     new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
-                new BBTag("attachment", "##AttachmentFileName=${content}##", "", false, true, new BBAttribute("num", ""), new BBAttribute("num", "num"))
+                new BBTag("attachment", "##AttachmentFileName=${content}##", "", false, true, 
+                    new BBAttribute("num", ""), 
+                    new BBAttribute("num", "num"))
             });
             var parser = new BBCodeParser(bbcodes);
-            var inlineAttachmentsPosts = new ConcurrentBag<(int PostId, PhpbbAttachments Attach)>();
+            var inlineAttachmentsPosts = new ConcurrentBag<(int PostId, /*PhpbbAttachments*/_AttachmentPartialModel Attach)>();
             var htmlCommentRegex = new Regex("<!--.*?-->", RegexOptions.Compiled | RegexOptions.Singleline);
             var newLineRegex = new Regex("\n", RegexOptions.Compiled | RegexOptions.Singleline);
-            var cachedAttachments = (from a in _dbContext.PhpbbAttachments
-                                     join p in postsInPage
-                                     on a.PostMsgId equals p.Id
-                                     into joined
-                                     from j in joined
-                                     select a).ToList();
+
+            var smileyRegex = new Regex("{SMILIES_PATH}", RegexOptions.Compiled | RegexOptions.Singleline);
 
             Parallel.ForEach(postsInPage, (p, state1) =>
             {
@@ -224,25 +224,13 @@ namespace Serverless.Forum.Pages
                 p.PostText = HttpUtility.HtmlDecode(parser.ToHtml(p.PostText, p.BbcodeUid));
                 p.PostText = newLineRegex.Replace(p.PostText, "<br/>");
                 p.PostText = htmlCommentRegex.Replace(p.PostText, string.Empty);
-                p.Attachments.Clear();
+                p.PostText = smileyRegex.Replace(p.PostText, "./images/smilies");
 
-                Parallel.ForEach(from a in cachedAttachments
-                                 where a.PostMsgId == p.Id
-                                 select a, 
-                                 (candidate, state2) =>
+                Parallel.ForEach(p.Attachments, (candidate, state2) =>
                 {
-                    if (p.PostText.Contains($"##AttachmentFileName={candidate.RealFilename}##"))
+                    if (p.PostText.Contains($"##AttachmentFileName={candidate.FileName}##"))
                     {
-
-                        inlineAttachmentsPosts.Add((p.Id.Value, (from a in cachedAttachments
-                                                                where a.PostMsgId == p.Id
-                                                                    && a.RealFilename == candidate.RealFilename
-                                                                select a).FirstOrDefault()
-                                                    ));
-                    }
-                    else
-                    {
-                        p.Attachments.Add(candidate.ToModel());
+                        inlineAttachmentsPosts.Add((p.Id.Value, candidate));
                     }
                 });
             });
@@ -254,12 +242,13 @@ namespace Serverless.Forum.Pages
                                           select a)
                 {
                     p.PostText = p.PostText.Replace(
-                        $"##AttachmentFileName={candidate.Attach.RealFilename}##",
+                        $"##AttachmentFileName={candidate.Attach.FileName}##",
                         await RenderRazorViewToString(
                             "_AttachmentPartial",
-                            candidate.Attach.ToModel()
+                            candidate.Attach
                         )
                     );
+                    p.Attachments.Remove(candidate.Attach);
                 }
             });
             TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
@@ -307,15 +296,11 @@ namespace Serverless.Forum.Pages
             return RedirectToPage("ViewTopic", "ByPostId", new { postId = postId, highlight = false });
         }
 
-        private readonly object _syncRoot = new object();
         private async Task<string> RenderRazorViewToString(string viewName, _AttachmentPartialModel model)
         {
             try
             {
-                var actionContext = new ActionContext(_context, _context.GetRouteData(), new ActionDescriptor
-                {
-                    RouteValues = ValueCopy(PageContext.ActionDescriptor.RouteValues)
-                });
+                var actionContext = new ActionContext(_context, _context.GetRouteData(), PageContext.ActionDescriptor);
 
 
                 var viewResult = _viewEngine.FindView(actionContext, viewName, false); 
@@ -359,20 +344,6 @@ namespace Serverless.Forum.Pages
             {
                 _dbPosts = Utils.Instance.GetPosts(topicId, _dbContext);
             }
-        }
-
-        private T ValueCopy<T>(T other)
-        {
-            return JsonConvert.DeserializeObject<T>(
-                JsonConvert.SerializeObject(
-                    other, 
-                    Formatting.Indented, 
-                    new JsonSerializerSettings
-                    {
-                        ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-                    }
-                )
-            );
         }
     }
 }

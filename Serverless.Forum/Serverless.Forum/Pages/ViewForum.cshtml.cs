@@ -28,9 +28,7 @@ namespace Serverless.Forum.Pages
         {
             var thisForum = await (from f in _dbContext.PhpbbForums
                                    where f.ForumId == forumId
-                                   select f)
-                             .FirstOrDefaultAsync()
-                             ;
+                                   select f).FirstOrDefaultAsync();
 
             if (thisForum == null)
             {
@@ -62,9 +60,7 @@ namespace Serverless.Forum.Pages
             ParentForumId = thisForum.ParentId;
             ParentForumTitle = HttpUtility.HtmlDecode(await (from pf in _dbContext.PhpbbForums
                                                              where pf.ForumId == thisForum.ParentId
-                                                             select pf.ForumName)
-                                                       .FirstOrDefaultAsync()
-                                                        ?? "untitled");
+                                                             select pf.ForumName).FirstOrDefaultAsync() ?? "untitled");
 
             Forums = from f in _dbContext.PhpbbForums
                      where f.ParentId == forumId

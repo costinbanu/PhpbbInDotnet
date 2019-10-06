@@ -115,8 +115,7 @@ namespace Serverless.Forum.Pages
 
             var curPost = await (from p in _dbContext.PhpbbPosts
                                  where p.PostId == postId
-                                 select p)
-                           .FirstOrDefaultAsync();
+                                 select p).FirstOrDefaultAsync();
 
             if (curPost == null)
             {
@@ -128,8 +127,7 @@ namespace Serverless.Forum.Pages
 
             var curTopic = await (from t in _dbContext.PhpbbTopics
                                   where t.TopicId == TopicId
-                                  select t)
-                            .FirstOrDefaultAsync();
+                                  select t).FirstOrDefaultAsync();
 
             if (curTopic == null)
             {
@@ -146,8 +144,7 @@ namespace Serverless.Forum.Pages
             {
                 curAuthor = await (from u in _dbContext.PhpbbUsers
                                    where u.UserId == curPost.PosterId
-                                   select u.Username)
-                              .FirstOrDefaultAsync();
+                                   select u.Username).FirstOrDefaultAsync();
             }
 
             PostText = $"[quote=\"{curAuthor}\"]{Environment.NewLine}{HttpUtility.HtmlDecode(RemoveBbCodeUid(curPost.PostText, curPost.BbcodeUid))}{Environment.NewLine}[/quote]";
@@ -202,6 +199,17 @@ namespace Serverless.Forum.Pages
             if (usr.UserId == 1)
             {
                 return Unauthorized();
+            }
+
+
+            foreach (var sr in from s in _dbContext.PhpbbSmilies
+                               select new
+                               {
+                                   Regex = new Regex(Regex.Escape(s.Code), RegexOptions.Compiled | RegexOptions.Singleline),
+                                   Replacement = $"<img src=\"./images/smilies/{s.SmileyUrl.Trim('/')}\" />"
+                               })
+            {
+                postText = sr.Regex.Replace(postText, sr.Replacement);
             }
 
             await _dbContext.PhpbbPosts.AddAsync(new PhpbbPosts
