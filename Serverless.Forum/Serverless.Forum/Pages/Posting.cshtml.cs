@@ -22,45 +22,17 @@ namespace Serverless.Forum.Pages
 {
     public class PostingModel : ModelWithLoggedUser
     {
-        public forumContext DbContext => _dbContext;
         private readonly IAmazonS3 _s3Client;
         private readonly IConfiguration _config;
 
-        public Lazy<List<PhpbbBbcodes>> DbBbCodes => 
-            new Lazy<List<PhpbbBbcodes>>(() =>
-                (from c in _dbContext.PhpbbBbcodes
-                 where c.DisplayOnPosting == 1
-                 select c).ToList()
+        public Lazy<List<PhpbbBbcodes>> DbBbCodes { get; private set; }
+        public Lazy<List<string>> BbCodes { get; private set; }
+        public Lazy<Dictionary<string, string>> BbCodeHelplines { get; private set; }
+        public (string Codes, string HelpLines) BbCodesForJs => (
+            JsonConvert.SerializeObject(BbCodes.Value, Formatting.Indented), 
+            JsonConvert.SerializeObject(BbCodeHelplines.Value, Formatting.Indented)
         );
-
-        public Lazy<List<string>> BbCodes =>
-            new Lazy<List<string>>(() =>
-            {
-                var codes = new List<string>(Constants.BBCODES);
-                foreach (var bbCode in DbBbCodes.Value)
-                {
-                    codes.Add($"[{bbCode.BbcodeTag}]");
-                    codes.Add($"[/{bbCode.BbcodeTag}]");
-                }
-                return codes;
-            }
-        );
-
-        public Lazy<Dictionary<string, string>> BbCodeHelplines =>
-            new Lazy<Dictionary<string, string>>(() =>
-            {
-                var helplines = new Dictionary<string, string>(Constants.BBCODE_HELPLINES);
-                foreach (var bbCode in DbBbCodes.Value)
-                {
-                    var index = BbCodes.Value.IndexOf($"[{bbCode.BbcodeTag}]");
-                    helplines.Add($"cb_{index}", bbCode.BbcodeHelpline);
-                }
-                return helplines;
-            }
-        );
-
-        public (string Codes, string HelpLines) BbCodesForJs => 
-            (JsonConvert.SerializeObject(BbCodes.Value, Formatting.Indented), JsonConvert.SerializeObject(BbCodeHelplines.Value, Formatting.Indented));
+        public Lazy<List<PhpbbSmilies>> Smilies { get; private set; }
 
         ////https://stackoverflow.com/questions/54963951/aws-lambda-file-upload-to-asp-net-core-2-1-razor-page-is-corrupting-binary
         //[BindProperty]
@@ -68,17 +40,53 @@ namespace Serverless.Forum.Pages
         //[Display(Name = "Attachment")]
         //public IFormFile Attachment { get; set; }
 
-        public string TopicTitle { get; set; }
-        public string PostTitle { get; set; }
-        public string PostText { get; set; }
-        public int ForumId { get; set; }
-        public int TopicId { get; set; }
+        public string TopicTitle { get; private set; }
+        public string PostTitle { get; private set; }
+        public string PostText { get; private set; }
+        public int ForumId { get; private set; }
+        public int TopicId { get; private set; }
         public Lazy<List<PhpbbAttachments>> PostAttachments => new Lazy<List<PhpbbAttachments>>(() => new List<PhpbbAttachments>());
 
         public PostingModel(forumContext context, IConfiguration config) : base(context)
         {
             _config = config;
             _s3Client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1);
+
+            DbBbCodes = new Lazy<List<PhpbbBbcodes>>(() =>
+                (from c in _dbContext.PhpbbBbcodes
+                 where c.DisplayOnPosting == 1
+                 select c).ToList()
+            );
+
+            BbCodes = new Lazy<List<string>>(() =>
+                {
+                    var codes = new List<string>(Constants.BBCODES);
+                    foreach (var bbCode in DbBbCodes.Value)
+                    {
+                        codes.Add($"[{bbCode.BbcodeTag}]");
+                        codes.Add($"[/{bbCode.BbcodeTag}]");
+                    }
+                    return codes;
+                }
+            );
+
+            BbCodeHelplines = new Lazy<Dictionary<string, string>>(() =>
+                {
+                    var helplines = new Dictionary<string, string>(Constants.BBCODE_HELPLINES);
+                    foreach (var bbCode in DbBbCodes.Value)
+                    {
+                        var index = BbCodes.Value.IndexOf($"[{bbCode.BbcodeTag}]");
+                        helplines.Add($"cb_{index}", bbCode.BbcodeHelpline);
+                    }
+                    return helplines;
+                }
+            );
+
+            Smilies = new Lazy<List<PhpbbSmilies>>(() => (from s in _dbContext.PhpbbSmilies
+                                                          group s by s.SmileyUrl into unique
+                                                          select unique.First())
+                                                          .OrderBy(s => s.SmileyOrder)
+                                                          .ToList());
         }
 
         public async Task<IActionResult> OnGetForumPost(int forumId, int topicId)
@@ -92,8 +100,7 @@ namespace Serverless.Forum.Pages
             TopicId = topicId;
             var curTopic = await (from t in _dbContext.PhpbbTopics
                                   where t.TopicId == topicId
-                                  select t)
-                            .FirstOrDefaultAsync();
+                                  select t).FirstOrDefaultAsync();
 
             if (curTopic == null)
             {
@@ -147,7 +154,7 @@ namespace Serverless.Forum.Pages
                                    select u.Username).FirstOrDefaultAsync();
             }
 
-            PostText = $"[quote=\"{curAuthor}\"]{Environment.NewLine}{HttpUtility.HtmlDecode(RemoveBbCodeUid(curPost.PostText, curPost.BbcodeUid))}{Environment.NewLine}[/quote]";
+            PostText = $"[quote=\"{curAuthor}\"]\n{HttpUtility.HtmlDecode(RemoveBbCodeUid(curPost.PostText, curPost.BbcodeUid))}\n[/quote]";
 
             return Page();
         }
@@ -211,7 +218,7 @@ namespace Serverless.Forum.Pages
             {
                 postText = sr.Regex.Replace(postText, sr.Replacement);
             }
-            todo: add smiley pane in html
+
             await _dbContext.PhpbbPosts.AddAsync(new PhpbbPosts
             {
                 ForumId = forumId,

@@ -51,5 +51,7 @@ namespace Serverless.Forum.Utilities
             {"e", "Listă: Adaugă element de listă"},
             {"d", "Flash: [flash=width,height]http://url[/flash]"}
         };
+
+        public static readonly string SMILEY_PATH = "./images/smilies";
     }
 }

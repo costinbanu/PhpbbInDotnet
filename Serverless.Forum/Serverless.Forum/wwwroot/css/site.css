@@ -134,7 +134,7 @@ input.button2 {
     border-left-color: rgb(234, 234, 234);
 }
 
-textarea.inputbox {
+/*textarea.inputbox {
     width: 85%;
 }
 
@@ -142,7 +142,7 @@ textarea.inputbox {
     background-color: #FFFFFF;
     border-color: #B4BAC0;
     color: #333333;
-}
+}*/
 
 .inputbox {
     background-color: #FFFFFF;
@@ -150,6 +150,13 @@ textarea.inputbox {
     color: #333333;
     padding: 2px;
     cursor: text;
+    float:left;
+    width:79%;
+}
+
+.smileybox {
+    float:right;
+    width:20%;
 }
 
 textarea {
@@ -160,9 +167,9 @@ textarea {
     line-height: 1.4em;
 }
 
-.fullwidth {
+/*.fullwidth {
     width: 100% !important;
-}
+}*/
 
 .AttachFieldsetDt {
     float: left;

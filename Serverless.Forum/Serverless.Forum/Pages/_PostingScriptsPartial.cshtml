@@ -321,6 +321,22 @@
         document.writeln('</table>');
     }
 
+    function change_palette() {
+        //dE('colour_palette');
+        e = document.getElementById('colour_palette');
+
+        if (e.style.visibility == 'visible') {
+            e.style.visibility = 'hidden';
+            e.style.position = 'absolute';
+            document.getElementById('bbpalette').value = 'Culoare font';
+        }
+        else {
+            e.style.visibility = 'visible';
+            e.style.position = 'relative';
+            document.getElementById('bbpalette').value = 'Ascunde culoarea fontului';
+        }
+    }
+
 
     /**
     * Caret Position object
@@ -373,5 +389,17 @@
             document.forms['attachForm'].style.visibility = 'visible'
         else
             document.forms['attachForm'].style.visibility = 'hidden'
+    }
+
+    function show_hidden_smilies(control) {
+        var container = document.getElementById('hiddenSmilies');
+        if (container.style.visibility == 'hidden') {
+            container.style.visibility = 'visible';
+            control.innerText = 'Arată mai puține';
+        }
+        else {
+            container.style.visibility = 'hidden';
+            control.innerText = 'Arată mai multe';
+        }
     }
 </script>

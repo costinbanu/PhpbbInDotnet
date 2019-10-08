@@ -1,4 +1,5 @@
 ﻿@page
+@using Serverless.Forum.Utilities
 @model Serverless.Forum.Pages.PostingModel
 @{
     ViewData["Title"] = "Posting";
@@ -16,61 +17,211 @@
 
 <h2>Răspunde: </h2>
 <form name="postform" method="post">
-    <dl style="clear: left;">
-        <dt><label for="subject">Subiect:</label></dt>
-        <dd><input type="text" name="subject" id="subject" size="45" maxlength="64" tabindex="2" value="@Model.PostTitle" class="inputbox fullwidth"></dd>
-    </dl>
-    <div id="colour_palette" style="display: none;">
-        <dl style="clear: left;">
-            <dt><label>Culoare font:</label></dt>
-            <dd>
-                <script type="text/javascript">
-                    // <![CDATA[
-                    function change_palette() {
-                        //dE('colour_palette');
-                        e = document.getElementById('colour_palette');
+        <table style="clear: left; width:79%; vertical-align:middle; display:block; border:none">
+            <tr>
+                <td style="width:100px">Subiect</td>
+                <td>
+                    <input type="text" name="subject" id="subject" size="45" maxlength="256" tabindex="2" value="@Model.PostTitle" class="inputbox fullwidth">
+                </td>
+            </tr>  
+            <tr id="colour_palette" style="position:absolute; visibility:hidden;">
+                <td>Culoare font:</td>
+                <td>
+                    <br/>
+                    <table style="border:none; margin:1px; padding:1px;">
+                        <tbody>
+                            <tr>
+                                <td style="width: 15px; height: 10px;" bgcolor="#000000"><a href="#" onclick="bbfontstyle('[color=#000000]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#000000" title="#000000" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#000040"><a href="#" onclick="bbfontstyle('[color=#000040]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#000040" title="#000040" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#000080"><a href="#" onclick="bbfontstyle('[color=#000080]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#000080" title="#000080" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#0000BF"><a href="#" onclick="bbfontstyle('[color=#0000BF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#0000BF" title="#0000BF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#0000FF"><a href="#" onclick="bbfontstyle('[color=#0000FF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#0000FF" title="#0000FF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#004000"><a href="#" onclick="bbfontstyle('[color=#004000]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#004000" title="#004000" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#004040"><a href="#" onclick="bbfontstyle('[color=#004040]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#004040" title="#004040" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#004080"><a href="#" onclick="bbfontstyle('[color=#004080]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#004080" title="#004080" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#0040BF"><a href="#" onclick="bbfontstyle('[color=#0040BF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#0040BF" title="#0040BF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#0040FF"><a href="#" onclick="bbfontstyle('[color=#0040FF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#0040FF" title="#0040FF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#008000"><a href="#" onclick="bbfontstyle('[color=#008000]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#008000" title="#008000" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#008040"><a href="#" onclick="bbfontstyle('[color=#008040]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#008040" title="#008040" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#008080"><a href="#" onclick="bbfontstyle('[color=#008080]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#008080" title="#008080" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#0080BF"><a href="#" onclick="bbfontstyle('[color=#0080BF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#0080BF" title="#0080BF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#0080FF"><a href="#" onclick="bbfontstyle('[color=#0080FF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#0080FF" title="#0080FF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#00BF00"><a href="#" onclick="bbfontstyle('[color=#00BF00]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#00BF00" title="#00BF00" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#00BF40"><a href="#" onclick="bbfontstyle('[color=#00BF40]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#00BF40" title="#00BF40" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#00BF80"><a href="#" onclick="bbfontstyle('[color=#00BF80]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#00BF80" title="#00BF80" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#00BFBF"><a href="#" onclick="bbfontstyle('[color=#00BFBF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#00BFBF" title="#00BFBF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#00BFFF"><a href="#" onclick="bbfontstyle('[color=#00BFFF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#00BFFF" title="#00BFFF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#00FF00"><a href="#" onclick="bbfontstyle('[color=#00FF00]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#00FF00" title="#00FF00" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#00FF40"><a href="#" onclick="bbfontstyle('[color=#00FF40]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#00FF40" title="#00FF40" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#00FF80"><a href="#" onclick="bbfontstyle('[color=#00FF80]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#00FF80" title="#00FF80" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#00FFBF"><a href="#" onclick="bbfontstyle('[color=#00FFBF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#00FFBF" title="#00FFBF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#00FFFF"><a href="#" onclick="bbfontstyle('[color=#00FFFF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#00FFFF" title="#00FFFF" width="15" height="10"></a></td>
+                            </tr>
+                            <tr>
+                                <td style="width: 15px; height: 10px;" bgcolor="#400000"><a href="#" onclick="bbfontstyle('[color=#400000]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#400000" title="#400000" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#400040"><a href="#" onclick="bbfontstyle('[color=#400040]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#400040" title="#400040" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#400080"><a href="#" onclick="bbfontstyle('[color=#400080]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#400080" title="#400080" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#4000BF"><a href="#" onclick="bbfontstyle('[color=#4000BF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#4000BF" title="#4000BF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#4000FF"><a href="#" onclick="bbfontstyle('[color=#4000FF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#4000FF" title="#4000FF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#404000"><a href="#" onclick="bbfontstyle('[color=#404000]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#404000" title="#404000" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#404040"><a href="#" onclick="bbfontstyle('[color=#404040]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#404040" title="#404040" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#404080"><a href="#" onclick="bbfontstyle('[color=#404080]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#404080" title="#404080" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#4040BF"><a href="#" onclick="bbfontstyle('[color=#4040BF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#4040BF" title="#4040BF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#4040FF"><a href="#" onclick="bbfontstyle('[color=#4040FF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#4040FF" title="#4040FF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#408000"><a href="#" onclick="bbfontstyle('[color=#408000]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#408000" title="#408000" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#408040"><a href="#" onclick="bbfontstyle('[color=#408040]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#408040" title="#408040" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#408080"><a href="#" onclick="bbfontstyle('[color=#408080]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#408080" title="#408080" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#4080BF"><a href="#" onclick="bbfontstyle('[color=#4080BF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#4080BF" title="#4080BF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#4080FF"><a href="#" onclick="bbfontstyle('[color=#4080FF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#4080FF" title="#4080FF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#40BF00"><a href="#" onclick="bbfontstyle('[color=#40BF00]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#40BF00" title="#40BF00" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#40BF40"><a href="#" onclick="bbfontstyle('[color=#40BF40]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#40BF40" title="#40BF40" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#40BF80"><a href="#" onclick="bbfontstyle('[color=#40BF80]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#40BF80" title="#40BF80" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#40BFBF"><a href="#" onclick="bbfontstyle('[color=#40BFBF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#40BFBF" title="#40BFBF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#40BFFF"><a href="#" onclick="bbfontstyle('[color=#40BFFF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#40BFFF" title="#40BFFF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#40FF00"><a href="#" onclick="bbfontstyle('[color=#40FF00]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#40FF00" title="#40FF00" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#40FF40"><a href="#" onclick="bbfontstyle('[color=#40FF40]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#40FF40" title="#40FF40" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#40FF80"><a href="#" onclick="bbfontstyle('[color=#40FF80]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#40FF80" title="#40FF80" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#40FFBF"><a href="#" onclick="bbfontstyle('[color=#40FFBF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#40FFBF" title="#40FFBF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#40FFFF"><a href="#" onclick="bbfontstyle('[color=#40FFFF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#40FFFF" title="#40FFFF" width="15" height="10"></a></td>
+                            </tr>
+                            <tr>
+                                <td style="width: 15px; height: 10px;" bgcolor="#800000"><a href="#" onclick="bbfontstyle('[color=#800000]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#800000" title="#800000" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#800040"><a href="#" onclick="bbfontstyle('[color=#800040]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#800040" title="#800040" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#800080"><a href="#" onclick="bbfontstyle('[color=#800080]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#800080" title="#800080" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#8000BF"><a href="#" onclick="bbfontstyle('[color=#8000BF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#8000BF" title="#8000BF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#8000FF"><a href="#" onclick="bbfontstyle('[color=#8000FF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#8000FF" title="#8000FF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#804000"><a href="#" onclick="bbfontstyle('[color=#804000]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#804000" title="#804000" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#804040"><a href="#" onclick="bbfontstyle('[color=#804040]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#804040" title="#804040" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#804080"><a href="#" onclick="bbfontstyle('[color=#804080]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#804080" title="#804080" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#8040BF"><a href="#" onclick="bbfontstyle('[color=#8040BF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#8040BF" title="#8040BF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#8040FF"><a href="#" onclick="bbfontstyle('[color=#8040FF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#8040FF" title="#8040FF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#808000"><a href="#" onclick="bbfontstyle('[color=#808000]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#808000" title="#808000" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#808040"><a href="#" onclick="bbfontstyle('[color=#808040]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#808040" title="#808040" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#808080"><a href="#" onclick="bbfontstyle('[color=#808080]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#808080" title="#808080" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#8080BF"><a href="#" onclick="bbfontstyle('[color=#8080BF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#8080BF" title="#8080BF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#8080FF"><a href="#" onclick="bbfontstyle('[color=#8080FF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#8080FF" title="#8080FF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#80BF00"><a href="#" onclick="bbfontstyle('[color=#80BF00]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#80BF00" title="#80BF00" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#80BF40"><a href="#" onclick="bbfontstyle('[color=#80BF40]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#80BF40" title="#80BF40" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#80BF80"><a href="#" onclick="bbfontstyle('[color=#80BF80]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#80BF80" title="#80BF80" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#80BFBF"><a href="#" onclick="bbfontstyle('[color=#80BFBF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#80BFBF" title="#80BFBF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#80BFFF"><a href="#" onclick="bbfontstyle('[color=#80BFFF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#80BFFF" title="#80BFFF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#80FF00"><a href="#" onclick="bbfontstyle('[color=#80FF00]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#80FF00" title="#80FF00" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#80FF40"><a href="#" onclick="bbfontstyle('[color=#80FF40]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#80FF40" title="#80FF40" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#80FF80"><a href="#" onclick="bbfontstyle('[color=#80FF80]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#80FF80" title="#80FF80" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#80FFBF"><a href="#" onclick="bbfontstyle('[color=#80FFBF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#80FFBF" title="#80FFBF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#80FFFF"><a href="#" onclick="bbfontstyle('[color=#80FFFF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#80FFFF" title="#80FFFF" width="15" height="10"></a></td>
+                            </tr>
+                            <tr>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BF0000"><a href="#" onclick="bbfontstyle('[color=#BF0000]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BF0000" title="#BF0000" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BF0040"><a href="#" onclick="bbfontstyle('[color=#BF0040]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BF0040" title="#BF0040" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BF0080"><a href="#" onclick="bbfontstyle('[color=#BF0080]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BF0080" title="#BF0080" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BF00BF"><a href="#" onclick="bbfontstyle('[color=#BF00BF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BF00BF" title="#BF00BF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BF00FF"><a href="#" onclick="bbfontstyle('[color=#BF00FF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BF00FF" title="#BF00FF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BF4000"><a href="#" onclick="bbfontstyle('[color=#BF4000]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BF4000" title="#BF4000" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BF4040"><a href="#" onclick="bbfontstyle('[color=#BF4040]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BF4040" title="#BF4040" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BF4080"><a href="#" onclick="bbfontstyle('[color=#BF4080]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BF4080" title="#BF4080" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BF40BF"><a href="#" onclick="bbfontstyle('[color=#BF40BF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BF40BF" title="#BF40BF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BF40FF"><a href="#" onclick="bbfontstyle('[color=#BF40FF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BF40FF" title="#BF40FF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BF8000"><a href="#" onclick="bbfontstyle('[color=#BF8000]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BF8000" title="#BF8000" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BF8040"><a href="#" onclick="bbfontstyle('[color=#BF8040]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BF8040" title="#BF8040" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BF8080"><a href="#" onclick="bbfontstyle('[color=#BF8080]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BF8080" title="#BF8080" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BF80BF"><a href="#" onclick="bbfontstyle('[color=#BF80BF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BF80BF" title="#BF80BF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BF80FF"><a href="#" onclick="bbfontstyle('[color=#BF80FF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BF80FF" title="#BF80FF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BFBF00"><a href="#" onclick="bbfontstyle('[color=#BFBF00]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BFBF00" title="#BFBF00" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BFBF40"><a href="#" onclick="bbfontstyle('[color=#BFBF40]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BFBF40" title="#BFBF40" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BFBF80"><a href="#" onclick="bbfontstyle('[color=#BFBF80]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BFBF80" title="#BFBF80" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BFBFBF"><a href="#" onclick="bbfontstyle('[color=#BFBFBF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BFBFBF" title="#BFBFBF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BFBFFF"><a href="#" onclick="bbfontstyle('[color=#BFBFFF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BFBFFF" title="#BFBFFF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BFFF00"><a href="#" onclick="bbfontstyle('[color=#BFFF00]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BFFF00" title="#BFFF00" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BFFF40"><a href="#" onclick="bbfontstyle('[color=#BFFF40]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BFFF40" title="#BFFF40" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BFFF80"><a href="#" onclick="bbfontstyle('[color=#BFFF80]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BFFF80" title="#BFFF80" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BFFFBF"><a href="#" onclick="bbfontstyle('[color=#BFFFBF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BFFFBF" title="#BFFFBF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#BFFFFF"><a href="#" onclick="bbfontstyle('[color=#BFFFFF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#BFFFFF" title="#BFFFFF" width="15" height="10"></a></td>
+                            </tr>
+                            <tr>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FF0000"><a href="#" onclick="bbfontstyle('[color=#FF0000]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FF0000" title="#FF0000" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FF0040"><a href="#" onclick="bbfontstyle('[color=#FF0040]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FF0040" title="#FF0040" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FF0080"><a href="#" onclick="bbfontstyle('[color=#FF0080]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FF0080" title="#FF0080" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FF00BF"><a href="#" onclick="bbfontstyle('[color=#FF00BF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FF00BF" title="#FF00BF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FF00FF"><a href="#" onclick="bbfontstyle('[color=#FF00FF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FF00FF" title="#FF00FF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FF4000"><a href="#" onclick="bbfontstyle('[color=#FF4000]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FF4000" title="#FF4000" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FF4040"><a href="#" onclick="bbfontstyle('[color=#FF4040]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FF4040" title="#FF4040" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FF4080"><a href="#" onclick="bbfontstyle('[color=#FF4080]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FF4080" title="#FF4080" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FF40BF"><a href="#" onclick="bbfontstyle('[color=#FF40BF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FF40BF" title="#FF40BF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FF40FF"><a href="#" onclick="bbfontstyle('[color=#FF40FF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FF40FF" title="#FF40FF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FF8000"><a href="#" onclick="bbfontstyle('[color=#FF8000]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FF8000" title="#FF8000" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FF8040"><a href="#" onclick="bbfontstyle('[color=#FF8040]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FF8040" title="#FF8040" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FF8080"><a href="#" onclick="bbfontstyle('[color=#FF8080]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FF8080" title="#FF8080" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FF80BF"><a href="#" onclick="bbfontstyle('[color=#FF80BF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FF80BF" title="#FF80BF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FF80FF"><a href="#" onclick="bbfontstyle('[color=#FF80FF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FF80FF" title="#FF80FF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FFBF00"><a href="#" onclick="bbfontstyle('[color=#FFBF00]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FFBF00" title="#FFBF00" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FFBF40"><a href="#" onclick="bbfontstyle('[color=#FFBF40]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FFBF40" title="#FFBF40" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FFBF80"><a href="#" onclick="bbfontstyle('[color=#FFBF80]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FFBF80" title="#FFBF80" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FFBFBF"><a href="#" onclick="bbfontstyle('[color=#FFBFBF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FFBFBF" title="#FFBFBF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FFBFFF"><a href="#" onclick="bbfontstyle('[color=#FFBFFF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FFBFFF" title="#FFBFFF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FFFF00"><a href="#" onclick="bbfontstyle('[color=#FFFF00]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FFFF00" title="#FFFF00" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FFFF40"><a href="#" onclick="bbfontstyle('[color=#FFFF40]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FFFF40" title="#FFFF40" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FFFF80"><a href="#" onclick="bbfontstyle('[color=#FFFF80]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FFFF80" title="#FFFF80" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FFFFBF"><a href="#" onclick="bbfontstyle('[color=#FFFFBF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FFFFBF" title="#FFFFBF" width="15" height="10"></a></td>
+                                <td style="width: 15px; height: 10px;" bgcolor="#FFFFFF"><a href="#" onclick="bbfontstyle('[color=#FFFFFF]', '[/color]'); return false;"><img src="./images/spacer.gif" alt="#FFFFFF" title="#FFFFFF" width="15" height="10"></a></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    <br/>
 
-                        if (e.style.display == 'block') {
-                            e.style.display = 'none';
-                            document.getElementById('bbpalette').value = 'Ascunde culoarea fontului';
-                        }
-                        else {
-                            e.style.display = 'block';
-                            document.getElementById('bbpalette').value = 'Culoare font';
-                        }
-                    }
-
-                    colorPalette('h', 15, 10);
-                    // ]]>
-                </script>
-            </dd>
-        </dl>
+    <div class="bbcodebuttons">
+        <input type="button" class="button2" accesskey="b" name="addbbcode0" value=" B " style="font-weight:bold; width: 30px" onclick="bbstyle(0)" title="Text bold: [b]text[/b]">
+        <input type="button" class="button2" accesskey="i" name="addbbcode2" value=" i " style="font-style:italic; width: 30px" onclick="bbstyle(2)" title="Text italic: [i]text[/i]">
+        <input type="button" class="button2" accesskey="u" name="addbbcode4" value=" u " style="text-decoration: underline; width: 30px" onclick="bbstyle(4)" title="Text subliniat: [u]text[/u]">
+        <input type="button" class="button2" accesskey="q" name="addbbcode6" value="Quote" style="width: 50px" onclick="bbstyle(6)" title="Citează text: [quote]text[/quote]">
+        <input type="button" class="button2" accesskey="c" name="addbbcode8" value="Code" style="width: 40px" onclick="bbstyle(8)" title="Afişează cod: [code]cod[/code]">
+        <input type="button" class="button2" accesskey="l" name="addbbcode10" value="List" style="width: 40px" onclick="bbstyle(10)" title="Listă: [list]text[/list]">
+        <input type="button" class="button2" accesskey="o" name="addbbcode12" value="List=" style="width: 40px" onclick="bbstyle(12)" title="Listă ordonată: [list=]text[/list]">
+        <input type="button" class="button2" accesskey="t" name="addlitsitem" value="[*]" style="width: 40px" onclick="bbstyle(-1)" title="Listează articolele: [*]text[/*]">
+        <input type="button" class="button2" accesskey="p" name="addbbcode14" value="Img" style="width: 40px" onclick="bbstyle(14)" title="Adaugă imagine: [img]http://cale_imagine[/img]">
+        <input type="button" class="button2" accesskey="w" name="addbbcode16" value="URL" style="text-decoration: underline; width: 40px" onclick="bbstyle(16)" title="Adaugă URL: [url]http://url[/url] sau [url=http://url]text URL[/url]">
+        <select name="addbbcode20" onchange="bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;" title="Mărime font: [size=85]text mic[/size]">
+            <option value="50">Micuţ</option>
+            <option value="85">Mic</option>
+            <option value="100" selected="selected">Normal</option>
+            <option value="150">Mare</option>
+            <option value="200">Imens</option>
+        </select>
+        <input type="button" class="button2" name="bbpalette" id="bbpalette" value="Culoare font" onclick="change_palette();" title="Culoare font: [color=red]text[/color]  Sfat: de asemenea puteţi folosi culorile hexazecimale culoare=#FF0000">
+        @foreach (var code in Model.DbBbCodes.Value)
+        {
+            var index = Model.BbCodes.Value.IndexOf($"[{code.BbcodeTag}]");
+            var name = $"addbbcode{index}";
+            <input type="button" class="button2" name="@name" value="@code.BbcodeTag" onclick="bbstyle(@index)" title="@code.BbcodeHelpline" />
+        }
     </div>
-    <input type="button" class="button2" accesskey="b" name="addbbcode0" value=" B " style="font-weight:bold; width: 30px" onclick="bbstyle(0)" title="Text bold: [b]text[/b]">
-    <input type="button" class="button2" accesskey="i" name="addbbcode2" value=" i " style="font-style:italic; width: 30px" onclick="bbstyle(2)" title="Text italic: [i]text[/i]">
-    <input type="button" class="button2" accesskey="u" name="addbbcode4" value=" u " style="text-decoration: underline; width: 30px" onclick="bbstyle(4)" title="Text subliniat: [u]text[/u]">
-    <input type="button" class="button2" accesskey="q" name="addbbcode6" value="Quote" style="width: 50px" onclick="bbstyle(6)" title="Citează text: [quote]text[/quote]">
-    <input type="button" class="button2" accesskey="c" name="addbbcode8" value="Code" style="width: 40px" onclick="bbstyle(8)" title="Afişează cod: [code]cod[/code]">
-    <input type="button" class="button2" accesskey="l" name="addbbcode10" value="List" style="width: 40px" onclick="bbstyle(10)" title="Listă: [list]text[/list]">
-    <input type="button" class="button2" accesskey="o" name="addbbcode12" value="List=" style="width: 40px" onclick="bbstyle(12)" title="Listă ordonată: [list=]text[/list]">
-    <input type="button" class="button2" accesskey="t" name="addlitsitem" value="[*]" style="width: 40px" onclick="bbstyle(-1)" title="Listează articolele: [*]text[/*]">
-    <input type="button" class="button2" accesskey="p" name="addbbcode14" value="Img" style="width: 40px" onclick="bbstyle(14)" title="Adaugă imagine: [img]http://cale_imagine[/img]">
-    <input type="button" class="button2" accesskey="w" name="addbbcode16" value="URL" style="text-decoration: underline; width: 40px" onclick="bbstyle(16)" title="Adaugă URL: [url]http://url[/url] sau [url=http://url]text URL[/url]">
-    <select name="addbbcode20" onchange="bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;" title="Mărime font: [size=85]text mic[/size]">
-        <option value="50">Micuţ</option>
-        <option value="85">Mic</option>
-        <option value="100" selected="selected">Normal</option>
-        <option value="150">Mare</option>
-        <option value="200">Imens</option>
-    </select>
-    <input type="button" class="button2" name="bbpalette" id="bbpalette" value="Culoare font" onclick="change_palette();" title="Culoare font: [color=red]text[/color]  Sfat: de asemenea puteţi folosi culorile hexazecimale culoare=#FF0000">
-    @foreach (var code in Model.DbBbCodes.Value)
-    {
-        var index = Model.BbCodes.Value.IndexOf($"[{code.BbcodeTag}]");
-        var name = $"addbbcode{index}";
-        <input type="button" class="button2" name="@name" value="@code.BbcodeTag" onclick="bbstyle(@index)" title="@code.BbcodeHelpline" />
-    }
-    <textarea name="message" id="message" rows="15" cols="76" style="width:100%" tabindex="3" onselect="storeCaret(this);" onclick="storeCaret(this);" onkeyup="storeCaret(this);" onfocus="initInsertions();" class="inputbox">@Model.PostText</textarea>
+    <br/>
+    <textarea name="message" id="message" rows="15" cols="76" tabindex="3" onselect="storeCaret(this);" onclick="storeCaret(this);" onkeyup="storeCaret(this);" onfocus="initInsertions();" class="inputbox">@Model.PostText</textarea>
+    <div id="smiley-box" class="smileybox">
+
+        <strong>Zâmbete</strong><br />
+
+        @foreach (var smiley in Model.Smilies.Value.Where(s => s.DisplayOnPosting == 1))
+        {
+            <a href="#a" onclick="insert_text('@smiley.Code', true); return false;">
+                <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
+            </a>
+        }
+        <p>&nbsp;</p>
+        <a href="#a" onclick="show_hidden_smilies(this)">Arată mai multe</a>
+        <p>&nbsp;</p>
+        <div id="hiddenSmilies" style="visibility:hidden">
+            @foreach (var smiley in Model.Smilies.Value.Where(s => s.DisplayOnPosting == 0))
+            {
+                <a href="#a" onclick="insert_text('@smiley.Code', true); return false;">
+                    <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
+                </a>
+            }
+        </div>
+    </div>
 </form>
 <p>&nbsp;</p>
 <input type="button" onclick="showAttachPanel()" value="Adaugă fișier atașat" />

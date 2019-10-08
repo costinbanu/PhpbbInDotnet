@@ -224,7 +224,7 @@ namespace Serverless.Forum.Pages
                 p.PostText = HttpUtility.HtmlDecode(parser.ToHtml(p.PostText, p.BbcodeUid));
                 p.PostText = newLineRegex.Replace(p.PostText, "<br/>");
                 p.PostText = htmlCommentRegex.Replace(p.PostText, string.Empty);
-                p.PostText = smileyRegex.Replace(p.PostText, "./images/smilies");
+                p.PostText = smileyRegex.Replace(p.PostText, Constants.SMILEY_PATH);
 
                 Parallel.ForEach(p.Attachments, (candidate, state2) =>
                 {
