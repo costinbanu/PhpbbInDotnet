@@ -183,6 +183,13 @@ textarea {
     margin-left: 0px;
 }
 
+.ColorPaletteTable {
+    border-collapse: collapse;
+    padding: 1px;
+    margin: 1px;
+    line-height:1em;
+}
+
 label {
     text-decoration: none !important;
     font-weight: normal !important;
