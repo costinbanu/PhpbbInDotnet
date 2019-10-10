@@ -39,14 +39,14 @@ namespace Serverless.Forum.Pages
 
             if (user.Count() != 1)
             {
-                errorMessage = "Authentication error!";
+                errorMessage = "Numele de utilizator și/sau parola sunt greșite!";
                 return Page();
             }
             else
             {
                 await HttpContext.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme, 
-                    await Utils.Instance.LoggedUserFromDbUser(user.First(), _dbContext), 
+                    Utils.Instance.LoggedUserFromDbUser(user.First(), _dbContext), 
                     new AuthenticationProperties
                     {
                         AllowRefresh = true,

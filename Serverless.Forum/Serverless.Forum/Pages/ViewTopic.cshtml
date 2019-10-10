@@ -4,6 +4,10 @@
 @{
     ViewData["Title"] = $"{Model.ForumTitle} - {Model.TopicTitle}";
     Layout = "~/Pages/_Layout.cshtml";
+    var IsAnonymous = (await Model.GetCurrentUser()).UserId == 1;
+    var IsLocked = Model.IsLocked && 
+                   !(await Model.IsCurrentUserAdminHere(Model.ForumId.Value)) && 
+                   !(await Model.IsCurrentUserModHere(Model.ForumId.Value));
 }
 
 <script type="text/javascript">
@@ -65,13 +69,13 @@
 <table style="border:none">
     <tr>
 
-        <td style="padding-right:20px">
+        <td style="padding-right:10px; border-right: @(IsAnonymous || !Model.Pagination.HasPages ? "none" : "solid 1px black")">
             @await Html.PartialAsync("_PaginationPartial", Model.Pagination, ViewData)
         </td>
 
-        @if ((await Model.GetCurrentUserAsync()).UserId != 1)
+        @if (!IsAnonymous)
         {
-            <td>
+            <td style="padding-left:10px">
                 <form method="post">
                     <label>Mesaje afișate pe pagină:&nbsp;</label>
                     <input type="hidden" name="topicId" value="@Model.TopicId" />
@@ -99,11 +103,13 @@
                                        where !a.IsDisplayedInline
                                        select a)
             {
-                <p>------------------</p>
-                @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
+                <br/>
+                <span style="padding:10px; margin:10px; border: solid 1px grey; border-radius: 5px; display:inline-block">
+                    @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
+                </span>
             }
             <br />
-            @if (!Model.IsLocked)
+            @if (!IsLocked)
             {
                 <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-postId="@post.Id">Răspunde cu citat</a>
             }
@@ -129,7 +135,7 @@
     </div>
 }
 <p></p>
-@if (!Model.IsLocked)
+@if (!IsLocked)
 {
     <a asp-page="/Posting" asp-page-handler="ForumPost" asp-route-topicTitle="@Model.TopicTitle">Scrie un răspuns</a>
 }
@@ -143,7 +149,7 @@ else
     <tr>
         @if (!Model.IsFirstPage)
         {
-            <td style="padding-right:20px">
+            <td style="padding-right:10px; border-right: solid 1px black">
                 <a asp-page="/ViewTopic" asp-route-topicId="@Model.TopicId" asp-route-pageNum="@(Model.CurrentPage - 1)" style="text-decoration:none">
                     <table border="0" cellpadding="0" cellspacing="0">
                         <tr>
@@ -158,12 +164,12 @@ else
                 </a>
             </td>
         }
-        <td style="padding-right:20px">
+        <td style="padding-right:10px; padding-left:10px; border-right: @((Model.IsLastPage && IsAnonymous) || !Model.Pagination.HasPages ? "none" : "solid 1px black")">
             @await Html.PartialAsync("_PaginationPartial", Model.Pagination, ViewData)
         </td>
-        @if ((await Model.GetCurrentUserAsync()).UserId != 1)
+        @if (!IsAnonymous)
         {
-            <td style="padding-right:20px">
+            <td style="padding-right:10px; padding-left:10px; border-right: @(Model.IsLastPage ? "none" : "solid 1px black")">
                 <form method="post">
                     <label>Mesaje afișate pe pagină:&nbsp;</label>
                     <input type="hidden" name="topicId" value="@Model.TopicId" />
@@ -176,7 +182,7 @@ else
         }
         @if (!Model.IsLastPage)
         {
-            <td>
+            <td style="padding-left:10px">
                 <a asp-page="/ViewTopic" asp-route-topicId="@Model.TopicId" asp-route-pageNum="@(Model.CurrentPage + 1)" style="text-decoration:none">
                     <table border="0" cellpadding="0" cellspacing="0">
                         <tr>

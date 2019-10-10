@@ -19,7 +19,7 @@ namespace Serverless.Forum.Contracts
 
         public string UserDateFormat { get; set; } = null;
 
-        public IEnumerable<ForumAuthentication> ForumAuthentications { get; set; } = null;
+        //public IEnumerable<ForumAuthentication> ForumAuthentications { get; set; } = null;
 
         public class Permissions
         {
@@ -32,11 +32,11 @@ namespace Serverless.Forum.Contracts
             public int AuthSetting { get; set; } = 0;
         }
 
-        public class ForumAuthentication
-        {
-            public int ForumId { get; set; }
+        //public class ForumAuthentication
+        //{
+        //    public int ForumId { get; set; }
 
-            public DateTime AcquiredAt { get; set; }
-        }
+        //    public DateTime AcquiredAt { get; set; }
+        //}
     }
 }

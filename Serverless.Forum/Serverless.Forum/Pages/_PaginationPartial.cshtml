@@ -1,26 +1,22 @@
 ﻿@model Serverless.Forum.Pages._PaginationPartialModel
-@using System.Web;
-@using JW
 
 <!DOCTYPE html>
 
 @{
-    var noOfPages = Model.Posts / Model.PostsPerPage + 1;
-    var pager = new Pager(Model.Posts, Model.CurrentPage, Model.PostsPerPage, 7);
-    var uri = HttpUtility.ParseQueryString(Model.Link);
-    if (pager.TotalPages > 1)
+
+    if (Model.HasPages)
     {
         <label>Mergi la pagina:&nbsp;</label>
-        if (pager.StartPage > 1)
+        if (Model.Pager.StartPage > 1)
         {
-            uri.Set("PageNum", "1");
+            Model.Link.Set("PageNum", "1");
             <span style="display:inline-block; background-color:gainsboro; padding:2px;">
-                <a href="@uri.ToString()">1</a>
+                <a href="@Model.Link.ToString()">1</a>
             </span>
             <span>&nbsp;...</span>
         }
 
-        foreach (var curPage in pager.Pages)
+        foreach (var curPage in Model.Pager.Pages)
         {
             if (curPage == Model.CurrentPage)
             {
@@ -28,19 +24,19 @@
             }
             else
             {
-                uri.Set("PageNum", curPage.ToString());
+                Model.Link.Set("PageNum", curPage.ToString());
                 <span style="display:inline-block; background-color:gainsboro; padding:2px;">
-                    <a href="@uri.ToString()">@curPage</a>
+                    <a href="@Model.Link.ToString()">@curPage</a>
                 </span>
             }
         }
 
-        if (pager.EndPage + 3 < pager.TotalPages)
+        if (Model.Pager.EndPage + 3 < Model.Pager.TotalPages)
         {
-            uri.Set("PageNum", pager.TotalPages.ToString());
+            Model.Link.Set("PageNum", Model.Pager.TotalPages.ToString());
             <span>&nbsp;...</span>
             <span style="display:inline-block; background-color:gainsboro; padding:2px;">
-                <a href="@uri.ToString()">@pager.TotalPages</a>
+                <a href="@Model.Link.ToString()">@Model.Pager.TotalPages</a>
             </span>
         }
     }

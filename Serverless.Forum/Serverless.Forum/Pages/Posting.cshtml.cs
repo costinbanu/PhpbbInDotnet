@@ -25,14 +25,15 @@ namespace Serverless.Forum.Pages
         private readonly IAmazonS3 _s3Client;
         private readonly IConfiguration _config;
 
-        public Lazy<List<PhpbbBbcodes>> DbBbCodes { get; private set; }
-        public Lazy<List<string>> BbCodes { get; private set; }
-        public Lazy<Dictionary<string, string>> BbCodeHelplines { get; private set; }
+        public List<PhpbbBbcodes> DbBbCodes { get; private set; }
+        public List<string> BbCodes { get; private set; }
+        public Dictionary<string, string> BbCodeHelplines { get; private set; }
         public (string Codes, string HelpLines) BbCodesForJs => (
-            JsonConvert.SerializeObject(BbCodes.Value, Formatting.Indented), 
-            JsonConvert.SerializeObject(BbCodeHelplines.Value, Formatting.Indented)
+            JsonConvert.SerializeObject(BbCodes, Formatting.Indented), 
+            JsonConvert.SerializeObject(BbCodeHelplines, Formatting.Indented)
         );
-        public Lazy<List<PhpbbSmilies>> Smilies { get; private set; }
+        public List<PhpbbSmilies> Smilies { get; private set; }
+        public IEnumerable<KeyValuePair<string, string>> Users { get; private set; }
 
         ////https://stackoverflow.com/questions/54963951/aws-lambda-file-upload-to-asp-net-core-2-1-razor-page-is-corrupting-binary
         //[BindProperty]
@@ -45,53 +46,50 @@ namespace Serverless.Forum.Pages
         public string PostText { get; private set; }
         public int ForumId { get; private set; }
         public int TopicId { get; private set; }
-        public Lazy<List<PhpbbAttachments>> PostAttachments => new Lazy<List<PhpbbAttachments>>(() => new List<PhpbbAttachments>());
+        public List<PhpbbAttachments> PostAttachments;
 
         public PostingModel(forumContext context, IConfiguration config) : base(context)
         {
             _config = config;
             _s3Client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1);
 
-            DbBbCodes = new Lazy<List<PhpbbBbcodes>>(() =>
-                (from c in _dbContext.PhpbbBbcodes
-                 where c.DisplayOnPosting == 1
-                 select c).ToList()
-            );
+            DbBbCodes = (from c in _dbContext.PhpbbBbcodes
+                         where c.DisplayOnPosting == 1
+                         select c).ToList();
 
-            BbCodes = new Lazy<List<string>>(() =>
-                {
-                    var codes = new List<string>(Constants.BBCODES);
-                    foreach (var bbCode in DbBbCodes.Value)
-                    {
-                        codes.Add($"[{bbCode.BbcodeTag}]");
-                        codes.Add($"[/{bbCode.BbcodeTag}]");
-                    }
-                    return codes;
-                }
-            );
+            BbCodes = new List<string>(Constants.BBCODES);
+            foreach (var bbCode in DbBbCodes)
+            {
+                BbCodes.Add($"[{bbCode.BbcodeTag}]");
+                BbCodes.Add($"[/{bbCode.BbcodeTag}]");
+            }
 
-            BbCodeHelplines = new Lazy<Dictionary<string, string>>(() =>
-                {
-                    var helplines = new Dictionary<string, string>(Constants.BBCODE_HELPLINES);
-                    foreach (var bbCode in DbBbCodes.Value)
-                    {
-                        var index = BbCodes.Value.IndexOf($"[{bbCode.BbcodeTag}]");
-                        helplines.Add($"cb_{index}", bbCode.BbcodeHelpline);
-                    }
-                    return helplines;
-                }
-            );
 
-            Smilies = new Lazy<List<PhpbbSmilies>>(() => (from s in _dbContext.PhpbbSmilies
-                                                          group s by s.SmileyUrl into unique
-                                                          select unique.First())
-                                                          .OrderBy(s => s.SmileyOrder)
-                                                          .ToList());
+            BbCodeHelplines = new Dictionary<string, string>(Constants.BBCODE_HELPLINES);
+            foreach (var bbCode in DbBbCodes)
+            {
+                var index = BbCodes.IndexOf($"[{bbCode.BbcodeTag}]");
+                BbCodeHelplines.Add($"cb_{index}", bbCode.BbcodeHelpline);
+            }
+
+
+            Smilies = (from s in _dbContext.PhpbbSmilies
+                       group s by s.SmileyUrl into unique
+                       select unique.First())
+                      .OrderBy(s => s.SmileyOrder)
+                      .ToList();
+
+            PostAttachments = new List<PhpbbAttachments>();
+
+            Users = from u in _dbContext.PhpbbUsers
+                    where u.UserId != 1 && u.UserType == 0
+                    orderby u.Username
+                    select KeyValuePair.Create(u.Username, $"[url=\"./User?UserId={u.UserId}\"]@{u.Username}[/url]");
         }
 
         public async Task<IActionResult> OnGetForumPost(int forumId, int topicId)
         {
-            if ((await GetCurrentUserAsync()).UserId == 1)
+            if ((await GetCurrentUser()).UserId == 1)
             {
                 return Unauthorized();
             }
@@ -115,7 +113,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnGetQuoteForumPost(int postId)
         {
-            if ((await GetCurrentUserAsync()).UserId == 1)
+            if ((await GetCurrentUser()).UserId == 1)
             {
                 return Unauthorized();
             }
@@ -161,7 +159,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPostAttachment(IList<IFormFile> files, string fileComment)
         {
-            var usr = await GetCurrentUserAsync();
+            var usr = await GetCurrentUser();
             if (usr.UserId == 1)
             {
                 return RedirectToPage("Login", new LoginModel(_dbContext));
@@ -184,7 +182,7 @@ namespace Serverless.Forum.Pages
                     throw new Exception("Failed to upload file");
                 }
 
-                PostAttachments.Value.Add(new PhpbbAttachments
+                PostAttachments.Add(new PhpbbAttachments
                 {
                     AttachComment = fileComment,
                     Extension = System.IO.Path.GetExtension(file.FileName),
@@ -202,7 +200,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPostForumPost(int forumId, int topicId, string postSubject, string postText, string returnUrl)
         {
-            var usr = await GetCurrentUserAsync();
+            var usr = await GetCurrentUser();
             if (usr.UserId == 1)
             {
                 return Unauthorized();
@@ -234,7 +232,7 @@ namespace Serverless.Forum.Pages
                 EnableMagicUrl = 1,
                 EnableSig = 1,
                 EnableSmilies = 1,
-                PostAttachment = (byte)(PostAttachments.Value.Any() ? 1 : 0),
+                PostAttachment = (byte)(PostAttachments.Any() ? 1 : 0),
                 PostChecksum = CalculateMD5Hash(HttpUtility.HtmlEncode(postText)),
                 PostEditCount = 0,
                 PostEditLocked = 0,

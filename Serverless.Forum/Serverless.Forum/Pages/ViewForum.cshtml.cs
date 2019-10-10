@@ -35,7 +35,7 @@ namespace Serverless.Forum.Pages
                 return NotFound($"Forumul {forumId} nu există.");
             }
 
-            var usr = await GetCurrentUserAsync();
+            var usr = await GetCurrentUser();
 
             if (!string.IsNullOrEmpty(thisForum.ForumPassword) &&
                 (HttpContext.Session.GetInt32("ForumLogin") ?? -1) != forumId)
@@ -99,13 +99,14 @@ namespace Serverless.Forum.Pages
                                        LastPosterName = HttpUtility.HtmlDecode(g.TopicLastPosterName),
                                        LastPostTime = g.TopicLastPostTime.TimestampToLocalTime(),
                                        PostCount = _dbContext.PhpbbPosts.Count(p => p.TopicId == g.TopicId),
-                                       Pagination = new _PaginationPartialModel
-                                       {
-                                           Link = $"/ViewTopic?topicId={g.TopicId}&pageNum=1",
-                                           Posts = postCount,
-                                           PostsPerPage = pageSize,
-                                           CurrentPage = 1
-                                       }
+                                       Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1)
+                                       //Pagination = new _PaginationPartialModel ()
+                                       //{
+                                       //    Link = $"/ViewTopic?topicId={g.TopicId}&pageNum=1",
+                                       //    Posts = postCount,
+                                       //    PostsPerPage = pageSize,
+                                       //    CurrentPage = 1
+                                       //}
                                    }
                       });
 

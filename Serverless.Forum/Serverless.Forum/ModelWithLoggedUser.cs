@@ -6,6 +6,8 @@ using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
 using Serverless.Forum.Utilities;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Serverless.Forum
@@ -13,13 +15,21 @@ namespace Serverless.Forum
     public class ModelWithLoggedUser : PageModel
     {
         protected readonly forumContext _dbContext;
+        protected readonly List<PhpbbAclRoles> _adminRoles;
+        protected readonly List<PhpbbAclRoles> _modRoles;
 
         public ModelWithLoggedUser(forumContext context)
         {
             _dbContext = context;
+            _adminRoles = (from r in _dbContext.PhpbbAclRoles
+                           where r.RoleType == "a_"
+                           select r).ToList();
+            _modRoles = (from r in _dbContext.PhpbbAclRoles
+                         where r.RoleType == "m_"
+                         select r).ToList();
         }
 
-        public async Task<LoggedUser> GetCurrentUserAsync()
+        public async Task<LoggedUser> GetCurrentUser()
         {
             var user = User;
             if (!user.Identity.IsAuthenticated)
@@ -39,16 +49,34 @@ namespace Serverless.Forum
             return user.ToLoggedUser();
         }
 
-        public async Task ReloadCurrentUserAsync()
+        public async Task<bool> IsCurrentUserAdminHere(int forumId)
         {
-            var current = (await GetCurrentUserAsync()).UserId;
+            return (from up in (await GetCurrentUser()).UserPermissions
+                    where up.ForumId == forumId || up.ForumId == 0
+                    join a in _adminRoles
+                    on up.AuthRoleId equals a.RoleId
+                    select up).Any();
+        }
+
+        public async Task<bool> IsCurrentUserModHere(int forumId)
+        {
+            return (from up in (await GetCurrentUser()).UserPermissions
+                    where up.ForumId == forumId || up.ForumId == 0
+                    join a in _modRoles
+                    on up.AuthRoleId equals a.RoleId
+                    select up).Any();
+        }
+
+        public async Task ReloadCurrentUser()
+        {
+            var current = (await GetCurrentUser()).UserId;
             if (current != 1)
             {
                 var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 await HttpContext.SignOutAsync();
                 await HttpContext.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme,
-                    await Utils.Instance.LoggedUserFromDbUser(
+                    Utils.Instance.LoggedUserFromDbUser(
                         await _dbContext.PhpbbUsers.FirstAsync(u => u.UserId == current),
                         _dbContext
                     ),

@@ -18,7 +18,7 @@ namespace Serverless.Forum.Pages
 
         public async Task OnGet()
         {
-            var usr = await GetCurrentUserAsync();
+            var usr = await GetCurrentUser();
             Forums = from f1 in _dbContext.PhpbbForums
                      where f1.ForumType == 0
                         && usr.UserPermissions != null

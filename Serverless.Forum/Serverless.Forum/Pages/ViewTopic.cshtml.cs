@@ -1,7 +1,6 @@
 ﻿using CodeKicker.BBCode.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -9,7 +8,6 @@ using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
 using Serverless.Forum.Utilities;
@@ -26,22 +24,22 @@ namespace Serverless.Forum.Pages
 {
     public class ViewTopicModel : ModelWithLoggedUser
     {
-        public List<PostDisplay> Posts;
-        public string TopicTitle;
-        public string ForumTitle;
-        public int? ForumId;
-        public _PaginationPartialModel Pagination;
-        public int? PostId;
-        public int? TopicId => _currentTopic?.TopicId;
-        public bool IsFirstPage;
-        public bool IsLastPage;
-        public int CurrentPage;
-        public bool IsLocked => (_currentTopic?.TopicStatus ?? 0) == 1;
+        public List<PostDisplay> Posts { get; private set; }
+        public string TopicTitle { get; private set; }
+        public string ForumTitle { get; private set; }
+        public int? ForumId { get; private set; }
+        public _PaginationPartialModel Pagination { get; private set; }
+        public int? PostId { get; private set; }
+        public bool IsFirstPage { get; private set; }
+        public bool IsLastPage { get; private set; }
+        public int CurrentPage { get; private set; }
         public readonly List<SelectListItem> PostsPerPage;
-        public bool? Highlight;
+        public bool? Highlight { get; private set; }
+        public int? TopicId => _currentTopic?.TopicId;
+        public bool IsLocked => (_currentTopic?.TopicStatus ?? 0) == 1;
 
-        private PhpbbTopics _currentTopic = null;
-        private IEnumerable<PhpbbPosts> _dbPosts = null;
+        private PhpbbTopics _currentTopic;
+        private IEnumerable<PhpbbPosts> _dbPosts;
         private readonly ICompositeViewEngine _viewEngine;
         private readonly IServiceProvider _serviceProvider;
         private readonly HttpContext _context;
@@ -83,7 +81,7 @@ namespace Serverless.Forum.Pages
             {
                 return NotFound($"Mesajul {postId} nu există.");
             }
-            var usr = await GetCurrentUserAsync();
+            var usr = await GetCurrentUser();
             var pageSize = usr.TopicPostsPerPage.ContainsKey(_currentTopic.TopicId) ? usr.TopicPostsPerPage[_currentTopic.TopicId] : 14;
             PostsPerPage.ForEach(ppp => ppp.Selected = int.TryParse(ppp.Value, out var value) && value == pageSize);
 
@@ -110,7 +108,7 @@ namespace Serverless.Forum.Pages
                 return NotFound($"Subiectul {topicId} nu există.");
             }
 
-            var usr = await GetCurrentUserAsync();
+            var usr = await GetCurrentUser();
             var pageSize = usr.TopicPostsPerPage.ContainsKey(topicId) ? usr.TopicPostsPerPage[topicId] : 14;
             PostsPerPage.ForEach(ppp => ppp.Selected = int.TryParse(ppp.Value, out var value) && value == pageSize);
 
@@ -124,10 +122,12 @@ namespace Serverless.Forum.Pages
                                 where j.TopicId == topicId
                                 select f).FirstOrDefaultAsync();
 
+            ForumId = parent?.ForumId;
+
             if (!string.IsNullOrEmpty(parent.ForumPassword) &&
                 (HttpContext.Session.GetInt32("ForumLogin") ?? -1) != ForumId)
             {
-                if ((await GetCurrentUserAsync()).UserPermissions.Any(fp => fp.ForumId == ForumId && fp.AuthRoleId == 16))
+                if ((await GetCurrentUser()).UserPermissions.Any(fp => fp.ForumId == ForumId && fp.AuthRoleId == 16))
                 {
                     return RedirectToPage("Unauthorized");
                 }
@@ -143,7 +143,6 @@ namespace Serverless.Forum.Pages
             }
 
             ForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? "untitled");
-            ForumId = parent?.ForumId;
 
             GetPostsLazy(topicId);
             var noOfPages = (_dbPosts.Count() / pageSize) + (_dbPosts.Count() % pageSize == 0 ? 0 : 1);
@@ -212,7 +211,7 @@ namespace Serverless.Forum.Pages
                     new BBAttribute("num", "num"))
             });
             var parser = new BBCodeParser(bbcodes);
-            var inlineAttachmentsPosts = new ConcurrentBag<(int PostId, /*PhpbbAttachments*/_AttachmentPartialModel Attach)>();
+            var inlineAttachmentsPosts = new ConcurrentBag<(int PostId, _AttachmentPartialModel Attach)>();
             var htmlCommentRegex = new Regex("<!--.*?-->", RegexOptions.Compiled | RegexOptions.Singleline);
             var newLineRegex = new Regex("\n", RegexOptions.Compiled | RegexOptions.Singleline);
 
@@ -253,20 +252,19 @@ namespace Serverless.Forum.Pages
             });
             TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
 
-            Pagination = new _PaginationPartialModel
-            {
-                Link = $"/ViewTopic?TopicId={topicId}&PageNum=1",
-                Posts = _dbContext.PhpbbPosts.Count(p => p.TopicId == topicId),
-                PostsPerPage = pageSize,
-                CurrentPage = pageNum
-            };
+            Pagination = new _PaginationPartialModel(
+                $"/ViewTopic?TopicId={topicId}&PageNum=1", 
+                _dbContext.PhpbbPosts.Count(p => p.TopicId == topicId), 
+                pageSize, 
+                pageNum
+            );
 
             return Page();
         }
 
         public async Task<IActionResult> OnPost(int topicId, int userPostsPerPage, int postId)
         {
-            var usr = await GetCurrentUserAsync();
+            var usr = await GetCurrentUser();
             var curValue = await _dbContext.PhpbbUserTopicPostNumber
                                            .FirstOrDefaultAsync(ppp => ppp.UserId == usr.UserId && 
                                                                        ppp.TopicId == topicId);
@@ -274,7 +272,7 @@ namespace Serverless.Forum.Pages
             async Task save()
             {
                 await _dbContext.SaveChangesAsync();
-                await ReloadCurrentUserAsync();
+                await ReloadCurrentUser();
             }
 
             if (curValue == null)

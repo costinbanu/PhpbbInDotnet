@@ -13,6 +13,8 @@
         {
             <img src="/File?Id=@Model.Id" />
             <br />
+            @Model.FileName
+
         }
         else
         {
@@ -21,11 +23,11 @@
                 <a asp-page="/File" asp-route-Id="@Model.Id">@Model.FileName</a>
             </video>
             <br />
+            @Model.FileName
         }
     }
     else
     {
         <a asp-page="/File" asp-route-Id="@Model.Id">@Model.FileName</a>
     }
-    @Model.FileName
 }

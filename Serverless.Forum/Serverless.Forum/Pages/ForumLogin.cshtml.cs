@@ -41,7 +41,7 @@ namespace Serverless.Forum.Pages
 
             if (forum.Count() != 1)
             {
-                ErrorMessage = "Authentication error!";
+                ErrorMessage = "Numele de utilizator și/sau parola sunt greșite!";
                 return Page();
             }
             else

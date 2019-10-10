@@ -15,7 +15,7 @@ namespace Serverless.Forum.Utilities
         static Utils _instance = null;
         ClaimsPrincipal _anonymous = null;
 
-        public async Task<ClaimsPrincipal> LoggedUserFromDbUser(PhpbbUsers user, forumContext dbContext)
+        public ClaimsPrincipal LoggedUserFromDbUser(PhpbbUsers user, forumContext dbContext)
         {
             var groups = (from g in dbContext.PhpbbUserGroup
                           where g.UserId == user.UserId
@@ -76,7 +76,7 @@ namespace Serverless.Forum.Utilities
                 return _anonymous;
             }
 
-            _anonymous = await LoggedUserFromDbUser(
+            _anonymous = LoggedUserFromDbUser(
                 await _dbContext.PhpbbUsers.FirstAsync(u => u.UserId == 1), 
                 _dbContext);
 

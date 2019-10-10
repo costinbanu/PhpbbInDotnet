@@ -74,9 +74,9 @@
             <option value="200">Imens</option>
         </select>
         <input type="button" class="button2" name="bbpalette" id="bbpalette" value="Culoare font" onclick="change_palette();" title="Culoare font: [color=red]text[/color]  Sfat: de asemenea puteţi folosi culorile hexazecimale culoare=#FF0000">
-        @foreach (var code in Model.DbBbCodes.Value)
+        @foreach (var code in Model.DbBbCodes)
         {
-            var index = Model.BbCodes.Value.IndexOf($"[{code.BbcodeTag}]");
+            var index = Model.BbCodes.IndexOf($"[{code.BbcodeTag}]");
             var name = $"addbbcode{index}";
             <input type="button" class="button2" name="@name" value="@code.BbcodeTag" onclick="bbstyle(@index)" title="@code.BbcodeHelpline" />
         }
@@ -88,7 +88,7 @@
 
         <strong>Zâmbete</strong><br />
 
-        @foreach (var smiley in Model.Smilies.Value.Where(s => s.DisplayOnPosting == 1))
+        @foreach (var smiley in Model.Smilies.Where(s => s.DisplayOnPosting == 1))
         {
             <a href="#a" onclick="insert_text('@smiley.Code', true); return false;">
                 <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
@@ -98,7 +98,7 @@
         <a href="#a" onclick="show_hidden_smilies(this)">Arată mai multe</a>
         <p>&nbsp;</p>
         <div id="hiddenSmilies" style="visibility:hidden">
-            @foreach (var smiley in Model.Smilies.Value.Where(s => s.DisplayOnPosting == 0))
+            @foreach (var smiley in Model.Smilies.Where(s => s.DisplayOnPosting == 0))
             {
                 <a href="#a" onclick="insert_text('@smiley.Code', true); return false;">
                     <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
@@ -128,16 +128,17 @@
 <script>
     var tribute = new Tribute({
         // menuContainer: document.getElementById('content'),
-        values: [
-            {
-                key: "Jordan Humphreys",
-                value: "[user]1[/user]"
-            },
-            {
-                key: "Sir Walter Riley",
-                value: "[user]2[/user]"
-            }
-        ],
+        //values: [
+        //    {
+        //        key: "Jordan Humphreys",
+        //        value: "[user]1[/user]"
+        //    },
+        //    {
+        //        key: "Sir Walter Riley",
+        //        value: "[user]2[/user]"
+        //    }
+        //],
+        values: @Json.Serialize(Model.Users) ,
         selectTemplate: function (item) {
             if (typeof item === "undefined") return null;
             if (this.range.isContentEditable(this.current.element)) {
@@ -155,8 +156,6 @@
         trigger: "@@",
         allowSpaces: true
     });
-
-   
 
     tribute.attach(document.getElementById("message"));
 </script>
