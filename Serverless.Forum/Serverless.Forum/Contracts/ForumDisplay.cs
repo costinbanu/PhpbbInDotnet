@@ -18,5 +18,7 @@ namespace Serverless.Forum.Contracts
         public DateTime? LastPostTime { get; set; } = null;
 
         public IEnumerable<ForumDisplay> Children { get; set; } = null;
+
+        public bool Unread { get; set; } = false;
     }
 }

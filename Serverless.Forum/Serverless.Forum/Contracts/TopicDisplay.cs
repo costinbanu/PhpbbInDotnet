@@ -18,6 +18,8 @@ namespace Serverless.Forum.Pages
         public int? PostCount { get; set; } = null;
 
         public _PaginationPartialModel Pagination { get; set; } = null;
+
+        public bool Unread { get; set; } = false;
     }
 
     public class TopicTransport

@@ -3,10 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using System.IO;
+using System.IO.Compression;
+using System.Text;
 
 namespace Serverless.Forum.Utilities
 {
@@ -15,7 +19,7 @@ namespace Serverless.Forum.Utilities
         static Utils _instance = null;
         ClaimsPrincipal _anonymous = null;
 
-        public ClaimsPrincipal LoggedUserFromDbUser(PhpbbUsers user, forumContext dbContext)
+        public async Task<ClaimsPrincipal> LoggedUserFromDbUser(PhpbbUsers user, forumContext dbContext)
         {
             var groups = (from g in dbContext.PhpbbUserGroup
                           where g.UserId == user.UserId
@@ -49,21 +53,22 @@ namespace Serverless.Forum.Utilities
                                        AuthOptionId = up.AuthOptionId,
                                        AuthRoleId = up.AuthRoleId,
                                        AuthSetting = up.AuthSetting
-                                   }).ToList().Union(
-                                    from gp in groupPermissions
-                                    select new LoggedUser.Permissions
-                                    {
-                                        ForumId = gp.ForumId,
-                                        AuthOptionId = gp.AuthOptionId,
-                                        AuthRoleId = gp.AuthRoleId,
-                                        AuthSetting = gp.AuthSetting
-                                    }).ToList(),
+                                   })
+                                   .ToList()
+                                   .Union((from gp in groupPermissions
+                                           select new LoggedUser.Permissions
+                                           {
+                                               ForumId = gp.ForumId,
+                                               AuthOptionId = gp.AuthOptionId,
+                                               AuthRoleId = gp.AuthRoleId,
+                                               AuthSetting = gp.AuthSetting
+                                           }).ToList()).ToList(),
                 TopicPostsPerPage = topicPostsPerPage.ToDictionary(k => k.Key, v => v.Value),
                 UserDateFormat = user.UserDateformat
             };
 
             var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
-            identity.AddClaim(new Claim(ClaimTypes.UserData, JsonConvert.SerializeObject(intermediary)));
+            identity.AddClaim(new Claim(ClaimTypes.UserData, await CompressObject(intermediary)));
             return new ClaimsPrincipal(identity);
         }
 
@@ -76,7 +81,7 @@ namespace Serverless.Forum.Utilities
                 return _anonymous;
             }
 
-            _anonymous = LoggedUserFromDbUser(
+            _anonymous = await LoggedUserFromDbUser(
                 await _dbContext.PhpbbUsers.FirstAsync(u => u.UserId == 1), 
                 _dbContext);
 
@@ -89,6 +94,34 @@ namespace Serverless.Forum.Utilities
                    where pp.TopicId == topicId
                    orderby pp.PostTime ascending
                    select pp;
+        }
+
+        public async Task<string> CompressObject<T>(T source)
+        {
+            using (var content = new MemoryStream(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(source))))
+            using (var memory = new MemoryStream())
+            using (var gzip = new GZipStream(memory, CompressionMode.Compress))
+            {
+                await content.CopyToAsync(gzip);
+                await gzip.FlushAsync();
+                return Convert.ToBase64String(memory.ToArray());
+            }
+        }
+
+        public async Task<T> DecompressObject<T>(string source)
+        {
+            if (string.IsNullOrWhiteSpace(source))
+            {
+                return default;
+            }
+            using (var content = new MemoryStream())
+            using (var memory = new MemoryStream(Convert.FromBase64String(source)))
+            using (var gzip = new GZipStream(memory, CompressionMode.Decompress))
+            {
+                await gzip.CopyToAsync(content);
+                await content.FlushAsync();
+                return JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(content.ToArray()));
+            }
         }
     }
 }

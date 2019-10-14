@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
 using Serverless.Forum.Utilities;
@@ -14,19 +15,22 @@ namespace Serverless.Forum
 {
     public class ModelWithLoggedUser : PageModel
     {
-        protected readonly forumContext _dbContext;
         protected readonly List<PhpbbAclRoles> _adminRoles;
         protected readonly List<PhpbbAclRoles> _modRoles;
+        protected readonly IConfiguration _config;
 
-        public ModelWithLoggedUser(forumContext context)
+        public ModelWithLoggedUser(IConfiguration config)
         {
-            _dbContext = context;
-            _adminRoles = (from r in _dbContext.PhpbbAclRoles
-                           where r.RoleType == "a_"
-                           select r).ToList();
-            _modRoles = (from r in _dbContext.PhpbbAclRoles
-                         where r.RoleType == "m_"
-                         select r).ToList();
+            _config = config;
+            using (var context = new forumContext(config))
+            {
+                _adminRoles = (from r in context.PhpbbAclRoles
+                               where r.RoleType == "a_"
+                               select r).ToList();
+                _modRoles = (from r in context.PhpbbAclRoles
+                             where r.RoleType == "m_"
+                             select r).ToList();
+            }
         }
 
         public async Task<LoggedUser> GetCurrentUser()
@@ -34,7 +38,10 @@ namespace Serverless.Forum
             var user = User;
             if (!user.Identity.IsAuthenticated)
             {
-                user = await Utils.Instance.GetAnonymousUser(_dbContext);
+                using (var context = new forumContext(_config))
+                {
+                    user = await Utils.Instance.GetAnonymousUser(context);
+                }
                 await HttpContext.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme,
                     user,
@@ -46,7 +53,7 @@ namespace Serverless.Forum
                     }
                 );
             }
-            return user.ToLoggedUser();
+            return await user.ToLoggedUser();
         }
 
         public async Task<bool> IsCurrentUserAdminHere(int forumId)
@@ -74,19 +81,22 @@ namespace Serverless.Forum
             {
                 var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 await HttpContext.SignOutAsync();
-                await HttpContext.SignInAsync(
-                    CookieAuthenticationDefaults.AuthenticationScheme,
-                    Utils.Instance.LoggedUserFromDbUser(
-                        await _dbContext.PhpbbUsers.FirstAsync(u => u.UserId == current),
-                        _dbContext
-                    ),
-                    new AuthenticationProperties
-                    {
-                        AllowRefresh = true,
-                        ExpiresUtc = result.Properties.ExpiresUtc,
-                        IsPersistent = true,
-                    }
-                );
+                using (var context = new forumContext(_config))
+                {
+                    await HttpContext.SignInAsync(
+                        CookieAuthenticationDefaults.AuthenticationScheme,
+                        await Utils.Instance.LoggedUserFromDbUser(
+                            await context.PhpbbUsers.FirstAsync(u => u.UserId == current),
+                            context
+                        ),
+                        new AuthenticationProperties
+                        {
+                            AllowRefresh = true,
+                            ExpiresUtc = result.Properties.ExpiresUtc,
+                            IsPersistent = true,
+                        }
+                    );
+                }
             }
         }
     }

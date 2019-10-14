@@ -1,10 +1,10 @@
-﻿using Newtonsoft.Json;
-using Serverless.Forum.Contracts;
+﻿using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
 using Serverless.Forum.Pages;
 using System;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace Serverless.Forum.Utilities
 {
@@ -19,12 +19,12 @@ namespace Serverless.Forum.Utilities
         public static long LocalTimeToTimestamp(this DateTime time)
         {
             var seed = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            return (int)time.Subtract(seed).TotalSeconds;
+            return (long)time.Subtract(seed).TotalSeconds;
         }
 
-        public static LoggedUser ToLoggedUser(this ClaimsPrincipal principal)
+        public static async Task<LoggedUser> ToLoggedUser(this ClaimsPrincipal principal)
         {
-            return JsonConvert.DeserializeObject<LoggedUser>(principal.Claims.FirstOrDefault()?.Value ?? "{}");
+            return await Utils.Instance.DecompressObject<LoggedUser>(principal.Claims.FirstOrDefault()?.Value);
         }
 
         public static bool IsMimeTypeInline(this string mimeType)

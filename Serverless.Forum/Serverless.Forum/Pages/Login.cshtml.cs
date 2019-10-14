@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Configuration;
 using Serverless.Forum.forum;
 using Serverless.Forum.Utilities;
 using System;
@@ -15,14 +16,13 @@ namespace Serverless.Forum.Pages
 {
     public class LoginModel : PageModel
     {
+        private readonly IConfiguration _config;
         public string returnUrl;
         public string errorMessage;
 
-        forumContext _dbContext;
-
-        public LoginModel(forumContext dbContext)
+        public LoginModel(IConfiguration config)
         {
-            _dbContext = dbContext;
+            _config = config;
         }
 
         public void OnGet(string ReturnUrl)
@@ -32,28 +32,31 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPost(string username, string password, string returnUrl, bool rememberMe = false)
         {
-            var user = from u in _dbContext.PhpbbUsers
-                       let cryptedPass = Crypter.Phpass.Crypt(password, u.UserPassword)
-                       where u.UsernameClean == username && cryptedPass == u.UserPassword
-                       select u;
+            using (var _dbContext = new forumContext(_config))
+            {
+                var user = from u in _dbContext.PhpbbUsers
+                           let cryptedPass = Crypter.Phpass.Crypt(password, u.UserPassword)
+                           where u.UsernameClean == username && cryptedPass == u.UserPassword
+                           select u;
 
-            if (user.Count() != 1)
-            {
-                errorMessage = "Numele de utilizator și/sau parola sunt greșite!";
-                return Page();
-            }
-            else
-            {
-                await HttpContext.SignInAsync(
-                    CookieAuthenticationDefaults.AuthenticationScheme, 
-                    Utils.Instance.LoggedUserFromDbUser(user.First(), _dbContext), 
-                    new AuthenticationProperties
-                    {
-                        AllowRefresh = true,
-                        ExpiresUtc = DateTimeOffset.Now.AddMonths(1),
-                        IsPersistent = true,
-                    });
-                return Redirect(HttpUtility.UrlDecode(returnUrl));
+                if (user.Count() != 1)
+                {
+                    errorMessage = "Numele de utilizator și/sau parola sunt greșite!";
+                    return Page();
+                }
+                else
+                {
+                    await HttpContext.SignInAsync(
+                        CookieAuthenticationDefaults.AuthenticationScheme,
+                        await Utils.Instance.LoggedUserFromDbUser(user.First(), _dbContext),
+                        new AuthenticationProperties
+                        {
+                            AllowRefresh = true,
+                            ExpiresUtc = DateTimeOffset.Now.AddMonths(1),
+                            IsPersistent = true,
+                        });
+                    return Redirect(HttpUtility.UrlDecode(returnUrl));
+                }
             }
         }
     }

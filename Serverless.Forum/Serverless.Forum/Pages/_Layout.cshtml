@@ -1,5 +1,4 @@
-﻿@using System.Text;
-@using System.Web
+﻿@using System.Web
 @using Microsoft.AspNetCore.DataProtection;
 @using Microsoft.AspNetCore.Http
 @using  Serverless.Forum.Contracts
@@ -7,6 +6,10 @@
 
 @inject IHttpContextAccessor _httpContext
 @inject IDataProtectionProvider _dpProvider
+
+@{ 
+    var currentUser = await User.ToLoggedUser();
+}
 
 <!DOCTYPE html>
 <html>
@@ -26,19 +29,6 @@
         <link rel="stylesheet" href="~/css/site.min.css" asp-append-version="true" />
     </environment>
 
-    <!-- Begin Cookie Consent plugin by Silktide - https://silktide.com/cookieconsent
-    <script type="text/javascript">
-        window.cookieconsent_options = {
-            "message": "Acest site folosește cookie-uri pentru personalizarea conținutului afișat, autentificare și altele. Prin utilizarea site-ului nostru acceptați folosirea acestora.",
-            "dismiss": "Sunt de acord",
-            "learnMore": "Mai multe detalii",
-            "link": "./about_cookies.html",
-            "theme": "dark-top"
-        };
-    </script>
-
-    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/1.0.9/cookieconsent.min.js"></script>
-     End Cookie Consent plugin -->
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.css" />
 </head>
 <body>
@@ -64,13 +54,13 @@
                     <li><a asp-page="/Index">Home</a></li>
                     <li><a asp-page="/Help">Help</a></li>
                     @{
-                        if (string.IsNullOrWhiteSpace(User?.ToLoggedUser()?.Username) || (User?.ToLoggedUser()?.UserId ?? 0) == 1)
+                        if (string.IsNullOrWhiteSpace(currentUser?.Username) || (currentUser?.UserId ?? 0) == 1)
                         {
                             <li><a href="#" onclick="loginForm.submit()">Login</a></li>
                         }
                         else
                         {
-                            <li><a asp-page="/User" asp-route-UserId="@User.ToLoggedUser().UserId">Welcome, @User.ToLoggedUser().Username!</a></li>
+                            <li><a asp-page="/User" asp-route-UserId="@currentUser.UserId">Welcome, @currentUser.Username!</a></li>
                             <li><a href="#" onclick="logoutForm.submit()">Logout</a></li>
                         }
                     }

@@ -20,7 +20,7 @@
                 <a asp-page="/ViewForum" asp-route-forumId="@forum.Id" class="nav-link">@forum.Name</a>
             </span>
             <span class="ForumListRight">
-                Ultimul mesaj: @forum.LastPostTime?.ToString(User?.ToLoggedUser()?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
+                Ultimul mesaj: @forum.LastPostTime?.ToString((await User?.ToLoggedUser())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
                 <br />
                 de&nbsp;
                 @if (forum.LastPosterId == null)

@@ -139,20 +139,20 @@
         //    }
         //],
         values: @Json.Serialize(Model.Users) ,
-        selectTemplate: function (item) {
-            if (typeof item === "undefined") return null;
-            if (this.range.isContentEditable(this.current.element)) {
-                return (
-                    '<span contenteditable="false"><a href="http://zurb.com" target="_blank" title="' +
-                    item.original.email +
-                    '">' +
-                    item.original.value +
-                    "</a></span>"
-                );
-            }
+        //selectTemplate: function (item) {
+        //    if (typeof item === "undefined") return null;
+        //    if (this.range.isContentEditable(this.current.element)) {
+        //        return (
+        //            '<span contenteditable="false"><a href="http://zurb.com" target="_blank" title="' +
+        //            item.original.email +
+        //            '">' +
+        //            item.original.value +
+        //            "</a></span>"
+        //        );
+        //    }
 
-            return item.original.value;
-        },
+        //    return item.original.value;
+        //},
         trigger: "@@",
         allowSpaces: true
     });
