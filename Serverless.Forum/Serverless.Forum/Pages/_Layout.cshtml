@@ -57,6 +57,7 @@
                         if (string.IsNullOrWhiteSpace(currentUser?.Username) || (currentUser?.UserId ?? 0) == 1)
                         {
                             <li><a href="#" onclick="loginForm.submit()">Login</a></li>
+                            <li><a asp-page="/Register">Register</a></li>
                         }
                         else
                         {

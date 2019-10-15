@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using PaulMiami.AspNetCore.Mvc.Recaptcha;
 using Serverless.Forum.forum;
 using System;
 
@@ -51,6 +52,13 @@ namespace Serverless.Forum
                 .AddCookie();
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
             services.AddDataProtection();
+
+            services.AddRecaptcha(new RecaptchaOptions
+            {
+                SiteKey = Configuration["Recaptcha:SiteKey"],
+                SecretKey = Configuration["Recaptcha:SecretKey"],
+                 
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

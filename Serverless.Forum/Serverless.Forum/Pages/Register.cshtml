@@ -1,0 +1,96 @@
+﻿@page
+@model Serverless.Forum.Pages.RegisterModel
+@{
+    ViewData["Title"] = "Register";
+    Layout = "~/Pages/_Layout.cshtml";
+}
+
+<h2>Register</h2>
+
+<script src="~/lib/jquery/dist/jquery.js"></script>
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+
+<form asp-controller="Home" method="post">
+    <recaptcha />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <table border="0" cellpadding="0" cellspacing="0">
+        <tr>
+            <td width="250px" height="30px">
+                Email
+            </td>
+            <td>
+                <input type="text" name="Email" asp-for="Email" />
+            </td>
+            <td>
+                <span asp-validation-for="Email"></span>
+            </td>
+        </tr>
+        <tr>
+            <td width="250px" height="30px">
+                User name
+            </td>
+            <td>
+                <input type="text" name="UserName" asp-for="UserName"/>
+            </td>
+            <td>
+                <span asp-validation-for="UserName"></span>
+            </td>
+        </tr>
+        <tr>
+            <td width="250px" height="30px">
+                Password
+            </td>
+            <td>
+                <input type="password" name="Password" asp-for="Password"/>
+            </td>
+            <td>
+                <span>
+                    <span asp-validation-for="Password"></span>
+                </span>
+            </td>
+        </tr>
+        <tr>
+            <td width="250px" height="30px">
+                Repeat password
+            </td>
+            <td>
+                <input type="password" name="SecondPassword"  asp-for="SecondPassword"/>
+            </td>
+            <td>
+                <span asp-validation-for="SecondPassword"></span>
+            </td>
+        </tr>
+        <tr>
+            <td width="250px" height="30px">
+                I agree with the terms of service:    
+            </td>
+            <td>
+                <input type="checkbox" asp-for="Agree"  />
+            </td>
+            <td>
+                <span asp-validation-for="Agree"></span>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="4">
+                <input type="submit" value="Submit" />
+            </td>
+        </tr>
+    </table>
+</form>
+<recaptcha-script />
+
+<script>
+    // extend range validator method to treat checkboxes differently
+    var defaultRangeValidator = $.validator.methods.range;
+    $.validator.methods.range = function (value, element, param) {
+        if (element.type === 'checkbox') {
+            // if it's a checkbox return true if it is checked
+            return element.checked;
+        } else {
+            // otherwise run the default validation function
+            return defaultRangeValidator.call(this, value, element, param);
+        }
+    }
+</script>

@@ -20,6 +20,7 @@ using System.Web;
 
 namespace Serverless.Forum.Pages
 {
+    [ValidateAntiForgeryToken]
     public class PostingModel : ModelWithLoggedUser
     {
         private readonly IAmazonS3 _s3Client;

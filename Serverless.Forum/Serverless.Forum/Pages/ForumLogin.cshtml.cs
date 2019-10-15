@@ -9,6 +9,7 @@ using System.Web;
 
 namespace Serverless.Forum.Pages
 {
+    [ValidateAntiForgeryToken]
     public class ForumLoginModel : PageModel
     {
         public string ReturnUrl { get; set; }

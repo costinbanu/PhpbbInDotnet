@@ -14,6 +14,7 @@ using System.Web;
 
 namespace Serverless.Forum.Pages
 {
+    [ValidateAntiForgeryToken]
     public class LoginModel : PageModel
     {
         private readonly IConfiguration _config;
