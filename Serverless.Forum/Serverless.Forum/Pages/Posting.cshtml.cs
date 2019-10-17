@@ -241,13 +241,13 @@ namespace Serverless.Forum.Pages
                     PostTime = DateTime.UtcNow.LocalTimeToTimestamp(),
                     PostApproved = 1,
                     PostReported = 0,
-                    BbcodeUid = RandomString(),
+                    BbcodeUid = Utils.Instance.RandomString(),
                     EnableBbcode = 1,
                     EnableMagicUrl = 1,
                     EnableSig = 1,
                     EnableSmilies = 1,
                     PostAttachment = (byte)(PostAttachments.Any() ? 1 : 0),
-                    PostChecksum = CalculateMD5Hash(HttpUtility.HtmlEncode(postText)),
+                    PostChecksum = Utils.Instance.CalculateMD5Hash(HttpUtility.HtmlEncode(postText)),
                     PostEditCount = 0,
                     PostEditLocked = 0,
                     PostEditReason = string.Empty,
@@ -265,31 +265,6 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnPostPrivateMessage()
         {
             throw await Task.FromResult(new NotImplementedException());
-        }
-
-        private string RandomString(int length = 8)
-        {
-            var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-            var stringChars = new char[length];
-            var random = new Random();
-
-            for (int i = 0; i < stringChars.Length; i++)
-            {
-                stringChars[i] = chars[random.Next(chars.Length)];
-            }
-
-            return new string(stringChars);
-        }
-
-        private string CalculateMD5Hash(string input)
-        {
-            var hash = MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(input));
-            var sb = new StringBuilder();
-            for (int i = 0; i < hash.Length; i++)
-            {
-                sb.Append(hash[i].ToString("x2"));
-            }
-            return sb.ToString();
         }
 
         private string RemoveBbCodeUid(string text, string uid)

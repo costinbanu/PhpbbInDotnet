@@ -46,7 +46,7 @@ blockquote {
     vertical-align: top;
     padding: 0.5em;
     display: table;
-    margin-top:5px;
+    margin-top: 5px;
 }
 
 .ForumListRowCategory {
@@ -70,12 +70,12 @@ blockquote {
     display: table-cell;
 }
 
-.ForumListLeft img {
-    max-width: 900px;
-    max-height: 600px;
-    width: auto;
-    height:auto;
-}
+    .ForumListLeft img {
+        max-width: 900px;
+        max-height: 600px;
+        width: auto;
+        height: auto;
+    }
 
 .ForumListRight {
     width: 25%;
@@ -84,12 +84,12 @@ blockquote {
     display: inline-block;
     vertical-align: top;
     display: table-cell;
-    padding-left:30px;
+    padding-left: 30px;
 }
 
 .PostTitle {
     font-size: 1.2em;
-    font-weight:bold;
+    font-weight: bold;
 }
 
 .clear {
@@ -98,12 +98,11 @@ blockquote {
 
 .Image {
     max-width: 100%;
-    max-height:100%;
+    max-height: 100%;
 }
 
 .AttachBox {
-
-    text-align:center;
+    text-align: center;
     vertical-align: central;
     border-radius: 5px;
     border: solid 1px black;
@@ -122,6 +121,7 @@ input.button2 {
     background-position-y: top;
     background-image: none;*/
 }
+
 .inputbox:hover {
     border-color: #11A3EA;
 }
@@ -150,13 +150,13 @@ input.button2 {
     color: #333333;
     padding: 2px;
     cursor: text;
-    float:left;
-    width:79%;
+    float: left;
+    width: 79%;
 }
 
 .smileybox {
-    float:right;
-    width:20%;
+    float: right;
+    width: 20%;
 }
 
 textarea {
@@ -187,10 +187,38 @@ textarea {
     border-collapse: collapse;
     padding: 1px;
     margin: 1px;
-    line-height:1em;
+    line-height: 1em;
 }
 
 label {
     text-decoration: none !important;
     font-weight: normal !important;
+}
+
+.validation {
+    margin-left: 30px;
+    color: red;
+}
+
+#g-recaptcha-response {
+    display: block !important;
+    position: absolute;
+    margin: -78px 0 0 0 !important;
+    width: 302px !important;
+    height: 76px !important;
+    z-index: -999999;
+    opacity: 0;
+}
+
+.formtable {
+    table-layout: auto;
+}
+
+.formtable tr td {
+    padding: 10px;
+    white-space: nowrap;
+}
+
+.formtable tr td:last-child {
+    width: 100%;
 }

@@ -69,49 +69,49 @@ namespace Serverless.Forum.Pages
                                                                  where pf.ForumId == thisForum.ParentId
                                                                  select pf.ForumName).FirstOrDefaultAsync() ?? "untitled");
 
-                Forums = (from f in context.PhpbbForums
-                          where f.ParentId == forumId
-                          orderby f.LeftId
-                          select new ForumDisplay
-                          {
-                              Id = f.ForumId,
-                              Name = HttpUtility.HtmlDecode(f.ForumName),
-                              LastPosterName = f.ForumLastPosterName,
-                              LastPostTime = f.ForumLastPostTime.TimestampToLocalTime(),
-                              Unread = IsForumUnread(f.ForumId)
-                          })
-                         .ToList();
+                Forums = await (from f in context.PhpbbForums
+                                where f.ParentId == forumId
+                                orderby f.LeftId
+                                select new ForumDisplay
+                                {
+                                    Id = f.ForumId,
+                                    Name = HttpUtility.HtmlDecode(f.ForumName),
+                                    LastPosterName = f.ForumLastPosterName,
+                                    LastPostTime = f.ForumLastPostTime.TimestampToLocalTime(),
+                                    Unread = IsForumUnread(f.ForumId)
+                                })
+                               .ToListAsync();
 
-                Topics = (from t in context.PhpbbTopics
-                          where t.ForumId == forumId
-                          orderby t.TopicLastPostTime descending
+                Topics = await (from t in context.PhpbbTopics
+                                where t.ForumId == forumId
+                                orderby t.TopicLastPostTime descending
 
-                          group t by t.TopicType into groups
-                          orderby groups.Key descending
-                          select new TopicTransport
-                          {
-                              TopicType = groups.Key,
-                              Topics = from g in groups
+                                group t by t.TopicType into groups
+                                orderby groups.Key descending
+                                select new TopicTransport
+                                {
+                                    TopicType = groups.Key,
+                                    Topics = from g in groups
 
-                                       join u in context.PhpbbUsers
-                                       on g.TopicLastPosterId equals u.UserId
-                                       into joined
+                                             join u in context.PhpbbUsers
+                                             on g.TopicLastPosterId equals u.UserId
+                                             into joined
 
-                                       from j in joined.DefaultIfEmpty()
-                                       let postCount = context.PhpbbPosts.Count(p => p.TopicId == g.TopicId)
-                                       let pageSize = usr.TopicPostsPerPage.ContainsKey(g.TopicId) ? usr.TopicPostsPerPage[g.TopicId] : 14
-                                       select new TopicDisplay
-                                       {
-                                           Id = g.TopicId,
-                                           Title = HttpUtility.HtmlDecode(g.TopicTitle),
-                                           LastPosterId = j.UserId == 1 ? null as int? : j.UserId,
-                                           LastPosterName = HttpUtility.HtmlDecode(g.TopicLastPosterName),
-                                           LastPostTime = g.TopicLastPostTime.TimestampToLocalTime(),
-                                           PostCount = context.PhpbbPosts.Count(p => p.TopicId == g.TopicId),
-                                           Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1),
-                                           Unread = IsTopicUnread(g.TopicId)
-                                       }
-                          }).ToList();
+                                             from j in joined.DefaultIfEmpty()
+                                             let postCount = context.PhpbbPosts.Count(p => p.TopicId == g.TopicId)
+                                             let pageSize = usr.TopicPostsPerPage.ContainsKey(g.TopicId) ? usr.TopicPostsPerPage[g.TopicId] : 14
+                                             select new TopicDisplay
+                                             {
+                                                 Id = g.TopicId,
+                                                 Title = HttpUtility.HtmlDecode(g.TopicTitle),
+                                                 LastPosterId = j.UserId == 1 ? null as int? : j.UserId,
+                                                 LastPosterName = HttpUtility.HtmlDecode(g.TopicLastPosterName),
+                                                 LastPostTime = g.TopicLastPostTime.TimestampToLocalTime(),
+                                                 PostCount = context.PhpbbPosts.Count(p => p.TopicId == g.TopicId),
+                                                 Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1),
+                                                 Unread = IsTopicUnread(g.TopicId)
+                                             }
+                                }).ToListAsync();
 
                 return Page();
             }

@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Serverless.Forum.forum
 {
     public partial class PhpbbUsers
     {
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int UserId { get; set; }
         public byte UserType { get; set; }
         public int GroupId { get; set; }
@@ -22,7 +24,7 @@ namespace Serverless.Forum.forum
         public string UserBirthday { get; set; }
         public int UserLastvisit { get; set; }
         public int UserLastmark { get; set; }
-        public int UserLastpostTime { get; set; }
+        public long UserLastpostTime { get; set; }
         public string UserLastpage { get; set; }
         public string UserLastConfirmKey { get; set; }
         public int UserLastSearch { get; set; }
@@ -30,7 +32,7 @@ namespace Serverless.Forum.forum
         public int UserLastWarning { get; set; }
         public byte UserLoginAttempts { get; set; }
         public byte UserInactiveReason { get; set; }
-        public int UserInactiveTime { get; set; }
+        public long UserInactiveTime { get; set; }
         public int UserPosts { get; set; }
         public string UserLang { get; set; }
         public decimal UserTimezone { get; set; }
@@ -44,7 +46,7 @@ namespace Serverless.Forum.forum
         public int UserLastPrivmsg { get; set; }
         public byte UserMessageRules { get; set; }
         public int UserFullFolder { get; set; }
-        public int UserEmailtime { get; set; }
+        public long UserEmailtime { get; set; }
         public short UserTopicShowDays { get; set; }
         public string UserTopicSortbyType { get; set; }
         public string UserTopicSortbyDir { get; set; }
@@ -80,8 +82,8 @@ namespace Serverless.Forum.forum
         public string UserFormSalt { get; set; }
         public byte UserNew { get; set; }
         public byte UserReminded { get; set; }
-        public int UserRemindedTime { get; set; }
+        public long UserRemindedTime { get; set; }
         public byte? AcceptedNewTerms { get; set; }
-        public int UserEditTime { get; set; }
+        public long UserEditTime { get; set; }
     }
 }

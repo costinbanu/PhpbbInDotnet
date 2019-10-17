@@ -14,49 +14,53 @@ using System.Web;
 
 namespace Serverless.Forum.Pages
 {
+    [BindProperties]
     [ValidateAntiForgeryToken]
     public class LoginModel : PageModel
     {
         private readonly IConfiguration _config;
-        public string returnUrl;
-        public string errorMessage;
+
+        public string UserName { get; set; }
+
+        public string Password { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public string ReturnUrl { get; set; }
+
+        public string ErrorMessage { get; set; }
 
         public LoginModel(IConfiguration config)
         {
             _config = config;
         }
 
-        public void OnGet(string ReturnUrl)
+        public async Task<IActionResult> OnPost()
         {
-            returnUrl = ReturnUrl;
-        }
-
-        public async Task<IActionResult> OnPost(string username, string password, string returnUrl, bool rememberMe = false)
-        {
-            using (var _dbContext = new forumContext(_config))
+            using (var context = new forumContext(_config))
             {
-                var user = from u in _dbContext.PhpbbUsers
-                           let cryptedPass = Crypter.Phpass.Crypt(password, u.UserPassword)
-                           where u.UsernameClean == username && cryptedPass == u.UserPassword
+                var user = from u in context.PhpbbUsers
+                           let cryptedPass = Crypter.Phpass.Crypt(Password, u.UserPassword)
+                           where u.UsernameClean == Utils.Instance.CleanString(UserName) 
+                              && cryptedPass == u.UserPassword
                            select u;
 
                 if (user.Count() != 1)
                 {
-                    errorMessage = "Numele de utilizator și/sau parola sunt greșite!";
+                    ErrorMessage = "Numele de utilizator și/sau parola sunt greșite!";
                     return Page();
                 }
                 else
                 {
                     await HttpContext.SignInAsync(
                         CookieAuthenticationDefaults.AuthenticationScheme,
-                        await Utils.Instance.LoggedUserFromDbUser(user.First(), _dbContext),
+                        await Utils.Instance.LoggedUserFromDbUser(user.First(), context),
                         new AuthenticationProperties
                         {
                             AllowRefresh = true,
                             ExpiresUtc = DateTimeOffset.Now.AddMonths(1),
                             IsPersistent = true,
                         });
-                    return Redirect(HttpUtility.UrlDecode(returnUrl));
+                    return Redirect(HttpUtility.UrlDecode(ReturnUrl));
                 }
             }
         }

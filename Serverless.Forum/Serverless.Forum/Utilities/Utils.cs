@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
+using System.Security.Cryptography;
+using System.Globalization;
 
 namespace Serverless.Forum.Utilities
 {
@@ -21,24 +23,24 @@ namespace Serverless.Forum.Utilities
 
         public async Task<ClaimsPrincipal> LoggedUserFromDbUser(PhpbbUsers user, forumContext dbContext)
         {
-            var groups = (from g in dbContext.PhpbbUserGroup
-                          where g.UserId == user.UserId
-                          select g.GroupId).ToList();
+            var groups = await (from g in dbContext.PhpbbUserGroup
+                                where g.UserId == user.UserId
+                                select g.GroupId).ToListAsync();
 
-            var userPermissions = (from up in dbContext.PhpbbAclUsers
-                                   where up.UserId == user.UserId
-                                   select up).ToList();
+            var userPermissions = await (from up in dbContext.PhpbbAclUsers
+                                         where up.UserId == user.UserId
+                                         select up).ToListAsync();
 
-            var groupPermissions = (from gp in dbContext.PhpbbAclGroups
-                                    let alreadySet = from up in userPermissions
-                                                     select up.ForumId
-                                    where groups.Contains(gp.GroupId)
-                                       && !alreadySet.Contains(gp.ForumId)
-                                    select gp).ToList();
+            var groupPermissions = await (from gp in dbContext.PhpbbAclGroups
+                                          let alreadySet = from up in userPermissions
+                                                           select up.ForumId
+                                          where groups.Contains(gp.GroupId)
+                                             && !alreadySet.Contains(gp.ForumId)
+                                          select gp).ToListAsync();
 
-            var topicPostsPerPage = (from tpp in dbContext.PhpbbUserTopicPostNumber
-                                     where tpp.UserId == user.UserId
-                                     select KeyValuePair.Create(tpp.TopicId, tpp.PostNo)).ToList();
+            var topicPostsPerPage = await (from tpp in dbContext.PhpbbUserTopicPostNumber
+                                           where tpp.UserId == user.UserId
+                                           select KeyValuePair.Create(tpp.TopicId, tpp.PostNo)).ToListAsync();
 
             var intermediary = new LoggedUser
             {
@@ -122,6 +124,48 @@ namespace Serverless.Forum.Utilities
                 await content.FlushAsync();
                 return JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(content.ToArray()));
             }
+        }
+
+        public string RandomString(int length = 8)
+        {
+            var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            var stringChars = new char[length];
+            var random = new Random();
+
+            for (int i = 0; i < stringChars.Length; i++)
+            {
+                stringChars[i] = chars[random.Next(chars.Length)];
+            }
+
+            return new string(stringChars);
+        }
+
+        public string CalculateMD5Hash(string input)
+        {
+            var hash = MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(input));
+            var sb = new StringBuilder();
+            for (int i = 0; i < hash.Length; i++)
+            {
+                sb.Append(hash[i].ToString("x2"));
+            }
+            return sb.ToString();
+        }
+
+        public string CleanString(string input)
+        {
+            var normalizedString = input.Normalize(NormalizationForm.FormD);
+            var stringBuilder = new StringBuilder();
+
+            foreach (var c in normalizedString)
+            {
+                var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
+                if (unicodeCategory != UnicodeCategory.NonSpacingMark)
+                {
+                    stringBuilder.Append(c);
+                }
+            }
+
+            return stringBuilder.ToString().ToLower().Normalize(NormalizationForm.FormC);
         }
     }
 }

@@ -6,6 +6,8 @@ namespace Serverless.Forum.Utilities
     {
         public static readonly string FORUM_NAME = "Forumul Metrou Ușor";
 
+        public static readonly string FORUM_BASE_URL = "https://forum.metrouusor.com";
+
         public static readonly string REPLY = "Re: ";
 
         public static readonly string[] BBCODES = new[]
