@@ -137,7 +137,7 @@
 <p></p>
 @if (!IsLocked)
 {
-    <a asp-page="/Posting" asp-page-handler="ForumPost" asp-route-topicTitle="@Model.TopicTitle">Scrie un răspuns</a>
+    <a asp-page="/Posting" asp-page-handler="ForumPost" asp-route-topicId="@Model.TopicId">Scrie un răspuns</a>
 }
 else
 {

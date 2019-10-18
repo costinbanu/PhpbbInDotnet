@@ -141,7 +141,7 @@ namespace Serverless.Forum.Pages
                 }
 
                 curTopic = await (from t in _dbContext.PhpbbTopics
-                                      where t.TopicId == TopicId
+                                      where t.TopicId == curPost.TopicId
                                       select t).FirstOrDefaultAsync();
 
                 if (curTopic == null)

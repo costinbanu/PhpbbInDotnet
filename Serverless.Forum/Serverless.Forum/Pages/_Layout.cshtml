@@ -46,7 +46,9 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a asp-page="/Index" class="navbar-brand">@Constants.FORUM_NAME</a>
+                @*<a asp-page="/Index" class="navbar-brand">@Constants.FORUM_NAME</a>*@
+                <a asp-page="/Index"><img src="~/images/forumlogo2014-1.png" /></a>
+
             </div>
             <div class="navbar-collapse collapse">
                 <form action="/Login" method="get" name="loginForm">
@@ -56,8 +58,8 @@
                     <input name="ReturnUrl" type="hidden" value="@HttpUtility.UrlEncode(Context.Request.Path + Context.Request.QueryString)" />
                 </form>
                 <ul class="nav navbar-nav">
-                    <li><a asp-page="/Index">Home</a></li>
-                    <li><a asp-page="/Help">Help</a></li>
+                    @*<li><a asp-page="/Index">Home</a></li>
+                    <li><a asp-page="/Help">Help</a></li>*@
                     @{
                         if (string.IsNullOrWhiteSpace(currentUser?.Username) || (currentUser?.UserId ?? 0) == 1)
                         {
