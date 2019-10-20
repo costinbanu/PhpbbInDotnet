@@ -15,22 +15,35 @@ namespace Serverless.Forum
 {
     public class ModelWithLoggedUser : PageModel
     {
-        protected readonly List<PhpbbAclRoles> _adminRoles;
-        protected readonly List<PhpbbAclRoles> _modRoles;
+        protected readonly Lazy<List<PhpbbAclRoles>> _adminRoles;
+        protected readonly Lazy<List<PhpbbAclRoles>> _modRoles;
         protected readonly IConfiguration _config;
+        protected readonly Utils _utils;
 
-        public ModelWithLoggedUser(IConfiguration config)
+        public ModelWithLoggedUser(IConfiguration config, Utils utils)
         {
             _config = config;
-            using (var context = new forumContext(config))
+            _utils = utils;
+
+            _adminRoles = new Lazy<List<PhpbbAclRoles>>(() =>
             {
-                _adminRoles = (from r in context.PhpbbAclRoles
-                               where r.RoleType == "a_"
-                               select r).ToList();
-                _modRoles = (from r in context.PhpbbAclRoles
-                             where r.RoleType == "m_"
-                             select r).ToList();
-            }
+                using (var context = new forumContext(config))
+                {
+                    return (from r in context.PhpbbAclRoles
+                            where r.RoleType == "a_"
+                            select r).ToList();
+                }
+            });
+
+            _modRoles = new Lazy<List<PhpbbAclRoles>>(() =>
+            {
+                using (var context = new forumContext(config))
+                {
+                    return (from r in context.PhpbbAclRoles
+                            where r.RoleType == "m_"
+                            select r).ToList();
+                }
+            });
         }
 
         public async Task<LoggedUser> GetCurrentUser()
@@ -40,7 +53,7 @@ namespace Serverless.Forum
             {
                 using (var context = new forumContext(_config))
                 {
-                    user = await Utils.Instance.GetAnonymousUser(context);
+                    user = _utils.Anonymous;
                 }
                 await HttpContext.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme,
@@ -53,14 +66,14 @@ namespace Serverless.Forum
                     }
                 );
             }
-            return await user.ToLoggedUser();
+            return await user.ToLoggedUser(_utils);
         }
 
         public async Task<bool> IsCurrentUserAdminHere(int forumId)
         {
             return (from up in (await GetCurrentUser()).UserPermissions
                     where up.ForumId == forumId || up.ForumId == 0
-                    join a in _adminRoles
+                    join a in _adminRoles.Value
                     on up.AuthRoleId equals a.RoleId
                     select up).Any();
         }
@@ -69,7 +82,7 @@ namespace Serverless.Forum
         {
             return (from up in (await GetCurrentUser()).UserPermissions
                     where up.ForumId == forumId || up.ForumId == 0
-                    join a in _modRoles
+                    join a in _modRoles.Value
                     on up.AuthRoleId equals a.RoleId
                     select up).Any();
         }
@@ -85,9 +98,8 @@ namespace Serverless.Forum
                 {
                     await HttpContext.SignInAsync(
                         CookieAuthenticationDefaults.AuthenticationScheme,
-                        await Utils.Instance.LoggedUserFromDbUser(
-                            await context.PhpbbUsers.FirstAsync(u => u.UserId == current),
-                            context
+                        await _utils.LoggedUserFromDbUser(
+                            await context.PhpbbUsers.FirstAsync(u => u.UserId == current)
                         ),
                         new AuthenticationProperties
                         {

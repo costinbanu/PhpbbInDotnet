@@ -1,4 +1,5 @@
-﻿using Serverless.Forum.Contracts;
+﻿using Microsoft.AspNetCore.Mvc;
+using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
 using Serverless.Forum.Pages;
 using System;
@@ -22,9 +23,9 @@ namespace Serverless.Forum.Utilities
             return (long)time.Subtract(seed).TotalSeconds;
         }
 
-        public static async Task<LoggedUser> ToLoggedUser(this ClaimsPrincipal principal)
+        public static async Task<LoggedUser> ToLoggedUser(this ClaimsPrincipal principal, Utils utils)
         {
-            return await Utils.Instance.DecompressObject<LoggedUser>(principal.Claims.FirstOrDefault()?.Value);
+            return await utils.DecompressObject<LoggedUser>(principal.Claims.FirstOrDefault()?.Value);
         }
 
         public static bool IsMimeTypeInline(this string mimeType)

@@ -13,12 +13,11 @@ namespace Serverless.Forum.Pages
 {
     public class LogoutModel : PageModel
     {
+        private readonly Utils _utils;
 
-        forumContext _dbContext;
-
-        public LogoutModel(forumContext context)
+        public LogoutModel(Utils utils)
         {
-            _dbContext = context;
+            _utils = utils;
         }
 
         public async Task<IActionResult> OnGet(string returnUrl)
@@ -26,7 +25,7 @@ namespace Serverless.Forum.Pages
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme, 
-                await Utils.Instance.GetAnonymousUser(_dbContext), 
+                _utils.Anonymous, 
                 new AuthenticationProperties
                 {
                     AllowRefresh = true,

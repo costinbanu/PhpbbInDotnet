@@ -48,46 +48,10 @@ namespace Serverless.Forum.Pages
         public int TopicId { get; private set; }
         public List<PhpbbAttachments> PostAttachments;
 
-        public PostingModel(IConfiguration config) : base(config)
+        public PostingModel(IConfiguration config, Utils utils) : base(config, utils)
         {
             _s3Client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1);
-
-            using (var context = new forumContext(_config))
-            {
-                DbBbCodes = (from c in context.PhpbbBbcodes
-                             where c.DisplayOnPosting == 1
-                             select c).ToList();
-
-                Smilies = (from s in context.PhpbbSmilies
-                           group s by s.SmileyUrl into unique
-                           select unique.First())
-                          .OrderBy(s => s.SmileyOrder)
-                          .ToList();
-
-                Users = (from u in context.PhpbbUsers
-                         where u.UserId != 1 && u.UserType == 0
-                         orderby u.Username
-                         select KeyValuePair.Create(u.Username, $"[url=\"./User?UserId={u.UserId}\"]{u.Username}[/url]"))
-                        .ToList();
-            }
-
-            BbCodes = new List<string>(Constants.BBCODES);
-            foreach (var bbCode in DbBbCodes)
-            {
-                BbCodes.Add($"[{bbCode.BbcodeTag}]");
-                BbCodes.Add($"[/{bbCode.BbcodeTag}]");
-            }
-
-
-            BbCodeHelplines = new Dictionary<string, string>(Constants.BBCODE_HELPLINES);
-            foreach (var bbCode in DbBbCodes)
-            {
-                var index = BbCodes.IndexOf($"[{bbCode.BbcodeTag}]");
-                BbCodeHelplines.Add($"cb_{index}", bbCode.BbcodeHelpline);
-            }
-
             PostAttachments = new List<PhpbbAttachments>();
-
         }
 
         public async Task<IActionResult> OnGetForumPost(int forumId, int topicId)
@@ -105,6 +69,8 @@ namespace Serverless.Forum.Pages
                 curTopic = await (from t in context.PhpbbTopics
                                   where t.TopicId == topicId
                                   select t).FirstOrDefaultAsync();
+
+                await Init(context);
             }
 
             if (curTopic == null)
@@ -129,9 +95,9 @@ namespace Serverless.Forum.Pages
             PhpbbTopics curTopic = null;
             string curAuthor = null;
 
-            using (var _dbContext = new forumContext(_config))
+            using (var context = new forumContext(_config))
             {
-                curPost = await (from p in _dbContext.PhpbbPosts
+                curPost = await (from p in context.PhpbbPosts
                                      where p.PostId == postId
                                      select p).FirstOrDefaultAsync();
 
@@ -140,7 +106,7 @@ namespace Serverless.Forum.Pages
                     return NotFound();
                 }
 
-                curTopic = await (from t in _dbContext.PhpbbTopics
+                curTopic = await (from t in context.PhpbbTopics
                                       where t.TopicId == curPost.TopicId
                                       select t).FirstOrDefaultAsync();
 
@@ -152,10 +118,12 @@ namespace Serverless.Forum.Pages
                 curAuthor = curPost.PostUsername;
                 if (string.IsNullOrWhiteSpace(curAuthor))
                 {
-                    curAuthor = await (from u in _dbContext.PhpbbUsers
+                    curAuthor = await (from u in context.PhpbbUsers
                                        where u.UserId == curPost.PosterId
                                        select u.Username).FirstOrDefaultAsync();
                 }
+
+                await Init(context);
             }
 
 
@@ -175,7 +143,7 @@ namespace Serverless.Forum.Pages
             var usr = await GetCurrentUser();
             if (usr.UserId == 1)
             {
-                return RedirectToPage("Login", new LoginModel(_config));
+                return RedirectToPage("Login");
             }
 
             foreach (var file in files)
@@ -204,8 +172,8 @@ namespace Serverless.Forum.Pages
                     Mimetype = file.ContentType,
                     PhysicalFilename = name,
                     RealFilename = System.IO.Path.GetFileName(file.FileName),
-                    PosterId = usr.UserId.Value,
-                    TopicId = TopicId
+                    //PosterId = usr.UserId.Value,
+                    //TopicId = TopicId
                 });
             }
             return Page();
@@ -231,7 +199,7 @@ namespace Serverless.Forum.Pages
                     postText = sr.Regex.Replace(postText, sr.Replacement);
                 }
 
-                await context.PhpbbPosts.AddAsync(new PhpbbPosts
+                var result = await context.PhpbbPosts.AddAsync(new PhpbbPosts
                 {
                     ForumId = forumId,
                     TopicId = topicId,
@@ -241,13 +209,13 @@ namespace Serverless.Forum.Pages
                     PostTime = DateTime.UtcNow.LocalTimeToTimestamp(),
                     PostApproved = 1,
                     PostReported = 0,
-                    BbcodeUid = Utils.Instance.RandomString(),
+                    BbcodeUid = _utils.RandomString(),
                     EnableBbcode = 1,
                     EnableMagicUrl = 1,
                     EnableSig = 1,
                     EnableSmilies = 1,
                     PostAttachment = (byte)(PostAttachments.Any() ? 1 : 0),
-                    PostChecksum = Utils.Instance.CalculateMD5Hash(HttpUtility.HtmlEncode(postText)),
+                    PostChecksum = _utils.CalculateMD5Hash(HttpUtility.HtmlEncode(postText)),
                     PostEditCount = 0,
                     PostEditLocked = 0,
                     PostEditReason = string.Empty,
@@ -255,6 +223,9 @@ namespace Serverless.Forum.Pages
                     PostEditUser = 0,
                     PosterIp = HttpContext.Connection.RemoteIpAddress.ToString()
                 });
+
+                PostAttachments.ForEach(a => a.PostMsgId = result.Entity.PostId);
+                await context.PhpbbAttachments.AddRangeAsync(PostAttachments);
 
                 await context.SaveChangesAsync();
             }
@@ -273,6 +244,37 @@ namespace Serverless.Forum.Pages
             var tagRegex = new Regex(@"(:[a-z])(\]|:)", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
             var cleanTextTemp = uidRegex.Replace(text, string.Empty);
             return tagRegex.Replace(cleanTextTemp, "$2");
+        }
+
+        private async Task Init(forumContext context)
+        {
+            DbBbCodes = await (from c in context.PhpbbBbcodes
+                               where c.DisplayOnPosting == 1
+                               select c)
+                              .ToListAsync();
+
+            Smilies = await (from s in context.PhpbbSmilies
+                             group s by s.SmileyUrl into unique
+                             select unique.First())
+                            .OrderBy(s => s.SmileyOrder)
+                            .ToListAsync();
+
+            Users = await (from u in context.PhpbbUsers
+                           where u.UserId != 1 && u.UserType == 0
+                           orderby u.Username
+                           select KeyValuePair.Create(u.Username, $"[url=\"./User?UserId={u.UserId}\"]{u.Username}[/url]"))
+                          .ToListAsync();
+
+            BbCodes = new List<string>(Constants.BBCODES);
+            BbCodeHelplines = new Dictionary<string, string>(Constants.BBCODE_HELPLINES);
+
+            foreach (var bbCode in DbBbCodes)
+            {
+                BbCodes.Add($"[{bbCode.BbcodeTag}]");
+                BbCodes.Add($"[/{bbCode.BbcodeTag}]");
+                var index = BbCodes.IndexOf($"[{bbCode.BbcodeTag}]");
+                BbCodeHelplines.Add($"cb_{index}", bbCode.BbcodeHelpline);
+            }
         }
     }
 }

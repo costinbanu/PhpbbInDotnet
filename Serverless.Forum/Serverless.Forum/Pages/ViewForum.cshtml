@@ -25,7 +25,7 @@ else
                 <a asp-page="/ViewForum" asp-route-forumId="@forum.Id" class="nav-link">@forum.Name</a>
             </span>
             <span class="ForumListRight">
-                Ultimul mesaj: @forum.LastPostTime?.ToString((await User?.ToLoggedUser())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
+                Ultimul mesaj: @forum.LastPostTime?.ToString((await Model.GetCurrentUser())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
                 <br />
                 de @forum.LastPosterName
             </span>
@@ -63,7 +63,7 @@ else
                     @await Html.PartialAsync("_PaginationPartial", topic.Pagination, ViewData)
                 </span>
                 <span class="ForumListRight">
-                    Ultimul mesaj: @topic.LastPostTime?.ToString((await User?.ToLoggedUser())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
+                    Ultimul mesaj: @topic.LastPostTime?.ToString((await Model.GetCurrentUser())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
                     <br />
                     de&nbsp;
                     @if (topic.LastPosterId == null)

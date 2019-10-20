@@ -14,7 +14,7 @@ namespace Serverless.Forum.Pages
     {
         public List<ForumDisplay> Forums { get; private set; }
 
-        public IndexModel(IConfiguration config) : base(config)
+        public IndexModel(IConfiguration config, Utils utils) : base(config, utils)
         {
         }
 

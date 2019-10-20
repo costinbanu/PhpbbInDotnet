@@ -6,9 +6,10 @@
 
 @inject IHttpContextAccessor _httpContext
 @inject IDataProtectionProvider _dpProvider
+@inject Utils  _utils
 
 @{ 
-    var currentUser = await User.ToLoggedUser();
+    var currentUser = await User.ToLoggedUser(_utils);
 }
 
 <!DOCTYPE html>

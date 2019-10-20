@@ -23,6 +23,7 @@ namespace Serverless.Forum.Pages
     {
         private readonly IHttpClientFactory _factory;
         private readonly IConfiguration _config;
+        private readonly Utils _utils;
 
         [Required(ErrorMessage = "Acest câmp este obligatoriu.")]
         [EmailAddress]
@@ -47,10 +48,11 @@ namespace Serverless.Forum.Pages
 
         public string ErrorMessage { get; set; }
 
-        public RegisterModel(IHttpClientFactory factory, IConfiguration config)
+        public RegisterModel(IHttpClientFactory factory, IConfiguration config, Utils utils)
         {
             _factory = factory;
             _config = config;
+            _utils = utils;
         }
 
         public async Task<IActionResult> OnPost()
@@ -58,12 +60,12 @@ namespace Serverless.Forum.Pages
             using (var context = new forumContext(_config))
             {
                 var check = await (from u in context.PhpbbUsers
-                                   where u.UsernameClean == Utils.Instance.CleanString(UserName)
+                                   where u.UsernameClean == _utils.CleanString(UserName)
                                       || u.UserEmail == Email
                                    select new { u.UsernameClean, u.UserEmail })
                                   .ToListAsync();
 
-                if (check.Any(u => u.UsernameClean == Utils.Instance.CleanString(UserName)))
+                if (check.Any(u => u.UsernameClean == _utils.CleanString(UserName)))
                 {
                     ErrorMessage = "Există deja un utilizator înregistrat cu acest nume de utilizator!";
                     SecondPassword = Password;
@@ -96,15 +98,18 @@ namespace Serverless.Forum.Pages
 
                 using (var smtp = new SmtpClient("Your SMTP server address"))
                 {
-                    var emailMessage = new MailMessage();
-                    emailMessage.From = new MailAddress($"admin@metrouusor.com");
+                    var subject = $"Bine ai venit la \"{Constants.FORUM_NAME}\"";
+                    var emailMessage = new MailMessage
+                    {
+                        From = new MailAddress($"admin@metrouusor.com"),
+                        Subject = subject,
+                        Body =                         
+                            $"<h2>{subject}</h2><br/><br/>" +
+                            "Pentru a continua, trebuie să îți confirmi adresa de email.<br/><br/>" +
+                            $"<a href=\"{Constants.FORUM_BASE_URL}/Register?code={registrationCode}\">Apasă aici</a> pentru a o confirma.<br/><br/>" +
+                            "O zi bună!"
+                    };
                     emailMessage.To.Add(Email);
-                    emailMessage.Subject = $"Bine ai venit la \"{Constants.FORUM_NAME}\"";
-                    emailMessage.Body =
-                        $"<h2>{emailMessage.Subject}</h2><br/><br/>" +
-                        "Pentru a continua, trebuie să îți confirmi adresa de email.<br/><br/>" +
-                        $"<a href=\"{Constants.FORUM_BASE_URL}/Register?code={registrationCode}\">Apasă aici</a> pentru a o confirma.<br/><br/>" +
-                        "O zi bună!";
 
                     await smtp.SendMailAsync(emailMessage);
                 }

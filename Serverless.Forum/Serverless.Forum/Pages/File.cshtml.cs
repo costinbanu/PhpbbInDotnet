@@ -16,29 +16,30 @@ namespace Serverless.Forum.Pages
 {
     public class FileModel : PageModel
     {
-        forumContext _dbContext;
-        IAmazonS3 _s3Client;
-        IConfiguration _config;
+        private readonly IAmazonS3 _s3Client;
+        private readonly IConfiguration _config;
 
-        public FileModel(forumContext dbContext, IConfiguration config)
+        public FileModel(IConfiguration config)
         {
-            _dbContext = dbContext;
             _config = config;
             _s3Client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1);
         }
 
         public async Task<IActionResult> OnGet(int Id)
         {
-            var file = await (from a in _dbContext.PhpbbAttachments
-                              where a.AttachId == Id
-                              select a).FirstOrDefaultAsync();
-
-            if (file == null)
+            using (var context = new forumContext(_config))
             {
-                return NotFound();
-            }
+                var file = await (from a in context.PhpbbAttachments
+                                  where a.AttachId == Id
+                                  select a).FirstOrDefaultAsync();
 
-            return await Renderfile(file);
+                if (file == null)
+                {
+                    return NotFound();
+                }
+
+                return await Renderfile(file);
+            }
         }
 
         private async Task<IActionResult> Renderfile(PhpbbAttachments file)

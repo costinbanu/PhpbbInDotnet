@@ -1,5 +1,5 @@
 body {
-    padding-top: 50px;
+    padding-top: 100px;
     padding-bottom: 20px;
 }
 
@@ -87,9 +87,14 @@ blockquote {
     padding-left: 30px;
 }
 
+/*.ForumListCollapsed {
+    display:none;
+}*/
+
 .PostTitle {
     font-size: 1.2em;
     font-weight: bold;
+    float:left;
 }
 
 .clear {
@@ -222,3 +227,17 @@ label {
 .formtable tr td:last-child {
     width: 100%;
 }
+
+.nav {
+    float:right;
+    padding-top: 50px;
+}
+
+/*@media (max-width: 768px) {
+    .ForumListRight {
+        display:none;
+    }
+    .ForumListCollapsed {
+        display:inline-block;
+    }
+}*/

@@ -5,40 +5,48 @@ using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
-using System.Text;
+using System.Linq;
+using System.Security.Claims;
 using System.Security.Cryptography;
-using System.Globalization;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Serverless.Forum.Utilities
 {
     public class Utils
     {
-        static Utils _instance = null;
-        ClaimsPrincipal _anonymous = null;
+        public readonly ClaimsPrincipal Anonymous;
+        private readonly forumContext _context;
 
-        public async Task<ClaimsPrincipal> LoggedUserFromDbUser(PhpbbUsers user, forumContext dbContext)
+        public Utils(forumContext context)
         {
-            var groups = await (from g in dbContext.PhpbbUserGroup
+            _context = context;
+            var anonTask = LoggedUserFromDbUser(_context.PhpbbUsers.First(u => u.UserId == 1));
+            Task.WaitAll(anonTask);
+            Anonymous = anonTask.Result;
+        }
+
+        public async Task<ClaimsPrincipal> LoggedUserFromDbUser(PhpbbUsers user)
+        {
+            var groups = await (from g in _context.PhpbbUserGroup
                                 where g.UserId == user.UserId
                                 select g.GroupId).ToListAsync();
 
-            var userPermissions = await (from up in dbContext.PhpbbAclUsers
+            var userPermissions = await (from up in _context.PhpbbAclUsers
                                          where up.UserId == user.UserId
                                          select up).ToListAsync();
 
-            var groupPermissions = await (from gp in dbContext.PhpbbAclGroups
+            var groupPermissions = await (from gp in _context.PhpbbAclGroups
                                           let alreadySet = from up in userPermissions
                                                            select up.ForumId
                                           where groups.Contains(gp.GroupId)
                                              && !alreadySet.Contains(gp.ForumId)
                                           select gp).ToListAsync();
 
-            var topicPostsPerPage = await (from tpp in dbContext.PhpbbUserTopicPostNumber
+            var topicPostsPerPage = await (from tpp in _context.PhpbbUserTopicPostNumber
                                            where tpp.UserId == user.UserId
                                            select KeyValuePair.Create(tpp.TopicId, tpp.PostNo)).ToListAsync();
 
@@ -74,28 +82,13 @@ namespace Serverless.Forum.Utilities
             return new ClaimsPrincipal(identity);
         }
 
-        public static Utils Instance => _instance ?? (_instance = new Utils());
-
-        public async Task<ClaimsPrincipal> GetAnonymousUser(forumContext _dbContext)
+        public async Task<List<PhpbbPosts>> GetPosts(int topicId)
         {
-            if (_anonymous != null)
-            {
-                return _anonymous;
-            }
-
-            _anonymous = await LoggedUserFromDbUser(
-                await _dbContext.PhpbbUsers.FirstAsync(u => u.UserId == 1), 
-                _dbContext);
-
-            return _anonymous;
-        }
-
-        public IEnumerable<PhpbbPosts> GetPosts(int topicId, forumContext dbContext)
-        {
-            return from pp in dbContext.PhpbbPosts
-                   where pp.TopicId == topicId
-                   orderby pp.PostTime ascending
-                   select pp;
+            return await(from pp in _context.PhpbbPosts
+                         where pp.TopicId == topicId
+                         orderby pp.PostTime ascending
+                         select pp)
+                        .ToListAsync();
         }
 
         public async Task<string> CompressObject<T>(T source)

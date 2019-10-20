@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using PaulMiami.AspNetCore.Mvc.Recaptcha;
 using Serverless.Forum.forum;
+using Serverless.Forum.Utilities;
 using System;
 
 namespace Serverless.Forum
@@ -70,6 +71,8 @@ namespace Serverless.Forum
                 options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
                 options.SerializerSettings.DateTimeZoneHandling = DateTimeZoneHandling.Utc;
             });
+
+            services.AddSingleton<Utils>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

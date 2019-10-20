@@ -24,7 +24,7 @@ namespace Serverless.Forum.Pages
 
         private Lazy<int> _currentUserId;
 
-        public ViewForumModel(IConfiguration config) : base(config)
+        public ViewForumModel(IConfiguration config, Utils utils) : base(config, utils)
         {
             _currentUserId = new Lazy<int>(() => Task.Run(async () => await GetCurrentUser()).Result.UserId.Value);
         }

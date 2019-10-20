@@ -19,6 +19,7 @@ namespace Serverless.Forum.Pages
     public class LoginModel : PageModel
     {
         private readonly IConfiguration _config;
+        private readonly Utils _utils;
 
         public string UserName { get; set; }
 
@@ -29,9 +30,10 @@ namespace Serverless.Forum.Pages
 
         public string ErrorMessage { get; set; }
 
-        public LoginModel(IConfiguration config)
+        public LoginModel(IConfiguration config, Utils utils)
         {
             _config = config;
+            _utils = utils;
         }
 
         public async Task<IActionResult> OnPost()
@@ -40,7 +42,7 @@ namespace Serverless.Forum.Pages
             {
                 var user = from u in context.PhpbbUsers
                            let cryptedPass = Crypter.Phpass.Crypt(Password, u.UserPassword)
-                           where u.UsernameClean == Utils.Instance.CleanString(UserName) 
+                           where u.UsernameClean == _utils.CleanString(UserName) 
                               && cryptedPass == u.UserPassword
                            select u;
 
@@ -53,7 +55,7 @@ namespace Serverless.Forum.Pages
                 {
                     await HttpContext.SignInAsync(
                         CookieAuthenticationDefaults.AuthenticationScheme,
-                        await Utils.Instance.LoggedUserFromDbUser(user.First(), context),
+                        await _utils.LoggedUserFromDbUser(user.First()),
                         new AuthenticationProperties
                         {
                             AllowRefresh = true,

@@ -46,7 +46,7 @@ namespace Serverless.Forum.Pages
         private readonly HttpContext _context;
         private readonly ITempDataProvider _tempDataProvider;
 
-        public ViewTopicModel(IConfiguration config, ICompositeViewEngine viewEngine, ITempDataProvider tempDataProvider, IServiceProvider serviceProvider, IHttpContextAccessor accessor) : base(config)
+        public ViewTopicModel(IConfiguration config, Utils utils, ICompositeViewEngine viewEngine, ITempDataProvider tempDataProvider, IServiceProvider serviceProvider, IHttpContextAccessor accessor) : base(config, utils)
         {
             _viewEngine = viewEngine;
             PostsPerPage = new List<SelectListItem>
@@ -89,7 +89,7 @@ namespace Serverless.Forum.Pages
             var pageSize = usr.TopicPostsPerPage.ContainsKey(_currentTopic.TopicId) ? usr.TopicPostsPerPage[_currentTopic.TopicId] : 14;
             PostsPerPage.ForEach(ppp => ppp.Selected = int.TryParse(ppp.Value, out var value) && value == pageSize);
 
-            GetPostsLazy(_currentTopic.TopicId);
+            await GetPostsLazy(_currentTopic.TopicId);
             var index = _dbPosts.Select(p => p.PostId).ToList().IndexOf(postId) + 1;
             var pageNum = (index / pageSize) + (index % pageSize == 0 ? 0 : 1);
 
@@ -151,7 +151,7 @@ namespace Serverless.Forum.Pages
 
             ForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? "untitled");
 
-            GetPostsLazy(topicId);
+            await GetPostsLazy(topicId);
             var noOfPages = (_dbPosts.Count() / pageSize) + (_dbPosts.Count() % pageSize == 0 ? 0 : 1);
             if (pageNum > noOfPages)
             {
@@ -349,14 +349,11 @@ namespace Serverless.Forum.Pages
             }
         }
 
-        private void GetPostsLazy(int topicId)
+        private async Task GetPostsLazy(int topicId)
         {
             if (_dbPosts == null)
             {
-                using (var _dbContext = new forumContext(_config))
-                {
-                    _dbPosts = Utils.Instance.GetPosts(topicId, _dbContext).ToList();
-                }
+                _dbPosts = await _utils.GetPosts(topicId);
             }
         }
     }
