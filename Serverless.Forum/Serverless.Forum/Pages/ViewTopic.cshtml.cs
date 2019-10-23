@@ -38,6 +38,8 @@ namespace Serverless.Forum.Pages
         public bool? Highlight { get; private set; }
         public int? TopicId => _currentTopic?.TopicId;
         public bool IsLocked => (_currentTopic?.TopicStatus ?? 0) == 1;
+        public IConfiguration Config => _config;
+        public Utils Utils => _utils;
 
         private PhpbbTopics _currentTopic;
         private List<PhpbbPosts> _dbPosts;

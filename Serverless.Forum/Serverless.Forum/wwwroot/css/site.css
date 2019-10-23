@@ -65,17 +65,16 @@ blockquote {
     width: 70%;
     /*float: left;*/
     height: 2.5em;
-    display: inline-block;
     vertical-align: top;
     display: table-cell;
 }
 
-    .ForumListLeft img {
-        max-width: 900px;
-        max-height: 600px;
-        width: auto;
-        height: auto;
-    }
+.ForumListLeft img {
+    max-width: 900px;
+    max-height: 600px;
+    width: auto;
+    height: auto;
+}
 
 .ForumListRight {
     width: 25%;
@@ -85,11 +84,17 @@ blockquote {
     vertical-align: top;
     display: table-cell;
     padding-left: 30px;
+    list-style-type:none;
 }
 
-/*.ForumListCollapsed {
-    display:none;
-}*/
+.ForumListCollapsed {
+    display: none;
+    border-radius: 5px;
+    border: solid 1px black;
+    float:right;
+    padding:3px;
+    cursor:pointer;
+}
 
 .PostTitle {
     font-size: 1.2em;
@@ -233,11 +238,28 @@ label {
     padding-top: 50px;
 }
 
-/*@media (max-width: 768px) {
+@media (max-width: 768px) {
     .ForumListRight {
-        display:none;
+        display: none;
+        position: absolute;
+        /*overflow:visible;
+        width:200px;*/
+        /*float: right;*/
+        clear:both;
+        width: auto !important;
+        height: auto !important;
+        border-radius: 5px;
+        border: solid 1px black;
+        background-color:aliceblue;
+        padding:5px !important;
     }
+    .ForumListLeft{
+        float:none;
+        clear:both;
+        width:auto;
+    }
+
     .ForumListCollapsed {
-        display:inline-block;
+        display:block;
     }
-}*/
+}

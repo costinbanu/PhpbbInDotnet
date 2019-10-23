@@ -1,0 +1,44 @@
+﻿@model Serverless.Forum.Pages._SummaryPartialModel
+@{
+    Layout = null;
+}
+
+@*<table border="0" cellpadding="0" cellspacing="2" class="ForumListRight" id="summary@(Model.AssetId)">
+<tr>
+    <td>Autor:</td>
+    <td>
+        @if (Model.AuthorId == null)
+        {
+            Html.Raw(Model.AuthorName);
+        }
+        else
+        {
+            <a asp-page="/User" asp-route-UserId="@Model.AuthorId">@Html.Raw(Model.AuthorName)</a>
+        }
+    </td>
+</tr>
+    <tr>
+        <td>
+            Scris la:
+        </td>
+        <td>
+            @Model.CreationTime?.ToString(Model.DateFormat)
+        </td>
+    </tr>
+</table>*@
+<ul class="ForumListRight" id="summary@(Model.AssetId)">
+    <li>
+        Autor:
+        @if (Model.AuthorId == null)
+        {
+            Html.Raw(Model.AuthorName);
+        }
+        else
+        {
+            <a asp-page="/User" asp-route-UserId="@Model.AuthorId">@Html.Raw(Model.AuthorName)</a>
+        }
+    </li>
+    <li>
+        Scris la: @Model.CreationTime?.ToString(Model.DateFormat)
+    </li>
+</ul>
