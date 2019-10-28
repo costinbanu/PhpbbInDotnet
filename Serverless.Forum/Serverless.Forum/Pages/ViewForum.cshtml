@@ -66,14 +66,16 @@ else
                     Ultimul mesaj: @topic.LastPostTime?.ToString((await Model.GetCurrentUser())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
                     <br />
                     de&nbsp;
-                    @if (topic.LastPosterId == null)
-                    {
-                        Html.Raw(topic.LastPosterName);
-                    }
-                    else
-                    {
-                        <a asp-page="/User" asp-route-userId="@topic.LastPosterId">@topic.LastPosterName</a>
-                    }
+                    <span style="font-weight:bold; color:@topic.LastPosterColor">
+                        @if (topic.LastPosterId == null)
+                        {
+                            Html.Raw(topic.LastPosterName);
+                        }
+                        else
+                        {
+                            <a asp-page="/User" asp-route-userId="@topic.LastPosterId">@topic.LastPosterName</a>
+                        }
+                    </span>
                 </span>
             </div>
         }

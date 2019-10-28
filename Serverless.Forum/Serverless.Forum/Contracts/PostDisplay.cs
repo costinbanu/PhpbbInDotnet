@@ -16,6 +16,8 @@ namespace Serverless.Forum.Contracts
 
         public int? AuthorId { get; set; } = null;
 
+        public string AuthorColor { get; set; } = null;
+
         public string BbcodeUid { get; set; } = null;
 
         public DateTime? PostCreationTime { get; set; } = null;

@@ -168,35 +168,52 @@ namespace Serverless.Forum.Pages
             IsLastPage = pageNum == noOfPages;
             CurrentPage = pageNum;
 
-            using (var _dbContext = new forumContext(_config))
+            using (var context = new forumContext(_config))
             {
-                var postsInPage = (from p in _dbPosts.Skip((pageNum - 1) * pageSize).Take(pageSize)
-                                   join u in _dbContext.PhpbbUsers
-                                   on p.PosterId equals u.UserId
-                                   into joinedUsers
+                var postsInPage = (
+                    from p in _dbPosts.Skip((pageNum - 1) * pageSize).Take(pageSize)
 
-                                   join a in _dbContext.PhpbbAttachments
-                                   on p.PostId equals a.PostMsgId
-                                   into joinedAttachments
+                    join u in context.PhpbbUsers
+                    on p.PosterId equals u.UserId
+                    into joinedUsers
 
-                                   from ju in joinedUsers.DefaultIfEmpty()
-
-                                   select new PostDisplay
-                                   {
-                                       PostTitle = p.PostSubject,
-                                       PostText = p.PostText,
-                                       AuthorName = ju == null ? "Anonymous" : (ju.UserId == 1 ? p.PostUsername : ju.Username),
-                                       AuthorId = ju == null ? 1 : (ju.UserId == 1 ? null as int? : ju.UserId),
-                                       PostCreationTime = p.PostTime.TimestampToLocalTime(),
-                                       PostModifiedTime = p.PostEditTime.TimestampToLocalTime(),
-                                       Id = p.PostId,
-                                       Attachments = (from ja in joinedAttachments
-                                                      select ja.ToModel()).ToList(),
-                                       BbcodeUid = p.BbcodeUid
-                                   }).ToList();
+                    join a in context.PhpbbAttachments
+                    on p.PostId equals a.PostMsgId
+                    into joinedAttachments
 
 
-                var bbcodes = new List<BBTag>(from c in _dbContext.PhpbbBbcodes
+                    let color = (
+                        from ug in context.PhpbbUserGroup
+                        where ug.UserId == p.PosterId
+
+                        join g in context.PhpbbGroups
+                        on ug.GroupId equals g.GroupId
+                        into groups
+
+                        from gr in groups.DefaultIfEmpty()
+                        select gr == null ? null : gr.GroupColour
+                    ).FirstOrDefault(c => !string.IsNullOrEmpty(c))
+
+                    from ju in joinedUsers.DefaultIfEmpty()
+
+                    select new PostDisplay
+                    {
+                        PostTitle = p.PostSubject,
+                        PostText = p.PostText,
+                        AuthorName = ju == null ? "Anonymous" : (ju.UserId == 1 ? p.PostUsername : ju.Username),
+                        AuthorId = ju == null ? 1 : (ju.UserId == 1 ? null as int? : ju.UserId),
+                        AuthorColor = $"#{color ?? "000000"}",
+                        PostCreationTime = p.PostTime.TimestampToLocalTime(),
+                        PostModifiedTime = p.PostEditTime.TimestampToLocalTime(),
+                        Id = p.PostId,
+                        Attachments = (from ja in joinedAttachments
+                                       select ja.ToModel()).ToList(),
+                        BbcodeUid = p.BbcodeUid
+                    }
+                ).ToList();
+
+
+                var bbcodes = new List<BBTag>(from c in context.PhpbbBbcodes
                                               select new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false));
                 bbcodes.AddRange(new[]
                 {
@@ -265,7 +282,7 @@ namespace Serverless.Forum.Pages
 
                 Pagination = new _PaginationPartialModel(
                     $"/ViewTopic?TopicId={topicId}&PageNum=1",
-                    _dbContext.PhpbbPosts.Count(p => p.TopicId == topicId),
+                    context.PhpbbPosts.Count(p => p.TopicId == topicId),
                     pageSize,
                     pageNum
                 );

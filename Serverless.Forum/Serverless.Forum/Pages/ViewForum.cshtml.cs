@@ -68,50 +68,100 @@ namespace Serverless.Forum.Pages
                 ParentForumTitle = HttpUtility.HtmlDecode(await (from pf in context.PhpbbForums
                                                                  where pf.ForumId == thisForum.ParentId
                                                                  select pf.ForumName).FirstOrDefaultAsync() ?? "untitled");
+                var id = _currentUserId.Value;
+                Forums = await ( this takes too long, need to find out why the commented out part gets a null ref ex
+                    from f in context.PhpbbForums
+                    where f.ParentId == forumId
+                    orderby f.LeftId
+                    //let isRead = (
+                    //    from t in context.PhpbbTopics
+                    //    where t.ForumId == forumId
 
-                Forums = await (from f in context.PhpbbForums
-                                where f.ParentId == forumId
-                                orderby f.LeftId
-                                select new ForumDisplay
-                                {
-                                    Id = f.ForumId,
-                                    Name = HttpUtility.HtmlDecode(f.ForumName),
-                                    LastPosterName = f.ForumLastPosterName,
-                                    LastPostTime = f.ForumLastPostTime.TimestampToLocalTime(),
-                                    Unread = IsForumUnread(f.ForumId)
-                                })
-                               .ToListAsync();
+                    //    join tt in context.PhpbbTopicsTrack
+                    //    on new { t.TopicId, UserId = id } equals new { tt.TopicId, tt.UserId }
+                    //    into tracked
 
-                Topics = await (from t in context.PhpbbTopics
-                                where t.ForumId == forumId
-                                orderby t.TopicLastPostTime descending
+                    //    from tt in tracked
+                    //    join p in context.PhpbbPosts
+                    //    on t.TopicId equals p.TopicId
+                    //    into posts
 
-                                group t by t.TopicType into groups
-                                orderby groups.Key descending
-                                select new TopicTransport
-                                {
-                                    TopicType = groups.Key,
-                                    Topics = from g in groups
+                    //    let currentTracked = tracked/*.DefaultIfEmpty()*/.FirstOrDefault()
+                    //    let currentMarked = currentTracked == null ? DateTime.UtcNow.LocalTimeToTimestamp() : currentTracked.MarkTime
+                    //    let posts1 = posts.DefaultIfEmpty()
+                    //    let max = posts1 == null ? 0L : posts1.Max(p => p == null ? 0 : p.PostTime)
 
-                                             join u in context.PhpbbUsers
-                                             on g.TopicLastPosterId equals u.UserId
-                                             into joined
+                    //    select (currentMarked < max)
+                    //).FirstOrDefault()
 
-                                             from j in joined.DefaultIfEmpty()
-                                             let postCount = context.PhpbbPosts.Count(p => p.TopicId == g.TopicId)
-                                             let pageSize = usr.TopicPostsPerPage.ContainsKey(g.TopicId) ? usr.TopicPostsPerPage[g.TopicId] : 14
-                                             select new TopicDisplay
-                                             {
-                                                 Id = g.TopicId,
-                                                 Title = HttpUtility.HtmlDecode(g.TopicTitle),
-                                                 LastPosterId = j.UserId == 1 ? null as int? : j.UserId,
-                                                 LastPosterName = HttpUtility.HtmlDecode(g.TopicLastPosterName),
-                                                 LastPostTime = g.TopicLastPostTime.TimestampToLocalTime(),
-                                                 PostCount = context.PhpbbPosts.Count(p => p.TopicId == g.TopicId),
-                                                 Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1),
-                                                 Unread = IsTopicUnread(g.TopicId)
-                                             }
-                                }).ToListAsync();
+                    select new ForumDisplay
+                    {
+                        Id = f.ForumId,
+                        Name = HttpUtility.HtmlDecode(f.ForumName),
+                        LastPosterName = f.ForumLastPosterName,
+                        LastPostTime = f.ForumLastPostTime.TimestampToLocalTime(),
+                        Unread = /*isRead*/ IsForumUnread(f.ForumId)
+                    }
+                ).ToListAsync();
+
+                Topics = await (
+                    from t in context.PhpbbTopics
+                    where t.ForumId == forumId
+                    orderby t.TopicLastPostTime descending
+
+                    group t by t.TopicType into groups
+                    orderby groups.Key descending
+                    select new TopicTransport
+                    {
+                        TopicType = groups.Key,
+                        Topics = from g in groups
+
+                                 let lastPost = (
+                                     from p in context.PhpbbPosts
+                                     where p.TopicId == g.TopicId
+
+                                     group p by p.PostId into grp
+                                     let MaxOrderDatePerPerson = grp.Max(gr => gr.PostTime)
+
+                                     from p in grp
+                                     where p.PostTime == MaxOrderDatePerPerson
+                                     select p
+                                 ).First()
+
+                                 join u in context.PhpbbUsers
+                                 on g.TopicLastPosterId equals u.UserId
+                                 into joined
+
+                                 from j in joined.DefaultIfEmpty()
+
+                                 let postCount = context.PhpbbPosts.Count(p => p.TopicId == g.TopicId)
+                                 let pageSize = usr.TopicPostsPerPage.ContainsKey(g.TopicId) ? usr.TopicPostsPerPage[g.TopicId] : 14
+                                 let color = (
+                                    from ug in context.PhpbbUserGroup
+                                    where ug.UserId == j.UserId
+
+                                    join g in context.PhpbbGroups
+                                    on ug.GroupId equals g.GroupId
+                                    into groups1
+
+                                    from gr in groups1.DefaultIfEmpty()
+                                    select gr == null ? null : gr.GroupColour
+                                ).FirstOrDefault(c => !string.IsNullOrEmpty(c))
+
+                                 select new TopicDisplay
+                                 {
+                                     Id = g.TopicId,
+                                     Title = HttpUtility.HtmlDecode(g.TopicTitle),
+                                     LastPosterId = j.UserId == 1 ? null as int? : j.UserId,
+                                     LastPosterName = HttpUtility.HtmlDecode(g.TopicLastPosterName),
+                                     LastPostTime = g.TopicLastPostTime.TimestampToLocalTime(),
+                                     PostCount = context.PhpbbPosts.Count(p => p.TopicId == g.TopicId),
+                                     Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1),
+                                     Unread = IsTopicUnread(g.TopicId),
+                                     LastPosterColor = color
+                                 }
+                    }
+                ).ToListAsync();
 
                 return Page();
             }

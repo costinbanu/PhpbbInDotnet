@@ -24,7 +24,7 @@
                     <input type="text" name="subject" id="subject" size="45" maxlength="256" tabindex="2" value="@Model.PostTitle" class="inputbox fullwidth">
                 </td>
             </tr>  
-            <tr id="colour_palette" style="position:absolute; visibility:hidden;">
+            <tr id="colour_palette" style="position:absolute; visibility:hidden;" class="postingControls">
                 <td>Culoare font:</td>
                 <td>
                     <br/>
@@ -55,7 +55,7 @@
         </table>
     <br/>
 
-    <div class="bbcodebuttons">
+    <div class="bbcodebuttons postingControls">
         <input type="button" class="button2" accesskey="b" name="addbbcode0" value=" B " style="font-weight:bold; width: 30px" onclick="bbstyle(0)" title="Text bold: [b]text[/b]">
         <input type="button" class="button2" accesskey="i" name="addbbcode2" value=" i " style="font-style:italic; width: 30px" onclick="bbstyle(2)" title="Text italic: [i]text[/i]">
         <input type="button" class="button2" accesskey="u" name="addbbcode4" value=" u " style="text-decoration: underline; width: 30px" onclick="bbstyle(4)" title="Text subliniat: [u]text[/u]">
@@ -84,7 +84,7 @@
     <div id="messageHolder">
         <textarea name="message" id="message" rows="15" cols="76" tabindex="3" onselect="storeCaret(this);" onclick="storeCaret(this);" onkeyup="storeCaret(this);" onfocus="initInsertions();" class="inputbox">@Model.PostText</textarea>
     </div>
-    <div id="smiley-box" class="smileybox">
+    <div id="smiley-box" class="smileybox postingControls">
 
         <strong>Zâmbete</strong><br />
 

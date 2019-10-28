@@ -19,6 +19,8 @@ namespace Serverless.Forum.Contracts
 
         public string UserDateFormat { get; set; } = null;
 
+        public string UserColor { get; set; } = null;
+
         //public IEnumerable<ForumAuthentication> ForumAuthentications { get; set; } = null;
 
         public class Permissions

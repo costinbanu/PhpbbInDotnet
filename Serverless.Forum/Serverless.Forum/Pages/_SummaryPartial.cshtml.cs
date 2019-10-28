@@ -13,6 +13,7 @@ namespace Serverless.Forum.Pages
     {
         public int? AuthorId { get; set; }
         public string AuthorName { get; set; }
+        public string AuthorColor { get; set; }
         public DateTime? CreationTime { get; set; }
         public int AssetId { get; set; }
         public string DateFormat { get; set; }

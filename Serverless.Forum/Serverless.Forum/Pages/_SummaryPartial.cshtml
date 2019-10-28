@@ -31,11 +31,11 @@
         Autor:
         @if (Model.AuthorId == null)
         {
-            Html.Raw(Model.AuthorName);
+            @Html.Raw(Model.AuthorName);
         }
         else
         {
-            <a asp-page="/User" asp-route-UserId="@Model.AuthorId">@Html.Raw(Model.AuthorName)</a>
+            <a asp-page="/User" asp-route-UserId="@Model.AuthorId" style="color:@Model.AuthorColor;font-weight:bold">@Html.Raw(Model.AuthorName)</a>
         }
     </li>
     <li>

@@ -20,6 +20,8 @@ namespace Serverless.Forum.Pages
         public _PaginationPartialModel Pagination { get; set; } = null;
 
         public bool Unread { get; set; } = false;
+
+        public string LastPosterColor { get; set; } = null;
     }
 
     public class TopicTransport
