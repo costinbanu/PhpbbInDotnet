@@ -87,7 +87,7 @@ namespace Serverless.Forum.Pages
             {
                 return NotFound($"Mesajul {postId} nu există.");
             }
-            var usr = await GetCurrentUser();
+            var usr = await GetCurrentUserAsync();
             var pageSize = usr.TopicPostsPerPage.ContainsKey(_currentTopic.TopicId) ? usr.TopicPostsPerPage[_currentTopic.TopicId] : 14;
             PostsPerPage.ForEach(ppp => ppp.Selected = int.TryParse(ppp.Value, out var value) && value == pageSize);
 
@@ -128,7 +128,7 @@ namespace Serverless.Forum.Pages
                                 select f).FirstOrDefaultAsync();
             }
 
-            var usr = await GetCurrentUser();
+            var usr = await GetCurrentUserAsync();
             var pageSize = usr.TopicPostsPerPage.ContainsKey(topicId) ? usr.TopicPostsPerPage[topicId] : 14;
             PostsPerPage.ForEach(ppp => ppp.Selected = int.TryParse(ppp.Value, out var value) && value == pageSize);
             ForumId = parent?.ForumId;
@@ -136,7 +136,7 @@ namespace Serverless.Forum.Pages
             if (!string.IsNullOrEmpty(parent.ForumPassword) &&
                 (HttpContext.Session.GetInt32("ForumLogin") ?? -1) != ForumId)
             {
-                if ((await GetCurrentUser()).UserPermissions.Any(fp => fp.ForumId == ForumId && fp.AuthRoleId == 16))
+                if ((await GetCurrentUserAsync()).UserPermissions.Any(fp => fp.ForumId == ForumId && fp.AuthRoleId == 16))
                 {
                     return RedirectToPage("Unauthorized");
                 }
@@ -208,7 +208,9 @@ namespace Serverless.Forum.Pages
                         Id = p.PostId,
                         Attachments = (from ja in joinedAttachments
                                        select ja.ToModel()).ToList(),
-                        BbcodeUid = p.BbcodeUid
+                        BbcodeUid = p.BbcodeUid,
+
+                        Unread = u.UserLastmark <= p.PostTime
                     }
                 ).ToList();
 
@@ -301,9 +303,8 @@ namespace Serverless.Forum.Pages
 
             using (var context = new forumContext(_config))
             {
-                var usr = await GetCurrentUser();
                 var curValue = await context.PhpbbUserTopicPostNumber
-                                               .FirstOrDefaultAsync(ppp => ppp.UserId == usr.UserId &&
+                                               .FirstOrDefaultAsync(ppp => ppp.UserId == CurrentUserId &&
                                                                            ppp.TopicId == topicId);
 
                 if (curValue == null)
@@ -311,7 +312,7 @@ namespace Serverless.Forum.Pages
                     context.PhpbbUserTopicPostNumber
                               .Add(new PhpbbUserTopicPostNumber
                               {
-                                  UserId = usr.UserId.Value,
+                                  UserId = CurrentUserId.Value,
                                   TopicId = topicId,
                                   PostNo = userPostsPerPage
                               });
@@ -372,7 +373,7 @@ namespace Serverless.Forum.Pages
         {
             if (_dbPosts == null)
             {
-                _dbPosts = await _utils.GetPosts(topicId);
+                _dbPosts = await _utils.GetPostsAsync(topicId);
             }
         }
     }

@@ -12,8 +12,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
@@ -56,7 +54,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnGetForumPost(int forumId, int topicId)
         {
-            if ((await GetCurrentUser()).UserId == 1)
+            if (CurrentUserId == 1)
             {
                 return Unauthorized();
             }
@@ -86,7 +84,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnGetQuoteForumPost(int postId)
         {
-            if ((await GetCurrentUser()).UserId == 1)
+            if (CurrentUserId == 1)
             {
                 return Unauthorized();
             }
@@ -140,15 +138,14 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPostAttachment(IList<IFormFile> files, string fileComment)
         {
-            var usr = await GetCurrentUser();
-            if (usr.UserId == 1)
+            if (CurrentUserId == 1)
             {
                 return RedirectToPage("Login");
             }
 
             foreach (var file in files)
             {
-                var name = $"{usr.UserId ?? 0}_{Guid.NewGuid():n}";
+                var name = $"{CurrentUserId ?? 0}_{Guid.NewGuid():n}";
                 var request = new PutObjectRequest
                 {
                     BucketName = _config["AwsS3BucketName"],
@@ -181,7 +178,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPostForumPost(int forumId, int topicId, string postSubject, string postText, string returnUrl)
         {
-            var usr = await GetCurrentUser();
+            var usr = await GetCurrentUserAsync();
             if (usr.UserId == 1)
             {
                 return Unauthorized();

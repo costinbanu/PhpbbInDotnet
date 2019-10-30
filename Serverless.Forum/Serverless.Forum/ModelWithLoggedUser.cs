@@ -20,6 +20,8 @@ namespace Serverless.Forum
         protected readonly IConfiguration _config;
         protected readonly Utils _utils;
 
+        private readonly Lazy<int?> _currentUserId;
+
         public ModelWithLoggedUser(IConfiguration config, Utils utils)
         {
             _config = config;
@@ -44,9 +46,11 @@ namespace Serverless.Forum
                             select r).ToList();
                 }
             });
+
+            _currentUserId = new Lazy<int?>(() => GetCurrentUserAsync().RunSync().UserId);
         }
 
-        public async Task<LoggedUser> GetCurrentUser()
+        public async Task<LoggedUser> GetCurrentUserAsync()
         {
             var user = User;
             if (!user.Identity.IsAuthenticated)
@@ -71,7 +75,7 @@ namespace Serverless.Forum
 
         public async Task<bool> IsCurrentUserAdminHere(int forumId)
         {
-            return (from up in (await GetCurrentUser()).UserPermissions
+            return (from up in (await GetCurrentUserAsync()).UserPermissions
                     where up.ForumId == forumId || up.ForumId == 0
                     join a in _adminRoles.Value
                     on up.AuthRoleId equals a.RoleId
@@ -80,7 +84,7 @@ namespace Serverless.Forum
 
         public async Task<bool> IsCurrentUserModHere(int forumId)
         {
-            return (from up in (await GetCurrentUser()).UserPermissions
+            return (from up in (await GetCurrentUserAsync()).UserPermissions
                     where up.ForumId == forumId || up.ForumId == 0
                     join a in _modRoles.Value
                     on up.AuthRoleId equals a.RoleId
@@ -89,7 +93,7 @@ namespace Serverless.Forum
 
         public async Task ReloadCurrentUser()
         {
-            var current = (await GetCurrentUser()).UserId;
+            var current = (await GetCurrentUserAsync()).UserId;
             if (current != 1)
             {
                 var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -98,7 +102,7 @@ namespace Serverless.Forum
                 {
                     await HttpContext.SignInAsync(
                         CookieAuthenticationDefaults.AuthenticationScheme,
-                        await _utils.LoggedUserFromDbUser(
+                        await _utils.LoggedUserFromDbUserAsync(
                             await context.PhpbbUsers.FirstAsync(u => u.UserId == current)
                         ),
                         new AuthenticationProperties
@@ -111,5 +115,7 @@ namespace Serverless.Forum
                 }
             }
         }
+
+        public int? CurrentUserId => _currentUserId.Value;
     }
 }

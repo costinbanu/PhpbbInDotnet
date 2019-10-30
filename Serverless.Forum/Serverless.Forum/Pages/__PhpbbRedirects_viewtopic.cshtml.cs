@@ -21,7 +21,7 @@ namespace Serverless.Forum.Pages
             {
                 if (start.HasValue)
                 {
-                    var posts = (from post in await _utils.GetPosts(t.Value)
+                    var posts = (from post in await _utils.GetPostsAsync(t.Value)
                                  select post.PostId).ToList();
                     return RedirectToPage("ViewTopic", "ByPostId", new { PostId = posts[start.Value] });
                 }

@@ -4,8 +4,6 @@
     ViewData["Title"] = "Home page";
 }
 
-@using Serverless.Forum.Utilities;
-
 <h2>Forumul Metrou Ușor</h2>
 
 @foreach (var category in Model.Forums)
@@ -15,12 +13,13 @@
     </div>
     @foreach (var forum in category.Children)
     {
-        <div class="ForumListRow">
+        var divClass = forum.Unread ? "ForumListRow Unread" : "ForumListRow";
+        <div class="@divClass">
             <span class="ForumListLeft" style="padding-left:20px">
                 <a asp-page="/ViewForum" asp-route-forumId="@forum.Id" class="nav-link">@forum.Name</a>
             </span>
             <span class="ForumListRight">
-                Ultimul mesaj: @forum.LastPostTime?.ToString((await Model.GetCurrentUser())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
+                Ultimul mesaj: @forum.LastPostTime?.ToString((await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
                 <br />
                 de&nbsp;
                 @if (forum.LastPosterId == null)

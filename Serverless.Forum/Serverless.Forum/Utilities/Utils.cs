@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
@@ -19,79 +20,125 @@ namespace Serverless.Forum.Utilities
     public class Utils
     {
         public readonly ClaimsPrincipal Anonymous;
-        private readonly forumContext _context;
+        private readonly IConfiguration _config;
+        private IEnumerable<Tuple<int, int>> _tracking;
 
-        public Utils(forumContext context)
+        public Utils(IConfiguration config)
         {
-            _context = context;
-            var anonTask = LoggedUserFromDbUser(_context.PhpbbUsers.First(u => u.UserId == 1));
-            Task.WaitAll(anonTask);
-            Anonymous = anonTask.Result;
-        }
-
-        public async Task<ClaimsPrincipal> LoggedUserFromDbUser(PhpbbUsers user)
-        {
-            var groups = await (from g in _context.PhpbbUserGroup
-                                where g.UserId == user.UserId
-                                select g.GroupId).ToListAsync();
-
-            var userPermissions = await (from up in _context.PhpbbAclUsers
-                                         where up.UserId == user.UserId
-                                         select up).ToListAsync();
-
-            var groupPermissions = await (from gp in _context.PhpbbAclGroups
-                                          let alreadySet = from up in userPermissions
-                                                           select up.ForumId
-                                          where groups.Contains(gp.GroupId)
-                                             && !alreadySet.Contains(gp.ForumId)
-                                          select gp).ToListAsync();
-
-            var topicPostsPerPage = await (from tpp in _context.PhpbbUserTopicPostNumber
-                                           where tpp.UserId == user.UserId
-                                           select KeyValuePair.Create(tpp.TopicId, tpp.PostNo)).ToListAsync();
-
-            var intermediary = new LoggedUser
+            _config = config;
+            using (var context = new forumContext(_config))
             {
-                UserId = user.UserId,
-                Username = user.Username,
-                UsernameClean = user.UsernameClean,
-                Groups = groups,
-                UserPermissions = (from up in userPermissions
-                                   select new LoggedUser.Permissions
-                                   {
-                                       ForumId = up.ForumId,
-                                       AuthOptionId = up.AuthOptionId,
-                                       AuthRoleId = up.AuthRoleId,
-                                       AuthSetting = up.AuthSetting
-                                   })
-                                   .ToList()
-                                   .Union((from gp in groupPermissions
-                                           select new LoggedUser.Permissions
-                                           {
-                                               ForumId = gp.ForumId,
-                                               AuthOptionId = gp.AuthOptionId,
-                                               AuthRoleId = gp.AuthRoleId,
-                                               AuthSetting = gp.AuthSetting
-                                           }).ToList()).ToList(),
-                TopicPostsPerPage = topicPostsPerPage.ToDictionary(k => k.Key, v => v.Value),
-                UserDateFormat = user.UserDateformat
-            };
-
-            var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
-            identity.AddClaim(new Claim(ClaimTypes.UserData, await CompressObject(intermediary)));
-            return new ClaimsPrincipal(identity);
+                Anonymous = LoggedUserFromDbUserAsync(context.PhpbbUsers.First(u => u.UserId == 1)).RunSync();
+            }
         }
 
-        public async Task<List<PhpbbPosts>> GetPosts(int topicId)
+        public async Task<ClaimsPrincipal> LoggedUserFromDbUserAsync(PhpbbUsers user)
         {
-            return await(from pp in _context.PhpbbPosts
-                         where pp.TopicId == topicId
-                         orderby pp.PostTime ascending
-                         select pp)
-                        .ToListAsync();
+            using (var context = new forumContext(_config))
+            {
+                var groups = await (from g in context.PhpbbUserGroup
+                                    where g.UserId == user.UserId
+                                    select g.GroupId).ToListAsync();
+
+                var userPermissions = await (from up in context.PhpbbAclUsers
+                                             where up.UserId == user.UserId
+                                             select up).ToListAsync();
+
+                var groupPermissions = await (from gp in context.PhpbbAclGroups
+                                              let alreadySet = from up in userPermissions
+                                                               select up.ForumId
+                                              where groups.Contains(gp.GroupId)
+                                                 && !alreadySet.Contains(gp.ForumId)
+                                              select gp).ToListAsync();
+
+                var topicPostsPerPage = await (from tpp in context.PhpbbUserTopicPostNumber
+                                               where tpp.UserId == user.UserId
+                                               select KeyValuePair.Create(tpp.TopicId, tpp.PostNo)).ToListAsync();
+
+                var intermediary = new LoggedUser
+                {
+                    UserId = user.UserId,
+                    Username = user.Username,
+                    UsernameClean = user.UsernameClean,
+                    Groups = groups,
+                    UserPermissions = (from up in userPermissions
+                                       select new LoggedUser.Permissions
+                                       {
+                                           ForumId = up.ForumId,
+                                           AuthOptionId = up.AuthOptionId,
+                                           AuthRoleId = up.AuthRoleId,
+                                           AuthSetting = up.AuthSetting
+                                       })
+                                       .ToList()
+                                       .Union((from gp in groupPermissions
+                                               select new LoggedUser.Permissions
+                                               {
+                                                   ForumId = gp.ForumId,
+                                                   AuthOptionId = gp.AuthOptionId,
+                                                   AuthRoleId = gp.AuthRoleId,
+                                                   AuthSetting = gp.AuthSetting
+                                               }).ToList()).ToList(),
+                    TopicPostsPerPage = topicPostsPerPage.ToDictionary(k => k.Key, v => v.Value),
+                    UserDateFormat = user.UserDateformat
+                };
+
+                var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
+                identity.AddClaim(new Claim(ClaimTypes.UserData, await CompressObjectAsync(intermediary)));
+                return new ClaimsPrincipal(identity);
+            }
         }
 
-        public async Task<string> CompressObject<T>(T source)
+        public async Task<List<PhpbbPosts>> GetPostsAsync(int topicId)
+        {
+            using (var _context = new forumContext(_config))
+            {
+                return await (from pp in _context.PhpbbPosts
+                              where pp.TopicId == topicId
+                              orderby pp.PostTime ascending
+                              select pp)
+                            .ToListAsync();
+            }
+        }
+
+        public async Task<Dictionary<int, List<int>>> GetUnreadTopicsAndAncestorsAsync(int currentUserId)
+        {
+            async Task<List<int>> ancestors(forumContext context, int current, List<int> parents)
+            {
+                var thisForum = await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == current);
+                if (thisForum == null)
+                {
+                    return parents;
+                }
+                parents.Add(current);
+                return await ancestors(context, thisForum.ParentId, parents);
+            }
+
+            var unread = getUnreadTopicsAndParentsLazy(currentUserId);
+            using (var context = new forumContext(_config))
+            {
+                var toReturn = new Dictionary<int, List<int>>();
+                foreach (var (ForumId, TopicId) in unread)
+                {
+                    toReturn.Add(TopicId, await ancestors(context, ForumId, new List<int>()));
+                }
+
+                return toReturn;
+            }
+        }
+
+        public bool IsForumUnread(int currentUserId, int forumId)
+        {
+            var unread = getUnreadTopicsAndParentsLazy(currentUserId);
+            return unread.Any(u => u.Item1 == forumId);
+        }
+
+        public bool IsTopicUnread(int currentUserId, int topicId)
+        {
+            var unread = getUnreadTopicsAndParentsLazy(currentUserId);
+            return unread.Any(u => u.Item2 == topicId);
+        }
+
+        public async Task<string> CompressObjectAsync<T>(T source)
         {
             using (var content = new MemoryStream(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(source))))
             using (var memory = new MemoryStream())
@@ -103,7 +150,7 @@ namespace Serverless.Forum.Utilities
             }
         }
 
-        public async Task<T> DecompressObject<T>(string source)
+        public async Task<T> DecompressObjectAsync<T>(string source)
         {
             if (string.IsNullOrWhiteSpace(source))
             {
@@ -159,6 +206,40 @@ namespace Serverless.Forum.Utilities
             }
 
             return stringBuilder.ToString().ToLower().Normalize(NormalizationForm.FormC);
+        }
+
+        private IEnumerable<Tuple<int, int>> getUnreadTopicsAndParentsLazy(int currentUserId)
+        {
+            if (_tracking == null)
+            {
+                //https://www.phpbb.com/community/viewtopic.php?t=2165146
+                //https://www.phpbb.com/community/viewtopic.php?p=2987015
+                using (var context = new forumContext(_config))
+                {
+                    _tracking = (
+                        from t in context.PhpbbTopics
+                        from u in context.PhpbbUsers
+
+                        where u.UserId == currentUserId && t.TopicLastPostTime > u.UserLastmark
+
+                        join tt in context.PhpbbTopicsTrack
+                        on new { t.TopicId, UserId = currentUserId } equals new { tt.TopicId, tt.UserId }
+                        into trackedTopics
+
+                        join ft in context.PhpbbForumsTrack
+                        on new { t.ForumId, UserId = currentUserId } equals new { ft.ForumId, ft.UserId }
+                        into trackedForums
+
+                        from tt in trackedTopics.DefaultIfEmpty()
+                        from ft in trackedForums.DefaultIfEmpty()
+
+                        where !((tt != null && t.TopicLastPostTime <= tt.MarkTime) || (ft != null && t.TopicLastPostTime <= ft.MarkTime))
+
+                        select Tuple.Create(t.ForumId, t.TopicId)
+                    ).ToList();
+                }
+            }
+            return _tracking;
         }
     }
 }

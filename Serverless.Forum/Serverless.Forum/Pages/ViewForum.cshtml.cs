@@ -5,7 +5,6 @@ using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
 using Serverless.Forum.Utilities;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -22,12 +21,7 @@ namespace Serverless.Forum.Pages
         public string ParentForumTitle { get; private set; }
         public int? ParentForumId { get; private set; }
 
-        private Lazy<int> _currentUserId;
-
-        public ViewForumModel(IConfiguration config, Utils utils) : base(config, utils)
-        {
-            _currentUserId = new Lazy<int>(() => Task.Run(async () => await GetCurrentUser()).Result.UserId.Value);
-        }
+        public ViewForumModel(IConfiguration config, Utils utils) : base(config, utils) { }
 
         public async Task<IActionResult> OnGet(int forumId)
         {
@@ -42,7 +36,7 @@ namespace Serverless.Forum.Pages
                     return NotFound($"Forumul {forumId} nu există.");
                 }
 
-                var usr = await GetCurrentUser();
+                var usr = await GetCurrentUserAsync();
 
                 if (!string.IsNullOrEmpty(thisForum.ForumPassword) &&
                     (HttpContext.Session.GetInt32("ForumLogin") ?? -1) != forumId)
@@ -68,39 +62,18 @@ namespace Serverless.Forum.Pages
                 ParentForumTitle = HttpUtility.HtmlDecode(await (from pf in context.PhpbbForums
                                                                  where pf.ForumId == thisForum.ParentId
                                                                  select pf.ForumName).FirstOrDefaultAsync() ?? "untitled");
-                var id = _currentUserId.Value;
-                Forums = await ( this takes too long, need to find out why the commented out part gets a null ref ex
+                var id = CurrentUserId;
+                Forums = await ( 
                     from f in context.PhpbbForums
                     where f.ParentId == forumId
                     orderby f.LeftId
-                    //let isRead = (
-                    //    from t in context.PhpbbTopics
-                    //    where t.ForumId == forumId
-
-                    //    join tt in context.PhpbbTopicsTrack
-                    //    on new { t.TopicId, UserId = id } equals new { tt.TopicId, tt.UserId }
-                    //    into tracked
-
-                    //    from tt in tracked
-                    //    join p in context.PhpbbPosts
-                    //    on t.TopicId equals p.TopicId
-                    //    into posts
-
-                    //    let currentTracked = tracked/*.DefaultIfEmpty()*/.FirstOrDefault()
-                    //    let currentMarked = currentTracked == null ? DateTime.UtcNow.LocalTimeToTimestamp() : currentTracked.MarkTime
-                    //    let posts1 = posts.DefaultIfEmpty()
-                    //    let max = posts1 == null ? 0L : posts1.Max(p => p == null ? 0 : p.PostTime)
-
-                    //    select (currentMarked < max)
-                    //).FirstOrDefault()
-
                     select new ForumDisplay
                     {
                         Id = f.ForumId,
                         Name = HttpUtility.HtmlDecode(f.ForumName),
                         LastPosterName = f.ForumLastPosterName,
                         LastPostTime = f.ForumLastPostTime.TimestampToLocalTime(),
-                        Unread = /*isRead*/ IsForumUnread(f.ForumId)
+                        Unread = _utils.IsForumUnread(CurrentUserId ?? 1, f.ForumId)
                     }
                 ).ToListAsync();
 
@@ -157,50 +130,13 @@ namespace Serverless.Forum.Pages
                                      LastPostTime = g.TopicLastPostTime.TimestampToLocalTime(),
                                      PostCount = context.PhpbbPosts.Count(p => p.TopicId == g.TopicId),
                                      Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1),
-                                     Unread = IsTopicUnread(g.TopicId),
+                                     Unread = _utils.IsTopicUnread(CurrentUserId ?? 1, g.TopicId),
                                      LastPosterColor = color
                                  }
                     }
                 ).ToListAsync();
 
                 return Page();
-            }
-        }
-
-
-        private bool IsTopicUnread(int topicId)
-        {
-            using (var context = new forumContext(_config))
-            {
-                return (context.PhpbbTopicsTrack.FirstOrDefault(tt => tt.TopicId == topicId && tt.UserId == _currentUserId.Value)
-                    ?.MarkTime ?? DateTime.UtcNow.LocalTimeToTimestamp()
-                ) < context.PhpbbPosts.Where(p => p.TopicId == topicId).Max(p => p.PostTime);
-            }
-        }
-
-        private bool IsForumUnread(int forumId)
-        {
-            using (var context = new forumContext(_config))
-            {
-                return (
-                    from t in context.PhpbbTopics
-                    where t.ForumId == forumId
-
-                    join tt in context.PhpbbTopicsTrack
-                    on new { t.TopicId, UserId = _currentUserId.Value } equals new { tt.TopicId, tt.UserId }
-                    into tracked
-
-                    from tt in tracked
-                    join p in context.PhpbbPosts
-                    on t.TopicId equals p.TopicId
-                    into posts
-
-                    let currentTracked = tracked.DefaultIfEmpty().FirstOrDefault()
-                    let currentMarked = currentTracked == null ? DateTime.UtcNow.LocalTimeToTimestamp() : currentTracked.MarkTime
-                    let max = posts.DefaultIfEmpty().Max(p => p.PostTime)
-
-                    select (currentMarked < max as bool?)
-                ).FirstOrDefault() ?? false; 
             }
         }
     }

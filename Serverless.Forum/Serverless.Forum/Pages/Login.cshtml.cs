@@ -55,7 +55,7 @@ namespace Serverless.Forum.Pages
                 {
                     await HttpContext.SignInAsync(
                         CookieAuthenticationDefaults.AuthenticationScheme,
-                        await _utils.LoggedUserFromDbUser(user.First()),
+                        await _utils.LoggedUserFromDbUserAsync(user.First()),
                         new AuthenticationProperties
                         {
                             AllowRefresh = true,

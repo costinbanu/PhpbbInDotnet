@@ -22,7 +22,7 @@ namespace Serverless.Forum.Pages
         {
             using (var context = new forumContext(_config))
             {
-                var usr = await GetCurrentUser();
+                var usr = await GetCurrentUserAsync();
                 Forums = await (from f1 in context.PhpbbForums
                                 where f1.ForumType == 0
                                    && usr.UserPermissions != null
@@ -42,7 +42,8 @@ namespace Serverless.Forum.Pages
                                                         Name = HttpUtility.HtmlDecode(f2.ForumName),
                                                         LastPosterName = f2.ForumLastPosterName,
                                                         LastPosterId = j.UserId == 1 ? null as int? : j.UserId,
-                                                        LastPostTime = f2.ForumLastPostTime.TimestampToLocalTime()
+                                                        LastPostTime = f2.ForumLastPostTime.TimestampToLocalTime(),
+                                                        Unread = _utils.IsForumUnread(CurrentUserId ?? 1, f2.ForumId)
                                                     }
                                 orderby f1.LeftId
                                 select new ForumDisplay()

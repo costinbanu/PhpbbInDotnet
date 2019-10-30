@@ -20,12 +20,13 @@ else
     <h4>Forumuri</h4>
     @foreach (var forum in Model.Forums)
     {
-        <div class="ForumListRow">
+        var divClass = forum.Unread ? "ForumListRow Unread" : "ForumListRow";
+        <div class="@divClass">
             <span class="ForumListLeft">
                 <a asp-page="/ViewForum" asp-route-forumId="@forum.Id" class="nav-link">@forum.Name</a>
             </span>
             <span class="ForumListRight">
-                Ultimul mesaj: @forum.LastPostTime?.ToString((await Model.GetCurrentUser())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
+                Ultimul mesaj: @forum.LastPostTime?.ToString((await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
                 <br />
                 de @forum.LastPosterName
             </span>
@@ -52,7 +53,8 @@ else
         }
         foreach (var topic in topicGroup?.Topics ?? new List<TopicDisplay>())
         {
-            <div class="ForumListRow">
+            var divClass = topic.Unread ? "ForumListRow Unread" : "ForumListRow";
+            <div class="@divClass">
                 <span class="ForumListLeft">
                     @if (topicGroup.TopicType == 1)
                     {
@@ -63,7 +65,7 @@ else
                     @await Html.PartialAsync("_PaginationPartial", topic.Pagination, ViewData)
                 </span>
                 <span class="ForumListRight">
-                    Ultimul mesaj: @topic.LastPostTime?.ToString((await Model.GetCurrentUser())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
+                    Ultimul mesaj: @topic.LastPostTime?.ToString((await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")
                     <br />
                     de&nbsp;
                     <span style="font-weight:bold; color:@topic.LastPosterColor">

@@ -25,7 +25,7 @@ namespace Serverless.Forum.Utilities
 
         public static async Task<LoggedUser> ToLoggedUser(this ClaimsPrincipal principal, Utils utils)
         {
-            return await utils.DecompressObject<LoggedUser>(principal.Claims.FirstOrDefault()?.Value);
+            return await utils.DecompressObjectAsync<LoggedUser>(principal.Claims.FirstOrDefault()?.Value);
         }
 
         public static bool IsMimeTypeInline(this string mimeType)
@@ -44,6 +44,17 @@ namespace Serverless.Forum.Utilities
                 IsRenderedInline = dbAttachmentRecord.Mimetype.IsMimeTypeInline(),
                 MimeType = dbAttachmentRecord.Mimetype
             };
+        }
+
+        public static T RunSync<T>(this Task<T> task)
+        {
+            Task.WaitAll(task);
+            return task.Result;
+        }
+
+        public static void RunSync(this Task task)
+        {
+            Task.WaitAll(task);
         }
     }
 }

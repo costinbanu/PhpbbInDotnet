@@ -51,6 +51,11 @@ blockquote {
     height:auto;
 }
 
+.Unread {
+    border: solid 2px #ffcc00;
+    background-color: #fffcf2;
+}
+
 .ForumListRowCategory {
     width: 100%;
     border-radius: 5px;

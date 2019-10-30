@@ -1,14 +1,13 @@
 ﻿@page
-@using Serverless.Forum.Utilities;
 @model Serverless.Forum.Pages.ViewTopicModel
 @{
     ViewData["Title"] = $"{Model.ForumTitle} - {Model.TopicTitle}";
     Layout = "~/Pages/_Layout.cshtml";
-    var IsAnonymous = (await Model.GetCurrentUser()).UserId == 1;
+    var IsAnonymous = Model.CurrentUserId == 1;
     var IsLocked = Model.IsLocked &&
                    !(await Model.IsCurrentUserAdminHere(Model.ForumId.Value)) &&
                    !(await Model.IsCurrentUserModHere(Model.ForumId.Value));
-    var UserDateFormat = (await Model.GetCurrentUser())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+    var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
 }
 
 <script type="text/javascript">
