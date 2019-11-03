@@ -60,7 +60,15 @@ else
                     {
                         <span>&#x26A0;&#xFE0F;&nbsp;</span>
                     }
-                    <a asp-page="/ViewTopic" asp-route-topicId="@topic.Id" asp-route-pageNum="1" class="nav-link">@Html.Raw(topic.Title)</a>
+                    @if (topic.Unread)
+                    {
+
+                        <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@Model.GetFirstUnreadPost(topic.Id ?? 0)" asp-route-highlight="false" class="nav-link">@Html.Raw(topic.Title)</a>
+                    }
+                    else
+                    {
+                        <a asp-page="/ViewTopic" asp-route-topicId="@topic.Id" asp-route-pageNum="1" class="nav-link">@Html.Raw(topic.Title)</a>
+                    }
                     <br />
                     @await Html.PartialAsync("_PaginationPartial", topic.Pagination, ViewData)
                 </span>

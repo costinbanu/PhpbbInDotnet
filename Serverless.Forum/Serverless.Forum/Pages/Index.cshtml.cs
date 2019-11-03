@@ -43,7 +43,7 @@ namespace Serverless.Forum.Pages
                                                         LastPosterName = f2.ForumLastPosterName,
                                                         LastPosterId = j.UserId == 1 ? null as int? : j.UserId,
                                                         LastPostTime = f2.ForumLastPostTime.TimestampToLocalTime(),
-                                                        Unread = _utils.IsForumUnread(CurrentUserId ?? 1, f2.ForumId)
+                                                        Unread = IsForumUnread(f2.ForumId)
                                                     }
                                 orderby f1.LeftId
                                 select new ForumDisplay()

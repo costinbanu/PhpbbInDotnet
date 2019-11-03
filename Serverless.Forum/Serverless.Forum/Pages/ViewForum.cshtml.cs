@@ -62,7 +62,6 @@ namespace Serverless.Forum.Pages
                 ParentForumTitle = HttpUtility.HtmlDecode(await (from pf in context.PhpbbForums
                                                                  where pf.ForumId == thisForum.ParentId
                                                                  select pf.ForumName).FirstOrDefaultAsync() ?? "untitled");
-                var id = CurrentUserId;
                 Forums = await ( 
                     from f in context.PhpbbForums
                     where f.ParentId == forumId
@@ -73,7 +72,7 @@ namespace Serverless.Forum.Pages
                         Name = HttpUtility.HtmlDecode(f.ForumName),
                         LastPosterName = f.ForumLastPosterName,
                         LastPostTime = f.ForumLastPostTime.TimestampToLocalTime(),
-                        Unread = _utils.IsForumUnread(CurrentUserId ?? 1, f.ForumId)
+                        Unread = IsForumUnread(f.ForumId)
                     }
                 ).ToListAsync();
 
@@ -130,7 +129,7 @@ namespace Serverless.Forum.Pages
                                      LastPostTime = g.TopicLastPostTime.TimestampToLocalTime(),
                                      PostCount = context.PhpbbPosts.Count(p => p.TopicId == g.TopicId),
                                      Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1),
-                                     Unread = _utils.IsTopicUnread(CurrentUserId ?? 1, g.TopicId),
+                                     Unread = IsTopicUnread(g.TopicId),
                                      LastPosterColor = color
                                  }
                     }

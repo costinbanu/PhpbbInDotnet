@@ -21,7 +21,6 @@ namespace Serverless.Forum.Utilities
     {
         public readonly ClaimsPrincipal Anonymous;
         private readonly IConfiguration _config;
-        private IEnumerable<Tuple<int, int>> _tracking;
 
         public Utils(IConfiguration config)
         {
@@ -100,43 +99,6 @@ namespace Serverless.Forum.Utilities
             }
         }
 
-        public async Task<Dictionary<int, List<int>>> GetUnreadTopicsAndAncestorsAsync(int currentUserId)
-        {
-            async Task<List<int>> ancestors(forumContext context, int current, List<int> parents)
-            {
-                var thisForum = await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == current);
-                if (thisForum == null)
-                {
-                    return parents;
-                }
-                parents.Add(current);
-                return await ancestors(context, thisForum.ParentId, parents);
-            }
-
-            var unread = getUnreadTopicsAndParentsLazy(currentUserId);
-            using (var context = new forumContext(_config))
-            {
-                var toReturn = new Dictionary<int, List<int>>();
-                foreach (var (ForumId, TopicId) in unread)
-                {
-                    toReturn.Add(TopicId, await ancestors(context, ForumId, new List<int>()));
-                }
-
-                return toReturn;
-            }
-        }
-
-        public bool IsForumUnread(int currentUserId, int forumId)
-        {
-            var unread = getUnreadTopicsAndParentsLazy(currentUserId);
-            return unread.Any(u => u.Item1 == forumId);
-        }
-
-        public bool IsTopicUnread(int currentUserId, int topicId)
-        {
-            var unread = getUnreadTopicsAndParentsLazy(currentUserId);
-            return unread.Any(u => u.Item2 == topicId);
-        }
 
         public async Task<string> CompressObjectAsync<T>(T source)
         {
@@ -206,40 +168,6 @@ namespace Serverless.Forum.Utilities
             }
 
             return stringBuilder.ToString().ToLower().Normalize(NormalizationForm.FormC);
-        }
-
-        private IEnumerable<Tuple<int, int>> getUnreadTopicsAndParentsLazy(int currentUserId)
-        {
-            if (_tracking == null)
-            {
-                //https://www.phpbb.com/community/viewtopic.php?t=2165146
-                //https://www.phpbb.com/community/viewtopic.php?p=2987015
-                using (var context = new forumContext(_config))
-                {
-                    _tracking = (
-                        from t in context.PhpbbTopics
-                        from u in context.PhpbbUsers
-
-                        where u.UserId == currentUserId && t.TopicLastPostTime > u.UserLastmark
-
-                        join tt in context.PhpbbTopicsTrack
-                        on new { t.TopicId, UserId = currentUserId } equals new { tt.TopicId, tt.UserId }
-                        into trackedTopics
-
-                        join ft in context.PhpbbForumsTrack
-                        on new { t.ForumId, UserId = currentUserId } equals new { ft.ForumId, ft.UserId }
-                        into trackedForums
-
-                        from tt in trackedTopics.DefaultIfEmpty()
-                        from ft in trackedForums.DefaultIfEmpty()
-
-                        where !((tt != null && t.TopicLastPostTime <= tt.MarkTime) || (ft != null && t.TopicLastPostTime <= ft.MarkTime))
-
-                        select Tuple.Create(t.ForumId, t.TopicId)
-                    ).ToList();
-                }
-            }
-            return _tracking;
         }
     }
 }

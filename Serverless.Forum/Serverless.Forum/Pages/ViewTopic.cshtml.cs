@@ -103,11 +103,11 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnGet(int topicId, int pageNum)
         {
             PhpbbForums parent = null;
-            using (var _dbContext = new forumContext(_config))
+            using (var context = new forumContext(_config))
             {
                 if (_currentTopic == null)
                 {
-                    _currentTopic = await (from t in _dbContext.PhpbbTopics
+                    _currentTopic = await (from t in context.PhpbbTopics
                                            where t.TopicId == topicId
                                            select t).FirstOrDefaultAsync();
                 }
@@ -117,9 +117,9 @@ namespace Serverless.Forum.Pages
                     return NotFound($"Subiectul {topicId} nu există.");
                 }
 
-                parent = await (from f in _dbContext.PhpbbForums
+                parent = await (from f in context.PhpbbForums
 
-                                join t in _dbContext.PhpbbTopics
+                                join t in context.PhpbbTopics
                                 on f.ForumId equals t.ForumId
                                 into joined
 
@@ -210,7 +210,7 @@ namespace Serverless.Forum.Pages
                                        select ja.ToModel()).ToList(),
                         BbcodeUid = p.BbcodeUid,
 
-                        Unread = u.UserLastmark <= p.PostTime
+                        Unread = IsPostUnread(p.TopicId, p.PostId)
                     }
                 ).ToList();
 
