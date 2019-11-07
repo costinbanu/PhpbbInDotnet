@@ -73,6 +73,13 @@
                             <li><a href="#" onclick="logoutForm.submit()">Logout</a></li>
                         }
                     }
+                    <li>
+                        <form method="get" action="/Search" name="searchForm">
+                            <input name="text" type="text" placeholder="Caută în forum..." />
+                            <input type="submit" value="&#x1F50E;" style="background:none; border:none; margin:0; padding:0; cursor: pointer;" />
+                            @Html.AntiForgeryToken()
+                        </form>
+                    </li>
                 </ul>
 
             </div>

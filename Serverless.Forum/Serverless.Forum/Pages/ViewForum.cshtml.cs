@@ -43,7 +43,7 @@ namespace Serverless.Forum.Pages
                 {
                     if (usr.UserPermissions.Any(fp => fp.ForumId == forumId && fp.AuthRoleId == 16))
                     {
-                        return RedirectToPage("Unauthorized");
+                        return Unauthorized();
                     }
                     else
                     {

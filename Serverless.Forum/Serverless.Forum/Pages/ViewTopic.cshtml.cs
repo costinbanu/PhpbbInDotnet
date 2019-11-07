@@ -138,7 +138,7 @@ namespace Serverless.Forum.Pages
             {
                 if ((await GetCurrentUserAsync()).UserPermissions.Any(fp => fp.ForumId == ForumId && fp.AuthRoleId == 16))
                 {
-                    return RedirectToPage("Unauthorized");
+                    return Unauthorized();
                 }
                 else
                 {
@@ -309,13 +309,14 @@ namespace Serverless.Forum.Pages
 
                 if (curValue == null)
                 {
-                    context.PhpbbUserTopicPostNumber
-                              .Add(new PhpbbUserTopicPostNumber
-                              {
-                                  UserId = CurrentUserId.Value,
-                                  TopicId = topicId,
-                                  PostNo = userPostsPerPage
-                              });
+                    context.PhpbbUserTopicPostNumber.Add(
+                        new PhpbbUserTopicPostNumber
+                        {
+                            UserId = CurrentUserId.Value,
+                            TopicId = topicId,
+                            PostNo = userPostsPerPage
+                        }
+                    );
                     await save(context);
                 }
                 else if (curValue.PostNo != userPostsPerPage)

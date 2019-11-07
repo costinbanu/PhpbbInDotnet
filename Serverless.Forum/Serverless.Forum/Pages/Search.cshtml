@@ -1,0 +1,15 @@
+﻿@page
+@model Serverless.Forum.Pages.SearchModel
+@{
+    ViewData["Title"] = "Search";
+    Layout = "~/Pages/_Layout.cshtml";
+}
+
+<h2>Search</h2>
+
+@foreach (var post in Model.Posts)
+{
+    <h4>@post.PostTitle</h4>
+    <p>@post.PostText</p>
+    <p>&nbsp;</p>
+}
