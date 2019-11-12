@@ -27,29 +27,32 @@ namespace Serverless.Forum.Pages
                                 where f1.ForumType == 0
                                    && usr.UserPermissions != null
                                    && !usr.UserPermissions.Any(fp => fp.ForumId == f1.ForumId && fp.AuthRoleId == 16)
-                                let firstChildren = from f2 in context.PhpbbForums
+                                let children = from f2 in context.PhpbbForums
                                                     where f2.ParentId == f1.ForumId
                                                     orderby f2.LeftId
 
                                                     join u in context.PhpbbUsers
                                                     on f2.ForumLastPosterId equals u.UserId
-                                                    into joined
+                                                    into joinedUsers
 
-                                                    from j in joined.DefaultIfEmpty()
+                                                    from ju in joinedUsers.DefaultIfEmpty()
+
                                                     select new ForumDisplay()
                                                     {
                                                         Id = f2.ForumId,
                                                         Name = HttpUtility.HtmlDecode(f2.ForumName),
-                                                        LastPosterName = f2.ForumLastPosterName,
-                                                        LastPosterId = j.UserId == 1 ? null as int? : j.UserId,
+                                                        Description = HttpUtility.HtmlDecode(f2.ForumDesc),
+                                                        LastPosterName = HttpUtility.HtmlDecode(f2.ForumLastPosterName),
+                                                        LastPosterId = ju.UserId == 1 ? null as int? : ju.UserId,
                                                         LastPostTime = f2.ForumLastPostTime.TimestampToLocalTime(),
-                                                        Unread = IsForumUnread(f2.ForumId)
+                                                        Unread = IsForumUnread(f2.ForumId),
+                                                        LastPosterColor = ju == null ? null : ju.UserColour
                                                     }
                                 orderby f1.LeftId
                                 select new ForumDisplay()
                                 {
                                     Name = HttpUtility.HtmlDecode(f1.ForumName),
-                                    Children = firstChildren
+                                    Children = children
                                 }).ToListAsync();
             }
         }

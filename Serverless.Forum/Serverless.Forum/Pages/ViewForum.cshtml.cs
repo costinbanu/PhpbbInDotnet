@@ -62,17 +62,28 @@ namespace Serverless.Forum.Pages
                 ParentForumTitle = HttpUtility.HtmlDecode(await (from pf in context.PhpbbForums
                                                                  where pf.ForumId == thisForum.ParentId
                                                                  select pf.ForumName).FirstOrDefaultAsync() ?? "untitled");
-                Forums = await ( 
+                Forums = await (
                     from f in context.PhpbbForums
                     where f.ParentId == forumId
+
+                    join u in context.PhpbbUsers
+                    on f.ForumLastPosterId equals u.UserId
+                    into joinedUsers
+
+                    from ju in joinedUsers.DefaultIfEmpty()
+
                     orderby f.LeftId
+
                     select new ForumDisplay
                     {
                         Id = f.ForumId,
                         Name = HttpUtility.HtmlDecode(f.ForumName),
-                        LastPosterName = f.ForumLastPosterName,
+                        Description = HttpUtility.HtmlDecode(f.ForumDesc),
+                        LastPosterId = f.ForumLastPosterId,
+                        LastPosterName = HttpUtility.HtmlDecode(f.ForumLastPosterName),
                         LastPostTime = f.ForumLastPostTime.TimestampToLocalTime(),
-                        Unread = IsForumUnread(f.ForumId)
+                        Unread = IsForumUnread(f.ForumId),
+                        LastPosterColor = ju == null ? null : ju.UserColour 
                     }
                 ).ToListAsync();
 
@@ -88,49 +99,26 @@ namespace Serverless.Forum.Pages
                         TopicType = groups.Key,
                         Topics = from g in groups
 
-                                 let lastPost = (
-                                     from p in context.PhpbbPosts
-                                     where p.TopicId == g.TopicId
-
-                                     group p by p.PostId into grp
-                                     let MaxOrderDatePerPerson = grp.Max(gr => gr.PostTime)
-
-                                     from p in grp
-                                     where p.PostTime == MaxOrderDatePerPerson
-                                     select p
-                                 ).First()
-
                                  join u in context.PhpbbUsers
                                  on g.TopicLastPosterId equals u.UserId
-                                 into joined
+                                 into joinedUsers
 
-                                 from j in joined.DefaultIfEmpty()
+                                 from ju in joinedUsers.DefaultIfEmpty()
 
                                  let postCount = context.PhpbbPosts.Count(p => p.TopicId == g.TopicId)
                                  let pageSize = usr.TopicPostsPerPage.ContainsKey(g.TopicId) ? usr.TopicPostsPerPage[g.TopicId] : 14
-                                 let color = (
-                                    from ug in context.PhpbbUserGroup
-                                    where ug.UserId == j.UserId
-
-                                    join g in context.PhpbbGroups
-                                    on ug.GroupId equals g.GroupId
-                                    into groups1
-
-                                    from gr in groups1.DefaultIfEmpty()
-                                    select gr == null ? null : gr.GroupColour
-                                ).FirstOrDefault(c => !string.IsNullOrEmpty(c))
 
                                  select new TopicDisplay
                                  {
                                      Id = g.TopicId,
                                      Title = HttpUtility.HtmlDecode(g.TopicTitle),
-                                     LastPosterId = j.UserId == 1 ? null as int? : j.UserId,
+                                     LastPosterId = ju.UserId == 1 ? null as int? : ju.UserId,
                                      LastPosterName = HttpUtility.HtmlDecode(g.TopicLastPosterName),
                                      LastPostTime = g.TopicLastPostTime.TimestampToLocalTime(),
                                      PostCount = context.PhpbbPosts.Count(p => p.TopicId == g.TopicId),
                                      Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1),
                                      Unread = IsTopicUnread(g.TopicId),
-                                     LastPosterColor = color
+                                     LastPosterColor = ju == null ? null : ju.UserColour
                                  }
                     }
                 ).ToListAsync();

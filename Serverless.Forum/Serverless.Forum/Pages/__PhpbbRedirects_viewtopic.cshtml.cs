@@ -1,18 +1,18 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Serverless.Forum.forum;
 using Serverless.Forum.Utilities;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace Serverless.Forum.Pages
 {
-    public class __PhpbbRedirects_viewtopicModel : PageModel
+    public class __PhpbbRedirects_viewtopicModel : ModelWithLoggedUser
     {
-        private readonly Utils _utils;
-
-        public __PhpbbRedirects_viewtopicModel(Utils utils)
+        public __PhpbbRedirects_viewtopicModel(IConfiguration config, Utils utils) : base(config, utils)
         {
-            _utils = utils;
         }
 
         public async Task<IActionResult> OnGet(int? f, int? t, int? p, int? start)
@@ -21,9 +21,13 @@ namespace Serverless.Forum.Pages
             {
                 if (start.HasValue)
                 {
-                    var posts = (from post in await _utils.GetPostsAsync(t.Value)
-                                 select post.PostId).ToList();
-                    return RedirectToPage("ViewTopic", "ByPostId", new { PostId = posts[start.Value] });
+                    using (var context = new forumContext(_config))
+                    {
+                        var posts = await (from post in context.PhpbbPosts
+                                           where post.TopicId == t.Value
+                                           select post.PostId).ToListAsync();
+                        return RedirectToPage("ViewTopic", "ByPostId", new { PostId = posts[start.Value] });
+                    }
                 }
                 else
                 {

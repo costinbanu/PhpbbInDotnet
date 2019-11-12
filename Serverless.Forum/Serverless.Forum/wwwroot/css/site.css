@@ -46,7 +46,6 @@ blockquote {
     display: inline-block;
     vertical-align: top;
     padding: 0.5em;
-    /*display: table;*/
     margin-top: 5px;
     height:auto;
 }
@@ -70,12 +69,10 @@ blockquote {
 
 .ForumListLeft {
     width: 70%;
-    /*float: left;*/
-    /*height: 2.5em;*/
-    height:auto;
+    height: auto;
     vertical-align: top;
-    /*display: table-cell;*/
-    display:inline-block;
+    display: inline-block;
+    margin-bottom: 0px !important;
 }
 
 .ForumListLeft img {
@@ -87,14 +84,12 @@ blockquote {
 
 .ForumListRight {
     width: 25%;
-    /*float: right;*/
-    /*height: 2.5em;*/
     display: inline-block;
     vertical-align: top;
-    /*display: table-cell;*/
     display:inline-block;
     padding-left: 30px;
     list-style-type:none;
+    margin-bottom: 0px !important;
 }
 
 .ForumListCollapsed {
@@ -133,13 +128,7 @@ input.button2 {
     width: auto !important;
     padding-top: 1px;
     padding-bottom: 1px;
-    /*font-family: "Lucida Grande", Verdana, Helvetica, Arial, sans-serif;*/
     color: #000;
-    /*background: #FAFAFA none repeat-x top;
-    background-color: rgb(250, 250, 250);
-    background-position-x: center;
-    background-position-y: top;
-    background-image: none;*/
 }
 
 .inputbox:hover {
@@ -153,16 +142,6 @@ input.button2 {
     border-bottom-color: rgb(234, 234, 234);
     border-left-color: rgb(234, 234, 234);
 }
-
-/*textarea.inputbox {
-    width: 85%;
-}
-
-.inputbox {
-    background-color: #FFFFFF;
-    border-color: #B4BAC0;
-    color: #333333;
-}*/
 
 .inputbox {
     background-color: #FFFFFF;
@@ -180,16 +159,11 @@ input.button2 {
 }
 
 textarea {
-    /*font-family: "Lucida Grande", Verdana, Helvetica, Arial, sans-serif;*/
     width: 60%;
     padding: 2px;
     font-size: 1em;
     line-height: 1.4em;
 }
-
-/*.fullwidth {
-    width: 100% !important;
-}*/
 
 .AttachFieldsetDt {
     float: left;
@@ -245,7 +219,6 @@ label {
 
 .nav {
     float:right;
-    /*padding-top: 50px;*/
 }
 
 .postingControls {
@@ -265,9 +238,6 @@ label {
     .ForumListRight {
         display: none;
         position: absolute;
-        /*overflow:visible;
-        width:200px;*/
-        /*float: right;*/
         clear:both;
         width: auto !important;
         height: auto !important;
@@ -277,8 +247,6 @@ label {
         padding:5px !important;
     }
     .ForumListLeft{
-        /*float:none;
-        clear:both;*/
         width:90vw;
         display:inline-block;
     }

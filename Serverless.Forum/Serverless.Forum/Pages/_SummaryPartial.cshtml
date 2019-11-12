@@ -35,7 +35,8 @@
         }
         else
         {
-            <a asp-page="/User" asp-route-UserId="@Model.AuthorId" style="color:@Model.AuthorColor;font-weight:bold">@Html.Raw(Model.AuthorName)</a>
+            var color = $"#{(string.IsNullOrWhiteSpace(Model.AuthorColor) ? "000000" : Model.AuthorColor)}";
+            <a asp-page="/User" asp-route-UserId="@Model.AuthorId" style="color:@color;font-weight:bold">@Html.Raw(Model.AuthorName)</a>
         }
     </li>
     <li>

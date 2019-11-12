@@ -43,6 +43,8 @@ namespace Serverless.Forum.Pages
 
         private PhpbbTopics _currentTopic;
         private List<PhpbbPosts> _dbPosts;
+        private int? _page;
+        private int? _count;
         private readonly ICompositeViewEngine _viewEngine;
         private readonly IServiceProvider _serviceProvider;
         private readonly HttpContext _context;
@@ -87,17 +89,12 @@ namespace Serverless.Forum.Pages
             {
                 return NotFound($"Mesajul {postId} nu există.");
             }
-            var usr = await GetCurrentUserAsync();
-            var pageSize = usr.TopicPostsPerPage.ContainsKey(_currentTopic.TopicId) ? usr.TopicPostsPerPage[_currentTopic.TopicId] : 14;
-            PostsPerPage.ForEach(ppp => ppp.Selected = int.TryParse(ppp.Value, out var value) && value == pageSize);
 
-            await GetPostsLazy(_currentTopic.TopicId);
-            var index = _dbPosts.Select(p => p.PostId).ToList().IndexOf(postId) + 1;
-            var pageNum = (index / pageSize) + (index % pageSize == 0 ? 0 : 1);
+            await GetPostsLazy(null, null, postId);
 
             PostId = postId;
             Highlight = highlight;
-            return await OnGet(_currentTopic.TopicId, pageNum);
+            return await OnGet(_currentTopic.TopicId, _page.Value);
         }
 
         public async Task<IActionResult> OnGet(int topicId, int pageNum)
@@ -153,8 +150,8 @@ namespace Serverless.Forum.Pages
 
             ForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? "untitled");
 
-            await GetPostsLazy(topicId);
-            var noOfPages = (_dbPosts.Count() / pageSize) + (_dbPosts.Count() % pageSize == 0 ? 0 : 1);
+            await GetPostsLazy(topicId, pageNum, null);
+            var noOfPages = (_count.Value / pageSize) + (_count.Value % pageSize == 0 ? 0 : 1);
             if (pageNum > noOfPages)
             {
                 pageNum = noOfPages;
@@ -171,7 +168,7 @@ namespace Serverless.Forum.Pages
             using (var context = new forumContext(_config))
             {
                 var postsInPage = (
-                    from p in _dbPosts.Skip((pageNum - 1) * pageSize).Take(pageSize)
+                    from p in _dbPosts
 
                     join u in context.PhpbbUsers
                     on p.PosterId equals u.UserId
@@ -181,19 +178,6 @@ namespace Serverless.Forum.Pages
                     on p.PostId equals a.PostMsgId
                     into joinedAttachments
 
-
-                    let color = (
-                        from ug in context.PhpbbUserGroup
-                        where ug.UserId == p.PosterId
-
-                        join g in context.PhpbbGroups
-                        on ug.GroupId equals g.GroupId
-                        into groups
-
-                        from gr in groups.DefaultIfEmpty()
-                        select gr == null ? null : gr.GroupColour
-                    ).FirstOrDefault(c => !string.IsNullOrEmpty(c))
-
                     from ju in joinedUsers.DefaultIfEmpty()
 
                     select new PostDisplay
@@ -202,7 +186,7 @@ namespace Serverless.Forum.Pages
                         PostText = p.PostText,
                         AuthorName = ju == null ? "Anonymous" : (ju.UserId == 1 ? p.PostUsername : ju.Username),
                         AuthorId = ju == null ? 1 : (ju.UserId == 1 ? null as int? : ju.UserId),
-                        AuthorColor = $"#{color ?? "000000"}",
+                        AuthorColor = ju == null ? null : ju.UserColour,
                         PostCreationTime = p.PostTime.TimestampToLocalTime(),
                         PostModifiedTime = p.PostEditTime.TimestampToLocalTime(),
                         Id = p.PostId,
@@ -284,7 +268,7 @@ namespace Serverless.Forum.Pages
 
                 Pagination = new _PaginationPartialModel(
                     $"/ViewTopic?TopicId={topicId}&PageNum=1",
-                    context.PhpbbPosts.Count(p => p.TopicId == topicId),
+                    _count.Value,
                     pageSize,
                     pageNum
                 );
@@ -370,11 +354,14 @@ namespace Serverless.Forum.Pages
             }
         }
 
-        private async Task GetPostsLazy(int topicId)
+        private async Task GetPostsLazy(int? topicId, int? page, int? postId)
         {
-            if (_dbPosts == null)
+            if (_dbPosts == null || _page == null || _count == null)
             {
-                _dbPosts = await _utils.GetPostsAsync(topicId);
+                var results = await _utils.GetPostPageAsync(CurrentUserId.Value, topicId, page, postId);
+                _dbPosts = results.Posts;
+                _page = results.Page;
+                _count = results.Count;
             }
         }
     }

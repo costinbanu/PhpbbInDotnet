@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
@@ -14,6 +16,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Dapper;
 
 namespace Serverless.Forum.Utilities
 {
@@ -87,15 +90,22 @@ namespace Serverless.Forum.Utilities
             }
         }
 
-        public async Task<List<PhpbbPosts>> GetPostsAsync(int topicId)
+        public async Task<(List<PhpbbPosts> Posts, int Page, int Count)> GetPostPageAsync(int userId, int? topicId, int? page, int? postId)
         {
-            using (var _context = new forumContext(_config))
+            using (var context = new forumContext(_config))
+            using (var connection = context.Database.GetDbConnection())
             {
-                return await (from pp in _context.PhpbbPosts
-                              where pp.TopicId == topicId
-                              orderby pp.PostTime ascending
-                              select pp)
-                            .ToListAsync();
+                await connection.OpenAsync();
+                DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+                using (var multi = connection.QueryMultiple("CALL `forum`.`get_posts`(@userId, @topicId, @page, @postId);", new { userId, topicId, page, postId }))
+                {
+                    return (
+                        Posts: multi.Read<PhpbbPosts>().ToList(),
+                        Page: multi.Read<int>().Single(),
+                        Count: multi.Read<int>().Single()
+                    );
+                }
             }
         }
 

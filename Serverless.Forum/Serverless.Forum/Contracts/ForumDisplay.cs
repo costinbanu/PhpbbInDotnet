@@ -11,6 +11,8 @@ namespace Serverless.Forum.Contracts
 
         public string Name { get; set; } = null;
 
+        public string Description { get; set; } = null;
+
         public int? LastPosterId { get; set; } = null;
 
         public string LastPosterName { get; set; } = null;
@@ -20,5 +22,7 @@ namespace Serverless.Forum.Contracts
         public IEnumerable<ForumDisplay> Children { get; set; } = null;
 
         public bool Unread { get; set; } = false;
+
+        public string LastPosterColor { get; set; } = null;
     }
 }
