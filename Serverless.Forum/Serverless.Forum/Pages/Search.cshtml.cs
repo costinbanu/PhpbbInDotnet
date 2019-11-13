@@ -6,17 +6,34 @@ using MySql.Data.MySqlClient;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
 using Serverless.Forum.Utilities;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace Serverless.Forum.Pages
 {
+    [BindProperties, ValidateAntiForgeryToken]
     public class SearchModel : PageModel
     {
         private readonly Utils _utils;
         private readonly IConfiguration _config;
+
+        [BindProperty(SupportsGet = true)]
+        public string QueryString { get; set; }
+
+        public string SearchText { get; set; }
+
+        public string AuthorName { get; set; }
+
+        [DataType(DataType.Date), DisplayFormat(DataFormatString = "{0:dd.MM.yyyy HH:mm:ss}", ApplyFormatInEditMode = true)]
+        public DateTime DateFrom { get; set; }
+
+        [DataType(DataType.Date), DisplayFormat(DataFormatString = "{0:dd.MM.yyyy HH:mm:ss}", ApplyFormatInEditMode = true)]
+        public DateTime DateTo { get; set; }
 
         public List<PostDisplay> Posts { get; private set; }
 
@@ -26,8 +43,10 @@ namespace Serverless.Forum.Pages
             _config = config;
         }
 
-        public async Task<IActionResult> OnGet(int? forum, int? topic, int? author, string text)
+        public async Task<IActionResult> OnPost(/*int? forum, int? topic, int? author, string text*/)
         {
+            var query = HttpUtility.ParseQueryString(HttpUtility.UrlDecode(QueryString ?? string.Empty));
+
             using (var context = new forumContext(_config))
             using (var cmd = context.Database.GetDbConnection().CreateCommand())
             {
@@ -36,20 +55,20 @@ namespace Serverless.Forum.Pages
                 cmd.CommandText = "forum.search_post_text";
                 cmd.Parameters.AddRange(new[]
                 {
-                    new MySqlParameter("forum", forum),
-                    new MySqlParameter("topic", topic),
-                    new MySqlParameter("author", author),
-                    new MySqlParameter("search", text)
+                    new MySqlParameter("forum", int.TryParse(query.Get("forumId"), out var f) ? f : (int?)null),
+                    new MySqlParameter("topic", int.TryParse(query.Get("topicId"), out var t) ? t : (int?)null),
+                    new MySqlParameter("author", /*author*/(int?)null),
+                    new MySqlParameter("search", SearchText)
                 });
                 using (var reader = await cmd.ExecuteReaderAsync())
                 using (var table = new DataTable())
                 {
                     table.Load(reader);
                     Posts = table.AsEnumerable().Select(
-                        t => new PostDisplay
+                        tbl => new PostDisplay
                         {
-                            PostTitle = t["post_subject"].ToString(),
-                            PostText = t["post_text"].ToString()
+                            PostTitle = tbl["post_subject"].ToString(),
+                            PostText = tbl["post_text"].ToString()
                         }
                     ).ToList();
                 }

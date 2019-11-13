@@ -47,7 +47,6 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                @*<a asp-page="/Index" class="navbar-brand">@Constants.FORUM_NAME</a>*@
                 <a asp-page="/Index"><img src="~/images/forumlogo2014-1.png" class="headerImg" /></a>
 
             </div>
@@ -59,8 +58,7 @@
                     <input name="ReturnUrl" type="hidden" value="@HttpUtility.UrlEncode(Context.Request.Path + Context.Request.QueryString)" />
                 </form>
                 <ul class="nav navbar-nav">
-                    @*<li><a asp-page="/Index">Home</a></li>
-                    <li><a asp-page="/Help">Help</a></li>*@
+
                     @{
                         if (string.IsNullOrWhiteSpace(currentUser?.Username) || (currentUser?.UserId ?? 0) == 1)
                         {
@@ -74,11 +72,12 @@
                         }
                     }
                     <li>
-                        <form method="get" action="/Search" name="searchForm">
+                        @*<form method="get" action="/Search" name="searchForm">
                             <input name="text" type="text" placeholder="Caută în forum..." />
                             <input type="submit" value="&#x1F50E;" style="background:none; border:none; margin:0; padding:0; cursor: pointer;" />
                             @Html.AntiForgeryToken()
-                        </form>
+                        </form>*@
+                        <a asp-page="/Search" asp-route-QueryString="@HttpUtility.UrlEncode(Context.Request.QueryString.ToString())">Caută în forum &#x1F50E;</a>
                     </li>
                 </ul>
 

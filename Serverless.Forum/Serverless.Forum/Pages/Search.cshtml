@@ -5,11 +5,27 @@
     Layout = "~/Pages/_Layout.cshtml";
 }
 
-<h2>Search</h2>
+<h2>Caută</h2>
 
-@foreach (var post in Model.Posts)
-{
-    <h4>@post.PostTitle</h4>
-    <p>@post.PostText</p>
+<form method="post">
+    <input asp-for="QueryString" type="hidden"/>
+    <input asp-for="SearchText" type="text" placeholder="Caută după text..." />
     <p>&nbsp;</p>
+    <input asp-for="AuthorName" type="text" placeholder="Cautå dupå autor..." />
+    @*<p>&nbsp;</p>
+    <input asp-for="DateFrom" value="@DateTime.Now" placeholder="Caută mesaje scrise după..." />
+    <p>&nbsp;</p>
+    <input asp-for="DateTo" value="@DateTime.Now" placeholder="Caută mesaje scrise înainte..." />*@
+    <p>&nbsp;</p>
+    <input type="submit" value="Trimite" />
+</form>
+@if (Model.Posts != null && Model.Posts.Any())
+{
+    <h2>Rezultate</h2>
+    foreach (var post in Model.Posts)
+    {
+        <h4>@post.PostTitle</h4>
+        <p>@post.PostText</p>
+        <p>&nbsp;</p>
+    }
 }
