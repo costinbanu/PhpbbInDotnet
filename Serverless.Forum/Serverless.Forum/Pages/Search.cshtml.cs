@@ -16,31 +16,41 @@ using System.Web;
 
 namespace Serverless.Forum.Pages
 {
-    [BindProperties, ValidateAntiForgeryToken]
-    public class SearchModel : PageModel
+    //[BindProperties, ValidateAntiForgeryToken]
+    public class SearchModel : ModelWithLoggedUser
     {
-        private readonly Utils _utils;
-        private readonly IConfiguration _config;
+        public IConfiguration Config => _config;
+        public Utils Utils => _utils;
 
         [BindProperty(SupportsGet = true)]
         public string QueryString { get; set; }
-
+        [BindProperty(SupportsGet = true)]
+        public int? AuthorId { get; set; }
+        [BindProperty(SupportsGet = false), DataType(DataType.Date), DisplayFormat(DataFormatString = "{0:dd.MM.yyyy HH:mm:ss}", ApplyFormatInEditMode = true)]
+        public DateTime? DateFrom { get; set; }
+        [BindProperty(SupportsGet = false), DataType(DataType.Date), DisplayFormat(DataFormatString = "{0:dd.MM.yyyy HH:mm:ss}", ApplyFormatInEditMode = true)]
+        public DateTime? DateTo { get; set; }
+        [BindProperty(SupportsGet = true)]
+        public int? ForumId { get; set; }
+        [BindProperty(SupportsGet = true)]
+        public int? TopicId { get; set; }
+        [BindProperty(SupportsGet = false)]
         public string SearchText { get; set; }
 
-        public string AuthorName { get; set; }
-
-        [DataType(DataType.Date), DisplayFormat(DataFormatString = "{0:dd.MM.yyyy HH:mm:ss}", ApplyFormatInEditMode = true)]
-        public DateTime DateFrom { get; set; }
-
-        [DataType(DataType.Date), DisplayFormat(DataFormatString = "{0:dd.MM.yyyy HH:mm:ss}", ApplyFormatInEditMode = true)]
-        public DateTime DateTo { get; set; }
-
+        public List<KeyValuePair<string, int>> Users { get; set; }
         public List<PostDisplay> Posts { get; private set; }
+        public SearchModel(IConfiguration config, Utils utils) : base(config, utils) { }
 
-        public SearchModel(Utils utils, IConfiguration config)
+        public async Task OnGet()
         {
-            _utils = utils;
-            _config = config;
+            using (var context = new forumContext(_config))
+            {
+                Users = await (from u in context.PhpbbUsers
+                               where u.UserId != 1 && u.UserType != 2
+                               orderby u.Username
+                               select KeyValuePair.Create(u.Username, u.UserId))
+                              .ToListAsync();
+            }
         }
 
         public async Task<IActionResult> OnPost(/*int? forum, int? topic, int? author, string text*/)
@@ -55,9 +65,11 @@ namespace Serverless.Forum.Pages
                 cmd.CommandText = "forum.search_post_text";
                 cmd.Parameters.AddRange(new[]
                 {
-                    new MySqlParameter("forum", int.TryParse(query.Get("forumId"), out var f) ? f : (int?)null),
-                    new MySqlParameter("topic", int.TryParse(query.Get("topicId"), out var t) ? t : (int?)null),
-                    new MySqlParameter("author", /*author*/(int?)null),
+                    new MySqlParameter("forum", /*int.TryParse(query.Get("forumId"), out var f) ? f : (int?)null*/ForumId > 0 ? ForumId : null),
+                    new MySqlParameter("topic", /*int.TryParse(query.Get("topicId"), out var t) ? t : (int?)null*/TopicId > 0 ? TopicId : null),
+                    new MySqlParameter("author", AuthorId),
+                    new MySqlParameter("fromDate", DateFrom?.LocalTimeToTimestamp()),
+                    new MySqlParameter("toDate", DateTo?.LocalTimeToTimestamp()),
                     new MySqlParameter("search", SearchText)
                 });
                 using (var reader = await cmd.ExecuteReaderAsync())
@@ -73,6 +85,8 @@ namespace Serverless.Forum.Pages
                     ).ToList();
                 }
             }
+
+            //TODO: show selected value in forum tree
 
             return Page();
         }

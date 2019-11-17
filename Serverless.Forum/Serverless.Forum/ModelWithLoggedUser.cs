@@ -1,15 +1,19 @@
-﻿using Microsoft.AspNetCore.Authentication;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
+using Serverless.Forum.Pages;
 using Serverless.Forum.Utilities;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace Serverless.Forum
 {
@@ -169,9 +173,83 @@ namespace Serverless.Forum
             return unread.FirstOrDefault(t => t.TopicId == topicId)?.Posts?.FirstOrDefault() ?? 0;
         }
 
+        public async Task<ForumDisplay> GetForumTree(ForumType? parentType = null)
+        {
+            var usr = await GetCurrentUserAsync();
+            using (var context = new forumContext(_config))
+            {
+                var allForums = await (
+                    from f in context.PhpbbForums
+                    where (parentType == null || f.ForumType == (byte?)parentType)
+                       && usr.UserPermissions != null
+                       && !usr.UserPermissions.Any(fp => fp.ForumId == f.ForumId && fp.AuthRoleId == 16)
+
+                    orderby f.LeftId
+
+                    join u in context.PhpbbUsers
+                    on f.ForumLastPosterId equals u.UserId
+                    into joinedUsers
+
+                    join t in context.PhpbbTopics
+                    on f.ForumId equals t.ForumId
+                    into joinedTopics
+
+                    from ju in joinedUsers.DefaultIfEmpty()
+
+                    select new
+                    {
+                        ForumDisplay = new ForumDisplay
+                        {
+                            Id = f.ForumId,
+                            Name = HttpUtility.HtmlDecode(f.ForumName),
+                            Description = HttpUtility.HtmlDecode(f.ForumDesc),
+                            LastPosterName = HttpUtility.HtmlDecode(f.ForumLastPosterName),
+                            LastPosterId = ju.UserId == 1 ? null as int? : ju.UserId,
+                            LastPostTime = f.ForumLastPostTime.TimestampToLocalTime(),
+                            Unread = IsForumUnread(f.ForumId),
+                            LastPosterColor = ju == null ? null : ju.UserColour,
+                            Topics = (from jt in joinedTopics
+                                      orderby jt.TopicLastPostTime descending
+                                      select new TopicDisplay
+                                      {
+                                          Id = jt.TopicId,
+                                          Title = HttpUtility.HtmlDecode(jt.TopicTitle),
+                                      }).ToList()
+
+                        },
+                        Parent = f.ParentId,
+                        Order = f.LeftId
+                    }
+                ).ToListAsync();
+
+                ForumDisplay traverse(ForumDisplay node)
+                {
+                    node.ChildrenForums = (
+                        from f in allForums
+                        where f.Parent == node.Id
+                        orderby f.Order
+                        select traverse(f.ForumDisplay)
+                    ).ToList();
+                    return node;
+                }
+
+                return new ForumDisplay
+                {
+                    Id = 0,
+                    Name = Constants.FORUM_NAME,
+                    ChildrenForums = (
+                        from f in allForums
+                        where f.Parent == 0
+                        orderby f.Order
+                        select traverse(f.ForumDisplay)
+                    ).ToList()
+                };
+            }
+        }
+
         private bool greaterThanMarked(PhpbbForumsTrack ft, PhpbbTopicsTrack tt, long toCompare)
         {
-            return (ft!= null || tt != null) && !((tt != null && toCompare <= tt.MarkTime) || (ft != null && toCompare <= ft.MarkTime));
+            return (ft != null || tt != null) && !((tt != null && toCompare <= tt.MarkTime) || (ft != null && toCompare <= ft.MarkTime));
         }
 
         private IEnumerable<Tracking> GetUnreadTopicsAndParentsLazy()
@@ -215,10 +293,10 @@ namespace Serverless.Forum
                             ForumId = t.ForumId,
                             Posts = from p in context.PhpbbPosts
                                     where p.TopicId == t.TopicId
-                                       && greaterThanMarked(ft, tt, p.PostTime) 
-                                       //!((tt != null && p.PostTime <= tt.MarkTime) || (ft != null && p.PostTime <= ft.MarkTime))
+                                       && greaterThanMarked(ft, tt, p.PostTime)
+                                    //!((tt != null && p.PostTime <= tt.MarkTime) || (ft != null && p.PostTime <= ft.MarkTime))
                                     orderby p.PostTime
-                                    select p.PostId 
+                                    select p.PostId
                         }
                     ).ToList();
                 }
@@ -232,5 +310,11 @@ namespace Serverless.Forum
             internal int ForumId { get; set; }
             internal IEnumerable<int> Posts { get; set; }
         }
+    }
+
+    public enum ForumType
+    {
+        Category = 0,
+        SubForum = 1
     }
 }

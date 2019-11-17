@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Serverless.Forum.Pages;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -19,7 +20,9 @@ namespace Serverless.Forum.Contracts
 
         public DateTime? LastPostTime { get; set; } = null;
 
-        public IEnumerable<ForumDisplay> Children { get; set; } = null;
+        public IEnumerable<ForumDisplay> ChildrenForums { get; set; } = null;
+
+        public IEnumerable<TopicDisplay> Topics { get; set; } = null;
 
         public bool Unread { get; set; } = false;
 

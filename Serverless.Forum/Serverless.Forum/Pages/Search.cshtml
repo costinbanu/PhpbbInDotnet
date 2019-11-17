@@ -3,22 +3,43 @@
 @{
     ViewData["Title"] = "Search";
     Layout = "~/Pages/_Layout.cshtml";
+    var dateFormat = (await Model.GetCurrentUserAsync()).UserDateFormat;
 }
 
 <h2>Caută</h2>
 
 <form method="post">
-    <input asp-for="QueryString" type="hidden"/>
-    <input asp-for="SearchText" type="text" placeholder="Caută după text..." />
+    <input asp-for="QueryString" type="hidden" />
+    <input asp-for="SearchText" type="text" placeholder="Caută după text..." style="width:100%" />
     <p>&nbsp;</p>
-    <input asp-for="AuthorName" type="text" placeholder="Cautå dupå autor..." />
-    @*<p>&nbsp;</p>
-    <input asp-for="DateFrom" value="@DateTime.Now" placeholder="Caută mesaje scrise după..." />
+    Caută în forumul...
+    <div style="height:400px; max-height:600px; overflow-y:scroll">
+        @await Html.PartialAsync(
+            "_ForumTreePartial",
+             new _ForumTreePartialModel(Model.Config, Model.Utils)
+             {
+                 Forums = await Model.GetForumTree(),
+                 ForumId = Model.ForumId
+             },
+            ViewData
+        )
+    </div>
+    <input asp-for="ForumId" type="hidden" id="ForumIdInput" />
     <p>&nbsp;</p>
-    <input asp-for="DateTo" value="@DateTime.Now" placeholder="Caută mesaje scrise înainte..." />*@
+    <select name="TopicId" id="TopicIdDisplay" style="width:100%">
+        <option selected disabled value="-1">Caută în subiectul...</option>
+        <option value="0">Caută în toate subiectele</option>
+    </select>
+    <p>&nbsp;</p>
+    <input asp-for="AuthorId" type="text" placeholder="Caută după autor..." id="AuthorInput" style="width:100%" />
+    <p>&nbsp;</p>
+    <input placeholder="Caută mesaje după..." name="DateFrom"type="text" onfocus="this.type = 'date'; this.click()" onblur="(this.type='text')" style="width:100%" />
+    <p>&nbsp;</p>
+    <input placeholder="Caută mesaje înainte de... " name="DateTo" type="text" onfocus="this.type='date'; this.click()" onblur="(this.type='text')" style="width:100%" />
     <p>&nbsp;</p>
     <input type="submit" value="Trimite" />
 </form>
+
 @if (Model.Posts != null && Model.Posts.Any())
 {
     <h2>Rezultate</h2>
@@ -29,3 +50,14 @@
         <p>&nbsp;</p>
     }
 }
+
+<link rel="stylesheet" href="~/lib/tribute/dist/tribute.css" />
+<script src="~/lib/tribute/dist/tribute.js"></script>
+<script>
+    var tribute = new Tribute({
+        values: @Json.Serialize(Model.Users) ,
+        autocompleteMode:true
+        });
+
+    tribute.attach(document.getElementById("AuthorInput"));
+</script>

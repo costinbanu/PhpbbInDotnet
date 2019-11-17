@@ -257,7 +257,7 @@ namespace Serverless.Forum.Pages
                             .ToListAsync();
 
             Users = await (from u in context.PhpbbUsers
-                           where u.UserId != 1 && u.UserType == 0
+                           where u.UserId != 1 && u.UserType != 2
                            orderby u.Username
                            select KeyValuePair.Create(u.Username, $"[url=\"./User?UserId={u.UserId}\"]{u.Username}[/url]"))
                           .ToListAsync();

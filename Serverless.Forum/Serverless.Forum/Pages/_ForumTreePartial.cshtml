@@ -1,0 +1,140 @@
+﻿@model Serverless.Forum.Pages._ForumTreePartialModel
+@*
+    For more information on enabling MVC for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
+*@
+
+@using Serverless.Forum.Contracts
+
+<style>
+    /* Remove default bullets */
+    ul, #myUL {
+        list-style-type: none;
+    }
+
+    /* Remove margins and padding from the parent ul */
+    #myUL {
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Style the caret/arrow */
+    .searchCaret {
+        cursor: pointer;
+        user-select: none; /* Prevent text selection */
+        width: 100%;
+        padding: 3px 3px;
+    }
+
+    /* Create the caret/arrow with a unicode, and style it */
+    .searchCaret::before {
+        content: "\25B6";
+        color: black;
+        display: inline-block;
+        margin-right: 6px;
+    }
+
+    /* Rotate the caret/arrow icon when clicked on (using JavaScript) */
+    .searchCaret-down::before {
+        transform: rotate(90deg);
+    }
+
+    /* Hide the nested list */
+    .nested {
+        display: none;
+    }
+
+    /* Show the nested list when the user clicks on the caret/arrow (with JavaScript) */
+    .active {
+        display: block;
+    }
+
+    .entry {
+        padding: 3px 3px;
+        display: inherit;
+        width: 100%;
+    }
+
+    .selected {
+        background-color: deepskyblue;
+    }
+</style>
+@functions {
+    async Task showTreeNode(ForumDisplay cur)
+    {
+        if (cur == null)
+        {
+            return;
+        }
+
+        var entryClass = cur.Id == Model.ForumId ? "entry selected" : "entry";
+        var topics = cur?.Topics ?? new List<TopicDisplay>();
+
+        if (cur.ChildrenForums?.Any() ?? false)
+        {
+            await Output.WriteAsync(
+                $"<li id='entry{cur.Id}' class='{entryClass}'>" +
+                    $"<span class='searchCaret' onclick='select(this, {cur.Id}, {Json.Serialize(topics)});'>{cur.Name}</span>" +
+                    $"<ul class='nested'>"
+            );
+            foreach (var child in cur.ChildrenForums ?? new List<ForumDisplay>())
+            {
+                await showTreeNode(child);
+            }
+            await Output.WriteAsync(
+                    "</ul>" +
+                "</li>"
+            );
+        }
+        else
+        {
+            await Output.WriteAsync(
+                $"<li id='entry{cur.Id}' class='{entryClass}' onclick='select(this, {cur.Id}, {Json.Serialize(topics)});'>{cur.Name}</li>"
+            );
+        }
+    }
+}
+<ul id="myUL">
+    @{await showTreeNode(Model.Forums);}
+</ul>
+
+
+
+<script>
+    var allInfo = @Json.Serialize(Model.Forums)
+
+    function select(obj, forumId, topics) {
+        var toggler = document.getElementsByClassName("selected");
+
+        for (var i = 0; i < toggler.length; i++) {
+            toggler[i].classList.remove("selected")
+        }
+
+        var parent = obj.parentElement.querySelector(".nested");
+        if (parent != null) {
+            parent.classList.toggle("active");
+        }
+        obj.classList.toggle("searchCaret-down");
+        obj.classList.toggle("selected");
+
+        var forumInput = document.getElementById("ForumIdInput");
+        if (forumInput != null) {
+            forumInput.value = forumId; 
+        }
+
+        var topicDisplay = document.getElementById("TopicIdDisplay");
+        if (topicDisplay != null) {
+            topicDisplay.options.length = 0;
+            var option = document.createElement('option');
+            option.text = "Caută în toate subiectele";
+            option.value = 0;
+            topicDisplay.add(option);
+            topics.forEach(t => {
+                var option = document.createElement('option');
+                option.text = t.title;
+                option.value = t.id;
+                topicDisplay.add(option);
+            });
+        }
+    }
+
+</script>

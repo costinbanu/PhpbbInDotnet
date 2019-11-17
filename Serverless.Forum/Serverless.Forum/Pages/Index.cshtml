@@ -12,7 +12,7 @@
     <div class="ForumListRowCategory">
         @category.Name
     </div>
-    @foreach (var forum in category.Children)
+    @foreach (var forum in category.ChildrenForums)
     {
         var divClass = forum.Unread ? "ForumListRow Unread" : "ForumListRow";
     <div class="@divClass">

@@ -17,6 +17,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Dapper;
+using System.Web;
 
 namespace Serverless.Forum.Utilities
 {
@@ -108,7 +109,6 @@ namespace Serverless.Forum.Utilities
                 }
             }
         }
-
 
         public async Task<string> CompressObjectAsync<T>(T source)
         {

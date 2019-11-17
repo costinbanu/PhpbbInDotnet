@@ -13,6 +13,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="3.1.0" />
+    <PackageReference Include="AutoMapper" Version="9.0.0" />
     <PackageReference Include="AWSSDK.S3" Version="3.3.104.25" />
     <PackageReference Include="Dapper" Version="2.0.30" />
     <PackageReference Include="JW.Pager" Version="1.0.1" />
