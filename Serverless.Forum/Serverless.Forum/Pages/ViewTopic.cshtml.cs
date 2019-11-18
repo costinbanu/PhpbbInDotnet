@@ -1,5 +1,4 @@
-﻿using CodeKicker.BBCode.Core;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -17,7 +16,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -73,15 +71,17 @@ namespace Serverless.Forum.Pages
             {
                 using (var context = new forumContext(_config))
                 {
-                    _currentTopic = await (from p in context.PhpbbPosts
-                                           where p.PostId == postId
+                    _currentTopic = await (
+                        from p in context.PhpbbPosts
+                        where p.PostId == postId
 
-                                           join t in context.PhpbbTopics
-                                           on p.TopicId equals t.TopicId
-                                           into joined
+                        join t in context.PhpbbTopics
+                        on p.TopicId equals t.TopicId
+                        into joined
 
-                                           from j in joined
-                                           select j).FirstOrDefaultAsync();
+                        from j in joined
+                        select j
+                    ).FirstOrDefaultAsync();
                 }
             }
 
@@ -167,7 +167,8 @@ namespace Serverless.Forum.Pages
 
             using (var context = new forumContext(_config))
             {
-                var postsInPage = (
+                //var postsInPage = (
+                Posts = (
                     from p in _dbPosts
 
                     join u in context.PhpbbUsers
@@ -182,14 +183,14 @@ namespace Serverless.Forum.Pages
 
                     select new PostDisplay
                     {
-                        PostTitle = p.PostSubject,
+                        PostSubject = p.PostSubject,
                         PostText = p.PostText,
                         AuthorName = ju == null ? "Anonymous" : (ju.UserId == 1 ? p.PostUsername : ju.Username),
                         AuthorId = ju == null ? 1 : (ju.UserId == 1 ? null as int? : ju.UserId),
                         AuthorColor = ju == null ? null : ju.UserColour,
                         PostCreationTime = p.PostTime.TimestampToLocalTime(),
                         PostModifiedTime = p.PostEditTime.TimestampToLocalTime(),
-                        Id = p.PostId,
+                        PostId = p.PostId,
                         Attachments = (from ja in joinedAttachments
                                        select ja.ToModel()).ToList(),
                         BbcodeUid = p.BbcodeUid,
@@ -198,60 +199,30 @@ namespace Serverless.Forum.Pages
                     }
                 ).ToList();
 
-
-                var bbcodes = new List<BBTag>(from c in context.PhpbbBbcodes
-                                              select new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false));
-                bbcodes.AddRange(new[]
-                {
-                    new BBTag("b", "<b>", "</b>"),
-                    new BBTag("i", "<span style=\"font-style:italic;\">", "</span>"),
-                    new BBTag("u", "<span style=\"text-decoration:underline;\">", "</span>"),
-                    new BBTag("code", "<pre class=\"prettyprint\">", "</pre>"),
-                    new BBTag("img", "<br/><img src=\"${content}\" /><br/>", string.Empty, false, false),
-                    new BBTag("quote", "<blockquote>${name}", "</blockquote>",
-                        new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : $"<b>{HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')}</b> a scris:<br/>")),
-                    new BBTag("*", "<li>", "</li>", true, false),
-                    new BBTag("list", "<${attr}>", "</${attr}>", true, true,
-                        new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul" : $"ol type=\"{a.AttributeValue}\"")),
-                    new BBTag("url", "<a href=\"${href}\">", "</a>",
-                        new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
-                    new BBTag("color", "<span style=\"color:${code}\">", "</span>",
-                        new BBAttribute("code", ""),
-                        new BBAttribute("code", "code")),
-                    new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>",
-                        new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
-                    new BBTag("attachment", "##AttachmentFileName=${content}##", "", false, true,
-                        new BBAttribute("num", ""),
-                        new BBAttribute("num", "num"))
-                });
-                var parser = new BBCodeParser(bbcodes);
                 var inlineAttachmentsPosts = new ConcurrentBag<(int PostId, _AttachmentPartialModel Attach)>();
-                var htmlCommentRegex = new Regex("<!--.*?-->", RegexOptions.Compiled | RegexOptions.Singleline);
-                var newLineRegex = new Regex("\n", RegexOptions.Compiled | RegexOptions.Singleline);
 
-                var smileyRegex = new Regex("{SMILIES_PATH}", RegexOptions.Compiled | RegexOptions.Singleline);
 
-                Parallel.ForEach(postsInPage, (p, state1) =>
+                Parallel.ForEach(/*postsInPage*/Posts, (p, state1) =>
                 {
-                    p.PostTitle = HttpUtility.HtmlDecode(p.PostTitle);
-                    p.PostText = HttpUtility.HtmlDecode(parser.ToHtml(p.PostText, p.BbcodeUid));
-                    p.PostText = newLineRegex.Replace(p.PostText, "<br/>");
-                    p.PostText = htmlCommentRegex.Replace(p.PostText, string.Empty);
-                    p.PostText = smileyRegex.Replace(p.PostText, Constants.SMILEY_PATH);
+                    p.PostSubject = HttpUtility.HtmlDecode(p.PostSubject);
+                    p.PostText = HttpUtility.HtmlDecode(_utils.BBCodeParser.ToHtml(p.PostText, p.BbcodeUid));
+                    p.PostText = _utils.NewLineRegex.Replace(p.PostText, "<br/>");
+                    p.PostText = _utils.HtmlCommentRegex.Replace(p.PostText, string.Empty);
+                    p.PostText = _utils.SmileyRegex.Replace(p.PostText, Constants.SMILEY_PATH);
 
                     Parallel.ForEach(p.Attachments, (candidate, state2) =>
                     {
                         if (p.PostText.Contains($"##AttachmentFileName={candidate.FileName}##"))
                         {
-                            inlineAttachmentsPosts.Add((p.Id.Value, candidate));
+                            inlineAttachmentsPosts.Add((p.PostId.Value, candidate));
                         }
                     });
                 });
-                Posts = postsInPage.ToList();
+                // Posts = postsInPage.ToList();
                 Posts.ForEach(async (p) =>
                 {
                     foreach (var candidate in from a in inlineAttachmentsPosts
-                                              where a.PostId == p.Id
+                                              where a.PostId == p.PostId
                                               select a)
                     {
                         p.PostText = p.PostText.Replace(

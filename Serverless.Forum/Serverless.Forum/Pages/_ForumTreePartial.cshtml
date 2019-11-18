@@ -72,8 +72,8 @@
         if (cur.ChildrenForums?.Any() ?? false)
         {
             await Output.WriteAsync(
-                $"<li id='entry{cur.Id}' class='{entryClass}'>" +
-                    $"<span class='searchCaret' onclick='select(this, {cur.Id}, {Json.Serialize(topics)});'>{cur.Name}</span>" +
+                $"<li class='{entryClass}'>" +
+                    $"<span id='entry{cur.Id}' class='searchCaret' onclick='select(this, {cur.Id}, {Json.Serialize(topics)});'>{cur.Name}</span>" +
                     $"<ul class='nested'>"
             );
             foreach (var child in cur.ChildrenForums ?? new List<ForumDisplay>())
@@ -100,7 +100,9 @@
 
 
 <script>
-    var allInfo = @Json.Serialize(Model.Forums)
+    var allInfo = @Json.Serialize(Model.Forums);
+    var path = @Json.Serialize(Model.PathToForumOrTopic);
+    var topicId = @Json.Serialize(Model.TopicId);
 
     function select(obj, forumId, topics) {
         var toggler = document.getElementsByClassName("selected");
@@ -136,5 +138,15 @@
             });
         }
     }
+
+    $(document).ready(function () {
+        for (var i = 0; i < path.length; i++) {
+            document.getElementById("entry" + path[i]).click();
+        }
+
+        if (topicId != null) {
+            $("#TopicIdDisplay").val(topicId).change();
+        }
+    });
 
 </script>

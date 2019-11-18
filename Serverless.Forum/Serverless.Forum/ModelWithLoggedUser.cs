@@ -26,6 +26,7 @@ namespace Serverless.Forum
         private IEnumerable<Tracking> _tracking;
 
         private readonly Lazy<int?> _currentUserId;
+        private ForumDisplay _tree = null;
 
         public ModelWithLoggedUser(IConfiguration config, Utils utils)
         {
@@ -52,13 +53,13 @@ namespace Serverless.Forum
                 }
             });
 
-            _currentUserId = new Lazy<int?>(() => GetCurrentUserAsync().RunSync().UserId);
+            _currentUserId = new Lazy<int?>(() => GetCurrentUserAsync().GetAwaiter().GetResult().UserId);
         }
 
         public async Task<LoggedUser> GetCurrentUserAsync()
         {
             var user = User;
-            if (!user.Identity.IsAuthenticated)
+            if (!user?.Identity?.IsAuthenticated ?? false)
             {
                 using (var context = new forumContext(_config))
                 {
@@ -175,6 +176,11 @@ namespace Serverless.Forum
 
         public async Task<ForumDisplay> GetForumTree(ForumType? parentType = null)
         {
+            if (_tree != null)
+            {
+                return _tree;
+            }
+
             var usr = await GetCurrentUserAsync();
             using (var context = new forumContext(_config))
             {
@@ -233,7 +239,7 @@ namespace Serverless.Forum
                     return node;
                 }
 
-                return new ForumDisplay
+                _tree = new ForumDisplay
                 {
                     Id = 0,
                     Name = Constants.FORUM_NAME,
@@ -244,7 +250,45 @@ namespace Serverless.Forum
                         select traverse(f.ForumDisplay)
                     ).ToList()
                 };
+
+                return _tree;
             }
+        }
+
+        public async Task<List<int>> PathToForumOrTopic(int? forumId, int? topicId)
+        {
+            var track = new List<int>();
+
+            bool traverse(ForumDisplay node)
+            {
+                if (node == null)
+                {
+                    return false;
+                }
+
+                if ((node.Topics?.Any(t => t.Id == topicId) ?? false) || node.Id == forumId)
+                {
+                    track.Add(node.Id.Value);
+                    return true;
+                }
+
+                track.Add(node.Id.Value);
+
+                foreach(var child in node.ChildrenForums)
+                {
+                    if (traverse(child))
+                    {
+                        return true;
+                    }
+                }
+
+                track.RemoveAt(track.Count - 1);
+                return false;
+            }
+
+            traverse(await GetForumTree());
+
+            return track;
         }
 
         private bool greaterThanMarked(PhpbbForumsTrack ft, PhpbbTopicsTrack tt, long toCompare)

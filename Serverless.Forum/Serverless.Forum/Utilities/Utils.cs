@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Authentication.Cookies;
+﻿using CodeKicker.BBCode.Core;
+using Dapper;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
@@ -15,8 +16,8 @@ using System.Linq;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Dapper;
 using System.Web;
 
 namespace Serverless.Forum.Utilities
@@ -24,15 +25,55 @@ namespace Serverless.Forum.Utilities
     public class Utils
     {
         public readonly ClaimsPrincipal Anonymous;
+        public BBCodeParser BBCodeParser => _parser.Value;
+        public Regex HtmlCommentRegex => new Regex("<!--.*?-->", RegexOptions.Compiled | RegexOptions.Singleline);
+        public Regex NewLineRegex => new Regex("\n", RegexOptions.Compiled | RegexOptions.Singleline);
+        public Regex SmileyRegex => new Regex("{SMILIES_PATH}", RegexOptions.Compiled | RegexOptions.Singleline);
+
         private readonly IConfiguration _config;
+        private readonly Lazy<BBCodeParser> _parser;
 
         public Utils(IConfiguration config)
         {
             _config = config;
             using (var context = new forumContext(_config))
             {
-                Anonymous = LoggedUserFromDbUserAsync(context.PhpbbUsers.First(u => u.UserId == 1)).RunSync();
+                Anonymous = LoggedUserFromDbUserAsync(context.PhpbbUsers.First(u => u.UserId == 1)).GetAwaiter().GetResult();
             }
+
+            _parser = new Lazy<BBCodeParser>(() =>
+            {
+                using (var context = new forumContext(_config))
+                {
+                    var bbcodes = new List<BBTag>(from c in context.PhpbbBbcodes
+                                                  select new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false));
+                    bbcodes.AddRange(new[]
+                    {
+                        new BBTag("b", "<b>", "</b>"),
+                        new BBTag("i", "<span style=\"font-style:italic;\">", "</span>"),
+                        new BBTag("u", "<span style=\"text-decoration:underline;\">", "</span>"),
+                        new BBTag("code", "<pre class=\"prettyprint\">", "</pre>"),
+                        new BBTag("img", "<br/><img src=\"${content}\" /><br/>", string.Empty, false, false),
+                        new BBTag("quote", "<blockquote>${name}", "</blockquote>",
+                            new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : $"<b>{HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')}</b> a scris:<br/>")),
+                        new BBTag("*", "<li>", "</li>", true, false),
+                        new BBTag("list", "<${attr}>", "</${attr}>", true, true,
+                            new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul" : $"ol type=\"{a.AttributeValue}\"")),
+                        new BBTag("url", "<a href=\"${href}\">", "</a>",
+                            new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
+                        new BBTag("color", "<span style=\"color:${code}\">", "</span>",
+                            new BBAttribute("code", ""),
+                            new BBAttribute("code", "code")),
+                        new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>",
+                            new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
+                        new BBTag("attachment", "##AttachmentFileName=${content}##", "", false, true,
+                            new BBAttribute("num", ""),
+                            new BBAttribute("num", "num"))
+                    });
+
+                    return new BBCodeParser(bbcodes);
+                }
+            });
         }
 
         public async Task<ClaimsPrincipal> LoggedUserFromDbUserAsync(PhpbbUsers user)
@@ -99,7 +140,7 @@ namespace Serverless.Forum.Utilities
                 await connection.OpenAsync();
                 DefaultTypeMap.MatchNamesWithUnderscores = true;
 
-                using (var multi = connection.QueryMultiple("CALL `forum`.`get_posts`(@userId, @topicId, @page, @postId);", new { userId, topicId, page, postId }))
+                using (var multi = await connection.QueryMultipleAsync("CALL `forum`.`get_posts`(@userId, @topicId, @page, @postId);", new { userId, topicId, page, postId }))
                 {
                     return (
                         Posts: multi.Read<PhpbbPosts>().ToList(),

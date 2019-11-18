@@ -91,7 +91,7 @@
                 <form method="post">
                     <label>Mesaje afișate pe pagină:&nbsp;</label>
                     <input type="hidden" name="topicId" value="@Model.TopicId" />
-                    <input type="hidden" name="postId" value="@Model.Posts.FirstOrDefault()?.Id" />
+                    <input type="hidden" name="postId" value="@Model.Posts.FirstOrDefault()?.PostId" />
                     @Html.DropDownList("userPostsPerPage", Model.PostsPerPage)
                     &nbsp;
                     <input type="submit" value="Salvează" />
@@ -106,11 +106,11 @@
 {
     var divClass = post.Unread ? "ForumListRow Unread" : "ForumListRow";
     <div class="@divClass">
-        <div class="ForumListLeft" id="@post.Id">
+        <div class="ForumListLeft" id="@post.PostId">
             <span class="PostTitle">
-                <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@post.Id">@Html.Raw(post.PostTitle)</a>
+                <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@post.PostId">@Html.Raw(post.PostSubject)</a>
             </span>
-            <span class="ForumListCollapsed" onclick="showSummary('#summary@(post.Id.Value)', '#button@(post.Id.Value)')" id="button@(post.Id.Value)" style="color:@post.AuthorColor;font-weight:bold">
+            <span class="ForumListCollapsed" onclick="showSummary('#summary@(post.PostId.Value)', '#button@(post.PostId.Value)')" id="button@(post.PostId.Value)" style="color:@post.AuthorColor;font-weight:bold">
                 @Html.Raw(post.AuthorName)
             </span>
             <p>&nbsp;</p>
@@ -127,7 +127,7 @@
             <br />
             @if (!IsLocked)
             {
-                <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-postId="@post.Id">Răspunde cu citat</a>
+                <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-postId="@post.PostId">Răspunde cu citat</a>
             }
             else
             {
@@ -141,7 +141,7 @@
                 AuthorId = post.AuthorId,
                 AuthorName = post.AuthorName,
                 CreationTime = post.PostCreationTime,
-                AssetId = post.Id.Value,
+                AssetId = post.PostId.Value,
                 DateFormat = UserDateFormat,
                 AuthorColor = post.AuthorColor
             }
@@ -187,7 +187,7 @@ else
                 <form method="post">
                     <label>Mesaje afișate pe pagină:&nbsp;</label>
                     <input type="hidden" name="topicId" value="@Model.TopicId" />
-                    <input type="hidden" name="postId" value="@Model.Posts.FirstOrDefault()?.Id" />
+                    <input type="hidden" name="postId" value="@Model.Posts.FirstOrDefault()?.PostId" />
                     @Html.DropDownList("userPostsPerPage", Model.PostsPerPage)
                     &nbsp;
                     <input type="submit" value="Salvează" />

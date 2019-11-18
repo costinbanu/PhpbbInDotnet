@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Dapper;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -24,18 +25,18 @@ namespace Serverless.Forum.Pages
 
         [BindProperty(SupportsGet = true)]
         public string QueryString { get; set; }
-        [BindProperty(SupportsGet = true)]
+        [BindProperty]
         public int? AuthorId { get; set; }
-        [BindProperty(SupportsGet = false), DataType(DataType.Date), DisplayFormat(DataFormatString = "{0:dd.MM.yyyy HH:mm:ss}", ApplyFormatInEditMode = true)]
-        public DateTime? DateFrom { get; set; }
-        [BindProperty(SupportsGet = false), DataType(DataType.Date), DisplayFormat(DataFormatString = "{0:dd.MM.yyyy HH:mm:ss}", ApplyFormatInEditMode = true)]
-        public DateTime? DateTo { get; set; }
-        [BindProperty(SupportsGet = true)]
+        [BindProperty]
         public int? ForumId { get; set; }
-        [BindProperty(SupportsGet = true)]
+        [BindProperty]
         public int? TopicId { get; set; }
-        [BindProperty(SupportsGet = false)]
+        [BindProperty]
         public string SearchText { get; set; }
+        [BindProperty(SupportsGet = true)]
+        public int? PageNumber { get; set; }
+        [BindProperty]
+        public int? TotalResults { get; set; }
 
         public List<KeyValuePair<string, int>> Users { get; set; }
         public List<PostDisplay> Posts { get; private set; }
@@ -43,52 +44,61 @@ namespace Serverless.Forum.Pages
 
         public async Task OnGet()
         {
+            var query = HttpUtility.ParseQueryString(HttpUtility.UrlDecode(QueryString ?? string.Empty));
+            ForumId = int.TryParse(query["ForumId"], out var i) ? i as int? : null;
+            TopicId = int.TryParse(query["TopicId"], out i) ? i as int? : null;
+
             using (var context = new forumContext(_config))
             {
-                Users = await (from u in context.PhpbbUsers
-                               where u.UserId != 1 && u.UserType != 2
-                               orderby u.Username
-                               select KeyValuePair.Create(u.Username, u.UserId))
-                              .ToListAsync();
+                Users = await (
+                    from u in context.PhpbbUsers
+                    where u.UserId != 1 && u.UserType != 2
+                    orderby u.Username
+                    select KeyValuePair.Create(u.Username, u.UserId)
+                ).ToListAsync();
             }
         }
 
-        public async Task<IActionResult> OnPost(/*int? forum, int? topic, int? author, string text*/)
+        public async Task OnPost()
         {
-            var query = HttpUtility.ParseQueryString(HttpUtility.UrlDecode(QueryString ?? string.Empty));
+            await OnGet();
 
             using (var context = new forumContext(_config))
-            using (var cmd = context.Database.GetDbConnection().CreateCommand())
+            using (var connection = context.Database.GetDbConnection())
             {
-                await cmd.Connection.OpenAsync();
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.CommandText = "forum.search_post_text";
-                cmd.Parameters.AddRange(new[]
-                {
-                    new MySqlParameter("forum", /*int.TryParse(query.Get("forumId"), out var f) ? f : (int?)null*/ForumId > 0 ? ForumId : null),
-                    new MySqlParameter("topic", /*int.TryParse(query.Get("topicId"), out var t) ? t : (int?)null*/TopicId > 0 ? TopicId : null),
-                    new MySqlParameter("author", AuthorId),
-                    new MySqlParameter("fromDate", DateFrom?.LocalTimeToTimestamp()),
-                    new MySqlParameter("toDate", DateTo?.LocalTimeToTimestamp()),
-                    new MySqlParameter("search", SearchText)
-                });
-                using (var reader = await cmd.ExecuteReaderAsync())
-                using (var table = new DataTable())
-                {
-                    table.Load(reader);
-                    Posts = table.AsEnumerable().Select(
-                        tbl => new PostDisplay
+                await connection.OpenAsync();
+                DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+                using (
+                    var multi = await connection.QueryMultipleAsync(
+                        "CALL `forum`.`search_post_text`(@forum, @topic, @author, @page, @search);",
+                        new
                         {
-                            PostTitle = tbl["post_subject"].ToString(),
-                            PostText = tbl["post_text"].ToString()
+                            forum = ForumId > 0 ? ForumId : null,
+                            topic = TopicId > 0 ? TopicId : null,
+                            author = AuthorId,
+                            page = PageNumber ?? 1,
+                            search = SearchText
                         }
-                    ).ToList();
+                    )
+                )
+                {
+                    todo: fix selecting a topic in the list (it will revert top whatever was selected before and it won't use it in a new search)
+                    todo: add pagination
+
+                    Posts = multi.Read<PostDisplay>().ToList();
+                    Parallel.ForEach(Posts, (p, state) =>
+                    {
+                        p.PostSubject = HttpUtility.HtmlDecode(p.PostSubject);
+                        p.PostText = HttpUtility.HtmlDecode(_utils.BBCodeParser.ToHtml(p.PostText, p.BbcodeUid));
+                        p.PostText = _utils.NewLineRegex.Replace(p.PostText, "<br/>");
+                        p.PostText = _utils.HtmlCommentRegex.Replace(p.PostText, string.Empty);
+                        p.PostText = _utils.SmileyRegex.Replace(p.PostText, Constants.SMILEY_PATH);
+                    });
+                    PageNumber = multi.Read<int>().Single();
+                    TotalResults = multi.Read<int>().Single();
                 }
             }
-
-            //TODO: show selected value in forum tree
-
-            return Page();
         }
     }
 }

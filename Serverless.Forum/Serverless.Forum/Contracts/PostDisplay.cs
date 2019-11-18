@@ -6,9 +6,9 @@ namespace Serverless.Forum.Contracts
 {
     public class PostDisplay
     {
-        public int? Id { get; set; } = null;
+        public int? PostId { get; set; } = null;
 
-        public string PostTitle { get; set; } = null;
+        public string PostSubject { get; set; } = null;
 
         public string PostText { get; set; } = null;
 

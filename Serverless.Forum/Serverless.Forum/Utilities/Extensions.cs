@@ -46,15 +46,15 @@ namespace Serverless.Forum.Utilities
             };
         }
 
-        public static T RunSync<T>(this Task<T> task)
-        {
-            Task.WaitAll(task);
-            return task.Result;
-        }
+        //public static T RunSync<T>(this Task<T> task)
+        //{
+        //    Task.WaitAll(task);
+        //    return task.Result;
+        //}
 
-        public static void RunSync(this Task task)
-        {
-            Task.WaitAll(task);
-        }
+        //public static void RunSync(this Task task)
+        //{
+        //    Task.WaitAll(task);
+        //}
     }
 }
