@@ -9,10 +9,21 @@ BEGIN
 	
     set @start_idx = (page_no - 1) * 14;
 	PREPARE stmt FROM 
-		"SELECT p.*
+		"SELECT p.post_id,
+				p.post_subject,
+                p.post_text,
+                case when p.poster_id = 1
+					then p.post_username 
+                    else u.username
+				end as author_name,
+                p.poster_id as author_id,
+                p.bbcode_uid,
+                from_unixtime(p.post_time) as post_creation_time
 		   FROM phpbb_posts p
 		   JOIN phpbb_topics t
 		     ON p.topic_id = t.topic_id
+		   LEFT JOIN phpbb_users u
+			ON p.poster_id = u.user_id
 		  WHERE (? IS NULL OR ? = t.forum_id)
 		    AND (? IS NULL OR ? = p.topic_id)
 		    AND (? IS NULL OR ? = p.poster_id)

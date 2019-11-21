@@ -1,12 +1,22 @@
 ﻿using CodeKicker.BBCode.Core;
 using Dapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.ViewEngines;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
+using Serverless.Forum.Pages;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
@@ -25,110 +35,87 @@ namespace Serverless.Forum.Utilities
     public class Utils
     {
         public readonly ClaimsPrincipal Anonymous;
-        public BBCodeParser BBCodeParser => _parser.Value;
-        public Regex HtmlCommentRegex => new Regex("<!--.*?-->", RegexOptions.Compiled | RegexOptions.Singleline);
-        public Regex NewLineRegex => new Regex("\n", RegexOptions.Compiled | RegexOptions.Singleline);
-        public Regex SmileyRegex => new Regex("{SMILIES_PATH}", RegexOptions.Compiled | RegexOptions.Singleline);
 
+        private readonly Regex _htmlCommentRegex;
+        private readonly Regex _newLineRegex;
+        private readonly Regex _smileyRegex;
         private readonly IConfiguration _config;
-        private readonly Lazy<BBCodeParser> _parser;
+        private readonly BBCodeParser _parser;
+        private readonly ICompositeViewEngine _viewEngine;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly HttpContext _context;
+        private readonly ITempDataProvider _tempDataProvider;
 
-        public Utils(IConfiguration config)
+        public Utils(IConfiguration config, ICompositeViewEngine viewEngine, ITempDataProvider tempDataProvider, IServiceProvider serviceProvider, IHttpContextAccessor accessor)
         {
             _config = config;
             using (var context = new forumContext(_config))
             {
-                Anonymous = LoggedUserFromDbUserAsync(context.PhpbbUsers.First(u => u.UserId == 1)).GetAwaiter().GetResult();
-            }
+                Anonymous = LoggedUserFromDbUserAsync(context.PhpbbUsers.First(u => u.UserId == 1u)).GetAwaiter().GetResult();
 
-            _parser = new Lazy<BBCodeParser>(() =>
-            {
-                using (var context = new forumContext(_config))
+                _htmlCommentRegex = new Regex("<!--.*?-->", RegexOptions.Compiled | RegexOptions.Singleline);
+                _newLineRegex = new Regex("\n", RegexOptions.Compiled | RegexOptions.Singleline);
+                _smileyRegex = new Regex("{SMILIES_PATH}", RegexOptions.Compiled | RegexOptions.Singleline);
+
+                _viewEngine = viewEngine;
+                _tempDataProvider = tempDataProvider;
+                _serviceProvider = serviceProvider;
+                _context = accessor?.HttpContext;
+
+                var bbcodes = new List<BBTag>(from c in context.PhpbbBbcodes
+                                              select new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false));
+                bbcodes.AddRange(new[]
                 {
-                    var bbcodes = new List<BBTag>(from c in context.PhpbbBbcodes
-                                                  select new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false));
-                    bbcodes.AddRange(new[]
-                    {
-                        new BBTag("b", "<b>", "</b>"),
-                        new BBTag("i", "<span style=\"font-style:italic;\">", "</span>"),
-                        new BBTag("u", "<span style=\"text-decoration:underline;\">", "</span>"),
-                        new BBTag("code", "<pre class=\"prettyprint\">", "</pre>"),
-                        new BBTag("img", "<br/><img src=\"${content}\" /><br/>", string.Empty, false, false),
-                        new BBTag("quote", "<blockquote>${name}", "</blockquote>",
-                            new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : $"<b>{HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')}</b> a scris:<br/>")),
-                        new BBTag("*", "<li>", "</li>", true, false),
-                        new BBTag("list", "<${attr}>", "</${attr}>", true, true,
-                            new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul" : $"ol type=\"{a.AttributeValue}\"")),
-                        new BBTag("url", "<a href=\"${href}\">", "</a>",
-                            new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
-                        new BBTag("color", "<span style=\"color:${code}\">", "</span>",
-                            new BBAttribute("code", ""),
-                            new BBAttribute("code", "code")),
-                        new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>",
-                            new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
-                        new BBTag("attachment", "##AttachmentFileName=${content}##", "", false, true,
-                            new BBAttribute("num", ""),
-                            new BBAttribute("num", "num"))
-                    });
-
-                    return new BBCodeParser(bbcodes);
-                }
-            });
+                    new BBTag("b", "<b>", "</b>"),
+                    new BBTag("i", "<span style=\"font-style:italic;\">", "</span>"),
+                    new BBTag("u", "<span style=\"text-decoration:underline;\">", "</span>"),
+                    new BBTag("code", "<pre class=\"prettyprint\">", "</pre>"),
+                    new BBTag("img", "<br/><img src=\"${content}\" /><br/>", string.Empty, false, false),
+                    new BBTag("quote", "<blockquote>${name}", "</blockquote>",
+                        new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : $"<b>{HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')}</b> a scris:<br/>")),
+                    new BBTag("*", "<li>", "</li>", true, false),
+                    new BBTag("list", "<${attr}>", "</${attr}>", true, true,
+                        new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul" : $"ol type=\"{a.AttributeValue}\"")),
+                    new BBTag("url", "<a href=\"${href}\">", "</a>",
+                        new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
+                    new BBTag("color", "<span style=\"color:${code}\">", "</span>",
+                        new BBAttribute("code", ""),
+                        new BBAttribute("code", "code")),
+                    new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>",
+                        new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
+                    new BBTag("attachment", "##AttachmentFileName=${content}##", "", false, true,
+                        new BBAttribute("num", ""),
+                        new BBAttribute("num", "num"))
+                });
+                _parser = new BBCodeParser(bbcodes);
+            }
         }
 
         public async Task<ClaimsPrincipal> LoggedUserFromDbUserAsync(PhpbbUsers user)
         {
             using (var context = new forumContext(_config))
+            using (var connection = context.Database.GetDbConnection())
             {
-                var groups = await (from g in context.PhpbbUserGroup
-                                    where g.UserId == user.UserId
-                                    select g.GroupId).ToListAsync();
+                await connection.OpenAsync();
+                DefaultTypeMap.MatchNamesWithUnderscores = true;
 
-                var userPermissions = await (from up in context.PhpbbAclUsers
-                                             where up.UserId == user.UserId
-                                             select up).ToListAsync();
-
-                var groupPermissions = await (from gp in context.PhpbbAclGroups
-                                              let alreadySet = from up in userPermissions
-                                                               select up.ForumId
-                                              where groups.Contains(gp.GroupId)
-                                                 && !alreadySet.Contains(gp.ForumId)
-                                              select gp).ToListAsync();
-
-                var topicPostsPerPage = await (from tpp in context.PhpbbUserTopicPostNumber
-                                               where tpp.UserId == user.UserId
-                                               select KeyValuePair.Create(tpp.TopicId, tpp.PostNo)).ToListAsync();
-
-                var intermediary = new LoggedUser
+                using (var multi = await connection.QueryMultipleAsync("CALL `forum`.`get_user_details`(@UserId);", new { user.UserId }))
                 {
-                    UserId = user.UserId,
-                    Username = user.Username,
-                    UsernameClean = user.UsernameClean,
-                    Groups = groups,
-                    UserPermissions = (from up in userPermissions
-                                       select new LoggedUser.Permissions
-                                       {
-                                           ForumId = up.ForumId,
-                                           AuthOptionId = up.AuthOptionId,
-                                           AuthRoleId = up.AuthRoleId,
-                                           AuthSetting = up.AuthSetting
-                                       })
-                                       .ToList()
-                                       .Union((from gp in groupPermissions
-                                               select new LoggedUser.Permissions
-                                               {
-                                                   ForumId = gp.ForumId,
-                                                   AuthOptionId = gp.AuthOptionId,
-                                                   AuthRoleId = gp.AuthRoleId,
-                                                   AuthSetting = gp.AuthSetting
-                                               }).ToList()).ToList(),
-                    TopicPostsPerPage = topicPostsPerPage.ToDictionary(k => k.Key, v => v.Value),
-                    UserDateFormat = user.UserDateformat
-                };
+                    var intermediary = new LoggedUser
+                    {
+                        UserId = user.UserId,
+                        Username = user.Username,
+                        UsernameClean = user.UsernameClean,
+                        UserPermissions = await multi.ReadAsync<LoggedUser.Permissions>(),
+                        Groups = (await multi.ReadAsync<uint>()).Select(x => checked((int)x)),
+                        TopicPostsPerPage = (await multi.ReadAsync()).ToDictionary(key => checked((int)key.topic_id), value => checked((int)value.post_no)),
+                        UserDateFormat = user.UserDateformat
+                    };
 
-                var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
-                identity.AddClaim(new Claim(ClaimTypes.UserData, await CompressObjectAsync(intermediary)));
-                return new ClaimsPrincipal(identity);
+                    var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
+                    identity.AddClaim(new Claim(ClaimTypes.UserData, await CompressObjectAsync(intermediary)));
+                    return new ClaimsPrincipal(identity);
+                }
             }
         }
 
@@ -148,6 +135,52 @@ namespace Serverless.Forum.Utilities
                         Count: multi.Read<int>().Single()
                     );
                 }
+            }
+        }
+
+        public void ProcessPosts(List<PostDisplay> Posts, PageContext pageContext, bool renderAttachments)
+        {
+            var inlineAttachmentsPosts = new ConcurrentBag<(int PostId, _AttachmentPartialModel Attach)>();
+            var attachRegex = new Regex("##AttachmentFileName=.*##", RegexOptions.Compiled);
+
+            Parallel.ForEach(Posts, (p, state1) =>
+            {
+                p.PostSubject = HttpUtility.HtmlDecode(p.PostSubject);
+                p.PostText = HttpUtility.HtmlDecode(_parser.ToHtml(p.PostText, p.BbcodeUid));
+                p.PostText = _newLineRegex.Replace(p.PostText, "<br/>");
+                p.PostText = _htmlCommentRegex.Replace(p.PostText, string.Empty);
+                p.PostText = _smileyRegex.Replace(p.PostText, Constants.SMILEY_PATH);
+                if (renderAttachments)
+                {
+                    Parallel.ForEach(p.Attachments, (candidate, state2) =>
+                    {
+                        if (p.PostText.Contains($"##AttachmentFileName={candidate.FileName}##"))
+                        {
+                            inlineAttachmentsPosts.Add((p.PostId.Value, candidate));
+                        }
+                    });
+                }
+                else
+                {
+                    p.PostText = attachRegex.Replace(p.PostText, string.Empty);
+                }
+            });
+
+            if (renderAttachments)
+            {
+                Posts.ForEach(async (p) =>
+                {
+                    foreach (var (PostId, Attach) in from a in inlineAttachmentsPosts
+                                                     where a.PostId == p.PostId
+                                                     select a)
+                    {
+                        p.PostText = p.PostText.Replace(
+                            $"##AttachmentFileName={Attach.FileName}##",
+                            await RenderRazorViewToString("_AttachmentPartial", Attach, pageContext)
+                        );
+                        p.Attachments.Remove(Attach);
+                    }
+                });
             }
         }
 
@@ -219,6 +252,47 @@ namespace Serverless.Forum.Utilities
             }
 
             return stringBuilder.ToString().ToLower().Normalize(NormalizationForm.FormC);
+        }
+
+        private async Task<string> RenderRazorViewToString(string viewName, _AttachmentPartialModel model, PageContext pageContext)
+        {
+            try
+            {
+                var actionContext = new ActionContext(_context, _context.GetRouteData(), pageContext.ActionDescriptor);
+                var viewResult = _viewEngine.FindView(actionContext, viewName, false);
+
+                if (viewResult.View == null)
+                {
+                    throw new ArgumentNullException($"{viewName} does not match any available view");
+                }
+
+                var viewDictionary = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary())
+                {
+                    Model = model
+                };
+
+                using (var sw = new StringWriter())
+                {
+                    var viewContext = new ViewContext(
+                        actionContext,
+                        viewResult.View,
+                        viewDictionary,
+                        new TempDataDictionary(actionContext.HttpContext, _tempDataProvider),
+                        sw,
+                        new HtmlHelperOptions()
+                    )
+                    {
+                        RouteData = _context.GetRouteData()
+                    };
+
+                    await viewResult.View.RenderAsync(viewContext);
+                    return sw.GetStringBuilder().ToString();
+                }
+            }
+            catch (Exception ex)
+            {
+                return string.Empty;
+            }
         }
     }
 }

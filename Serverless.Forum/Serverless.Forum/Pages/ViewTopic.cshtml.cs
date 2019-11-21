@@ -1,38 +1,24 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.AspNetCore.Mvc.ViewEngines;
-using Microsoft.AspNetCore.Mvc.ViewFeatures;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
 using Serverless.Forum.Utilities;
-using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
 
 namespace Serverless.Forum.Pages
 {
-    public class ViewTopicModel : ModelWithLoggedUser
+    public class ViewTopicModel : ModelWithPagination
     {
         public List<PostDisplay> Posts { get; private set; }
         public string TopicTitle { get; private set; }
         public string ForumTitle { get; private set; }
         public int? ForumId { get; private set; }
-        public _PaginationPartialModel Pagination { get; private set; }
         public int? PostId { get; private set; }
-        public bool IsFirstPage { get; private set; }
-        public bool IsLastPage { get; private set; }
-        public int CurrentPage { get; private set; }
-        public readonly List<SelectListItem> PostsPerPage;
         public bool? Highlight { get; private set; }
         public int? TopicId => _currentTopic?.TopicId;
         public bool IsLocked => (_currentTopic?.TopicStatus ?? 0) == 1;
@@ -43,26 +29,10 @@ namespace Serverless.Forum.Pages
         private List<PhpbbPosts> _dbPosts;
         private int? _page;
         private int? _count;
-        private readonly ICompositeViewEngine _viewEngine;
-        private readonly IServiceProvider _serviceProvider;
-        private readonly HttpContext _context;
-        private readonly ITempDataProvider _tempDataProvider;
 
-        public ViewTopicModel(IConfiguration config, Utils utils, ICompositeViewEngine viewEngine, ITempDataProvider tempDataProvider, IServiceProvider serviceProvider, IHttpContextAccessor accessor) : base(config, utils)
+        public ViewTopicModel(IConfiguration config, Utils utils) : base(config, utils)
         {
-            _viewEngine = viewEngine;
-            PostsPerPage = new List<SelectListItem>
-            {
-                new SelectListItem("7", "7", false),
-                new SelectListItem("14", "14", false),
-                new SelectListItem("28", "28", false),
-                new SelectListItem("56", "56", false),
-                new SelectListItem("112", "112", false)
-            };
 
-            _tempDataProvider = tempDataProvider;
-            _serviceProvider = serviceProvider;
-            _context = accessor?.HttpContext;
         }
 
         public async Task<IActionResult> OnGetByPostId(int postId, bool? highlight)
@@ -125,9 +95,6 @@ namespace Serverless.Forum.Pages
                                 select f).FirstOrDefaultAsync();
             }
 
-            var usr = await GetCurrentUserAsync();
-            var pageSize = usr.TopicPostsPerPage.ContainsKey(topicId) ? usr.TopicPostsPerPage[topicId] : 14;
-            PostsPerPage.ForEach(ppp => ppp.Selected = int.TryParse(ppp.Value, out var value) && value == pageSize);
             ForumId = parent?.ForumId;
 
             if (!string.IsNullOrEmpty(parent.ForumPassword) &&
@@ -151,23 +118,10 @@ namespace Serverless.Forum.Pages
             ForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? "untitled");
 
             await GetPostsLazy(topicId, pageNum, null);
-            var noOfPages = (_count.Value / pageSize) + (_count.Value % pageSize == 0 ? 0 : 1);
-            if (pageNum > noOfPages)
-            {
-                pageNum = noOfPages;
-            }
-            if (pageNum < 1)
-            {
-                pageNum = 1;
-            }
-
-            IsFirstPage = pageNum == 1;
-            IsLastPage = pageNum == noOfPages;
-            CurrentPage = pageNum;
+            await ComputePagination(_count.Value, pageNum, $"/ViewTopic?TopicId={topicId}&PageNum=1", topicId);
 
             using (var context = new forumContext(_config))
             {
-                //var postsInPage = (
                 Posts = (
                     from p in _dbPosts
 
@@ -198,53 +152,12 @@ namespace Serverless.Forum.Pages
                         Unread = IsPostUnread(p.TopicId, p.PostId)
                     }
                 ).ToList();
-
-                var inlineAttachmentsPosts = new ConcurrentBag<(int PostId, _AttachmentPartialModel Attach)>();
-
-
-                Parallel.ForEach(/*postsInPage*/Posts, (p, state1) =>
-                {
-                    p.PostSubject = HttpUtility.HtmlDecode(p.PostSubject);
-                    p.PostText = HttpUtility.HtmlDecode(_utils.BBCodeParser.ToHtml(p.PostText, p.BbcodeUid));
-                    p.PostText = _utils.NewLineRegex.Replace(p.PostText, "<br/>");
-                    p.PostText = _utils.HtmlCommentRegex.Replace(p.PostText, string.Empty);
-                    p.PostText = _utils.SmileyRegex.Replace(p.PostText, Constants.SMILEY_PATH);
-
-                    Parallel.ForEach(p.Attachments, (candidate, state2) =>
-                    {
-                        if (p.PostText.Contains($"##AttachmentFileName={candidate.FileName}##"))
-                        {
-                            inlineAttachmentsPosts.Add((p.PostId.Value, candidate));
-                        }
-                    });
-                });
-                // Posts = postsInPage.ToList();
-                Posts.ForEach(async (p) =>
-                {
-                    foreach (var candidate in from a in inlineAttachmentsPosts
-                                              where a.PostId == p.PostId
-                                              select a)
-                    {
-                        p.PostText = p.PostText.Replace(
-                            $"##AttachmentFileName={candidate.Attach.FileName}##",
-                            await RenderRazorViewToString(
-                                "_AttachmentPartial",
-                                candidate.Attach
-                            )
-                        );
-                        p.Attachments.Remove(candidate.Attach);
-                    }
-                });
+                _utils.ProcessPosts(Posts, PageContext, true);
                 TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
 
-                Pagination = new _PaginationPartialModel(
-                    $"/ViewTopic?TopicId={topicId}&PageNum=1",
-                    _count.Value,
-                    pageSize,
-                    pageNum
-                );
+                ongetbypostid advances one page too many if it's greater than half??? to test: open random topic. 
+                click post title that's after half of the page. it will advance one page althoutgh it shouldn stay on te same one
             }
-
             return Page();
         }
 
@@ -258,9 +171,7 @@ namespace Serverless.Forum.Pages
 
             using (var context = new forumContext(_config))
             {
-                var curValue = await context.PhpbbUserTopicPostNumber
-                                               .FirstOrDefaultAsync(ppp => ppp.UserId == CurrentUserId &&
-                                                                           ppp.TopicId == topicId);
+                var curValue = await context.PhpbbUserTopicPostNumber.FirstOrDefaultAsync(ppp => ppp.UserId == CurrentUserId && ppp.TopicId == topicId);
 
                 if (curValue == null)
                 {
@@ -283,47 +194,6 @@ namespace Serverless.Forum.Pages
             }
         }
 
-        private async Task<string> RenderRazorViewToString(string viewName, _AttachmentPartialModel model)
-        {
-            try
-            {
-                var actionContext = new ActionContext(_context, _context.GetRouteData(), PageContext.ActionDescriptor);
-
-
-                var viewResult = _viewEngine.FindView(actionContext, viewName, false); 
-
-                if (viewResult.View == null)
-                {
-                    throw new ArgumentNullException($"{viewName} does not match any available view");
-                }
-
-                var viewDictionary = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary())
-                {
-                    Model = model
-                };
-                using (var sw = new StringWriter())
-                {
-                    var viewContext = new ViewContext(
-                        actionContext,
-                        viewResult.View,
-                        viewDictionary,
-                        new TempDataDictionary(actionContext.HttpContext, _tempDataProvider),
-                        sw,
-                        new HtmlHelperOptions()
-                    )
-                    {
-                        RouteData = _context.GetRouteData()
-                    };
-
-                    await viewResult.View.RenderAsync(viewContext);
-                    return sw.GetStringBuilder().ToString();
-                }
-            }
-            catch (Exception ex)
-            {
-                return string.Empty;
-            }
-        }
 
         private async Task GetPostsLazy(int? topicId, int? page, int? postId)
         {
