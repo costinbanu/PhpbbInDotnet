@@ -25,7 +25,7 @@ BEGIN
 	elseif page_no is null
     then
 		set @rownum = 0;
-        set @idx = 0;
+        set @idx = 1;
         SELECT x.position
           INTO @idx
           FROM (

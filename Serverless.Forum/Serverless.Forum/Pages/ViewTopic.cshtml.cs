@@ -155,8 +155,6 @@ namespace Serverless.Forum.Pages
                 _utils.ProcessPosts(Posts, PageContext, true);
                 TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
 
-                ongetbypostid advances one page too many if it's greater than half??? to test: open random topic. 
-                click post title that's after half of the page. it will advance one page althoutgh it shouldn stay on te same one
             }
             return Page();
         }

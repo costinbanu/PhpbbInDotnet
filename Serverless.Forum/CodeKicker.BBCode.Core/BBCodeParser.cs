@@ -369,7 +369,7 @@ namespace CodeKicker.BBCode.Core
             if (end >= input.Length || input[end] != '=') return null;
             end++;
 
-            var endIndex = input.IndexOfAny(" []:".ToCharArray(), end);
+            var endIndex = input.IndexOfAny("[]:".ToCharArray(), end);
             if (endIndex == -1) endIndex = input.Length;
             var toAdd = 0;
             if (endIndex < input.Length && input[endIndex] == ':' && input.Substring(endIndex + 1, code.Length) == code)
