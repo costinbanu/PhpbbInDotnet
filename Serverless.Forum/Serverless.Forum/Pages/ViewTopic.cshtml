@@ -47,29 +47,18 @@
 }
 <h2>Subiect: @Model.TopicTitle</h2>
 
-<table style="border:none">
-    <tr>
-
-        <td style="padding-right:10px; border-right: @(IsAnonymous || !Model.Pagination.HasPages ? "none" : "solid 1px black")">
-            @await Html.PartialAsync("_PaginationPartial", Model.Pagination, ViewData)
-        </td>
-
-        @if (!IsAnonymous)
-        {
-            <td style="padding-left:10px;">
-                <form method="post">
-                    <label>Mesaje afișate pe pagină:&nbsp;</label>
-                    <input type="hidden" name="topicId" value="@Model.TopicId" />
-                    <input type="hidden" name="postId" value="@Model.Posts.FirstOrDefault()?.PostId" />
-                    @Html.DropDownList("userPostsPerPage", Model.PostsPerPage)
-                    &nbsp;
-                    <input type="submit" value="Salvează" />
-                </form>
-            </td>
-        }
-
-    </tr>
-</table>
+@await  Html.PartialAsync(
+    "_PaginationControlsPartial",
+    new _PaginationControlsPartialModel(
+        Model, 
+        $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.Pagination.CurrentPage - 1}", 
+        $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.Pagination.CurrentPage + 1}",
+        false, 
+        Model.TopicId, 
+        Model.Posts.LastOrDefault()?.PostId
+    ),
+    ViewData
+)
 
 @foreach (var post in Model.Posts)
 {
@@ -128,60 +117,17 @@ else
 }
 <p></p>
 
-<table style="border:none;">
-    <tr>
-        @if (!Model.IsFirstPage)
-        {
-            <td style="padding-right:10px; border-right: solid 1px black">
-                <a asp-page="/ViewTopic" asp-route-topicId="@Model.TopicId" asp-route-pageNum="@(Model.CurrentPage - 1)" style="text-decoration:none">
-                    <table border="0" cellpadding="0" cellspacing="0">
-                        <tr>
-                            <td style="font-size:3em; vertical-align:middle; padding-right:10px">
-                                &#x1F880;
-                            </td>
-                            <td style="vertical-align:middle;">
-                                Pagina<br />precedentă
-                            </td>
-                        </tr>
-                    </table>
-                </a>
-            </td>
-        }
-        <td style="padding-right:10px; padding-left:10px; border-right: @((Model.IsLastPage && IsAnonymous) || !Model.Pagination.HasPages ? "none" : "solid 1px black")">
-            @await Html.PartialAsync("_PaginationPartial", Model.Pagination, ViewData)
-        </td>
-        @if (!IsAnonymous)
-        {
-            <td style="padding-right:10px; padding-left:10px; border-right: @(Model.IsLastPage ? "none" : "solid 1px black")">
-                <form method="post">
-                    <label>Mesaje afișate pe pagină:&nbsp;</label>
-                    <input type="hidden" name="topicId" value="@Model.TopicId" />
-                    <input type="hidden" name="postId" value="@Model.Posts.FirstOrDefault()?.PostId" />
-                    @Html.DropDownList("userPostsPerPage", Model.PostsPerPage)
-                    &nbsp;
-                    <input type="submit" value="Salvează" />
-                </form>
-            </td>
-        }
-        @if (!Model.IsLastPage)
-        {
-            <td style="padding-left:10px">
-                <a asp-page="/ViewTopic" asp-route-topicId="@Model.TopicId" asp-route-pageNum="@(Model.CurrentPage + 1)" style="text-decoration:none">
-                    <table border="0" cellpadding="0" cellspacing="0">
-                        <tr>
-                            <td style="vertical-align:middle;">
-                                Pagina<br />următoare
-                            </td>
-                            <td style="font-size:3em; vertical-align:middle; padding-left:10px">
-                                &#x1F882;
-                            </td>
-                        </tr>
-                    </table>
-                </a>
-            </td>
-        }
-    </tr>
-</table>
-
+@await  Html.PartialAsync(
+    "_PaginationControlsPartial",
+    new _PaginationControlsPartialModel(
+        Model, 
+        $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.Pagination.CurrentPage - 1}", 
+        $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.Pagination.CurrentPage + 1}",
+        true, 
+        Model.TopicId, 
+        Model.Posts.LastOrDefault()?.PostId
+    ),
+    ViewData
+)
 
 

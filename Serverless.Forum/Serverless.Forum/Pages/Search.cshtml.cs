@@ -37,7 +37,7 @@ namespace Serverless.Forum.Pages
         public string SearchText { get; set; }
 
         [BindProperty(SupportsGet = true)]
-        public int? PageNumber { get; set; }
+        public int? PageNum { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public int? TotalResults { get; set; }
@@ -94,12 +94,12 @@ namespace Serverless.Forum.Pages
 
         public string GetSearchLinkForPage(int page) =>
             $"/Search" +
-                $"?{nameof(QueryString)}={QueryString}" +
+                $"?{nameof(QueryString)}={HttpUtility.UrlEncode(QueryString)}" +
                 $"&{nameof(AuthorId)}={AuthorId}" +
                 $"&{nameof(ForumId)}={ForumId}" +
                 $"&{nameof(TopicId)}={TopicId}" +
                 $"&{nameof(SearchText)}={HttpUtility.UrlEncode(SearchText)}" +
-                $"&{nameof(PageNumber)}={page}" +
+                $"&{nameof(PageNum)}={page}" +
                 $"&{nameof(TotalResults)}={TotalResults}" +
                 $"&{nameof(DoSearch)}={true}";
 
@@ -119,7 +119,7 @@ namespace Serverless.Forum.Pages
                             forum = ForumId > 0 ? ForumId : null,
                             topic = TopicId > 0 ? TopicId : null,
                             author = AuthorId,
-                            page = PageNumber ?? 1,
+                            page = PageNum ?? 1,
                             search = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText)
                         }
                     )
@@ -128,11 +128,11 @@ namespace Serverless.Forum.Pages
 
                     Posts = (await multi.ReadAsync<PostDisplay>()).ToList();
                     _utils.ProcessPosts(Posts, PageContext, false);
-                    PageNumber = (await multi.ReadAsync<int>()).Single();
+                    PageNum = (await multi.ReadAsync<int>()).Single();
                     TotalResults = unchecked((int)(await multi.ReadAsync<long>()).Single());
                 }
 
-                await ComputePagination(TotalResults.Value, PageNumber.Value, GetSearchLinkForPage(PageNumber.Value + 1));
+                await ComputePagination(TotalResults.Value, PageNum.Value, GetSearchLinkForPage(PageNum.Value + 1));
             }
         }
     }

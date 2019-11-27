@@ -47,7 +47,7 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a asp-page="/Index"><img src="~/images/forumlogo2014-1.png" class="headerImg" /></a>
+                <a asp-page="/Index"><div class="headerImg" ></div></a>
 
             </div>
             <div class="navbar-collapse collapse">
@@ -58,8 +58,8 @@
                     <input name="ReturnUrl" type="hidden" value="@HttpUtility.UrlEncode(Context.Request.Path + Context.Request.QueryString)" />
                 </form>
                 <ul class="nav navbar-nav">
-
                     @{
+                        var isTopic = ViewContext.RouteData.Values["page"].ToString() == "/ViewTopic";
                         if (string.IsNullOrWhiteSpace(currentUser?.Username) || (currentUser?.UserId ?? 0) == 1)
                         {
                             <li><a href="#" onclick="loginForm.submit()">Login</a></li>
@@ -70,17 +70,14 @@
                             <li><a asp-page="/User" asp-route-UserId="@currentUser.UserId">Welcome, @currentUser.Username!</a></li>
                             <li><a href="#" onclick="logoutForm.submit()">Logout</a></li>
                         }
-                    }
-                    <li>
-                        @*<form method="get" action="/Search" name="searchForm">
-                            <input name="text" type="text" placeholder="Caută în forum..." />
-                            <input type="submit" value="&#x1F50E;" style="background:none; border:none; margin:0; padding:0; cursor: pointer;" />
-                            @Html.AntiForgeryToken()
-                        </form>*@
-                        <a asp-page="/Search" asp-route-QueryString="@HttpUtility.UrlEncode(Context.Request.QueryString.ToString())">Caută în forum &#x1F50E;</a>
-                    </li>
-                </ul>
 
+                        <li>
+                            <a asp-page="/Search" asp-route-QueryString="@HttpUtility.UrlEncode(Context.Request.QueryString.ToString())">
+                                Caută în @(isTopic ? "subiect" : "forum") &#x1F50E;
+                            </a>
+                        </li>
+                    }
+                </ul>
             </div>
         </div>
     </nav>

@@ -218,7 +218,7 @@ label {
 }
 
 .nav {
-    float:right;
+    float: right;
 }
 
 .postingControls {
@@ -230,8 +230,10 @@ label {
 }
 
 .headerImg {
-    width:auto;
-    height:auto;
+    width: 682px;
+    height: 100px;
+    background-image: url("../images/forumlogo-full.png");
+    background-size:contain;
 }
 
 @media (max-width: 768px) {
@@ -258,20 +260,17 @@ label {
     .postingControls {
         display:none;
     }
-    .headerImg {
-        width: 90vw;
-        height: auto;
-    }
-
     .inputbox {
         width:100%;
     }
 }
 
-@media (max-width:1000px) {
+@media (max-width:1200px) {
     .headerImg {
-        width: 50vw;
-        height: auto;
+        width: 325px;
+        height: 77px;
+        background-image: url("../images/forumlogo-small.png");
+        background-size: contain;
     }
 }
 

@@ -16,7 +16,7 @@
 
 <form method="post">
     <input asp-for="QueryString" type="hidden" />
-    <input asp-for="PageNumber" type="hidden" />
+    <input asp-for="PageNum" type="hidden" />
     <input asp-for="TotalResults" type="hidden" />
 
     <input asp-for="SearchText" type="text" placeholder="Caută după text..." style="width:100%" />
@@ -50,47 +50,18 @@
 @if (Model.Posts != null && Model.Posts.Any())
 {
     <h2>Rezultate</h2>
-    <table style="border:none;">
-        <tr>
-            @if (!Model.IsFirstPage)
-            {
-                <td style="padding-right:10px; border-right: solid 1px black">
-                    <a href="@Model.GetSearchLinkForPage(Model.PageNumber.Value - 1)" style="text-decoration:none">
-                        <table border="0" cellpadding="0" cellspacing="0">
-                            <tr>
-                                <td style="font-size:3em; vertical-align:middle; padding-right:10px">
-                                    &#x1F880;
-                                </td>
-                                <td style="vertical-align:middle;">
-                                    Pagina<br />precedentă
-                                </td>
-                            </tr>
-                        </table>
-                    </a>
-                </td>
-            }
-            <td style="padding-right:10px; padding-left:10px; border-right: @((Model.IsLastPage && IsAnonymous) || !Model.Pagination.HasPages ? "none" : "solid 1px black")">
-                @await Html.PartialAsync("_PaginationPartial", Model.Pagination, ViewData)
-            </td>
-            @if (!Model.IsLastPage)
-            {
-                <td style="padding-left:10px">
-                    <a href="@Model.GetSearchLinkForPage(Model.PageNumber.Value + 1)" style="text-decoration:none">
-                        <table border="0" cellpadding="0" cellspacing="0">
-                            <tr>
-                                <td style="vertical-align:middle;">
-                                    Pagina<br />următoare
-                                </td>
-                                <td style="font-size:3em; vertical-align:middle; padding-left:10px">
-                                    &#x1F882;
-                                </td>
-                            </tr>
-                        </table>
-                    </a>
-                </td>
-            }
-        </tr>
-    </table>
+@await  Html.PartialAsync(
+    "_PaginationControlsPartial",
+    new _PaginationControlsPartialModel(
+        Model,
+        Model.GetSearchLinkForPage(Model.PageNum.Value - 1),
+        Model.GetSearchLinkForPage(Model.PageNum.Value + 1),
+        false,
+        null,
+        Model.Posts.LastOrDefault()?.PostId
+    ),
+    ViewData
+)
 
     foreach (var post in Model.Posts)
     {
@@ -112,47 +83,18 @@
         )
     }
 
-    <table style="border:none;">
-        <tr>
-            @if (!Model.IsFirstPage)
-            {
-                <td style="padding-right:10px; border-right: solid 1px black">
-                    <a href="@Model.GetSearchLinkForPage(Model.PageNumber.Value - 1)" style="text-decoration:none">
-                        <table border="0" cellpadding="0" cellspacing="0">
-                            <tr>
-                                <td style="font-size:3em; vertical-align:middle; padding-right:10px">
-                                    &#x1F880;
-                                </td>
-                                <td style="vertical-align:middle;">
-                                    Pagina<br />precedentă
-                                </td>
-                            </tr>
-                        </table>
-                    </a>
-                </td>
-            }
-            <td style="padding-right:10px; padding-left:10px; border-right: @((Model.IsLastPage && IsAnonymous) || !Model.Pagination.HasPages ? "none" : "solid 1px black")">
-                @await Html.PartialAsync("_PaginationPartial", Model.Pagination, ViewData)
-            </td>
-            @if (!Model.IsLastPage)
-            {
-                <td style="padding-left:10px">
-                    <a href="@Model.GetSearchLinkForPage(Model.PageNumber.Value + 1)" style="text-decoration:none">
-                        <table border="0" cellpadding="0" cellspacing="0">
-                            <tr>
-                                <td style="vertical-align:middle;">
-                                    Pagina<br />următoare
-                                </td>
-                                <td style="font-size:3em; vertical-align:middle; padding-left:10px">
-                                    &#x1F882;
-                                </td>
-                            </tr>
-                        </table>
-                    </a>
-                </td>
-            }
-        </tr>
-    </table>
+    @await  Html.PartialAsync(
+        "_PaginationControlsPartial",
+        new _PaginationControlsPartialModel(
+            Model,
+            Model.GetSearchLinkForPage(Model.PageNum.Value - 1),
+            Model.GetSearchLinkForPage(Model.PageNum.Value + 1),
+            true,
+            null,
+            Model.Posts.LastOrDefault()?.PostId
+        ),
+        ViewData
+    )
 }
 
 <link rel="stylesheet" href="~/lib/tribute/dist/tribute.css" />
@@ -164,6 +106,4 @@
         });
 
     tribute.attach(document.getElementById("AuthorInput"));
-
-
 </script>
