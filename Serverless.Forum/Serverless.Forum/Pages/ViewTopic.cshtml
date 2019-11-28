@@ -4,13 +4,14 @@
     ViewData["Title"] = $"{Model.ForumTitle} - {Model.TopicTitle}";
     Layout = "~/Pages/_Layout.cshtml";
     var IsAnonymous = Model.CurrentUserId == 1;
-    var IsLocked = Model.IsLocked &&
-                   !(await Model.IsCurrentUserAdminHere(Model.ForumId.Value)) &&
-                   !(await Model.IsCurrentUserModHere(Model.ForumId.Value));
+    var IsLocked = Model.IsLocked 
+                && !(await Model.IsCurrentUserAdminHere(Model.ForumId.Value)) 
+                && !(await Model.IsCurrentUserModHere(Model.ForumId.Value));
     var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
 }
 
-<script type="text/javascript" src="~/js/site.js">
+<script type="text/javascript"  src="~/js/site.js"></script>
+<script type="text/javascript">
     window.onload = function () {
         onPostLoad();
         var postId = @Json.Serialize(Model.PostId ?? -1);
@@ -27,18 +28,6 @@
             window.scrollTo(0, middle);
         }
     }
-
-    function showSummary(summary, button) {
-        if ($(summary).css("display") != "block") {
-            var position = $(button).offset();
-            $(summary).css("right", "30px");
-            $(summary).css("top", position.top + $(button).height() + 10 + "px");
-            $(summary).css("display", "block");
-        }
-        else {
-            $(summary).css("display", "none");
-        }
-    }
 </script>
 
 @if (Model.ForumId != null)
@@ -50,12 +39,13 @@
 @await  Html.PartialAsync(
     "_PaginationControlsPartial",
     new _PaginationControlsPartialModel(
-        Model, 
-        $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.Pagination.CurrentPage - 1}", 
-        $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.Pagination.CurrentPage + 1}",
-        false, 
-        Model.TopicId, 
-        Model.Posts.LastOrDefault()?.PostId
+        pagination: Model,
+        allowPaginationChange: true,
+        back: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.Pagination.CurrentPage - 1}",
+        forward: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.Pagination.CurrentPage + 1}",
+        includeEasyNavigation: false,
+        topicId: Model.TopicId,
+        lastPostId: Model.Posts.LastOrDefault()?.PostId
     ),
     ViewData
 )
@@ -68,7 +58,7 @@
             <span class="PostTitle">
                 <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@post.PostId">@Html.Raw(post.PostSubject)</a>
             </span>
-            <span class="ForumListCollapsed" onclick="showSummary('#summary@(post.PostId.Value)', '#button@(post.PostId.Value)')" id="button@(post.PostId.Value)" style="color:@post.AuthorColor;font-weight:bold">
+            <span class="CollapsedMenu" onclick="expandCollapsedMenu('#summary@(post.PostId.Value)', '#button@(post.PostId.Value)')" id="button@(post.PostId.Value)" style="color:#@post.AuthorColor;font-weight:bold">
                 @Html.Raw(post.AuthorName)
             </span>
             <p>&nbsp;</p>
@@ -120,12 +110,13 @@ else
 @await  Html.PartialAsync(
     "_PaginationControlsPartial",
     new _PaginationControlsPartialModel(
-        Model, 
-        $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.Pagination.CurrentPage - 1}", 
-        $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.Pagination.CurrentPage + 1}",
-        true, 
-        Model.TopicId, 
-        Model.Posts.LastOrDefault()?.PostId
+        pagination: Model,
+        allowPaginationChange: true,
+        back: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.Pagination.CurrentPage - 1}",
+        forward: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.Pagination.CurrentPage + 1}",
+        includeEasyNavigation: true,
+        topicId: Model.TopicId,
+        lastPostId: Model.Posts.LastOrDefault()?.PostId
     ),
     ViewData
 )

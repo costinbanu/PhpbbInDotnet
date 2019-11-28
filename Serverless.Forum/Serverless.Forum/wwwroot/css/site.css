@@ -92,7 +92,7 @@ blockquote {
     margin-bottom: 0px !important;
 }
 
-.ForumListCollapsed {
+.CollapsedMenu {
     display: none;
     border-radius: 5px;
     border: solid 1px black;
@@ -236,6 +236,18 @@ label {
     background-size:contain;
 }
 
+.paginationControls {
+    display: none;
+}
+
+#paginationControlsCollapsed {
+    display: none;
+}
+
+#paginationControlsFull {
+    display: inline;
+}
+
 @media (max-width: 768px) {
     .ForumListRight {
         display: none;
@@ -253,7 +265,7 @@ label {
         display:inline-block;
     }
 
-    .ForumListCollapsed {
+    .CollapsedMenu {
         display:inline-block;
     }
 
@@ -262,6 +274,13 @@ label {
     }
     .inputbox {
         width:100%;
+    }
+    #paginationControlsCollapsed {
+        display: inline;
+    }
+
+    #paginationControlsFull {
+        display: none;
     }
 }
 
