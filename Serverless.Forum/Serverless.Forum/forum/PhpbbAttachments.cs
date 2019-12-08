@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Serverless.Forum.forum
 {
     public partial class PhpbbAttachments
     {
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int AttachId { get; set; }
         public int PostMsgId { get; set; }
         public int TopicId { get; set; }

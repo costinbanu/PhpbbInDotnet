@@ -10,6 +10,7 @@ using Serverless.Forum.forum;
 using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -54,7 +55,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnGetForumPost(int forumId, int topicId)
         {
-            if (CurrentUserId == 1)
+            if ((CurrentUserId ?? 1) == 1)
             {
                 return Unauthorized();
             }
@@ -84,7 +85,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnGetQuoteForumPost(int postId)
         {
-            if (CurrentUserId == 1)
+            if ((CurrentUserId ?? 1) == 1)
             {
                 return Unauthorized();
             }
@@ -131,7 +132,7 @@ namespace Serverless.Forum.Pages
 
             var subject = curPost.PostSubject.StartsWith(Constants.REPLY) ? curPost.PostSubject.Substring(Constants.REPLY.Length) : curPost.PostSubject;
             PostTitle = PostTitle = $"{Constants.REPLY}{subject}";
-            PostText = $"[quote=\"{curAuthor}\"]\n{HttpUtility.HtmlDecode(RemoveBbCodeUid(curPost.PostText, curPost.BbcodeUid))}\n[/quote]";
+            PostText = $"[quote=\"{curAuthor}\"]\n{HttpUtility.HtmlDecode(CleanText(curPost.PostText, curPost.BbcodeUid))}\n[/quote]";
 
             return Page();
         }
@@ -163,12 +164,14 @@ namespace Serverless.Forum.Pages
                 PostAttachments.Add(new PhpbbAttachments
                 {
                     AttachComment = fileComment,
-                    Extension = System.IO.Path.GetExtension(file.FileName),
+                    Extension = Path.GetExtension(file.FileName),
                     Filetime = DateTime.UtcNow.LocalTimeToTimestamp(),
                     Filesize = file.Length,
                     Mimetype = file.ContentType,
                     PhysicalFilename = name,
-                    RealFilename = System.IO.Path.GetFileName(file.FileName),
+                    RealFilename = Path.GetFileName(file.FileName),
+                    TopicId = TopicId,
+                    PosterId = CurrentUserId.Value
                     //PosterId = usr.UserId.Value,
                     //TopicId = TopicId
                 });
@@ -235,12 +238,38 @@ namespace Serverless.Forum.Pages
             throw await Task.FromResult(new NotImplementedException());
         }
 
-        private string RemoveBbCodeUid(string text, string uid)
+        private string CleanText(string text, string uid)
         {
-            var uidRegex = new Regex($":{uid}", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            var uidRegex = new Regex($":{uid}", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
             var tagRegex = new Regex(@"(:[a-z])(\]|:)", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
             var cleanTextTemp = uidRegex.Replace(text, string.Empty);
-            return tagRegex.Replace(cleanTextTemp, "$2");
+            var noUid = tagRegex.Replace(cleanTextTemp, "$2");
+
+            var noSmileys = noUid;
+            var smileyRegex = new Regex("<!-- s(:?.+?) -->.+?<!-- s:?.+?:? -->", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            var smileyMatches = smileyRegex.Matches(noSmileys);
+            try
+            {
+                foreach (Match m in smileyMatches)
+                {
+                    noSmileys = noSmileys.Replace(m.Value, m.Groups[1].Value);
+                }
+            }
+            catch { }
+
+            var noLinks = noSmileys;
+            var linkRegex = new Regex(@"<!-- m --><a\s+(?:[^>]*?\s+)?href=([""'])(.*?)\1.+?<!-- m -->", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            var linkMatches = linkRegex.Matches(noLinks);
+            try
+            {
+                foreach (Match m in linkMatches)
+                {
+                    noLinks = noLinks.Replace(m.Value, m.Groups[2].Value);
+                }
+            }
+            catch { }
+
+            return noLinks;
         }
 
         private async Task Init(forumContext context)
