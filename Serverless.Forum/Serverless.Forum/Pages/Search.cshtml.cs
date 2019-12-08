@@ -25,7 +25,7 @@ namespace Serverless.Forum.Pages
         public string QueryString { get; set; }
 
         [BindProperty(SupportsGet = true)]
-        public int? AuthorId { get; set; }
+        public string Author { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public int? ForumId { get; set; }
@@ -45,7 +45,7 @@ namespace Serverless.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public bool? DoSearch { get; set; }
 
-        public List<KeyValuePair<string, int>> Users { get; set; }
+        public List<KeyValuePair<string, string>> Users { get; set; }
 
         public List<PostDisplay> Posts { get; private set; }
 
@@ -76,7 +76,7 @@ namespace Serverless.Forum.Pages
                     from u in context.PhpbbUsers
                     where u.UserId != 1 && u.UserType != 2
                     orderby u.Username
-                    select KeyValuePair.Create(u.Username, u.UserId)
+                    select KeyValuePair.Create(u.Username, u.Username)
                 ).ToListAsync();
             }
 
@@ -95,7 +95,7 @@ namespace Serverless.Forum.Pages
         public string GetSearchLinkForPage(int page) =>
             $"/Search" +
                 $"?{nameof(QueryString)}={HttpUtility.UrlEncode(QueryString)}" +
-                $"&{nameof(AuthorId)}={AuthorId}" +
+                $"&{nameof(Author)}={Author}" +
                 $"&{nameof(ForumId)}={ForumId}" +
                 $"&{nameof(TopicId)}={TopicId}" +
                 $"&{nameof(SearchText)}={HttpUtility.UrlEncode(SearchText)}" +
@@ -110,7 +110,7 @@ namespace Serverless.Forum.Pages
             {
                 await connection.OpenAsync();
                 DefaultTypeMap.MatchNamesWithUnderscores = true;
-
+                var authorUser = await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UsernameClean == _utils.CleanString(Author));
                 using (
                     var multi = await connection.QueryMultipleAsync(
                         "CALL `forum`.`search_post_text`(@forum, @topic, @author, @page, @search);",
@@ -118,7 +118,7 @@ namespace Serverless.Forum.Pages
                         {
                             forum = ForumId > 0 ? ForumId : null,
                             topic = TopicId > 0 ? TopicId : null,
-                            author = AuthorId,
+                            author = authorUser?.UserId,
                             page = PageNum ?? 1,
                             search = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText)
                         }

@@ -1,6 +1,9 @@
 ﻿using AutoMapper;
+using Dapper;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -124,52 +127,42 @@ namespace Serverless.Forum
 
         public int? CurrentUserId => _currentUserId.Value;
 
-        //public async Task<Dictionary<int, List<int>>> GetUnreadTopicsAndAncestorsAsync()
-        //{
-        //    async Task<List<int>> ancestors(forumContext context, int current, List<int> parents)
-        //    {
-        //        var thisForum = await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == current);
-        //        if (thisForum == null)
-        //        {
-        //            return parents;
-        //        }
-        //        parents.Add(current);
-        //        return await ancestors(context, thisForum.ParentId, parents);
-        //    }
-
-        //    var unread = GetUnreadTopicsAndParentsLazy();
-        //    using (var context = new forumContext(_config))
-        //    {
-        //        var toReturn = new Dictionary<int, List<int>>();
-        //        foreach (var (ForumId, TopicId) in unread)
-        //        {
-        //            toReturn.Add(TopicId, await ancestors(context, ForumId, new List<int>()));
-        //        }
-
-        //        return toReturn;
-        //    }
-        //}
-
         public bool IsForumUnread(int forumId)
         {
+            if ((CurrentUserId ?? 1) == 1)
+            {
+                return false;
+            }
             var unread = GetUnreadTopicsAndParentsLazy();
             return unread.Any(u => u.ForumId == forumId);
         }
 
         public bool IsTopicUnread(int topicId)
         {
+            if ((CurrentUserId ?? 1) == 1)
+            {
+                return false;
+            }
             var unread = GetUnreadTopicsAndParentsLazy();
             return unread.Any(u => u.TopicId == topicId);
         }
 
         public bool IsPostUnread(int topicId, int PostId)
         {
+            if ((CurrentUserId ?? 1) == 1)
+            {
+                return false;
+            }
             var unread = GetUnreadTopicsAndParentsLazy();
             return unread.FirstOrDefault(t => t.TopicId == topicId)?.Posts?.Any(p => p == PostId) ?? false;
         }
 
         public int GetFirstUnreadPost(int topicId)
         {
+            if ((CurrentUserId ?? 1) == 1)
+            {
+                return 0;
+            }
             var unread = GetUnreadTopicsAndParentsLazy();
             return unread.FirstOrDefault(t => t.TopicId == topicId)?.Posts?.FirstOrDefault() ?? 0;
         }
@@ -298,54 +291,59 @@ namespace Serverless.Forum
 
         private IEnumerable<Tracking> GetUnreadTopicsAndParentsLazy()
         {
-
-
-            if (_tracking == null)
+            if (_tracking != null)
             {
-                //https://www.phpbb.com/community/viewtopic.php?t=2165146
-                //https://www.phpbb.com/community/viewtopic.php?p=2987015
-                using (var context = new forumContext(_config))
-                {
-                    _tracking = (
-                        from t in context.PhpbbTopics
-                        from u in context.PhpbbUsers
+                return _tracking;
+            }
 
-                            //let times = from p in context.PhpbbPosts
-                            //            where p.TopicId == t.TopicId
-                            //            select p.PostTime
-                        let topicLastPostTime = t.TopicLastPostTime // times.Count() > 0 ? times.Max() : 0L
+            using (var context = new forumContext(_config))
+            using (var connection = context.Database.GetDbConnection())
+            {
+                connection.Open();
+                DefaultTypeMap.MatchNamesWithUnderscores = true;
 
-                        where u.UserId == (CurrentUserId ?? 0) && topicLastPostTime > u.UserLastmark
-
-                        join tt in context.PhpbbTopicsTrack
-                        on new { t.TopicId, UserId = CurrentUserId ?? 0 } equals new { tt.TopicId, tt.UserId }
-                        into trackedTopics
-
-                        join ft in context.PhpbbForumsTrack
-                        on new { t.ForumId, UserId = CurrentUserId ?? 0 } equals new { ft.ForumId, ft.UserId }
-                        into trackedForums
-
-                        from tt in trackedTopics.DefaultIfEmpty()
-                        from ft in trackedForums.DefaultIfEmpty()
-
-                        where greaterThanMarked(ft, tt, topicLastPostTime)
-                        //!((tt != null && topicLastPostTime <= tt.MarkTime) || (ft != null && topicLastPostTime <= ft.MarkTime))
-
-                        select new Tracking
-                        {
-                            TopicId = t.TopicId,
-                            ForumId = t.ForumId,
-                            Posts = from p in context.PhpbbPosts
-                                    where p.TopicId == t.TopicId
-                                       && greaterThanMarked(ft, tt, p.PostTime)
-                                    //!((tt != null && p.PostTime <= tt.MarkTime) || (ft != null && p.PostTime <= ft.MarkTime))
-                                    orderby p.PostTime
-                                    select p.PostId
-                        }
-                    ).ToList();
-                }
+                var result = connection.Query<TrackingQueryResult>(
+                    "CALL `forum`.`get_post_tracking`(@userId, @topicId);", 
+                    new { userId = CurrentUserId, topicId = null as int? }
+                );
+                _tracking = from t in result
+                            group t by new { t.ForumId, t.TopicId } into grouped
+                            select new Tracking
+                            {
+                                ForumId = grouped.Key.ForumId,
+                                TopicId = grouped.Key.TopicId,
+                                Posts = grouped.Select(g => g.PostId)
+                            };
             }
             return _tracking;
+        }
+
+        protected async Task<IActionResult> ValidatePermissionsResponses(PhpbbForums thisForum, int forumId)
+        {
+            if (thisForum == null)
+            {
+                return NotFound($"Forumul {forumId} nu există.");
+            }
+
+            if (!string.IsNullOrEmpty(thisForum.ForumPassword) &&
+                (HttpContext.Session.GetInt32("ForumLogin") ?? -1) != forumId)
+            {
+                if ((await GetCurrentUserAsync()).UserPermissions.Any(fp => fp.ForumId == forumId && fp.AuthRoleId == 16))
+                {
+                    return Unauthorized();
+                }
+                else
+                {
+                    return RedirectToPage("ForumLogin", new ForumLoginModel(_config)
+                    {
+                        ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString),
+                        ForumId = forumId,
+                        ForumName = thisForum.ForumName
+                    });
+                }
+            }
+
+            return null;
         }
 
         class Tracking
@@ -353,6 +351,13 @@ namespace Serverless.Forum
             internal int TopicId { get; set; }
             internal int ForumId { get; set; }
             internal IEnumerable<int> Posts { get; set; }
+        }
+
+        class TrackingQueryResult
+        {
+            internal int ForumId { get; set; }
+            internal int TopicId { get; set; }
+            internal int PostId { get; set; }
         }
     }
 

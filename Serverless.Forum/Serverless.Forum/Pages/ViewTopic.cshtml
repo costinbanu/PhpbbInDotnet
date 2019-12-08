@@ -4,13 +4,13 @@
     ViewData["Title"] = $"{Model.ForumTitle} - {Model.TopicTitle}";
     Layout = "~/Pages/_Layout.cshtml";
     var IsAnonymous = Model.CurrentUserId == 1;
-    var IsLocked = Model.IsLocked 
-                && !(await Model.IsCurrentUserAdminHere(Model.ForumId.Value)) 
+    var IsLocked = Model.IsLocked
+                && !(await Model.IsCurrentUserAdminHere(Model.ForumId.Value))
                 && !(await Model.IsCurrentUserModHere(Model.ForumId.Value));
     var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
 }
 
-<script type="text/javascript"  src="~/js/site.js"></script>
+<script type="text/javascript" src="~/js/site.js"></script>
 <script type="text/javascript">
     window.onload = function () {
         onPostLoad();
@@ -121,4 +121,24 @@ else
     ViewData
 )
 
-
+<p></p>
+<b>Navigare - alege destinația:</b>
+<p></p>
+<div style="height:400px; max-height:600px; overflow-y:scroll">
+    @await Html.PartialAsync(
+        "_ForumTreePartial",
+         new _ForumTreePartialModel
+         {
+             Forums = await Model.GetForumTree(),
+             ForumId = Model.ForumId,
+             TopicId = Model.TopicId,
+             PathToForumOrTopic = await Model.PathToForumOrTopic(Model.ForumId, Model.TopicId)
+         },
+        ViewData
+    )
+</div>
+<p></p>
+<form action="/ViewForum">
+    <input type="hidden" name="ForumId" id="ForumIdInput" />
+    <input type="submit" value="Du-te" />
+</form>

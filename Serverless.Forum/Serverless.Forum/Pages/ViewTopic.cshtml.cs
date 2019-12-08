@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
 using Serverless.Forum.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -97,22 +98,10 @@ namespace Serverless.Forum.Pages
 
             ForumId = parent?.ForumId;
 
-            if (!string.IsNullOrEmpty(parent.ForumPassword) &&
-                (HttpContext.Session.GetInt32("ForumLogin") ?? -1) != ForumId)
+            var permissionError = await ValidatePermissionsResponses(parent, ForumId ?? 0);
+            if (permissionError != null)
             {
-                if ((await GetCurrentUserAsync()).UserPermissions.Any(fp => fp.ForumId == ForumId && fp.AuthRoleId == 16))
-                {
-                    return Unauthorized();
-                }
-                else
-                {
-                    return RedirectToPage("ForumLogin", new ForumLoginModel(_config)
-                    {
-                        ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString),
-                        ForumId = parent.ForumId,
-                        ForumName = parent.ForumName
-                    });
-                }
+                return permissionError;
             }
 
             ForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? "untitled");
@@ -155,6 +144,17 @@ namespace Serverless.Forum.Pages
                 _utils.ProcessPosts(Posts, PageContext, true);
                 TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
 
+                if (Posts.Any(p => p.Unread))
+                {
+                    await context.PhpbbTopicsTrack.AddAsync(new PhpbbTopicsTrack
+                    {
+                        ForumId = ForumId.Value,
+                        MarkTime = DateTime.UtcNow.LocalTimeToTimestamp(),
+                        TopicId = TopicId.Value,
+                        UserId = CurrentUserId.Value
+                    });
+                    await context.SaveChangesAsync();
+                }
             }
             return Page();
         }

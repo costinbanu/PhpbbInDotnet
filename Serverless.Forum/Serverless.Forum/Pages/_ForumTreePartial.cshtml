@@ -52,6 +52,7 @@
         padding: 3px 3px;
         display: inherit;
         width: 100%;
+        cursor: default;
     }
 
     .selected {
@@ -74,7 +75,7 @@
             await Output.WriteAsync(
                 $"<li class='{entryClass}'>" +
                     $"<span id='entry{cur.Id}' class='searchCaret' onclick='select(this, {cur.Id}, {Json.Serialize(topics)});'>{cur.Name}</span>" +
-                    $"<ul class='nested'>"
+                    $"<ul class='nested' id='child{cur.Id}'>"
             );
             foreach (var child in cur.ChildrenForums ?? new List<ForumDisplay>())
             {
@@ -111,7 +112,7 @@
             toggler[i].classList.remove("selected")
         }
 
-        var parent = obj.parentElement.querySelector(".nested");
+        var parent = document.getElementById("child" + forumId); //obj.parentElement.querySelector(".nested");
         if (parent != null) {
             parent.classList.toggle("active");
         }
@@ -120,7 +121,7 @@
 
         var forumInput = document.getElementById("ForumIdInput");
         if (forumInput != null) {
-            forumInput.value = forumId; 
+            forumInput.value = forumId;
         }
 
         var topicDisplay = document.getElementById("TopicIdDisplay");

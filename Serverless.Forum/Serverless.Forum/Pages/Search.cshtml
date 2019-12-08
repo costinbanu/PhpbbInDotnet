@@ -12,7 +12,9 @@
 <script src="~/lib/jquery-ui/jquery-ui.js"></script>
 <script type="text/javascript" src="~/js/site.js"></script>
 <script type="text/javascript">
-    window.onload = function () {onPostLoad(); }
+    window.onload = function () {
+        onPostLoad();
+    }
 </script>
 
 <form method="post">
@@ -43,7 +45,7 @@
         <option value="0">Caută în toate subiectele</option>
     </select>
     <p>&nbsp;</p>
-    <input asp-for="AuthorId" type="text" placeholder="Caută după autor..." id="AuthorInput" style="width:100%" />
+    <input asp-for="Author" type="text" placeholder="Caută după autor..." id="AuthorInput" style="width:100%" />
     <p>&nbsp;</p>
     <input type="submit" value="Trimite" />
 </form>

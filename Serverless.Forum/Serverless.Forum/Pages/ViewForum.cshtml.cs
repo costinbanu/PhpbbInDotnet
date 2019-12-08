@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.forum;
 using Serverless.Forum.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -20,6 +21,7 @@ namespace Serverless.Forum.Pages
         public string ForumTitle { get; private set; }
         public string ParentForumTitle { get; private set; }
         public int? ParentForumId { get; private set; }
+        public int ForumId { get; private set; }
 
         public ViewForumModel(IConfiguration config, Utils utils) : base(config, utils) { }
 
@@ -27,33 +29,16 @@ namespace Serverless.Forum.Pages
         {
             using (var context = new forumContext(_config))
             {
+                ForumId = forumId;
+                var usr = await GetCurrentUserAsync();
                 var thisForum = await (from f in context.PhpbbForums
                                        where f.ForumId == forumId
                                        select f).FirstOrDefaultAsync();
 
-                if (thisForum == null)
+                var permissionError = await ValidatePermissionsResponses(thisForum, forumId);
+                if (permissionError != null)
                 {
-                    return NotFound($"Forumul {forumId} nu există.");
-                }
-
-                var usr = await GetCurrentUserAsync();
-
-                if (!string.IsNullOrEmpty(thisForum.ForumPassword) &&
-                    (HttpContext.Session.GetInt32("ForumLogin") ?? -1) != forumId)
-                {
-                    if (usr.UserPermissions.Any(fp => fp.ForumId == forumId && fp.AuthRoleId == 16))
-                    {
-                        return Unauthorized();
-                    }
-                    else
-                    {
-                        return RedirectToPage("ForumLogin", new ForumLoginModel(_config)
-                        {
-                            ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString),
-                            ForumId = forumId,
-                            ForumName = thisForum.ForumName
-                        });
-                    }
+                    return permissionError;
                 }
 
                 ForumTitle = HttpUtility.HtmlDecode(thisForum?.ForumName ?? "untitled");
@@ -125,6 +110,84 @@ namespace Serverless.Forum.Pages
 
                 return Page();
             }
+        }
+
+        public async Task<IActionResult> OnPostForums(int forumId)
+        {
+            using (var context = new forumContext(_config))
+            {
+                var usr = await GetCurrentUserAsync();
+                var thisForum = await (from f in context.PhpbbForums
+                                       where f.ForumId == forumId
+                                       select f).FirstOrDefaultAsync();
+
+                var permissionError = await ValidatePermissionsResponses(thisForum, forumId);
+                if (permissionError != null)
+                {
+                    return permissionError;
+                }
+
+                var childForums = from f in context.PhpbbForums
+                                  where f.ParentId == forumId
+                                  select f.ForumId;
+                foreach (var child in childForums)
+                {
+                    await UpdateTracking(context, child);
+                }
+                await context.SaveChangesAsync();
+            }
+
+            return await OnGet(forumId);
+        }
+
+        public async Task<IActionResult> OnPostTopics(int forumId)
+        {
+            using (var context = new forumContext(_config))
+            {
+                var usr = await GetCurrentUserAsync();
+                var thisForum = await (from f in context.PhpbbForums
+                                       where f.ForumId == forumId
+                                       select f).FirstOrDefaultAsync();
+
+                var permissionError = await ValidatePermissionsResponses(thisForum, forumId);
+                if (permissionError != null)
+                {
+                    return permissionError;
+                }
+
+                await UpdateTracking(context, forumId);
+                await context.SaveChangesAsync();
+            }
+
+            return await OnGet(forumId);
+        }
+
+        private async Task UpdateTracking(forumContext context, int forumId)
+        {
+            var toRemove = await (
+                from t in context.PhpbbTopics
+
+                where t.ForumId == forumId
+
+                join tt in context.PhpbbTopicsTrack
+                on t.TopicId equals tt.TopicId
+                into joinedTopicTracks
+
+                from jtt in joinedTopicTracks.DefaultIfEmpty()
+                where jtt.UserId == CurrentUserId
+                select jtt
+            ).ToListAsync();
+
+            //if (toRemove.Any())
+            //{
+                context.PhpbbTopicsTrack.RemoveRange(toRemove);
+                await context.PhpbbForumsTrack.AddAsync(new PhpbbForumsTrack
+                {
+                    ForumId = forumId,
+                    UserId = CurrentUserId.Value,
+                    MarkTime = DateTime.UtcNow.LocalTimeToTimestamp()
+                });
+            //}
         }
     }
 }

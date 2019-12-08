@@ -4,7 +4,15 @@
     ViewData["Title"] = Model.ForumTitle;
     Layout = "~/Pages/_Layout.cshtml";
     var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+    var IsAnonymous = Model.CurrentUserId == 1;
 }
+<form asp-page-handler="Forums" method="post" name="MarkForumsRead">
+    <input name="forumId" type="hidden" value="@Model.ForumId" />
+</form>
+<form asp-page-handler="Topics" method="post" name="MarkTopicsRead">
+    <input name="forumId" type="hidden" value="@Model.ForumId" />
+</form>
+
 @if (Model.ParentForumId != 0)
 {
     <h4>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@Model.ParentForumTitle</a></h4>
@@ -17,11 +25,14 @@ else
 <p>&nbsp;</p>
 @if (Model.Forums.Any())
 {
-    <h4>Forumuri</h4>
+    <h4 style="float:left">Forumuri</h4>
+    @if (!IsAnonymous)
+    {
+        <a href="#" onclick="MarkForumsRead.submit()" style="float:right; margin-top:10px; margin-bottom:10px">Marchează forumurile ca citite</a>
+    }
     @foreach (var forum in Model.Forums)
     {
-        var divClass = forum.Unread ? "ForumListRow Unread" : "ForumListRow";
-        <div class="@divClass">
+        var divClass = forum.Unread ? "ForumListRow Unread" : "ForumListRow";<div class="@divClass">
             <span class="ForumListLeft">
                 <a asp-page="/ViewForum" asp-route-forumId="@forum.Id" class="nav-link" style="font-weight:bold">@forum.Name</a><br />
                 @Html.Raw(forum.Description)
@@ -38,7 +49,7 @@ else
                     AuthorColor = forum.LastPosterColor
                 }
             )
-    </div>
+        </div>
     }
 
     <p>&nbsp;</p>
@@ -48,15 +59,19 @@ else
     /*https://stackoverflow.com/questions/5144265/an-equally-quick-alternative-to-securityelement-escapestring-to-escape-xml-spe#comment88712318_5144356
      * use SecurityElement.Escape when using Html.Raw*/
     var topicsDisplayed = false;
+    if (!IsAnonymous)
+    {
+        <a href="#" onclick="MarkTopicsRead.submit()" style="float:right; margin-top:10px; margin-bottom:10px">Marchează subiectele ca citite</a>
+    }
     foreach (var topicGroup in Model.Topics)
     {
         @if ((topicGroup.TopicType ?? 0) == 2)
         {
-            <h4>Anunțuri</h4>
+            <h4 style="float:left">Anunțuri</h4>
         }
         else if (!topicsDisplayed)
         {
-            <h4>Subiecte</h4>
+            <h4 style="float:left">Subiecte</h4>
             topicsDisplayed = true;
         }
         foreach (var topic in topicGroup?.Topics ?? new List<TopicDisplay>())
@@ -97,3 +112,24 @@ else
     }
 }
 
+<p></p>
+<b>Navigare - alege destinația:</b>
+<p></p>
+<div style="height:400px; max-height:600px; overflow-y:scroll">
+    @await Html.PartialAsync(
+        "_ForumTreePartial",
+         new _ForumTreePartialModel
+         {
+             Forums = await Model.GetForumTree(),
+             ForumId = Model.ForumId,
+             TopicId = null,
+             PathToForumOrTopic = await Model.PathToForumOrTopic(Model.ForumId, null)
+         },
+        ViewData
+    )
+</div>
+<p></p>
+<form action="/ViewForum">
+    <input type="hidden" name="ForumId" id="ForumIdInput" />
+    <input type="submit" value="Du-te" />
+</form>
