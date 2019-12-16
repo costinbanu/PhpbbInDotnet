@@ -98,6 +98,7 @@ blockquote {
     border: solid 1px black;
     float:right;
     padding:3px;
+    margin: 3px;
     cursor:pointer;
 }
 

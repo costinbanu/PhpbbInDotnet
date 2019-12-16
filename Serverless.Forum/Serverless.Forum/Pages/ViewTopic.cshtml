@@ -75,7 +75,7 @@
             <br />
             @if (!IsLocked)
             {
-                <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-postId="@post.PostId">Răspunde cu citat</a>
+                <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">Răspunde cu citat</a>
             }
             else
             {
@@ -99,7 +99,7 @@
 <p></p>
 @if (!IsLocked)
 {
-    <a asp-page="/Posting" asp-page-handler="ForumPost" asp-route-topicId="@Model.TopicId">Scrie un răspuns</a>
+    <a asp-page="/Posting" asp-page-handler="ForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId">Scrie un răspuns</a>
 }
 else
 {

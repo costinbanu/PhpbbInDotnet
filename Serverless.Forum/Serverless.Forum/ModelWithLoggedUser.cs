@@ -167,6 +167,20 @@ namespace Serverless.Forum
             return unread.FirstOrDefault(t => t.TopicId == topicId)?.Posts?.FirstOrDefault() ?? 0;
         }
 
+        public async Task<T> GetFromCache<T>(string key)
+        {
+            return await _utils.DecompressObjectAsync<T>(TempData.Peek(key) as string);
+        }
+
+        public async Task SetInCache<T>(string key, T value, bool overwrite = false)
+        {
+            if (TempData.Peek(key) == null || overwrite)
+            {
+                TempData[key] = await _utils.CompressObjectAsync(value);
+                TempData.Keep(key);
+            }
+        }
+
         public async Task<ForumDisplay> GetForumTree(ForumType? parentType = null)
         {
             if (_tree != null)

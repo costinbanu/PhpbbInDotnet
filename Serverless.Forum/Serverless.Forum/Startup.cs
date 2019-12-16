@@ -55,6 +55,7 @@ namespace Serverless.Forum
                 .AddCookie();
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
             services.AddDataProtection();
+            services.AddAntiforgery(o => o.HeaderName = "XSRF-TOKEN");
 
             services.AddRecaptcha(new RecaptchaOptions
             {

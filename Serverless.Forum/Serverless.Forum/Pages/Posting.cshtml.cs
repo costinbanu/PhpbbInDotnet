@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
 using Serverless.Forum.forum;
 using Serverless.Forum.Utilities;
 using System;
@@ -19,55 +18,49 @@ using System.Web;
 
 namespace Serverless.Forum.Pages
 {
+    //https://stackoverflow.com/questions/54963951/aws-lambda-file-upload-to-asp-net-core-2-1-razor-page-is-corrupting-binary
     [ValidateAntiForgeryToken]
     public class PostingModel : ModelWithLoggedUser
     {
         private readonly IAmazonS3 _s3Client;
 
-        public List<PhpbbBbcodes> DbBbCodes { get; private set; }
-        public List<string> BbCodes { get; private set; }
-        public Dictionary<string, string> BbCodeHelplines { get; private set; }
-        public (string Codes, string HelpLines) BbCodesForJs => (
-            JsonConvert.SerializeObject(BbCodes), 
-            JsonConvert.SerializeObject(BbCodeHelplines)
-        );
-        public List<PhpbbSmilies> Smilies { get; private set; }
-        public List<KeyValuePair<string, string>> Users { get; private set; }
+        [BindProperty]
+        public string PostTitle { get; set; }
 
-        ////https://stackoverflow.com/questions/54963951/aws-lambda-file-upload-to-asp-net-core-2-1-razor-page-is-corrupting-binary
-        //[BindProperty]
-        //[Required]
-        //[Display(Name = "Attachment")]
-        //public IFormFile Attachment { get; set; }
+        [BindProperty]
+        public string PostText { get; set; }
 
-        public string TopicTitle { get; private set; }
-        public string PostTitle { get; private set; }
-        public string PostText { get; private set; }
-        public int ForumId { get; private set; }
-        public int TopicId { get; private set; }
-        public List<PhpbbAttachments> PostAttachments;
+        [BindProperty(SupportsGet = true)]
+        public int ForumId { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public int TopicId { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public int PostId { get; set; }
 
         public PostingModel(IConfiguration config, Utils utils) : base(config, utils)
         {
             _s3Client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1);
-            PostAttachments = new List<PhpbbAttachments>();
         }
 
-        public async Task<IActionResult> OnGetForumPost(int forumId, int topicId)
+        public async Task<IActionResult> OnGetForumPost()
         {
             if ((CurrentUserId ?? 1) == 1)
             {
                 return Unauthorized();
             }
 
-            ForumId = forumId;
-            TopicId = topicId;
             PhpbbTopics curTopic = null;
             using (var context = new forumContext(_config))
             {
-                curTopic = await (from t in context.PhpbbTopics
-                                  where t.TopicId == topicId
-                                  select t).FirstOrDefaultAsync();
+                curTopic = await context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == TopicId);
+
+                var permissionError = await ValidatePermissionsResponses(await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId);
+                if (permissionError != null)
+                {
+                    return permissionError;
+                }
 
                 await Init(context);
             }
@@ -77,13 +70,13 @@ namespace Serverless.Forum.Pages
                 return NotFound();
             }
 
-            TopicTitle = curTopic.TopicTitle;
-            PostTitle = $"{Constants.REPLY}{TopicTitle}";
+            await SetInCache("TopicTitle", curTopic.TopicTitle, true);
+            PostTitle = $"{Constants.REPLY}{curTopic.TopicTitle}";
 
             return Page();
         }
 
-        public async Task<IActionResult> OnGetQuoteForumPost(int postId)
+        public async Task<IActionResult> OnGetQuoteForumPost()
         {
             if ((CurrentUserId ?? 1) == 1)
             {
@@ -96,18 +89,14 @@ namespace Serverless.Forum.Pages
 
             using (var context = new forumContext(_config))
             {
-                curPost = await (from p in context.PhpbbPosts
-                                     where p.PostId == postId
-                                     select p).FirstOrDefaultAsync();
+                curPost = await context.PhpbbPosts.FirstOrDefaultAsync(p => p.PostId == PostId);
 
                 if (curPost == null)
                 {
                     return NotFound();
                 }
 
-                curTopic = await (from t in context.PhpbbTopics
-                                      where t.TopicId == curPost.TopicId
-                                      select t).FirstOrDefaultAsync();
+                curTopic = await context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == curPost.TopicId);
 
                 if (curTopic == null)
                 {
@@ -117,18 +106,19 @@ namespace Serverless.Forum.Pages
                 curAuthor = curPost.PostUsername;
                 if (string.IsNullOrWhiteSpace(curAuthor))
                 {
-                    curAuthor = await (from u in context.PhpbbUsers
-                                       where u.UserId == curPost.PosterId
-                                       select u.Username).FirstOrDefaultAsync();
+                    curAuthor = (await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == curPost.PosterId))?.Username ?? "Anonymous";
+                }
+
+                var permissionError = await ValidatePermissionsResponses(await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId);
+                if (permissionError != null)
+                {
+                    return permissionError;
                 }
 
                 await Init(context);
             }
 
-
-            ForumId = curPost.ForumId;
-            TopicId = curPost.TopicId;
-            TopicTitle = curTopic.TopicTitle;
+            await SetInCache("TopicTitle", curTopic.TopicTitle, true);
 
             var subject = curPost.PostSubject.StartsWith(Constants.REPLY) ? curPost.PostSubject.Substring(Constants.REPLY.Length) : curPost.PostSubject;
             PostTitle = PostTitle = $"{Constants.REPLY}{subject}";
@@ -137,15 +127,19 @@ namespace Serverless.Forum.Pages
             return Page();
         }
 
-        public async Task<IActionResult> OnPostAttachment(IList<IFormFile> files, string fileComment)
+        public async Task<IActionResult> OnPostAttachment(IFormFile file, string fileComment)
         {
-            if (CurrentUserId == 1)
+            if (file == null)
+            {
+                return Page();
+            }
+
+            if ((CurrentUserId ?? 1) == 1)
             {
                 return RedirectToPage("Login");
             }
 
-            foreach (var file in files)
-            {
+            var attachList = (await GetFromCache<List<PhpbbAttachments>>("PostAttachments")) ?? new List<PhpbbAttachments>();
                 var name = $"{CurrentUserId ?? 0}_{Guid.NewGuid():n}";
                 var request = new PutObjectRequest
                 {
@@ -155,13 +149,13 @@ namespace Serverless.Forum.Pages
                     InputStream = file.OpenReadStream()
                 };
 
-                var response = await _s3Client.PutObjectAsync(request);
-                if (response.HttpStatusCode != HttpStatusCode.OK)
-                {
-                    throw new Exception("Failed to upload file");
-                }
+            var response = await _s3Client.PutObjectAsync(request);
+            if (response.HttpStatusCode != HttpStatusCode.OK)
+            {
+                throw new Exception("Failed to upload file");
+            }
 
-                PostAttachments.Add(new PhpbbAttachments
+            attachList.Add(new PhpbbAttachments
                 {
                     AttachComment = fileComment,
                     Extension = Path.GetExtension(file.FileName),
@@ -172,14 +166,12 @@ namespace Serverless.Forum.Pages
                     RealFilename = Path.GetFileName(file.FileName),
                     TopicId = TopicId,
                     PosterId = CurrentUserId.Value
-                    //PosterId = usr.UserId.Value,
-                    //TopicId = TopicId
                 });
-            }
+            await SetInCache("PostAttachments", attachList, true);
             return Page();
         }
 
-        public async Task<IActionResult> OnPostForumPost(int forumId, int topicId, string postSubject, string postText, string returnUrl)
+        public async Task<IActionResult> OnPostForumPost()
         {
             var usr = await GetCurrentUserAsync();
             if (usr.UserId == 1)
@@ -196,16 +188,29 @@ namespace Serverless.Forum.Pages
                                        Replacement = $"<img src=\"./images/smilies/{s.SmileyUrl.Trim('/')}\" />"
                                    })
                 {
-                    postText = sr.Regex.Replace(postText, sr.Replacement);
+                    PostText = sr.Regex.Replace(PostText, sr.Replacement);
                 }
+
+                var urlRegex = new Regex(@"(?:(?:https?|ftp):\/\/|\b(?:[a-z\d]+\.))(?:(?:[^\s()<>]+|\((?:[^\s()<>]+|(?:\([^\s()<>]+\)))?\))+(?:\((?:[^\s()<>]+|(?:\(?:[^\s()<>]+\)))?\)|[^\s`!()\[\]{};:'"".,<>?«»“”‘’]))", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.ExplicitCapture);
+                foreach (Match match in urlRegex.Matches(PostText))
+                {
+                    var linkText = match.Value;
+                    if (linkText.Length > 48)
+                    {
+                        linkText = $"{linkText.Substring(0, 40)} ... {linkText.Substring(linkText.Length - 8)}";
+                    }
+                    PostText = match.Result($"<a href=\"{(match.Value.StartsWith("http") ? match.Value : $"//{match.Value}")}\">{linkText}</a>");
+                }
+
+                var attachList = (await GetFromCache<List<PhpbbAttachments>>("PostAttachments")) ?? new List<PhpbbAttachments>();
 
                 var result = await context.PhpbbPosts.AddAsync(new PhpbbPosts
                 {
-                    ForumId = forumId,
-                    TopicId = topicId,
+                    ForumId = ForumId,
+                    TopicId = TopicId,
                     PosterId = usr.UserId.Value,
-                    PostSubject = HttpUtility.HtmlEncode(postSubject),
-                    PostText = HttpUtility.HtmlEncode(postText),
+                    PostSubject = HttpUtility.HtmlEncode(PostTitle),
+                    PostText = HttpUtility.HtmlEncode(PostText),
                     PostTime = DateTime.UtcNow.LocalTimeToTimestamp(),
                     PostApproved = 1,
                     PostReported = 0,
@@ -214,8 +219,8 @@ namespace Serverless.Forum.Pages
                     EnableMagicUrl = 1,
                     EnableSig = 1,
                     EnableSmilies = 1,
-                    PostAttachment = (byte)(PostAttachments.Any() ? 1 : 0),
-                    PostChecksum = _utils.CalculateMD5Hash(HttpUtility.HtmlEncode(postText)),
+                    PostAttachment = (byte)(attachList.Any() ? 1 : 0),
+                    PostChecksum = _utils.CalculateMD5Hash(HttpUtility.HtmlEncode(PostText)),
                     PostEditCount = 0,
                     PostEditLocked = 0,
                     PostEditReason = string.Empty,
@@ -224,13 +229,13 @@ namespace Serverless.Forum.Pages
                     PosterIp = HttpContext.Connection.RemoteIpAddress.ToString()
                 });
 
-                PostAttachments.ForEach(a => a.PostMsgId = result.Entity.PostId);
-                await context.PhpbbAttachments.AddRangeAsync(PostAttachments);
-
+                attachList.ForEach(a => a.PostMsgId = result.Entity.PostId);
+                await SetInCache("PostAttachments", attachList, true);
+                await context.PhpbbAttachments.AddRangeAsync(attachList);
                 await context.SaveChangesAsync();
-            }
 
-            return RedirectToPage(HttpUtility.UrlDecode(returnUrl));
+                return RedirectToPage($"/ViewTopic?postId={result.Entity.PostId}");
+            }
         }
 
         public async Task<IActionResult> OnPostPrivateMessage()
@@ -274,33 +279,45 @@ namespace Serverless.Forum.Pages
 
         private async Task Init(forumContext context)
         {
-            DbBbCodes = await (from c in context.PhpbbBbcodes
-                               where c.DisplayOnPosting == 1
-                               select c)
-                              .ToListAsync();
+            var dbBbCodes = await (
+                from c in context.PhpbbBbcodes
+                where c.DisplayOnPosting == 1
+                select c
+            ).ToListAsync();
+            await SetInCache("DbBbCodes", dbBbCodes);
 
-            Smilies = await (from s in context.PhpbbSmilies
-                             group s by s.SmileyUrl into unique
-                             select unique.First())
-                            .OrderBy(s => s.SmileyOrder)
-                            .ToListAsync();
+            await SetInCache(
+                "Smilies", 
+                await (
+                    from s in context.PhpbbSmilies
+                    group s by s.SmileyUrl into unique
+                    select unique.First()
+                ).OrderBy(s => s.SmileyOrder)
+                 .ToListAsync()
+             );
 
-            Users = await (from u in context.PhpbbUsers
-                           where u.UserId != 1 && u.UserType != 2
-                           orderby u.Username
-                           select KeyValuePair.Create(u.Username, $"[url=\"./User?UserId={u.UserId}\"]{u.Username}[/url]"))
-                          .ToListAsync();
+            await SetInCache(
+                "Users",
+                await (
+                    from u in context.PhpbbUsers
+                    where u.UserId != 1 && u.UserType != 2
+                    orderby u.Username
+                    select KeyValuePair.Create(u.Username, $"[url=\"./User?UserId={u.UserId}\"]{u.Username}[/url]")
+                ).ToListAsync()
+            );
 
-            BbCodes = new List<string>(Constants.BBCODES);
-            BbCodeHelplines = new Dictionary<string, string>(Constants.BBCODE_HELPLINES);
-
-            foreach (var bbCode in DbBbCodes)
+            var helplines = new Dictionary<string, string>(Constants.BBCODE_HELPLINES);
+            var bbcodes = new List<string>(Constants.BBCODES);
+            foreach (var bbCode in dbBbCodes)
             {
-                BbCodes.Add($"[{bbCode.BbcodeTag}]");
-                BbCodes.Add($"[/{bbCode.BbcodeTag}]");
-                var index = BbCodes.IndexOf($"[{bbCode.BbcodeTag}]");
-                BbCodeHelplines.Add($"cb_{index}", bbCode.BbcodeHelpline);
+                bbcodes.Add($"[{bbCode.BbcodeTag}]");
+                bbcodes.Add($"[/{bbCode.BbcodeTag}]");
+                var index = bbcodes.IndexOf($"[{bbCode.BbcodeTag}]");
+                helplines.Add($"cb_{index}", bbCode.BbcodeHelpline);
             }
+            await SetInCache("BbCodeHelplines", helplines);
+            await SetInCache("BbCodes", bbcodes);
+
         }
     }
 }
