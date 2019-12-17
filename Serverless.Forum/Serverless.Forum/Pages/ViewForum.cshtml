@@ -12,6 +12,7 @@
 <form asp-page-handler="Topics" method="post" name="MarkTopicsRead">
     <input name="forumId" type="hidden" value="@Model.ForumId" />
 </form>
+<script type="text/javascript" src="~/js/site.js"></script>
 
 @if (Model.ParentForumId != 0)
 {
@@ -46,7 +47,9 @@ else
                     CreationTime = forum.LastPostTime,
                     AssetId = forum.Id.Value,
                     DateFormat = UserDateFormat,
-                    AuthorColor = forum.LastPosterColor
+                    AuthorColor = forum.LastPosterColor,
+                    LinkHref = forum.LastPostId == null ? null : $"./ViewTopic?postId={forum.LastPostId}&handler=ByPostId",
+                    LinkText = forum.LastPostId == null ? null : $"Mergi la ultimul mesaj"
                 }
             )
         </div>
@@ -104,7 +107,9 @@ else
                         CreationTime = topic.LastPostTime,
                         AssetId = topic.Id.Value,
                         DateFormat = UserDateFormat,
-                        AuthorColor = topic.LastPosterColor
+                        AuthorColor = topic.LastPosterColor,
+                        LinkHref = topic.LastPostId == null ? null : $"./ViewTopic?postId={topic.LastPostId}&handler=ByPostId",
+                        LinkText = topic.LastPostId == null ? null : $"Mergi la ultimul mesaj"
                     }
                 )
             </div>
@@ -113,23 +118,25 @@ else
 }
 
 <p></p>
-<b>Navigare - alege destinația:</b>
+<span onclick="showElement('forumTree')" style="cursor:pointer; font-weight:bold">Navigare - alege destinația &#x2935;</span>
 <p></p>
-<div style="height:400px; max-height:600px; overflow-y:scroll">
-    @await Html.PartialAsync(
-        "_ForumTreePartial",
-         new _ForumTreePartialModel
-         {
-             Forums = await Model.GetForumTree(),
-             ForumId = Model.ForumId,
-             TopicId = null,
-             PathToForumOrTopic = await Model.PathToForumOrTopic(Model.ForumId, null)
-         },
-        ViewData
-    )
+<div id="forumTree" style=" display:none">
+    <div style="height:400px; max-height:600px; overflow-y:scroll;">
+        @await Html.PartialAsync(
+            "_ForumTreePartial",
+             new _ForumTreePartialModel
+             {
+                 Forums = await Model.GetForumTree(),
+                 ForumId = Model.ForumId,
+                 TopicId = null,
+                 PathToForumOrTopic = await Model.PathToForumOrTopic(Model.ForumId, null)
+             },
+            ViewData
+        )
+    </div>
+    <p></p>
+    <form action="/ViewForum">
+        <input type="hidden" name="ForumId" id="ForumIdInput" />
+        <input type="submit" value="Du-te" />
+    </form>
 </div>
-<p></p>
-<form action="/ViewForum">
-    <input type="hidden" name="ForumId" id="ForumIdInput" />
-    <input type="submit" value="Du-te" />
-</form>

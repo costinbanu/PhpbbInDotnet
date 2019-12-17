@@ -29,7 +29,9 @@
                 CreationTime = forum.LastPostTime,
                 AssetId = forum.Id.Value,
                 DateFormat = UserDateFormat,
-                AuthorColor = forum.LastPosterColor
+                AuthorColor = forum.LastPosterColor,
+                LinkHref = forum.LastPostId == null ? null : $"./ViewTopic?postId={forum.LastPostId}&handler=ByPostId",
+                LinkText = forum.LastPostId == null ? null : $"Mergi la ultimul mesaj"
             }
         )
     </div>

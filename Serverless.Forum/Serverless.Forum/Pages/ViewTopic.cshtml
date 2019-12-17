@@ -91,7 +91,8 @@
                 CreationTime = post.PostCreationTime,
                 AssetId = post.PostId.Value,
                 DateFormat = UserDateFormat,
-                AuthorColor = post.AuthorColor
+                AuthorColor = post.AuthorColor,
+                ShowAvatar = post.AuthorHasAvatar
             }
         )
     </div>
@@ -122,23 +123,25 @@ else
 )
 
 <p></p>
-<b>Navigare - alege destinația:</b>
+<span onclick="showElement('forumTree')" style="cursor:pointer; font-weight:bold">Navigare - alege destinația &#x2935;</span>
 <p></p>
-<div style="height:400px; max-height:600px; overflow-y:scroll">
-    @await Html.PartialAsync(
-        "_ForumTreePartial",
-         new _ForumTreePartialModel
-         {
-             Forums = await Model.GetForumTree(),
-             ForumId = Model.ForumId,
-             TopicId = Model.TopicId,
-             PathToForumOrTopic = await Model.PathToForumOrTopic(Model.ForumId, Model.TopicId)
-         },
-        ViewData
-    )
+<div id="forumTree" style=" display:none">
+    <div style="height:400px; max-height:600px; overflow-y:scroll;">
+        @await Html.PartialAsync(
+            "_ForumTreePartial",
+             new _ForumTreePartialModel
+             {
+                 Forums = await Model.GetForumTree(),
+                 ForumId = Model.ForumId,
+                 TopicId = Model.TopicId,
+                 PathToForumOrTopic = await Model.PathToForumOrTopic(Model.ForumId, Model.TopicId)
+             },
+            ViewData
+        )
+    </div>
+    <p></p>
+    <form action="/ViewForum">
+        <input type="hidden" name="ForumId" id="ForumIdInput" />
+        <input type="submit" value="Du-te" />
+    </form>
 </div>
-<p></p>
-<form action="/ViewForum">
-    <input type="hidden" name="ForumId" id="ForumIdInput" />
-    <input type="submit" value="Du-te" />
-</form>

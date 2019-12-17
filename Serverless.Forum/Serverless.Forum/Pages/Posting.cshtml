@@ -8,6 +8,7 @@
 }
 
 <script src="~/lib/tribute/dist/tribute.js"></script>
+<script src="~/js/site.js"></script>
 <link rel="stylesheet" href="~/lib/tribute/dist/tribute.css" />
 <script type="text/javascript">
      // <![CDATA[
@@ -18,11 +19,11 @@
 
     // Define the bbCode tags
     var bbcode = new Array();
-    var bbtags = @Json.Serialize(await Model.GetFromCache<List<string>>("BbCodes"));
+    var bbtags = @Json.Serialize(await Model.GetFromCacheAsync<List<string>>("BbCodes"));
     var imageTag = false;
 
     // Helpline messages
-    var help_line = @Json.Serialize(await Model.GetFromCache<Dictionary<string, string>>("BbCodeHelplines"));
+    var help_line = @Json.Serialize(await Model.GetFromCacheAsync<Dictionary<string, string>>("BbCodeHelplines"));
     var panels = new Array('options-panel', 'attach-panel', 'poll-panel');
     var show_panel = 'options-panel';
 
@@ -348,14 +349,6 @@
         return caretPos;
     }
 
-    function showAttachPanel() {
-        var panel = document.getElementById('attachPanel');
-        if (panel.style.visibility == 'hidden')
-            panel.style.visibility = 'visible'
-        else
-            panel.style.visibility = 'hidden'
-    }
-
     function show_hidden_smilies(control) {
         var container = document.getElementById('hiddenSmilies');
         if (container.style.visibility == 'hidden') {
@@ -483,9 +476,9 @@
             <option value="200">Imens</option>
         </select>
         <input type="button" class="button2" name="bbpalette" id="bbpalette" value="Culoare font" onclick="change_palette();" title="Culoare font: [color=red]text[/color]  Sfat: de asemenea puteţi folosi culorile hexazecimale culoare=#FF0000">
-        @foreach (var code in (await Model.GetFromCache<List<PhpbbBbcodes>>("DbBbCodes")) ?? new List<PhpbbBbcodes>())
+        @foreach (var code in (await Model.GetFromCacheAsync<List<PhpbbBbcodes>>("DbBbCodes")) ?? new List<PhpbbBbcodes>())
         {
-            var index = (await Model.GetFromCache<List<string>>("BbCodes")).IndexOf($"[{code.BbcodeTag}]");
+            var index = (await Model.GetFromCacheAsync<List<string>>("BbCodes")).IndexOf($"[{code.BbcodeTag}]");
             var name = $"addbbcode{index}";
             <input type="button" class="button2" name="@name" value="@code.BbcodeTag" onclick="bbstyle(@index)" title="@code.BbcodeHelpline" />
         }
@@ -497,7 +490,7 @@
 
         <strong>Zâmbete</strong><br />
 
-        @foreach (var smiley in ((await Model.GetFromCache<List<PhpbbSmilies>>("Smilies")) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 1))
+        @foreach (var smiley in ((await Model.GetFromCacheAsync<List<PhpbbSmilies>>("Smilies")) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 1))
         {
             <a href="#a" onclick="insert_text('@smiley.Code', true); return false;">
                 <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
@@ -507,7 +500,7 @@
         <a href="#a" onclick="show_hidden_smilies(this)">Arată mai multe</a>
         <p>&nbsp;</p>
         <div id="hiddenSmilies" style="visibility:hidden">
-            @foreach (var smiley in ((await Model.GetFromCache<List<PhpbbSmilies>>("Smilies")) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 0))
+            @foreach (var smiley in ((await Model.GetFromCacheAsync<List<PhpbbSmilies>>("Smilies")) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 0))
             {
                 <a href="#a" onclick="insert_text('@smiley.Code', true); return false;">
                     <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
@@ -517,8 +510,8 @@
     </div>
     <input type="submit" value="Trimite mesajul" onclick="return censor()" asp-page-handler="ForumPost" />
     <p>&nbsp;</p>
-    <a href="#" onclick="showAttachPanel()">Adaugă fișier atașat</a>
-    <div id="attachPanel" style="visibility:hidden">
+    <a href="#" onclick="showElement('attachPanel')">Adaugă fișier atașat</a>
+    <div id="attachPanel" style="display:none">
         <p>&nbsp;</p>
         <table style="border:none; margin:0px; padding:0px">
             <tr>
@@ -538,7 +531,7 @@
                 <th style="width:200px; padding-bottom:15px">Nume fișier</th>
                 <th style="padding-bottom:15px">Comentariu fișier</th>
             </tr>
-            @foreach (var attach in (await Model.GetFromCache<List<PhpbbAttachments>>("PostAttachments")) ?? new List<PhpbbAttachments>())
+            @foreach (var attach in (await Model.GetFromCacheAsync<List<PhpbbAttachments>>("PostAttachments")) ?? new List<PhpbbAttachments>())
             {
                 @*<dl>
                     <dt class="AttachFieldsetDt">Fișier:</dt>
@@ -568,7 +561,7 @@
 </form>
 <script>
     var tribute = new Tribute({
-        values: @Json.Serialize(await Model.GetFromCache<List<KeyValuePair<string, string>>>("Users")),
+        values: @Json.Serialize(await Model.GetFromCacheAsync<List<KeyValuePair<string, string>>>("Users")),
         trigger: "@@",
         allowSpaces: true
     });

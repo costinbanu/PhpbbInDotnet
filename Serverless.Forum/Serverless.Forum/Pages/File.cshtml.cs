@@ -3,6 +3,7 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.forum;
@@ -42,6 +43,23 @@ namespace Serverless.Forum.Pages
             }
         }
 
+        public async Task<IActionResult> OnGetAvatar(int userId)
+        {
+            using (var context = new forumContext(_config))
+            {
+                var file = await (from u in context.PhpbbUsers
+                                  where u.UserId == userId
+                                  select u.UserAvatar).FirstOrDefaultAsync();
+
+                if (file == null)
+                {
+                    return NotFound();
+                }
+
+                return await Renderfile($"avatars/{userId}{Path.GetExtension(file)}");
+            }
+        }
+
         private async Task<IActionResult> Renderfile(PhpbbAttachments file)
         {
             try
@@ -65,6 +83,37 @@ namespace Serverless.Forum.Pages
             catch (AmazonS3Exception s3ex) when (s3ex.Message == "The specified key does not exist.")
             {
                 return NotFound($"Fișierul {file.AttachId} nu a fost găsit.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        private async Task<IActionResult> Renderfile(string fileName)
+        {
+            try
+            {
+                var request = new GetObjectRequest
+                {
+                    BucketName = _config["AwsS3BucketName"],
+                    Key = fileName
+                };
+
+                var mimeType = new FileExtensionContentTypeProvider().Mappings[Path.GetExtension(fileName)];
+                using (var response = await _s3Client.GetObjectAsync(request))
+                using (var responseStream = new MemoryStream())
+                {
+                    await response.ResponseStream.CopyToAsync(responseStream);
+
+                    HttpContext.Response.Headers.Add("content-disposition", $"{(mimeType.IsMimeTypeInline() ? "inline" : "attachment")}; filename={fileName}");
+
+                    return File(responseStream.GetBuffer(), mimeType);
+                }
+            }
+            catch (AmazonS3Exception s3ex) when (s3ex.Message == "The specified key does not exist.")
+            {
+                return NotFound($"Fișierul {fileName} nu a fost găsit.");
             }
             catch (Exception ex)
             {

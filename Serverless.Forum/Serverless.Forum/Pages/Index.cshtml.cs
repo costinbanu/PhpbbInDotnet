@@ -46,7 +46,8 @@ namespace Serverless.Forum.Pages
                                                    LastPosterId = ju.UserId == 1 ? null as int? : ju.UserId,
                                                    LastPostTime = f2.ForumLastPostTime.TimestampToLocalTime(),
                                                    Unread = IsForumUnread(f2.ForumId),
-                                                   LastPosterColor = ju == null ? null : ju.UserColour
+                                                   LastPosterColor = ju == null ? null : ju.UserColour,
+                                                   LastPostId = f2.ForumLastPostId
                                                }
                                 orderby f1.LeftId
                                 select new ForumDisplay()

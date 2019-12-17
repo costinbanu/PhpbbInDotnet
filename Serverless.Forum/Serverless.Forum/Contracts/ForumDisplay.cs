@@ -20,6 +20,8 @@ namespace Serverless.Forum.Contracts
 
         public DateTime? LastPostTime { get; set; } = null;
 
+        public int? LastPostId { get; set; } = null;
+
         public IEnumerable<ForumDisplay> ChildrenForums { get; set; } = null;
 
         public IEnumerable<TopicDisplay> Topics { get; set; } = null;

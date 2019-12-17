@@ -27,5 +27,7 @@ namespace Serverless.Forum.Contracts
         public List<_AttachmentPartialModel> Attachments { get; set; } = null;
 
         public bool Unread { get; set; }
+
+        public bool AuthorHasAvatar { get; set; } = false;
     }
 }

@@ -92,6 +92,11 @@ blockquote {
     margin-bottom: 0px !important;
 }
 
+.ForumListRight img {
+    max-height: 200px;
+    max-width: 200px;
+}
+
 .CollapsedMenu {
     display: none;
     border-radius: 5px;
@@ -261,6 +266,11 @@ label {
         background-color:aliceblue;
         padding:5px !important;
     }
+
+    .ForumListRight img{
+        display: none;
+    }
+
     .ForumListLeft{
         width:90vw;
         display:inline-block;

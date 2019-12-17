@@ -47,3 +47,11 @@ function expandCollapsedMenu(summary, button) {
     }
 }
 
+
+function showElement(elementName) {
+    var panel = document.getElementById(elementName);
+    if (panel.style.display === 'none')
+        panel.style.display = 'block';
+    else
+        panel.style.display = 'none';
+}

@@ -70,7 +70,7 @@ namespace Serverless.Forum.Pages
                 return NotFound();
             }
 
-            await SetInCache("TopicTitle", curTopic.TopicTitle, true);
+            await SetInCacheAsync("TopicTitle", curTopic.TopicTitle, true);
             PostTitle = $"{Constants.REPLY}{curTopic.TopicTitle}";
 
             return Page();
@@ -118,7 +118,7 @@ namespace Serverless.Forum.Pages
                 await Init(context);
             }
 
-            await SetInCache("TopicTitle", curTopic.TopicTitle, true);
+            await SetInCacheAsync("TopicTitle", curTopic.TopicTitle, true);
 
             var subject = curPost.PostSubject.StartsWith(Constants.REPLY) ? curPost.PostSubject.Substring(Constants.REPLY.Length) : curPost.PostSubject;
             PostTitle = PostTitle = $"{Constants.REPLY}{subject}";
@@ -139,7 +139,7 @@ namespace Serverless.Forum.Pages
                 return RedirectToPage("Login");
             }
 
-            var attachList = (await GetFromCache<List<PhpbbAttachments>>("PostAttachments")) ?? new List<PhpbbAttachments>();
+            var attachList = (await GetFromCacheAsync<List<PhpbbAttachments>>("PostAttachments")) ?? new List<PhpbbAttachments>();
                 var name = $"{CurrentUserId ?? 0}_{Guid.NewGuid():n}";
                 var request = new PutObjectRequest
                 {
@@ -167,7 +167,7 @@ namespace Serverless.Forum.Pages
                     TopicId = TopicId,
                     PosterId = CurrentUserId.Value
                 });
-            await SetInCache("PostAttachments", attachList, true);
+            await SetInCacheAsync("PostAttachments", attachList, true);
             return Page();
         }
 
@@ -202,7 +202,7 @@ namespace Serverless.Forum.Pages
                     PostText = match.Result($"<a href=\"{(match.Value.StartsWith("http") ? match.Value : $"//{match.Value}")}\">{linkText}</a>");
                 }
 
-                var attachList = (await GetFromCache<List<PhpbbAttachments>>("PostAttachments")) ?? new List<PhpbbAttachments>();
+                var attachList = (await GetFromCacheAsync<List<PhpbbAttachments>>("PostAttachments")) ?? new List<PhpbbAttachments>();
 
                 var result = await context.PhpbbPosts.AddAsync(new PhpbbPosts
                 {
@@ -230,11 +230,11 @@ namespace Serverless.Forum.Pages
                 });
 
                 attachList.ForEach(a => a.PostMsgId = result.Entity.PostId);
-                await SetInCache("PostAttachments", attachList, true);
+                await SetInCacheAsync("PostAttachments", attachList, true);
                 await context.PhpbbAttachments.AddRangeAsync(attachList);
                 await context.SaveChangesAsync();
 
-                return RedirectToPage($"/ViewTopic?postId={result.Entity.PostId}");
+                return RedirectToPage($"/ViewTopic?postId={result.Entity.PostId}&handler=byPostId");
             }
         }
 
@@ -284,9 +284,9 @@ namespace Serverless.Forum.Pages
                 where c.DisplayOnPosting == 1
                 select c
             ).ToListAsync();
-            await SetInCache("DbBbCodes", dbBbCodes);
+            await SetInCacheAsync("DbBbCodes", dbBbCodes);
 
-            await SetInCache(
+            await SetInCacheAsync(
                 "Smilies", 
                 await (
                     from s in context.PhpbbSmilies
@@ -296,7 +296,7 @@ namespace Serverless.Forum.Pages
                  .ToListAsync()
              );
 
-            await SetInCache(
+            await SetInCacheAsync(
                 "Users",
                 await (
                     from u in context.PhpbbUsers
@@ -315,8 +315,8 @@ namespace Serverless.Forum.Pages
                 var index = bbcodes.IndexOf($"[{bbCode.BbcodeTag}]");
                 helplines.Add($"cb_{index}", bbCode.BbcodeHelpline);
             }
-            await SetInCache("BbCodeHelplines", helplines);
-            await SetInCache("BbCodes", bbcodes);
+            await SetInCacheAsync("BbCodeHelplines", helplines);
+            await SetInCacheAsync("BbCodes", bbcodes);
 
         }
     }

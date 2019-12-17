@@ -68,7 +68,8 @@ namespace Serverless.Forum.Pages
                         LastPosterName = HttpUtility.HtmlDecode(f.ForumLastPosterName),
                         LastPostTime = f.ForumLastPostTime.TimestampToLocalTime(),
                         Unread = IsForumUnread(f.ForumId),
-                        LastPosterColor = ju == null ? null : ju.UserColour 
+                        LastPosterColor = ju == null ? null : ju.UserColour ,
+                        LastPostId = f.ForumLastPostId
                     }
                 ).ToListAsync();
 
@@ -103,7 +104,8 @@ namespace Serverless.Forum.Pages
                                      PostCount = context.PhpbbPosts.Count(p => p.TopicId == g.TopicId),
                                      Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1),
                                      Unread = IsTopicUnread(g.TopicId),
-                                     LastPosterColor = ju == null ? null : ju.UserColour
+                                     LastPosterColor = ju == null ? null : ju.UserColour,
+                                     LastPostId = g.TopicLastPostId
                                  }
                     }
                 ).ToListAsync();

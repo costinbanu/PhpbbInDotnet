@@ -137,8 +137,8 @@ namespace Serverless.Forum.Pages
                         Attachments = (from ja in joinedAttachments
                                        select ja.ToModel()).ToList(),
                         BbcodeUid = p.BbcodeUid,
-
-                        Unread = IsPostUnread(p.TopicId, p.PostId)
+                        Unread = IsPostUnread(p.TopicId, p.PostId),
+                        AuthorHasAvatar = ju == null ? false : !string.IsNullOrWhiteSpace(ju.UserAvatar)
                     }
                 ).ToList();
                 _utils.ProcessPosts(Posts, PageContext, true);

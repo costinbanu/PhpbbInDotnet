@@ -17,6 +17,9 @@ namespace Serverless.Forum.Pages
         public DateTime? CreationTime { get; set; }
         public int AssetId { get; set; }
         public string DateFormat { get; set; }
+        public bool ShowAvatar { get; set; } = false;
+        public string LinkHref { get; set; }
+        public string LinkText { get; set; }
 
         public void OnGet()
         {
