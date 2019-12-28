@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PaulMiami.AspNetCore.Mvc.Recaptcha;
-using Serverless.Forum.forum;
+using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 
 namespace Serverless.Forum.Pages
@@ -57,7 +57,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
-            using (var context = new forumContext(_config))
+            using (var context = new ForumDbContext(_config))
             {
                 var check = await (from u in context.PhpbbUsers
                                    where u.UsernameClean == _utils.CleanString(UserName)
@@ -86,7 +86,7 @@ namespace Serverless.Forum.Pages
                     UsernameClean = UserName.ToLower(),
                     UserEmail = Email,
                     UserPassword = Crypter.Phpass.Crypt(Password, Crypter.Phpass.GenerateSalt()),
-                    UserInactiveTime = DateTime.UtcNow.LocalTimeToTimestamp(),
+                    UserInactiveTime = DateTime.UtcNow.UtcTimeToTimestamp(),
                     UserActkey = registrationCode
                 });
 
@@ -107,7 +107,8 @@ namespace Serverless.Forum.Pages
                             $"<h2>{subject}</h2><br/><br/>" +
                             "Pentru a continua, trebuie să îți confirmi adresa de email.<br/><br/>" +
                             $"<a href=\"{Constants.FORUM_BASE_URL}/Register?code={registrationCode}\">Apasă aici</a> pentru a o confirma.<br/><br/>" +
-                            "O zi bună!"
+                            "O zi bună!",
+                        IsBodyHtml = true
                     };
                     emailMessage.To.Add(Email);
 

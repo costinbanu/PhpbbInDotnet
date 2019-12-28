@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Serverless.Forum.forum;
+using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System;
 using System.IO;
@@ -28,7 +28,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnGet(int Id)
         {
-            using (var context = new forumContext(_config))
+            using (var context = new ForumDbContext(_config))
             {
                 var file = await (from a in context.PhpbbAttachments
                                   where a.AttachId == Id
@@ -45,7 +45,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnGetAvatar(int userId)
         {
-            using (var context = new forumContext(_config))
+            using (var context = new ForumDbContext(_config))
             {
                 var file = await (from u in context.PhpbbUsers
                                   where u.UserId == userId

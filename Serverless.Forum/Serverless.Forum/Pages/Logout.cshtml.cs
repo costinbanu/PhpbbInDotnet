@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Serverless.Forum.forum;
+using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System;
 using System.Threading.Tasks;

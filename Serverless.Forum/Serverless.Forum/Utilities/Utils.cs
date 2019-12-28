@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Serverless.Forum.Contracts;
-using Serverless.Forum.forum;
+using Serverless.Forum.ForumDb;
 using Serverless.Forum.Pages;
 using System;
 using System.Collections.Concurrent;
@@ -49,7 +49,7 @@ namespace Serverless.Forum.Utilities
         public Utils(IConfiguration config, ICompositeViewEngine viewEngine, ITempDataProvider tempDataProvider, IServiceProvider serviceProvider, IHttpContextAccessor accessor)
         {
             _config = config;
-            using (var context = new forumContext(_config))
+            using (var context = new ForumDbContext(_config))
             {
                 Anonymous = LoggedUserFromDbUserAsync(context.PhpbbUsers.First(u => u.UserId == 1u)).GetAwaiter().GetResult();
 
@@ -93,7 +93,7 @@ namespace Serverless.Forum.Utilities
 
         public async Task<ClaimsPrincipal> LoggedUserFromDbUserAsync(PhpbbUsers user)
         {
-            using (var context = new forumContext(_config))
+            using (var context = new ForumDbContext(_config))
             using (var connection = context.Database.GetDbConnection())
             {
                 await connection.OpenAsync();
@@ -121,7 +121,7 @@ namespace Serverless.Forum.Utilities
 
         public async Task<(List<PhpbbPosts> Posts, int Page, int Count)> GetPostPageAsync(int userId, int? topicId, int? page, int? postId)
         {
-            using (var context = new forumContext(_config))
+            using (var context = new ForumDbContext(_config))
             using (var connection = context.Database.GetDbConnection())
             {
                 await connection.OpenAsync();

@@ -1,13 +1,15 @@
 ﻿@page
 @using Serverless.Forum.Utilities
-@using Serverless.Forum.forum
+@using Serverless.Forum.ForumDb
 @model Serverless.Forum.Pages.PostingModel
 @{
     ViewData["Title"] = "Posting";
     Layout = "~/Pages/_Layout.cshtml";
+    var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
 }
 
 <script src="~/lib/tribute/dist/tribute.js"></script>
+<script src="~/lib/moment.js"></script>
 <script src="~/js/site.js"></script>
 <link rel="stylesheet" href="~/lib/tribute/dist/tribute.css" />
 <script type="text/javascript">
@@ -415,6 +417,13 @@
             return true;
         }
     }
+
+    function showExpirationDate(value) {
+        moment().locale(window.navigator.userLanguage || window.navigator.language);
+        var target = document.getElementById("pollExpirationHelper");
+        value = value * 86400;
+        target.innerText = "Chestionarul expiră " + moment().add(value, "seconds").format("LLLL");
+    }
 </script>
 
 <h2>Răspunde: </h2>
@@ -511,6 +520,8 @@
     <input type="submit" value="Trimite mesajul" onclick="return censor()" asp-page-handler="ForumPost" />
     <p>&nbsp;</p>
     <a href="#" onclick="showElement('attachPanel')">Adaugă fișier atașat</a>
+    &nbsp;|&nbsp;
+    <a href="#" onclick="showElement('pollPanel')">Adaugă chestionar</a>
     <div id="attachPanel" style="display:none">
         <p>&nbsp;</p>
         <table style="border:none; margin:0px; padding:0px">
@@ -533,14 +544,6 @@
             </tr>
             @foreach (var attach in (await Model.GetFromCacheAsync<List<PhpbbAttachments>>("PostAttachments")) ?? new List<PhpbbAttachments>())
             {
-                @*<dl>
-                    <dt class="AttachFieldsetDt">Fișier:</dt>
-                    <dd class="AttachFieldsetDd">@attach.RealFilename</dd>
-                </dl>
-                <dl style="border-bottom:solid 1px black">
-                    <dt class="AttachFieldsetDt">Comentariu:</dt>
-                    <dd class="AttachFieldsetDd">@attach.AttachComment</dd>
-                </dl>*@
                 <tr>
                     <td style="width:200px; padding-bottom:15px">@attach.RealFilename</td>
                     <td style="padding-bottom:15px">@attach.AttachComment</td>
@@ -548,13 +551,36 @@
             }
         </table>
     </div>
-    @*<input asp-for="BbCodesData" type="hidden" />
-    <input asp-for="BbCodeHelplinesData" type="hidden" />
-    <input asp-for="DbBbCodesData" type="hidden" />
-    <input asp-for="SmiliesData" type="hidden" />
-    <input asp-for="PostAttachmentsData" type="hidden" />
-    <input asp-for="UsersJson" type="hidden" />
-    <input asp-for="TopicTitle" type="hidden" />*@
+    <div id="pollPanel" style="display:none">
+        <p>&nbsp;</p>
+        <table style="border:none; margin:0px;">
+            <tr style="border-bottom: solid 1px black">
+                <td style="width:200px; padding:5px">Opțiuni (una pe rând)</td>
+                <td colspan="2" style="padding:5px">
+                    <textarea asp-for="PollOptions" rows="4" cols="50"></textarea>
+                    <span asp-validation-for="PollOptions" class="validation"></span>
+                </td>
+            </tr>
+            <tr style="border-bottom: solid 1px black">
+                <td style="width:200px; padding:5px">Timp pentru votare (zile)</td>
+                <td style="padding:5px">
+                    <input asp-for="PollExpirationDaysString" onchange="showExpirationDate(this.value)" id="pollExpiration"/><br />
+                    <span class="Caption">Sunt permise și fracții precum 0.5, 1.75 etc</span>
+                    <span asp-validation-for="PollExpirationDaysString" class="validation"></span>
+                </td>
+                <td style="padding:5px">
+                    <span id="pollExpirationHelper"></span>
+                </td>
+            </tr>
+            <tr>
+                <td style="width:200px; padding:5px">Opțiuni per votant</td>
+                <td colspan="2" style="padding:5px">
+                    <input asp-for="PollMaxOptions" />
+                    <span asp-validation-for="PollMaxOptions" class="validation"></span>
+                </td>
+            </tr>
+        </table>
+    </div>
     <input asp-for="ForumId" type="hidden" />
     <input asp-for="TopicId" type="hidden" />
     <input asp-for="PostId" type="hidden" />
@@ -567,4 +593,6 @@
     });
 
     tribute.attach(document.getElementById("message"));
+
+    showExpirationDate(document.getElementById("pollExpiration").value);
 </script>

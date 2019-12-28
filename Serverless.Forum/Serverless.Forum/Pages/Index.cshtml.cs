@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
-using Serverless.Forum.forum;
+using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,7 +20,7 @@ namespace Serverless.Forum.Pages
 
         public async Task OnGet()
         {
-            using (var context = new forumContext(_config))
+            using (var context = new ForumDbContext(_config))
             {
                 var usr = await GetCurrentUserAsync();
                 Forums = await (from f1 in context.PhpbbForums
@@ -44,7 +44,7 @@ namespace Serverless.Forum.Pages
                                                    Description = HttpUtility.HtmlDecode(f2.ForumDesc),
                                                    LastPosterName = HttpUtility.HtmlDecode(f2.ForumLastPosterName),
                                                    LastPosterId = ju.UserId == 1 ? null as int? : ju.UserId,
-                                                   LastPostTime = f2.ForumLastPostTime.TimestampToLocalTime(),
+                                                   LastPostTime = f2.ForumLastPostTime.TimestampToUtcTime(),
                                                    Unread = IsForumUnread(f2.ForumId),
                                                    LastPosterColor = ju == null ? null : ju.UserColour,
                                                    LastPostId = f2.ForumLastPostId

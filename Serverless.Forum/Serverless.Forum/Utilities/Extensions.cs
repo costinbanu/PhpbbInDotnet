@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Serverless.Forum.Contracts;
-using Serverless.Forum.forum;
+using Serverless.Forum.ForumDb;
 using Serverless.Forum.Pages;
 using System;
 using System.Linq;
@@ -11,14 +11,18 @@ namespace Serverless.Forum.Utilities
 {
     public static class Extensions
     {
-        public static DateTime TimestampToLocalTime(this long timestamp)
+        public static DateTime TimestampToUtcTime(this long timestamp)
         {
             var seed = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
             return seed.AddSeconds(timestamp);
         }
 
-        public static long LocalTimeToTimestamp(this DateTime time)
+        public static long UtcTimeToTimestamp(this DateTime time)
         {
+            if (time.Kind != DateTimeKind.Utc)
+            {
+                time = time.ToUniversalTime();
+            }
             var seed = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
             return (long)time.Subtract(seed).TotalSeconds;
         }

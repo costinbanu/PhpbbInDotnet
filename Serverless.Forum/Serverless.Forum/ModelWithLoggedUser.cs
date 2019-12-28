@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Dapper;
+﻿using Dapper;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
@@ -8,11 +7,10 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
-using Serverless.Forum.forum;
+using Serverless.Forum.ForumDb;
 using Serverless.Forum.Pages;
 using Serverless.Forum.Utilities;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -26,8 +24,8 @@ namespace Serverless.Forum
         protected readonly Lazy<List<PhpbbAclRoles>> _modRoles;
         protected readonly IConfiguration _config;
         protected readonly Utils _utils;
-        private IEnumerable<Tracking> _tracking;
 
+        private IEnumerable<Tracking> _tracking;
         private readonly Lazy<int?> _currentUserId;
         private ForumDisplay _tree = null;
 
@@ -38,7 +36,7 @@ namespace Serverless.Forum
 
             _adminRoles = new Lazy<List<PhpbbAclRoles>>(() =>
             {
-                using (var context = new forumContext(config))
+                using (var context = new ForumDbContext(config))
                 {
                     return (from r in context.PhpbbAclRoles
                             where r.RoleType == "a_"
@@ -48,7 +46,7 @@ namespace Serverless.Forum
 
             _modRoles = new Lazy<List<PhpbbAclRoles>>(() =>
             {
-                using (var context = new forumContext(config))
+                using (var context = new ForumDbContext(config))
                 {
                     return (from r in context.PhpbbAclRoles
                             where r.RoleType == "m_"
@@ -64,7 +62,7 @@ namespace Serverless.Forum
             var user = User;
             if (!user?.Identity?.IsAuthenticated ?? false)
             {
-                using (var context = new forumContext(_config))
+                using (var context = new ForumDbContext(_config))
                 {
                     user = _utils.Anonymous;
                 }
@@ -107,7 +105,7 @@ namespace Serverless.Forum
             {
                 var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 await HttpContext.SignOutAsync();
-                using (var context = new forumContext(_config))
+                using (var context = new ForumDbContext(_config))
                 {
                     await HttpContext.SignInAsync(
                         CookieAuthenticationDefaults.AuthenticationScheme,
@@ -181,6 +179,14 @@ namespace Serverless.Forum
             }
         }
 
+        public void RemoveFromCache(string key)
+        {
+            if (TempData.Peek(key) != null)
+            {
+                TempData.Remove(key);
+            }
+        }
+
         public async Task<ForumDisplay> GetForumTree(ForumType? parentType = null)
         {
             if (_tree != null)
@@ -189,7 +195,7 @@ namespace Serverless.Forum
             }
 
             var usr = await GetCurrentUserAsync();
-            using (var context = new forumContext(_config))
+            using (var context = new ForumDbContext(_config))
             {
                 var allForums = await (
                     from f in context.PhpbbForums
@@ -218,7 +224,7 @@ namespace Serverless.Forum
                             Description = HttpUtility.HtmlDecode(f.ForumDesc),
                             LastPosterName = HttpUtility.HtmlDecode(f.ForumLastPosterName),
                             LastPosterId = ju.UserId == 1 ? null as int? : ju.UserId,
-                            LastPostTime = f.ForumLastPostTime.TimestampToLocalTime(),
+                            LastPostTime = f.ForumLastPostTime.TimestampToUtcTime(),
                             Unread = IsForumUnread(f.ForumId),
                             LastPosterColor = ju == null ? null : ju.UserColour,
                             Topics = (from jt in joinedTopics
@@ -298,11 +304,6 @@ namespace Serverless.Forum
             return track;
         }
 
-        private bool greaterThanMarked(PhpbbForumsTrack ft, PhpbbTopicsTrack tt, long toCompare)
-        {
-            return (ft != null || tt != null) && !((tt != null && toCompare <= tt.MarkTime) || (ft != null && toCompare <= ft.MarkTime));
-        }
-
         private IEnumerable<Tracking> GetUnreadTopicsAndParentsLazy()
         {
             if (_tracking != null)
@@ -310,7 +311,7 @@ namespace Serverless.Forum
                 return _tracking;
             }
 
-            using (var context = new forumContext(_config))
+            using (var context = new ForumDbContext(_config))
             using (var connection = context.Database.GetDbConnection())
             {
                 connection.Open();

@@ -37,7 +37,7 @@ BEGIN
              ORDER BY p.post_time) x
           WHERE x.post_id = post_id;
           
-          set page_no = @idx / @page_size;
+          set page_no = @idx div @page_size;
           if @idx mod @page_size <> 0
           then set page_no = page_no + 1;
           end if;

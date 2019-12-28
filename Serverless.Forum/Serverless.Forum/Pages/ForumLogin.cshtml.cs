@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Configuration;
-using Serverless.Forum.forum;
+using Serverless.Forum.ForumDb;
 using System.Linq;
 using System.Web;
 
@@ -36,7 +36,7 @@ namespace Serverless.Forum.Pages
 
         public IActionResult OnPost(string password, string returnUrl, int forumId)
         {
-            using (var context = new forumContext(_config))
+            using (var context = new ForumDbContext(_config))
             {
                 var forum = from f in context.PhpbbForums
                             let cryptedPass = Crypter.Phpass.Crypt(password, f.ForumPassword)

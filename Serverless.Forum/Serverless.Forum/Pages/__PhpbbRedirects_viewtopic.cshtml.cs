@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Serverless.Forum.forum;
+using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,7 +21,7 @@ namespace Serverless.Forum.Pages
             {
                 if (start.HasValue)
                 {
-                    using (var context = new forumContext(_config))
+                    using (var context = new ForumDbContext(_config))
                     {
                         var posts = await (from post in context.PhpbbPosts
                                            where post.TopicId == t.Value

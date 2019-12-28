@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Configuration;
-using Serverless.Forum.forum;
+using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System;
 using System.Linq;
@@ -38,7 +38,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
-            using (var context = new forumContext(_config))
+            using (var context = new ForumDbContext(_config))
             {
                 var user = from u in context.PhpbbUsers
                            let cryptedPass = Crypter.Phpass.Crypt(Password, u.UserPassword)

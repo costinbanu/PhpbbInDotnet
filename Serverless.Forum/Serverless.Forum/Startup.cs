@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using PaulMiami.AspNetCore.Mvc.Recaptcha;
-using Serverless.Forum.forum;
+using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System;
 
@@ -33,7 +33,7 @@ namespace Serverless.Forum
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
-            services.AddTransient<forumContext>();
+            services.AddTransient<ForumDbContext>();
             services.AddTransient<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton(Configuration);
 
@@ -97,6 +97,7 @@ namespace Serverless.Forum
                 app.UseHsts();
             }
 
+            app.UseRequestLocalization();
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseCookiePolicy();

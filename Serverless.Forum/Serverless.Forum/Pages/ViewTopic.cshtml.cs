@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
-using Serverless.Forum.forum;
+using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
@@ -23,8 +23,9 @@ namespace Serverless.Forum.Pages
         public bool? Highlight { get; private set; }
         public int? TopicId => _currentTopic?.TopicId;
         public bool IsLocked => (_currentTopic?.TopicStatus ?? 0) == 1;
-        public IConfiguration Config => _config;
-        public Utils Utils => _utils;
+        public PollDisplay Poll { get; private set; }
+        //public IConfiguration Config => _config;
+        //public Utils Utils => _utils;
 
         private PhpbbTopics _currentTopic;
         private List<PhpbbPosts> _dbPosts;
@@ -40,7 +41,7 @@ namespace Serverless.Forum.Pages
         {
             if (_currentTopic == null)
             {
-                using (var context = new forumContext(_config))
+                using (var context = new ForumDbContext(_config))
                 {
                     _currentTopic = await (
                         from p in context.PhpbbPosts
@@ -71,7 +72,7 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnGet(int topicId, int pageNum)
         {
             PhpbbForums parent = null;
-            using (var context = new forumContext(_config))
+            using (var context = new ForumDbContext(_config))
             {
                 if (_currentTopic == null)
                 {
@@ -94,23 +95,22 @@ namespace Serverless.Forum.Pages
                                 from j in joined
                                 where j.TopicId == topicId
                                 select f).FirstOrDefaultAsync();
-            }
 
-            ForumId = parent?.ForumId;
 
-            var permissionError = await ValidatePermissionsResponses(parent, ForumId ?? 0);
-            if (permissionError != null)
-            {
-                return permissionError;
-            }
+                ForumId = parent?.ForumId;
 
-            ForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? "untitled");
+                var permissionError = await ValidatePermissionsResponses(parent, ForumId ?? 0);
+                if (permissionError != null)
+                {
+                    return permissionError;
+                }
 
-            await GetPostsLazy(topicId, pageNum, null);
-            await ComputePagination(_count.Value, pageNum, $"/ViewTopic?TopicId={topicId}&PageNum=1", topicId);
+                ForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? "untitled");
 
-            using (var context = new forumContext(_config))
-            {
+                await GetPostsLazy(topicId, pageNum, null);
+                await ComputePagination(_count.Value, pageNum, $"/ViewTopic?TopicId={topicId}&PageNum=1", topicId);
+
+
                 Posts = (
                     from p in _dbPosts
 
@@ -131,8 +131,8 @@ namespace Serverless.Forum.Pages
                         AuthorName = ju == null ? "Anonymous" : (ju.UserId == 1 ? p.PostUsername : ju.Username),
                         AuthorId = ju == null ? 1 : (ju.UserId == 1 ? null as int? : ju.UserId),
                         AuthorColor = ju == null ? null : ju.UserColour,
-                        PostCreationTime = p.PostTime.TimestampToLocalTime(),
-                        PostModifiedTime = p.PostEditTime.TimestampToLocalTime(),
+                        PostCreationTime = p.PostTime.TimestampToUtcTime(),
+                        PostModifiedTime = p.PostEditTime.TimestampToUtcTime(),
                         PostId = p.PostId,
                         Attachments = (from ja in joinedAttachments
                                        select ja.ToModel()).ToList(),
@@ -144,12 +144,14 @@ namespace Serverless.Forum.Pages
                 _utils.ProcessPosts(Posts, PageContext, true);
                 TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
 
+                await GetPoll(context);
+
                 if (Posts.Any(p => p.Unread))
                 {
                     await context.PhpbbTopicsTrack.AddAsync(new PhpbbTopicsTrack
                     {
                         ForumId = ForumId.Value,
-                        MarkTime = DateTime.UtcNow.LocalTimeToTimestamp(),
+                        MarkTime = DateTime.UtcNow.UtcTimeToTimestamp(),
                         TopicId = TopicId.Value,
                         UserId = CurrentUserId.Value
                     });
@@ -161,13 +163,13 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPost(int topicId, int userPostsPerPage, int postId)
         {
-            async Task save(forumContext localContext)
+            async Task save(ForumDbContext localContext)
             {
                 await localContext.SaveChangesAsync();
                 await ReloadCurrentUser();
             }
 
-            using (var context = new forumContext(_config))
+            using (var context = new ForumDbContext(_config))
             {
                 var curValue = await context.PhpbbUserTopicPostNumber.FirstOrDefaultAsync(ppp => ppp.UserId == CurrentUserId && ppp.TopicId == topicId);
 
@@ -202,6 +204,55 @@ namespace Serverless.Forum.Pages
                 _page = results.Page;
                 _count = results.Count;
             }
+        }
+
+        private async Task GetPoll(ForumDbContext context)
+        {
+            var dbPollOptions = await (
+                from o in context.PhpbbPollOptions
+                where o.TopicId == TopicId
+                select o
+            ).ToListAsync();
+
+            if (!dbPollOptions.Any() && string.IsNullOrWhiteSpace(_currentTopic.PollTitle) && _currentTopic.PollStart == 0)
+            {
+                return;
+            }
+
+            Poll = new PollDisplay
+            {
+                PollTitle = _currentTopic.PollTitle,
+                PollStart = _currentTopic.PollStart.TimestampToUtcTime(),
+                PollDurationSecons = _currentTopic.PollLength,
+                PollMaxOptions = _currentTopic.PollMaxOptions,
+                TopicId = TopicId.Value,
+                VoteCanBeChanged = _currentTopic.PollVoteChange == 1,
+                PollOptions = (
+                    from o in dbPollOptions
+                    select new PollOption
+                    {
+                        PollOptionId = o.PollOptionId,
+                        PollOptionText = o.PollOptionText,
+                        TopicId = o.TopicId,
+                        PollOptionVoters = (
+                            from v in context.PhpbbPollVotes
+                            where o.PollOptionId == v.PollOptionId
+                               && o.TopicId == v.TopicId
+
+                            join u in context.PhpbbUsers
+                            on v.VoteUserId equals u.UserId
+                            into joinedUsers
+
+                            from ju in joinedUsers.DefaultIfEmpty()
+                            select new PollOptionVoter
+                            {
+                                UserId = v.VoteUserId,
+                                Username = ju == null ? "[deleted user]" : ju.Username
+                            }
+                        ).ToList()
+                    }
+                ).ToList()
+            };
         }
     }
 }

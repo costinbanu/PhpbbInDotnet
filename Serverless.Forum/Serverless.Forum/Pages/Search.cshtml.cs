@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
-using Serverless.Forum.forum;
+using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -70,7 +70,7 @@ namespace Serverless.Forum.Pages
                 TopicId = int.TryParse(query["TopicId"], out var i) ? i as int? : null;
             }
 
-            using (var context = new forumContext(_config))
+            using (var context = new ForumDbContext(_config))
             {
                 Users = await (
                     from u in context.PhpbbUsers
@@ -105,7 +105,7 @@ namespace Serverless.Forum.Pages
 
         private async Task Search()
         {
-            using (var context = new forumContext(_config))
+            using (var context = new ForumDbContext(_config))
             using (var connection = context.Database.GetDbConnection())
             {
                 await connection.OpenAsync();

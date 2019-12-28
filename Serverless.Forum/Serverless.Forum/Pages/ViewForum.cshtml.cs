@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
-using Serverless.Forum.forum;
+using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
@@ -27,7 +27,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnGet(int forumId)
         {
-            using (var context = new forumContext(_config))
+            using (var context = new ForumDbContext(_config))
             {
                 ForumId = forumId;
                 var usr = await GetCurrentUserAsync();
@@ -66,7 +66,7 @@ namespace Serverless.Forum.Pages
                         Description = HttpUtility.HtmlDecode(f.ForumDesc),
                         LastPosterId = f.ForumLastPosterId,
                         LastPosterName = HttpUtility.HtmlDecode(f.ForumLastPosterName),
-                        LastPostTime = f.ForumLastPostTime.TimestampToLocalTime(),
+                        LastPostTime = f.ForumLastPostTime.TimestampToUtcTime(),
                         Unread = IsForumUnread(f.ForumId),
                         LastPosterColor = ju == null ? null : ju.UserColour ,
                         LastPostId = f.ForumLastPostId
@@ -100,7 +100,7 @@ namespace Serverless.Forum.Pages
                                      Title = HttpUtility.HtmlDecode(g.TopicTitle),
                                      LastPosterId = ju.UserId == 1 ? null as int? : ju.UserId,
                                      LastPosterName = HttpUtility.HtmlDecode(g.TopicLastPosterName),
-                                     LastPostTime = g.TopicLastPostTime.TimestampToLocalTime(),
+                                     LastPostTime = g.TopicLastPostTime.TimestampToUtcTime(),
                                      PostCount = context.PhpbbPosts.Count(p => p.TopicId == g.TopicId),
                                      Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1),
                                      Unread = IsTopicUnread(g.TopicId),
@@ -116,7 +116,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPostForums(int forumId)
         {
-            using (var context = new forumContext(_config))
+            using (var context = new ForumDbContext(_config))
             {
                 var usr = await GetCurrentUserAsync();
                 var thisForum = await (from f in context.PhpbbForums
@@ -144,7 +144,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPostTopics(int forumId)
         {
-            using (var context = new forumContext(_config))
+            using (var context = new ForumDbContext(_config))
             {
                 var usr = await GetCurrentUserAsync();
                 var thisForum = await (from f in context.PhpbbForums
@@ -164,7 +164,7 @@ namespace Serverless.Forum.Pages
             return await OnGet(forumId);
         }
 
-        private async Task UpdateTracking(forumContext context, int forumId)
+        private async Task UpdateTracking(ForumDbContext context, int forumId)
         {
             var toRemove = await (
                 from t in context.PhpbbTopics
@@ -187,7 +187,7 @@ namespace Serverless.Forum.Pages
                 {
                     ForumId = forumId,
                     UserId = CurrentUserId.Value,
-                    MarkTime = DateTime.UtcNow.LocalTimeToTimestamp()
+                    MarkTime = DateTime.UtcNow.UtcTimeToTimestamp()
                 });
             //}
         }

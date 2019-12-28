@@ -101,10 +101,12 @@ blockquote {
     display: none;
     border-radius: 5px;
     border: solid 1px black;
-    float:right;
-    padding:3px;
+    float: right;
+    padding: 3px;
     margin: 3px;
-    cursor:pointer;
+    cursor: pointer;
+    font-weight: bold;
+    margin-right: 10px;
 }
 
 .PostTitle {
@@ -198,6 +200,7 @@ label {
 .validation {
     margin-left: 30px;
     color: red;
+    display:block;
 }
 
 #g-recaptcha-response {
@@ -254,6 +257,16 @@ label {
     display: inline;
 }
 
+.Caption {
+    font-style: italic;
+    font-size: 0.8em;
+}
+
+/*.NewlineBefore:before {
+    content: '\A';
+    white-space: pre;
+}*/
+
 @media (max-width: 768px) {
     .ForumListRight {
         display: none;
@@ -277,7 +290,7 @@ label {
     }
 
     .CollapsedMenu {
-        display:inline-block;
+        display: inline-block;
     }
 
     .postingControls {

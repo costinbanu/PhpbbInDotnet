@@ -5,10 +5,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Serverless.Forum.forum;
+using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -24,24 +25,35 @@ namespace Serverless.Forum.Pages
     {
         private readonly IAmazonS3 _s3Client;
 
-        [BindProperty]
+        [BindProperty, Required]
         public string PostTitle { get; set; }
 
-        [BindProperty]
+        [BindProperty, Required]
         public string PostText { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public int ForumId { get; set; }
 
-        [BindProperty(SupportsGet = true)]
+        [BindProperty(SupportsGet = true), Required]
         public int TopicId { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public int PostId { get; set; }
 
+        [BindProperty]
+        public string PollOptions { get; set; }
+
+        [BindProperty, Required, RegularExpression("^[0-9]([.,][0-9]{1,3})?$", ErrorMessage = "Valoarea introdusă nu este validă. Valori acceptate: între 0.1 și 365")]
+        public string PollExpirationDaysString { get; set; }
+
+        [BindProperty, Required, Range(1, int.MaxValue, ErrorMessage = "Valori valide: între 1 și numărul de opțiuni ale chestionarului.")]
+        public int? PollMaxOptions { get; set; }
+
         public PostingModel(IConfiguration config, Utils utils) : base(config, utils)
         {
             _s3Client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1);
+            PollExpirationDaysString = "1";
+            PollMaxOptions = 1;
         }
 
         public async Task<IActionResult> OnGetForumPost()
@@ -52,7 +64,7 @@ namespace Serverless.Forum.Pages
             }
 
             PhpbbTopics curTopic = null;
-            using (var context = new forumContext(_config))
+            using (var context = new ForumDbContext(_config))
             {
                 curTopic = await context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == TopicId);
 
@@ -87,7 +99,7 @@ namespace Serverless.Forum.Pages
             PhpbbTopics curTopic = null;
             string curAuthor = null;
 
-            using (var context = new forumContext(_config))
+            using (var context = new ForumDbContext(_config))
             {
                 curPost = await context.PhpbbPosts.FirstOrDefaultAsync(p => p.PostId == PostId);
 
@@ -140,14 +152,14 @@ namespace Serverless.Forum.Pages
             }
 
             var attachList = (await GetFromCacheAsync<List<PhpbbAttachments>>("PostAttachments")) ?? new List<PhpbbAttachments>();
-                var name = $"{CurrentUserId ?? 0}_{Guid.NewGuid():n}";
-                var request = new PutObjectRequest
-                {
-                    BucketName = _config["AwsS3BucketName"],
-                    Key = name,
-                    ContentType = file.ContentType,
-                    InputStream = file.OpenReadStream()
-                };
+            var name = $"{CurrentUserId ?? 0}_{Guid.NewGuid():n}";
+            var request = new PutObjectRequest
+            {
+                BucketName = _config["AwsS3BucketName"],
+                Key = name,
+                ContentType = file.ContentType,
+                InputStream = file.OpenReadStream()
+            };
 
             var response = await _s3Client.PutObjectAsync(request);
             if (response.HttpStatusCode != HttpStatusCode.OK)
@@ -156,17 +168,17 @@ namespace Serverless.Forum.Pages
             }
 
             attachList.Add(new PhpbbAttachments
-                {
-                    AttachComment = fileComment,
-                    Extension = Path.GetExtension(file.FileName),
-                    Filetime = DateTime.UtcNow.LocalTimeToTimestamp(),
-                    Filesize = file.Length,
-                    Mimetype = file.ContentType,
-                    PhysicalFilename = name,
-                    RealFilename = Path.GetFileName(file.FileName),
-                    TopicId = TopicId,
-                    PosterId = CurrentUserId.Value
-                });
+            {
+                AttachComment = fileComment,
+                Extension = Path.GetExtension(file.FileName),
+                Filetime = DateTime.UtcNow.UtcTimeToTimestamp(),
+                Filesize = file.Length,
+                Mimetype = file.ContentType,
+                PhysicalFilename = name,
+                RealFilename = Path.GetFileName(file.FileName),
+                TopicId = TopicId,
+                PosterId = CurrentUserId.Value
+            });
             await SetInCacheAsync("PostAttachments", attachList, true);
             return Page();
         }
@@ -179,7 +191,7 @@ namespace Serverless.Forum.Pages
                 return Unauthorized();
             }
 
-            using (var context = new forumContext(_config))
+            using (var context = new ForumDbContext(_config))
             {
                 foreach (var sr in from s in context.PhpbbSmilies
                                    select new
@@ -211,7 +223,7 @@ namespace Serverless.Forum.Pages
                     PosterId = usr.UserId.Value,
                     PostSubject = HttpUtility.HtmlEncode(PostTitle),
                     PostText = HttpUtility.HtmlEncode(PostText),
-                    PostTime = DateTime.UtcNow.LocalTimeToTimestamp(),
+                    PostTime = DateTime.UtcNow.UtcTimeToTimestamp(),
                     PostApproved = 1,
                     PostReported = 0,
                     BbcodeUid = _utils.RandomString(),
@@ -231,8 +243,8 @@ namespace Serverless.Forum.Pages
 
                 attachList.ForEach(a => a.PostMsgId = result.Entity.PostId);
                 await SetInCacheAsync("PostAttachments", attachList, true);
-                await context.PhpbbAttachments.AddRangeAsync(attachList);
-                await context.SaveChangesAsync();
+                //await context.PhpbbAttachments.AddRangeAsync(attachList);
+                //await context.SaveChangesAsync();
 
                 return RedirectToPage($"/ViewTopic?postId={result.Entity.PostId}&handler=byPostId");
             }
@@ -277,7 +289,7 @@ namespace Serverless.Forum.Pages
             return noLinks;
         }
 
-        private async Task Init(forumContext context)
+        private async Task Init(ForumDbContext context)
         {
             var dbBbCodes = await (
                 from c in context.PhpbbBbcodes
