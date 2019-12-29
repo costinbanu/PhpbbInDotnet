@@ -40,7 +40,7 @@ else
             </span>
             @await Html.PartialAsync(
                 "_SummaryPartial",
-                new _SummaryPartialModel
+                new CustomPartials._SummaryPartialModel
                 {
                     AuthorId = forum.LastPosterId,
                     AuthorName = forum.LastPosterName,
@@ -100,7 +100,7 @@ else
                 </span>
                 @await Html.PartialAsync(
                     "_SummaryPartial",
-                    new _SummaryPartialModel
+                    new CustomPartials._SummaryPartialModel
                     {
                         AuthorId = topic.LastPosterId,
                         AuthorName = topic.LastPosterName,
@@ -124,7 +124,7 @@ else
     <div style="height:400px; max-height:600px; overflow-y:scroll;">
         @await Html.PartialAsync(
             "_ForumTreePartial",
-             new _ForumTreePartialModel
+             new CustomPartials._ForumTreePartialModel
              {
                  Forums = await Model.GetForumTree(),
                  ForumId = Model.ForumId,

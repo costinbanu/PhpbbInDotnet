@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Serverless.Forum.Contracts;
 using System.Collections.Generic;
 
-namespace Serverless.Forum.Pages
+namespace Serverless.Forum.Pages.CustomPartials
 {
     [BindProperties(SupportsGet = true), ValidateAntiForgeryToken]
     public class _ForumTreePartialModel : PageModel

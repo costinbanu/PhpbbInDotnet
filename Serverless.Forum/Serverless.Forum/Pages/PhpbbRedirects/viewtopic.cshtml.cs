@@ -7,11 +7,11 @@ using Serverless.Forum.Utilities;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Serverless.Forum.Pages
+namespace Serverless.Forum.Pages.PhpbbRedirects
 {
-    public class __PhpbbRedirects_viewtopicModel : ModelWithLoggedUser
+    public class viewtopicModel : ModelWithLoggedUser
     {
-        public __PhpbbRedirects_viewtopicModel(IConfiguration config, Utils utils) : base(config, utils)
+        public viewtopicModel(IConfiguration config, Utils utils) : base(config, utils)
         {
         }
 
@@ -26,17 +26,17 @@ namespace Serverless.Forum.Pages
                         var posts = await (from post in context.PhpbbPosts
                                            where post.TopicId == t.Value
                                            select post.PostId).ToListAsync();
-                        return RedirectToPage("ViewTopic", "ByPostId", new { PostId = posts[start.Value] });
+                        return RedirectToPage("../ViewTopic", "ByPostId", new { PostId = posts[start.Value] });
                     }
                 }
                 else
                 {
-                    return RedirectToPage("ViewTopic", new { TopicId = t.Value });
+                    return RedirectToPage("../ViewTopic", new { TopicId = t.Value, PageNum = 1 });
                 }
             }
             else if (p.HasValue)
             {
-                return RedirectToPage("ViewTopic", "ByPostId", new { PostId = p.Value });
+                return RedirectToPage("../ViewTopic", "ByPostId", new { PostId = p.Value });
             }
             else
             {

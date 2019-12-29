@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
 using System;
 
-namespace Serverless.Forum.Pages
+namespace Serverless.Forum.Pages.CustomPartials
 {
     public class _PaginationControlsPartialModel : PageModel
     {

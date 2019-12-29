@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Internal;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using PaulMiami.AspNetCore.Mvc.Recaptcha;
@@ -51,10 +52,17 @@ namespace Serverless.Forum
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
+            services.AddLogging(log => log.AddConsole());
+
             services
                 .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                 .AddCookie();
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+
+            services
+                .AddMvc()
+                .SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
+                .AddRazorOptions(o => o.PageViewLocationFormats.Add("~/Pages/CustomPartials/{0}.cshtml"));
+
             services.AddDataProtection();
             services.AddAntiforgery(o => o.HeaderName = "XSRF-TOKEN");
 

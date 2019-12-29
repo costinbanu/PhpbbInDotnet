@@ -2,15 +2,15 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System;
 
-namespace Serverless.Forum.Pages
+namespace Serverless.Forum.Pages.PhpbbRedirects
 {
-    public class __PhpbbRedirects_fileModel : PageModel
+    public class fileModel : PageModel
     {
         public IActionResult OnGet(int? id, int? avatar)
         {
             if (id.HasValue)
             {
-                return RedirectToPage("File", new { Id = id.Value });
+                return RedirectToPage("../File", new { Id = id.Value });
             }
             else if (avatar.HasValue)
             {

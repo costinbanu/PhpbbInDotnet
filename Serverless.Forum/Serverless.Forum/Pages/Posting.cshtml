@@ -520,8 +520,11 @@
     <input type="submit" value="Trimite mesajul" onclick="return censor()" asp-page-handler="ForumPost" />
     <p>&nbsp;</p>
     <a href="#" onclick="showElement('attachPanel')">Adaugă fișier atașat</a>
-    &nbsp;|&nbsp;
-    <a href="#" onclick="showElement('pollPanel')">Adaugă chestionar</a>
+    @if (Model.CanCreatePoll)
+    {
+        <span>&nbsp; | &nbsp;</span>
+        <a href="#" onclick="showElement('pollPanel')">Adaugă chestionar</a>
+    }
     <div id="attachPanel" style="display:none">
         <p>&nbsp;</p>
         <table style="border:none; margin:0px; padding:0px">
@@ -551,36 +554,39 @@
             }
         </table>
     </div>
-    <div id="pollPanel" style="display:none">
-        <p>&nbsp;</p>
-        <table style="border:none; margin:0px;">
-            <tr style="border-bottom: solid 1px black">
-                <td style="width:200px; padding:5px">Opțiuni (una pe rând)</td>
-                <td colspan="2" style="padding:5px">
-                    <textarea asp-for="PollOptions" rows="4" cols="50"></textarea>
-                    <span asp-validation-for="PollOptions" class="validation"></span>
-                </td>
-            </tr>
-            <tr style="border-bottom: solid 1px black">
-                <td style="width:200px; padding:5px">Timp pentru votare (zile)</td>
-                <td style="padding:5px">
-                    <input asp-for="PollExpirationDaysString" onchange="showExpirationDate(this.value)" id="pollExpiration"/><br />
-                    <span class="Caption">Sunt permise și fracții precum 0.5, 1.75 etc</span>
-                    <span asp-validation-for="PollExpirationDaysString" class="validation"></span>
-                </td>
-                <td style="padding:5px">
-                    <span id="pollExpirationHelper"></span>
-                </td>
-            </tr>
-            <tr>
-                <td style="width:200px; padding:5px">Opțiuni per votant</td>
-                <td colspan="2" style="padding:5px">
-                    <input asp-for="PollMaxOptions" />
-                    <span asp-validation-for="PollMaxOptions" class="validation"></span>
-                </td>
-            </tr>
-        </table>
-    </div>
+    @if (Model.CanCreatePoll)
+    {
+        <div id="pollPanel" style="display:none">
+            <p>&nbsp;</p>
+            <table style="border:none; margin:0px;">
+                <tr style="border-bottom: solid 1px black">
+                    <td style="width:200px; padding:5px">Opțiuni (una pe rând)</td>
+                    <td colspan="2" style="padding:5px">
+                        <textarea asp-for="PollOptions" rows="4" cols="50"></textarea>
+                        <span asp-validation-for="PollOptions" class="validation"></span>
+                    </td>
+                </tr>
+                <tr style="border-bottom: solid 1px black">
+                    <td style="width:200px; padding:5px">Timp pentru votare (zile)</td>
+                    <td style="padding:5px">
+                        <input asp-for="PollExpirationDaysString" onchange="showExpirationDate(this.value)" id="pollExpiration"/><br />
+                        <span class="Caption">Sunt permise și fracții precum 0.5, 1.75 etc</span>
+                        <span asp-validation-for="PollExpirationDaysString" class="validation"></span>
+                    </td>
+                    <td style="padding:5px">
+                        <span id="pollExpirationHelper"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width:200px; padding:5px">Opțiuni per votant</td>
+                    <td colspan="2" style="padding:5px">
+                        <input asp-for="PollMaxOptions" />
+                        <span asp-validation-for="PollMaxOptions" class="validation"></span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    }
     <input asp-for="ForumId" type="hidden" />
     <input asp-for="TopicId" type="hidden" />
     <input asp-for="PostId" type="hidden" />

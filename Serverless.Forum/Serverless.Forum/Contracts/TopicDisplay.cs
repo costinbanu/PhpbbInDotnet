@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Serverless.Forum.Pages.CustomPartials;
+using System;
 using System.Collections.Generic;
 
 namespace Serverless.Forum.Pages

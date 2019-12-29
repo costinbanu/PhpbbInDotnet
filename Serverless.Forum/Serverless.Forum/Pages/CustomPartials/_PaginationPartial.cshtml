@@ -1,0 +1,39 @@
+﻿@model Serverless.Forum.Pages.CustomPartials._PaginationPartialModel
+
+<!DOCTYPE html>
+@if (Model.HasPages)
+{
+    <label>Mergi la pagina:&nbsp;</label>
+    if (Model.Pager.StartPage > 1)
+    {
+        Model.Link.Set("PageNum", "1");
+        <span style="display:inline-block; background-color:gainsboro; padding:2px;">
+            <a href="@Model.Link.ToString()">1</a>
+        </span>
+        <span>&nbsp;...</span>
+    }
+
+    foreach (var curPage in Model.Pager.Pages)
+    {
+        if (curPage == Model.CurrentPage)
+        {
+            <span style="display:inline-block; padding:2px;">@curPage</span>
+        }
+        else
+        {
+            Model.Link.Set("PageNum", curPage.ToString());
+            <span style="display:inline-block; background-color:gainsboro; padding:2px;">
+                <a href="@Model.Link.ToString()">@curPage</a>
+            </span>
+        }
+    }
+
+    if (Model.Pager.EndPage + 3 < Model.Pager.TotalPages)
+    {
+        Model.Link.Set("PageNum", Model.Pager.TotalPages.ToString());
+        <span>&nbsp;...</span>
+        <span style="display:inline-block; background-color:gainsboro; padding:2px;">
+            <a href="@Model.Link.ToString()">@Model.Pager.TotalPages</a>
+        </span>
+    }
+}

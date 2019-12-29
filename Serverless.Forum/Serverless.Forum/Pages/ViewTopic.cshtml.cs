@@ -209,11 +209,7 @@ namespace Serverless.Forum.Pages
 
         private async Task GetPoll(ForumDbContext context)
         {
-            var dbPollOptions = await (
-                from o in context.PhpbbPollOptions
-                where o.TopicId == TopicId
-                select o
-            ).ToListAsync();
+            var dbPollOptions = await context.PhpbbPollOptions.Where(o => o.TopicId == (TopicId ?? 0)).ToListAsync();
 
             if (!dbPollOptions.Any() && string.IsNullOrWhiteSpace(_currentTopic.PollTitle) && _currentTopic.PollStart == 0)
             {

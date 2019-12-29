@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace Serverless.Forum.Pages
+namespace Serverless.Forum.Pages.CustomPartials
 {
     public class _AttachmentPartialModel : PageModel 
     {

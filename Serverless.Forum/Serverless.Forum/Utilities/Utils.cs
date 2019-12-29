@@ -1,7 +1,6 @@
 ﻿using CodeKicker.BBCode.Core;
 using Dapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -12,10 +11,11 @@ using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
-using Serverless.Forum.Pages;
+using Serverless.Forum.Pages.CustomPartials;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -41,23 +41,24 @@ namespace Serverless.Forum.Utilities
         private readonly Regex _newLineRegex;
         private readonly Regex _smileyRegex;
         private readonly IConfiguration _config;
+        private readonly ILogger<Utils> _logger;
         private readonly BBCodeParser _parser;
         private readonly ICompositeViewEngine _viewEngine;
         private readonly ITempDataProvider _tempDataProvider;
 
-        public Utils(IConfiguration config, ICompositeViewEngine viewEngine, ITempDataProvider tempDataProvider)
+        public Utils(IConfiguration config, ICompositeViewEngine viewEngine, ITempDataProvider tempDataProvider, ILogger<Utils> logger)
         {
             _config = config;
+            _logger = logger;
+            _htmlCommentRegex = new Regex("<!--.*?-->", RegexOptions.Compiled | RegexOptions.Singleline);
+            _newLineRegex = new Regex("\n", RegexOptions.Compiled | RegexOptions.Singleline);
+            _smileyRegex = new Regex("{SMILIES_PATH}", RegexOptions.Compiled | RegexOptions.Singleline);
+            _viewEngine = viewEngine;
+            _tempDataProvider = tempDataProvider;
+
             using (var context = new ForumDbContext(_config))
             {
-                Anonymous = LoggedUserFromDbUserAsync(context.PhpbbUsers.First(u => u.UserId == 1u)).GetAwaiter().GetResult();
-
-                _htmlCommentRegex = new Regex("<!--.*?-->", RegexOptions.Compiled | RegexOptions.Singleline);
-                _newLineRegex = new Regex("\n", RegexOptions.Compiled | RegexOptions.Singleline);
-                _smileyRegex = new Regex("{SMILIES_PATH}", RegexOptions.Compiled | RegexOptions.Singleline);
-
-                _viewEngine = viewEngine;
-                _tempDataProvider = tempDataProvider;
+                Anonymous = context.PhpbbUsers.First(u => u.UserId == 1u).ToClaimsPrincipalAsync(context, this).RunSync();
 
                 var bbcodes = new List<BBTag>(from c in context.PhpbbBbcodes
                                               select new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false));
@@ -85,34 +86,6 @@ namespace Serverless.Forum.Utilities
                         new BBAttribute("num", "num"))
                 });
                 _parser = new BBCodeParser(bbcodes);
-            }
-        }
-
-        public async Task<ClaimsPrincipal> LoggedUserFromDbUserAsync(PhpbbUsers user)
-        {
-            using (var context = new ForumDbContext(_config))
-            using (var connection = context.Database.GetDbConnection())
-            {
-                await connection.OpenAsync();
-                DefaultTypeMap.MatchNamesWithUnderscores = true;
-
-                using (var multi = await connection.QueryMultipleAsync("CALL `forum`.`get_user_details`(@UserId);", new { user.UserId }))
-                {
-                    var intermediary = new LoggedUser
-                    {
-                        UserId = user.UserId,
-                        Username = user.Username,
-                        UsernameClean = user.UsernameClean,
-                        UserPermissions = await multi.ReadAsync<LoggedUser.Permissions>(),
-                        Groups = (await multi.ReadAsync<uint>()).Select(x => checked((int)x)),
-                        TopicPostsPerPage = (await multi.ReadAsync()).ToDictionary(key => checked((int)key.topic_id), value => checked((int)value.post_no)),
-                        UserDateFormat = user.UserDateformat
-                    };
-
-                    var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
-                    identity.AddClaim(new Claim(ClaimTypes.UserData, await CompressObjectAsync(intermediary)));
-                    return new ClaimsPrincipal(identity);
-                }
             }
         }
 
@@ -222,7 +195,7 @@ namespace Serverless.Forum.Utilities
             return bbCodeText;
         }
 
-        public async Task<string> CompressObjectAsync<T>(T source)
+        public async Task<byte[]> CompressObjectAsync<T>(T source)
         {
             using (var content = new MemoryStream(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(source))))
             using (var memory = new MemoryStream())
@@ -230,18 +203,19 @@ namespace Serverless.Forum.Utilities
             {
                 await content.CopyToAsync(gzip);
                 await gzip.FlushAsync();
-                return Convert.ToBase64String(memory.ToArray());
+                return memory.ToArray();
             }
         }
 
-        public async Task<T> DecompressObjectAsync<T>(string source)
+        public async Task<T> DecompressObjectAsync<T>(byte[] source)
         {
-            if (string.IsNullOrWhiteSpace(source))
+            if (!(source?.Any() ?? false))
             {
                 return default;
             }
+
             using (var content = new MemoryStream())
-            using (var memory = new MemoryStream(Convert.FromBase64String(source)))
+            using (var memory = new MemoryStream(source))
             using (var gzip = new GZipStream(memory, CompressionMode.Decompress))
             {
                 await gzip.CopyToAsync(content);
@@ -297,7 +271,7 @@ namespace Serverless.Forum.Utilities
             try
             {
                 var actionContext = new ActionContext(httpContext, httpContext.GetRouteData(), pageContext.ActionDescriptor);
-                var viewResult = _viewEngine.FindView(actionContext, viewName, false);//_viewEngine.GetView(_environment.WebRootPath, viewName, false); 
+                var viewResult = _viewEngine.FindView(actionContext, viewName, false);
 
                 if (viewResult.View == null)
                 {
@@ -329,6 +303,7 @@ namespace Serverless.Forum.Utilities
             }
             catch (Exception ex)
             {
+                _logger.LogWarning(ex, "Error rendering partial view.");
                 return string.Empty;
             }
         }

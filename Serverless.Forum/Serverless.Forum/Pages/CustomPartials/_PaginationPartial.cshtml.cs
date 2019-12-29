@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Collections.Specialized;
 using System.Web;
 
-namespace Serverless.Forum.Pages
+namespace Serverless.Forum.Pages.CustomPartials
 {
     public class _PaginationPartialModel : PageModel
     {

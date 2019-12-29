@@ -33,11 +33,14 @@ namespace Serverless.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public int ForumId { get; set; }
 
-        [BindProperty(SupportsGet = true), Required]
-        public int TopicId { get; set; }
+        [BindProperty(SupportsGet = true)]
+        public int? TopicId { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public int PostId { get; set; }
+
+        [BindProperty]
+        public bool CanCreatePoll { get; set; }
 
         [BindProperty]
         public string PollOptions { get; set; }
@@ -61,10 +64,10 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnGetForumPost()
         {
-            if ((CurrentUserId ?? 1) == 1)
-            {
-                return Unauthorized();
-            }
+            //if ((CurrentUserId ?? 1) == 1)
+            //{
+            //    return Unauthorized();
+            //}
 
             PhpbbTopics curTopic = null;
             using (var context = new ForumDbContext(_config))
@@ -93,10 +96,10 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnGetQuoteForumPost()
         {
-            if ((CurrentUserId ?? 1) == 1)
-            {
-                return Unauthorized();
-            }
+            //if ((CurrentUserId ?? 1) == 1)
+            //{
+            //    return Unauthorized();
+            //}
 
             PhpbbPosts curPost = null;
             PhpbbTopics curTopic = null;
@@ -142,6 +145,11 @@ namespace Serverless.Forum.Pages
             return Page();
         }
 
+        public async Task<IActionResult> OnGetNewTopic()
+        {
+            return default;
+        }
+
         public async Task<IActionResult> OnPostAttachment(IFormFile file, string fileComment)
         {
             if (file == null)
@@ -179,7 +187,7 @@ namespace Serverless.Forum.Pages
                 Mimetype = file.ContentType,
                 PhysicalFilename = name,
                 RealFilename = Path.GetFileName(file.FileName),
-                TopicId = TopicId,
+                //TopicId = TopicId,
                 PosterId = CurrentUserId.Value
             });
             await SetInCacheAsync("PostAttachments", attachList, true);
@@ -222,7 +230,7 @@ namespace Serverless.Forum.Pages
                 var result = await context.PhpbbPosts.AddAsync(new PhpbbPosts
                 {
                     ForumId = ForumId,
-                    TopicId = TopicId,
+                    //TopicId = TopicId,
                     PosterId = usr.UserId.Value,
                     PostSubject = HttpUtility.HtmlEncode(PostTitle),
                     PostText = HttpUtility.HtmlEncode(PostText),
@@ -259,25 +267,20 @@ namespace Serverless.Forum.Pages
         }
 
         public async Task<T> GetFromCacheAsync<T>(string key, bool isPersonalizedData)
-        {
-            if (isPersonalizedData)
-            {
-                key = $"{CurrentUserId}_{ForumId}_{TopicId}_{key}";
-            }
-
-            return await _utils.DecompressObjectAsync<T>(await _cache.GetStringAsync(key));
-        }
+            => await _utils.DecompressObjectAsync<T>(await _cache.GetAsync(GetActualCacheKey(key, isPersonalizedData)));
 
         public async Task SetInCacheAsync<T>(string key, T value, bool isPersonalizedData)
-        {
-            if (isPersonalizedData)
-            {
-                key = $"{CurrentUserId}_{ForumId}_{TopicId}_{key}";
-            }
+            => await _cache.SetAsync(
+                GetActualCacheKey(key, isPersonalizedData), 
+                await _utils.CompressObjectAsync(value), 
+                new DistributedCacheEntryOptions { SlidingExpiration = TimeSpan.FromHours(12) }
+            );
 
-            await _cache.SetStringAsync(key, await _utils.CompressObjectAsync(value));
-        }
+        public async Task<bool> ExistsInCache(string key, bool isPersonalizedData)
+            => (await _cache.GetAsync(GetActualCacheKey(key, isPersonalizedData)))?.Any() ?? false;
 
+        private string GetActualCacheKey(string key, bool isPersonalizedData)
+            => isPersonalizedData ? $"{CurrentUserId}_{ForumId}_{TopicId}_{key}" : key;
 
         private string CleanText(string text, string uid)
         {
@@ -315,46 +318,64 @@ namespace Serverless.Forum.Pages
 
         private async Task Init(ForumDbContext context)
         {
-            var dbBbCodes = await (
-                from c in context.PhpbbBbcodes
-                where c.DisplayOnPosting == 1
-                select c
-            ).ToListAsync();
-            await SetInCacheAsync(key: "DbBbCodes", value: dbBbCodes, isPersonalizedData: false);
-
-            await SetInCacheAsync(
-                key: "Smilies", 
-                value: await (
-                    from s in context.PhpbbSmilies
-                    group s by s.SmileyUrl into unique
-                    select unique.First()
-                ).OrderBy(s => s.SmileyOrder)
-                 .ToListAsync(),
-                isPersonalizedData: false
-             );
-
-            await SetInCacheAsync(
-                key: "Users",
-                value: await (
-                    from u in context.PhpbbUsers
-                    where u.UserId != 1 && u.UserType != 2
-                    orderby u.Username
-                    select KeyValuePair.Create(u.Username, $"[url=\"./User?UserId={u.UserId}\"]{u.Username}[/url]")
-                ).ToListAsync(),
-                isPersonalizedData: false
-            );
-
-            var helplines = new Dictionary<string, string>(Constants.BBCODE_HELPLINES);
-            var bbcodes = new List<string>(Constants.BBCODES);
-            foreach (var bbCode in dbBbCodes)
+            if (!await ExistsInCache("Smilies", false))
             {
-                bbcodes.Add($"[{bbCode.BbcodeTag}]");
-                bbcodes.Add($"[/{bbCode.BbcodeTag}]");
-                var index = bbcodes.IndexOf($"[{bbCode.BbcodeTag}]");
-                helplines.Add($"cb_{index}", bbCode.BbcodeHelpline);
+                await SetInCacheAsync(
+                    "Smilies",
+                    await (
+                        from s in context.PhpbbSmilies
+                        group s by s.SmileyUrl into unique
+                        select unique.First()
+                    ).OrderBy(s => s.SmileyOrder)
+                     .ToListAsync(),
+                    false
+                 );
             }
-            await SetInCacheAsync(key: "BbCodeHelplines", value: helplines, isPersonalizedData: false);
-            await SetInCacheAsync(key: "BbCodes", value: bbcodes, isPersonalizedData: false);
+
+            if (!await ExistsInCache("Users", false))
+            {
+                await SetInCacheAsync(
+                    "Users",
+                    await (
+                        from u in context.PhpbbUsers
+                        where u.UserId != 1 && u.UserType != 2
+                        orderby u.Username
+                        select KeyValuePair.Create(u.Username, $"[url=\"./User?UserId={u.UserId}\"]{u.Username}[/url]")
+                    ).ToListAsync(),
+                    false
+                );
+            }
+
+            if (!await ExistsInCache("BbCodeHelplines", false) || !await ExistsInCache("BbCodes", false) || !await ExistsInCache("DbBbCodes", false))
+            {
+                var dbBbCodes = await (
+                    from c in context.PhpbbBbcodes
+                    where c.DisplayOnPosting == 1
+                    select c
+                ).ToListAsync();
+                var helplines = new Dictionary<string, string>(Constants.BBCODE_HELPLINES);
+                var bbcodes = new List<string>(Constants.BBCODES);
+                foreach (var bbCode in dbBbCodes)
+                {
+                    bbcodes.Add($"[{bbCode.BbcodeTag}]");
+                    bbcodes.Add($"[/{bbCode.BbcodeTag}]");
+                    var index = bbcodes.IndexOf($"[{bbCode.BbcodeTag}]");
+                    helplines.Add($"cb_{index}", bbCode.BbcodeHelpline);
+                }
+                await SetInCacheAsync("BbCodeHelplines", helplines, false);
+                await SetInCacheAsync("BbCodes", bbcodes, false);
+                await SetInCacheAsync("DbBbCodes", dbBbCodes, false);
+            }
+
+            if (!await ExistsInCache("CanCreatePoll", true))
+            {
+                CanCreatePoll = !(await context.PhpbbPollOptions.Where(o => o.TopicId == (TopicId ?? 0)).ToListAsync()).Any();
+                await SetInCacheAsync("CanCreatePoll", CanCreatePoll, true);
+            }
+            else
+            {
+                CanCreatePoll = await GetFromCacheAsync<bool>("CanCreatePoll", true);
+            }
         }
     }
 }

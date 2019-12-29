@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Utilities;
 
-namespace Serverless.Forum.Pages
+namespace Serverless.Forum.Pages.CustomPartials
 {
     public class _SummaryPartialModel : PageModel
     {

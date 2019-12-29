@@ -77,7 +77,7 @@ namespace Serverless.Forum
                     }
                 );
             }
-            return await user.ToLoggedUser(_utils);
+            return await user.ToLoggedUserAsync(_utils);
         }
 
         public async Task<bool> IsCurrentUserAdminHere(int forumId)
@@ -109,9 +109,7 @@ namespace Serverless.Forum
                 {
                     await HttpContext.SignInAsync(
                         CookieAuthenticationDefaults.AuthenticationScheme,
-                        await _utils.LoggedUserFromDbUserAsync(
-                            await context.PhpbbUsers.FirstAsync(u => u.UserId == current)
-                        ),
+                        await (await context.PhpbbUsers.FirstAsync(u => u.UserId == current)).ToClaimsPrincipalAsync(context, _utils),
                         new AuthenticationProperties
                         {
                             AllowRefresh = true,

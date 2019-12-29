@@ -28,7 +28,7 @@
     <div style="height:400px; max-height:600px; overflow-y:scroll">
         @await Html.PartialAsync(
             "_ForumTreePartial",
-             new _ForumTreePartialModel
+             new CustomPartials._ForumTreePartialModel
              {
                  Forums = await Model.GetForumTree(),
                  ForumId = Model.ForumId,
@@ -55,7 +55,7 @@
     <h2>Rezultate</h2>
     @await  Html.PartialAsync(
         "_PaginationControlsPartial",
-        new _PaginationControlsPartialModel(
+        new CustomPartials._PaginationControlsPartialModel(
             pagination: Model,
             allowPaginationChange: false,
             back: Model.GetSearchLinkForPage(Model.PageNum.Value - 1),
@@ -76,7 +76,7 @@
             </div>
             @await Html.PartialAsync(
                 "_SummaryPartial",
-                new _SummaryPartialModel
+                new CustomPartials._SummaryPartialModel
                 {
                     AuthorId = post.AuthorId,
                     AuthorName = post.AuthorName,
@@ -91,7 +91,7 @@
     <p>&nbsp;</p>
     @await  Html.PartialAsync(
         "_PaginationControlsPartial",
-        new _PaginationControlsPartialModel(
+        new CustomPartials._PaginationControlsPartialModel(
             pagination: Model,
             allowPaginationChange: false,
             back: Model.GetSearchLinkForPage(Model.PageNum.Value - 1),

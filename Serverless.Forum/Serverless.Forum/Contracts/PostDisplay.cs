@@ -1,4 +1,4 @@
-﻿using Serverless.Forum.Pages;
+﻿using Serverless.Forum.Pages.CustomPartials;
 using System;
 using System.Collections.Generic;
 

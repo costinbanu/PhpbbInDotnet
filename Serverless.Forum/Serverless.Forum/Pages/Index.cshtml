@@ -22,7 +22,7 @@
         </span>
         @await Html.PartialAsync(
             "_SummaryPartial",
-            new _SummaryPartialModel
+            new CustomPartials._SummaryPartialModel
             {
                 AuthorId = forum.LastPosterId,
                 AuthorName = forum.LastPosterName,
