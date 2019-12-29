@@ -271,8 +271,8 @@ namespace Serverless.Forum.Pages
 
         public async Task SetInCacheAsync<T>(string key, T value, bool isPersonalizedData)
             => await _cache.SetAsync(
-                GetActualCacheKey(key, isPersonalizedData), 
-                await _utils.CompressObjectAsync(value), 
+                GetActualCacheKey(key, isPersonalizedData),
+                await _utils.CompressObjectAsync(value),
                 new DistributedCacheEntryOptions { SlidingExpiration = TimeSpan.FromHours(12) }
             );
 
@@ -318,64 +318,49 @@ namespace Serverless.Forum.Pages
 
         private async Task Init(ForumDbContext context)
         {
-            if (!await ExistsInCache("Smilies", false))
-            {
-                await SetInCacheAsync(
-                    "Smilies",
-                    await (
-                        from s in context.PhpbbSmilies
-                        group s by s.SmileyUrl into unique
-                        select unique.First()
-                    ).OrderBy(s => s.SmileyOrder)
-                     .ToListAsync(),
-                    false
-                 );
-            }
+            await SetInCacheAsync(
+                "Smilies",
+                await (
+                    from s in context.PhpbbSmilies
+                    group s by s.SmileyUrl into unique
+                    select unique.First()
+                ).OrderBy(s => s.SmileyOrder)
+                 .ToListAsync(),
+                false
+             );
 
-            if (!await ExistsInCache("Users", false))
-            {
-                await SetInCacheAsync(
-                    "Users",
-                    await (
-                        from u in context.PhpbbUsers
-                        where u.UserId != 1 && u.UserType != 2
-                        orderby u.Username
-                        select KeyValuePair.Create(u.Username, $"[url=\"./User?UserId={u.UserId}\"]{u.Username}[/url]")
-                    ).ToListAsync(),
-                    false
-                );
-            }
+            await SetInCacheAsync(
+                "Users",
+                await (
+                    from u in context.PhpbbUsers
+                    where u.UserId != 1 && u.UserType != 2
+                    orderby u.Username
+                    select KeyValuePair.Create(u.Username, $"[url=\"./User?UserId={u.UserId}\"]{u.Username}[/url]")
+                ).ToListAsync(),
+                false
+            );
 
-            if (!await ExistsInCache("BbCodeHelplines", false) || !await ExistsInCache("BbCodes", false) || !await ExistsInCache("DbBbCodes", false))
+            var dbBbCodes = await (
+                from c in context.PhpbbBbcodes
+                where c.DisplayOnPosting == 1
+                select c
+            ).ToListAsync();
+            var helplines = new Dictionary<string, string>(Constants.BBCODE_HELPLINES);
+            var bbcodes = new List<string>(Constants.BBCODES);
+            foreach (var bbCode in dbBbCodes)
             {
-                var dbBbCodes = await (
-                    from c in context.PhpbbBbcodes
-                    where c.DisplayOnPosting == 1
-                    select c
-                ).ToListAsync();
-                var helplines = new Dictionary<string, string>(Constants.BBCODE_HELPLINES);
-                var bbcodes = new List<string>(Constants.BBCODES);
-                foreach (var bbCode in dbBbCodes)
-                {
-                    bbcodes.Add($"[{bbCode.BbcodeTag}]");
-                    bbcodes.Add($"[/{bbCode.BbcodeTag}]");
-                    var index = bbcodes.IndexOf($"[{bbCode.BbcodeTag}]");
-                    helplines.Add($"cb_{index}", bbCode.BbcodeHelpline);
-                }
-                await SetInCacheAsync("BbCodeHelplines", helplines, false);
-                await SetInCacheAsync("BbCodes", bbcodes, false);
-                await SetInCacheAsync("DbBbCodes", dbBbCodes, false);
+                bbcodes.Add($"[{bbCode.BbcodeTag}]");
+                bbcodes.Add($"[/{bbCode.BbcodeTag}]");
+                var index = bbcodes.IndexOf($"[{bbCode.BbcodeTag}]");
+                helplines.Add($"cb_{index}", bbCode.BbcodeHelpline);
             }
+            await SetInCacheAsync("BbCodeHelplines", helplines, false);
+            await SetInCacheAsync("BbCodes", bbcodes, false);
+            await SetInCacheAsync("DbBbCodes", dbBbCodes, false);
 
-            if (!await ExistsInCache("CanCreatePoll", true))
-            {
-                CanCreatePoll = !(await context.PhpbbPollOptions.Where(o => o.TopicId == (TopicId ?? 0)).ToListAsync()).Any();
-                await SetInCacheAsync("CanCreatePoll", CanCreatePoll, true);
-            }
-            else
-            {
-                CanCreatePoll = await GetFromCacheAsync<bool>("CanCreatePoll", true);
-            }
+
+            CanCreatePoll = !(await context.PhpbbPollOptions.Where(o => o.TopicId == (TopicId ?? 0)).ToListAsync()).Any();
+            await SetInCacheAsync("CanCreatePoll", CanCreatePoll, true);
         }
     }
 }
