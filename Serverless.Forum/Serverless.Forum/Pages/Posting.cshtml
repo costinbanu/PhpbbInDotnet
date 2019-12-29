@@ -21,11 +21,11 @@
 
     // Define the bbCode tags
     var bbcode = new Array();
-    var bbtags = @Json.Serialize(await Model.GetFromCacheAsync<List<string>>("BbCodes"));
+    var bbtags = @Json.Serialize(await Model.GetFromCacheAsync<List<string>>("BbCodes", false));
     var imageTag = false;
 
     // Helpline messages
-    var help_line = @Json.Serialize(await Model.GetFromCacheAsync<Dictionary<string, string>>("BbCodeHelplines"));
+    var help_line = @Json.Serialize(await Model.GetFromCacheAsync<Dictionary<string, string>>("BbCodeHelplines", false));
     var panels = new Array('options-panel', 'attach-panel', 'poll-panel');
     var show_panel = 'options-panel';
 
@@ -485,9 +485,9 @@
             <option value="200">Imens</option>
         </select>
         <input type="button" class="button2" name="bbpalette" id="bbpalette" value="Culoare font" onclick="change_palette();" title="Culoare font: [color=red]text[/color]  Sfat: de asemenea puteţi folosi culorile hexazecimale culoare=#FF0000">
-        @foreach (var code in (await Model.GetFromCacheAsync<List<PhpbbBbcodes>>("DbBbCodes")) ?? new List<PhpbbBbcodes>())
+        @foreach (var code in (await Model.GetFromCacheAsync<List<PhpbbBbcodes>>("DbBbCodes", false)) ?? new List<PhpbbBbcodes>())
         {
-            var index = (await Model.GetFromCacheAsync<List<string>>("BbCodes")).IndexOf($"[{code.BbcodeTag}]");
+            var index = (await Model.GetFromCacheAsync<List<string>>("BbCodes", false)).IndexOf($"[{code.BbcodeTag}]");
             var name = $"addbbcode{index}";
             <input type="button" class="button2" name="@name" value="@code.BbcodeTag" onclick="bbstyle(@index)" title="@code.BbcodeHelpline" />
         }
@@ -499,7 +499,7 @@
 
         <strong>Zâmbete</strong><br />
 
-        @foreach (var smiley in ((await Model.GetFromCacheAsync<List<PhpbbSmilies>>("Smilies")) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 1))
+        @foreach (var smiley in ((await Model.GetFromCacheAsync<List<PhpbbSmilies>>("Smilies", false)) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 1))
         {
             <a href="#a" onclick="insert_text('@smiley.Code', true); return false;">
                 <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
@@ -509,7 +509,7 @@
         <a href="#a" onclick="show_hidden_smilies(this)">Arată mai multe</a>
         <p>&nbsp;</p>
         <div id="hiddenSmilies" style="visibility:hidden">
-            @foreach (var smiley in ((await Model.GetFromCacheAsync<List<PhpbbSmilies>>("Smilies")) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 0))
+            @foreach (var smiley in ((await Model.GetFromCacheAsync<List<PhpbbSmilies>>("Smilies", false)) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 0))
             {
                 <a href="#a" onclick="insert_text('@smiley.Code', true); return false;">
                     <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
@@ -542,7 +542,7 @@
                 <th style="width:200px; padding-bottom:15px">Nume fișier</th>
                 <th style="padding-bottom:15px">Comentariu fișier</th>
             </tr>
-            @foreach (var attach in (await Model.GetFromCacheAsync<List<PhpbbAttachments>>("PostAttachments")) ?? new List<PhpbbAttachments>())
+            @foreach (var attach in (await Model.GetFromCacheAsync<List<PhpbbAttachments>>("PostAttachments", true)) ?? new List<PhpbbAttachments>())
             {
                 <tr>
                     <td style="width:200px; padding-bottom:15px">@attach.RealFilename</td>
@@ -587,7 +587,7 @@
 </form>
 <script>
     var tribute = new Tribute({
-        values: @Json.Serialize(await Model.GetFromCacheAsync<List<KeyValuePair<string, string>>>("Users")),
+        values: @Json.Serialize(await Model.GetFromCacheAsync<List<KeyValuePair<string, string>>>("Users", false)),
         trigger: "@@",
         allowSpaces: true
     });

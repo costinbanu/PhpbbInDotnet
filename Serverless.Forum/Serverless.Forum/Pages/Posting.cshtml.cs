@@ -4,6 +4,7 @@ using Amazon.S3.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
@@ -23,8 +24,6 @@ namespace Serverless.Forum.Pages
     [ValidateAntiForgeryToken]
     public class PostingModel : ModelWithLoggedUser
     {
-        private readonly IAmazonS3 _s3Client;
-
         [BindProperty, Required]
         public string PostTitle { get; set; }
 
@@ -49,11 +48,15 @@ namespace Serverless.Forum.Pages
         [BindProperty, Required, Range(1, int.MaxValue, ErrorMessage = "Valori valide: între 1 și numărul de opțiuni ale chestionarului.")]
         public int? PollMaxOptions { get; set; }
 
-        public PostingModel(IConfiguration config, Utils utils) : base(config, utils)
+        private readonly IDistributedCache _cache;
+        private readonly IAmazonS3 _s3Client;
+
+        public PostingModel(IConfiguration config, Utils utils, IDistributedCache cache) : base(config, utils)
         {
             _s3Client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1);
             PollExpirationDaysString = "1";
             PollMaxOptions = 1;
+            _cache = cache;
         }
 
         public async Task<IActionResult> OnGetForumPost()
@@ -151,7 +154,7 @@ namespace Serverless.Forum.Pages
                 return RedirectToPage("Login");
             }
 
-            var attachList = (await GetFromCacheAsync<List<PhpbbAttachments>>("PostAttachments")) ?? new List<PhpbbAttachments>();
+            var attachList = (await GetFromCacheAsync<List<PhpbbAttachments>>("PostAttachments", true)) ?? new List<PhpbbAttachments>();
             var name = $"{CurrentUserId ?? 0}_{Guid.NewGuid():n}";
             var request = new PutObjectRequest
             {
@@ -214,7 +217,7 @@ namespace Serverless.Forum.Pages
                     PostText = match.Result($"<a href=\"{(match.Value.StartsWith("http") ? match.Value : $"//{match.Value}")}\">{linkText}</a>");
                 }
 
-                var attachList = (await GetFromCacheAsync<List<PhpbbAttachments>>("PostAttachments")) ?? new List<PhpbbAttachments>();
+                var attachList = (await GetFromCacheAsync<List<PhpbbAttachments>>("PostAttachments", true)) ?? new List<PhpbbAttachments>();
 
                 var result = await context.PhpbbPosts.AddAsync(new PhpbbPosts
                 {
@@ -254,6 +257,27 @@ namespace Serverless.Forum.Pages
         {
             throw await Task.FromResult(new NotImplementedException());
         }
+
+        public async Task<T> GetFromCacheAsync<T>(string key, bool isPersonalizedData)
+        {
+            if (isPersonalizedData)
+            {
+                key = $"{CurrentUserId}_{ForumId}_{TopicId}_{key}";
+            }
+
+            return await _utils.DecompressObjectAsync<T>(await _cache.GetStringAsync(key));
+        }
+
+        public async Task SetInCacheAsync<T>(string key, T value, bool isPersonalizedData)
+        {
+            if (isPersonalizedData)
+            {
+                key = $"{CurrentUserId}_{ForumId}_{TopicId}_{key}";
+            }
+
+            await _cache.SetStringAsync(key, await _utils.CompressObjectAsync(value));
+        }
+
 
         private string CleanText(string text, string uid)
         {
@@ -296,26 +320,28 @@ namespace Serverless.Forum.Pages
                 where c.DisplayOnPosting == 1
                 select c
             ).ToListAsync();
-            await SetInCacheAsync("DbBbCodes", dbBbCodes);
+            await SetInCacheAsync(key: "DbBbCodes", value: dbBbCodes, isPersonalizedData: false);
 
             await SetInCacheAsync(
-                "Smilies", 
-                await (
+                key: "Smilies", 
+                value: await (
                     from s in context.PhpbbSmilies
                     group s by s.SmileyUrl into unique
                     select unique.First()
                 ).OrderBy(s => s.SmileyOrder)
-                 .ToListAsync()
+                 .ToListAsync(),
+                isPersonalizedData: false
              );
 
             await SetInCacheAsync(
-                "Users",
-                await (
+                key: "Users",
+                value: await (
                     from u in context.PhpbbUsers
                     where u.UserId != 1 && u.UserType != 2
                     orderby u.Username
                     select KeyValuePair.Create(u.Username, $"[url=\"./User?UserId={u.UserId}\"]{u.Username}[/url]")
-                ).ToListAsync()
+                ).ToListAsync(),
+                isPersonalizedData: false
             );
 
             var helplines = new Dictionary<string, string>(Constants.BBCODE_HELPLINES);
@@ -327,9 +353,8 @@ namespace Serverless.Forum.Pages
                 var index = bbcodes.IndexOf($"[{bbCode.BbcodeTag}]");
                 helplines.Add($"cb_{index}", bbCode.BbcodeHelpline);
             }
-            await SetInCacheAsync("BbCodeHelplines", helplines);
-            await SetInCacheAsync("BbCodes", bbcodes);
-
+            await SetInCacheAsync(key: "BbCodeHelplines", value: helplines, isPersonalizedData: false);
+            await SetInCacheAsync(key: "BbCodes", value: bbcodes, isPersonalizedData: false);
         }
     }
 }

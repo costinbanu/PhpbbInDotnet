@@ -99,25 +99,36 @@
                 @Html.Raw(post.AuthorName)
             </span>
             <p>&nbsp;</p>
-            @Html.Raw(post.PostText)
-            @foreach (var attachment in from a in post.Attachments
-                                        where !a.IsDisplayedInline
-                                        select a)
-            {
-                <br />
-                @*<span style="padding:10px; margin:10px; border: solid 1px grey; border-radius: 5px; display:inline-block">*@
-                    @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
-                @*</span>*@
-            }
-            <br />
-            @if (!IsLocked)
-            {
-                <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">Răspunde cu citat</a>
-            }
-            else
-            {
-                <a href="#" title="Subiectul este închis, nu se mai pot trimite răspunsuri."><s>Răspunde cu citat</s></a>
-            }
+            <span style="display:flex; flex-direction:column">
+                <span style="display:inline-block">
+                    @Html.Raw(post.PostText)
+                    @foreach (var attachment in post.Attachments)
+                    {
+                        <br />
+                        @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
+                    }
+                    <br />
+                </span>
+                <span style="margin-top:auto; display:inline-block">
+                    <span style="float:right">
+                        @if (!IsLocked)
+                        {
+                            <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">Răspunde cu citat</a>
+                        }
+                        else
+                        {
+                            <a href="#" title="Subiectul este închis, nu se mai pot trimite răspunsuri."><s>Răspunde cu citat</s></a>
+                        }
+                    </span>
+                    @if (!string.IsNullOrWhiteSpace(post.AuthorSignature))
+                    {
+                        <br/>
+                        <span style="width:25%; display:inline-block; border-bottom:solid 1px black">&nbsp;</span>
+                        <br/>
+                        <span class="Caption">@Html.Raw(post.AuthorSignature)</span>
+                    }
+                </span>
+            </span>
         </div>
         @await Html.PartialAsync(
             "_SummaryPartial",

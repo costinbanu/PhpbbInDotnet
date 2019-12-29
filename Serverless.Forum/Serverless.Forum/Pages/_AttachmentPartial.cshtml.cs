@@ -4,11 +4,11 @@ namespace Serverless.Forum.Pages
 {
     public class _AttachmentPartialModel : PageModel 
     {
-        public bool IsRenderedInline = false;
-        public bool IsDisplayedInline = false;
-        public int Id;
-        public string FileName;
-        public string MimeType;
+        public bool IsRenderedInline { get; set; } = false;
+        public int Id { get; set; }
+        public string FileName { get; set; }
+        public string MimeType { get; set; }
+        public int DownloadCount { get; set; }
 
         public void OnGet()
         {

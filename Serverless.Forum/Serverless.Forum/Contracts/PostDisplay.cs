@@ -29,5 +29,7 @@ namespace Serverless.Forum.Contracts
         public bool Unread { get; set; }
 
         public bool AuthorHasAvatar { get; set; } = false;
+
+        public string AuthorSignature { get; set; }
     }
 }

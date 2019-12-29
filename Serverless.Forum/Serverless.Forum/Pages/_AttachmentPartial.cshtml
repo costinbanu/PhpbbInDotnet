@@ -7,13 +7,14 @@
 
 @if (Model != null)
 {
+    <p>&nbsp;</p>
     if (Model.IsRenderedInline)
     {
         if (Model.MimeType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase))
         {
             <img src="/File?Id=@Model.Id" />
             <br />
-            <span class="Caption">@Model.FileName</span>
+            <span class="Caption">@Model.FileName (descărcat @(Model.DownloadCount == 1 ? "o dată" : $"de {Model.DownloadCount} ori"))</span>
 
         }
         else
@@ -23,11 +24,14 @@
                 <a asp-page="/File" asp-route-Id="@Model.Id">@Model.FileName</a>
             </video>
             <br />
-            <span class="Caption">@Model.FileName</span>
+            <span class="Caption">@Model.FileName (descărcat @(Model.DownloadCount == 1 ? "o dată" : $"de {Model.DownloadCount} ori"))</span>
         }
     }
     else
     {
         <a asp-page="/File" asp-route-Id="@Model.Id">@Model.FileName</a>
+        <br />
+        <span class="Caption">Descărcat @(Model.DownloadCount == 1 ? "o dată" : $"de {Model.DownloadCount} ori")</span>
     }
+    <p>&nbsp;</p>
 }

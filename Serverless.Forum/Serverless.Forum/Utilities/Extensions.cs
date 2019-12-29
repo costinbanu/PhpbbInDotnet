@@ -46,19 +46,9 @@ namespace Serverless.Forum.Utilities
                 FileName = dbAttachmentRecord.RealFilename,
                 Id = dbAttachmentRecord.AttachId,
                 IsRenderedInline = dbAttachmentRecord.Mimetype.IsMimeTypeInline(),
-                MimeType = dbAttachmentRecord.Mimetype
+                MimeType = dbAttachmentRecord.Mimetype,
+                DownloadCount = dbAttachmentRecord.DownloadCount
             };
         }
-
-        //public static T RunSync<T>(this Task<T> task)
-        //{
-        //    Task.WaitAll(task);
-        //    return task.Result;
-        //}
-
-        //public static void RunSync(this Task task)
-        //{
-        //    Task.WaitAll(task);
-        //}
     }
 }

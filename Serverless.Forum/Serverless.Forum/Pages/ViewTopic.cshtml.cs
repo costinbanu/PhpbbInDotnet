@@ -138,10 +138,11 @@ namespace Serverless.Forum.Pages
                                        select ja.ToModel()).ToList(),
                         BbcodeUid = p.BbcodeUid,
                         Unread = IsPostUnread(p.TopicId, p.PostId),
-                        AuthorHasAvatar = ju == null ? false : !string.IsNullOrWhiteSpace(ju.UserAvatar)
+                        AuthorHasAvatar = ju == null ? false : !string.IsNullOrWhiteSpace(ju.UserAvatar),
+                        AuthorSignature = ju == null ? null : _utils.BbCodeToHtml(ju.UserSig, ju.UserSigBbcodeUid)
                     }
                 ).ToList();
-                _utils.ProcessPosts(Posts, PageContext, true);
+                _utils.ProcessPosts(Posts, PageContext, HttpContext, true);
                 TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
 
                 await GetPoll(context);

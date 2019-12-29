@@ -127,7 +127,7 @@ namespace Serverless.Forum.Pages
                 {
 
                     Posts = (await multi.ReadAsync<PostDisplay>()).ToList();
-                    _utils.ProcessPosts(Posts, PageContext, false);
+                    _utils.ProcessPosts(Posts, PageContext, HttpContext, false);
                     PageNum = (await multi.ReadAsync<int>()).Single();
                     TotalResults = unchecked((int)(await multi.ReadAsync<long>()).Single());
                 }

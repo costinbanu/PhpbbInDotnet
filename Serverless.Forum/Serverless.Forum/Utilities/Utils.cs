@@ -1,6 +1,7 @@
 ﻿using CodeKicker.BBCode.Core;
 using Dapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -42,11 +43,9 @@ namespace Serverless.Forum.Utilities
         private readonly IConfiguration _config;
         private readonly BBCodeParser _parser;
         private readonly ICompositeViewEngine _viewEngine;
-        private readonly IServiceProvider _serviceProvider;
-        private readonly HttpContext _context;
         private readonly ITempDataProvider _tempDataProvider;
 
-        public Utils(IConfiguration config, ICompositeViewEngine viewEngine, ITempDataProvider tempDataProvider, IServiceProvider serviceProvider, IHttpContextAccessor accessor)
+        public Utils(IConfiguration config, ICompositeViewEngine viewEngine, ITempDataProvider tempDataProvider)
         {
             _config = config;
             using (var context = new ForumDbContext(_config))
@@ -59,8 +58,6 @@ namespace Serverless.Forum.Utilities
 
                 _viewEngine = viewEngine;
                 _tempDataProvider = tempDataProvider;
-                _serviceProvider = serviceProvider;
-                _context = accessor?.HttpContext;
 
                 var bbcodes = new List<BBTag>(from c in context.PhpbbBbcodes
                                               select new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false));
@@ -167,7 +164,7 @@ namespace Serverless.Forum.Utilities
             }
         }
 
-        public void ProcessPosts(List<PostDisplay> Posts, PageContext pageContext, bool renderAttachments)
+        public void ProcessPosts(List<PostDisplay> Posts, PageContext pageContext, HttpContext httpContext, bool renderAttachments)
         {
             var inlineAttachmentsPosts = new ConcurrentBag<(int PostId, _AttachmentPartialModel Attach)>();
             var attachRegex = new Regex("##AttachmentFileName=.*##", RegexOptions.Compiled);
@@ -175,10 +172,7 @@ namespace Serverless.Forum.Utilities
             Parallel.ForEach(Posts, (p, state1) =>
             {
                 p.PostSubject = HttpUtility.HtmlDecode(p.PostSubject);
-                p.PostText = HttpUtility.HtmlDecode(_parser.ToHtml(p.PostText, p.BbcodeUid));
-                p.PostText = _newLineRegex.Replace(p.PostText, "<br/>");
-                p.PostText = _htmlCommentRegex.Replace(p.PostText, string.Empty);
-                p.PostText = _smileyRegex.Replace(p.PostText, Constants.SMILEY_PATH);
+                p.PostText = BbCodeToHtml(p.PostText, p.BbcodeUid);
                 if (renderAttachments)
                 {
                     Parallel.ForEach(p.Attachments, (candidate, state2) =>
@@ -205,12 +199,27 @@ namespace Serverless.Forum.Utilities
                     {
                         p.PostText = p.PostText.Replace(
                             $"##AttachmentFileName={Attach.FileName}##",
-                            await RenderRazorViewToString("_AttachmentPartial", Attach, pageContext)
+                            await RenderRazorViewToString("_AttachmentPartial", Attach, pageContext, httpContext)
                         );
                         p.Attachments.Remove(Attach);
                     }
                 });
             }
+        }
+
+        public string BbCodeToHtml(string bbCodeText, string bbCodeUid)
+        {
+            if (string.IsNullOrWhiteSpace(bbCodeText))
+            {
+                return string.Empty;
+            }
+
+            bbCodeText = HttpUtility.HtmlDecode(_parser.ToHtml(bbCodeText, bbCodeUid));
+            bbCodeText = _newLineRegex.Replace(bbCodeText, "<br/>");
+            bbCodeText = _htmlCommentRegex.Replace(bbCodeText, string.Empty);
+            bbCodeText = _smileyRegex.Replace(bbCodeText, Constants.SMILEY_PATH);
+
+            return bbCodeText;
         }
 
         public async Task<string> CompressObjectAsync<T>(T source)
@@ -283,12 +292,12 @@ namespace Serverless.Forum.Utilities
             return stringBuilder.ToString().ToLower().Normalize(NormalizationForm.FormC);
         }
 
-        private async Task<string> RenderRazorViewToString(string viewName, _AttachmentPartialModel model, PageContext pageContext)
+        private async Task<string> RenderRazorViewToString(string viewName, _AttachmentPartialModel model, PageContext pageContext, HttpContext httpContext)
         {
             try
             {
-                var actionContext = new ActionContext(_context, _context.GetRouteData(), pageContext.ActionDescriptor);
-                var viewResult = _viewEngine.FindView(actionContext, viewName, false);
+                var actionContext = new ActionContext(httpContext, httpContext.GetRouteData(), pageContext.ActionDescriptor);
+                var viewResult = _viewEngine.FindView(actionContext, viewName, false);//_viewEngine.GetView(_environment.WebRootPath, viewName, false); 
 
                 if (viewResult.View == null)
                 {
@@ -311,7 +320,7 @@ namespace Serverless.Forum.Utilities
                         new HtmlHelperOptions()
                     )
                     {
-                        RouteData = _context.GetRouteData()
+                        RouteData = httpContext.GetRouteData()
                     };
 
                     await viewResult.View.RenderAsync(viewContext);
