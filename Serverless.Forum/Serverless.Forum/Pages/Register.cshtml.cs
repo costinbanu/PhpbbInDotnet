@@ -86,7 +86,7 @@ namespace Serverless.Forum.Pages
                     UsernameClean = UserName.ToLower(),
                     UserEmail = Email,
                     UserPassword = Crypter.Phpass.Crypt(Password, Crypter.Phpass.GenerateSalt()),
-                    UserInactiveTime = DateTime.UtcNow.UtcTimeToTimestamp(),
+                    UserInactiveTime = DateTime.UtcNow.ToUnixTimestamp(),
                     UserActkey = registrationCode
                 });
 

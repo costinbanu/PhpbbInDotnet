@@ -44,7 +44,7 @@ namespace Serverless.Forum.Pages
                                                    Description = HttpUtility.HtmlDecode(f2.ForumDesc),
                                                    LastPosterName = HttpUtility.HtmlDecode(f2.ForumLastPosterName),
                                                    LastPosterId = ju.UserId == 1 ? null as int? : ju.UserId,
-                                                   LastPostTime = f2.ForumLastPostTime.TimestampToUtcTime(),
+                                                   LastPostTime = f2.ForumLastPostTime.ToUtcTime(),
                                                    Unread = IsForumUnread(f2.ForumId),
                                                    LastPosterColor = ju == null ? null : ju.UserColour,
                                                    LastPostId = f2.ForumLastPostId

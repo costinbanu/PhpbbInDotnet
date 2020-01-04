@@ -66,7 +66,7 @@ namespace Serverless.Forum.Pages
                         Description = HttpUtility.HtmlDecode(f.ForumDesc),
                         LastPosterId = f.ForumLastPosterId,
                         LastPosterName = HttpUtility.HtmlDecode(f.ForumLastPosterName),
-                        LastPostTime = f.ForumLastPostTime.TimestampToUtcTime(),
+                        LastPostTime = f.ForumLastPostTime.ToUtcTime(),
                         Unread = IsForumUnread(f.ForumId),
                         LastPosterColor = ju == null ? null : ju.UserColour ,
                         LastPostId = f.ForumLastPostId
@@ -100,7 +100,7 @@ namespace Serverless.Forum.Pages
                                      Title = HttpUtility.HtmlDecode(g.TopicTitle),
                                      LastPosterId = ju.UserId == 1 ? null as int? : ju.UserId,
                                      LastPosterName = HttpUtility.HtmlDecode(g.TopicLastPosterName),
-                                     LastPostTime = g.TopicLastPostTime.TimestampToUtcTime(),
+                                     LastPostTime = g.TopicLastPostTime.ToUtcTime(),
                                      PostCount = context.PhpbbPosts.Count(p => p.TopicId == g.TopicId),
                                      Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1),
                                      Unread = IsTopicUnread(g.TopicId),
@@ -187,7 +187,7 @@ namespace Serverless.Forum.Pages
                 {
                     ForumId = forumId,
                     UserId = CurrentUserId.Value,
-                    MarkTime = DateTime.UtcNow.UtcTimeToTimestamp()
+                    MarkTime = DateTime.UtcNow.ToUnixTimestamp()
                 });
             //}
         }

@@ -37,10 +37,13 @@ namespace Serverless.Forum.Pages
         public int? TopicId { get; set; }
 
         [BindProperty(SupportsGet = true)]
-        public int PostId { get; set; }
+        public int? PostId { get; set; }
 
         [BindProperty]
         public bool CanCreatePoll { get; set; }
+
+        [BindProperty]
+        public string PollQuestion { get; set; }
 
         [BindProperty]
         public string PollOptions { get; set; }
@@ -50,6 +53,11 @@ namespace Serverless.Forum.Pages
 
         [BindProperty, Required, Range(1, int.MaxValue, ErrorMessage = "Valori valide: între 1 și numărul de opțiuni ale chestionarului.")]
         public int? PollMaxOptions { get; set; }
+
+        [BindProperty]
+        public bool PollCanChangeVote { get; set; }
+
+        public string Header { get; private set; }
 
         private readonly IDistributedCache _cache;
         private readonly IAmazonS3 _s3Client;
@@ -64,11 +72,6 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnGetForumPost()
         {
-            //if ((CurrentUserId ?? 1) == 1)
-            //{
-            //    return Unauthorized();
-            //}
-
             PhpbbTopics curTopic = null;
             using (var context = new ForumDbContext(_config))
             {
@@ -88,19 +91,14 @@ namespace Serverless.Forum.Pages
                 return NotFound();
             }
 
-            await SetInCacheAsync("TopicTitle", curTopic.TopicTitle, true);
-            PostTitle = $"{Constants.REPLY}{curTopic.TopicTitle}";
-
+            //await SetInCacheAsync("TopicTitle", curTopic.TopicTitle, true);
+            PostTitle = $"{Constants.REPLY}{HttpUtility.HtmlDecode(curTopic.TopicTitle)}";
+            Header = HttpUtility.HtmlDecode(curTopic.TopicTitle);
             return Page();
         }
 
         public async Task<IActionResult> OnGetQuoteForumPost()
         {
-            //if ((CurrentUserId ?? 1) == 1)
-            //{
-            //    return Unauthorized();
-            //}
-
             PhpbbPosts curPost = null;
             PhpbbTopics curTopic = null;
             string curAuthor = null;
@@ -136,18 +134,32 @@ namespace Serverless.Forum.Pages
                 await Init(context);
             }
 
-            await SetInCacheAsync("TopicTitle", curTopic.TopicTitle, true);
+            //await SetInCacheAsync("TopicTitle", curTopic.TopicTitle, true);
 
             var subject = curPost.PostSubject.StartsWith(Constants.REPLY) ? curPost.PostSubject.Substring(Constants.REPLY.Length) : curPost.PostSubject;
-            PostTitle = PostTitle = $"{Constants.REPLY}{subject}";
             PostText = $"[quote=\"{curAuthor}\"]\n{HttpUtility.HtmlDecode(CleanText(curPost.PostText, curPost.BbcodeUid))}\n[/quote]";
-
+            PostTitle = $"{Constants.REPLY}{HttpUtility.HtmlDecode(curTopic.TopicTitle)}";
+            Header = HttpUtility.HtmlDecode(curTopic.TopicTitle);
             return Page();
         }
 
         public async Task<IActionResult> OnGetNewTopic()
         {
-            return default;
+            using (var context = new ForumDbContext(_config))
+            {
+                var curForum = await context.PhpbbForums.FirstOrDefaultAsync(t => t.ForumId == ForumId);
+
+                var permissionError = await ValidatePermissionsResponses(await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId);
+                if (permissionError != null)
+                {
+                    return permissionError;
+                }
+                Header = HttpUtility.HtmlDecode(curForum.ForumName);
+
+                await Init(context);
+            }
+            await SetInCacheAsync("IsNewTopic", true, true);
+            return Page();
         }
 
         public async Task<IActionResult> OnPostAttachment(IFormFile file, string fileComment)
@@ -182,12 +194,11 @@ namespace Serverless.Forum.Pages
             {
                 AttachComment = fileComment,
                 Extension = Path.GetExtension(file.FileName),
-                Filetime = DateTime.UtcNow.UtcTimeToTimestamp(),
+                Filetime = DateTime.UtcNow.ToUnixTimestamp(),
                 Filesize = file.Length,
                 Mimetype = file.ContentType,
                 PhysicalFilename = name,
                 RealFilename = Path.GetFileName(file.FileName),
-                //TopicId = TopicId,
                 PosterId = CurrentUserId.Value
             });
             await SetInCacheAsync("PostAttachments", attachList, true);
@@ -225,16 +236,30 @@ namespace Serverless.Forum.Pages
                     PostText = match.Result($"<a href=\"{(match.Value.StartsWith("http") ? match.Value : $"//{match.Value}")}\">{linkText}</a>");
                 }
 
+                var isNewTopic = await GetFromCacheAsync<bool>("IsNewTopic", true);
+                if (isNewTopic)
+                {
+                    var topicResult = await context.PhpbbTopics.AddAsync(new PhpbbTopics
+                    {
+                        ForumId = ForumId,
+                        TopicTitle = PostTitle,
+                        TopicTime = DateTime.UtcNow.ToUnixTimestamp()
+                    });
+                    await context.SaveChangesAsync();
+                    await RemoveFromCacheAsync("IsNewTopic", true);
+                    TopicId = topicResult.Entity.TopicId;
+                }
+
                 var attachList = (await GetFromCacheAsync<List<PhpbbAttachments>>("PostAttachments", true)) ?? new List<PhpbbAttachments>();
 
-                var result = await context.PhpbbPosts.AddAsync(new PhpbbPosts
+                var postResult = await context.PhpbbPosts.AddAsync(new PhpbbPosts
                 {
                     ForumId = ForumId,
-                    //TopicId = TopicId,
+                    TopicId = TopicId.Value,
                     PosterId = usr.UserId.Value,
                     PostSubject = HttpUtility.HtmlEncode(PostTitle),
                     PostText = HttpUtility.HtmlEncode(PostText),
-                    PostTime = DateTime.UtcNow.UtcTimeToTimestamp(),
+                    PostTime = DateTime.UtcNow.ToUnixTimestamp(),
                     PostApproved = 1,
                     PostReported = 0,
                     BbcodeUid = _utils.RandomString(),
@@ -252,12 +277,48 @@ namespace Serverless.Forum.Pages
                     PosterIp = HttpContext.Connection.RemoteIpAddress.ToString()
                 });
 
-                attachList.ForEach(a => a.PostMsgId = result.Entity.PostId);
-                await SetInCacheAsync("PostAttachments", attachList, true);
-                //await context.PhpbbAttachments.AddRangeAsync(attachList);
-                //await context.SaveChangesAsync();
+                attachList.ForEach(a =>
+                {
+                    a.PostMsgId = postResult.Entity.PostId;
+                    a.TopicId = TopicId.Value;
+                });
 
-                return RedirectToPage($"/ViewTopic?postId={result.Entity.PostId}&handler=byPostId");
+                var curForum = await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == ForumId);
+                var curTopic = await context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == TopicId);
+
+                curTopic.TopicLastPosterColour  = curForum.ForumLastPosterColour = usr.UserColor;
+                curTopic.TopicLastPosterId      = curForum.ForumLastPosterId     = usr.UserId.Value;
+                curTopic.TopicLastPosterName    = curForum.ForumLastPosterName   = HttpUtility.HtmlEncode(usr.Username);
+                curTopic.TopicLastPostId        = curForum.ForumLastPostId       = postResult.Entity.PostId;
+                curTopic.TopicLastPostSubject   = curForum.ForumLastPostSubject  = HttpUtility.HtmlEncode(PostTitle);
+                curTopic.TopicLastPostTime      = curForum.ForumLastPostTime     = postResult.Entity.PostTime;
+
+                if (CanCreatePoll && !string.IsNullOrWhiteSpace(PollOptions))
+                {
+                    byte id = 1;
+                    foreach (var option in PollOptions.Split(Environment.NewLine))
+                    {
+                        await context.PhpbbPollOptions.AddAsync(new PhpbbPollOptions
+                        {
+                            PollOptionId = id++,
+                            PollOptionText = option,
+                            PollOptionTotal = 0,
+                            TopicId = TopicId.Value
+                        });
+                    }
+
+                    curTopic.PollStart = postResult.Entity.PostTime;
+                    curTopic.PollLength = (int)TimeSpan.FromDays(double.Parse(PollExpirationDaysString)).TotalSeconds;
+                    curTopic.PollMaxOptions = (byte)(PollMaxOptions ?? 1);
+                    curTopic.PollTitle = PollQuestion;
+                    curTopic.PollVoteChange = (byte)(PollCanChangeVote ? 1 : 0);
+                }
+
+                await context.PhpbbAttachments.AddRangeAsync(attachList);
+                //await context.SaveChangesAsync();
+                //await RemoveFromCacheAsync("PostAttachments", true);
+
+                return RedirectToPage($"/ViewTopic?postId={postResult.Entity.PostId}&handler=byPostId");
             }
         }
 
@@ -276,11 +337,14 @@ namespace Serverless.Forum.Pages
                 new DistributedCacheEntryOptions { SlidingExpiration = TimeSpan.FromHours(12) }
             );
 
-        public async Task<bool> ExistsInCache(string key, bool isPersonalizedData)
+        public async Task<bool> ExistsInCacheAsync(string key, bool isPersonalizedData)
             => (await _cache.GetAsync(GetActualCacheKey(key, isPersonalizedData)))?.Any() ?? false;
 
+        public async Task RemoveFromCacheAsync(string key, bool isPersonalizedData)
+            => await _cache.RemoveAsync(GetActualCacheKey(key, isPersonalizedData));
+
         private string GetActualCacheKey(string key, bool isPersonalizedData)
-            => isPersonalizedData ? $"{CurrentUserId}_{ForumId}_{TopicId}_{key}" : key;
+            => isPersonalizedData ? $"{CurrentUserId ?? throw new ArgumentNullException(nameof(CurrentUserId))}_{ForumId}_{TopicId ?? -1}_{key ?? throw new ArgumentNullException(nameof(key))}" : key;
 
         private string CleanText(string text, string uid)
         {

@@ -426,7 +426,27 @@
     }
 </script>
 
-<h2>Răspunde: </h2>
+@if(Model.PostId.HasValue)
+{
+<h3>
+    Răspunde: 
+    <a asp-page="/ViewTopic" asp-route-postId="@Model.PostId.Value" asp-page-handler="ByPostId">@Model.Header</a>
+</h3>
+}
+else if(Model.TopicId.HasValue)
+{
+<h3>
+    Răspunde: 
+    <a asp-page="/ViewTopic" asp-route-postId="@Model.TopicId.Value" asp-route-pageNum="1">@Model.Header</a>
+</h3>
+}
+else
+{
+    <h3>
+        Scrie un subiect nou: 
+        <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@Model.Header</a>
+    </h3>
+}
 <form name="postform" method="post" enctype="multipart/form-data">
     <table style="clear: left; width:79%; vertical-align:middle; display:block; border:none">
         <tr>
@@ -526,6 +546,7 @@
         <a href="#" onclick="showElement('pollPanel')">Adaugă chestionar</a>
     }
     <div id="attachPanel" style="display:none">
+        <h4>Adaugă fișiere</h4>
         <p>&nbsp;</p>
         <table style="border:none; margin:0px; padding:0px">
             <tr>
@@ -557,19 +578,27 @@
     @if (Model.CanCreatePoll)
     {
         <div id="pollPanel" style="display:none">
+            <h4>Adaugă chestionar</h4>
             <p>&nbsp;</p>
             <table style="border:none; margin:0px;">
                 <tr style="border-bottom: solid 1px black">
+                    <td style="width:200px; padding:5px">Întrebarea chestionarului</td>
+                    <td colspan="2" style="padding:5px">
+                        <input asp-for="PollQuestion" style="width:100%" />
+                        <span asp-validation-for="PollQuestion" class="validation"></span>
+                    </td>
+                </tr>
+                <tr style="border-bottom: solid 1px black">
                     <td style="width:200px; padding:5px">Opțiuni (una pe rând)</td>
                     <td colspan="2" style="padding:5px">
-                        <textarea asp-for="PollOptions" rows="4" cols="50"></textarea>
+                        <textarea asp-for="PollOptions" rows="4" style="width:100%"></textarea>
                         <span asp-validation-for="PollOptions" class="validation"></span>
                     </td>
                 </tr>
                 <tr style="border-bottom: solid 1px black">
                     <td style="width:200px; padding:5px">Timp pentru votare (zile)</td>
                     <td style="padding:5px">
-                        <input asp-for="PollExpirationDaysString" onchange="showExpirationDate(this.value)" id="pollExpiration"/><br />
+                        <input asp-for="PollExpirationDaysString" onchange="showExpirationDate(this.value)" id="pollExpiration" /><br />
                         <span class="Caption">Sunt permise și fracții precum 0.5, 1.75 etc</span>
                         <span asp-validation-for="PollExpirationDaysString" class="validation"></span>
                     </td>
@@ -577,11 +606,19 @@
                         <span id="pollExpirationHelper"></span>
                     </td>
                 </tr>
-                <tr>
+                <tr style="border-bottom: solid 1px black">
                     <td style="width:200px; padding:5px">Opțiuni per votant</td>
                     <td colspan="2" style="padding:5px">
                         <input asp-for="PollMaxOptions" />
                         <span asp-validation-for="PollMaxOptions" class="validation"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width:200px; padding:5px">Votanții își pot schimba votul</td>
+                    <td colspan="2" style="padding:5px">
+                        <input asp-for="PollCanChangeVote" /><br />
+                        <span class="Caption">Bifați pentru „da”.</span>
+                        <span asp-validation-for="PollCanChangeVote" class="validation"></span>
                     </td>
                 </tr>
             </table>

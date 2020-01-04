@@ -200,7 +200,7 @@ namespace Serverless.Forum
                             Description = HttpUtility.HtmlDecode(f.ForumDesc),
                             LastPosterName = HttpUtility.HtmlDecode(f.ForumLastPosterName),
                             LastPosterId = ju.UserId == 1 ? null as int? : ju.UserId,
-                            LastPostTime = f.ForumLastPostTime.TimestampToUtcTime(),
+                            LastPostTime = f.ForumLastPostTime.ToUtcTime(),
                             Unread = IsForumUnread(f.ForumId),
                             LastPosterColor = ju == null ? null : ju.UserColour,
                             Topics = (from jt in joinedTopics

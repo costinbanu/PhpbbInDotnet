@@ -131,8 +131,8 @@ namespace Serverless.Forum.Pages
                         AuthorName = ju == null ? "Anonymous" : (ju.UserId == 1 ? p.PostUsername : ju.Username),
                         AuthorId = ju == null ? 1 : (ju.UserId == 1 ? null as int? : ju.UserId),
                         AuthorColor = ju == null ? null : ju.UserColour,
-                        PostCreationTime = p.PostTime.TimestampToUtcTime(),
-                        PostModifiedTime = p.PostEditTime.TimestampToUtcTime(),
+                        PostCreationTime = p.PostTime.ToUtcTime(),
+                        PostModifiedTime = p.PostEditTime.ToUtcTime(),
                         PostId = p.PostId,
                         Attachments = (from ja in joinedAttachments
                                        select ja.ToModel()).ToList(),
@@ -152,7 +152,7 @@ namespace Serverless.Forum.Pages
                     await context.PhpbbTopicsTrack.AddAsync(new PhpbbTopicsTrack
                     {
                         ForumId = ForumId.Value,
-                        MarkTime = DateTime.UtcNow.UtcTimeToTimestamp(),
+                        MarkTime = DateTime.UtcNow.ToUnixTimestamp(),
                         TopicId = TopicId.Value,
                         UserId = CurrentUserId.Value
                     });
@@ -219,7 +219,7 @@ namespace Serverless.Forum.Pages
             Poll = new PollDisplay
             {
                 PollTitle = _currentTopic.PollTitle,
-                PollStart = _currentTopic.PollStart.TimestampToUtcTime(),
+                PollStart = _currentTopic.PollStart.ToUtcTime(),
                 PollDurationSecons = _currentTopic.PollLength,
                 PollMaxOptions = _currentTopic.PollMaxOptions,
                 TopicId = TopicId.Value,

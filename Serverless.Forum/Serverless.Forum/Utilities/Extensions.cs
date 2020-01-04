@@ -13,13 +13,13 @@ namespace Serverless.Forum.Utilities
 {
     public static class Extensions
     {
-        public static DateTime TimestampToUtcTime(this long timestamp)
+        public static DateTime ToUtcTime(this long timestamp)
         {
             var seed = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
             return seed.AddSeconds(timestamp);
         }
 
-        public static long UtcTimeToTimestamp(this DateTime time)
+        public static long ToUnixTimestamp(this DateTime time)
         {
             if (time.Kind != DateTimeKind.Utc)
             {
