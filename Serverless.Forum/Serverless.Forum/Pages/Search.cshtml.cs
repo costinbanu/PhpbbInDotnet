@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Data;
@@ -47,7 +48,7 @@ namespace Serverless.Forum.Pages
 
         public List<KeyValuePair<string, string>> Users { get; set; }
 
-        public List<PostDisplay> Posts { get; private set; }
+        public IEnumerable<ExtendedPostDisplay> Posts { get; private set; }
 
         public SearchModel(IConfiguration config, Utils utils) : base(config, utils) { }
 
@@ -126,14 +127,26 @@ namespace Serverless.Forum.Pages
                 )
                 {
 
-                    Posts = (await multi.ReadAsync<PostDisplay>()).ToList();
-                    _utils.ProcessPosts(Posts, PageContext, HttpContext, false);
+                    Posts = await multi.ReadAsync<ExtendedPostDisplay>();
+                    Parallel.ForEach(Posts, p =>
+                    {
+                        p.AuthorHasAvatar = !string.IsNullOrWhiteSpace(p.UserAvatar);
+                        p.AuthorSignature = p.UserSig == null ? null : _utils.BbCodeToHtml(p.UserSig, p.UserSigBbcodeUid);
+                    });
+                    await _utils.ProcessPosts(Posts, PageContext, HttpContext, false);
                     PageNum = (await multi.ReadAsync<int>()).Single();
                     TotalResults = unchecked((int)(await multi.ReadAsync<long>()).Single());
                 }
 
                 await ComputePagination(TotalResults.Value, PageNum.Value, GetSearchLinkForPage(PageNum.Value + 1));
             }
+        }
+
+        public class ExtendedPostDisplay : PostDisplay
+        {
+            public string UserAvatar { get; set; }
+            public string UserSig { get; set; }
+            public string UserSigBbcodeUid { get; set; }
         }
     }
 }

@@ -137,7 +137,7 @@ namespace Serverless.Forum.Utilities
             }
         }
 
-        public void ProcessPosts(List<PostDisplay> Posts, PageContext pageContext, HttpContext httpContext, bool renderAttachments)
+        public async Task ProcessPosts(IEnumerable<PostDisplay> Posts, PageContext pageContext, HttpContext httpContext, bool renderAttachments)
         {
             var inlineAttachmentsPosts = new ConcurrentBag<(int PostId, _AttachmentPartialModel Attach)>();
             var attachRegex = new Regex("##AttachmentFileName=.*##", RegexOptions.Compiled);
@@ -164,7 +164,7 @@ namespace Serverless.Forum.Utilities
 
             if (renderAttachments)
             {
-                Posts.ForEach(async (p) =>
+                foreach (var p in Posts)
                 {
                     foreach (var (PostId, Attach) in from a in inlineAttachmentsPosts
                                                      where a.PostId == p.PostId
@@ -176,7 +176,7 @@ namespace Serverless.Forum.Utilities
                         );
                         p.Attachments.Remove(Attach);
                     }
-                });
+                }
             }
         }
 
