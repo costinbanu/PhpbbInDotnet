@@ -186,7 +186,7 @@ namespace Serverless.Forum.Pages
                 await context.PhpbbForumsTrack.AddAsync(new PhpbbForumsTrack
                 {
                     ForumId = forumId,
-                    UserId = CurrentUserId.Value,
+                    UserId = CurrentUserId,
                     MarkTime = DateTime.UtcNow.ToUnixTimestamp()
                 });
             //}

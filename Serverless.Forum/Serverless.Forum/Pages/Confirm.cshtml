@@ -1,0 +1,15 @@
+﻿@page
+@model Serverless.Forum.Pages.ConfirmModel
+@{
+    ViewData["Title"] = "Confirm";
+    Layout = "~/Pages/_Layout.cshtml";
+}
+
+<h2>@Model.Title</h2>
+
+<center>
+    <h4>@Model.Message</h4>
+    <h6><a asp-page="./Login">Login</a></h6>
+    <h6><a asp-page="./">Prima pagină</a></h6>
+</center>
+

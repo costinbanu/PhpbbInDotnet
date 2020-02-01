@@ -25,7 +25,7 @@ namespace Serverless.Forum.Pages
         public bool IsLocked => (_currentTopic?.TopicStatus ?? 0) == 1;
         public PollDisplay Poll { get; private set; }
         //public IConfiguration Config => _config;
-        //public Utils Utils => _utils;
+        public Utils Utils => _utils;
 
         private PhpbbTopics _currentTopic;
         private List<PhpbbPosts> _dbPosts;
@@ -154,7 +154,7 @@ namespace Serverless.Forum.Pages
                         ForumId = ForumId.Value,
                         MarkTime = DateTime.UtcNow.ToUnixTimestamp(),
                         TopicId = TopicId.Value,
-                        UserId = CurrentUserId.Value
+                        UserId = CurrentUserId
                     });
                     await context.SaveChangesAsync();
                 }
@@ -179,7 +179,7 @@ namespace Serverless.Forum.Pages
                     context.PhpbbUserTopicPostNumber.Add(
                         new PhpbbUserTopicPostNumber
                         {
-                            UserId = CurrentUserId.Value,
+                            UserId = CurrentUserId,
                             TopicId = topicId,
                             PostNo = userPostsPerPage
                         }
@@ -200,7 +200,7 @@ namespace Serverless.Forum.Pages
         {
             if (_dbPosts == null || _page == null || _count == null)
             {
-                var results = await _utils.GetPostPageAsync(CurrentUserId.Value, topicId, page, postId);
+                var results = await _utils.GetPostPageAsync(CurrentUserId, topicId, page, postId);
                 _dbPosts = results.Posts;
                 _page = results.Page;
                 _count = results.Count;

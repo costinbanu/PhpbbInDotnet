@@ -44,6 +44,8 @@ namespace Serverless.Forum.Pages
                            let cryptedPass = Crypter.Phpass.Crypt(Password, u.UserPassword)
                            where u.UsernameClean == _utils.CleanString(UserName) 
                               && cryptedPass == u.UserPassword
+                              && u.UserInactiveTime == 0L
+                              && u.UserInactiveReason == UserInactiveReason.NotInactive
                            select u;
 
                 if (user.Count() != 1)
@@ -53,15 +55,24 @@ namespace Serverless.Forum.Pages
                 }
                 else
                 {
+                    var currentUser = user.First();
+
                     await HttpContext.SignInAsync(
                         CookieAuthenticationDefaults.AuthenticationScheme,
-                        await user.First().ToClaimsPrincipalAsync(context, _utils),
+                        await currentUser.ToClaimsPrincipalAsync(context, _utils),
                         new AuthenticationProperties
                         {
                             AllowRefresh = true,
                             ExpiresUtc = DateTimeOffset.Now.AddMonths(1),
                             IsPersistent = true,
                         });
+
+                    var key = $"UserMustLogIn_{currentUser.UsernameClean}";
+                    if (await _utils.GetFromCacheAsync<bool?>(key) ?? false)
+                    {
+                        await _utils.RemoveFromCacheAsync(key);
+                    }
+
                     return Redirect(HttpUtility.UrlDecode(ReturnUrl));
                 }
             }

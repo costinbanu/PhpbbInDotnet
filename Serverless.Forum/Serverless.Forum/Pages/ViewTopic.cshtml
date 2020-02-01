@@ -5,8 +5,8 @@
     Layout = "~/Pages/_Layout.cshtml";
     var IsAnonymous = Model.CurrentUserId == 1;
     var IsLocked = Model.IsLocked
-                && !(await Model.IsCurrentUserAdminHere(Model.ForumId.Value))
-                && !(await Model.IsCurrentUserModHere(Model.ForumId.Value));
+                && !(await Model.IsCurrentUserAdminHereAsync(Model.ForumId.Value))
+                && !(await Model.IsCurrentUserModeratorHereAsync(Model.ForumId.Value));
     var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
 }
 
@@ -53,7 +53,7 @@
                 <tr style="border-bottom:solid 1px black">
                     <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
                         @Html.Raw(option.PollOptionText)
-                        @if (await Model.IsCurrentUserAdminHere(Model.ForumId ?? -1))
+                        @if (await Model.IsCurrentUserAdminHereAsync(Model.ForumId ?? -1))
                         {
                             <div class="Caption">
                                 Votanti: @string.Join(", ", option.PollOptionVoters.Select(v => v.Username))

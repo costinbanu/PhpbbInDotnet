@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Net.Http;
-using System.Net.Mail;
-using System.Threading.Tasks;
-using CryptSharp.Core;
+﻿using CryptSharp.Core;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +6,12 @@ using Microsoft.Extensions.Configuration;
 using PaulMiami.AspNetCore.Mvc.Recaptcha;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
+using System;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Net;
+using System.Net.Mail;
+using System.Threading.Tasks;
 
 namespace Serverless.Forum.Pages
 {
@@ -21,7 +20,6 @@ namespace Serverless.Forum.Pages
     [ValidateAntiForgeryToken]
     public class RegisterModel : PageModel
     {
-        private readonly IHttpClientFactory _factory;
         private readonly IConfiguration _config;
         private readonly Utils _utils;
 
@@ -48,9 +46,8 @@ namespace Serverless.Forum.Pages
 
         public string ErrorMessage { get; set; }
 
-        public RegisterModel(IHttpClientFactory factory, IConfiguration config, Utils utils)
+        public RegisterModel(IConfiguration config, Utils utils)
         {
-            _factory = factory;
             _config = config;
             _utils = utils;
         }
@@ -83,11 +80,13 @@ namespace Serverless.Forum.Pages
                 var userInsertResult = await context.PhpbbUsers.AddAsync(new PhpbbUsers
                 {
                     Username = UserName,
-                    UsernameClean = UserName.ToLower(),
+                    UsernameClean = _utils.CleanString(UserName),
                     UserEmail = Email,
                     UserPassword = Crypter.Phpass.Crypt(Password, Crypter.Phpass.GenerateSalt()),
                     UserInactiveTime = DateTime.UtcNow.ToUnixTimestamp(),
-                    UserActkey = registrationCode
+                    UserInactiveReason = UserInactiveReason.NewlyRegisteredNotConfirmed,
+                    UserActkey = registrationCode,
+                    UserIp = HttpContext.Connection.RemoteIpAddress.ToString()
                 });
 
                 await context.PhpbbUserGroup.AddAsync(new PhpbbUserGroup
@@ -96,25 +95,22 @@ namespace Serverless.Forum.Pages
                     UserId = userInsertResult.Entity.UserId,
                 });
 
-                using (var smtp = new SmtpClient("Your SMTP server address"))
+                var subject = $"Bine ai venit la \"{Constants.FORUM_NAME}\"";
+                var emailMessage = new MailMessage
                 {
-                    var subject = $"Bine ai venit la \"{Constants.FORUM_NAME}\"";
-                    var emailMessage = new MailMessage
-                    {
-                        From = new MailAddress($"admin@metrouusor.com"),
-                        Subject = subject,
-                        Body =                         
-                            $"<h2>{subject}</h2><br/><br/>" +
-                            "Pentru a continua, trebuie să îți confirmi adresa de email.<br/><br/>" +
-                            $"<a href=\"{Constants.FORUM_BASE_URL}/Register?code={registrationCode}\">Apasă aici</a> pentru a o confirma.<br/><br/>" +
-                            "O zi bună!",
-                        IsBodyHtml = true
-                    };
-                    emailMessage.To.Add(Email);
+                    From = new MailAddress($"admin@metrouusor.com", Constants.FORUM_NAME),
+                    Subject = subject,
+                    Body =
+                        $"<h2>{subject}</h2><br/><br/>" +
+                        "Pentru a continua, trebuie să îți confirmi adresa de email.<br/><br/>" +
+                        $"<a href=\"{Constants.FORUM_BASE_URL}/Confirm?code={registrationCode}&username={_utils.CleanString(UserName)}&handler=ConfirmEmail\">Apasă aici</a> pentru a o confirma.<br/><br/>" +
+                        "O zi bună!",
+                    IsBodyHtml = true
+                };
+                emailMessage.To.Add(Email);
+                await _utils.SendEmail(emailMessage);
 
-                    await smtp.SendMailAsync(emailMessage);
-                }
-                return RedirectToPage("RegistrationSuccessful", new { code = registrationCode });
+                return RedirectToPage("Confirm", "RegistrationComplete");
             }
         }
     }

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
@@ -20,52 +21,33 @@ namespace Serverless.Forum
 {
     public class ModelWithLoggedUser : PageModel
     {
-        protected readonly Lazy<List<PhpbbAclRoles>> _adminRoles;
-        protected readonly Lazy<List<PhpbbAclRoles>> _modRoles;
+
         protected readonly IConfiguration _config;
         protected readonly Utils _utils;
 
         private IEnumerable<Tracking> _tracking;
-        private readonly Lazy<int?> _currentUserId;
+        private LoggedUser _currentUser;
         private ForumDisplay _tree = null;
 
         public ModelWithLoggedUser(IConfiguration config, Utils utils)
         {
             _config = config;
             _utils = utils;
-
-            _adminRoles = new Lazy<List<PhpbbAclRoles>>(() =>
-            {
-                using (var context = new ForumDbContext(config))
-                {
-                    return (from r in context.PhpbbAclRoles
-                            where r.RoleType == "a_"
-                            select r).ToList();
-                }
-            });
-
-            _modRoles = new Lazy<List<PhpbbAclRoles>>(() =>
-            {
-                using (var context = new ForumDbContext(config))
-                {
-                    return (from r in context.PhpbbAclRoles
-                            where r.RoleType == "m_"
-                            select r).ToList();
-                }
-            });
-
-            _currentUserId = new Lazy<int?>(() => GetCurrentUserAsync().GetAwaiter().GetResult().UserId);
+            //_currentUser = new Lazy<LoggedUser>(() => GetCurrentUserAsync().RunSync());
         }
 
         public async Task<LoggedUser> GetCurrentUserAsync()
         {
-            var user = User;
-            if (!user?.Identity?.IsAuthenticated ?? false)
+            if (_currentUser != null)
             {
-                using (var context = new ForumDbContext(_config))
-                {
-                    user = _utils.Anonymous;
-                }
+                return _currentUser;
+            }
+            var user = User;
+            //LoggedUser loggedUser = null;
+            if (!(user?.Identity?.IsAuthenticated ?? false))
+            {
+                user = _utils.AnonymousClaimsPrincipal;
+                _currentUser = await user.ToLoggedUserAsync(_utils);
                 await HttpContext.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme,
                     user,
@@ -77,25 +59,31 @@ namespace Serverless.Forum
                     }
                 );
             }
-            return await user.ToLoggedUserAsync(_utils);
-        }
-
-        public async Task<bool> IsCurrentUserAdminHere(int forumId)
-        {
-            return (from up in (await GetCurrentUserAsync()).UserPermissions
-                    where up.ForumId == forumId || up.ForumId == 0
-                    join a in _adminRoles.Value
-                    on up.AuthRoleId equals a.RoleId
-                    select up).Any();
-        }
-
-        public async Task<bool> IsCurrentUserModHere(int forumId)
-        {
-            return (from up in (await GetCurrentUserAsync()).UserPermissions
-                    where up.ForumId == forumId || up.ForumId == 0
-                    join a in _modRoles.Value
-                    on up.AuthRoleId equals a.RoleId
-                    select up).Any();
+            else
+            {
+                _currentUser = await user.ToLoggedUserAsync(_utils);
+                if (_currentUser != _utils.AnonymousLoggedUser)
+                {
+                    var key = $"UserMustLogIn_{_currentUser.UsernameClean}";
+                    if (await _utils.GetFromCacheAsync<bool?>(key) ?? false)
+                    {
+                        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    }
+                    else
+                    {
+                        using (var context = new ForumDbContext(_config))
+                        {
+                            var dbUser = await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == _currentUser.UserId);
+                            if (dbUser == null || dbUser.UserInactiveTime > 0)
+                            {
+                                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                                await _utils.SetInCacheAsync(key, true);
+                            }
+                        }
+                    }
+                }
+            }
+            return _currentUser;
         }
 
         public async Task ReloadCurrentUser()
@@ -121,11 +109,15 @@ namespace Serverless.Forum
             }
         }
 
-        public int? CurrentUserId => _currentUserId.Value;
+        public async Task<bool> IsCurrentUserAdminHereAsync(int forumId = 0) => _utils.IsUserAdminInForum(await GetCurrentUserAsync(), forumId);
+
+        public async Task<bool> IsCurrentUserModeratorHereAsync(int forumId = 0) => _utils.IsUserModeratorInForum(await GetCurrentUserAsync(), forumId);
+
+        public int CurrentUserId => GetCurrentUserAsync().RunSync().UserId;
 
         public bool IsForumUnread(int forumId)
         {
-            if ((CurrentUserId ?? 1) == 1)
+            if (CurrentUserId == 1)
             {
                 return false;
             }
@@ -135,7 +127,7 @@ namespace Serverless.Forum
 
         public bool IsTopicUnread(int topicId)
         {
-            if ((CurrentUserId ?? 1) == 1)
+            if (CurrentUserId == 1)
             {
                 return false;
             }
@@ -145,7 +137,7 @@ namespace Serverless.Forum
 
         public bool IsPostUnread(int topicId, int PostId)
         {
-            if ((CurrentUserId ?? 1) == 1)
+            if (CurrentUserId == 1)
             {
                 return false;
             }
@@ -155,7 +147,7 @@ namespace Serverless.Forum
 
         public int GetFirstUnreadPost(int topicId)
         {
-            if ((CurrentUserId ?? 1) == 1)
+            if (CurrentUserId == 1)
             {
                 return 0;
             }
@@ -350,11 +342,5 @@ namespace Serverless.Forum
             internal int TopicId { get; set; }
             internal int PostId { get; set; }
         }
-    }
-
-    public enum ForumType
-    {
-        Category = 0,
-        SubForum = 1
     }
 }

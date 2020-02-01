@@ -31,7 +31,7 @@ namespace Serverless.Forum.Utilities
 
         public static async Task<LoggedUser> ToLoggedUserAsync(this ClaimsPrincipal principal, Utils utils)
         {
-            return await utils.DecompressObjectAsync<LoggedUser>(Convert.FromBase64String(principal.Claims.FirstOrDefault()?.Value));
+            return await utils.DecompressObjectAsync<LoggedUser>(Convert.FromBase64String(principal.Claims.FirstOrDefault()?.Value ?? string.Empty));
         }
 
         public static async Task<ClaimsPrincipal> ToClaimsPrincipalAsync(this PhpbbUsers user, ForumDbContext dbContext, Utils utils)

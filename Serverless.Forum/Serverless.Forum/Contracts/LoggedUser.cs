@@ -5,7 +5,7 @@ namespace Serverless.Forum.Contracts
 {
     public class LoggedUser
     {
-        public int? UserId { get; set; } = null;
+        public int UserId { get; set; }
 
         public string Username { get; set; } = null;
 
@@ -21,7 +21,13 @@ namespace Serverless.Forum.Contracts
 
         public string UserColor { get; set; } = null;
 
-        //public IEnumerable<ForumAuthentication> ForumAuthentications { get; set; } = null;
+        public static bool operator == (LoggedUser left, LoggedUser right) => left?.UserId == right?.UserId;
+
+        public static bool operator != (LoggedUser left, LoggedUser right) => !(left == right);
+
+        public override bool Equals(object obj) => obj is LoggedUser other && other == this;
+
+        public override int GetHashCode() => UserId.GetHashCode();
 
         public class Permissions
         {
@@ -33,12 +39,5 @@ namespace Serverless.Forum.Contracts
 
             public int AuthSetting { get; set; } = 0;
         }
-
-        //public class ForumAuthentication
-        //{
-        //    public int ForumId { get; set; }
-
-        //    public DateTime AcquiredAt { get; set; }
-        //}
     }
 }

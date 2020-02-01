@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Serverless.Forum.Utilities;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -31,7 +32,8 @@ namespace Serverless.Forum.ForumDb
         public byte UserWarnings { get; set; }
         public int UserLastWarning { get; set; }
         public byte UserLoginAttempts { get; set; }
-        public byte UserInactiveReason { get; set; }
+        [Column(TypeName = "tinyint(2)")]
+        public UserInactiveReason UserInactiveReason { get; set; }
         public long UserInactiveTime { get; set; }
         public int UserPosts { get; set; }
         public string UserLang { get; set; }

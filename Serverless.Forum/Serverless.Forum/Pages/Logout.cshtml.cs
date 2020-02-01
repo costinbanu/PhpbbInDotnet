@@ -25,7 +25,7 @@ namespace Serverless.Forum.Pages
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme, 
-                _utils.Anonymous, 
+                _utils.AnonymousClaimsPrincipal, 
                 new AuthenticationProperties
                 {
                     AllowRefresh = true,

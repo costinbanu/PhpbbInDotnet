@@ -1,6 +1,5 @@
 ﻿using CodeKicker.BBCode.Core;
 using Dapper;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -10,6 +9,7 @@ using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -24,6 +24,8 @@ using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Net;
+using System.Net.Mail;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -35,7 +37,9 @@ namespace Serverless.Forum.Utilities
 {
     public class Utils
     {
-        public readonly ClaimsPrincipal Anonymous;
+        public readonly ClaimsPrincipal AnonymousClaimsPrincipal;
+        public readonly PhpbbUsers AnonymousDbUser;
+        public readonly LoggedUser AnonymousLoggedUser;
 
         private readonly Regex _htmlCommentRegex;
         private readonly Regex _newLineRegex;
@@ -45,8 +49,12 @@ namespace Serverless.Forum.Utilities
         private readonly BBCodeParser _parser;
         private readonly ICompositeViewEngine _viewEngine;
         private readonly ITempDataProvider _tempDataProvider;
+        private readonly IDistributedCache _cache;
 
-        public Utils(IConfiguration config, ICompositeViewEngine viewEngine, ITempDataProvider tempDataProvider, ILogger<Utils> logger)
+        private readonly List<PhpbbAclRoles> _adminRoles;
+        private readonly List<PhpbbAclRoles> _modRoles;
+
+        public Utils(IConfiguration config, IDistributedCache cache, ICompositeViewEngine viewEngine, ITempDataProvider tempDataProvider, ILogger<Utils> logger)
         {
             _config = config;
             _logger = logger;
@@ -55,10 +63,13 @@ namespace Serverless.Forum.Utilities
             _smileyRegex = new Regex("{SMILIES_PATH}", RegexOptions.Compiled | RegexOptions.Singleline);
             _viewEngine = viewEngine;
             _tempDataProvider = tempDataProvider;
+            _cache = cache;
 
             using (var context = new ForumDbContext(_config))
             {
-                Anonymous = context.PhpbbUsers.First(u => u.UserId == 1u).ToClaimsPrincipalAsync(context, this).RunSync();
+                AnonymousDbUser = context.PhpbbUsers.First(u => u.UserId == 1u);
+                AnonymousClaimsPrincipal = AnonymousDbUser.ToClaimsPrincipalAsync(context, this).RunSync();
+                AnonymousLoggedUser = AnonymousClaimsPrincipal.ToLoggedUserAsync(this).RunSync();
 
                 var bbcodes = new List<BBTag>(from c in context.PhpbbBbcodes
                                               select new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false));
@@ -86,8 +97,18 @@ namespace Serverless.Forum.Utilities
                         new BBAttribute("num", "num"))
                 });
                 _parser = new BBCodeParser(bbcodes);
+
+                _adminRoles = (from r in context.PhpbbAclRoles
+                               where r.RoleType == "a_"
+                               select r).ToList();
+
+                _modRoles = (from r in context.PhpbbAclRoles
+                             where r.RoleType == "m_"
+                             select r).ToList();
             }
         }
+
+        #region Posts
 
         public async Task<(List<PhpbbPosts> Posts, int Page, int Count)> GetPostPageAsync(int userId, int? topicId, int? page, int? postId)
         {
@@ -195,6 +216,52 @@ namespace Serverless.Forum.Utilities
             return bbCodeText;
         }
 
+        private async Task<string> RenderRazorViewToString(string viewName, _AttachmentPartialModel model, PageContext pageContext, HttpContext httpContext)
+        {
+            try
+            {
+                var actionContext = new ActionContext(httpContext, httpContext.GetRouteData(), pageContext.ActionDescriptor);
+                var viewResult = _viewEngine.FindView(actionContext, viewName, false);
+
+                if (viewResult.View == null)
+                {
+                    throw new ArgumentNullException($"{viewName} does not match any available view");
+                }
+
+                var viewDictionary = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary())
+                {
+                    Model = model
+                };
+
+                using (var sw = new StringWriter())
+                {
+                    var viewContext = new ViewContext(
+                        actionContext,
+                        viewResult.View,
+                        viewDictionary,
+                        new TempDataDictionary(actionContext.HttpContext, _tempDataProvider),
+                        sw,
+                        new HtmlHelperOptions()
+                    )
+                    {
+                        RouteData = httpContext.GetRouteData()
+                    };
+
+                    await viewResult.View.RenderAsync(viewContext);
+                    return sw.GetStringBuilder().ToString();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error rendering partial view.");
+                return string.Empty;
+            }
+        }
+
+        #endregion Posts
+
+        #region Generics
+
         public async Task<byte[]> CompressObjectAsync<T>(T source)
         {
             using (var content = new MemoryStream(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(source))))
@@ -266,46 +333,61 @@ namespace Serverless.Forum.Utilities
             return stringBuilder.ToString().ToLower().Normalize(NormalizationForm.FormC);
         }
 
-        private async Task<string> RenderRazorViewToString(string viewName, _AttachmentPartialModel model, PageContext pageContext, HttpContext httpContext)
+        public async Task SendEmail(MailMessage emailMessage)
         {
-            try
+            using (var smtp = new SmtpClient(_config.GetValue<string>("Smtp:Host"), _config.GetValue<int>("Smtp:Post"))
             {
-                var actionContext = new ActionContext(httpContext, httpContext.GetRouteData(), pageContext.ActionDescriptor);
-                var viewResult = _viewEngine.FindView(actionContext, viewName, false);
-
-                if (viewResult.View == null)
+                EnableSsl = true,
+                UseDefaultCredentials = false,
+                Credentials = new NetworkCredential
                 {
-                    throw new ArgumentNullException($"{viewName} does not match any available view");
+                    UserName = _config.GetValue<string>("Smtp:Username"),
+                    Password = _config.GetValue<string>("Smtp:Password")
                 }
-
-                var viewDictionary = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary())
-                {
-                    Model = model
-                };
-
-                using (var sw = new StringWriter())
-                {
-                    var viewContext = new ViewContext(
-                        actionContext,
-                        viewResult.View,
-                        viewDictionary,
-                        new TempDataDictionary(actionContext.HttpContext, _tempDataProvider),
-                        sw,
-                        new HtmlHelperOptions()
-                    )
-                    {
-                        RouteData = httpContext.GetRouteData()
-                    };
-
-                    await viewResult.View.RenderAsync(viewContext);
-                    return sw.GetStringBuilder().ToString();
-                }
-            }
-            catch (Exception ex)
+            })
             {
-                _logger.LogWarning(ex, "Error rendering partial view.");
-                return string.Empty;
+                await smtp.SendMailAsync(emailMessage);
             }
         }
+
+        #endregion Generics
+
+        #region Caching
+
+        public async Task<T> GetFromCacheAsync<T>(string key)
+            => await DecompressObjectAsync<T>(await _cache.GetAsync(key));
+
+        public async Task SetInCacheAsync<T>(string key, T value)
+            => await _cache.SetAsync(
+                key,
+                await CompressObjectAsync(value),
+                new DistributedCacheEntryOptions { SlidingExpiration = TimeSpan.FromHours(12) }
+            );
+
+        public async Task<bool> ExistsInCacheAsync(string key)
+            => (await _cache.GetAsync(key))?.Any() ?? false;
+
+        public async Task RemoveFromCacheAsync(string key)
+            => await _cache.RemoveAsync(key);
+
+        #endregion Caching
+
+        #region Users
+
+        public bool IsUserAdminInForum(LoggedUser user, int forumId)
+            => user == null || (from up in user.UserPermissions
+                                where up.ForumId == forumId || up.ForumId == 0
+                                join a in _adminRoles
+                                on up.AuthRoleId equals a.RoleId
+                                select up).Any();
+
+        public bool IsUserModeratorInForum(LoggedUser user, int forumId)
+            => user == null || (from up in user.UserPermissions
+                                where up.ForumId == forumId || up.ForumId == 0
+                                join a in _modRoles
+                                on up.AuthRoleId equals a.RoleId
+                                select up).Any();
+
+        #endregion Users
     }
 }

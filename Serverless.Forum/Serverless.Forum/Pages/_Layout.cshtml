@@ -88,6 +88,10 @@
         <p>&nbsp;</p>
         <p>&copy; 2018 - Serverless.Forum</p>
         <p><a asp-page="/TermsAndConditions" target="_blank">Termenele și condițiile de utilizare</a></p>
+        @if (_utils.IsUserAdminInForum(currentUser, 0))
+        {
+            <p><a asp-page="./Admin">Panoul administratorului</a></p>
+        }
     </center>
     <environment include="Development">
         <script src="~/lib/jquery/dist/jquery.js"></script>
