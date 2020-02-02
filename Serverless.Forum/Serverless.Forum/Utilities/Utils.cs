@@ -67,7 +67,7 @@ namespace Serverless.Forum.Utilities
 
             using (var context = new ForumDbContext(_config))
             {
-                AnonymousDbUser = context.PhpbbUsers.First(u => u.UserId == 1u);
+                AnonymousDbUser = context.PhpbbUsers.First(u => u.UserId == 1);
                 AnonymousClaimsPrincipal = AnonymousDbUser.ToClaimsPrincipalAsync(context, this).RunSync();
                 AnonymousLoggedUser = AnonymousClaimsPrincipal.ToLoggedUserAsync(this).RunSync();
 

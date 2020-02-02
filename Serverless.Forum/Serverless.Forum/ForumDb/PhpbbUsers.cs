@@ -1,24 +1,25 @@
 ﻿using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Serverless.Forum.ForumDb
 {
     public partial class PhpbbUsers
     {
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int UserId { get; set; }
+        [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int UserId { get; set; } = 0;
         public byte UserType { get; set; }
         public int GroupId { get; set; }
         public string UserPermissions { get; set; }
         public int UserPermFrom { get; set; }
         public string UserIp { get; set; }
-        public int UserRegdate { get; set; }
+        public long UserRegdate { get; set; }
         public string Username { get; set; }
         public string UsernameClean { get; set; }
         public string UserPassword { get; set; }
-        public int UserPasschg { get; set; }
+        public long UserPasschg { get; set; }
         public byte UserPassConvert { get; set; }
         public string UserEmail { get; set; }
         public long UserEmailHash { get; set; }

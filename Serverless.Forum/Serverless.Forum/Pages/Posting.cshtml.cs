@@ -328,7 +328,7 @@ namespace Serverless.Forum.Pages
         }
 
         public string GetActualCacheKey(string key, bool isPersonalizedData)
-            => isPersonalizedData ? $"{CurrentUserId}_{ForumId}_{TopicId ?? -1}_{key ?? throw new ArgumentNullException(nameof(key))}" : key;
+            => isPersonalizedData ? $"{CurrentUserId}_{ForumId}_{TopicId ?? 0}_{key ?? throw new ArgumentNullException(nameof(key))}" : key;
 
         private string CleanText(string text, string uid)
         {

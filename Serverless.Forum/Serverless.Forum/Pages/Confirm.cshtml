@@ -7,9 +7,8 @@
 
 <h2>@Model.Title</h2>
 
-<center>
-    <h4>@Model.Message</h4>
-    <h6><a asp-page="./Login">Login</a></h6>
-    <h6><a asp-page="./">Prima pagină</a></h6>
-</center>
+<span style="font-size:1.2em">@Html.Raw(Model.Message)</span>
+<p>&nbsp;</p>
+<a asp-page="./Login">Login</a><br/>
+<a asp-page="./">Prima pagină</a>
 

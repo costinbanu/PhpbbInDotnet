@@ -1,10 +1,13 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Pages.CustomPartials;
 using System;
+using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -84,6 +87,27 @@ namespace Serverless.Forum.Utilities
         public static T RunSync<T>(this Task<T> asyncTask)
         {
             return asyncTask.GetAwaiter().GetResult();
+        }
+
+        public static Bitmap ToImage(this IFormFile file)
+        {
+            if (file == null)
+            {
+                return null;
+            }
+            try
+            {
+                var stream = file.OpenReadStream();
+                using (var bmp = new Bitmap(stream))
+                {
+                    stream.Seek(0, SeekOrigin.Begin);
+                    return bmp;
+                }
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 }

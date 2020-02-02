@@ -14,7 +14,7 @@
 <script type="text/javascript">
     window.onload = function () {
         onPostLoad();
-        var postId = @Json.Serialize(Model.PostId ?? -1);
+        var postId = @Json.Serialize(Model.PostId ?? 0);
         var highlight = @Json.Serialize(Model.Highlight ?? true);
         if (postId != -1) {
             element = document.getElementById(postId);
@@ -53,7 +53,7 @@
                 <tr style="border-bottom:solid 1px black">
                     <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
                         @Html.Raw(option.PollOptionText)
-                        @if (await Model.IsCurrentUserAdminHereAsync(Model.ForumId ?? -1))
+                        @if (await Model.IsCurrentUserAdminHereAsync(Model.ForumId ?? 0))
                         {
                             <div class="Caption">
                                 Votanti: @string.Join(", ", option.PollOptionVoters.Select(v => v.Username))

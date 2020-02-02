@@ -1,9 +1,229 @@
 ﻿@page
+@using Serverless.Forum.Utilities
+
 @model Serverless.Forum.Pages.UserModel
 @{
     ViewData["Title"] = "User";
     Layout = "~/Pages/_Layout.cshtml";
 }
 
-<h2>User</h2>
+<style>
+    input, textarea {
+        width: 400px;
+    }
+
+    td {
+        padding: 5px;
+        margin-bottom: 10px;
+    }
+</style>
+
+<h2>Panoul utilizatorului</h2>
+<p>&nbsp;</p>
+<h4>@Model.CurrentUser.Username - Privire generală</h4>
+<form action="post">
+    <table style="padding:0px; margin: 0px; border: none">
+        <tr>
+            <td colspan="2"><img src="./File?userId=@Model.CurrentUser.UserId&handler=avatar" /></td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold">Nume utilizator</td>
+            <td>
+                @if (await Model.IsCurrentUserAdminHereAsync())
+                {
+                    <input asp-for="CurrentUser.Username" />
+                }
+                else
+                {
+                    @Html.Raw(Model.CurrentUser.Username)
+                    @if (Model.IsSelf)
+                    {
+                        <br />
+                        <span class="Caption">Trimiteți un e-mail la <a href="mailto:admin@metrouusor.com">admin@metrouusor.com</a> dacă doriți schimbarea numelui de utilizator.</span>
+                    }
+                }
+            </td>
+        </tr>
+        <tr>
+            @if (await Model.CanEditAsync())
+            {
+                <td style="font-weight: bold">Data nașterii</td>
+                <td>
+                    <input asp-for="Birthday" /><br />
+                    <span class="Caption">Dacă este completată, se va afișa doar vârsta.<br />Completați cu data în format ZZ.LL.AAAA sau ZZ-LL-AAAA sau lăsați necompletat pentru a nu afișa vârsta. </span><br/>
+                    <span asp-validation-for="Birthday" class="validation"></span>
+                </td>
+            }
+            else if (DateTime.TryParse(Model.CurrentUser.UserBirthday, out var birthday))
+            {
+                <td style="font-weight: bold">Vârsta</td>
+                <td>@((int)(DateTime.UtcNow.Subtract(birthday).TotalDays / 365.25)) ani</td>
+            }
+        </tr>
+        @if (Model.IsSelf)
+        {
+            <tr>
+                <td style="font-weight: bold">Parola</td>
+                <td>
+                    <input asp-for="FirstPassword" type="password" /><br />
+                    <span class="Caption">Lăsați necompletat dacă nu doriți să o modificați.</span>
+                </td>
+            </tr>
+            <tr>
+                <td style="font-weight: bold">Repetă parola</td>
+                <td><input asp-for="SecondPassword" type="password" /><span asp-validation-for="SecondPassword" class="validation"></span></td>
+            </tr>
+        }
+        <tr>
+            <td style="font-weight: bold">Prezentare</td>
+            <td>
+                @if (await Model.CanEditAsync())
+                {
+                    <input asp-for="CurrentUser.UserOcc" />
+                }
+                else
+                {
+                    @Html.Raw(Model.CurrentUser.UserOcc)
+                }
+            </td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold">Interese</td>
+            <td>
+                @if (await Model.CanEditAsync())
+                {
+                    <input asp-for="CurrentUser.UserInterests" />
+                }
+                else
+                {
+                    @Html.Raw(Model.CurrentUser.UserInterests)
+                }
+            </td>
+        </tr>
+        @if (await Model.CanEditAsync())
+        {
+            <tr>
+                <td style="font-weight: bold">Formatul datelor afișate</td>
+                <td>
+                    <input asp-for="CurrentUser.UserDateformat" />
+                </td>
+            </tr>
+            <tr>
+                <td style="font-weight: bold">Semnătura</td>
+                <td>
+                    <textarea asp-for="CurrentUser.UserSig" rows="4"></textarea><br />
+                    <span class="Caption">Este permis codul BB.</span>
+                </td>
+            </tr>
+            <tr>
+                <td style="font-weight: bold">Avatar</td>
+                <td>
+                    <img src="./File?userId=@Model.CurrentUser.UserId&handler=avatar" /><br />
+                    @Html.Raw(Model.CurrentUser.UserAvatar)<br />
+                    <input asp-for="DeleteAvatar" style="width:auto" /> Șterge acest avatar?<br />
+                    <span class="Caption">Bifați pentru a șterge avatarul curent.</span><br /><br />
+                    <input asp-for="Avatar" />
+                    <span class="Caption">Sunt permise imagini cu dimensiunea maximă 200 px / 200 px.</span><br />
+                    <span asp-validation-for="Avatar" class="validation"></span>
+                </td>
+            </tr>
+        }
+        @if (await Model.IsCurrentUserAdminHereAsync())
+        {
+            <tr>
+                <td style="font-weight: bold">Timpul cât este permisă<br />editarea mesajelor</td>
+                <td>
+                    <input asp-for="CurrentUser.UserEditTime" /><br />
+                    <span class="Caption">Minute de la publicarea mesajului.</span><br />
+                </td>
+            </tr>
+        }
+    </table>
+    <p>&nbsp;</p>
+    <h4>Contact</h4>
+    <table style="padding:0px; margin: 0px; border: none">
+        @if (Model.CurrentUser.UserAllowViewemail == 1 || await Model.IsCurrentUserAdminHereAsync())
+        {
+            <tr>
+                @if (await Model.CanEditAsync())
+                {
+                    <td style="font-weight: bold">E-mail</td>
+                    <td>
+                        <input asp-for="CurrentUser.UserEmail" /><br />
+                        <span class="Caption">Dacă modificați acest câmp, contul va deveni inactiv. Veți primi pe noua adresă de e-mail un mesaj cu instrucțiuni pentru reactivare.</span><br />
+                        <span asp-validation-for="CurrentUser.UserEmail" class="validation"></span>
+                    </td>
+                }
+                else
+                {
+                    <td colspan="2">
+                        <a href="mailto:@Html.Raw(Model.CurrentUser.UserEmail)">Trimite e-mail</a>
+                    </td>
+                }
+            </tr>
+        }
+        @if (!Model.IsSelf)
+        {
+            <tr>
+                <td colspan="2"><a asp-page="./Posting" asp-route-to="@Model.CurrentUser.UserId" asp-page-handler="SendPM">Trimite mesaj privat</a></td>
+            </tr>
+        }
+        <tr>
+            @if (await Model.CanEditAsync())
+            {
+                <td style="font-weight: bold">Website</td>
+                <td>
+                    <input asp-for="CurrentUser.UserWebsite" />
+                </td>
+            }
+            else if (!string.IsNullOrEmpty(Model.CurrentUser.UserWebsite))
+            {
+                <td colspan="2">
+                    <a href="@Html.Raw(Model.CurrentUser.UserWebsite)" target="_blank">Vizitează website</a>
+                </td>
+            }
+        </tr>
+    </table>
+    <p>&nbsp;</p>
+    <h4>Statistici</h4>
+    <table style="padding:0px; margin: 0px; border: none">
+        <tr>
+            <td style="font-weight: bold">Membru din</td>
+            <td>
+                @Model.CurrentUser.UserRegdate.ToUtcTime().ToLocalTime().ToString((await Model.GetCurrentUserAsync()).UserDateFormat)
+            </td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold">Total mesaje</td>
+            <td>
+                @Model.TotalPosts
+            </td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold">Mesaje pe zi (în medie)</td>
+            <td>
+                @Model.PostsPerDay.ToString("########.##")
+            </td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold">Cel mai activ în subiectul</td>
+            <td>
+                @if (Model.PreferredTopic.Id == null || Model.PreferredTopic.Title == null)
+                {
+                    <span>-</span>
+                }
+                else
+                {
+                    <a asp-page="./ViewTopic" asp-route-topicId="@Model.PreferredTopic.Id" asp-route-pageNum="1">@Model.PreferredTopic.Title</a>
+                }
+            </td>
+        </tr>
+    </table>
+
+    @if (await Model.CanEditAsync())
+    {
+        <input type="submit" value="Salvează modificările" style="width:auto" />
+    }
+</form>
+
 

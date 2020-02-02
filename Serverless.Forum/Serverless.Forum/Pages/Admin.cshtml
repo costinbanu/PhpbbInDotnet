@@ -1,4 +1,6 @@
 ﻿@page
+@using Serverless.Forum.Utilities
+
 @model Serverless.Forum.Pages.AdminModel
 @{
     ViewData["Title"] = "Admin";
@@ -42,20 +44,20 @@
 </style>
 
 <div class="tab">
-    <button class="tablinks active" onclick="openCity(event, 'Users')">Administrare utilizatori</button>
-    <button class="tablinks" onclick="openCity(event, 'Forums')">Administrare forumuri</button>
-    <button class="tablinks" onclick="openCity(event, 'Logs')">Administrare loguri</button>
+    <button class="@(Model.Category == AdminCategories.Users ? "tablinks active" : "tablinks")" onclick="openCity(event, 'Users')">Administrare utilizatori</button>
+    <button class="@(Model.Category == AdminCategories.Forums ? "tablinks active" : "tablinks")" onclick="openCity(event, 'Forums')">Administrare forumuri</button>
+    <button class="@(Model.Category == AdminCategories.Logs ? "tablinks active" : "tablinks")" onclick="openCity(event, 'Logs')">Administrare loguri</button>
 </div>
 
-<div id="Users" class="tabcontent" style="display:inherit">
+<div id="Users" class="tabcontent" style="@(Model.Category == AdminCategories.Users ? "display:inherit" : "display:none")">
     @await  Html.PartialAsync(
             "_AdminUsersPartial",
-            new CustomPartials._AdminUsersPartialModel(Model.Config, Model.Utils, (await Model.GetCurrentUserAsync()).UserDateFormat),
+            Model.AdminUsers,
             ViewData
         )
 </div>
 
-<div id="Forums" class="tabcontent">
+<div id="Forums" class="tabcontent" style="@(Model.Category == AdminCategories.Forums ? "display:inherit" : "display:none")">
     @await  Html.PartialAsync(
         "_AdminForumsPartial",
         new CustomPartials._AdminForumsPartialModel(),
@@ -63,7 +65,7 @@
     )
 </div>
 
-<div id="Logs" class="tabcontent">
+<div id="Logs" class="tabcontent" style="@(Model.Category == AdminCategories.Logs ? "display:inherit" : "display:none")">
     @await  Html.PartialAsync(
         "_AdminLogsPartial",
         new CustomPartials._AdminLogsPartialModel(),
@@ -84,5 +86,11 @@
         }
         document.getElementById(tabName).style.display = "block";
         evt.currentTarget.className += " active";
+    }
+
+    function submitForm(form, action, id) {
+        document.getElementById("action").value = action;
+        document.getElementById("id").value = id;
+        document.getElementById(form).submit();
     }
 </script>

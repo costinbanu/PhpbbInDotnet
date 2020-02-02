@@ -1,7 +1,4 @@
 ﻿@model Serverless.Forum.Pages.CustomPartials._AdminUsersPartialModel
-@using Serverless.Forum.Utilities
-
-<h4>Utilizatori inactivi</h4>
 
 <style>
     .collapsible {
@@ -26,32 +23,89 @@
         overflow: hidden;
         background-color: #f1f1f1;
     }
+
+    .message {
+        display: none;
+        color: white;
+        font-weight: bold;
+        width: 100%;
+        padding: 10px;
+    }
+
+    .success {
+        display: block;
+        background-color: darkgreen;
+    }
+
+    .fail {
+        display: block;
+        background-color: darkred;
+    }
 </style>
 
-@{
-    await Model.Init();
-    foreach (var user in Model.InactiveUsers)
-    {
-        <button type="button" class="collapsible">@user.Username</button>
-        <table class="content" style="border:none; padding:5px">
-            <tr>
-                <td style="font-weight:bold; padding:5px">E-mail</td>
-                <td>@user.UserEmail</td>
-            </tr>
-            <tr>
-                <td style="font-weight:bold; padding:5px">IP</td>
-                <td>@user.UserIp <a href="https://whatismyipaddress.com/ip/@user.UserIp" target="_blank">[IP Lookup]</a></td>
-            </tr>
-            <tr>
-                <td style="font-weight:bold; padding:5px">Data inactivării</td>
-                <td>@user.UserInactiveTime.ToUtcTime().ToLocalTime().ToString(Model.UserDateFormat)</td>
-            </tr>
-            <tr>
-                <td style="font-weight:bold; padding:5px">Motivul inactivării</td>
-                <td>@user.UserInactiveReason.ToString()</td>
-            </tr>
-        </table>
-    }
+<span class="@Model.MessageClass">@Model.Message</span>
+
+<h4>Utilizatori inactivi</h4>
+
+<form method="post" id="userManagement" asp-page-handler="UserManagement">
+    <input type="hidden" name="action" id="action" />
+    <input type="hidden" name="id" id="id" />
+</form>
+
+@await Html.PartialAsync(
+    "_AdminUsersSummaryPartial",
+    new _AdminUsersSummaryPartialModel(
+        Model.DateFormat,
+        await Model.GetInactiveUsersAsync()
+    ),
+    ViewData
+)
+
+<h4>Caută utilizatori</h4>
+<form method="post" id="userSearch" asp-page-handler="UserSearch">
+    <table style="border:none; padding:0px; margin:0px">
+        <tr>
+            <td style="padding:5px; font-weight:bold; text-align: right">
+                Nume utilizator
+            </td>
+            <td>
+                <input type="text" name="username" id="username" />
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:5px; font-weight:bold; text-align: right">
+                E-mail
+            </td>
+            <td>
+                <input type="text" name="email" id="email" />
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:5px; font-weight:bold; text-align: right">
+                Id
+            </td>
+            <td>
+                <input type="text" name="userid" id="userid" />
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" style="padding:5px; font-weight:bold; text-align: center">
+                <input type="submit" value="Caută" />
+            </td>
+        </tr>
+    </table>
+</form>
+
+@if (Model.SearchResults.Any())
+{
+    @await Html.PartialAsync(
+        "_AdminUsersSummaryPartial",
+        new _AdminUsersSummaryPartialModel(
+            Model.DateFormat,
+            Model.SearchResults    
+        ),
+        ViewData
+    );
 }
 
 <script>
@@ -68,5 +122,13 @@
                 content.style.display = "block";
             }
         });
+    }
+
+    function submitUserForm(userId, userName, action) {
+        msg = "Am primit comanda '" + action + "' pentru utilizatorul '" + userName + "'. Sunteți sigur că doriți să continuați cu execuția acestei comenzi?";
+
+        if (confirm(msg)) {
+            submitForm("userManagement", action, userId);
+        }
     }
 </script>

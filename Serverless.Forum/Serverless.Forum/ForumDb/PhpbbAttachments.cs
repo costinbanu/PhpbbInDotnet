@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Serverless.Forum.ForumDb
 {
     public partial class PhpbbAttachments
     {
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int AttachId { get; set; }
+        [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int AttachId { get; set; } = 0;
         public int PostMsgId { get; set; }
         public int TopicId { get; set; }
         public byte InMessage { get; set; }

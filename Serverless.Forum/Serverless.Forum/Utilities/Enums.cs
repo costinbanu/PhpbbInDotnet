@@ -35,12 +35,32 @@
         /// <summary>
         /// Registration pre-activation (confirmed email)
         /// </summary>
-        NewlyRegisteredConfirmed = 6
+        NewlyRegisteredConfirmed = 6,
+
+        /// <summary>
+        /// User changed their email and have not confirmed it yet
+        /// </summary>
+        ChangedEmailNotConfirmed = 7
     }
 
     public enum ForumType
     {
         Category = 0,
         SubForum = 1
+    }
+
+    public enum AdminCategories
+    {
+        Users,
+        Forums,
+        Logs
+    }
+
+    public enum AdminUserActions
+    {
+        Activate,
+        Deactivate,
+        Delete_KeepMessages,
+        Delete_DeleteMessages
     }
 }

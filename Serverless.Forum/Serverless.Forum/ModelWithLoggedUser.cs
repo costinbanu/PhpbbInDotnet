@@ -33,22 +33,25 @@ namespace Serverless.Forum
         {
             _config = config;
             _utils = utils;
-            //_currentUser = new Lazy<LoggedUser>(() => GetCurrentUserAsync().RunSync());
         }
 
         public async Task<LoggedUser> GetCurrentUserAsync()
+        {
+            return await GetCurrentUserAsync(HttpContext);
+        }
+
+        public async Task<LoggedUser> GetCurrentUserAsync(HttpContext httpContext)
         {
             if (_currentUser != null)
             {
                 return _currentUser;
             }
             var user = User;
-            //LoggedUser loggedUser = null;
             if (!(user?.Identity?.IsAuthenticated ?? false))
             {
                 user = _utils.AnonymousClaimsPrincipal;
                 _currentUser = await user.ToLoggedUserAsync(_utils);
-                await HttpContext.SignInAsync(
+                await httpContext.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme,
                     user,
                     new AuthenticationProperties
@@ -67,7 +70,7 @@ namespace Serverless.Forum
                     var key = $"UserMustLogIn_{_currentUser.UsernameClean}";
                     if (await _utils.GetFromCacheAsync<bool?>(key) ?? false)
                     {
-                        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                        await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                     }
                     else
                     {
@@ -76,7 +79,7 @@ namespace Serverless.Forum
                             var dbUser = await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == _currentUser.UserId);
                             if (dbUser == null || dbUser.UserInactiveTime > 0)
                             {
-                                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                                await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                                 await _utils.SetInCacheAsync(key, true);
                             }
                         }

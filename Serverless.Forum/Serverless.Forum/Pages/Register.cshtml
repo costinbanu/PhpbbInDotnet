@@ -7,6 +7,17 @@
 
 @inject Microsoft.Extensions.Configuration.IConfiguration _config;
 
+<style>
+    input, textarea {
+        width: 400px;
+    }
+
+    td {
+        padding: 5px;
+        margin-bottom: 10px;
+    }
+</style>
+
 <h2>Înregistrează-te</h2>
 
 <form asp-controller="Home" method="post" onsubmit="return validateCaptcha();">
@@ -49,7 +60,7 @@
         </tr>
         <tr>
             <td>
-               <input type="checkbox" asp-for="Agree" /> Sunt de acord cu <a asp-page="/TermsAndConditions" target="_blank">termenele și condițiile de utilizare</a>
+               <input type="checkbox" asp-for="Agree" style="width:auto"/> Sunt de acord cu <a asp-page="/TermsAndConditions" target="_blank">termenele și condițiile de utilizare</a>
             </td>
             <td class="tablecell">
                 <span asp-validation-for="Agree" class="validation"></span>
@@ -65,7 +76,7 @@
         </tr>
         <tr>
             <td class="tablecell" colspan="3">
-                <input type="submit" value="Trimite" />
+                <input type="submit" value="Trimite" style="width:auto"/>
             </td>
         </tr>
     </table>

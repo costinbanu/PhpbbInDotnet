@@ -86,14 +86,20 @@ namespace Serverless.Forum.Pages
                     UserInactiveTime = DateTime.UtcNow.ToUnixTimestamp(),
                     UserInactiveReason = UserInactiveReason.NewlyRegisteredNotConfirmed,
                     UserActkey = registrationCode,
-                    UserIp = HttpContext.Connection.RemoteIpAddress.ToString()
+                    UserIp = HttpContext.Connection.RemoteIpAddress.ToString(),
+                    UserRegdate = DateTime.UtcNow.ToUnixTimestamp()
                 });
+
+                userInsertResult.Entity.UserId = 0;
+                await context.SaveChangesAsync();
 
                 await context.PhpbbUserGroup.AddAsync(new PhpbbUserGroup
                 {
                     GroupId = 2,
                     UserId = userInsertResult.Entity.UserId,
                 });
+
+                await context.SaveChangesAsync();
 
                 var subject = $"Bine ai venit la \"{Constants.FORUM_NAME}\"";
                 var emailMessage = new MailMessage

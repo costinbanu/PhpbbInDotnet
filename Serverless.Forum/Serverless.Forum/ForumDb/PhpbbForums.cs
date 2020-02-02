@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Serverless.Forum.ForumDb
 {
     public partial class PhpbbForums
     {
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int ForumId { get; set; }
+        [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int ForumId { get; set; } = 0;
         public int ParentId { get; set; }
         public int LeftId { get; set; }
         public int RightId { get; set; }
