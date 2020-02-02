@@ -107,8 +107,10 @@ namespace Serverless.Forum.Pages
                     From = new MailAddress($"admin@metrouusor.com", Constants.FORUM_NAME),
                     Subject = subject,
                     Body =
-                        $"<h2>{subject}</h2><br/><br/>" +
-                        "Pentru a continua, trebuie să îți confirmi adresa de email.<br/><br/>" +
+                        $"<h2>{subject}</h2><br/>" +
+                        $"Am primit o solicitare de înregistrare pe <a href=\"{Constants.FORUM_BASE_URL}\">{Constants.FORUM_NAME}</a> a contului '{UserName}' asociat acestei adrese de e-mail.<br/>" +
+                        "Dacă această solicitare nu îți aparține, te rugăm să răspunzi la acest mesaj (reply) și să semnalezi problema. Cineva din echipa administrativă va analiza situația.<br/><br/>" +
+                        "Dacă această solicitare îți aparține, trebuie să îți confirmi adresa de email.<br/>" +
                         $"<a href=\"{Constants.FORUM_BASE_URL}/Confirm?code={registrationCode}&username={_utils.CleanString(UserName)}&handler=ConfirmEmail\">Apasă aici</a> pentru a o confirma.<br/><br/>" +
                         "O zi bună!",
                     IsBodyHtml = true

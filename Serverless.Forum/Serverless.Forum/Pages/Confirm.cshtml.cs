@@ -58,6 +58,9 @@ namespace Serverless.Forum.Pages
                             "Contactați echipa administrativă la <a href=\"mailto:admin@metrouusor.com\">admin@metrouusor.com</a> " +
                             "dacă au trecut mai mult de 48 de ore de la înregistrare iar contul încă nu a fost activat." +
                         "</span>";
+
+                    user.UserInactiveReason = UserInactiveReason.NewlyRegisteredConfirmed;
+                    await context.SaveChangesAsync();
                 }
             }
             Title = "Confirmarea adresei de e-mail";

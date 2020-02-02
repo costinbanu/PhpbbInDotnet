@@ -44,13 +44,16 @@ namespace Serverless.Forum.Pages
                            let cryptedPass = Crypter.Phpass.Crypt(Password, u.UserPassword)
                            where u.UsernameClean == _utils.CleanString(UserName) 
                               && cryptedPass == u.UserPassword
-                              && u.UserInactiveTime == 0L
-                              && u.UserInactiveReason == UserInactiveReason.NotInactive
                            select u;
 
                 if (user.Count() != 1)
                 {
                     ErrorMessage = "Numele de utilizator și/sau parola sunt greșite!";
+                    return Page();
+                }
+                else if(user.First().UserInactiveReason != UserInactiveReason.NotInactive || user.First().UserInactiveTime != 0)
+                {
+                    ErrorMessage = "Utilizatorul nu este activat!";
                     return Page();
                 }
                 else

@@ -151,7 +151,8 @@
                     <td>
                         <input asp-for="CurrentUser.UserEmail" /><br />
                         <span class="Caption">Dacă modificați acest câmp, contul va deveni inactiv. Veți primi pe noua adresă de e-mail un mesaj cu instrucțiuni pentru reactivare.</span><br />
-                        <span asp-validation-for="CurrentUser.UserEmail" class="validation"></span>
+                        <span asp-validation-for="CurrentUser.UserEmail" class="validation"></span><br/>
+                        <input asp-for="ShowEmail" style="width:auto" /> Arată adresa de e-mail în profil (astfel membrii forumului vă pot contacta prin e-mail).
                     </td>
                 }
                 else

@@ -39,6 +39,8 @@ namespace Serverless.Forum.Pages
         [BindProperty]
         public bool DeleteAvatar { get; set; } = false;
         [BindProperty]
+        public bool ShowEmail { get; set; } = true;
+        [BindProperty]
         [Required(ErrorMessage = "Trebuie să introduceți o adresă e e-mail validă.")]
         [EmailAddress(ErrorMessage = "Trebuie să introduceți o adresă e e-mail validă.")]
         public string Email { get; set; }
@@ -101,6 +103,7 @@ namespace Serverless.Forum.Pages
                 }
 
                 CurrentUser.UserBirthday = Birthday;
+                CurrentUser.UserAllowViewemail = (byte)(ShowEmail ? 1 : 0);
 
                 if (Email != CurrentUser.UserEmail)
                 {
