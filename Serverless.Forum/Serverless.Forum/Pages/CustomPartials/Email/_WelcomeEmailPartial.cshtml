@@ -1,0 +1,14 @@
+﻿@model Serverless.Forum.Pages.CustomPartials.Email._WelcomeEmailPartialModel
+@using Serverless.Forum.Utilities
+@inject Utils _utils
+
+<h2>@Model.Subject</h2>
+<p>
+    Pentru a continua, trebuie să îți confirmi adresa de email.<br />
+    <a href="@Constants.FORUM_BASE_URL/Confirm?code=@Model.RegistrationCode&username=@_utils.CleanString(Model.UserName)&handler=ConfirmEmail">Apasă aici</a> pentru a o confirma.
+</p>
+<p style="font-size:0.7em">
+    Ai primit acest mesaj deoarece această adresă de e-mail a fost folosită pentru a înregistra contul '@Model.UserName' pe <a href="@Constants.FORUM_BASE_URL">@Constants.FORUM_NAME</a>.<br />
+    Dacă această solicitare de înregistrare nu îți aparține, te rugăm să răspunzi imediat la acest mesaj (reply) și să semnalezi problema. Cineva din echipa administrativă va răspunde în cel mai scurt timp.
+</p>
+O zi bună!

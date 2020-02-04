@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
@@ -35,12 +34,9 @@ namespace Serverless.Forum
             _utils = utils;
         }
 
-        public async Task<LoggedUser> GetCurrentUserAsync()
-        {
-            return await GetCurrentUserAsync(HttpContext);
-        }
+        #region User
 
-        public async Task<LoggedUser> GetCurrentUserAsync(HttpContext httpContext)
+        public async Task<LoggedUser> GetCurrentUserAsync()
         {
             if (_currentUser != null)
             {
@@ -51,7 +47,7 @@ namespace Serverless.Forum
             {
                 user = _utils.AnonymousClaimsPrincipal;
                 _currentUser = await user.ToLoggedUserAsync(_utils);
-                await httpContext.SignInAsync(
+                await HttpContext.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme,
                     user,
                     new AuthenticationProperties
@@ -70,7 +66,7 @@ namespace Serverless.Forum
                     var key = $"UserMustLogIn_{_currentUser.UsernameClean}";
                     if (await _utils.GetFromCacheAsync<bool?>(key) ?? false)
                     {
-                        await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                     }
                     else
                     {
@@ -79,7 +75,7 @@ namespace Serverless.Forum
                             var dbUser = await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == _currentUser.UserId);
                             if (dbUser == null || dbUser.UserInactiveTime > 0)
                             {
-                                await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                                 await _utils.SetInCacheAsync(key, true);
                             }
                         }
@@ -117,6 +113,57 @@ namespace Serverless.Forum
         public async Task<bool> IsCurrentUserModeratorHereAsync(int forumId = 0) => _utils.IsUserModeratorInForum(await GetCurrentUserAsync(), forumId);
 
         public int CurrentUserId => GetCurrentUserAsync().RunSync().UserId;
+
+        #endregion User
+
+        #region Forum for user
+
+        /// <summary>
+        /// No response returned = OK
+        /// </summary>
+        protected async Task<IActionResult> ValidateForumPermissionsResponsesAsync(PhpbbForums thisForum, int forumId)
+        {
+            if (thisForum == null)
+            {
+                return NotFound($"Forumul {forumId} nu există.");
+            }
+
+            if (!string.IsNullOrEmpty(thisForum.ForumPassword) &&
+                (HttpContext.Session.GetInt32("ForumLogin") ?? -1) != forumId)
+            {
+                if ((await GetCurrentUserAsync()).UserPermissions.Any(fp => fp.ForumId == forumId && fp.AuthRoleId == 16))
+                {
+                    return Unauthorized();
+                }
+                else
+                {
+                    return RedirectToPage("ForumLogin", new ForumLoginModel(_config)
+                    {
+                        ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString),
+                        ForumId = forumId,
+                        ForumName = thisForum.ForumName
+                    });
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// No response returned = OK
+        /// </summary>
+        protected async Task<IActionResult> ValidatePagePermissionsResponsesAsync()
+        {
+            if ((await GetCurrentUserAsync()) == _utils.AnonymousLoggedUser)
+            {
+                return RedirectToPage("Login", new LoginModel(_config, _utils)
+                {
+                    ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString)
+                });
+            }
+
+            return null;
+        }
 
         public bool IsForumUnread(int forumId)
         {
@@ -193,10 +240,10 @@ namespace Serverless.Forum
                             Id = f.ForumId,
                             Name = HttpUtility.HtmlDecode(f.ForumName),
                             Description = HttpUtility.HtmlDecode(f.ForumDesc),
+                            Unread = IsForumUnread(f.ForumId),
                             LastPosterName = HttpUtility.HtmlDecode(f.ForumLastPosterName),
                             LastPosterId = ju.UserId == 1 ? null as int? : ju.UserId,
                             LastPostTime = f.ForumLastPostTime.ToUtcTime(),
-                            Unread = IsForumUnread(f.ForumId),
                             LastPosterColor = ju == null ? null : ju.UserColour,
                             Topics = (from jt in joinedTopics
                                       orderby jt.TopicLastPostTime descending
@@ -220,6 +267,25 @@ namespace Serverless.Forum
                         orderby f.Order
                         select traverse(f.ForumDisplay)
                     ).ToList();
+
+                    var (lastPosterColor, lastPosterId, lastPosterName, lastPostId, lastPostTime) = (
+                        from c in node.ChildrenForums
+                        group c by c.LastPostTime into groups
+                        orderby groups.Key ?? DateTime.MinValue descending
+                        let first = groups.FirstOrDefault()
+                        select (first?.LastPosterColor, first?.LastPosterId, first?.LastPosterName, first?.LastPostId, first?.LastPostTime)
+                    ).FirstOrDefault();
+
+                    node.Unread |= node.ChildrenForums.Any(c => c.Unread);
+                    if (node.LastPostTime < (lastPostTime ?? DateTime.MinValue))
+                    {
+                        node.LastPosterColor = lastPosterColor ?? node.LastPosterColor;
+                        node.LastPosterId = lastPosterId ?? node.LastPosterId;
+                        node.LastPosterName = lastPosterName ?? node.LastPosterName;
+                        node.LastPostId = lastPostId ?? node.LastPostId;
+                        node.LastPostTime = lastPostTime ?? node.LastPostTime;
+                    }
+
                     return node;
                 }
 
@@ -304,33 +370,7 @@ namespace Serverless.Forum
             return _tracking;
         }
 
-        protected async Task<IActionResult> ValidatePermissionsResponses(PhpbbForums thisForum, int forumId)
-        {
-            if (thisForum == null)
-            {
-                return NotFound($"Forumul {forumId} nu există.");
-            }
-
-            if (!string.IsNullOrEmpty(thisForum.ForumPassword) &&
-                (HttpContext.Session.GetInt32("ForumLogin") ?? -1) != forumId)
-            {
-                if ((await GetCurrentUserAsync()).UserPermissions.Any(fp => fp.ForumId == forumId && fp.AuthRoleId == 16))
-                {
-                    return Unauthorized();
-                }
-                else
-                {
-                    return RedirectToPage("ForumLogin", new ForumLoginModel(_config)
-                    {
-                        ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString),
-                        ForumId = forumId,
-                        ForumName = thisForum.ForumName
-                    });
-                }
-            }
-
-            return null;
-        }
+        #endregion Forum for user
 
         class Tracking
         {

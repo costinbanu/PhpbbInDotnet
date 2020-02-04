@@ -77,7 +77,7 @@ namespace Serverless.Forum.Pages
             {
                 curTopic = await context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == TopicId);
 
-                var permissionError = await ValidatePermissionsResponses(await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId);
+                var permissionError = await ValidateForumPermissionsResponsesAsync(await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId);
                 if (permissionError != null)
                 {
                     return permissionError;
@@ -91,7 +91,6 @@ namespace Serverless.Forum.Pages
                 return NotFound();
             }
 
-            //await SetInCacheAsync("TopicTitle", curTopic.TopicTitle, true);
             PostTitle = $"{Constants.REPLY}{HttpUtility.HtmlDecode(curTopic.TopicTitle)}";
             Header = HttpUtility.HtmlDecode(curTopic.TopicTitle);
             return Page();
@@ -125,7 +124,7 @@ namespace Serverless.Forum.Pages
                     curAuthor = (await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == curPost.PosterId))?.Username ?? "Anonymous";
                 }
 
-                var permissionError = await ValidatePermissionsResponses(await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId);
+                var permissionError = await ValidateForumPermissionsResponsesAsync(await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId);
                 if (permissionError != null)
                 {
                     return permissionError;
@@ -133,8 +132,6 @@ namespace Serverless.Forum.Pages
 
                 await Init(context);
             }
-
-            //await SetInCacheAsync("TopicTitle", curTopic.TopicTitle, true);
 
             var subject = curPost.PostSubject.StartsWith(Constants.REPLY) ? curPost.PostSubject.Substring(Constants.REPLY.Length) : curPost.PostSubject;
             PostText = $"[quote=\"{curAuthor}\"]\n{HttpUtility.HtmlDecode(CleanText(curPost.PostText, curPost.BbcodeUid))}\n[/quote]";
@@ -149,7 +146,7 @@ namespace Serverless.Forum.Pages
             {
                 var curForum = await context.PhpbbForums.FirstOrDefaultAsync(t => t.ForumId == ForumId);
 
-                var permissionError = await ValidatePermissionsResponses(await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId);
+                var permissionError = await ValidateForumPermissionsResponsesAsync(await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId);
                 if (permissionError != null)
                 {
                     return permissionError;
@@ -245,6 +242,7 @@ namespace Serverless.Forum.Pages
                         TopicTitle = PostTitle,
                         TopicTime = DateTime.UtcNow.ToUnixTimestamp()
                     });
+                    topicResult.Entity.TopicId = 0;
                     await context.SaveChangesAsync();
                     await _utils.RemoveFromCacheAsync(GetActualCacheKey("IsNewTopic", true));
                     TopicId = topicResult.Entity.TopicId;
@@ -276,37 +274,32 @@ namespace Serverless.Forum.Pages
                     PostEditUser = 0,
                     PosterIp = HttpContext.Connection.RemoteIpAddress.ToString()
                 });
-
+                postResult.Entity.PostId = 0;
+                await context.SaveChangesAsync();
                 attachList.ForEach(a =>
                 {
                     a.PostMsgId = postResult.Entity.PostId;
                     a.TopicId = TopicId.Value;
                 });
 
-                var curForum = await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == ForumId);
-                var curTopic = await context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == TopicId);
-
-                curTopic.TopicLastPosterColour  = curForum.ForumLastPosterColour = usr.UserColor;
-                curTopic.TopicLastPosterId      = curForum.ForumLastPosterId     = usr.UserId;
-                curTopic.TopicLastPosterName    = curForum.ForumLastPosterName   = HttpUtility.HtmlEncode(usr.Username);
-                curTopic.TopicLastPostId        = curForum.ForumLastPostId       = postResult.Entity.PostId;
-                curTopic.TopicLastPostSubject   = curForum.ForumLastPostSubject  = HttpUtility.HtmlEncode(PostTitle);
-                curTopic.TopicLastPostTime      = curForum.ForumLastPostTime     = postResult.Entity.PostTime;
+                await _utils.CascadePostAdd(context, postResult.Entity, usr);
 
                 if (CanCreatePoll && !string.IsNullOrWhiteSpace(PollOptions))
                 {
                     byte id = 1;
                     foreach (var option in PollOptions.Split(Environment.NewLine))
                     {
-                        await context.PhpbbPollOptions.AddAsync(new PhpbbPollOptions
+                        var result = await context.PhpbbPollOptions.AddAsync(new PhpbbPollOptions
                         {
                             PollOptionId = id++,
                             PollOptionText = option,
                             PollOptionTotal = 0,
                             TopicId = TopicId.Value
                         });
+                        result.Entity.Id = 0;
                     }
 
+                    var curTopic = await context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == postResult.Entity.TopicId);
                     curTopic.PollStart = postResult.Entity.PostTime;
                     curTopic.PollLength = (int)TimeSpan.FromDays(double.Parse(PollExpirationDaysString)).TotalSeconds;
                     curTopic.PollMaxOptions = (byte)(PollMaxOptions ?? 1);
@@ -315,10 +308,10 @@ namespace Serverless.Forum.Pages
                 }
 
                 await context.PhpbbAttachments.AddRangeAsync(attachList);
-                //await context.SaveChangesAsync();
-                //await RemoveFromCacheAsync("PostAttachments", true);
+                await context.SaveChangesAsync();
+                await _utils.RemoveFromCacheAsync(GetActualCacheKey("PostAttachments", true));
 
-                return RedirectToPage($"/ViewTopic?postId={postResult.Entity.PostId}&handler=byPostId");
+                return RedirectToPage($"./ViewTopic?postId={postResult.Entity.PostId}&handler=byPostId");
             }
         }
 

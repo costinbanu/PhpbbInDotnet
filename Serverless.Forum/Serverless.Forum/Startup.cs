@@ -61,7 +61,13 @@ namespace Serverless.Forum
             services
                 .AddMvc()
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
-                .AddRazorOptions(o => o.PageViewLocationFormats.Add("~/Pages/CustomPartials/{0}.cshtml"));
+                .AddRazorOptions(o =>
+                {
+                    o.PageViewLocationFormats.Add("~/Pages/CustomPartials/{0}.cshtml");
+                    o.PageViewLocationFormats.Add("~/Pages/CustomPartials/Admin/{0}.cshtml");
+                    o.PageViewLocationFormats.Add("~/Pages/CustomPartials/Email/{0}.cshtml");
+                });
+
 
             services.AddDataProtection();
             services.AddAntiforgery(o => o.HeaderName = "XSRF-TOKEN");

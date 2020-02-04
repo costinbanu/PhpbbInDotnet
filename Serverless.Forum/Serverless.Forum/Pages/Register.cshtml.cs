@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PaulMiami.AspNetCore.Mvc.Recaptcha;
 using Serverless.Forum.ForumDb;
+using Serverless.Forum.Pages.CustomPartials.Email;
 using Serverless.Forum.Utilities;
 using System;
 using System.ComponentModel.DataAnnotations;
@@ -77,17 +78,19 @@ namespace Serverless.Forum.Pages
 
                 var registrationCode = Guid.NewGuid().ToString("n");
 
+                var now = DateTime.UtcNow.ToUnixTimestamp();
                 var userInsertResult = await context.PhpbbUsers.AddAsync(new PhpbbUsers
                 {
                     Username = UserName,
                     UsernameClean = _utils.CleanString(UserName),
                     UserEmail = Email,
                     UserPassword = Crypter.Phpass.Crypt(Password, Crypter.Phpass.GenerateSalt()),
-                    UserInactiveTime = DateTime.UtcNow.ToUnixTimestamp(),
+                    UserInactiveTime = now,
                     UserInactiveReason = UserInactiveReason.NewlyRegisteredNotConfirmed,
                     UserActkey = registrationCode,
                     UserIp = HttpContext.Connection.RemoteIpAddress.ToString(),
-                    UserRegdate = DateTime.UtcNow.ToUnixTimestamp()
+                    UserRegdate = now,
+                    UserLastmark = now
                 });
 
                 userInsertResult.Entity.UserId = 0;
@@ -106,13 +109,17 @@ namespace Serverless.Forum.Pages
                 {
                     From = new MailAddress($"admin@metrouusor.com", Constants.FORUM_NAME),
                     Subject = subject,
-                    Body =
-                        $"<h2>{subject}</h2><br/>" +
-                        $"Am primit o solicitare de înregistrare pe <a href=\"{Constants.FORUM_BASE_URL}\">{Constants.FORUM_NAME}</a> a contului '{UserName}' asociat acestei adrese de e-mail.<br/>" +
-                        "Dacă această solicitare nu îți aparține, te rugăm să răspunzi la acest mesaj (reply) și să semnalezi problema. Cineva din echipa administrativă va analiza situația.<br/><br/>" +
-                        "Dacă această solicitare îți aparține, trebuie să îți confirmi adresa de email.<br/>" +
-                        $"<a href=\"{Constants.FORUM_BASE_URL}/Confirm?code={registrationCode}&username={_utils.CleanString(UserName)}&handler=ConfirmEmail\">Apasă aici</a> pentru a o confirma.<br/><br/>" +
-                        "O zi bună!",
+                    Body = await _utils.RenderRazorViewToString(
+                        "_WelcomeEmailPartial", 
+                        new _WelcomeEmailPartialModel
+                        {
+                            RegistrationCode = registrationCode,
+                            Subject = subject,
+                            UserName = UserName
+                        }, 
+                        PageContext, 
+                        HttpContext
+                    ),
                     IsBodyHtml = true
                 };
                 emailMessage.To.Add(Email);

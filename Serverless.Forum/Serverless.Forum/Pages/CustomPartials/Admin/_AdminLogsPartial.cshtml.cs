@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace Serverless.Forum.Pages.CustomPartials
+namespace Serverless.Forum.Pages.CustomPartials.Admin
 {
-    public class _AdminForumsPartialModel : PageModel
+    public class _AdminLogsPartialModel : PageModel
     {
         public void OnGet()
         {

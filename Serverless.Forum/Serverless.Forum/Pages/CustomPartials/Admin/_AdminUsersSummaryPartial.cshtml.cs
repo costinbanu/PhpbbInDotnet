@@ -2,7 +2,7 @@
 using Serverless.Forum.ForumDb;
 using System.Collections.Generic;
 
-namespace Serverless.Forum.Pages.CustomPartials
+namespace Serverless.Forum.Pages.CustomPartials.Admin
 {
     public class _AdminUsersSummaryPartialModel : PageModel
     {

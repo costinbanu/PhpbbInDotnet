@@ -32,11 +32,6 @@ namespace Serverless.Forum.Utilities
             return (long)time.Subtract(seed).TotalSeconds;
         }
 
-        public static async Task<LoggedUser> ToLoggedUserAsync(this ClaimsPrincipal principal, Utils utils)
-        {
-            return await utils.DecompressObjectAsync<LoggedUser>(Convert.FromBase64String(principal.Claims.FirstOrDefault()?.Value ?? string.Empty));
-        }
-
         public static async Task<ClaimsPrincipal> ToClaimsPrincipalAsync(this PhpbbUsers user, ForumDbContext dbContext, Utils utils)
         {
             using (var connection = dbContext.Database.GetDbConnection())
@@ -64,6 +59,15 @@ namespace Serverless.Forum.Utilities
             }
         }
 
+        public static async Task<LoggedUser> ToLoggedUserAsync(this ClaimsPrincipal principal, Utils utils)
+        {
+            return await utils.DecompressObjectAsync<LoggedUser>(Convert.FromBase64String(principal.Claims.FirstOrDefault()?.Value ?? string.Empty));
+        }
+
+        public static async Task<LoggedUser> ToLoggedUserAsync(this PhpbbUsers user, ForumDbContext context, Utils utils)
+        {
+            return await (await user.ToClaimsPrincipalAsync(context, utils)).ToLoggedUserAsync(utils);
+        }
 
         public static bool IsMimeTypeInline(this string mimeType)
         {

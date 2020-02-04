@@ -1,22 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Amazon;
+using Amazon.S3;
+using Amazon.S3.Model;
+using CryptSharp.Core;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
-using CryptSharp.Core;
-using Microsoft.AspNetCore.Http;
-using Amazon.S3.Model;
-using System.Net;
+using System;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
-using Amazon.S3;
-using Amazon;
+using System.Linq;
+using System.Net;
 using System.Net.Mail;
+using System.Threading.Tasks;
 
 namespace Serverless.Forum.Pages
 {
@@ -59,6 +57,12 @@ namespace Serverless.Forum.Pages
             if ((UserId ?? 1) == 1)
             {
                 return Forbid();
+            }
+
+            var response = await ValidatePagePermissionsResponsesAsync();
+            if (response != null)
+            {
+                return response;
             }
 
             using (var context = new ForumDbContext(_config))

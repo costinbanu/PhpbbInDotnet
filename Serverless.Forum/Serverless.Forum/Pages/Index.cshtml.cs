@@ -23,11 +23,11 @@ namespace Serverless.Forum.Pages
             using (var context = new ForumDbContext(_config))
             {
                 var usr = await GetCurrentUserAsync();
-                Forums = await (from f1 in context.PhpbbForums
-                                where f1.ForumType == 0
+                Forums = (from f1 in (await GetForumTree()).ChildrenForums // context.PhpbbForums
+                                /*where f1.ForumType == 0
                                    && usr.UserPermissions != null
-                                   && !usr.UserPermissions.Any(fp => fp.ForumId == f1.ForumId && fp.AuthRoleId == 16)
-                                let children = from f2 in context.PhpbbForums
+                                   && !usr.UserPermissions.Any(fp => fp.ForumId == f1.ForumId && fp.AuthRoleId == 16)*/
+                                let children = f1.ChildrenForums /*from f2 in context.PhpbbForums
                                                where f2.ParentId == f1.ForumId
                                                orderby f2.LeftId
 
@@ -49,12 +49,12 @@ namespace Serverless.Forum.Pages
                                                    LastPosterColor = ju == null ? null : ju.UserColour,
                                                    LastPostId = f2.ForumLastPostId
                                                }
-                                orderby f1.LeftId
+                                orderby f1.LeftId*/
                                 select new ForumDisplay()
                                 {
-                                    Name = HttpUtility.HtmlDecode(f1.ForumName),
+                                    Name = HttpUtility.HtmlDecode(f1.Name),
                                     ChildrenForums = children
-                                }).ToListAsync();
+                                }).ToList();
             }
             //Forums = await GetForumMap(ForumType.Category);
         }

@@ -216,45 +216,64 @@ namespace Serverless.Forum.Utilities
             return bbCodeText;
         }
 
-        private async Task<string> RenderRazorViewToString(string viewName, _AttachmentPartialModel model, PageContext pageContext, HttpContext httpContext)
+        public async Task CascadePostAdd(ForumDbContext context, PhpbbPosts added, LoggedUser usr)
         {
-            try
+            var curTopic = await context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == added.TopicId);
+            var curForum = await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == curTopic.ForumId);
+
+            curTopic.TopicLastPosterColour = curForum.ForumLastPosterColour = usr.UserColor;
+            curTopic.TopicLastPosterId = curForum.ForumLastPosterId = usr.UserId;
+            curTopic.TopicLastPosterName = curForum.ForumLastPosterName = HttpUtility.HtmlEncode(usr.Username);
+            curTopic.TopicLastPostId = curForum.ForumLastPostId = added.PostId;
+            curTopic.TopicLastPostSubject = curForum.ForumLastPostSubject = HttpUtility.HtmlEncode(added.PostSubject);
+            curTopic.TopicLastPostTime = curForum.ForumLastPostTime = added.PostTime;
+        }
+
+        public async Task CascadePostDelete(ForumDbContext context, PhpbbPosts deleted)
+        {
+            var curTopic = await context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == deleted.TopicId);
+            var curForum = await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == curTopic.ForumId);
+
+            if (context.PhpbbPosts.Count(p => p.TopicId == deleted.TopicId) == 0)
             {
-                var actionContext = new ActionContext(httpContext, httpContext.GetRouteData(), pageContext.ActionDescriptor);
-                var viewResult = _viewEngine.FindView(actionContext, viewName, false);
-
-                if (viewResult.View == null)
-                {
-                    throw new ArgumentNullException($"{viewName} does not match any available view");
-                }
-
-                var viewDictionary = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary())
-                {
-                    Model = model
-                };
-
-                using (var sw = new StringWriter())
-                {
-                    var viewContext = new ViewContext(
-                        actionContext,
-                        viewResult.View,
-                        viewDictionary,
-                        new TempDataDictionary(actionContext.HttpContext, _tempDataProvider),
-                        sw,
-                        new HtmlHelperOptions()
-                    )
-                    {
-                        RouteData = httpContext.GetRouteData()
-                    };
-
-                    await viewResult.View.RenderAsync(viewContext);
-                    return sw.GetStringBuilder().ToString();
-                }
+                context.PhpbbTopics.Remove(curTopic);
             }
-            catch (Exception ex)
+            else if (curTopic.TopicLastPostId == deleted.PostId)
             {
-                _logger.LogWarning(ex, "Error rendering partial view.");
-                return string.Empty;
+                var lastPost = await (
+                    from p in context.PhpbbPosts
+                    where p.TopicId == deleted.TopicId
+                    group p by p.PostTime into grouped
+                    orderby grouped.Key descending
+                    select grouped.FirstOrDefault()
+                ).FirstOrDefaultAsync();
+                var lastPostUser = await (await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == lastPost.PosterId)).ToLoggedUserAsync(context, this);
+
+                curTopic.TopicLastPostId = lastPost.PosterId;
+                curTopic.TopicLastPostSubject = lastPost.PostSubject;
+                curTopic.TopicLastPostTime = lastPost.PostTime;
+                curTopic.TopicLastPosterColour = lastPostUser.UserColor;
+                curTopic.TopicLastPosterName = lastPostUser == AnonymousLoggedUser ? lastPost.PostUsername : lastPostUser.Username;
+            }
+
+            if (curForum.ForumLastPostId == deleted.PostId)
+            {
+                var lastPost = await (
+                    from t in context.PhpbbTopics
+                    where t.ForumId == curForum.ForumId
+                    join p in context.PhpbbPosts
+                    on t.TopicId equals p.TopicId
+                    group p by p.PostTime into grouped
+                    orderby grouped.Key descending
+                    select grouped.FirstOrDefault()
+                ).FirstOrDefaultAsync();
+                var lastPostUser = await (await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == lastPost.PosterId)).ToLoggedUserAsync(context, this);
+                
+                curForum.ForumLastPostId = lastPost.PosterId;
+                curForum.ForumLastPostSubject = lastPost.PostSubject;
+                curForum.ForumLastPostTime = lastPost.PostTime;
+                curForum.ForumLastPosterColour = lastPostUser.UserColor;
+                curForum.ForumLastPosterName = lastPostUser == AnonymousLoggedUser ? lastPost.PostUsername : lastPostUser.Username;
             }
         }
 
@@ -349,6 +368,49 @@ namespace Serverless.Forum.Utilities
                 await smtp.SendMailAsync(emailMessage);
             }
         }
+
+        public async Task<string> RenderRazorViewToString(string viewName, PageModel model, PageContext pageContext, HttpContext httpContext)
+        {
+            try
+            {
+                var actionContext = new ActionContext(httpContext, httpContext.GetRouteData(), pageContext.ActionDescriptor);
+                var viewResult = _viewEngine.FindView(actionContext, viewName, false);
+
+                if (viewResult.View == null)
+                {
+                    throw new ArgumentNullException($"{viewName} does not match any available view");
+                }
+
+                var viewDictionary = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary())
+                {
+                    Model = model
+                };
+
+                using (var sw = new StringWriter())
+                {
+                    var viewContext = new ViewContext(
+                        actionContext,
+                        viewResult.View,
+                        viewDictionary,
+                        new TempDataDictionary(actionContext.HttpContext, _tempDataProvider),
+                        sw,
+                        new HtmlHelperOptions()
+                    )
+                    {
+                        RouteData = httpContext.GetRouteData()
+                    };
+
+                    await viewResult.View.RenderAsync(viewContext);
+                    return sw.GetStringBuilder().ToString();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error rendering partial view.");
+                return string.Empty;
+            }
+        }
+
 
         #endregion Generics
 

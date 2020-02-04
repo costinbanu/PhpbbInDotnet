@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Serverless.Forum.Pages.CustomPartials;
+using Serverless.Forum.Pages.CustomPartials.Admin;
 using Serverless.Forum.Utilities;
 using System.Threading.Tasks;
 

@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Serverless.Forum.Pages.CustomPartials
+namespace Serverless.Forum.Pages.CustomPartials.Admin
 {
     public class _AdminUsersPartialModel : PageModel
     {
@@ -109,6 +109,7 @@ namespace Serverless.Forum.Pages.CustomPartials
                     context.PhpbbUserTopicPostNumber.RemoveRange(await context.PhpbbUserTopicPostNumber.Where(u => u.UserId == userId).ToListAsync());
                     context.PhpbbWarnings.RemoveRange(await context.PhpbbWarnings.Where(u => u.UserId == userId).ToListAsync());
                     context.PhpbbZebra.RemoveRange(await context.PhpbbZebra.Where(u => u.UserId == userId).ToListAsync());
+                    context.PhpbbUsers.Remove(user);
                 }
 
                 try
@@ -148,16 +149,20 @@ namespace Serverless.Forum.Pages.CustomPartials
 
                                 await flagUserAsChanged();
                                 await deleteUser();
-
+                                Message = $"Utilizatorul '{user.Username}' a fost șters iar mesajele păstrate.";
+                                IsSuccess = true;
                                 break;
                             }
                         case AdminUserActions.Delete_DeleteMessages:
                             {
-                                context.PhpbbPosts.RemoveRange(await context.PhpbbPosts.Where(p => p.PosterId == userId).ToListAsync());
+                                var toDelete = await context.PhpbbPosts.Where(p => p.PosterId == userId).ToListAsync();
+                                context.PhpbbPosts.RemoveRange(toDelete);
+                                toDelete.ForEach(async p => await _utils.CascadePostDelete(context, p));
 
                                 await flagUserAsChanged();
                                 await deleteUser();
-
+                                Message = $"Utilizatorul '{user.Username}' a fost șters cu tot cu mesajele scrise.";
+                                IsSuccess = true;
                                 break;
                             }
                         default: throw new ArgumentException($"Unknown action '{action}'.", nameof(action));

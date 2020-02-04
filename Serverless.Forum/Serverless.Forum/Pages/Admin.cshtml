@@ -60,7 +60,7 @@
 <div id="Forums" class="tabcontent" style="@(Model.Category == AdminCategories.Forums ? "display:inherit" : "display:none")">
     @await  Html.PartialAsync(
         "_AdminForumsPartial",
-        new CustomPartials._AdminForumsPartialModel(),
+        new CustomPartials.Admin._AdminForumsPartialModel(),
         ViewData
     )
 </div>
@@ -68,7 +68,7 @@
 <div id="Logs" class="tabcontent" style="@(Model.Category == AdminCategories.Logs ? "display:inherit" : "display:none")">
     @await  Html.PartialAsync(
         "_AdminLogsPartial",
-        new CustomPartials._AdminLogsPartialModel(),
+        new CustomPartials.Admin._AdminLogsPartialModel(),
         ViewData
     )
 </div>

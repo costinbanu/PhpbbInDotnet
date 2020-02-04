@@ -99,7 +99,7 @@ namespace Serverless.Forum.Pages
 
                 ForumId = parent?.ForumId;
 
-                var permissionError = await ValidatePermissionsResponses(parent, ForumId ?? 0);
+                var permissionError = await ValidateForumPermissionsResponsesAsync(parent, ForumId ?? 0);
                 if (permissionError != null)
                 {
                     return permissionError;
