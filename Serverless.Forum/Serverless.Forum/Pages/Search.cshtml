@@ -8,12 +8,42 @@
 }
 
 <h2>Caută</h2>
-<script src="~/lib/jquery/dist/jquery.js"></script>
-<script src="~/lib/jquery-ui/jquery-ui.js"></script>
-<script type="text/javascript" src="~/js/site.js"></script>
 <script type="text/javascript">
     window.onload = function () {
         onPostLoad();
+    }
+
+    //forum tree callback
+    function forumSelectCallback(forumId) {
+        var forumInput = document.getElementById("ForumIdInput");
+        if (forumInput != null) {
+            forumInput.value = forumId;
+        }
+    }
+
+    //forum tree callback
+    function topicSelectCallback(topics) {
+        var topicDisplay = document.getElementById("TopicIdDisplay");
+        if (topicDisplay != null) {
+            topicDisplay.options.length = 0;
+            var option = document.createElement('option');
+            option.text = "Caută în toate subiectele";
+            option.value = 0;
+            topicDisplay.add(option);
+            topics.forEach(t => {
+                var option = document.createElement('option');
+                option.text = t.title;
+                option.value = t.id;
+                topicDisplay.add(option);
+            });
+        }
+    }
+
+    //forum tree callback
+    function topicSelectInit(topicId) {
+        if (topicId != null) {
+            $("#TopicIdDisplay").val(topicId).change();
+        }
     }
 </script>
 

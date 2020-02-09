@@ -41,12 +41,62 @@
         border: 1px solid #ccc;
         border-top: none;
     }
+
+    .collapsible {
+        background-color: #777;
+        color: white;
+        cursor: pointer;
+        padding: 18px;
+        width: 100%;
+        border: none;
+        text-align: left;
+        outline: none;
+        font-size: 15px;
+    }
+
+    .active, .collapsible:hover {
+        background-color: #555;
+    }
+
+    .content {
+        padding: 0 18px;
+        display: none;
+        overflow: hidden;
+        background-color: #f1f1f1;
+    }
+
+    .message {
+        display: none;
+        color: white;
+        font-weight: bold;
+        width: 100%;
+        padding: 10px;
+    }
+
+    .success {
+        display: block;
+        background-color: darkgreen;
+    }
+
+    .fail {
+        display: block;
+        background-color: darkred;
+    }
+
+    input, textarea {
+        width: 400px;
+    }
+
+    td {
+        padding: 5px;
+        margin-bottom: 10px;
+    }
 </style>
 
 <div class="tab">
-    <button class="@(Model.Category == AdminCategories.Users ? "tablinks active" : "tablinks")" onclick="openCity(event, 'Users')">Administrare utilizatori</button>
-    <button class="@(Model.Category == AdminCategories.Forums ? "tablinks active" : "tablinks")" onclick="openCity(event, 'Forums')">Administrare forumuri</button>
-    <button class="@(Model.Category == AdminCategories.Logs ? "tablinks active" : "tablinks")" onclick="openCity(event, 'Logs')">Administrare loguri</button>
+    <button class="@(Model.Category == AdminCategories.Users ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Users')">Administrare utilizatori</button>
+    <button class="@(Model.Category == AdminCategories.Forums ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Forums')">Administrare forumuri</button>
+    <button class="@(Model.Category == AdminCategories.Logs ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Logs')">Administrare loguri</button>
 </div>
 
 <div id="Users" class="tabcontent" style="@(Model.Category == AdminCategories.Users ? "display:inherit" : "display:none")">
@@ -60,7 +110,7 @@
 <div id="Forums" class="tabcontent" style="@(Model.Category == AdminCategories.Forums ? "display:inherit" : "display:none")">
     @await  Html.PartialAsync(
         "_AdminForumsPartial",
-        new CustomPartials.Admin._AdminForumsPartialModel(),
+        await Model.GetAdminForumsModelLazy(),
         ViewData
     )
 </div>
@@ -74,7 +124,7 @@
 </div>
 
 <script>
-    function openCity(evt, tabName) {
+    function openTab(evt, tabName) {
         var i, tabcontent, tablinks;
         tabcontent = document.getElementsByClassName("tabcontent");
         for (i = 0; i < tabcontent.length; i++) {

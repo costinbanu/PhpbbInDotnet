@@ -337,6 +337,11 @@ namespace Serverless.Forum.Utilities
 
         public string CleanString(string input)
         {
+            if (input == null)
+            {
+                return string.Empty;
+            }
+
             var normalizedString = input.Normalize(NormalizationForm.FormD);
             var stringBuilder = new StringBuilder();
 

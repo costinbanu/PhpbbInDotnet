@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.ForumDb;
+using Serverless.Forum.Pages.CustomPartials.Email;
 using Serverless.Forum.Utilities;
 using System;
 using System.ComponentModel.DataAnnotations;
@@ -124,11 +125,17 @@ namespace Serverless.Forum.Pages
                     {
                         From = new MailAddress($"admin@metrouusor.com", Constants.FORUM_NAME),
                         Subject = subject,
-                        Body =
-                            $"<h2>{subject}</h2><br/><br/>" +
-                            "Pentru a continua, trebuie să îți confirmi adresa de email.<br/><br/>" +
-                            $"<a href=\"{Constants.FORUM_BASE_URL}/Confirm?code={registrationCode}&username={CurrentUser.UsernameClean}&handler=ConfirmEmail\">Apasă aici</a> pentru a o confirma.<br/><br/>" +
-                            "O zi bună!",
+                        Body = await _utils.RenderRazorViewToString(
+                            "_WelcomeEmailPartial",
+                            new _WelcomeEmailPartialModel
+                            {
+                                RegistrationCode = registrationCode,
+                                Subject = subject,
+                                UserName = CurrentUser.Username
+                            },
+                            PageContext,
+                            HttpContext
+                        ),
                         IsBodyHtml = true
                     };
                     emailMessage.To.Add(Email);

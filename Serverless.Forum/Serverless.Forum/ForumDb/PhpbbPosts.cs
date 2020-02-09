@@ -9,30 +9,30 @@ namespace Serverless.Forum.ForumDb
     {
         [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int PostId { get; set; } = 0;
-        public int TopicId { get; set; }
-        public int ForumId { get; set; }
-        public int PosterId { get; set; }
-        public int IconId { get; set; }
-        public string PosterIp { get; set; }
-        public long PostTime { get; set; }
-        public byte PostApproved { get; set; }
-        public byte PostReported { get; set; }
-        public byte EnableBbcode { get; set; }
-        public byte EnableSmilies { get; set; }
-        public byte EnableMagicUrl { get; set; }
-        public byte EnableSig { get; set; }
-        public string PostUsername { get; set; }
-        public string PostSubject { get; set; }
-        public string PostText { get; set; }
-        public string PostChecksum { get; set; }
-        public byte PostAttachment { get; set; }
-        public string BbcodeBitfield { get; set; }
-        public string BbcodeUid { get; set; }
-        public byte PostPostcount { get; set; }
-        public long PostEditTime { get; set; }
-        public string PostEditReason { get; set; }
-        public long PostEditUser { get; set; }
-        public short PostEditCount { get; set; }
-        public byte PostEditLocked { get; set; }
+        public int TopicId { get; set; } = 0;
+        public int ForumId { get; set; } = 0;
+        public int PosterId { get; set; } = 0;
+        public int IconId { get; set; } = 0;
+        public string PosterIp { get; set; } = string.Empty;
+        public long PostTime { get; set; } = 0;
+        public byte PostApproved { get; set; } = 1;
+        public byte PostReported { get; set; } = 0;
+        public byte EnableBbcode { get; set; } = 1;
+        public byte EnableSmilies { get; set; } = 1;
+        public byte EnableMagicUrl { get; set; } = 1;
+        public byte EnableSig { get; set; } = 1;
+        public string PostUsername { get; set; } = string.Empty;
+        public string PostSubject { get; set; } = string.Empty;
+        public string PostText { get; set; } = string.Empty;
+        public string PostChecksum { get; set; } = string.Empty;
+        public byte PostAttachment { get; set; } = 0;
+        public string BbcodeBitfield { get; set; } = string.Empty;
+        public string BbcodeUid { get; set; } = string.Empty;
+        public byte PostPostcount { get; set; } = 0;
+        public long PostEditTime { get; set; } = 0;
+        public string PostEditReason { get; set; } = string.Empty;
+        public long PostEditUser { get; set; } = 0;
+        public short PostEditCount { get; set; } = 0;
+        public byte PostEditLocked { get; set; } = 0;
     }
 }

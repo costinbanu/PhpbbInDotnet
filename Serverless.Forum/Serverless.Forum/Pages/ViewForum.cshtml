@@ -12,8 +12,15 @@
 <form asp-page-handler="Topics" method="post" name="MarkTopicsRead">
     <input name="forumId" type="hidden" value="@Model.ForumId" />
 </form>
-<script type="text/javascript" src="~/js/site.js"></script>
-
+<script type="text/javascript">
+    //forum tree callback
+    function forumSelectCallback(forumId) {
+        var forumInput = document.getElementById("ForumIdInput");
+        if (forumInput != null) {
+            forumInput.value = forumId;
+        }
+    }
+</script>
 @if (Model.ParentForumId != 0)
 {
     <h4>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@Model.ParentForumTitle</a></h4>

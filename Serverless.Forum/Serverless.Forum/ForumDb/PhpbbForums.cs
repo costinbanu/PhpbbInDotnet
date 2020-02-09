@@ -9,47 +9,47 @@ namespace Serverless.Forum.ForumDb
     {
         [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int ForumId { get; set; } = 0;
-        public int ParentId { get; set; }
-        public int LeftId { get; set; }
-        public int RightId { get; set; }
-        public string ForumParents { get; set; }
-        public string ForumName { get; set; }
-        public string ForumDesc { get; set; }
-        public string ForumDescBitfield { get; set; }
-        public int ForumDescOptions { get; set; }
-        public string ForumDescUid { get; set; }
-        public string ForumLink { get; set; }
-        public string ForumPassword { get; set; }
-        public int ForumStyle { get; set; }
-        public string ForumImage { get; set; }
-        public string ForumRules { get; set; }
-        public string ForumRulesLink { get; set; }
-        public string ForumRulesBitfield { get; set; }
-        public int ForumRulesOptions { get; set; }
+        public int ParentId { get; set; } = 0;
+        public int LeftId { get; set; } = 0;
+        public int RightId { get; set; } = 0;
+        public string ForumParents { get; set; } = string.Empty;
+        public string ForumName { get; set; } = string.Empty;
+        public string ForumDesc { get; set; } = string.Empty;
+        public string ForumDescBitfield { get; set; } = string.Empty;
+        public int ForumDescOptions { get; set; } = 7;
+        public string ForumDescUid { get; set; } = string.Empty;
+        public string ForumLink { get; set; } = string.Empty;
+        public string ForumPassword { get; set; } = string.Empty;
+        public int ForumStyle { get; set; } = 0;
+        public string ForumImage { get; set; } = string.Empty;
+        public string ForumRules { get; set; } = string.Empty;
+        public string ForumRulesLink { get; set; } = string.Empty;
+        public string ForumRulesBitfield { get; set; } = string.Empty;
+        public int ForumRulesOptions { get; set; } = 7;
         public string ForumRulesUid { get; set; }
-        public byte ForumTopicsPerPage { get; set; }
-        public byte ForumType { get; set; }
-        public byte ForumStatus { get; set; }
-        public int ForumPosts { get; set; }
-        public int ForumTopics { get; set; }
-        public int ForumTopicsReal { get; set; }
-        public int ForumLastPostId { get; set; }
-        public int ForumLastPosterId { get; set; }
-        public string ForumLastPostSubject { get; set; }
-        public long ForumLastPostTime { get; set; }
-        public string ForumLastPosterName { get; set; }
-        public string ForumLastPosterColour { get; set; }
-        public byte ForumFlags { get; set; }
-        public int ForumOptions { get; set; }
-        public byte DisplaySubforumList { get; set; }
-        public byte DisplayOnIndex { get; set; }
-        public byte EnableIndexing { get; set; }
-        public byte EnableIcons { get; set; }
-        public byte EnablePrune { get; set; }
-        public int PruneNext { get; set; }
-        public int PruneDays { get; set; }
-        public int PruneViewed { get; set; }
-        public int PruneFreq { get; set; }
-        public long ForumEditTime { get; set; }
+        public byte ForumTopicsPerPage { get; set; } = 0;
+        public byte ForumType { get; set; } = 0;
+        public byte ForumStatus { get; set; } = 0;
+        public int ForumPosts { get; set; } = 0;
+        public int ForumTopics { get; set; } = 0;
+        public int ForumTopicsReal { get; set; } = 0;
+        public int ForumLastPostId { get; set; } = 0;
+        public int ForumLastPosterId { get; set; } = 0;
+        public string ForumLastPostSubject { get; set; } = string.Empty;
+        public long ForumLastPostTime { get; set; } = 0;
+        public string ForumLastPosterName { get; set; } = string.Empty;
+        public string ForumLastPosterColour { get; set; } = string.Empty;
+        public byte ForumFlags { get; set; } = 32;
+        public int ForumOptions { get; set; } = 0;
+        public byte DisplaySubforumList { get; set; } = 1;
+        public byte DisplayOnIndex { get; set; } = 1;
+        public byte EnableIndexing { get; set; } = 1;
+        public byte EnableIcons { get; set; } = 1;
+        public byte EnablePrune { get; set; } = 0;
+        public int PruneNext { get; set; } = 0;
+        public int PruneDays { get; set; } = 0;
+        public int PruneViewed { get; set; } = 0;
+        public int PruneFreq { get; set; } = 0;
+        public long ForumEditTime { get; set; } = 0;
     }
 }

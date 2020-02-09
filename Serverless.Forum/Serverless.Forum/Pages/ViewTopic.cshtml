@@ -10,7 +10,6 @@
     var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
 }
 
-<script type="text/javascript" src="~/js/site.js"></script>
 <script type="text/javascript">
     window.onload = function () {
         onPostLoad();
@@ -26,6 +25,14 @@
                 element.parentNode.style.borderColor = "#87ceeb";
             }
             window.scrollTo(0, middle);
+        }
+    }
+
+    //forum tree callback
+    function forumSelectCallback(forumId) {
+        var forumInput = document.getElementById("ForumIdInput");
+        if (forumInput != null) {
+            forumInput.value = forumId;
         }
     }
 </script>

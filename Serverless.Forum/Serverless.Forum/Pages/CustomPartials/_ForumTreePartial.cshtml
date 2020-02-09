@@ -17,7 +17,6 @@
         padding: 0;
     }
 
-    /* Style the caret/arrow */
     .searchCaret {
         cursor: pointer;
         user-select: none; /* Prevent text selection */
@@ -25,7 +24,6 @@
         padding: 3px 3px;
     }
 
-    /* Create the caret/arrow with a unicode, and style it */
     .searchCaret::before {
         content: "\25B6";
         color: black;
@@ -33,29 +31,26 @@
         margin-right: 6px;
     }
 
-    /* Rotate the caret/arrow icon when clicked on (using JavaScript) */
     .searchCaret-down::before {
         transform: rotate(90deg);
     }
 
-    /* Hide the nested list */
-    .nested {
+    .nestedTreeNode {
         display: none;
     }
 
-    /* Show the nested list when the user clicks on the caret/arrow (with JavaScript) */
-    .active {
+    .activeTreeNode {
         display: block;
     }
 
-    .entry {
+    .treeNode {
         padding: 3px 3px;
         display: inherit;
         width: 100%;
         cursor: default;
     }
 
-    .selected {
+    .selectedTreeNode {
         background-color: deepskyblue;
     }
 </style>
@@ -67,15 +62,15 @@
             return;
         }
 
-        var entryClass = cur.Id == Model.ForumId ? "entry selected" : "entry";
+        var treeNodeClass = cur.Id == Model.ForumId ? "treeNode selectedTreeNode" : "treeNode";
         var topics = cur?.Topics ?? new List<TopicDisplay>();
 
         if (cur.ChildrenForums?.Any() ?? false)
         {
             await Output.WriteAsync(
-                $"<li class='{entryClass}'>" +
-                    $"<span id='entry{cur.Id}' class='searchCaret' onclick='select(this, {cur.Id}, {Json.Serialize(topics)});'>{cur.Name}</span>" +
-                    $"<ul class='nested' id='child{cur.Id}'>"
+                $"<li class='{treeNodeClass}'>" +
+                    $"<span id='treeNode{cur.Id}' class='searchCaret' onclick='select(this, {cur.Id}, {Json.Serialize(topics)});'>{cur.Name}</span>" +
+                    $"<ul class='nestedTreeNode' id='child{cur.Id}'>"
             );
             foreach (var child in cur.ChildrenForums ?? new List<ForumDisplay>())
             {
@@ -89,7 +84,7 @@
         else
         {
             await Output.WriteAsync(
-                $"<li id='entry{cur.Id}' class='{entryClass}' onclick='select(this, {cur.Id}, {Json.Serialize(topics)});'>{cur.Name}</li>"
+                $"<li id='treeNode{cur.Id}' class='{treeNodeClass}' onclick='select(this, {cur.Id}, {Json.Serialize(topics)});'>{cur.Name}</li>"
             );
         }
     }
@@ -101,52 +96,40 @@
 
 
 <script>
-    var allInfo = @Json.Serialize(Model.Forums);
+    //var allInfo = @Json.Serialize(Model.Forums);
     var path = @Json.Serialize(Model.PathToForumOrTopic);
     var topicId = @Json.Serialize(Model.TopicId);
 
     function select(obj, forumId, topics) {
-        var toggler = document.getElementsByClassName("selected");
+        var toggler = document.getElementsByClassName("selectedTreeNode");
 
         for (var i = 0; i < toggler.length; i++) {
-            toggler[i].classList.remove("selected")
+            toggler[i].classList.remove("selectedTreeNode")
         }
 
-        var parent = document.getElementById("child" + forumId); //obj.parentElement.querySelector(".nested");
+        var parent = document.getElementById("child" + forumId);
         if (parent != null) {
-            parent.classList.toggle("active");
+            parent.classList.toggle("activeTreeNode");
         }
         obj.classList.toggle("searchCaret-down");
-        obj.classList.toggle("selected");
+        obj.classList.toggle("selectedTreeNode");
 
-        var forumInput = document.getElementById("ForumIdInput");
-        if (forumInput != null) {
-            forumInput.value = forumId;
+        if (typeof forumSelectCallback === "function") {
+            forumSelectCallback(forumId);
         }
 
-        var topicDisplay = document.getElementById("TopicIdDisplay");
-        if (topicDisplay != null) {
-            topicDisplay.options.length = 0;
-            var option = document.createElement('option');
-            option.text = "Caută în toate subiectele";
-            option.value = 0;
-            topicDisplay.add(option);
-            topics.forEach(t => {
-                var option = document.createElement('option');
-                option.text = t.title;
-                option.value = t.id;
-                topicDisplay.add(option);
-            });
+        if (typeof topicSelectCallback === "function") {
+            topicSelectCallback(topics);
         }
     }
 
     $(document).ready(function () {
         for (var i = 0; i < path.length; i++) {
-            document.getElementById("entry" + path[i]).click();
+            document.getElementById("treeNode" + path[i]).click();
         }
 
-        if (topicId != null) {
-            $("#TopicIdDisplay").val(topicId).change();
+        if (typeof topicSelectInit === "function") {
+            topicSelectInit(topics);
         }
     });
 

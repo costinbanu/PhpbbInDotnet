@@ -9,19 +9,19 @@ namespace Serverless.Forum.ForumDb
     {
         [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int AttachId { get; set; } = 0;
-        public int PostMsgId { get; set; }
-        public int TopicId { get; set; }
-        public byte InMessage { get; set; }
-        public int PosterId { get; set; }
-        public byte IsOrphan { get; set; }
-        public string PhysicalFilename { get; set; }
-        public string RealFilename { get; set; }
-        public int DownloadCount { get; set; }
-        public string AttachComment { get; set; }
-        public string Extension { get; set; }
-        public string Mimetype { get; set; }
-        public long Filesize { get; set; }
-        public long Filetime { get; set; }
-        public byte Thumbnail { get; set; }
+        public int PostMsgId { get; set; } = 0;
+        public int TopicId { get; set; } = 0;
+        public byte InMessage { get; set; } = 0;
+        public int PosterId { get; set; } = 0;
+        public byte IsOrphan { get; set; } = 1;
+        public string PhysicalFilename { get; set; } = string.Empty;
+        public string RealFilename { get; set; } = string.Empty;
+        public int DownloadCount { get; set; } = 0;
+        public string AttachComment { get; set; } = string.Empty;
+        public string Extension { get; set; } = string.Empty;
+        public string Mimetype { get; set; } = string.Empty;
+        public long Filesize { get; set; } = 0;
+        public long Filetime { get; set; } = 0;
+        public byte Thumbnail { get; set; } = 0;
     }
 }
