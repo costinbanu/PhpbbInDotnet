@@ -3,20 +3,48 @@ using Microsoft.Extensions.Configuration;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Pages.CustomPartials.Admin;
 using Serverless.Forum.Utilities;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using System;
+using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using Serverless.Forum.Admin;
+using Serverless.Forum.Contracts;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace Serverless.Forum.Pages
 {
     public partial class AdminModel : ModelWithLoggedUser
     {
         public AdminCategories Category { get; private set; } = AdminCategories.Users;
-        public _AdminUsersPartialModel AdminUsers { get; private set; }
-
-        private _AdminForumsPartialModel _adminForums;
-
-        public AdminModel(IConfiguration config, Utils utils) : base(config, utils)
+        public bool? IsSuccess { get; private set; }
+        public string Message { get; private set; }
+        public string MessageClass
         {
-            AdminUsers = new _AdminUsersPartialModel(config, utils);
+            get
+            {
+                switch (IsSuccess)
+                {
+                    case null:
+                        return "message";
+                    case true:
+                        return "message success";
+                    case false:
+                    default:
+                        return "message fail";
+                }
+            }
+        }
+
+        private readonly UserService _userService;
+        private readonly ForumService _forumService;
+
+        public AdminModel(IConfiguration config, Utils utils, UserService userService, ForumService forumService) : base(config, utils)
+        {
+            _userService = userService;
+            _forumService = forumService;
+            UserSearchResults = new List<PhpbbUsers>();
+            ForumChildren = new List<PhpbbForums>();
         }
 
         public async Task<IActionResult> OnGet()
@@ -30,19 +58,13 @@ namespace Serverless.Forum.Pages
             return Page();
         }
 
+        private async Task<IActionResult> ValidatePermissionsAndInit(AdminCategories category)
+            => !await IsCurrentUserAdminHereAsync() ? Forbid() : null;
+
+
         #region Admin user
 
-        public async Task<IActionResult> OnPostUserManagement(AdminUserActions? action, int? id)
-        {
-            var validationResult = await ValidatePermissionsAndInit(AdminCategories.Users);
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
-
-            await AdminUsers.ManageUserAsync(action, id);
-            return Page();
-        }
+        public List<PhpbbUsers> UserSearchResults { get; private set; }
 
         public async Task<IActionResult> OnPostUserSearch(string username, string email, int? userid)
         {
@@ -52,7 +74,20 @@ namespace Serverless.Forum.Pages
                 return validationResult;
             }
 
-            await AdminUsers.UserSearchAsync(username, email, userid);
+            UserSearchResults = await _userService.UserSearchAsync(username, email, userid);
+            Category = AdminCategories.Users;
+            return Page();
+        }
+
+        public async Task<IActionResult> OnPostUserManagement(AdminUserActions? userAction, int? userId)
+        {
+            var validationResult = await ValidatePermissionsAndInit(AdminCategories.Users);
+            if (validationResult != null)
+            {
+                return validationResult;
+            }
+
+            (Message, IsSuccess) = await _userService.ManageUserAsync(userAction, userId);
             Category = AdminCategories.Users;
             return Page();
         }
@@ -61,18 +96,10 @@ namespace Serverless.Forum.Pages
 
         #region Admin forum
 
-        public async Task<IActionResult> OnPostForumManagement(int forumId, int[] childrenForums, PhpbbForums changedForum)
-        {
-            var validationResult = await ValidatePermissionsAndInit(AdminCategories.Users);
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
-
-            await (await GetAdminForumsModelLazy()).ManageForumsAsync(forumId, childrenForums, changedForum);
-            Category = AdminCategories.Forums;
-            return Page();
-        }
+        public PhpbbForums Forum { get; set; } = null;
+        public int SelectedForumId { get; private set; }
+        public List<PhpbbForums> ForumChildren { get; private set; }
+        //public List<SelectListItem> ForumSelectedParent { get; private set; }
 
         public async Task<IActionResult> OnPostShowForum(int forumId)
         {
@@ -82,26 +109,27 @@ namespace Serverless.Forum.Pages
                 return validationResult;
             }
 
-            await (await GetAdminForumsModelLazy()).ShowForum(forumId, async (id) => await PathToForumOrTopic(id, null));
+            (Forum, ForumChildren) = await _forumService.ShowForum(forumId);
+            SelectedForumId = forumId;
+
             Category = AdminCategories.Forums;
             return Page();
         }
 
-        public async Task<_AdminForumsPartialModel> GetAdminForumsModelLazy()
-            => _adminForums ?? (_adminForums = new _AdminForumsPartialModel(_config, _utils, await GetForumTree(), await PathToForumOrTopic(0, null)));
+        public async Task<IActionResult> OnPostForumManagement(List<int> childrenForums, int forumId, string forumName, string forumDesc)
+        {
+            var validationResult = await ValidatePermissionsAndInit(AdminCategories.Users);
+            if (validationResult != null)
+            {
+                return validationResult;
+            }
+
+            (Message, IsSuccess) = await _forumService.ManageForumsAsync(childrenForums, forumId, forumName, forumDesc);
+            Category = AdminCategories.Forums;
+            return Page();
+        }
 
         #endregion Admin forum
 
-        private async Task<IActionResult> ValidatePermissionsAndInit(AdminCategories category)
-        {
-            if (!await IsCurrentUserAdminHereAsync())
-            {
-                return Forbid();
-            }
-
-            AdminUsers.DateFormat = (await GetCurrentUserAsync()).UserDateFormat;
-            Category = AdminCategories.Users;
-            return null;
-        }
     }
 }

@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
@@ -8,39 +7,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Serverless.Forum.Pages.CustomPartials.Admin
+namespace Serverless.Forum.Admin
 {
-    public class _AdminUsersPartialModel : PageModel
+    public class UserService
     {
         private readonly IConfiguration _config;
         private readonly Utils _utils;
 
-        public List<PhpbbUsers> SearchResults { get; private set; }
-        public string DateFormat { get; set; } = "dddd, dd.MM.yyyy, HH:mm";
-        public bool? IsSuccess { get; private set; }
-        public string Message { get; private set; }
-        public string MessageClass
-        {
-            get
-            {
-                switch (IsSuccess)
-                {
-                    case null:
-                        return "message";
-                    case true:
-                        return "message success";
-                    case false:
-                    default:
-                        return "message fail";
-                }
-            }
-        }
-
-        public _AdminUsersPartialModel(IConfiguration config, Utils utils)
+        public UserService(IConfiguration config, Utils utils)
         {
             _config = config;
             _utils = utils;
-            SearchResults = new List<PhpbbUsers>();
         }
 
         public async Task<List<PhpbbUsers>> GetInactiveUsersAsync()
@@ -56,23 +33,19 @@ namespace Serverless.Forum.Pages.CustomPartials.Admin
             }
         }
 
-        public async Task ManageUserAsync(AdminUserActions? action, int? userId)
+        public async Task<(string Message, bool? IsSuccess)> ManageUserAsync(AdminUserActions? action, int? userId)
         {
             using (var context = new ForumDbContext(_config))
             {
                 if (userId == _utils.AnonymousDbUser.UserId)
                 {
-                    Message = $"Utilizatorul cu id '{userId}' este utilizatorul anonim și nu poate fi șters.";
-                    IsSuccess = false;
-                    return;
+                    return ($"Utilizatorul cu id '{userId}' este utilizatorul anonim și nu poate fi șters.", false);
                 }
 
                 var user = await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == userId);
                 if (user == null)
                 {
-                    Message = $"Utilizatorul cu id '{userId}' nu a fost găsit.";
-                    IsSuccess = false;
-                    return;
+                    return ($"Utilizatorul cu id '{userId}' nu a fost găsit.", false);
                 }
 
                 async Task flagUserAsChanged()
@@ -114,14 +87,17 @@ namespace Serverless.Forum.Pages.CustomPartials.Admin
 
                 try
                 {
+                    var message = null as string;
+                    var isSuccess = null as bool?;
+
                     switch (action)
                     {
                         case AdminUserActions.Activate:
                             {
                                 user.UserInactiveReason = UserInactiveReason.NotInactive;
                                 user.UserInactiveTime = 0L;
-                                Message = $"Utilizatorul '{user.Username}' a fost activat.";
-                                IsSuccess = true;
+                                message = $"Utilizatorul '{user.Username}' a fost activat.";
+                                isSuccess = true;
                                 break;
                             }
                         case AdminUserActions.Deactivate:
@@ -129,8 +105,8 @@ namespace Serverless.Forum.Pages.CustomPartials.Admin
                                 user.UserInactiveReason = UserInactiveReason.InactivatedByAdmin;
                                 user.UserInactiveTime = DateTime.UtcNow.ToUnixTimestamp();
                                 await flagUserAsChanged();
-                                Message = $"Utilizatorul '{user.Username}' a fost dezactivat.";
-                                IsSuccess = true;
+                                message = $"Utilizatorul '{user.Username}' a fost dezactivat.";
+                                isSuccess = true;
                                 break;
                             }
                         case AdminUserActions.Delete_KeepMessages:
@@ -149,8 +125,8 @@ namespace Serverless.Forum.Pages.CustomPartials.Admin
 
                                 await flagUserAsChanged();
                                 await deleteUser();
-                                Message = $"Utilizatorul '{user.Username}' a fost șters iar mesajele păstrate.";
-                                IsSuccess = true;
+                                message = $"Utilizatorul '{user.Username}' a fost șters iar mesajele păstrate.";
+                                isSuccess = true;
                                 break;
                             }
                         case AdminUserActions.Delete_DeleteMessages:
@@ -161,29 +137,29 @@ namespace Serverless.Forum.Pages.CustomPartials.Admin
 
                                 await flagUserAsChanged();
                                 await deleteUser();
-                                Message = $"Utilizatorul '{user.Username}' a fost șters cu tot cu mesajele scrise.";
-                                IsSuccess = true;
+                                message = $"Utilizatorul '{user.Username}' a fost șters cu tot cu mesajele scrise.";
+                                isSuccess = true;
                                 break;
                             }
                         default: throw new ArgumentException($"Unknown action '{action}'.", nameof(action));
                     }
 
                     await context.SaveChangesAsync();
+
+                    return (message, isSuccess);
                 }
                 catch (Exception ex)
                 {
-                    Message = $"Acțiunea {action} nu a putut fi aplicată utilizatorului '{user.Username}'. Eroare: {ex.Message}";
-                    IsSuccess = false;
-                    return;
+                    return ($"Acțiunea {action} nu a putut fi aplicată utilizatorului '{user.Username}'. Eroare: {ex.Message}", false);
                 }
             }
         }
 
-        public async Task UserSearchAsync(string username, string email, int? userid)
+        public async Task<List<PhpbbUsers>> UserSearchAsync(string username, string email, int? userid)
         {
             using (var context = new ForumDbContext(_config))
             {
-                SearchResults = await (
+                return await (
                     from u in context.PhpbbUsers
                     where (string.IsNullOrWhiteSpace(username) || u.UsernameClean.Contains(_utils.CleanString(username), StringComparison.InvariantCultureIgnoreCase))
                        && (string.IsNullOrWhiteSpace(email) || u.UserEmail == email)

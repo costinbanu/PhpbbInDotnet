@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using PaulMiami.AspNetCore.Mvc.Recaptcha;
+using Serverless.Forum.Admin;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System;
@@ -64,7 +65,6 @@ namespace Serverless.Forum
                 .AddRazorOptions(o =>
                 {
                     o.PageViewLocationFormats.Add("~/Pages/CustomPartials/{0}.cshtml");
-                    o.PageViewLocationFormats.Add("~/Pages/CustomPartials/Admin/{0}.cshtml");
                     o.PageViewLocationFormats.Add("~/Pages/CustomPartials/Email/{0}.cshtml");
                 });
 
@@ -89,6 +89,8 @@ namespace Serverless.Forum
             });
 
             services.AddSingleton<Utils>();
+            services.AddSingleton<ForumService>();
+            services.AddSingleton<UserService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

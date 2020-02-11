@@ -217,7 +217,7 @@ namespace Serverless.Forum
             {
                 var allForums = await (
                     from f in context.PhpbbForums
-                    where (parentType == null || f.ForumType == (byte?)parentType)
+                    where (parentType == null || f.ForumType == parentType)
                        && usr.UserPermissions != null
                        && !usr.UserPermissions.Any(fp => fp.ForumId == f.ForumId && fp.AuthRoleId == 16)
 

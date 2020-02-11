@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Serverless.Forum.Utilities;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -28,7 +29,8 @@ namespace Serverless.Forum.ForumDb
         public int ForumRulesOptions { get; set; } = 7;
         public string ForumRulesUid { get; set; }
         public byte ForumTopicsPerPage { get; set; } = 0;
-        public byte ForumType { get; set; } = 0;
+        [Column(TypeName = "tinyint(2)")]
+        public ForumType ForumType { get; set; } = ForumType.Category;
         public byte ForumStatus { get; set; } = 0;
         public int ForumPosts { get; set; } = 0;
         public int ForumTopics { get; set; } = 0;

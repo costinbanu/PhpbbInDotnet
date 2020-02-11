@@ -1,10 +1,14 @@
 ﻿@page
 @using Serverless.Forum.Utilities
+@using Serverless.Forum.Pages.CustomPartials.Admin;
+
+@inject Admin.UserService _userService;
 
 @model Serverless.Forum.Pages.AdminModel
 @{
     ViewData["Title"] = "Admin";
     Layout = "~/Pages/_Layout.cshtml";
+    var dateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
 }
 
 <h2>Panoul administratorului</h2>
@@ -83,13 +87,27 @@
         background-color: darkred;
     }
 
-    input, textarea {
+    input[type='text'], input[type='password'], textarea, option {
         width: 400px;
     }
 
     td {
         padding: 5px;
         margin-bottom: 10px;
+    }
+
+    #forumFields {
+        position: fixed;
+        background-color: rgba(255, 255, 255, 0.90);
+        width: 75%;
+        height: 75%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        overflow-y: scroll;
+        display: block;
+        border: solid 1px black;
+        padding: 10px;
     }
 </style>
 
@@ -99,31 +117,215 @@
     <button class="@(Model.Category == AdminCategories.Logs ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Logs')">Administrare loguri</button>
 </div>
 
+<span class="@Model.MessageClass">@Model.Message</span>
+
 <div id="Users" class="tabcontent" style="@(Model.Category == AdminCategories.Users ? "display:inherit" : "display:none")">
-    @await  Html.PartialAsync(
-            "_AdminUsersPartial",
-            Model.AdminUsers,
+    <h4>Utilizatori inactivi</h4>
+
+    <form method="post" id="userManagement" asp-page-handler="UserManagement">
+        <input type="hidden" name="userAction" id="action" />
+        <input type="hidden" name="userId" id="id" />
+    </form>
+
+    @await Html.PartialAsync(
+        "_AdminUsersSummaryPartial",
+        new _AdminUsersSummaryPartialModel(
+            dateFormat,
+            await _userService.GetInactiveUsersAsync()
+        ),
+        ViewData
+    )
+
+    <h4>Caută utilizatori</h4>
+    <form method="post" id="userSearch" asp-page-handler="UserSearch">
+        <table style="border:none; padding:0px; margin:0px">
+            <tr>
+                <td style="padding:5px; font-weight:bold; text-align: right">
+                    Nume utilizator
+                </td>
+                <td>
+                    <input type="text" name="username" id="username" />
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:5px; font-weight:bold; text-align: right">
+                    E-mail
+                </td>
+                <td>
+                    <input type="text" name="email" id="email" />
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:5px; font-weight:bold; text-align: right">
+                    Id
+                </td>
+                <td>
+                    <input type="text" name="userid" id="userid" />
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2" style="padding:5px; font-weight:bold; text-align: center">
+                    <input type="submit" value="Caută" />
+                </td>
+            </tr>
+        </table>
+    </form>
+
+    @if (Model.UserSearchResults.Any())
+    {
+        @await Html.PartialAsync(
+            "_AdminUsersSummaryPartial",
+            new _AdminUsersSummaryPartialModel(
+                dateFormat,
+                Model.UserSearchResults
+            ),
             ViewData
-        )
+        );
+    }
 </div>
 
 <div id="Forums" class="tabcontent" style="@(Model.Category == AdminCategories.Forums ? "display:inherit" : "display:none")">
-    @await  Html.PartialAsync(
-        "_AdminForumsPartial",
-        await Model.GetAdminForumsModelLazy(),
+    <div style="float:left">
+        <h4>Administrare forumuri</h4>
+    </div>
+
+    <form method="post" asp-page-handler="ShowForum">
+        <div style="float:right; width:200px;">
+            <input type="submit" value="Manage selected forum" style="position:fixed; width:auto" />
+        </div>
+        <input id="forumId" name="forumId" type="hidden" />
+    </form>
+    <p>&nbsp;</p>
+    <p>&nbsp;</p>
+
+    @await Html.PartialAsync(
+        "_ForumTreePartial",
+         new CustomPartials._ForumTreePartialModel
+         {
+             Forums = await Model.GetForumTree(),
+             ForumId = Model.SelectedForumId,
+             TopicId = null,
+             PathToForumOrTopic = await Model.PathToForumOrTopic(Model.SelectedForumId, null)
+         },
         ViewData
     )
+
+    @if (Model.Forum != null)
+    {
+        <form id="forumFields" method="post" asp-page-handler="ForumManagement">
+            <h4 style="float:left">Administrează forum - @Model.Forum.ForumName</h4>
+            <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('forumFields')">Închide [X]</div>
+            <p>&nbsp;</p>
+            <p>&nbsp;</p>
+            <table style="border:none; padding:0px; margin:0px">
+                <tr>
+                    <td style="padding:5px; font-weight:bold; text-align: right">
+                        Nume forum
+                    </td>
+                    <td>
+                        <input asp-for="Forum.ForumName" name="forumName" />
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:5px; font-weight:bold; text-align: right">
+                        Descriere forum
+                    </td>
+                    <td>
+                        <textarea asp-for="Forum.ForumDesc" name="forumDesc"></textarea>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:5px; font-weight:bold; text-align: right">
+                        Parolă forum
+                    </td>
+                    <td>
+                        <input asp-for="Forum.ForumPassword" name="forumPassword" type="password" id="forumPassword" />&nbsp;
+                        <input type="checkbox" onclick="Toggle()">&nbsp;
+                        Arată parola
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:5px; font-weight:bold; text-align: right">
+                        Tip forum
+                    </td>
+                    <td>
+                        <input asp-for="Forum.ForumType" name="forumType" />
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:5px; font-weight:bold; text-align: right">
+                        Părinte forum
+                    </td>
+                    <td style="max-height:600px; overflow:scroll">
+                        @await Html.PartialAsync(
+                            "_ForumTreePartial",
+                             new CustomPartials._ForumTreePartialModel
+                             {
+                                 Forums = await Model.GetForumTree(),
+                                 ForumId = Model.SelectedForumId,
+                                 TopicId = null,
+                                 PathToForumOrTopic = await Model.PathToForumOrTopic(Model.SelectedForumId, null)
+                             },
+                            ViewData nu merge cu doua tree in aceeasi pagina, de incercat cu dropdown indentat (parcurgere forum tree)
+                        ) 
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:5px; font-weight:bold; text-align: right">
+                        Ordonează sub-forumuri
+                    </td>
+                    <td>
+                        <div id="siblings">
+                            @foreach (var child in Model.ForumChildren)
+                            {
+                                <div style="padding:5px; margin:5px; border: solid 1px black; border-radius:5px; cursor:move">
+                                    @child.ForumName
+                                    <input type="hidden" name="childrenForums" value="@child.ForumId" />
+                                </div>
+                            }
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:5px; font-weight:bold; text-align: right">
+                        Permisiuni
+                    </td>
+                    <td></td>
+                </tr>
+            </table>
+            <input type="submit" value="Salvează modificările" />
+            <input asp-for="Forum.ForumId" type="hidden" name="forumId" />
+        </form>
+    }
+
 </div>
 
 <div id="Logs" class="tabcontent" style="@(Model.Category == AdminCategories.Logs ? "display:inherit" : "display:none")">
-    @await  Html.PartialAsync(
-        "_AdminLogsPartial",
-        new CustomPartials.Admin._AdminLogsPartialModel(),
-        ViewData
-    )
+    &nbsp;
 </div>
 
-<script>
+<script type="text/javascript">
+    var coll = document.getElementsByClassName("collapsible");
+    var i;
+
+    for (i = 0; i < coll.length; i++) {
+        coll[i].addEventListener("click", function () {
+            this.classList.toggle("active");
+            var content = this.nextElementSibling;
+            if (content.style.display === "block") {
+                content.style.display = "none";
+            } else {
+                content.style.display = "block";
+            }
+        });
+    }
+
+    $(function () {
+        $("#siblings").sortable({
+            axis: 'y'
+        });
+    });
+
     function openTab(evt, tabName) {
         var i, tabcontent, tablinks;
         tabcontent = document.getElementsByClassName("tabcontent");
@@ -138,9 +340,36 @@
         evt.currentTarget.className += " active";
     }
 
-    function submitForm(form, action, id) {
-        document.getElementById("action").value = action;
-        document.getElementById("id").value = id;
+    function submitForumForm(form, id) {
+        document.getElementById("forumId").value = id;
         document.getElementById(form).submit();
     }
+
+    function submitUserForm(userId, userName, action) {
+        msg = "Am primit comanda '" + action + "' pentru utilizatorul '" + userName + "'. Sunteți sigur că doriți să continuați cu execuția acestei comenzi?";
+
+        if (confirm(msg)) {
+            document.getElementById("userAction").value = action;
+            document.getElementById("userId").value = userId;
+            document.getElementById(form).submit();
+        }
+    }
+
+    //forum tree callback
+    function forumSelectCallback(forumId) {
+        var forumInput = document.getElementById("forumId");
+        if (forumInput != null) {
+            forumInput.value = forumId;
+        }
+    }
+
+    function Toggle() {
+        var temp = document.getElementById("forumPassword");
+        if (temp.type === "password") {
+            temp.type = "text";
+        }
+        else {
+            temp.type = "password";
+        }
+    } 
 </script>
