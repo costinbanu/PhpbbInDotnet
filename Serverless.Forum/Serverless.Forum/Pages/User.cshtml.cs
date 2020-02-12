@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Pages.CustomPartials.Email;
+using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System;
 using System.ComponentModel.DataAnnotations;
@@ -48,7 +49,8 @@ namespace Serverless.Forum.Pages
 
         private readonly IAmazonS3 _s3Client;
 
-        public UserModel(IConfiguration config, Utils utils) : base(config, utils)
+        public UserModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService)
+            : base(config, utils, forumService, userService, cacheService)
         {
             _s3Client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1);
         }

@@ -2,7 +2,8 @@
 @using Serverless.Forum.Utilities
 @using Serverless.Forum.Pages.CustomPartials.Admin;
 
-@inject Admin.UserService _userService;
+@inject Services.AdminUserService _adminUserService;
+@inject Services.AdminForumService _adminForumService;
 
 @model Serverless.Forum.Pages.AdminModel
 @{
@@ -131,7 +132,7 @@
         "_AdminUsersSummaryPartial",
         new _AdminUsersSummaryPartialModel(
             dateFormat,
-            await _userService.GetInactiveUsersAsync()
+            await _adminUserService.GetInactiveUsersAsync()
         ),
         ViewData
     )
@@ -202,7 +203,7 @@
         "_ForumTreePartial",
          new CustomPartials._ForumTreePartialModel
          {
-             Forums = await Model.GetForumTree(),
+             Forums = await Model.GetForumTreeAsync(),
              ForumId = Model.SelectedForumId,
              TopicId = null,
              PathToForumOrTopic = await Model.PathToForumOrTopic(Model.SelectedForumId, null)
@@ -249,7 +250,7 @@
                         Tip forum
                     </td>
                     <td>
-                        <input asp-for="Forum.ForumType" name="forumType" />
+                        @Html.DropDownListFor(m => m.Forum.ForumType, new SelectList(Enum.GetValues(typeof(ForumType))))
                     </td>
                 </tr>
                 <tr>
@@ -257,17 +258,7 @@
                         Părinte forum
                     </td>
                     <td style="max-height:600px; overflow:scroll">
-                        @await Html.PartialAsync(
-                            "_ForumTreePartial",
-                             new CustomPartials._ForumTreePartialModel
-                             {
-                                 Forums = await Model.GetForumTree(),
-                                 ForumId = Model.SelectedForumId,
-                                 TopicId = null,
-                                 PathToForumOrTopic = await Model.PathToForumOrTopic(Model.SelectedForumId, null)
-                             },
-                            ViewData nu merge cu doua tree in aceeasi pagina, de incercat cu dropdown indentat (parcurgere forum tree)
-                        ) 
+                        @Html.DropDownListFor(m => m.ParentId, await _adminForumService.FlatForumTreeAsListItem(Model.ParentId, Model.Forum.ForumId))
                     </td>
                 </tr>
                 <tr>

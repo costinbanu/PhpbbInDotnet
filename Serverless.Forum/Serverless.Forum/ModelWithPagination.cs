@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Configuration;
-using Serverless.Forum.Pages;
 using Serverless.Forum.Pages.CustomPartials;
+using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -16,7 +16,8 @@ namespace Serverless.Forum
         public int CurrentPage { get; protected set; }
         public readonly List<SelectListItem> PostsPerPage;
 
-        public ModelWithPagination(IConfiguration config, Utils utils) : base(config, utils)
+        public ModelWithPagination(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService)
+            : base(config, utils, forumService, userService, cacheService)
         {
             PostsPerPage = new List<SelectListItem>
             {

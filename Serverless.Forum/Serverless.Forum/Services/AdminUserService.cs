@@ -7,17 +7,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Serverless.Forum.Admin
+namespace Serverless.Forum.Services
 {
-    public class UserService
+    public class AdminUserService
     {
         private readonly IConfiguration _config;
         private readonly Utils _utils;
+        private readonly PostService _postService;
 
-        public UserService(IConfiguration config, Utils utils)
+        public AdminUserService(IConfiguration config, Utils utils, PostService postService)
         {
             _config = config;
             _utils = utils;
+            _postService = postService;
         }
 
         public async Task<List<PhpbbUsers>> GetInactiveUsersAsync()
@@ -133,7 +135,7 @@ namespace Serverless.Forum.Admin
                             {
                                 var toDelete = await context.PhpbbPosts.Where(p => p.PosterId == userId).ToListAsync();
                                 context.PhpbbPosts.RemoveRange(toDelete);
-                                toDelete.ForEach(async p => await _utils.CascadePostDelete(context, p));
+                                toDelete.ForEach(async p => await _postService.CascadePostDelete(context, p));
 
                                 await flagUserAsChanged();
                                 await deleteUser();

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
+using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
@@ -24,17 +25,16 @@ namespace Serverless.Forum.Pages
         public int? TopicId => _currentTopic?.TopicId;
         public bool IsLocked => (_currentTopic?.TopicStatus ?? 0) == 1;
         public PollDisplay Poll { get; private set; }
-        //public IConfiguration Config => _config;
-        public Utils Utils => _utils;
 
         private PhpbbTopics _currentTopic;
         private List<PhpbbPosts> _dbPosts;
         private int? _page;
         private int? _count;
+        private readonly PostService _postService;
 
-        public ViewTopicModel(IConfiguration config, Utils utils) : base(config, utils)
+        public ViewTopicModel(IConfiguration config, Utils utils, ForumTreeService forumService, PostService postService) : base(config, utils, forumService)
         {
-
+            _postService = postService;
         }
 
         public async Task<IActionResult> OnGetByPostId(int postId, bool? highlight)
@@ -139,10 +139,10 @@ namespace Serverless.Forum.Pages
                         BbcodeUid = p.BbcodeUid,
                         Unread = IsPostUnread(p.TopicId, p.PostId),
                         AuthorHasAvatar = ju == null ? false : !string.IsNullOrWhiteSpace(ju.UserAvatar),
-                        AuthorSignature = ju == null ? null : _utils.BbCodeToHtml(ju.UserSig, ju.UserSigBbcodeUid)
+                        AuthorSignature = ju == null ? null : _postService.BbCodeToHtml(ju.UserSig, ju.UserSigBbcodeUid).RunSync()
                     }
                 ).ToList();
-                await _utils.ProcessPosts(Posts, PageContext, HttpContext, true);
+                await _postService.ProcessPosts(Posts, PageContext, HttpContext, true);
                 TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
 
                 await GetPoll(context);
@@ -200,7 +200,7 @@ namespace Serverless.Forum.Pages
         {
             if (_dbPosts == null || _page == null || _count == null)
             {
-                var results = await _utils.GetPostPageAsync(CurrentUserId, topicId, page, postId);
+                var results = await _postService.GetPostPageAsync(CurrentUserId, topicId, page, postId);
                 _dbPosts = results.Posts;
                 _page = results.Page;
                 _count = results.Count;

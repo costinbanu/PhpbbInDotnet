@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using PaulMiami.AspNetCore.Mvc.Recaptcha;
-using Serverless.Forum.Admin;
+using Serverless.Forum.Services;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System;
@@ -89,8 +89,9 @@ namespace Serverless.Forum
             });
 
             services.AddSingleton<Utils>();
-            services.AddSingleton<ForumService>();
-            services.AddSingleton<UserService>();
+            services.AddSingleton<AdminForumService>();
+            services.AddSingleton<AdminUserService>();
+            services.AddSingleton<ForumTreeService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

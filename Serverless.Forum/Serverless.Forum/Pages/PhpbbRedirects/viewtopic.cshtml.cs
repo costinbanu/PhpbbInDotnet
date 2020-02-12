@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.ForumDb;
+using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System.Linq;
 using System.Threading.Tasks;
@@ -11,7 +11,8 @@ namespace Serverless.Forum.Pages.PhpbbRedirects
 {
     public class viewtopicModel : ModelWithLoggedUser
     {
-        public viewtopicModel(IConfiguration config, Utils utils) : base(config, utils)
+        public viewtopicModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService) 
+            : base(config, utils, forumService, userService, cacheService)
         {
         }
 

@@ -60,10 +60,10 @@
             "_ForumTreePartial",
              new CustomPartials._ForumTreePartialModel
              {
-                 Forums = await Model.GetForumTree(),
+                 Forums = await Model.GetForumTreeAsync(),
                  ForumId = Model.ForumId,
                  TopicId = Model.TopicId,
-                 PathToForumOrTopic = await Model.PathToForumOrTopic(Model.ForumId, Model.TopicId)
+                 PathToForumOrTopic = await Model.PathToForumOrTopic(Model.ForumId.Value, Model.TopicId)
              },
             ViewData
         )

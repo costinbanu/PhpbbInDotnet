@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using System;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
-using Serverless.Forum.Admin;
+using Serverless.Forum.Services;
 using Serverless.Forum.Contracts;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
@@ -36,15 +36,17 @@ namespace Serverless.Forum.Pages
             }
         }
 
-        private readonly UserService _userService;
-        private readonly ForumService _forumService;
+        private readonly AdminUserService _adminUserService;
+        private readonly AdminForumService _adminForumService;
 
-        public AdminModel(IConfiguration config, Utils utils, UserService userService, ForumService forumService) : base(config, utils)
+        public AdminModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService, AdminUserService adminUserService, AdminForumService adminForumService)
+            : base(config, utils, forumService, userService, cacheService)
         {
-            _userService = userService;
-            _forumService = forumService;
+            _adminUserService = adminUserService;
+            _adminForumService = adminForumService;
             UserSearchResults = new List<PhpbbUsers>();
             ForumChildren = new List<PhpbbForums>();
+            ForumSelectedParent = new List<SelectListItem>();
         }
 
         public async Task<IActionResult> OnGet()
@@ -74,7 +76,7 @@ namespace Serverless.Forum.Pages
                 return validationResult;
             }
 
-            UserSearchResults = await _userService.UserSearchAsync(username, email, userid);
+            UserSearchResults = await _adminUserService.UserSearchAsync(username, email, userid);
             Category = AdminCategories.Users;
             return Page();
         }
@@ -87,7 +89,7 @@ namespace Serverless.Forum.Pages
                 return validationResult;
             }
 
-            (Message, IsSuccess) = await _userService.ManageUserAsync(userAction, userId);
+            (Message, IsSuccess) = await _adminUserService.ManageUserAsync(userAction, userId);
             Category = AdminCategories.Users;
             return Page();
         }
@@ -99,7 +101,9 @@ namespace Serverless.Forum.Pages
         public PhpbbForums Forum { get; set; } = null;
         public int SelectedForumId { get; private set; }
         public List<PhpbbForums> ForumChildren { get; private set; }
-        //public List<SelectListItem> ForumSelectedParent { get; private set; }
+        public List<SelectListItem> ForumSelectedParent { get; private set; }
+        [BindProperty]
+        public int ParentId { get; private set; }
 
         public async Task<IActionResult> OnPostShowForum(int forumId)
         {
@@ -109,14 +113,15 @@ namespace Serverless.Forum.Pages
                 return validationResult;
             }
 
-            (Forum, ForumChildren) = await _forumService.ShowForum(forumId);
+            (Forum, ForumChildren) = await _adminForumService.ShowForum(forumId);
             SelectedForumId = forumId;
+            ParentId = Forum.ParentId;
 
             Category = AdminCategories.Forums;
             return Page();
         }
 
-        public async Task<IActionResult> OnPostForumManagement(List<int> childrenForums, int forumId, string forumName, string forumDesc)
+        public async Task<IActionResult> OnPostForumManagement(List<int> childrenForums, int forumId, string forumName, string forumDesc, int parentId)
         {
             var validationResult = await ValidatePermissionsAndInit(AdminCategories.Users);
             if (validationResult != null)
@@ -124,7 +129,7 @@ namespace Serverless.Forum.Pages
                 return validationResult;
             }
 
-            (Message, IsSuccess) = await _forumService.ManageForumsAsync(childrenForums, forumId, forumName, forumDesc);
+            (Message, IsSuccess) = await _adminForumService.ManageForumsAsync(childrenForums, forumId, forumName, forumDesc);
             Category = AdminCategories.Forums;
             return Page();
         }

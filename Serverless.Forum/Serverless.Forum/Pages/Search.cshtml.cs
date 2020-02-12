@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
+using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -18,6 +19,8 @@ namespace Serverless.Forum.Pages
     [ValidateAntiForgeryToken]
     public class SearchModel : ModelWithPagination
     {
+        private readonly PostService _postService;
+
         public IConfiguration Config => _config;
 
         public Utils Utils => _utils;
@@ -50,7 +53,10 @@ namespace Serverless.Forum.Pages
 
         public IEnumerable<ExtendedPostDisplay> Posts { get; private set; }
 
-        public SearchModel(IConfiguration config, Utils utils) : base(config, utils) { }
+        public SearchModel(IConfiguration config, Utils utils, ForumTreeService forumService, PostService postService) : base(config, utils, forumService)
+        {
+            _postService = postService;
+        }
 
         public async Task OnGet()
         {
@@ -128,12 +134,12 @@ namespace Serverless.Forum.Pages
                 {
 
                     Posts = await multi.ReadAsync<ExtendedPostDisplay>();
-                    Parallel.ForEach(Posts, p =>
+                    Parallel.ForEach(Posts, async p =>
                     {
                         p.AuthorHasAvatar = !string.IsNullOrWhiteSpace(p.UserAvatar);
-                        p.AuthorSignature = p.UserSig == null ? null : _utils.BbCodeToHtml(p.UserSig, p.UserSigBbcodeUid);
+                        p.AuthorSignature = p.UserSig == null ? null : await _postService.BbCodeToHtml(p.UserSig, p.UserSigBbcodeUid);
                     });
-                    await _utils.ProcessPosts(Posts, PageContext, HttpContext, false);
+                    await _postService.ProcessPosts(Posts, PageContext, HttpContext, false);
                     PageNum = (await multi.ReadAsync<int>()).Single();
                     TotalResults = unchecked((int)(await multi.ReadAsync<long>()).Single());
                 }

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Pages.CustomPartials;
+using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
@@ -23,10 +24,19 @@ namespace Serverless.Forum.Pages
         public int? ParentForumId { get; private set; }
         public int ForumId { get; private set; }
 
-        public ViewForumModel(IConfiguration config, Utils utils) : base(config, utils) { }
+        public ViewForumModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService)
+            : base(config, utils, forumService, userService, cacheService)
+        {
+
+        }
 
         public async Task<IActionResult> OnGet(int forumId)
         {
+            if (forumId == 0)
+            {
+                return RedirectToPage("/Index");
+            }
+
             using (var context = new ForumDbContext(_config))
             {
                 ForumId = forumId;
@@ -47,31 +57,8 @@ namespace Serverless.Forum.Pages
                 ParentForumTitle = HttpUtility.HtmlDecode(await (from pf in context.PhpbbForums
                                                                  where pf.ForumId == thisForum.ParentId
                                                                  select pf.ForumName).FirstOrDefaultAsync() ?? "untitled");
-                Forums = await (
-                    from f in context.PhpbbForums
-                    where f.ParentId == forumId
 
-                    join u in context.PhpbbUsers
-                    on f.ForumLastPosterId equals u.UserId
-                    into joinedUsers
-
-                    from ju in joinedUsers.DefaultIfEmpty()
-
-                    orderby f.LeftId
-
-                    select new ForumDisplay
-                    {
-                        Id = f.ForumId,
-                        Name = HttpUtility.HtmlDecode(f.ForumName),
-                        Description = HttpUtility.HtmlDecode(f.ForumDesc),
-                        LastPosterId = f.ForumLastPosterId,
-                        LastPosterName = HttpUtility.HtmlDecode(f.ForumLastPosterName),
-                        LastPostTime = f.ForumLastPostTime.ToUtcTime(),
-                        Unread = IsForumUnread(f.ForumId),
-                        LastPosterColor = ju == null ? null : ju.UserColour ,
-                        LastPostId = f.ForumLastPostId
-                    }
-                ).ToListAsync();
+                Forums = (await GetForum(forumId)).ChildrenForums.ToList();
 
                 Topics = await (
                     from t in context.PhpbbTopics

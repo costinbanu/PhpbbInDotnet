@@ -15,23 +15,29 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
+using Serverless.Forum.Services;
 
 namespace Serverless.Forum
 {
     public class ModelWithLoggedUser : PageModel
     {
-
         protected readonly IConfiguration _config;
         protected readonly Utils _utils;
+        protected readonly ForumTreeService _forumService;
+        protected readonly CacheService _cacheService;
+        protected readonly UserService _userService;
 
         private IEnumerable<Tracking> _tracking;
         private LoggedUser _currentUser;
         private ForumDisplay _tree = null;
 
-        public ModelWithLoggedUser(IConfiguration config, Utils utils)
+        public ModelWithLoggedUser(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService)
         {
             _config = config;
             _utils = utils;
+            _forumService = forumService;
+            _cacheService = cacheService;
+            _userService = userService;
         }
 
         #region User
@@ -45,8 +51,8 @@ namespace Serverless.Forum
             var user = User;
             if (!(user?.Identity?.IsAuthenticated ?? false))
             {
-                user = _utils.AnonymousClaimsPrincipal;
-                _currentUser = await user.ToLoggedUserAsync(_utils);
+                user = await _userService.GetAnonymousClaimsPrincipalAsync();
+                _currentUser = await _userService.ClaimsPrincipalToLoggedUserAsync(user);
                 await HttpContext.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme,
                     user,
@@ -60,11 +66,11 @@ namespace Serverless.Forum
             }
             else
             {
-                _currentUser = await user.ToLoggedUserAsync(_utils);
-                if (_currentUser != _utils.AnonymousLoggedUser)
+                _currentUser = await _userService.ClaimsPrincipalToLoggedUserAsync(user);
+                if (_currentUser != await _userService.GetAnonymousLoggedUserAsync())
                 {
                     var key = $"UserMustLogIn_{_currentUser.UsernameClean}";
-                    if (await _utils.GetFromCacheAsync<bool?>(key) ?? false)
+                    if (await _cacheService.GetFromCacheAsync<bool?>(key) ?? false)
                     {
                         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                     }
@@ -76,7 +82,7 @@ namespace Serverless.Forum
                             if (dbUser == null || dbUser.UserInactiveTime > 0)
                             {
                                 await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                                await _utils.SetInCacheAsync(key, true);
+                                await _cacheService.SetInCacheAsync(key, true);
                             }
                         }
                     }
@@ -96,7 +102,7 @@ namespace Serverless.Forum
                 {
                     await HttpContext.SignInAsync(
                         CookieAuthenticationDefaults.AuthenticationScheme,
-                        await (await context.PhpbbUsers.FirstAsync(u => u.UserId == current)).ToClaimsPrincipalAsync(context, _utils),
+                        await _userService.DbUserToClaimsPrincipalAsync(await context.PhpbbUsers.FirstAsync(u => u.UserId == current)),
                         new AuthenticationProperties
                         {
                             AllowRefresh = true,
@@ -108,9 +114,11 @@ namespace Serverless.Forum
             }
         }
 
-        public async Task<bool> IsCurrentUserAdminHereAsync(int forumId = 0) => _utils.IsUserAdminInForum(await GetCurrentUserAsync(), forumId);
+        public async Task<bool> IsCurrentUserAdminHereAsync(int forumId = 0) 
+            => await _userService.IsUserAdminInForum(await GetCurrentUserAsync(), forumId);
 
-        public async Task<bool> IsCurrentUserModeratorHereAsync(int forumId = 0) => _utils.IsUserModeratorInForum(await GetCurrentUserAsync(), forumId);
+        public async Task<bool> IsCurrentUserModeratorHereAsync(int forumId = 0) 
+            => await _userService.IsUserModeratorInForum(await GetCurrentUserAsync(), forumId);
 
         public int CurrentUserId => GetCurrentUserAsync().RunSync().UserId;
 
@@ -154,7 +162,7 @@ namespace Serverless.Forum
         /// </summary>
         protected async Task<IActionResult> ValidatePagePermissionsResponsesAsync()
         {
-            if ((await GetCurrentUserAsync()) == _utils.AnonymousLoggedUser)
+            if (await GetCurrentUserAsync() == await _userService.GetAnonymousLoggedUserAsync())
             {
                 return RedirectToPage("Login", new LoginModel(_config, _utils)
                 {
@@ -205,141 +213,14 @@ namespace Serverless.Forum
             return unread.FirstOrDefault(t => t.TopicId == topicId)?.Posts?.FirstOrDefault() ?? 0;
         }
 
-        public async Task<ForumDisplay> GetForumTree(ForumType? parentType = null)
-        {
-            if (_tree != null)
-            {
-                return _tree;
-            }
+        public async Task<ForumDisplay> GetForumTreeAsync(ForumType? parentType = null)
+            => _tree ?? (_tree = await _forumService.GetForumTreeAsync(parentType, await GetCurrentUserAsync(), forumId => IsForumUnread(forumId)));
 
-            var usr = await GetCurrentUserAsync();
-            using (var context = new ForumDbContext(_config))
-            {
-                var allForums = await (
-                    from f in context.PhpbbForums
-                    where (parentType == null || f.ForumType == parentType)
-                       && usr.UserPermissions != null
-                       && !usr.UserPermissions.Any(fp => fp.ForumId == f.ForumId && fp.AuthRoleId == 16)
+        public async Task<List<int>> PathToForumOrTopic(int forumId, int? topicId)
+            => _forumService.GetPathInTree(await GetForumTreeAsync(), (forum, _) => forum.Id ?? 0, forumId, topicId);
 
-                    orderby f.LeftId
-
-                    join u in context.PhpbbUsers
-                    on f.ForumLastPosterId equals u.UserId
-                    into joinedUsers
-
-                    join t in context.PhpbbTopics
-                    on f.ForumId equals t.ForumId
-                    into joinedTopics
-
-                    from ju in joinedUsers.DefaultIfEmpty()
-
-                    select new
-                    {
-                        ForumDisplay = new ForumDisplay
-                        {
-                            Id = f.ForumId,
-                            Name = HttpUtility.HtmlDecode(f.ForumName),
-                            Description = HttpUtility.HtmlDecode(f.ForumDesc),
-                            Unread = IsForumUnread(f.ForumId),
-                            LastPosterName = HttpUtility.HtmlDecode(f.ForumLastPosterName),
-                            LastPosterId = ju.UserId == 1 ? null as int? : ju.UserId,
-                            LastPostTime = f.ForumLastPostTime.ToUtcTime(),
-                            LastPosterColor = ju == null ? null : ju.UserColour,
-                            Topics = (from jt in joinedTopics
-                                      orderby jt.TopicLastPostTime descending
-                                      select new TopicDisplay
-                                      {
-                                          Id = jt.TopicId,
-                                          Title = HttpUtility.HtmlDecode(jt.TopicTitle),
-                                      }).ToList()
-
-                        },
-                        Parent = f.ParentId,
-                        Order = f.LeftId
-                    }
-                ).ToListAsync();
-
-                ForumDisplay traverse(ForumDisplay node)
-                {
-                    node.ChildrenForums = (
-                        from f in allForums
-                        where f.Parent == node.Id
-                        orderby f.Order
-                        select traverse(f.ForumDisplay)
-                    ).ToList();
-
-                    var (lastPosterColor, lastPosterId, lastPosterName, lastPostId, lastPostTime) = (
-                        from c in node.ChildrenForums
-                        group c by c.LastPostTime into groups
-                        orderby groups.Key ?? DateTime.MinValue descending
-                        let first = groups.FirstOrDefault()
-                        select (first?.LastPosterColor, first?.LastPosterId, first?.LastPosterName, first?.LastPostId, first?.LastPostTime)
-                    ).FirstOrDefault();
-
-                    node.Unread |= node.ChildrenForums.Any(c => c.Unread);
-                    if (node.LastPostTime < (lastPostTime ?? DateTime.MinValue))
-                    {
-                        node.LastPosterColor = lastPosterColor ?? node.LastPosterColor;
-                        node.LastPosterId = lastPosterId ?? node.LastPosterId;
-                        node.LastPosterName = lastPosterName ?? node.LastPosterName;
-                        node.LastPostId = lastPostId ?? node.LastPostId;
-                        node.LastPostTime = lastPostTime ?? node.LastPostTime;
-                    }
-
-                    return node;
-                }
-
-                _tree = new ForumDisplay
-                {
-                    Id = 0,
-                    Name = Constants.FORUM_NAME,
-                    ChildrenForums = (
-                        from f in allForums
-                        where f.Parent == 0
-                        orderby f.Order
-                        select traverse(f.ForumDisplay)
-                    ).ToList()
-                };
-
-                return _tree;
-            }
-        }
-
-        public async Task<List<int>> PathToForumOrTopic(int? forumId, int? topicId)
-        {
-            var track = new List<int>();
-
-            bool traverse(ForumDisplay node)
-            {
-                if (node == null)
-                {
-                    return false;
-                }
-
-                if ((node.Topics?.Any(t => t.Id == topicId) ?? false) || node.Id == forumId)
-                {
-                    track.Add(node.Id.Value);
-                    return true;
-                }
-
-                track.Add(node.Id.Value);
-
-                foreach(var child in node.ChildrenForums)
-                {
-                    if (traverse(child))
-                    {
-                        return true;
-                    }
-                }
-
-                track.RemoveAt(track.Count - 1);
-                return false;
-            }
-
-            traverse(await GetForumTree());
-
-            return track;
-        }
+        public async Task<ForumDisplay> GetForum(int forumId)
+            => _forumService.GetPathInTree(await GetForumTreeAsync(), (forum, _) => forum, forumId).Last();
 
         private IEnumerable<Tracking> GetUnreadTopicsAndParentsLazy()
         {

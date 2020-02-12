@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
@@ -6,18 +7,21 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Web;
 
-namespace Serverless.Forum.Admin
+namespace Serverless.Forum.Services
 {
-    public class ForumService
+    public class AdminForumService
     {
         private readonly IConfiguration _config;
         private readonly Utils _utils;
+        private readonly ForumTreeService _forumService;
 
-        public ForumService(IConfiguration config, Utils utils)
+        public AdminForumService(IConfiguration config, Utils utils, ForumTreeService forumService)
         {
             _config = config;
             _utils = utils;
+            _forumService = forumService;
         }
 
         public async Task<(string Message, bool? IsSuccess)> ManageForumsAsync(List<int> childrenForums, int forumId, string forumName, string forumDesc)
@@ -66,5 +70,17 @@ namespace Serverless.Forum.Admin
                 );
             }
         }
+
+        public async Task<List<SelectListItem>> FlatForumTreeAsListItem(int parentId, int forumId)
+            => _forumService.GetPathInTree(
+                root: await _forumService.GetForumTreeAsync(), 
+                mapToTypeForRecursionLevel: (forum, level) => new SelectListItem(
+                    $"{new string('-', level)} {forum.Name}", 
+                    forum.Id.ToString(), 
+                    forum.Id == parentId, 
+                    forum.Id == parentId || forum.Id == forumId
+                ),
+                forumId: null
+            );
     }
 }

@@ -52,7 +52,7 @@ else
                     AuthorId = forum.LastPosterId,
                     AuthorName = forum.LastPosterName,
                     CreationTime = forum.LastPostTime,
-                    AssetId = forum.Id.Value,
+                    AssetId = forum.Id ?? 0,
                     DateFormat = UserDateFormat,
                     AuthorColor = forum.LastPosterColor,
                     LinkHref = forum.LastPostId == null ? null : $"./ViewTopic?postId={forum.LastPostId}&handler=ByPostId",
@@ -134,7 +134,7 @@ else
             "_ForumTreePartial",
              new CustomPartials._ForumTreePartialModel
              {
-                 Forums = await Model.GetForumTree(),
+                 Forums = await Model.GetForumTreeAsync(),
                  ForumId = Model.ForumId,
                  TopicId = null,
                  PathToForumOrTopic = await Model.PathToForumOrTopic(Model.ForumId, null)
