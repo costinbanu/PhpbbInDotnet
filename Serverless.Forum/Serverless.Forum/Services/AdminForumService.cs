@@ -73,14 +73,9 @@ namespace Serverless.Forum.Services
 
         public async Task<List<SelectListItem>> FlatForumTreeAsListItem(int parentId, int forumId)
             => _forumService.GetPathInTree(
-                root: await _forumService.GetForumTreeAsync(), 
-                mapToTypeForRecursionLevel: (forum, level) => new SelectListItem(
-                    $"{new string('-', level)} {forum.Name}", 
-                    forum.Id.ToString(), 
-                    forum.Id == parentId, 
-                    forum.Id == parentId || forum.Id == forumId
-                ),
-                forumId: null
+                await _forumService.GetForumTreeAsync(), 
+                forum => new SelectListItem(forum.Name, forum.Id.ToString(), forum.Id == parentId, forum.Id == parentId || forum.Id == forumId || forum.ParentId == forumId),
+                (item, level) => item.Text = $"{new string('-', level)} {item.Text}"
             );
     }
 }

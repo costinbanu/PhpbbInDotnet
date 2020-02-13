@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.ForumDb;
+using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System;
 using System.Linq;
@@ -20,6 +21,8 @@ namespace Serverless.Forum.Pages
     {
         private readonly IConfiguration _config;
         private readonly Utils _utils;
+        private readonly CacheService _cacheService;
+        private readonly UserService _userService;
 
         public string UserName { get; set; }
 
@@ -30,10 +33,12 @@ namespace Serverless.Forum.Pages
 
         public string ErrorMessage { get; set; }
 
-        public LoginModel(IConfiguration config, Utils utils)
+        public LoginModel(IConfiguration config, Utils utils, CacheService cacheService, UserService userService)
         {
             _config = config;
             _utils = utils;
+            _cacheService = cacheService;
+            _userService = userService;
         }
 
         public async Task<IActionResult> OnPost()
@@ -62,7 +67,7 @@ namespace Serverless.Forum.Pages
 
                     await HttpContext.SignInAsync(
                         CookieAuthenticationDefaults.AuthenticationScheme,
-                        await currentUser.ToClaimsPrincipalAsync(context, _utils),
+                        await _userService.DbUserToClaimsPrincipalAsync(currentUser),
                         new AuthenticationProperties
                         {
                             AllowRefresh = true,
@@ -71,9 +76,9 @@ namespace Serverless.Forum.Pages
                         });
 
                     var key = $"UserMustLogIn_{currentUser.UsernameClean}";
-                    if (await _utils.GetFromCacheAsync<bool?>(key) ?? false)
+                    if (await _cacheService.GetFromCacheAsync<bool?>(key) ?? false)
                     {
-                        await _utils.RemoveFromCacheAsync(key);
+                        await _cacheService.RemoveFromCacheAsync(key);
                     }
 
                     return Redirect(HttpUtility.UrlDecode(ReturnUrl));

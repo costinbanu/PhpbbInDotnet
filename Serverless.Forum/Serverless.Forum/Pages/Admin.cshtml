@@ -206,7 +206,7 @@
              Forums = await Model.GetForumTreeAsync(),
              ForumId = Model.SelectedForumId,
              TopicId = null,
-             PathToForumOrTopic = await Model.PathToForumOrTopic(Model.SelectedForumId, null)
+             PathToForumOrTopic = await Model.PathToForumOrTopic(Model.SelectedForumId)
          },
         ViewData
     )

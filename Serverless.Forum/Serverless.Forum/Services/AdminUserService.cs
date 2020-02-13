@@ -14,12 +14,16 @@ namespace Serverless.Forum.Services
         private readonly IConfiguration _config;
         private readonly Utils _utils;
         private readonly PostService _postService;
+        private readonly UserService _userService;
+        private readonly CacheService _cacheService;
 
-        public AdminUserService(IConfiguration config, Utils utils, PostService postService)
+        public AdminUserService(IConfiguration config, Utils utils, PostService postService, UserService userService, CacheService cacheService)
         {
             _config = config;
             _utils = utils;
             _postService = postService;
+            _userService = userService;
+            _cacheService = cacheService;
         }
 
         public async Task<List<PhpbbUsers>> GetInactiveUsersAsync()
@@ -39,7 +43,7 @@ namespace Serverless.Forum.Services
         {
             using (var context = new ForumDbContext(_config))
             {
-                if (userId == _utils.AnonymousDbUser.UserId)
+                if (userId == (await _userService.GetAnonymousDbUserAsync()).UserId)
                 {
                     return ($"Utilizatorul cu id '{userId}' este utilizatorul anonim și nu poate fi șters.", false);
                 }
@@ -53,7 +57,7 @@ namespace Serverless.Forum.Services
                 async Task flagUserAsChanged()
                 {
                     var key = $"UserMustLogIn_{user.UsernameClean}";
-                    await _utils.SetInCacheAsync(key, true);
+                    await _cacheService.SetInCacheAsync(key, true);
                 }
 
                 async Task deleteUser()
@@ -119,10 +123,10 @@ namespace Serverless.Forum.Services
                                     select p
                                 ).ToListAsync();
 
-                                posts.ForEach(p =>
+                                posts.ForEach(async p =>
                                 {
                                     p.PostUsername = user.Username;
-                                    p.PosterId = _utils.AnonymousDbUser.UserId;
+                                    p.PosterId = (await _userService.GetAnonymousDbUserAsync()).UserId;
                                 });
 
                                 await flagUserAsChanged();

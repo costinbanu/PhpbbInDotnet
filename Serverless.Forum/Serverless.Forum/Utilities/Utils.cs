@@ -9,8 +9,6 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Serverless.Forum.Contracts;
-using Serverless.Forum.ForumDb;
 using System;
 using System.Globalization;
 using System.IO;
@@ -18,7 +16,6 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Mail;
-using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -27,10 +24,6 @@ namespace Serverless.Forum.Utilities
 {
     public class Utils
     {
-        //public readonly ClaimsPrincipal AnonymousClaimsPrincipal;
-        //public readonly PhpbbUsers AnonymousDbUser;
-        //public readonly LoggedUser AnonymousLoggedUser;
-
         private readonly IConfiguration _config;
         private readonly ILogger<Utils> _logger;
         private readonly ICompositeViewEngine _viewEngine;
@@ -40,17 +33,8 @@ namespace Serverless.Forum.Utilities
         {
             _config = config;
             _logger = logger;
-
             _viewEngine = viewEngine;
             _tempDataProvider = tempDataProvider;
-
-            using (var context = new ForumDbContext(_config))
-            {
-                AnonymousDbUser = context.PhpbbUsers.First(u => u.UserId == 1);
-                AnonymousClaimsPrincipal = AnonymousDbUser.ToClaimsPrincipalAsync(context, this).RunSync();
-                AnonymousLoggedUser = AnonymousClaimsPrincipal.ToLoggedUserAsync(this).RunSync();
-
-            }
         }
 
         public async Task<byte[]> CompressObjectAsync<T>(T source)

@@ -14,7 +14,7 @@
             Autor:
             @if (Model.AuthorId == null)
             {
-                @Html.Raw(Model.AuthorName);
+                <span style="text-decoration: line-through">@Html.Raw(Model.AuthorName)</span>
             }
             else
             {

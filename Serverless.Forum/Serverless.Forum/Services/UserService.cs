@@ -126,9 +126,10 @@ namespace Serverless.Forum.Services
         }
 
         public async Task<LoggedUser> ClaimsPrincipalToLoggedUserAsync(ClaimsPrincipal principal)
-        {
-            return await _utils.DecompressObjectAsync<LoggedUser>(Convert.FromBase64String(principal.Claims.FirstOrDefault()?.Value ?? string.Empty));
-        }
+            => await _utils.DecompressObjectAsync<LoggedUser>(Convert.FromBase64String(principal.Claims.FirstOrDefault()?.Value ?? string.Empty));
+
+        public async Task<LoggedUser> DbUserToLoggedUserAsync(PhpbbUsers dbUser)
+            => await ClaimsPrincipalToLoggedUserAsync(await DbUserToClaimsPrincipalAsync(dbUser));
 
         private async Task<List<PhpbbAclRoles>> GetModRolesLazy()
         {

@@ -2,7 +2,8 @@
 @using Serverless.Forum.Utilities
 @using Serverless.Forum.ForumDb
 @model Serverless.Forum.Pages.PostingModel
-@inject Utils  _utils;
+@inject Services.CacheService _cacheService
+
 @{
     ViewData["Title"] = "Posting";
     Layout = "~/Pages/_Layout.cshtml";
@@ -22,11 +23,11 @@
 
     // Define the bbCode tags
     var bbcode = new Array();
-    var bbtags = @Json.Serialize(await _utils.GetFromCacheAsync<List<string>>(Model.GetActualCacheKey("BbCodes", false)));
+    var bbtags = @Json.Serialize(await _cacheService.GetFromCacheAsync<List<string>>(Model.GetActualCacheKey("BbCodes", false)));
     var imageTag = false;
 
     // Helpline messages
-    var help_line = @Json.Serialize(await _utils.GetFromCacheAsync<Dictionary<string, string>>(Model.GetActualCacheKey("BbCodeHelplines", false)));
+    var help_line = @Json.Serialize(await _cacheService.GetFromCacheAsync<Dictionary<string, string>>(Model.GetActualCacheKey("BbCodeHelplines", false)));
     var panels = new Array('options-panel', 'attach-panel', 'poll-panel');
     var show_panel = 'options-panel';
 
@@ -508,9 +509,9 @@ else
             <option value="200">Imens</option>
         </select>
         <input type="button" class="button2" name="bbpalette" id="bbpalette" value="Culoare font" onclick="change_palette();" title="Culoare font: [color=red]text[/color]  Sfat: de asemenea puteţi folosi culorile hexazecimale culoare=#FF0000">
-        @foreach (var code in (await _utils.GetFromCacheAsync<List<PhpbbBbcodes>>(Model.GetActualCacheKey("DbBbCodes", false))) ?? new List<PhpbbBbcodes>())
+        @foreach (var code in (await _cacheService.GetFromCacheAsync<List<PhpbbBbcodes>>(Model.GetActualCacheKey("DbBbCodes", false))) ?? new List<PhpbbBbcodes>())
         {
-            var index = (await _utils.GetFromCacheAsync<List<string>>(Model.GetActualCacheKey("BbCodes", false))).IndexOf($"[{code.BbcodeTag}]");
+            var index = (await _cacheService.GetFromCacheAsync<List<string>>(Model.GetActualCacheKey("BbCodes", false))).IndexOf($"[{code.BbcodeTag}]");
             var name = $"addbbcode{index}";
             <input type="button" class="button2" name="@name" value="@code.BbcodeTag" onclick="bbstyle(@index)" title="@code.BbcodeHelpline" />
         }
@@ -523,7 +524,7 @@ else
 
         <strong>Zâmbete</strong><br />
 
-        @foreach (var smiley in ((await _utils.GetFromCacheAsync<List<PhpbbSmilies>>(Model.GetActualCacheKey("Smilies", false))) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 1))
+        @foreach (var smiley in ((await _cacheService.GetFromCacheAsync<List<PhpbbSmilies>>(Model.GetActualCacheKey("Smilies", false))) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 1))
         {
             <a href="#a" onclick="insert_text('@smiley.Code', true); return false;">
                 <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
@@ -533,7 +534,7 @@ else
         <a href="#a" onclick="show_hidden_smilies(this)">Arată mai multe</a>
         <p>&nbsp;</p>
         <div id="hiddenSmilies" style="visibility:hidden">
-            @foreach (var smiley in ((await _utils.GetFromCacheAsync<List<PhpbbSmilies>>(Model.GetActualCacheKey("Smilies", false))) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 0))
+            @foreach (var smiley in ((await _cacheService.GetFromCacheAsync<List<PhpbbSmilies>>(Model.GetActualCacheKey("Smilies", false))) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 0))
             {
                 <a href="#a" onclick="insert_text('@smiley.Code', true); return false;">
                     <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
@@ -570,7 +571,7 @@ else
                 <th style="width:200px; padding-bottom:15px">Nume fișier</th>
                 <th style="padding-bottom:15px">Comentariu fișier</th>
             </tr>
-            @foreach (var attach in (await _utils.GetFromCacheAsync<List<PhpbbAttachments>>(Model.GetActualCacheKey("PostAttachments", true))) ?? new List<PhpbbAttachments>())
+            @foreach (var attach in (await _cacheService.GetFromCacheAsync<List<PhpbbAttachments>>(Model.GetActualCacheKey("PostAttachments", true))) ?? new List<PhpbbAttachments>())
             {
                 <tr>
                     <td style="width:200px; padding-bottom:15px">@attach.RealFilename</td>
@@ -634,7 +635,7 @@ else
 </form>
 <script>
     var tribute = new Tribute({
-        values: @Json.Serialize(await _utils.GetFromCacheAsync<List<KeyValuePair<string, string>>>(Model.GetActualCacheKey("Users", false))),
+        values: @Json.Serialize(await _cacheService.GetFromCacheAsync<List<KeyValuePair<string, string>>>(Model.GetActualCacheKey("Users", false))),
         trigger: "@@",
         allowSpaces: true
     });

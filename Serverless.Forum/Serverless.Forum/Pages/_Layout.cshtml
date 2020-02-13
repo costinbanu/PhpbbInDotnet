@@ -1,15 +1,12 @@
 ﻿@using System.Web
-@using Microsoft.AspNetCore.DataProtection;
-@using Microsoft.AspNetCore.Http
 @using  Serverless.Forum.Contracts
 @using Serverless.Forum.Utilities
 
-@*@inject IHttpContextAccessor _httpContext
-@inject IDataProtectionProvider _dpProvider*@
-@inject Utils  _utils
+
+@inject Services.UserService  _userServices
 
 @{ 
-    var currentUser = await User.ToLoggedUserAsync(_utils);
+    var currentUser = await _userServices.ClaimsPrincipalToLoggedUserAsync(User);
 }
 
 <!DOCTYPE html>
@@ -90,7 +87,7 @@
         <p>&nbsp;</p>
         <p>&copy; 2018 - Serverless.Forum</p>
         <p><a asp-page="/TermsAndConditions" target="_blank">Termenele și condițiile de utilizare</a></p>
-        @if (_utils.IsUserAdminInForum(currentUser, 0))
+        @if (await _userServices.IsUserAdminInForum(currentUser, 0))
         {
             <p><a asp-page="./Admin">Panoul administratorului</a></p>
         }

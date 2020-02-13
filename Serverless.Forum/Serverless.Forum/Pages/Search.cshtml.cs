@@ -6,7 +6,6 @@ using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Data;
@@ -53,7 +52,8 @@ namespace Serverless.Forum.Pages
 
         public IEnumerable<ExtendedPostDisplay> Posts { get; private set; }
 
-        public SearchModel(IConfiguration config, Utils utils, ForumTreeService forumService, PostService postService) : base(config, utils, forumService)
+        public SearchModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService, PostService postService)
+            : base(config, utils, forumService, userService, cacheService)
         {
             _postService = postService;
         }

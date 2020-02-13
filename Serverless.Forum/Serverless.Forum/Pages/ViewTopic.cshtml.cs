@@ -32,7 +32,8 @@ namespace Serverless.Forum.Pages
         private int? _count;
         private readonly PostService _postService;
 
-        public ViewTopicModel(IConfiguration config, Utils utils, ForumTreeService forumService, PostService postService) : base(config, utils, forumService)
+        public ViewTopicModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService, PostService postService)
+            : base(config, utils, forumService, userService, cacheService)
         {
             _postService = postService;
         }

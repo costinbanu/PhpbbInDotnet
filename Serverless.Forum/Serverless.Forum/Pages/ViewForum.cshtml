@@ -137,7 +137,7 @@ else
                  Forums = await Model.GetForumTreeAsync(),
                  ForumId = Model.ForumId,
                  TopicId = null,
-                 PathToForumOrTopic = await Model.PathToForumOrTopic(Model.ForumId, null)
+                 PathToForumOrTopic = await Model.PathToForumOrTopic(Model.ForumId)
              },
             ViewData
         )

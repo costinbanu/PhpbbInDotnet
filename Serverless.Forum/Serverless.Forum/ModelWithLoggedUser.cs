@@ -164,7 +164,7 @@ namespace Serverless.Forum
         {
             if (await GetCurrentUserAsync() == await _userService.GetAnonymousLoggedUserAsync())
             {
-                return RedirectToPage("Login", new LoginModel(_config, _utils)
+                return RedirectToPage("Login", new LoginModel(_config, _utils, _cacheService, _userService)
                 {
                     ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString)
                 });
@@ -216,11 +216,11 @@ namespace Serverless.Forum
         public async Task<ForumDisplay> GetForumTreeAsync(ForumType? parentType = null)
             => _tree ?? (_tree = await _forumService.GetForumTreeAsync(parentType, await GetCurrentUserAsync(), forumId => IsForumUnread(forumId)));
 
-        public async Task<List<int>> PathToForumOrTopic(int forumId, int? topicId)
-            => _forumService.GetPathInTree(await GetForumTreeAsync(), (forum, _) => forum.Id ?? 0, forumId, topicId);
+        public async Task<List<int>> PathToForumOrTopic(int forumId, int? topicId = null)
+            => _forumService.GetPathInTree(await GetForumTreeAsync(), forum => forum.Id ?? 0, forumId, topicId ?? -1);
 
         public async Task<ForumDisplay> GetForum(int forumId)
-            => _forumService.GetPathInTree(await GetForumTreeAsync(), (forum, _) => forum, forumId).Last();
+            => _forumService.GetPathInTree(await GetForumTreeAsync(), forumId).Last();
 
         private IEnumerable<Tracking> GetUnreadTopicsAndParentsLazy()
         {

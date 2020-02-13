@@ -57,6 +57,7 @@ namespace Serverless.Forum.Services
                             Name = HttpUtility.HtmlDecode(f.ForumName),
                             Description = HttpUtility.HtmlDecode(f.ForumDesc),
                             Unread = IsForumUnread(f.ForumId),
+                            LastPostId = f.ForumLastPostId,
                             LastPosterName = HttpUtility.HtmlDecode(f.ForumLastPosterName),
                             LastPosterId = ju.UserId == 1 ? null as int? : ju.UserId,
                             LastPostTime = f.ForumLastPostTime.ToUtcTime(),
@@ -119,43 +120,75 @@ namespace Serverless.Forum.Services
             }
         }
 
-        public List<T> GetPathInTree<T>(ForumDisplay root, Func<ForumDisplay, int, T> mapToTypeForRecursionLevel, int? forumId, int? topicId = null)
+        public List<ForumDisplay> GetPathInTree(ForumDisplay root, int forumId)
+        {
+            var track = new List<ForumDisplay>();
+            Traverse(track, root, false, 0, x => x, (x, _) => { }, forumId, -1);
+            return track;
+        }
+
+        public List<T> GetPathInTree<T>(ForumDisplay root, Func<ForumDisplay, T> mapToType, int forumId, int topicId)
         {
             var track = new List<T>();
+            Traverse(track, root, false, 0, mapToType, (x, _) => { }, forumId, topicId);
+            return track;
+        }
 
-            bool traverse(ForumDisplay node, bool isFullTraversal, int level)
+        public List<T> GetPathInTree<T>(ForumDisplay root, Func<ForumDisplay, T> mapToType, Action<T, int> transformForLevel, int forumId, int topicId) where T : class
+        {
+            var track = new List<T>();
+            Traverse(track, root, false, 0, mapToType, transformForLevel, forumId, topicId);
+            return track;
+        }
+
+        public List<T> GetPathInTree<T>(ForumDisplay root, Func<ForumDisplay, T> mapToType)
+        {
+            var track = new List<T>();
+            Traverse(track, root, true, 0, mapToType, (x, _) => { }, -1, -1);
+            return track;
+        }
+
+        public List<T> GetPathInTree<T>(ForumDisplay root, Func<ForumDisplay, T> mapToType, Action<T, int> transformForLevel) where T : class
+        {
+            var track = new List<T>();
+            Traverse(track, root, true, 0, mapToType, transformForLevel, -1, -1);
+            return track;
+        }
+
+        private bool Traverse<T>(List<T> track, ForumDisplay node, bool isFullTraversal, int level, Func<ForumDisplay, T> mapToType, Action<T, int> transformForLevel, int forumId, int topicId) 
+        {
+            if (node == null)
             {
-                if (node == null)
-                {
-                    return false;
-                }
-
-                if (!isFullTraversal && ((node.Topics?.Any(t => t.Id == topicId) ?? false) || node.Id == forumId))
-                {
-                    track.Add(mapToTypeForRecursionLevel(node, level));
-                    return true;
-                }
-
-                track.Add(mapToTypeForRecursionLevel(node, level));
-
-                foreach (var child in node.ChildrenForums)
-                {
-                    if (traverse(child, isFullTraversal, level + 1))
-                    {
-                        return true;
-                    }
-                }
-
-                if (!isFullTraversal)
-                {
-                    track.RemoveAt(track.Count - 1);
-                }
                 return false;
             }
 
-            traverse(root, forumId == null, 0);
+            T item = default;
 
-            return track;
+            if (!isFullTraversal && ((node.Topics?.Any(t => t.Id == topicId) ?? false) || node.Id == forumId))
+            {
+                item = mapToType(node);
+                transformForLevel(item, level);
+                track.Add(item);
+                return true;
+            }
+
+            item = mapToType(node);
+            transformForLevel(item, level);
+            track.Add(item);
+
+            foreach (var child in node.ChildrenForums)
+            {
+                if (Traverse(track, child, isFullTraversal, level + 1, mapToType, transformForLevel, forumId, topicId))
+                {
+                    return true;
+                }
+            }
+
+            if (!isFullTraversal)
+            {
+                track.RemoveAt(track.Count - 1);
+            }
+            return false;
         }
     }
 }

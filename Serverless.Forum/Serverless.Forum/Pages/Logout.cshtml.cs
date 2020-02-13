@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Serverless.Forum.ForumDb;
+using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System;
 using System.Threading.Tasks;
@@ -13,11 +14,11 @@ namespace Serverless.Forum.Pages
 {
     public class LogoutModel : PageModel
     {
-        private readonly Utils _utils;
+        private readonly UserService _userService;
 
-        public LogoutModel(Utils utils)
+        public LogoutModel(UserService userService)
         {
-            _utils = utils;
+            _userService = userService;
         }
 
         public async Task<IActionResult> OnGet(string returnUrl)
@@ -25,7 +26,7 @@ namespace Serverless.Forum.Pages
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme, 
-                _utils.AnonymousClaimsPrincipal, 
+                await _userService.GetAnonymousClaimsPrincipalAsync(), 
                 new AuthenticationProperties
                 {
                     AllowRefresh = true,

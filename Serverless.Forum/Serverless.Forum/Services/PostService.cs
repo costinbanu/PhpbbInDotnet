@@ -22,15 +22,17 @@ namespace Serverless.Forum.Services
     {
         private readonly IConfiguration _config;
         private readonly Utils _utils;
+        private readonly UserService _userService;
         private readonly Regex _htmlCommentRegex;
         private readonly Regex _newLineRegex;
         private readonly Regex _smileyRegex;
         private BBCodeParser _parser;
 
-        public PostService(IConfiguration config, Utils utils)
+        public PostService(IConfiguration config, Utils utils, UserService userService)
         {
             _config = config;
             _utils = utils;
+            _userService = userService;
             _htmlCommentRegex = new Regex("<!--.*?-->", RegexOptions.Compiled | RegexOptions.Singleline);
             _newLineRegex = new Regex("\n", RegexOptions.Compiled | RegexOptions.Singleline);
             _smileyRegex = new Regex("{SMILIES_PATH}", RegexOptions.Compiled | RegexOptions.Singleline);
@@ -173,13 +175,15 @@ namespace Serverless.Forum.Services
                     orderby grouped.Key descending
                     select grouped.FirstOrDefault()
                 ).FirstOrDefaultAsync();
-                var lastPostUser = await (await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == lastPost.PosterId)).ToLoggedUserAsync(context, _utils);
+                var lastPostUser = await _userService.DbUserToLoggedUserAsync(
+                    await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == lastPost.PosterId)
+                );
 
                 curTopic.TopicLastPostId = lastPost.PosterId;
                 curTopic.TopicLastPostSubject = lastPost.PostSubject;
                 curTopic.TopicLastPostTime = lastPost.PostTime;
                 curTopic.TopicLastPosterColour = lastPostUser.UserColor;
-                curTopic.TopicLastPosterName = lastPostUser == _utils.AnonymousLoggedUser ? lastPost.PostUsername : lastPostUser.Username;
+                curTopic.TopicLastPosterName = lastPostUser == await _userService.GetAnonymousLoggedUserAsync() ? lastPost.PostUsername : lastPostUser.Username;
             }
 
             if (curForum.ForumLastPostId == deleted.PostId)
@@ -193,13 +197,15 @@ namespace Serverless.Forum.Services
                     orderby grouped.Key descending
                     select grouped.FirstOrDefault()
                 ).FirstOrDefaultAsync();
-                var lastPostUser = await (await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == lastPost.PosterId)).ToLoggedUserAsync(context, _utils);
+                var lastPostUser = await _userService.DbUserToLoggedUserAsync(
+                    await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == lastPost.PosterId)
+                );
 
                 curForum.ForumLastPostId = lastPost.PosterId;
                 curForum.ForumLastPostSubject = lastPost.PostSubject;
                 curForum.ForumLastPostTime = lastPost.PostTime;
                 curForum.ForumLastPosterColour = lastPostUser.UserColor;
-                curForum.ForumLastPosterName = lastPostUser == _utils.AnonymousLoggedUser ? lastPost.PostUsername : lastPostUser.Username;
+                curForum.ForumLastPosterName = lastPostUser == await _userService.GetAnonymousLoggedUserAsync() ? lastPost.PostUsername : lastPostUser.Username;
             }
         }
 
