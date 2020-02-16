@@ -136,10 +136,13 @@ namespace Serverless.Forum
                 return NotFound($"Forumul {forumId} nu există.");
             }
 
-            if (!string.IsNullOrEmpty(thisForum.ForumPassword) &&
-                (HttpContext.Session.GetInt32("ForumLogin") ?? -1) != forumId)
+            var forumAncestors = _forumService.GetPathInTree(await GetForumTreeAsync(), thisForum.ForumId);
+            var restrictedAncestor = forumAncestors.FirstOrDefault(
+                f => !string.IsNullOrEmpty(f.ForumPassword) && (HttpContext.Session.GetInt32($"ForumLogin_{f.Id}") ?? 0) != 1);
+
+            if (restrictedAncestor != null)
             {
-                if ((await GetCurrentUserAsync()).UserPermissions.Any(fp => fp.ForumId == forumId && fp.AuthRoleId == 16))
+                if ((await GetCurrentUserAsync()).UserPermissions.Any(p => p.ForumId == restrictedAncestor.Id && p.AuthRoleId == 16))
                 {
                     return Unauthorized();
                 }
@@ -148,8 +151,8 @@ namespace Serverless.Forum
                     return RedirectToPage("ForumLogin", new ForumLoginModel(_config)
                     {
                         ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString),
-                        ForumId = forumId,
-                        ForumName = thisForum.ForumName
+                        ForumId = restrictedAncestor.Id.Value,
+                        ForumName = restrictedAncestor.Name
                     });
                 }
             }

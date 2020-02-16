@@ -55,6 +55,7 @@ namespace Serverless.Forum.Services
                             Id = f.ForumId,
                             ParentId = f.ParentId,
                             Name = HttpUtility.HtmlDecode(f.ForumName),
+                            ForumPassword = f.ForumPassword,
                             Description = HttpUtility.HtmlDecode(f.ForumDesc),
                             Unread = IsForumUnread(f.ForumId),
                             LastPostId = f.ForumLastPostId,

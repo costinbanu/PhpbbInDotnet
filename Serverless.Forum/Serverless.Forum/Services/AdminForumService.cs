@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc.Rendering;
+﻿using Dapper;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System;
@@ -77,5 +79,16 @@ namespace Serverless.Forum.Services
                 forum => new SelectListItem(forum.Name, forum.Id.ToString(), forum.Id == parentId, forum.Id == parentId || forum.Id == forumId || forum.ParentId == forumId),
                 (item, level) => item.Text = $"{new string('-', level)} {item.Text}"
             );
+
+        public async Task<IEnumerable<ForumPermissions>> GetPermissions(int forumId)
+        {
+            using (var context = new ForumDbContext(_config))
+            using (var connection = context.Database.GetDbConnection())
+            {
+                await connection.OpenAsync();
+                DefaultTypeMap.MatchNamesWithUnderscores = true;
+                return await connection.QueryAsync<ForumPermissions>("CALL `forum`.`get_forum_permissions`(@forumId);", new { forumId });
+            }
+        }
     }
 }

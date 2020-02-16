@@ -78,6 +78,11 @@ namespace Serverless.Forum.Pages
 
             UserSearchResults = await _adminUserService.UserSearchAsync(username, email, userid);
             Category = AdminCategories.Users;
+            if (!UserSearchResults.Any())
+            {
+                Message = $"Nu a fost găsit nici un utilizator cu username-ul '{username}'.";
+                IsSuccess = false;
+            }
             return Page();
         }
 
@@ -104,6 +109,7 @@ namespace Serverless.Forum.Pages
         public List<SelectListItem> ForumSelectedParent { get; private set; }
         [BindProperty]
         public int ParentId { get; private set; }
+        public IEnumerable<ForumPermissions> Permissions { get; private set; }
 
         public async Task<IActionResult> OnPostShowForum(int forumId)
         {
@@ -113,6 +119,7 @@ namespace Serverless.Forum.Pages
                 return validationResult;
             }
 
+            Permissions = await _adminForumService.GetPermissions(forumId);
             (Forum, ForumChildren) = await _adminForumService.ShowForum(forumId);
             SelectedForumId = forumId;
             ParentId = Forum.ParentId;

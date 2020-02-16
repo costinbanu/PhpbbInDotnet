@@ -1,0 +1,208 @@
+﻿@model Serverless.Forum.Pages.CustomPartials.Admin._AdminForumsPartialModel
+@inject Services.ForumTreeService _forumTreeService
+@inject Services.AdminForumService _adminForumService
+@{ 
+    var forumTree = await _forumTreeService.GetForumTreeAsync();
+}
+
+<style>
+    #forumFields {
+        position: fixed;
+        background-color: rgba(255, 255, 255, 0.90);
+        width: 75%;
+        height: 75%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        overflow-y: scroll;
+        display: block;
+        border: solid 1px black;
+        padding: 10px;
+    }
+</style>
+
+<div style="float:left">
+    <h4>Administrare forumuri</h4>
+</div>
+
+<form method="post" asp-page-handler="ShowForum">
+    <div style="float:right; width:200px;">
+        <input type="submit" value="Manage selected forum" style="position:fixed; width:auto" />
+    </div>
+    <input id="forumId" name="forumId" type="hidden" />
+</form>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+@await Html.PartialAsync(
+    "_ForumTreePartial",
+    new CustomPartials._ForumTreePartialModel
+    {
+        Forums = forumTree,
+        ForumId = Model.Forum?.ForumId ?? 0,
+        TopicId = null,
+        PathToForumOrTopic = _forumTreeService.GetPathInTree(forumTree, forum => forum.Id ?? 0, Model.Forum?.ForumId ?? 0, -1)
+    },
+    ViewData
+);
+
+
+@if (Model.Forum != null)
+{
+    <form id="forumFields" method="post" asp-page-handler="ForumManagement" autocomplete="off">
+        <h4 style="float:left">Administrează forum - @Model.Forum.ForumName</h4>
+        <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('forumFields')">Închide [X]</div>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+        <table style="border:none; padding:0px; margin:0px">
+            <tr>
+                <td style="padding:5px; font-weight:bold; text-align: right">
+                    Nume forum
+                </td>
+                <td>
+                    <input asp-for="Forum.ForumName" name="forumName" />
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:5px; font-weight:bold; text-align: right">
+                    Descriere forum
+                </td>
+                <td>
+                    <textarea asp-for="Forum.ForumDesc" name="forumDesc"></textarea>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:5px; font-weight:bold; text-align: right">
+                    Parolă forum
+                </td>
+                <td>
+                    <input asp-for="Forum.ForumPassword" name="forumPassword" type="password" id="forumPassword" />&nbsp;
+                    <input type="checkbox" onclick="Toggle()">&nbsp;
+                    Arată parola
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:5px; font-weight:bold; text-align: right">
+                    Tip forum
+                </td>
+                <td>
+                    @Html.DropDownListFor(m => m.Forum.ForumType, new SelectList(Enum.GetValues(typeof(Utilities.ForumType))))
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:5px; font-weight:bold; text-align: right">
+                    Părinte forum
+                </td>
+                <td style="max-height:600px; overflow:scroll">
+                    @Html.DropDownListFor(m => m.Forum.ParentId, await _adminForumService.FlatForumTreeAsListItem(Model.Forum.ParentId, Model.Forum.ForumId))
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:5px; font-weight:bold; text-align: right">
+                    Ordonează sub-forumuri
+                </td>
+                <td>
+                    <div id="siblings">
+                        @foreach (var child in Model.ForumChildren)
+                        {
+                            <div style="padding:5px; margin:5px; border: solid 1px black; border-radius:5px; cursor:move; width: auto">
+                                @child.ForumName
+                                <input type="hidden" name="childrenForums" value="@child.ForumId" style="width:0px" />
+                            </div>
+                        }
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:5px; font-weight:bold; text-align: right; vertical-align:top">
+                    Permisiuni
+                </td>
+                <td>
+                    <h5>Utilizatori</h5>
+                    @foreach (var permissions in from p in Model.Permissions
+                                                where p.Type == Utilities.AclItemType.User
+                                                group p by new { p.Id, p.Name } into groups
+                                                select groups)
+                    {
+                        <button type="button" class="collapsible">@permissions.Key.Name</button>
+                        <table class="content" style="border:none; padding:5px">
+                            <thead>
+                                <tr>
+                                    <td>Nume permisiune</td>
+                                    <td>Descriere permisiune</td>
+                                    <td>Utilizatorul are permisiunea</td>
+                                </tr>
+                            </thead>
+                            @foreach (var permission in permissions)
+                            {
+                                <tr>
+                                    <td>@permission.RoleName</td>
+                                    <td>@permission.RoleDescription</td>
+                                    <td>@(permission.HasRole ? "DA" : "NU")</td>
+                                </tr>
+                            }
+                        </table>
+                    }
+                    <h5>Grupuri</h5>
+                    @foreach (var permissions in from p in Model.Permissions
+                                                where p.Type == Utilities.AclItemType.Group
+                                                group p by new { p.Id, p.Name } into groups
+                                                select groups)
+                    {
+                        <button type="button" class="collapsible">@permissions.Key.Name</button>
+                        <table class="content" style="border:none; padding:5px">
+                            <thead>
+                                <tr>
+                                    <td>Nume permisiune</td>
+                                    <td>Descriere permisiune</td>
+                                    <td>Utilizatorul are permisiunea</td>
+                                </tr>
+                            </thead>
+                            @foreach (var permission in permissions)
+                            {
+                                <tr>
+                                    <td>@permission.RoleName</td>
+                                    <td>@permission.RoleDescription</td>
+                                    <td>@(permission.HasRole ? "DA" : "NU")</td>
+                                </tr>
+                            }
+                        </table>
+                    }
+                </td>
+            </tr>
+        </table>
+        <input type="submit" value="Salvează modificările" />
+        <input asp-for="Forum.ForumId" type="hidden" name="forumId" />
+    </form>
+}
+
+<script type="text/javascript">
+    $(function () {
+        $("#siblings").sortable({
+            axis: 'y'
+        });
+    });
+
+    function submitForumForm(form, id) {
+        document.getElementById("forumId").value = id;
+        document.getElementById(form).submit();
+    }
+
+    //forum tree callback
+    function forumSelectCallback(forumId) {
+        var forumInput = document.getElementById("forumId");
+        if (forumInput != null) {
+            forumInput.value = forumId;
+        }
+    }
+
+    function Toggle() {
+        var temp = document.getElementById("forumPassword");
+        if (temp.type === "password") {
+            temp.type = "text";
+        }
+        else {
+            temp.type = "password";
+        }
+    } 
+</script>

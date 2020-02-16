@@ -65,6 +65,7 @@ namespace Serverless.Forum
                 .AddRazorOptions(o =>
                 {
                     o.PageViewLocationFormats.Add("~/Pages/CustomPartials/{0}.cshtml");
+                    o.PageViewLocationFormats.Add("~/Pages/CustomPartials/Admin/{0}.cshtml");
                     o.PageViewLocationFormats.Add("~/Pages/CustomPartials/Email/{0}.cshtml");
                 });
 

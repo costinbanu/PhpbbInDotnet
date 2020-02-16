@@ -63,4 +63,10 @@
         Delete_KeepMessages,
         Delete_DeleteMessages
     }
+
+    public enum AclItemType
+    {
+        User,
+        Group
+    }
 }

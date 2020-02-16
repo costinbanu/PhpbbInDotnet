@@ -50,7 +50,7 @@ namespace Serverless.Forum.Pages
                 }
                 else
                 {
-                    HttpContext.Session.SetInt32("ForumLogin", (int)forumId);
+                    HttpContext.Session.SetInt32($"ForumLogin_{forumId}", 1);
                     return Redirect(HttpUtility.UrlDecode(returnUrl));
                 }
             }
