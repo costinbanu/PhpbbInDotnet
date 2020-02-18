@@ -44,7 +44,7 @@
         PathToForumOrTopic = _forumTreeService.GetPathInTree(forumTree, forum => forum.Id ?? 0, Model.Forum?.ForumId ?? 0, -1)
     },
     ViewData
-);
+)
 
 
 @if (Model.Forum != null)
@@ -118,56 +118,26 @@
                     Permisiuni
                 </td>
                 <td>
-                    <h5>Utilizatori</h5>
-                    @foreach (var permissions in from p in Model.Permissions
-                                                where p.Type == Utilities.AclItemType.User
-                                                group p by new { p.Id, p.Name } into groups
-                                                select groups)
-                    {
-                        <button type="button" class="collapsible">@permissions.Key.Name</button>
-                        <table class="content" style="border:none; padding:5px">
-                            <thead>
-                                <tr>
-                                    <td>Nume permisiune</td>
-                                    <td>Descriere permisiune</td>
-                                    <td>Utilizatorul are permisiunea</td>
-                                </tr>
-                            </thead>
-                            @foreach (var permission in permissions)
-                            {
-                                <tr>
-                                    <td>@permission.RoleName</td>
-                                    <td>@permission.RoleDescription</td>
-                                    <td>@(permission.HasRole ? "DA" : "NU")</td>
-                                </tr>
-                            }
-                        </table>
-                    }
-                    <h5>Grupuri</h5>
-                    @foreach (var permissions in from p in Model.Permissions
-                                                where p.Type == Utilities.AclItemType.Group
-                                                group p by new { p.Id, p.Name } into groups
-                                                select groups)
-                    {
-                        <button type="button" class="collapsible">@permissions.Key.Name</button>
-                        <table class="content" style="border:none; padding:5px">
-                            <thead>
-                                <tr>
-                                    <td>Nume permisiune</td>
-                                    <td>Descriere permisiune</td>
-                                    <td>Utilizatorul are permisiunea</td>
-                                </tr>
-                            </thead>
-                            @foreach (var permission in permissions)
-                            {
-                                <tr>
-                                    <td>@permission.RoleName</td>
-                                    <td>@permission.RoleDescription</td>
-                                    <td>@(permission.HasRole ? "DA" : "NU")</td>
-                                </tr>
-                            }
-                        </table>
-                    }
+                    <h5><b>Utilizatori</b></h5>
+                    @await Html.PartialAsync(
+                        "_AdminForumPermissionsPartial", 
+                        new _AdminForumPermissionsPartialModel(
+                            Model.Forum, 
+                            Model.ForumChildren, 
+                            Model.Permissions.Where(p => p.Type == Utilities.AclItemType.User)
+                        ), 
+                        ViewData
+                    )
+                    <h5><b>Grupuri</b></h5>
+                    @await Html.PartialAsync(
+                        "_AdminForumPermissionsPartial", 
+                        new _AdminForumPermissionsPartialModel(
+                            Model.Forum, 
+                            Model.ForumChildren, 
+                            Model.Permissions.Where(p => p.Type == Utilities.AclItemType.Group)
+                        ), 
+                        ViewData
+                    )
                 </td>
             </tr>
         </table>

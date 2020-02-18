@@ -1,0 +1,29 @@
+﻿@model Serverless.Forum.Pages.CustomPartials.Admin._AdminForumPermissionsPartialModel
+
+@foreach (var permissions in from p in Model.Permissions
+                            group p by new { p.Id, p.Name } into groups
+                            select groups)
+{
+    <button type="button" class="collapsible">@permissions.Key.Name</button>
+    <table class="content" style="border:none; padding:5px">
+        <thead>
+            <tr>
+                <td>Nume permisiune</td>
+                <td>Descriere permisiune</td>
+                <td>Are permisiunea</td>
+            </tr>
+        </thead>
+        @foreach (var permission in permissions)
+        {
+            <tr>
+                <td>@permission.RoleName</td>
+                <td>@permission.RoleDescription</td>
+                <td>
+                    @*@Html.RadioButtonFor(m => m.PermissionsForAclEntity[permissions.Key.Id], permission.RoleId, permission.HasRole)*@
+                    <input type="radio" name="PermissionsForAclEntity[@permissions.Key.Id]" value="@permission.RoleId" @(permission.HasRole ? "checked='checked'" : "") id="@($"{permissions.Key.Id}_{permission.RoleId}")" />
+                @aici asta nu merge bine (Marian Andrei nu e checkuit)
+                </td>
+            </tr>
+        }
+    </table>
+}
