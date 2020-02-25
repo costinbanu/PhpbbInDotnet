@@ -1,4 +1,5 @@
-﻿using Dapper;
+﻿using CryptSharp.Core;
+using Dapper;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -9,7 +10,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Web;
 
 namespace Serverless.Forum.Services
 {
@@ -26,10 +26,31 @@ namespace Serverless.Forum.Services
             _forumService = forumService;
         }
 
-        public async Task<(string Message, bool? IsSuccess)> ManageForumsAsync(List<int> childrenForums, int forumId, string forumName, string forumDesc)
+        public async Task<(string Message, bool? IsSuccess)> ManageForumsAsync(
+            int? forumId, string forumName, string forumDesc, bool? hasPassword, string forumPassword, int? parentId,
+            ForumType? forumType, List<int> childrenForums, Dictionary<AclEntityType, Dictionary<int, int>> rolesForAclEntity)
         {
             using (var context = new ForumDbContext(_config))
             {
+                var actual = await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == forumId);
+                if (string.IsNullOrWhiteSpace(forumName))
+                {
+                    return ("Numele forumului nu este valid!", false);
+                }
+
+                actual.ForumName = forumName;
+                actual.ForumDesc = forumDesc;
+                if(hasPassword.HasValue && !hasPassword.Value)
+                {
+                    actual.ForumPassword = string.Empty;
+                }
+                if(!string.IsNullOrWhiteSpace(forumPassword))
+                {
+                    actual.ForumPassword = Crypter.Phpass.Crypt(forumPassword, Crypter.Phpass.GenerateSalt());
+                }
+                actual.ParentId = parentId ?? actual.ParentId;
+                actual.ForumType = forumType ?? actual.ForumType;
+
                 var children = await (
                     from f in context.PhpbbForums
                     where f.ParentId == forumId
@@ -42,16 +63,23 @@ namespace Serverless.Forum.Services
                     children.ForEach(c => c.LeftId = (childrenForums.IndexOf(c.ForumId) + 1) * 2);
                 }
 
-                var actual = await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == forumId);
-                if (string.IsNullOrWhiteSpace(forumName))
-                {
-                    return ("Numele forumului nu este valid!", false);
-                }
+                var userPermissions = await (
+                    from p in context.PhpbbAclUsers
+                    where p.ForumId == forumId
+                       && rolesForAclEntity[AclEntityType.User].Keys.Contains(p.UserId)
+                    select p
+                ).ToListAsync();
+                userPermissions.ForEach(p => p.AuthRoleId = rolesForAclEntity[AclEntityType.User][p.UserId]);
 
-                actual.ForumName = forumName;
-                actual.ForumDesc = forumDesc;
+                var groupPermissions = await (
+                    from p in context.PhpbbAclGroups
+                    where p.ForumId == forumId
+                       && rolesForAclEntity[AclEntityType.Group].Keys.Contains(p.GroupId)
+                    select p
+                ).ToListAsync();
+                groupPermissions.ForEach(p => p.AuthRoleId = rolesForAclEntity[AclEntityType.Group][p.GroupId]);
 
-                await context.SaveChangesAsync();
+                //await context.SaveChangesAsync();
 
                 return ($"Forumul {forumName} a fost actualizat cu succes!", true);
             }

@@ -63,7 +63,6 @@ namespace Serverless.Forum.Pages
         private async Task<IActionResult> ValidatePermissionsAndInit(AdminCategories category)
             => !await IsCurrentUserAdminHereAsync() ? Forbid() : null;
 
-
         #region Admin user
 
         public List<PhpbbUsers> UserSearchResults { get; private set; }
@@ -103,13 +102,12 @@ namespace Serverless.Forum.Pages
 
         #region Admin forum
 
+        [BindProperty]
         public PhpbbForums Forum { get; set; } = null;
-        public int SelectedForumId { get; private set; }
         public List<PhpbbForums> ForumChildren { get; private set; }
         public List<SelectListItem> ForumSelectedParent { get; private set; }
-        [BindProperty]
-        public int ParentId { get; private set; }
         public IEnumerable<ForumPermissions> Permissions { get; private set; }
+        public bool ShowForum { get; private set; }
 
         public async Task<IActionResult> OnPostShowForum(int forumId)
         {
@@ -121,14 +119,16 @@ namespace Serverless.Forum.Pages
 
             Permissions = await _adminForumService.GetPermissions(forumId);
             (Forum, ForumChildren) = await _adminForumService.ShowForum(forumId);
-            SelectedForumId = forumId;
-            ParentId = Forum.ParentId;
 
+            ShowForum = true;
             Category = AdminCategories.Forums;
             return Page();
         }
 
-        public async Task<IActionResult> OnPostForumManagement(List<int> childrenForums, int forumId, string forumName, string forumDesc, int parentId)
+        public async Task<IActionResult> OnPostForumManagement(
+            int? forumId, string forumName, string forumDesc, bool? hasPassword, string forumPassword, int? parentId, 
+            ForumType? forumType, List<int> childrenForums, Dictionary<AclEntityType, Dictionary<int, int>> rolesForAclEntity
+        )
         {
             var validationResult = await ValidatePermissionsAndInit(AdminCategories.Users);
             if (validationResult != null)
@@ -136,7 +136,11 @@ namespace Serverless.Forum.Pages
                 return validationResult;
             }
 
-            (Message, IsSuccess) = await _adminForumService.ManageForumsAsync(childrenForums, forumId, forumName, forumDesc);
+            (Message, IsSuccess) = await _adminForumService.ManageForumsAsync(
+                forumId, forumName, forumDesc, hasPassword, forumPassword, parentId, forumType, childrenForums, rolesForAclEntity
+            );
+
+            ShowForum = false;
             Category = AdminCategories.Forums;
             return Page();
         }

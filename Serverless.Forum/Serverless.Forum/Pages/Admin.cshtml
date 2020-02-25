@@ -85,13 +85,34 @@
         background-color: darkred;
     }
 
-    input[type='text'], input[type='password'], textarea, option {
-        width: 400px;
+    input[type='text'], input[type='password'], input[type='select'], textarea, option {
+        width: 75%;
     }
 
-    td {
+    .mainTable {
+        width: 100%;
+        border: none;
+        padding: 0px;
+        margin: 0px
+    }
+
+    .mainTable td {
         padding: 5px;
         margin-bottom: 10px;
+    }
+
+    .mainTable tr:not(:last-child) {
+        border-bottom: solid 1px #919191;
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+
+    .mainTable thead {
+        font-weight: bold;
+    }
+
+    .mainTable td:first-child {
+        width: 20%;
     }
 </style>
 
@@ -114,7 +135,7 @@
 <div id="Forums" class="tabcontent" style="@(Model.Category == AdminCategories.Forums ? "display:inherit" : "display:none")">
     @await Html.PartialAsync(
         "_AdminForumsPartial",
-        new _AdminForumsPartialModel(Model.Forum, Model.ForumChildren, Model.Permissions),
+        new _AdminForumsPartialModel(Model.Forum, Model.ForumChildren, Model.Permissions, Model.ShowForum),
         ViewData
     )
 </div>

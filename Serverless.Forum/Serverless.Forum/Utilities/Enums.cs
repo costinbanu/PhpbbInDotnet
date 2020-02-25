@@ -64,7 +64,7 @@
         Delete_DeleteMessages
     }
 
-    public enum AclItemType
+    public enum AclEntityType
     {
         User,
         Group

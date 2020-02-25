@@ -68,7 +68,6 @@ namespace Serverless.Forum.Pages
             _s3Client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1);
             PollExpirationDaysString = "1";
             PollMaxOptions = 1;
-            //_cache = cache;
             _postService = postService;
         }
 

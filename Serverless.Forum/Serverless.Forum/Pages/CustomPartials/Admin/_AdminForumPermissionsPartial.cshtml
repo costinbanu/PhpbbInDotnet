@@ -1,11 +1,41 @@
 ﻿@model Serverless.Forum.Pages.CustomPartials.Admin._AdminForumPermissionsPartialModel
+@using Microsoft.EntityFrameworkCore;
+@inject ForumDb.ForumDbContext _dbContext;
 
-@foreach (var permissions in from p in Model.Permissions
-                            group p by new { p.Id, p.Name } into groups
-                            select groups)
+@if (Model.Permissions != null)
 {
-    <button type="button" class="collapsible">@permissions.Key.Name</button>
-    <table class="content" style="border:none; padding:5px">
+    foreach (var permissions in from p in Model.Permissions
+                                group p by new { p.Id, p.Name } into groups
+                                select groups)
+    {
+        <button type="button" class="collapsible">@permissions.Key.Name</button>
+        <table class="content" style="border:none; padding:5px; width:80%">
+            <thead>
+                <tr>
+                    <td>Nume permisiune</td>
+                    <td>Descriere permisiune</td>
+                    <td>Are permisiunea</td>
+                </tr>
+            </thead>
+            @foreach (var permission in permissions)
+            {
+                <tr>
+                    <td>@permission.RoleName</td>
+                    <td>@permission.RoleDescription</td>
+                    <td>
+                        <input type="radio" name="RolesForAclEntity[@Model.EntityType][@permissions.Key.Id]" value="@permission.RoleId" @(permission.HasRole ? "checked=checked" : "") id="@($"{Model.EntityType}_{permissions.Key.Id}_{permission.RoleId}")" />
+                    </td>
+                </tr>
+            }
+        </table>
+    }
+}
+<button type="button" class="collapsible"><strong>Adaugă permisiuni pentru un utilizator nou</strong></button>
+<div class="content">
+    <p>&nbsp;</p>
+    <input type="text" id="permissionsUserId" placeholder="Caută un utilizator..." />
+    <p>&nbsp;</p>
+    <table style="border:none; padding:5px; width:80%" id="newPermissions">
         <thead>
             <tr>
                 <td>Nume permisiune</td>
@@ -13,17 +43,44 @@
                 <td>Are permisiunea</td>
             </tr>
         </thead>
-        @foreach (var permission in permissions)
+        @foreach (var permission in _dbContext.PhpbbAclRoles.Where(r => r.RoleType == "f_"))
         {
             <tr>
                 <td>@permission.RoleName</td>
                 <td>@permission.RoleDescription</td>
                 <td>
-                    @*@Html.RadioButtonFor(m => m.PermissionsForAclEntity[permissions.Key.Id], permission.RoleId, permission.HasRole)*@
-                    <input type="radio" name="PermissionsForAclEntity[@permissions.Key.Id]" value="@permission.RoleId" @(permission.HasRole ? "checked='checked'" : "") id="@($"{permissions.Key.Id}_{permission.RoleId}")" />
-                @aici asta nu merge bine (Marian Andrei nu e checkuit)
+                    <input type="radio" name="RolesForAclEntity[@Model.EntityType][{{userid}}]" value="@permission.RoleId" id="@($"{Model.EntityType}_NewEntity_{permission.RoleId}")" />
                 </td>
             </tr>
         }
     </table>
+</div>
+
+@{
+    var users = await (
+        from u in _dbContext.PhpbbUsers
+        where u.UserId != 1 && u.UserType != 2
+        orderby u.Username
+        select KeyValuePair.Create(u.Username, u.UserId)
+    ).ToListAsync();
 }
+
+<link rel="stylesheet" href="~/lib/tribute/dist/tribute.css" />
+<script src="~/lib/tribute/dist/tribute.js"></script>
+<script>
+    var tribute = new Tribute({
+        values: @Json.Serialize(users) ,
+        autocompleteMode:true
+        });
+
+    tribute.attach(document.getElementById("permissionsUserId"));
+
+    document.getElementById("permissionsUserId").addEventListener("tribute-replaced", function (e) {
+        document.getElementById("newPermissions").querySelectorAll("input").forEach(input => {
+            input.name = input.name.replace("{{userid}}", e.detail.item.original.value);
+        });
+        @de adaugat logica pt blocat inputul cand introduci un user.apoi sa apara un buton cum ca schimbi(care sa faca revert)
+        si abia apoi sa poti rescrie un alt nume.
+        de facut research si despre afisarea din tribute (poate sa afiseze cheia si sa foloseasca valoarea in alta parte?)
+    });
+</script>
