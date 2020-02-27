@@ -1,41 +1,41 @@
 ﻿@model Serverless.Forum.Pages.CustomPartials.Admin._AdminForumPermissionsPartialModel
-@using Microsoft.EntityFrameworkCore;
-@inject ForumDb.ForumDbContext _dbContext;
 
-@if (Model.Permissions != null)
-{
-    foreach (var permissions in from p in Model.Permissions
-                                group p by new { p.Id, p.Name } into groups
-                                select groups)
+@using Microsoft.EntityFrameworkCore;
+@using Serverless.Forum.Utilities;
+@using Serverless.Forum.Contracts;
+
+@inject ForumDb.ForumDbContext _dbContext
+
+@{
+    var groupedPermissions = from p in Model.Permissions ?? new List<ForumPermissions>()
+                             group p by new { p.Id, p.Name } into groups
+                             select groups;
+    var entityIds = groupedPermissions.Select(x => x.Key.Id).Distinct();
+    var entityName = Model.EntityType == AclEntityType.Group ? "grup" : "utilizator";
+    var remainingEntities = new List<KeyValuePair<string, int>>();
+    if (Model.EntityType == AclEntityType.Group)
     {
-        <button type="button" class="collapsible">@permissions.Key.Name</button>
-        <table class="content" style="border:none; padding:5px; width:80%">
-            <thead>
-                <tr>
-                    <td>Nume permisiune</td>
-                    <td>Descriere permisiune</td>
-                    <td>Are permisiunea</td>
-                </tr>
-            </thead>
-            @foreach (var permission in permissions)
-            {
-                <tr>
-                    <td>@permission.RoleName</td>
-                    <td>@permission.RoleDescription</td>
-                    <td>
-                        <input type="radio" name="RolesForAclEntity[@Model.EntityType][@permissions.Key.Id]" value="@permission.RoleId" @(permission.HasRole ? "checked=checked" : "") id="@($"{Model.EntityType}_{permissions.Key.Id}_{permission.RoleId}")" />
-                    </td>
-                </tr>
-            }
-        </table>
+        remainingEntities = await (
+            from g in _dbContext.PhpbbGroups
+            where !entityIds.Contains(g.GroupId)
+            select KeyValuePair.Create(g.GroupName, g.GroupId)
+        ).ToListAsync();
+    }
+    else
+    {
+        remainingEntities = await (
+            from u in _dbContext.PhpbbUsers
+            where u.UserId != 1 && !entityIds.Contains(u.UserId) && u.UserType != 2
+            orderby u.Username
+            select KeyValuePair.Create(u.Username, u.UserId)
+        ).ToListAsync();
     }
 }
-<button type="button" class="collapsible"><strong>Adaugă permisiuni pentru un utilizator nou</strong></button>
-<div class="content">
-    <p>&nbsp;</p>
-    <input type="text" id="permissionsUserId" placeholder="Caută un utilizator..." />
-    <p>&nbsp;</p>
-    <table style="border:none; padding:5px; width:80%" id="newPermissions">
+
+@foreach (var permissions in groupedPermissions)
+{
+    <button type="button" class="collapsible">@permissions.Key.Name</button>
+    <table class="content" style="border:none; padding:5px; width:80%">
         <thead>
             <tr>
                 <td>Nume permisiune</td>
@@ -43,44 +43,101 @@
                 <td>Are permisiunea</td>
             </tr>
         </thead>
-        @foreach (var permission in _dbContext.PhpbbAclRoles.Where(r => r.RoleType == "f_"))
+        @foreach (var permission in permissions)
         {
             <tr>
                 <td>@permission.RoleName</td>
                 <td>@permission.RoleDescription</td>
                 <td>
-                    <input type="radio" name="RolesForAclEntity[@Model.EntityType][{{userid}}]" value="@permission.RoleId" id="@($"{Model.EntityType}_NewEntity_{permission.RoleId}")" />
+                    <input type="radio" name="RolesForAclEntity[@((int)Model.EntityType)][@permissions.Key.Id]" value="@permission.RoleId" @(permission.HasRole ? "checked=checked" : "") id="@($"{Model.EntityType}_{permissions.Key.Id}_{permission.RoleId}")" />
                 </td>
             </tr>
         }
     </table>
-</div>
-
-@{
-    var users = await (
-        from u in _dbContext.PhpbbUsers
-        where u.UserId != 1 && u.UserType != 2
-        orderby u.Username
-        select KeyValuePair.Create(u.Username, u.UserId)
-    ).ToListAsync();
 }
 
-<link rel="stylesheet" href="~/lib/tribute/dist/tribute.css" />
-<script src="~/lib/tribute/dist/tribute.js"></script>
-<script>
-    var tribute = new Tribute({
-        values: @Json.Serialize(users) ,
-        autocompleteMode:true
-        });
+@if (remainingEntities.Any())
+{
+    <button type="button" class="collapsible"><strong>Adaugă permisiuni pentru un @entityName nou</strong></button>
+    <div class="content">
+        <p>&nbsp;</p>
+        @if (Model.EntityType == AclEntityType.User)
+        {
+            <input type="text" id="permissionsUser" placeholder="Caută un utilizator..." />
+        }
+        else
+        {
+            var dropDownItems = new List<SelectListItem>
+            {
+                new SelectListItem("Alege un grup", "0", true, true)
+            };
+            dropDownItems.AddRange(remainingEntities.Select(p => new SelectListItem(p.Key, p.Value.ToString())));
+            @Html.DropDownList($"permissionsGroup", dropDownItems,  new { onclick = "changeGroupId(this.options[this.selectedIndex].value)" });
+        }
+        <p>&nbsp;</p>
+        <table style="border:none; padding:5px; width:80%" id="newPermissions_@(Model.Self)">
+            <thead>
+                <tr>
+                    <td>Nume permisiune</td>
+                    <td>Descriere permisiune</td>
+                    <td>Are permisiunea</td>
+                </tr>
+            </thead>
+            @foreach (var permission in _dbContext.PhpbbAclRoles.Where(r => r.RoleType == "f_"))
+            {
+                <tr>
+                    <td>@permission.RoleName</td>
+                    <td>@permission.RoleDescription</td>
+                    <td>
+                        <input type="radio" name="RolesForAclEntity[@((int)Model.EntityType)][0]" value="@permission.RoleId" id="@($"{Model.EntityType}_NewEntity_{permission.RoleId}_{Model.Self}")" />
+                    </td>
+                </tr>
+            }
+        </table>
+    </div>
 
-    tribute.attach(document.getElementById("permissionsUserId"));
+    <script type="text/javascript">
+        function changeIds_@(Model.Self)(oldValue, newValue) {
+            document.getElementById("newPermissions_@(Model.Self)").querySelectorAll("input").forEach(input => {
+                input.name = input.name.replace("[" + oldValue + "]", "[" + newValue + "]");
+            });
+        }
+    </script>
 
-    document.getElementById("permissionsUserId").addEventListener("tribute-replaced", function (e) {
-        document.getElementById("newPermissions").querySelectorAll("input").forEach(input => {
-            input.name = input.name.replace("{{userid}}", e.detail.item.original.value);
-        });
-        @de adaugat logica pt blocat inputul cand introduci un user.apoi sa apara un buton cum ca schimbi(care sa faca revert)
-        si abia apoi sa poti rescrie un alt nume.
-        de facut research si despre afisarea din tribute (poate sa afiseze cheia si sa foloseasca valoarea in alta parte?)
-    });
-</script>
+    @if (Model.EntityType == AclEntityType.User)
+    {
+        <link rel="stylesheet" href="~/lib/tribute/dist/tribute.css" />
+        <script src="~/lib/tribute/dist/tribute.js" type="text/javascript"></script>
+        <script type="text/javascript">
+            var tribute = new Tribute({
+                values: @Json.Serialize(remainingEntities) ,
+                autocompleteMode: true,
+                selectTemplate: function (item) {
+                                return item.original.key;
+                }
+            });
+
+            var permissionsUser = document.getElementById("permissionsUser");
+            var oldUserValue = 0;
+
+            tribute.attach(permissionsUser);
+
+            permissionsUser.addEventListener("tribute-replaced", function(e) {
+                var newValue = e.detail.item.original.value;
+                changeIds_@(Model.Self)(oldUserValue, newValue);
+                permissionsUser.value = e.detail.item.original.key;
+                oldUserValue = newValue;
+            });
+        </script>
+    }
+    else
+    {
+        <script type="text/javascript">
+            var oldGroupValue = 0;
+            function changeGroupId(newValue) {
+                changeIds_@(Model.Self)(oldGroupValue, newValue);
+                oldGroupValue = newValue;
+            }
+        </script>
+    }
+}

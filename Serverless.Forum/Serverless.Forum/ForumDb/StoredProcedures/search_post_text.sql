@@ -32,7 +32,7 @@ BEGIN
 		    AND (? IS NULL OR ? = p.topic_id)
 		    AND (? IS NULL OR ? = p.poster_id)
 		    AND (? IS NULL OR MATCH(p.post_text) AGAINST(?))
-		  ORDER BY p.post_time
+		  ORDER BY p.post_time DESC
 		  LIMIT ?, 14;";
           
     set @forum = forum;

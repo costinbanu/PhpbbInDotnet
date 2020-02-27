@@ -2,6 +2,7 @@
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -14,6 +15,7 @@ namespace Serverless.Forum.Pages.CustomPartials.Admin
         public IEnumerable<ForumPermissions> Permissions { get; private set; }
         public Dictionary<AclEntityType,Dictionary<int, int>> RolesForAclEntity { get; set; }
         public AclEntityType EntityType { get; private set; }
+        public readonly string Self;
 
         public _AdminForumPermissionsPartialModel(PhpbbForums forum, IEnumerable<PhpbbForums> forumChildren, IEnumerable<ForumPermissions> forumPermissions, AclEntityType entityType)
         {
@@ -21,6 +23,7 @@ namespace Serverless.Forum.Pages.CustomPartials.Admin
             ForumChildren = forumChildren;
             Permissions = forumPermissions;
             EntityType = entityType;
+            Self = Guid.NewGuid().ToString("n");
             if (Permissions != null)
             {
                 RolesForAclEntity = new Dictionary<AclEntityType, Dictionary<int, int>>

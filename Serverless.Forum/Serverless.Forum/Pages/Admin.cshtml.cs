@@ -109,7 +109,7 @@ namespace Serverless.Forum.Pages
         public IEnumerable<ForumPermissions> Permissions { get; private set; }
         public bool ShowForum { get; private set; }
 
-        public async Task<IActionResult> OnPostShowForum(int forumId)
+        public async Task<IActionResult> OnPostShowForum(int? forumId)
         {
             var validationResult = await ValidatePermissionsAndInit(AdminCategories.Users);
             if (validationResult != null)
@@ -117,8 +117,11 @@ namespace Serverless.Forum.Pages
                 return validationResult;
             }
 
-            Permissions = await _adminForumService.GetPermissions(forumId);
-            (Forum, ForumChildren) = await _adminForumService.ShowForum(forumId);
+            if (forumId != null)
+            {
+                Permissions = await _adminForumService.GetPermissions(forumId.Value);
+                (Forum, ForumChildren) = await _adminForumService.ShowForum(forumId.Value);
+            }
 
             ShowForum = true;
             Category = AdminCategories.Forums;
@@ -128,7 +131,7 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnPostForumManagement(
             int? forumId, string forumName, string forumDesc, bool? hasPassword, string forumPassword, int? parentId, 
             ForumType? forumType, List<int> childrenForums, Dictionary<AclEntityType, Dictionary<int, int>> rolesForAclEntity
-        )
+        ) rolesForAclEntity nu poate fi serializat (probleme la prima cheie, gaseste 'forumName' ca valoare string pt ea. what to do?
         {
             var validationResult = await ValidatePermissionsAndInit(AdminCategories.Users);
             if (validationResult != null)
@@ -137,7 +140,7 @@ namespace Serverless.Forum.Pages
             }
 
             (Message, IsSuccess) = await _adminForumService.ManageForumsAsync(
-                forumId, forumName, forumDesc, hasPassword, forumPassword, parentId, forumType, childrenForums, rolesForAclEntity
+                forumId, forumName, forumDesc, hasPassword, forumPassword, parentId, forumType, childrenForums, null //rolesForAclEntity
             );
 
             ShowForum = false;

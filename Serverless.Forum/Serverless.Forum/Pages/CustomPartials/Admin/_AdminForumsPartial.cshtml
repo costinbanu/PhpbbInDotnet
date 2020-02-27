@@ -30,9 +30,14 @@
 
 <form method="post" asp-page-handler="ShowForum">
     <div style="float:right; width:200px;">
-        <input type="submit" value="Manage selected forum" style="position:fixed; width:auto" />
+        <input type="submit" value="Modifică forumul selectat" style="position:fixed; width:auto" />
     </div>
     <input id="forumId" name="forumId" type="hidden" />
+</form>
+<form method="post" asp-page-handler="ShowForum">
+    <div style="float:right; width:200px;">
+        <input type="submit" value="Creează un forum nou" style="position:fixed; width:auto; margin-top:50px" />
+    </div>
 </form>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
@@ -52,8 +57,15 @@
 
 @if (Model.Show)
 {
-    <form id="forumFields" method="post" asp-page-handler="ForumManagement">
-        <h4 style="float:left">Administrează forum - @Model.Forum.ForumName</h4>
+    <form id="forumFields" method="post" asp-page-handler="ForumManagement" autocomplete="no">
+        @if ((Model.Forum?.ForumId ?? 0) != 0)
+        {
+            <h4 style="float:left">Administrează forum - @Model.Forum.ForumName</h4>
+        }
+        else
+        {
+            <h4 style="float:left">Creează un forum nou</h4>
+        }
         <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('forumFields')">Închide [X]</div>
         <p>&nbsp;</p>
         <p>&nbsp;</p>
@@ -63,7 +75,7 @@
                     Nume forum
                 </td>
                 <td>
-                    <input asp-for="Forum.ForumName" name="forumName" />
+                    <input asp-for="Forum.ForumName" name="forumName" autocomplete="no" />
                 </td>
             </tr>
             <tr>
@@ -84,7 +96,7 @@
                     <br />
                     <span class="Caption">Debifați pentru a elimina parola existentă.</span>
                     <br /> <br />
-                    <input asp-for="Forum.ForumPassword" name="forumPassword" type="password" id="forumPassword" />&nbsp;
+                    <input asp-for="Forum.ForumPassword" name="forumPassword" type="password" id="forumPassword" autocomplete="no" />&nbsp;
                     <input type="checkbox" onclick="Toggle()" />&nbsp;Arată parola<br />
                     <span class="Caption">Introduceți noua parolă. Va fi schimbată dacă forumul are deja una.</span>
                 </td>
@@ -94,7 +106,7 @@
                     Tip forum
                 </td>
                 <td>
-                    @Html.DropDownList("forumType", Enum.GetValues(typeof(Utilities.ForumType)).Cast<ForumType>().Select(
+                    @Html.DropDownList("forumType", Enum.GetValues(typeof(ForumType)).Cast<ForumType>().Select(
                         ft => new SelectListItem(ft.ToString("g"), ft.ToString("g"), Model.Forum.ForumType == ft, Model.Forum.ForumType == ft)))
                 </td>
             </tr>
@@ -133,8 +145,8 @@
                         new _AdminForumPermissionsPartialModel(
                             Model.Forum,
                             Model.ForumChildren,
-                            Model.Permissions?.Where(p => p.Type == Utilities.AclEntityType.User),
-                            Utilities.AclEntityType.User
+                            Model.Permissions?.Where(p => p.Type == AclEntityType.User),
+                            AclEntityType.User
                         ),
                         ViewData
                     )
@@ -145,8 +157,8 @@
                         new _AdminForumPermissionsPartialModel(
                             Model.Forum,
                             Model.ForumChildren,
-                            Model.Permissions?.Where(p => p.Type == Utilities.AclEntityType.Group),
-                            Utilities.AclEntityType.Group
+                            Model.Permissions?.Where(p => p.Type == AclEntityType.Group),
+                            AclEntityType.Group
                         ),
                         ViewData
                     )

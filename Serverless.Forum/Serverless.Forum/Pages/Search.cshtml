@@ -3,8 +3,7 @@
 @{
     ViewData["Title"] = "Search";
     Layout = "~/Pages/_Layout.cshtml";
-    var dateFormat = (await Model.GetCurrentUserAsync()).UserDateFormat;
-    var IsAnonymous = Model.CurrentUserId == 1;
+    var dateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
 }
 
 <h2>Caută</h2>
@@ -78,6 +77,7 @@
     <input asp-for="Author" type="text" placeholder="Caută după autor..." id="AuthorInput" style="width:100%" />
     <p>&nbsp;</p>
     <input type="submit" value="Trimite" />
+    <input asp-for="AuthorId" type="hidden" id="authorId" />
 </form>
 
 @if (Model.Posts != null && Model.Posts.Any())
@@ -149,8 +149,18 @@
 <script>
     var tribute = new Tribute({
         values: @Json.Serialize(Model.Users) ,
-        autocompleteMode:true
-        });
+        autocompleteMode: true,
+        selectTemplate: function (item) {
+            return item.original.key;
+        }
+    });
 
-    tribute.attach(document.getElementById("AuthorInput"));
+    var authorInput = document.getElementById("AuthorInput");
+
+    tribute.attach(authorInput);
+
+    authorInput.addEventListener("tribute-replaced", function (e) {
+        document.getElementById("authorId").value = e.detail.item.original.value;
+        authorInput.value = e.detail.item.original.key;
+    });
 </script>
