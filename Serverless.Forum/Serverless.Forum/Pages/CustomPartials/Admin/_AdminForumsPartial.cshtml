@@ -146,7 +146,8 @@
                             Model.Forum,
                             Model.ForumChildren,
                             Model.Permissions?.Where(p => p.Type == AclEntityType.User),
-                            AclEntityType.User
+                            AclEntityType.User,
+                            0
                         ),
                         ViewData
                     )
@@ -154,11 +155,12 @@
                     <span style="font-weight:bold">Grupuri</span>
                     @await Html.PartialAsync(
                         "_AdminForumPermissionsPartial",
-                        new _AdminForumPermissionsPartialModel(
+                        new _AdminForumPermissionsPartialModel (
                             Model.Forum,
                             Model.ForumChildren,
                             Model.Permissions?.Where(p => p.Type == AclEntityType.Group),
-                            AclEntityType.Group
+                            AclEntityType.Group,
+                            0
                         ),
                         ViewData
                     )

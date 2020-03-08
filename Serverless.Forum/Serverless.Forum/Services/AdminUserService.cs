@@ -31,7 +31,7 @@ namespace Serverless.Forum.Services
             using (var context = new ForumDbContext(_config))
             {
                 return await (
-                    from u in context.PhpbbUsers
+                    from u in context.PhpbbUsers.AsNoTracking()
                     where u.UserInactiveTime > 0
                        && u.UserInactiveReason != UserInactiveReason.NotInactive
                     select u
@@ -166,7 +166,7 @@ namespace Serverless.Forum.Services
             using (var context = new ForumDbContext(_config))
             {
                 return await (
-                    from u in context.PhpbbUsers
+                    from u in context.PhpbbUsers.AsNoTracking()
                     where (string.IsNullOrWhiteSpace(username) || u.UsernameClean.Contains(_utils.CleanString(username), StringComparison.InvariantCultureIgnoreCase))
                        && (string.IsNullOrWhiteSpace(email) || u.UserEmail == email)
                        && ((userid ?? 0) == 0 || u.UserId == userid)

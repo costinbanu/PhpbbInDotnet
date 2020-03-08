@@ -70,13 +70,13 @@ namespace Serverless.Forum.Pages
 
             using (var context = new ForumDbContext(_config))
             {
-                CurrentUser = await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == UserId);
+                CurrentUser = await context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == UserId);
                 if (CurrentUser == null)
                 {
                     return NotFound($"Utilizatorul cu id '{UserId}' nu există.");
                 }
 
-                TotalPosts = await context.PhpbbPosts.CountAsync(p => p.PosterId == UserId);
+                TotalPosts = await context.PhpbbPosts.AsNoTracking().CountAsync(p => p.PosterId == UserId);
                 var preferredTopicId = await (
                     from p in context.PhpbbPosts
                     where p.PosterId == UserId

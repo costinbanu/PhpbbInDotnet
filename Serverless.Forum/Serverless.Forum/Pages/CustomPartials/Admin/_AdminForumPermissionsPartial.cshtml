@@ -1,60 +1,70 @@
 ﻿@model Serverless.Forum.Pages.CustomPartials.Admin._AdminForumPermissionsPartialModel
 
 @using Microsoft.EntityFrameworkCore;
-@using Serverless.Forum.Utilities;
 @using Serverless.Forum.Contracts;
+@using Serverless.Forum.ForumDb;
+@using Serverless.Forum.Utilities;
 
-@inject ForumDb.ForumDbContext _dbContext
+@inject Microsoft.Extensions.Configuration.IConfiguration _config
 
 @{
     var groupedPermissions = from p in Model.Permissions ?? new List<ForumPermissions>()
                              group p by new { p.Id, p.Name } into groups
                              select groups;
+
     var entityIds = groupedPermissions.Select(x => x.Key.Id).Distinct();
     var entityName = Model.EntityType == AclEntityType.Group ? "grup" : "utilizator";
     var remainingEntities = new List<KeyValuePair<string, int>>();
-    if (Model.EntityType == AclEntityType.Group)
+    var roles = new List<PhpbbAclRoles>();
+    var index = Model.StartIndex;
+    using (var context = new ForumDbContext(_config))
     {
-        remainingEntities = await (
-            from g in _dbContext.PhpbbGroups
-            where !entityIds.Contains(g.GroupId)
-            select KeyValuePair.Create(g.GroupName, g.GroupId)
-        ).ToListAsync();
-    }
-    else
-    {
-        remainingEntities = await (
-            from u in _dbContext.PhpbbUsers
-            where u.UserId != 1 && !entityIds.Contains(u.UserId) && u.UserType != 2
-            orderby u.Username
-            select KeyValuePair.Create(u.Username, u.UserId)
-        ).ToListAsync();
+        if (Model.EntityType == AclEntityType.Group)
+        {
+            remainingEntities = await (
+                from g in context.PhpbbGroups
+                where !entityIds.Contains(g.GroupId)
+                select KeyValuePair.Create(g.GroupName, g.GroupId)
+            ).ToListAsync();
+        }
+        else
+        {
+            remainingEntities = await (
+                from u in context.PhpbbUsers
+                where u.UserId != 1 && !entityIds.Contains(u.UserId) && u.UserType != 2
+                orderby u.Username
+                select KeyValuePair.Create(u.Username, u.UserId)
+            ).ToListAsync();
+        }
+        roles = await context.PhpbbAclRoles.Where(r => r.RoleType == "f_").ToListAsync();
     }
 }
 
+<input type="hidden" name="@(Model.EntityType)Roles" id="@(Model.EntityType)Roles" value="@System.Web.HttpUtility.HtmlEncode(Json.Serialize(Model.RolesForAclEntity[Model.EntityType]))" />
+
 @foreach (var permissions in groupedPermissions)
 {
-    <button type="button" class="collapsible">@permissions.Key.Name</button>
-    <table class="content" style="border:none; padding:5px; width:80%">
-        <thead>
-            <tr>
-                <td>Nume permisiune</td>
-                <td>Descriere permisiune</td>
-                <td>Are permisiunea</td>
-            </tr>
-        </thead>
-        @foreach (var permission in permissions)
-        {
-            <tr>
-                <td>@permission.RoleName</td>
-                <td>@permission.RoleDescription</td>
-                <td>
-                    <input type="radio" name="RolesForAclEntity[@((int)Model.EntityType)][@permissions.Key.Id]" value="@permission.RoleId" @(permission.HasRole ? "checked=checked" : "") id="@($"{Model.EntityType}_{permissions.Key.Id}_{permission.RoleId}")" />
-                </td>
-            </tr>
-        }
+    <table style="border:none; padding:5px; width:80%">
+        <tr>
+            <td style="width:40%">@permissions.Key.Name</td>
+            <td>
+                @Html.DropDownList(
+                    $"{Model.EntityType}ForumPermissions[{index++}]", 
+                    permissions.Select(p => new SelectListItem(p.RoleDescription, $"{permissions.Key.Id}_{p.RoleId}", p.HasRole)), 
+                    new { style = "width:300px" }
+                )
+            </td>
+        </tr>
     </table>
 }
+
+<script type="text/javascript">
+    function changeIds_@(Model.Self)(oldValue, newValue) {
+        document.getElementById("newPermissions_@(Model.Self)").querySelectorAll("option").forEach(input => {
+            input.value = input.value.replace(oldValue + "_", newValue + "_");
+        });
+    }
+</script>
 
 @if (remainingEntities.Any())
 {
@@ -71,38 +81,23 @@
             {
                 new SelectListItem("Alege un grup", "0", true, true)
             };
-            dropDownItems.AddRange(remainingEntities.Select(p => new SelectListItem(p.Key, p.Value.ToString())));
-            @Html.DropDownList($"permissionsGroup", dropDownItems,  new { onclick = "changeGroupId(this.options[this.selectedIndex].value)" });
+            dropDownItems.AddRange(remainingEntities.Select(e => new SelectListItem(e.Key, e.Value.ToString())));
+            @Html.DropDownList($"permissionsGroup", dropDownItems, new { onchange = "changeGroupId(this.options[this.selectedIndex].value, this.options[this.selectedIndex].text)" });
         }
         <p>&nbsp;</p>
-        <table style="border:none; padding:5px; width:80%" id="newPermissions_@(Model.Self)">
-            <thead>
-                <tr>
-                    <td>Nume permisiune</td>
-                    <td>Descriere permisiune</td>
-                    <td>Are permisiunea</td>
-                </tr>
-            </thead>
-            @foreach (var permission in _dbContext.PhpbbAclRoles.Where(r => r.RoleType == "f_"))
-            {
-                <tr>
-                    <td>@permission.RoleName</td>
-                    <td>@permission.RoleDescription</td>
-                    <td>
-                        <input type="radio" name="RolesForAclEntity[@((int)Model.EntityType)][0]" value="@permission.RoleId" id="@($"{Model.EntityType}_NewEntity_{permission.RoleId}_{Model.Self}")" />
-                    </td>
-                </tr>
-            }
+        <table style="border:none; padding:5px; width:80%">
+            <tr>
+                <td style="width:40%" id="entityName_@(Model.Self)">@entityName nou</td>
+                <td>
+                    @Html.DropDownList(
+                        $"{Model.EntityType}ForumPermissions[{index++}]", 
+                        roles.Select(p => new SelectListItem(p.RoleDescription, $"0_{p.RoleId}")), 
+                        new { id = $"newPermissions_{Model.Self}", style = "width:300px"}
+                    )
+                </td>
+            </tr>
         </table>
     </div>
-
-    <script type="text/javascript">
-        function changeIds_@(Model.Self)(oldValue, newValue) {
-            document.getElementById("newPermissions_@(Model.Self)").querySelectorAll("input").forEach(input => {
-                input.name = input.name.replace("[" + oldValue + "]", "[" + newValue + "]");
-            });
-        }
-    </script>
 
     @if (Model.EntityType == AclEntityType.User)
     {
@@ -124,9 +119,11 @@
 
             permissionsUser.addEventListener("tribute-replaced", function(e) {
                 var newValue = e.detail.item.original.value;
+                var newKey = e.detail.item.original.key
                 changeIds_@(Model.Self)(oldUserValue, newValue);
-                permissionsUser.value = e.detail.item.original.key;
+                permissionsUser.value = newKey;
                 oldUserValue = newValue;
+                document.getElementById("entityName_@(Model.Self)").innerText = newKey;
             });
         </script>
     }
@@ -134,9 +131,10 @@
     {
         <script type="text/javascript">
             var oldGroupValue = 0;
-            function changeGroupId(newValue) {
+            function changeGroupId(newValue, newKey) {
                 changeIds_@(Model.Self)(oldGroupValue, newValue);
                 oldGroupValue = newValue;
+                document.getElementById("entityName_@(Model.Self)").innerText = newKey;
             }
         </script>
     }

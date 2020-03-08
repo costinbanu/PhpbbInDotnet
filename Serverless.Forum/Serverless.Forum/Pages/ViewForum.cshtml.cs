@@ -41,7 +41,7 @@ namespace Serverless.Forum.Pages
             {
                 ForumId = forumId;
                 var usr = await GetCurrentUserAsync();
-                var thisForum = await (from f in context.PhpbbForums
+                var thisForum = await (from f in context.PhpbbForums.AsNoTracking()
                                        where f.ForumId == forumId
                                        select f).FirstOrDefaultAsync();
 
@@ -54,14 +54,14 @@ namespace Serverless.Forum.Pages
                 ForumTitle = HttpUtility.HtmlDecode(thisForum?.ForumName ?? "untitled");
 
                 ParentForumId = thisForum.ParentId;
-                ParentForumTitle = HttpUtility.HtmlDecode(await (from pf in context.PhpbbForums
+                ParentForumTitle = HttpUtility.HtmlDecode(await (from pf in context.PhpbbForums.AsNoTracking()
                                                                  where pf.ForumId == thisForum.ParentId
                                                                  select pf.ForumName).FirstOrDefaultAsync() ?? "untitled");
 
                 Forums = (await GetForum(forumId)).ChildrenForums.ToList();
 
                 Topics = await (
-                    from t in context.PhpbbTopics
+                    from t in context.PhpbbTopics.AsNoTracking()
                     where t.ForumId == forumId
                     orderby t.TopicLastPostTime descending
 
@@ -72,7 +72,7 @@ namespace Serverless.Forum.Pages
                         TopicType = groups.Key,
                         Topics = from g in groups
 
-                                 join u in context.PhpbbUsers
+                                 join u in context.PhpbbUsers.AsNoTracking()
                                  on g.TopicLastPosterId equals u.UserId
                                  into joinedUsers
 

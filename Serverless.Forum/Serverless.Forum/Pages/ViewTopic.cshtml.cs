@@ -45,10 +45,10 @@ namespace Serverless.Forum.Pages
                 using (var context = new ForumDbContext(_config))
                 {
                     _currentTopic = await (
-                        from p in context.PhpbbPosts
+                        from p in context.PhpbbPosts.AsNoTracking()
                         where p.PostId == postId
 
-                        join t in context.PhpbbTopics
+                        join t in context.PhpbbTopics.AsNoTracking()
                         on p.TopicId equals t.TopicId
                         into joined
 
@@ -77,7 +77,7 @@ namespace Serverless.Forum.Pages
             {
                 if (_currentTopic == null)
                 {
-                    _currentTopic = await (from t in context.PhpbbTopics
+                    _currentTopic = await (from t in context.PhpbbTopics.AsNoTracking()
                                            where t.TopicId == topicId
                                            select t).FirstOrDefaultAsync();
                 }
@@ -87,9 +87,9 @@ namespace Serverless.Forum.Pages
                     return NotFound($"Subiectul {topicId} nu există.");
                 }
 
-                parent = await (from f in context.PhpbbForums
+                parent = await (from f in context.PhpbbForums.AsNoTracking()
 
-                                join t in context.PhpbbTopics
+                                join t in context.PhpbbTopics.AsNoTracking()
                                 on f.ForumId equals t.ForumId
                                 into joined
 
@@ -115,11 +115,11 @@ namespace Serverless.Forum.Pages
                 Posts = (
                     from p in _dbPosts
 
-                    join u in context.PhpbbUsers
+                    join u in context.PhpbbUsers.AsNoTracking()
                     on p.PosterId equals u.UserId
                     into joinedUsers
 
-                    join a in context.PhpbbAttachments
+                    join a in context.PhpbbAttachments.AsNoTracking()
                     on p.PostId equals a.PostMsgId
                     into joinedAttachments
 
@@ -210,7 +210,7 @@ namespace Serverless.Forum.Pages
 
         private async Task GetPoll(ForumDbContext context)
         {
-            var dbPollOptions = await context.PhpbbPollOptions.Where(o => o.TopicId == (TopicId ?? 0)).ToListAsync();
+            var dbPollOptions = await context.PhpbbPollOptions.AsNoTracking().Where(o => o.TopicId == (TopicId ?? 0)).ToListAsync();
 
             if (!dbPollOptions.Any() && string.IsNullOrWhiteSpace(_currentTopic.PollTitle) && _currentTopic.PollStart == 0)
             {
@@ -233,11 +233,11 @@ namespace Serverless.Forum.Pages
                         PollOptionText = o.PollOptionText,
                         TopicId = o.TopicId,
                         PollOptionVoters = (
-                            from v in context.PhpbbPollVotes
+                            from v in context.PhpbbPollVotes.AsNoTracking()
                             where o.PollOptionId == v.PollOptionId
                                && o.TopicId == v.TopicId
 
-                            join u in context.PhpbbUsers
+                            join u in context.PhpbbUsers.AsNoTracking()
                             on v.VoteUserId equals u.UserId
                             into joinedUsers
 

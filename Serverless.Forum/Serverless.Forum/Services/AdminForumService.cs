@@ -28,7 +28,7 @@ namespace Serverless.Forum.Services
 
         public async Task<(string Message, bool? IsSuccess)> ManageForumsAsync(
             int? forumId, string forumName, string forumDesc, bool? hasPassword, string forumPassword, int? parentId,
-            ForumType? forumType, List<int> childrenForums, Dictionary<AclEntityType, Dictionary<int?, int>> rolesForAclEntity)
+            ForumType? forumType, List<int> childrenForums, Dictionary<AclEntityType, Dictionary<int, int>> rolesForAclEntity)
         {
             using (var context = new ForumDbContext(_config))
             {
@@ -90,7 +90,7 @@ namespace Serverless.Forum.Services
             using (var context = new ForumDbContext(_config))
             {
                 return (
-                    await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == forumId),
+                    await context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == forumId),
                     await (
                         from f in context.PhpbbForums
                         where f.ParentId == forumId

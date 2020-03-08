@@ -13,17 +13,20 @@ namespace Serverless.Forum.Pages.CustomPartials.Admin
         public PhpbbForums Forum { get; private set; }
         public IEnumerable<PhpbbForums> ForumChildren { get; private set; }
         public IEnumerable<ForumPermissions> Permissions { get; private set; }
-        public Dictionary<AclEntityType,Dictionary<int, int>> RolesForAclEntity { get; set; }
+        public Dictionary<AclEntityType,Dictionary<int, int>> RolesForAclEntity { get; private set; }
         public AclEntityType EntityType { get; private set; }
         public readonly string Self;
+        public readonly int StartIndex;
 
-        public _AdminForumPermissionsPartialModel(PhpbbForums forum, IEnumerable<PhpbbForums> forumChildren, IEnumerable<ForumPermissions> forumPermissions, AclEntityType entityType)
+        public _AdminForumPermissionsPartialModel(
+            PhpbbForums forum, IEnumerable<PhpbbForums> forumChildren, IEnumerable<ForumPermissions> forumPermissions, AclEntityType entityType, int startIndex)
         {
             Forum = forum;
             ForumChildren = forumChildren;
             Permissions = forumPermissions;
             EntityType = entityType;
             Self = Guid.NewGuid().ToString("n");
+            StartIndex = startIndex;
             if (Permissions != null)
             {
                 RolesForAclEntity = new Dictionary<AclEntityType, Dictionary<int, int>>

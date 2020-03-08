@@ -52,7 +52,7 @@ namespace Serverless.Forum.Services
 
             using (var context = new ForumDbContext(_config))
             {
-                _anonymousDbUser = await context.PhpbbUsers.FirstAsync(u => u.UserId == 1);
+                _anonymousDbUser = await context.PhpbbUsers.AsNoTracking().FirstAsync(u => u.UserId == 1);
                 return _anonymousDbUser;
             }
         }
@@ -89,7 +89,7 @@ namespace Serverless.Forum.Services
             using (var context = new ForumDbContext(_config))
             {
                 _adminRoles = await (
-                    from r in context.PhpbbAclRoles
+                    from r in context.PhpbbAclRoles.AsNoTracking()
                     where r.RoleType == "a_"
                     select r
                 ).ToListAsync();
@@ -141,7 +141,7 @@ namespace Serverless.Forum.Services
             using (var context = new ForumDbContext(_config))
             {
                 _modRoles = await (
-                    from r in context.PhpbbAclRoles
+                    from r in context.PhpbbAclRoles.AsNoTracking()
                     where r.RoleType == "m_"
                     select r
                 ).ToListAsync();

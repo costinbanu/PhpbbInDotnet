@@ -36,7 +36,6 @@ namespace Serverless.Forum
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
-            services.AddTransient<ForumDbContext>();
             services.AddTransient<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton(Configuration);
 
@@ -77,7 +76,6 @@ namespace Serverless.Forum
             {
                 SiteKey = Configuration["Recaptcha:SiteKey"],
                 SecretKey = Configuration["Recaptcha:SecretKey"],
-                 
             });
 
             services.AddHttpClient();

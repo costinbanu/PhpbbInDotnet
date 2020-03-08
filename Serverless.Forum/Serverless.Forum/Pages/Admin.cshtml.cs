@@ -130,18 +130,34 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPostForumManagement(
             int? forumId, string forumName, string forumDesc, bool? hasPassword, string forumPassword, int? parentId, 
-            ForumType? forumType, List<int> childrenForums, Dictionary<AclEntityType, Dictionary<int, int>> rolesForAclEntity
-        ) rolesForAclEntity nu poate fi serializat (probleme la prima cheie, gaseste 'forumName' ca valoare string pt ea. what to do?
+            ForumType? forumType, List<int> childrenForums, List<string> userForumPermissions, List<string> groupForumPermissions
+        ) 
         {
             var validationResult = await ValidatePermissionsAndInit(AdminCategories.Users);
             if (validationResult != null)
             {
                 return validationResult;
             }
+            todo translate input
+            //var rolesForAclEntity = (
+            //    from fp in forumPermissions
+            //    let items = fp.Split("_", StringSplitOptions.RemoveEmptyEntries)
+            //    let entityType = (AclEntityType)Enum.Parse(typeof(AclEntityType), items[0])
+            //    let entityId = int.Parse(items[1])
+            //    let roleId = int.Parse(items[2])
+            //    where entityId > 0
+            //    group new { entityId, roleId } by entityType into groups
+            //    select groups
+            //).ToDictionary(
+            //    key => key.Key, 
+            //    value => value.ToDictionary(
+            //        valuekey => valuekey.entityId, 
+            //        valuevalue => valuevalue.roleId)
+            //);
 
-            (Message, IsSuccess) = await _adminForumService.ManageForumsAsync(
-                forumId, forumName, forumDesc, hasPassword, forumPassword, parentId, forumType, childrenForums, null //rolesForAclEntity
-            );
+            //(Message, IsSuccess) = await _adminForumService.ManageForumsAsync(
+            //    forumId, forumName, forumDesc, hasPassword, forumPassword, parentId, forumType, childrenForums, rolesForAclEntity
+            //);
 
             ShowForum = false;
             Category = AdminCategories.Forums;

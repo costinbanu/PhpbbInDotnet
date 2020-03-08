@@ -217,7 +217,7 @@ namespace Serverless.Forum.Services
             }
             using (var context = new ForumDbContext(_config))
             {
-                var bbcodes = await context.PhpbbBbcodes.Select(c => new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false)).ToListAsync();
+                var bbcodes = await context.PhpbbBbcodes.AsNoTracking().Select(c => new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false)).ToListAsync();
 
 
                 bbcodes.AddRange(new[]
