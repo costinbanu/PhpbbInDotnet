@@ -69,8 +69,8 @@ namespace Serverless.Forum.Services
                                       {
                                           Id = jt.TopicId,
                                           Title = HttpUtility.HtmlDecode(jt.TopicTitle),
-                                      }).ToList()
-
+                                      }).ToList(),
+                            ForumType = f.ForumType
                         },
                         Parent = f.ParentId,
                         Order = f.LeftId

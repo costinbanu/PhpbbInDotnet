@@ -33,34 +33,15 @@ else
 <p>&nbsp;</p>
 @if (Model.Forums.Any())
 {
-    <h4 style="float:left">Forumuri</h4>
     @if (!IsAnonymous)
     {
         <a href="#" onclick="MarkForumsRead.submit()" style="float:right; margin-top:10px; margin-bottom:10px">Marchează forumurile ca citite</a>
     }
-    @foreach (var forum in Model.Forums)
-    {
-        var divClass = forum.Unread ? "ForumListRow Unread" : "ForumListRow";<div class="@divClass">
-            <span class="ForumListLeft">
-                <a asp-page="/ViewForum" asp-route-forumId="@forum.Id" class="nav-link" style="font-weight:bold">@forum.Name</a><br />
-                @Html.Raw(forum.Description)
-            </span>
-            @await Html.PartialAsync(
-                "_SummaryPartial",
-                new CustomPartials._SummaryPartialModel
-                {
-                    AuthorId = forum.LastPosterId,
-                    AuthorName = forum.LastPosterName,
-                    CreationTime = forum.LastPostTime,
-                    AssetId = forum.Id ?? 0,
-                    DateFormat = UserDateFormat,
-                    AuthorColor = forum.LastPosterColor,
-                    LinkHref = forum.LastPostId == null ? null : $"./ViewTopic?postId={forum.LastPostId}&handler=ByPostId",
-                    LinkText = forum.LastPostId == null ? null : $"Mergi la ultimul mesaj"
-                }
-            )
-        </div>
-    }
+    @await Html.PartialAsync(
+        "_ForumDisplayPartial",
+        new Serverless.Forum.Pages.CustomPartials._ForumDisplayPartialModel(Model.Forums, UserDateFormat, true),
+        ViewData
+    )
 
     <p>&nbsp;</p>
 }
@@ -78,10 +59,12 @@ else
         @if ((topicGroup.TopicType ?? 0) == 2)
         {
             <h4 style="float:left">Anunțuri</h4>
+            <p>&nbsp;</p>
         }
         else if (!topicsDisplayed)
         {
             <h4 style="float:left">Subiecte</h4>
+            <p>&nbsp;</p>
             topicsDisplayed = true;
         }
         foreach (var topic in topicGroup?.Topics ?? new List<TopicDisplay>())
@@ -102,7 +85,7 @@ else
                     {
                         <a asp-page="/ViewTopic" asp-route-topicId="@topic.Id" asp-route-pageNum="1" class="nav-link" style="font-weight:bold">@Html.Raw(topic.Title)</a>
                     }
-                    <br />
+                    <br /><br />
                     @await Html.PartialAsync("_PaginationPartial", topic.Pagination, ViewData)
                 </span>
                 @await Html.PartialAsync(

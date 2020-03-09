@@ -1,0 +1,69 @@
+﻿@model Serverless.Forum.Pages.CustomPartials._ForumDisplayPartialModel
+@if (Model.ShowTitle && Model.Categories.Any())
+{
+    <h4 style="float:left">Categorii</h4>
+}
+
+@foreach (var category in Model.Categories)
+{
+
+    <div class="ForumListRowCategory">
+        @category.Name
+    </div>
+    @foreach (var forum in category.ChildrenForums)
+    {
+        var divClass = forum.Unread ? "ForumListRow Unread" : "ForumListRow";
+        <div class="@divClass">
+            <span class="ForumListLeft" style="padding-left:20px">
+                <a asp-page="/ViewForum" asp-route-forumId="@forum.Id" class="nav-link" style="font-weight:bold">@forum.Name</a><br />
+                @Html.Raw(forum.Description)
+            </span>
+            @await Html.PartialAsync(
+                "_SummaryPartial",
+                new CustomPartials._SummaryPartialModel
+                {
+                    AuthorId = forum.LastPosterId,
+                    AuthorName = forum.LastPosterName,
+                    CreationTime = forum.LastPostTime,
+                    AssetId = forum.Id ?? 0,
+                    DateFormat = Model.DateFormat,
+                    AuthorColor = forum.LastPosterColor,
+                    LinkHref = forum.LastPostId == null ? null : $"./ViewTopic?postId={forum.LastPostId}&handler=ByPostId",
+                    LinkText = forum.LastPostId == null ? null : $"Mergi la ultimul mesaj"
+                }
+            )
+        </div>
+    }
+}
+
+        <p>&nbsp;</p>
+
+@if (Model.ShowTitle && Model.SubForums.Any())
+{
+    <h4 style="float:left">Forumuri</h4>
+}
+
+@foreach (var forum in Model.SubForums)
+{
+    var divClass = forum.Unread ? "ForumListRow Unread" : "ForumListRow";
+    <div class="@divClass">
+        <span class="ForumListLeft">
+            <a asp-page="/ViewForum" asp-route-forumId="@forum.Id" class="nav-link" style="font-weight:bold">@forum.Name</a><br />
+            @Html.Raw(forum.Description)
+        </span>
+        @await Html.PartialAsync(
+            "_SummaryPartial",
+            new CustomPartials._SummaryPartialModel
+            {
+                AuthorId = forum.LastPosterId,
+                AuthorName = forum.LastPosterName,
+                CreationTime = forum.LastPostTime,
+                AssetId = forum.Id ?? 0,
+                DateFormat = Model.DateFormat,
+                AuthorColor = forum.LastPosterColor,
+                LinkHref = forum.LastPostId == null ? null : $"./ViewTopic?postId={forum.LastPostId}&handler=ByPostId",
+                LinkText = forum.LastPostId == null ? null : $"Mergi la ultimul mesaj"
+            }
+        )
+    </div>
+}

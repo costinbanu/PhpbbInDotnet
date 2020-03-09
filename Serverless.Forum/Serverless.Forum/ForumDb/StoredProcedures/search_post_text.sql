@@ -31,7 +31,7 @@ BEGIN
 		  WHERE (? IS NULL OR ? = t.forum_id)
 		    AND (? IS NULL OR ? = p.topic_id)
 		    AND (? IS NULL OR ? = p.poster_id)
-		    AND (? IS NULL OR MATCH(p.post_text) AGAINST(?))
+		    AND (? IS NULL OR MATCH(p.post_text) AGAINST(? IN BOOLEAN MODE))
 		  ORDER BY p.post_time DESC
 		  LIMIT ?, 14;";
           
@@ -52,6 +52,6 @@ BEGIN
     WHERE (forum IS NULL OR forum = t.forum_id)
       AND (topic IS NULL OR topic = p.topic_id)
       AND (author IS NULL OR author = p.poster_id)
-      AND (search IS NULL OR MATCH(p.post_text) AGAINST(search));
+      AND (search IS NULL OR MATCH(p.post_text) AGAINST(search IN BOOLEAN MODE));
 
 END

@@ -120,7 +120,6 @@ namespace Serverless.Forum.Pages
             {
                 await connection.OpenAsync();
                 DefaultTypeMap.MatchNamesWithUnderscores = true;
-                //var authorUser = await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UsernameClean == _utils.CleanString(Author));
                 using (
                     var multi = await connection.QueryMultipleAsync(
                         "CALL `forum`.`search_post_text`(@forum, @topic, @author, @page, @search);",
@@ -128,7 +127,7 @@ namespace Serverless.Forum.Pages
                         {
                             forum = ForumId > 0 ? ForumId : null,
                             topic = TopicId > 0 ? TopicId : null,
-                            author = AuthorId, // authorUser?.UserId,
+                            author = AuthorId > 0 ? AuthorId : null as int?, 
                             page = PageNum ?? 1,
                             search = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText)
                         }
@@ -142,7 +141,7 @@ namespace Serverless.Forum.Pages
                         p.AuthorHasAvatar = !string.IsNullOrWhiteSpace(p.UserAvatar);
                         p.AuthorSignature = p.UserSig == null ? null : await _postService.BbCodeToHtml(p.UserSig, p.UserSigBbcodeUid);
                     });
-                    await _postService.ProcessPosts(Posts, PageContext, HttpContext, false);
+                    await _postService.ProcessPosts(Posts, PageContext, HttpContext, false, SearchText);
                     PageNum = (await multi.ReadAsync<int>()).Single();
                     TotalResults = unchecked((int)(await multi.ReadAsync<long>()).Single());
                 }

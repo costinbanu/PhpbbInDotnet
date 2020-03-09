@@ -3,37 +3,16 @@
 @{
     ViewData["Title"] = "Home page";
     var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+    var IsAnonymous = Model.CurrentUserId == 1;
 }
 
 <h2>Forumul Metrou Ușor</h2>
-
-@foreach (var category in Model.Forums)
+@if (!IsAnonymous)
 {
-    <div class="ForumListRowCategory">
-        @category.Name
-    </div>
-    @foreach (var forum in category.ChildrenForums)
-    {
-        var divClass = forum.Unread ? "ForumListRow Unread" : "ForumListRow";
-    <div class="@divClass">
-        <span class="ForumListLeft" style="padding-left:20px">
-            <a asp-page="/ViewForum" asp-route-forumId="@forum.Id" class="nav-link" style="font-weight:bold">@forum.Name</a><br/>
-            @Html.Raw(forum.Description)
-        </span>
-        @await Html.PartialAsync(
-            "_SummaryPartial",
-            new CustomPartials._SummaryPartialModel
-            {
-                AuthorId = forum.LastPosterId,
-                AuthorName = forum.LastPosterName,
-                CreationTime = forum.LastPostTime,
-                AssetId = forum.Id ?? 0,
-                DateFormat = UserDateFormat,
-                AuthorColor = forum.LastPosterColor,
-                LinkHref = forum.LastPostId == null ? null : $"./ViewTopic?postId={forum.LastPostId}&handler=ByPostId",
-                LinkText = forum.LastPostId == null ? null : $"Mergi la ultimul mesaj"
-            }
-        )
-    </div>
-    }
+    <a href="#" onclick="MarkForumsRead.submit()" style="float:right; margin-top:10px; margin-bottom:10px">Marchează forumurile ca citite</a>
 }
+@await Html.PartialAsync(
+    "_ForumDisplayPartial",
+    new Serverless.Forum.Pages.CustomPartials._ForumDisplayPartialModel(Model.Forums, UserDateFormat, false),
+    ViewData
+)

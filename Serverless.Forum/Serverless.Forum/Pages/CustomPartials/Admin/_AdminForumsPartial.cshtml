@@ -146,8 +146,7 @@
                             Model.Forum,
                             Model.ForumChildren,
                             Model.Permissions?.Where(p => p.Type == AclEntityType.User),
-                            AclEntityType.User,
-                            0
+                            AclEntityType.User
                         ),
                         ViewData
                     )
@@ -159,8 +158,7 @@
                             Model.Forum,
                             Model.ForumChildren,
                             Model.Permissions?.Where(p => p.Type == AclEntityType.Group),
-                            AclEntityType.Group,
-                            0
+                            AclEntityType.Group
                         ),
                         ViewData
                     )

@@ -62,7 +62,7 @@
                  Forums = await Model.GetForumTreeAsync(),
                  ForumId = Model.ForumId,
                  TopicId = Model.TopicId,
-                 PathToForumOrTopic = await Model.PathToForumOrTopic(Model.ForumId.Value, Model.TopicId)
+                 PathToForumOrTopic = await Model.PathToForumOrTopic(Model.ForumId ?? 0, Model.TopicId)
              },
             ViewData
         )
@@ -74,7 +74,7 @@
         <option value="0">Caută în toate subiectele</option>
     </select>
     <p>&nbsp;</p>
-    <input asp-for="Author" type="text" placeholder="Caută după autor..." id="AuthorInput" style="width:100%" />
+    <input asp-for="Author" type="text" placeholder="Caută după autor..." id="AuthorInput" style="width:100%" autocomplete="off" />
     <p>&nbsp;</p>
     <input type="submit" value="Trimite" />
     <input asp-for="AuthorId" type="hidden" id="authorId" />

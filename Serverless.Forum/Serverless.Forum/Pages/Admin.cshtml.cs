@@ -138,26 +138,10 @@ namespace Serverless.Forum.Pages
             {
                 return validationResult;
             }
-            todo translate input
-            //var rolesForAclEntity = (
-            //    from fp in forumPermissions
-            //    let items = fp.Split("_", StringSplitOptions.RemoveEmptyEntries)
-            //    let entityType = (AclEntityType)Enum.Parse(typeof(AclEntityType), items[0])
-            //    let entityId = int.Parse(items[1])
-            //    let roleId = int.Parse(items[2])
-            //    where entityId > 0
-            //    group new { entityId, roleId } by entityType into groups
-            //    select groups
-            //).ToDictionary(
-            //    key => key.Key, 
-            //    value => value.ToDictionary(
-            //        valuekey => valuekey.entityId, 
-            //        valuevalue => valuevalue.roleId)
-            //);
 
-            //(Message, IsSuccess) = await _adminForumService.ManageForumsAsync(
-            //    forumId, forumName, forumDesc, hasPassword, forumPassword, parentId, forumType, childrenForums, rolesForAclEntity
-            //);
+            (Message, IsSuccess) = await _adminForumService.ManageForumsAsync(
+                forumId, forumName, forumDesc, hasPassword, forumPassword, parentId, forumType, childrenForums, userForumPermissions, groupForumPermissions
+            );
 
             ShowForum = false;
             Category = AdminCategories.Forums;

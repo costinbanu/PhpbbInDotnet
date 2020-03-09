@@ -1,4 +1,5 @@
 ﻿using Serverless.Forum.Pages;
+using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
 
@@ -31,5 +32,7 @@ namespace Serverless.Forum.Contracts
         public bool Unread { get; set; } = false;
 
         public string LastPosterColor { get; set; } = null;
+
+        public ForumType? ForumType { get; set; } = null;
     }
 }

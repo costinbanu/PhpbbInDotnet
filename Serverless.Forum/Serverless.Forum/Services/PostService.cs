@@ -11,7 +11,9 @@ using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
@@ -86,15 +88,60 @@ namespace Serverless.Forum.Services
             }
         }
 
-        public async Task ProcessPosts(IEnumerable<PostDisplay> Posts, PageContext pageContext, HttpContext httpContext, bool renderAttachments)
+        public async Task ProcessPosts(IEnumerable<PostDisplay> Posts, PageContext pageContext, HttpContext httpContext, bool renderAttachments, string toHighlight = null)
         {
             var inlineAttachmentsPosts = new ConcurrentBag<(int PostId, _AttachmentPartialModel Attach)>();
             var attachRegex = new Regex("##AttachmentFileName=.*##", RegexOptions.Compiled);
+            var highlightWords = new List<string>();
+            if (!string.IsNullOrWhiteSpace(toHighlight))
+            {
+                var sb = new StringBuilder();
+                var openQuote = false;
+                foreach (var ch in toHighlight)
+                {
+                    if ((char.IsLetterOrDigit(ch) || openQuote) && ch != '"')
+                    {
+                        sb.Append(ch);
+                    }
+                    else if (sb.Length > 0)
+                    {
+                        highlightWords.Add(sb.ToString());
+                        sb.Clear();
+                    }
+
+                    if (ch == '"')
+                    {
+                        openQuote = !openQuote;
+                    }
+                }
+                if (sb.Length > 0)
+                {
+                    highlightWords.Add(sb.ToString());
+                    sb.Clear();
+                }
+            }
 
             Parallel.ForEach(Posts, async (p, state1) =>
             {
                 p.PostSubject = HttpUtility.HtmlDecode(p.PostSubject);
                 p.PostText = await BbCodeToHtml(p.PostText, p.BbcodeUid);
+
+                todo: make diacritics work. this doesnt work, apparently
+                //https://gigi.nullneuron.net/gigilabs/diacritic-insensitive-search-in-c/
+                foreach (var word in highlightWords)
+                {
+                    var index = CultureInfo.CurrentCulture.CompareInfo.IndexOf(p.PostText, word, 0, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace);
+                    while (index != -1)
+                    {
+                        var openTag = "<span class=\"posthilit\">";
+                        var closeTag = "</span>";
+                        p.PostText = p.PostText.Insert(index, openTag);
+                        p.PostText = p.PostText.Insert(index + openTag.Length + word.Length, closeTag);
+                        index = CultureInfo.CurrentCulture.CompareInfo.IndexOf(p.PostText, word, index + openTag.Length + word.Length + closeTag.Length, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace);
+                    }
+                    //p.PostText = p.PostText.Replace(word, $"<span class=\"posthilit\">{word}</span>", StringComparison.InvariantCultureIgnoreCase | StringComparison.);
+                }
+
                 if (renderAttachments)
                 {
                     Parallel.ForEach(p.Attachments, (candidate, state2) =>

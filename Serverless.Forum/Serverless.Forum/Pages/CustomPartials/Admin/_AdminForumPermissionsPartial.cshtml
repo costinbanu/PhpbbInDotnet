@@ -40,8 +40,6 @@
     }
 }
 
-<input type="hidden" name="@(Model.EntityType)Roles" id="@(Model.EntityType)Roles" value="@System.Web.HttpUtility.HtmlEncode(Json.Serialize(Model.RolesForAclEntity[Model.EntityType]))" />
-
 @foreach (var permissions in groupedPermissions)
 {
     <table style="border:none; padding:5px; width:80%">

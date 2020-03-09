@@ -249,6 +249,11 @@ label {
     display: none;
 }
 
+.posthilit {
+    background-color: #F3BFCC;
+    color: #BC2A4D;
+}
+
 #paginationControlsCollapsed {
     display: none;
 }

@@ -21,7 +21,7 @@ namespace Serverless.Forum.Pages
 
         public async Task OnGet()
         {
-            Forums = (await GetForumTreeAsync()).ChildrenForums.ToList();
+            Forums = (await GetForumTreeAsync()).ChildrenForums.Where(f => f.ForumType == ForumType.Category).ToList();
         }
     }
 }
