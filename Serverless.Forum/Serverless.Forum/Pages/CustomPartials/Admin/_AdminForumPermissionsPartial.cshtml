@@ -47,8 +47,8 @@
             <td style="width:40%">@permissions.Key.Name</td>
             <td>
                 @Html.DropDownList(
-                    $"{Model.EntityType}ForumPermissions[{index++}]", 
-                    permissions.Select(p => new SelectListItem(p.RoleDescription, $"{permissions.Key.Id}_{p.RoleId}", p.HasRole)), 
+                    $"{Model.EntityType}ForumPermissions[{index++}]",
+                    permissions.Select(p => new SelectListItem(p.RoleDescription, $"{permissions.Key.Id}_{p.RoleId}", p.HasRole)),
                     new { style = "width:300px" }
                 )
             </td>
@@ -66,8 +66,9 @@
 
 @if (remainingEntities.Any())
 {
-    <button type="button" class="collapsible"><strong>Adaugă permisiuni pentru un @entityName nou</strong></button>
-    <div class="content">
+    <p>&nbsp;</p>
+    <div style="border:solid 1px black; padding:5px; border-radius:5px; width:75%">
+        <strong>Adaugă permisiuni pentru un @entityName nou</strong>
         <p>&nbsp;</p>
         @if (Model.EntityType == AclEntityType.User)
         {
@@ -88,15 +89,14 @@
                 <td style="width:40%" id="entityName_@(Model.Self)">@entityName nou</td>
                 <td>
                     @Html.DropDownList(
-                        $"{Model.EntityType}ForumPermissions[{index++}]", 
-                        roles.Select(p => new SelectListItem(p.RoleDescription, $"0_{p.RoleId}")), 
+                        $"{Model.EntityType}ForumPermissions[{index++}]",
+                        roles.Select(p => new SelectListItem(p.RoleDescription, $"0_{p.RoleId}")),
                         new { id = $"newPermissions_{Model.Self}", style = "width:300px"}
                     )
                 </td>
             </tr>
         </table>
     </div>
-
     @if (Model.EntityType == AclEntityType.User)
     {
         <link rel="stylesheet" href="~/lib/tribute/dist/tribute.css" />

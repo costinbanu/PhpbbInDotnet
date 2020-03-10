@@ -1,5 +1,6 @@
 ﻿using CodeKicker.BBCode.Core;
 using Dapper;
+using Diacritics.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +12,6 @@ using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -25,6 +25,7 @@ namespace Serverless.Forum.Services
         private readonly IConfiguration _config;
         private readonly Utils _utils;
         private readonly UserService _userService;
+        private readonly Regex _htmlRegex;
         private readonly Regex _htmlCommentRegex;
         private readonly Regex _newLineRegex;
         private readonly Regex _smileyRegex;
@@ -38,6 +39,7 @@ namespace Serverless.Forum.Services
             _htmlCommentRegex = new Regex("<!--.*?-->", RegexOptions.Compiled | RegexOptions.Singleline);
             _newLineRegex = new Regex("\n", RegexOptions.Compiled | RegexOptions.Singleline);
             _smileyRegex = new Regex("{SMILIES_PATH}", RegexOptions.Compiled | RegexOptions.Singleline);
+            _htmlRegex = new Regex(@"<((?=!\-\-)!\-\-[\s\S]*\-\-|((?=\?)\?[\s\S]*\?|((?=\/)\/[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*|[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*(?:\s[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*(?:=(?:""[^""]*""|'[^']*'|[^'""<\s]*))?)*)\s?\/?))>", RegexOptions.Compiled);
         }
 
         public async Task<(List<PhpbbPosts> Posts, int Page, int Count)> GetPostPageAsync(int userId, int? topicId, int? page, int? postId)
@@ -92,55 +94,13 @@ namespace Serverless.Forum.Services
         {
             var inlineAttachmentsPosts = new ConcurrentBag<(int PostId, _AttachmentPartialModel Attach)>();
             var attachRegex = new Regex("##AttachmentFileName=.*##", RegexOptions.Compiled);
-            var highlightWords = new List<string>();
-            if (!string.IsNullOrWhiteSpace(toHighlight))
-            {
-                var sb = new StringBuilder();
-                var openQuote = false;
-                foreach (var ch in toHighlight)
-                {
-                    if ((char.IsLetterOrDigit(ch) || openQuote) && ch != '"')
-                    {
-                        sb.Append(ch);
-                    }
-                    else if (sb.Length > 0)
-                    {
-                        highlightWords.Add(sb.ToString());
-                        sb.Clear();
-                    }
-
-                    if (ch == '"')
-                    {
-                        openQuote = !openQuote;
-                    }
-                }
-                if (sb.Length > 0)
-                {
-                    highlightWords.Add(sb.ToString());
-                    sb.Clear();
-                }
-            }
+            var highlightWords = SplitHighlightWords(toHighlight);
 
             Parallel.ForEach(Posts, async (p, state1) =>
             {
-                p.PostSubject = HttpUtility.HtmlDecode(p.PostSubject);
-                p.PostText = await BbCodeToHtml(p.PostText, p.BbcodeUid);
 
-                todo: make diacritics work. this doesnt work, apparently
-                //https://gigi.nullneuron.net/gigilabs/diacritic-insensitive-search-in-c/
-                foreach (var word in highlightWords)
-                {
-                    var index = CultureInfo.CurrentCulture.CompareInfo.IndexOf(p.PostText, word, 0, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace);
-                    while (index != -1)
-                    {
-                        var openTag = "<span class=\"posthilit\">";
-                        var closeTag = "</span>";
-                        p.PostText = p.PostText.Insert(index, openTag);
-                        p.PostText = p.PostText.Insert(index + openTag.Length + word.Length, closeTag);
-                        index = CultureInfo.CurrentCulture.CompareInfo.IndexOf(p.PostText, word, index + openTag.Length + word.Length + closeTag.Length, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace);
-                    }
-                    //p.PostText = p.PostText.Replace(word, $"<span class=\"posthilit\">{word}</span>", StringComparison.InvariantCultureIgnoreCase | StringComparison.);
-                }
+                p.PostSubject = HighLightText(HttpUtility.HtmlDecode(p.PostSubject), highlightWords, false);
+                p.PostText = HighLightText(await BbCodeToHtml(p.PostText, p.BbcodeUid), highlightWords, false);
 
                 if (renderAttachments)
                 {
@@ -293,6 +253,96 @@ namespace Serverless.Forum.Services
                 _parser = new BBCodeParser(bbcodes);
                 return _parser;
             }
+        }
+
+        private List<string> SplitHighlightWords(string search)
+        {
+            var highlightWords = new List<string>();
+            if (string.IsNullOrWhiteSpace(search))
+            {
+                return highlightWords;
+            }
+
+            var sb = new StringBuilder();
+            var openQuote = false;
+            foreach (var ch in search)
+            {
+                if ((char.IsLetterOrDigit(ch) || openQuote) && ch != '"')
+                {
+                    sb.Append(ch);
+                }
+                else if (sb.Length > 0)
+                {
+                    highlightWords.Add(sb.ToString());
+                    sb.Clear();
+                }
+                if (ch == '"')
+                {
+                    openQuote = !openQuote;
+                }
+            }
+            if (sb.Length > 0)
+            {
+                highlightWords.Add(sb.ToString());
+                sb.Clear();
+            }
+            return highlightWords;
+        }
+
+        private string HighLightText(string input, List<string> highlightWords, bool expectHtmlInInput)
+        {
+            var htmlTagsLocation = new List<(int Position, int Length)>();
+            var cleanText = string.Empty;
+            var shouldHighlight = highlightWords.Any();
+
+            if (shouldHighlight)
+            {
+                cleanText = input.RemoveDiacritics();
+                if (cleanText.Length == input.Length && expectHtmlInInput)
+                {
+                    var m = _htmlRegex.Match(cleanText);
+                    while (m.Success)
+                    {
+                        htmlTagsLocation.Add((m.Groups[0].Index, m.Groups[0].Length));
+                        m = m.NextMatch();
+                    }
+                }
+                else if (cleanText.Length != input.Length)
+                {
+                    shouldHighlight = false;
+                }
+            }
+
+            if (shouldHighlight)
+            {
+                foreach (var word in highlightWords)
+                {
+                    var cleanWord = word.RemoveDiacritics();
+                    if (cleanWord.Length == word.Length)
+                    {
+                        var index = cleanText.IndexOf(cleanWord, 0, StringComparison.CurrentCultureIgnoreCase);
+                        while (index != -1)
+                        {
+                            var startIndex = 0;
+                            var tag = htmlTagsLocation.FirstOrDefault(x => index >= x.Position && index < x.Position + x.Length);
+                            if (tag == default)
+                            {
+                                var openTag = "<span class=\"posthilit\">";
+                                var closeTag = "</span>";
+                                input = input.Insert(index, openTag);
+                                input = input.Insert(index + openTag.Length + word.Length, closeTag);
+                                startIndex = index + openTag.Length + word.Length + closeTag.Length;
+                            }
+                            else
+                            {
+                                startIndex = tag.Position + tag.Length;
+                            }
+                            index = startIndex > cleanText.Length ? -1 : cleanText.IndexOf(cleanWord, startIndex, StringComparison.CurrentCultureIgnoreCase);
+                        }
+                    }
+                }
+            }
+            return input;
         }
     }
 }

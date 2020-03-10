@@ -136,10 +136,10 @@
             </tr>
             <tr>
                 <td style="font-weight:bold; text-align: right; vertical-align:top">
-                    Permisiuni
+                    Permisiuni pentru forum
                 </td>
                 <td>
-                    <span style="font-weight:bold">Utilizatori</span>
+                    <span style="font-weight:bold">Permisiuni utilizatori</span>
                     @await Html.PartialAsync(
                         "_AdminForumPermissionsPartial",
                         new _AdminForumPermissionsPartialModel(
@@ -151,7 +151,7 @@
                         ViewData
                     )
                     <p>&nbsp;</p>
-                    <span style="font-weight:bold">Grupuri</span>
+                    <span style="font-weight:bold">Permisiuni grupuri</span>
                     @await Html.PartialAsync(
                         "_AdminForumPermissionsPartial",
                         new _AdminForumPermissionsPartialModel (

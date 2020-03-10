@@ -16,6 +16,7 @@
     <PackageReference Include="AutoMapper" Version="9.0.0" />
     <PackageReference Include="AWSSDK.S3" Version="3.3.104.25" />
     <PackageReference Include="Dapper" Version="2.0.30" />
+    <PackageReference Include="Diacritics" Version="2.1.20036.1" />
     <PackageReference Include="JW.Pager" Version="1.0.1" />
     <!--<PackageReference Include="Microsoft.AspNetCore.App" Version="2.2.6" />-->
 	<PackageReference Include="Microsoft.AspNetCore.App" />
