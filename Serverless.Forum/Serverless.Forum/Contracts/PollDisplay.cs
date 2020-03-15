@@ -12,7 +12,7 @@ namespace Serverless.Forum.Contracts
 
         public DateTime PollStart { get; set; }
 
-        public DateTime PollEnd => PollStart.AddSeconds(PollDurationSecons);
+        public DateTime? PollEnd => PollDurationSecons == 0 ? null as DateTime? : PollStart.AddSeconds(PollDurationSecons);
 
         public int PollDurationSecons { get; set; } //86400 seconds in a day
 
@@ -24,11 +24,13 @@ namespace Serverless.Forum.Contracts
 
         public bool CanVoteNow(int? currentUserId) => !(
             (currentUserId ?? 1) <= 1 || 
-            PollEnd < DateTime.UtcNow || 
+            PollEnded || 
             (PollOptions.Any(o => o.PollOptionVoters.Any(v => v.UserId == currentUserId.Value)) && !VoteCanBeChanged)
         );
 
         public int TotalVotes => PollOptions.Sum(o => o.PollOptionVotes);
+
+        public bool PollEnded => PollEnd < DateTime.UtcNow;
     }
 
     public class PollOption

@@ -421,21 +421,26 @@
     }
 
     function showExpirationDate(value) {
-        moment().locale(window.navigator.userLanguage || window.navigator.language);
         var target = document.getElementById("pollExpirationHelper");
+        if (value == 0) {
+            target.innerText = "Chestionarul nu va expira niciodată";
+            return;
+        }
+
+        moment().locale(window.navigator.userLanguage || window.navigator.language);
         value = value * 86400;
         target.innerText = "Chestionarul expiră " + moment().add(value, "seconds").format("LLLL");
     }
 </script>
 
-@if(Model.PostId.HasValue)
+@if (Model.PostId.HasValue)
 {
 <h3>
     Răspunde: 
     <a asp-page="/ViewTopic" asp-route-postId="@Model.PostId.Value" asp-page-handler="ByPostId">@Model.Header</a>
 </h3>
 }
-else if(Model.TopicId.HasValue)
+else if (Model.TopicId.HasValue)
 {
 <h3>
     Răspunde: 
@@ -550,20 +555,20 @@ else
         <span>&nbsp; | &nbsp;</span>
         <a href="#" onclick="showElement('pollPanel')">Adaugă chestionar</a>
     }
-    <div id="attachPanel" style="display:none">
+    <div id="attachPanel" style="display:@(await _cacheService.ExistsInCacheAsync(Model.GetActualCacheKey("PostAttachments", true)) ? "block" : "none")">
         <h4>Adaugă fișiere</h4>
         <p>&nbsp;</p>
         <table style="border:none; margin:0px; padding:0px">
             <tr>
-                <td style="width:200px; padding-bottom:15px">Fișier: </td>
-                <td><input type="file" name="file" /></td>
+                <td style="width:50%; padding-bottom:15px">Alege unul sau mai multe fișiere: </td>
+                <td><input type="file" name="files" multiple /></td>
             </tr>
-            <tr>
+            @*<tr>
                 <td style="width:200px; padding-bottom:15px">Comentariu fișier: </td>
                 <td><textarea type="text" name="fileComment" id="fileComment" rows="1" cols="40" style="display:inline-block"></textarea></td>
-            </tr>
+            </tr>*@
         </table>
-        <input type="submit" value="Încarcă fișier" asp-page-handler="Attachment" />
+        <input type="submit" value="Încarcă fișiere" asp-page-handler="Attachment" />
         <p>&nbsp;</p>
         <p><b>Fișiere deja atașate:</b></p>
         <table style="border:none; margin:0px; padding:0px">
@@ -571,12 +576,15 @@ else
                 <th style="width:200px; padding-bottom:15px">Nume fișier</th>
                 <th style="padding-bottom:15px">Comentariu fișier</th>
             </tr>
-            @foreach (var attach in (await _cacheService.GetFromCacheAsync<List<PhpbbAttachments>>(Model.GetActualCacheKey("PostAttachments", true))) ?? new List<PhpbbAttachments>())
-            {
-                <tr>
-                    <td style="width:200px; padding-bottom:15px">@attach.RealFilename</td>
-                    <td style="padding-bottom:15px">@attach.AttachComment</td>
-                </tr>
+            @{
+                var i = 0;
+                foreach (var attach in (await _cacheService.GetFromCacheAsync<List<PhpbbAttachments>>(Model.GetActualCacheKey("PostAttachments", true))) ?? new List<PhpbbAttachments>())
+                {
+                    <tr>
+                        <td style="width:200px; padding-bottom:15px">@attach.RealFilename</td>
+                        <td><textarea type="text" name="fileComment[@(i++)]" id="fileComment" rows="4" cols="40" style="display:inline-block"></textarea></td>
+                    </tr>
+                }
             }
         </table>
     </div>
@@ -585,7 +593,7 @@ else
         <div id="pollPanel" style="display:none">
             <h4>Adaugă chestionar</h4>
             <p>&nbsp;</p>
-            <table style="border:none; margin:0px;">
+            <table style="border:none; margin:0px; width:80%">
                 <tr style="border-bottom: solid 1px black">
                     <td style="width:200px; padding:5px">Întrebarea chestionarului</td>
                     <td colspan="2" style="padding:5px">
@@ -604,7 +612,7 @@ else
                     <td style="width:200px; padding:5px">Timp pentru votare (zile)</td>
                     <td style="padding:5px">
                         <input asp-for="PollExpirationDaysString" onchange="showExpirationDate(this.value)" id="pollExpiration" /><br />
-                        <span class="Caption">Sunt permise și fracții precum 0.5, 1.75 etc</span>
+                        <span class="Caption">Introdu '0' pentru timp nelimitat.<br/>Sunt permise și fracții precum 0.5, 1.75 etc</span>
                         <span asp-validation-for="PollExpirationDaysString" class="validation"></span>
                     </td>
                     <td style="padding:5px">

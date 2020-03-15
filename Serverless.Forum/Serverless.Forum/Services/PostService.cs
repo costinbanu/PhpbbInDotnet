@@ -216,6 +216,65 @@ namespace Serverless.Forum.Services
             }
         }
 
+        public string CleanTextForQuoting(string text, string uid)
+        {
+            var uidRegex = new Regex($":{uid}", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            var tagRegex = new Regex(@"(:[a-z])(\]|:)", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            var cleanTextTemp = uidRegex.Replace(text, string.Empty);
+            var noUid = tagRegex.Replace(cleanTextTemp, "$2");
+
+            var noSmileys = noUid;
+            var smileyRegex = new Regex("<!-- s(:?.+?) -->.+?<!-- s:?.+?:? -->", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            var smileyMatches = smileyRegex.Matches(noSmileys);
+            try
+            {
+                foreach (Match m in smileyMatches)
+                {
+                    noSmileys = noSmileys.Replace(m.Value, m.Groups[1].Value);
+                }
+            }
+            catch { }
+
+            var noLinks = noSmileys;
+            var linkRegex = new Regex(@"<!-- m --><a\s+(?:[^>]*?\s+)?href=([""'])(.*?)\1.+?<!-- m -->", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            var linkMatches = linkRegex.Matches(noLinks);
+            try
+            {
+                foreach (Match m in linkMatches)
+                {
+                    noLinks = noLinks.Replace(m.Value, m.Groups[2].Value);
+                }
+            }
+            catch { }
+
+            return noLinks;
+        }
+
+        public string PrepareTextForSaving(ForumDbContext context, string text)
+        {
+            foreach (var sr in from s in context.PhpbbSmilies.AsNoTracking()
+                                select new
+                                {
+                                    Regex = new Regex(Regex.Escape(s.Code), RegexOptions.Compiled | RegexOptions.Singleline),
+                                    Replacement = $"<img src=\"./images/smilies/{s.SmileyUrl.Trim('/')}\" />"
+                                })
+            {
+                text = sr.Regex.Replace(text, sr.Replacement);
+            }
+
+            var urlRegex = new Regex(@"(?:(?:https?|ftp):\/\/|\b(?:[a-z\d]+\.))(?:(?:[^\s()<>]+|\((?:[^\s()<>]+|(?:\([^\s()<>]+\)))?\))+(?:\((?:[^\s()<>]+|(?:\(?:[^\s()<>]+\)))?\)|[^\s`!()\[\]{};:'"".,<>?«»“”‘’]))", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.ExplicitCapture);
+            foreach (Match match in urlRegex.Matches(text))
+            {
+                var linkText = match.Value;
+                if (linkText.Length > 48)
+                {
+                    linkText = $"{linkText.Substring(0, 40)} ... {linkText.Substring(linkText.Length - 8)}";
+                }
+                text = match.Result($"<!-- m --><a href=\"{(match.Value.StartsWith("http") ? match.Value : $"//{match.Value}")}\">{linkText}</a><!-- m -->");
+            }
+            return text;
+        }
+
         private async Task<BBCodeParser> GetParserLazy()
         {
             if (_parser != null)

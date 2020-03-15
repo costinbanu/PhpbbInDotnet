@@ -22,6 +22,7 @@ namespace Serverless.Forum.Pages
         public int? ForumId { get; private set; }
         public int? PostId { get; private set; }
         public bool? Highlight { get; private set; }
+        [BindProperty]
         public int? TopicId => _currentTopic?.TopicId;
         public bool IsLocked => (_currentTopic?.TopicStatus ?? 0) == 1;
         public PollDisplay Poll { get; private set; }
@@ -150,13 +151,24 @@ namespace Serverless.Forum.Pages
 
                 if (Posts.Any(p => p.Unread))
                 {
-                    await context.PhpbbTopicsTrack.AddAsync(new PhpbbTopicsTrack
+                    var existing = await context.PhpbbTopicsTrack.FirstOrDefaultAsync(t => t.UserId == CurrentUserId && t.TopicId == TopicId);
+                    if (existing == null)
                     {
-                        ForumId = ForumId.Value,
-                        MarkTime = DateTime.UtcNow.ToUnixTimestamp(),
-                        TopicId = TopicId.Value,
-                        UserId = CurrentUserId
-                    });
+                        await context.PhpbbTopicsTrack.AddAsync(
+                            new PhpbbTopicsTrack
+                            {
+                                ForumId = ForumId.Value,
+                                MarkTime = DateTime.UtcNow.ToUnixTimestamp(),
+                                TopicId = TopicId.Value,
+                                UserId = CurrentUserId
+                            }
+                        );
+                    }
+                    else
+                    {
+                        existing.ForumId = ForumId.Value;
+                        existing.MarkTime = DateTime.UtcNow.ToUnixTimestamp();
+                    }
                     await context.SaveChangesAsync();
                 }
             }
@@ -165,6 +177,11 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPost(int topicId, int userPostsPerPage, int postId)
         {
+            if(CurrentUserId == 1)
+            {
+                return Forbid();
+            }
+
             async Task save(ForumDbContext localContext)
             {
                 await localContext.SaveChangesAsync();
@@ -196,6 +213,41 @@ namespace Serverless.Forum.Pages
             }
         }
 
+        public async Task<IActionResult> OnPostVote(int topicId, int[] votes, string queryString)
+        {
+            if (CurrentUserId == 1)
+            {
+                return Forbid();
+            }
+
+            using (var context = new ForumDbContext(_config))
+            {
+                var current = await context.PhpbbPollVotes.Where(v => v.TopicId == topicId && v.VoteUserId == CurrentUserId).ToListAsync();
+                var id = await context.PhpbbPollVotes.AsNoTracking().MaxAsync(v => v.Id);
+                if (current.Any())
+                {
+                    var topic = await context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == topicId);
+                    if (topic.PollVoteChange == 0)
+                    {
+                        return Forbid("Can't change votes for this poll.");
+                    }
+                    context.PhpbbPollVotes.RemoveRange(current.Where(v => !votes.Contains(v.PollOptionId)));
+                }
+                foreach (var vote in votes)
+                {
+                    await context.PhpbbPollVotes.AddAsync(new PhpbbPollVotes
+                    {
+                        Id = ++id,
+                        PollOptionId = (byte)vote,
+                        TopicId = topicId,
+                        VoteUserId = CurrentUserId,
+                        VoteUserIp = HttpContext.Connection.RemoteIpAddress.ToString()
+                    });
+                }
+                await context.SaveChangesAsync();
+                return Redirect($"./ViewTopic{HttpUtility.UrlDecode(queryString)}");
+            }
+        }
 
         private async Task GetPostsLazy(int? topicId, int? page, int? postId)
         {

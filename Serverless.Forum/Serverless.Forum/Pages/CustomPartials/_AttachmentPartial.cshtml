@@ -14,7 +14,10 @@
         {
             <img src="/File?Id=@Model.Id" />
             <br />
-            <span class="Caption">@Model.FileName (descărcat @(Model.DownloadCount == 1 ? "o dată" : $"de {Model.DownloadCount} ori"))</span>
+            <span class="Caption">
+                @Model.Comment <br/>
+                @Model.FileName (descărcat @(Model.DownloadCount == 1 ? "o dată" : $"de {Model.DownloadCount} ori"))
+            </span>
 
         }
         else

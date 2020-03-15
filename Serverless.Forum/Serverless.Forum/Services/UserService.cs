@@ -30,18 +30,24 @@ namespace Serverless.Forum.Services
         }
 
         public async Task<bool> IsUserAdminInForum(LoggedUser user, int forumId)
-            => user == null || (from up in user.UserPermissions
-                        where up.ForumId == forumId || up.ForumId == 0
-                        join a in await GetAdminRolesLazy()
-                        on up.AuthRoleId equals a.RoleId
-                        select up).Any();
+            => user != null && (
+                from up in user.UserPermissions
+                where up.ForumId == forumId || up.ForumId == 0
+                join a in await GetAdminRolesLazy()
+                on up.AuthRoleId equals a.RoleId
+                select up
+            ).Any();
 
         public async Task<bool> IsUserModeratorInForum(LoggedUser user, int forumId)
-            => user == null || (from up in user.UserPermissions
-                                where up.ForumId == forumId || up.ForumId == 0
-                                join a in await GetModRolesLazy()
-                                on up.AuthRoleId equals a.RoleId
-                                select up).Any();
+            => (await IsUserAdminInForum(user, forumId)) || (
+                user != null && (
+                    from up in user.UserPermissions
+                    where up.ForumId == forumId || up.ForumId == 0
+                    join a in await GetModRolesLazy()
+                    on up.AuthRoleId equals a.RoleId
+                    select up
+                ).Any()
+            );
 
         public async Task<PhpbbUsers> GetAnonymousDbUserAsync()
         {
@@ -115,7 +121,8 @@ namespace Serverless.Forum.Services
                         UserPermissions = await multi.ReadAsync<LoggedUser.Permissions>(),
                         Groups = (await multi.ReadAsync<uint>()).Select(x => checked((int)x)),
                         TopicPostsPerPage = (await multi.ReadAsync()).ToDictionary(key => checked((int)key.topic_id), value => checked((int)value.post_no)),
-                        UserDateFormat = user.UserDateformat
+                        UserDateFormat = user.UserDateformat,
+                        UserColor = user.UserColour
                     };
 
                     var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);

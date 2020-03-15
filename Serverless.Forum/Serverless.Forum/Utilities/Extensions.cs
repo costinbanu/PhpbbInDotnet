@@ -38,6 +38,7 @@ namespace Serverless.Forum.Utilities
             return new _AttachmentPartialModel()
             {
                 FileName = dbAttachmentRecord.RealFilename,
+                Comment = dbAttachmentRecord.AttachComment,
                 Id = dbAttachmentRecord.AttachId,
                 IsRenderedInline = dbAttachmentRecord.Mimetype.IsMimeTypeInline(),
                 MimeType = dbAttachmentRecord.Mimetype,

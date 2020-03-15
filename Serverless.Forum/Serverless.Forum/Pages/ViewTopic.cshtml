@@ -1,4 +1,5 @@
 ﻿@page
+@using System.Web
 @model Serverless.Forum.Pages.ViewTopicModel
 @{
     ViewData["Title"] = $"{Model.ForumTitle} - {Model.TopicTitle}";
@@ -8,6 +9,7 @@
                 && !(await Model.IsCurrentUserAdminHereAsync(Model.ForumId.Value))
                 && !(await Model.IsCurrentUserModeratorHereAsync(Model.ForumId.Value));
     var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+    var IsAdmin = await Model.IsCurrentUserAdminHereAsync();
 }
 
 <script type="text/javascript">
@@ -35,6 +37,17 @@
             forumInput.value = forumId;
         }
     }
+
+    function switchPollPanels(id1, id2, button) {
+        showElement(id1);
+        showElement(id2);
+        if (button.value == "Arată rezultatele") {
+            button.value = "Votează";
+        }
+        else {
+            button.value = "Arată rezultatele";
+        }
+    }
 </script>
 
 @if (Model.ForumId != null)
@@ -45,39 +58,92 @@
 
 @if (Model.Poll != null)
 {
-    if (Model.Poll.CanVoteNow(Model.CurrentUserId))
+    if (!Model.Poll.PollEnded)
     {
-        <span>to do</span>
-    }
-    else
-    {
-        <h4>@Model.Poll.PollTitle</h4>
-        <div>Chestionarul @(Model.Poll.PollEnd < DateTime.UtcNow ? "a fost" : "va fi") inchis: @(Model.Poll.PollEnd.ToString(UserDateFormat)).</div>
-        <p></p>
-        <table style="border:none; padding:unset; margin:unset; width:100%">
-            @foreach (var option in Model.Poll.PollOptions)
+        var isDisabled = !Model.Poll.CanVoteNow(Model.CurrentUserId);
+<div id="votes" style="display:block">
+    <h4>Chestionar: @Model.Poll.PollTitle</h4>
+    <div>Chestionarul @(Model.Poll.PollEnded ? "a fost" : "va fi") inchis: @(Model.Poll.PollEnd.HasValue ? Model.Poll.PollEnd.Value.ToString(UserDateFormat) : "niciodată").</div>
+
+    <form method="post" asp-page-handler="vote">
+        @if (Model.Poll.PollMaxOptions > 1)
+        {
+            foreach (var option in Model.Poll.PollOptions)
             {
-                <tr style="border-bottom:solid 1px black">
-                    <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
-                        @Html.Raw(option.PollOptionText)
-                        @if (await Model.IsCurrentUserAdminHereAsync(Model.ForumId ?? 0))
-                        {
-                            <div class="Caption">
-                                Votanti: @string.Join(", ", option.PollOptionVoters.Select(v => v.Username))
-                            </div>
-                        }
-                    </td>
-                    <td style="width:50%; padding-top: 5px; padding-bottom: 5px">
-                        @{var percentage = (option.PollOptionVotes * 100m / Model.Poll.TotalVotes).ToString("##0.##'%'", System.Globalization.CultureInfo.InvariantCulture);}
-                        <span style="width: 100%; background: linear-gradient(to right, #87ceeb @percentage, #ffffff 0%); border: solid 1px black; display: inline-block; padding:2px">
-                            @option.PollOptionVotes @(option.PollOptionVotes == 1 ? "vot" : "voturi") @(percentage)
-                        </span>
-                    </td>
-                </tr>
+                var isChecked = option.PollOptionVoters.Any(v => v.UserId == Model.CurrentUserId);
+                <table style="border:none; padding:unset; margin:unset; width:100%">
+                    <tr style="border-bottom:solid 1px black">
+                        <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
+                            @Html.Raw(option.PollOptionText)
+                        </td>
+                        <td>
+                            <input type="checkbox" name="Votes" value="@option.PollOptionId" @(isChecked ? "checked" : "") @(isDisabled ? "disabled" : "") />
+                        </td>
+                    </tr>
+                </table>
             }
-        </table>
+        }
+        else
+        {
+            foreach (var option in Model.Poll.PollOptions)
+            {
+                var isChecked = option.PollOptionVoters.Any(v => v.UserId == Model.CurrentUserId);
+                <table style="border:none; padding:unset; margin:unset; width:100%">
+                    <tr style="border-bottom:solid 1px black">
+                        <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
+                            @Html.Raw(option.PollOptionText)
+                        </td>
+                        <td>
+                            <input type="radio" name="Votes" value="@option.PollOptionId" @(isChecked ? "checked" : "") @(isDisabled ? "disabled" : "") />
+                        </td>
+                    </tr>
+                </table>
+            }
+        }
+        <br />
+        <input asp-for="TopicId" type="hidden" />
+        <input name="queryString" type="hidden" value="@HttpUtility.UrlEncode(Request.QueryString.ToString())" />
+        <input type="submit" value="Trimite vot" @(isDisabled ? "disabled" : "") />
+    </form>
+</div>
     }
-    <p></p>
+    if (Model.Poll.PollEnded || IsAdmin)
+    {
+        <div id="results" style="display:@(Model.Poll.PollEnded ? "block" : "none")">
+            <h4>Chestionar: @Model.Poll.PollTitle</h4>
+            <div>Chestionarul @(Model.Poll.PollEnded ? "a fost" : "va fi") inchis: @(Model.Poll.PollEnd.HasValue ? Model.Poll.PollEnd.Value.ToString(UserDateFormat) : "niciodată").</div>
+            <p></p>
+            <table style="border:none; padding:unset; margin:unset; width:100%">
+                @foreach (var option in Model.Poll.PollOptions)
+                {
+                    <tr style="border-bottom:solid 1px black">
+                        <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
+                            @Html.Raw(option.PollOptionText)
+                            @if (await Model.IsCurrentUserAdminHereAsync(Model.ForumId ?? 0))
+                            {
+                                <div class="Caption">
+                                    Votanti: @string.Join(", ", option.PollOptionVoters.Select(v => v.Username))
+                                </div>
+                            }
+                        </td>
+                        <td style="width:50%; padding-top: 5px; padding-bottom: 5px">
+                            @{var percentage = (option.PollOptionVotes * 100m / Model.Poll.TotalVotes).ToString("##0.##'%'", System.Globalization.CultureInfo.InvariantCulture);}
+                            <span style="width: 100%; background: linear-gradient(to right, #87ceeb @percentage, #ffffff 0%); border: solid 1px black; display: inline-block; padding:2px">
+                                @option.PollOptionVotes @(option.PollOptionVotes == 1 ? "vot" : "voturi") @(percentage)
+                            </span>
+                        </td>
+                    </tr>
+                }
+            </table>
+        </div>
+        <br />
+    }
+    if (!Model.Poll.PollEnded && IsAdmin)
+    {
+        <input type="button" value="Arată rezultatele" onclick="switchPollPanels('results', 'votes', this)" />
+    }
+    <p>&nbsp;</p>
+    <p>&nbsp;</p>
 }
 
 @await  Html.PartialAsync(
@@ -129,9 +195,9 @@
                     </span>
                     @if (!string.IsNullOrWhiteSpace(post.AuthorSignature))
                     {
-                        <br/>
+                        <br />
                         <span style="width:25%; display:inline-block; border-bottom:solid 1px black">&nbsp;</span>
-                        <br/>
+                        <br />
                         <span class="Caption">@Html.Raw(post.AuthorSignature)</span>
                     }
                 </span>

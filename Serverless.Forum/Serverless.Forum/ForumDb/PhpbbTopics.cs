@@ -36,7 +36,7 @@ namespace Serverless.Forum.ForumDb
         public int TopicMovedId { get; set; } = 0;
         public byte TopicBumped { get; set; } = 0;
         public int TopicBumper { get; set; } = 0;
-        public string PollTitle { get; set; }
+        public string PollTitle { get; set; } = string.Empty;
         public long PollStart { get; set; } = 0;
         public int PollLength { get; set; } = 0;
         public byte PollMaxOptions { get; set; } = 1;
