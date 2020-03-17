@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
-using System.Drawing;
-using System.IO;
 
 namespace Serverless.Forum.Utilities
 {
@@ -9,12 +7,12 @@ namespace Serverless.Forum.Utilities
     {
         public override bool IsValid(object value)
         {
+            if (value == null)
+            {
+                return true;
+            }
             if (value is IFormFile file)
             {
-                if (file == null)
-                {
-                    return false;
-                }
                 try
                 {
                     using (var bmp = file.ToImage())

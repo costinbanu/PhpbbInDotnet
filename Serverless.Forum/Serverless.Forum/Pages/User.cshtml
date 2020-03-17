@@ -7,6 +7,8 @@
     Layout = "~/Pages/_Layout.cshtml";
 }
 
+@inject Services.UserService _userService
+
 <style>
     input, textarea {
         width: 400px;
@@ -21,25 +23,40 @@
 <h2>Panoul utilizatorului</h2>
 <p>&nbsp;</p>
 <h4>@Model.CurrentUser.Username - Privire generală</h4>
-<form action="post">
+@if (await Model.CanEditAsync())
+{
+    <a href="?userId=@(Model.CurrentUser.UserId)&viewAsAnother=true">Vezi profilul ca alt utilizator</a>
+}
+else if (Model.ViewAsAnother)
+{
+    <a href="?userId=@(Model.CurrentUser.UserId)&viewAsAnother=false">Vezi profilul ca tine însuți</a>
+}
+<form method="post">
     <table style="padding:0px; margin: 0px; border: none">
         <tr>
-            <td colspan="2"><img src="./File?userId=@Model.CurrentUser.UserId&handler=avatar" /></td>
+            <td colspan="2">
+                @if (!string.IsNullOrWhiteSpace(Model.CurrentUser.UserAvatar))
+                {
+                    <img src="./File?userId=@Model.CurrentUser.UserId&handler=avatar" />
+                }
+            </td>
         </tr>
         <tr>
             <td style="font-weight: bold">Nume utilizator</td>
             <td>
-                @if (await Model.IsCurrentUserAdminHereAsync())
+                @if (!Model.ViewAsAnother && await Model.IsCurrentUserAdminHereAsync())
                 {
                     <input asp-for="CurrentUser.Username" />
                 }
                 else
                 {
-                    @Html.Raw(Model.CurrentUser.Username)
+                    <span style="font-weight:bold; color:#@(string.IsNullOrWhiteSpace(Model.CurrentUser.UserColour) ? "000000" : Model.CurrentUser.UserColour)">
+                        @Html.Raw(Model.CurrentUser.Username)
+                    </span>
                     @if (Model.IsSelf)
                     {
                         <br />
-                        <span class="Caption">Trimiteți un e-mail la <a href="mailto:admin@metrouusor.com">admin@metrouusor.com</a> dacă doriți schimbarea numelui de utilizator.</span>
+                        <span class="Caption">Trimite un e-mail la <a href="mailto:admin@metrouusor.com">admin@metrouusor.com</a> dacă dorești schimbarea numelui de utilizator.</span>
                     }
                 }
             </td>
@@ -50,7 +67,7 @@
                 <td style="font-weight: bold">Data nașterii</td>
                 <td>
                     <input asp-for="Birthday" /><br />
-                    <span class="Caption">Dacă este completată, se va afișa doar vârsta.<br />Completați cu data în format ZZ.LL.AAAA sau ZZ-LL-AAAA sau lăsați necompletat pentru a nu afișa vârsta. </span><br/>
+                    <span class="Caption">Dacă este completată, se va afișa doar vârsta.<br />Completează cu data în format ZZ.LL.AAAA sau ZZ-LL-AAAA sau lasă necompletat pentru a nu afișa vârsta. </span><br />
                     <span asp-validation-for="Birthday" class="validation"></span>
                 </td>
             }
@@ -60,13 +77,13 @@
                 <td>@((int)(DateTime.UtcNow.Subtract(birthday).TotalDays / 365.25)) ani</td>
             }
         </tr>
-        @if (Model.IsSelf)
+        @if (!Model.ViewAsAnother && Model.IsSelf)
         {
             <tr>
                 <td style="font-weight: bold">Parola</td>
                 <td>
                     <input asp-for="FirstPassword" type="password" /><br />
-                    <span class="Caption">Lăsați necompletat dacă nu doriți să o modificați.</span>
+                    <span class="Caption">Lasă necompletat dacă nu dorești să o modifici.</span>
                 </td>
             </tr>
             <tr>
@@ -106,6 +123,7 @@
                 <td style="font-weight: bold">Formatul datelor afișate</td>
                 <td>
                     <input asp-for="CurrentUser.UserDateformat" />
+                    <br/><span class="Caption">Exemplu: dd.MM.yyyy HH:mm va afișa data "@DateTime.Now.ToString("dd.MM.yyyy HH:mm")"</span>
                 </td>
             </tr>
             <tr>
@@ -118,23 +136,69 @@
             <tr>
                 <td style="font-weight: bold">Avatar</td>
                 <td>
-                    <img src="./File?userId=@Model.CurrentUser.UserId&handler=avatar" /><br />
-                    @Html.Raw(Model.CurrentUser.UserAvatar)<br />
-                    <input asp-for="DeleteAvatar" style="width:auto" /> Șterge acest avatar?<br />
-                    <span class="Caption">Bifați pentru a șterge avatarul curent.</span><br /><br />
+                    @if (!string.IsNullOrWhiteSpace(Model.CurrentUser.UserAvatar))
+                    {
+                        <img src="./File?userId=@Model.CurrentUser.UserId&handler=avatar" /><br />
+                        @Html.Raw(Model.CurrentUser.UserAvatar)<br />
+                        <input asp-for="DeleteAvatar" style="width:auto" /> <span>Șterge acest avatar?</span><br/>
+                        <span class="Caption">Bifează pentru a șterge avatarul curent.</span><br /><br />
+                    }
                     <input asp-for="Avatar" />
                     <span class="Caption">Sunt permise imagini cu dimensiunea maximă 200 px / 200 px.</span><br />
                     <span asp-validation-for="Avatar" class="validation"></span>
                 </td>
             </tr>
         }
-        @if (await Model.IsCurrentUserAdminHereAsync())
+        @if (!Model.ViewAsAnother && await Model.IsCurrentUserAdminHereAsync())
         {
+            var permissions = new List<SelectListItem>(
+                (await _userService.GetUserRolesListAsync()).Select(
+                    p => new SelectListItem(p.RoleDescription, p.RoleId.ToString(), p.RoleId == Model.AclRole)
+                )
+            );
+            permissions.Add(new SelectListItem("Nici un rol atribuit", "-1", !permissions.Any(p => p.Selected)));
+
+            var ranks = new List<SelectListItem>(
+                (await _userService.GetRankListAsync()).Select(
+                    r => new SelectListItem(r.RankTitle, r.RankId.ToString(), r.RankId == Model.CurrentUser.UserRank)
+                )
+            );
+            ranks.Add(new SelectListItem("Nici un rang atribuit", "0", !ranks.Any(p => p.Selected)));
+
+            var groups = new List<SelectListItem>(
+                (await _userService.GetGroupListAsync()).Select(
+                    g => new SelectListItem(g.GroupName, g.GroupId.ToString(), g.GroupId == Model.GroupId)
+                )
+            );
+
+            <tr>
+                <td colspan="2">
+                    <h4>Administrează cont</h4>
+                </td>
+            </tr>
             <tr>
                 <td style="font-weight: bold">Timpul cât este permisă<br />editarea mesajelor</td>
                 <td>
                     <input asp-for="CurrentUser.UserEditTime" /><br />
-                    <span class="Caption">Minute de la publicarea mesajului.</span><br />
+                    <span class="Caption">Minute de la publicarea mesajului.<br />Aceeași setare există și la grupuri și se aplică valoarea cea mai restrictivă.</span><br />
+                </td>
+            </tr>
+            <tr>
+                <td style="font-weight: bold">Permisiunile utilizatorului</td>
+                <td>
+                    @Html.DropDownListFor(m => m.AclRole, permissions, new { style = "width:300px", autocomplete = "off" })
+                </td>
+            </tr>
+            <tr>
+                <td style="font-weight: bold">Rangul utilizatorului</td>
+                <td>
+                    @Html.DropDownListFor(m => m.UserRank, ranks, new { style = "width:300px", autocomplete = "off" })
+                </td>
+            </tr>
+            <tr>
+                <td style="font-weight: bold">Grupul utilizatorului</td>
+                <td>
+                    @Html.DropDownListFor(m => m.GroupId, groups, new { style = "width:300px", autocomplete = "off" })
                 </td>
             </tr>
         }
@@ -142,27 +206,24 @@
     <p>&nbsp;</p>
     <h4>Contact</h4>
     <table style="padding:0px; margin: 0px; border: none">
-        @if (Model.CurrentUser.UserAllowViewemail == 1 || await Model.IsCurrentUserAdminHereAsync())
-        {
-            <tr>
-                @if (await Model.CanEditAsync())
-                {
-                    <td style="font-weight: bold">E-mail</td>
-                    <td>
-                        <input asp-for="CurrentUser.UserEmail" /><br />
-                        <span class="Caption">Dacă modificați acest câmp, contul va deveni inactiv. Veți primi pe noua adresă de e-mail un mesaj cu instrucțiuni pentru reactivare.</span><br />
-                        <span asp-validation-for="CurrentUser.UserEmail" class="validation"></span><br/>
-                        <input asp-for="ShowEmail" style="width:auto" /> Arată adresa de e-mail în profil (astfel membrii forumului vă pot contacta prin e-mail).
-                    </td>
-                }
-                else
-                {
-                    <td colspan="2">
-                        <a href="mailto:@Html.Raw(Model.CurrentUser.UserEmail)">Trimite e-mail</a>
-                    </td>
-                }
-            </tr>
-        }
+        <tr>
+            @if (await Model.CanEditAsync())
+            {
+                <td style="font-weight: bold">E-mail</td>
+                <td>
+                    <input asp-for="Email" /><br />
+                    <span class="Caption">Dacă modifici acest câmp, contul va deveni inactiv. Vei primi pe noua adresă de e-mail un mesaj cu instrucțiuni pentru reactivare.</span><br />
+                    <span asp-validation-for="Email" class="validation"></span><br />
+                    <input asp-for="ShowEmail" style="width:auto" /> Arată adresa de e-mail în profil (astfel membrii forumului te pot contacta prin e-mail).
+                </td>
+            }
+            else if (Model.CurrentUser.UserAllowViewemail == 1 || await Model.IsCurrentUserAdminHereAsync())
+            {
+                <td colspan="2">
+                    <a href="mailto:@Html.Raw(Model.CurrentUser.UserEmail)">Trimite e-mail</a>
+                </td>
+            }
+        </tr>
         @if (!Model.IsSelf)
         {
             <tr>
@@ -215,7 +276,7 @@
                 }
                 else
                 {
-                    <a asp-page="./ViewTopic" asp-route-topicId="@Model.PreferredTopic.Id" asp-route-pageNum="1">@Model.PreferredTopic.Title</a>
+                    <a asp-page="./ViewTopic" asp-route-topicId="@Model.PreferredTopic.Id" asp-route-pageNum="1">@Html.Raw(Model.PreferredTopic.Title)</a>
                 }
             </td>
         </tr>
@@ -225,6 +286,7 @@
     {
         <input type="submit" value="Salvează modificările" style="width:auto" />
     }
+    <input asp-for="CurrentUser.UserId" type="hidden" />
 </form>
 
 

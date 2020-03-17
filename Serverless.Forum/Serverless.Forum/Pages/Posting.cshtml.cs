@@ -59,6 +59,9 @@ namespace Serverless.Forum.Pages
         [BindProperty]
         public bool PollCanChangeVote { get; set; }
 
+        [BindProperty]
+        public IEnumerable<IFormFile> Files { get; set; }
+
         public string Header { get; private set; }
 
         private readonly PostService _postService;
@@ -162,9 +165,9 @@ namespace Serverless.Forum.Pages
             return Page();
         }
 
-        public async Task<IActionResult> OnPostAttachment(IEnumerable<IFormFile> files)
+        public async Task<IActionResult> OnPostAttachment()
         {
-            if (!(files?.Any() ?? false))
+            if (!(Files?.Any() ?? false))
             {
                 return Page();
             }
@@ -174,8 +177,21 @@ namespace Serverless.Forum.Pages
                 return RedirectToPage("Login");
             }
 
+            if(Files.Count() > 10)
+            {
+                ModelState.AddModelError(nameof(Files), "Maxim 10 fișiere!");
+                return Page();
+            }
+
+            var tooLargeFiles = Files.Where(f => f.Length > 1024 * 1024 * 2);
+            if(tooLargeFiles.Any() && !(await IsCurrentUserAdminHereAsync()))
+            {
+                ModelState.AddModelError(nameof(Files), $"Următoarele fișiere sunt mai mari de 2MB: {string.Join(",", tooLargeFiles.Select(f => f.FileName))}");
+                return Page();
+            }
+
             var attachList = (await _cacheService.GetFromCacheAsync<List<PhpbbAttachments>>(GetActualCacheKey("PostAttachments", true))) ?? new List<PhpbbAttachments>();
-            foreach (var file in files)
+            foreach (var file in Files)
             {
                 var name = $"{CurrentUserId}_{Guid.NewGuid():n}";
                 var request = new PutObjectRequest

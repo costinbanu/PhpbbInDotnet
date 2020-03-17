@@ -1267,6 +1267,11 @@ namespace Serverless.Forum.ForumDb
                     .HasColumnName("group_user_upload_size")
                     .HasColumnType("int(8) unsigned")
                     .HasDefaultValueSql("0");
+
+                entity.Property(e => e.GroupEditTime)
+                    .HasColumnName("group_edit_time")
+                    .HasColumnType("int(4) unsigned")
+                    .HasDefaultValueSql("60");
             });
 
             modelBuilder.Entity<PhpbbIcons>(entity =>

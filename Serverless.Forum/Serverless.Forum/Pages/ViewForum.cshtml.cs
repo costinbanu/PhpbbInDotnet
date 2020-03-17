@@ -72,11 +72,11 @@ namespace Serverless.Forum.Pages
                         TopicType = groups.Key,
                         Topics = from g in groups
 
-                                 join u in context.PhpbbUsers.AsNoTracking()
-                                 on g.TopicLastPosterId equals u.UserId
-                                 into joinedUsers
+                                 //join u in context.PhpbbUsers.AsNoTracking()
+                                 //on g.TopicLastPosterId equals u.UserId
+                                 //into joinedUsers
 
-                                 from ju in joinedUsers.DefaultIfEmpty()
+                                 //from ju in joinedUsers.DefaultIfEmpty()
 
                                  let postCount = context.PhpbbPosts.Count(p => p.TopicId == g.TopicId)
                                  let pageSize = usr.TopicPostsPerPage.ContainsKey(g.TopicId) ? usr.TopicPostsPerPage[g.TopicId] : 14
@@ -85,13 +85,13 @@ namespace Serverless.Forum.Pages
                                  {
                                      Id = g.TopicId,
                                      Title = HttpUtility.HtmlDecode(g.TopicTitle),
-                                     LastPosterId = ju.UserId == 1 ? null as int? : ju.UserId,
+                                     LastPosterId = /*ju.UserId*/g.TopicLastPosterId == 1 ? null as int? : /*ju.UserId*/g.TopicLastPosterId,
                                      LastPosterName = HttpUtility.HtmlDecode(g.TopicLastPosterName),
                                      LastPostTime = g.TopicLastPostTime.ToUtcTime(),
                                      PostCount = context.PhpbbPosts.Count(p => p.TopicId == g.TopicId),
                                      Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1),
                                      Unread = IsTopicUnread(g.TopicId),
-                                     LastPosterColor = ju == null ? null : ju.UserColour,
+                                     LastPosterColor = /*ju == null ? null : ju.UserColour*/g.TopicLastPosterColour,
                                      LastPostId = g.TopicLastPostId
                                  }
                     }

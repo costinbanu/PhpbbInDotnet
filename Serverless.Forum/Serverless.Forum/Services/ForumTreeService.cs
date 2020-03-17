@@ -38,15 +38,15 @@ namespace Serverless.Forum.Services
                        && (usr == null || usr.UserPermissions == null || !usr.UserPermissions.Any(fp => fp.ForumId == f.ForumId && fp.AuthRoleId == 16))
                     orderby f.LeftId
 
-                    join u in context.PhpbbUsers
-                    on f.ForumLastPosterId equals u.UserId
-                    into joinedUsers
+                    //join u in context.PhpbbUsers
+                    //on f.ForumLastPosterId equals u.UserId
+                    //into joinedUsers
 
                     join t in context.PhpbbTopics
                     on f.ForumId equals t.ForumId
                     into joinedTopics
 
-                    from ju in joinedUsers.DefaultIfEmpty()
+                    //from ju in joinedUsers.DefaultIfEmpty()
 
                     select new
                     {
@@ -60,9 +60,9 @@ namespace Serverless.Forum.Services
                             Unread = IsForumUnread(f.ForumId),
                             LastPostId = f.ForumLastPostId,
                             LastPosterName = HttpUtility.HtmlDecode(f.ForumLastPosterName),
-                            LastPosterId = ju.UserId == 1 ? null as int? : ju.UserId,
+                            LastPosterId = /*ju.UserId*/f.ForumLastPosterId == 1 ? null as int? : /*ju.UserId*/f.ForumLastPosterId,
                             LastPostTime = f.ForumLastPostTime.ToUtcTime(),
-                            LastPosterColor = ju == null ? null : ju.UserColour,
+                            LastPosterColor = /*ju == null ? null : ju.UserColour*/f.ForumLastPosterColour,
                             Topics = (from jt in joinedTopics
                                       orderby jt.TopicLastPostTime descending
                                       select new TopicDisplay

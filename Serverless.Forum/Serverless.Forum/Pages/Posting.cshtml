@@ -549,7 +549,7 @@ else
     </div>
     <input type="submit" value="Trimite mesajul" onclick="return censor()" asp-page-handler="ForumPost" />
     <p>&nbsp;</p>
-    <a href="#" onclick="showElement('attachPanel')">Adaugă fișier atașat</a>
+    <a href="#" onclick="showElement('attachPanel')">Adaugă fișiere atașate</a>
     @if (Model.CanCreatePoll)
     {
         <span>&nbsp; | &nbsp;</span>
@@ -561,7 +561,18 @@ else
         <table style="border:none; margin:0px; padding:0px">
             <tr>
                 <td style="width:50%; padding-bottom:15px">Alege unul sau mai multe fișiere: </td>
-                <td><input type="file" name="files" multiple /></td>
+                <td>
+                    @*<input type="file" name="files" multiple />*@
+                    <input asp-for="Files" multiple />
+                    <span class="Caption">
+                        <span>Minim 1, maxim 10 fișiere. </span>
+                        @if (!await Model.IsCurrentUserAdminHereAsync())
+                        {
+                            <span>Fiecare fișier trebuie să aibă maxim 2MB.</span>
+                        }
+                        <br/><span asp-validation-for="Files" class="validation"></span>
+                    </span>
+                </td>
             </tr>
             @*<tr>
                 <td style="width:200px; padding-bottom:15px">Comentariu fișier: </td>

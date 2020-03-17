@@ -19,6 +19,7 @@ namespace Serverless.Forum.Services
         private readonly Utils _utils;
         private List<PhpbbAclRoles> _adminRoles;
         private List<PhpbbAclRoles> _modRoles;
+        private List<PhpbbAclRoles> _userRoles;
         private PhpbbUsers _anonymousDbUser;
         private ClaimsPrincipal _anonymousClaimsPrincipal;
         private LoggedUser _anonymousLoggedUser;
@@ -48,6 +49,12 @@ namespace Serverless.Forum.Services
                     select up
                 ).Any()
             );
+
+        public async Task<int?> GetUserRole(LoggedUser user)
+            => (from up in user.UserPermissions
+                join a in await GetUserRolesLazy()
+                on up.AuthRoleId equals a.RoleId
+                select up.AuthRoleId as int?).FirstOrDefault();
 
         public async Task<PhpbbUsers> GetAnonymousDbUserAsync()
         {
@@ -85,24 +92,6 @@ namespace Serverless.Forum.Services
             return _anonymousLoggedUser;
         }
 
-        private async Task<List<PhpbbAclRoles>> GetAdminRolesLazy()
-        {
-            if (_adminRoles != null)
-            {
-                return _adminRoles;
-            }
-
-            using (var context = new ForumDbContext(_config))
-            {
-                _adminRoles = await (
-                    from r in context.PhpbbAclRoles.AsNoTracking()
-                    where r.RoleType == "a_"
-                    select r
-                ).ToListAsync();
-                return _adminRoles;
-            }
-        }
-
         public async Task<ClaimsPrincipal> DbUserToClaimsPrincipalAsync(PhpbbUsers user)
         {
             using (var dbContext = new ForumDbContext(_config))
@@ -138,6 +127,51 @@ namespace Serverless.Forum.Services
         public async Task<LoggedUser> DbUserToLoggedUserAsync(PhpbbUsers dbUser)
             => await ClaimsPrincipalToLoggedUserAsync(await DbUserToClaimsPrincipalAsync(dbUser));
 
+        public async Task<List<PhpbbAclRoles>> GetUserRolesListAsync()
+            => await GetUserRolesLazy();
+
+        public async Task<List<PhpbbRanks>> GetRankListAsync()
+        {
+            using (var context = new ForumDbContext(_config))
+            {
+                return await context.PhpbbRanks.AsNoTracking().ToListAsync();
+            }
+        }
+
+        public async Task<List<PhpbbGroups>> GetGroupListAsync()
+        {
+            using (var context = new ForumDbContext(_config))
+            {
+                return await context.PhpbbGroups.AsNoTracking().ToListAsync();
+            }
+        }
+
+        public async Task<int?> GeUserGroupAsync(int userId)
+        {
+            using (var context = new ForumDbContext(_config))
+            {
+                return (await context.PhpbbUserGroup.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == userId))?.GroupId;
+            }
+        }
+
+        private async Task<List<PhpbbAclRoles>> GetUserRolesLazy()
+        {
+            if (_userRoles != null)
+            {
+                return _userRoles;
+            }
+
+            using (var context = new ForumDbContext(_config))
+            {
+                _userRoles = await (
+                    from r in context.PhpbbAclRoles.AsNoTracking()
+                    where r.RoleType == "u_"
+                    select r
+                ).ToListAsync();
+                return _userRoles;
+            }
+        }
+
         private async Task<List<PhpbbAclRoles>> GetModRolesLazy()
         {
             if (_modRoles != null)
@@ -153,6 +187,24 @@ namespace Serverless.Forum.Services
                     select r
                 ).ToListAsync();
                 return _modRoles;
+            }
+        }
+
+        private async Task<List<PhpbbAclRoles>> GetAdminRolesLazy()
+        {
+            if (_adminRoles != null)
+            {
+                return _adminRoles;
+            }
+
+            using (var context = new ForumDbContext(_config))
+            {
+                _adminRoles = await (
+                    from r in context.PhpbbAclRoles.AsNoTracking()
+                    where r.RoleType == "a_"
+                    select r
+                ).ToListAsync();
+                return _adminRoles;
             }
         }
     }
