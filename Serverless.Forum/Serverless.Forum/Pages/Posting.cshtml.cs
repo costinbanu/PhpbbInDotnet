@@ -1,7 +1,4 @@
-﻿using Amazon;
-using Amazon.S3;
-using Amazon.S3.Model;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -11,9 +8,7 @@ using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.IO;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -23,10 +18,10 @@ namespace Serverless.Forum.Pages
     [ValidateAntiForgeryToken]
     public class PostingModel : ModelWithLoggedUser
     {
-        [BindProperty, Required]
+        [BindProperty(SupportsGet = true)]
         public string PostTitle { get; set; }
 
-        [BindProperty, Required]
+        [BindProperty(SupportsGet = true)]
         public string PostText { get; set; }
 
         [BindProperty(SupportsGet = true)]
@@ -39,9 +34,6 @@ namespace Serverless.Forum.Pages
         public int? PostId { get; set; }
 
         [BindProperty]
-        public bool HasAttachments { get; set; }
-
-        [BindProperty]
         public bool CanCreatePoll { get; set; }
 
         [BindProperty]
@@ -50,10 +42,10 @@ namespace Serverless.Forum.Pages
         [BindProperty]
         public string PollOptions { get; set; }
 
-        [BindProperty, Required, RegularExpression("^[0-9]+([.,][0-9]{1,3})?$", ErrorMessage = "Valoarea introdusă nu este validă. Valori acceptate: între 0.1 și 365")]
+        [BindProperty]
         public string PollExpirationDaysString { get; set; }
 
-        [BindProperty, Required, Range(1, int.MaxValue, ErrorMessage = "Valori valide: între 1 și numărul de opțiuni ale chestionarului.")]
+        [BindProperty, Required, Range(1, int.MaxValue, ErrorMessage = "")]
         public int? PollMaxOptions { get; set; }
 
         [BindProperty]
@@ -62,18 +54,28 @@ namespace Serverless.Forum.Pages
         [BindProperty]
         public IEnumerable<IFormFile> Files { get; set; }
 
+        [BindProperty]
+        public List<string> FileComment { get; set; }
+
+        [BindProperty]
+        public List<string> DeleteFileDummyForValidation { get; set; }
+
         public string Header { get; private set; }
 
         private readonly PostService _postService;
-        private readonly IAmazonS3 _s3Client;
+        private readonly StorageService _storageService;
+        //private readonly IHostingEnvironment _hostingEnvironment;
 
-        public PostingModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService, PostService postService)
+        public PostingModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService, PostService postService, StorageService storageService)
             : base(config, utils, forumService, userService, cacheService)
         {
-            _s3Client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1);
             PollExpirationDaysString = "1";
             PollMaxOptions = 1;
             _postService = postService;
+            FileComment = new List<string>();
+            DeleteFileDummyForValidation = new List<string>();
+            //_hostingEnvironment = hostingEnvironment;
+            _storageService = storageService;
         }
 
         public async Task<IActionResult> OnGetForumPost()
@@ -165,7 +167,7 @@ namespace Serverless.Forum.Pages
             return Page();
         }
 
-        public async Task<IActionResult> OnPostAttachment()
+        public async Task<IActionResult> OnPostAddAttachment()
         {
             if (!(Files?.Any() ?? false))
             {
@@ -177,59 +179,95 @@ namespace Serverless.Forum.Pages
                 return RedirectToPage("Login");
             }
 
-            if(Files.Count() > 10)
-            {
-                ModelState.AddModelError(nameof(Files), "Maxim 10 fișiere!");
-                return Page();
-            }
-
             var tooLargeFiles = Files.Where(f => f.Length > 1024 * 1024 * 2);
-            if(tooLargeFiles.Any() && !(await IsCurrentUserAdminHereAsync()))
+            if (tooLargeFiles.Any() && !await IsCurrentUserAdminHereAsync())
             {
                 ModelState.AddModelError(nameof(Files), $"Următoarele fișiere sunt mai mari de 2MB: {string.Join(",", tooLargeFiles.Select(f => f.FileName))}");
                 return Page();
             }
 
             var attachList = (await _cacheService.GetFromCacheAsync<List<PhpbbAttachments>>(GetActualCacheKey("PostAttachments", true))) ?? new List<PhpbbAttachments>();
-            foreach (var file in Files)
+            if (attachList.Count + Files.Count() > 10 && !await IsCurrentUserAdminHereAsync())
             {
-                var name = $"{CurrentUserId}_{Guid.NewGuid():n}";
-                var request = new PutObjectRequest
-                {
-                    BucketName = _config["AwsS3BucketName"],
-                    Key = name,
-                    ContentType = file.ContentType,
-                    InputStream = file.OpenReadStream()
-                };
-
-                var response = await _s3Client.PutObjectAsync(request);
-                if (response.HttpStatusCode != HttpStatusCode.OK)
-                {
-                    throw new Exception("Failed to upload file");
-                }
-
-                attachList.Add(new PhpbbAttachments
-                {
-                    AttachComment = null,
-                    Extension = Path.GetExtension(file.FileName),
-                    Filetime = DateTime.UtcNow.ToUnixTimestamp(),
-                    Filesize = file.Length,
-                    Mimetype = file.ContentType,
-                    PhysicalFilename = name,
-                    RealFilename = Path.GetFileName(file.FileName),
-                    PosterId = CurrentUserId
-                });
+                ModelState.AddModelError(nameof(Files), "Sunt permise maxim 10 fișiere per mesaj.");
+                return Page();
             }
+
+            var (succeeded, failed) = await _storageService.BulkAddAttachments(Files, CurrentUserId);
+            attachList.AddRange(succeeded);
+
+            if(failed.Any())
+            {
+                ModelState.AddModelError(nameof(Files), $"Următoarele fișiere nu au putut fi adăugate, vă rugăm să încercați din nou: {string.Join(",", failed)}");
+                asta nu merge. trebuie pus in cache sau ceva.
+                bonus, ce facem cu indecsii?
+            }
+
             await _cacheService.SetInCacheAsync(GetActualCacheKey("PostAttachments", true), attachList);
             return Page();
         }
 
-        public async Task<IActionResult> OnPostForumPost(string[] fileComment)
+        public async Task<IActionResult> OnPostDeleteAttachment(int index)
+        {
+            if (CurrentUserId == 1)
+            {
+                return RedirectToPage("Login");
+            }
+
+            var attachList = (await _cacheService.GetFromCacheAsync<List<PhpbbAttachments>>(GetActualCacheKey("PostAttachments", true))) ?? new List<PhpbbAttachments>();
+            var attachment = attachList.ElementAtOrDefault(index);
+
+            if(attachment == null)
+            {
+                ModelState.AddModelError($"{nameof(DeleteFileDummyForValidation)}[{index}]", "Fișierul nu a putut fi șters, vă rugăm încercați din nou.");
+                return Page();
+            }
+
+            if (!await _storageService.DeleteFile(attachment.PhysicalFilename))
+            {
+                ModelState.AddModelError($"{nameof(DeleteFileDummyForValidation)}[{index}]", "Fișierul nu a putut fi șters, vă rugăm încercați din nou.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(PostText))
+            {
+                PostText = PostText.Replace($"[attachment={index}]{attachment.RealFilename}[/attachment]", string.Empty, StringComparison.InvariantCultureIgnoreCase);
+            }
+            attachList.RemoveAt(index);
+            await _cacheService.SetInCacheAsync(GetActualCacheKey("PostAttachments", true), attachList);
+            return Page();
+        }
+
+        public async Task<IActionResult> OnPostForumPost()
         {
             var usr = await GetCurrentUserAsync();
             if (usr.UserId == 1)
             {
                 return Unauthorized();
+            }
+
+            if ((PostTitle?.Trim()?.Length ?? 0) < 3)
+            {
+                ModelState.AddModelError(nameof(PostTitle), "Titlul este prea scurt (minim 3 caractere, exclusiv spații).");
+                return Page();
+            }
+
+            if ((PostText?.Trim()?.Length ?? 0) < 3)
+            {
+                ModelState.AddModelError(nameof(PostText), "Titlul este prea scurt (minim 3 caractere, exclusiv spații).");
+                return Page();
+            }
+
+            if (CanCreatePoll && !string.IsNullOrWhiteSpace(PollExpirationDaysString) && !double.TryParse(PollExpirationDaysString, out var val) && val < 0.1 && val > 365)
+            {
+                ModelState.AddModelError(nameof(PollExpirationDaysString), "Valoarea introdusă nu este validă. Valori acceptate: între 0.1 și 365");
+                return Page();
+            }
+
+            var pollOptionsArray = PollOptions?.Split(Environment.NewLine) ?? new string[0];
+            if (CanCreatePoll && PollMaxOptions.HasValue && pollOptionsArray.Any() && PollMaxOptions < 1 && PollMaxOptions > pollOptionsArray.Length)
+            {
+                ModelState.AddModelError(nameof(PollMaxOptions), "Valori valide: între 1 și numărul de opțiuni ale chestionarului.");
+                return Page();
             }
 
             using (var context = new ForumDbContext(_config))
@@ -286,7 +324,7 @@ namespace Serverless.Forum.Pages
                 {
                     attachList[i].PostMsgId = postResult.Entity.PostId;
                     attachList[i].TopicId = TopicId.Value;
-                    attachList[i].AttachComment = fileComment[i];
+                    attachList[i].AttachComment = FileComment[i];
                 }
 
                 await _postService.CascadePostAdd(context, postResult.Entity, usr);
@@ -295,7 +333,7 @@ namespace Serverless.Forum.Pages
                 {
                     byte pollOptionId = 1;
                     ulong id = await context.PhpbbPollOptions.AsNoTracking().MaxAsync(o => o.Id);
-                    foreach (var option in PollOptions.Split(Environment.NewLine))
+                    foreach (var option in pollOptionsArray)
                     {
                         var result = await context.PhpbbPollOptions.AddAsync(new PhpbbPollOptions
                         {

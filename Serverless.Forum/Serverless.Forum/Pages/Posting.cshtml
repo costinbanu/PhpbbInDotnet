@@ -15,7 +15,6 @@
 <script src="~/js/site.js"></script>
 <link rel="stylesheet" href="~/lib/tribute/dist/tribute.css" />
 <script type="text/javascript">
-     // <![CDATA[
     var form_name = 'postform';
     var text_name = 'message';
     var load_draft = false;
@@ -30,13 +29,6 @@
     var help_line = @Json.Serialize(await _cacheService.GetFromCacheAsync<Dictionary<string, string>>(Model.GetActualCacheKey("BbCodeHelplines", false)));
     var panels = new Array('options-panel', 'attach-panel', 'poll-panel');
     var show_panel = 'options-panel';
-
-    // ]]>
-
-    /**
-    * bbCode control by subBlue design [ www.subBlue.com ]
-    * Includes unixsafe colour palette selector by SHS`
-    */
 
     // Startup variables
     var imageTag = false;
@@ -373,7 +365,7 @@
             textinput.value = textinput.value.replace(/photobucket/gi, "*****");
             textinput.value = textinput.value.replace(/imageshack/gi, "*****");
             var imgNo = textinput.value.split("[img]").length - 1;
-            if (imgNo > 10) {
+            if (imgNo > 10 && @(! await Model.IsCurrentUserAdminHereAsync())) {
                 alert("Ati inclus " + imgNo + " imagini in mesaj. Numarul maxim permis: 10.")
                 return false;
             }
@@ -404,7 +396,7 @@
                         }
                     });
                 }
-                if (!isok) {
+                if (!isok && @(! await Model.IsCurrentUserAdminHereAsync())) {
                     document.getElementById('imgcheckstatus').style.visibility = 'hidden';
                     alert('Nu este permisa includerea unor imagini avand peste 2MB dimensiune. Urmatoarele imagini sunt mai mari:\n' + badimgs.join('\n'));
                     return false;
@@ -432,25 +424,41 @@
         target.innerText = "Chestionarul expiră " + moment().add(value, "seconds").format("LLLL");
     }
 </script>
-
+<style>
+    .popup {
+        border: solid 1px black;
+        border-radius: 15px;
+        padding: 15px;
+        position: fixed;
+        text-align: center;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        z-index: 100;
+        font-family: Verdana, Helvetica, Arial, sans-serif;
+        font-size: 1em;
+        visibility: hidden;
+    }
+</style>
 @if (Model.PostId.HasValue)
 {
-<h3>
-    Răspunde: 
-    <a asp-page="/ViewTopic" asp-route-postId="@Model.PostId.Value" asp-page-handler="ByPostId">@Model.Header</a>
-</h3>
+    <h3>
+        Răspunde:
+        <a asp-page="/ViewTopic" asp-route-postId="@Model.PostId.Value" asp-page-handler="ByPostId">@Model.Header</a>
+    </h3>
 }
 else if (Model.TopicId.HasValue)
 {
-<h3>
-    Răspunde: 
-    <a asp-page="/ViewTopic" asp-route-postId="@Model.TopicId.Value" asp-route-pageNum="1">@Model.Header</a>
-</h3>
+    <h3>
+        Răspunde:
+        <a asp-page="/ViewTopic" asp-route-postId="@Model.TopicId.Value" asp-route-pageNum="1">@Model.Header</a>
+    </h3>
 }
 else
 {
     <h3>
-        Scrie un subiect nou: 
+        Scrie un subiect nou:
         <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@Model.Header</a>
     </h3>
 }
@@ -521,7 +529,7 @@ else
             <input type="button" class="button2" name="@name" value="@code.BbcodeTag" onclick="bbstyle(@index)" title="@code.BbcodeHelpline" />
         }
     </div>
-    <br/>
+    <br />
     <div id="messageHolder">
         <textarea asp-for="PostText" id="message" rows="15" cols="76" tabindex="3" onselect="storeCaret(this);" onclick="storeCaret(this);" onkeyup="storeCaret(this);" onfocus="initInsertions();" class="inputbox"></textarea>
     </div>
@@ -554,53 +562,6 @@ else
     {
         <span>&nbsp; | &nbsp;</span>
         <a href="#" onclick="showElement('pollPanel')">Adaugă chestionar</a>
-    }
-    <div id="attachPanel" style="display:@(await _cacheService.ExistsInCacheAsync(Model.GetActualCacheKey("PostAttachments", true)) ? "block" : "none")">
-        <h4>Adaugă fișiere</h4>
-        <p>&nbsp;</p>
-        <table style="border:none; margin:0px; padding:0px">
-            <tr>
-                <td style="width:50%; padding-bottom:15px">Alege unul sau mai multe fișiere: </td>
-                <td>
-                    @*<input type="file" name="files" multiple />*@
-                    <input asp-for="Files" multiple />
-                    <span class="Caption">
-                        <span>Minim 1, maxim 10 fișiere. </span>
-                        @if (!await Model.IsCurrentUserAdminHereAsync())
-                        {
-                            <span>Fiecare fișier trebuie să aibă maxim 2MB.</span>
-                        }
-                        <br/><span asp-validation-for="Files" class="validation"></span>
-                    </span>
-                </td>
-            </tr>
-            @*<tr>
-                <td style="width:200px; padding-bottom:15px">Comentariu fișier: </td>
-                <td><textarea type="text" name="fileComment" id="fileComment" rows="1" cols="40" style="display:inline-block"></textarea></td>
-            </tr>*@
-        </table>
-        <input type="submit" value="Încarcă fișiere" asp-page-handler="Attachment" />
-        <p>&nbsp;</p>
-        <p><b>Fișiere deja atașate:</b></p>
-        <table style="border:none; margin:0px; padding:0px">
-            <tr>
-                <th style="width:200px; padding-bottom:15px">Nume fișier</th>
-                <th style="padding-bottom:15px">Comentariu fișier</th>
-            </tr>
-            @{
-                var i = 0;
-                foreach (var attach in (await _cacheService.GetFromCacheAsync<List<PhpbbAttachments>>(Model.GetActualCacheKey("PostAttachments", true))) ?? new List<PhpbbAttachments>())
-                {
-                    <tr>
-                        <td style="width:200px; padding-bottom:15px">@attach.RealFilename</td>
-                        <td><textarea type="text" name="fileComment[@(i++)]" id="fileComment" rows="4" cols="40" style="display:inline-block"></textarea></td>
-                    </tr>
-                }
-            }
-        </table>
-    </div>
-    @if (Model.CanCreatePoll)
-    {
         <div id="pollPanel" style="display:none">
             <h4>Adaugă chestionar</h4>
             <p>&nbsp;</p>
@@ -623,7 +584,7 @@ else
                     <td style="width:200px; padding:5px">Timp pentru votare (zile)</td>
                     <td style="padding:5px">
                         <input asp-for="PollExpirationDaysString" onchange="showExpirationDate(this.value)" id="pollExpiration" /><br />
-                        <span class="Caption">Introdu '0' pentru timp nelimitat.<br/>Sunt permise și fracții precum 0.5, 1.75 etc</span>
+                        <span class="Caption">Introdu '0' pentru timp nelimitat.<br />Sunt permise și fracții precum 0.5, 1.75 etc</span>
                         <span asp-validation-for="PollExpirationDaysString" class="validation"></span>
                     </td>
                     <td style="padding:5px">
@@ -651,7 +612,50 @@ else
     <input asp-for="ForumId" type="hidden" />
     <input asp-for="TopicId" type="hidden" />
     <input asp-for="PostId" type="hidden" />
+    <div id="attachPanel" style="display:@(await _cacheService.ExistsInCacheAsync(Model.GetActualCacheKey("PostAttachments", true)) ? "block" : "none")">
+        <h4>Adaugă fișiere</h4>
+        <p>&nbsp;</p>
+        <table style="border:none; margin:0px; padding:0px">
+            <tr>
+                <td style="width:50%; padding-bottom:15px">Alege unul sau mai multe fișiere: </td>
+                <td>
+                    <input asp-for="Files" multiple />
+                    @if (!await Model.IsCurrentUserAdminHereAsync())
+                    {
+                        <span class="Caption">Minim 1, maxim 10 fișiere. Fiecare fișier trebuie să aibă maxim 2MB.</span>
+                    }
+                    <br />
+                    <span asp-validation-for="Files" class="validation"></span>
+                </td>
+            </tr>
+        </table>
+        <input type="submit" value="Încarcă fișiere" asp-page-handler="AddAttachment" />
+        <p>&nbsp;</p>
+        @{
+            var attachments = await _cacheService.GetFromCacheAsync<List<PhpbbAttachments>>(Model.GetActualCacheKey("PostAttachments", true)) ?? new List<PhpbbAttachments>();
+            if (attachments.Any())
+            {
+                <p><b>Fișiere deja atașate:</b></p>
+                @for (var i = 0; i < attachments.Count; i++)
+                {
+                    <div style="margin-bottom:20px; padding-bottom:20px">
+                        <b>Nume:</b> @attachments[i].RealFilename <br />
+                        <b>Comentariu fișier:</b>
+                        <br />
+                        <textarea type="text" name="FileComment[@i]" id="FileComment" rows="4" cols="100" style="display:inline-block"></textarea>
+                        <br />
+                        <input type="button" value="Așează în linie" onclick="attach_inline(@i, '@attachments[i].RealFilename')" /> &nbsp;
+                        <input type="submit" value="Șterge fișier" asp-page-handler="DeleteAttachment" onclick="document.getElementById('indexToDelete').value = @i; return true;" />
+                        <br />
+                        <span asp-validation-for="DeleteFileDummyForValidation[i]" class="validation"></span>
+                    </div>
+                }
+                <input type="hidden" name="index" id="indexToDelete" value="" />
+            }
+        }
+    </div>
 </form>
+
 <script>
     var tribute = new Tribute({
         values: @Json.Serialize(await _cacheService.GetFromCacheAsync<List<KeyValuePair<string, string>>>(Model.GetActualCacheKey("Users", false))),
@@ -663,3 +667,5 @@ else
 
     showExpirationDate(document.getElementById("pollExpiration").value);
 </script>
+
+<div id="imgcheckstatus" class="popup"></div>

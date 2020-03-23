@@ -1,12 +1,11 @@
-﻿using Amazon;
-using Amazon.S3;
-using Amazon.S3.Model;
+﻿using Amazon.S3;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.ForumDb;
+using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System;
 using System.IO;
@@ -17,13 +16,13 @@ namespace Serverless.Forum.Pages
 {
     public class FileModel : PageModel
     {
-        private readonly IAmazonS3 _s3Client;
         private readonly IConfiguration _config;
+        private readonly StorageService _storageService;
 
-        public FileModel(IConfiguration config)
+        public FileModel(IConfiguration config, StorageService storageService)
         {
             _config = config;
-            _s3Client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1);
+            _storageService = storageService;
         }
 
         public async Task<IActionResult> OnGet(int Id)
@@ -39,7 +38,7 @@ namespace Serverless.Forum.Pages
                     return NotFound();
                 }
 
-                return await Renderfile(file);
+                return await Renderfile(file.PhysicalFilename, file.Mimetype);
             }
         }
 
@@ -60,56 +59,19 @@ namespace Serverless.Forum.Pages
             }
         }
 
-        private async Task<IActionResult> Renderfile(PhpbbAttachments file)
+        private async Task<IActionResult> Renderfile(string fileName, string mimeType = null)
         {
             try
             {
-                var request = new GetObjectRequest
+                if (string.IsNullOrWhiteSpace(mimeType))
                 {
-                    BucketName = _config["AwsS3BucketName"],
-                    Key = file.PhysicalFilename
-                };
-
-                using (var response = await _s3Client.GetObjectAsync(request))
-                using (var responseStream = new MemoryStream())
-                {
-                    await response.ResponseStream.CopyToAsync(responseStream);
-
-                    HttpContext.Response.Headers.Add("content-disposition", $"{(file.Mimetype.IsMimeTypeInline() ? "inline" : "attachment")}; filename={file.RealFilename}");
-
-                    return File(responseStream.GetBuffer(), file.Mimetype);
+                    mimeType = new FileExtensionContentTypeProvider().Mappings[Path.GetExtension(fileName)];
                 }
-            }
-            catch (AmazonS3Exception s3ex) when (s3ex.Message == "The specified key does not exist.")
-            {
-                return NotFound($"Fișierul {file.AttachId} nu a fost găsit.");
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
 
-        private async Task<IActionResult> Renderfile(string fileName)
-        {
-            try
-            {
-                var request = new GetObjectRequest
-                {
-                    BucketName = _config["AwsS3BucketName"],
-                    Key = fileName
-                };
-
-                var mimeType = new FileExtensionContentTypeProvider().Mappings[Path.GetExtension(fileName)];
-                using (var response = await _s3Client.GetObjectAsync(request))
-                using (var responseStream = new MemoryStream())
-                {
-                    await response.ResponseStream.CopyToAsync(responseStream);
-
-                    HttpContext.Response.Headers.Add("content-disposition", $"{(mimeType.IsMimeTypeInline() ? "inline" : "attachment")}; filename={fileName}");
-
-                    return File(responseStream.GetBuffer(), mimeType);
-                }
+                var responseStream = await _storageService.ReadFile(fileName);
+                HttpContext.Response.Headers.Add("content-disposition", $"{(mimeType.IsMimeTypeInline() ? "inline" : "attachment")}; filename={fileName}");
+                HttpContext.Response.Headers.Add("content-length", responseStream.Length.ToString());
+                return File(responseStream, mimeType);
             }
             catch (AmazonS3Exception s3ex) when (s3ex.Message == "The specified key does not exist.")
             {

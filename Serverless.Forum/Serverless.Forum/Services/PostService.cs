@@ -301,13 +301,11 @@ namespace Serverless.Forum.Services
                     new BBTag("url", "<a href=\"${href}\">", "</a>",
                         new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
                     new BBTag("color", "<span style=\"color:${code}\">", "</span>",
-                        new BBAttribute("code", ""),
-                        new BBAttribute("code", "code")),
+                        new BBAttribute("code", "")),
                     new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>",
                         new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
                     new BBTag("attachment", "##AttachmentFileName=${content}##", "", false, true,
-                        new BBAttribute("num", ""),
-                        new BBAttribute("num", "num"))
+                        new BBAttribute("num", ""))
                 });
                 _parser = new BBCodeParser(bbcodes);
                 return _parser;

@@ -94,6 +94,7 @@ namespace Serverless.Forum
             services.AddSingleton<ForumTreeService>();
             services.AddSingleton<PostService>();
             services.AddSingleton<UserService>();
+            services.AddSingleton<StorageService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
