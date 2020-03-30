@@ -90,11 +90,12 @@ namespace Serverless.Forum.Services
             }
         }
 
-        public async Task ProcessPosts(IEnumerable<PostDisplay> Posts, PageContext pageContext, HttpContext httpContext, bool renderAttachments, string toHighlight = null)
+        public void ProcessPosts(IEnumerable<PostDisplay> Posts, PageContext pageContext, HttpContext httpContext, bool renderAttachments, string toHighlight = null)
         {
-            var inlineAttachmentsPosts = new ConcurrentBag<(int PostId, _AttachmentPartialModel Attach)>();
-            var attachRegex = new Regex("##AttachmentFileName=.*##", RegexOptions.Compiled);
+            var inlineAttachmentsPosts = new ConcurrentBag<(int PostId, int AttachIndex, _AttachmentPartialModel Attach)>();
+            var attachRegex = new Regex("#{AttachmentFileName=[^/]+/AttachmentIndex=[0-9]+}#", RegexOptions.Compiled);
             var highlightWords = SplitHighlightWords(toHighlight);
+            var locker = new object();
 
             Parallel.ForEach(Posts, async (p, state1) =>
             {
@@ -104,11 +105,43 @@ namespace Serverless.Forum.Services
 
                 if (renderAttachments)
                 {
-                    Parallel.ForEach(p.Attachments, (candidate, state2) =>
+                    var matches = from m in attachRegex.Matches(p.PostText).AsEnumerable()
+                                  where m.Success
+                                  orderby m.Index descending
+                                  let parts = m.Value.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries)
+                                  let fn = parts[0].Trim("#{".ToCharArray()).Replace("AttachmentFileName=", string.Empty)
+                                  let i = int.Parse(parts[1].Trim("}#".ToCharArray()).Replace("AttachmentIndex=", string.Empty))
+                                  select (FileName: fn, AttachIndex: i, Original: m);
+
+                    Parallel.ForEach(matches, (m, state2) =>
                     {
-                        if (p.PostText.Contains($"##AttachmentFileName={candidate.FileName}##"))
+                        _AttachmentPartialModel model = null;
+                        int index = m.AttachIndex;
+                        var candidates = p.Attachments.Where(a => a.FileName == m.FileName).ToList();
+                        if (candidates.Count == 1)
                         {
-                            inlineAttachmentsPosts.Add((p.PostId.Value, candidate));
+                            model = candidates.First();
+                        }
+                        else if(candidates.Count > 1)
+                        {
+                            model = candidates.FirstOrDefault(a => candidates.IndexOf(a) == index);
+                            if (model == null)
+                            {
+                                index = candidates.Count - m.AttachIndex;
+                                model = candidates.FirstOrDefault(a => candidates.IndexOf(a) == index);
+                            }
+                        }
+
+                        if (model != null)
+                        {
+                            lock (locker)
+                            {
+                                p.PostText = p.PostText.Replace(
+                                    $"#{{AttachmentFileName={model.FileName}/AttachmentIndex={index}}}#",
+                                    _utils.RenderRazorViewToString("_AttachmentPartial", model, pageContext, httpContext).RunSync()
+                                );
+                                p.Attachments.Remove(model);
+                            }
                         }
                     });
                 }
@@ -117,23 +150,6 @@ namespace Serverless.Forum.Services
                     p.PostText = attachRegex.Replace(p.PostText, string.Empty);
                 }
             });
-
-            if (renderAttachments)
-            {
-                foreach (var p in Posts)
-                {
-                    foreach (var (PostId, Attach) in from a in inlineAttachmentsPosts
-                                                     where a.PostId == p.PostId
-                                                     select a)
-                    {
-                        p.PostText = p.PostText.Replace(
-                            $"##AttachmentFileName={Attach.FileName}##",
-                            await _utils.RenderRazorViewToString("_AttachmentPartial", Attach, pageContext, httpContext)
-                        );
-                        p.Attachments.Remove(Attach);
-                    }
-                }
-            }
         }
 
         public async Task<string> BbCodeToHtml(string bbCodeText, string bbCodeUid)
@@ -304,7 +320,7 @@ namespace Serverless.Forum.Services
                         new BBAttribute("code", "")),
                     new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>",
                         new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
-                    new BBTag("attachment", "##AttachmentFileName=${content}##", "", false, true,
+                    new BBTag("attachment", "#{AttachmentFileName=${content}/AttachmentIndex=${num}}#", "", false, true,
                         new BBAttribute("num", ""))
                 });
                 _parser = new BBCodeParser(bbcodes);

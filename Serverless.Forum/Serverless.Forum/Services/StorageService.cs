@@ -7,7 +7,6 @@ using Microsoft.Extensions.Hosting;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -26,60 +25,41 @@ namespace Serverless.Forum.Services
             _hostingEnvironment = hostingEnvironment;
         }
 
-        public async Task<Stream> ReadFile(string name)
+        public string ReadFile(string name, string contentDisposition, string contentType)
         {
-            //var request = new GetObjectRequest
-            //{
-            //    BucketName = _config["AwsS3BucketName"],
-            //    Key = $"{(!_hostingEnvironment.IsProduction() ? "testing/" : string.Empty)}{name}"
-            //};
-
-            ////using (var s3client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1))
-            ////using (var response = await s3client.GetObjectAsync(request))
-            ////using (var responseStream = new MemoryStream())
-            ////{
-            ////    ;
-            ////    await response.ResponseStream.CopyToAsync(responseStream);
-            ////    return responseStream;
-            ////}
-            //using (var s3client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1))
-            //using (var response = await s3client.GetObjectAsync(request))
-            ////using (var responseStream = new MemoryStream())
-            //{
-            //    return response.ResponseStream;
-            //}
-
-            async Task<Stream> Impl(string fileName)
+            string Impl(string fileName)
             {
-                var request = new GetObjectRequest
+                var request = new GetPreSignedUrlRequest
                 {
                     BucketName = _config["AwsS3BucketName"],
-                    Key = fileName
+                    Key = fileName,
+                    Expires = DateTime.Now.AddMinutes(2),
+                    ResponseHeaderOverrides = new ResponseHeaderOverrides
+                    {
+                        ContentDisposition = contentDisposition,
+                        ContentType = contentType
+                    }
                 };
                 using (var s3client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1))
-                using (var response = await s3client.GetObjectAsync(request))
                 {
-                    var result = new MemoryStream();
-                    await response.ResponseStream.CopyToAsync(result);
-                    result.Seek(0, SeekOrigin.Begin);
-                    return result;
+                    return s3client.GetPreSignedURL(request);
                 }
             }
 
 
             if (_hostingEnvironment.IsProduction())
             {
-                return await Impl(name);
+                return Impl(name);
             }
             else
             {
                 try
                 {
-                    return await Impl(name);
+                    return Impl(name);
                 }
                 catch (AmazonS3Exception s3ex) when (s3ex.Message == "The specified key does not exist.")
                 {
-                    return await Impl($"testing/{name}");
+                    return Impl($"testing/{name}");
                 }
             }
         }

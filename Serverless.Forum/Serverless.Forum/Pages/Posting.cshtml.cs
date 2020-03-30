@@ -64,7 +64,6 @@ namespace Serverless.Forum.Pages
 
         private readonly PostService _postService;
         private readonly StorageService _storageService;
-        //private readonly IHostingEnvironment _hostingEnvironment;
 
         public PostingModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService, PostService postService, StorageService storageService)
             : base(config, utils, forumService, userService, cacheService)
@@ -74,7 +73,6 @@ namespace Serverless.Forum.Pages
             _postService = postService;
             FileComment = new List<string>();
             DeleteFileDummyForValidation = new List<string>();
-            //_hostingEnvironment = hostingEnvironment;
             _storageService = storageService;
         }
 
@@ -199,8 +197,6 @@ namespace Serverless.Forum.Pages
             if(failed.Any())
             {
                 ModelState.AddModelError(nameof(Files), $"Următoarele fișiere nu au putut fi adăugate, vă rugăm să încercați din nou: {string.Join(",", failed)}");
-                asta nu merge. trebuie pus in cache sau ceva.
-                bonus, ce facem cu indecsii?
             }
 
             await _cacheService.SetInCacheAsync(GetActualCacheKey("PostAttachments", true), attachList);
@@ -231,6 +227,8 @@ namespace Serverless.Forum.Pages
             if (!string.IsNullOrWhiteSpace(PostText))
             {
                 PostText = PostText.Replace($"[attachment={index}]{attachment.RealFilename}[/attachment]", string.Empty, StringComparison.InvariantCultureIgnoreCase);
+                asta nu merge. trebuie pus in cache sau ceva.
+                    de verificat indecsii la atasamente la mesaje noi
             }
             attachList.RemoveAt(index);
             await _cacheService.SetInCacheAsync(GetActualCacheKey("PostAttachments", true), attachList);

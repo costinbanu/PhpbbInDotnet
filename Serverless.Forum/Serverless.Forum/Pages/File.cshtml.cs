@@ -11,6 +11,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace Serverless.Forum.Pages
 {
@@ -38,7 +39,7 @@ namespace Serverless.Forum.Pages
                     return NotFound();
                 }
 
-                return await Renderfile(file.PhysicalFilename, file.Mimetype);
+                return Renderfile(file.PhysicalFilename, file.RealFilename, file.Mimetype);
             }
         }
 
@@ -55,11 +56,11 @@ namespace Serverless.Forum.Pages
                     return NotFound();
                 }
 
-                return await Renderfile($"avatars/{userId}{Path.GetExtension(file)}");
+                return Renderfile($"avatars/{userId}{Path.GetExtension(file)}", file);
             }
         }
 
-        private async Task<IActionResult> Renderfile(string fileName, string mimeType = null)
+        private IActionResult Renderfile(string fileName, string displayName, string mimeType = null)
         {
             try
             {
@@ -67,11 +68,8 @@ namespace Serverless.Forum.Pages
                 {
                     mimeType = new FileExtensionContentTypeProvider().Mappings[Path.GetExtension(fileName)];
                 }
-
-                var responseStream = await _storageService.ReadFile(fileName);
-                HttpContext.Response.Headers.Add("content-disposition", $"{(mimeType.IsMimeTypeInline() ? "inline" : "attachment")}; filename={fileName}");
-                HttpContext.Response.Headers.Add("content-length", responseStream.Length.ToString());
-                return File(responseStream, mimeType);
+                do this https://stackoverflow.com/questions/93551/how-to-encode-the-filename-parameter-of-content-disposition-header-in-http
+                return Redirect(_storageService.ReadFile(fileName, $"{(mimeType.IsMimeTypeInline() ? "inline" : "attachment")}; filename={HttpUtility.UrlEncode(displayName)}", mimeType));
             }
             catch (AmazonS3Exception s3ex) when (s3ex.Message == "The specified key does not exist.")
             {
