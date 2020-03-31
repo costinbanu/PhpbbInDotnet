@@ -25,42 +25,64 @@ namespace Serverless.Forum.Services
             _hostingEnvironment = hostingEnvironment;
         }
 
-        public string ReadFile(string name, string contentDisposition, string contentType)
+        public async Task<bool> FileExists(string fileName)
+        {
+            using (var s3client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1))
+            {
+                try
+                {
+                    await s3client.GetObjectMetadataAsync(
+                        new GetObjectMetadataRequest()
+                        {
+                            BucketName = _config["AwsS3BucketName"],
+                            Key = fileName
+                        }
+                    );
+                    return true;
+                }
+                catch 
+                {
+                    return false;
+                }
+            }
+        }
+
+        public async Task<string> ReadFile(string name, string contentDisposition, string contentType)
         {
             string Impl(string fileName)
             {
-                var request = new GetPreSignedUrlRequest
-                {
-                    BucketName = _config["AwsS3BucketName"],
-                    Key = fileName,
-                    Expires = DateTime.Now.AddMinutes(2),
-                    ResponseHeaderOverrides = new ResponseHeaderOverrides
-                    {
-                        ContentDisposition = contentDisposition,
-                        ContentType = contentType
-                    }
-                };
                 using (var s3client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1))
                 {
+                    var request = new GetPreSignedUrlRequest
+                    {
+                        BucketName = _config["AwsS3BucketName"],
+                        Key = fileName,
+                        Expires = DateTime.Now.AddMinutes(2),
+                        ResponseHeaderOverrides = new ResponseHeaderOverrides
+                        {
+                            ContentDisposition = contentDisposition,
+                            ContentType = contentType
+                        }
+                    };
                     return s3client.GetPreSignedURL(request);
                 }
             }
-
 
             if (_hostingEnvironment.IsProduction())
             {
                 return Impl(name);
             }
+            else if (await FileExists(name))
+            {
+                return Impl(name);
+            }
+            else if (await FileExists($"testing/{name}"))
+            {
+                return Impl($"testing/{name}");
+            }
             else
             {
-                try
-                {
-                    return Impl(name);
-                }
-                catch (AmazonS3Exception s3ex) when (s3ex.Message == "The specified key does not exist.")
-                {
-                    return Impl($"testing/{name}");
-                }
+                return string.Empty;
             }
         }
 
@@ -70,29 +92,29 @@ namespace Serverless.Forum.Services
             var failed = new List<string>();
             using (var s3client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1))
             {
-                 foreach(var file in attachedFiles)
-                 {
-                     var name = $"{userId}_{Guid.NewGuid():n}";
+                foreach (var file in attachedFiles)
+                {
+                    var name = $"{userId}_{Guid.NewGuid():n}";
 
-                     if (!await UploadFileImpl(name, file.ContentType, file.OpenReadStream(), s3client))
-                     {
-                         failed.Add(file.FileName);
-                     }
-                     else
-                     {
-                         succeeded.Add(new PhpbbAttachments
-                         {
-                             AttachComment = null,
-                             Extension = Path.GetExtension(file.FileName),
-                             Filetime = DateTime.UtcNow.ToUnixTimestamp(),
-                             Filesize = file.Length,
-                             Mimetype = file.ContentType,
-                             PhysicalFilename = name,
-                             RealFilename = Path.GetFileName(file.FileName),
-                             PosterId = userId
-                         });
-                     }
-                 }
+                    if (!await UploadFileImpl(name, file.ContentType, file.OpenReadStream(), s3client))
+                    {
+                        failed.Add(file.FileName);
+                    }
+                    else
+                    {
+                        succeeded.Add(new PhpbbAttachments
+                        {
+                            AttachComment = null,
+                            Extension = Path.GetExtension(file.FileName),
+                            Filetime = DateTime.UtcNow.ToUnixTimestamp(),
+                            Filesize = file.Length,
+                            Mimetype = file.ContentType,
+                            PhysicalFilename = name,
+                            RealFilename = Path.GetFileName(file.FileName),
+                            PosterId = userId
+                        });
+                    }
+                }
                 return (succeeded, failed);
             }
         }

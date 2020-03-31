@@ -1,5 +1,4 @@
-﻿using Amazon.S3;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +10,6 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Web;
 
 namespace Serverless.Forum.Pages
 {
@@ -30,7 +28,7 @@ namespace Serverless.Forum.Pages
         {
             using (var context = new ForumDbContext(_config))
             {
-                var file = await (from a in context.PhpbbAttachments
+                var file = await (from a in context.PhpbbAttachments.AsNoTracking()
                                   where a.AttachId == Id
                                   select a).FirstOrDefaultAsync();
 
@@ -39,7 +37,7 @@ namespace Serverless.Forum.Pages
                     return NotFound();
                 }
 
-                return Renderfile(file.PhysicalFilename, file.RealFilename, file.Mimetype);
+                return await SendToClient(file.PhysicalFilename, file.RealFilename, file.Mimetype);
             }
         }
 
@@ -47,7 +45,7 @@ namespace Serverless.Forum.Pages
         {
             using (var context = new ForumDbContext(_config))
             {
-                var file = await (from u in context.PhpbbUsers
+                var file = await (from u in context.PhpbbUsers.AsNoTracking()
                                   where u.UserId == userId
                                   select u.UserAvatar).FirstOrDefaultAsync();
 
@@ -56,29 +54,23 @@ namespace Serverless.Forum.Pages
                     return NotFound();
                 }
 
-                return Renderfile($"avatars/{userId}{Path.GetExtension(file)}", file);
+                return await SendToClient($"avatars/{userId}{Path.GetExtension(file)}", file);
             }
         }
 
-        private IActionResult Renderfile(string fileName, string displayName, string mimeType = null)
+        private async Task<IActionResult> SendToClient(string fileName, string displayName, string mimeType = null)
         {
-            try
+            if (string.IsNullOrWhiteSpace(mimeType))
             {
-                if (string.IsNullOrWhiteSpace(mimeType))
-                {
-                    mimeType = new FileExtensionContentTypeProvider().Mappings[Path.GetExtension(fileName)];
-                }
-                do this https://stackoverflow.com/questions/93551/how-to-encode-the-filename-parameter-of-content-disposition-header-in-http
-                return Redirect(_storageService.ReadFile(fileName, $"{(mimeType.IsMimeTypeInline() ? "inline" : "attachment")}; filename={HttpUtility.UrlEncode(displayName)}", mimeType));
+                mimeType = new FileExtensionContentTypeProvider().Mappings[Path.GetExtension(fileName)];
             }
-            catch (AmazonS3Exception s3ex) when (s3ex.Message == "The specified key does not exist.")
-            {
-                return NotFound($"Fișierul {fileName} nu a fost găsit.");
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+
+            //TODO: this doesn't work in chrome
+            var header = $"{(mimeType.IsMimeTypeInline() ? "inline" : "attachment")}; " +
+                $"filename={Uri.EscapeDataString(displayName)}; " +
+                $"filename*=UTF-8''{Uri.EscapeDataString(displayName)}";
+
+            return Redirect(await _storageService.ReadFile(fileName, header, mimeType));
         }
     }
 }

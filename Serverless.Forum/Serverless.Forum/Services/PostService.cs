@@ -127,7 +127,7 @@ namespace Serverless.Forum.Services
                             model = candidates.FirstOrDefault(a => candidates.IndexOf(a) == index);
                             if (model == null)
                             {
-                                index = candidates.Count - m.AttachIndex;
+                                index = candidates.Count - m.AttachIndex - 1;
                                 model = candidates.FirstOrDefault(a => candidates.IndexOf(a) == index);
                             }
                         }
@@ -278,15 +278,16 @@ namespace Serverless.Forum.Services
                 text = sr.Regex.Replace(text, sr.Replacement);
             }
 
-            var urlRegex = new Regex(@"(?:(?:https?|ftp):\/\/|\b(?:[a-z\d]+\.))(?:(?:[^\s()<>]+|\((?:[^\s()<>]+|(?:\([^\s()<>]+\)))?\))+(?:\((?:[^\s()<>]+|(?:\(?:[^\s()<>]+\)))?\)|[^\s`!()\[\]{};:'"".,<>?«»“”‘’]))", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.ExplicitCapture);
+            //var urlRegex = new Regex(@"(?:(?:https?|ftp):\/\/|\b(?:[a-z\d]+\.))(?:(?:[^\s()<>]+|\((?:[^\s()<>]+|(?:\([^\s()<>]+\)))?\))+(?:\((?:[^\s()<>]+|(?:\(?:[^\s()<>]+\)))?\)|[^\s`!()\[\]{};:'"".,<>?«»“”‘’]))", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.ExplicitCapture);
+            var urlRegex = new Regex(@"(ftp:\/\/|www\.|https?:\/\/){1}[a-zA-Z0-9u00a1-\uffff0-]{2,}\.[a-zA-Z0-9u00a1-\uffff0-]{2,}(\S*)", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.ExplicitCapture);
             foreach (Match match in urlRegex.Matches(text))
             {
                 var linkText = match.Value;
-                if (linkText.Length > 48)
+                if (linkText.Length > 53)
                 {
                     linkText = $"{linkText.Substring(0, 40)} ... {linkText.Substring(linkText.Length - 8)}";
                 }
-                text = match.Result($"<!-- m --><a href=\"{(match.Value.StartsWith("http") ? match.Value : $"//{match.Value}")}\">{linkText}</a><!-- m -->");
+                text = match.Result($"<!-- m --><a href=\"{match.Value}\">{linkText}</a><!-- m -->");
             }
             return text;
         }

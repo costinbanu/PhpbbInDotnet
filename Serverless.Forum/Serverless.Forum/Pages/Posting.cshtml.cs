@@ -227,8 +227,11 @@ namespace Serverless.Forum.Pages
             if (!string.IsNullOrWhiteSpace(PostText))
             {
                 PostText = PostText.Replace($"[attachment={index}]{attachment.RealFilename}[/attachment]", string.Empty, StringComparison.InvariantCultureIgnoreCase);
-                asta nu merge. trebuie pus in cache sau ceva.
-                    de verificat indecsii la atasamente la mesaje noi
+                for (int i = index + 1; i < attachList.Count; i++)
+                {
+                    PostText = PostText.Replace($"[attachment={i}]{attachList[i].RealFilename}[/attachment]", $"[attachment={i - 1}]{attachList[i].RealFilename}[/attachment]", StringComparison.InvariantCultureIgnoreCase);
+                }
+                ModelState.Remove(nameof(PostText));
             }
             attachList.RemoveAt(index);
             await _cacheService.SetInCacheAsync(GetActualCacheKey("PostAttachments", true), attachList);
@@ -322,7 +325,7 @@ namespace Serverless.Forum.Pages
                 {
                     attachList[i].PostMsgId = postResult.Entity.PostId;
                     attachList[i].TopicId = TopicId.Value;
-                    attachList[i].AttachComment = FileComment[i];
+                    attachList[i].AttachComment = FileComment[i] ?? string.Empty;
                 }
 
                 await _postService.CascadePostAdd(context, postResult.Entity, usr);
