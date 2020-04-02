@@ -53,7 +53,7 @@
     {
         Users,
         Forums,
-        Logs
+        WritingTools
     }
 
     public enum AdminUserActions

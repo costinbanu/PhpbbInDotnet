@@ -155,7 +155,7 @@ namespace Serverless.Forum.Pages
                         p.AuthorHasAvatar = !string.IsNullOrWhiteSpace(p.UserAvatar);
                         p.AuthorSignature = p.UserSig == null ? null : await _postService.BbCodeToHtml(p.UserSig, p.UserSigBbcodeUid);
                     });
-                    _postService.ProcessPosts(Posts, PageContext, HttpContext, false, SearchText);
+                    await _postService.ProcessPosts(Posts, PageContext, HttpContext, false, SearchText);
                     TotalResults = unchecked((int)(await multi.ReadAsync<long>()).Single());
                 }
 

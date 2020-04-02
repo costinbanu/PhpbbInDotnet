@@ -144,7 +144,7 @@ namespace Serverless.Forum.Pages
                         AuthorSignature = ju == null ? null : _postService.BbCodeToHtml(ju.UserSig, ju.UserSigBbcodeUid).RunSync()
                     }
                 ).ToList();
-                _postService.ProcessPosts(Posts, PageContext, HttpContext, true);
+                await _postService.ProcessPosts(Posts, PageContext, HttpContext, true);
                 TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
 
                 await GetPoll(context);

@@ -119,7 +119,7 @@
 <div class="tab">
     <button class="@(Model.Category == AdminCategories.Users ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Users')">Administrare utilizatori</button>
     <button class="@(Model.Category == AdminCategories.Forums ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Forums')">Administrare forumuri</button>
-    <button class="@(Model.Category == AdminCategories.Logs ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Logs')">Administrare loguri</button>
+    <button class="@(Model.Category == AdminCategories.WritingTools ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Writing')">Unelte scriere</button>
 </div>
 
 <span class="@Model.MessageClass">@Model.Message</span>
@@ -140,8 +140,12 @@
     )
 </div>
 
-<div id="Logs" class="tabcontent" style="@(Model.Category == AdminCategories.Logs ? "display:inherit" : "display:none")">
-    &nbsp;
+<div id="Writing" class="tabcontent" style="@(Model.Category == AdminCategories.WritingTools ? "display:inherit" : "display:none")">
+    @await Html.PartialAsync(
+        "_AdminWriting",
+        new _AdminWritingModel(),
+        ViewData
+    )
 </div>
 
 <script type="text/javascript">

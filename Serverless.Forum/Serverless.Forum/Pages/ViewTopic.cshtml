@@ -61,51 +61,51 @@
     if (!Model.Poll.PollEnded)
     {
         var isDisabled = !Model.Poll.CanVoteNow(Model.CurrentUserId);
-<div id="votes" style="display:block">
-    <h4>Chestionar: @Model.Poll.PollTitle</h4>
-    <div>Chestionarul @(Model.Poll.PollEnded ? "a fost" : "va fi") inchis: @(Model.Poll.PollEnd.HasValue ? Model.Poll.PollEnd.Value.ToString(UserDateFormat) : "niciodată").</div>
+        <div id="votes" style="display:block">
+            <h4>Chestionar: @Model.Poll.PollTitle</h4>
+            <div>Chestionarul @(Model.Poll.PollEnded ? "a fost" : "va fi") inchis: @(Model.Poll.PollEnd.HasValue ? Model.Poll.PollEnd.Value.ToString(UserDateFormat) : "niciodată").</div>
 
-    <form method="post" asp-page-handler="vote">
-        @if (Model.Poll.PollMaxOptions > 1)
-        {
-            foreach (var option in Model.Poll.PollOptions)
-            {
-                var isChecked = option.PollOptionVoters.Any(v => v.UserId == Model.CurrentUserId);
-                <table style="border:none; padding:unset; margin:unset; width:100%">
-                    <tr style="border-bottom:solid 1px black">
-                        <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
-                            @Html.Raw(option.PollOptionText)
-                        </td>
-                        <td>
-                            <input type="checkbox" name="Votes" value="@option.PollOptionId" @(isChecked ? "checked" : "") @(isDisabled ? "disabled" : "") />
-                        </td>
-                    </tr>
-                </table>
-            }
-        }
-        else
-        {
-            foreach (var option in Model.Poll.PollOptions)
-            {
-                var isChecked = option.PollOptionVoters.Any(v => v.UserId == Model.CurrentUserId);
-                <table style="border:none; padding:unset; margin:unset; width:100%">
-                    <tr style="border-bottom:solid 1px black">
-                        <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
-                            @Html.Raw(option.PollOptionText)
-                        </td>
-                        <td>
-                            <input type="radio" name="Votes" value="@option.PollOptionId" @(isChecked ? "checked" : "") @(isDisabled ? "disabled" : "") />
-                        </td>
-                    </tr>
-                </table>
-            }
-        }
-        <br />
-        <input asp-for="TopicId" type="hidden" />
-        <input name="queryString" type="hidden" value="@HttpUtility.UrlEncode(Request.QueryString.ToString())" />
-        <input type="submit" value="Trimite vot" @(isDisabled ? "disabled" : "") />
-    </form>
-</div>
+            <form method="post" asp-page-handler="vote">
+                @if (Model.Poll.PollMaxOptions > 1)
+                {
+                    foreach (var option in Model.Poll.PollOptions)
+                    {
+                        var isChecked = option.PollOptionVoters.Any(v => v.UserId == Model.CurrentUserId);
+                        <table style="border:none; padding:unset; margin:unset; width:100%">
+                            <tr style="border-bottom:solid 1px black">
+                                <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
+                                    @Html.Raw(option.PollOptionText)
+                                </td>
+                                <td>
+                                    <input type="checkbox" name="Votes" value="@option.PollOptionId" @(isChecked ? "checked" : "") @(isDisabled ? "disabled" : "") />
+                                </td>
+                            </tr>
+                        </table>
+                    }
+                }
+                else
+                {
+                    foreach (var option in Model.Poll.PollOptions)
+                    {
+                        var isChecked = option.PollOptionVoters.Any(v => v.UserId == Model.CurrentUserId);
+                        <table style="border:none; padding:unset; margin:unset; width:100%">
+                            <tr style="border-bottom:solid 1px black">
+                                <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
+                                    @Html.Raw(option.PollOptionText)
+                                </td>
+                                <td>
+                                    <input type="radio" name="Votes" value="@option.PollOptionId" @(isChecked ? "checked" : "") @(isDisabled ? "disabled" : "") />
+                                </td>
+                            </tr>
+                        </table>
+                    }
+                }
+                <br />
+                <input asp-for="TopicId" type="hidden" />
+                <input name="queryString" type="hidden" value="@HttpUtility.UrlEncode(Request.QueryString.ToString())" />
+                <input type="submit" value="Trimite vot" @(isDisabled ? "disabled" : "") />
+            </form>
+        </div>
     }
     if (Model.Poll.PollEnded || IsAdmin)
     {

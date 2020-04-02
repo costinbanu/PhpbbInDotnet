@@ -25,19 +25,27 @@ namespace Serverless.Forum.Services
         private readonly IConfiguration _config;
         private readonly Utils _utils;
         private readonly UserService _userService;
+        private readonly AdminWritingToolsService _writingService;
         private readonly Regex _htmlRegex;
         private readonly Regex _htmlCommentRegex;
         private readonly Regex _newLineRegex;
         private readonly Regex _smileyRegex;
+        private readonly Regex _tabRegex;
+        private readonly Regex _spaceRegex;
         private BBCodeParser _parser;
 
-        public PostService(IConfiguration config, Utils utils, UserService userService)
+        private delegate (string result, string cleanedResult, int endIndex) TransformWord(string originalInput, string cleanedInput, string word, int startIndex);
+
+        public PostService(IConfiguration config, Utils utils, UserService userService, AdminWritingToolsService writingService)
         {
             _config = config;
             _utils = utils;
             _userService = userService;
+            _writingService = writingService;
             _htmlCommentRegex = new Regex("<!--.*?-->", RegexOptions.Compiled | RegexOptions.Singleline);
             _newLineRegex = new Regex("\n", RegexOptions.Compiled | RegexOptions.Singleline);
+            _tabRegex = new Regex("\t", RegexOptions.Compiled | RegexOptions.Singleline);
+            _spaceRegex = new Regex(" +", RegexOptions.Compiled | RegexOptions.Singleline);
             _smileyRegex = new Regex("{SMILIES_PATH}", RegexOptions.Compiled | RegexOptions.Singleline);
             _htmlRegex = new Regex(@"<((?=!\-\-)!\-\-[\s\S]*\-\-|((?=\?)\?[\s\S]*\?|((?=\/)\/[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*|[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*(?:\s[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*(?:=(?:""[^""]*""|'[^']*'|[^'""<\s]*))?)*)\s?\/?))>", RegexOptions.Compiled);
         }
@@ -90,18 +98,21 @@ namespace Serverless.Forum.Services
             }
         }
 
-        public void ProcessPosts(IEnumerable<PostDisplay> Posts, PageContext pageContext, HttpContext httpContext, bool renderAttachments, string toHighlight = null)
+        public async Task ProcessPosts(IEnumerable<PostDisplay> Posts, PageContext pageContext, HttpContext httpContext, bool renderAttachments, string toHighlight = null)
         {
             var inlineAttachmentsPosts = new ConcurrentBag<(int PostId, int AttachIndex, _AttachmentPartialModel Attach)>();
             var attachRegex = new Regex("#{AttachmentFileName=[^/]+/AttachmentIndex=[0-9]+}#", RegexOptions.Compiled);
             var highlightWords = SplitHighlightWords(toHighlight);
+            var bannedWords = (await _writingService.GetBannedWords()).GroupBy(p => p.Word).Select(grp => grp.FirstOrDefault()).ToDictionary(x => x.Word, y => y.Replacement);
+
             var locker = new object();
 
-            Parallel.ForEach(Posts, async (p, state1) =>
+            Parallel.ForEach(Posts, (p, state1) =>
             {
-
-                p.PostSubject = HighLightText(HttpUtility.HtmlDecode(p.PostSubject), highlightWords, false);
-                p.PostText = HighLightText(await BbCodeToHtml(p.PostText, p.BbcodeUid), highlightWords, false);
+                p.PostSubject = CensorWords(HttpUtility.HtmlDecode(p.PostSubject), bannedWords);
+                p.PostText = CensorWords(p.PostText, bannedWords);
+                p.PostSubject = HighlightWords(p.PostSubject, highlightWords);
+                p.PostText = HighlightWords(/*await BbCodeToHtml(*/p.PostText/*, p.BbcodeUid)*/, highlightWords);
 
                 if (renderAttachments)
                 {
@@ -154,17 +165,28 @@ namespace Serverless.Forum.Services
 
         public async Task<string> BbCodeToHtml(string bbCodeText, string bbCodeUid)
         {
-            if (string.IsNullOrWhiteSpace(bbCodeText))
+            asta nu merge pentru posturile noi (dar merge pt alea vechi) - textul nu e randat ca html ci ca text. sa fie de la uid?
+            
+                if (string.IsNullOrWhiteSpace(bbCodeText))
             {
                 return string.Empty;
             }
 
-            bbCodeText = HttpUtility.HtmlDecode((await GetParserLazy()).ToHtml(bbCodeText, bbCodeUid));
+            bbCodeText = (await GetParserLazy()).ToHtml(bbCodeText, bbCodeUid);
             bbCodeText = _newLineRegex.Replace(bbCodeText, "<br/>");
             bbCodeText = _htmlCommentRegex.Replace(bbCodeText, string.Empty);
             bbCodeText = _smileyRegex.Replace(bbCodeText, Constants.SMILEY_PATH);
+            bbCodeText = _tabRegex.Replace(bbCodeText, _utils.HtmlSafeWhitespace(4));
 
-            return bbCodeText;
+            var offset = 0;
+            foreach (Match m in _spaceRegex.Matches(bbCodeText))
+            {
+                var (result, curOffset) = _utils.ReplaceAtIndex(bbCodeText, m.Value, _utils.HtmlSafeWhitespace(m.Length), m.Index + offset);
+                bbCodeText = result;
+                offset += curOffset;
+            }
+
+            return HttpUtility.HtmlDecode(bbCodeText);
         }
 
         public async Task CascadePostAdd(ForumDbContext context, PhpbbPosts added, LoggedUser usr)
@@ -269,17 +291,17 @@ namespace Serverless.Forum.Services
         public string PrepareTextForSaving(ForumDbContext context, string text)
         {
             foreach (var sr in from s in context.PhpbbSmilies.AsNoTracking()
-                                select new
-                                {
-                                    Regex = new Regex(Regex.Escape(s.Code), RegexOptions.Compiled | RegexOptions.Singleline),
-                                    Replacement = $"<img src=\"./images/smilies/{s.SmileyUrl.Trim('/')}\" />"
-                                })
+                               select new
+                               {
+                                   Regex = new Regex(Regex.Escape(s.Code), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
+                                   Replacement = $"<!-- s{s.Code} --><img src=\"./images/smilies/{s.SmileyUrl.Trim('/')}\" /><!-- s{s.Code} -->"
+                               }) 
             {
                 text = sr.Regex.Replace(text, sr.Replacement);
             }
 
-            //var urlRegex = new Regex(@"(?:(?:https?|ftp):\/\/|\b(?:[a-z\d]+\.))(?:(?:[^\s()<>]+|\((?:[^\s()<>]+|(?:\([^\s()<>]+\)))?\))+(?:\((?:[^\s()<>]+|(?:\(?:[^\s()<>]+\)))?\)|[^\s`!()\[\]{};:'"".,<>?«»“”‘’]))", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.ExplicitCapture);
             var urlRegex = new Regex(@"(ftp:\/\/|www\.|https?:\/\/){1}[a-zA-Z0-9u00a1-\uffff0-]{2,}\.[a-zA-Z0-9u00a1-\uffff0-]{2,}(\S*)", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.ExplicitCapture);
+            var offset = 0;
             foreach (Match match in urlRegex.Matches(text))
             {
                 var linkText = match.Value;
@@ -287,7 +309,9 @@ namespace Serverless.Forum.Services
                 {
                     linkText = $"{linkText.Substring(0, 40)} ... {linkText.Substring(linkText.Length - 8)}";
                 }
-                text = match.Result($"<!-- m --><a href=\"{match.Value}\">{linkText}</a><!-- m -->");
+                var (result, curOffset) = _utils.ReplaceAtIndex(text, match.Value, match.Result($"<!-- m --><a href=\"{match.Value}\">{linkText}</a><!-- m -->"), match.Index + offset);
+                text = result;
+                offset += curOffset;
             }
             return text;
         }
@@ -363,13 +387,42 @@ namespace Serverless.Forum.Services
             return highlightWords;
         }
 
-        private string HighLightText(string input, List<string> highlightWords, bool expectHtmlInInput)
+        private string HighlightWords(string text, List<string> words)
+            => ProcessAllWords(text, words, false, (input, cleanedInput, word, index) =>
+            {
+                var openTag = "<span class=\"posthilit\">";
+                var closeTag = "</span>";
+                input = input.Insert(index, openTag);
+                input = input.Insert(index + openTag.Length + word.Length, closeTag);
+                cleanedInput = cleanedInput.Insert(index, openTag);
+                cleanedInput = cleanedInput.Insert(index + openTag.Length + word.Length, closeTag);
+                return (input, cleanedInput, index + openTag.Length + word.Length + closeTag.Length);
+            });
+
+        private string CensorWords(string text, Dictionary<string, string> wordMap)
+            => ProcessAllWords(text, wordMap.Keys, false, (input, cleanedInput, word, index) =>
+            {
+                var replacement = wordMap[word];
+                if ((index > 0 && char.IsLetterOrDigit(input[index - 1])) || (index < input.Length - 1 && char.IsLetterOrDigit(input[index + 1])))
+                {
+                    return (input, cleanedInput, index + word.Length);
+                }
+                var (result, offset) = _utils.ReplaceAtIndex(input, word, replacement, index);
+                var (cleanedResult, cleanedOffset) = _utils.ReplaceAtIndex(cleanedInput, word, replacement.RemoveDiacritics(), index);
+                if(offset != cleanedOffset)
+                {
+                    return (input, cleanedInput, index + word.Length);
+                }
+                return (result, cleanedResult, index + replacement.Length);
+            });
+
+        private string ProcessAllWords(string input, IEnumerable<string> words, bool expectHtmlInInput, TransformWord transform)
         {
             var htmlTagsLocation = new List<(int Position, int Length)>();
             var cleanText = string.Empty;
-            var shouldHighlight = highlightWords.Any();
+            var shouldProcess = words.Any();
 
-            if (shouldHighlight)
+            if (shouldProcess)
             {
                 cleanText = input.RemoveDiacritics();
                 if (cleanText.Length == input.Length && expectHtmlInInput)
@@ -383,13 +436,13 @@ namespace Serverless.Forum.Services
                 }
                 else if (cleanText.Length != input.Length)
                 {
-                    shouldHighlight = false;
+                    shouldProcess = false;
                 }
             }
 
-            if (shouldHighlight)
+            if (shouldProcess)
             {
-                foreach (var word in highlightWords)
+                foreach (var word in words)
                 {
                     var cleanWord = word.RemoveDiacritics();
                     if (cleanWord.Length == word.Length)
@@ -401,11 +454,7 @@ namespace Serverless.Forum.Services
                             var tag = htmlTagsLocation.FirstOrDefault(x => index >= x.Position && index < x.Position + x.Length);
                             if (tag == default)
                             {
-                                var openTag = "<span class=\"posthilit\">";
-                                var closeTag = "</span>";
-                                input = input.Insert(index, openTag);
-                                input = input.Insert(index + openTag.Length + word.Length, closeTag);
-                                startIndex = index + openTag.Length + word.Length + closeTag.Length;
+                                (input, cleanText, startIndex) = transform(input, cleanText, word, index);
                             }
                             else
                             {

@@ -1,16 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Configuration;
+using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
-using Serverless.Forum.Pages.CustomPartials.Admin;
+using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using System;
 using System.Linq;
-using Microsoft.EntityFrameworkCore;
-using Serverless.Forum.Services;
-using Serverless.Forum.Contracts;
-using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Threading.Tasks;
 
 namespace Serverless.Forum.Pages
 {
@@ -38,12 +35,16 @@ namespace Serverless.Forum.Pages
 
         private readonly AdminUserService _adminUserService;
         private readonly AdminForumService _adminForumService;
+        private readonly AdminWritingToolsService _adminWritingService;
 
-        public AdminModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService, AdminUserService adminUserService, AdminForumService adminForumService)
-            : base(config, utils, forumService, userService, cacheService)
+        public AdminModel (
+            IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService, 
+            AdminUserService adminUserService, AdminForumService adminForumService, AdminWritingToolsService adminWritingService
+        ) : base(config, utils, forumService, userService, cacheService)
         {
             _adminUserService = adminUserService;
             _adminForumService = adminForumService;
+            _adminWritingService = adminWritingService;
             UserSearchResults = new List<PhpbbUsers>();
             ForumChildren = new List<PhpbbForums>();
             ForumSelectedParent = new List<SelectListItem>();
@@ -149,6 +150,25 @@ namespace Serverless.Forum.Pages
         }
 
         #endregion Admin forum
+
+        #region Admin writing
+
+        public async Task<IActionResult> OnPostBanWords(List<PhpbbWords> words, List<int> toRemove)
+        {
+            var validationResult = await ValidatePermissionsAndInit(AdminCategories.Users);
+            if (validationResult != null)
+            {
+                return validationResult;
+            }
+
+            (Message, IsSuccess) = await _adminWritingService.ManageBannedWords(words, toRemove);
+
+            Category = AdminCategories.WritingTools;
+
+            return Page();
+        }
+
+        #endregion Admin writing
 
     }
 }

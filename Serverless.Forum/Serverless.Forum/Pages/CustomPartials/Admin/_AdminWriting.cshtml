@@ -1,0 +1,58 @@
+﻿@model Serverless.Forum.Pages.CustomPartials.Admin._AdminWritingModel
+@inject Serverless.Forum.Services.AdminWritingToolsService _writingService
+
+<style>
+    table#bannedWords  td {
+        padding-bottom: 10px;
+    }
+</style>
+
+<h4>Cuvinte cenzurate</h4>
+@{
+    var words = await _writingService.GetBannedWords();
+    <form method="post" asp-page-handler="BanWords">
+        <table style="border:none; padding:5px; width:80%" id="bannedWords">
+            <tr style="margin-bottom:10px">
+                <th style="width:45%">Cuvânt</th>
+                <th style="width:45%">Înlocuitor</th>
+                <th style="width:10%">Șterge?</th>
+            </tr>
+
+            @for (var i = 0; i < words.Count; i++)
+            {
+                <tr style="margin-bottom:10px">
+                    <td>
+                        <input type="text" name="words[@i].Word" value="@words[i].Word" />
+                    </td>
+                    <td>
+                        <input type="text" name="words[@i].Replacement" value="@words[i].Replacement" />
+                    </td>
+                    <td>
+                        <input type="checkbox" name="toRemove[@i]" value="@i" />
+                    </td>
+                </tr>
+            }
+
+        </table>
+        <input type="button" onclick="addBannedWord()" value="Adaugă un cuvânt nou" /> &nbsp; <input type="submit" value="Salvează modificările" />
+    </form>
+    <script type="text/javascript">
+        var index = @words.Count;
+        function addBannedWord() {
+            $("#bannedWords > tbody:last-child").append(
+                "<tr style='margin-bottom: 10px'>" +
+                    "<td>" +
+                        "<input type='text' name='words[" + index + "].Word' />" +
+                    "</td>" +
+                    "<td>" +
+                        "<input type='text' name='words[" + index + "].Replacement' />" +
+                    "</td>" +
+                    "<td>" +
+                        "&nbsp;" +
+                    "</td>" +
+                "</tr>"
+            );
+            index++;
+        }
+    </script>
+}
