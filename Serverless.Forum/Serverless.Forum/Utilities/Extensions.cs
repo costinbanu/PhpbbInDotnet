@@ -42,7 +42,8 @@ namespace Serverless.Forum.Utilities
                 Id = dbAttachmentRecord.AttachId,
                 IsRenderedInline = dbAttachmentRecord.Mimetype.IsMimeTypeInline(),
                 MimeType = dbAttachmentRecord.Mimetype,
-                DownloadCount = dbAttachmentRecord.DownloadCount
+                DownloadCount = dbAttachmentRecord.DownloadCount,
+                FileSize = dbAttachmentRecord.Filesize
             };
         }
 

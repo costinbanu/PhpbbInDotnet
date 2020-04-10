@@ -35,11 +35,11 @@ namespace Serverless.Forum.Pages
 
         private readonly AdminUserService _adminUserService;
         private readonly AdminForumService _adminForumService;
-        private readonly AdminWritingToolsService _adminWritingService;
+        private readonly WritingToolsService _adminWritingService;
 
         public AdminModel (
             IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService, 
-            AdminUserService adminUserService, AdminForumService adminForumService, AdminWritingToolsService adminWritingService
+            AdminUserService adminUserService, AdminForumService adminForumService, WritingToolsService adminWritingService
         ) : base(config, utils, forumService, userService, cacheService)
         {
             _adminUserService = adminUserService;

@@ -25,7 +25,7 @@ namespace Serverless.Forum.Services
         private readonly IConfiguration _config;
         private readonly Utils _utils;
         private readonly UserService _userService;
-        private readonly AdminWritingToolsService _writingService;
+        private readonly WritingToolsService _writingService;
         private readonly Regex _htmlRegex;
         private readonly Regex _htmlCommentRegex;
         private readonly Regex _newLineRegex;
@@ -34,15 +34,16 @@ namespace Serverless.Forum.Services
         private readonly Regex _spaceRegex;
         private BBCodeParser _parser;
 
-        private delegate (string result, string cleanedResult, int endIndex) TransformWord(string originalInput, string cleanedInput, string word, int startIndex);
+        private delegate (int index, string match) FirstIndexOf(string haystack, string needle, int startIndex);
+        private delegate (string result, int endIndex) Transform(string haystack, string needle, int startIndex);
 
-        public PostService(IConfiguration config, Utils utils, UserService userService, AdminWritingToolsService writingService)
+        public PostService(IConfiguration config, Utils utils, UserService userService, WritingToolsService writingService)
         {
             _config = config;
             _utils = utils;
             _userService = userService;
             _writingService = writingService;
-            _htmlCommentRegex = new Regex("<!--.*?-->", RegexOptions.Compiled | RegexOptions.Singleline);
+            _htmlCommentRegex = new Regex("(<!--.*?-->)|(&lt;!--.*?--&gt;)", RegexOptions.Compiled | RegexOptions.Singleline);
             _newLineRegex = new Regex("\n", RegexOptions.Compiled | RegexOptions.Singleline);
             _tabRegex = new Regex("\t", RegexOptions.Compiled | RegexOptions.Singleline);
             _spaceRegex = new Regex(" +", RegexOptions.Compiled | RegexOptions.Singleline);
@@ -104,15 +105,14 @@ namespace Serverless.Forum.Services
             var attachRegex = new Regex("#{AttachmentFileName=[^/]+/AttachmentIndex=[0-9]+}#", RegexOptions.Compiled);
             var highlightWords = SplitHighlightWords(toHighlight);
             var bannedWords = (await _writingService.GetBannedWords()).GroupBy(p => p.Word).Select(grp => grp.FirstOrDefault()).ToDictionary(x => x.Word, y => y.Replacement);
-
             var locker = new object();
 
-            Parallel.ForEach(Posts, (p, state1) =>
+            Parallel.ForEach(Posts, async (p, state1) =>
             {
                 p.PostSubject = CensorWords(HttpUtility.HtmlDecode(p.PostSubject), bannedWords);
                 p.PostText = CensorWords(p.PostText, bannedWords);
                 p.PostSubject = HighlightWords(p.PostSubject, highlightWords);
-                p.PostText = HighlightWords(/*await BbCodeToHtml(*/p.PostText/*, p.BbcodeUid)*/, highlightWords);
+                p.PostText = HighlightWords(await BbCodeToHtml(p.PostText, p.BbcodeUid), highlightWords);
 
                 if (renderAttachments)
                 {
@@ -135,7 +135,7 @@ namespace Serverless.Forum.Services
                         }
                         else if(candidates.Count > 1)
                         {
-                            model = candidates.FirstOrDefault(a => candidates.IndexOf(a) == index);
+                            model = candidates.FirstOrDefault(a => a.FileName == m.FileName && candidates.IndexOf(a) == index);
                             if (model == null)
                             {
                                 index = candidates.Count - m.AttachIndex - 1;
@@ -164,10 +164,8 @@ namespace Serverless.Forum.Services
         }
 
         public async Task<string> BbCodeToHtml(string bbCodeText, string bbCodeUid)
-        {
-            asta nu merge pentru posturile noi (dar merge pt alea vechi) - textul nu e randat ca html ci ca text. sa fie de la uid?
-            
-                if (string.IsNullOrWhiteSpace(bbCodeText))
+        {           
+            if (string.IsNullOrWhiteSpace(bbCodeText))
             {
                 return string.Empty;
             }
@@ -388,53 +386,65 @@ namespace Serverless.Forum.Services
         }
 
         private string HighlightWords(string text, List<string> words)
-            => ProcessAllWords(text, words, false, (input, cleanedInput, word, index) =>
-            {
-                var openTag = "<span class=\"posthilit\">";
-                var closeTag = "</span>";
-                input = input.Insert(index, openTag);
-                input = input.Insert(index + openTag.Length + word.Length, closeTag);
-                cleanedInput = cleanedInput.Insert(index, openTag);
-                cleanedInput = cleanedInput.Insert(index + openTag.Length + word.Length, closeTag);
-                return (input, cleanedInput, index + openTag.Length + word.Length + closeTag.Length);
-            });
+            => ProcessAllWords(
+                text, 
+                words, 
+                false, 
+                (haystack, needle, startIndex) => (haystack.IndexOf(needle, startIndex, StringComparison.CurrentCultureIgnoreCase), needle),
+                (haystack, needle, index) =>
+                {
+                    var openTag = "<span class=\"posthilit\">";
+                    var closeTag = "</span>";
+                    haystack = haystack.Insert(index, openTag);
+                    haystack = haystack.Insert(index + openTag.Length + needle.Length, closeTag);
+                    return (haystack, index + openTag.Length + needle.Length + closeTag.Length);
+                }
+            );
 
         private string CensorWords(string text, Dictionary<string, string> wordMap)
-            => ProcessAllWords(text, wordMap.Keys, false, (input, cleanedInput, word, index) =>
-            {
-                var replacement = wordMap[word];
-                if ((index > 0 && char.IsLetterOrDigit(input[index - 1])) || (index < input.Length - 1 && char.IsLetterOrDigit(input[index + 1])))
-                {
-                    return (input, cleanedInput, index + word.Length);
-                }
-                var (result, offset) = _utils.ReplaceAtIndex(input, word, replacement, index);
-                var (cleanedResult, cleanedOffset) = _utils.ReplaceAtIndex(cleanedInput, word, replacement.RemoveDiacritics(), index);
-                if(offset != cleanedOffset)
-                {
-                    return (input, cleanedInput, index + word.Length);
-                }
-                return (result, cleanedResult, index + replacement.Length);
-            });
+        {
+            Regex getRegex(string wildcard)
+                => new Regex(@"\b" + Regex.Escape(wildcard).Replace(@"\*", @"\w*").Replace(@"\?", @"\w") + @"\b");
 
-        private string ProcessAllWords(string input, IEnumerable<string> words, bool expectHtmlInInput, TransformWord transform)
+            return ProcessAllWords(
+                text, 
+                wordMap.Keys, 
+                false,
+                (haystack, needle, startIndex) =>
+                {
+                    var match = getRegex(needle).Match(haystack, startIndex);
+                    return match.Success ? (match.Index, match.Value) : (-1, needle);
+                },
+                (haystack, needle, index) =>
+                {
+                    var replacement = wordMap.Select(x => KeyValuePair.Create(getRegex(x.Key), x.Value)).FirstOrDefault(x => x.Key.IsMatch(needle)).Value;
+                    if (replacement == null)
+                    {
+                        return (haystack, index + needle.Length);
+                    }
+                    var (result, offset) = _utils.ReplaceAtIndex(haystack, needle, replacement, index);
+                    return (result, index + replacement.Length);
+                }
+            );
+        }
+
+        private string ProcessAllWords(string input, IEnumerable<string> words, bool expectHtmlInInput, FirstIndexOf indexOf, Transform transform)
         {
             var htmlTagsLocation = new List<(int Position, int Length)>();
-            var cleanText = string.Empty;
+            var cleanedInput = string.Empty;
             var shouldProcess = words.Any();
 
             if (shouldProcess)
             {
-                cleanText = input.RemoveDiacritics();
-                if (cleanText.Length == input.Length && expectHtmlInInput)
+                cleanedInput = input.RemoveDiacritics();
+                if (cleanedInput.Length == input.Length && expectHtmlInInput)
                 {
-                    var m = _htmlRegex.Match(cleanText);
-                    while (m.Success)
+                    foreach (Match m in _htmlRegex.Matches(cleanedInput))
                     {
                         htmlTagsLocation.Add((m.Groups[0].Index, m.Groups[0].Length));
-                        m = m.NextMatch();
                     }
                 }
-                else if (cleanText.Length != input.Length)
+                else if (cleanedInput.Length != input.Length)
                 {
                     shouldProcess = false;
                 }
@@ -444,23 +454,42 @@ namespace Serverless.Forum.Services
             {
                 foreach (var word in words)
                 {
-                    var cleanWord = word.RemoveDiacritics();
-                    if (cleanWord.Length == word.Length)
+                    var cleanedWord = word.RemoveDiacritics();
+                    if (cleanedWord.Length == word.Length)
                     {
-                        var index = cleanText.IndexOf(cleanWord, 0, StringComparison.CurrentCultureIgnoreCase);
+                        var (index, cleanedMatch) = indexOf(cleanedInput, cleanedWord, 0);
+                        if(index == -1)
+                        {
+                            continue;
+                        }
+
+                        var match = input.Substring(index, cleanedMatch.Length);
+
+                        if(match.RemoveDiacritics() != cleanedMatch)
+                        {
+                            continue;
+                        }
+
                         while (index != -1)
                         {
                             var startIndex = 0;
                             var tag = htmlTagsLocation.FirstOrDefault(x => index >= x.Position && index < x.Position + x.Length);
                             if (tag == default)
                             {
-                                (input, cleanText, startIndex) = transform(input, cleanText, word, index);
+                                var (result, nextIndex) = transform(input, match, index);
+                                var (cleanedResult, cleanednextIndex) = transform(cleanedInput, cleanedMatch, index);
+                                if (result.RemoveDiacritics() == cleanedResult && nextIndex == cleanednextIndex)
+                                {
+                                    input = result;
+                                    cleanedInput = cleanedResult;
+                                    startIndex = nextIndex;
+                                }
                             }
                             else
                             {
                                 startIndex = tag.Position + tag.Length;
                             }
-                            index = startIndex > cleanText.Length ? -1 : cleanText.IndexOf(cleanWord, startIndex, StringComparison.CurrentCultureIgnoreCase);
+                            index = startIndex > cleanedInput.Length ? -1 : indexOf(cleanedInput, cleanedWord, startIndex).index;
                         }
                     }
                 }

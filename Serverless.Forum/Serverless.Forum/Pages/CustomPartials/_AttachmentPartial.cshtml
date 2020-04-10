@@ -1,9 +1,5 @@
 ﻿@model Serverless.Forum.Pages.CustomPartials._AttachmentPartialModel
-@*
-    For more information on enabling MVC for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
-*@
-
-<!DOCTYPE html>
+@inject Utilities.Utils _utils
 
 @if (Model != null)
 {
@@ -13,12 +9,6 @@
         if (Model.MimeType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase))
         {
             <img src="/File?Id=@Model.Id" />
-            <br />
-            <span class="Caption">
-                @Model.Comment <br/>
-                @Model.FileName (descărcat @(Model.DownloadCount == 1 ? "o dată" : $"de {Model.DownloadCount} ori"))
-            </span>
-
         }
         else
         {
@@ -26,15 +16,15 @@
                 <source src="/File?Id=@Model.Id" type="@Model.MimeType" />
                 <a asp-page="/File" asp-route-Id="@Model.Id">@Model.FileName</a>
             </video>
-            <br />
-            <span class="Caption">@Model.FileName (descărcat @(Model.DownloadCount == 1 ? "o dată" : $"de {Model.DownloadCount} ori"))</span>
         }
     }
     else
     {
         <a asp-page="/File" asp-route-Id="@Model.Id">@Model.FileName</a>
-        <br />
-        <span class="Caption">Descărcat @(Model.DownloadCount == 1 ? "o dată" : $"de {Model.DownloadCount} ori")</span>
     }
-    <p>&nbsp;</p>
+    <br />
+    <span class="Caption">
+        @Model.Comment <br />
+        @Model.FileName (dimensiune: @_utils.ReadableFileSize(Model.FileSize); descărcat @(Model.DownloadCount == 1 ? "o dată" : $"de {Model.DownloadCount} ori"))
+    </span> <p>&nbsp;</p>
 }

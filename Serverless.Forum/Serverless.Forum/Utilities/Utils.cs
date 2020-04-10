@@ -191,5 +191,18 @@ namespace Serverless.Forum.Utilities
                 return string.Empty;
             }
         }
+
+        public string ReadableFileSize(long fileSizeInBytes)
+        {
+            var suf = new[] { "B", "KB", "MB", "GB", "TB", "PB", "EB" };
+            if (fileSizeInBytes == 0)
+            {
+                return "0" + suf[0];
+            }
+            var bytes = Math.Abs(fileSizeInBytes);
+            var place = Convert.ToInt32(Math.Floor(Math.Log(bytes, 1024)));
+            var num = Math.Round(bytes / Math.Pow(1024, place), 2);
+            return $"{(Math.Sign(fileSizeInBytes) * num).ToString("##.##", CultureInfo.InvariantCulture)} {suf[place]}";
+        }
     }
 }

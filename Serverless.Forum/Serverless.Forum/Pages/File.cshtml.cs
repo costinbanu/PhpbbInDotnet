@@ -13,14 +13,13 @@ using System.Threading.Tasks;
 
 namespace Serverless.Forum.Pages
 {
-    public class FileModel : PageModel
+    public class FileModel : ModelWithLoggedUser
     {
-        private readonly IConfiguration _config;
         private readonly StorageService _storageService;
 
-        public FileModel(IConfiguration config, StorageService storageService)
+        public FileModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService, StorageService storageService) 
+            : base(config, utils, forumService, userService, cacheService)
         {
-            _config = config;
             _storageService = storageService;
         }
 
@@ -28,13 +27,32 @@ namespace Serverless.Forum.Pages
         {
             using (var context = new ForumDbContext(_config))
             {
-                var file = await (from a in context.PhpbbAttachments.AsNoTracking()
-                                  where a.AttachId == Id
-                                  select a).FirstOrDefaultAsync();
+                var file = await context.PhpbbAttachments.AsNoTracking().FirstOrDefaultAsync(a => a.AttachId == Id);
 
                 if (file == null)
                 {
                     return NotFound();
+                }
+
+                var forum = await (
+                    from f in context.PhpbbForums.AsNoTracking()
+
+                    join t in context.PhpbbTopics.AsNoTracking()
+                    on f.ForumId equals t.ForumId
+
+                    join p in context.PhpbbPosts.AsNoTracking()
+                    on t.TopicId equals p.TopicId
+
+                    where p.PostId == file.PostMsgId
+
+                    select f
+                ).FirstOrDefaultAsync();
+
+                var response = await ValidateForumPermissionsResponsesAsync(forum, forum?.ForumId ?? 0);
+
+                if (response != null)
+                {
+                    return response;
                 }
 
                 return await SendToClient(file.PhysicalFilename, file.RealFilename, file.Mimetype);
@@ -70,7 +88,7 @@ namespace Serverless.Forum.Pages
                 $"filename={Uri.EscapeDataString(displayName)}; " +
                 $"filename*=UTF-8''{Uri.EscapeDataString(displayName)}";
 
-            return Redirect(await _storageService.ReadFile(fileName, header, mimeType));
+            return Redirect(await _storageService.GetFileUrl(fileName, header, mimeType));
         }
     }
 }

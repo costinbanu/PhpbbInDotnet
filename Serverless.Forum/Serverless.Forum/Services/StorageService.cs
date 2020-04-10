@@ -47,7 +47,7 @@ namespace Serverless.Forum.Services
             }
         }
 
-        public async Task<string> ReadFile(string name, string contentDisposition, string contentType)
+        public async Task<string> GetFileUrl(string name, string contentDisposition, string contentType)
         {
             string Impl(string fileName)
             {

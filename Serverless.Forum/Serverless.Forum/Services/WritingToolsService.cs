@@ -9,12 +9,12 @@ using System.Threading.Tasks;
 
 namespace Serverless.Forum.Services
 {
-    public class AdminWritingToolsService
+    public class WritingToolsService
     {
         private readonly IConfiguration _config;
         private readonly Utils _utils;
 
-        public AdminWritingToolsService(IConfiguration config, Utils utils)
+        public WritingToolsService(IConfiguration config, Utils utils)
         {
             _config = config;
             _utils = utils;

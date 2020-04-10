@@ -10,9 +10,6 @@ namespace Serverless.Forum.Pages.CustomPartials
         public string MimeType { get; set; }
         public int DownloadCount { get; set; }
         public string Comment { get; set; }
-
-        public void OnGet()
-        {
-        }
+        public long FileSize { get; set; }
     }
 }

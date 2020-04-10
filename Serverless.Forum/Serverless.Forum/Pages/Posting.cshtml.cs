@@ -273,7 +273,7 @@ namespace Serverless.Forum.Pages
 
             using (var context = new ForumDbContext(_config))
             {
-                PostText = _postService.PrepareTextForSaving(context, PostText);
+                PostText = _postService.PrepareTextForSaving(context, HttpUtility.HtmlEncode(PostText));
                 PhpbbTopics curTopic = null;
                 var isNewTopic = await _cacheService.GetFromCacheAsync<bool>(GetActualCacheKey("IsNewTopic", true));
                 CanCreatePoll = await _cacheService.GetFromCacheAsync<bool>(GetActualCacheKey("CanCreatePoll", true));
@@ -300,7 +300,7 @@ namespace Serverless.Forum.Pages
                     TopicId = TopicId.Value,
                     PosterId = usr.UserId,
                     PostSubject = HttpUtility.HtmlEncode(PostTitle),
-                    PostText = HttpUtility.HtmlEncode(PostText),
+                    PostText = PostText,
                     PostTime = DateTime.UtcNow.ToUnixTimestamp(),
                     PostApproved = 1,
                     PostReported = 0,

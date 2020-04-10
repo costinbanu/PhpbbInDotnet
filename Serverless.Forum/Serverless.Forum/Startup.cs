@@ -90,7 +90,7 @@ namespace Serverless.Forum
             services.AddSingleton<Utils>();
             services.AddSingleton<AdminForumService>();
             services.AddSingleton<AdminUserService>();
-            services.AddSingleton<AdminWritingToolsService>();
+            services.AddSingleton<WritingToolsService>();
             services.AddSingleton<CacheService>();
             services.AddSingleton<ForumTreeService>();
             services.AddSingleton<PostService>();
