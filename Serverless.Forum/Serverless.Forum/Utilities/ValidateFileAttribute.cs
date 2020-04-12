@@ -15,10 +15,8 @@ namespace Serverless.Forum.Utilities
             {
                 try
                 {
-                    using (var bmp = file.ToImage())
-                    {
-                        return bmp.Width <= 200 && bmp.Height <= 200;
-                    }
+                    using var bmp = file.ToImage();
+                    return bmp.Width <= 200 && bmp.Height <= 200;
                 }
                 catch { }
             }

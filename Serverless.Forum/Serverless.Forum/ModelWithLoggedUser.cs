@@ -129,11 +129,11 @@ namespace Serverless.Forum
         /// <summary>
         /// No response returned = OK
         /// </summary>
-        protected async Task<IActionResult> ValidateForumPermissionsResponsesAsync(PhpbbForums thisForum, int forumId)
+        protected async IAsyncEnumerable<IActionResult> ValidateForumPermissionsResponsesAsync(PhpbbForums thisForum, int forumId)
         {
             if (thisForum == null)
             {
-                return NotFound($"Forumul {forumId} nu există.");
+                yield return NotFound($"Forumul {forumId} nu există.");
             }
 
             var forumAncestors = _forumService.GetPathInTree(await GetForumTreeAsync(), thisForum.ForumId);
@@ -144,11 +144,11 @@ namespace Serverless.Forum
             {
                 if ((await GetCurrentUserAsync()).UserPermissions.Any(p => p.ForumId == restrictedAncestor.Id && p.AuthRoleId == 16))
                 {
-                    return Unauthorized();
+                    yield return Unauthorized();
                 }
                 else
                 {
-                    return RedirectToPage("ForumLogin", new ForumLoginModel(_config)
+                    yield return RedirectToPage("ForumLogin", new ForumLoginModel(_config)
                     {
                         ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString),
                         ForumId = restrictedAncestor.Id.Value,
@@ -156,24 +156,20 @@ namespace Serverless.Forum
                     });
                 }
             }
-
-            return null;
         }
 
         /// <summary>
         /// No response returned = OK
         /// </summary>
-        protected async Task<IActionResult> ValidatePagePermissionsResponsesAsync()
+        protected async IAsyncEnumerable<IActionResult> ValidatePagePermissionsResponsesAsync()
         {
             if (await GetCurrentUserAsync() == await _userService.GetAnonymousLoggedUserAsync())
             {
-                return RedirectToPage("Login", new LoginModel(_config, _utils, _cacheService, _userService)
+                yield return RedirectToPage("Login", new LoginModel(_config, _utils, _cacheService, _userService)
                 {
                     ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString)
                 });
             }
-
-            return null;
         }
 
         public bool IsForumUnread(int forumId)

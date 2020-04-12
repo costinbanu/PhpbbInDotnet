@@ -1,7 +1,4 @@
-﻿using Amazon;
-using Amazon.S3;
-using Amazon.S3.Model;
-using CryptSharp.Core;
+﻿using CryptSharp.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,7 +12,6 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Mail;
 using System.Threading.Tasks;
 
@@ -55,12 +51,12 @@ namespace Serverless.Forum.Pages
         [BindProperty]
         public int UserRank { get; set; }
 
-        private readonly IAmazonS3 _s3Client;
+        private readonly StorageService _storageService;
 
-        public UserModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService)
+        public UserModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService, StorageService storageService)
             : base(config, utils, forumService, userService, cacheService)
         {
-            _s3Client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1);
+            _storageService = storageService;
         }
 
         public async Task<IActionResult> OnGet(int? userId, bool? viewAsAnother)
@@ -70,7 +66,7 @@ namespace Serverless.Forum.Pages
                 return Forbid();
             }
 
-            var response = await ValidatePagePermissionsResponsesAsync();
+            var response = await ValidatePagePermissionsResponsesAsync().FirstOrDefaultAsync();
             if (response != null)
             {
                 return response;
@@ -121,7 +117,7 @@ namespace Serverless.Forum.Pages
                     dbUser.UserEmailtime = DateTime.UtcNow.ToUnixTimestamp();
 
                     var subject = $"Schimbarea adresei de e-mail de pe \"{Constants.FORUM_NAME}\"";
-                    using (var emailMessage = new MailMessage
+                    using var emailMessage = new MailMessage
                     {
                         From = new MailAddress($"admin@metrouusor.com", Constants.FORUM_NAME),
                         Subject = subject,
@@ -137,11 +133,9 @@ namespace Serverless.Forum.Pages
                             HttpContext
                         ),
                         IsBodyHtml = true
-                    })
-                    {
-                        emailMessage.To.Add(Email);
-                        await _utils.SendEmail(emailMessage);
-                    }
+                    };
+                    emailMessage.To.Add(Email);
+                    await _utils.SendEmail(emailMessage);
                 }
 
                 if (!string.IsNullOrWhiteSpace(FirstPassword)
@@ -153,15 +147,7 @@ namespace Serverless.Forum.Pages
 
                 if (DeleteAvatar)
                 {
-                    var request = new DeleteObjectRequest
-                    {
-                        BucketName = _config["AwsS3BucketName"],
-                        Key = $"avatars/{dbUser.UserId}{Path.GetExtension(dbUser.UserAvatar)}"
-                    };
-
-                    var response = await _s3Client.DeleteObjectAsync(request);
-
-                    if (response.HttpStatusCode != HttpStatusCode.OK)
+                    if(! await _storageService.DeleteFile($"{_storageService.FolderPrefix}{_storageService.AvatarsFolder}{dbUser.UserId}{Path.GetExtension(dbUser.UserAvatar)}"))
                     {
                         throw new Exception("Failed to delete file");
                     }
@@ -174,27 +160,16 @@ namespace Serverless.Forum.Pages
 
                 if (Avatar != null)
                 {
-                    var request = new PutObjectRequest
-                    {
-                        BucketName = _config["AwsS3BucketName"],
-                        Key = $"avatars/{dbUser.UserId}{Path.GetExtension(Avatar.FileName)}",
-                        ContentType = Avatar.ContentType,
-                        InputStream = Avatar.OpenReadStream()
-                    };
-
-                    var response = await _s3Client.PutObjectAsync(request);
-                    if (response.HttpStatusCode != HttpStatusCode.OK)
+                    if (! await _storageService.UploadFile($"{_storageService.FolderPrefix}{_storageService.AvatarsFolder}{dbUser.UserId}{Path.GetExtension(Avatar.FileName)}", Avatar.ContentType, Avatar.OpenReadStream()))
                     {
                         throw new Exception("Failed to upload file");
                     }
 
-                    using (var bmp = Avatar.ToImage())
-                    {
-                        dbUser.UserAvatarType = 1;
-                        dbUser.UserAvatarWidth = unchecked((short)bmp.Width);
-                        dbUser.UserAvatarHeight = unchecked((short)bmp.Height);
-                        dbUser.UserAvatar = $"{dbUser.UserId}_{Avatar.FileName}";
-                    }
+                    using var bmp = Avatar.ToImage();
+                    dbUser.UserAvatarType = 1;
+                    dbUser.UserAvatarWidth = unchecked((short)bmp.Width);
+                    dbUser.UserAvatarHeight = unchecked((short)bmp.Height);
+                    dbUser.UserAvatar = $"{dbUser.UserId}_{Avatar.FileName}";
                 }
 
                 var dbAclRole = await context.PhpbbAclUsers.FirstOrDefaultAsync(r => r.UserId == dbUser.UserId);

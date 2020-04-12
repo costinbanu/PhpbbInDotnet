@@ -1,44 +1,39 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Amazon.S3.Model;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
+using Serverless.Forum.Pages.CustomPartials.Admin;
 using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace Serverless.Forum.Pages
 {
+    [RequestSizeLimit(10 * 1024 * 1024)]
     public partial class AdminModel : ModelWithLoggedUser
     {
         public AdminCategories Category { get; private set; } = AdminCategories.Users;
         public bool? IsSuccess { get; private set; }
         public string Message { get; private set; }
         public string MessageClass
-        {
-            get
+            => IsSuccess switch
             {
-                switch (IsSuccess)
-                {
-                    case null:
-                        return "message";
-                    case true:
-                        return "message success";
-                    case false:
-                    default:
-                        return "message fail";
-                }
-            }
-        }
+                null => "message",
+                true => "message success",
+                _ => "message fail",
+            };
 
         private readonly AdminUserService _adminUserService;
         private readonly AdminForumService _adminForumService;
         private readonly WritingToolsService _adminWritingService;
 
-        public AdminModel (
-            IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService, 
+        public AdminModel(
+            IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService,
             AdminUserService adminUserService, AdminForumService adminForumService, WritingToolsService adminWritingService
         ) : base(config, utils, forumService, userService, cacheService)
         {
@@ -130,9 +125,9 @@ namespace Serverless.Forum.Pages
         }
 
         public async Task<IActionResult> OnPostForumManagement(
-            int? forumId, string forumName, string forumDesc, bool? hasPassword, string forumPassword, int? parentId, 
+            int? forumId, string forumName, string forumDesc, bool? hasPassword, string forumPassword, int? parentId,
             ForumType? forumType, List<int> childrenForums, List<string> userForumPermissions, List<string> groupForumPermissions
-        ) 
+        )
         {
             var validationResult = await ValidatePermissionsAndInit(AdminCategories.Users);
             if (validationResult != null)
@@ -153,6 +148,18 @@ namespace Serverless.Forum.Pages
 
         #region Admin writing
 
+        public async Task<IActionResult> OnGetWriting()
+        {
+            var validationResult = await ValidatePermissionsAndInit(AdminCategories.Users);
+            if (validationResult != null)
+            {
+                return validationResult;
+            }
+
+            var result = await _utils.RenderRazorViewToString("_AdminWriting", new _AdminWritingModel(CurrentUserId), PageContext, HttpContext);
+            return Content(result);
+        }
+
         public async Task<IActionResult> OnPostBanWords(List<PhpbbWords> words, List<int> toRemove)
         {
             var validationResult = await ValidatePermissionsAndInit(AdminCategories.Users);
@@ -162,6 +169,34 @@ namespace Serverless.Forum.Pages
             }
 
             (Message, IsSuccess) = await _adminWritingService.ManageBannedWords(words, toRemove);
+
+            Category = AdminCategories.WritingTools;
+
+            return Page();
+        }
+
+        public async Task<IActionResult> OnPostOrphanedFiles(AdminOrphanedFilesActions action)
+        {
+            var validationResult = await ValidatePermissionsAndInit(AdminCategories.Users);
+            if (validationResult != null)
+            {
+                return validationResult;
+            }
+
+            var (inS3, inDb) = await _cacheService.GetFromCacheAsync<(IEnumerable<string> inS3, IEnumerable<int> inDb)>(_adminWritingService.GetCacheKey(CurrentUserId));
+            if (action == AdminOrphanedFilesActions.DeleteFromDb)
+            {
+                (Message, IsSuccess) = await _adminWritingService.DeleteDbOrphanedFiles(inDb);
+            }
+            else if (action == AdminOrphanedFilesActions.DeleteFromS3)
+            {
+                (Message, IsSuccess) = await _adminWritingService.DeleteS3OrphanedFiles(inS3);
+            }
+
+            if(IsSuccess ?? false)
+            {
+                await _cacheService.RemoveFromCacheAsync(_adminWritingService.GetCacheKey(CurrentUserId));
+            }
 
             Category = AdminCategories.WritingTools;
 

@@ -64,6 +64,12 @@
         Delete_DeleteMessages
     }
 
+    public enum AdminOrphanedFilesActions
+    {
+        DeleteFromS3,
+        DeleteFromDb
+    }
+
     public enum AclEntityType
     {
         User,

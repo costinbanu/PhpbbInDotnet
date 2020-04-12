@@ -1,18 +1,35 @@
 ﻿@model Serverless.Forum.Pages.CustomPartials.Admin._AdminWritingModel
-@inject Serverless.Forum.Services.WritingToolsService _writingService
+
+
+@using Serverless.Forum.Utilities
+@using Serverless.Forum.Services
+
+@inject WritingToolsService _writingService
+@inject Utils _utils
 
 <style>
-    table#bannedWords  td {
+    .writingTable {
+        border: none;
+        padding: 5px;
+        width: 80%
+    }
+
+    .writingTable td {
         padding-bottom: 10px;
+    }
+
+    .writingTable tr {
+        margin-bottom: 10px
     }
 </style>
 
 <h4>Cuvinte cenzurate</h4>
 @{
     var words = await _writingService.GetBannedWords();
+
     <form method="post" asp-page-handler="BanWords">
-        <table style="border:none; padding:5px; width:80%" id="bannedWords">
-            <tr style="margin-bottom:10px">
+        <table id="bannedWords" class="writingTable">
+            <tr>
                 <th style="width:45%">Cuvânt</th>
                 <th style="width:45%">Înlocuitor</th>
                 <th style="width:10%">Șterge?</th>
@@ -20,15 +37,17 @@
 
             @for (var i = 0; i < words.Count; i++)
             {
-                <tr style="margin-bottom:10px">
+                <tr>
                     <td>
-                        <input type="text" name="words[@i].Word" value="@words[i].Word" />
+                        @words[i].Word
+                        <input type="hidden" name="words[@i].Word" value="@words[i].Word" />
+                        <input type="hidden" name="words[@i].WordId" value="@words[i].WordId" />
                     </td>
                     <td>
                         <input type="text" name="words[@i].Replacement" value="@words[i].Replacement" />
                     </td>
                     <td>
-                        <input type="checkbox" name="toRemove[@i]" value="@i" />
+                        <input type="checkbox" name="toRemove" value="@i" />
                     </td>
                 </tr>
             }
@@ -38,6 +57,7 @@
     </form>
     <script type="text/javascript">
         var index = @words.Count;
+
         function addBannedWord() {
             $("#bannedWords > tbody:last-child").append(
                 "<tr style='margin-bottom: 10px'>" +
@@ -48,11 +68,108 @@
                         "<input type='text' name='words[" + index + "].Replacement' />" +
                     "</td>" +
                     "<td>" +
-                        "&nbsp;" +
+                        "<a href=\"#!\" onclick=\"cancelAddBannedWord(this)\">Anulează</a>" +
                     "</td>" +
                 "</tr>"
             );
             index++;
         }
+
+        function cancelAddBannedWord(elem) {
+            $(elem).parent().parent().remove();
+            index--;
+        }
     </script>
 }
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<h4>Fișiere orfane</h4>
+@{
+    var (inS3, inDb) = await _writingService.CacheOrphanedFiles(Model.CurrentUserId);
+    <form method="post" asp-page-handler="OrphanedFiles" id="orphanedFilesForm">
+        <input name="action" id="action" type="hidden" />
+    </form>
+    <h5>
+        <b>Fișiere pe server fără corespondență într-un mesaj (@inS3.Count() fișiere, în total @_utils.ReadableFileSize(inS3.Sum(f => f.Item1.Size)))</b>
+        <br /><i>Click pe titlul coloanei pentru sortare.</i>
+        <br /><a href="#!" onclick="submitOrphanedFiles('@Utilities.AdminOrphanedFilesActions.DeleteFromS3')">Șterge aceste fișiere</a>
+    </h5>
+    <table class="writingTable">
+        <tr>
+            <th onclick="sort(this)" style="cursor:pointer">Nume fișier</th>
+            <th onclick="sort(this)" style="cursor:pointer">Autor</th>
+            <th onclick="sort(this)" style="cursor:pointer">Ultima dată modificat</th>
+            <th onclick="sort(this)" style="cursor:pointer">Dimensiune</th>
+        </tr>
+
+        @foreach (var f in inS3)
+        {
+            <tr>
+                <td>@f.Item1.Key</td>
+                <td>@f.Item2</td>
+                <td>@f.Item1.LastModified.ToUniversalTime()</td>
+                <td>@_utils.ReadableFileSize(f.Item1.Size)</td>
+            </tr>
+        }
+    </table>
+
+    <p>&nbsp;</p>
+
+    <h5>
+        <b>Fișiere în mesaje fără corespondență pe server (@inDb.Count() fișiere)</b>
+        <br /><i>Click pe titlul coloanei pentru sortare.</i>
+        <br /><a href="#!" onclick="submitOrphanedFiles('@Utilities.AdminOrphanedFilesActions.DeleteFromDb')">Șterge aceste fișiere</a>
+    </h5>
+    <table class="writingTable">
+        <tr>
+            <th onclick="sort(this)" style="cursor:pointer">Id fișier</th>
+            <th onclick="sort(this)" style="cursor:pointer">Nume fișier</th>
+            <th onclick="sort(this)" style="cursor:pointer">Id mesaj</th>
+            <th onclick="sort(this)" style="cursor:pointer">Autor</th>
+            <th onclick="sort(this)" style="cursor:pointer">Ultima dată modificat</th>
+            <th onclick="sort(this)" style="cursor:pointer">Dimensiune</th>
+        </tr>
+        @foreach (var f in inDb)
+        {
+            <tr>
+                <td>@f.Item1.AttachId</td>
+                <td style="width:40%; word-break: break-all">@f.Item1.RealFilename</td>
+                <td><a asp-page="ViewTopic" asp-route-postId="@f.Item1.PostMsgId" asp-route-highlight="true" asp-page-handler="byPostId" target="_blank">@f.Item1.PostMsgId</a></td>
+                <td>@f.Item2</td>
+                <td>@f.Item1.Filetime.ToUtcTime()</td>
+                <td>@_utils.ReadableFileSize(f.Item1.Filesize)</td>
+            </tr>
+        }
+    </table>
+}
+
+<script type="text/javascript">
+    function sort(elem) {
+        var table = $(elem).parents('table').eq(0);
+        var rows = table.find('tr:gt(0)').toArray().sort(comparer($(elem).index()));
+        elem.asc = !elem.asc;
+        if (!elem.asc) {
+            rows = rows.reverse();
+        }
+        for (var i = 0; i < rows.length; i++) {
+            table.append(rows[i]);
+        }
+    }
+
+    function comparer(index) {
+        return function (a, b) {
+            var valA = getCellValue(a, index), valB = getCellValue(b, index);
+            return $.isNumeric(valA) && $.isNumeric(valB) ? valA - valB : valA.toString().localeCompare(valB);
+        }
+    }
+
+    function getCellValue(row, index) {
+        return $(row).children('td').eq(index).text();
+    }
+
+    function submitOrphanedFiles(action) {
+        $("#action").val(action);
+        $("#orphanedFilesForm").submit();
+    }
+
+</script>

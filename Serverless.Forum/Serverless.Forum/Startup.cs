@@ -2,29 +2,31 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Internal;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using PaulMiami.AspNetCore.Mvc.Recaptcha;
 using Serverless.Forum.Services;
-using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System;
+using System.Diagnostics;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Serverless.Forum
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
+        public Startup(IConfiguration configuration, IHostEnvironment env)
         {
             Configuration = configuration;
+            Env = env;
         }
 
         public IConfiguration Configuration { get; private set; }
+        public IHostEnvironment Env { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -58,16 +60,25 @@ namespace Serverless.Forum
                 .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                 .AddCookie();
 
-            services
-                .AddMvc()
-                .SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
-                .AddRazorOptions(o =>
-                {
-                    o.PageViewLocationFormats.Add("~/Pages/CustomPartials/{0}.cshtml");
-                    o.PageViewLocationFormats.Add("~/Pages/CustomPartials/Admin/{0}.cshtml");
-                    o.PageViewLocationFormats.Add("~/Pages/CustomPartials/Email/{0}.cshtml");
-                });
+            var builder = services.AddMvc()
+                                .SetCompatibilityVersion(CompatibilityVersion.Version_3_0)
+                                .AddRazorOptions(o =>
+                                {
+                                    o.PageViewLocationFormats.Add("~/Pages/CustomPartials/{0}.cshtml");
+                                    o.PageViewLocationFormats.Add("~/Pages/CustomPartials/Admin/{0}.cshtml");
+                                    o.PageViewLocationFormats.Add("~/Pages/CustomPartials/Email/{0}.cshtml");
+                                })
+                                .AddJsonOptions(o =>
+                                {
+                                    o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                                    o.JsonSerializerOptions.Converters.Add(new DateTimeConverter());
+                                    o.JsonSerializerOptions.IgnoreNullValues = true;
+                                });
 
+            if (Env.IsDevelopment())
+            {
+                builder.AddRazorRuntimeCompilation();
+            }
 
             services.AddDataProtection();
             services.AddAntiforgery(o => o.HeaderName = "XSRF-TOKEN");
@@ -79,13 +90,6 @@ namespace Serverless.Forum
             });
 
             services.AddHttpClient();
-
-            services.Configure<MvcJsonOptions>(options =>
-            {
-                options.SerializerSettings.Converters.Add(new StringEnumConverter());
-                options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
-                options.SerializerSettings.DateTimeZoneHandling = DateTimeZoneHandling.Utc;
-            });
 
             services.AddSingleton<Utils>();
             services.AddSingleton<AdminForumService>();
@@ -99,7 +103,7 @@ namespace Serverless.Forum
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostEnvironment env)
         {
             var builder = new ConfigurationBuilder()
                 .SetBasePath(env.ContentRootPath)
@@ -119,16 +123,34 @@ namespace Serverless.Forum
                 app.UseHsts();
             }
 
-            app.UseEndpointRouting();
+            app.UseRouting();
             app.UseRequestLocalization();
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseCookiePolicy();
             app.UseAuthentication();
             app.UseSession();
-            app.UseMvc();
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+                endpoints.MapRazorPages();
+            });
 
             Configuration = builder.Build();
+        }
+    }
+
+    public class DateTimeConverter : JsonConverter<DateTime>
+    {
+        public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            Debug.Assert(typeToConvert == typeof(DateTime));
+            return DateTime.Parse(reader.GetString());
+        }
+
+        public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(value.ToUniversalTime().ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ssZ"));
         }
     }
 }

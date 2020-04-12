@@ -45,7 +45,7 @@ namespace Serverless.Forum.Pages
                                        where f.ForumId == forumId
                                        select f).FirstOrDefaultAsync();
 
-                var permissionError = await ValidateForumPermissionsResponsesAsync(thisForum, forumId);
+                var permissionError = await ValidateForumPermissionsResponsesAsync(thisForum, forumId).FirstOrDefaultAsync();
                 if (permissionError != null)
                 {
                     return permissionError;
@@ -110,7 +110,7 @@ namespace Serverless.Forum.Pages
                                        where f.ForumId == forumId
                                        select f).FirstOrDefaultAsync();
 
-                var permissionError = await ValidateForumPermissionsResponsesAsync(thisForum, forumId);
+                var permissionError = await ValidateForumPermissionsResponsesAsync(thisForum, forumId).FirstOrDefaultAsync();
                 if (permissionError != null)
                 {
                     return permissionError;
@@ -138,7 +138,7 @@ namespace Serverless.Forum.Pages
                                        where f.ForumId == forumId
                                        select f).FirstOrDefaultAsync();
 
-                var permissionError = await ValidateForumPermissionsResponsesAsync(thisForum, forumId);
+                var permissionError = await ValidateForumPermissionsResponsesAsync(thisForum, forumId).FirstOrDefaultAsync();
                 if (permissionError != null)
                 {
                     return permissionError;

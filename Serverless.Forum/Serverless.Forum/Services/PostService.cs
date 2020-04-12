@@ -53,50 +53,46 @@ namespace Serverless.Forum.Services
 
         public async Task<(List<PhpbbPosts> Posts, int Page, int Count)> GetPostPageAsync(int userId, int? topicId, int? page, int? postId)
         {
-            using (var context = new ForumDbContext(_config))
-            using (var connection = context.Database.GetDbConnection())
-            {
-                await connection.OpenAsync();
-                DefaultTypeMap.MatchNamesWithUnderscores = true;
+            using var context = new ForumDbContext(_config);
+            using var connection = context.Database.GetDbConnection();
+            await connection.OpenAsync();
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
 
-                using (var multi = await connection.QueryMultipleAsync("CALL `forum`.`get_posts`(@userId, @topicId, @page, @postId);", new { userId, topicId, page, postId }))
-                {
-                    var toReturn = (
-                        Posts: multi.Read<PhpbbPosts>().ToList(),
-                        Page: multi.Read<int>().Single(),
-                        Count: multi.Read<int>().Single()
-                    );
+            using var multi = await connection.QueryMultipleAsync("CALL `forum`.`get_posts`(@userId, @topicId, @page, @postId);", new { userId, topicId, page, postId });
+            var toReturn = (
+                Posts: multi.Read<PhpbbPosts>().ToList(),
+                Page: multi.Read<int>().Single(),
+                Count: multi.Read<int>().Single()
+            );
 
-                    var attachments = from a in context.PhpbbAttachments
+            var attachments = from a in context.PhpbbAttachments
 
-                                      join p in toReturn.Posts
-                                      on a.PostMsgId equals p.PostId
+                              join p in toReturn.Posts
+                              on a.PostMsgId equals p.PostId
 
-                                      select new PhpbbAttachments
-                                      {
-                                          AttachComment = a.AttachComment,
-                                          AttachId = a.AttachId,
-                                          DownloadCount = a.DownloadCount + 1,
-                                          Extension = a.Extension,
-                                          Filesize = a.Filesize,
-                                          Filetime = a.Filetime,
-                                          InMessage = a.InMessage,
-                                          IsOrphan = a.IsOrphan,
-                                          Mimetype = a.Mimetype,
-                                          PhysicalFilename = a.PhysicalFilename,
-                                          PosterId = a.PosterId,
-                                          PostMsgId = a.PostMsgId,
-                                          RealFilename = a.RealFilename,
-                                          Thumbnail = a.Thumbnail,
-                                          TopicId = a.TopicId
-                                      };
+                              select new PhpbbAttachments
+                              {
+                                  AttachComment = a.AttachComment,
+                                  AttachId = a.AttachId,
+                                  DownloadCount = a.DownloadCount + 1,
+                                  Extension = a.Extension,
+                                  Filesize = a.Filesize,
+                                  Filetime = a.Filetime,
+                                  InMessage = a.InMessage,
+                                  IsOrphan = a.IsOrphan,
+                                  Mimetype = a.Mimetype,
+                                  PhysicalFilename = a.PhysicalFilename,
+                                  PosterId = a.PosterId,
+                                  PostMsgId = a.PostMsgId,
+                                  RealFilename = a.RealFilename,
+                                  Thumbnail = a.Thumbnail,
+                                  TopicId = a.TopicId
+                              };
 
-                    context.PhpbbAttachments.UpdateRange(attachments);
-                    await context.SaveChangesAsync();
+            context.PhpbbAttachments.UpdateRange(attachments);
+            await context.SaveChangesAsync();
 
-                    return toReturn;
-                }
-            }
+            return toReturn;
         }
 
         public async Task ProcessPosts(IEnumerable<PostDisplay> Posts, PageContext pageContext, HttpContext httpContext, bool renderAttachments, string toHighlight = null)

@@ -45,7 +45,7 @@ namespace Serverless.Forum.Pages
         [BindProperty]
         public string PollExpirationDaysString { get; set; }
 
-        [BindProperty, Required, Range(1, int.MaxValue, ErrorMessage = "")]
+        [BindProperty, Required, Range(1, int.MaxValue, ErrorMessage = null)]
         public int? PollMaxOptions { get; set; }
 
         [BindProperty]
@@ -83,12 +83,12 @@ namespace Serverless.Forum.Pages
             {
                 curTopic = await context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == TopicId);
 
-                var permissionError = await ValidateForumPermissionsResponsesAsync(await context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId);
+                var permissionError = await ValidateForumPermissionsResponsesAsync(await context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId).FirstOrDefaultAsync();
                 if (permissionError != null)
                 {
                     return permissionError;
                 }
-
+                CanCreatePoll = false;
                 await Init(context);
             }
 
@@ -130,12 +130,12 @@ namespace Serverless.Forum.Pages
                     curAuthor = (await context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == curPost.PosterId))?.Username ?? "Anonymous";
                 }
 
-                var permissionError = await ValidateForumPermissionsResponsesAsync(await context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId);
+                var permissionError = await ValidateForumPermissionsResponsesAsync(await context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId).FirstOrDefaultAsync();
                 if (permissionError != null)
                 {
                     return permissionError;
                 }
-
+                CanCreatePoll = false;
                 await Init(context);
             }
 
@@ -152,13 +152,13 @@ namespace Serverless.Forum.Pages
             {
                 var curForum = await context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(t => t.ForumId == ForumId);
 
-                var permissionError = await ValidateForumPermissionsResponsesAsync(curForum, ForumId);
+                var permissionError = await ValidateForumPermissionsResponsesAsync(curForum, ForumId).FirstOrDefaultAsync();
                 if (permissionError != null)
                 {
                     return permissionError;
                 }
                 Header = HttpUtility.HtmlDecode(curForum.ForumName);
-
+                CanCreatePoll = true;
                 await Init(context);
             }
             await _cacheService.SetInCacheAsync(GetActualCacheKey("IsNewTopic", true), true);
@@ -414,7 +414,7 @@ namespace Serverless.Forum.Pages
             await _cacheService.SetInCacheAsync(GetActualCacheKey("DbBbCodes", false), dbBbCodes);
 
 
-            CanCreatePoll = !(await context.PhpbbPollOptions.AsNoTracking().Where(o => o.TopicId == (TopicId ?? 0)).ToListAsync()).Any();
+            //CanCreatePoll = !(await context.PhpbbPollOptions.AsNoTracking().Where(o => o.TopicId == (TopicId ?? 0)).ToListAsync()).Any();
             await _cacheService.SetInCacheAsync(GetActualCacheKey("CanCreatePoll", true), CanCreatePoll);
         }
     }

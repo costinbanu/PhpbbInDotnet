@@ -48,7 +48,7 @@ namespace Serverless.Forum.Pages
                     select f
                 ).FirstOrDefaultAsync();
 
-                var response = await ValidateForumPermissionsResponsesAsync(forum, forum?.ForumId ?? 0);
+                var response = await ValidateForumPermissionsResponsesAsync(forum, forum?.ForumId ?? 0).FirstOrDefaultAsync();
 
                 if (response != null)
                 {

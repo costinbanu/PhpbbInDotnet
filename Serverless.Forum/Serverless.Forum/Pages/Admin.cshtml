@@ -141,12 +141,22 @@
 </div>
 
 <div id="Writing" class="tabcontent" style="@(Model.Category == AdminCategories.WritingTools ? "display:inherit" : "display:none")">
-    @await Html.PartialAsync(
-        "_AdminWriting",
-        new _AdminWritingModel(),
-        ViewData
-    )
+    <center>
+        <img src="~/images/loading.gif" width="50" height="50" alt="loading..." />
+    </center>
 </div>
+
+<script type="text/javascript" async>
+    $.ajax({
+        type: "GET",
+        url: "/Admin?handler=Writing",
+        success: function (data) {
+            $("#Writing").html(data);
+        }, error: function (data) {
+            $("#Writing").html(data);
+        }
+    });
+</script>
 
 <script type="text/javascript">
     var coll = document.getElementsByClassName("collapsible");
