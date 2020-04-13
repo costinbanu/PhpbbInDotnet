@@ -15,110 +15,101 @@ namespace Serverless.Forum.Services
     public class ForumTreeService
     {
         private readonly IConfiguration _config;
-        private readonly Utils _utils;
 
-        public ForumTreeService(IConfiguration config, Utils utils)
+        public ForumTreeService(IConfiguration config)
         {
             _config = config;
-            _utils = utils;
         }
 
         public async Task<ForumDisplay> GetForumTreeAsync(ForumType? parentType = null, LoggedUser usr = null, Func<int, bool> IsForumUnread = null)
         {
-            using (var context = new ForumDbContext(_config))
+            using var context = new ForumDbContext(_config);
+            if (IsForumUnread == null)
             {
-                if (IsForumUnread == null)
-                {
-                    IsForumUnread = new Func<int, bool>(_ => false);
-                }
-
-                var allForums = await (
-                    from f in context.PhpbbForums.AsNoTracking()
-                    where (parentType == null || f.ForumType == parentType)
-                       && (usr == null || usr.UserPermissions == null || !usr.UserPermissions.Any(fp => fp.ForumId == f.ForumId && fp.AuthRoleId == 16))
-                    orderby f.LeftId
-
-                    //join u in context.PhpbbUsers
-                    //on f.ForumLastPosterId equals u.UserId
-                    //into joinedUsers
-
-                    join t in context.PhpbbTopics
-                    on f.ForumId equals t.ForumId
-                    into joinedTopics
-
-                    //from ju in joinedUsers.DefaultIfEmpty()
-
-                    select new
-                    {
-                        ForumDisplay = new ForumDisplay
-                        {
-                            Id = f.ForumId,
-                            ParentId = f.ParentId,
-                            Name = HttpUtility.HtmlDecode(f.ForumName),
-                            ForumPassword = f.ForumPassword,
-                            Description = HttpUtility.HtmlDecode(f.ForumDesc),
-                            Unread = IsForumUnread(f.ForumId),
-                            LastPostId = f.ForumLastPostId,
-                            LastPosterName = HttpUtility.HtmlDecode(f.ForumLastPosterName),
-                            LastPosterId = /*ju.UserId*/f.ForumLastPosterId == 1 ? null as int? : /*ju.UserId*/f.ForumLastPosterId,
-                            LastPostTime = f.ForumLastPostTime.ToUtcTime(),
-                            LastPosterColor = /*ju == null ? null : ju.UserColour*/f.ForumLastPosterColour,
-                            Topics = (from jt in joinedTopics
-                                      orderby jt.TopicLastPostTime descending
-                                      select new TopicDisplay
-                                      {
-                                          Id = jt.TopicId,
-                                          Title = HttpUtility.HtmlDecode(jt.TopicTitle),
-                                      }).ToList(),
-                            ForumType = f.ForumType
-                        },
-                        Parent = f.ParentId,
-                        Order = f.LeftId
-                    }
-                ).ToListAsync();
-
-                ForumDisplay traverse(ForumDisplay node)
-                {
-                    node.ChildrenForums = (
-                        from f in allForums
-                        where f.Parent == node.Id
-                        orderby f.Order
-                        select traverse(f.ForumDisplay)
-                    ).ToList();
-
-                    var (lastPosterColor, lastPosterId, lastPosterName, lastPostId, lastPostTime) = (
-                        from c in node.ChildrenForums
-                        group c by c.LastPostTime into groups
-                        orderby groups.Key ?? DateTime.MinValue descending
-                        let first = groups.FirstOrDefault()
-                        select (first?.LastPosterColor, first?.LastPosterId, first?.LastPosterName, first?.LastPostId, first?.LastPostTime)
-                    ).FirstOrDefault();
-
-                    node.Unread |= node.ChildrenForums.Any(c => c.Unread);
-                    if (node.LastPostTime < (lastPostTime ?? DateTime.MinValue))
-                    {
-                        node.LastPosterColor = lastPosterColor ?? node.LastPosterColor;
-                        node.LastPosterId = lastPosterId ?? node.LastPosterId;
-                        node.LastPosterName = lastPosterName ?? node.LastPosterName;
-                        node.LastPostId = lastPostId ?? node.LastPostId;
-                        node.LastPostTime = lastPostTime ?? node.LastPostTime;
-                    }
-
-                    return node;
-                }
-
-                return new ForumDisplay
-                {
-                    Id = 0,
-                    Name = Constants.FORUM_NAME,
-                    ChildrenForums = (
-                        from f in allForums
-                        where f.Parent == 0
-                        orderby f.Order
-                        select traverse(f.ForumDisplay)
-                    ).ToList()
-                };
+                IsForumUnread = new Func<int, bool>(_ => false);
             }
+
+            var allForums = await (
+                from f in context.PhpbbForums.AsNoTracking()
+                where (parentType == null || f.ForumType == parentType)
+                   && (usr == null || usr.UserPermissions == null || !usr.UserPermissions.Any(fp => fp.ForumId == f.ForumId && fp.AuthRoleId == 16))
+                orderby f.LeftId
+
+                join t in context.PhpbbTopics
+                on f.ForumId equals t.ForumId
+                into joinedTopics
+
+                select new
+                {
+                    ForumDisplay = new ForumDisplay
+                    {
+                        Id = f.ForumId,
+                        ParentId = f.ParentId,
+                        Name = HttpUtility.HtmlDecode(f.ForumName),
+                        ForumPassword = f.ForumPassword,
+                        Description = f.ForumDesc,
+                        DescriptionBbCodeUid = f.ForumDescUid,
+                        Unread = IsForumUnread(f.ForumId),
+                        LastPostId = f.ForumLastPostId,
+                        LastPosterName = HttpUtility.HtmlDecode(f.ForumLastPosterName),
+                        LastPosterId = f.ForumLastPosterId == 1 ? null as int? : f.ForumLastPosterId,
+                        LastPostTime = f.ForumLastPostTime.ToUtcTime(),
+                        LastPosterColor = f.ForumLastPosterColour,
+                        Topics = (from jt in joinedTopics
+                                  orderby jt.TopicLastPostTime descending
+                                  select new TopicDisplay
+                                  {
+                                      Id = jt.TopicId,
+                                      Title = HttpUtility.HtmlDecode(jt.TopicTitle),
+                                  }).ToList(),
+                        ForumType = f.ForumType
+                    },
+                    Parent = f.ParentId,
+                    Order = f.LeftId
+                }
+            ).ToListAsync();
+
+            ForumDisplay traverse(ForumDisplay node)
+            {
+                node.ChildrenForums = (
+                    from f in allForums
+                    where f.Parent == node.Id
+                    orderby f.Order
+                    select traverse(f.ForumDisplay)
+                ).ToList();
+
+                var (lastPosterColor, lastPosterId, lastPosterName, lastPostId, lastPostTime) = (
+                    from c in node.ChildrenForums
+                    group c by c.LastPostTime into groups
+                    orderby groups.Key ?? DateTime.MinValue descending
+                    let first = groups.FirstOrDefault()
+                    select (first?.LastPosterColor, first?.LastPosterId, first?.LastPosterName, first?.LastPostId, first?.LastPostTime)
+                ).FirstOrDefault();
+
+                node.Unread |= node.ChildrenForums.Any(c => c.Unread);
+                if (node.LastPostTime < (lastPostTime ?? DateTime.MinValue))
+                {
+                    node.LastPosterColor = lastPosterColor ?? node.LastPosterColor;
+                    node.LastPosterId = lastPosterId ?? node.LastPosterId;
+                    node.LastPosterName = lastPosterName ?? node.LastPosterName;
+                    node.LastPostId = lastPostId ?? node.LastPostId;
+                    node.LastPostTime = lastPostTime ?? node.LastPostTime;
+                }
+
+                return node;
+            }
+
+            return new ForumDisplay
+            {
+                Id = 0,
+                Name = Constants.FORUM_NAME,
+                ChildrenForums = (
+                    from f in allForums
+                    where f.Parent == 0
+                    orderby f.Order
+                    select traverse(f.ForumDisplay)
+                ).ToList()
+            };
         }
 
         public List<ForumDisplay> GetPathInTree(ForumDisplay root, int forumId)

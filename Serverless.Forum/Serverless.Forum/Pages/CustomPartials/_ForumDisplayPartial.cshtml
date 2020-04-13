@@ -1,4 +1,6 @@
 ﻿@model Serverless.Forum.Pages.CustomPartials._ForumDisplayPartialModel
+@inject Services.PostService _postService; 
+
 @if (Model.ShowTitle && Model.Categories.Any())
 {
     <h4 style="float:left">Categorii</h4>
@@ -16,7 +18,7 @@
         <div class="@divClass">
             <span class="ForumListLeft" style="padding-left:20px">
                 <a asp-page="/ViewForum" asp-route-forumId="@forum.Id" class="nav-link" style="font-weight:bold">@forum.Name</a><br />
-                @Html.Raw(forum.Description)
+                @Html.Raw(await _postService.BbCodeToHtml(forum.Description, forum.DescriptionBbCodeUid))
             </span>
             @await Html.PartialAsync(
                 "_SummaryPartial",
@@ -49,7 +51,7 @@
     <div class="@divClass">
         <span class="ForumListLeft">
             <a asp-page="/ViewForum" asp-route-forumId="@forum.Id" class="nav-link" style="font-weight:bold">@forum.Name</a><br />
-            @Html.Raw(forum.Description)
+            @Html.Raw(await _postService.BbCodeToHtml(forum.Description, forum.DescriptionBbCodeUid))
         </span>
         @await Html.PartialAsync(
             "_SummaryPartial",

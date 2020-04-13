@@ -81,16 +81,26 @@ namespace Serverless.Forum.Services
 
                 var userPermissions = await (
                     from p in context.PhpbbAclUsers
+                    join r in context.PhpbbAclRoles.AsNoTracking()
+                    on p.AuthRoleId equals r.RoleId
+                    into joined
+                    from j in joined
                     where p.ForumId == forumId
                        && rolesForAclEntity[AclEntityType.User].Keys.Contains(p.UserId)
+                       && j.RoleType == "f_"
                     select p
                 ).ToListAsync();
                 userPermissions.ForEach(p => p.AuthRoleId = rolesForAclEntity[AclEntityType.User][p.UserId]);
 
                 var groupPermissions = await (
                     from p in context.PhpbbAclGroups
+                    join r in context.PhpbbAclRoles.AsNoTracking()
+                    on p.AuthRoleId equals r.RoleId
+                    into joined
+                    from j in joined
                     where p.ForumId == forumId
                        && rolesForAclEntity[AclEntityType.Group].Keys.Contains(p.GroupId)
+                       && j.RoleType == "f_"
                     select p
                 ).ToListAsync();
                 groupPermissions.ForEach(p => p.AuthRoleId = rolesForAclEntity[AclEntityType.Group][p.GroupId]);

@@ -15,6 +15,8 @@ namespace Serverless.Forum.Contracts
 
         public string Description { get; set; } = null;
 
+        public string DescriptionBbCodeUid { get; set; } = null;
+
         public string ForumPassword { get; set; } = null;
 
         public int? LastPosterId { get; set; } = null;
