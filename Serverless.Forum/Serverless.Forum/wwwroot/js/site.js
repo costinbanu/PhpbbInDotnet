@@ -50,7 +50,7 @@ function expandCollapsedMenu(summary, button) {
 
 function showElement(id) {
     var panel = document.getElementById(id);
-    if (panel.style.display === 'none')
+    if (getComputedStyle(panel).display === 'none')
         panel.style.display = 'block';
     else
         panel.style.display = 'none';

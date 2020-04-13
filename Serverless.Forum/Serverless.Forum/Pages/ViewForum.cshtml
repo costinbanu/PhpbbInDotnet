@@ -1,5 +1,6 @@
 ﻿@page
 @model Serverless.Forum.Pages.ViewForumModel
+@using Serverless.Forum.Utilities
 @{
     ViewData["Title"] = Model.ForumTitle;
     Layout = "~/Pages/_Layout.cshtml";
@@ -50,18 +51,20 @@ else
     /*https://stackoverflow.com/questions/5144265/an-equally-quick-alternative-to-securityelement-escapestring-to-escape-xml-spe#comment88712318_5144356
      * use SecurityElement.Escape when using Html.Raw*/
     var topicsDisplayed = false;
+    var announcementsDisplayed = false;
     if (!IsAnonymous)
     {
         <a href="#" onclick="MarkTopicsRead.submit()" style="float:right; margin-top:10px; margin-bottom:10px">Marchează subiectele ca citite</a>
     }
     foreach (var topicGroup in Model.Topics)
     {
-        @if ((topicGroup.TopicType ?? 0) == 2)
+        @if (!announcementsDisplayed && (topicGroup.TopicType == TopicType.Announcement || topicGroup.TopicType == TopicType.Global))
         {
             <h4 style="float:left">Anunțuri</h4>
             <p>&nbsp;</p>
+            announcementsDisplayed = true;
         }
-        else if (!topicsDisplayed)
+        else if (!topicsDisplayed && topicGroup.TopicType != TopicType.Announcement && topicGroup.TopicType != TopicType.Global)
         {
             <h4 style="float:left">Subiecte</h4>
             <p>&nbsp;</p>
@@ -72,7 +75,7 @@ else
             var divClass = topic.Unread ? "ForumListRow Unread" : "ForumListRow";
             <div class="@divClass">
                 <span class="ForumListLeft">
-                    @if (topicGroup.TopicType == 1)
+                    @if (topicGroup.TopicType == TopicType.Important)
                     {
                         <span>&#x26A0;&#xFE0F;&nbsp;</span>
                     }

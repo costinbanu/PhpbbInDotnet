@@ -10,22 +10,22 @@
             <img src="./File?userId=@Model.AuthorId&handler=avatar" />
         </li>
     }
-        <li>
-            Autor:
-            @if (Model.AuthorId == null)
-            {
-                <span style="text-decoration: line-through">@Html.Raw(Model.AuthorName)</span>
-            }
-            else
-            {
-                var color = $"#{(string.IsNullOrWhiteSpace(Model.AuthorColor) ? "000000" : Model.AuthorColor)}";
-                <a asp-page="/User" asp-route-UserId="@Model.AuthorId" style="color:@color;font-weight:bold">@Html.Raw(Model.AuthorName)</a>
-            }
-        </li>
-        <li>
-            Scris la: @Model.CreationTime?.ToString(Model.DateFormat)
-        </li>
-    @if(!string.IsNullOrWhiteSpace(Model.LinkHref) && !string.IsNullOrWhiteSpace(Model.LinkText))
+    <li>
+        Autor:
+        @if (Model.AuthorId == null)
+        {
+            <span style="text-decoration: line-through">@Html.Raw(Model.AuthorName)</span>
+        }
+        else
+        {
+            var color = $"#{(string.IsNullOrWhiteSpace(Model.AuthorColor) ? "000000" : Model.AuthorColor)}";
+            <a asp-page="/User" asp-route-UserId="@Model.AuthorId" style="color:@color;font-weight:bold">@Html.Raw(Model.AuthorName)</a>
+        }
+    </li>
+    <li>
+        Scris la: @Model.CreationTime?.ToString(Model.DateFormat)
+    </li>
+    @if (!string.IsNullOrWhiteSpace(Model.LinkHref) && !string.IsNullOrWhiteSpace(Model.LinkText))
     {
         <li>
             <a href="@Model.LinkHref">@Model.LinkText</a>

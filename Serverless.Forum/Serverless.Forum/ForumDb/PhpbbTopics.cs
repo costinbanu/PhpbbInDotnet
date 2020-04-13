@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Serverless.Forum.Utilities;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -22,7 +23,8 @@ namespace Serverless.Forum.ForumDb
         public int TopicReplies { get; set; } = 0;
         public int TopicRepliesReal { get; set; } = 0;
         public byte TopicStatus { get; set; } = 0;
-        public byte TopicType { get; set; } = 0;
+        [Column(TypeName = "tinyint(2)")]
+        public TopicType TopicType { get; set; } = TopicType.Normal;
         public int TopicFirstPostId { get; set; } = 0;
         public string TopicFirstPosterName { get; set; } = string.Empty;
         public string TopicFirstPosterColour { get; set; } = string.Empty;

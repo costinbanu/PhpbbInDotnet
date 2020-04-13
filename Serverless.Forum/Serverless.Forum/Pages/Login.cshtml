@@ -17,4 +17,4 @@
     <input type="submit" value="Login" class="form" />
     @Html.AntiForgeryToken()
 </form>
-<div style="visibility:@string.IsNullOrEmpty(Model.ErrorMessage) ? hidden : visible">@Model.ErrorMessage</div>
+<div style="visibility:@(string.IsNullOrEmpty(Model.ErrorMessage) ? "hidden" : "visible")">@Model.ErrorMessage</div>

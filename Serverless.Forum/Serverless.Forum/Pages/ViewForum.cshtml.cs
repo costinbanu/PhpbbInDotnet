@@ -37,68 +37,60 @@ namespace Serverless.Forum.Pages
                 return RedirectToPage("/Index");
             }
 
-            using (var context = new ForumDbContext(_config))
+            using var context = new ForumDbContext(_config);
+            ForumId = forumId;
+            var usr = await GetCurrentUserAsync();
+            var thisForum = await (from f in context.PhpbbForums.AsNoTracking()
+                                   where f.ForumId == forumId
+                                   select f).FirstOrDefaultAsync();
+
+            var permissionError = await ValidateForumPermissionsResponsesAsync(thisForum, forumId).FirstOrDefaultAsync();
+            if (permissionError != null)
             {
-                ForumId = forumId;
-                var usr = await GetCurrentUserAsync();
-                var thisForum = await (from f in context.PhpbbForums.AsNoTracking()
-                                       where f.ForumId == forumId
-                                       select f).FirstOrDefaultAsync();
-
-                var permissionError = await ValidateForumPermissionsResponsesAsync(thisForum, forumId).FirstOrDefaultAsync();
-                if (permissionError != null)
-                {
-                    return permissionError;
-                }
-
-                ForumTitle = HttpUtility.HtmlDecode(thisForum?.ForumName ?? "untitled");
-
-                ParentForumId = thisForum.ParentId;
-                ParentForumTitle = HttpUtility.HtmlDecode(await (from pf in context.PhpbbForums.AsNoTracking()
-                                                                 where pf.ForumId == thisForum.ParentId
-                                                                 select pf.ForumName).FirstOrDefaultAsync() ?? "untitled");
-
-                Forums = (await GetForum(forumId)).ChildrenForums.ToList();
-
-                Topics = await (
-                    from t in context.PhpbbTopics.AsNoTracking()
-                    where t.ForumId == forumId
-                    orderby t.TopicLastPostTime descending
-
-                    group t by t.TopicType into groups
-                    orderby groups.Key descending
-                    select new TopicTransport
-                    {
-                        TopicType = groups.Key,
-                        Topics = from g in groups
-
-                                 //join u in context.PhpbbUsers.AsNoTracking()
-                                 //on g.TopicLastPosterId equals u.UserId
-                                 //into joinedUsers
-
-                                 //from ju in joinedUsers.DefaultIfEmpty()
-
-                                 let postCount = context.PhpbbPosts.Count(p => p.TopicId == g.TopicId)
-                                 let pageSize = usr.TopicPostsPerPage.ContainsKey(g.TopicId) ? usr.TopicPostsPerPage[g.TopicId] : 14
-
-                                 select new TopicDisplay
-                                 {
-                                     Id = g.TopicId,
-                                     Title = HttpUtility.HtmlDecode(g.TopicTitle),
-                                     LastPosterId = /*ju.UserId*/g.TopicLastPosterId == 1 ? null as int? : /*ju.UserId*/g.TopicLastPosterId,
-                                     LastPosterName = HttpUtility.HtmlDecode(g.TopicLastPosterName),
-                                     LastPostTime = g.TopicLastPostTime.ToUtcTime(),
-                                     PostCount = context.PhpbbPosts.Count(p => p.TopicId == g.TopicId),
-                                     Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1),
-                                     Unread = IsTopicUnread(g.TopicId),
-                                     LastPosterColor = /*ju == null ? null : ju.UserColour*/g.TopicLastPosterColour,
-                                     LastPostId = g.TopicLastPostId
-                                 }
-                    }
-                ).ToListAsync();
-
-                return Page();
+                return permissionError;
             }
+
+            ForumTitle = HttpUtility.HtmlDecode(thisForum?.ForumName ?? "untitled");
+
+            ParentForumId = thisForum.ParentId;
+            ParentForumTitle = HttpUtility.HtmlDecode(await (from pf in context.PhpbbForums.AsNoTracking()
+                                                             where pf.ForumId == thisForum.ParentId
+                                                             select pf.ForumName).FirstOrDefaultAsync() ?? "untitled");
+
+            Forums = (await GetForum(forumId)).ChildrenForums.ToList();
+
+            Topics = await (
+                from t in context.PhpbbTopics.AsNoTracking()
+                where t.ForumId == forumId || t.TopicType == TopicType.Global
+                orderby t.TopicLastPostTime descending
+
+                group t by t.TopicType into groups
+                orderby groups.Key descending
+                select new TopicTransport
+                {
+                    TopicType = groups.Key,
+                    Topics = from g in groups
+
+                             let postCount = context.PhpbbPosts.Count(p => p.TopicId == g.TopicId)
+                             let pageSize = usr.TopicPostsPerPage.ContainsKey(g.TopicId) ? usr.TopicPostsPerPage[g.TopicId] : 14
+
+                             select new TopicDisplay
+                             {
+                                 Id = g.TopicId,
+                                 Title = HttpUtility.HtmlDecode(g.TopicTitle),
+                                 LastPosterId = /*ju.UserId*/g.TopicLastPosterId == 1 ? null as int? : /*ju.UserId*/g.TopicLastPosterId,
+                                 LastPosterName = HttpUtility.HtmlDecode(g.TopicLastPosterName),
+                                 LastPostTime = g.TopicLastPostTime.ToUtcTime(),
+                                 PostCount = context.PhpbbPosts.Count(p => p.TopicId == g.TopicId),
+                                 Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1),
+                                 Unread = IsTopicUnread(g.TopicId),
+                                 LastPosterColor = /*ju == null ? null : ju.UserColour*/g.TopicLastPosterColour,
+                                 LastPostId = g.TopicLastPostId
+                             }
+                }
+            ).ToListAsync();
+
+            return Page();
         }
 
         public async Task<IActionResult> OnPostForums(int forumId)

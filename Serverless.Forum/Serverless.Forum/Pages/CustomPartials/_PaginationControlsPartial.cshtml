@@ -104,7 +104,7 @@
     @await Html.PartialAsync("_PaginationPartial", Model.Pagination.Pagination, ViewData)
     @if (!IsAnonymous && Model.AllowPaginationChange)
     {
-        <form method="post">
+        <form method="post" asp-page-handler="Pagination">
             <label>Mesaje afișate pe pagină:&nbsp;</label>
             <input type="hidden" name="topicId" value="@Model.TopicId" />
             <input type="hidden" name="postId" value="@Model.LastPostId" />

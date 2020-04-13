@@ -1,4 +1,5 @@
 ﻿using Serverless.Forum.Pages.CustomPartials;
+using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
 
@@ -29,7 +30,7 @@ namespace Serverless.Forum.Pages
 
     public class TopicTransport
     {
-        public byte? TopicType { get; set; } = null;
+        public TopicType? TopicType { get; set; } = null;
 
         public IEnumerable<TopicDisplay> Topics { get; set; }
     }

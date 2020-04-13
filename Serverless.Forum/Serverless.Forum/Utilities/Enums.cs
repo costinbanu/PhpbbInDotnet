@@ -75,4 +75,24 @@
         User,
         Group
     }
+
+    public enum TopicType
+    {
+        Normal = 0,
+        Important = 1,
+        Announcement = 2,
+        Global = 3
+    }
+
+    public enum ModeratorActions
+    {
+        LockTopic,
+        MakeTopicNormal,
+        MakeTopicImportant,
+        MakeTopicAnnouncement,
+        MakeTopicGlobal,
+        MergeSelectedPosts,
+        SplitSelectedPosts,
+        DeleteSelectedPosts
+    }
 }

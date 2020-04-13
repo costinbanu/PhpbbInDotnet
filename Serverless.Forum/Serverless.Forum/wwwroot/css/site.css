@@ -97,6 +97,16 @@ blockquote {
     max-width: 200px;
 }
 
+.PostActions {
+    display: flex;
+    margin-bottom: 0px !important;
+    padding-left:0px !important;
+}
+
+.PostActions li {
+    padding-right:10px;
+}
+
 .CollapsedMenu {
     display: none;
     border-radius: 5px;
@@ -107,6 +117,19 @@ blockquote {
     cursor: pointer;
     font-weight: bold;
     margin-right: 10px;
+}
+
+.CollapsedActions {
+    display: none;
+    cursor: pointer;
+    /*border-radius: 5px;
+    border: solid 1px black;
+    float: right;
+    padding: 3px;
+    margin: 3px;
+    
+    font-weight: bold;
+    margin-right: 10px;*/
 }
 
 .PostTitle {
@@ -272,6 +295,11 @@ label {
     white-space: pre;
 }*/
 
+.Signature {
+    margin-top: auto;
+    display: inline-block;
+}
+
 @media (max-width: 768px) {
     .ForumListRight {
         display: none;
@@ -290,12 +318,29 @@ label {
     }
 
     .ForumListLeft{
-        width:90vw;
+        width:100%;
         display:inline-block;
+    }
+
+    .Signature {
+        display: none;
     }
 
     .CollapsedMenu {
         display: inline-block;
+    }
+
+    .CollapsedActions {
+        display: inline-block;
+    }
+
+    .PostActions {
+        display: none;
+    }
+
+    .PostActions li {
+        text-indent: 2em;
+        padding-top: 5px;
     }
 
     .postingControls {
@@ -313,12 +358,23 @@ label {
     }
 }
 
-@media (max-width:1200px) {
+@media (max-width:1300px) {
     .headerImg {
         width: 325px;
         height: 77px;
+        background-image: url("../images/forumlogo-medium.png");
+        background-size: contain;
+        background-repeat: no-repeat;
+    }
+}
+
+@media (max-width:768px) {
+    .headerImg {
+        /*width: 325px;
+        height: 77px;*/
         background-image: url("../images/forumlogo-small.png");
         background-size: contain;
+        background-repeat: no-repeat;
     }
 }
 

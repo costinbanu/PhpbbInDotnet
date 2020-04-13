@@ -1,6 +1,11 @@
 ﻿@page
-@using System.Web
 @model Serverless.Forum.Pages.ViewTopicModel
+
+@using System.Web
+@using Serverless.Forum.Utilities
+
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor
+
 @{
     ViewData["Title"] = $"{Model.ForumTitle} - {Model.TopicTitle}";
     Layout = "~/Pages/_Layout.cshtml";
@@ -146,7 +151,7 @@
     <p>&nbsp;</p>
 }
 
-@await  Html.PartialAsync(
+@await Html.PartialAsync(
     "_PaginationControlsPartial",
     new CustomPartials._PaginationControlsPartialModel(
         pagination: Model,
@@ -172,36 +177,55 @@
                 @Html.Raw(post.AuthorName)
             </span>
             <p>&nbsp;</p>
-            <span style="display:flex; flex-direction:column">
-                <span style="display:inline-block">
-                    @Html.Raw(post.PostText)
-                    @foreach (var attachment in post.Attachments)
-                    {
-                        <br />
-                        @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
-                    }
+            <span style="display:inline-block">
+                @Html.Raw(post.PostText)
+                @foreach (var attachment in post.Attachments)
+                {
                     <br />
-                </span>
-                <span style="margin-top:auto; display:inline-block">
-                    <span style="float:right">
-                        @if (!IsLocked)
-                        {
-                            <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">Răspunde cu citat</a>
-                        }
-                        else
-                        {
-                            <a href="#" title="Subiectul este închis, nu se mai pot trimite răspunsuri."><s>Răspunde cu citat</s></a>
-                        }
-                    </span>
-                    @if (!string.IsNullOrWhiteSpace(post.AuthorSignature))
-                    {
-                        <br />
-                        <span style="width:25%; display:inline-block; border-bottom:solid 1px black">&nbsp;</span>
-                        <br />
-                        <span class="Caption">@Html.Raw(post.AuthorSignature)</span>
-                    }
-                </span>
+                    @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
+                }
+                <br />
             </span>
+            <p>&nbsp;</p>
+            <p>&nbsp;</p>
+            <span class="CollapsedActions" onclick="showElement('actions@(post.PostId.Value)')" id="actionsButton@(post.PostId.Value)">
+                &#x2699; Opțiuni mesaj
+            </span>
+            <ul class="PostActions" id="actions@(post.PostId.Value)">
+                <li>
+                    @if (!IsLocked)
+                    {
+                        <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">❠ Răspunde cu citat</a>
+                    }
+                    else
+                    {
+                        <a href="#!" title="Subiectul este închis, nu se mai pot trimite răspunsuri."><s>&#x1F5E8; Răspunde cu citat</s></a>
+                    }
+                </li>
+                <li>
+                    <a asp-page="/Posting" asp-page-handler="QuotePrivateMessage" asp-route-postId="@post.PostId">&#x1F4E7; Trimite mesaj privat</a>
+                </li>
+                <li>
+                    <a href="#">&#x2757; Raportează mesajul</a>
+                </li>
+                @if (await Model.IsCurrentUserModeratorHereAsync())
+                {
+                    <li>
+                        <a href="#!">&#x2753; Informații mesaj</a>
+                    </li>
+                    <li>
+                        Selectează pentru moderare <input type="checkBox" name="posts" value="@post.PostId" form="moderatorForm" />
+                    </li>
+                }
+            </ul>
+            @if (!string.IsNullOrWhiteSpace(post.AuthorSignature))
+            {
+                <span class="Signature">
+                    <span style="width:25%; display:inline-block; border-bottom:solid 1px black">&nbsp;</span>
+                    <br />
+                    <span class="Caption">@Html.Raw(post.AuthorSignature)</span>
+                </span>
+            }
         </div>
         @await Html.PartialAsync(
             "_SummaryPartial",
@@ -229,7 +253,7 @@ else
 }
 <p></p>
 
-@await  Html.PartialAsync(
+@await Html.PartialAsync(
     "_PaginationControlsPartial",
     new CustomPartials._PaginationControlsPartialModel(
         pagination: Model,
@@ -243,9 +267,9 @@ else
     ViewData
 )
 
-<p></p>
+<p>&nbsp;</p>
 <span onclick="showElement('forumTree')" style="cursor:pointer; font-weight:bold">Navigare - alege destinația &#x2935;</span>
-<p></p>
+<p>&nbsp;</p>
 <div id="forumTree" style=" display:none">
     <div style="height:400px; max-height:600px; overflow-y:scroll;">
         @await Html.PartialAsync(
@@ -266,3 +290,22 @@ else
         <input type="submit" value="Du-te" />
     </form>
 </div>
+
+<p>&nbsp;</p>
+@if (await Model.IsCurrentUserModeratorHereAsync())
+{
+    <form id="moderatorForm" method="post" asp-page-handler="Moderator">
+        <span>Acțiuni moderare: </span>
+        @Html.DropDownList("action", Enum.GetValues(typeof(ModeratorActions)).Cast<int>().Select(x => new SelectListItem(Enum.GetName(typeof(ModeratorActions), x), x.ToString())))
+        <input type="submit" value="Trimite" /> 
+        <br />
+        <span asp-validation-for="ModeratorActionResult" class="validation"></span>
+        @if (!string.IsNullOrWhiteSpace(Model.ModeratorActionResult))
+        {
+            <br/>
+            <span style="margin-left: 30px; color: green; display:block;">@Model.ModeratorActionResult</span>
+        }
+        <input asp-for="TopicId" type="hidden" />
+        <input asp-for="PageNum" type="hidden" />
+    </form>
+}
