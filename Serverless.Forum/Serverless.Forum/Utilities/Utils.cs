@@ -39,14 +39,12 @@ namespace Serverless.Forum.Utilities
 
         public async Task<byte[]> CompressObjectAsync<T>(T source)
         {
-            using (var content = new MemoryStream(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(source))))
-            using (var memory = new MemoryStream())
-            using (var gzip = new GZipStream(memory, CompressionMode.Compress))
-            {
-                await content.CopyToAsync(gzip);
-                await gzip.FlushAsync();
-                return memory.ToArray();
-            }
+            using var content = new MemoryStream(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(source)));
+            using var memory = new MemoryStream();
+            using var gzip = new GZipStream(memory, CompressionMode.Compress);
+            await content.CopyToAsync(gzip);
+            await gzip.FlushAsync();
+            return memory.ToArray();
         }
 
         public async Task<T> DecompressObjectAsync<T>(byte[] source)
@@ -56,14 +54,12 @@ namespace Serverless.Forum.Utilities
                 return default;
             }
 
-            using (var content = new MemoryStream())
-            using (var memory = new MemoryStream(source))
-            using (var gzip = new GZipStream(memory, CompressionMode.Decompress))
-            {
-                await gzip.CopyToAsync(content);
-                await content.FlushAsync();
-                return JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(content.ToArray()));
-            }
+            using var content = new MemoryStream();
+            using var memory = new MemoryStream(source);
+            using var gzip = new GZipStream(memory, CompressionMode.Decompress);
+            await gzip.CopyToAsync(content);
+            await content.FlushAsync();
+            return JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(content.ToArray()));
         }
 
         public string RandomString(int length = 8)
@@ -135,7 +131,7 @@ namespace Serverless.Forum.Utilities
 
         public async Task SendEmail(MailMessage emailMessage)
         {
-            using (var smtp = new SmtpClient(_config.GetValue<string>("Smtp:Host"), _config.GetValue<int>("Smtp:Post"))
+            using var smtp = new SmtpClient(_config.GetValue<string>("Smtp:Host"), _config.GetValue<int>("Smtp:Post"))
             {
                 EnableSsl = true,
                 UseDefaultCredentials = false,
@@ -144,10 +140,8 @@ namespace Serverless.Forum.Utilities
                     UserName = _config.GetValue<string>("Smtp:Username"),
                     Password = _config.GetValue<string>("Smtp:Password")
                 }
-            })
-            {
-                await smtp.SendMailAsync(emailMessage);
-            }
+            };
+            await smtp.SendMailAsync(emailMessage);
         }
 
         public async Task<string> RenderRazorViewToString(string viewName, PageModel model, PageContext pageContext, HttpContext httpContext)
@@ -167,23 +161,21 @@ namespace Serverless.Forum.Utilities
                     Model = model
                 };
 
-                using (var sw = new StringWriter())
+                using var sw = new StringWriter();
+                var viewContext = new ViewContext(
+                    actionContext,
+                    viewResult.View,
+                    viewDictionary,
+                    new TempDataDictionary(actionContext.HttpContext, _tempDataProvider),
+                    sw,
+                    new HtmlHelperOptions()
+                )
                 {
-                    var viewContext = new ViewContext(
-                        actionContext,
-                        viewResult.View,
-                        viewDictionary,
-                        new TempDataDictionary(actionContext.HttpContext, _tempDataProvider),
-                        sw,
-                        new HtmlHelperOptions()
-                    )
-                    {
-                        RouteData = httpContext.GetRouteData()
-                    };
+                    RouteData = httpContext.GetRouteData()
+                };
 
-                    await viewResult.View.RenderAsync(viewContext);
-                    return sw.GetStringBuilder().ToString();
-                }
+                await viewResult.View.RenderAsync(viewContext);
+                return sw.GetStringBuilder().ToString();
             }
             catch (Exception ex)
             {

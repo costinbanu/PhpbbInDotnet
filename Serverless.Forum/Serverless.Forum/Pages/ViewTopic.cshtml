@@ -15,6 +15,8 @@
                 && !(await Model.IsCurrentUserModeratorHereAsync(Model.ForumId.Value));
     var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
     var IsAdmin = await Model.IsCurrentUserAdminHereAsync();
+    var IsMod = await Model.IsCurrentUserModeratorHereAsync();
+    var EditTime = (await Model.GetCurrentUserAsync()).PostEditTime;
 }
 
 <script type="text/javascript">
@@ -191,33 +193,6 @@
             <span class="CollapsedActions" onclick="showElement('actions@(post.PostId.Value)')" id="actionsButton@(post.PostId.Value)">
                 &#x2699; Opțiuni mesaj
             </span>
-            <ul class="PostActions" id="actions@(post.PostId.Value)">
-                <li>
-                    @if (!IsLocked)
-                    {
-                        <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">❠ Răspunde cu citat</a>
-                    }
-                    else
-                    {
-                        <a href="#!" title="Subiectul este închis, nu se mai pot trimite răspunsuri."><s>&#x1F5E8; Răspunde cu citat</s></a>
-                    }
-                </li>
-                <li>
-                    <a asp-page="/Posting" asp-page-handler="QuotePrivateMessage" asp-route-postId="@post.PostId">&#x1F4E7; Trimite mesaj privat</a>
-                </li>
-                <li>
-                    <a href="#">&#x2757; Raportează mesajul</a>
-                </li>
-                @if (await Model.IsCurrentUserModeratorHereAsync())
-                {
-                    <li>
-                        <a href="#!">&#x2753; Informații mesaj</a>
-                    </li>
-                    <li>
-                        Selectează pentru moderare <input type="checkBox" name="posts" value="@post.PostId" form="moderatorForm" />
-                    </li>
-                }
-            </ul>
             @if (!string.IsNullOrWhiteSpace(post.AuthorSignature))
             {
                 <span class="Signature">
@@ -226,6 +201,12 @@
                     <span class="Caption">@Html.Raw(post.AuthorSignature)</span>
                 </span>
             }
+            <span class="Caption">
+                @if(post.LastEditTime > 0)
+                {
+                    <span>Ultima dată modificat de @post.LastEditUser pe @post.LastEditTime.ToUtcTime().ToString(UserDateFormat). Motiv: @post.LastEditReason. Modificări în total: @post.EditCount.</span>
+                }
+            </span>
         </div>
         @await Html.PartialAsync(
             "_SummaryPartial",
@@ -240,6 +221,40 @@
                 ShowAvatar = post.AuthorHasAvatar
             }
         )
+        <p>&nbsp;</p>
+        <ul class="PostActions" id="actions@(post.PostId.Value)">
+            <li>
+                @if (!IsLocked)
+                {
+                    <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">&#x1F5E8; Răspunde cu citat</a>
+                }
+                else
+                {
+                    <a href="#!" title="Subiectul este închis, nu se mai pot trimite răspunsuri."><s>&#x1F5E8; Răspunde cu citat</s></a>
+                }
+            </li>
+            <li>
+                <a asp-page="/Posting" asp-page-handler="QuotePrivateMessage" asp-route-postId="@post.PostId">&#x1F4E7; Trimite mesaj privat</a>
+            </li>
+            <li>
+                <a href="#">&#x2757; Raportează mesajul</a>
+            </li>
+            @if (IsMod)
+            {
+                <li>
+                    <a href="#!">&#x2753; Informații mesaj</a>
+                </li>
+                <li>
+                    Selectează pentru moderare <input type="checkBox" name="posts" value="@post.PostId" form="moderatorForm" />
+                </li>
+            }
+            @if (IsMod || (post.AuthorId == Model.CurrentUserId && DateTime.UtcNow.Subtract(post.PostCreationTime ?? default).TotalMinutes <= EditTime))
+            {
+                <li>
+                    <a asp-page="/Posting" asp-page-handler="EditPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">&#x1F4DD; Modifică</a>
+                </li>
+            }
+        </ul>
     </div>
 }
 <p></p>
@@ -292,17 +307,17 @@ else
 </div>
 
 <p>&nbsp;</p>
-@if (await Model.IsCurrentUserModeratorHereAsync())
+@if (IsMod)
 {
     <form id="moderatorForm" method="post" asp-page-handler="Moderator">
         <span>Acțiuni moderare: </span>
         @Html.DropDownList("action", Enum.GetValues(typeof(ModeratorActions)).Cast<int>().Select(x => new SelectListItem(Enum.GetName(typeof(ModeratorActions), x), x.ToString())))
-        <input type="submit" value="Trimite" /> 
+        <input type="submit" value="Trimite" />
         <br />
         <span asp-validation-for="ModeratorActionResult" class="validation"></span>
         @if (!string.IsNullOrWhiteSpace(Model.ModeratorActionResult))
         {
-            <br/>
+            <br />
             <span style="margin-left: 30px; color: green; display:block;">@Model.ModeratorActionResult</span>
         }
         <input asp-for="TopicId" type="hidden" />

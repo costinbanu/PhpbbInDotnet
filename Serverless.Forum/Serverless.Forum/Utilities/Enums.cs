@@ -95,4 +95,11 @@
         SplitSelectedPosts,
         DeleteSelectedPosts
     }
+
+    public enum PostingActions
+    {
+        NewForumPost,
+        EditForumPost,
+        NewPrivateMessage
+    }
 }

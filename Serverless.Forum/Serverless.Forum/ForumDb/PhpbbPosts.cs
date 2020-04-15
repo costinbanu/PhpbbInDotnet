@@ -31,7 +31,7 @@ namespace Serverless.Forum.ForumDb
         public byte PostPostcount { get; set; } = 0;
         public long PostEditTime { get; set; } = 0;
         public string PostEditReason { get; set; } = string.Empty;
-        public long PostEditUser { get; set; } = 0;
+        public int PostEditUser { get; set; } = 0;
         public short PostEditCount { get; set; } = 0;
         public byte PostEditLocked { get; set; } = 0;
     }

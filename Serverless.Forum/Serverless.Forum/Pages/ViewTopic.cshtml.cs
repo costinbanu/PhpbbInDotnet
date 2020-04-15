@@ -127,6 +127,9 @@ namespace Serverless.Forum.Pages
 
                 from ju in joinedUsers.DefaultIfEmpty()
 
+                let lastEditUser = context.PhpbbUsers.FirstOrDefault(u => u.UserId == p.PostEditUser)
+                let lastEditUsername = lastEditUser == null ? "Anonymous" : lastEditUser.Username
+
                 select new PostDisplay
                 {
                     PostSubject = p.PostSubject,
@@ -142,7 +145,11 @@ namespace Serverless.Forum.Pages
                     BbcodeUid = p.BbcodeUid,
                     Unread = IsPostUnread(p.TopicId, p.PostId),
                     AuthorHasAvatar = ju == null ? false : !string.IsNullOrWhiteSpace(ju.UserAvatar),
-                    AuthorSignature = ju == null ? null : _postService.BbCodeToHtml(ju.UserSig, ju.UserSigBbcodeUid).RunSync()
+                    AuthorSignature = ju == null ? null : _postService.BbCodeToHtml(ju.UserSig, ju.UserSigBbcodeUid).RunSync(),
+                    LastEditTime = p.PostEditTime,
+                    LastEditUser = lastEditUsername,
+                    LastEditReason = p.PostEditReason,
+                    EditCount = p.PostEditCount
                 }
             ).ToList();
             await _postService.ProcessPosts(Posts, PageContext, HttpContext, true);

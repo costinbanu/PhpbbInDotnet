@@ -555,7 +555,24 @@ else
             }
         </div>
     </div>
-    <input type="submit" value="Trimite mesajul" onclick="return censor()" asp-page-handler="ForumPost" />
+
+    @switch (Model.Action)
+    {
+        case PostingActions.NewForumPost:
+            <input type="submit" value="Trimite mesajul" onclick="return censor()" asp-page-handler="NewForumPost" />
+            break;
+        case PostingActions.EditForumPost:
+            <span>Motivul modificării: </span><input asp-for="EditReason" type="text" /><br />
+            <input type="submit" value="Trimite mesajul" onclick="return censor()" asp-page-handler="EditForumPost" />
+            break;
+        case PostingActions.NewPrivateMessage:
+            <input type="submit" value="Trimite mesajul" onclick="return censor()" asp-page-handler="PrivateMessage" />
+            break;
+        default:
+            <span class="validation">A intervenit o eroare, pagina nu a fost afișată corect.</span>
+            break;
+    }
+
     <p>&nbsp;</p>
     <a href="#" onclick="showElement('attachPanel')">Adaugă fișiere atașate</a>
     @if (Model.CanCreatePoll)

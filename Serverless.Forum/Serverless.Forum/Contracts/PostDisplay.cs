@@ -31,5 +31,13 @@ namespace Serverless.Forum.Contracts
         public bool AuthorHasAvatar { get; set; } = false;
 
         public string AuthorSignature { get; set; }
+
+        public long LastEditTime { get; set; } = 0;
+
+        public string LastEditUser { get; set; }
+
+        public short EditCount { get; set; } = 0;
+
+        public string LastEditReason { get; set; }
     }
 }

@@ -21,6 +21,8 @@ namespace Serverless.Forum.Contracts
 
         public string UserColor { get; set; } = null;
 
+        public int PostEditTime { get; set; } = 60;
+
         public static bool operator == (LoggedUser left, LoggedUser right) => left?.UserId == right?.UserId;
 
         public static bool operator != (LoggedUser left, LoggedUser right) => !(left == right);

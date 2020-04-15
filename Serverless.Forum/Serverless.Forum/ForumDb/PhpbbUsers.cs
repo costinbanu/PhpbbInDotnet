@@ -87,6 +87,6 @@ namespace Serverless.Forum.ForumDb
         public byte UserReminded { get; set; } = 0;
         public long UserRemindedTime { get; set; } = 0;
         public byte? AcceptedNewTerms { get; set; } = null;
-        public long UserEditTime { get; set; } = 60;
+        public int UserEditTime { get; set; } = 60;
     }
 }
