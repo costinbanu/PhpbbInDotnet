@@ -70,8 +70,10 @@ namespace Serverless.Forum.Pages
 
         private readonly PostService _postService;
         private readonly StorageService _storageService;
+        private readonly WritingToolsService _writingService;
 
-        public PostingModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService, PostService postService, StorageService storageService)
+        public PostingModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService, 
+            PostService postService, StorageService storageService, WritingToolsService writingService) 
             : base(config, utils, forumService, userService, cacheService)
         {
             PollExpirationDaysString = "1";
@@ -80,6 +82,7 @@ namespace Serverless.Forum.Pages
             DeleteFileDummyForValidation = new List<string>();
             _postService = postService;
             _storageService = storageService;
+            _writingService = writingService;
         }
 
         public async Task<IActionResult> OnGetForumPost()
@@ -137,7 +140,7 @@ namespace Serverless.Forum.Pages
             CanCreatePoll = false;
             await Init(context);
 
-            PostText = $"[quote=\"{curAuthor}\"]\n{HttpUtility.HtmlDecode(_postService.CleanTextForQuoting(curPost.PostText, curPost.BbcodeUid))}\n[/quote]";
+            PostText = $"[quote=\"{curAuthor}\"]\n{HttpUtility.HtmlDecode(_writingService.CleanTextForQuoting(curPost.PostText, curPost.BbcodeUid))}\n[/quote]";
             PostTitle = $"{Constants.REPLY}{HttpUtility.HtmlDecode(curPost.PostSubject)}";
             Header = HttpUtility.HtmlDecode(curTopic.TopicTitle);
             Action = PostingActions.NewForumPost;
@@ -176,21 +179,13 @@ namespace Serverless.Forum.Pages
             {
                 return permissionError;
             }
-            de testat asta
+            //de testat asta
             if(!await IsCurrentUserModeratorHereAsync() && DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes > (await GetCurrentUserAsync()).PostEditTime)
             {
                 return RedirectToPage("ViewTopic", "byPostId", new { PostId });
             }
 
-            CanCreatePoll = (
-                await (
-                    from p in context.PhpbbPosts
-                    where p.TopicId == curPost.TopicId
-                    group p by p.PostTime into groups
-                    orderby groups.Key ascending
-                    select groups.FirstOrDefault()
-                ).FirstOrDefaultAsync()
-            )?.PostId == PostId;
+            CanCreatePoll = curTopic.TopicFirstPostId == PostId;
 
             await Init(context);
             
@@ -199,7 +194,7 @@ namespace Serverless.Forum.Pages
                 await context.PhpbbAttachments.AsNoTracking().Where(a => a.PostMsgId == PostId).ToListAsync()
             );
             var subject = curPost.PostSubject.StartsWith(Constants.REPLY) ? curPost.PostSubject.Substring(Constants.REPLY.Length) : curPost.PostSubject;
-            PostText = HttpUtility.HtmlDecode(_postService.CleanTextForQuoting(curPost.PostText, curPost.BbcodeUid));
+            PostText = HttpUtility.HtmlDecode(_writingService.CleanTextForQuoting(curPost.PostText, curPost.BbcodeUid));
             PostTitle = HttpUtility.HtmlDecode(curPost.PostSubject);
             Header = HttpUtility.HtmlDecode(curTopic.TopicTitle);
             Action = PostingActions.EditForumPost;
@@ -314,7 +309,7 @@ namespace Serverless.Forum.Pages
                 return permissionError;
             }
 
-            var addedPostId = UpsertPost(context, null, usr);
+            var addedPostId = await UpsertPost(context, null, usr);
 
             return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
         }
@@ -335,18 +330,17 @@ namespace Serverless.Forum.Pages
 
             var post = await context.PhpbbPosts.FirstOrDefaultAsync(p => p.PostId == PostId);
 
-            post.PostText = _postService.PrepareTextForSaving(context, HttpUtility.HtmlEncode(PostText));
+            post.PostText = _writingService.PrepareTextForSaving(context, HttpUtility.HtmlEncode(PostText));
             post.PostSubject = HttpUtility.HtmlEncode(PostTitle);
             post.PostEditTime = DateTime.UtcNow.ToUnixTimestamp();
             post.PostEditUser = CurrentUserId;
             post.PostEditReason = EditReason ?? string.Empty;
             post.PostEditCount++;
 
-            var addedPostId = UpsertPost(context, post, usr);
+            var addedPostId = await UpsertPost(context, post, usr);
 
             return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
         }
-
 
         public async Task<IActionResult> OnPostPrivateMessage()
         {
@@ -454,7 +448,7 @@ namespace Serverless.Forum.Pages
                     TopicId = TopicId.Value,
                     PosterId = usr.UserId,
                     PostSubject = HttpUtility.HtmlEncode(PostTitle),
-                    PostText = _postService.PrepareTextForSaving(context, HttpUtility.HtmlEncode(PostText)),
+                    PostText = _writingService.PrepareTextForSaving(context, HttpUtility.HtmlEncode(PostText)),
                     PostTime = DateTime.UtcNow.ToUnixTimestamp(),
                     PostApproved = 1,
                     PostReported = 0,
@@ -470,7 +464,8 @@ namespace Serverless.Forum.Pages
                     PostEditReason = string.Empty,
                     PostEditTime = 0,
                     PostEditUser = 0,
-                    PosterIp = HttpContext.Connection.RemoteIpAddress.ToString()
+                    PosterIp = HttpContext.Connection.RemoteIpAddress.ToString(), 
+                    PostUsername = HttpUtility.HtmlEncode(usr.Username)
                 });
                 postResult.Entity.PostId = 0;
                 await context.SaveChangesAsync();
@@ -483,8 +478,7 @@ namespace Serverless.Forum.Pages
                     attachList[i].AttachComment = FileComment[i] ?? string.Empty;
                 }
 
-                await _postService.CascadePostAdd(context, post, usr);
-
+                await _postService.CascadePostAdd(context, post, usr, isNewTopic);
                 await context.PhpbbAttachments.AddRangeAsync(attachList);
             }
             else
@@ -502,6 +496,8 @@ namespace Serverless.Forum.Pages
                 {
                     xref.Old.AttachComment = xref.NewComment;
                 }
+
+                await _postService.CascadePostEdit(context, post, usr);
                 await context.SaveChangesAsync();
             }
 
@@ -509,6 +505,15 @@ namespace Serverless.Forum.Pages
             {
                 byte pollOptionId = 1;
                 ulong id = await context.PhpbbPollOptions.AsNoTracking().MaxAsync(o => o.Id);
+
+                var options = context.PhpbbPollOptions.Where(o => o.TopicId == TopicId);
+                if (options.Any())
+                {
+                    context.PhpbbPollOptions.RemoveRange(options);
+                    context.PhpbbPollVotes.RemoveRange(context.PhpbbPollVotes.Where(v => v.TopicId == TopicId));
+                    await context.SaveChangesAsync();
+                }
+
                 foreach (var option in pollOptionsArray)
                 {
                     var result = await context.PhpbbPollOptions.AddAsync(new PhpbbPollOptions

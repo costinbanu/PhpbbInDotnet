@@ -36,12 +36,15 @@ namespace Serverless.Forum.Pages
         private int? _count;
         private readonly PostService _postService;
         private readonly ModeratorService _moderatorService;
+        private readonly BBCodeRenderingService _renderingService;
 
-        public ViewTopicModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService, PostService postService, ModeratorService moderatorService)
+        public ViewTopicModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService, 
+            PostService postService, ModeratorService moderatorService, BBCodeRenderingService renderingService)
             : base(config, utils, forumService, userService, cacheService)
         {
             _postService = postService;
             _moderatorService = moderatorService;
+            _renderingService = renderingService;
         }
 
         public async Task<IActionResult> OnGetByPostId(int postId, bool? highlight)
@@ -145,14 +148,14 @@ namespace Serverless.Forum.Pages
                     BbcodeUid = p.BbcodeUid,
                     Unread = IsPostUnread(p.TopicId, p.PostId),
                     AuthorHasAvatar = ju == null ? false : !string.IsNullOrWhiteSpace(ju.UserAvatar),
-                    AuthorSignature = ju == null ? null : _postService.BbCodeToHtml(ju.UserSig, ju.UserSigBbcodeUid).RunSync(),
+                    AuthorSignature = ju == null ? null : _renderingService.BbCodeToHtml(ju.UserSig, ju.UserSigBbcodeUid).RunSync(),
                     LastEditTime = p.PostEditTime,
                     LastEditUser = lastEditUsername,
                     LastEditReason = p.PostEditReason,
                     EditCount = p.PostEditCount
                 }
             ).ToList();
-            await _postService.ProcessPosts(Posts, PageContext, HttpContext, true);
+            await _renderingService.ProcessPosts(Posts, PageContext, HttpContext, true);
             TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
 
             await GetPoll(context);

@@ -2,9 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.ForumDb;
+using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Serverless.Forum.Services
@@ -14,14 +16,14 @@ namespace Serverless.Forum.Services
         private readonly IConfiguration _config;
         private readonly StorageService _storageService;
         private readonly CacheService _cacheService;
+        private readonly Utils _utils;
 
-        public string S3FolderPrefix => _storageService.FolderPrefix;
-
-        public WritingToolsService(IConfiguration config, StorageService storageService, CacheService cacheService)
+        public WritingToolsService(IConfiguration config, StorageService storageService, CacheService cacheService, Utils utils)
         {
             _config = config;
             _storageService = storageService;
             _cacheService = cacheService;
+            _utils = utils;
         }
 
         public async Task<List<PhpbbWords>> GetBannedWords()
@@ -197,6 +199,68 @@ namespace Serverless.Forum.Services
             {
                 return ("A intervenit o eroare, mai încearcă o dată.", false);
             }
+        }
+
+        public string PrepareTextForSaving(ForumDbContext context, string text)
+        {
+            foreach (var sr in from s in context.PhpbbSmilies.AsNoTracking()
+                               select new
+                               {
+                                   Regex = new Regex(Regex.Escape(s.Code), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
+                                   Replacement = $"<!-- s{s.Code} --><img src=\"./images/smilies/{s.SmileyUrl.Trim('/')}\" /><!-- s{s.Code} -->"
+                               })
+            {
+                text = sr.Regex.Replace(text, sr.Replacement);
+            }
+
+            var urlRegex = new Regex(@"(ftp:\/\/|www\.|https?:\/\/){1}[a-zA-Z0-9u00a1-\uffff0-]{2,}\.[a-zA-Z0-9u00a1-\uffff0-]{2,}(\S*)", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.ExplicitCapture);
+            var offset = 0;
+            foreach (Match match in urlRegex.Matches(text))
+            {
+                var linkText = match.Value;
+                if (linkText.Length > 53)
+                {
+                    linkText = $"{linkText.Substring(0, 40)} ... {linkText.Substring(linkText.Length - 8)}";
+                }
+                var (result, curOffset) = _utils.ReplaceAtIndex(text, match.Value, match.Result($"<!-- m --><a href=\"{match.Value}\">{linkText}</a><!-- m -->"), match.Index + offset);
+                text = result;
+                offset += curOffset;
+            }
+            return text;
+        }
+
+        public string CleanTextForQuoting(string text, string uid)
+        {
+            var uidRegex = new Regex($":{uid}", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            var tagRegex = new Regex(@"(:[a-z])(\]|:)", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            var cleanTextTemp = uidRegex.Replace(text, string.Empty);
+            var noUid = tagRegex.Replace(cleanTextTemp, "$2");
+
+            var noSmileys = noUid;
+            var smileyRegex = new Regex("<!-- s(:?.+?) -->.+?<!-- s:?.+?:? -->", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            var smileyMatches = smileyRegex.Matches(noSmileys);
+            try
+            {
+                foreach (Match m in smileyMatches)
+                {
+                    noSmileys = noSmileys.Replace(m.Value, m.Groups[1].Value);
+                }
+            }
+            catch { }
+
+            var noLinks = noSmileys;
+            var linkRegex = new Regex(@"<!-- m --><a\s+(?:[^>]*?\s+)?href=([""'])(.*?)\1.+?<!-- m -->", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            var linkMatches = linkRegex.Matches(noLinks);
+            try
+            {
+                foreach (Match m in linkMatches)
+                {
+                    noLinks = noLinks.Replace(m.Value, m.Groups[2].Value);
+                }
+            }
+            catch { }
+
+            return noLinks;
         }
     }
 }

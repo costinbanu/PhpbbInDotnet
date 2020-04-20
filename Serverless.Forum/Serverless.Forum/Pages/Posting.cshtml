@@ -423,6 +423,13 @@
         value = value * 86400;
         target.innerText = "Chestionarul expiră " + moment().add(value, "seconds").format("LLLL");
     }
+
+    var hasConfirmation = false;
+    function confirmPollChange() {
+        if (@Model.Action == @PostingActions.EditForumPost && !hasConfirmation && confirm("Dacă modificați opțiunile, toate voturile înregistrate până acum vor fi șterse. Continuați?")) {
+            hasConfirmation = true;
+        }
+    }
 </script>
 <style>
     .popup {
@@ -488,7 +495,7 @@ else
                                     {
                                         var value = $"#{color[r]:X2}{color[g]:X2}{color[b]:X2}";
                                         <td style="width: 15px; height: 10px; background-color: @value; border:solid 1px white">
-                                            <a href="#a" onclick="bbfontstyle('[color=@value]', '[/color]'); return false;">
+                                            <a href="javascript:bbfontstyle('[color=@value]', '[/color]');">
                                                 <img src="./images/spacer.gif" alt="@value" title="@value" style="width: 15px; height: 10px">
                                             </a>
                                         </td>
@@ -539,17 +546,17 @@ else
 
         @foreach (var smiley in ((await _cacheService.GetFromCacheAsync<List<PhpbbSmilies>>(Model.GetActualCacheKey("Smilies", false))) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 1))
         {
-            <a href="#a" onclick="insert_text('@smiley.Code', true); return false;">
+            <a href="javascript:insert_text('@smiley.Code', true);">
                 <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
             </a>
         }
         <p>&nbsp;</p>
-        <a href="#a" onclick="show_hidden_smilies(this)">Arată mai multe</a>
+        <a href="javascript:show_hidden_smilies(this);">Arată mai multe</a>
         <p>&nbsp;</p>
         <div id="hiddenSmilies" style="visibility:hidden">
             @foreach (var smiley in ((await _cacheService.GetFromCacheAsync<List<PhpbbSmilies>>(Model.GetActualCacheKey("Smilies", false))) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 0))
             {
-                <a href="#a" onclick="insert_text('@smiley.Code', true); return false;">
+                <a href="#a" onclick="insert_text('@smiley.Code', true);">
                     <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
                 </a>
             }
@@ -562,7 +569,7 @@ else
             <input type="submit" value="Trimite mesajul" onclick="return censor()" asp-page-handler="NewForumPost" />
             break;
         case PostingActions.EditForumPost:
-            <span>Motivul modificării: </span><input asp-for="EditReason" type="text" /><br />
+            <span>Motivul modificării: </span><input asp-for="EditReason" type="text" style="width:80%" /><br />
             <input type="submit" value="Trimite mesajul" onclick="return censor()" asp-page-handler="EditForumPost" />
             break;
         case PostingActions.NewPrivateMessage:
@@ -593,7 +600,7 @@ else
                 <tr style="border-bottom: solid 1px black">
                     <td style="width:200px; padding:5px">Opțiuni (una pe rând)</td>
                     <td colspan="2" style="padding:5px">
-                        <textarea asp-for="PollOptions" rows="4" style="width:100%"></textarea>
+                        <textarea asp-for="PollOptions" rows="4" style="width:100%" onmousedown="confirmPollChange()"></textarea>
                         <span asp-validation-for="PollOptions" class="validation"></span>
                     </td>
                 </tr>
@@ -682,7 +689,10 @@ else
 
     tribute.attach(document.getElementById("message"));
 
-    showExpirationDate(document.getElementById("pollExpiration").value);
+    var pollExpiration = document.getElementById("pollExpiration");
+    if (pollExpiration) {
+        showExpirationDate(pollExpiration.value);
+    }
 </script>
 
 <div id="imgcheckstatus" class="popup"></div>

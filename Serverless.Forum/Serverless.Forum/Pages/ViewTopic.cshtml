@@ -230,19 +230,19 @@
                 }
                 else
                 {
-                    <a href="#!" title="Subiectul este închis, nu se mai pot trimite răspunsuri."><s>&#x1F5E8; Răspunde cu citat</s></a>
+                    <a href="javascript:return;" title="Subiectul este închis, nu se mai pot trimite răspunsuri."><s>&#x1F5E8; Răspunde cu citat</s></a>
                 }
             </li>
             <li>
                 <a asp-page="/Posting" asp-page-handler="QuotePrivateMessage" asp-route-postId="@post.PostId">&#x1F4E7; Trimite mesaj privat</a>
             </li>
             <li>
-                <a href="#">&#x2757; Raportează mesajul</a>
+                <a href="javascript:return;">&#x2757; Raportează mesajul</a>
             </li>
             @if (IsMod)
             {
                 <li>
-                    <a href="#!">&#x2753; Informații mesaj</a>
+                    <a href="javascript:return;">&#x2753; Informații mesaj</a>
                 </li>
                 <li>
                     Selectează pentru moderare <input type="checkBox" name="posts" value="@post.PostId" form="moderatorForm" />

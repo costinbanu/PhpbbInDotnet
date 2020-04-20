@@ -19,6 +19,7 @@ namespace Serverless.Forum.Pages
     public class SearchModel : ModelWithPagination
     {
         private readonly PostService _postService;
+        private readonly BBCodeRenderingService _renderingService;
 
         public IConfiguration Config => _config;
 
@@ -55,10 +56,12 @@ namespace Serverless.Forum.Pages
 
         public IEnumerable<ExtendedPostDisplay> Posts { get; private set; }
 
-        public SearchModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService, PostService postService)
+        public SearchModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService, 
+            PostService postService, BBCodeRenderingService renderingService)
             : base(config, utils, forumService, userService, cacheService)
         {
             _postService = postService;
+            _renderingService = renderingService;
         }
 
         public async Task OnGet()
@@ -80,27 +83,25 @@ namespace Serverless.Forum.Pages
                 TopicId = int.TryParse(query["topicid"], out var i) ? i as int? : null;
             }
 
-            using (var context = new ForumDbContext(_config))
+            using var context = new ForumDbContext(_config);
+            Users = await (
+                from u in context.PhpbbUsers.AsNoTracking()
+                where u.UserId != 1 && u.UserType != 2
+                orderby u.Username
+                select KeyValuePair.Create(u.Username, u.UserId)
+            ).ToListAsync();
+
+            if (ForumId == null && TopicId != null)
             {
-                Users = await (
-                    from u in context.PhpbbUsers.AsNoTracking()
-                    where u.UserId != 1 && u.UserType != 2
-                    orderby u.Username
-                    select KeyValuePair.Create(u.Username, u.UserId)
-                ).ToListAsync();
+                ForumId = (await context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == TopicId))?.ForumId;
+            }
 
-                if (ForumId == null && TopicId != null)
-                {
-                    ForumId = (await context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == TopicId))?.ForumId;
-                }
-
-                if (ForumId == null && TopicId == null && query != null)
-                {
-                    var postId = int.TryParse(query["postid"], out var i) ? i as int? : null;
-                    var post = await context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(t => t.PostId == postId);
-                    TopicId = post?.TopicId;
-                    ForumId = post.ForumId;
-                }
+            if (ForumId == null && TopicId == null && query != null)
+            {
+                var postId = int.TryParse(query["postid"], out var i) ? i as int? : null;
+                var post = await context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(t => t.PostId == postId);
+                TopicId = post?.TopicId;
+                ForumId = post.ForumId;
             }
 
             if (DoSearch ?? false)
@@ -128,39 +129,33 @@ namespace Serverless.Forum.Pages
 
         private async Task Search()
         {
-            using (var context = new ForumDbContext(_config))
-            using (var connection = context.Database.GetDbConnection())
-            {
-                await connection.OpenAsync();
-                DefaultTypeMap.MatchNamesWithUnderscores = true;
-                PageNum = PageNum ?? 1;
-                using (
-                    var multi = await connection.QueryMultipleAsync(
-                        "CALL `forum`.`search_post_text`(@forum, @topic, @author, @page, @search);",
-                        new
-                        {
-                            forum = ForumId > 0 ? ForumId : null,
-                            topic = TopicId > 0 ? TopicId : null,
-                            author = AuthorId > 0 ? AuthorId : null as int?, 
-                            page = PageNum,
-                            search = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText)
-                        }
-                    )
-                )
+            using var context = new ForumDbContext(_config);
+            using var connection = context.Database.GetDbConnection();
+            await connection.OpenAsync();
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            PageNum ??= 1;
+            using var multi = await connection.QueryMultipleAsync(
+                "CALL `forum`.`search_post_text`(@forum, @topic, @author, @page, @search);",
+                new
                 {
-
-                    Posts = await multi.ReadAsync<ExtendedPostDisplay>();
-                    Parallel.ForEach(Posts, async p =>
-                    {
-                        p.AuthorHasAvatar = !string.IsNullOrWhiteSpace(p.UserAvatar);
-                        p.AuthorSignature = p.UserSig == null ? null : await _postService.BbCodeToHtml(p.UserSig, p.UserSigBbcodeUid);
-                    });
-                    await _postService.ProcessPosts(Posts, PageContext, HttpContext, false, SearchText);
-                    TotalResults = unchecked((int)(await multi.ReadAsync<long>()).Single());
+                    forum = ForumId > 0 ? ForumId : null,
+                    topic = TopicId > 0 ? TopicId : null,
+                    author = AuthorId > 0 ? AuthorId : null as int?,
+                    page = PageNum,
+                    search = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText)
                 }
+            );
 
-                await ComputePagination(TotalResults.Value, PageNum.Value, GetSearchLinkForPage(PageNum.Value + 1));
-            }
+            Posts = await multi.ReadAsync<ExtendedPostDisplay>();
+            Parallel.ForEach(Posts, async p =>
+            {
+                p.AuthorHasAvatar = !string.IsNullOrWhiteSpace(p.UserAvatar);
+                p.AuthorSignature = p.UserSig == null ? null : await _renderingService.BbCodeToHtml(p.UserSig, p.UserSigBbcodeUid);
+            });
+            await _renderingService.ProcessPosts(Posts, PageContext, HttpContext, false, SearchText);
+            TotalResults = unchecked((int)(await multi.ReadAsync<long>()).Single());
+
+            await ComputePagination(TotalResults.Value, PageNum.Value, GetSearchLinkForPage(PageNum.Value + 1));
         }
 
         public class ExtendedPostDisplay : PostDisplay

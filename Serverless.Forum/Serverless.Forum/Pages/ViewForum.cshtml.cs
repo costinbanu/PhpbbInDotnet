@@ -78,13 +78,13 @@ namespace Serverless.Forum.Pages
                              {
                                  Id = g.TopicId,
                                  Title = HttpUtility.HtmlDecode(g.TopicTitle),
-                                 LastPosterId = /*ju.UserId*/g.TopicLastPosterId == 1 ? null as int? : /*ju.UserId*/g.TopicLastPosterId,
+                                 LastPosterId = g.TopicLastPosterId == 1 ? null as int? : g.TopicLastPosterId,
                                  LastPosterName = HttpUtility.HtmlDecode(g.TopicLastPosterName),
                                  LastPostTime = g.TopicLastPostTime.ToUtcTime(),
                                  PostCount = context.PhpbbPosts.Count(p => p.TopicId == g.TopicId),
                                  Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1),
                                  Unread = IsTopicUnread(g.TopicId),
-                                 LastPosterColor = /*ju == null ? null : ju.UserColour*/g.TopicLastPosterColour,
+                                 LastPosterColor = g.TopicLastPosterColour,
                                  LastPostId = g.TopicLastPostId
                              }
                 }
@@ -159,16 +159,13 @@ namespace Serverless.Forum.Pages
                 select jtt
             ).ToListAsync();
 
-            //if (toRemove.Any())
-            //{
-                context.PhpbbTopicsTrack.RemoveRange(toRemove);
-                await context.PhpbbForumsTrack.AddAsync(new PhpbbForumsTrack
-                {
-                    ForumId = forumId,
-                    UserId = CurrentUserId,
-                    MarkTime = DateTime.UtcNow.ToUnixTimestamp()
-                });
-            //}
+            context.PhpbbTopicsTrack.RemoveRange(toRemove);
+            await context.PhpbbForumsTrack.AddAsync(new PhpbbForumsTrack
+            {
+                ForumId = forumId,
+                UserId = CurrentUserId,
+                MarkTime = DateTime.UtcNow.ToUnixTimestamp()
+            });
         }
     }
 }
