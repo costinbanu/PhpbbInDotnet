@@ -22,23 +22,23 @@
             </span>
             @await Html.PartialAsync(
                 "_SummaryPartial",
-                new CustomPartials._SummaryPartialModel
-                {
-                    AuthorId = forum.LastPosterId,
-                    AuthorName = forum.LastPosterName,
-                    CreationTime = forum.LastPostTime,
-                    AssetId = forum.Id ?? 0,
-                    DateFormat = Model.DateFormat,
-                    AuthorColor = forum.LastPosterColor,
-                    LinkHref = forum.LastPostId == null ? null : $"./ViewTopic?postId={forum.LastPostId}&handler=ByPostId",
-                    LinkText = forum.LastPostId == null ? null : $"Mergi la ultimul mesaj"
-                }
+                new CustomPartials._SummaryPartialModel(
+                    forum.LastPosterId,
+                    forum.LastPosterName,
+                    forum.LastPosterColor,
+                    forum.LastPostTime,
+                    forum.Id ?? 0,
+                    Model.DateFormat,
+                    false,
+                    forum.LastPostId == null ? null : $"./ViewTopic?postId={forum.LastPostId}&handler=ByPostId",
+                    forum.LastPostId == null ? null : $"Mergi la ultimul mesaj"
+                )
             )
         </div>
     }
 }
 
-        <p>&nbsp;</p>
+<p>&nbsp;</p>
 
 @if (Model.ShowTitle && Model.SubForums.Any())
 {
@@ -55,17 +55,17 @@
         </span>
         @await Html.PartialAsync(
             "_SummaryPartial",
-            new CustomPartials._SummaryPartialModel
-            {
-                AuthorId = forum.LastPosterId,
-                AuthorName = forum.LastPosterName,
-                CreationTime = forum.LastPostTime,
-                AssetId = forum.Id ?? 0,
-                DateFormat = Model.DateFormat,
-                AuthorColor = forum.LastPosterColor,
-                LinkHref = forum.LastPostId == null ? null : $"./ViewTopic?postId={forum.LastPostId}&handler=ByPostId",
-                LinkText = forum.LastPostId == null ? null : $"Mergi la ultimul mesaj"
-            }
+            new CustomPartials._SummaryPartialModel(
+                forum.LastPosterId,
+                forum.LastPosterName,
+                forum.LastPosterColor,
+                forum.LastPostTime,
+                forum.Id ?? 0,
+                Model.DateFormat,
+                false,
+                forum.LastPostId == null ? null : $"./ViewTopic?postId={forum.LastPostId}&handler=ByPostId",
+                forum.LastPostId == null ? null : $"Mergi la ultimul mesaj"
+            )
         )
     </div>
 }

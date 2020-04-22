@@ -1,8 +1,9 @@
 ﻿using CryptSharp.Core;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Pages.CustomPartials.Email;
 using Serverless.Forum.Services;
@@ -14,6 +15,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Mail;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace Serverless.Forum.Pages
 {
@@ -52,11 +54,13 @@ namespace Serverless.Forum.Pages
         public int UserRank { get; set; }
 
         private readonly StorageService _storageService;
+        private readonly WritingToolsService _writingService;
 
-        public UserModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService, StorageService storageService)
-            : base(config, utils, forumService, userService, cacheService)
+        public UserModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, StorageService storageService, WritingToolsService writingService)
+            : base(utils, context, forumService, userService, cacheService)
         {
             _storageService = storageService;
+            _writingService = writingService;
         }
 
         public async Task<IActionResult> OnGet(int? userId, bool? viewAsAnother)
@@ -74,15 +78,12 @@ namespace Serverless.Forum.Pages
 
             ViewAsAnother = viewAsAnother ?? false;
 
-            using (var context = new ForumDbContext(_config))
+            var cur = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == userId);
+            if (cur == null)
             {
-                var cur = await context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == userId);
-                if (cur == null)
-                {
-                    return NotFound($"Utilizatorul cu id '{userId}' nu există.");
-                }
-                await Render(context, cur);
+                return NotFound($"Utilizatorul cu id '{userId}' nu există.");
             }
+            await Render(_context, cur);
 
             return Page();
         }
@@ -94,144 +95,158 @@ namespace Serverless.Forum.Pages
                 return Forbid();
             }
 
-            using (var context = new ForumDbContext(_config))
+            var dbUser = await _context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == CurrentUser.UserId);
+            if (dbUser == null)
             {
-                var dbUser = await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == CurrentUser.UserId);
-                if (dbUser == null)
-                {
-                    return NotFound($"Utilizatorul cu id '{CurrentUser.UserId}' nu există.");
-                }
-
-                dbUser.UserBirthday = Birthday ?? string.Empty;
-                dbUser.UserAllowViewemail = (byte)(ShowEmail ? 1 : 0);
-                dbUser.UserRank = UserRank;
-
-                if (Email != dbUser.UserEmail)
-                {
-                    var registrationCode = Guid.NewGuid().ToString("n");
-
-                    dbUser.UserEmail = Email;
-                    dbUser.UserInactiveTime = DateTime.UtcNow.ToUnixTimestamp();
-                    dbUser.UserInactiveReason = UserInactiveReason.ChangedEmailNotConfirmed;
-                    dbUser.UserActkey = registrationCode;
-                    dbUser.UserEmailtime = DateTime.UtcNow.ToUnixTimestamp();
-
-                    var subject = $"Schimbarea adresei de e-mail de pe \"{Constants.FORUM_NAME}\"";
-                    using var emailMessage = new MailMessage
-                    {
-                        From = new MailAddress($"admin@metrouusor.com", Constants.FORUM_NAME),
-                        Subject = subject,
-                        Body = await _utils.RenderRazorViewToString(
-                            "_WelcomeEmailPartial",
-                            new _WelcomeEmailPartialModel
-                            {
-                                RegistrationCode = registrationCode,
-                                Subject = subject,
-                                UserName = dbUser.Username
-                            },
-                            PageContext,
-                            HttpContext
-                        ),
-                        IsBodyHtml = true
-                    };
-                    emailMessage.To.Add(Email);
-                    await _utils.SendEmail(emailMessage);
-                }
-
-                if (!string.IsNullOrWhiteSpace(FirstPassword)
-                    && Crypter.Phpass.Crypt(FirstPassword, dbUser.UserPassword) != dbUser.UserPassword)
-                {
-                    dbUser.UserPassword = Crypter.Phpass.Crypt(FirstPassword, Crypter.Phpass.GenerateSalt());
-                    dbUser.UserPasschg = DateTime.UtcNow.ToUnixTimestamp();
-                }
-
-                if (DeleteAvatar)
-                {
-                    if(! await _storageService.DeleteFile($"{_storageService.FolderPrefix}{_storageService.AvatarsFolder}{dbUser.UserId}{Path.GetExtension(dbUser.UserAvatar)}"))
-                    {
-                        throw new Exception("Failed to delete file");
-                    }
-
-                    dbUser.UserAvatarType = 0;
-                    dbUser.UserAvatarWidth = 0;
-                    dbUser.UserAvatarHeight = 0;
-                    dbUser.UserAvatar = null;
-                }
-
-                if (Avatar != null)
-                {
-                    if (! await _storageService.UploadFile($"{_storageService.FolderPrefix}{_storageService.AvatarsFolder}{dbUser.UserId}{Path.GetExtension(Avatar.FileName)}", Avatar.ContentType, Avatar.OpenReadStream()))
-                    {
-                        throw new Exception("Failed to upload file");
-                    }
-
-                    using var bmp = Avatar.ToImage();
-                    dbUser.UserAvatarType = 1;
-                    dbUser.UserAvatarWidth = unchecked((short)bmp.Width);
-                    dbUser.UserAvatarHeight = unchecked((short)bmp.Height);
-                    dbUser.UserAvatar = $"{dbUser.UserId}_{Avatar.FileName}";
-                }
-
-                var dbAclRole = await context.PhpbbAclUsers.FirstOrDefaultAsync(r => r.UserId == dbUser.UserId);
-                if (dbAclRole != null && AclRole == -1)
-                {
-                    context.PhpbbAclUsers.Remove(dbAclRole);
-                }
-                else if (dbAclRole != null && AclRole.HasValue && AclRole.Value != dbAclRole.AuthRoleId)
-                {
-                    dbAclRole.AuthRoleId = AclRole.Value;
-                }
-                else if (dbAclRole == null && AclRole.HasValue && AclRole.Value != -1)
-                {
-                    await context.PhpbbAclUsers.AddAsync(new PhpbbAclUsers
-                    {
-                        AuthOptionId = 0,
-                        AuthRoleId = AclRole.Value,
-                        AuthSetting = 0,
-                        ForumId = 0,
-                        UserId = dbUser.UserId
-                    });
-                }
-
-                var dbUserGroup = await context.PhpbbUserGroup.FirstOrDefaultAsync(g => g.UserId == dbUser.UserId);
-                if (GroupId.HasValue && GroupId != dbUserGroup.GroupId)
-                {
-                    var newGroup = new PhpbbUserGroup
-                    {
-                        GroupId = GroupId.Value,
-                        GroupLeader = dbUserGroup.GroupLeader,
-                        UserId = dbUserGroup.UserId,
-                        UserPending = dbUserGroup.UserPending
-                    };
-
-                    context.PhpbbUserGroup.Remove(dbUserGroup);
-                    await context.SaveChangesAsync();
-
-                    await context.PhpbbUserGroup.AddAsync(newGroup);
-
-                    var group = await context.PhpbbGroups.AsNoTracking().FirstOrDefaultAsync(g => g.GroupId == GroupId.Value);
-                    foreach (var f in context.PhpbbForums.Where(f => f.ForumLastPosterId == dbUser.UserId))
-                    {
-                        f.ForumLastPosterColour = group.GroupColour;
-                    }
-                    foreach (var t in context.PhpbbTopics.Where(t => t.TopicLastPosterId == dbUser.UserId))
-                    {
-                        t.TopicLastPosterColour = group.GroupColour;
-                    }
-                    dbUser.UserColour = group.GroupColour;
-                }
-
-                await context.SaveChangesAsync();
-
-                await Render(context, dbUser);
-
-                return Page();
+                return NotFound($"Utilizatorul cu id '{CurrentUser.UserId}' nu există.");
             }
+
+            dbUser.UserBirthday = Birthday ?? string.Empty;
+            dbUser.UserAllowViewemail = (byte)(ShowEmail ? 1 : 0);
+            dbUser.UserRank = UserRank;
+            dbUser.UserOcc = CurrentUser.UserOcc ?? string.Empty;
+            dbUser.UserInterests = CurrentUser.UserInterests ?? string.Empty;
+            dbUser.UserDateformat = CurrentUser.UserDateformat ?? "dddd, dd.MM.yyyy, HH:mm";
+            dbUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(CurrentUser.UserSig));
+            dbUser.UserEditTime = CurrentUser.UserEditTime;
+            dbUser.UserWebsite = CurrentUser.UserWebsite ?? string.Empty;
+
+            if (Email != dbUser.UserEmail)
+            {
+                var registrationCode = Guid.NewGuid().ToString("n");
+
+                dbUser.UserEmail = Email;
+                dbUser.UserInactiveTime = DateTime.UtcNow.ToUnixTimestamp();
+                dbUser.UserInactiveReason = UserInactiveReason.ChangedEmailNotConfirmed;
+                dbUser.UserActkey = registrationCode;
+                dbUser.UserEmailtime = DateTime.UtcNow.ToUnixTimestamp();
+
+                var subject = $"Schimbarea adresei de e-mail de pe \"{Constants.FORUM_NAME}\"";
+                using var emailMessage = new MailMessage
+                {
+                    From = new MailAddress($"admin@metrouusor.com", Constants.FORUM_NAME),
+                    Subject = subject,
+                    Body = await _utils.RenderRazorViewToString(
+                        "_WelcomeEmailPartial",
+                        new _WelcomeEmailPartialModel
+                        {
+                            RegistrationCode = registrationCode,
+                            Subject = subject,
+                            UserName = dbUser.Username
+                        },
+                        PageContext,
+                        HttpContext
+                    ),
+                    IsBodyHtml = true
+                };
+                emailMessage.To.Add(Email);
+                await _utils.SendEmail(emailMessage);
+            }
+
+            if (!string.IsNullOrWhiteSpace(FirstPassword)
+                && Crypter.Phpass.Crypt(FirstPassword, dbUser.UserPassword) != dbUser.UserPassword)
+            {
+                dbUser.UserPassword = Crypter.Phpass.Crypt(FirstPassword, Crypter.Phpass.GenerateSalt());
+                dbUser.UserPasschg = DateTime.UtcNow.ToUnixTimestamp();
+            }
+
+            if (DeleteAvatar)
+            {
+                if (!await _storageService.DeleteFile($"{_storageService.FolderPrefix}{_storageService.AvatarsFolder}{dbUser.UserId}{Path.GetExtension(dbUser.UserAvatar)}"))
+                {
+                    throw new Exception("Failed to delete file");
+                }
+
+                dbUser.UserAvatarType = 0;
+                dbUser.UserAvatarWidth = 0;
+                dbUser.UserAvatarHeight = 0;
+                dbUser.UserAvatar = null;
+            }
+
+            if (Avatar != null)
+            {
+                if (!await _storageService.UploadFile($"{_storageService.FolderPrefix}{_storageService.AvatarsFolder}{dbUser.UserId}{Path.GetExtension(Avatar.FileName)}", Avatar.ContentType, Avatar.OpenReadStream()))
+                {
+                    throw new Exception("Failed to upload file");
+                }
+
+                using var bmp = Avatar.ToImage();
+                dbUser.UserAvatarType = 1;
+                dbUser.UserAvatarWidth = unchecked((short)bmp.Width);
+                dbUser.UserAvatarHeight = unchecked((short)bmp.Height);
+                dbUser.UserAvatar = $"{dbUser.UserId}_{Avatar.FileName}";
+            }
+
+            var dbAclRole = await _context.PhpbbAclUsers.FirstOrDefaultAsync(r => r.UserId == dbUser.UserId);
+            if (dbAclRole != null && AclRole == -1)
+            {
+                _context.PhpbbAclUsers.Remove(dbAclRole);
+            }
+            else if (dbAclRole != null && AclRole.HasValue && AclRole.Value != dbAclRole.AuthRoleId)
+            {
+                dbAclRole.AuthRoleId = AclRole.Value;
+            }
+            else if (dbAclRole == null && AclRole.HasValue && AclRole.Value != -1)
+            {
+                await _context.PhpbbAclUsers.AddAsync(new PhpbbAclUsers
+                {
+                    AuthOptionId = 0,
+                    AuthRoleId = AclRole.Value,
+                    AuthSetting = 0,
+                    ForumId = 0,
+                    UserId = dbUser.UserId
+                });
+            }
+
+            var dbUserGroup = await _context.PhpbbUserGroup.FirstOrDefaultAsync(g => g.UserId == dbUser.UserId);
+            if (GroupId.HasValue && GroupId != dbUserGroup.GroupId)
+            {
+                var newGroup = new PhpbbUserGroup
+                {
+                    GroupId = GroupId.Value,
+                    GroupLeader = dbUserGroup.GroupLeader,
+                    UserId = dbUserGroup.UserId,
+                    UserPending = dbUserGroup.UserPending
+                };
+
+                _context.PhpbbUserGroup.Remove(dbUserGroup);
+                await _context.SaveChangesAsync();
+
+                await _context.PhpbbUserGroup.AddAsync(newGroup);
+
+                var group = await _context.PhpbbGroups.AsNoTracking().FirstOrDefaultAsync(g => g.GroupId == GroupId.Value);
+                foreach (var f in _context.PhpbbForums.Where(f => f.ForumLastPosterId == dbUser.UserId))
+                {
+                    f.ForumLastPosterColour = group.GroupColour;
+                }
+                foreach (var t in _context.PhpbbTopics.Where(t => t.TopicLastPosterId == dbUser.UserId))
+                {
+                    t.TopicLastPosterColour = group.GroupColour;
+                }
+                dbUser.UserColour = group.GroupColour;
+            }
+
+            await _context.SaveChangesAsync();
+
+            await Render(_context, dbUser);
+
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                await _userService.DbUserToClaimsPrincipalAsync(dbUser),
+                new AuthenticationProperties
+                {
+                    AllowRefresh = true,
+                    ExpiresUtc = DateTimeOffset.Now.AddMonths(1),
+                    IsPersistent = true,
+                }
+            );
+            return Page();
         }
 
         private async Task Render(ForumDbContext context, PhpbbUsers cur)
         {
             CurrentUser = cur;
+            CurrentUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : HttpUtility.HtmlDecode(_writingService.CleanTextForQuoting(CurrentUser.UserSig, CurrentUser.UserSigBbcodeUid));
             TotalPosts = await context.PhpbbPosts.AsNoTracking().CountAsync(p => p.PosterId == cur.UserId);
             var preferredTopicId = await (
                 from p in context.PhpbbPosts
@@ -254,7 +269,7 @@ namespace Serverless.Forum.Pages
             Email = cur.UserEmail;
             Birthday = cur.UserBirthday;
             AclRole = await _userService.GetUserRole(await _userService.DbUserToLoggedUserAsync(cur));
-            GroupId = await _userService.GeUserGroupAsync(cur.UserId);
+            GroupId = await _userService.GetUserGroupAsync(cur.UserId);
             UserRank = cur.UserRank;
         }
     }

@@ -3,6 +3,8 @@
     Layout = null;
 }
 
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor
+
 <ul class="ForumListRight" id="summary@(Model.AssetId)">
     @if (Model.ShowAvatar)
     {
@@ -22,12 +24,13 @@
             <a asp-page="/User" asp-route-UserId="@Model.AuthorId" style="color:@color;font-weight:bold">@Html.Raw(Model.AuthorName)</a>
         }
     </li>
-    <li>@asta nu merge
+    <li>
         Scris la: 
         <script>
-            moment.locale('ro');
-            document.write(moment.utc('@($"{Model.CreationTime.Value:yyyy-MM-dd HH:mm:ss}")').local().format('[userFormat]'))
+            var date = new Date("@Model.CreationTime?.ToString("o")");
+            document.write(date.format("@(string.IsNullOrWhiteSpace(Model.DateFormat) ? "dddd, dd.MM.yyyy HH:mm" : Model.DateFormat)"));
         </script>
+
     </li>
     @if (!string.IsNullOrWhiteSpace(Model.LinkHref) && !string.IsNullOrWhiteSpace(Model.LinkText))
     {

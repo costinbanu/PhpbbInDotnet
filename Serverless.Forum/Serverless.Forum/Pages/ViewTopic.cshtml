@@ -210,16 +210,8 @@
         </div>
         @await Html.PartialAsync(
             "_SummaryPartial",
-            new CustomPartials._SummaryPartialModel
-            {
-                AuthorId = post.AuthorId,
-                AuthorName = post.AuthorName,
-                CreationTime = post.PostCreationTime,
-                AssetId = post.PostId.Value,
-                DateFormat = UserDateFormat,
-                AuthorColor = post.AuthorColor,
-                ShowAvatar = post.AuthorHasAvatar
-            }
+            new CustomPartials._SummaryPartialModel (post.AuthorId, post.AuthorName, post.AuthorColor, post.PostCreationTime, post.PostId.Value, 
+                UserDateFormat, post.AuthorHasAvatar, null, null)
         )
         <p>&nbsp;</p>
         <ul class="PostActions" id="actions@(post.PostId.Value)">

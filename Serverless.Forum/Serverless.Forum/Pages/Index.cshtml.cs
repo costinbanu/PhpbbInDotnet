@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Services;
@@ -6,7 +5,6 @@ using Serverless.Forum.Utilities;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Web;
 
 namespace Serverless.Forum.Pages
 {
@@ -14,8 +12,8 @@ namespace Serverless.Forum.Pages
     {
         public List<ForumDisplay> Forums { get; private set; }
 
-        public IndexModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService)
-            : base(config, utils, forumService, userService, cacheService)
+        public IndexModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
+            : base(utils, context, forumService, userService, cacheService)
         {
         }
 

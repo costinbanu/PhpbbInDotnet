@@ -17,6 +17,7 @@ namespace Serverless.Forum.Services
     {
         private readonly IConfiguration _config;
         private readonly Utils _utils;
+        private readonly ForumDbContext _context;
         private List<PhpbbAclRoles> _adminRoles;
         private List<PhpbbAclRoles> _modRoles;
         private List<PhpbbAclRoles> _userRoles;
@@ -24,10 +25,11 @@ namespace Serverless.Forum.Services
         private ClaimsPrincipal _anonymousClaimsPrincipal;
         private LoggedUser _anonymousLoggedUser;
 
-        public UserService(IConfiguration config, Utils utils)
+        public UserService(IConfiguration config, Utils utils, ForumDbContext context)
         {
             _config = config;
             _utils = utils;
+            _context = context;
         }
 
         public async Task<bool> IsUserAdminInForum(LoggedUser user, int forumId)
@@ -63,8 +65,7 @@ namespace Serverless.Forum.Services
                 return _anonymousDbUser;
             }
 
-            using var context = new ForumDbContext(_config);
-            _anonymousDbUser = await context.PhpbbUsers.AsNoTracking().FirstAsync(u => u.UserId == 1);
+            _anonymousDbUser = await _context.PhpbbUsers.AsNoTracking().FirstAsync(u => u.UserId == 1);
             return _anonymousDbUser;
         }
 
@@ -92,8 +93,7 @@ namespace Serverless.Forum.Services
 
         public async Task<ClaimsPrincipal> DbUserToClaimsPrincipalAsync(PhpbbUsers user)
         {
-            using var dbContext = new ForumDbContext(_config);
-            using var connection = dbContext.Database.GetDbConnection();
+            using var connection = _context.Database.GetDbConnection();
             await connection.OpenAsync();
             DefaultTypeMap.MatchNamesWithUnderscores = true;
 
@@ -127,20 +127,17 @@ namespace Serverless.Forum.Services
 
         public async Task<List<PhpbbRanks>> GetRankListAsync()
         {
-            using var context = new ForumDbContext(_config);
-            return await context.PhpbbRanks.AsNoTracking().ToListAsync();
+            return await _context.PhpbbRanks.AsNoTracking().ToListAsync();
         }
 
         public async Task<List<PhpbbGroups>> GetGroupListAsync()
         {
-            using var context = new ForumDbContext(_config);
-            return await context.PhpbbGroups.AsNoTracking().ToListAsync();
+            return await _context.PhpbbGroups.AsNoTracking().ToListAsync();
         }
 
-        public async Task<int?> GeUserGroupAsync(int userId)
+        public async Task<int?> GetUserGroupAsync(int userId)
         {
-            using var context = new ForumDbContext(_config);
-            return (await context.PhpbbUserGroup.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == userId))?.GroupId;
+            return (await _context.PhpbbUserGroup.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == userId))?.GroupId;
         }
 
         private async Task<List<PhpbbAclRoles>> GetUserRolesLazy()
@@ -150,9 +147,8 @@ namespace Serverless.Forum.Services
                 return _userRoles;
             }
 
-            using var context = new ForumDbContext(_config);
             _userRoles = await (
-                from r in context.PhpbbAclRoles.AsNoTracking()
+                from r in _context.PhpbbAclRoles.AsNoTracking()
                 where r.RoleType == "u_"
                 select r
             ).ToListAsync();
@@ -166,9 +162,8 @@ namespace Serverless.Forum.Services
                 return _modRoles;
             }
 
-            using var context = new ForumDbContext(_config);
             _modRoles = await (
-                from r in context.PhpbbAclRoles.AsNoTracking()
+                from r in _context.PhpbbAclRoles.AsNoTracking()
                 where r.RoleType == "m_"
                 select r
             ).ToListAsync();
@@ -182,9 +177,8 @@ namespace Serverless.Forum.Services
                 return _adminRoles;
             }
 
-            using var context = new ForumDbContext(_config);
             _adminRoles = await (
-                from r in context.PhpbbAclRoles.AsNoTracking()
+                from r in _context.PhpbbAclRoles.AsNoTracking()
                 where r.RoleType == "a_"
                 select r
             ).ToListAsync();

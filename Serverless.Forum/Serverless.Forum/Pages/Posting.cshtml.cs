@@ -72,9 +72,9 @@ namespace Serverless.Forum.Pages
         private readonly StorageService _storageService;
         private readonly WritingToolsService _writingService;
 
-        public PostingModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService, 
+        public PostingModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
             PostService postService, StorageService storageService, WritingToolsService writingService) 
-            : base(config, utils, forumService, userService, cacheService)
+            : base(utils, context, forumService, userService, cacheService)
         {
             PollExpirationDaysString = "1";
             PollMaxOptions = 1;
@@ -87,16 +87,15 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnGetForumPost()
         {
-            using var context = new ForumDbContext(_config);
-            var curTopic = await context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == TopicId);
+            var curTopic = await _context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == TopicId);
 
-            var permissionError = await ValidateForumPermissionsResponsesAsync(await context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId).FirstOrDefaultAsync();
+            var permissionError = await ValidateForumPermissionsResponsesAsync(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId).FirstOrDefaultAsync();
             if (permissionError != null)
             {
                 return permissionError;
             }
             CanCreatePoll = false;
-            await Init(context);
+            await Init(_context);
 
             if (curTopic == null)
             {
@@ -111,15 +110,14 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnGetQuoteForumPost()
         {
-            using var context = new ForumDbContext(_config);
-            var curPost = await context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == PostId);
+            var curPost = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == PostId);
 
             if (curPost == null)
             {
                 return NotFound();
             }
 
-            var curTopic = await context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == curPost.TopicId);
+            var curTopic = await _context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == curPost.TopicId);
 
             if (curTopic == null)
             {
@@ -129,16 +127,16 @@ namespace Serverless.Forum.Pages
             var curAuthor = curPost.PostUsername;
             if (string.IsNullOrWhiteSpace(curAuthor))
             {
-                curAuthor = (await context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == curPost.PosterId))?.Username ?? "Anonymous";
+                curAuthor = (await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == curPost.PosterId))?.Username ?? "Anonymous";
             }
 
-            var permissionError = await ValidateForumPermissionsResponsesAsync(await context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId).FirstOrDefaultAsync();
+            var permissionError = await ValidateForumPermissionsResponsesAsync(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId).FirstOrDefaultAsync();
             if (permissionError != null)
             {
                 return permissionError;
             }
             CanCreatePoll = false;
-            await Init(context);
+            await Init(_context);
 
             PostText = $"[quote=\"{curAuthor}\"]\n{HttpUtility.HtmlDecode(_writingService.CleanTextForQuoting(curPost.PostText, curPost.BbcodeUid))}\n[/quote]";
             PostTitle = $"{Constants.REPLY}{HttpUtility.HtmlDecode(curPost.PostSubject)}";
@@ -150,8 +148,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnGetNewTopic()
         {
-            using var context = new ForumDbContext(_config);
-            var curForum = await context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(t => t.ForumId == ForumId);
+            var curForum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(t => t.ForumId == ForumId);
 
             var permissionError = await ValidateForumPermissionsResponsesAsync(curForum, ForumId).FirstOrDefaultAsync();
             if (permissionError != null)
@@ -161,7 +158,7 @@ namespace Serverless.Forum.Pages
 
             Header = HttpUtility.HtmlDecode(curForum.ForumName);
             CanCreatePoll = true;
-            await Init(context);
+            await Init(_context);
             await _cacheService.SetInCacheAsync(GetActualCacheKey("IsNewTopic", true), true);
             Action = PostingActions.NewForumPost;
             
@@ -170,11 +167,10 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnGetEditPost()
         {
-            using var context = new ForumDbContext(_config);
-            var curPost = await context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == PostId);
-            var curTopic = await context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == TopicId);
+            var curPost = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == PostId);
+            var curTopic = await _context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == TopicId);
             
-            var permissionError = await ValidateForumPermissionsResponsesAsync(await context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId).FirstOrDefaultAsync();
+            var permissionError = await ValidateForumPermissionsResponsesAsync(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId).FirstOrDefaultAsync();
             if (permissionError != null)
             {
                 return permissionError;
@@ -187,11 +183,11 @@ namespace Serverless.Forum.Pages
 
             CanCreatePoll = curTopic.TopicFirstPostId == PostId;
 
-            await Init(context);
+            await Init(_context);
             
             await _cacheService.SetInCacheAsync(
                 GetActualCacheKey("PostAttachments", true), 
-                await context.PhpbbAttachments.AsNoTracking().Where(a => a.PostMsgId == PostId).ToListAsync()
+                await _context.PhpbbAttachments.AsNoTracking().Where(a => a.PostMsgId == PostId).ToListAsync()
             );
             var subject = curPost.PostSubject.StartsWith(Constants.REPLY) ? curPost.PostSubject.Substring(Constants.REPLY.Length) : curPost.PostSubject;
             PostText = HttpUtility.HtmlDecode(_writingService.CleanTextForQuoting(curPost.PostText, curPost.BbcodeUid));
@@ -213,8 +209,7 @@ namespace Serverless.Forum.Pages
             {
                 return RedirectToPage("Login");
             }
-            using var context = new ForumDbContext(_config);
-            var permissionError = await ValidateForumPermissionsResponsesAsync(await context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId).FirstOrDefaultAsync();
+            var permissionError = await ValidateForumPermissionsResponsesAsync(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId).FirstOrDefaultAsync();
             if (permissionError != null)
             {
                 return permissionError;
@@ -252,8 +247,7 @@ namespace Serverless.Forum.Pages
             {
                 return RedirectToPage("Login");
             }
-            using var context = new ForumDbContext(_config);
-            var permissionError = await ValidateForumPermissionsResponsesAsync(await context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId).FirstOrDefaultAsync();
+            var permissionError = await ValidateForumPermissionsResponsesAsync(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId).FirstOrDefaultAsync();
             if (permissionError != null)
             {
                 return permissionError;
@@ -283,11 +277,11 @@ namespace Serverless.Forum.Pages
                 ModelState.Remove(nameof(PostText));
             }
 
-            var dbAttach = await context.PhpbbAttachments.FirstOrDefaultAsync(a => a.AttachId == attachList[index].AttachId);
+            var dbAttach = await _context.PhpbbAttachments.FirstOrDefaultAsync(a => a.AttachId == attachList[index].AttachId);
             if (dbAttach != null)
             {
-                context.PhpbbAttachments.Remove(dbAttach);
-                await context.SaveChangesAsync();
+                _context.PhpbbAttachments.Remove(dbAttach);
+                await _context.SaveChangesAsync();
             }
 
             attachList.RemoveAt(index);
@@ -298,18 +292,17 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnPostNewForumPost()
         {
             var usr = await GetCurrentUserAsync();
-            using var context = new ForumDbContext(_config);
             if (usr == await _userService.GetAnonymousLoggedUserAsync())
             {
                 return Unauthorized();
             }
-            var permissionError = await ValidateForumPermissionsResponsesAsync(await context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId).FirstOrDefaultAsync();
+            var permissionError = await ValidateForumPermissionsResponsesAsync(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId).FirstOrDefaultAsync();
             if (permissionError != null)
             {
                 return permissionError;
             }
 
-            var addedPostId = await UpsertPost(context, null, usr);
+            var addedPostId = await UpsertPost(_context, null, usr);
 
             return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
         }
@@ -317,27 +310,26 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnPostEditForumPost()
         {
             var usr = await GetCurrentUserAsync();
-            using var context = new ForumDbContext(_config);
             if (usr == await _userService.GetAnonymousLoggedUserAsync())
             {
                 return Unauthorized();
             }
-            var permissionError = await ValidateForumPermissionsResponsesAsync(await context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId).FirstOrDefaultAsync();
+            var permissionError = await ValidateForumPermissionsResponsesAsync(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId).FirstOrDefaultAsync();
             if (permissionError != null)
             {
                 return permissionError;
             }
 
-            var post = await context.PhpbbPosts.FirstOrDefaultAsync(p => p.PostId == PostId);
+            var post = await _context.PhpbbPosts.FirstOrDefaultAsync(p => p.PostId == PostId);
 
-            post.PostText = _writingService.PrepareTextForSaving(context, HttpUtility.HtmlEncode(PostText));
+            post.PostText = _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText));
             post.PostSubject = HttpUtility.HtmlEncode(PostTitle);
             post.PostEditTime = DateTime.UtcNow.ToUnixTimestamp();
             post.PostEditUser = CurrentUserId;
             post.PostEditReason = EditReason ?? string.Empty;
             post.PostEditCount++;
 
-            var addedPostId = await UpsertPost(context, post, usr);
+            var addedPostId = await UpsertPost(_context, post, usr);
 
             return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
         }
@@ -448,7 +440,7 @@ namespace Serverless.Forum.Pages
                     TopicId = TopicId.Value,
                     PosterId = usr.UserId,
                     PostSubject = HttpUtility.HtmlEncode(PostTitle),
-                    PostText = _writingService.PrepareTextForSaving(context, HttpUtility.HtmlEncode(PostText)),
+                    PostText = _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText)),
                     PostTime = DateTime.UtcNow.ToUnixTimestamp(),
                     PostApproved = 1,
                     PostReported = 0,

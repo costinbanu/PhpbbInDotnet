@@ -35,11 +35,7 @@
     <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
     <script src='https://www.google.com/recaptcha/api.js'></script>
     <script src="~/js/site.js"></script>
-    <script src="~/lib/moment.js"></script>
-    <script>
-        var momentLanguage = window.navigator.userLanguage || window.navigator.language;
-        moment.updateLocale(momentLanguage, { longDateFormat: { "[userFormat]": "@(currentUser.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm")".replace('yyyy', 'YYYY').replace('dd.', 'D.') } });
-    </script>
+    <script src="~/js/dateFormatter.js"></script>
 </head>
 <body>
     <nav class="navbar navbar-inverse navbar-fixed-top">

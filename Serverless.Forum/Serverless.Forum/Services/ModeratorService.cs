@@ -1,9 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -11,23 +8,22 @@ namespace Serverless.Forum.Services
 {
     public class ModeratorService
     {
-        private readonly IConfiguration _config;
+        private readonly ForumDbContext _context;
 
-        public ModeratorService(IConfiguration config)
+        public ModeratorService(ForumDbContext context)
         {
-            _config = config;
+            _context = context;
         }
 
         public async Task<(string Message, bool? IsSuccess)> ChangeTopicType(int topicId, TopicType topicType)
         {
             try
             {
-                using var context = new ForumDbContext(_config);
-                var topic = await context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == topicId);
+                var topic = await _context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == topicId);
                 if (topic != null && topic.TopicType != topicType)
                 {
                     topic.TopicType = topicType;
-                    await context.SaveChangesAsync();
+                    await _context.SaveChangesAsync();
                     return ("Subiectul a fost modificat cu succes!", true);
                 }
                 else if (topic == null)

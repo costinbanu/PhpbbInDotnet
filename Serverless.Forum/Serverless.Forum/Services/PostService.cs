@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using System.Collections.Generic;
@@ -11,22 +10,21 @@ namespace Serverless.Forum.Services
 {
     public class PostService
     {
-        private readonly IConfiguration _config;
+        private readonly ForumDbContext _context;
         private readonly UserService _userService;
 
         private delegate (int index, string match) FirstIndexOf(string haystack, string needle, int startIndex);
         private delegate (string result, int endIndex) Transform(string haystack, string needle, int startIndex);
 
-        public PostService(IConfiguration config, UserService userService)
+        public PostService(ForumDbContext context, UserService userService)
         {
-            _config = config;
+            _context = context;
             _userService = userService;
         }
 
         public async Task<(List<PhpbbPosts> Posts, int Page, int Count)> GetPostPageAsync(int userId, int? topicId, int? page, int? postId)
         {
-            using var context = new ForumDbContext(_config);
-            using var connection = context.Database.GetDbConnection();
+            using var connection = _context.Database.GetDbConnection();
             await connection.OpenAsync();
             DefaultTypeMap.MatchNamesWithUnderscores = true;
 
@@ -37,7 +35,7 @@ namespace Serverless.Forum.Services
                 Count: multi.Read<int>().Single()
             );
 
-            var attachments = from a in context.PhpbbAttachments
+            var attachments = from a in _context.PhpbbAttachments
 
                               join p in toReturn.Posts
                               on a.PostMsgId equals p.PostId
@@ -61,8 +59,8 @@ namespace Serverless.Forum.Services
                                   TopicId = a.TopicId
                               };
 
-            context.PhpbbAttachments.UpdateRange(attachments);
-            await context.SaveChangesAsync();
+            _context.PhpbbAttachments.UpdateRange(attachments);
+            await _context.SaveChangesAsync();
 
             return toReturn;
         }
@@ -82,7 +80,7 @@ namespace Serverless.Forum.Services
                 await SetTopicLastPost(curTopic, added, usr);
             }
 
-            if(curForum.ForumLastPostId == added.PostId)
+            if (curForum.ForumLastPostId == added.PostId)
             {
                 await SetForumLastPost(curForum, added, usr);
             }
@@ -162,7 +160,7 @@ namespace Serverless.Forum.Services
                 }
             }
         }
-      
+
         private async Task SetTopicLastPost(PhpbbTopics topic, PhpbbPosts post, LoggedUser author)
         {
             topic.TopicLastPostId = post.PosterId;

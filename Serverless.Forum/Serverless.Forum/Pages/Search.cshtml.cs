@@ -1,7 +1,6 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Services;
@@ -18,12 +17,7 @@ namespace Serverless.Forum.Pages
     [ValidateAntiForgeryToken]
     public class SearchModel : ModelWithPagination
     {
-        private readonly PostService _postService;
         private readonly BBCodeRenderingService _renderingService;
-
-        public IConfiguration Config => _config;
-
-        public Utils Utils => _utils;
 
         [BindProperty(SupportsGet = true)]
         public string QueryString { get; set; }
@@ -56,11 +50,9 @@ namespace Serverless.Forum.Pages
 
         public IEnumerable<ExtendedPostDisplay> Posts { get; private set; }
 
-        public SearchModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService, 
-            PostService postService, BBCodeRenderingService renderingService)
-            : base(config, utils, forumService, userService, cacheService)
+        public SearchModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, BBCodeRenderingService renderingService)
+            : base(utils, context, forumService, userService, cacheService)
         {
-            _postService = postService;
             _renderingService = renderingService;
         }
 
@@ -83,9 +75,8 @@ namespace Serverless.Forum.Pages
                 TopicId = int.TryParse(query["topicid"], out var i) ? i as int? : null;
             }
 
-            using var context = new ForumDbContext(_config);
             Users = await (
-                from u in context.PhpbbUsers.AsNoTracking()
+                from u in _context.PhpbbUsers.AsNoTracking()
                 where u.UserId != 1 && u.UserType != 2
                 orderby u.Username
                 select KeyValuePair.Create(u.Username, u.UserId)
@@ -93,13 +84,13 @@ namespace Serverless.Forum.Pages
 
             if (ForumId == null && TopicId != null)
             {
-                ForumId = (await context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == TopicId))?.ForumId;
+                ForumId = (await _context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == TopicId))?.ForumId;
             }
 
             if (ForumId == null && TopicId == null && query != null)
             {
                 var postId = int.TryParse(query["postid"], out var i) ? i as int? : null;
-                var post = await context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(t => t.PostId == postId);
+                var post = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(t => t.PostId == postId);
                 TopicId = post?.TopicId;
                 ForumId = post.ForumId;
             }
@@ -129,8 +120,7 @@ namespace Serverless.Forum.Pages
 
         private async Task Search()
         {
-            using var context = new ForumDbContext(_config);
-            using var connection = context.Database.GetDbConnection();
+            using var connection = _context.Database.GetDbConnection();
             await connection.OpenAsync();
             DefaultTypeMap.MatchNamesWithUnderscores = true;
             PageNum ??= 1;

@@ -1,24 +1,10 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.EntityFrameworkCore;
 
 namespace Serverless.Forum.ForumDb
 {
     public partial class ForumDbContext : DbContext
     {
-        IConfiguration _config;
-
-        public ForumDbContext(IConfiguration config)
-        {
-            _config = config;
-        }
-
-        public ForumDbContext(DbContextOptions<ForumDbContext> options, IConfiguration config)
-            : base(options)
-        {
-            _config = config;
-        }
+        public ForumDbContext(DbContextOptions<ForumDbContext> options) : base(options) { }
 
         public virtual DbSet<PhpbbAclGroups> PhpbbAclGroups { get; set; }
         public virtual DbSet<PhpbbAclOptions> PhpbbAclOptions { get; set; }
@@ -86,14 +72,6 @@ namespace Serverless.Forum.ForumDb
         public virtual DbSet<PhpbbWarnings> PhpbbWarnings { get; set; }
         public virtual DbSet<PhpbbWords> PhpbbWords { get; set; }
         public virtual DbSet<PhpbbZebra> PhpbbZebra { get; set; }
-
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            if (!optionsBuilder.IsConfigured)
-            {
-                optionsBuilder.UseMySQL(_config["ForumDbConnectionString"]);
-            }
-        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

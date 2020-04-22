@@ -3,11 +3,13 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using PaulMiami.AspNetCore.Mvc.Recaptcha;
+using Serverless.Forum.ForumDb;
 using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System;
@@ -91,17 +93,19 @@ namespace Serverless.Forum
 
             services.AddHttpClient();
 
-            services.AddSingleton<Utils>();
-            services.AddSingleton<AdminForumService>();
-            services.AddSingleton<AdminUserService>();
-            services.AddSingleton<WritingToolsService>();
-            services.AddSingleton<CacheService>();
-            services.AddSingleton<ForumTreeService>();
-            services.AddSingleton<PostService>();
-            services.AddSingleton<UserService>();
-            services.AddSingleton<StorageService>();
-            services.AddSingleton<ModeratorService>();
-            services.AddSingleton<BBCodeRenderingService>();
+            services.AddTransient<Utils>();
+            services.AddTransient<AdminForumService>();
+            services.AddTransient<AdminUserService>();
+            services.AddTransient<WritingToolsService>();
+            services.AddTransient<CacheService>();
+            services.AddTransient<ForumTreeService>();
+            services.AddTransient<PostService>();
+            services.AddTransient<UserService>();
+            services.AddTransient<StorageService>();
+            services.AddTransient<ModeratorService>();
+            services.AddTransient<BBCodeRenderingService>();
+
+            services.AddDbContext<ForumDbContext>(options => options.UseMySQL(Configuration["ForumDbConnectionString"]));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -24,6 +24,7 @@ namespace Serverless.Forum.Services
     {
         private readonly IConfiguration _config;
         private readonly Utils _utils;
+        private readonly ForumDbContext _context;
         private readonly WritingToolsService _writingService;
         private readonly Regex _htmlRegex;
         private readonly Regex _htmlCommentRegex;
@@ -36,10 +37,11 @@ namespace Serverless.Forum.Services
         private delegate (int index, string match) FirstIndexOf(string haystack, string needle, int startIndex);
         private delegate (string result, int endIndex) Transform(string haystack, string needle, int startIndex);
 
-        public BBCodeRenderingService(IConfiguration config, Utils utils, WritingToolsService writingService)
+        public BBCodeRenderingService(IConfiguration config, Utils utils, ForumDbContext context, WritingToolsService writingService)
         {
             _config = config;
             _utils = utils;
+            _context = context;
             _writingService = writingService;
             _htmlCommentRegex = new Regex("(<!--.*?-->)|(&lt;!--.*?--&gt;)", RegexOptions.Compiled | RegexOptions.Singleline);
             _newLineRegex = new Regex("\n", RegexOptions.Compiled | RegexOptions.Singleline);
@@ -149,8 +151,7 @@ namespace Serverless.Forum.Services
             {
                 return _parser;
             }
-            using var context = new ForumDbContext(_config);
-            var bbcodes = await context.PhpbbBbcodes.AsNoTracking().Select(c => new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false)).ToListAsync();
+            var bbcodes = await _context.PhpbbBbcodes.AsNoTracking().Select(c => new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false)).ToListAsync();
 
 
             bbcodes.AddRange(new[]

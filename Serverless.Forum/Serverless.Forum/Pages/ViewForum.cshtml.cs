@@ -24,10 +24,9 @@ namespace Serverless.Forum.Pages
         public int? ParentForumId { get; private set; }
         public int ForumId { get; private set; }
 
-        public ViewForumModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService)
-            : base(config, utils, forumService, userService, cacheService)
+        public ViewForumModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
+            : base(utils, context, forumService, userService, cacheService)
         {
-
         }
 
         public async Task<IActionResult> OnGet(int forumId)
@@ -37,10 +36,9 @@ namespace Serverless.Forum.Pages
                 return RedirectToPage("/Index");
             }
 
-            using var context = new ForumDbContext(_config);
             ForumId = forumId;
             var usr = await GetCurrentUserAsync();
-            var thisForum = await (from f in context.PhpbbForums.AsNoTracking()
+            var thisForum = await (from f in _context.PhpbbForums.AsNoTracking()
                                    where f.ForumId == forumId
                                    select f).FirstOrDefaultAsync();
 
@@ -53,14 +51,14 @@ namespace Serverless.Forum.Pages
             ForumTitle = HttpUtility.HtmlDecode(thisForum?.ForumName ?? "untitled");
 
             ParentForumId = thisForum.ParentId;
-            ParentForumTitle = HttpUtility.HtmlDecode(await (from pf in context.PhpbbForums.AsNoTracking()
+            ParentForumTitle = HttpUtility.HtmlDecode(await (from pf in _context.PhpbbForums.AsNoTracking()
                                                              where pf.ForumId == thisForum.ParentId
                                                              select pf.ForumName).FirstOrDefaultAsync() ?? "untitled");
 
             Forums = (await GetForum(forumId)).ChildrenForums.ToList();
 
             Topics = await (
-                from t in context.PhpbbTopics.AsNoTracking()
+                from t in _context.PhpbbTopics.AsNoTracking()
                 where t.ForumId == forumId || t.TopicType == TopicType.Global
                 orderby t.TopicLastPostTime descending
 
@@ -71,7 +69,7 @@ namespace Serverless.Forum.Pages
                     TopicType = groups.Key,
                     Topics = from g in groups
 
-                             let postCount = context.PhpbbPosts.Count(p => p.TopicId == g.TopicId)
+                             let postCount = _context.PhpbbPosts.Count(p => p.TopicId == g.TopicId)
                              let pageSize = usr.TopicPostsPerPage.ContainsKey(g.TopicId) ? usr.TopicPostsPerPage[g.TopicId] : 14
 
                              select new TopicDisplay
@@ -81,7 +79,7 @@ namespace Serverless.Forum.Pages
                                  LastPosterId = g.TopicLastPosterId == 1 ? null as int? : g.TopicLastPosterId,
                                  LastPosterName = HttpUtility.HtmlDecode(g.TopicLastPosterName),
                                  LastPostTime = g.TopicLastPostTime.ToUtcTime(),
-                                 PostCount = context.PhpbbPosts.Count(p => p.TopicId == g.TopicId),
+                                 PostCount = _context.PhpbbPosts.Count(p => p.TopicId == g.TopicId),
                                  Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1),
                                  Unread = IsTopicUnread(g.TopicId),
                                  LastPosterColor = g.TopicLastPosterColour,
@@ -95,10 +93,8 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPostForums(int forumId)
         {
-            using (var context = new ForumDbContext(_config))
-            {
                 var usr = await GetCurrentUserAsync();
-                var thisForum = await (from f in context.PhpbbForums
+                var thisForum = await (from f in _context.PhpbbForums
                                        where f.ForumId == forumId
                                        select f).FirstOrDefaultAsync();
 
@@ -108,38 +104,33 @@ namespace Serverless.Forum.Pages
                     return permissionError;
                 }
 
-                var childForums = from f in context.PhpbbForums
+                var childForums = from f in _context.PhpbbForums
                                   where f.ParentId == forumId
                                   select f.ForumId;
                 foreach (var child in childForums)
                 {
-                    await UpdateTracking(context, child);
+                    await UpdateTracking(_context, child);
                 }
-                await context.SaveChangesAsync();
-            }
+                await _context.SaveChangesAsync();
 
             return await OnGet(forumId);
         }
 
         public async Task<IActionResult> OnPostTopics(int forumId)
         {
-            using (var context = new ForumDbContext(_config))
+            var usr = await GetCurrentUserAsync();
+            var thisForum = await (from f in _context.PhpbbForums
+                                    where f.ForumId == forumId
+                                    select f).FirstOrDefaultAsync();
+
+            var permissionError = await ValidateForumPermissionsResponsesAsync(thisForum, forumId).FirstOrDefaultAsync();
+            if (permissionError != null)
             {
-                var usr = await GetCurrentUserAsync();
-                var thisForum = await (from f in context.PhpbbForums
-                                       where f.ForumId == forumId
-                                       select f).FirstOrDefaultAsync();
-
-                var permissionError = await ValidateForumPermissionsResponsesAsync(thisForum, forumId).FirstOrDefaultAsync();
-                if (permissionError != null)
-                {
-                    return permissionError;
-                }
-
-                await UpdateTracking(context, forumId);
-                await context.SaveChangesAsync();
+                return permissionError;
             }
 
+            await UpdateTracking(_context, forumId);
+            await _context.SaveChangesAsync();
             return await OnGet(forumId);
         }
 

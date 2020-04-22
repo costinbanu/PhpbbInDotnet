@@ -123,7 +123,7 @@ else if (Model.ViewAsAnother)
                 <td style="font-weight: bold">Formatul datelor afișate</td>
                 <td>
                     <input asp-for="CurrentUser.UserDateformat" />
-                    <br/><span class="Caption">Exemplu: dd.MM.yyyy HH:mm va afișa data "@DateTime.Now.ToString("dd.MM.yyyy HH:mm")"</span>
+                    <br /><span class="Caption">Exemplu: dd.MM.yyyy HH:mm va afișa data "@DateTime.Now.ToString("dd.MM.yyyy HH:mm")"</span>
                 </td>
             </tr>
             <tr>
@@ -140,7 +140,7 @@ else if (Model.ViewAsAnother)
                     {
                         <img src="./File?userId=@Model.CurrentUser.UserId&handler=avatar" /><br />
                         @Html.Raw(Model.CurrentUser.UserAvatar)<br />
-                        <input asp-for="DeleteAvatar" style="width:auto" /> <span>Șterge acest avatar?</span><br/>
+                        <input asp-for="DeleteAvatar" style="width:auto" /> <span>Șterge acest avatar?</span><br />
                         <span class="Caption">Bifează pentru a șterge avatarul curent.</span><br /><br />
                     }
                     <input asp-for="Avatar" />
@@ -289,4 +289,12 @@ else if (Model.ViewAsAnother)
     <input asp-for="CurrentUser.UserId" type="hidden" />
 </form>
 
-
+<script>
+    var selectObj = document.getElementById("userTimezone");
+    for (var i = 0; i < selectObj.options.length; i++) {
+        if (parseFloat(selectObj.options[i].value) == parseFloat("@Model.CurrentUser.UserTimezone")) {
+            selectObj.options[i].selected = true;
+            break;
+        }
+    }
+</script>

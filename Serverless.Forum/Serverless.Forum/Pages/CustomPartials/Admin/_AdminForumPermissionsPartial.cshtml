@@ -5,7 +5,7 @@
 @using Serverless.Forum.ForumDb;
 @using Serverless.Forum.Utilities;
 
-@inject Microsoft.Extensions.Configuration.IConfiguration _config
+@inject ForumDbContext _context
 
 @{
     var groupedPermissions = from p in Model.Permissions ?? new List<ForumPermissions>()
@@ -17,27 +17,24 @@
     var remainingEntities = new List<KeyValuePair<string, int>>();
     var roles = new List<PhpbbAclRoles>();
     var index = Model.StartIndex;
-    using (var context = new ForumDbContext(_config))
+    if (Model.EntityType == AclEntityType.Group)
     {
-        if (Model.EntityType == AclEntityType.Group)
-        {
-            remainingEntities = await (
-                from g in context.PhpbbGroups
-                where !entityIds.Contains(g.GroupId)
-                select KeyValuePair.Create(g.GroupName, g.GroupId)
-            ).ToListAsync();
-        }
-        else
-        {
-            remainingEntities = await (
-                from u in context.PhpbbUsers
-                where u.UserId != 1 && !entityIds.Contains(u.UserId) && u.UserType != 2
-                orderby u.Username
-                select KeyValuePair.Create(u.Username, u.UserId)
-            ).ToListAsync();
-        }
-        roles = await context.PhpbbAclRoles.Where(r => r.RoleType == "f_").ToListAsync();
+        remainingEntities = await (
+            from g in _context.PhpbbGroups
+            where !entityIds.Contains(g.GroupId)
+            select KeyValuePair.Create(g.GroupName, g.GroupId)
+        ).ToListAsync();
     }
+    else
+    {
+        remainingEntities = await (
+            from u in _context.PhpbbUsers
+            where u.UserId != 1 && !entityIds.Contains(u.UserId) && u.UserType != 2
+            orderby u.Username
+            select KeyValuePair.Create(u.Username, u.UserId)
+        ).ToListAsync();
+    }
+    roles = await _context.PhpbbAclRoles.Where(r => r.RoleType == "f_").ToListAsync();
 }
 
 @foreach (var permissions in groupedPermissions)

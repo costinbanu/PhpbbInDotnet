@@ -5,39 +5,38 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Pages;
+using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
-using Serverless.Forum.Services;
 
 namespace Serverless.Forum
 {
     public class ModelWithLoggedUser : PageModel
     {
-        protected readonly IConfiguration _config;
         protected readonly Utils _utils;
         protected readonly ForumTreeService _forumService;
         protected readonly CacheService _cacheService;
         protected readonly UserService _userService;
+        protected readonly ForumDbContext _context;
 
         private IEnumerable<Tracking> _tracking;
         private LoggedUser _currentUser;
         private ForumDisplay _tree = null;
 
-        public ModelWithLoggedUser(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService)
+        public ModelWithLoggedUser(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
         {
-            _config = config;
             _utils = utils;
             _forumService = forumService;
             _cacheService = cacheService;
             _userService = userService;
+            _context = context;
         }
 
         #region User
@@ -76,14 +75,11 @@ namespace Serverless.Forum
                     }
                     else
                     {
-                        using (var context = new ForumDbContext(_config))
+                        var dbUser = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == _currentUser.UserId);
+                        if (dbUser == null || dbUser.UserInactiveTime > 0)
                         {
-                            var dbUser = await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == _currentUser.UserId);
-                            if (dbUser == null || dbUser.UserInactiveTime > 0)
-                            {
-                                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                                await _cacheService.SetInCacheAsync(key, true);
-                            }
+                            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                            await _cacheService.SetInCacheAsync(key, true);
                         }
                     }
                 }
@@ -98,26 +94,25 @@ namespace Serverless.Forum
             {
                 var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 await HttpContext.SignOutAsync();
-                using (var context = new ForumDbContext(_config))
-                {
-                    await HttpContext.SignInAsync(
-                        CookieAuthenticationDefaults.AuthenticationScheme,
-                        await _userService.DbUserToClaimsPrincipalAsync(await context.PhpbbUsers.FirstAsync(u => u.UserId == current)),
-                        new AuthenticationProperties
-                        {
-                            AllowRefresh = true,
-                            ExpiresUtc = result.Properties.ExpiresUtc,
-                            IsPersistent = true,
-                        }
-                    );
-                }
+
+                await HttpContext.SignInAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme,
+                    await _userService.DbUserToClaimsPrincipalAsync(await _context.PhpbbUsers.AsNoTracking().FirstAsync(u => u.UserId == current)),
+                    new AuthenticationProperties
+                    {
+                        AllowRefresh = true,
+                        ExpiresUtc = result.Properties.ExpiresUtc,
+                        IsPersistent = true,
+                    }
+                );
+
             }
         }
 
-        public async Task<bool> IsCurrentUserAdminHereAsync(int forumId = 0) 
+        public async Task<bool> IsCurrentUserAdminHereAsync(int forumId = 0)
             => await _userService.IsUserAdminInForum(await GetCurrentUserAsync(), forumId);
 
-        public async Task<bool> IsCurrentUserModeratorHereAsync(int forumId = 0) 
+        public async Task<bool> IsCurrentUserModeratorHereAsync(int forumId = 0)
             => await _userService.IsUserModeratorInForum(await GetCurrentUserAsync(), forumId);
 
         public int CurrentUserId => GetCurrentUserAsync().RunSync().UserId;
@@ -148,7 +143,7 @@ namespace Serverless.Forum
                 }
                 else
                 {
-                    yield return RedirectToPage("ForumLogin", new ForumLoginModel(_config)
+                    yield return RedirectToPage("ForumLogin", new ForumLoginModel(_context)
                     {
                         ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString),
                         ForumId = restrictedAncestor.Id.Value,
@@ -165,7 +160,7 @@ namespace Serverless.Forum
         {
             if (await GetCurrentUserAsync() == await _userService.GetAnonymousLoggedUserAsync())
             {
-                yield return RedirectToPage("Login", new LoginModel(_config, _utils, _cacheService, _userService)
+                yield return RedirectToPage("Login", new LoginModel(_context, _utils, _cacheService, _userService)
                 {
                     ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString)
                 });
@@ -228,14 +223,13 @@ namespace Serverless.Forum
                 return _tracking;
             }
 
-            using (var context = new ForumDbContext(_config))
-            using (var connection = context.Database.GetDbConnection())
+            using (var connection = _context.Database.GetDbConnection())
             {
                 connection.Open();
                 DefaultTypeMap.MatchNamesWithUnderscores = true;
 
                 var result = connection.Query<TrackingQueryResult>(
-                    "CALL `forum`.`get_post_tracking`(@userId, @topicId);", 
+                    "CALL `forum`.`get_post_tracking`(@userId, @topicId);",
                     new { userId = CurrentUserId, topicId = null as int? }
                 );
                 _tracking = from t in result

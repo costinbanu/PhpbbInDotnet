@@ -13,33 +13,28 @@ namespace Serverless.Forum.Services
 {
     public class WritingToolsService
     {
-        private readonly IConfiguration _config;
+        private readonly ForumDbContext _context;
         private readonly StorageService _storageService;
         private readonly CacheService _cacheService;
         private readonly Utils _utils;
 
-        public WritingToolsService(IConfiguration config, StorageService storageService, CacheService cacheService, Utils utils)
+        public WritingToolsService(ForumDbContext context, StorageService storageService, CacheService cacheService, Utils utils)
         {
-            _config = config;
+            _context = context;
             _storageService = storageService;
             _cacheService = cacheService;
             _utils = utils;
         }
 
         public async Task<List<PhpbbWords>> GetBannedWords()
-        {
-            using var context = new ForumDbContext(_config);
-            return await context.PhpbbWords.AsNoTracking().ToListAsync();
-        }
+            => await _context.PhpbbWords.AsNoTracking().ToListAsync();
 
         public async Task<(string Message, bool? IsSuccess)> ManageBannedWords(List<PhpbbWords> words, List<int> indexesToRemove)
         {
             try
             {
-                using var context = new ForumDbContext(_config);
-
                 var newWords = from w2 in words
-                               join w in context.PhpbbWords.AsNoTracking()
+                               join w in _context.PhpbbWords.AsNoTracking()
                                on w2.WordId equals w.WordId
                                into joined
                                from j in joined.DefaultIfEmpty()
@@ -48,17 +43,17 @@ namespace Serverless.Forum.Services
                 
                 if (newWords.Any())
                 {
-                    await context.PhpbbWords.AddRangeAsync(newWords);
+                    await _context.PhpbbWords.AddRangeAsync(newWords);
                 }
 
                 var toRemove = new List<PhpbbWords>();
                 foreach (var idx in indexesToRemove)
                 {
-                        toRemove.Add(await context.PhpbbWords.FirstOrDefaultAsync(x => x.WordId == words[idx].WordId));
+                        toRemove.Add(await _context.PhpbbWords.FirstOrDefaultAsync(x => x.WordId == words[idx].WordId));
                 }
-                context.PhpbbWords.RemoveRange(toRemove);
+                _context.PhpbbWords.RemoveRange(toRemove);
                 
-                var editedWords = from w in await context.PhpbbWords.ToListAsync()
+                var editedWords = from w in await _context.PhpbbWords.ToListAsync()
                                   join w2 in words 
                                   on w.WordId equals w2.WordId
                                   join r in toRemove
@@ -73,7 +68,7 @@ namespace Serverless.Forum.Services
                     Word.Replacement = Replacement;
                 }
 
-                await context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
 
                 return ("Cuvintele au fost actualizate cu succes!", true);
             }
@@ -98,13 +93,12 @@ namespace Serverless.Forum.Services
                 return int.TryParse(cleanName.Split('_')[0], out var val) ? val : 1;
             }
 
-            using var context = new ForumDbContext(_config);
             var inS3 = (
                 from s in await _storageService.ListItems().ToListAsync()
                 
                 let name = getFileName(s.Key)
                 
-                join u in context.PhpbbUsers.AsNoTracking()
+                join u in _context.PhpbbUsers.AsNoTracking()
                 on getUserId(name) equals u.UserId
                 into joinedUsers
                 
@@ -114,9 +108,9 @@ namespace Serverless.Forum.Services
             ).ToList();
 
             var inDb = await (
-                from a in context.PhpbbAttachments.AsNoTracking()
+                from a in _context.PhpbbAttachments.AsNoTracking()
                 
-                join u in context.PhpbbUsers.AsNoTracking()
+                join u in _context.PhpbbUsers.AsNoTracking()
                 on a.PosterId equals u.UserId
                 into joinedUsers
                 
@@ -185,14 +179,13 @@ namespace Serverless.Forum.Services
 
             try
             {
-                using var context = new ForumDbContext(_config);
-                context.PhpbbAttachments.RemoveRange(
-                    from a in context.PhpbbAttachments
+                _context.PhpbbAttachments.RemoveRange(
+                    from a in _context.PhpbbAttachments
                     join d in dbFiles
                     on a.AttachId equals d
                     select a
                 );
-                await context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
                 return success;
             }
             catch
@@ -201,9 +194,9 @@ namespace Serverless.Forum.Services
             }
         }
 
-        public string PrepareTextForSaving(ForumDbContext context, string text)
+        public string PrepareTextForSaving(string text)
         {
-            foreach (var sr in from s in context.PhpbbSmilies.AsNoTracking()
+            foreach (var sr in from s in _context.PhpbbSmilies.AsNoTracking()
                                select new
                                {
                                    Regex = new Regex(Regex.Escape(s.Code), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),

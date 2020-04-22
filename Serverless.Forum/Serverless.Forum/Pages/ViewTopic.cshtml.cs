@@ -38,9 +38,9 @@ namespace Serverless.Forum.Pages
         private readonly ModeratorService _moderatorService;
         private readonly BBCodeRenderingService _renderingService;
 
-        public ViewTopicModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService, 
+        public ViewTopicModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
             PostService postService, ModeratorService moderatorService, BBCodeRenderingService renderingService)
-            : base(config, utils, forumService, userService, cacheService)
+            : base(utils, context, forumService, userService, cacheService)
         {
             _postService = postService;
             _moderatorService = moderatorService;
@@ -51,12 +51,11 @@ namespace Serverless.Forum.Pages
         {
             if (_currentTopic == null)
             {
-                using var context = new ForumDbContext(_config);
                 _currentTopic = await (
-                    from p in context.PhpbbPosts.AsNoTracking()
+                    from p in _context.PhpbbPosts.AsNoTracking()
                     where p.PostId == postId
 
-                    join t in context.PhpbbTopics.AsNoTracking()
+                    join t in _context.PhpbbTopics.AsNoTracking()
                     on p.TopicId equals t.TopicId
                     into joined
 
@@ -80,10 +79,9 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnGet(int topicId, int pageNum)
         {
             PhpbbForums parent = null;
-            using var context = new ForumDbContext(_config);
             if (_currentTopic == null)
             {
-                _currentTopic = await (from t in context.PhpbbTopics.AsNoTracking()
+                _currentTopic = await (from t in _context.PhpbbTopics.AsNoTracking()
                                        where t.TopicId == topicId
                                        select t).FirstOrDefaultAsync();
             }
@@ -93,9 +91,9 @@ namespace Serverless.Forum.Pages
                 return NotFound($"Subiectul {topicId} nu există.");
             }
 
-            parent = await (from f in context.PhpbbForums.AsNoTracking()
+            parent = await (from f in _context.PhpbbForums.AsNoTracking()
 
-                            join t in context.PhpbbTopics.AsNoTracking()
+                            join t in _context.PhpbbTopics.AsNoTracking()
                             on f.ForumId equals t.ForumId
                             into joined
 
@@ -120,17 +118,17 @@ namespace Serverless.Forum.Pages
             Posts = (
                 from p in _dbPosts
 
-                join u in context.PhpbbUsers.AsNoTracking()
+                join u in _context.PhpbbUsers.AsNoTracking()
                 on p.PosterId equals u.UserId
                 into joinedUsers
 
-                join a in context.PhpbbAttachments.AsNoTracking()
+                join a in _context.PhpbbAttachments.AsNoTracking()
                 on p.PostId equals a.PostMsgId
                 into joinedAttachments
 
                 from ju in joinedUsers.DefaultIfEmpty()
 
-                let lastEditUser = context.PhpbbUsers.FirstOrDefault(u => u.UserId == p.PostEditUser)
+                let lastEditUser = _context.PhpbbUsers.FirstOrDefault(u => u.UserId == p.PostEditUser)
                 let lastEditUsername = lastEditUser == null ? "Anonymous" : lastEditUser.Username
 
                 select new PostDisplay
@@ -158,14 +156,14 @@ namespace Serverless.Forum.Pages
             await _renderingService.ProcessPosts(Posts, PageContext, HttpContext, true);
             TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
 
-            await GetPoll(context);
+            await GetPoll();
 
             if (Posts.Any(p => p.Unread))
             {
-                var existing = await context.PhpbbTopicsTrack.FirstOrDefaultAsync(t => t.UserId == CurrentUserId && t.TopicId == TopicId);
+                var existing = await _context.PhpbbTopicsTrack.FirstOrDefaultAsync(t => t.UserId == CurrentUserId && t.TopicId == TopicId);
                 if (existing == null)
                 {
-                    await context.PhpbbTopicsTrack.AddAsync(
+                    await _context.PhpbbTopicsTrack.AddAsync(
                         new PhpbbTopicsTrack
                         {
                             ForumId = ForumId.Value,
@@ -180,7 +178,7 @@ namespace Serverless.Forum.Pages
                     existing.ForumId = ForumId.Value;
                     existing.MarkTime = DateTime.UtcNow.ToUnixTimestamp();
                 }
-                await context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
             }
             return Page();
         }
@@ -198,12 +196,11 @@ namespace Serverless.Forum.Pages
                 await ReloadCurrentUser();
             }
 
-            using var context = new ForumDbContext(_config);
-            var curValue = await context.PhpbbUserTopicPostNumber.FirstOrDefaultAsync(ppp => ppp.UserId == CurrentUserId && ppp.TopicId == topicId);
+            var curValue = await _context.PhpbbUserTopicPostNumber.FirstOrDefaultAsync(ppp => ppp.UserId == CurrentUserId && ppp.TopicId == topicId);
 
             if (curValue == null)
             {
-                context.PhpbbUserTopicPostNumber.Add(
+                _context.PhpbbUserTopicPostNumber.Add(
                     new PhpbbUserTopicPostNumber
                     {
                         UserId = CurrentUserId,
@@ -211,12 +208,12 @@ namespace Serverless.Forum.Pages
                         PostNo = userPostsPerPage
                     }
                 );
-                await save(context);
+                await save(_context);
             }
             else if (curValue.PostNo != userPostsPerPage)
             {
                 curValue.PostNo = userPostsPerPage;
-                await save(context);
+                await save(_context);
             }
             return RedirectToPage("ViewTopic", "ByPostId", new { postId = postId, highlight = false });
         }
@@ -228,21 +225,20 @@ namespace Serverless.Forum.Pages
                 return Forbid();
             }
 
-            using var context = new ForumDbContext(_config);
-            var current = await context.PhpbbPollVotes.Where(v => v.TopicId == topicId && v.VoteUserId == CurrentUserId).ToListAsync();
-            var id = await context.PhpbbPollVotes.AsNoTracking().MaxAsync(v => v.Id);
+            var current = await _context.PhpbbPollVotes.Where(v => v.TopicId == topicId && v.VoteUserId == CurrentUserId).ToListAsync();
+            var id = await _context.PhpbbPollVotes.AsNoTracking().MaxAsync(v => v.Id);
             if (current.Any())
             {
-                var topic = await context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == topicId);
+                var topic = await _context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == topicId);
                 if (topic.PollVoteChange == 0)
                 {
                     return Forbid("Can't change votes for this poll.");
                 }
-                context.PhpbbPollVotes.RemoveRange(current.Where(v => !votes.Contains(v.PollOptionId)));
+                _context.PhpbbPollVotes.RemoveRange(current.Where(v => !votes.Contains(v.PollOptionId)));
             }
             foreach (var vote in votes)
             {
-                await context.PhpbbPollVotes.AddAsync(new PhpbbPollVotes
+                await _context.PhpbbPollVotes.AddAsync(new PhpbbPollVotes
                 {
                     Id = ++id,
                     PollOptionId = (byte)vote,
@@ -251,7 +247,7 @@ namespace Serverless.Forum.Pages
                     VoteUserIp = HttpContext.Connection.RemoteIpAddress.ToString()
                 });
             }
-            await context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
             return Redirect($"./ViewTopic{HttpUtility.UrlDecode(queryString)}");
         }
 
@@ -303,9 +299,9 @@ namespace Serverless.Forum.Pages
             }
         }
 
-        private async Task GetPoll(ForumDbContext context)
+        private async Task GetPoll()
         {
-            var dbPollOptions = await context.PhpbbPollOptions.AsNoTracking().Where(o => o.TopicId == (TopicId ?? 0)).ToListAsync();
+            var dbPollOptions = await _context.PhpbbPollOptions.AsNoTracking().Where(o => o.TopicId == (TopicId ?? 0)).ToListAsync();
 
             if (!dbPollOptions.Any() && string.IsNullOrWhiteSpace(_currentTopic.PollTitle) && _currentTopic.PollStart == 0)
             {
@@ -328,11 +324,9 @@ namespace Serverless.Forum.Pages
                         PollOptionText = o.PollOptionText,
                         TopicId = o.TopicId,
                         PollOptionVoters = (
-                            from v in context.PhpbbPollVotes.AsNoTracking()
-                            where o.PollOptionId == v.PollOptionId
-                               && o.TopicId == v.TopicId
-
-                            join u in context.PhpbbUsers.AsNoTracking()
+                            from v in _context.PhpbbPollVotes.AsNoTracking().Where(v => o.PollOptionId == v.PollOptionId && o.TopicId == v.TopicId).ToList()
+                            
+                            join u in _context.PhpbbUsers.AsNoTracking()
                             on v.VoteUserId equals u.UserId
                             into joinedUsers
 

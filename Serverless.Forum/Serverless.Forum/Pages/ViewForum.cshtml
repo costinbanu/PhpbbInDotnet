@@ -93,17 +93,16 @@ else
                 </span>
                 @await Html.PartialAsync(
                     "_SummaryPartial",
-                    new CustomPartials._SummaryPartialModel
-                    {
-                        AuthorId = topic.LastPosterId,
-                        AuthorName = topic.LastPosterName,
-                        CreationTime = topic.LastPostTime,
-                        AssetId = topic.Id.Value,
-                        DateFormat = UserDateFormat,
-                        AuthorColor = topic.LastPosterColor,
-                        LinkHref = topic.LastPostId == null ? null : $"./ViewTopic?postId={topic.LastPostId}&handler=ByPostId",
-                        LinkText = topic.LastPostId == null ? null : $"Mergi la ultimul mesaj"
-                    }
+                    new CustomPartials._SummaryPartialModel(
+                        topic.LastPosterId, 
+                        topic.LastPosterName, 
+                        topic.LastPosterColor, 
+                        topic.LastPostTime, 
+                        topic.Id.Value, 
+                        UserDateFormat, false, 
+                        topic.LastPostId == null ? null : $"./ViewTopic?postId={topic.LastPostId}&handler=ByPostId", 
+                        topic.LastPostId == null ? null : $"Mergi la ultimul mesaj"
+                    )
                 )
             </div>
         }

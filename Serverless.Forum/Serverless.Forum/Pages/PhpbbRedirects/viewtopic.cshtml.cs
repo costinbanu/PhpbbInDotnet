@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
@@ -11,8 +10,8 @@ namespace Serverless.Forum.Pages.PhpbbRedirects
 {
     public class viewtopicModel : ModelWithLoggedUser
     {
-        public viewtopicModel(IConfiguration config, Utils utils, ForumTreeService forumService, UserService userService, CacheService cacheService) 
-            : base(config, utils, forumService, userService, cacheService)
+        public viewtopicModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
+            : base(utils, context, forumService, userService, cacheService)
         {
         }
 
@@ -22,13 +21,10 @@ namespace Serverless.Forum.Pages.PhpbbRedirects
             {
                 if (start.HasValue)
                 {
-                    using (var context = new ForumDbContext(_config))
-                    {
-                        var posts = await (from post in context.PhpbbPosts
-                                           where post.TopicId == t.Value
-                                           select post.PostId).ToListAsync();
-                        return RedirectToPage("../ViewTopic", "ByPostId", new { PostId = posts[start.Value] });
-                    }
+                    var posts = await (from post in _context.PhpbbPosts.AsNoTracking()
+                                       where post.TopicId == t.Value
+                                       select post.PostId).ToListAsync();
+                    return RedirectToPage("../ViewTopic", "ByPostId", new { PostId = posts[start.Value] });
                 }
                 else
                 {

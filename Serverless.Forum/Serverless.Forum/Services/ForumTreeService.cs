@@ -15,27 +15,28 @@ namespace Serverless.Forum.Services
     public class ForumTreeService
     {
         private readonly IConfiguration _config;
+        private readonly ForumDbContext _context;
 
-        public ForumTreeService(IConfiguration config)
+        public ForumTreeService(IConfiguration config, ForumDbContext context)
         {
             _config = config;
+            _context = context;
         }
 
         public async Task<ForumDisplay> GetForumTreeAsync(ForumType? parentType = null, LoggedUser usr = null, Func<int, bool> IsForumUnread = null)
         {
-            using var context = new ForumDbContext(_config);
             if (IsForumUnread == null)
             {
                 IsForumUnread = new Func<int, bool>(_ => false);
             }
 
             var allForums = await (
-                from f in context.PhpbbForums.AsNoTracking()
+                from f in _context.PhpbbForums.AsNoTracking()
                 where (parentType == null || f.ForumType == parentType)
                    && (usr == null || usr.UserPermissions == null || !usr.UserPermissions.Any(fp => fp.ForumId == f.ForumId && fp.AuthRoleId == 16))
                 orderby f.LeftId
 
-                join t in context.PhpbbTopics
+                join t in _context.PhpbbTopics.AsNoTracking()
                 on f.ForumId equals t.ForumId
                 into joinedTopics
 
