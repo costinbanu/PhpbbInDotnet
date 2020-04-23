@@ -49,9 +49,16 @@ function expandCollapsedMenu(summary, button) {
 
 
 function showElement(id) {
-    var panel = document.getElementById(id);
-    if (getComputedStyle(panel).display === 'none')
-        panel.style.display = 'block';
-    else
-        panel.style.display = 'none';
+    //var panel = document.getElementById(id);
+    //if (getComputedStyle(panel).display === 'none')
+    //    panel.style.display = 'block';
+    //else
+    //    panel.style.display = 'none';
+    var elem = "#" + id;
+    if ($(elem).is(":visible")) {
+        $(elem).hide("fast", function () { });
+    }
+    else {
+        $(elem).show("fast", function () { });
+    }
 }

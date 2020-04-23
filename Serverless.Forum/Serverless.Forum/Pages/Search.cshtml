@@ -50,34 +50,39 @@
     <input asp-for="QueryString" type="hidden" />
     <input asp-for="PageNum" type="hidden" />
     <input asp-for="TotalResults" type="hidden" />
+    <input asp-for="AuthorId" type="hidden" id="authorId" />
 
     <input asp-for="SearchText" type="text" placeholder="Caută după text..." style="width:100%" />
     <p>&nbsp;</p>
-    Caută în forumul...
-    <div style="height:400px; max-height:600px; overflow-y:scroll">
-        @await Html.PartialAsync(
-            "_ForumTreePartial",
-             new CustomPartials._ForumTreePartialModel
-             {
-                 Forums = await Model.GetForumTreeAsync(),
-                 ForumId = Model.ForumId,
-                 TopicId = Model.TopicId,
-                 PathToForumOrTopic = await Model.PathToForumOrTopic(Model.ForumId ?? 0, Model.TopicId)
-             },
-            ViewData
-        )
+    <a href="javascript:showElement('advanced')">Căutare avansată</a>
+    <p>&nbsp;</p>
+    <div id="advanced" style="display:none">
+        Caută în forumul...
+        <div style="height:400px; max-height:600px; overflow-y:scroll">
+            @await Html.PartialAsync(
+                "_ForumTreePartial",
+                 new CustomPartials._ForumTreePartialModel
+                 {
+                     Forums = await Model.GetForumTreeAsync(),
+                     ForumId = Model.ForumId,
+                     TopicId = Model.TopicId,
+                     PathToForumOrTopic = await Model.PathToForumOrTopic(Model.ForumId ?? 0, Model.TopicId)
+                 },
+                ViewData
+            )
+        </div>
+        <input asp-for="ForumId" type="hidden" id="ForumIdInput" />
+        <p>&nbsp;</p>
+        Caută în subiectul...<br />
+        <select name="TopicId" id="TopicIdDisplay" style="width:100%">
+            <option selected disabled value="-1">Caută în subiectul...</option>
+            <option value="0">Caută în toate subiectele</option>
+        </select>
+        <p>&nbsp;</p>
+        <input asp-for="Author" type="text" placeholder="Caută după autor..." id="AuthorInput" style="width:100%" autocomplete="off" />
+        <p>&nbsp;</p>
     </div>
-    <input asp-for="ForumId" type="hidden" id="ForumIdInput" />
-    <p>&nbsp;</p>
-    <select name="TopicId" id="TopicIdDisplay" style="width:100%">
-        <option selected disabled value="-1">Caută în subiectul...</option>
-        <option value="0">Caută în toate subiectele</option>
-    </select>
-    <p>&nbsp;</p>
-    <input asp-for="Author" type="text" placeholder="Caută după autor..." id="AuthorInput" style="width:100%" autocomplete="off" />
-    <p>&nbsp;</p>
     <input type="submit" value="Trimite" />
-    <input asp-for="AuthorId" type="hidden" id="authorId" />
 </form>
 
 @if (Model.Posts != null && Model.Posts.Any())
@@ -154,4 +159,13 @@
         document.getElementById("authorId").value = e.detail.item.original.value;
         authorInput.value = e.detail.item.original.key;
     });
+
+    function toggleAdvancedSearch() {
+        if ($("#advanced").is(":visible")) {
+            $("#advanced").hide("fast", function () { });
+        }
+        else {
+            $("#advanced").show("fast", function () { });
+        }
+    }
 </script>

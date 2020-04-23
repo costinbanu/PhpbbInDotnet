@@ -167,18 +167,20 @@
     ViewData
 )
 
+@{ var index = 0; }
 @foreach (var post in Model.Posts)
 {
-    var divClass = post.Unread ? "ForumListRow Unread" : "ForumListRow";
+    var divClass = post.Unread ? $"ForumListRow Unread Color{index % 2}" : $"ForumListRow Color{index % 2}";
     <div class="@divClass">
         <div class="ForumListLeft" id="@post.PostId">
-            <span class="PostTitle">
-                <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@post.PostId">@Html.Raw(post.PostSubject)</a>
+            <span style="display:flex">
+                <span class="PostTitle">
+                    <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@post.PostId">@Html.Raw(post.PostSubject)</a>
+                </span>
+                <span class="CollapsedMenu" onclick="expandCollapsedMenu('#summary@(post.PostId.Value)', '#button@(post.PostId.Value)')" id="button@(post.PostId.Value)" style="color:#@post.AuthorColor;margin-left: auto; height:2em;">
+                    @Html.Raw(post.AuthorName)
+                </span>
             </span>
-            <span class="CollapsedMenu" onclick="expandCollapsedMenu('#summary@(post.PostId.Value)', '#button@(post.PostId.Value)')" id="button@(post.PostId.Value)" style="color:#@post.AuthorColor">
-                @Html.Raw(post.AuthorName)
-            </span>
-            <p>&nbsp;</p>
             <span style="display:inline-block">
                 @Html.Raw(post.PostText)
                 @foreach (var attachment in post.Attachments)
@@ -188,7 +190,6 @@
                 }
                 <br />
             </span>
-            <p>&nbsp;</p>
             <p>&nbsp;</p>
             <span class="CollapsedActions" onclick="showElement('actions@(post.PostId.Value)')" id="actionsButton@(post.PostId.Value)">
                 &#x2699; Opțiuni mesaj
@@ -202,7 +203,7 @@
                 </span>
             }
             <span class="Caption">
-                @if(post.LastEditTime > 0)
+                @if (post.LastEditTime > 0)
                 {
                     <span>Ultima dată modificat de @post.LastEditUser pe @post.LastEditTime.ToUtcTime().ToString(UserDateFormat). Motiv: @post.LastEditReason. Modificări în total: @post.EditCount.</span>
                 }
@@ -210,46 +211,48 @@
         </div>
         @await Html.PartialAsync(
             "_SummaryPartial",
-            new CustomPartials._SummaryPartialModel (post.AuthorId, post.AuthorName, post.AuthorColor, post.PostCreationTime, post.PostId.Value, 
+            new CustomPartials._SummaryPartialModel(post.AuthorId, post.AuthorName, post.AuthorColor, post.PostCreationTime, post.PostId.Value,
                 UserDateFormat, post.AuthorHasAvatar, null, null)
         )
         <p>&nbsp;</p>
-        <ul class="PostActions" id="actions@(post.PostId.Value)">
-            <li>
-                @if (!IsLocked)
-                {
-                    <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">&#x1F5E8; Răspunde cu citat</a>
-                }
-                else
-                {
-                    <a href="javascript:return;" title="Subiectul este închis, nu se mai pot trimite răspunsuri."><s>&#x1F5E8; Răspunde cu citat</s></a>
-                }
-            </li>
-            <li>
-                <a asp-page="/Posting" asp-page-handler="QuotePrivateMessage" asp-route-postId="@post.PostId">&#x1F4E7; Trimite mesaj privat</a>
-            </li>
-            <li>
-                <a href="javascript:return;">&#x2757; Raportează mesajul</a>
-            </li>
-            @if (IsMod)
-            {
-                <li>
-                    <a href="javascript:return;">&#x2753; Informații mesaj</a>
-                </li>
-                <li>
-                    Selectează pentru moderare <input type="checkBox" name="posts" value="@post.PostId" form="moderatorForm" />
-                </li>
-            }
-            @if (IsMod || (post.AuthorId == Model.CurrentUserId && DateTime.UtcNow.Subtract(post.PostCreationTime ?? default).TotalMinutes <= EditTime))
-            {
-                <li>
-                    <a asp-page="/Posting" asp-page-handler="EditPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">&#x1F4DD; Modifică</a>
-                </li>
-            }
-        </ul>
     </div>
+    <ul class="PostActions @($"Color{index % 2}")" id="actions@(post.PostId.Value)">
+        <li>
+            @if (!IsLocked)
+            {
+                <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">&#x1F5E8; Răspunde cu citat</a>
+            }
+            else
+            {
+                <a href="javascript:return;" title="Subiectul este închis, nu se mai pot trimite răspunsuri."><s>&#x1F5E8; Răspunde cu citat</s></a>
+            }
+        </li>
+        <li>
+            <a asp-page="/Posting" asp-page-handler="QuotePrivateMessage" asp-route-postId="@post.PostId">&#x1F4E7; Trimite mesaj privat</a>
+        </li>
+        <li>
+            <a href="javascript:return;">&#x2757; Raportează mesajul</a>
+        </li>
+        @if (IsMod)
+        {
+            <li>
+                <a href="javascript:return;">&#x2753; Informații mesaj</a>
+            </li>
+            <li>
+                Selectează pentru moderare <input type="checkBox" name="posts" value="@post.PostId" form="moderatorForm" />
+            </li>
+        }
+        @if (IsMod || (post.AuthorId == Model.CurrentUserId && DateTime.UtcNow.Subtract(post.PostCreationTime ?? default).TotalMinutes <= EditTime))
+        {
+            <li>
+                <a asp-page="/Posting" asp-page-handler="EditPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">&#x1F4DD; Modifică</a>
+            </li>
+        }
+    </ul>
+    index++;
 }
-<p></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
 @if (!IsLocked)
 {
     <a asp-page="/Posting" asp-page-handler="ForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId">Scrie un răspuns</a>
@@ -302,7 +305,7 @@ else
 @if (IsMod)
 {
     <form id="moderatorForm" method="post" asp-page-handler="Moderator">
-        <span>Acțiuni moderare: </span>
+        <span>Acțiuni moderare (cu mesajele selectate): </span>
         @Html.DropDownList("action", Enum.GetValues(typeof(ModeratorActions)).Cast<int>().Select(x => new SelectListItem(Enum.GetName(typeof(ModeratorActions), x), x.ToString())))
         <input type="submit" value="Trimite" />
         <br />

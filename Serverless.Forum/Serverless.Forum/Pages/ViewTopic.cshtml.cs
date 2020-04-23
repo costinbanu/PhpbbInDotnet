@@ -307,7 +307,7 @@ namespace Serverless.Forum.Pages
             {
                 return;
             }
-
+            var tid = TopicId ?? 0;
             Poll = new PollDisplay
             {
                 PollTitle = _currentTopic.PollTitle,
@@ -317,26 +317,28 @@ namespace Serverless.Forum.Pages
                 TopicId = TopicId.Value,
                 VoteCanBeChanged = _currentTopic.PollVoteChange == 1,
                 PollOptions = (
-                    from o in dbPollOptions
+                    from o in _context.PhpbbPollOptions.AsNoTracking()
+                    where o.TopicId == tid
+                    let voters = from v in _context.PhpbbPollVotes.AsNoTracking()
+                                 where o.PollOptionId == v.PollOptionId && o.TopicId == v.TopicId
+                                 join u in _context.PhpbbUsers.AsNoTracking()
+                                 on v.VoteUserId equals u.UserId
+                                 into joinedUsers
+
+                                 from ju in joinedUsers.DefaultIfEmpty()
+                                 select new PollOptionVoter
+                                 {
+                                     UserId = v.VoteUserId,
+                                     Username = ju == null ? "[deleted user]" : ju.Username
+                                 }
+
+
                     select new PollOption
                     {
                         PollOptionId = o.PollOptionId,
                         PollOptionText = o.PollOptionText,
                         TopicId = o.TopicId,
-                        PollOptionVoters = (
-                            from v in _context.PhpbbPollVotes.AsNoTracking().Where(v => o.PollOptionId == v.PollOptionId && o.TopicId == v.TopicId).ToList()
-                            
-                            join u in _context.PhpbbUsers.AsNoTracking()
-                            on v.VoteUserId equals u.UserId
-                            into joinedUsers
-
-                            from ju in joinedUsers.DefaultIfEmpty()
-                            select new PollOptionVoter
-                            {
-                                UserId = v.VoteUserId,
-                                Username = ju == null ? "[deleted user]" : ju.Username
-                            }
-                        ).ToList()
+                        PollOptionVoters = voters.ToList() 
                     }
                 ).ToList()
             };

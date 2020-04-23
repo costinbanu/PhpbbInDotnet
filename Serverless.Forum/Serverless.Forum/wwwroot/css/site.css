@@ -1,13 +1,33 @@
 body {
     padding-top: 100px;
     padding-bottom: 20px;
+    background-image: url('../images/bg.gif');
+    background-repeat: repeat;
+    background-attachment :fixed;
 }
 
 /* Wrapping element */
 /* Set some basic padding to keep content from hitting the edges */
 .body-content {
-    padding-left: 15px;
-    padding-right: 15px;
+    padding: 15px 15px;
+    background-color: white;
+    max-width: 100vw;
+}
+
+.size1300 {
+    width: 80% !important;
+}
+
+.navbar {
+    background-image: url('../images/bg.gif');
+    background-repeat: repeat;
+    border: none !important;
+    padding-bottom: 10px;
+}
+
+.navbar li > a {
+    color: white !important;
+    text-decoration: underline !important;
 }
 
 /* Carousel */
@@ -38,12 +58,21 @@ blockquote {
     background-color: #fef6e9 !important;
 }
 
+.Color0 {
+    background-color: white;
+}
+
+.Color1 {
+    background-color: #f8faf9;
+}
+
 .ForumListRow {
     width: 100%;
     max-width: 100vw;
-    border-radius: 5px;
-    border: solid 1px black;
-    display: inline-block;
+    /*border-radius: 5px;
+    border: solid 1px black;*/
+    /*display: inline-block;*/
+    display: flex;
     vertical-align: top;
     padding: 0.5em;
     margin-top: 5px;
@@ -57,18 +86,19 @@ blockquote {
 
 .ForumListRowCategory {
     width: 100%;
-    border-radius: 5px;
-    border: solid 1px black;
+    /*border-radius: 5px;
+    border: solid 1px black;*/
     display: block;
     vertical-align: top;
     padding: 0.5em;
     display: table;
     margin-top: 5px;
     background-color: #dbf5fe;
+    font-weight: bold;
 }
 
 .ForumListLeft {
-    width: 70%;
+    width: 68%;
     height: auto;
     vertical-align: top;
     display: inline-block;
@@ -83,13 +113,15 @@ blockquote {
 }
 
 .ForumListRight {
-    width: 25%;
+    width: 30%;
     display: inline-block;
     vertical-align: top;
-    display:inline-block;
+    display: inline-block;
     padding-left: 30px;
-    list-style-type:none;
+    list-style-type: none;
     margin-bottom: 0px !important;
+    /*margin-left: auto;
+    white-space: nowrap;*/
 }
 
 .ForumListRight img {
@@ -100,7 +132,7 @@ blockquote {
 .PostActions {
     display: flex;
     margin-bottom: 0px !important;
-    padding-left:0px !important;
+    padding-left: 0px !important;
 }
 
 /*.PostActions li {
@@ -145,7 +177,8 @@ blockquote {
 .PostTitle {
     font-size: 1.2em;
     font-weight: bold;
-    float:left;
+    float: left;
+    text-overflow: ellipsis;
 }
 
 .clear {
@@ -267,15 +300,12 @@ label {
     display:inherit;
 }
 
-.body-content {
-    max-width:100vw;
-}
-
 .headerImg {
     width: 682px;
     height: 100px;
     background-image: url("../images/forumlogo-full.png");
-    background-size:contain;
+    background-size: contain;
+    background-position: left;
 }
 
 .paginationControls {
@@ -310,6 +340,27 @@ label {
     display: inline-block;
 }
 
+.Shortcuts {
+    padding-left: 0px !important;
+}
+
+.Shortcuts li {
+    display: inline;
+    white-space: nowrap;
+}
+
+.Shortcuts li:after {
+    content: " \2022 ";
+}
+
+.Shortcuts li:last-child:after {
+    content: none;
+}
+
+.Hide1300 {
+    display: inline-block;
+}
+
 @media (max-width: 768px) {
     .ForumListRight {
         display: none;
@@ -338,6 +389,10 @@ label {
 
     .CollapsedMenu {
         display: inline-block;
+    }
+
+    .PostTitle {
+        margin-right: 10px;
     }
 
     .CollapsedActions {
@@ -372,23 +427,44 @@ label {
     }
 }
 
-@media (max-width:1300px) {
+@media (max-width:1160px) {
     .headerImg {
         width: 325px;
         height: 77px;
         background-image: url("../images/forumlogo-medium.png");
         background-size: contain;
         background-repeat: no-repeat;
+        background-position: left;
     }
 }
 
-@media (max-width:768px) {
+@media (max-width:1400px) {
+    /*.headerImg {
+        width: 325px;
+        height: 77px;
+        background-image: url("../images/forumlogo-medium.png");
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: left;
+    }*/
+
+    .size1300 {
+        width: 95% !important;
+    }
+
+    .Hide1300 {
+        display: none;
+    }
+}
+
+@media (max-width:800px) {
     .headerImg {
         /*width: 325px;
         height: 77px;*/
         background-image: url("../images/forumlogo-small.png");
         background-size: contain;
         background-repeat: no-repeat;
+        background-position: left;
     }
 }
 

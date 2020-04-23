@@ -39,7 +39,7 @@
 </head>
 <body>
     <nav class="navbar navbar-inverse navbar-fixed-top">
-        <div class="container">
+        <div class="container size1300">
             <div class="navbar-header">
                 <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
                     <span class="sr-only">Toggle navigation</span>
@@ -57,18 +57,18 @@
                 <form action="/Logout" method="get" name="logoutForm">
                     <input name="ReturnUrl" type="hidden" value="@HttpUtility.UrlEncode(Context.Request.Path + Context.Request.QueryString)" />
                 </form>
-                <ul class="nav navbar-nav">
+                <ul class="nav navbar-nav firstRow">
                     @{
                         var isTopic = ViewContext.RouteData.Values["page"].ToString() == "/ViewTopic";
                         if (string.IsNullOrWhiteSpace(currentUser?.Username) || (currentUser?.UserId ?? 0) == 1)
                         {
-                            <li><a href="#" onclick="loginForm.submit()">Login</a></li>
+                            <li><a href="javascript:loginForm.submit()">Login</a></li>
                             <li><a asp-page="/Register">Register</a></li>
                         }
                         else
                         {
                             <li><a asp-page="/User" asp-route-UserId="@currentUser.UserId">Welcome, @currentUser.Username!</a></li>
-                            <li><a href="#" onclick="logoutForm.submit()">Logout</a></li>
+                            <li><a href="javascript:logoutForm.submit()">Logout</a></li>
                         }
 
                         <li>
@@ -77,20 +77,27 @@
                             </a>
                         </li>
                     }
-                </ul>
+                </ul><br /> <br />
             </div>
         </div>
     </nav>
-    <div class="container body-content">
+    <div class="container body-content size1300">
+        <ul class="Shortcuts Hide1300">
+            <li><a href="https://metrouusor.com">Asociația „Metrou Ușor”</a></li>
+            <li><a href="https://www.facebook.com/MetrouUsor/">Facebook</a></li>
+            <li><a href="https://youtube.com/channel/UCczAlitk6NaUjQsbtCSdEjA">Youtube</a></li>
+            <li><a href="https://www.facebook.com/InitiativaMTB/">Inițiativa pentru Muzeul transportului bucureștean</a></li>
+            <li><a href="https://metrouusor.com/index.php/implica-te/directoneaza-2-din-impozit">2% pentru Asociația „Metrou Ușor”</a></li>
+        </ul>
         @RenderBody()
     </div>
-    <center>
+    <center style="color:white;">
         <p>&nbsp;</p>
         <p>&copy; 2018 - Serverless.Forum</p>
-        <p><a asp-page="/TermsAndConditions" target="_blank">Termenele și condițiile de utilizare</a></p>
+        <p><a asp-page="/TermsAndConditions" style="color:white; text-decoration:underline">Termenele și condițiile de utilizare</a></p>
         @if (await _userServices.IsUserAdminInForum(currentUser, 0))
         {
-            <p><a asp-page="./Admin">Panoul administratorului</a></p>
+            <p><a asp-page="./Admin" style="color:white; text-decoration:underline">Panoul administratorului</a></p>
         }
     </center>
     <environment include="Development">

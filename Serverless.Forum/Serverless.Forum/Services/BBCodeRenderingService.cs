@@ -22,7 +22,6 @@ namespace Serverless.Forum.Services
 {
     public class BBCodeRenderingService
     {
-        private readonly IConfiguration _config;
         private readonly Utils _utils;
         private readonly ForumDbContext _context;
         private readonly WritingToolsService _writingService;
@@ -37,9 +36,8 @@ namespace Serverless.Forum.Services
         private delegate (int index, string match) FirstIndexOf(string haystack, string needle, int startIndex);
         private delegate (string result, int endIndex) Transform(string haystack, string needle, int startIndex);
 
-        public BBCodeRenderingService(IConfiguration config, Utils utils, ForumDbContext context, WritingToolsService writingService)
+        public BBCodeRenderingService(Utils utils, ForumDbContext context, WritingToolsService writingService)
         {
-            _config = config;
             _utils = utils;
             _context = context;
             _writingService = writingService;
@@ -49,6 +47,31 @@ namespace Serverless.Forum.Services
             _spaceRegex = new Regex(" +", RegexOptions.Compiled | RegexOptions.Singleline);
             _smileyRegex = new Regex("{SMILIES_PATH}", RegexOptions.Compiled | RegexOptions.Singleline);
             _htmlRegex = new Regex(@"<((?=!\-\-)!\-\-[\s\S]*\-\-|((?=\?)\?[\s\S]*\?|((?=\/)\/[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*|[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*(?:\s[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*(?:=(?:""[^""]*""|'[^']*'|[^'""<\s]*))?)*)\s?\/?))>", RegexOptions.Compiled);
+
+            var bbcodes = _context.PhpbbBbcodes.AsNoTracking().Select(c => new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false)).ToList();
+
+            bbcodes.AddRange(new[]
+            {
+                    new BBTag("b", "<b>", "</b>"),
+                    new BBTag("i", "<span style=\"font-style:italic;\">", "</span>"),
+                    new BBTag("u", "<span style=\"text-decoration:underline;\">", "</span>"),
+                    new BBTag("code", "<pre class=\"prettyprint\">", "</pre>"),
+                    new BBTag("img", "<br/><img src=\"${content}\" /><br/>", string.Empty, false, false),
+                    new BBTag("quote", "<blockquote>${name}", "</blockquote>",
+                        new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : $"<b>{HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')}</b> a scris:<br/>")),
+                    new BBTag("*", "<li>", "</li>", true, false),
+                    new BBTag("list", "<${attr}>", "</${attr}>", true, true,
+                        new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul" : $"ol type=\"{a.AttributeValue}\"")),
+                    new BBTag("url", "<a href=\"${href}\" target=\"_blank\">", "</a>",
+                        new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
+                    new BBTag("color", "<span style=\"color:${code}\">", "</span>",
+                        new BBAttribute("code", "")),
+                    new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>",
+                        new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
+                    new BBTag("attachment", "#{AttachmentFileName=${content}/AttachmentIndex=${num}}#", "", false, true,
+                        new BBAttribute("num", ""))
+                });
+            _parser = new BBCodeParser(bbcodes);
         }
 
         public async Task ProcessPosts(IEnumerable<PostDisplay> Posts, PageContext pageContext, HttpContext httpContext, bool renderAttachments, string toHighlight = null)
@@ -128,7 +151,7 @@ namespace Serverless.Forum.Services
                 return string.Empty;
             }
 
-            bbCodeText = (await GetParserLazy()).ToHtml(bbCodeText, bbCodeUid);
+            bbCodeText = /*(await GetParserLazy())*/_parser.ToHtml(bbCodeText, bbCodeUid);
             bbCodeText = _newLineRegex.Replace(bbCodeText, "<br/>");
             bbCodeText = _htmlCommentRegex.Replace(bbCodeText, string.Empty);
             bbCodeText = _smileyRegex.Replace(bbCodeText, Constants.SMILEY_PATH);
@@ -143,40 +166,6 @@ namespace Serverless.Forum.Services
             }
 
             return HttpUtility.HtmlDecode(bbCodeText);
-        }
-
-        private async Task<BBCodeParser> GetParserLazy()
-        {
-            if (_parser != null)
-            {
-                return _parser;
-            }
-            var bbcodes = await _context.PhpbbBbcodes.AsNoTracking().Select(c => new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false)).ToListAsync();
-
-
-            bbcodes.AddRange(new[]
-            {
-                    new BBTag("b", "<b>", "</b>"),
-                    new BBTag("i", "<span style=\"font-style:italic;\">", "</span>"),
-                    new BBTag("u", "<span style=\"text-decoration:underline;\">", "</span>"),
-                    new BBTag("code", "<pre class=\"prettyprint\">", "</pre>"),
-                    new BBTag("img", "<br/><img src=\"${content}\" /><br/>", string.Empty, false, false),
-                    new BBTag("quote", "<blockquote>${name}", "</blockquote>",
-                        new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : $"<b>{HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')}</b> a scris:<br/>")),
-                    new BBTag("*", "<li>", "</li>", true, false),
-                    new BBTag("list", "<${attr}>", "</${attr}>", true, true,
-                        new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul" : $"ol type=\"{a.AttributeValue}\"")),
-                    new BBTag("url", "<a href=\"${href}\" target=\"_blank\">", "</a>",
-                        new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
-                    new BBTag("color", "<span style=\"color:${code}\">", "</span>",
-                        new BBAttribute("code", "")),
-                    new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>",
-                        new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
-                    new BBTag("attachment", "#{AttachmentFileName=${content}/AttachmentIndex=${num}}#", "", false, true,
-                        new BBAttribute("num", ""))
-                });
-            _parser = new BBCodeParser(bbcodes);
-            return _parser;
         }
 
         private List<string> SplitHighlightWords(string search)
