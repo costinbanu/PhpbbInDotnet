@@ -137,10 +137,10 @@ namespace Serverless.Forum.Pages
             );
 
             Posts = await multi.ReadAsync<ExtendedPostDisplay>();
-            Parallel.ForEach(Posts, async p =>
+            Parallel.ForEach(Posts, p =>
             {
                 p.AuthorHasAvatar = !string.IsNullOrWhiteSpace(p.UserAvatar);
-                p.AuthorSignature = p.UserSig == null ? null : await _renderingService.BbCodeToHtml(p.UserSig, p.UserSigBbcodeUid);
+                p.AuthorSignature = p.UserSig == null ? null : _renderingService.BbCodeToHtml(p.UserSig, p.UserSigBbcodeUid);
             });
             await _renderingService.ProcessPosts(Posts, PageContext, HttpContext, false, SearchText);
             TotalResults = unchecked((int)(await multi.ReadAsync<long>()).Single());

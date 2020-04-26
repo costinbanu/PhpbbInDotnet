@@ -24,7 +24,7 @@
         <link rel="stylesheet" href="https://ajax.aspnetcdn.com/ajax/bootstrap/3.3.7/css/bootstrap.min.css"
               asp-fallback-href="~/lib/bootstrap/dist/css/bootstrap.min.css"
               asp-fallback-test-class="sr-only" asp-fallback-test-property="position" asp-fallback-test-value="absolute" />
-        <link rel="stylesheet" href="~/css/site.min.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     </environment>
 
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.css" />
@@ -38,7 +38,7 @@
     <script src="~/js/dateFormatter.js"></script>
 </head>
 <body>
-    <nav class="navbar navbar-inverse navbar-fixed-top">
+    <nav class="navbar navbar-inverse navbar-fixed-top" id="topBanner">
         <div class="container size1300">
             <div class="navbar-header">
                 <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
@@ -57,7 +57,7 @@
                 <form action="/Logout" method="get" name="logoutForm">
                     <input name="ReturnUrl" type="hidden" value="@HttpUtility.UrlEncode(Context.Request.Path + Context.Request.QueryString)" />
                 </form>
-                <ul class="nav navbar-nav firstRow">
+                <ul style="float:right; padding-top:10px; list-style:none; line-height:1.85em;">
                     @{
                         var isTopic = ViewContext.RouteData.Values["page"].ToString() == "/ViewTopic";
                         if (string.IsNullOrWhiteSpace(currentUser?.Username) || (currentUser?.UserId ?? 0) == 1)
@@ -67,7 +67,7 @@
                         }
                         else
                         {
-                            <li><a asp-page="/User" asp-route-UserId="@currentUser.UserId">Welcome, @currentUser.Username!</a></li>
+                            <li><a asp-page="/User" asp-route-UserId="@currentUser.UserId">Contul meu [@currentUser.Username]</a></li>
                             <li><a href="javascript:logoutForm.submit()">Logout</a></li>
                         }
 
@@ -82,18 +82,20 @@
         </div>
     </nav>
     <div class="container body-content size1300">
-        <ul class="Shortcuts Hide1300">
+        <a href="javascript:showElement('metrouusorLinks');" class="Show1300"><b>Site-urile „MetrouUșor” &#x2935;</b></a>
+        <ul class="Shortcuts Hide1300" id="metrouusorLinks">
             <li><a href="https://metrouusor.com">Asociația „Metrou Ușor”</a></li>
             <li><a href="https://www.facebook.com/MetrouUsor/">Facebook</a></li>
             <li><a href="https://youtube.com/channel/UCczAlitk6NaUjQsbtCSdEjA">Youtube</a></li>
             <li><a href="https://www.facebook.com/InitiativaMTB/">Inițiativa pentru Muzeul transportului bucureștean</a></li>
             <li><a href="https://metrouusor.com/index.php/implica-te/directoneaza-2-din-impozit">2% pentru Asociația „Metrou Ușor”</a></li>
         </ul>
+        <p>&nbsp;</p>
         @RenderBody()
     </div>
     <center style="color:white;">
         <p>&nbsp;</p>
-        <p>&copy; 2018 - Serverless.Forum</p>
+        <p>&copy; 2009 - @DateTime.Now.Year <a href="https://metrouusor.com" style="color:white; text-decoration:underline">Asociația „Metrou Ușor”</a></p>
         <p><a asp-page="/TermsAndConditions" style="color:white; text-decoration:underline">Termenele și condițiile de utilizare</a></p>
         @if (await _userServices.IsUserAdminInForum(currentUser, 0))
         {

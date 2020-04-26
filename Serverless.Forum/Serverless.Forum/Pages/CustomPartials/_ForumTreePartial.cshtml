@@ -1,17 +1,11 @@
 ﻿@model Serverless.Forum.Pages.CustomPartials._ForumTreePartialModel
-@*
-    For more information on enabling MVC for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
-*@
-
 @using Serverless.Forum.Contracts
 
 <style>
-    /* Remove default bullets */
     ul, #myUL {
         list-style-type: none;
     }
 
-    /* Remove margins and padding from the parent ul */
     #myUL {
         margin: 0;
         padding: 0;
@@ -19,7 +13,7 @@
 
     .searchCaret {
         cursor: pointer;
-        user-select: none; /* Prevent text selection */
+        user-select: none;
         width: 100%;
         padding: 3px 3px;
     }

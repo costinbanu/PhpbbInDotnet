@@ -183,7 +183,7 @@ namespace Serverless.Forum.Pages
                 return validationResult;
             }
 
-            var (inS3, inDb) = await _cacheService.GetFromCacheAsync<(IEnumerable<string> inS3, IEnumerable<int> inDb)>(_adminWritingService.GetCacheKey(CurrentUserId));
+            var (inS3, inDb) = await _cacheService.GetFromCache<(IEnumerable<string> inS3, IEnumerable<int> inDb)>(_adminWritingService.GetCacheKey(CurrentUserId));
             if (action == AdminOrphanedFilesActions.DeleteFromDb)
             {
                 (Message, IsSuccess) = await _adminWritingService.DeleteDbOrphanedFiles(inDb);
@@ -195,7 +195,7 @@ namespace Serverless.Forum.Pages
 
             if(IsSuccess ?? false)
             {
-                await _cacheService.RemoveFromCacheAsync(_adminWritingService.GetCacheKey(CurrentUserId));
+                await _cacheService.RemoveFromCache(_adminWritingService.GetCacheKey(CurrentUserId));
             }
 
             Category = AdminCategories.WritingTools;

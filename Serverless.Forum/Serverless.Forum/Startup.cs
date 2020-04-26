@@ -77,10 +77,16 @@ namespace Serverless.Forum
                                     o.JsonSerializerOptions.IgnoreNullValues = true;
                                 });
 
+#if DEBUG
             if (Env.IsDevelopment())
             {
                 builder.AddRazorRuntimeCompilation();
             }
+#endif
+            services.Configure<IISServerOptions>(options =>
+            {
+                options.AutomaticAuthentication = false;
+            });
 
             services.AddDataProtection();
             services.AddAntiforgery(o => o.HeaderName = "XSRF-TOKEN");

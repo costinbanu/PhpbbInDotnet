@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Services;
@@ -146,7 +145,7 @@ namespace Serverless.Forum.Pages
                     BbcodeUid = p.BbcodeUid,
                     Unread = IsPostUnread(p.TopicId, p.PostId),
                     AuthorHasAvatar = ju == null ? false : !string.IsNullOrWhiteSpace(ju.UserAvatar),
-                    AuthorSignature = ju == null ? null : _renderingService.BbCodeToHtml(ju.UserSig, ju.UserSigBbcodeUid).RunSync(),
+                    AuthorSignature = ju == null ? null : _renderingService.BbCodeToHtml(ju.UserSig, ju.UserSigBbcodeUid),
                     LastEditTime = p.PostEditTime,
                     LastEditUser = lastEditUsername,
                     LastEditReason = p.PostEditReason,
@@ -301,22 +300,22 @@ namespace Serverless.Forum.Pages
 
         private async Task GetPoll()
         {
-            var dbPollOptions = await _context.PhpbbPollOptions.AsNoTracking().Where(o => o.TopicId == (TopicId ?? 0)).ToListAsync();
-
-            if (!dbPollOptions.Any() && string.IsNullOrWhiteSpace(_currentTopic.PollTitle) && _currentTopic.PollStart == 0)
-            {
-                return;
-            }
             var tid = TopicId ?? 0;
+            //var dbPollOptions = await _context.PhpbbPollOptions.AsNoTracking().Where(o => o.TopicId == tid).ToListAsync();
+
+            //if (!dbPollOptions.Any() && string.IsNullOrWhiteSpace(_currentTopic.PollTitle) && _currentTopic.PollStart == 0)
+            //{
+            //    return;
+            //}
             Poll = new PollDisplay
             {
                 PollTitle = _currentTopic.PollTitle,
                 PollStart = _currentTopic.PollStart.ToUtcTime(),
                 PollDurationSecons = _currentTopic.PollLength,
                 PollMaxOptions = _currentTopic.PollMaxOptions,
-                TopicId = TopicId.Value,
+                TopicId = tid,
                 VoteCanBeChanged = _currentTopic.PollVoteChange == 1,
-                PollOptions = (
+                PollOptions = await (
                     from o in _context.PhpbbPollOptions.AsNoTracking()
                     where o.TopicId == tid
                     let voters = from v in _context.PhpbbPollVotes.AsNoTracking()
@@ -326,12 +325,8 @@ namespace Serverless.Forum.Pages
                                  into joinedUsers
 
                                  from ju in joinedUsers.DefaultIfEmpty()
-                                 select new PollOptionVoter
-                                 {
-                                     UserId = v.VoteUserId,
-                                     Username = ju == null ? "[deleted user]" : ju.Username
-                                 }
-
+                                 where ju != null
+                                 select new PollOptionVoter { UserId = ju.UserId, Username = ju.Username }
 
                     select new PollOption
                     {
@@ -340,8 +335,13 @@ namespace Serverless.Forum.Pages
                         TopicId = o.TopicId,
                         PollOptionVoters = voters.ToList() 
                     }
-                ).ToList()
+                ).ToListAsync()
             };
+
+            if(!Poll.PollOptions.Any())
+            {
+                Poll = null;
+            }
         }
     }
 }

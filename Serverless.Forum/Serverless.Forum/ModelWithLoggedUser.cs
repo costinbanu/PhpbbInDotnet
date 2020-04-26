@@ -69,7 +69,7 @@ namespace Serverless.Forum
                 if (_currentUser != await _userService.GetAnonymousLoggedUserAsync())
                 {
                     var key = $"UserMustLogIn_{_currentUser.UsernameClean}";
-                    if (await _cacheService.GetFromCacheAsync<bool?>(key) ?? false)
+                    if (await _cacheService.GetFromCache<bool?>(key) ?? false)
                     {
                         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                     }
@@ -79,7 +79,7 @@ namespace Serverless.Forum
                         if (dbUser == null || dbUser.UserInactiveTime > 0)
                         {
                             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                            await _cacheService.SetInCacheAsync(key, true);
+                            await _cacheService.SetInCache(key, true);
                         }
                     }
                 }

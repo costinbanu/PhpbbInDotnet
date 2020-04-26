@@ -74,9 +74,9 @@ namespace Serverless.Forum.Pages
                     });
 
                 var key = $"UserMustLogIn_{currentUser.UsernameClean}";
-                if (await _cacheService.GetFromCacheAsync<bool?>(key) ?? false)
+                if (await _cacheService.GetFromCache<bool?>(key) ?? false)
                 {
-                    await _cacheService.RemoveFromCacheAsync(key);
+                    await _cacheService.RemoveFromCache(key);
                 }
 
                 return Redirect(HttpUtility.UrlDecode(ReturnUrl));

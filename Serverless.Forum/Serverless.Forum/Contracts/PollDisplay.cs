@@ -35,7 +35,7 @@ namespace Serverless.Forum.Contracts
 
     public class PollOption
     {
-        public int PollOptionId { get; set; }
+        public byte PollOptionId { get; set; }
 
         public int TopicId { get; set; }
 
@@ -48,7 +48,7 @@ namespace Serverless.Forum.Contracts
 
     public class PollOptionVoter
     {
-        public int? UserId { get; set; }
+        public int UserId { get; set; }
 
         public string Username { get; set; }
     }

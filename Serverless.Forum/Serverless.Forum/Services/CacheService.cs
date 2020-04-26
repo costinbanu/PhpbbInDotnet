@@ -17,20 +17,27 @@ namespace Serverless.Forum.Services
             _cache = cache;
         }
 
-        public async Task<T> GetFromCacheAsync<T>(string key)
-            => await _utils.DecompressObjectAsync<T>(await _cache.GetAsync(key));
+        public async Task<T> GetFromCache<T>(string key)
+            => await _utils.DecompressObject<T>(await _cache.GetAsync(key));
 
-        public async Task SetInCacheAsync<T>(string key, T value)
+        public async Task<T> GetAndRemoveFromCache<T>(string key)
+        {
+            var toReturn = await GetFromCache<T>(key);
+            await RemoveFromCache(key);
+            return toReturn;
+        }
+        
+        public async Task SetInCache<T>(string key, T value)
             => await _cache.SetAsync(
                 key,
-                await _utils.CompressObjectAsync(value),
+                await _utils.CompressObject(value),
                 new DistributedCacheEntryOptions { SlidingExpiration = TimeSpan.FromHours(12) }
             );
 
-        public async Task<bool> ExistsInCacheAsync(string key)
+        public async Task<bool> ExistsInCache(string key)
             => (await _cache.GetAsync(key))?.Any() ?? false;
 
-        public async Task RemoveFromCacheAsync(string key)
+        public async Task RemoveFromCache(string key)
             => await _cache.RemoveAsync(key);
     }
 }

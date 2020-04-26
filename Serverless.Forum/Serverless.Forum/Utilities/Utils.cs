@@ -37,7 +37,7 @@ namespace Serverless.Forum.Utilities
             _tempDataProvider = tempDataProvider;
         }
 
-        public async Task<byte[]> CompressObjectAsync<T>(T source)
+        public async Task<byte[]> CompressObject<T>(T source)
         {
             using var content = new MemoryStream(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(source)));
             using var memory = new MemoryStream();
@@ -47,7 +47,7 @@ namespace Serverless.Forum.Utilities
             return memory.ToArray();
         }
 
-        public async Task<T> DecompressObjectAsync<T>(byte[] source)
+        public async Task<T> DecompressObject<T>(byte[] source)
         {
             if (!(source?.Any() ?? false))
             {

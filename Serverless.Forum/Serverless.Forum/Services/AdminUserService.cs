@@ -50,7 +50,7 @@ namespace Serverless.Forum.Services
             async Task flagUserAsChanged()
             {
                 var key = $"UserMustLogIn_{user.UsernameClean}";
-                await _cacheService.SetInCacheAsync(key, true);
+                await _cacheService.SetInCache(key, true);
             }
 
             async Task deleteUser()

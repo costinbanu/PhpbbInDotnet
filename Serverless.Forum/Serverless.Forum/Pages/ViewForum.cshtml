@@ -13,6 +13,7 @@
 <form asp-page-handler="Topics" method="post" name="MarkTopicsRead">
     <input name="forumId" type="hidden" value="@Model.ForumId" />
 </form>
+
 <script type="text/javascript">
     //forum tree callback
     function forumSelectCallback(forumId) {
@@ -22,6 +23,7 @@
         }
     }
 </script>
+
 @if (Model.ParentForumId != 0)
 {
     <span>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@Model.ParentForumTitle</a></span>
@@ -30,10 +32,11 @@ else
 {
     <h4><a href="/">Prima pagină</a></h4>
 }
+
 <h2>Forum: @Model.ForumTitle</h2>
 @if (!IsAnonymous)
 {
-    <ul class="Shortcuts" style="float:right">
+    <ul class="Shortcuts">
         @if (Model.Forums.Any())
         {
             <li><a href="javascript:MarkForumsRead.submit()">Marchează forumurile ca citite</a></li>
@@ -45,6 +48,7 @@ else
         <li><a asp-page="/Posting" asp-page-handler="NewTopic" asp-route-forumId="@Model.ForumId">Deschide un subiect nou</a></li>
     </ul>
 }
+
 @if (Model.Forums.Any())
 {
     @await Html.PartialAsync(
@@ -54,6 +58,7 @@ else
     )
     <hr />
 }
+
 @if (Model.Topics.Any())
 {
     /*https://stackoverflow.com/questions/5144265/an-equally-quick-alternative-to-securityelement-escapestring-to-escape-xml-spe#comment88712318_5144356
@@ -63,29 +68,25 @@ else
     var globalsDisplayed = false;
     foreach (var topicGroup in Model.Topics)
     {
-        if (topicGroup != Model.Topics.First())
-        {
-            <hr />
-        }
         var index = 0;
         if (!globalsDisplayed && topicGroup.TopicType == TopicType.Global)
         {
-            <h4 style="float:left">Subiecte globale</h4>
+            <h3 style="float:left">Subiecte globale</h3>
             globalsDisplayed = true;
         }
         else if (!announcementsDisplayed && topicGroup.TopicType == TopicType.Announcement)
-        {
-            <h4 style="float:left">Anunțuri</h4>
+        { 
+            <h3 style="float:left">Anunțuri</h3>
             announcementsDisplayed = true;
         }
         else if (!topicsDisplayed)
         {
-            <h4 style="float:left">Subiecte</h4>
+            <h3 style="float:left">Subiecte</h3>
             topicsDisplayed = true;
         }
         foreach (var topic in topicGroup?.Topics ?? new List<TopicDisplay>())
         {
-            var divClass = topic.Unread ? $"ForumListRow Unread Color{index % 2}" : $"ForumListRow Color{index % 2}";
+            var divClass = topic.Unread ? $"ForumListRow Unread RowMargin Color{index % 2}" : $"ForumListRow RowMargin Color{index % 2}";
             index++;
             <div class="@divClass">
                 <span class="ForumListLeft">
@@ -120,6 +121,7 @@ else
                 )
             </div>
         }
+        <hr />
     }
 }
 @if (!IsAnonymous)

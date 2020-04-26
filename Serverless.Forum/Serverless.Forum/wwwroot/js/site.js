@@ -35,30 +35,35 @@ function onPostLoad() {
 }
 
 //Expand collapsed menus
-function expandCollapsedMenu(summary, button) {
-    if ($(summary).css("display") !== "block") {
-        var position = $(button).offset();
-        $(summary).css("right", "26px");
-        $(summary).css("top", position.top + $(button).height() + 10 + "px");
-        $(summary).css("display", "block");
+function expandCollapsedMenu(summaryId, buttonId) {
+    var summary = $("#" + summaryId);
+    var button = $("#" + buttonId);
+
+    if (!summary.is(":visible")) {
+        var position = button.offset();
+        summary.css("right", "40px");
+        summary.css("top", position.top + button.height() + 10 + "px");
+        summary.show("fast", function () { });
     }
     else {
-        $(summary).css("display", "none");
+        summary.hide("fast", function () { });
     }
 }
 
 
-function showElement(id) {
-    //var panel = document.getElementById(id);
-    //if (getComputedStyle(panel).display === 'none')
-    //    panel.style.display = 'block';
-    //else
-    //    panel.style.display = 'none';
-    var elem = "#" + id;
-    if ($(elem).is(":visible")) {
-        $(elem).hide("fast", function () { });
+function showElement(id, whenHiding, whenShowing) {
+    var elem = $("#" + id);
+    if (!whenHiding) {
+        whenHiding = function () { }
+    }
+    if (!whenShowing) {
+        whenShowing = function () { }
+    }
+
+    if (elem.is(":visible")) {
+        elem.hide("fast", whenHiding);
     }
     else {
-        $(elem).show("fast", function () { });
+        elem.show("fast", whenShowing);
     }
 }

@@ -8,477 +8,56 @@
     ViewData["Title"] = "Posting";
     Layout = "~/Pages/_Layout.cshtml";
     var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+    var Header = await _cacheService.GetFromCache<string>(Model.GetActualCacheKey("Header", true));
+    var CanCreatePoll = await _cacheService.GetFromCache<bool>(Model.GetActualCacheKey("CanCreatePoll", true));
 }
 
 <script src="~/lib/tribute/dist/tribute.js"></script>
-<script src="~/lib/moment.js"></script>
-<script src="~/js/site.js"></script>
+<script src="~/js/posting.js"></script>
 <link rel="stylesheet" href="~/lib/tribute/dist/tribute.css" />
+<link rel="stylesheet" href="~/css/posting.css" />
 <script type="text/javascript">
-    var form_name = 'postform';
-    var text_name = 'message';
-    var load_draft = false;
-    var upload = false;
-
-    // Define the bbCode tags
-    var bbcode = new Array();
-    var bbtags = @Json.Serialize(await _cacheService.GetFromCacheAsync<List<string>>(Model.GetActualCacheKey("BbCodes", false)));
-    var imageTag = false;
-
-    // Helpline messages
-    var help_line = @Json.Serialize(await _cacheService.GetFromCacheAsync<Dictionary<string, string>>(Model.GetActualCacheKey("BbCodeHelplines", false)));
-    var panels = new Array('options-panel', 'attach-panel', 'poll-panel');
-    var show_panel = 'options-panel';
-
-    // Startup variables
-    var imageTag = false;
-    var theSelection = false;
-
-    // Check for Browser & Platform for PC & IE specific bits
-    // More details from: http://www.mozilla.org/docs/web-developer/sniffer/browser_type.html
-    var clientPC = navigator.userAgent.toLowerCase(); // Get client info
-    var clientVer = parseInt(navigator.appVersion); // Get browser version
-
-    var is_ie = ((clientPC.indexOf('msie') != -1) && (clientPC.indexOf('opera') == -1));
-    var is_win = ((clientPC.indexOf('win') != -1) || (clientPC.indexOf('16bit') != -1));
-
-    var baseHeight;
-
-    /**
-    * Shows the help messages in the helpline window
-    */
-    function helpline(help) {
-        document.forms[form_name].helpbox.value = help_line[help];
-    }
-
-    /**
-    * Fix a bug involving the TextRange object. From
-    * http://www.frostjedi.com/terra/scripts/demo/caretBug.html
-    */
-    function initInsertions() {
-        var doc;
-
-        if (document.forms[form_name]) {
-            doc = document;
-        }
-        else {
-            doc = opener.document;
-        }
-
-        var textarea = doc.forms[form_name].elements[text_name];
-
-        if (is_ie && typeof (baseHeight) != 'number') {
-            textarea.focus();
-            baseHeight = doc.selection.createRange().duplicate().boundingHeight;
-
-            if (!document.forms[form_name]) {
-                document.body.focus();
-            }
-        }
-    }
-
-    /**
-    * bbstyle
-    */
-    function bbstyle(bbnumber) {
-        if (bbnumber != -1) {
-            bbfontstyle(bbtags[bbnumber], bbtags[bbnumber + 1]);
-        }
-        else {
-            insert_text('[*]');
-            document.forms[form_name].elements[text_name].focus();
-        }
-    }
-
-    /**
-    * Apply bbcodes
-    */
-    function bbfontstyle(bbopen, bbclose) {
-        theSelection = false;
-
-        var textarea = document.forms[form_name].elements[text_name];
-
-        textarea.focus();
-
-        if ((clientVer >= 4) && is_ie && is_win) {
-            // Get text selection
-            theSelection = document.selection.createRange().text;
-
-            if (theSelection) {
-                // Add tags around selection
-                document.selection.createRange().text = bbopen + theSelection + bbclose;
-                document.forms[form_name].elements[text_name].focus();
-                theSelection = '';
-                return;
-            }
-        }
-        else if (document.forms[form_name].elements[text_name].selectionEnd && (document.forms[form_name].elements[text_name].selectionEnd - document.forms[form_name].elements[text_name].selectionStart > 0)) {
-            mozWrap(document.forms[form_name].elements[text_name], bbopen, bbclose);
-            document.forms[form_name].elements[text_name].focus();
-            theSelection = '';
-            return;
-        }
-
-        //The new position for the cursor after adding the bbcode
-        var caret_pos = getCaretPosition(textarea).start;
-        var new_pos = caret_pos + bbopen.length;
-
-        // Open tag
-        insert_text(bbopen + bbclose);
-
-        // Center the cursor when we don't have a selection
-        // Gecko and proper browsers
-        if (!isNaN(textarea.selectionStart)) {
-            textarea.selectionStart = new_pos;
-            textarea.selectionEnd = new_pos;
-        }
-        // IE
-        else if (document.selection) {
-            var range = textarea.createTextRange();
-            range.move("character", new_pos);
-            range.select();
-            storeCaret(textarea);
-        }
-
-        textarea.focus();
-        return;
-    }
-
-    /**
-    * Insert text at position
-    */
-    function insert_text(text, spaces, popup) {
-        var textarea;
-
-        if (!popup) {
-            textarea = document.forms[form_name].elements[text_name];
-        }
-        else {
-            textarea = opener.document.forms[form_name].elements[text_name];
-        }
-        if (spaces) {
-            text = ' ' + text + ' ';
-        }
-
-        if (!isNaN(textarea.selectionStart)) {
-            var sel_start = textarea.selectionStart;
-            var sel_end = textarea.selectionEnd;
-
-            mozWrap(textarea, text, '')
-            textarea.selectionStart = sel_start + text.length;
-            textarea.selectionEnd = sel_end + text.length;
-        }
-        else if (textarea.createTextRange && textarea.caretPos) {
-            if (baseHeight != textarea.caretPos.boundingHeight) {
-                textarea.focus();
-                storeCaret(textarea);
-            }
-
-            var caret_pos = textarea.caretPos;
-            caret_pos.text = caret_pos.text.charAt(caret_pos.text.length - 1) == ' ' ? caret_pos.text + text + ' ' : caret_pos.text + text;
-        }
-        else {
-            textarea.value = textarea.value + text;
-        }
-        if (!popup) {
-            textarea.focus();
-        }
-    }
-
-    /**
-    * Add inline attachment at position
-    */
-    function attach_inline(index, filename) {
-        insert_text('[attachment=' + index + ']' + filename + '[/attachment]');
-        document.forms[form_name].elements[text_name].focus();
-    }
-
-    /**
-    * Add quote text to message
-    */
-    function addquote(post_id, username) {
-        var message_name = 'message_' + post_id;
-        var theSelection = '';
-        var divarea = false;
-
-        if (document.all) {
-            divarea = document.all[message_name];
-        }
-        else {
-            divarea = document.getElementById(message_name);
-        }
-
-        // Get text selection - not only the post content :(
-        if (window.getSelection) {
-            theSelection = window.getSelection().toString();
-        }
-        else if (document.getSelection) {
-            theSelection = document.getSelection();
-        }
-        else if (document.selection) {
-            theSelection = document.selection.createRange().text;
-        }
-
-        if (theSelection == '' || typeof theSelection == 'undefined' || theSelection == null) {
-            if (divarea.innerHTML) {
-                theSelection = divarea.innerHTML.replace(/<br>/ig, '\n');
-                theSelection = theSelection.replace(/<br\/>/ig, '\n');
-                theSelection = theSelection.replace(/&lt\;/ig, '<');
-                theSelection = theSelection.replace(/&gt\;/ig, '>');
-                theSelection = theSelection.replace(/&amp\;/ig, '&');
-                theSelection = theSelection.replace(/&nbsp\;/ig, ' ');
-            }
-            else if (document.all) {
-                theSelection = divarea.innerText;
-            }
-            else if (divarea.textContent) {
-                theSelection = divarea.textContent;
-            }
-            else if (divarea.firstChild.nodeValue) {
-                theSelection = divarea.firstChild.nodeValue;
-            }
-        }
-
-        if (theSelection) {
-            insert_text('[quote="' + username + '"]' + theSelection + '[/quote]');
-        }
-
-        return;
-    }
-
-    /**
-    * From http://www.massless.org/mozedit/
-    */
-    function mozWrap(txtarea, open, close) {
-        var selLength = txtarea.textLength;
-        var selStart = txtarea.selectionStart;
-        var selEnd = txtarea.selectionEnd;
-        var scrollTop = txtarea.scrollTop;
-
-        if (selEnd == 1 || selEnd == 2) {
-            selEnd = selLength;
-        }
-
-        var s1 = (txtarea.value).substring(0, selStart);
-        var s2 = (txtarea.value).substring(selStart, selEnd)
-        var s3 = (txtarea.value).substring(selEnd, selLength);
-
-        txtarea.value = s1 + open + s2 + close + s3;
-        txtarea.selectionStart = selEnd + open.length + close.length;
-        txtarea.selectionEnd = txtarea.selectionStart;
-        txtarea.focus();
-        txtarea.scrollTop = scrollTop;
-
-        return;
-    }
-
-    /**
-    * Insert at Caret position. Code from
-    * http://www.faqts.com/knowledge_base/view.phtml/aid/1052/fid/130
-    */
-    function storeCaret(textEl) {
-        if (textEl.createTextRange) {
-            textEl.caretPos = document.selection.createRange().duplicate();
-        }
-    }
-
-    function change_palette() {
-        //dE('colour_palette');
-        e = document.getElementById('colour_palette');
-
-        if (e.style.visibility == 'visible') {
-            e.style.visibility = 'hidden';
-            e.style.position = 'absolute';
-            document.getElementById('bbpalette').value = 'Culoare font';
-        }
-        else {
-            e.style.visibility = 'visible';
-            e.style.position = 'relative';
-            document.getElementById('bbpalette').value = 'Ascunde culoarea fontului';
-        }
-    }
-
-
-    /**
-    * Caret Position object
-    */
-    function caretPosition() {
-        var start = null;
-        var end = null;
-    }
-
-
-    /**
-    * Get the caret position in an textarea
-    */
-    function getCaretPosition(txtarea) {
-        var caretPos = new caretPosition();
-
-        // simple Gecko/Opera way
-        if (txtarea.selectionStart || txtarea.selectionStart == 0) {
-            caretPos.start = txtarea.selectionStart;
-            caretPos.end = txtarea.selectionEnd;
-        }
-        // dirty and slow IE way
-        else if (document.selection) {
-
-            // get current selection
-            var range = document.selection.createRange();
-
-            // a new selection of the whole textarea
-            var range_all = document.body.createTextRange();
-            range_all.moveToElementText(txtarea);
-
-            // calculate selection start point by moving beginning of range_all to beginning of range
-            var sel_start;
-            for (sel_start = 0; range_all.compareEndPoints('StartToStart', range) < 0; sel_start++) {
-                range_all.moveStart('character', 1);
-            }
-
-            txtarea.sel_start = sel_start;
-
-            // we ignore the end value for IE, this is already dirty enough and we don't need it
-            caretPos.start = txtarea.sel_start;
-            caretPos.end = txtarea.sel_start;
-        }
-
-        return caretPos;
-    }
-
-    function show_hidden_smilies(control) {
-        var container = document.getElementById('hiddenSmilies');
-        if (container.style.visibility == 'hidden') {
-            container.style.visibility = 'visible';
-            control.innerText = 'Arată mai puține';
-        }
-        else {
-            container.style.visibility = 'hidden';
-            control.innerText = 'Arată mai multe';
-        }
-    }
-
-    function censor() {
-        var textinput = document.getElementById("message");
-        if (textinput) {
-            textinput.value = textinput.value.replace(/postimage/gi, "*****");
-            textinput.value = textinput.value.replace(/postimg/gi, "*****");
-            textinput.value = textinput.value.replace(/photobucket/gi, "*****");
-            textinput.value = textinput.value.replace(/imageshack/gi, "*****");
-            var imgNo = textinput.value.split("[img]").length - 1;
-            if (imgNo > 10 && @(! await Model.IsCurrentUserAdminHereAsync())) {
-                alert("Ati inclus " + imgNo + " imagini in mesaj. Numarul maxim permis: 10.")
-                return false;
-            }
-            else {
-                var imgs = textinput.value.match(/\[img\](.*?)\[\/img\]/g).map(function (val) {
-                    return val.replace(/\[\/?img\]/g, '');
-                });
-                document.getElementById('imgcheckstatus').style.visibility = 'visible';
-                var isok = true;
-                var badimgs = [];
-                for (var i = 0; i < imgs.length; i++) {
-                    if (imgs[i].indexOf("metrouusor") != -1) {
-                        continue;
-                    }
-                    document.getElementById('imgcheckstatus').innerHTML = 'Sunt verificate imaginile incluse in mesaj.<br/>Va rugam asteptati...<br/>' + Math.round((i * 100) / imgs.length) + '%';
-                    var xhr = $.ajax({
-                        type: "GET",
-                        async: false,
-                        url: imgs[i],//'loadimage.php?imgurl=' + encodeURIComponent(imgs[i]),
-                        success: function (msg) {
-                            if (msg.length / 1024 / 1024 > 2) {
-                                isok = false;
-                                badimgs.push(imgs[i]);
-                            }
-                        },
-                        error: function (jqXHR, textStatus, errorThrown) {
-                            console.log(textStatus, errorThrown);
-                        }
-                    });
-                }
-                if (!isok && @(! await Model.IsCurrentUserAdminHereAsync())) {
-                    document.getElementById('imgcheckstatus').style.visibility = 'hidden';
-                    alert('Nu este permisa includerea unor imagini avand peste 2MB dimensiune. Urmatoarele imagini sunt mai mari:\n' + badimgs.join('\n'));
-                    return false;
-                }
-                else {
-                    document.getElementById('imgcheckstatus').style.visibility = 'hidden';
-                    return true;
-                }
-            }
-        }
-        else {
-            return true;
-        }
-    }
-
-    function showExpirationDate(value) {
-        var target = document.getElementById("pollExpirationHelper");
-        if (value == 0) {
-            target.innerText = "Chestionarul nu va expira niciodată";
-            return;
-        }
-
-        moment().locale(window.navigator.userLanguage || window.navigator.language);
-        value = value * 86400;
-        target.innerText = "Chestionarul expiră " + moment().add(value, "seconds").format("LLLL");
-    }
-
-    var hasConfirmation = false;
-    function confirmPollChange() {
-        if (@Model.Action == @PostingActions.EditForumPost && !hasConfirmation && confirm("Dacă modificați opțiunile, toate voturile înregistrate până acum vor fi șterse. Continuați?")) {
-            hasConfirmation = true;
-        }
-    }
+    var posting = new Posting(
+        @Json.Serialize(await _cacheService.GetFromCache<List<string>>(Model.GetActualCacheKey("BbCodes", false))),
+        @Json.Serialize(await _cacheService.GetFromCache<Dictionary<string, string>>(Model.GetActualCacheKey("BbCodeHelplines", false))),
+        @((await Model.IsCurrentUserAdminHereAsync()).ToString().ToLower()),
+        @((Model.Action == PostingActions.EditForumPost).ToString().ToLower()),
+        "@UserDateFormat"
+    );
 </script>
-<style>
-    .popup {
-        border: solid 1px black;
-        border-radius: 15px;
-        padding: 15px;
-        position: fixed;
-        text-align: center;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        background-color: white;
-        z-index: 100;
-        font-family: Verdana, Helvetica, Arial, sans-serif;
-        font-size: 1em;
-        visibility: hidden;
-    }
-</style>
+
+
 @if (Model.PostId.HasValue)
 {
     <h3>
         Răspunde:
-        <a asp-page="/ViewTopic" asp-route-postId="@Model.PostId.Value" asp-page-handler="ByPostId">@Model.Header</a>
+        <a asp-page="/ViewTopic" asp-route-postId="@Model.PostId.Value" asp-page-handler="ByPostId">@Header</a>
     </h3>
 }
 else if (Model.TopicId.HasValue)
 {
     <h3>
         Răspunde:
-        <a asp-page="/ViewTopic" asp-route-postId="@Model.TopicId.Value" asp-route-pageNum="1">@Model.Header</a>
+        <a asp-page="/ViewTopic" asp-route-topicId="@Model.TopicId.Value" asp-route-pageNum="1">@Header</a>
     </h3>
 }
 else
 {
     <h3>
         Scrie un subiect nou:
-        <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@Model.Header</a>
+        <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@Header</a>
     </h3>
 }
 <form name="postform" method="post" enctype="multipart/form-data">
-    <table style="clear: left; width:79%; vertical-align:middle; display:block; border:none">
+    <table class="InputTable InputWidth">
         <tr>
-            <td style="width:100px">Subiect</td>
-            <td>
-                <input asp-for="PostTitle" type="text" id="subject" size="45" maxlength="256" tabindex="2" class="inputbox fullwidth">
+            <td style="width:7%">Subiect:</td>
+            <td style="width:93%">
+                <input asp-for="PostTitle" type="text" id="subject" size="45" maxlength="256" tabindex="2" class="InputBox" style="width:100%">
             </td>
         </tr>
     </table>
-    <table id="colour_palette" style="clear: left; width:79%; vertical-align:middle; display:block; border:none;position:absolute; visibility:hidden;" class="postingControls">
+    <table id="colour_palette" class="ColorPalette PostingControls InputWidth">
         <tr>
             <td style="width:100px">Culoare font:</td>
             <td>
@@ -495,7 +74,7 @@ else
                                     {
                                         var value = $"#{color[r]:X2}{color[g]:X2}{color[b]:X2}";
                                         <td style="width: 15px; height: 10px; background-color: @value; border:solid 1px white">
-                                            <a href="javascript:bbfontstyle('[color=@value]', '[/color]');">
+                                            <a href="javascript:posting.bbfontstyle('[color=@value]', '[/color]');">
                                                 <img src="./images/spacer.gif" alt="@value" title="@value" style="width: 15px; height: 10px">
                                             </a>
                                         </td>
@@ -510,17 +89,17 @@ else
     </table>
     <br />
 
-    <div class="bbcodebuttons postingControls">
-        <input type="button" class="button2" accesskey="b" name="addbbcode0" value=" B " style="font-weight:bold; width: 30px" onclick="bbstyle(0)" title="Text bold: [b]text[/b]">
-        <input type="button" class="button2" accesskey="i" name="addbbcode2" value=" i " style="font-style:italic; width: 30px" onclick="bbstyle(2)" title="Text italic: [i]text[/i]">
-        <input type="button" class="button2" accesskey="u" name="addbbcode4" value=" u " style="text-decoration: underline; width: 30px" onclick="bbstyle(4)" title="Text subliniat: [u]text[/u]">
-        <input type="button" class="button2" accesskey="q" name="addbbcode6" value="Quote" style="width: 50px" onclick="bbstyle(6)" title="Citează text: [quote]text[/quote]">
-        <input type="button" class="button2" accesskey="c" name="addbbcode8" value="Code" style="width: 40px" onclick="bbstyle(8)" title="Afişează cod: [code]cod[/code]">
-        <input type="button" class="button2" accesskey="l" name="addbbcode10" value="List" style="width: 40px" onclick="bbstyle(10)" title="Listă: [list]text[/list]">
-        <input type="button" class="button2" accesskey="o" name="addbbcode12" value="List=" style="width: 40px" onclick="bbstyle(12)" title="Listă ordonată: [list=]text[/list]">
-        <input type="button" class="button2" accesskey="t" name="addlitsitem" value="[*]" style="width: 40px" onclick="bbstyle(-1)" title="Listează articolele: [*]text[/*]">
-        <input type="button" class="button2" accesskey="p" name="addbbcode14" value="Img" style="width: 40px" onclick="bbstyle(14)" title="Adaugă imagine: [img]http://cale_imagine[/img]">
-        <input type="button" class="button2" accesskey="w" name="addbbcode16" value="URL" style="text-decoration: underline; width: 40px" onclick="bbstyle(16)" title="Adaugă URL: [url]http://url[/url] sau [url=http://url]text URL[/url]">
+    <div class="bbcodebuttons PostingControls">
+        <input type="button" class="BbCodeButton" accesskey="b" name="addbbcode0" value=" B " style="font-weight:bold" onclick="posting.bbstyle(0)" title="Text bold: [b]text[/b]">
+        <input type="button" class="BbCodeButton" accesskey="i" name="addbbcode2" value=" i " style="font-style:italic" onclick="posting.bbstyle(2)" title="Text italic: [i]text[/i]">
+        <input type="button" class="BbCodeButton" accesskey="u" name="addbbcode4" value=" u " style="text-decoration: underline" onclick="posting.bbstyle(4)" title="Text subliniat: [u]text[/u]">
+        <input type="button" class="BbCodeButton" accesskey="q" name="addbbcode6" value="Quote" onclick="posting.bbstyle(6)" title="Citează text: [quote]text[/quote]">
+        <input type="button" class="BbCodeButton" accesskey="c" name="addbbcode8" value="Code" onclick="posting.bbstyle(8)" title="Afişează cod: [code]cod[/code]">
+        <input type="button" class="BbCodeButton" accesskey="l" name="addbbcode10" value="List" onclick="posting.bbstyle(10)" title="Listă: [list]text[/list]">
+        <input type="button" class="BbCodeButton" accesskey="o" name="addbbcode12" value="List=" onclick="posting.bbstyle(12)" title="Listă ordonată: [list=]text[/list]">
+        <input type="button" class="BbCodeButton" accesskey="t" name="addlitsitem" value="[*]" onclick="posting.bbstyle(-1)" title="Listează articolele: [*]text[/*]">
+        <input type="button" class="BbCodeButton" accesskey="p" name="addbbcode14" value="Img" onclick="posting.bbstyle(14)" title="Adaugă imagine: [img]http://cale_imagine[/img]">
+        <input type="button" class="BbCodeButton" accesskey="w" name="addbbcode16" value="URL" style="text-decoration: underline" onclick="posting.bbstyle(16)" title="Adaugă URL: [url]http://url[/url] sau [url=http://url]text URL[/url]">
         <select name="addbbcode20" onchange="bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;" title="Mărime font: [size=85]text mic[/size]">
             <option value="50">Micuţ</option>
             <option value="85">Mic</option>
@@ -528,66 +107,51 @@ else
             <option value="150">Mare</option>
             <option value="200">Imens</option>
         </select>
-        <input type="button" class="button2" name="bbpalette" id="bbpalette" value="Culoare font" onclick="change_palette();" title="Culoare font: [color=red]text[/color]  Sfat: de asemenea puteţi folosi culorile hexazecimale culoare=#FF0000">
-        @foreach (var code in (await _cacheService.GetFromCacheAsync<List<PhpbbBbcodes>>(Model.GetActualCacheKey("DbBbCodes", false))) ?? new List<PhpbbBbcodes>())
+        <input type="button" class="BbCodeButton" name="bbpalette" id="bbpalette" value="Culoare font" onclick="posting.change_palette();" title="Culoare font: [color=red]text[/color]  Sfat: de asemenea puteţi folosi culorile hexazecimale culoare=#FF0000">
+        @foreach (var code in (await _cacheService.GetFromCache<List<PhpbbBbcodes>>(Model.GetActualCacheKey("DbBbCodes", false))) ?? new List<PhpbbBbcodes>())
         {
-            var index = (await _cacheService.GetFromCacheAsync<List<string>>(Model.GetActualCacheKey("BbCodes", false))).IndexOf($"[{code.BbcodeTag}]");
+            var index = (await _cacheService.GetFromCache<List<string>>(Model.GetActualCacheKey("BbCodes", false))).IndexOf($"[{code.BbcodeTag}]");
             var name = $"addbbcode{index}";
-            <input type="button" class="button2" name="@name" value="@code.BbcodeTag" onclick="bbstyle(@index)" title="@code.BbcodeHelpline" />
+            <input type="button" class="BbCodeButton" name="@name" value="@code.BbcodeTag" onclick="posting.bbstyle(@index)" title="@code.BbcodeHelpline" />
         }
     </div>
     <br />
-    <div id="messageHolder">
-        <textarea asp-for="PostText" id="message" rows="15" cols="76" tabindex="3" onselect="storeCaret(this);" onclick="storeCaret(this);" onkeyup="storeCaret(this);" onfocus="initInsertions();" class="inputbox"></textarea>
-    </div>
-    <div id="smiley-box" class="smileybox postingControls">
+    <div>
+        <textarea asp-for="PostText" id="message" rows="15" cols="76" tabindex="3" onselect="posting.storeCaret(this);" onclick="posting.storeCaret(this);" onkeyup="posting.storeCaret(this);" onfocus="posting.initInsertions();" class="InputBox InputWidth"></textarea>
 
-        <strong>Zâmbete</strong><br />
+        <div id="smiley-box" class="smileybox PostingControls">
 
-        @foreach (var smiley in ((await _cacheService.GetFromCacheAsync<List<PhpbbSmilies>>(Model.GetActualCacheKey("Smilies", false))) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 1))
-        {
-            <a href="javascript:insert_text('@smiley.Code', true);">
-                <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
-            </a>
-        }
-        <p>&nbsp;</p>
-        <a href="javascript:show_hidden_smilies(this);">Arată mai multe</a>
-        <p>&nbsp;</p>
-        <div id="hiddenSmilies" style="visibility:hidden">
-            @foreach (var smiley in ((await _cacheService.GetFromCacheAsync<List<PhpbbSmilies>>(Model.GetActualCacheKey("Smilies", false))) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 0))
+            <strong>Zâmbete</strong><br />
+
+            @foreach (var smiley in ((await _cacheService.GetFromCache<List<PhpbbSmilies>>(Model.GetActualCacheKey("Smilies", false))) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 1))
             {
-                <a href="#a" onclick="insert_text('@smiley.Code', true);">
+                <a href="javascript:posting.insert_text('@smiley.Code', true);">
                     <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
                 </a>
             }
+            <p>&nbsp;</p>
+            <a href="javascript:posting.show_hidden_smilies();" id="showHiddenSmiliesButton">Arată mai multe</a>
+            <p>&nbsp;</p>
+            <div id="hiddenSmilies" style="display:none">
+                @foreach (var smiley in ((await _cacheService.GetFromCache<List<PhpbbSmilies>>(Model.GetActualCacheKey("Smilies", false))) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 0))
+                {
+                    <a href="javascript:posting.insert_text('@smiley.Code', true);">
+                        <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
+                    </a>
+                }
+            </div>
         </div>
     </div>
-
-    @switch (Model.Action)
-    {
-        case PostingActions.NewForumPost:
-            <input type="submit" value="Trimite mesajul" onclick="return censor()" asp-page-handler="NewForumPost" />
-            break;
-        case PostingActions.EditForumPost:
-            <span>Motivul modificării: </span><input asp-for="EditReason" type="text" style="width:80%" /><br />
-            <input type="submit" value="Trimite mesajul" onclick="return censor()" asp-page-handler="EditForumPost" />
-            break;
-        case PostingActions.NewPrivateMessage:
-            <input type="submit" value="Trimite mesajul" onclick="return censor()" asp-page-handler="PrivateMessage" />
-            break;
-        default:
-            <span class="validation">A intervenit o eroare, pagina nu a fost afișată corect.</span>
-            break;
-    }
-
-    <p>&nbsp;</p>
-    <a href="#" onclick="showElement('attachPanel')">Adaugă fișiere atașate</a>
-    @if (Model.CanCreatePoll)
+    <br />
+    <p style="clear:both"></p>
+    <a href="javascript:showElement('attachPanel')">Adaugă fișiere atașate</a>
+    @if (CanCreatePoll)
     {
         <span>&nbsp; | &nbsp;</span>
-        <a href="#" onclick="showElement('pollPanel')">Adaugă chestionar</a>
+        <a href="javascript:showElement('pollPanel')">Adaugă chestionar</a>
         <div id="pollPanel" style="display:none">
-            <h4>Adaugă chestionar</h4>
+            <hr />
+            <h3>Chestionar</h3>
             <p>&nbsp;</p>
             <table style="border:none; margin:0px; width:80%">
                 <tr style="border-bottom: solid 1px black">
@@ -600,14 +164,14 @@ else
                 <tr style="border-bottom: solid 1px black">
                     <td style="width:200px; padding:5px">Opțiuni (una pe rând)</td>
                     <td colspan="2" style="padding:5px">
-                        <textarea asp-for="PollOptions" rows="4" style="width:100%" onmousedown="confirmPollChange()"></textarea>
+                        <textarea asp-for="PollOptions" rows="4" style="width:100%" onmousedown="posting.confirmPollChange()"></textarea>
                         <span asp-validation-for="PollOptions" class="validation"></span>
                     </td>
                 </tr>
                 <tr style="border-bottom: solid 1px black">
                     <td style="width:200px; padding:5px">Timp pentru votare (zile)</td>
                     <td style="padding:5px">
-                        <input asp-for="PollExpirationDaysString" onchange="showExpirationDate(this.value)" id="pollExpiration" /><br />
+                        <input asp-for="PollExpirationDaysString" onchange="posting.showExpirationDate(this.value)" id="pollExpiration" /><br />
                         <span class="Caption">Introdu '0' pentru timp nelimitat.<br />Sunt permise și fracții precum 0.5, 1.75 etc</span>
                         <span asp-validation-for="PollExpirationDaysString" class="validation"></span>
                     </td>
@@ -632,18 +196,20 @@ else
                 </tr>
             </table>
         </div>
+        <hr />
     }
     <input asp-for="ForumId" type="hidden" />
     <input asp-for="TopicId" type="hidden" />
     <input asp-for="PostId" type="hidden" />
-    <div id="attachPanel" style="display:@(await _cacheService.ExistsInCacheAsync(Model.GetActualCacheKey("PostAttachments", true)) ? "block" : "none")">
-        <h4>Adaugă fișiere</h4>
-        <p>&nbsp;</p>
+    <div id="attachPanel" style="display:@(await _cacheService.ExistsInCache(Model.GetActualCacheKey("PostAttachments", true)) ? "block" : "none")">
+        <p></p>
+        <h3>Fișiere atașate</h3>
+        <h4>Adaugă fișiere noi</h4>
         <table style="border:none; margin:0px; padding:0px">
             <tr>
                 <td style="width:50%; padding-bottom:15px">Alege unul sau mai multe fișiere: </td>
                 <td>
-                    <input asp-for="Files" multiple />
+                    <input asp-for="Files" onchange="$('#submitAttachmentsButton').trigger('click')" multiple/>
                     @if (!await Model.IsCurrentUserAdminHereAsync())
                     {
                         <span class="Caption">Minim 1, maxim 10 fișiere. Fiecare fișier trebuie să aibă maxim 2MB.</span>
@@ -653,13 +219,13 @@ else
                 </td>
             </tr>
         </table>
-        <input type="submit" value="Încarcă fișiere" asp-page-handler="AddAttachment" />
+        <input type="submit" value="Încarcă fișierele alese" asp-page-handler="AddAttachment" style="display:none" id="submitAttachmentsButton" />
         <p>&nbsp;</p>
         @{
-            var attachments = await _cacheService.GetFromCacheAsync<List<PhpbbAttachments>>(Model.GetActualCacheKey("PostAttachments", true)) ?? new List<PhpbbAttachments>();
+            var attachments = await _cacheService.GetFromCache<List<PhpbbAttachments>>(Model.GetActualCacheKey("PostAttachments", true)) ?? new List<PhpbbAttachments>();
             if (attachments.Any())
             {
-                <p><b>Fișiere deja atașate:</b></p>
+                <h4>Fișiere deja atașate:</h4>
                 @for (var i = 0; i < attachments.Count; i++)
                 {
                     <div style="margin-bottom:20px; padding-bottom:20px">
@@ -668,7 +234,7 @@ else
                         <br />
                         <textarea type="text" name="FileComment[@i]" id="FileComment" rows="4" cols="100" style="display:inline-block"></textarea>
                         <br />
-                        <input type="button" value="Așează în linie" onclick="attach_inline(@i, '@attachments[i].RealFilename')" /> &nbsp;
+                        <input type="button" value="Așează în linie" onclick="posting.attach_inline(@i, '@attachments[i].RealFilename')" /> &nbsp;
                         <input type="submit" value="Șterge fișier" asp-page-handler="DeleteAttachment" onclick="document.getElementById('indexToDelete').value = @i; return true;" />
                         <br />
                         <span asp-validation-for="DeleteFileDummyForValidation[i]" class="validation"></span>
@@ -678,11 +244,33 @@ else
             }
         }
     </div>
+    <p>&nbsp;</p>
+    @switch (Model.Action)
+    {
+        case PostingActions.NewForumPost:
+            <input type="submit" value="Trimite mesajul" onclick="return posting.censor()" asp-page-handler="NewForumPost" />
+            break;
+        case PostingActions.EditForumPost:
+            <table class="InputTable InputWidth">
+                <tr>
+                    <td style="width:15%">Motivul modificării:</td>
+                    <td style="width:85%"><input asp-for="EditReason" type="text" style="width:100%" /></td>
+                </tr>
+            </table>
+            <input type="submit" value="Trimite mesajul" onclick="return posting.censor()" asp-page-handler="EditForumPost" />
+            break;
+        case PostingActions.NewPrivateMessage:
+            <input type="submit" value="Trimite mesajul" onclick="return posting.censor()" asp-page-handler="PrivateMessage" />
+            break;
+        default:
+            <span class="validation">A intervenit o eroare, pagina nu a fost afișată corect.</span>
+            break;
+    }
 </form>
 
 <script>
     var tribute = new Tribute({
-        values: @Json.Serialize(await _cacheService.GetFromCacheAsync<List<KeyValuePair<string, string>>>(Model.GetActualCacheKey("Users", false))),
+        values: @Json.Serialize(await _cacheService.GetFromCache<List<KeyValuePair<string, string>>>(Model.GetActualCacheKey("Users", false))),
         trigger: "@@",
         allowSpaces: true
     });
@@ -691,8 +279,8 @@ else
 
     var pollExpiration = document.getElementById("pollExpiration");
     if (pollExpiration) {
-        showExpirationDate(pollExpiration.value);
+        posting.showExpirationDate(pollExpiration.value);
     }
 </script>
 
-<div id="imgcheckstatus" class="popup"></div>
+<div id="imgcheckstatus" class="Popup"></div>

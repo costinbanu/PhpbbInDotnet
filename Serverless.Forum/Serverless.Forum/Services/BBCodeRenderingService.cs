@@ -82,12 +82,12 @@ namespace Serverless.Forum.Services
             var bannedWords = (await _writingService.GetBannedWords()).GroupBy(p => p.Word).Select(grp => grp.FirstOrDefault()).ToDictionary(x => x.Word, y => y.Replacement);
             var mutex = new Mutex();
 
-            Parallel.ForEach(Posts, async (p, state1) =>
+            Parallel.ForEach(Posts, (p, state1) =>
             {
                 p.PostSubject = CensorWords(HttpUtility.HtmlDecode(p.PostSubject), bannedWords);
                 p.PostText = CensorWords(p.PostText, bannedWords);
                 p.PostSubject = HighlightWords(p.PostSubject, highlightWords);
-                p.PostText = HighlightWords(await BbCodeToHtml(p.PostText, p.BbcodeUid), highlightWords);
+                p.PostText = HighlightWords(BbCodeToHtml(p.PostText, p.BbcodeUid), highlightWords);
 
                 if (renderAttachments)
                 {
@@ -144,14 +144,14 @@ namespace Serverless.Forum.Services
             });
         }
 
-        public async Task<string> BbCodeToHtml(string bbCodeText, string bbCodeUid)
+        public string BbCodeToHtml(string bbCodeText, string bbCodeUid)
         {
             if (string.IsNullOrWhiteSpace(bbCodeText))
             {
                 return string.Empty;
             }
 
-            bbCodeText = /*(await GetParserLazy())*/_parser.ToHtml(bbCodeText, bbCodeUid);
+            bbCodeText = _parser.ToHtml(bbCodeText, bbCodeUid);
             bbCodeText = _newLineRegex.Replace(bbCodeText, "<br/>");
             bbCodeText = _htmlCommentRegex.Replace(bbCodeText, string.Empty);
             bbCodeText = _smileyRegex.Replace(bbCodeText, Constants.SMILEY_PATH);

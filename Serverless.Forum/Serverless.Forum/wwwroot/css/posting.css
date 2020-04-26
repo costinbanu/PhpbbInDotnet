@@ -1,0 +1,83 @@
+﻿.PostingControls {
+    display: inherit;
+}
+
+.Popup {
+    border: solid 1px black;
+    border-radius: 15px;
+    padding: 15px;
+    position: fixed;
+    text-align: center;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    z-index: 100;
+    font-family: Verdana, Helvetica, Arial, sans-serif;
+    font-size: 1em;
+    visibility: hidden;
+}
+
+.InputWidth {
+    width: 79%;
+}
+
+BbCodeButton {
+    width: auto !important;
+    padding-top: 1px;
+    padding-bottom: 1px;
+    color: #000;
+}
+
+.InputBox {
+    background-color: #FFFFFF;
+    border: 1px solid #c0c0c0;
+    color: #333333;
+    padding: 2px;
+    cursor: text;
+    float: left;
+}
+
+.InputBox:hover {
+    border-color: #11A3EA;
+}
+
+.InputBox:hover {
+    border: 1px solid #eaeaea;
+    border-top-color: rgb(234, 234, 234);
+    border-right-color: rgb(234, 234, 234);
+    border-bottom-color: rgb(234, 234, 234);
+    border-left-color: rgb(234, 234, 234);
+}
+
+.ColorPalette {
+    vertical-align: middle;
+    display: block;
+    border: none;
+    position: absolute;
+    visibility: hidden;
+}
+
+.ColorPaletteTable {
+    border-collapse: collapse;
+    padding: 1px;
+    margin: 1px;
+    line-height: 1em;
+}
+
+.smileybox {
+    float: right;
+    width: 20%;
+    clear:right;
+}
+
+@media (max-width: 960px) {
+    .InputWidth {
+        width: 100%;
+    }
+
+    .PostingControls {
+        display: none;
+    }
+}
+

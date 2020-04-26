@@ -140,7 +140,7 @@ namespace Serverless.Forum.Services
                       select Tuple.Create(d.Attach, d.User)
             );
 
-            await _cacheService.SetInCacheAsync(
+            await _cacheService.SetInCache(
                 GetCacheKey(currentUserId), 
                 (toReturn.inS3.Select(x => x.Item1.Key), toReturn.inDb.Select(x => x.Item1.AttachId))
             );
@@ -199,8 +199,8 @@ namespace Serverless.Forum.Services
             foreach (var sr in from s in _context.PhpbbSmilies.AsNoTracking()
                                select new
                                {
-                                   Regex = new Regex(Regex.Escape(s.Code), RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
-                                   Replacement = $"<!-- s{s.Code} --><img src=\"./images/smilies/{s.SmileyUrl.Trim('/')}\" /><!-- s{s.Code} -->"
+                                   Regex = new Regex(@$"(?<=(^|\s)){Regex.Escape(s.Code)}(?=($|\s))", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
+                                   Replacement = $"<!-- s{s.Code} --><img src=\"./images/smilies/{s.SmileyUrl.Trim('/')}\" alt=\"{s.Code}\" title=\"{s.Emotion}\" /><!-- s{s.Code} -->"
                                })
             {
                 text = sr.Regex.Replace(text, sr.Replacement);
