@@ -17,7 +17,7 @@
         var divClass = forum.Unread ? $"ForumListRow Unread Color{catIndex % 2}" : $"ForumListRow Color{catIndex % 2}";
         catIndex++;
         <div class="@divClass">
-            <span class="ForumListLeft" style="padding-left:20px">
+            <span class="ForumContent" style="padding-left:20px">
                 <a asp-page="/ViewForum" asp-route-forumId="@forum.Id" class="nav-link" style="font-weight:bold">@forum.Name</a><br />
                 @Html.Raw(_renderingService.BbCodeToHtml(forum.Description, forum.DescriptionBbCodeUid))
             </span>
@@ -32,7 +32,9 @@
                     Model.DateFormat,
                     false,
                     forum.LastPostId == null ? null : $"./ViewTopic?postId={forum.LastPostId}&handler=ByPostId",
-                    forum.LastPostId == null ? null : $"Mergi la ultimul mesaj"
+                    forum.LastPostId == null ? null : "&#x1F4C3;",
+                    forum.LastPostId == null ? null : "Vezi ultimul mesaj",
+                    false
                 )
             )
         </div>
@@ -55,7 +57,7 @@
     var divClass = forum.Unread ? $"ForumListRow Unread Color{index % 2}" : $"ForumListRow Color{index % 2}";
     index++;
     <div class="@divClass">
-        <span class="ForumListLeft">
+        <span class="ForumContent">
             <a asp-page="/ViewForum" asp-route-forumId="@forum.Id" class="nav-link" style="font-weight:bold">@forum.Name</a><br />
             @Html.Raw(_renderingService.BbCodeToHtml(forum.Description, forum.DescriptionBbCodeUid))
         </span>
@@ -70,7 +72,9 @@
                 Model.DateFormat,
                 false,
                 forum.LastPostId == null ? null : $"./ViewTopic?postId={forum.LastPostId}&handler=ByPostId",
-                forum.LastPostId == null ? null : $"Mergi la ultimul mesaj"
+                forum.LastPostId == null ? null : "&#x1F4C3;",
+                forum.LastPostId == null ? null : "Vezi ultimul mesaj",
+                false
             )
         )
     </div>

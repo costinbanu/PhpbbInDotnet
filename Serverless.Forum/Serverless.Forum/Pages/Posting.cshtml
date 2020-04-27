@@ -201,7 +201,7 @@ else
     <input asp-for="ForumId" type="hidden" />
     <input asp-for="TopicId" type="hidden" />
     <input asp-for="PostId" type="hidden" />
-    <div id="attachPanel" style="display:@(await _cacheService.ExistsInCache(Model.GetActualCacheKey("PostAttachments", true)) ? "block" : "none")">
+    <div id="attachPanel" style="display:@(await _cacheService.ExistsInCache(Model.GetActualCacheKey("PostAttachments", true)) || !ViewData.ModelState.IsValid ? "block" : "none")">
         <p></p>
         <h3>Fișiere atașate</h3>
         <h4>Adaugă fișiere noi</h4>

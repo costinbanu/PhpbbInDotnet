@@ -89,7 +89,7 @@ else
             var divClass = topic.Unread ? $"ForumListRow Unread RowMargin Color{index % 2}" : $"ForumListRow RowMargin Color{index % 2}";
             index++;
             <div class="@divClass">
-                <span class="ForumListLeft">
+                <span class="ForumContent">
                     @if (topicGroup.TopicType == TopicType.Important)
                     {
                         <span>&#x26A0;&#xFE0F;&nbsp;</span>
@@ -116,7 +116,9 @@ else
                         topic.Id.Value,
                         UserDateFormat, false,
                         topic.LastPostId == null ? null : $"./ViewTopic?postId={topic.LastPostId}&handler=ByPostId",
-                        topic.LastPostId == null ? null : $"Mergi la ultimul mesaj"
+                        topic.LastPostId == null ? null : "&#x1F4C3;",
+                        topic.LastPostId == null ? null : "Vezi ultimul mesaj",
+                        false
                     )
                 )
             </div>

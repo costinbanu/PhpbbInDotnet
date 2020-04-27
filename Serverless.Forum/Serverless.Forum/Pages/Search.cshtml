@@ -105,7 +105,7 @@
     foreach (var post in Model.Posts)
     {
         <div class="ForumListRow">
-            <div class="ForumListLeft" id="@post.PostId">
+            <div class="ForumContent" id="@post.PostId">
                 <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@post.PostId"><h4>@Html.Raw(post.PostSubject)</h4></a>
                 <p>@Html.Raw(post.PostText)</p>
                 <span style="margin-top:auto; display:inline-block">
@@ -120,7 +120,19 @@
             </div>
             @await Html.PartialAsync(
                 "_SummaryPartial",
-                new CustomPartials._SummaryPartialModel(post.AuthorId, post.AuthorName, post.AuthorColor, post.PostCreationTime, post.PostId.Value, dateFormat, post.AuthorHasAvatar, null, null)
+                new CustomPartials._SummaryPartialModel(
+                    post.AuthorId, 
+                    post.AuthorName, 
+                    post.AuthorColor, 
+                    post.PostCreationTime, 
+                    post.PostId.Value, 
+                    dateFormat, 
+                    post.AuthorHasAvatar, 
+                    null, 
+                    null, 
+                    null,
+                    true
+                )
             )
         </div>
     }

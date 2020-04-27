@@ -130,8 +130,9 @@ namespace Serverless.Forum.Pages
             }
             await Init(false, false, HttpUtility.HtmlDecode(curTopic.TopicTitle));
 
+            var title = HttpUtility.HtmlDecode(curPost.PostSubject);
             PostText = $"[quote=\"{curAuthor}\"]\n{HttpUtility.HtmlDecode(_writingService.CleanTextForQuoting(curPost.PostText, curPost.BbcodeUid))}\n[/quote]";
-            PostTitle = $"{Constants.REPLY}{HttpUtility.HtmlDecode(curPost.PostSubject)}";
+            PostTitle = title.StartsWith(Constants.REPLY) ? title : $"{Constants.REPLY}{title}";
             Action = PostingActions.NewForumPost;
             
             return Page();

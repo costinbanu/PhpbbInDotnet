@@ -1,9 +1,14 @@
 ﻿// Resize media in posts
 function onPostLoad() {
-    var posts = document.getElementsByClassName("ForumListLeft");
+    var posts = $(".ForumContent");
     for (var i = 0; i < posts.length; i++) {
+        var summary = $(posts[i]).parent().find(".Summary");
+        var w = summary.parent().innerWidth();
+        if (summary.is(":visible")) {
+            w -= summary.outerWidth();
+        }
         var imgs = posts[i].getElementsByTagName("img");
-        var w = posts[i].offsetWidth;
+        //var w = posts[i].offsetWidth;
         var h = window.innerHeight;
         for (var j = 0; j < imgs.length; j++) {
             var oh = imgs[j].naturalHeight,
@@ -41,8 +46,10 @@ function expandCollapsedMenu(summaryId, buttonId) {
 
     if (!summary.is(":visible")) {
         var position = button.offset();
-        summary.css("right", "40px");
-        summary.css("top", position.top + button.height() + 10 + "px");
+        summary.css({
+            "right": "40px",
+            "top": position.top + button.height() + 10 + "px"
+        });
         summary.show("fast", function () { });
     }
     else {

@@ -4,19 +4,19 @@
 @if (Model != null)
 {
     <p>&nbsp;</p>
-    if (Model.IsRenderedInline)
+    //if (Model.IsRenderedInline)
+    //{
+    if (Model.MimeType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase))
     {
-        if (Model.MimeType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase))
-        {
             <img src="/File?Id=@Model.Id" />
-        }
+        @*}
         else
         {
-            <video>
+            <video style="width:100%; height:100%" controls>
                 <source src="/File?Id=@Model.Id" type="@Model.MimeType" />
                 <a asp-page="/File" asp-route-Id="@Model.Id">@Model.FileName</a>
             </video>
-        }
+        }*@
     }
     else
     {

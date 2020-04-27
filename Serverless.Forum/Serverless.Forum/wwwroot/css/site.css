@@ -1,9 +1,35 @@
+@font-face {
+    font-family: Ubuntu;
+    src: url('../fonts/Ubuntu-Regular.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: Ubuntu;
+    src: url('../fonts/Ubuntu-Bold.ttf') format('truetype');
+    font-weight: bold;
+}
+
+@font-face {
+    font-family: Ubuntu;
+    src: url('../fonts/Ubuntu-Italic.ttf') format('truetype');
+    font-style: italic;
+}
+
+@font-face {
+    font-family: Ubuntu;
+    src: url('../fonts/Ubuntu-BoldItalic.ttf') format('truetype');
+    font-weight: bold;
+    font-style: italic;
+}
+
 body {
     padding-top: 100px;
     padding-bottom: 20px;
     background-image: url('../images/bg.gif');
     background-repeat: repeat;
     background-attachment: fixed;
+    font-family: Ubuntu;
+    font-size: 1.5em;
 }
 
 h3 {
@@ -35,26 +61,6 @@ h3 {
     content: "\A" !important;
     white-space: pre !important;
 }
-
-/* Carousel 
-.carousel-caption p {
-    font-size: 20px;
-    line-height: 1.4;
-}
-
-.carousel-inner .item img[src$=".svg"] {
-    width: 100%;
-}
-
-#qrCode {
-    margin: 15px;
-}
-
-@media screen and (max-width: 767px) {
-    .carousel-caption {
-        display: none;
-    }
-}*/
 
 blockquote {
     background-color: #fef6e9 !important;
@@ -94,54 +100,80 @@ blockquote {
     width: 100%;
     display: block;
     vertical-align: top;
-    padding: 0.5em;
+    padding-left: 20px;
+    padding-top: 3px;
+    padding-bottom: 3px;
     display: table;
     margin-top: 5px;
-    background-color: #dbf5fe;
-    font-weight: bold;
+    /*background-color: #dbf5fe;*/
+    /*font-weight: bold;*/
+    background-image: linear-gradient(#4478bc, #255391);
+    color: white;
+    font-size: 1.1em;
 }
 
-.ForumListLeft {
-    width: 68%;
+.ForumContent {
+    /*width: 68%;*/
     height: auto;
     vertical-align: top;
-    display: inline-block;
-    margin-bottom: 0px !important;
+    flex: 1;
 }
 
-.ForumListLeft img {
+/*.ForumContent div > img {
     max-width: 900px;
     max-height: 600px;
     width: auto;
     height: auto;
-}
+}*/
 
-.ForumListRight {
-    width: 30%;
+.Summary {
+    min-width: 270px;
+    max-width:270px;
     display: inline-block;
     vertical-align: top;
     display: inline-block;
-    padding-left: 30px;
+    /*padding-left: 30px;
+    padding-right: 20px;*/
     list-style-type: none;
     margin-bottom: 0px !important;
-    /*margin-left: auto;
-    white-space: nowrap;*/
+    white-space: nowrap;
 }
 
-.ForumListRight img {
+.FlexRight {
+    margin-left: auto;
+    margin-right: 0px;
+    padding-left: 15px;
+    padding-right: 0px;
+}
+
+.FlexLeft {
+    margin-right: auto;
+    margin-left: 0px;
+    padding-right: 15px;
+    padding-left: 0px;
+}
+
+.VerticalContent {
+    display: flex; /*inline-block;*/
+    flex-direction: column;
+    margin-bottom: 0px !important;
+}
+
+.Summary img {
     max-height: 200px;
     max-width: 200px;
 }
 
 .PostActions {
-    display: flex;
+    display: inline-flex;
     margin-bottom: 0px;
     padding-left: 7px;
     padding-bottom: 7px;
 }
 
 .PostActions li:after {
-    content: '|';
+    /*content: '|';*/
+    content: '\2022';
     padding-right: 10px;
     padding-left: 10px;
 }
@@ -281,6 +313,14 @@ label {
 .Signature {
     margin-top: auto;
     display: inline-block;
+    /*position: absolute;
+    bottom: 0px;
+    margin-top: auto;*/
+}
+
+.PostFooter {
+    margin-top: auto;
+    position: relative;
 }
 
 .Shortcuts {
@@ -328,7 +368,7 @@ label {
         background-position: left;
     }
 
-    .ForumListRight {
+    .Summary {
         display: none;
         position: absolute;
         clear:both;
@@ -340,11 +380,11 @@ label {
         padding:5px !important;
     }
 
-    .ForumListRight img{
+    .Summary img{
         display: none;
     }
 
-    .ForumListLeft{
+    .ForumContent{
         width:100%;
         display:inline-block;
     }
