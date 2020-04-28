@@ -127,7 +127,7 @@ namespace Serverless.Forum.Pages
 
                 from ju in joinedUsers.DefaultIfEmpty()
 
-                let lastEditUser = _context.PhpbbUsers.FirstOrDefault(u => u.UserId == p.PostEditUser)
+                let lastEditUser = _context.PhpbbUsers.AsNoTracking().FirstOrDefault(u => u.UserId == p.PostEditUser)
                 let lastEditUsername = lastEditUser == null ? "Anonymous" : lastEditUser.Username
 
                 select new PostDisplay

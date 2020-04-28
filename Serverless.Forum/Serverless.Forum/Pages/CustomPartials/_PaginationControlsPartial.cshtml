@@ -1,117 +1,87 @@
 ﻿@model Serverless.Forum.Pages.CustomPartials._PaginationControlsPartialModel
-@{ 
-    var IsAnonymous = Model.Pagination.CurrentUserId == 1;
+@{
+    var IsAnonymous = Model.PaginationModel.CurrentUserId == 1;
 }
-<table style="border:none" id="paginationControlsFull">
-    <tr>
-        @if (!Model.Pagination.IsFirstPage && Model.IncludeEasyNavigation)
+
+@if (Model.PaginationModel.Pagination.HasPages)
+{
+
+    <div class="PaginationControlsFull@(Model.IncludeEasyNavigation ? " FlexCenter" : "")">
+        @if (!Model.PaginationModel.IsFirstPage && Model.IncludeEasyNavigation)
         {
-            <td style="padding-right:10px; border-right: solid 1px black">
+            <div style="padding-right:10px">
                 <a href="@Model.Back" style="text-decoration:none">
-                    <table border="0" cellpadding="0" cellspacing="0">
-                        <tr>
-                            <td style="font-size:3em; vertical-align:middle; padding-right:10px">
-                                &#x1F880;
-                            </td>
-                            <td style="vertical-align:middle;">
-                                Pagina<br />precedentă
-                            </td>
-                        </tr>
-                    </table>
+                    <img src="~/images/prev.png" />
                 </a>
-            </td>
+            </div>
         }
-            <td style="padding-right:10px; padding-left:10px; border-right: @((Model.Pagination.IsLastPage || !Model.IncludeEasyNavigation || !Model.AllowPaginationChange && IsAnonymous) || !Model.Pagination.Pagination.HasPages ? "none" : "solid 1px black")">
-                @await Html.PartialAsync("_PaginationPartial", Model.Pagination.Pagination, ViewData)
-            </td>
+        <div>
+            @await Html.PartialAsync("_PaginationPartial", Model.PaginationModel.Pagination, ViewData)
+        </div>
         @if (!IsAnonymous && Model.AllowPaginationChange)
         {
-            <td style="padding-right:10px; padding-left:10px; border-right: @(Model.Pagination.IsLastPage || !Model.IncludeEasyNavigation ? "none" : "solid 1px black")">
+            <div>
                 <form method="post">
                     <label>Mesaje afișate pe pagină:&nbsp;</label>
                     <input type="hidden" name="topicId" value="@Model.TopicId" />
                     <input type="hidden" name="postId" value="@Model.LastPostId" />
-                    @Html.DropDownList("userPostsPerPage", Model.Pagination.PostsPerPage)
+                    @Html.DropDownList("userPostsPerPage", Model.PaginationModel.PostsPerPage)
                     &nbsp;
                     <input type="submit" value="Salvează" />
                 </form>
-            </td>
+            </div>
         }
-        @if (!Model.Pagination.IsLastPage && Model.IncludeEasyNavigation)
+        @if (!Model.PaginationModel.IsLastPage && Model.IncludeEasyNavigation)
         {
-            <td style="padding-left:10px">
+            <div>
                 <a href="@Model.Forward" style="text-decoration:none">
-                    <table border="0" cellpadding="0" cellspacing="0">
-                        <tr>
-                            <td style="vertical-align:middle;">
-                                Pagina<br />următoare
-                            </td>
-                            <td style="font-size:3em; vertical-align:middle; padding-left:10px">
-                                &#x1F882;
-                            </td>
-                        </tr>
-                    </table>
+                    <img src="~/images/next.png" />
                 </a>
-            </td>
+            </div>
         }
-    </tr>
-</table>
 
-<table style="border:none" id="paginationControlsCollapsed">
-    <tr>
-        @if (!Model.Pagination.IsFirstPage && Model.IncludeEasyNavigation)
+    </div>
+
+    <div class="PaginationControlsCollapsed@(Model.IncludeEasyNavigation ? " FlexCenterCollapsed" : "")">
+        @if (!Model.PaginationModel.IsFirstPage && Model.IncludeEasyNavigation)
         {
-            <td style="padding-right:10px; border-right: solid 1px black">
+            <div>
                 <a href="@Model.Back" style="text-decoration:none">
-                    <table border="0" cellpadding="0" cellspacing="0">
-                        <tr>
-                            <td style="font-size:3em; vertical-align:middle; padding-right:10px">
-                                &#x1F880;
-                            </td>
-                            <td style="vertical-align:middle;">
-                                Pagina<br />precedentă
-                            </td>
-                        </tr>
-                    </table>
+
+                    <img src="~/images/prev.png" />
                 </a>
-            </td>
+            </div>
         }
-        <td style="padding-right:10px; padding-left:10px; border-right: @((Model.Pagination.IsLastPage || !Model.IncludeEasyNavigation) || !Model.Pagination.Pagination.HasPages ? "none" : "solid 1px black")">
-            <span class="CollapsedMenu" onclick="expandCollapsedMenu('paginationControls_@(Model.Self)', 'expandPagination_@(Model.Self)')" id="expandPagination_@(Model.Self)">
+        <div>
+            <div class="CollapsedMenu" onclick="showElement('paginationControls_@(Model.Self)')">
                 Opțiuni paginare
-            </span>
-        </td>
-        @if (!Model.Pagination.IsLastPage && Model.IncludeEasyNavigation)
+            </div>
+        </div>
+        @if (!Model.PaginationModel.IsLastPage && Model.IncludeEasyNavigation)
         {
-            <td style="padding-left:10px">
+            <div>
                 <a href="@Model.Forward" style="text-decoration:none">
-                    <table border="0" cellpadding="0" cellspacing="0">
-                        <tr>
-                            <td style="vertical-align:middle;">
-                                Pagina<br />următoare
-                            </td>
-                            <td style="font-size:3em; vertical-align:middle; padding-left:10px">
-                                &#x1F882;
-                            </td>
-                        </tr>
-                    </table>
+                    <img src="~/images/next.png" />
                 </a>
-            </td>
+            </div>
         }
-    </tr>
-</table>
-<div id="paginationControls_@(Model.Self)" class="paginationControls">
-    @await Html.PartialAsync("_PaginationPartial", Model.Pagination.Pagination, ViewData)
-    @if (!IsAnonymous && Model.AllowPaginationChange)
-    {
-        <form method="post" asp-page-handler="Pagination">
-            <label>Mesaje afișate pe pagină:&nbsp;</label>
-            <input type="hidden" name="topicId" value="@Model.TopicId" />
-            <input type="hidden" name="postId" value="@Model.LastPostId" />
-            @Html.DropDownList("userPostsPerPage", Model.Pagination.PostsPerPage)
-            &nbsp;
-            <input type="submit" value="Salvează" />
-        </form>
-    }
-</div>
-<br/>
+
+    </div>
+    <center>
+        <div id="paginationControls_@(Model.Self)" class="PaginationControls">
+            @await Html.PartialAsync("_PaginationPartial", Model.PaginationModel.Pagination, ViewData)
+            @if (!IsAnonymous && Model.AllowPaginationChange)
+            {
+                <form method="post" asp-page-handler="Pagination">
+                    <label>Mesaje afișate pe pagină:&nbsp;</label>
+                    <input type="hidden" name="topicId" value="@Model.TopicId" />
+                    <input type="hidden" name="postId" value="@Model.LastPostId" />
+                    @Html.DropDownList("userPostsPerPage", Model.PaginationModel.PostsPerPage)
+                    &nbsp;
+                    <input type="submit" value="Salvează" />
+                </form>
+            }
+        </div>
+    </center>
+    <br />
+}

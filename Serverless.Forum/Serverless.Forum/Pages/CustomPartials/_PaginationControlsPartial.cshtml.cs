@@ -10,13 +10,13 @@ namespace Serverless.Forum.Pages.CustomPartials
         public bool IncludeEasyNavigation { get; private set; }
         public string Back { get; private set; }
         public string Forward { get; private set; }
-        public ModelWithPagination Pagination { get; private set; }
+        public ModelWithPagination PaginationModel { get; private set; }
         public string Self { get; private set; }
         public bool AllowPaginationChange { get; private set; }
 
         public _PaginationControlsPartialModel(ModelWithPagination pagination, bool allowPaginationChange, string back, string forward, bool includeEasyNavigation, int? topicId = null, int? lastPostId = null) 
         {
-            Pagination = pagination;
+            PaginationModel = pagination;
             Back = back;
             Forward = forward;
             TopicId = topicId;

@@ -4,7 +4,7 @@
 @using System.Web
 @using Serverless.Forum.Utilities
 
-@inject Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor
+@inject Services.UserService _userService
 
 @{
     ViewData["Title"] = $"{Model.ForumTitle} - {Model.TopicTitle}";
@@ -19,7 +19,7 @@
     var EditTime = (await Model.GetCurrentUserAsync()).PostEditTime;
 }
 
-    <script type="text/javascript">
+<script type="text/javascript">
     window.onload = function () {
         onPostLoad();
         var postId = @Json.Serialize(Model.PostId ?? -1);
@@ -80,9 +80,8 @@
 
 @if (Model.Poll != null)
 {
-    if (!Model.Poll.PollEnded)
+    if (Model.Poll.CanVoteNow(Model.CurrentUserId) || IsAnonymous)
     {
-        var isDisabled = !Model.Poll.CanVoteNow(Model.CurrentUserId);
         <div id="votes" style="display:block">
             <h3>Chestionar: @Model.Poll.PollTitle</h3>
             <div>Chestionarul @(Model.Poll.PollEnded ? "a fost" : "va fi") inchis: @(Model.Poll.PollEnd.HasValue ? Model.Poll.PollEnd.Value.ToString(UserDateFormat) : "niciodată").</div>
@@ -99,7 +98,7 @@
                                     @Html.Raw(option.PollOptionText)
                                 </td>
                                 <td>
-                                    <input type="checkbox" name="Votes" value="@option.PollOptionId" @(isChecked ? "checked" : "") @(isDisabled ? "disabled" : "") />
+                                    <input type="checkbox" name="Votes" value="@option.PollOptionId" @(isChecked ? "checked" : "") @(IsAnonymous ? "disabled" : "") />
                                 </td>
                             </tr>
                         </table>
@@ -116,7 +115,7 @@
                                     @Html.Raw(option.PollOptionText)
                                 </td>
                                 <td>
-                                    <input type="radio" name="Votes" value="@option.PollOptionId" @(isChecked ? "checked" : "") @(isDisabled ? "disabled" : "") />
+                                    <input type="radio" name="Votes" value="@option.PollOptionId" @(isChecked ? "checked" : "") @(IsAnonymous ? "disabled" : "") />
                                 </td>
                             </tr>
                         </table>
@@ -125,13 +124,13 @@
                 <br />
                 <input asp-for="TopicId" type="hidden" />
                 <input name="queryString" type="hidden" value="@HttpUtility.UrlEncode(Request.QueryString.ToString())" />
-                <input type="submit" value="Trimite vot" @(isDisabled ? "disabled" : "") />
+                <input type="submit" value="Trimite vot" @(IsAnonymous ? "disabled" : "") />
             </form>
         </div>
     }
-    if (Model.Poll.PollEnded || IsAdmin)
+    if ((!Model.Poll.CanVoteNow(Model.CurrentUserId) && !IsAnonymous) || IsAdmin)
     {
-        <div id="results" style="display:@(Model.Poll.PollEnded ? "block" : "none")">
+        <div id="results" style="display:@(Model.Poll.CanVoteNow(Model.CurrentUserId) && IsAdmin ? "none" : "block")">
             <h3>Chestionar: @Model.Poll.PollTitle</h3>
             <div>Chestionarul @(Model.Poll.PollEnded ? "a fost" : "va fi") inchis: @(Model.Poll.PollEnd.HasValue ? Model.Poll.PollEnd.Value.ToString(UserDateFormat) : "niciodată").</div>
             <p></p>
@@ -158,8 +157,11 @@
                 }
             </table>
         </div>
-        <br />
-        <input type="button" value="Arată rezultatele" onclick="switchPollPanels('results', 'votes', this)" />
+        @if (Model.Poll.CanVoteNow(Model.CurrentUserId) && IsAdmin)
+        {
+            <br />
+            <input type="button" value="Arată rezultatele" onclick="switchPollPanels('results', 'votes', this)" />
+        }
     }
     <hr />
 }
@@ -225,47 +227,51 @@
                         <br />
                     }
                     <br />
-                    @if (!IsLocked && post != Model.Posts.Last())
-                    {
-                        <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">
-                            &#x1F5E8; Răspunde cu citat
-                        </a>
-                        <span style="padding-left:10px;padding-right:3px;">&bull;</span>
-                    }
-                    else if (post != Model.Posts.Last())
-                    {
-                        <a href="javascript:;" title="Subiectul este închis, nu se mai pot trimite răspunsuri.">
-                            <s>&#x1F5E8; Răspunde</s>
-                        </a>
-                        <span style="padding-left:10px;padding-right:3px;">&bull;</span>
-                    }
-                    <span class="CollapsedActions" onclick="showElement('actions@(post.PostId.Value)')" id="actionsButton@(post.PostId.Value)">
-                        &#x1F4CB; Opțiuni mesaj
-                    </span>
-                    <ul class="PostActions" id="actions@(post.PostId.Value)">
-                        <li>
-                            <a asp-page="/Posting" asp-page-handler="QuotePrivateMessage" asp-route-postId="@post.PostId">&#x2709; Mesaj privat</a>
-                        </li>
-                        <li>
+                    <div class="PostActions">
+                        @if (!IsLocked && !IsAnonymous && post != Model.Posts.Last())
+                        {
+                            <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">
+                                &#x1F5E8; Răspunde cu citat
+                            </a>
+                            @*<span style="padding-left:10px;padding-right:3px;">&bull;</span>*@
+                        }
+                        else if (!IsAnonymous && post != Model.Posts.Last())
+                        {
+                            <a href="javascript:;" title="Subiectul este închis, nu se mai pot trimite răspunsuri.">
+                                <s>&#x1F5E8; Răspunde cu citat</s>
+                            </a>
+                            @*<span style="padding-left:10px;padding-right:3px;">&bull;</span>*@
+                        }
+                        @*<span class="CollapsedActions" onclick="showElement('actions@(post.PostId.Value)')" id="actionsButton@(post.PostId.Value)">
+                                &#x1F4CB; Opțiuni mesaj
+                            </span>*@
+                        @*<ul class="PostActions" id="actions@(post.PostId.Value)">*@
+                        @if (await _userService.GetUserRole(await Model.GetCurrentUserAsync()) != 8)
+                        {
+                            <span>
+                                <a asp-page="/Posting" asp-page-handler="QuotePrivateMessage" asp-route-postId="@post.PostId">&#x2709; Mesaj privat</a>
+                            </span>
+                        }
+                        <span>
                             <a href="javascript:return;">&#x2757; Raportează</a>
-                        </li>
+                        </span>
                         @if (IsMod)
                         {
-                            <li>
+                            <span>
                                 <a href="javascript:return;">&#x2753; Informații</a>
-                            </li>
-                            <li>
+                            </span>
+                            <span>
                                 Selectează pentru moderare <input type="checkBox" name="posts" value="@post.PostId" form="moderatorForm" />
-                            </li>
+                            </span>
                         }
                         @if (IsMod || (post.AuthorId == Model.CurrentUserId && DateTime.UtcNow.Subtract(post.PostCreationTime ?? default).TotalMinutes <= EditTime))
                         {
-                            <li>
+                            <span>
                                 <a asp-page="/Posting" asp-page-handler="EditPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">&#x1F4DD; Modifică</a>
-                            </li>
+                            </span>
                         }
-                    </ul>
-
+                        @*</ul>*@
+                    </div>
                 </div>
             </div>
             <p>&nbsp;</p>
@@ -274,15 +280,16 @@
     index++;
 }
 <hr />
-@if (!IsLocked)
+@if (!IsLocked && !IsAnonymous)
 {
     <a asp-page="/Posting" asp-page-handler="ForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId">Scrie un răspuns</a>
+    <hr />
 }
-else
+else if (!IsAnonymous)
 {
     <a title="Subiectul este închis, nu se mai pot trimite răspunsuri."><s>Scrie un răspuns</s></a>
+    <hr />
 }
-<hr />
 @await Html.PartialAsync(
     "_PaginationControlsPartial",
     new CustomPartials._PaginationControlsPartialModel(

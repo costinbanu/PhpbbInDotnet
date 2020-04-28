@@ -15,7 +15,6 @@ namespace Serverless.Forum.Services
 {
     public class UserService
     {
-        private readonly IConfiguration _config;
         private readonly Utils _utils;
         private readonly ForumDbContext _context;
         private List<PhpbbAclRoles> _adminRoles;
@@ -25,9 +24,8 @@ namespace Serverless.Forum.Services
         private ClaimsPrincipal _anonymousClaimsPrincipal;
         private LoggedUser _anonymousLoggedUser;
 
-        public UserService(IConfiguration config, Utils utils, ForumDbContext context)
+        public UserService(Utils utils, ForumDbContext context)
         {
-            _config = config;
             _utils = utils;
             _context = context;
         }

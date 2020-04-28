@@ -88,7 +88,7 @@
 @if (Model.Posts != null && Model.Posts.Any())
 {
     <h2>Rezultate</h2>
-    @await  Html.PartialAsync(
+    @await Html.PartialAsync(
         "_PaginationControlsPartial",
         new CustomPartials._PaginationControlsPartialModel(
             pagination: Model,
@@ -102,42 +102,36 @@
         ViewData
     )
 
+    var index = 0;
     foreach (var post in Model.Posts)
     {
-        <div class="ForumListRow">
-            <div class="ForumContent" id="@post.PostId">
-                <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@post.PostId"><h4>@Html.Raw(post.PostSubject)</h4></a>
-                <p>@Html.Raw(post.PostText)</p>
-                <span style="margin-top:auto; display:inline-block">
-                    @if (!string.IsNullOrWhiteSpace(post.AuthorSignature))
-                    {
-                        <br />
-                        <span style="width:25%; display:inline-block; border-bottom:solid 1px black">&nbsp;</span>
-                        <br />
-                        <span class="Caption">@Html.Raw(post.AuthorSignature)</span>
-                    }
-                </span>
-            </div>
+        <div class="RowMargin ForumListRow @($"Color{index % 2}")">
             @await Html.PartialAsync(
                 "_SummaryPartial",
                 new CustomPartials._SummaryPartialModel(
-                    post.AuthorId, 
-                    post.AuthorName, 
-                    post.AuthorColor, 
-                    post.PostCreationTime, 
-                    post.PostId.Value, 
-                    dateFormat, 
-                    post.AuthorHasAvatar, 
-                    null, 
-                    null, 
+                    post.AuthorId,
+                    post.AuthorName,
+                    post.AuthorColor,
+                    post.PostCreationTime,
+                    post.PostId.Value,
+                    dateFormat,
+                    post.AuthorHasAvatar,
+                    null,
+                    null,
                     null,
                     true
                 )
             )
+            <div class="ForumContent" id="@post.PostId">
+                <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@post.PostId" class="PostTitle">@Html.Raw(post.PostSubject)</a>
+                <p>@Html.Raw(post.PostText)</p>
+            </div>
         </div>
+        index++;
     }
+
     <p>&nbsp;</p>
-    @await  Html.PartialAsync(
+    @await Html.PartialAsync(
         "_PaginationControlsPartial",
         new CustomPartials._PaginationControlsPartialModel(
             pagination: Model,
@@ -156,7 +150,7 @@
 <script src="~/lib/tribute/dist/tribute.js"></script>
 <script>
     var tribute = new Tribute({
-        values: @Json.Serialize(Model.Users) ,
+        values: @Json.Serialize(Model.Users),
         autocompleteMode: true,
         selectTemplate: function (item) {
             return item.original.key;
@@ -172,12 +166,12 @@
         authorInput.value = e.detail.item.original.key;
     });
 
-    function toggleAdvancedSearch() {
-        if ($("#advanced").is(":visible")) {
-            $("#advanced").hide("fast", function () { });
-        }
-        else {
-            $("#advanced").show("fast", function () { });
-        }
-    }
+    //function toggleAdvancedSearch() {
+    //    if ($("#advanced").is(":visible")) {
+    //        $("#advanced").hide("fast", function () { });
+    //    }
+    //    else {
+    //        $("#advanced").show("fast", function () { });
+    //    }
+    //}
 </script>

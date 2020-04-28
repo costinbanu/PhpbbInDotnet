@@ -57,7 +57,7 @@ namespace Serverless.Forum.Services
                     new BBTag("u", "<span style=\"text-decoration:underline;\">", "</span>"),
                     new BBTag("code", "<pre class=\"prettyprint\">", "</pre>"),
                     new BBTag("img", "<br/><img src=\"${content}\" /><br/>", string.Empty, false, false),
-                    new BBTag("quote", "<blockquote>${name}", "</blockquote>",
+                    new BBTag("quote", "<blockquote class=\"PostQuote\">${name}", "</blockquote>",
                         new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : $"<b>{HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')}</b> a scris:<br/>")),
                     new BBTag("*", "<li>", "</li>", true, false),
                     new BBTag("list", "<${attr}>", "</${attr}>", true, true,
@@ -207,7 +207,7 @@ namespace Serverless.Forum.Services
                 text,
                 words,
                 false,
-                (haystack, needle, startIndex) => (haystack.IndexOf(needle, startIndex, StringComparison.CurrentCultureIgnoreCase), needle),
+                (haystack, needle, startIndex) => (haystack.IndexOf(needle, startIndex, StringComparison.InvariantCultureIgnoreCase), needle),
                 (haystack, needle, index) =>
                 {
                     var openTag = "<span class=\"posthilit\">";
@@ -282,7 +282,7 @@ namespace Serverless.Forum.Services
 
                         var match = input.Substring(index, cleanedMatch.Length);
 
-                        if (match.RemoveDiacritics() != cleanedMatch)
+                        if (!match.RemoveDiacritics().Equals(cleanedMatch, StringComparison.InvariantCultureIgnoreCase))
                         {
                             continue;
                         }
@@ -295,7 +295,7 @@ namespace Serverless.Forum.Services
                             {
                                 var (result, nextIndex) = transform(input, match, index);
                                 var (cleanedResult, cleanednextIndex) = transform(cleanedInput, cleanedMatch, index);
-                                if (result.RemoveDiacritics() == cleanedResult && nextIndex == cleanednextIndex)
+                                if (result.RemoveDiacritics().Equals(cleanedResult, StringComparison.InvariantCultureIgnoreCase) && nextIndex == cleanednextIndex)
                                 {
                                     input = result;
                                     cleanedInput = cleanedResult;

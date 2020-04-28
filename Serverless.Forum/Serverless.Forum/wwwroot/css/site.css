@@ -62,8 +62,8 @@ h3 {
     white-space: pre !important;
 }
 
-blockquote {
-    background-color: #fef6e9 !important;
+.PostQuote {
+    background-color: #fef6e9;
 }
 
 .Color0 {
@@ -113,7 +113,7 @@ blockquote {
 }
 
 .ForumContent {
-    /*width: 68%;*/
+    width: 100%;
     height: auto;
     vertical-align: top;
     flex: 1;
@@ -165,21 +165,31 @@ blockquote {
 }
 
 .PostActions {
-    display: inline-flex;
+    display: block;
     margin-bottom: 0px;
     padding-left: 7px;
     padding-bottom: 7px;
 }
 
-.PostActions li:after {
-    /*content: '|';*/
+.PostActions span {
+    white-space: nowrap;
+}
+
+.PostActions /*li:after*/ span:before {
     content: '\2022';
     padding-right: 10px;
     padding-left: 10px;
 }
 
-.PostActions li:last-child:after {
+.PostActions /*li:last-child:after*/ span:first-child:before {
     content: '';
+}
+
+.PageNum {
+    display: inline-block;
+    background-color: gainsboro;
+    padding: 2px;
+    white-space: nowrap;
 }
 
 .CollapsedMenu {
@@ -288,21 +298,33 @@ label {
     background-position: left;
 }
 
-.paginationControls {
+.PaginationControls {
     display: none;
 }
 
-.posthilit {
-    background-color: #F3BFCC;
-    color: #BC2A4D;
-}
-
-#paginationControlsCollapsed {
+.PaginationControlsCollapsed {
     display: none;
 }
 
-#paginationControlsFull {
-    display: inline;
+.PaginationControlsFull {
+    display: flex !important;
+    flex-wrap: wrap;
+}
+
+.PaginationControlsFull div > *:not(span) {
+    float: left !important;
+    height: auto;
+}
+
+.PaginationControlsFull div:after {
+    content: ' ';
+    padding-right: 10px;
+    padding-left: 10px;
+}
+
+.PaginationControlsFull div:last-child:after {
+    padding-right: 0px;
+    padding-left: 0px;
 }
 
 .Caption {
@@ -313,9 +335,6 @@ label {
 .Signature {
     margin-top: auto;
     display: inline-block;
-    /*position: absolute;
-    bottom: 0px;
-    margin-top: auto;*/
 }
 
 .PostFooter {
@@ -358,6 +377,20 @@ label {
     width: 100%;
 }
 
+.posthilit {
+    background-color: #F3BFCC;
+    color: #BC2A4D;
+}
+
+.FlexCenter {
+    align-items: center;
+    justify-content: center;
+}
+
+.FlexCenterCollapsed {
+    display: none;
+}
+
 @media (max-width: 768px) {
     .headerImg {
         width: 128px;
@@ -385,8 +418,9 @@ label {
     }
 
     .ForumContent{
-        width:100%;
-        display:inline-block;
+        /*width: 100%;*/
+        display: inline-block;
+        padding-left: 0px;
     }
 
     .Signature {
@@ -401,12 +435,43 @@ label {
         margin-right: 10px;
     }
 
-    #paginationControlsCollapsed {
-        display: inline;
+    .PaginationControlsCollapsed {
+        display: table;
     }
 
-    #paginationControlsFull {
+    .PaginationControlsCollapsed div > * {
+        float: unset !important;
+        height: auto;
+    }
+
+    .PaginationControlsCollapsed div:after {
+        content: ' ';
+        padding-right: 10px;
+        padding-left: 10px;
+    }
+
+    .PaginationControlsCollapsed div:last-child:after {
+        padding-right: 0px;
+        padding-left: 0px;
+    }
+
+    .PaginationControlsFull {
         display: none;
+    }
+
+    .PaginationControlsFull div {
+        display: none;
+    }
+
+    .FlexCenter {
+        display: none;
+    }
+
+    .FlexCenterCollapsed {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
     }
 }
 
@@ -445,7 +510,7 @@ label {
         word-break: break-all !important;
     }
 
-    .PostActions {
+    /*.PostActions {
         display: none;
     }
 
@@ -456,7 +521,7 @@ label {
 
     .PostActions li:after {
         content: '';
-    }
+    }*/
 
     .CollapsedActions {
         display: inline-block;
@@ -471,5 +536,21 @@ label {
 
     .Show1300 {
         display: none !important;
+    }
+}
+
+@media (max-width: 450px) {
+    .FlexCenterCollapsed {
+        flex-direction: column;
+        flex-wrap: nowrap;
+    }
+    .FlexCenterCollapsed :first-child {
+        order: 1;
+    }
+    .FlexCenterCollapsed :nth-child(2) {
+        order: 3;
+    }
+    .FlexCenterCollapsed :last-child {
+        order: 2;
     }
 }

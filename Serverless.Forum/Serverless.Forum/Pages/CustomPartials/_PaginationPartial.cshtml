@@ -3,17 +3,17 @@
 <!DOCTYPE html>
 @if (Model.HasPages)
 {
-    <label>Mergi la pagina:&nbsp;</label>
-    if (Model.Pager.StartPage > 1)
+    <span>Mergi la pagina:&nbsp;</span>
+    @if (Model.Pager.StartPage > 1)
     {
         Model.Link.Set("PageNum", "1");
-        <span style="display:inline-block; background-color:gainsboro; padding:2px;">
+        <span class="PageNum">
             <a href="@Model.Link.ToString()">1</a>
         </span>
         <span>&nbsp;...</span>
     }
 
-    foreach (var curPage in Model.Pager.Pages)
+    @foreach (var curPage in Model.Pager.Pages)
     {
         if (curPage == Model.CurrentPage)
         {
@@ -22,18 +22,28 @@
         else
         {
             Model.Link.Set("PageNum", curPage.ToString());
-            <span style="display:inline-block; background-color:gainsboro; padding:2px;">
+            <span class="PageNum">
                 <a href="@Model.Link.ToString()">@curPage</a>
             </span>
         }
     }
 
-    if (Model.Pager.EndPage + 3 < Model.Pager.TotalPages)
+    @if (Model.Pager.EndPage + 3 < Model.Pager.TotalPages)
     {
         Model.Link.Set("PageNum", Model.Pager.TotalPages.ToString());
         <span>&nbsp;...</span>
-        <span style="display:inline-block; background-color:gainsboro; padding:2px;">
+        <span class="PageNum">
             <a href="@Model.Link.ToString()">@Model.Pager.TotalPages</a>
         </span>
+    }
+    else if (Model.Pager.EndPage < Model.Pager.TotalPages)
+    {
+        for (var num = Model.Pager.EndPage; num <= Model.Pager.TotalPages; num++)
+        {
+            Model.Link.Set("PageNum", num.ToString());
+            <span class="PageNum">
+                <a href="@Model.Link.ToString()">@num</a>
+            </span>
+        }
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -14,8 +15,10 @@ using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 
 namespace Serverless.Forum
 {
@@ -111,7 +114,7 @@ namespace Serverless.Forum
             services.AddTransient<ModeratorService>();
             services.AddTransient<BBCodeRenderingService>();
 
-            services.AddDbContext<ForumDbContext>(options => options.UseMySQL(Configuration["ForumDbConnectionString"]));
+            services.AddDbContext<ForumDbContext>(options => options.UseMySQL(Configuration["ForumDbConnectionString"]), ServiceLifetime.Transient);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -126,8 +129,26 @@ namespace Serverless.Forum
 
             if (env.IsDevelopment())
             {
-                app.UseDeveloperExceptionPage();
+                //app.UseDeveloperExceptionPage();
                 builder.AddUserSecrets<Startup>();
+                //app.UseExceptionHandler("/Error");
+                app.UseExceptionHandler(errorApp =>
+                {
+                    errorApp.Run(context =>
+                    {
+                        var handler = context.Features.Get<IExceptionHandlerPathFeature>();
+                        var id = Guid.NewGuid().ToString("n");
+                        File.AppendAllText(
+                            @"c:\users\costin\desktop\log.txt",
+                            $"Exception while accessing {handler.Path}:" + Environment.NewLine +
+                                $"ID: {id}" + Environment.NewLine +
+                                handler.Error.Message + Environment.NewLine +
+                                handler.Error.StackTrace + Environment.NewLine + Environment.NewLine
+                        );
+                        context.Response.Redirect($"/Error?id={id}");
+                        return Task.CompletedTask;
+                    });
+                });
             }
             else
             {

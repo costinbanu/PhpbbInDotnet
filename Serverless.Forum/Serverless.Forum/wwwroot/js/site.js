@@ -1,42 +1,29 @@
 ﻿// Resize media in posts
 function onPostLoad() {
-    var posts = $(".ForumContent");
-    for (var i = 0; i < posts.length; i++) {
-        var summary = $(posts[i]).parent().find(".Summary");
-        var w = summary.parent().innerWidth();
-        if (summary.is(":visible")) {
-            w -= summary.outerWidth();
-        }
-        var imgs = posts[i].getElementsByTagName("img");
-        //var w = posts[i].offsetWidth;
-        var h = window.innerHeight;
-        for (var j = 0; j < imgs.length; j++) {
-            var oh = imgs[j].naturalHeight,
-                ow = imgs[j].naturalWidth,
-                x = h / oh,
-                y = w / ow;
-            imgs[j].style.maxWidth = w + "px";
-            imgs[j].style.maxHeight = h + "px";
-            if (x < 1 || y < 1) {
-                imgs[j].style.width = Math.round(0.9 * ow * Math.min(x, y)) + "px";
-                imgs[j].style.height = Math.round(0.9 * oh * Math.min(x, y)) + "px";
-                if (imgs[j].parentNode.nodeName !== "A") {
-                    imgs[j].setAttribute("onclick", "window.open(this.src);");
-                    imgs[j].setAttribute("title", "Click pentru imaginea marita.");
-                    imgs[j].style.cursor = "pointer";
+    $(".ForumContent").each(function (_, post) {
+        var maxWidth = ($(".ForumListRow").width() - ($(".Summary").is(":visible") ? $(".Summary").outerWidth() : 0)) * 0.95;
+        var maxHeight = $(window).innerHeight() - $("#topBanner").outerHeight() - 20;
+        console.log("max size: w=" + maxWidth + ", h=" + maxHeight + ". parent width = " + $(post).parent().outerWidth());
+        $(post).find("img").each(function (_, img) {
+            var originalWidth = img.naturalWidth,
+                originalHeight = img.naturalHeight,
+                ratio = Math.min(maxHeight / originalHeight, maxWidth / originalWidth);
+            if (ratio < 1) {
+                $(img).css({ "width": Math.round(originalWidth * ratio) + "px", "height": Math.round(originalHeight * ratio) + "px" });
+                if (!$(img).parent().is("a")) {
+                    $(img).attr({ "onclick": "window.open(this.src);", "title": "Click pentru imaginea mărită." });
+                    $(img).css("cursor", "pointer");
                 }
             }
-        }
-        var frames = posts[i].getElementsByTagName("iframe");
-        for (var k = 0; k < frames.length; k++) {
-            frames[k].width = w - 20;
-            frames[k].height = Math.max(Math.round(h / 1.8), Math.round((w - 20) * 9 / 16));
-            frames[k].style.width = w - 20 + "px";
-            frames[k].style.height = Math.max(Math.round(h / 1.8), Math.round((w - 20) * 9 / 16)) + "px";
-            if (frames[k].src.indexOf("imgur") !== -1)
-                frames[k].src += "?w=" + (w - 20);
-        }
-    }
+        });
+        $(post).find("iframe").each(function (_, frame) {
+            $(frame).attr({ "width": maxWidth, "height": Math.max(Math.round(maxHeight / 1.8), Math.round((maxWidth) * 9 / 16)) });
+            var src = $(frame).attr("src");
+            if (src.indexOf("imgur") !== -1) {
+                $(frame).attr("src", src + "?w=" + maxWidth)
+            }
+        });
+    });
 }
 
 //Expand collapsed menus
