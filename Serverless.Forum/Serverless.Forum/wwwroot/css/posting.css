@@ -22,11 +22,10 @@
     width: 79%;
 }
 
-BbCodeButton {
+.BbCodeButton {
     width: auto !important;
-    padding-top: 1px;
-    padding-bottom: 1px;
     color: #000;
+    height: 27px;
 }
 
 .InputBox {
@@ -36,6 +35,7 @@ BbCodeButton {
     padding: 2px;
     cursor: text;
     float: left;
+    max-height: 270px;
 }
 
 .InputBox:hover {
@@ -52,23 +52,26 @@ BbCodeButton {
 
 .ColorPalette {
     vertical-align: middle;
-    display: block;
+    display: none;
     border: none;
-    position: absolute;
-    visibility: hidden;
-}
-
-.ColorPaletteTable {
     border-collapse: collapse;
     padding: 1px;
     margin: 1px;
     line-height: 1em;
 }
 
-.smileybox {
+.SmileyBox {
     float: right;
     width: 20%;
     clear:right;
+}
+
+.PostingControlsButton {
+    display: none;
+}
+
+.PostingControlsSpacer {
+    display: block;
 }
 
 @media (max-width: 960px) {
@@ -79,5 +82,18 @@ BbCodeButton {
     .PostingControls {
         display: none;
     }
+
+    .PostingControlsButton {
+        display: block;
+    }
+
+    .PostingControlsSpacer {
+        display: none;
+    }
 }
 
+@media (max-width: 430px) {
+    .ColorPalette td, img {
+        width: calc(100vw / 32) !important;
+    }
+}

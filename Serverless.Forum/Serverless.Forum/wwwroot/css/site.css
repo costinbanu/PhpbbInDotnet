@@ -88,8 +88,14 @@ h3 {
 }
 
 .Unread {
-    border: solid 2px #ffcc00 !important;
-    background-color: #fffcf2 !important;
+    border: solid 2px /*#ffcc00*/ #ff9000 !important;
+    background-color: /*#fffcf2*/ #fdfaf4 !important;
+    margin-top: 3px;
+    margin-bottom: 3px;
+}
+
+.Unread blockquote {
+    border: solid 1px #e2c088;
 }
 
 .Highlight {
@@ -105,8 +111,6 @@ h3 {
     padding-bottom: 3px;
     display: table;
     margin-top: 5px;
-    /*background-color: #dbf5fe;*/
-    /*font-weight: bold;*/
     background-image: linear-gradient(#4478bc, #255391);
     color: white;
     font-size: 1.1em;
@@ -119,21 +123,12 @@ h3 {
     flex: 1;
 }
 
-/*.ForumContent div > img {
-    max-width: 900px;
-    max-height: 600px;
-    width: auto;
-    height: auto;
-}*/
-
 .Summary {
     min-width: 270px;
     max-width:270px;
     display: inline-block;
     vertical-align: top;
     display: inline-block;
-    /*padding-left: 30px;
-    padding-right: 20px;*/
     list-style-type: none;
     margin-bottom: 0px !important;
     white-space: nowrap;
@@ -154,7 +149,7 @@ h3 {
 }
 
 .VerticalContent {
-    display: flex; /*inline-block;*/
+    display: flex;
     flex-direction: column;
     margin-bottom: 0px !important;
 }
@@ -175,13 +170,13 @@ h3 {
     white-space: nowrap;
 }
 
-.PostActions /*li:after*/ span:before {
+.PostActions span:before {
     content: '\2022';
     padding-right: 10px;
     padding-left: 10px;
 }
 
-.PostActions /*li:last-child:after*/ span:first-child:before {
+.PostActions span:first-child:before {
     content: '';
 }
 
@@ -206,7 +201,7 @@ h3 {
 
 .CollapsedActions {
     display: none;
-    cursor: pointer;
+    /*cursor: pointer;*/
 }
 
 .PostTitle {
@@ -333,13 +328,14 @@ label {
 }
 
 .Signature {
-    margin-top: auto;
+    /*margin-top: auto;*/
     display: inline-block;
+    font-size: 0.9em;
 }
 
 .PostFooter {
     margin-top: auto;
-    position: relative;
+    /*position: relative;*/
 }
 
 .Shortcuts {
@@ -525,7 +521,7 @@ label {
 
     .CollapsedActions {
         display: inline-block;
-        margin: 7px 7px;
+        /*margin: 7px 7px;*/
     }
 }
 

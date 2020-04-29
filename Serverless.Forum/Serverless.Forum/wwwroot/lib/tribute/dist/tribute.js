@@ -644,7 +644,7 @@ function () {
       }
 
       if (!instance.tribute.isActive) {
-        if (instance.tribute.autocompleteMode) {
+        if (instance.tribute.autocompleteMode/*trigger === ''*/) {
           instance.callbacks().triggerChar(event, this, '');
         } else {
           var keyCode = instance.getKeyCode(instance, this, event);

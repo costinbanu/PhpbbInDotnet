@@ -268,57 +268,28 @@
     }
 
     change_palette() {
-        //dE('colour_palette');
-        e = document.getElementById('colour_palette');
-
-        if (e.style.visibility == 'visible') {
-            e.style.visibility = 'hidden';
-            e.style.position = 'absolute';
-            document.getElementById('bbpalette').value = 'Culoare font';
-        }
-        else {
-            e.style.visibility = 'visible';
-            e.style.position = 'relative';
-            document.getElementById('bbpalette').value = 'Ascunde culoarea fontului';
-        }
+        showElement(
+            'colour_palette',
+            function () {
+                $('#bbpalette').val('Culoare font');
+            },
+            function () {
+                $('#bbpalette').val('Ascunde culoarea fontului');
+            }
+        );
     }
 
-    /**
-    * Get the caret position in an textarea
-    */
-    //getCaretPosition(txtarea) {
-    //    var caretPos = new CaretPosition();
-
-    //    // simple Gecko/Opera way
-    //    if (txtarea.selectionStart || txtarea.selectionStart == 0) {
-    //        caretPos.start = txtarea.selectionStart;
-    //        caretPos.end = txtarea.selectionEnd;
-    //    }
-    //    // dirty and slow IE way
-    //    else if (document.selection) {
-
-    //        // get current selection
-    //        var range = document.selection.createRange();
-
-    //        // a new selection of the whole textarea
-    //        var range_all = document.body.createTextRange();
-    //        range_all.moveToElementText(txtarea);
-
-    //        // calculate selection start point by moving beginning of range_all to beginning of range
-    //        var sel_start;
-    //        for (sel_start = 0; range_all.compareEndPoints('StartToStart', range) < 0; sel_start++) {
-    //            range_all.moveStart('character', 1);
-    //        }
-
-    //        txtarea.sel_start = sel_start;
-
-    //        // we ignore the end value for IE, this is already dirty enough and we don't need it
-    //        caretPos.start = txtarea.sel_start;
-    //        caretPos.end = txtarea.sel_start;
-    //    }
-
-    //    return caretPos;
-    //}
+    show_hidden_formatters() {
+        showElement(
+            'controls',
+            function () {
+                $('.PostingControlsButton').text('Opțiuni formatare');
+            },
+            function () {
+                $('.PostingControlsButton').text('Ascunde opțiunile de formatare');
+            }
+        );
+    }
 
     show_hidden_smilies() {
         showElement(
@@ -405,10 +376,3 @@
         }
     }
 }
-
-//class CaretPosition {
-//    constructor() {
-//        this.start = null;
-//        this.end = null;
-//    }
-//}

@@ -1,8 +1,11 @@
 ﻿@page
+
 @using Serverless.Forum.Utilities
 @using Serverless.Forum.ForumDb
+
 @model Serverless.Forum.Pages.PostingModel
 @inject Services.CacheService _cacheService
+@inject Services.WritingToolsService _writingService
 
 @{
     ViewData["Title"] = "Posting";
@@ -49,47 +52,10 @@ else
     </h3>
 }
 <form name="postform" method="post" enctype="multipart/form-data">
-    <table class="InputTable InputWidth">
-        <tr>
-            <td style="width:7%">Subiect:</td>
-            <td style="width:93%">
-                <input asp-for="PostTitle" type="text" id="subject" size="45" maxlength="256" tabindex="2" class="InputBox" style="width:100%">
-            </td>
-        </tr>
-    </table>
-    <table id="colour_palette" class="ColorPalette PostingControls InputWidth">
-        <tr>
-            <td style="width:100px">Culoare font:</td>
-            <td>
-                <br />
-                <table class="ColorPaletteTable">
-                    @{
-                        var color = new[] { 0x0, 0x40, 0x80, 0xbf, 0xff };
-                        for (var r = 0; r < 5; r++)
-                        {
-                            <tr>
-                                @for (var g = 0; g < 5; g++)
-                                {
-                                    for (var b = 0; b < 5; b++)
-                                    {
-                                        var value = $"#{color[r]:X2}{color[g]:X2}{color[b]:X2}";
-                                        <td style="width: 15px; height: 10px; background-color: @value; border:solid 1px white">
-                                            <a href="javascript:posting.bbfontstyle('[color=@value]', '[/color]');">
-                                                <img src="./images/spacer.gif" alt="@value" title="@value" style="width: 15px; height: 10px">
-                                            </a>
-                                        </td>
-                                    }
-                                }
-                            </tr>
-                        }
-                    }
-                </table>
-            </td>
-        </tr>
-    </table>
+    <input asp-for="PostTitle" type="text" id="subject" size="45" maxlength="256" tabindex="2" class="InputBox InputWidth" placeholder="Subiect">
     <br />
-
-    <div class="bbcodebuttons PostingControls">
+    <div class="PostingControlsSpacer">&nbsp;</div>
+    <div class="PostingControls InputWidth" id="controls">
         <input type="button" class="BbCodeButton" accesskey="b" name="addbbcode0" value=" B " style="font-weight:bold" onclick="posting.bbstyle(0)" title="Text bold: [b]text[/b]">
         <input type="button" class="BbCodeButton" accesskey="i" name="addbbcode2" value=" i " style="font-style:italic" onclick="posting.bbstyle(2)" title="Text italic: [i]text[/i]">
         <input type="button" class="BbCodeButton" accesskey="u" name="addbbcode4" value=" u " style="text-decoration: underline" onclick="posting.bbstyle(4)" title="Text subliniat: [u]text[/u]">
@@ -100,7 +66,7 @@ else
         <input type="button" class="BbCodeButton" accesskey="t" name="addlitsitem" value="[*]" onclick="posting.bbstyle(-1)" title="Listează articolele: [*]text[/*]">
         <input type="button" class="BbCodeButton" accesskey="p" name="addbbcode14" value="Img" onclick="posting.bbstyle(14)" title="Adaugă imagine: [img]http://cale_imagine[/img]">
         <input type="button" class="BbCodeButton" accesskey="w" name="addbbcode16" value="URL" style="text-decoration: underline" onclick="posting.bbstyle(16)" title="Adaugă URL: [url]http://url[/url] sau [url=http://url]text URL[/url]">
-        <select name="addbbcode20" onchange="bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;" title="Mărime font: [size=85]text mic[/size]">
+        <select name="addbbcode20" class="BbCodeButton" onchange="bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;" title="Mărime font: [size=85]text mic[/size]">
             <option value="50">Micuţ</option>
             <option value="85">Mic</option>
             <option value="100" selected="selected">Normal</option>
@@ -112,22 +78,44 @@ else
         {
             var index = (await _cacheService.GetFromCache<List<string>>(Model.GetActualCacheKey("BbCodes", false))).IndexOf($"[{code.BbcodeTag}]");
             var name = $"addbbcode{index}";
-            <input type="button" class="BbCodeButton" name="@name" value="@code.BbcodeTag" onclick="posting.bbstyle(@index)" title="@code.BbcodeHelpline" />
+        <input type="button" class="BbCodeButton" name="@name" value="@code.BbcodeTag" onclick="posting.bbstyle(@index)" title="@code.BbcodeHelpline" />
         }
+        <table class="ColorPalette" id="colour_palette">
+            @{
+                var color = new[] { 0x0, 0x40, 0x80, 0xbf, 0xff };
+                for (var r = 0; r < 5; r++)
+                {
+                <tr>
+                    @for (var g = 0; g < 5; g++)
+                        {
+                            for (var b = 0; b < 5; b++)
+                            {
+                                var value = $"#{color[r]:X2}{color[g]:X2}{color[b]:X2}";
+                    <td style="width: 15px; height: 10px; background-color: @value; border:solid 1px white">
+                        <a href="javascript:posting.bbfontstyle('[color=@value]', '[/color]');">
+                            <img src="./images/spacer.gif" alt="@value" title="@value" style="width: 15px; height: 10px">
+                        </a>
+                    </td>
+                            }
+                        }
+                </tr>
+                }
+            }
+        </table>
     </div>
-    <br />
+    <a href="javascript:posting.show_hidden_formatters();" class="PostingControlsButton">Opțiuni formatare</a>
+    <div class="PostingControlsSpacer">&nbsp;</div>
     <div>
         <textarea asp-for="PostText" id="message" rows="15" cols="76" tabindex="3" onselect="posting.storeCaret(this);" onclick="posting.storeCaret(this);" onkeyup="posting.storeCaret(this);" onfocus="posting.initInsertions();" class="InputBox InputWidth"></textarea>
-
-        <div id="smiley-box" class="smileybox PostingControls">
+        <div id="smiley-box" class="SmileyBox PostingControls">
 
             <strong>Zâmbete</strong><br />
 
             @foreach (var smiley in ((await _cacheService.GetFromCache<List<PhpbbSmilies>>(Model.GetActualCacheKey("Smilies", false))) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 1))
             {
-                <a href="javascript:posting.insert_text('@smiley.Code', true);">
-                    <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
-                </a>
+            <a href="javascript:posting.insert_text('@smiley.Code', true);">
+                <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
+            </a>
             }
             <p>&nbsp;</p>
             <a href="javascript:posting.show_hidden_smilies();" id="showHiddenSmiliesButton">Arată mai multe</a>
@@ -135,9 +123,9 @@ else
             <div id="hiddenSmilies" style="display:none">
                 @foreach (var smiley in ((await _cacheService.GetFromCache<List<PhpbbSmilies>>(Model.GetActualCacheKey("Smilies", false))) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 0))
                 {
-                    <a href="javascript:posting.insert_text('@smiley.Code', true);">
-                        <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
-                    </a>
+                <a href="javascript:posting.insert_text('@smiley.Code', true);">
+                    <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
+                </a>
                 }
             </div>
         </div>
@@ -147,56 +135,56 @@ else
     <a href="javascript:showElement('attachPanel')">Adaugă fișiere atașate</a>
     @if (CanCreatePoll)
     {
-        <span>&nbsp; | &nbsp;</span>
-        <a href="javascript:showElement('pollPanel')">Adaugă chestionar</a>
-        <div id="pollPanel" style="display:none">
-            <hr />
-            <h3>Chestionar</h3>
-            <p>&nbsp;</p>
-            <table style="border:none; margin:0px; width:80%">
-                <tr style="border-bottom: solid 1px black">
-                    <td style="width:200px; padding:5px">Întrebarea chestionarului</td>
-                    <td colspan="2" style="padding:5px">
-                        <input asp-for="PollQuestion" style="width:100%" />
-                        <span asp-validation-for="PollQuestion" class="validation"></span>
-                    </td>
-                </tr>
-                <tr style="border-bottom: solid 1px black">
-                    <td style="width:200px; padding:5px">Opțiuni (una pe rând)</td>
-                    <td colspan="2" style="padding:5px">
-                        <textarea asp-for="PollOptions" rows="4" style="width:100%" onmousedown="posting.confirmPollChange()"></textarea>
-                        <span asp-validation-for="PollOptions" class="validation"></span>
-                    </td>
-                </tr>
-                <tr style="border-bottom: solid 1px black">
-                    <td style="width:200px; padding:5px">Timp pentru votare (zile)</td>
-                    <td style="padding:5px">
-                        <input asp-for="PollExpirationDaysString" onchange="posting.showExpirationDate(this.value)" id="pollExpiration" /><br />
-                        <span class="Caption">Introdu '0' pentru timp nelimitat.<br />Sunt permise și fracții precum 0.5, 1.75 etc</span>
-                        <span asp-validation-for="PollExpirationDaysString" class="validation"></span>
-                    </td>
-                    <td style="padding:5px">
-                        <span id="pollExpirationHelper"></span>
-                    </td>
-                </tr>
-                <tr style="border-bottom: solid 1px black">
-                    <td style="width:200px; padding:5px">Opțiuni per votant</td>
-                    <td colspan="2" style="padding:5px">
-                        <input asp-for="PollMaxOptions" />
-                        <span asp-validation-for="PollMaxOptions" class="validation"></span>
-                    </td>
-                </tr>
-                <tr>
-                    <td style="width:200px; padding:5px">Votanții își pot schimba votul</td>
-                    <td colspan="2" style="padding:5px">
-                        <input asp-for="PollCanChangeVote" /><br />
-                        <span class="Caption">Bifați pentru „da”.</span>
-                        <span asp-validation-for="PollCanChangeVote" class="validation"></span>
-                    </td>
-                </tr>
-            </table>
-        </div>
+    <span>&nbsp; | &nbsp;</span>
+    <a href="javascript:showElement('pollPanel')">Adaugă chestionar</a>
+    <div id="pollPanel" style="display:none">
         <hr />
+        <h3>Chestionar</h3>
+        <p>&nbsp;</p>
+        <table style="border:none; margin:0px; width:80%">
+            <tr style="border-bottom: solid 1px black">
+                <td style="width:200px; padding:5px">Întrebarea chestionarului</td>
+                <td colspan="2" style="padding:5px">
+                    <input asp-for="PollQuestion" style="width:100%" />
+                    <span asp-validation-for="PollQuestion" class="validation"></span>
+                </td>
+            </tr>
+            <tr style="border-bottom: solid 1px black">
+                <td style="width:200px; padding:5px">Opțiuni (una pe rând)</td>
+                <td colspan="2" style="padding:5px">
+                    <textarea asp-for="PollOptions" rows="4" style="width:100%" onmousedown="posting.confirmPollChange()"></textarea>
+                    <span asp-validation-for="PollOptions" class="validation"></span>
+                </td>
+            </tr>
+            <tr style="border-bottom: solid 1px black">
+                <td style="width:200px; padding:5px">Timp pentru votare (zile)</td>
+                <td style="padding:5px">
+                    <input asp-for="PollExpirationDaysString" onchange="posting.showExpirationDate(this.value)" id="pollExpiration" /><br />
+                    <span class="Caption">Introdu '0' pentru timp nelimitat.<br />Sunt permise și fracții precum 0.5, 1.75 etc</span>
+                    <span asp-validation-for="PollExpirationDaysString" class="validation"></span>
+                </td>
+                <td style="padding:5px">
+                    <span id="pollExpirationHelper"></span>
+                </td>
+            </tr>
+            <tr style="border-bottom: solid 1px black">
+                <td style="width:200px; padding:5px">Opțiuni per votant</td>
+                <td colspan="2" style="padding:5px">
+                    <input asp-for="PollMaxOptions" />
+                    <span asp-validation-for="PollMaxOptions" class="validation"></span>
+                </td>
+            </tr>
+            <tr>
+                <td style="width:200px; padding:5px">Votanții își pot schimba votul</td>
+                <td colspan="2" style="padding:5px">
+                    <input asp-for="PollCanChangeVote" /><br />
+                    <span class="Caption">Bifați pentru „da”.</span>
+                    <span asp-validation-for="PollCanChangeVote" class="validation"></span>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <hr />
     }
     <input asp-for="ForumId" type="hidden" />
     <input asp-for="TopicId" type="hidden" />
@@ -205,42 +193,37 @@ else
         <p></p>
         <h3>Fișiere atașate</h3>
         <h4>Adaugă fișiere noi</h4>
-        <table style="border:none; margin:0px; padding:0px">
-            <tr>
-                <td style="width:50%; padding-bottom:15px">Alege unul sau mai multe fișiere: </td>
-                <td>
-                    <input asp-for="Files" onchange="$('#submitAttachmentsButton').trigger('click')" multiple/>
-                    @if (!await Model.IsCurrentUserAdminHereAsync())
-                    {
-                        <span class="Caption">Minim 1, maxim 10 fișiere. Fiecare fișier trebuie să aibă maxim 2MB.</span>
-                    }
-                    <br />
-                    <span asp-validation-for="Files" class="validation"></span>
-                </td>
-            </tr>
-        </table>
+        Alege unul sau mai multe fișiere:
+        <input asp-for="Files" onchange="$('#submitAttachmentsButton').trigger('click')" multiple />
+        @if (!await Model.IsCurrentUserAdminHereAsync())
+        {
+        <span class="Caption">Minim 1, maxim 10 fișiere. Fiecare fișier trebuie să aibă maxim 2MB.</span>
+        }
+        <br />
+        <span asp-validation-for="Files" class="validation"></span>
+
         <input type="submit" value="Încarcă fișierele alese" asp-page-handler="AddAttachment" style="display:none" id="submitAttachmentsButton" />
         <p>&nbsp;</p>
         @{
             var attachments = await _cacheService.GetFromCache<List<PhpbbAttachments>>(Model.GetActualCacheKey("PostAttachments", true)) ?? new List<PhpbbAttachments>();
             if (attachments.Any())
             {
-                <h4>Fișiere deja atașate:</h4>
-                @for (var i = 0; i < attachments.Count; i++)
+            <h4>Fișiere deja atașate:</h4>
+            @for (var i = 0; i < attachments.Count; i++)
                 {
-                    <div style="margin-bottom:20px; padding-bottom:20px">
-                        <b>Nume:</b> @attachments[i].RealFilename <br />
-                        <b>Comentariu fișier:</b>
-                        <br />
-                        <textarea type="text" name="FileComment[@i]" id="FileComment" rows="4" cols="100" style="display:inline-block"></textarea>
-                        <br />
-                        <input type="button" value="Așează în linie" onclick="posting.attach_inline(@i, '@attachments[i].RealFilename')" /> &nbsp;
-                        <input type="submit" value="Șterge fișier" asp-page-handler="DeleteAttachment" onclick="document.getElementById('indexToDelete').value = @i; return true;" />
-                        <br />
-                        <span asp-validation-for="DeleteFileDummyForValidation[i]" class="validation"></span>
-                    </div>
+            <div style="margin-bottom:20px; padding-bottom:20px">
+                <b>Nume:</b> @attachments[i].RealFilename <br />
+                <b>Comentariu fișier:</b>
+                <br />
+                <textarea type="text" name="FileComment[@i]" id="FileComment" rows="4" cols="100" style="display:inline-block"></textarea>
+                <br />
+                <input type="button" value="Așează în linie" onclick="posting.attach_inline(@i, '@attachments[i].RealFilename')" /> &nbsp;
+                <input type="submit" value="Șterge fișier" asp-page-handler="DeleteAttachment" onclick="document.getElementById('indexToDelete').value = @i; return true;" />
+                <br />
+                <span asp-validation-for="DeleteFileDummyForValidation[i]" class="validation"></span>
+            </div>
                 }
-                <input type="hidden" name="index" id="indexToDelete" value="" />
+            <input type="hidden" name="index" id="indexToDelete" value="" />
             }
         }
     </div>
@@ -248,29 +231,29 @@ else
     @switch (Model.Action)
     {
         case PostingActions.NewForumPost:
-            <input type="submit" value="Trimite mesajul" onclick="return posting.censor()" asp-page-handler="NewForumPost" />
+    <input type="submit" value="Trimite mesajul" onclick="return posting.censor()" asp-page-handler="NewForumPost" />
             break;
         case PostingActions.EditForumPost:
-            <table class="InputTable InputWidth">
-                <tr>
-                    <td style="width:15%">Motivul modificării:</td>
-                    <td style="width:85%"><input asp-for="EditReason" type="text" style="width:100%" /></td>
-                </tr>
-            </table>
-            <input type="submit" value="Trimite mesajul" onclick="return posting.censor()" asp-page-handler="EditForumPost" />
+    <table class="InputTable InputWidth">
+        <tr>
+            <td style="width:15%">Motivul modificării:</td>
+            <td style="width:85%"><input asp-for="EditReason" type="text" style="width:100%" /></td>
+        </tr>
+    </table>
+    <input type="submit" value="Trimite mesajul" onclick="return posting.censor()" asp-page-handler="EditForumPost" />
             break;
         case PostingActions.NewPrivateMessage:
-            <input type="submit" value="Trimite mesajul" onclick="return posting.censor()" asp-page-handler="PrivateMessage" />
+    <input type="submit" value="Trimite mesajul" onclick="return posting.censor()" asp-page-handler="PrivateMessage" />
             break;
         default:
-            <span class="validation">A intervenit o eroare, pagina nu a fost afișată corect.</span>
+    <span class="validation">A intervenit o eroare, pagina nu a fost afișată corect.</span>
             break;
     }
 </form>
 
 <script>
     var tribute = new Tribute({
-        values: @Json.Serialize(await _cacheService.GetFromCache<List<KeyValuePair<string, string>>>(Model.GetActualCacheKey("Users", false))),
+        values: @Html.Raw(_writingService.ToCamelCaseJson(await _cacheService.GetFromCache<List<KeyValuePair<string, string>>>(Model.GetActualCacheKey("Users", false)))),
         trigger: "@@",
         allowSpaces: true
     });

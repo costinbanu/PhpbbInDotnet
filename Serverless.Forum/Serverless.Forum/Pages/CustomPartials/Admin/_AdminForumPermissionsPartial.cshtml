@@ -6,6 +6,7 @@
 @using Serverless.Forum.Utilities;
 
 @inject ForumDbContext _context
+@inject Services.WritingToolsService _writingSerivce
 
 @{
     var groupedPermissions = from p in Model.Permissions ?? new List<ForumPermissions>()
@@ -69,7 +70,7 @@
         <p>&nbsp;</p>
         @if (Model.EntityType == AclEntityType.User)
         {
-            <input type="text" id="permissionsUser" placeholder="Caută un utilizator..." />
+            <input type="text" id="permissionsUser" placeholder="Caută un utilizator..." autocomplete="off" />
         }
         else
         {
@@ -80,7 +81,7 @@
             dropDownItems.AddRange(remainingEntities.Select(e => new SelectListItem(e.Key, e.Value.ToString())));
             @Html.DropDownList($"permissionsGroup", dropDownItems, new { onchange = "changeGroupId(this.options[this.selectedIndex].value, this.options[this.selectedIndex].text)" });
         }
-        <p>&nbsp;</p>
+        <p id="tributeHolder" style="position:relative">&nbsp;</p>
         <table style="border:none; padding:5px; width:80%">
             <tr>
                 <td style="width:40%" id="entityName_@(Model.Self)">@entityName nou</td>
@@ -100,11 +101,14 @@
         <script src="~/lib/tribute/dist/tribute.js" type="text/javascript"></script>
         <script type="text/javascript">
             var tribute = new Tribute({
-                values: @Json.Serialize(remainingEntities) ,
-                autocompleteMode: true,
+                values: @Html.Raw(_writingSerivce.ToCamelCaseJson(remainingEntities)),
                 selectTemplate: function (item) {
-                                return item.original.key;
-                }
+                    return item.original.key;
+                },
+                allowSpaces: true,
+                trigger: ' ',
+                menuContainer: document.getElementById("tributeHolder"),
+                positionMenu: false,
             });
 
             var permissionsUser = document.getElementById("permissionsUser");
@@ -119,6 +123,10 @@
                 permissionsUser.value = newKey;
                 oldUserValue = newValue;
                 document.getElementById("entityName_@(Model.Self)").innerText = newKey;
+            });
+
+            permissionsUser.addEventListener("focusin", function (e) {
+                tribute.showMenuForCollection(permissionsUser);
             });
         </script>
     }

@@ -3,7 +3,7 @@
     var IsAnonymous = Model.PaginationModel.CurrentUserId == 1;
 }
 
-@if (Model.PaginationModel.Pagination.HasPages)
+@if (Model.PaginationModel?.Pagination?.HasPages ?? false)
 {
 
     <div class="PaginationControlsFull@(Model.IncludeEasyNavigation ? " FlexCenter" : "")">
@@ -21,10 +21,10 @@
         @if (!IsAnonymous && Model.AllowPaginationChange)
         {
             <div>
-                <form method="post">
+                <form method="post" asp-page-handler="Pagination">
                     <label>Mesaje afișate pe pagină:&nbsp;</label>
                     <input type="hidden" name="topicId" value="@Model.TopicId" />
-                    <input type="hidden" name="postId" value="@Model.LastPostId" />
+                    <input type="hidden" name="postId" value="@Model.FirstPostId" />
                     @Html.DropDownList("userPostsPerPage", Model.PaginationModel.PostsPerPage)
                     &nbsp;
                     <input type="submit" value="Salvează" />
@@ -75,7 +75,7 @@
                 <form method="post" asp-page-handler="Pagination">
                     <label>Mesaje afișate pe pagină:&nbsp;</label>
                     <input type="hidden" name="topicId" value="@Model.TopicId" />
-                    <input type="hidden" name="postId" value="@Model.LastPostId" />
+                    <input type="hidden" name="postId" value="@Model.FirstPostId" />
                     @Html.DropDownList("userPostsPerPage", Model.PaginationModel.PostsPerPage)
                     &nbsp;
                     <input type="submit" value="Salvează" />

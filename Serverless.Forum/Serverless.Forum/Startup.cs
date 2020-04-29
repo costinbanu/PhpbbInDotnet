@@ -129,9 +129,11 @@ namespace Serverless.Forum
 
             if (env.IsDevelopment())
             {
-                //app.UseDeveloperExceptionPage();
+                app.UseDeveloperExceptionPage();
                 builder.AddUserSecrets<Startup>();
-                //app.UseExceptionHandler("/Error");
+            }
+            else
+            {
                 app.UseExceptionHandler(errorApp =>
                 {
                     errorApp.Run(context =>
@@ -149,10 +151,7 @@ namespace Serverless.Forum
                         return Task.CompletedTask;
                     });
                 });
-            }
-            else
-            {
-                app.UseExceptionHandler("/Error");
+                //app.UseExceptionHandler("/Error");
                 app.UseHsts();
             }
 

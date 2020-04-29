@@ -130,6 +130,12 @@ namespace Serverless.Forum.Pages
                 let lastEditUser = _context.PhpbbUsers.AsNoTracking().FirstOrDefault(u => u.UserId == p.PostEditUser)
                 let lastEditUsername = lastEditUser == null ? "Anonymous" : lastEditUser.Username
 
+                join r in _context.PhpbbRanks.AsNoTracking()
+                on ju.UserRank equals r.RankId
+                into joinedRanks
+
+                from jr in joinedRanks.DefaultIfEmpty()
+
                 select new PostDisplay
                 {
                     PostSubject = p.PostSubject,
@@ -146,6 +152,7 @@ namespace Serverless.Forum.Pages
                     Unread = IsPostUnread(p.TopicId, p.PostId),
                     AuthorHasAvatar = ju == null ? false : !string.IsNullOrWhiteSpace(ju.UserAvatar),
                     AuthorSignature = ju == null ? null : _renderingService.BbCodeToHtml(ju.UserSig, ju.UserSigBbcodeUid),
+                    AuthorRank = jr == null ? null : jr.RankTitle,
                     LastEditTime = p.PostEditTime,
                     LastEditUser = lastEditUsername,
                     LastEditReason = p.PostEditReason,
@@ -182,7 +189,7 @@ namespace Serverless.Forum.Pages
             return Page();
         }
 
-        public async Task<IActionResult> OnPostPagination(int topicId, int userPostsPerPage, int postId)
+        public async Task<IActionResult> OnPostPagination(int topicId, int userPostsPerPage, int? postId)
         {
             if (CurrentUserId == 1)
             {
@@ -214,7 +221,14 @@ namespace Serverless.Forum.Pages
                 curValue.PostNo = userPostsPerPage;
                 await save(_context);
             }
-            return RedirectToPage("ViewTopic", "ByPostId", new { postId = postId, highlight = false });
+            if (postId.HasValue)
+            {
+                return RedirectToPage("ViewTopic", "ByPostId", new { postId = postId.Value, highlight = false });
+            }
+            else
+            {
+                return RedirectToPage("ViewTopic", new { topicId = TopicId.Value, pageNum = 1 });
+            }
         }
 
         public async Task<IActionResult> OnPostVote(int topicId, int[] votes, string queryString)

@@ -1,6 +1,8 @@
 ﻿using Amazon.S3.Model;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System;
@@ -17,13 +19,15 @@ namespace Serverless.Forum.Services
         private readonly StorageService _storageService;
         private readonly CacheService _cacheService;
         private readonly Utils _utils;
+        private readonly IHtmlHelper _html;
 
-        public WritingToolsService(ForumDbContext context, StorageService storageService, CacheService cacheService, Utils utils)
+        public WritingToolsService(ForumDbContext context, StorageService storageService, CacheService cacheService, Utils utils, IHtmlHelper html)
         {
             _context = context;
             _storageService = storageService;
             _cacheService = cacheService;
             _utils = utils;
+            _html = html;
         }
 
         public async Task<List<PhpbbWords>> GetBannedWords()
@@ -255,5 +259,12 @@ namespace Serverless.Forum.Services
 
             return noLinks;
         }
+
+        public string ToCamelCaseJson<T>(T @object)
+            => JsonConvert.SerializeObject(
+                @object,
+                Formatting.None,
+                new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() }
+            );
     }
 }

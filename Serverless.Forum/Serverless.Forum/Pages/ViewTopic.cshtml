@@ -56,20 +56,6 @@
         );
         showElement(id2);
     }
-
-    //function showPostOptions(postId) {
-    //    var actions = "actions" + postId;
-    //    var buttonLeft = $("#actionsButton" + postId).position().left;
-    //    showElement(
-    //        actions,
-    //        function () {
-    //            $("#" + actions).animate({ "padding-left": "0px" }, "fast");
-    //        },
-    //        function () {
-    //            $("#" + actions).animate({ "padding-left": buttonLeft + 10 + "px" }, "fast");
-    //        }
-    //    )
-    //}
 </script>
 
 @if (Model.ForumId != null)
@@ -165,17 +151,17 @@
     }
     <hr />
 }
-
+                                
 @await Html.PartialAsync(
     "_PaginationControlsPartial",
     new CustomPartials._PaginationControlsPartialModel(
         pagination: Model,
         allowPaginationChange: true,
-        back: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.Pagination.CurrentPage - 1}",
-        forward: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.Pagination.CurrentPage + 1}",
+        back: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum - 1}",
+        forward: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum + 1}",
         includeEasyNavigation: false,
         topicId: Model.TopicId,
-        lastPostId: Model.Posts.LastOrDefault()?.PostId
+        firstPostId: Model.Posts?.FirstOrDefault()?.PostId
     ),
     ViewData
 )
@@ -188,7 +174,7 @@
             @await Html.PartialAsync(
                 "_SummaryPartial",
                 new CustomPartials._SummaryPartialModel(post.AuthorId, post.AuthorName, post.AuthorColor, post.PostCreationTime, post.PostId.Value,
-                    UserDateFormat, post.AuthorHasAvatar, null, null, null, true)
+                    UserDateFormat, post.AuthorHasAvatar, post.AuthorRank, null, null, null, true)
             )
             <div class="ForumContent VerticalContent FlexRight" id="@post.PostId">
                 <span style="display:flex">
@@ -221,10 +207,12 @@
                     }
                     @if (!string.IsNullOrWhiteSpace(post.AuthorSignature))
                     {
-                        <div style="width:25%; display:inline-block; border-bottom:solid 1px black">&nbsp;</div>
-                        <br />
-                        @Html.Raw(post.AuthorSignature)
-                        <br />
+                        <div class="Signature">
+                            <div style="width:25%; display:inline-block; border-bottom:solid 1px black">&nbsp;</div>
+                            <br />
+                            @Html.Raw(post.AuthorSignature)
+                            <br /> <br/>
+                        </div>
                     }
                     <br />
                     <div class="PostActions">
@@ -233,19 +221,16 @@
                             <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">
                                 &#x1F5E8; Răspunde cu citat
                             </a>
-                            @*<span style="padding-left:10px;padding-right:3px;">&bull;</span>*@
                         }
                         else if (!IsAnonymous && post != Model.Posts.Last())
                         {
                             <a href="javascript:;" title="Subiectul este închis, nu se mai pot trimite răspunsuri.">
                                 <s>&#x1F5E8; Răspunde cu citat</s>
                             </a>
-                            @*<span style="padding-left:10px;padding-right:3px;">&bull;</span>*@
                         }
-                        @*<span class="CollapsedActions" onclick="showElement('actions@(post.PostId.Value)')" id="actionsButton@(post.PostId.Value)">
-                                &#x1F4CB; Opțiuni mesaj
-                            </span>*@
-                        @*<ul class="PostActions" id="actions@(post.PostId.Value)">*@
+                    @*</div>
+                    <a href="javascript:showElement('PostOptions@(post.PostId)')" class="CollapsedActions">Mai multe opțiuni</a>
+                    <div class="PostActions" id="PostOptions@(post.PostId)">*@
                         @if (await _userService.GetUserRole(await Model.GetCurrentUserAsync()) != 8)
                         {
                             <span>
@@ -270,7 +255,6 @@
                                 <a asp-page="/Posting" asp-page-handler="EditPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">&#x1F4DD; Modifică</a>
                             </span>
                         }
-                        @*</ul>*@
                     </div>
                 </div>
             </div>
@@ -295,11 +279,11 @@ else if (!IsAnonymous)
     new CustomPartials._PaginationControlsPartialModel(
         pagination: Model,
         allowPaginationChange: true,
-        back: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.Pagination.CurrentPage - 1}",
-        forward: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.Pagination.CurrentPage + 1}",
+        back: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum - 1}",
+        forward: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum + 1}",
         includeEasyNavigation: true,
         topicId: Model.TopicId,
-        lastPostId: Model.Posts.LastOrDefault()?.PostId
+        firstPostId: Model.Posts?.FirstOrDefault()?.PostId
     ),
     ViewData
 )

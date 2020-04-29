@@ -5,20 +5,21 @@ namespace Serverless.Forum.Pages.CustomPartials
 {
     public class _SummaryPartialModel : PageModel
     {
-        public int? AuthorId { get; private set; }
-        public string AuthorName { get; private set; }
-        public string AuthorColor { get; private set; }
-        public DateTime? CreationTime { get; private set; }
-        public int AssetId { get; private set; }
-        public string DateFormat { get; private set; }
-        public bool ShowAvatar { get; private set; } = false;
-        public string LinkHref { get; private set; }
-        public string LinkText { get; private set; }
-        public string LinkTooltip { get; private set; }
-        public bool Left { get; private set; }
+        public int? AuthorId { get; }
+        public string AuthorName { get; }
+        public string AuthorColor { get; }
+        public DateTime? CreationTime { get; }
+        public int AssetId { get; }
+        public string DateFormat { get; }
+        public bool ShowAvatar { get; } = false;
+        public string LinkHref { get; }
+        public string LinkText { get; }
+        public string LinkTooltip { get; }
+        public bool Left { get; }
+        public string AuthorRank { get; }
 
         public _SummaryPartialModel(int? authorId, string authorName, string authorColor, DateTime? creationTime, int assetId, string dateFormat, 
-            bool showAvatar, string linkHref, string linkText, string linkTooltip, bool left)
+            bool showAvatar, string authorRank, string linkHref, string linkText, string linkTooltip, bool left)
         {
             AuthorId = authorId;
             AuthorName = authorName;
@@ -31,6 +32,7 @@ namespace Serverless.Forum.Pages.CustomPartials
             LinkText = linkText;
             LinkTooltip = linkTooltip;
             Left = left;
+            AuthorRank = authorRank;
         }
     }
 }

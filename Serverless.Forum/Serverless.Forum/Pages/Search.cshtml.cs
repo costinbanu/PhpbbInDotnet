@@ -120,6 +120,11 @@ namespace Serverless.Forum.Pages
 
         private async Task Search()
         {
+            if (string.IsNullOrWhiteSpace(SearchText))
+            {
+                ModelState.AddModelError(nameof(SearchText), "Introduceți unul sau mai multe cuvinte!");
+                return;
+            }
             using var connection = _context.Database.GetDbConnection();
             await connection.OpenAsync();
             DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -140,7 +145,7 @@ namespace Serverless.Forum.Pages
             Parallel.ForEach(Posts, p =>
             {
                 p.AuthorHasAvatar = !string.IsNullOrWhiteSpace(p.UserAvatar);
-                p.AuthorSignature = p.UserSig == null ? null : _renderingService.BbCodeToHtml(p.UserSig, p.UserSigBbcodeUid);
+                //p.AuthorSignature = p.UserSig == null ? null : _renderingService.BbCodeToHtml(p.UserSig, p.UserSigBbcodeUid);
             });
             await _renderingService.ProcessPosts(Posts, PageContext, HttpContext, false, SearchText);
             TotalResults = unchecked((int)(await multi.ReadAsync<long>()).Single());

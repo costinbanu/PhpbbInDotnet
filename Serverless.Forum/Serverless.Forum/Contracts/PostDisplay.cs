@@ -39,5 +39,7 @@ namespace Serverless.Forum.Contracts
         public short EditCount { get; set; } = 0;
 
         public string LastEditReason { get; set; }
+
+        public string AuthorRank { get;  set; }
     }
 }

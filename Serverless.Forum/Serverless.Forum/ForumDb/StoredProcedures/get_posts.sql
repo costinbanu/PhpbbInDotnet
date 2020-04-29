@@ -1,11 +1,7 @@
 CREATE DEFINER=`root`@`localhost` PROCEDURE `get_posts`(user_id int, topic_id int, page_no int, post_id int)
 BEGIN
 	set @page_size = 14;
-	select utpn.post_no
-    into @page_size
-    from phpbb_user_topic_post_number utpn
-    where utpn.user_id = user_id and utpn.topic_id = topic_id;
-    
+   
 	if topic_id is null and post_id is null
     then 
 		SIGNAL SQLSTATE '45000'
@@ -17,6 +13,11 @@ BEGIN
         from phpbb_posts p
         where p.post_id = post_id;
 	end if;
+
+	select utpn.post_no
+    into @page_size
+    from phpbb_user_topic_post_number utpn
+    where utpn.user_id = user_id and utpn.topic_id = topic_id;
     
     if page_no is null and post_id is null
     then 
