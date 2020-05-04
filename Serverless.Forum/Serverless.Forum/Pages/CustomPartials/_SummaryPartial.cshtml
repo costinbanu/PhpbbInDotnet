@@ -33,8 +33,7 @@
     <li>
         Scris la:
         <script>
-            var date = new Date("@Model.CreationTime?.ToString("o")");
-            document.write(date.format("@(string.IsNullOrWhiteSpace(Model.DateFormat) ? "dddd, dd.MM.yyyy HH:mm" : Model.DateFormat)"));
+            writeDate("@Model.CreationTime?.ToString("o")", "@Model.DateFormat");
         </script>
     </li>
 </ul>

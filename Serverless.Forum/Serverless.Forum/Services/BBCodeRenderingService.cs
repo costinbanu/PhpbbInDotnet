@@ -103,14 +103,14 @@ namespace Serverless.Forum.Services
                     {
                         _AttachmentPartialModel model = null;
                         int index = m.AttachIndex;
-                        var candidates = p.Attachments.Where(a => a.FileName == m.FileName).ToList();
+                        var candidates = p.Attachments.Where(a => a.DisplayName == m.FileName).ToList();
                         if (candidates.Count == 1)
                         {
                             model = candidates.First();
                         }
                         else if (candidates.Count > 1)
                         {
-                            model = candidates.FirstOrDefault(a => a.FileName == m.FileName && candidates.IndexOf(a) == index);
+                            model = candidates.FirstOrDefault(a => a.DisplayName == m.FileName && candidates.IndexOf(a) == index);
                             if (model == null)
                             {
                                 index = candidates.Count - m.AttachIndex - 1;
@@ -125,7 +125,7 @@ namespace Serverless.Forum.Services
                                 mutex.WaitOne();
 
                                 p.PostText = p.PostText.Replace(
-                                    $"#{{AttachmentFileName={model.FileName}/AttachmentIndex={index}}}#",
+                                    $"#{{AttachmentFileName={model.DisplayName}/AttachmentIndex={index}}}#",
                                     await _utils.RenderRazorViewToString("_AttachmentPartial", model, pageContext, httpContext)
                                 );
                                 p.Attachments.Remove(model);

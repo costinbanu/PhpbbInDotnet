@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
+using Serverless.Forum.Pages.CustomPartials;
 using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System;
@@ -146,8 +147,7 @@ namespace Serverless.Forum.Pages
                     PostCreationTime = p.PostTime.ToUtcTime(),
                     PostModifiedTime = p.PostEditTime.ToUtcTime(),
                     PostId = p.PostId,
-                    Attachments = (from ja in joinedAttachments
-                                   select ja.ToModel()).ToList(),
+                    Attachments = joinedAttachments.Select(x => new _AttachmentPartialModel(x)).ToList(),
                     BbcodeUid = p.BbcodeUid,
                     Unread = IsPostUnread(p.TopicId, p.PostId),
                     AuthorHasAvatar = ju == null ? false : !string.IsNullOrWhiteSpace(ju.UserAvatar),

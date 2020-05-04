@@ -142,7 +142,7 @@ namespace Serverless.Forum
                         var id = Guid.NewGuid().ToString("n");
                         File.AppendAllText(
                             @"c:\users\costin\desktop\log.txt",
-                            $"Exception while accessing {handler.Path}:" + Environment.NewLine +
+                            $"{DateTime.UtcNow:o} - Exception while accessing {handler.Path}:" + Environment.NewLine +
                                 $"ID: {id}" + Environment.NewLine +
                                 handler.Error.Message + Environment.NewLine +
                                 handler.Error.StackTrace + Environment.NewLine + Environment.NewLine

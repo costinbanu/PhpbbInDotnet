@@ -19,15 +19,13 @@ namespace Serverless.Forum.Services
         private readonly StorageService _storageService;
         private readonly CacheService _cacheService;
         private readonly Utils _utils;
-        private readonly IHtmlHelper _html;
 
-        public WritingToolsService(ForumDbContext context, StorageService storageService, CacheService cacheService, Utils utils, IHtmlHelper html)
+        public WritingToolsService(ForumDbContext context, StorageService storageService, CacheService cacheService, Utils utils)
         {
             _context = context;
             _storageService = storageService;
             _cacheService = cacheService;
             _utils = utils;
-            _html = html;
         }
 
         public async Task<List<PhpbbWords>> GetBannedWords()

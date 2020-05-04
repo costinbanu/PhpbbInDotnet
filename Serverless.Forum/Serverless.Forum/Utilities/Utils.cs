@@ -144,7 +144,7 @@ namespace Serverless.Forum.Utilities
             await smtp.SendMailAsync(emailMessage);
         }
 
-        public async Task<string> RenderRazorViewToString(string viewName, PageModel model, PageContext pageContext, HttpContext httpContext)
+        public async Task<string> RenderRazorViewToString(string viewName, object model, PageContext pageContext, HttpContext httpContext)
         {
             try
             {

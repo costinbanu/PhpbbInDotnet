@@ -1,5 +1,6 @@
 ﻿@page
 
+@using System.Web
 @using Serverless.Forum.Utilities
 @using Serverless.Forum.ForumDb
 
@@ -10,7 +11,7 @@
 @{
     ViewData["Title"] = "Posting";
     Layout = "~/Pages/_Layout.cshtml";
-    var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+    var UserDateFormat = (await Model.GetCurrentUserAsync()).UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
     var Header = await _cacheService.GetFromCache<string>(Model.GetActualCacheKey("Header", true));
     var CanCreatePoll = await _cacheService.GetFromCache<bool>(Model.GetActualCacheKey("CanCreatePoll", true));
 }
@@ -27,6 +28,26 @@
         @((Model.Action == PostingActions.EditForumPost).ToString().ToLower()),
         "@UserDateFormat"
     );
+    var showPollText = 'Arată opțiuni chestionar';
+    var hidePollText = 'Ascunde opțiuni chestionar';
+    var showAttachText = 'Arată opțiuni fișiere atașate';
+    var hideAttachText = 'Ascunde opțiuni fișiere atașate';
+
+    window.onload = function () {
+        onPostLoad();
+        if ($('#attachPanel').is(':visible')) {
+            $('#attachButton').text(hideAttachText);
+        }
+        else {
+            $('#attachButton').text(showAttachText);
+        }
+        if ($('#pollPanel').is(':visible')) {
+            $('#pollButton').text(hidePollText);
+        }
+        else {
+            $('#pollButton').text(showPollText);
+        }
+    }
 </script>
 
 
@@ -78,27 +99,27 @@ else
         {
             var index = (await _cacheService.GetFromCache<List<string>>(Model.GetActualCacheKey("BbCodes", false))).IndexOf($"[{code.BbcodeTag}]");
             var name = $"addbbcode{index}";
-        <input type="button" class="BbCodeButton" name="@name" value="@code.BbcodeTag" onclick="posting.bbstyle(@index)" title="@code.BbcodeHelpline" />
+            <input type="button" class="BbCodeButton" name="@name" value="@code.BbcodeTag" onclick="posting.bbstyle(@index)" title="@code.BbcodeHelpline" />
         }
         <table class="ColorPalette" id="colour_palette">
             @{
                 var color = new[] { 0x0, 0x40, 0x80, 0xbf, 0xff };
                 for (var r = 0; r < 5; r++)
                 {
-                <tr>
-                    @for (var g = 0; g < 5; g++)
+                    <tr>
+                        @for (var g = 0; g < 5; g++)
                         {
                             for (var b = 0; b < 5; b++)
                             {
                                 var value = $"#{color[r]:X2}{color[g]:X2}{color[b]:X2}";
-                    <td style="width: 15px; height: 10px; background-color: @value; border:solid 1px white">
-                        <a href="javascript:posting.bbfontstyle('[color=@value]', '[/color]');">
-                            <img src="./images/spacer.gif" alt="@value" title="@value" style="width: 15px; height: 10px">
-                        </a>
-                    </td>
+                                <td style="width: 15px; height: 10px; background-color: @value; border:solid 1px white">
+                                    <a href="javascript:posting.bbfontstyle('[color=@value]', '[/color]');">
+                                        <img src="./images/spacer.gif" alt="@value" title="@value" style="width: 15px; height: 10px">
+                                    </a>
+                                </td>
                             }
                         }
-                </tr>
+                    </tr>
                 }
             }
         </table>
@@ -113,9 +134,9 @@ else
 
             @foreach (var smiley in ((await _cacheService.GetFromCache<List<PhpbbSmilies>>(Model.GetActualCacheKey("Smilies", false))) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 1))
             {
-            <a href="javascript:posting.insert_text('@smiley.Code', true);">
-                <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
-            </a>
+                <a href="javascript:posting.insert_text('@smiley.Code', true);">
+                    <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
+                </a>
             }
             <p>&nbsp;</p>
             <a href="javascript:posting.show_hidden_smilies();" id="showHiddenSmiliesButton">Arată mai multe</a>
@@ -123,73 +144,74 @@ else
             <div id="hiddenSmilies" style="display:none">
                 @foreach (var smiley in ((await _cacheService.GetFromCache<List<PhpbbSmilies>>(Model.GetActualCacheKey("Smilies", false))) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 0))
                 {
-                <a href="javascript:posting.insert_text('@smiley.Code', true);">
-                    <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
-                </a>
+                    <a href="javascript:posting.insert_text('@smiley.Code', true);">
+                        <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
+                    </a>
                 }
             </div>
         </div>
     </div>
     <br />
     <p style="clear:both"></p>
-    <a href="javascript:showElement('attachPanel')">Adaugă fișiere atașate</a>
+    <a href="javascript:posting.togglePanel('attachPanel', 'attachButton', hideAttachText, showAttachText);" id="attachButton">Adaugă fișiere atașate</a>
     @if (CanCreatePoll)
     {
-    <span>&nbsp; | &nbsp;</span>
-    <a href="javascript:showElement('pollPanel')">Adaugă chestionar</a>
-    <div id="pollPanel" style="display:none">
+        <span>&nbsp; | &nbsp;</span>
+        <a href="javascript:posting.togglePanel('pollPanel', 'pollButton', hidePollText, showPollText);" id="pollButton">Adaugă chestionar</a>
+        <div id="pollPanel" style="display:@(!string.IsNullOrWhiteSpace(Model.PollOptions) || Model.HasPollError ? "block" : "none")">
+            <hr />
+            <h3>Chestionar</h3>
+            <p>&nbsp;</p>
+            <table style="border:none; margin:0px; width:80%">
+                <tr style="border-bottom: solid 1px black">
+                    <td style="width:200px; padding:5px">Întrebarea chestionarului</td>
+                    <td colspan="2" style="padding:5px">
+                        <input asp-for="PollQuestion" style="width:100%" />
+                        <span asp-validation-for="PollQuestion" class="validation"></span>
+                    </td>
+                </tr>
+                <tr style="border-bottom: solid 1px black">
+                    <td style="width:200px; padding:5px">Opțiuni (una pe rând)</td>
+                    <td colspan="2" style="padding:5px">
+                        <textarea asp-for="PollOptions" rows="4" style="width:100%" onmousedown="posting.confirmPollChange()"></textarea>
+                        <span asp-validation-for="PollOptions" class="validation"></span>
+                    </td>
+                </tr>
+                <tr style="border-bottom: solid 1px black">
+                    <td style="width:200px; padding:5px">Timp pentru votare (zile)</td>
+                    <td style="padding:5px">
+                        <input asp-for="PollExpirationDaysString" onchange="posting.showExpirationDate(this.value)" id="pollExpiration" /><br />
+                        <span class="Caption">Introdu '0' pentru timp nelimitat.<br />Sunt permise și fracții precum 0.5, 1.75 etc</span>
+                        <span asp-validation-for="PollExpirationDaysString" class="validation"></span>
+                    </td>
+                    <td style="padding:5px">
+                        <span id="pollExpirationHelper"></span>
+                    </td>
+                </tr>
+                <tr style="border-bottom: solid 1px black">
+                    <td style="width:200px; padding:5px">Opțiuni per votant</td>
+                    <td colspan="2" style="padding:5px">
+                        <input asp-for="PollMaxOptions" />
+                        <span asp-validation-for="PollMaxOptions" class="validation"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width:200px; padding:5px">Votanții își pot schimba votul</td>
+                    <td colspan="2" style="padding:5px">
+                        <input asp-for="PollCanChangeVote" /><br />
+                        <span class="Caption">Bifați pentru „da”.</span>
+                        <span asp-validation-for="PollCanChangeVote" class="validation"></span>
+                    </td>
+                </tr>
+            </table>
+        </div>
         <hr />
-        <h3>Chestionar</h3>
-        <p>&nbsp;</p>
-        <table style="border:none; margin:0px; width:80%">
-            <tr style="border-bottom: solid 1px black">
-                <td style="width:200px; padding:5px">Întrebarea chestionarului</td>
-                <td colspan="2" style="padding:5px">
-                    <input asp-for="PollQuestion" style="width:100%" />
-                    <span asp-validation-for="PollQuestion" class="validation"></span>
-                </td>
-            </tr>
-            <tr style="border-bottom: solid 1px black">
-                <td style="width:200px; padding:5px">Opțiuni (una pe rând)</td>
-                <td colspan="2" style="padding:5px">
-                    <textarea asp-for="PollOptions" rows="4" style="width:100%" onmousedown="posting.confirmPollChange()"></textarea>
-                    <span asp-validation-for="PollOptions" class="validation"></span>
-                </td>
-            </tr>
-            <tr style="border-bottom: solid 1px black">
-                <td style="width:200px; padding:5px">Timp pentru votare (zile)</td>
-                <td style="padding:5px">
-                    <input asp-for="PollExpirationDaysString" onchange="posting.showExpirationDate(this.value)" id="pollExpiration" /><br />
-                    <span class="Caption">Introdu '0' pentru timp nelimitat.<br />Sunt permise și fracții precum 0.5, 1.75 etc</span>
-                    <span asp-validation-for="PollExpirationDaysString" class="validation"></span>
-                </td>
-                <td style="padding:5px">
-                    <span id="pollExpirationHelper"></span>
-                </td>
-            </tr>
-            <tr style="border-bottom: solid 1px black">
-                <td style="width:200px; padding:5px">Opțiuni per votant</td>
-                <td colspan="2" style="padding:5px">
-                    <input asp-for="PollMaxOptions" />
-                    <span asp-validation-for="PollMaxOptions" class="validation"></span>
-                </td>
-            </tr>
-            <tr>
-                <td style="width:200px; padding:5px">Votanții își pot schimba votul</td>
-                <td colspan="2" style="padding:5px">
-                    <input asp-for="PollCanChangeVote" /><br />
-                    <span class="Caption">Bifați pentru „da”.</span>
-                    <span asp-validation-for="PollCanChangeVote" class="validation"></span>
-                </td>
-            </tr>
-        </table>
-    </div>
-    <hr />
     }
     <input asp-for="ForumId" type="hidden" />
     <input asp-for="TopicId" type="hidden" />
     <input asp-for="PostId" type="hidden" />
-    <div id="attachPanel" style="display:@(await _cacheService.ExistsInCache(Model.GetActualCacheKey("PostAttachments", true)) || !ViewData.ModelState.IsValid ? "block" : "none")">
+    @{ var attachments = await _cacheService.GetFromCache<List<PhpbbAttachments>>(Model.GetActualCacheKey("PostAttachments", true)) ?? new List<PhpbbAttachments>(); }
+    <div id="attachPanel" style="display:@(attachments.Any() || Model.HasAttachError ? "block" : "none")">
         <p></p>
         <h3>Fișiere atașate</h3>
         <h4>Adaugă fișiere noi</h4>
@@ -197,56 +219,60 @@ else
         <input asp-for="Files" onchange="$('#submitAttachmentsButton').trigger('click')" multiple />
         @if (!await Model.IsCurrentUserAdminHereAsync())
         {
-        <span class="Caption">Minim 1, maxim 10 fișiere. Fiecare fișier trebuie să aibă maxim 2MB.</span>
+            <span class="Caption">Minim 1, maxim 10 fișiere. Fiecare fișier trebuie să aibă maxim 2MB.</span>
         }
         <br />
         <span asp-validation-for="Files" class="validation"></span>
 
         <input type="submit" value="Încarcă fișierele alese" asp-page-handler="AddAttachment" style="display:none" id="submitAttachmentsButton" />
         <p>&nbsp;</p>
-        @{
-            var attachments = await _cacheService.GetFromCache<List<PhpbbAttachments>>(Model.GetActualCacheKey("PostAttachments", true)) ?? new List<PhpbbAttachments>();
-            if (attachments.Any())
-            {
+        @if (attachments.Any())
+        {
             <h4>Fișiere deja atașate:</h4>
             @for (var i = 0; i < attachments.Count; i++)
-                {
-            <div style="margin-bottom:20px; padding-bottom:20px">
-                <b>Nume:</b> @attachments[i].RealFilename <br />
-                <b>Comentariu fișier:</b>
-                <br />
-                <textarea type="text" name="FileComment[@i]" id="FileComment" rows="4" cols="100" style="display:inline-block"></textarea>
-                <br />
-                <input type="button" value="Așează în linie" onclick="posting.attach_inline(@i, '@attachments[i].RealFilename')" /> &nbsp;
-                <input type="submit" value="Șterge fișier" asp-page-handler="DeleteAttachment" onclick="document.getElementById('indexToDelete').value = @i; return true;" />
-                <br />
-                <span asp-validation-for="DeleteFileDummyForValidation[i]" class="validation"></span>
-            </div>
-                }
-            <input type="hidden" name="index" id="indexToDelete" value="" />
+            {
+                <div style="margin-bottom:20px; padding-bottom:20px">
+                    <b>Nume:</b> @attachments[i].RealFilename <br />
+                    <b>Comentariu fișier:</b>
+                    <br />
+                    <textarea type="text" name="FileComment[@i]" id="FileComment" rows="4" cols="100" style="display:inline-block"></textarea>
+                    <br />
+                    <input type="button" value="Așează în linie" onclick="posting.attach_inline(@i, '@attachments[i].RealFilename')" /> &nbsp;
+                    <input type="submit" value="Șterge fișier" asp-page-handler="DeleteAttachment" onclick="document.getElementById('indexToDelete').value = @i; return true;" />
+                    <br />
+                    <span asp-validation-for="DeleteFileDummyForValidation[i]" class="validation"></span>
+                </div>
             }
+            <input type="hidden" name="index" id="indexToDelete" value="" />
         }
     </div>
     <p>&nbsp;</p>
+    @if (Model.Action == PostingActions.EditForumPost)
+    {
+        <table class="InputTable InputWidth">
+            <tr>
+                <td style="width:15%">Motivul modificării:</td>
+                <td style="width:85%"><input asp-for="EditReason" type="text" style="width:100%" /></td>
+            </tr>
+        </table>
+        <br />
+    }
+    <input type="submit" value="Previzualizează" onclick="return posting.censor()" asp-page-handler="Preview" />
+    <span>&nbsp; </span>
     @switch (Model.Action)
     {
+        case PostingActions.NewTopic:
         case PostingActions.NewForumPost:
-    <input type="submit" value="Trimite mesajul" onclick="return posting.censor()" asp-page-handler="NewForumPost" />
+            <input type="submit" value="Trimite mesajul" onclick="return posting.censor()" asp-page-handler="NewForumPost" />
             break;
         case PostingActions.EditForumPost:
-    <table class="InputTable InputWidth">
-        <tr>
-            <td style="width:15%">Motivul modificării:</td>
-            <td style="width:85%"><input asp-for="EditReason" type="text" style="width:100%" /></td>
-        </tr>
-    </table>
-    <input type="submit" value="Trimite mesajul" onclick="return posting.censor()" asp-page-handler="EditForumPost" />
+            <input type="submit" value="Trimite mesajul" onclick="return posting.censor()" asp-page-handler="EditForumPost" />
             break;
         case PostingActions.NewPrivateMessage:
-    <input type="submit" value="Trimite mesajul" onclick="return posting.censor()" asp-page-handler="PrivateMessage" />
+            <input type="submit" value="Trimite mesajul" onclick="return posting.censor()" asp-page-handler="PrivateMessage" />
             break;
         default:
-    <span class="validation">A intervenit o eroare, pagina nu a fost afișată corect.</span>
+            <span class="validation">A intervenit o eroare, pagina nu a fost afișată corect.</span>
             break;
     }
 </form>
@@ -267,3 +293,113 @@ else
 </script>
 
 <div id="imgcheckstatus" class="Popup"></div>
+
+@if (Model.PreviewablePost != null)
+{
+    <div class="MiddleBox" id="preview">
+        <h4 style="float:left">Previzualizează</h4>
+        <div style="float:right; cursor:pointer; font-weight:bold; margin-top:10px; margin-bottom:10px" onclick="showElement('preview')">Închide [X]</div>
+
+        @if (Model.PreviewablePoll != null)
+        {
+            <div id="votes" style="display:block; clear: both;">
+                <h3>Chestionar: @Html.Raw(HttpUtility.HtmlDecode(Model.PreviewablePoll.PollTitle))</h3>
+                <div>Chestionarul @(Model.PreviewablePoll.PollEnded ? "a fost" : "va fi") inchis: @(Model.PreviewablePoll.PollEnd.HasValue ? Model.PreviewablePoll.PollEnd.Value.ToString(UserDateFormat) : "niciodată").</div>
+
+                    @if (Model.PreviewablePoll.PollMaxOptions > 1)
+                    {
+                        foreach (var option in Model.PreviewablePoll.PollOptions)
+                        {
+                            <table style="border:none; padding:unset; margin:unset; width:100%">
+                                <tr style="border-bottom:solid 1px black">
+                                    <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
+                                        @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText))
+                                    </td>
+                                    <td>
+                                        <input type="checkbox" name="Votes" value="@option.PollOptionId" />
+                                    </td>
+                                </tr>
+                            </table>
+                        }
+                    }
+                    else
+                    {
+                        foreach (var option in Model.PreviewablePoll.PollOptions)
+                        {
+                            <table style="border:none; padding:unset; margin:unset; width:100%">
+                                <tr style="border-bottom:solid 1px black">
+                                    <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
+                                        @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText))
+                                    </td>
+                                    <td>
+                                        <input type="radio" name="Votes" value="@option.PollOptionId" />
+                                    </td>
+                                </tr>
+                            </table>
+                        }
+                    }
+                    <br />
+                    <input type="button" value="Trimite vot" />
+            </div>
+        }
+        <div class="RowMargin Color0" style="margin-top: 50px; position:relative" onload="onPostLoad()">
+            <div class="ForumListRow">
+                @await Html.PartialAsync(
+                 "_SummaryPartial",
+                 new CustomPartials._SummaryPartialModel(Model.PreviewablePost.AuthorId, Model.PreviewablePost.AuthorName, Model.PreviewablePost.AuthorColor, Model.PreviewablePost.PostCreationTime, Model.PreviewablePost.PostId.Value,
+                     UserDateFormat, Model.PreviewablePost.AuthorHasAvatar, Model.PreviewablePost.AuthorRank, null, null, null, true)
+                )
+                <div class="ForumContent VerticalContent FlexRight" id="@Model.PreviewablePost.PostId">
+                    <span style="display:flex">
+                        <span class="PostTitle">
+                            <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@Model.PreviewablePost.PostId">@Html.Raw(Model.PreviewablePost.PostSubject)</a>
+                        </span>
+                        <span style="margin-left:auto">
+                            <span class="CollapsedMenu" onclick="expandCollapsedMenu('summary@(Model.PreviewablePost.PostId.Value)', 'button@(Model.PreviewablePost.PostId.Value)')" id="button@(Model.PreviewablePost.PostId.Value)" style="color:#@Model.PreviewablePost.AuthorColor;margin-left: auto; height:auto">
+                                @Html.Raw(Model.PreviewablePost.AuthorName)
+                            </span>
+                        </span>
+                    </span>
+                    <div>
+                        <br />
+                        @Html.Raw(Model.PreviewablePost.PostText)
+                        @foreach (var attachment in Model.PreviewablePost.Attachments)
+                        {
+                            <br />
+                            @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
+                        }
+                        <br />
+                    </div>
+                    <div class="PostFooter">
+                        @if (Model.PreviewablePost.LastEditTime > 0)
+                        {
+                            <br />
+                            <div class="Caption" style="color:#495d6c">
+                                Ultima dată modificat de @Model.PreviewablePost.LastEditUser pe
+                                <script>
+                                    writeDate("@Model.PreviewablePost.LastEditTime.ToUtcTime().ToString("o")", "@UserDateFormat");
+                                </script>
+                                @if (!string.IsNullOrWhiteSpace(Model.PreviewablePost.LastEditReason))
+                                {
+                                    <span>. Motiv: @Model.PreviewablePost.LastEditReason</span>
+                                }
+                                . Modificări în total: @Model.PreviewablePost.EditCount.
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Model.PreviewablePost.AuthorSignature))
+                        {
+                            <div class="Signature">
+                                <div style="width:25%; display:inline-block; border-bottom:solid 1px black">&nbsp;</div>
+                                <br />
+                                @Html.Raw(Model.PreviewablePost.AuthorSignature)
+                                <br /> <br />
+                            </div>
+                        }
+                        <br />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div style="float:right; cursor:pointer; font-weight:bold; margin-top:10px; margin-bottom:10px" onclick="showElement('preview')">Închide [X]</div>
+    </div>
+}

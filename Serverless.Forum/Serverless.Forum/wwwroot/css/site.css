@@ -235,18 +235,6 @@ textarea {
     line-height: 1.4em;
 }
 
-.AttachFieldsetDt {
-    float: left;
-    clear: left;
-    margin-right: 5px;
-    font-weight: bold;
-    width: 20%;
-}
-
-.AttachFieldsetDd {
-    margin-left: 0px;
-}
-
 label {
     text-decoration: none !important;
     font-weight: normal !important;
@@ -385,6 +373,21 @@ label {
 
 .FlexCenterCollapsed {
     display: none;
+}
+
+.MiddleBox {
+    position: fixed;
+    background-color: rgba(255, 255, 255, 0.90);
+    width: 75%;
+    height: 75%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    overflow-y: scroll;
+    display: block;
+    border: solid 1px black;
+    padding: 10px;
+    margin: 3px;
 }
 
 @media (max-width: 768px) {

@@ -69,7 +69,7 @@
     if (Model.Poll.CanVoteNow(Model.CurrentUserId) || IsAnonymous)
     {
         <div id="votes" style="display:block">
-            <h3>Chestionar: @Model.Poll.PollTitle</h3>
+            <h3>Chestionar: @Html.Raw(HttpUtility.HtmlDecode(Model.Poll.PollTitle))</h3>
             <div>Chestionarul @(Model.Poll.PollEnded ? "a fost" : "va fi") inchis: @(Model.Poll.PollEnd.HasValue ? Model.Poll.PollEnd.Value.ToString(UserDateFormat) : "niciodată").</div>
 
             <form method="post" asp-page-handler="vote">
@@ -81,7 +81,7 @@
                         <table style="border:none; padding:unset; margin:unset; width:100%">
                             <tr style="border-bottom:solid 1px black">
                                 <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
-                                    @Html.Raw(option.PollOptionText)
+                                    @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText))
                                 </td>
                                 <td>
                                     <input type="checkbox" name="Votes" value="@option.PollOptionId" @(isChecked ? "checked" : "") @(IsAnonymous ? "disabled" : "") />
@@ -98,7 +98,7 @@
                         <table style="border:none; padding:unset; margin:unset; width:100%">
                             <tr style="border-bottom:solid 1px black">
                                 <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
-                                    @Html.Raw(option.PollOptionText)
+                                    @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText))
                                 </td>
                                 <td>
                                     <input type="radio" name="Votes" value="@option.PollOptionId" @(isChecked ? "checked" : "") @(IsAnonymous ? "disabled" : "") />
@@ -117,7 +117,7 @@
     if ((!Model.Poll.CanVoteNow(Model.CurrentUserId) && !IsAnonymous) || IsAdmin)
     {
         <div id="results" style="display:@(Model.Poll.CanVoteNow(Model.CurrentUserId) && IsAdmin ? "none" : "block")">
-            <h3>Chestionar: @Model.Poll.PollTitle</h3>
+            <h3>Chestionar: @Html.Raw(HttpUtility.HtmlDecode(Model.Poll.PollTitle))</h3>
             <div>Chestionarul @(Model.Poll.PollEnded ? "a fost" : "va fi") inchis: @(Model.Poll.PollEnd.HasValue ? Model.Poll.PollEnd.Value.ToString(UserDateFormat) : "niciodată").</div>
             <p></p>
             <table style="border:none; padding:unset; margin:unset; width:100%">
@@ -125,11 +125,11 @@
                 {
                     <tr style="border-bottom:solid 1px black">
                         <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
-                            @Html.Raw(option.PollOptionText)
+                            @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText))
                             @if (await Model.IsCurrentUserAdminHereAsync(Model.ForumId ?? 0))
                             {
                                 <div class="Caption">
-                                    Votanti: @string.Join(", ", option.PollOptionVoters.Select(v => v.Username))
+                                    Votanti: @Html.Raw(HttpUtility.HtmlDecode(string.Join(", ", option.PollOptionVoters.Select(v => v.Username))))
                                 </div>
                             }
                         </td>
@@ -151,7 +151,7 @@
     }
     <hr />
 }
-                                
+
 @await Html.PartialAsync(
     "_PaginationControlsPartial",
     new CustomPartials._PaginationControlsPartialModel(
@@ -165,7 +165,10 @@
     ),
     ViewData
 )
-<hr />
+@if (Model.Pagination.HasPages)
+{
+    <hr />
+}
 @{ var index = 0; }
 @foreach (var post in Model.Posts)
 {
@@ -202,7 +205,15 @@
                     {
                         <br />
                         <div class="Caption" style="color:#495d6c">
-                            Ultima dată modificat de @post.LastEditUser pe @post.LastEditTime.ToUtcTime().ToString(UserDateFormat). Motiv: @post.LastEditReason. Modificări în total: @post.EditCount.
+                            Ultima dată modificat de @post.LastEditUser pe
+                            <script>
+                                    writeDate("@post.LastEditTime.ToUtcTime().ToString("o")", "@UserDateFormat");
+                            </script>
+                            @if (!string.IsNullOrWhiteSpace(post.LastEditReason))
+                            {
+                                <span>. Motiv: @post.LastEditReason</span>
+                            }
+                            . Modificări în total: @post.EditCount.
                         </div>
                     }
                     @if (!string.IsNullOrWhiteSpace(post.AuthorSignature))
@@ -211,7 +222,7 @@
                             <div style="width:25%; display:inline-block; border-bottom:solid 1px black">&nbsp;</div>
                             <br />
                             @Html.Raw(post.AuthorSignature)
-                            <br /> <br/>
+                            <br /> <br />
                         </div>
                     }
                     <br />
@@ -228,9 +239,6 @@
                                 <s>&#x1F5E8; Răspunde cu citat</s>
                             </a>
                         }
-                    @*</div>
-                    <a href="javascript:showElement('PostOptions@(post.PostId)')" class="CollapsedActions">Mai multe opțiuni</a>
-                    <div class="PostActions" id="PostOptions@(post.PostId)">*@
                         @if (await _userService.GetUserRole(await Model.GetCurrentUserAsync()) != 8)
                         {
                             <span>
@@ -287,7 +295,10 @@ else if (!IsAnonymous)
     ),
     ViewData
 )
-<hr />
+@if (Model.Pagination.HasPages)
+{
+    <hr />
+}
 <span onclick="showElement('forumTree')" style="cursor:pointer; font-weight:bold">Navigare - alege destinația &#x2935;</span>
 <p>&nbsp;</p>
 <div id="forumTree" style=" display:none">

@@ -54,6 +54,9 @@ namespace Serverless.Forum.Pages
             return await SendToClient(file.PhysicalFilename, file.RealFilename, file.Mimetype);
         }
 
+        public async Task<IActionResult> OnGetPreview(string physicalFileName, string realFileName, string mimeType)
+            => await SendToClient(physicalFileName, realFileName, mimeType);
+
         public async Task<IActionResult> OnGetAvatar(int userId)
         {
             var file = await (from u in _context.PhpbbUsers.AsNoTracking()

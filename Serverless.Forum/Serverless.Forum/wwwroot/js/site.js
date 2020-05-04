@@ -3,7 +3,7 @@ function onPostLoad() {
     $(".ForumContent").each(function (_, post) {
         var maxWidth = ($(".ForumListRow").width() - ($(".Summary").is(":visible") ? $(".Summary").outerWidth() : 0)) * 0.95;
         var maxHeight = $(window).innerHeight() - $("#topBanner").outerHeight() - 20;
-        console.log("max size: w=" + maxWidth + ", h=" + maxHeight + ". parent width = " + $(post).parent().outerWidth());
+        //console.log("max size: w=" + maxWidth + ", h=" + maxHeight + ". parent width = " + $(post).parent().outerWidth());
         $(post).find("img").each(function (_, img) {
             var originalWidth = img.naturalWidth,
                 originalHeight = img.naturalHeight,
@@ -60,4 +60,12 @@ function showElement(id, whenHiding, whenShowing) {
     else {
         elem.show("fast", whenShowing);
     }
+}
+
+function writeDate(dateString, format) {
+    var date = new Date(dateString);
+    if (!format) {
+        format = "dddd, dd.MM.yyyy HH: mm";
+    }
+    document.write(date.format(format));
 }

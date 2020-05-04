@@ -375,4 +375,16 @@
             this.hasConfirmation = true;
         }
     }
+
+    togglePanel(panelId, buttonId, textWhenVisible, textWhenHidden) {
+        showElement(
+            panelId,
+            function () {
+                $('#' + buttonId).text(textWhenHidden);
+            },
+            function () {
+                $('#' + buttonId).text(textWhenVisible)
+            }
+        );
+    }
 }

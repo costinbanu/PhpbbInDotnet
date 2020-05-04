@@ -103,7 +103,7 @@ else
                     {
                         <a asp-page="/ViewTopic" asp-route-topicId="@topic.Id" asp-route-pageNum="1" class="nav-link" style="font-weight:bold">@Html.Raw(topic.Title)</a>
                     }
-                    <br /><br />
+                    <br />
                     @await Html.PartialAsync("_PaginationPartial", topic.Pagination, ViewData)
                 </span>
                 @await Html.PartialAsync(

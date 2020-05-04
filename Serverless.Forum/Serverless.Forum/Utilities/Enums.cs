@@ -98,6 +98,7 @@
 
     public enum PostingActions
     {
+        NewTopic,
         NewForumPost,
         EditForumPost,
         NewPrivateMessage
