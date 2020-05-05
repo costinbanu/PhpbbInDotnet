@@ -46,19 +46,18 @@ namespace Serverless.Forum.Pages
         public List<string> DeleteFileDummyForValidation { get; set; }
         [BindProperty]
         public string EditReason { get; set; }
-        public PostingActions Action { get; private set; }
         public PostDisplay PreviewablePost { get; private set; }
         public PollDisplay PreviewablePoll { get; private set; }
-        public bool HasAttachError { get; private set; } = false;
-        public bool HasPollError { get; private set; } = false;
+        public bool ShowAttach { get; private set; } = false;
+        public bool ShowPoll { get; private set; } = false;
 
         private readonly PostService _postService;
         private readonly StorageService _storageService;
         private readonly WritingToolsService _writingService;
         private readonly BBCodeRenderingService _renderingService;
 
-        public PostingModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
-            PostService postService, StorageService storageService, WritingToolsService writingService, BBCodeRenderingService renderingService) 
+        public PostingModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService,
+            PostService postService, StorageService storageService, WritingToolsService writingService, BBCodeRenderingService renderingService)
             : base(utils, context, forumService, userService, cacheService)
         {
             PollExpirationDaysString = "1";
@@ -125,7 +124,7 @@ namespace Serverless.Forum.Pages
             var title = HttpUtility.HtmlDecode(curPost.PostSubject);
             PostText = $"[quote=\"{curAuthor}\"]\n{HttpUtility.HtmlDecode(_writingService.CleanTextForQuoting(curPost.PostText, curPost.BbcodeUid))}\n[/quote]";
             PostTitle = title.StartsWith(Constants.REPLY) ? title : $"{Constants.REPLY}{title}";
-            
+
             return Page();
         }
 
@@ -140,7 +139,7 @@ namespace Serverless.Forum.Pages
             }
 
             await Init(PostingActions.NewTopic, true, HttpUtility.HtmlDecode(curForum.ForumName));
-            
+
             return Page();
         }
 
@@ -148,14 +147,14 @@ namespace Serverless.Forum.Pages
         {
             var curPost = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == PostId);
             var curTopic = await _context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == TopicId);
-            
+
             var permissionError = await ValidateForumPermissionsResponsesAsync(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId).FirstOrDefaultAsync();
             if (permissionError != null)
             {
                 return permissionError;
             }
             //de testat asta
-            if(!await IsCurrentUserModeratorHereAsync() && DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes > (await GetCurrentUserAsync()).PostEditTime)
+            if (!await IsCurrentUserModeratorHereAsync() && DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes > (await GetCurrentUserAsync()).PostEditTime)
             {
                 return RedirectToPage("ViewTopic", "byPostId", new { PostId });
             }
@@ -163,9 +162,9 @@ namespace Serverless.Forum.Pages
             var canCreatePoll = (curTopic.TopicFirstPostId == PostId) && (await IsCurrentUserModeratorHereAsync() || (curPost.PosterId == CurrentUserId && DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= (await GetCurrentUserAsync()).PostEditTime));
 
             await Init(PostingActions.EditForumPost, canCreatePoll, HttpUtility.HtmlDecode(curTopic.TopicTitle));
-            
+
             await _cacheService.SetInCache(
-                GetActualCacheKey("PostAttachments", true), 
+                GetActualCacheKey("PostAttachments", true),
                 await _context.PhpbbAttachments.AsNoTracking().Where(a => a.PostMsgId == PostId).ToListAsync()
             );
 
@@ -211,7 +210,7 @@ namespace Serverless.Forum.Pages
             if (tooLargeFiles.Any() && !await IsCurrentUserAdminHereAsync())
             {
                 ModelState.AddModelError(nameof(Files), $"Următoarele fișiere sunt mai mari de 2MB: {string.Join(",", tooLargeFiles.Select(f => f.FileName))}");
-                HasAttachError = true;
+                ShowAttach = true;
                 return Page();
             }
 
@@ -219,18 +218,18 @@ namespace Serverless.Forum.Pages
             if (attachList.Count + Files.Count() > 10 && !await IsCurrentUserAdminHereAsync())
             {
                 ModelState.AddModelError(nameof(Files), "Sunt permise maxim 10 fișiere per mesaj.");
-                HasAttachError = true;
+                ShowAttach = true;
                 return Page();
             }
 
             var (succeeded, failed) = await _storageService.BulkAddAttachments(Files, CurrentUserId);
             attachList.AddRange(succeeded);
 
-            if(failed.Any())
+            if (failed.Any())
             {
                 ModelState.AddModelError(nameof(Files), $"Următoarele fișiere nu au putut fi adăugate, vă rugăm să încercați din nou: {string.Join(",", failed)}");
-                HasAttachError = true;
             }
+            ShowAttach = true;
 
             await _cacheService.SetInCache(GetActualCacheKey("PostAttachments", true), attachList);
             return Page();
@@ -278,6 +277,7 @@ namespace Serverless.Forum.Pages
                 _context.PhpbbAttachments.Remove(dbAttach);
                 await _context.SaveChangesAsync();
             }
+            ShowAttach = true;
 
             attachList.RemoveAt(index);
             await _cacheService.SetInCache(GetActualCacheKey("PostAttachments", true), attachList);
@@ -301,12 +301,25 @@ namespace Serverless.Forum.Pages
                 return permissionError;
             }
 
+            if ((PostTitle?.Trim()?.Length ?? 0) < 3)
+            {
+                ModelState.AddModelError(nameof(PostTitle), "Titlul este prea scurt (minim 3 caractere, exclusiv spații).");
+                return Page();
+            }
+
+            if ((PostText?.Trim()?.Length ?? 0) < 3)
+            {
+                ModelState.AddModelError(nameof(PostText), "Titlul este prea scurt (minim 3 caractere, exclusiv spații).");
+                return Page();
+            }
+
             var action = await _cacheService.GetFromCache<PostingActions>(GetActualCacheKey("Action", true));
             var currentPost = action == PostingActions.EditForumPost ? await InitEditedPost() : null;
-            var postAuthor = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == (action == PostingActions.EditForumPost ? currentPost.PosterId : CurrentUserId));
+            var userId = action == PostingActions.EditForumPost ? currentPost.PosterId : CurrentUserId;
+            var postAuthor = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == userId);
             var rankId = postAuthor?.UserRank ?? 0;
             var attachments = await _cacheService.GetFromCache<List<PhpbbAttachments>>(GetActualCacheKey("PostAttachments", true)) ?? new List<PhpbbAttachments>();
-            
+
             PreviewablePost = new PostDisplay
             {
                 Attachments = attachments.Select(x => new _AttachmentPartialModel(x, true)).ToList(),
@@ -335,7 +348,8 @@ namespace Serverless.Forum.Pages
                     PollOptions = new List<PollOption>(PollOptions.Split(Environment.NewLine).Select(x => new PollOption { PollOptionText = HttpUtility.HtmlEncode(x) })),
                     VoteCanBeChanged = PollCanChangeVote,
                     PollDurationSecons = (int)TimeSpan.FromDays(double.Parse(PollExpirationDaysString)).TotalSeconds,
-                    PollMaxOptions = PollMaxOptions ?? 1
+                    PollMaxOptions = PollMaxOptions ?? 1,
+                    PollStart = PreviewablePost.PostCreationTime ?? DateTime.UtcNow
                 };
             }
             await _renderingService.ProcessPosts(new[] { PreviewablePost }, PageContext, HttpContext, true);
@@ -358,6 +372,11 @@ namespace Serverless.Forum.Pages
 
             var addedPostId = await UpsertPost(_context, null, usr);
 
+            if (addedPostId == null)
+            {
+                return Page();
+            }
+
             return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
         }
 
@@ -373,7 +392,14 @@ namespace Serverless.Forum.Pages
             {
                 return permissionError;
             }
+
             var addedPostId = await UpsertPost(_context, await InitEditedPost(), usr);
+
+            if (addedPostId == null)
+            {
+                return Page();
+            }
+
             return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
         }
 
@@ -428,8 +454,6 @@ namespace Serverless.Forum.Pages
             await _cacheService.SetInCache(GetActualCacheKey("BbCodeHelplines", false), helplines);
             await _cacheService.SetInCache(GetActualCacheKey("BbCodes", false), bbcodes);
             await _cacheService.SetInCache(GetActualCacheKey("DbBbCodes", false), dbBbCodes);
-
-            Action = action;
             await _cacheService.SetInCache(GetActualCacheKey("Action", true), action);
             await _cacheService.SetInCache(GetActualCacheKey("Header", true), Header);
             await _cacheService.SetInCache(GetActualCacheKey("CanCreatePoll", true), CanCreatePoll);
@@ -463,21 +487,23 @@ namespace Serverless.Forum.Pages
                 return null;
             }
 
-            var canCreatePoll = await _cacheService.GetAndRemoveFromCache<bool>(GetActualCacheKey("CanCreatePoll", true));
-            if (canCreatePoll && !string.IsNullOrWhiteSpace(PollExpirationDaysString) && !double.TryParse(PollExpirationDaysString, out var val) && val < 0.1 && val > 365)
+            var canCreatePoll = await _cacheService.GetFromCache<bool>(GetActualCacheKey("CanCreatePoll", true));
+            if (canCreatePoll && (string.IsNullOrWhiteSpace(PollExpirationDaysString) || !double.TryParse(PollExpirationDaysString, out var val) || val < 0 || val > 365))
             {
-                ModelState.AddModelError(nameof(PollExpirationDaysString), "Valoarea introdusă nu este validă. Valori acceptate: între 0.1 și 365");
-                HasPollError = true;
+                ModelState.AddModelError(nameof(PollExpirationDaysString), "Valoarea introdusă nu este validă. Valori acceptate: între 0 și 365");
+                ShowPoll = true;
                 return null;
             }
 
             var pollOptionsArray = PollOptions?.Split(Environment.NewLine)?.Select(x => x.Trim()) ?? Enumerable.Empty<string>();
-            if (canCreatePoll && PollMaxOptions.HasValue && pollOptionsArray.Any() && (PollMaxOptions < 1 || PollMaxOptions > pollOptionsArray.Count()))
+            if (canCreatePoll && (PollMaxOptions == null || (pollOptionsArray.Any() && (PollMaxOptions < 1 || PollMaxOptions > pollOptionsArray.Count()))))
             {
                 ModelState.AddModelError(nameof(PollMaxOptions), "Valori valide: între 1 și numărul de opțiuni ale chestionarului.");
-                HasPollError = true;
+                ShowPoll = true;
                 return null;
             }
+
+            await _cacheService.RemoveFromCache(GetActualCacheKey("CanCreatePoll", true));
 
             PhpbbTopics curTopic = null;
             var attachList = await _cacheService.GetAndRemoveFromCache<List<PhpbbAttachments>>(GetActualCacheKey("PostAttachments", true)) ?? new List<PhpbbAttachments>();
@@ -492,7 +518,6 @@ namespace Serverless.Forum.Pages
                 });
                 topicResult.Entity.TopicId = 0;
                 await context.SaveChangesAsync();
-                await _cacheService.RemoveFromCache(GetActualCacheKey("IsNewTopic", true));
                 curTopic = topicResult.Entity;
                 TopicId = topicResult.Entity.TopicId;
             }
@@ -521,7 +546,7 @@ namespace Serverless.Forum.Pages
                     PostEditReason = string.Empty,
                     PostEditTime = 0,
                     PostEditUser = 0,
-                    PosterIp = HttpContext.Connection.RemoteIpAddress.ToString(), 
+                    PosterIp = HttpContext.Connection.RemoteIpAddress.ToString(),
                     PostUsername = HttpUtility.HtmlEncode(usr.Username)
                 });
                 postResult.Entity.PostId = 0;
@@ -547,7 +572,7 @@ namespace Serverless.Forum.Pages
                     on a.AttachId equals al.AttachId
                     into joined
                     from j in joined
-                    select new { Old = a, NewComment = j.AttachComment }
+                    select new { Old = a, NewComment = j.AttachComment ?? string.Empty }
                 ).ToListAsync();
                 foreach (var xref in attachXref)
                 {

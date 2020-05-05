@@ -28,6 +28,12 @@
         this.isEditAction = isEditAction;
 
         this.userDateFormat = userDateFormat;
+
+        this.showPollText = 'Arată opțiuni chestionar';
+        this.hidePollText = 'Ascunde opțiuni chestionar';
+        this.showAttachText = 'Arată opțiuni fișiere atașate';
+        this.hideAttachText = 'Ascunde opțiuni fișiere atașate';
+
     }
     /**
     * Shows the help messages in the helpline window
@@ -386,5 +392,24 @@
                 $('#' + buttonId).text(textWhenVisible)
             }
         );
+    }
+
+    toggleAttach() {
+        if ($('#pollPanel').is(':visible')) {
+            this.togglePanel('pollPanel', 'pollButton', this.hidePollText, this.showPollText);
+        }
+        this.togglePanel('attachPanel', 'attachButton', this.hideAttachText, this.showAttachText);
+    }
+
+    togglePoll() {
+        if ($('#attachPanel').is(':visible')) {
+            posting.togglePanel('attachPanel', 'attachButton', this.hideAttachText, this.showAttachText);
+        }
+        this.togglePanel('pollPanel', 'pollButton', this.hidePollText, this.showPollText);
+    }
+
+    submitAttachments() {
+        $('#submitAttachmentsButton').trigger('click');
+        $('#fileUploadStatus').text('Se încarcă fișierele...');
     }
 }

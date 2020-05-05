@@ -1,7 +1,7 @@
 ﻿// Resize media in posts
 function onPostLoad() {
     $(".ForumContent").each(function (_, post) {
-        var maxWidth = ($(".ForumListRow").width() - ($(".Summary").is(":visible") ? $(".Summary").outerWidth() : 0)) * 0.95;
+        var maxWidth = ($(".FlexRow").width() - ($(".Summary").is(":visible") ? $(".Summary").outerWidth() : 0)) * 0.95;
         var maxHeight = $(window).innerHeight() - $("#topBanner").outerHeight() - 20;
         //console.log("max size: w=" + maxWidth + ", h=" + maxHeight + ". parent width = " + $(post).parent().outerWidth());
         $(post).find("img").each(function (_, img) {

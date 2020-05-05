@@ -74,7 +74,7 @@ h3 {
     background-color: #f8faf9;
 }
 
-.ForumListRow {
+.FlexRow {
     width: 100%;
     max-width: 100vw;
     display: flex;
@@ -102,10 +102,7 @@ h3 {
     border: solid 5px #87ceeb;
 }
 
-.ForumListRowCategory {
-    width: 100%;
-    display: block;
-    vertical-align: top;
+.Category {
     padding-left: 20px;
     padding-top: 3px;
     padding-bottom: 3px;
@@ -180,13 +177,6 @@ h3 {
     content: '';
 }
 
-.PageNum {
-    display: inline-block;
-    background-color: gainsboro;
-    padding: 2px;
-    white-space: nowrap;
-}
-
 .CollapsedMenu {
     display: none;
     border-radius: 5px;
@@ -201,7 +191,6 @@ h3 {
 
 .CollapsedActions {
     display: none;
-    /*cursor: pointer;*/
 }
 
 .PostTitle {
@@ -213,19 +202,6 @@ h3 {
 
 .clear {
     clear: both;
-}
-
-.Image {
-    max-width: 100%;
-    max-height: 100%;
-}
-
-.AttachBox {
-    text-align: center;
-    vertical-align: central;
-    border-radius: 5px;
-    border: solid 1px black;
-    background-color: aliceblue;
 }
 
 textarea {
@@ -281,49 +257,18 @@ label {
     background-position: left;
 }
 
-.PaginationControls {
-    display: none;
-}
-
-.PaginationControlsCollapsed {
-    display: none;
-}
-
-.PaginationControlsFull {
-    display: flex !important;
-    flex-wrap: wrap;
-}
-
-.PaginationControlsFull div > *:not(span) {
-    float: left !important;
-    height: auto;
-}
-
-.PaginationControlsFull div:after {
-    content: ' ';
-    padding-right: 10px;
-    padding-left: 10px;
-}
-
-.PaginationControlsFull div:last-child:after {
-    padding-right: 0px;
-    padding-left: 0px;
-}
-
 .Caption {
     font-style: italic;
     font-size: 0.8em;
 }
 
 .Signature {
-    /*margin-top: auto;*/
     display: inline-block;
     font-size: 0.9em;
 }
 
 .PostFooter {
     margin-top: auto;
-    /*position: relative;*/
 }
 
 .Shortcuts {
@@ -367,12 +312,16 @@ label {
 }
 
 .FlexCenter {
+    display: flex;
     align-items: center;
-    justify-content: center;
 }
 
-.FlexCenterCollapsed {
-    display: none;
+.SubtypeSeparator {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    margin-left: 40px;
+    margin-right: 40px;
+    border-top: 1px solid #83a6c0;
 }
 
 .MiddleBox {
@@ -417,7 +366,6 @@ label {
     }
 
     .ForumContent{
-        /*width: 100%;*/
         display: inline-block;
         padding-left: 0px;
     }
@@ -434,43 +382,23 @@ label {
         margin-right: 10px;
     }
 
-    .PaginationControlsCollapsed {
-        display: table;
-    }
-
-    .PaginationControlsCollapsed div > * {
-        float: unset !important;
-        height: auto;
-    }
-
-    .PaginationControlsCollapsed div:after {
-        content: ' ';
-        padding-right: 10px;
-        padding-left: 10px;
-    }
-
-    .PaginationControlsCollapsed div:last-child:after {
-        padding-right: 0px;
-        padding-left: 0px;
-    }
-
-    .PaginationControlsFull {
-        display: none;
-    }
-
-    .PaginationControlsFull div {
-        display: none;
-    }
-
     .FlexCenter {
-        display: none;
-    }
-
-    .FlexCenterCollapsed {
         display: flex !important;
         align-items: center;
-        justify-content: center;
-        flex-wrap: wrap;
+        flex-direction: column;
+        flex-wrap: nowrap;
+    }
+
+    .Reordered :first-child {
+        order: 1;
+    }
+
+    .Reordered :nth-child(2) {
+        order: 3;
+    }
+
+    .Reordered :last-child {
+        order: 2;
     }
 }
 
@@ -509,47 +437,7 @@ label {
         word-break: break-all !important;
     }
 
-    /*.PostActions {
-        display: none;
-    }
-
-    .PostActions li {
-        text-indent: 2em;
-        padding-top: 5px;
-    }
-
-    .PostActions li:after {
-        content: '';
-    }*/
-
     .CollapsedActions {
         display: inline-block;
-        /*margin: 7px 7px;*/
-    }
-}
-
-@media (min-width: 1301px) {
-    .Hide1300 {
-        display: inline-block !important;
-    }
-
-    .Show1300 {
-        display: none !important;
-    }
-}
-
-@media (max-width: 450px) {
-    .FlexCenterCollapsed {
-        flex-direction: column;
-        flex-wrap: nowrap;
-    }
-    .FlexCenterCollapsed :first-child {
-        order: 1;
-    }
-    .FlexCenterCollapsed :nth-child(2) {
-        order: 3;
-    }
-    .FlexCenterCollapsed :last-child {
-        order: 2;
     }
 }

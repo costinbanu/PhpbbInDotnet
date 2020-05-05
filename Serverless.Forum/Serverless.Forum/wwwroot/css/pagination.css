@@ -1,0 +1,65 @@
+﻿.PageNum {
+    display: inline-block;
+    background-color: gainsboro;
+    padding: 2px;
+    white-space: nowrap;
+}
+
+.PaginationControls {
+    display: none;
+}
+
+.PaginationControlsCollapsed {
+    display: none !important;
+}
+
+.PaginationControlsFull {
+    display: flex !important;
+    flex-wrap: wrap;
+}
+
+.PaginationControlsFull div > *:not(span) {
+    float: left !important;
+    height: auto;
+}
+
+.PaginationControlsFull div:after {
+    content: ' ';
+    padding-right: 10px;
+    padding-left: 10px;
+}
+
+.PaginationControlsFull div:last-child:after {
+    padding-right: 0px;
+    padding-left: 0px;
+}
+
+@media (max-width: 768px) {
+    .PaginationControlsCollapsed {
+        display: table !important;
+    }
+
+    .PaginationControlsCollapsed div > * {
+        float: unset !important;
+        height: auto;
+    }
+
+    .PaginationControlsCollapsed div:after {
+        content: ' ';
+        padding-right: 10px;
+        padding-left: 10px;
+    }
+
+    .PaginationControlsCollapsed div:last-child:after {
+        padding-right: 0px;
+        padding-left: 0px;
+    }
+
+    .PaginationControlsFull {
+        display: none;
+    }
+
+    .PaginationControlsFull div {
+        display: none;
+    }
+}

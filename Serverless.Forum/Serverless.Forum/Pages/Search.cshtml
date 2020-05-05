@@ -9,6 +9,8 @@
     var dateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
 }
 
+<link rel="stylesheet" href="~/css/pagination.css" />
+
 <h2>Caută</h2>
 <script type="text/javascript">
     window.onload = function () {
@@ -114,7 +116,7 @@
     var index = 0;
     foreach (var post in Model.Posts)
     {
-        <div class="RowMargin ForumListRow @($"Color{index % 2}")">
+        <div class="RowMargin FlexRow @($"Color{index % 2}")">
             @await Html.PartialAsync(
                 "_SummaryPartial",
                 new CustomPartials._SummaryPartialModel(

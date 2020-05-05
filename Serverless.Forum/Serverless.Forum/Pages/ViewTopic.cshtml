@@ -19,6 +19,8 @@
     var EditTime = (await Model.GetCurrentUserAsync()).PostEditTime;
 }
 
+<link rel="stylesheet" href="~/css/pagination.css" />
+
 <script type="text/javascript">
     window.onload = function () {
         onPostLoad();
@@ -73,40 +75,40 @@
             <div>Chestionarul @(Model.Poll.PollEnded ? "a fost" : "va fi") inchis: @(Model.Poll.PollEnd.HasValue ? Model.Poll.PollEnd.Value.ToString(UserDateFormat) : "niciodată").</div>
 
             <form method="post" asp-page-handler="vote">
-                @if (Model.Poll.PollMaxOptions > 1)
+                @*@if (Model.Poll.PollMaxOptions > 1)
+                    {*@
+                @foreach (var option in Model.Poll.PollOptions)
                 {
-                    foreach (var option in Model.Poll.PollOptions)
-                    {
-                        var isChecked = option.PollOptionVoters.Any(v => v.UserId == Model.CurrentUserId);
-                        <table style="border:none; padding:unset; margin:unset; width:100%">
-                            <tr style="border-bottom:solid 1px black">
-                                <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
-                                    @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText))
-                                </td>
-                                <td>
-                                    <input type="checkbox" name="Votes" value="@option.PollOptionId" @(isChecked ? "checked" : "") @(IsAnonymous ? "disabled" : "") />
-                                </td>
-                            </tr>
-                        </table>
-                    }
+                    var isChecked = option.PollOptionVoters.Any(v => v.UserId == Model.CurrentUserId);
+                    <table style="border:none; padding:unset; margin:unset; width:100%">
+                        <tr style="border-bottom:solid 1px black">
+                            <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
+                                @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText))
+                            </td>
+                            <td>
+                                <input type="@(Model.Poll.PollMaxOptions > 1 ? "checkbox" : "radio")" name="Votes" value="@option.PollOptionId" @(isChecked ? "checked" : "") @(IsAnonymous ? "disabled" : "") />
+                            </td>
+                        </tr>
+                    </table>
                 }
-                else
-                {
-                    foreach (var option in Model.Poll.PollOptions)
+                @*}
+                    else
                     {
-                        var isChecked = option.PollOptionVoters.Any(v => v.UserId == Model.CurrentUserId);
-                        <table style="border:none; padding:unset; margin:unset; width:100%">
-                            <tr style="border-bottom:solid 1px black">
-                                <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
-                                    @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText))
-                                </td>
-                                <td>
-                                    <input type="radio" name="Votes" value="@option.PollOptionId" @(isChecked ? "checked" : "") @(IsAnonymous ? "disabled" : "") />
-                                </td>
-                            </tr>
-                        </table>
-                    }
-                }
+                        foreach (var option in Model.Poll.PollOptions)
+                        {
+                            var isChecked = option.PollOptionVoters.Any(v => v.UserId == Model.CurrentUserId);
+                            <table style="border:none; padding:unset; margin:unset; width:100%">
+                                <tr style="border-bottom:solid 1px black">
+                                    <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
+                                        @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText))
+                                    </td>
+                                    <td>
+                                        <input type="radio" name="Votes" value="@option.PollOptionId" @(isChecked ? "checked" : "") @(IsAnonymous ? "disabled" : "") />
+                                    </td>
+                                </tr>
+                            </table>
+                        }
+                    }*@
                 <br />
                 <input asp-for="TopicId" type="hidden" />
                 <input name="queryString" type="hidden" value="@HttpUtility.UrlEncode(Request.QueryString.ToString())" />
@@ -173,7 +175,7 @@
 @foreach (var post in Model.Posts)
 {
     <div class="RowMargin @(post.Unread ? "Unread" : $"Color{index % 2}")">
-        <div class="ForumListRow">
+        <div class="FlexRow">
             @await Html.PartialAsync(
                 "_SummaryPartial",
                 new CustomPartials._SummaryPartialModel(post.AuthorId, post.AuthorName, post.AuthorColor, post.PostCreationTime, post.PostId.Value,

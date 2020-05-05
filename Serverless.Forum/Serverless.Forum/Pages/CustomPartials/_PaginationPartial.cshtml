@@ -38,7 +38,7 @@
     }
     else if (Model.Pager.EndPage < Model.Pager.TotalPages)
     {
-        for (var num = Model.Pager.EndPage; num <= Model.Pager.TotalPages; num++)
+        for (var num = Model.Pager.EndPage + 1; num <= Model.Pager.TotalPages; num++)
         {
             Model.Link.Set("PageNum", num.ToString());
             <span class="PageNum">

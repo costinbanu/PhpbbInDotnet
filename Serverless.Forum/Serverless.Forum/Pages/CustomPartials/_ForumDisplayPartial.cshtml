@@ -9,12 +9,12 @@
 @foreach (var category in Model.Categories)
 {
     var catIndex = 0;
-    <div class="ForumListRowCategory">
+    <div class="FlexRow Category">
         @category.Name
     </div>
     @foreach (var forum in category.ChildrenForums)
     {
-        var divClass = forum.Unread ? $"ForumListRow Unread Color{catIndex % 2}" : $"ForumListRow Color{catIndex % 2}";
+        var divClass = forum.Unread ? $"FlexRow Unread Color{catIndex % 2}" : $"FlexRow Color{catIndex % 2}";
         catIndex++;
         <div class="@divClass">
             <span class="ForumContent" style="padding-left:20px">
@@ -55,7 +55,7 @@
 @{ var index = 0; }
 @foreach (var forum in Model.SubForums)
 {
-    var divClass = forum.Unread ? $"ForumListRow Unread Color{index % 2}" : $"ForumListRow Color{index % 2}";
+    var divClass = forum.Unread ? $"FlexRow Unread Color{index % 2}" : $"FlexRow Color{index % 2}";
     index++;
     <div class="@divClass">
         <span class="ForumContent">

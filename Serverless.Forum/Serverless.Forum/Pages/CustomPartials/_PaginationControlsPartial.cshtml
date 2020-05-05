@@ -6,7 +6,7 @@
 @if (Model.PaginationModel?.Pagination?.HasPages ?? false)
 {
 
-    <div class="PaginationControlsFull@(Model.IncludeEasyNavigation ? " FlexCenter" : "")">
+    <div class="PaginationControlsFull@(Model.IncludeEasyNavigation ? " FlexCenter" : "")" style="justify-content:center">
         @if (!Model.PaginationModel.IsFirstPage && Model.IncludeEasyNavigation)
         {
             <div style="padding-right:10px">
@@ -41,35 +41,37 @@
         }
 
     </div>
-
-    <div class="PaginationControlsCollapsed@(Model.IncludeEasyNavigation ? " FlexCenterCollapsed" : "")">
-        @if (!Model.PaginationModel.IsFirstPage && Model.IncludeEasyNavigation)
-        {
-            <div>
-                <a href="@Model.Back" style="text-decoration:none">
-
-                    <img src="~/images/prev.png" />
-                </a>
-            </div>
-        }
-        <div>
-            <div class="CollapsedMenu" onclick="showElement('paginationControls_@(Model.Self)')">
-                Opțiuni paginare
-            </div>
-        </div>
-        @if (!Model.PaginationModel.IsLastPage && Model.IncludeEasyNavigation)
-        {
-            <div>
-                <a href="@Model.Forward" style="text-decoration:none">
-                    <img src="~/images/next.png" />
-                </a>
-            </div>
-        }
-
-    </div>
     <center>
-        <div id="paginationControls_@(Model.Self)" class="PaginationControls">
+
+        <div class="PaginationControlsCollapsed @(Model.IncludeEasyNavigation ? "FlexCenter" : "") Reordered">
+            @if (!Model.PaginationModel.IsFirstPage && Model.IncludeEasyNavigation)
+            {
+                <div>
+                    <a href="@Model.Back" style="text-decoration:none">
+
+                        <img src="~/images/prev.png" />
+                    </a>
+                </div>
+            }
+            <div>
+                <div class="CollapsedMenu" onclick="showElement('paginationControls_@(Model.Self)')">
+                    Opțiuni paginare
+                </div>
+            </div>
+            @if (!Model.PaginationModel.IsLastPage && Model.IncludeEasyNavigation)
+            {
+                <div>
+                    <a href="@Model.Forward" style="text-decoration:none">
+                        <img src="~/images/next.png" />
+                    </a>
+                </div>
+            }
+
+        </div>
+        <div id="paginationControls_@(Model.Self)" class="PaginationControls" style="align-self:center">
+            <p></p>
             @await Html.PartialAsync("_PaginationPartial", Model.PaginationModel.Pagination, ViewData)
+            <p></p>
             @if (!IsAnonymous && Model.AllowPaginationChange)
             {
                 <form method="post" asp-page-handler="Pagination">
@@ -83,5 +85,4 @@
             }
         </div>
     </center>
-    <br />
 }
