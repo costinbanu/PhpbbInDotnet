@@ -6,25 +6,12 @@
 @{
     var forumTree = await _forumTreeService.GetForumTreeAsync();
 }
-
+<link rel="stylesheet" href="~/css/posting.css" />
 <div style="float:left">
     <h4>Administrare forumuri</h4>
 </div>
-
-<form method="post" asp-page-handler="ShowForum">
-    <div style="float:right; width:200px;">
-        <input type="submit" value="Modifică forumul selectat" style="position:fixed; width:auto" />
-    </div>
-    <input id="forumId" name="forumId" type="hidden" />
-</form>
-<form method="post" asp-page-handler="ShowForum">
-    <div style="float:right; width:200px;">
-        <input type="submit" value="Creează un forum nou" style="position:fixed; width:auto; margin-top:50px" />
-    </div>
-</form>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
-
 @await Html.PartialAsync(
     "_ForumTreePartial",
     new CustomPartials._ForumTreePartialModel
@@ -36,11 +23,14 @@
     },
     ViewData
 )
-
-
+<form method="post" asp-page-handler="ShowForum">
+    <input type="submit" value="Modifică forumul selectat" /> &nbsp;
+    <input type="submit" value="Creează un forum nou" onclick="$('#forumId').val('')" />
+    <input id="forumId" name="forumId" type="hidden" />
+</form>
 @if (Model.Show)
 {
-    <form id="forumFields" method="post" asp-page-handler="ForumManagement" autocomplete="no" class="MiddleBox">
+    <form id="forumFields" method="post" asp-page-handler="ForumManagement" class="MiddleBox">
         @if ((Model.Forum?.ForumId ?? 0) != 0)
         {
             <h4 style="float:left">Administrează forum - @Model.Forum.ForumName</h4>
@@ -52,104 +42,107 @@
         <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('forumFields')">Închide [X]</div>
         <p>&nbsp;</p>
         <p>&nbsp;</p>
-        <table class="mainTable">
-            <tr>
-                <td style="font-weight:bold; text-align: right">
-                    Nume forum
-                </td>
-                <td>
-                    <input asp-for="Forum.ForumName" name="forumName" autocomplete="no" />
-                </td>
-            </tr>
-            <tr>
-                <td style="font-weight:bold; text-align: right">
-                    Descriere forum
-                </td>
-                <td>
-                    <textarea asp-for="Forum.ForumDesc" name="forumDesc"></textarea>
-                </td>
-            </tr>
-            <tr>
-                <td style="font-weight:bold; text-align: right">
-                    Parolă forum
-                </td>
-                <td>
-                    Forumul are parolă&nbsp;
-                    @Html.CheckBox("hasPassword", !string.IsNullOrWhiteSpace(Model.Forum.ForumPassword))
-                    <br />
-                    <span class="Caption">Debifați pentru a elimina parola existentă.</span>
-                    <br /> <br />
-                    <input asp-for="Forum.ForumPassword" name="forumPassword" type="password" id="forumPassword" autocomplete="no" />&nbsp;
-                    <input type="checkbox" onclick="Toggle()" />&nbsp;Arată parola<br />
-                    <span class="Caption">Introduceți noua parolă. Va fi schimbată dacă forumul are deja una.</span>
-                </td>
-            </tr>
-            <tr>
-                <td style="font-weight:bold; text-align: right">
-                    Tip forum
-                </td>
-                <td>
-                    @Html.DropDownList("forumType", Enum.GetValues(typeof(ForumType)).Cast<ForumType>().Select(
-                        ft => new SelectListItem(ft.ToString("g"), ft.ToString("g"), Model.Forum.ForumType == ft, Model.Forum.ForumType == ft)))
-                </td>
-            </tr>
-            <tr>
-                <td style="font-weight:bold; text-align: right">
-                    Părinte forum
-                </td>
-                <td>
-                    @Html.DropDownList("parentId", await _adminForumService.FlatForumTreeAsListItem(Model.Forum.ParentId, Model.Forum.ForumId))
-                </td>
-            </tr>
-            <tr>
-                <td style="font-weight:bold; text-align: right">
-                    Ordonează sub-forumuri
-                </td>
-                <td>
-                    <div id="children">
-                        @foreach (var child in Model.ForumChildren)
-                        {
-                            <div style="padding:5px; margin:5px; border: solid 1px black; border-radius:5px; cursor:move; width: 75%">
-                                @Html.Raw(child.ForumName)
-                                <input type="hidden" name="childrenForums" value="@child.ForumId" style="width:0px" />
-                            </div>
-                        }
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td style="font-weight:bold; text-align: right; vertical-align:top">
-                    Permisiuni pentru forum
-                </td>
-                <td>
-                    <span style="font-weight:bold">Permisiuni utilizatori</span>
-                    @await Html.PartialAsync(
-                        "_AdminForumPermissionsPartial",
-                        new _AdminForumPermissionsPartialModel(
-                            Model.Forum,
-                            Model.ForumChildren,
-                            Model.Permissions?.Where(p => p.Type == AclEntityType.User),
-                            AclEntityType.User
-                        ),
-                        ViewData
-                    )
-                    <p>&nbsp;</p>
-                    <span style="font-weight:bold">Permisiuni grupuri</span>
-                    @await Html.PartialAsync(
-                        "_AdminForumPermissionsPartial",
-                        new _AdminForumPermissionsPartialModel (
-                            Model.Forum,
-                            Model.ForumChildren,
-                            Model.Permissions?.Where(p => p.Type == AclEntityType.Group),
-                            AclEntityType.Group
-                        ),
-                        ViewData
-                    )
-                </td>
-            </tr>
-        </table>
-        <input type="submit" value="Salvează modificările" style="margin-bottom:10px" />
+        <div class="FlexCenter">
+            <div style="font-weight:bold; text-align: right">
+                Nume forum
+            </div>
+            <div class="FlexRight PostInputWidth">
+                <input asp-for="Forum.ForumName" name="forumName" autocomplete="off" />
+            </div>
+        </div>
+        <hr class="SubtypeSeparator" />
+        <div class="FlexCenter">
+            <div style="font-weight:bold; text-align: right">
+                Descriere forum
+            </div>
+            <div class="FlexRight PostInputWidth">
+                <textarea asp-for="Forum.ForumDesc" name="forumDesc"></textarea>
+            </div>
+        </div>
+        <hr class="SubtypeSeparator" />
+        <div class="FlexCenter">
+            <div style="font-weight:bold; text-align: right">
+                Parolă forum
+            </div>
+            <div class="FlexRight PostInputWidth">
+                Forumul are parolă&nbsp;
+                @Html.CheckBox("hasPassword", !string.IsNullOrWhiteSpace(Model.Forum.ForumPassword))
+                <br />
+                <span class="Caption">Debifați pentru a elimina parola existentă.</span>
+                <br /> <br />
+                <input asp-for="Forum.ForumPassword" name="forumPassword" type="password" id="forumPassword" autocomplete="off" />&nbsp;
+                <input type="checkbox" onclick="Toggle()" />&nbsp;Arată parola<br />
+                <span class="Caption">Introduceți noua parolă. Va fi schimbată dacă forumul are deja una.</span>
+            </div>
+        </div>
+        <hr class="SubtypeSeparator" />
+        <div class="FlexCenter">
+            <div style="font-weight:bold; text-align: right">
+                Tip forum
+            </div>
+            <div class="FlexRight PostInputWidth">
+                @Html.DropDownList("forumType", Enum.GetValues(typeof(ForumType)).Cast<ForumType>().Select(
+                    ft => new SelectListItem(ft.ToString("g"), ft.ToString("g"), Model.Forum.ForumType == ft, Model.Forum.ForumType == ft)))
+            </div>
+        </div>
+        <hr class="SubtypeSeparator" />
+        <div class="FlexCenter">
+            <div style="font-weight:bold; text-align: right">
+                Părinte forum
+            </div>
+            <div class="FlexRight PostInputWidth">
+                @Html.DropDownList("parentId", await _adminForumService.FlatForumTreeAsListItem(Model.Forum.ParentId, Model.Forum.ForumId))
+            </div>
+        </div>
+        <hr class="SubtypeSeparator" />
+        <div class="FlexCenter">
+            <div style="font-weight:bold; text-align: right">
+                Ordonează sub-forumuri
+            </div>
+            <div class="FlexRight PostInputWidth">
+                <div id="children" style="width:100%">
+                    @foreach (var child in Model.ForumChildren)
+                    {
+                        <div style="padding:5px; margin:5px; border: solid 1px black; border-radius:5px; cursor:move; width: 95%">
+                            @Html.Raw(child.ForumName)
+                            <input type="hidden" name="childrenForums" value="@child.ForumId" style="width:0px" />
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <hr />
+        <div style="font-weight:bold; vertical-align:top; font-size:1.2em">
+            Permisiuni pentru forum
+        </div>
+        <span style="font-weight:bold">Permisiuni utilizatori</span>
+        @await Html.PartialAsync(
+            "_AdminForumPermissionsPartial",
+            new _AdminForumPermissionsPartialModel(
+                Model.Forum,
+                Model.ForumChildren,
+                Model.Permissions?.Where(p => p.Type == AclEntityType.User),
+                AclEntityType.User
+            ),
+            ViewData
+        )
+        <hr class="SubtypeSeparator" />
+        <span style="font-weight:bold">Permisiuni grupuri</span>
+        @await Html.PartialAsync(
+            "_AdminForumPermissionsPartial",
+            new _AdminForumPermissionsPartialModel(
+                Model.Forum,
+                Model.ForumChildren,
+                Model.Permissions?.Where(p => p.Type == AclEntityType.Group),
+                AclEntityType.Group
+            ),
+            ViewData
+        )
+        <hr />
+        <input type="submit" value="Salvează modificările" style="margin-bottom:10px; float: left;" /> &nbsp;
         <input asp-for="Forum.ForumId" type="hidden" name="forumId" />
+        <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('forumFields')">Închide [X]</div>
+
     </form>
 }
 

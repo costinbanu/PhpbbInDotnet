@@ -113,7 +113,7 @@ namespace Serverless.Forum
             services.AddTransient<StorageService>();
             services.AddTransient<ModeratorService>();
             services.AddTransient<BBCodeRenderingService>();
-
+            services.AddTransient<ErrorReportingService>();
             services.AddDbContext<ForumDbContext>(options => options.UseMySQL(Configuration["ForumDbConnectionString"]), ServiceLifetime.Transient);
         }
 
@@ -127,6 +127,8 @@ namespace Serverless.Forum
                              reloadOnChange: true)
                 .AddEnvironmentVariables();
 
+            var reporter = app.ApplicationServices.GetService<ErrorReportingService>();
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -139,19 +141,11 @@ namespace Serverless.Forum
                     errorApp.Run(context =>
                     {
                         var handler = context.Features.Get<IExceptionHandlerPathFeature>();
-                        var id = Guid.NewGuid().ToString("n");
-                        File.AppendAllText(
-                            @"c:\users\costin\desktop\log.txt",
-                            $"{DateTime.UtcNow:o} - Exception while accessing {handler.Path}:" + Environment.NewLine +
-                                $"ID: {id}" + Environment.NewLine +
-                                handler.Error.Message + Environment.NewLine +
-                                handler.Error.StackTrace + Environment.NewLine + Environment.NewLine
-                        );
+                        var id = reporter.LogError(handler.Error, handler.Path);
                         context.Response.Redirect($"/Error?id={id}");
                         return Task.CompletedTask;
                     });
                 });
-                //app.UseExceptionHandler("/Error");
                 app.UseHsts();
             }
 

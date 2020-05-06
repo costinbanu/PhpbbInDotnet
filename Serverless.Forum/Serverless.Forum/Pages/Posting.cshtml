@@ -15,6 +15,8 @@
     var Header = await _cacheService.GetFromCache<string>(Model.GetActualCacheKey("Header", true));
     var CanCreatePoll = await _cacheService.GetFromCache<bool>(Model.GetActualCacheKey("CanCreatePoll", true));
     var Action = await _cacheService.GetFromCache<PostingActions>(Model.GetActualCacheKey("Action", true));
+    var ForumName = await _cacheService.GetFromCache<string>(Model.GetActualCacheKey("ForumName", true));
+    var ForumId = await _cacheService.GetFromCache<int>(Model.GetActualCacheKey("ForumId", true));
 }
 
 <script src="~/lib/tribute/dist/tribute.js"></script>
@@ -50,6 +52,10 @@
 
 @if (Model.PostId.HasValue)
 {
+    <span>
+        Forum părinte:
+        <a asp-page="/ViewForum" asp-route-forumId="@ForumId">@ForumName</a>
+    </span>
     <h3>
         Răspunde:
         <a asp-page="/ViewTopic" asp-route-postId="@Model.PostId.Value" asp-page-handler="ByPostId">@Header</a>
@@ -57,6 +63,10 @@
 }
 else if (Model.TopicId.HasValue)
 {
+    <span>
+        Forum părinte:
+        <a asp-page="/ViewForum" asp-route-forumId="@ForumId">@ForumName</a>
+    </span>
     <h3>
         Răspunde:
         <a asp-page="/ViewTopic" asp-route-topicId="@Model.TopicId.Value" asp-route-pageNum="1">@Header</a>
@@ -225,7 +235,7 @@ else
                 <span asp-validation-for="Files" class="validation"></span>
                 <div id="fileUploadStatus"></div>
             </div>
-        </div>      
+        </div>
         <input type="submit" value="Încarcă fișierele alese" asp-page-handler="AddAttachment" style="display:none" id="submitAttachmentsButton" />
         @if (attachments.Any())
         {
@@ -358,7 +368,7 @@ else
                             <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@Model.PreviewablePost.PostId">@Html.Raw(Model.PreviewablePost.PostSubject)</a>
                         </span>
                         <span style="margin-left:auto">
-                            <span class="CollapsedMenu" onclick="expandCollapsedMenu('summary@(Model.PreviewablePost.PostId.Value)', 'button@(Model.PreviewablePost.PostId.Value)')" id="button@(Model.PreviewablePost.PostId.Value)" style="color:#@Model.PreviewablePost.AuthorColor;margin-left: auto; height:auto">
+                            <span class="CollapsedMenu" onclick="expandCollapsedMenu('summary@(Model.PreviewablePost.PostId.Value)', 'button@(Model.PreviewablePost.PostId.Value)', true)" id="button@(Model.PreviewablePost.PostId.Value)" style="color:#@Model.PreviewablePost.AuthorColor;margin-left: auto; height:auto">
                                 @Html.Raw(Model.PreviewablePost.AuthorName)
                             </span>
                         </span>
@@ -403,6 +413,13 @@ else
                 </div>
             </div>
         </div>
-        <div style="float:right; cursor:pointer; font-weight:bold; margin-top:10px; margin-bottom:10px" onclick="showElement('preview')">Închide [X]</div>
+        <script>
+            var element = document.getElementById("preview");
+            if (element.offsetHeight < element.scrollHeight || element.offsetWidth < element.scrollWidth) {
+                document.write(
+                    "<div style=\"float: right; cursor: pointer; font-weight: bold; margin-top: 10px; margin-bottom: 10px\" onclick=\"showElement('preview')\">Închide [X]</div>"
+                );
+            } 
+        </script>
     </div>
 }

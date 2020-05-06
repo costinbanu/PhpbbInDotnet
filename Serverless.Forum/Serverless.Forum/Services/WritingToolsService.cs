@@ -208,7 +208,7 @@ namespace Serverless.Forum.Services
                 text = sr.Regex.Replace(text, sr.Replacement);
             }
 
-            var urlRegex = new Regex(@"(ftp:\/\/|www\.|https?:\/\/){1}[a-zA-Z0-9u00a1-\uffff0-]{2,}\.[a-zA-Z0-9u00a1-\uffff0-]{2,}(\S*)", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.ExplicitCapture);
+            var urlRegex = new Regex(@"(?<=(^|\s))(ftp:\/\/|www\.|https?:\/\/){1}[a-zA-Z0-9u00a1-\uffff0-]{2,}\.[a-zA-Z0-9u00a1-\uffff0-]{2,}($|\S*)", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.ExplicitCapture);
             var offset = 0;
             foreach (Match match in urlRegex.Matches(text))
             {

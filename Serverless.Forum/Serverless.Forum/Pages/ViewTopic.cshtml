@@ -91,24 +91,6 @@
                         </tr>
                     </table>
                 }
-                @*}
-                    else
-                    {
-                        foreach (var option in Model.Poll.PollOptions)
-                        {
-                            var isChecked = option.PollOptionVoters.Any(v => v.UserId == Model.CurrentUserId);
-                            <table style="border:none; padding:unset; margin:unset; width:100%">
-                                <tr style="border-bottom:solid 1px black">
-                                    <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
-                                        @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText))
-                                    </td>
-                                    <td>
-                                        <input type="radio" name="Votes" value="@option.PollOptionId" @(isChecked ? "checked" : "") @(IsAnonymous ? "disabled" : "") />
-                                    </td>
-                                </tr>
-                            </table>
-                        }
-                    }*@
                 <br />
                 <input asp-for="TopicId" type="hidden" />
                 <input name="queryString" type="hidden" value="@HttpUtility.UrlEncode(Request.QueryString.ToString())" />

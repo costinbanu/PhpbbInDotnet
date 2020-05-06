@@ -27,15 +27,15 @@ function onPostLoad() {
 }
 
 //Expand collapsed menus
-function expandCollapsedMenu(summaryId, buttonId) {
+function expandCollapsedMenu(summaryId, buttonId, containerIsFixed = false) {
     var summary = $("#" + summaryId);
     var button = $("#" + buttonId);
 
     if (!summary.is(":visible")) {
-        var position = button.offset();
+        var top = containerIsFixed ? button.position().top + 10 : button.offset().top;
         summary.css({
-            "right": "40px",
-            "top": position.top + button.height() + 10 + "px"
+            "right": containerIsFixed ? "20px" : "40px",
+            "top": top + button.height() + 10 + "px"
         });
         summary.show("fast", function () { });
     }

@@ -1,6 +1,8 @@
 ﻿@model Serverless.Forum.Pages.CustomPartials._ForumDisplayPartialModel
 @inject Services.BBCodeRenderingService _renderingService
 
+<link rel="stylesheet" href="~/css/pagination.css" />
+
 @if (Model.ShowTitle && Model.Categories.Any())
 {
     <h3 style="float:left">Categorii</h3>

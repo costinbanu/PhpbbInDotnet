@@ -328,7 +328,7 @@ label {
     position: fixed;
     background-color: rgba(255, 255, 255, 0.90);
     width: 75%;
-    height: 75%;
+    max-height: 75%;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
@@ -337,6 +337,7 @@ label {
     border: solid 1px black;
     padding: 10px;
     margin: 3px;
+    z-index: 1040;
 }
 
 @media (max-width: 768px) {
@@ -399,6 +400,11 @@ label {
 
     .Reordered :last-child {
         order: 2;
+    }
+
+    .MiddleBox {
+        width: 90%;
+        max-height: 90%;
     }
 }
 

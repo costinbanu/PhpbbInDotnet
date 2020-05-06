@@ -40,18 +40,16 @@
 
 @foreach (var permissions in groupedPermissions)
 {
-    <table style="border:none; padding:5px; width:80%">
-        <tr>
-            <td style="width:40%">@permissions.Key.Name</td>
-            <td>
+        <div class="FlexCenter">
+            <div>@permissions.Key.Name</div>
+            <div class="FlexRight PostInputWidth">
                 @Html.DropDownList(
                     $"{Model.EntityType}ForumPermissions[{index++}]",
                     permissions.Select(p => new SelectListItem(p.RoleDescription, $"{permissions.Key.Id}_{p.RoleId}", p.HasRole)),
-                    new { style = "width:300px" }
+                    new { style = "width:95%" }
                 )
-            </td>
-        </tr>
-    </table>
+            </div>
+        </div>
 }
 
 <script type="text/javascript">
@@ -65,7 +63,7 @@
 @if (remainingEntities.Any())
 {
     <p>&nbsp;</p>
-    <div style="border:solid 1px black; padding:5px; border-radius:5px; width:75%">
+    <div style="border:solid 1px black; padding:5px; border-radius:5px; width:95%">
         <strong>Adaugă permisiuni pentru un @entityName nou</strong>
         <p>&nbsp;</p>
         @if (Model.EntityType == AclEntityType.User)
@@ -82,18 +80,17 @@
             @Html.DropDownList($"permissionsGroup", dropDownItems, new { onchange = "changeGroupId(this.options[this.selectedIndex].value, this.options[this.selectedIndex].text)" });
         }
         <p id="tributeHolder" style="position:relative">&nbsp;</p>
-        <table style="border:none; padding:5px; width:80%">
-            <tr>
-                <td style="width:40%" id="entityName_@(Model.Self)">@entityName nou</td>
-                <td>
+            <div class="FlexCenter">
+                <div id="entityName_@(Model.Self)">@entityName nou</div>
+                <div class="FlexRight PostInputWidth">
                     @Html.DropDownList(
                         $"{Model.EntityType}ForumPermissions[{index++}]",
                         roles.Select(p => new SelectListItem(p.RoleDescription, $"0_{p.RoleId}")),
-                        new { id = $"newPermissions_{Model.Self}", style = "width:300px"}
+                        new { id = $"newPermissions_{Model.Self}", style = "width:95%"}
                     )
-                </td>
-            </tr>
-        </table>
+                </div>
+            </div>
+
     </div>
     @if (Model.EntityType == AclEntityType.User)
     {
