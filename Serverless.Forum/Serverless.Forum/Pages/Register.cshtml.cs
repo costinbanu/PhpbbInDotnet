@@ -80,6 +80,7 @@ namespace Serverless.Forum.Pages
                 Username = UserName,
                 UsernameClean = _utils.CleanString(UserName),
                 UserEmail = Email,
+                UserEmailHash = _utils.CalculateCrc32Hash(Email),
                 UserPassword = Crypter.Phpass.Crypt(Password, Crypter.Phpass.GenerateSalt()),
                 UserInactiveTime = now,
                 UserInactiveReason = UserInactiveReason.NewlyRegisteredNotConfirmed,

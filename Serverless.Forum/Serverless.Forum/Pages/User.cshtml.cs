@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Pages.CustomPartials.Email;
@@ -70,7 +71,7 @@ namespace Serverless.Forum.Pages
                 return Forbid();
             }
 
-            var response = await ValidatePagePermissionsResponsesAsync().FirstOrDefaultAsync();
+            var response = await PageAuthorizationResponses().FirstOrDefaultAsync();
             if (response != null)
             {
                 return response;
@@ -246,11 +247,22 @@ namespace Serverless.Forum.Pages
         private async Task Render(ForumDbContext context, PhpbbUsers cur)
         {
             CurrentUser = cur;
-            CurrentUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : HttpUtility.HtmlDecode(_writingService.CleanTextForQuoting(CurrentUser.UserSig, CurrentUser.UserSigBbcodeUid));
+            CurrentUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(CurrentUser.UserSig, CurrentUser.UserSigBbcodeUid));
             TotalPosts = await context.PhpbbPosts.AsNoTracking().CountAsync(p => p.PosterId == cur.UserId);
+            var restrictedForums = (await GetCurrentUserAsync()).AllPermissions.Where(p => p.AuthRoleId == 16).Select(p => p.ForumId);
             var preferredTopicId = await (
-                from p in context.PhpbbPosts
+                from p in context.PhpbbPosts.AsNoTracking()
                 where p.PosterId == cur.UserId
+                
+                join t in context.PhpbbTopics.AsNoTracking()
+                on p.TopicId equals t.TopicId
+                
+                join f in restrictedForums
+                on t.ForumId equals f
+                into joinedForums
+                
+                from jf in joinedForums.DefaultIfEmpty()
+                where jf == default
                 group p by p.TopicId into groups
                 orderby groups.Count() descending
                 select groups.Key as int?

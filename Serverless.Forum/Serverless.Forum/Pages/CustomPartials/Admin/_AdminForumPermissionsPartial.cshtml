@@ -44,10 +44,11 @@
             <div>@permissions.Key.Name</div>
             <div class="FlexRight PostInputWidth">
                 @Html.DropDownList(
-                    $"{Model.EntityType}ForumPermissions[{index++}]",
+                    $"dto.{Model.EntityType}ForumPermissions[{index}]",
                     permissions.Select(p => new SelectListItem(p.RoleDescription, $"{permissions.Key.Id}_{p.RoleId}", p.HasRole)),
-                    new { style = "width:95%" }
+                    new { style = "width:75%" }
                 )
+                &nbsp;Șterge? <input type="checkbox" name="dto.@(Model.EntityType)PermissionToRemove" value="@(index++)" />
             </div>
         </div>
 }
@@ -84,7 +85,7 @@
                 <div id="entityName_@(Model.Self)">@entityName nou</div>
                 <div class="FlexRight PostInputWidth">
                     @Html.DropDownList(
-                        $"{Model.EntityType}ForumPermissions[{index++}]",
+                        $"dto.{Model.EntityType}ForumPermissions[{index++}]",
                         roles.Select(p => new SelectListItem(p.RoleDescription, $"0_{p.RoleId}")),
                         new { id = $"newPermissions_{Model.Self}", style = "width:95%"}
                     )

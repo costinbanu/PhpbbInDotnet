@@ -124,11 +124,16 @@ namespace Serverless.Forum
         /// <summary>
         /// No response returned = OK
         /// </summary>
-        protected async IAsyncEnumerable<IActionResult> ValidateForumPermissionsResponsesAsync(PhpbbForums thisForum, int forumId)
+        protected async IAsyncEnumerable<IActionResult> ForumAuthorizationResponses(PhpbbForums thisForum, bool allowAnonymous = true)
         {
             if (thisForum == null)
             {
-                yield return NotFound($"Forumul {forumId} nu există.");
+                yield return NotFound($"Forumul solicitat nu există.");
+            }
+
+            if (!allowAnonymous)
+            {
+                yield return await PageAuthorizationResponses().FirstOrDefaultAsync();
             }
 
             var forumAncestors = _forumService.GetPathInTree(await GetForumTreeAsync(), thisForum.ForumId);
@@ -137,7 +142,7 @@ namespace Serverless.Forum
 
             if (restrictedAncestor != null)
             {
-                if ((await GetCurrentUserAsync()).UserPermissions.Any(p => p.ForumId == restrictedAncestor.Id && p.AuthRoleId == 16))
+                if ((await GetCurrentUserAsync()).AllPermissions.Any(p => p.ForumId == restrictedAncestor.Id && p.AuthRoleId == 16))
                 {
                     yield return Unauthorized();
                 }
@@ -156,7 +161,7 @@ namespace Serverless.Forum
         /// <summary>
         /// No response returned = OK
         /// </summary>
-        protected async IAsyncEnumerable<IActionResult> ValidatePagePermissionsResponsesAsync()
+        protected async IAsyncEnumerable<IActionResult> PageAuthorizationResponses()
         {
             if (await GetCurrentUserAsync() == await _userService.GetAnonymousLoggedUserAsync())
             {

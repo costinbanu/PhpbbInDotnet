@@ -13,7 +13,7 @@ namespace Serverless.Forum.Contracts
 
         public IEnumerable<int> Groups { get; set; } = null;
 
-        public IEnumerable<Permissions> UserPermissions { get; set; } = null;
+        public IEnumerable<Permissions> AllPermissions { get; set; } = null;
 
         public Dictionary<int, int> TopicPostsPerPage { get; set; } = null;
 

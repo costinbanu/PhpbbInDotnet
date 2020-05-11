@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Force.Crc32;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -86,6 +87,9 @@ namespace Serverless.Forum.Utilities
             }
             return sb.ToString();
         }
+
+        public long CalculateCrc32Hash(string input)
+            => long.Parse(Crc32Algorithm.Compute(Encoding.UTF8.GetBytes(input.ToLower())).ToString() + input.Length.ToString());
 
         public string CleanString(string input)
         {

@@ -111,7 +111,7 @@
         }
 
         //The new position for the cursor after adding the this.bbcode
-        var caret_pos = getCaretPosition(textarea).start;
+        var caret_pos = this.getCaretPosition(textarea).start;
         var new_pos = caret_pos + bbopen.length;
 
         // Open tag
@@ -182,6 +182,43 @@
     attach_inline(index, filename) {
         this.insert_text('[attachment=' + index + ']' + filename + '[/attachment]');
         document.forms[this.form_name].elements[this.text_name].focus();
+    }
+
+    /**
+    * Get the caret position in an textarea
+    */
+    getCaretPosition(txtarea) {
+        var caretPos = new CaretPosition();
+
+        // simple Gecko/Opera way
+        if (txtarea.selectionStart || txtarea.selectionStart == 0) {
+            caretPos.start = txtarea.selectionStart;
+            caretPos.end = txtarea.selectionEnd;
+        }
+        // dirty and slow IE way
+        else if (document.selection) {
+
+            // get current selection
+            var range = document.selection.createRange();
+
+            // a new selection of the whole textarea
+            var range_all = document.body.createTextRange();
+            range_all.moveToElementText(txtarea);
+
+            // calculate selection start point by moving beginning of range_all to beginning of range
+            var sel_start;
+            for (sel_start = 0; range_all.compareEndPoints('StartToStart', range) < 0; sel_start++) {
+                range_all.moveStart('character', 1);
+            }
+
+            txtarea.sel_start = sel_start;
+
+            // we ignore the end value for IE, this is already dirty enough and we don't need it
+            caretPos.start = txtarea.sel_start;
+            caretPos.end = txtarea.sel_start;
+        }
+
+        return caretPos;
     }
 
     /**
@@ -411,5 +448,15 @@
     submitAttachments() {
         $('#submitAttachmentsButton').trigger('click');
         $('#fileUploadStatus').text('Se încarcă fișierele...');
+    }
+}
+
+/**
+* Caret Position object
+*/
+class CaretPosition {
+    constructor() {
+        this.start = null;
+        this.end = null;
     }
 }

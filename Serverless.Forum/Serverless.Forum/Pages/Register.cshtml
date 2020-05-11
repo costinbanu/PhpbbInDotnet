@@ -23,63 +23,33 @@
 <form asp-controller="Home" method="post" onsubmit="return validateCaptcha();">
 
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <table border="0" cellpadding="0" cellspacing="0" class="formtable">
-        <tr>
-            <td>
+
                 <input type="text" name="Email" asp-for="Email" placeholder="Email" />
-            </td>
-            <td class="tablecell">
+<br/>
                 <span asp-validation-for="Email" class="validation"></span>
-            </td>
-        </tr>
-        <tr>
-            <td>
+<p></p>
                 <input type="text" name="UserName" asp-for="UserName" placeholder="Nume utilizator" />
-            </td>
-            <td class="tablecell">
+                <br />
                 <span asp-validation-for="UserName" class="validation"></span>
-            </td>
-        </tr>
-        <tr>
-            <td>
+<p></p>
                 <input type="password" name="Password" asp-for="Password" placeholder="Parola" />
-            </td>
-            <td class="tablecell">
-                <span>
+                <br />
                     <span asp-validation-for="Password" class="validation"></span>
-                </span>
-            </td>
-        </tr>
-        <tr>
-            <td>
+<p></p>
                 <input type="password" name="SecondPassword" asp-for="SecondPassword" placeholder="Repetă parola" />
-            </td>
-            <td class="tablecell">
+                <br />
                 <span asp-validation-for="SecondPassword" class="validation"></span>
-            </td>
-        </tr>
-        <tr>
-            <td>
+<p></p>
                <input type="checkbox" asp-for="Agree" style="width:auto"/> Sunt de acord cu <a asp-page="/TermsAndConditions" target="_blank">termenele și condițiile de utilizare</a>
-            </td>
-            <td class="tablecell">
+                                                                                            <br />
                 <span asp-validation-for="Agree" class="validation"></span>
-            </td>
-        </tr>
-        <tr>
-            <td class="tablecell">
+<p></p>
                     <div class="g-recaptcha" data-sitekey="@_config["Recaptcha:SiteKey"]" data-callback="recaptchaCallback"></div>
-            </td>
-            <td class="tablecell">
+<br/>
                 <span class="validation" style="visibility:hidden" id="reCaptchaErrorMessage">Te rugăm să bifezi aici.</span>
-            </td>
-        </tr>
-        <tr>
-            <td class="tablecell" colspan="3">
+<p></p>
                 <input type="submit" value="Trimite" style="width:auto"/>
-            </td>
-        </tr>
-    </table>
+
     @Html.AntiForgeryToken()
 </form>
 

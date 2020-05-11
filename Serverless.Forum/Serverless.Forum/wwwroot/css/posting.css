@@ -39,7 +39,7 @@
     padding: 2px;
     cursor: text;
     float: left;
-    max-height: 270px;
+    max-height: 130px;
 }
 
 .InputBox:hover {
@@ -82,6 +82,10 @@
     display: inline-block;
 }
 
+.Show960 {
+    display: none !important;
+}
+
 @media (max-width: 960px) {
     .PostInputWidth {
         width: 100%;
@@ -101,6 +105,10 @@
 
     .Hide960 {
         display: none !important;
+    }
+
+    .Show960 {
+        display: block !important;
     }
 }
 

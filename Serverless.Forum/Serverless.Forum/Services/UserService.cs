@@ -32,7 +32,7 @@ namespace Serverless.Forum.Services
 
         public async Task<bool> IsUserAdminInForum(LoggedUser user, int forumId)
             => user != null && (
-                from up in user.UserPermissions
+                from up in user.AllPermissions ?? new List<LoggedUser.Permissions>()
                 where up.ForumId == forumId || up.ForumId == 0
                 join a in await GetAdminRolesLazy()
                 on up.AuthRoleId equals a.RoleId
@@ -42,7 +42,7 @@ namespace Serverless.Forum.Services
         public async Task<bool> IsUserModeratorInForum(LoggedUser user, int forumId)
             => (await IsUserAdminInForum(user, forumId)) || (
                 user != null && (
-                    from up in user.UserPermissions
+                    from up in user.AllPermissions ?? new List<LoggedUser.Permissions>()
                     where up.ForumId == forumId || up.ForumId == 0
                     join a in await GetModRolesLazy()
                     on up.AuthRoleId equals a.RoleId
@@ -51,10 +51,13 @@ namespace Serverless.Forum.Services
             );
 
         public async Task<int?> GetUserRole(LoggedUser user)
-            => (from up in user.UserPermissions
+            => (from up in user.AllPermissions ?? new List<LoggedUser.Permissions>()
                 join a in await GetUserRolesLazy()
                 on up.AuthRoleId equals a.RoleId
                 select up.AuthRoleId as int?).FirstOrDefault();
+
+        public async Task<int?> GetUserRole(int userId)
+            => await GetUserRole(await DbUserToLoggedUserAsync(await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == userId)));
 
         public async Task<PhpbbUsers> GetAnonymousDbUserAsync()
         {
@@ -101,7 +104,7 @@ namespace Serverless.Forum.Services
                 UserId = user.UserId,
                 Username = user.Username,
                 UsernameClean = user.UsernameClean,
-                UserPermissions = await multi.ReadAsync<LoggedUser.Permissions>(),
+                AllPermissions = await multi.ReadAsync<LoggedUser.Permissions>(),
                 Groups = (await multi.ReadAsync<uint>()).Select(x => checked((int)x)),
                 TopicPostsPerPage = (await multi.ReadAsync()).ToDictionary(key => checked((int)key.topic_id), value => checked((int)value.post_no)),
                 UserDateFormat = user.UserDateformat,

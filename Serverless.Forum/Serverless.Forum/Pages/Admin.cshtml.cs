@@ -124,10 +124,7 @@ namespace Serverless.Forum.Pages
             return Page();
         }
 
-        public async Task<IActionResult> OnPostForumManagement(
-            int? forumId, string forumName, string forumDesc, bool? hasPassword, string forumPassword, int? parentId,
-            ForumType? forumType, List<int> childrenForums, List<string> userForumPermissions, List<string> groupForumPermissions
-        )
+        public async Task<IActionResult> OnPostForumManagement(UpsertForumDto dto)
         {
             var validationResult = await ValidatePermissionsAndInit(AdminCategories.Users);
             if (validationResult != null)
@@ -135,9 +132,7 @@ namespace Serverless.Forum.Pages
                 return validationResult;
             }
 
-            (Message, IsSuccess) = await _adminForumService.ManageForumsAsync(
-                forumId, forumName, forumDesc, hasPassword, forumPassword, parentId, forumType, childrenForums, userForumPermissions, groupForumPermissions
-            );
+            (Message, IsSuccess) = await _adminForumService.ManageForumsAsync(dto);
 
             ShowForum = false;
             Category = AdminCategories.Forums;

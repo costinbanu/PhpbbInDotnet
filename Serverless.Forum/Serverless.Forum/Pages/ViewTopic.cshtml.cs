@@ -104,7 +104,7 @@ namespace Serverless.Forum.Pages
             ForumId = parent?.ForumId;
             PageNum = pageNum;
 
-            var permissionError = await ValidateForumPermissionsResponsesAsync(parent, ForumId ?? 0).FirstOrDefaultAsync();
+            var permissionError = await ForumAuthorizationResponses(parent).FirstOrDefaultAsync();
             if (permissionError != null)
             {
                 return permissionError;

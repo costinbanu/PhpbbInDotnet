@@ -75,7 +75,7 @@ namespace Serverless.Forum.Pages
         {
             var curTopic = await _context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == TopicId);
             var curForum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId);
-            var permissionError = await ValidateForumPermissionsResponsesAsync(curForum, ForumId).FirstOrDefaultAsync();
+            var permissionError = await ForumAuthorizationResponses(curForum, false).FirstOrDefaultAsync();
             if (permissionError != null)
             {
                 return permissionError;
@@ -112,7 +112,7 @@ namespace Serverless.Forum.Pages
                 curAuthor = (await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == curPost.PosterId))?.Username ?? "Anonymous";
             }
 
-            var permissionError = await ValidateForumPermissionsResponsesAsync(curForum, ForumId).FirstOrDefaultAsync();
+            var permissionError = await ForumAuthorizationResponses(curForum, false).FirstOrDefaultAsync();
             if (permissionError != null)
             {
                 return permissionError;
@@ -120,7 +120,7 @@ namespace Serverless.Forum.Pages
             await Init(PostingActions.NewForumPost, false, HttpUtility.HtmlDecode(curTopic.TopicTitle), curForum.ForumName, curForum.ForumId);
 
             var title = HttpUtility.HtmlDecode(curPost.PostSubject);
-            PostText = $"[quote=\"{curAuthor}\"]\n{HttpUtility.HtmlDecode(_writingService.CleanTextForQuoting(curPost.PostText, curPost.BbcodeUid))}\n[/quote]";
+            PostText = $"[quote=\"{curAuthor}\"]\n{HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid))}\n[/quote]";
             PostTitle = title.StartsWith(Constants.REPLY) ? title : $"{Constants.REPLY}{title}";
 
             return Page();
@@ -130,7 +130,7 @@ namespace Serverless.Forum.Pages
         {
             var curForum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(t => t.ForumId == ForumId);
 
-            var permissionError = await ValidateForumPermissionsResponsesAsync(curForum, ForumId).FirstOrDefaultAsync();
+            var permissionError = await ForumAuthorizationResponses(curForum, false).FirstOrDefaultAsync();
             if (permissionError != null)
             {
                 return permissionError;
@@ -146,7 +146,7 @@ namespace Serverless.Forum.Pages
             var curPost = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == PostId);
             var curTopic = await _context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == TopicId);
             var curForum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId);
-            var permissionError = await ValidateForumPermissionsResponsesAsync(curForum, ForumId).FirstOrDefaultAsync();
+            var permissionError = await ForumAuthorizationResponses(curForum, false).FirstOrDefaultAsync();
             if (permissionError != null)
             {
                 return permissionError;
@@ -179,7 +179,7 @@ namespace Serverless.Forum.Pages
             }
 
             var subject = curPost.PostSubject.StartsWith(Constants.REPLY) ? curPost.PostSubject.Substring(Constants.REPLY.Length) : curPost.PostSubject;
-            PostText = HttpUtility.HtmlDecode(_writingService.CleanTextForQuoting(curPost.PostText, curPost.BbcodeUid));
+            PostText = HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid));
             PostTitle = HttpUtility.HtmlDecode(curPost.PostSubject);
 
             return Page();
@@ -200,7 +200,7 @@ namespace Serverless.Forum.Pages
             {
                 return RedirectToPage("Login");
             }
-            var permissionError = await ValidateForumPermissionsResponsesAsync(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId).FirstOrDefaultAsync();
+            var permissionError = await ForumAuthorizationResponses(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), false).FirstOrDefaultAsync();
             if (permissionError != null)
             {
                 return permissionError;
@@ -241,7 +241,7 @@ namespace Serverless.Forum.Pages
             {
                 return RedirectToPage("Login");
             }
-            var permissionError = await ValidateForumPermissionsResponsesAsync(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId).FirstOrDefaultAsync();
+            var permissionError = await ForumAuthorizationResponses(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), false).FirstOrDefaultAsync();
             if (permissionError != null)
             {
                 return permissionError;
@@ -295,7 +295,7 @@ namespace Serverless.Forum.Pages
             {
                 return Unauthorized();
             }
-            var permissionError = await ValidateForumPermissionsResponsesAsync(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId).FirstOrDefaultAsync();
+            var permissionError = await ForumAuthorizationResponses(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), false).FirstOrDefaultAsync();
             if (permissionError != null)
             {
                 return permissionError;
@@ -365,7 +365,7 @@ namespace Serverless.Forum.Pages
             {
                 return Unauthorized();
             }
-            var permissionError = await ValidateForumPermissionsResponsesAsync(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId).FirstOrDefaultAsync();
+            var permissionError = await ForumAuthorizationResponses(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), false).FirstOrDefaultAsync();
             if (permissionError != null)
             {
                 return permissionError;
@@ -388,7 +388,7 @@ namespace Serverless.Forum.Pages
             {
                 return Unauthorized();
             }
-            var permissionError = await ValidateForumPermissionsResponsesAsync(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), ForumId).FirstOrDefaultAsync();
+            var permissionError = await ForumAuthorizationResponses(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), false).FirstOrDefaultAsync();
             if (permissionError != null)
             {
                 return permissionError;

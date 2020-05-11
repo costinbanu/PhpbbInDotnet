@@ -7,14 +7,31 @@
 
 <h2>Login</h2>
 <form method="post">
-    <div asp-validation-summary="All" class="text-danger"></div>
-    <p>&nbsp;</p>
-    <input type="text" name="UserName" asp-for="UserName" placeholder="Nume utilizator" class="form" />
-    <p>&nbsp;</p>
-    <input type="password" name="Password" asp-for="Password" placeholder="Parola" class="form" />
-    <p>&nbsp;</p>
-    <input name="returnUrl" type="hidden" asp-for="ReturnUrl" class="form" />
+    @if (!string.IsNullOrWhiteSpace(Model.PwdResetSuccessMessage))
+    {
+        <span style="padding: 10px 10px; background-color: darkgreen; color: white; font-weight: bold">@Model.PwdResetSuccessMessage</span>
+        <p></p>
+    }
+    <input type="text" asp-for="UserName" placeholder="Nume utilizator" class="form" />
+    <p></p>
+    <input type="password" asp-for="Password" placeholder="Parola" class="form" />
+    <p></p>
+    <input type="hidden" asp-for="ReturnUrl" class="form" />
+    <p></p>
+    <span asp-validation-for="LoginErrorMessage" class="validation"></span>
     <input type="submit" value="Login" class="form" />
     @Html.AntiForgeryToken()
+    <p></p>
+    <a href="javascript:showElement('forgotPassword')">Am uitat parola</a>
+    <div style="display:@(Model.ShowPwdResetOptions ? "block" : "none"); margin-left:15px" id="forgotPassword">
+        <p></p>
+        <input type="text" asp-for="UserNameForPwdReset" placeholder="Nume utilizator" class="form" />
+        <p></p>
+        <input type="email" asp-for="EmailForPwdReset" placeholder="Adresa de e-mail" class="form" />
+        <p></p>
+        <span class="caption">Dacă nu îți amintești aceste informații, scrie-ne la <a href="mailto:admin@metrouusor.com">admin@metrouusor.com</a> și vom încerca să te ajutăm.</span>
+        <p></p>
+        <span asp-validation-for="PwdResetErrorMessage" class="validation"></span>
+        <input type="submit" value="Resetează parola" asp-page-handler="ResetPassword" />
+    </div>
 </form>
-<div style="visibility:@(string.IsNullOrEmpty(Model.ErrorMessage) ? "hidden" : "visible")">@Model.ErrorMessage</div>

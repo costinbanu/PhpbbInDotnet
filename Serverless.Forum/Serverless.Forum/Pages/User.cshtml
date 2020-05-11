@@ -288,13 +288,3 @@ else if (Model.ViewAsAnother)
     }
     <input asp-for="CurrentUser.UserId" type="hidden" />
 </form>
-
-<script>
-    var selectObj = document.getElementById("userTimezone");
-    for (var i = 0; i < selectObj.options.length; i++) {
-        if (parseFloat(selectObj.options[i].value) == parseFloat("@Model.CurrentUser.UserTimezone")) {
-            selectObj.options[i].selected = true;
-            break;
-        }
-    }
-</script>

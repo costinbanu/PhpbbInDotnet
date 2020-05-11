@@ -33,7 +33,7 @@ namespace Serverless.Forum.Services
             var allForums = await (
                 from f in _context.PhpbbForums.AsNoTracking()
                 where (parentType == null || f.ForumType == parentType)
-                   && (usr == null || usr.UserPermissions == null || !usr.UserPermissions.Any(fp => fp.ForumId == f.ForumId && fp.AuthRoleId == 16))
+                   && (usr == null || usr.AllPermissions == null || !usr.AllPermissions.Any(fp => fp.ForumId == f.ForumId && fp.AuthRoleId == 16))
                 orderby f.LeftId
 
                 join t in _context.PhpbbTopics.AsNoTracking()

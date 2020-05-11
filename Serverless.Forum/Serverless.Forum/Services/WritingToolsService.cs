@@ -224,7 +224,7 @@ namespace Serverless.Forum.Services
             return text;
         }
 
-        public string CleanTextForQuoting(string text, string uid)
+        public string CleanBbTextForDisplay(string text, string uid)
         {
             var uidRegex = new Regex($":{uid}", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
             var tagRegex = new Regex(@"(:[a-z])(\]|:)", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);

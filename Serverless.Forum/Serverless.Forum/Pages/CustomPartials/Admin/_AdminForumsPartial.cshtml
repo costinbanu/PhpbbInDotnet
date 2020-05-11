@@ -47,7 +47,7 @@
                 Nume forum
             </div>
             <div class="FlexRight PostInputWidth">
-                <input asp-for="Forum.ForumName" name="forumName" autocomplete="off" />
+                <input asp-for="Forum.ForumName" name="dto.forumName" autocomplete="off" />
             </div>
         </div>
         <hr class="SubtypeSeparator" />
@@ -56,7 +56,7 @@
                 Descriere forum
             </div>
             <div class="FlexRight PostInputWidth">
-                <textarea asp-for="Forum.ForumDesc" name="forumDesc"></textarea>
+                <textarea asp-for="Forum.ForumDesc" name="dto.forumDesc"></textarea>
             </div>
         </div>
         <hr class="SubtypeSeparator" />
@@ -66,11 +66,11 @@
             </div>
             <div class="FlexRight PostInputWidth">
                 Forumul are parolă&nbsp;
-                @Html.CheckBox("hasPassword", !string.IsNullOrWhiteSpace(Model.Forum.ForumPassword))
+                @Html.CheckBox("dto.hasPassword", !string.IsNullOrWhiteSpace(Model.Forum.ForumPassword))
                 <br />
                 <span class="Caption">Debifați pentru a elimina parola existentă.</span>
                 <br /> <br />
-                <input asp-for="Forum.ForumPassword" name="forumPassword" type="password" id="forumPassword" autocomplete="off" />&nbsp;
+                <input asp-for="Forum.ForumPassword" name="dto.forumPassword" type="password" id="forumPassword" autocomplete="off" style="width:75% !important" />&nbsp;
                 <input type="checkbox" onclick="Toggle()" />&nbsp;Arată parola<br />
                 <span class="Caption">Introduceți noua parolă. Va fi schimbată dacă forumul are deja una.</span>
             </div>
@@ -81,8 +81,8 @@
                 Tip forum
             </div>
             <div class="FlexRight PostInputWidth">
-                @Html.DropDownList("forumType", Enum.GetValues(typeof(ForumType)).Cast<ForumType>().Select(
-                    ft => new SelectListItem(ft.ToString("g"), ft.ToString("g"), Model.Forum.ForumType == ft, Model.Forum.ForumType == ft)))
+                @Html.DropDownList("dto.forumType", Enum.GetValues(typeof(ForumType)).Cast<ForumType>().Select(
+                    ft => new SelectListItem(ft.ToString("g"), ft.ToString("g"), Model.Forum.ForumType == ft)))
             </div>
         </div>
         <hr class="SubtypeSeparator" />
@@ -91,7 +91,7 @@
                 Părinte forum
             </div>
             <div class="FlexRight PostInputWidth">
-                @Html.DropDownList("parentId", await _adminForumService.FlatForumTreeAsListItem(Model.Forum.ParentId, Model.Forum.ForumId))
+                @Html.DropDownList("dto.parentId", await _adminForumService.FlatForumTreeAsListItem(Model.Forum.ParentId, Model.Forum.ForumId))
             </div>
         </div>
         <hr class="SubtypeSeparator" />
@@ -105,7 +105,7 @@
                     {
                         <div style="padding:5px; margin:5px; border: solid 1px black; border-radius:5px; cursor:move; width: 95%">
                             @Html.Raw(child.ForumName)
-                            <input type="hidden" name="childrenForums" value="@child.ForumId" style="width:0px" />
+                            <input type="hidden" name="dto.childrenForums" value="@child.ForumId" style="width:0px" />
                         </div>
                     }
                 </div>
@@ -115,7 +115,9 @@
         <div style="font-weight:bold; vertical-align:top; font-size:1.2em">
             Permisiuni pentru forum
         </div>
+        <br />
         <span style="font-weight:bold">Permisiuni utilizatori</span>
+        <br />
         @await Html.PartialAsync(
             "_AdminForumPermissionsPartial",
             new _AdminForumPermissionsPartialModel(
@@ -128,6 +130,7 @@
         )
         <hr class="SubtypeSeparator" />
         <span style="font-weight:bold">Permisiuni grupuri</span>
+        <br />
         @await Html.PartialAsync(
             "_AdminForumPermissionsPartial",
             new _AdminForumPermissionsPartialModel(
@@ -140,18 +143,14 @@
         )
         <hr />
         <input type="submit" value="Salvează modificările" style="margin-bottom:10px; float: left;" /> &nbsp;
-        <input asp-for="Forum.ForumId" type="hidden" name="forumId" />
+        <input asp-for="Forum.ForumId" type="hidden" name="dto.forumId" />
         <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('forumFields')">Închide [X]</div>
 
     </form>
 }
 
 <script type="text/javascript">
-    $(function () {
-        $("#children").sortable({
-            axis: 'y'
-        });
-    });
+    Sortable.create(document.getElementById('children'), { animation: 150 });
 
     function submitForumForm(form, id) {
         document.getElementById("forumId").value = id;

@@ -1384,7 +1384,7 @@ function () {
       return {
         top: menuTop < Math.floor(windowTop),
         right: menuRight > Math.ceil(windowLeft + windowWidth),
-        bottom: menuBottom > Math.ceil(windowTop + windowHeight),
+        bottom: menuTop + menuDimensions.height / 4 > Math.ceil(windowTop + windowHeight),
         left: menuLeft < Math.floor(windowLeft)
       };
     }
