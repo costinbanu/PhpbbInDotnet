@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Net.NetworkInformation;
 
 namespace Serverless.Forum.Utilities
 {
@@ -55,5 +56,7 @@ namespace Serverless.Forum.Utilities
         };
 
         public static readonly string SMILEY_PATH = "./images/smilies";
+
+        public static readonly int ANONYMOUS_USER_ID = 1;
     }
 }

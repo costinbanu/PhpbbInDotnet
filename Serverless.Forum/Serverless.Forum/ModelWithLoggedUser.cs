@@ -90,7 +90,7 @@ namespace Serverless.Forum
         public async Task ReloadCurrentUser()
         {
             var current = (await GetCurrentUserAsync()).UserId;
-            if (current != 1)
+            if (current != Constants.ANONYMOUS_USER_ID)
             {
                 var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 await HttpContext.SignOutAsync();
@@ -174,7 +174,7 @@ namespace Serverless.Forum
 
         public bool IsForumUnread(int forumId)
         {
-            if (CurrentUserId == 1)
+            if (CurrentUserId == Constants.ANONYMOUS_USER_ID)
             {
                 return false;
             }
@@ -184,7 +184,7 @@ namespace Serverless.Forum
 
         public bool IsTopicUnread(int topicId)
         {
-            if (CurrentUserId == 1)
+            if (CurrentUserId == Constants.ANONYMOUS_USER_ID)
             {
                 return false;
             }
@@ -194,7 +194,7 @@ namespace Serverless.Forum
 
         public bool IsPostUnread(int topicId, int PostId)
         {
-            if (CurrentUserId == 1)
+            if (CurrentUserId == Constants.ANONYMOUS_USER_ID)
             {
                 return false;
             }
@@ -204,7 +204,7 @@ namespace Serverless.Forum
 
         public int GetFirstUnreadPost(int topicId)
         {
-            if (CurrentUserId == 1)
+            if (CurrentUserId == Constants.ANONYMOUS_USER_ID)
             {
                 return 0;
             }

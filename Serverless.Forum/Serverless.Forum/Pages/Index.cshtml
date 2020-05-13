@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "Home page";
     var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
-    var IsAnonymous = Model.CurrentUserId == 1;
+    var IsAnonymous = Model.CurrentUserId == Utilities.Constants.ANONYMOUS_USER_ID;
 }
 
 @*<h2>Forumul Metrou Ușor</h2>*@

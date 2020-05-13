@@ -196,7 +196,7 @@ namespace Serverless.Forum.Pages
                 return Page();
             }
 
-            if (CurrentUserId == 1)
+            if (CurrentUserId == Constants.ANONYMOUS_USER_ID)
             {
                 return RedirectToPage("Login");
             }
@@ -237,7 +237,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPostDeleteAttachment(int index)
         {
-            if (CurrentUserId == 1)
+            if (CurrentUserId == Constants.ANONYMOUS_USER_ID)
             {
                 return RedirectToPage("Login");
             }
@@ -432,7 +432,7 @@ namespace Serverless.Forum.Pages
                 GetActualCacheKey("Users", false),
                 await (
                     from u in _context.PhpbbUsers.AsNoTracking()
-                    where u.UserId != 1 && u.UserType != 2
+                    where u.UserId != Constants.ANONYMOUS_USER_ID && u.UserType != 2
                     orderby u.Username
                     select KeyValuePair.Create(u.Username, $"[url=\"./User?UserId={u.UserId}\"]{u.Username}[/url]")
                 ).ToListAsync()

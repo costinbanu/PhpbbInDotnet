@@ -5,7 +5,7 @@
     ViewData["Title"] = Model.ForumTitle;
     Layout = "~/Pages/_Layout.cshtml";
     var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
-    var IsAnonymous = Model.CurrentUserId == 1;
+    var IsAnonymous = Model.CurrentUserId == Constants.ANONYMOUS_USER_ID;
 }
 <form asp-page-handler="Forums" method="post" name="MarkForumsRead">
     <input name="forumId" type="hidden" value="@Model.ForumId" />

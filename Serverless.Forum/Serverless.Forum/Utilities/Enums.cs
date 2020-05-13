@@ -103,4 +103,10 @@
         EditForumPost,
         NewPrivateMessage
     }
+
+    public enum LoginMode
+    {
+        Normal,
+        PasswordReset
+    }
 }

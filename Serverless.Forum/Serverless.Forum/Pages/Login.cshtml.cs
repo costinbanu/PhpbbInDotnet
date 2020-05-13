@@ -1,5 +1,4 @@
 ﻿using CryptSharp.Core;
-using Force.Crc32;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
@@ -15,7 +14,6 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Net.Mail;
-using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -29,20 +27,46 @@ namespace Serverless.Forum.Pages
         private readonly Utils _utils;
         private readonly CacheService _cacheService;
         private readonly UserService _userService;
+        
         [Required]
         public string UserName { get; set; }
+        
         [Required, PasswordPropertyText]
         public string Password { get; set; }
+        
         [BindProperty(SupportsGet = true)]
         public string ReturnUrl { get; set; }
+        
         public string LoginErrorMessage { get; set; }
+        
         [Required]
         public string UserNameForPwdReset { get; set; }
+        
         [Required, EmailAddress]
         public string EmailForPwdReset { get; set; }
+        
         public string PwdResetSuccessMessage { get; set; }
+        
         public string PwdResetErrorMessage { get; set; }
+        
         public bool ShowPwdResetOptions { get; set; } = false;
+        
+        [Required, PasswordPropertyText, StringLength(maximumLength: 256, MinimumLength = 8, ErrorMessage = "Parola trebuie să fie de minim 8 caractere lungime")]
+        public string PwdResetFirstPassword { get; set; }
+        
+        [Required, PasswordPropertyText, Compare(otherProperty: nameof(PwdResetFirstPassword), ErrorMessage = "Cele două parole trebuie să fie identice")]
+        public string PwdResetSecondPassword { get; set; }
+        
+        [BindProperty(SupportsGet = true)]
+        public string ResetPasswordCode { get; set; }
+        
+        [BindProperty(SupportsGet = true)]
+        public int UserId { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public Guid Init { get; set; }
+
+        public LoginMode Mode { get; set; }
 
         public LoginModel(ForumDbContext context, Utils utils, CacheService cacheService, UserService userService)
         {
@@ -50,6 +74,34 @@ namespace Serverless.Forum.Pages
             _utils = utils;
             _cacheService = cacheService;
             _userService = userService;
+        }
+
+        public async Task<IActionResult> OnGet()
+        {
+            if ((User?.Identity?.IsAuthenticated ?? false) && (await _userService.ClaimsPrincipalToLoggedUserAsync(User)).UserId != Constants.ANONYMOUS_USER_ID)
+            {
+                return RedirectToPage("Logout", new { returnUrl = ReturnUrl ?? "/" });
+            }
+            Mode = LoginMode.Normal;
+            return Page();
+        }
+
+        public async Task<IActionResult> OnGetNewPassword()
+        {
+            if ((User?.Identity?.IsAuthenticated ?? false) && (await _userService.ClaimsPrincipalToLoggedUserAsync(User)).UserId != Constants.ANONYMOUS_USER_ID)
+            {
+                return RedirectToPage("Logout", new { returnUrl = ReturnUrl ?? "/" });
+            }
+
+            var user = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == UserId);
+
+            if (user == null || ResetPasswordCode != await _utils.DecryptAES(user.UserNewpasswd, Init))
+            {
+                ModelState.AddModelError(nameof(PwdResetErrorMessage), "A intervenit o eroare - utilizatorul nu există sau codul de resetare a parolei este greșit.");
+                return Page();
+            }
+            Mode = LoginMode.PasswordReset;
+            return Page();
         }
 
         public async Task<IActionResult> OnPost()
@@ -60,6 +112,7 @@ namespace Serverless.Forum.Pages
                           && cryptedPass == u.UserPassword
                        select u;
 
+            Mode = LoginMode.Normal;
             if (user.Count() != 1)
             {
                 ModelState.AddModelError(nameof(LoginErrorMessage), "Numele de utilizator și/sau parola sunt greșite!");
@@ -90,23 +143,29 @@ namespace Serverless.Forum.Pages
                     await _cacheService.RemoveFromCache(key);
                 }
 
-                return Redirect(HttpUtility.UrlDecode(ReturnUrl));
+                return Redirect(HttpUtility.UrlDecode(ReturnUrl ?? "/"));
             }
         }
 
         public async Task<IActionResult> OnPostResetPassword()
         {
-            var current = await _context.PhpbbUsers.FirstOrDefaultAsync(x => x.UsernameClean == _utils.CleanString(UserNameForPwdReset) && x.UserEmailHash == _utils.CalculateCrc32Hash(EmailForPwdReset));
-            if(current == null)
+            var user = await _context.PhpbbUsers.FirstOrDefaultAsync(
+                x => x.UsernameClean == _utils.CleanString(UserNameForPwdReset) && 
+                x.UserEmailHash == _utils.CalculateCrc32Hash(EmailForPwdReset)
+            );
+
+            if(user == null)
             {
                 ModelState.AddModelError(nameof(PwdResetErrorMessage), "Adresa de email și/sau numele de utilizator introduse nu sunt corecte.");
                 ShowPwdResetOptions = true;
+                Mode = LoginMode.PasswordReset;
                 return Page();
             }
 
             var resetKey = Guid.NewGuid().ToString("n");
-            current.UserNewpasswd = Crypter.Phpass.Crypt(resetKey);
-            //await _context.SaveChangesAsync();
+            var (encrypted, iv) = await _utils.EncryptAES(resetKey);
+            user.UserNewpasswd = encrypted;
+            await _context.SaveChangesAsync();
 
             try
             {
@@ -120,7 +179,8 @@ namespace Serverless.Forum.Pages
                         new _ResetPasswordPartialModel
                         {
                             Code = resetKey,
-                            UserId = current.UserId,
+                            IV = iv,
+                            UserId = user.UserId,
                             UserName = UserName
                         },
                         PageContext,
@@ -129,18 +189,35 @@ namespace Serverless.Forum.Pages
                     IsBodyHtml = true
                 };
                 emailMessage.To.Add(EmailForPwdReset);
-                //await _utils.SendEmail(emailMessage);
+                await _utils.SendEmail(emailMessage);
             }
             catch
             {
                 ModelState.AddModelError(nameof(PwdResetErrorMessage), "A intervenit o eroare, te rugăm să încerci mai târziu.");
                 ShowPwdResetOptions = true;
+                Mode = LoginMode.PasswordReset;
                 return Page();
             }
 
-            PwdResetSuccessMessage = "Am trimis un e-mail, la adresa completată, cu mai multe instrucțiuni pe care trebuie să le urmezi ca să îți poți recupera contul.";
+            return RedirectToPage("Confirm", "NewPassword");
+        }
 
-            return Page();
+        public async Task<IActionResult> OnPostSaveNewPassword()
+        {
+            var user = await _context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == UserId);
+            if (user == null || ResetPasswordCode != await _utils.DecryptAES(user.UserNewpasswd, Init))
+            {
+                ModelState.AddModelError(nameof(PwdResetErrorMessage), "A intervenit o eroare - utilizatorul nu există sau codul de resetare a parolei este greșit.");
+                Mode = LoginMode.PasswordReset;
+                return Page();
+            }
+
+            user.UserNewpasswd = string.Empty;
+            user.UserPassword = Crypter.Phpass.Crypt(PwdResetFirstPassword, Crypter.Phpass.GenerateSalt());
+            user.UserPasschg = DateTime.UtcNow.ToUnixTimestamp();
+            await _context.SaveChangesAsync();
+
+            return RedirectToPage("Confirm", "PasswordChanged");
         }
     }
 }

@@ -28,7 +28,7 @@ namespace Serverless.Forum.Pages
 
         [Required(ErrorMessage = "Acest câmp este obligatoriu.")]
         [StringLength(maximumLength: 32, MinimumLength = 2, ErrorMessage = "Numele de utilizator trebuie să aibă o lungime cuprinsă între 2 și 32 de caractere.")]
-        [RegularExpression(@"[a-zA-Z0-9 \._-]+", ErrorMessage = "Caractere permise în numele de utilizator: a-z, A-Z, 0-9, [space], [dot], [underrscore], [dash].")]
+        [RegularExpression(@"[a-zA-Z0-9 \._-]+", ErrorMessage = "Caractere permise în numele de utilizator: a-z, A-Z, 0-9, [space], [dot], [underscore], [dash].")]
         public string UserName { get; set; }
 
         [Required(ErrorMessage = "Acest câmp este obligatoriu.")]

@@ -9,7 +9,7 @@
 @{
     ViewData["Title"] = $"{Model.ForumTitle} - {Model.TopicTitle}";
     Layout = "~/Pages/_Layout.cshtml";
-    var IsAnonymous = Model.CurrentUserId == 1;
+    var IsAnonymous = Model.CurrentUserId == Constants.ANONYMOUS_USER_ID;
     var IsLocked = Model.IsLocked
                 && !(await Model.IsCurrentUserAdminHereAsync(Model.ForumId.Value))
                 && !(await Model.IsCurrentUserModeratorHereAsync(Model.ForumId.Value));

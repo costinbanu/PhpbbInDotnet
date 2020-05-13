@@ -77,7 +77,7 @@ namespace Serverless.Forum.Pages
 
             Users = await (
                 from u in _context.PhpbbUsers.AsNoTracking()
-                where u.UserId != 1 && u.UserType != 2
+                where u.UserId != Constants.ANONYMOUS_USER_ID && u.UserType != 2
                 orderby u.Username
                 select KeyValuePair.Create(u.Username, u.UserId)
             ).ToListAsync();

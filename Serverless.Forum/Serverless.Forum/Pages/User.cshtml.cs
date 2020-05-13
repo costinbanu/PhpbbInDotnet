@@ -66,7 +66,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnGet(int? userId, bool? viewAsAnother)
         {
-            if ((userId ?? 1) == 1)
+            if ((userId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID)
             {
                 return Forbid();
             }
@@ -112,11 +112,12 @@ namespace Serverless.Forum.Pages
             dbUser.UserEditTime = CurrentUser.UserEditTime;
             dbUser.UserWebsite = CurrentUser.UserWebsite ?? string.Empty;
 
-            if (Email != dbUser.UserEmail)
+            if (_utils.CalculateCrc32Hash(Email) != dbUser.UserEmailHash)
             {
                 var registrationCode = Guid.NewGuid().ToString("n");
 
                 dbUser.UserEmail = Email;
+                dbUser.UserEmailHash = _utils.CalculateCrc32Hash(Email);
                 dbUser.UserInactiveTime = DateTime.UtcNow.ToUnixTimestamp();
                 dbUser.UserInactiveReason = UserInactiveReason.ChangedEmailNotConfirmed;
                 dbUser.UserActkey = registrationCode;
@@ -149,6 +150,8 @@ namespace Serverless.Forum.Pages
             {
                 dbUser.UserPassword = Crypter.Phpass.Crypt(FirstPassword, Crypter.Phpass.GenerateSalt());
                 dbUser.UserPasschg = DateTime.UtcNow.ToUnixTimestamp();
+                var key = $"UserMustLogIn_{dbUser.UsernameClean}";
+                await _cacheService.SetInCache(key, true);
             }
 
             if (DeleteAvatar)

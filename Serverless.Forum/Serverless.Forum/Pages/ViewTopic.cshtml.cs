@@ -141,8 +141,8 @@ namespace Serverless.Forum.Pages
                 {
                     PostSubject = p.PostSubject,
                     PostText = p.PostText,
-                    AuthorName = ju == null ? "Anonymous" : (ju.UserId == 1 ? p.PostUsername : ju.Username),
-                    AuthorId = ju == null ? 1 : (ju.UserId == 1 ? null as int? : ju.UserId),
+                    AuthorName = ju == null ? "Anonymous" : (ju.UserId == Constants.ANONYMOUS_USER_ID ? p.PostUsername : ju.Username),
+                    AuthorId = ju == null ? 1 : (ju.UserId == Constants.ANONYMOUS_USER_ID ? null as int? : ju.UserId),
                     AuthorColor = ju == null ? null : ju.UserColour,
                     PostCreationTime = p.PostTime.ToUtcTime(),
                     PostModifiedTime = p.PostEditTime.ToUtcTime(),
@@ -191,7 +191,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPostPagination(int topicId, int userPostsPerPage, int? postId)
         {
-            if (CurrentUserId == 1)
+            if (CurrentUserId == Constants.ANONYMOUS_USER_ID)
             {
                 return Forbid();
             }
@@ -233,7 +233,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPostVote(int topicId, int[] votes, string queryString)
         {
-            if (CurrentUserId == 1)
+            if (CurrentUserId == Constants.ANONYMOUS_USER_ID)
             {
                 return Forbid();
             }

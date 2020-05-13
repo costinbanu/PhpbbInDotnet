@@ -76,7 +76,7 @@ namespace Serverless.Forum.Pages
                              {
                                  Id = g.TopicId,
                                  Title = HttpUtility.HtmlDecode(g.TopicTitle),
-                                 LastPosterId = g.TopicLastPosterId == 1 ? null as int? : g.TopicLastPosterId,
+                                 LastPosterId = g.TopicLastPosterId == Constants.ANONYMOUS_USER_ID ? null as int? : g.TopicLastPosterId,
                                  LastPosterName = HttpUtility.HtmlDecode(g.TopicLastPosterName),
                                  LastPostTime = g.TopicLastPostTime.ToUtcTime(),
                                  PostCount = _context.PhpbbPosts.Count(p => p.TopicId == g.TopicId),

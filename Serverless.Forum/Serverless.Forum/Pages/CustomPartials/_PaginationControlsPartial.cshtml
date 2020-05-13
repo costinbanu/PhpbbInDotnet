@@ -1,6 +1,6 @@
 ﻿@model Serverless.Forum.Pages.CustomPartials._PaginationControlsPartialModel
 @{
-    var IsAnonymous = Model.PaginationModel.CurrentUserId == 1;
+    var IsAnonymous = Model.PaginationModel.CurrentUserId == Utilities.Constants.ANONYMOUS_USER_ID;
 }
 
 @if (Model.PaginationModel?.Pagination?.HasPages ?? false)

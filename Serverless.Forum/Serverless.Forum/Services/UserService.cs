@@ -66,7 +66,7 @@ namespace Serverless.Forum.Services
                 return _anonymousDbUser;
             }
 
-            _anonymousDbUser = await _context.PhpbbUsers.AsNoTracking().FirstAsync(u => u.UserId == 1);
+            _anonymousDbUser = await _context.PhpbbUsers.AsNoTracking().FirstAsync(u => u.UserId == Constants.ANONYMOUS_USER_ID);
             return _anonymousDbUser;
         }
 

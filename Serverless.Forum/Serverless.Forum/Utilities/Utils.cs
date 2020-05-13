@@ -11,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Immutable;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
@@ -199,6 +200,64 @@ namespace Serverless.Forum.Utilities
             var place = Convert.ToInt32(Math.Floor(Math.Log(bytes, 1024)));
             var num = Math.Round(bytes / Math.Pow(1024, place), 2);
             return $"{(Math.Sign(fileSizeInBytes) * num).ToString("##.##", CultureInfo.InvariantCulture)} {suf[place]}";
+        }
+
+        public async Task<(string encrypted, Guid iv)> EncryptAES(string plainText, byte[] key = null)
+        {
+            byte[] encrypted;
+            var iv = Guid.NewGuid();
+            key ??= GetEncryptionKey();
+
+            using (var aes = new AesCryptoServiceProvider())
+            {
+                aes.Key = key;
+                aes.IV = iv.ToByteArray();
+                aes.Mode = CipherMode.CBC;
+                aes.Padding = PaddingMode.PKCS7;
+
+                using var enc = aes.CreateEncryptor(aes.Key, aes.IV);
+                using var ms = new MemoryStream();
+                using var cs = new CryptoStream(ms, enc, CryptoStreamMode.Write);
+                using (var sw = new StreamWriter(cs))
+                {
+                    await sw.WriteAsync(plainText);
+                }
+
+                encrypted = ms.ToArray();
+            }
+
+            return (Convert.ToBase64String(encrypted), iv);
+        }
+
+        public async Task<string> DecryptAES(string encryptedText, Guid iv, byte[] key = null)
+        {
+            string decrypted = null;
+            byte[] cipher = Convert.FromBase64String(encryptedText);
+            key ??= GetEncryptionKey();
+
+            using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
+            {
+                aes.Key = key;
+                aes.IV = iv.ToByteArray();
+                aes.Mode = CipherMode.CBC;
+                aes.Padding = PaddingMode.PKCS7;
+
+                using var dec = aes.CreateDecryptor(aes.Key, aes.IV);
+                using var ms = new MemoryStream(cipher);
+                using var cs = new CryptoStream(ms, dec, CryptoStreamMode.Read);
+                using var sr = new StreamReader(cs);
+                decrypted = await sr.ReadToEndAsync();
+            }
+
+            return decrypted;
+        }
+
+        public byte[] GetEncryptionKey()
+        {
+            var key1 = _config.GetValue<Guid>("Encryption:Key1").ToByteArray().ToList();
+            var key2 = _config.GetValue<Guid>("Encryption:Key2").ToByteArray();
+            key1.AddRange(key2);
+            return key1.ToArray();
         }
     }
 }
