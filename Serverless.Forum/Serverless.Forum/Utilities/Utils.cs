@@ -11,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.IO;
@@ -258,6 +259,16 @@ namespace Serverless.Forum.Utilities
             var key2 = _config.GetValue<Guid>("Encryption:Key2").ToByteArray();
             key1.AddRange(key2);
             return key1.ToArray();
+        }
+
+        public List<SelectListItem> EnumToDropDownList<T>(bool addDummyEntry = false) where T : Enum
+        {
+            var toReturn = Enum.GetValues(typeof(T)).Cast<int>().Select(x => new SelectListItem(Enum.GetName(typeof(T), x), x.ToString())).ToList();
+            if (addDummyEntry)
+            {
+                toReturn.Insert(0, new SelectListItem("Alege o opțiune", string.Empty, true, true));
+            }
+            return toReturn;
         }
     }
 }

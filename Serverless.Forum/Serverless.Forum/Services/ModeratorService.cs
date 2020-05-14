@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json.Linq;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -40,5 +42,10 @@ namespace Serverless.Forum.Services
                 return ("A intervenit o eroare, încearcă din nou.", false);
             }
         }
+
+        //public async Task<(string Message, bool? IsSuccess)> ApplyPostAction(IEnumerable<int> posts, ModeratorPostActions action)
+        //{
+
+        //}
     }
 }

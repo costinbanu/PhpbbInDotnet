@@ -1,22 +1,40 @@
-﻿using Microsoft.AspNetCore.Mvc.RazorPages;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.ForumDb;
+using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System.Threading.Tasks;
 
 namespace Serverless.Forum.Pages
 {
-    public class ConfirmModel : PageModel
+    public class ConfirmModel : ModelWithLoggedUser
     {
-        private readonly ForumDbContext _context;
-
         public string Message { get; private set; }
+        
         public string Title { get; private set; }
+        
+        [BindProperty(SupportsGet = true)]
+        public int? ForumId { get; set; }
+        
+        [BindProperty(SupportsGet = true)]
+        public int? TopicId { get; set; }
 
-        public ConfirmModel(ForumDbContext context)
-        {
-            _context = context;
-        }
+        [BindProperty(SupportsGet = true)]
+        public int? PageNum { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public int? TopicActionInt { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public int? PostActionInt { get; set; }
+
+        public bool IsModeratorConfirmation { get; private set; }
+
+        public bool IsTopicNeeded { get; private set; }
+
+        public ConfirmModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
+            : base(utils, context, forumService, userService, cacheService) { }
 
         public void OnGetRegistrationComplete()
         {
@@ -79,6 +97,18 @@ namespace Serverless.Forum.Pages
                 "</span>";
 
             Title = "Modificarea parolei";
+        }
+
+        public void OnGetModeratorForumConfirmation()
+        {
+            IsModeratorConfirmation = true;
+            IsTopicNeeded = false;
+        }
+
+        public void OnGetModeratorTopicConfirmation()
+        {
+            IsModeratorConfirmation = true;
+            IsTopicNeeded = true;
         }
     }
 }

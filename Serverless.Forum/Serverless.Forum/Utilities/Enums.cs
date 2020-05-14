@@ -84,14 +84,20 @@
         Global = 3
     }
 
-    public enum ModeratorActions
+    public enum ModeratorTopicActions
     {
         LockTopic,
+        MoveTopic,
+        DeleteTopic,
         MakeTopicNormal,
         MakeTopicImportant,
         MakeTopicAnnouncement,
-        MakeTopicGlobal,
-        MergeSelectedPosts,
+        MakeTopicGlobal
+    }
+
+    public enum ModeratorPostActions
+    {
+        MoveSelectedPosts,
         SplitSelectedPosts,
         DeleteSelectedPosts
     }

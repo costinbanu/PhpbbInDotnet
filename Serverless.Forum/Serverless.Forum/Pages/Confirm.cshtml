@@ -7,8 +7,81 @@
 
 <h2>@Model.Title</h2>
 
-<span style="font-size:1.2em">@Html.Raw(Model.Message)</span>
-<p>&nbsp;</p>
-<a asp-page="./Login">Login</a><br/>
-<a asp-page="./">Prima pagină</a>
+@if (Model.IsModeratorConfirmation)
+{
+    <script type="text/javascript">
+        //forum tree callback
+        function forumSelectCallback(forumId) {
+            var forumInput = document.getElementById("DestinationForumId");
+            if (forumInput != null) {
+                forumInput.value = forumId;
+            }
+        }
+    </script>
+    @if (Model.IsTopicNeeded)
+    {
+        <script type="text/javascript">
+            //forum tree callback
+            function topicSelectCallback(topics) {
+                var topicDisplay = document.getElementById("DestinationTopicId");
+                if (topicDisplay != null) {
+                    topicDisplay.options.length = 0;
+                    var option = document.createElement('option');
+                    option.text = "Alege subiectul...";
+                    option.value = 0;
+                    topicDisplay.add(option);
+                    topics.forEach(t => {
+                        var option = document.createElement('option');
+                        option.text = t.title;
+                        option.value = t.id;
+                        topicDisplay.add(option);
+                    });
+                }
+            }
 
+            //forum tree callback
+            function topicSelectInit(topicId) {
+                if (topicId != null) {
+                    $("#DestinationTopicId").val(topicId).change();
+                }
+            }
+        </script>
+    }
+
+    <h4>Alege forumul...</h4>
+    <div>
+        @await Html.PartialAsync(
+            "_ForumTreePartial",
+             new CustomPartials._ForumTreePartialModel
+             {
+                 Forums = await Model.GetForumTreeAsync(),
+                 ForumId = Model.ForumId,
+                 TopicId = Model.TopicId,
+                 PathToForumOrTopic = await Model.PathToForumOrTopic(Model.ForumId ?? 0, Model.TopicId)
+             },
+            ViewData
+        )
+    </div>
+    <form action="./ViewTopic" method="get">
+        <input type="hidden" name="DestinationForumId" id="DestinationForumId" />
+        @if (Model.IsTopicNeeded)
+        {
+            <h4>Alege subiectul...</h4>
+            <select name="DestinationTopicId" id="DestinationTopicId" />
+        }
+        <input type="hidden" asp-for="TopicId" />
+        <input type="hidden" asp-for="PageNum" />
+        <input type="hidden" name="TopicAction" value="@((Serverless.Forum.Utilities.ModeratorTopicActions?)Model.TopicActionInt)" />
+        <input type="hidden" name="PostAction" value="@((Serverless.Forum.Utilities.ModeratorPostActions?)Model.TopicActionInt)" />
+        <p></p>
+        <input type="submit" value="Trimite" />
+    </form>
+}
+else
+{
+    <span style="font-size:1.2em">@Html.Raw(Model.Message)</span>
+    <p>&nbsp;</p>
+    <a asp-page="./Login">Login</a>
+    <br />
+    <a asp-page="./">Prima pagină</a>
+}

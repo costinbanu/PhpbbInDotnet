@@ -5,6 +5,8 @@
 @using Serverless.Forum.Utilities
 
 @inject Services.UserService _userService
+@inject Utils _utils
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor
 
 @{
     ViewData["Title"] = $"{Model.ForumTitle} - {Model.TopicTitle}";
@@ -73,10 +75,7 @@
         <div id="votes" style="display:block">
             <h3>Chestionar: @Html.Raw(HttpUtility.HtmlDecode(Model.Poll.PollTitle))</h3>
             <div>Chestionarul @(Model.Poll.PollEnded ? "a fost" : "va fi") inchis: @(Model.Poll.PollEnd.HasValue ? Model.Poll.PollEnd.Value.ToString(UserDateFormat) : "niciodată").</div>
-
             <form method="post" asp-page-handler="vote">
-                @*@if (Model.Poll.PollMaxOptions > 1)
-                    {*@
                 @foreach (var option in Model.Poll.PollOptions)
                 {
                     var isChecked = option.PollOptionVoters.Any(v => v.UserId == Model.CurrentUserId);
@@ -238,7 +237,7 @@
                                 <a href="javascript:return;">&#x2753; Informații</a>
                             </span>
                             <span>
-                                Selectează pentru moderare <input type="checkBox" name="posts" value="@post.PostId" form="moderatorForm" />
+                                Selectează pentru moderare <input name="PostIdsForModerator" type="checkBox" value="@post.PostId" form="moderatorForm" />
                             </span>
                         }
                         @if (IsMod || (post.AuthorId == Model.CurrentUserId && DateTime.UtcNow.Subtract(post.PostCreationTime ?? default).TotalMinutes <= EditTime))
@@ -308,18 +307,91 @@ else if (!IsAnonymous)
 <hr />
 @if (IsMod)
 {
-    <form id="moderatorForm" method="post" asp-page-handler="Moderator">
-        <span>Acțiuni moderare (cu mesajele selectate): </span>
-        @Html.DropDownList("action", Enum.GetValues(typeof(ModeratorActions)).Cast<int>().Select(x => new SelectListItem(Enum.GetName(typeof(ModeratorActions), x), x.ToString())))
-        <input type="submit" value="Trimite" />
-        <br />
-        <span asp-validation-for="ModeratorActionResult" class="validation"></span>
-        @if (!string.IsNullOrWhiteSpace(Model.ModeratorActionResult))
-        {
+    <form method="post" asp-page-handler="TopicModerator">
+        <span>Acțiuni moderare (topic): </span>
+        @Html.DropDownList("TopicAction", _utils.EnumToDropDownList<ModeratorTopicActions>(true), new { onchange = "showTopicExtraInput(this)", id = "TopicAction" })
+        <div id="extraInputTopic" style="display:@(Model.ShowTopic ? "block" : "none")">
             <br />
-            <span style="margin-left: 30px; color: green; display:block;">@Model.ModeratorActionResult</span>
-        }
+            <input type="text" asp-for="DestinationForumId" placeholder="ID forum destinație" /><br />
+            <a id="topicLink" asp-page="Confirm" asp-page-handler="ModeratorForumConfirmation" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-pageNum="@Model.PageNum">
+                Alege id-ul forumului de destinație
+            </a>
+            <span asp-validation-for="DestinationForumId" class="validation"></span>
+        </div>
+        <input type="submit" value="Trimite" />
         <input asp-for="TopicId" type="hidden" />
         <input asp-for="PageNum" type="hidden" />
     </form>
+    <form id="moderatorForm" method="post" asp-page-handler="PostModerator">
+        <br />
+        <span>Acțiuni moderare (cu mesajele selectate): </span>
+        @Html.DropDownList("PostAction", _utils.EnumToDropDownList<ModeratorPostActions>(true), new { onchange = "showPostExtraInput(this)", id = "PostAction" })
+        <div id="extraInputPostForum" style="display:@(Model.ShowPostForum ? "block" : "none")">
+            <br />
+            <input type="text" asp-for="DestinationForumId" name="targetForum" placeholder="ID forum destinație" /><br />
+            <a id="postForumLink" asp-page="Confirm" asp-page-handler="ModeratorForumConfirmation" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-pageNum="@Model.PageNum">
+                Alege id-ul forumului de destinație
+            </a>
+            <span asp-validation-for="PostIdsForModerator" class="validation"></span>
+            <span asp-validation-for="DestinationForumId" class="validation"></span>
+        </div>
+        <div id="extraInputPostTopic" style="display:@(Model.ShowPostTopic ? "block" : "none")">
+            <br />
+            <input type="text" asp-for="DestinationTopicId" name="targetForum" placeholder="ID subiect destinație" /><br />
+            <a id="postTopicLink" asp-page="Confirm" asp-page-handler="ModeratorTopicConfirmation" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-pageNum="@Model.PageNum">
+                Alege id-ul subiectului de destinație
+            </a>
+            <span asp-validation-for="PostIdsForModerator" class="validation"></span>
+            <span asp-validation-for="DestinationTopicId" class="validation"></span>
+        </div>
+        <input type="submit" value="Trimite" />
+        <br />
+        <input asp-for="TopicId" type="hidden" />
+        <input asp-for="PageNum" type="hidden" />
+    </form>
+    @if (!string.IsNullOrWhiteSpace(Model.ModeratorActionResult))
+    {
+        <br />
+        <span style="margin-left: 30px; color: red; display:block;">@Model.ModeratorActionResult</span>
+    }
+    <script>
+        window.onload = function() {
+            $('#TopicAction').val('');
+            $('#PostAction').val('');
+
+            if (@Model.ScrollToModeratorPanel) {
+                document.getElementById('moderatorForm').scrollIntoView();
+            }
+        }
+
+        function showTopicExtraInput(source) {
+            if ($(source).val() == @((int)ModeratorTopicActions.MoveTopic)) {
+                $('#extraInputPostForum').hide("fast");
+                $('#extraInputPostTopic').hide("fast");
+                $('#extraInputTopic').show("fast");
+                setForumAction('topicLink', 'Topic');
+            }
+        }
+
+        function showPostExtraInput(source) {
+            if ($(source).val() == @((int)ModeratorPostActions.MoveSelectedPosts)) {
+                $('#extraInputPostForum').hide("fast");
+                $('#extraInputTopic').hide("fast");
+                $('#extraInputPostTopic').show("fast");
+                setForumAction('postTopicLink', 'Post');
+            } else if ($(source).val() == @((int)ModeratorPostActions.SplitSelectedPosts)) {
+                $('#extraInputTopic').hide("fast");
+                $('#extraInputPostTopic').hide("fast");
+                $('#extraInputPostForum').show("fast");
+                setForumAction('postForumLink', 'Topic');
+            }
+        }
+
+        function setForumAction(id, kind) {
+            var val = $('#' + id).attr('href');
+            val += '&' + kind + 'ActionInt=' + $('#' + kind + 'Action').val();
+            $('#' + id).attr('href', val);
+        }@need to pass this to the confirm page or cache it(better cache it ?) either way it does not mwork
+            (when we return from the confirm page we should know what action is this)
+    </script>
 }
