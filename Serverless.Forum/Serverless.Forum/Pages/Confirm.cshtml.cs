@@ -24,14 +24,15 @@ namespace Serverless.Forum.Pages
         public int? PageNum { get; set; }
 
         [BindProperty(SupportsGet = true)]
-        public int? TopicActionInt { get; set; }
+        public ModeratorTopicActions? TopicAction { get; set; }
 
         [BindProperty(SupportsGet = true)]
-        public int? PostActionInt { get; set; }
+        public ModeratorPostActions? PostAction { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public bool ShowTopicSelector { get; set; }
 
         public bool IsModeratorConfirmation { get; private set; }
-
-        public bool IsTopicNeeded { get; private set; }
 
         public ConfirmModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
             : base(utils, context, forumService, userService, cacheService) { }
@@ -99,16 +100,9 @@ namespace Serverless.Forum.Pages
             Title = "Modificarea parolei";
         }
 
-        public void OnGetModeratorForumConfirmation()
+        public void OnGetModeratorConfirmation()
         {
             IsModeratorConfirmation = true;
-            IsTopicNeeded = false;
-        }
-
-        public void OnGetModeratorTopicConfirmation()
-        {
-            IsModeratorConfirmation = true;
-            IsTopicNeeded = true;
         }
     }
 }

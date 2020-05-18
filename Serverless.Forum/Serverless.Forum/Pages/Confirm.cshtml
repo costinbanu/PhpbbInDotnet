@@ -18,7 +18,7 @@
             }
         }
     </script>
-    @if (Model.IsTopicNeeded)
+    @if (Model.ShowTopicSelector)
     {
         <script type="text/javascript">
             //forum tree callback
@@ -64,15 +64,15 @@
     </div>
     <form action="./ViewTopic" method="get">
         <input type="hidden" name="DestinationForumId" id="DestinationForumId" />
-        @if (Model.IsTopicNeeded)
+        @if (Model.ShowTopicSelector)
         {
             <h4>Alege subiectul...</h4>
             <select name="DestinationTopicId" id="DestinationTopicId" />
         }
         <input type="hidden" asp-for="TopicId" />
         <input type="hidden" asp-for="PageNum" />
-        <input type="hidden" name="TopicAction" value="@((Serverless.Forum.Utilities.ModeratorTopicActions?)Model.TopicActionInt)" />
-        <input type="hidden" name="PostAction" value="@((Serverless.Forum.Utilities.ModeratorPostActions?)Model.TopicActionInt)" />
+        <input type="hidden" asp-for="TopicAction" />
+        <input type="hidden" asp-for="PostAction" />
         <p></p>
         <input type="submit" value="Trimite" />
     </form>

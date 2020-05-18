@@ -261,10 +261,10 @@ namespace Serverless.Forum.Utilities
             return key1.ToArray();
         }
 
-        public List<SelectListItem> EnumToDropDownList<T>(bool addDummyEntry = false) where T : Enum
+        public List<SelectListItem> EnumToDropDownList<T>(T? selectedItem) where T : struct, Enum
         {
-            var toReturn = Enum.GetValues(typeof(T)).Cast<int>().Select(x => new SelectListItem(Enum.GetName(typeof(T), x), x.ToString())).ToList();
-            if (addDummyEntry)
+            var toReturn = Enum.GetNames(typeof(T)).Select(x => new SelectListItem(x, x, selectedItem.HasValue && Enum.GetName(selectedItem.Value.GetType(), selectedItem.Value) == x)).ToList();
+            if (!selectedItem.HasValue)
             {
                 toReturn.Insert(0, new SelectListItem("Alege o opțiune", string.Empty, true, true));
             }

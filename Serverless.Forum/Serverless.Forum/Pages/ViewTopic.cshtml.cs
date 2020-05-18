@@ -48,10 +48,10 @@ namespace Serverless.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public int? DestinationTopicId { get; set; }
 
-        [BindProperty]
+        [BindProperty(SupportsGet = true)]
         public ModeratorTopicActions? TopicAction { get; set; }
 
-        [BindProperty]
+        [BindProperty(SupportsGet = true)]
         public ModeratorPostActions? PostAction { get; set; }
 
         [BindProperty]
@@ -112,7 +112,7 @@ namespace Serverless.Forum.Pages
 
             if (_currentTopic == null)
             {
-                return NotFound($"Mesajul {PostId} nu există.");
+                return NotFound($"Mesajul '{PostId}' nu există.");
             }
 
             await GetPostsLazy(null, null, PostId);
@@ -134,7 +134,12 @@ namespace Serverless.Forum.Pages
 
             if (_currentTopic == null)
             {
-                return NotFound($"Subiectul {TopicId} nu există.");
+                return NotFound($"Subiectul '{TopicId}' nu există.");
+            }
+
+            if ((PageNum ?? 0) <= 0)
+            {
+                return BadRequest($"'{PageNum}' nu este o valoare corectă pentru numărul paginii.");
             }
 
             parent = await (from f in _context.PhpbbForums.AsNoTracking()
