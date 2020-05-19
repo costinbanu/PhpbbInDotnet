@@ -5,6 +5,8 @@
     Layout = "~/Pages/_Layout.cshtml";
 }
 
+@inject Serverless.Forum.Utilities.Utils _utils
+
 <h2>@Model.Title</h2>
 
 @if (Model.IsModeratorConfirmation)
@@ -48,7 +50,7 @@
         </script>
     }
 
-    <h4>Alege forumul...</h4>
+    <h3>Alege forumul de destinație...</h3>
     <div>
         @await Html.PartialAsync(
             "_ForumTreePartial",
@@ -66,7 +68,7 @@
         <input type="hidden" name="DestinationForumId" id="DestinationForumId" />
         @if (Model.ShowTopicSelector)
         {
-            <h4>Alege subiectul...</h4>
+            <h3>Alege subiectul de destinație...</h3>
             <select name="DestinationTopicId" id="DestinationTopicId" />
         }
         <input type="hidden" asp-for="TopicId" />
@@ -76,6 +78,14 @@
         <p></p>
         <input type="submit" value="Trimite" />
     </form>
+}
+else if (Model.IsDestinationConfirmation)
+{
+    foreach(var destination in Model.Destinations)
+    {
+        Html.Raw(_utils.UrlDecodeAndDecompress(destination));
+        <p></p>
+    }
 }
 else
 {

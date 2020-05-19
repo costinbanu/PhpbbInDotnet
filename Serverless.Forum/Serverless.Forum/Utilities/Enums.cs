@@ -87,6 +87,7 @@
     public enum ModeratorTopicActions
     {
         LockTopic,
+        UnlockTopic,
         MoveTopic,
         DeleteTopic,
         MakeTopicNormal,

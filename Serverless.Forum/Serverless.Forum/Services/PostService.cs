@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
+using Serverless.Forum.Utilities;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -72,7 +73,7 @@ namespace Serverless.Forum.Services
 
             if (curTopic.TopicFirstPostId == added.PostId)
             {
-                SetTopicFirstPost(curTopic, added, usr);
+                await SetTopicFirstPost(curTopic, added, usr);
             }
 
             if (curTopic.TopicLastPostId == added.PostId)
@@ -86,64 +87,67 @@ namespace Serverless.Forum.Services
             }
         }
 
-        public async Task CascadePostAdd(ForumDbContext context, PhpbbPosts added, LoggedUser usr, bool isFirstPost)
+        public async Task CascadePostAdd(ForumDbContext context, PhpbbPosts added, LoggedUser usr, bool isFirstPost, bool ignoreTopic)
         {
             var curTopic = await context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == added.TopicId);
             var curForum = await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == curTopic.ForumId);
 
-            await SetTopicLastPost(curTopic, added, usr);
             await SetForumLastPost(curForum, added, usr);
 
-            if (isFirstPost)
+            if (!ignoreTopic)
             {
-                SetTopicFirstPost(curTopic, added, usr);
+                await SetTopicLastPost(curTopic, added, usr);
+                if (isFirstPost)
+                {
+                    await SetTopicFirstPost(curTopic, added, usr);
+                }
             }
         }
 
-        public async Task CascadePostDelete(ForumDbContext context, PhpbbPosts deleted)
+        public async Task CascadePostDelete(ForumDbContext context, PhpbbPosts deleted, bool ignoreTopic)
         {
             var curTopic = await context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == deleted.TopicId);
             var curForum = await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == curTopic.ForumId);
 
-            if (context.PhpbbPosts.Count(p => p.TopicId == deleted.TopicId) == 0)
+            if (context.PhpbbPosts.Count(p => p.TopicId == deleted.TopicId) == 0 && !ignoreTopic)
             {
                 context.PhpbbTopics.Remove(curTopic);
             }
-            else if (curTopic.TopicLastPostId == deleted.PostId)
+            else
             {
-                if (curTopic.TopicLastPostId == deleted.PostId)
+                if (curTopic.TopicLastPostId == deleted.PostId && !ignoreTopic)
                 {
-                    var lastPost = await (
+                    var lastTopicPost = await (
                         from p in context.PhpbbPosts
                         where p.TopicId == curTopic.TopicId
                         group p by p.PostTime into grouped
                         orderby grouped.Key descending
                         select grouped.FirstOrDefault()
                     ).FirstOrDefaultAsync();
-                    var lastPostUser = await _userService.DbUserToLoggedUserAsync(
-                        await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == lastPost.PosterId)
+                    var lastTopicPostUser = await _userService.DbUserToLoggedUserAsync(
+                        await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == lastTopicPost.PosterId)
                     );
 
-                    await SetTopicLastPost(curTopic, lastPost, lastPostUser);
+                    await SetTopicLastPost(curTopic, lastTopicPost, lastTopicPostUser);
                 }
 
                 if (curForum.ForumLastPostId == deleted.PostId)
                 {
-                    var lastPost = await (
+                    var lastForumPost = await (
                         from p in context.PhpbbPosts
                         where p.ForumId == curForum.ForumId
                         group p by p.PostTime into grouped
                         orderby grouped.Key descending
                         select grouped.FirstOrDefault()
                     ).FirstOrDefaultAsync();
-                    var lastPostUser = await _userService.DbUserToLoggedUserAsync(
-                        await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == lastPost.PosterId)
+                    var lastForumPostUser = await _userService.DbUserToLoggedUserAsync(
+                        await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == lastForumPost.PosterId)
                     );
 
-                    await SetForumLastPost(curForum, lastPost, lastPostUser);
+                    await SetForumLastPost(curForum, lastForumPost, lastForumPostUser);
                 }
 
-                if (curTopic.TopicFirstPostId == deleted.PostId)
+                if (curTopic.TopicFirstPostId == deleted.PostId && !ignoreTopic)
                 {
                     var firstPost = await (
                         from p in context.PhpbbPosts
@@ -156,36 +160,47 @@ namespace Serverless.Forum.Services
                         await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == firstPost.PosterId)
                     );
 
-                    SetTopicFirstPost(curTopic, firstPost, firstPostUser);
+                    await SetTopicFirstPost(curTopic, firstPost, firstPostUser);
                 }
             }
         }
 
         private async Task SetTopicLastPost(PhpbbTopics topic, PhpbbPosts post, LoggedUser author)
         {
-            topic.TopicLastPostId = post.PosterId;
-            topic.TopicLastPostSubject = post.PostSubject;
-            topic.TopicLastPostTime = post.PostTime;
-            topic.TopicLastPosterColour = author.UserColor;
-            topic.TopicLastPosterId = post.PosterId;
-            topic.TopicLastPosterName = author == await _userService.GetAnonymousLoggedUserAsync() ? post.PostUsername : author.Username;
+            if (topic.TopicLastPostTime < post.PostTime)
+            {
+                topic.TopicLastPostId = post.PosterId;
+                topic.TopicLastPostSubject = post.PostSubject;
+                topic.TopicLastPostTime = post.PostTime;
+                topic.TopicLastPosterColour = author.UserColor;
+                topic.TopicLastPosterId = post.PosterId;
+                topic.TopicLastPosterName = author == await _userService.GetAnonymousLoggedUserAsync() ? post.PostUsername : author.Username;
+            }
         }
 
         private async Task SetForumLastPost(PhpbbForums forum, PhpbbPosts post, LoggedUser author)
         {
-            forum.ForumLastPostId = post.PosterId;
-            forum.ForumLastPostSubject = post.PostSubject;
-            forum.ForumLastPostTime = post.PostTime;
-            forum.ForumLastPosterColour = author.UserColor;
-            forum.ForumLastPosterId = post.PosterId;
-            forum.ForumLastPosterName = author == await _userService.GetAnonymousLoggedUserAsync() ? post.PostUsername : author.Username;
+            if (forum.ForumLastPostTime < post.PostTime)
+            {
+                forum.ForumLastPostId = post.PosterId;
+                forum.ForumLastPostSubject = post.PostSubject;
+                forum.ForumLastPostTime = post.PostTime;
+                forum.ForumLastPosterColour = author.UserColor;
+                forum.ForumLastPosterId = post.PosterId;
+                forum.ForumLastPosterName = author == await _userService.GetAnonymousLoggedUserAsync() ? post.PostUsername : author.Username;
+            }
         }
 
-        private void SetTopicFirstPost(PhpbbTopics topic, PhpbbPosts post, LoggedUser author)
+        private async Task SetTopicFirstPost(PhpbbTopics topic, PhpbbPosts post, LoggedUser author)
         {
-            topic.TopicFirstPostId = post.PostId;
-            topic.TopicFirstPosterColour = author.UserColor;
-            topic.TopicFirstPosterName = author.Username;
+            var curFirstPost = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == topic.TopicFirstPostId);
+            if (curFirstPost.PostTime >= post.PostTime)
+            {
+                topic.TopicTitle = post.PostSubject.Replace(Constants.REPLY, string.Empty).Trim();
+                topic.TopicFirstPostId = post.PostId;
+                topic.TopicFirstPosterColour = author.UserColor;
+                topic.TopicFirstPosterName = author.Username;
+            }
         }
     }
 }

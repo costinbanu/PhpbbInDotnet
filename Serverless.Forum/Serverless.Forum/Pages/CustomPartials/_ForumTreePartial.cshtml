@@ -57,7 +57,7 @@
         }
 
         var treeNodeClass = cur.Id == Model.ForumId ? "treeNode selectedTreeNode" : "treeNode";
-        var topics = (cur?.Topics ?? new List<TopicDisplay>()).OrderBy(t => t.Title).ToList();
+        var topics = (cur?.Topics ?? new List<TopicDisplay>()).OrderBy(t => t.Title, StringComparer.OrdinalIgnoreCase).ToList();
 
         if (cur.ChildrenForums?.Any() ?? false)
         {

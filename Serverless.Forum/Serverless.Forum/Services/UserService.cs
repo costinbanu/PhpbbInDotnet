@@ -57,7 +57,7 @@ namespace Serverless.Forum.Services
                 select up.AuthRoleId as int?).FirstOrDefault();
 
         public async Task<int?> GetUserRole(int userId)
-            => await GetUserRole(await DbUserToLoggedUserAsync(await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == userId)));
+            => await GetUserRole(await GetLoggedUserById(userId));
 
         public async Task<PhpbbUsers> GetAnonymousDbUserAsync()
         {
@@ -127,19 +127,19 @@ namespace Serverless.Forum.Services
             => await GetUserRolesLazy();
 
         public async Task<List<PhpbbRanks>> GetRankListAsync()
-        {
-            return await _context.PhpbbRanks.AsNoTracking().ToListAsync();
-        }
+            => await _context.PhpbbRanks.AsNoTracking().ToListAsync();
+        
 
         public async Task<List<PhpbbGroups>> GetGroupListAsync()
-        {
-            return await _context.PhpbbGroups.AsNoTracking().ToListAsync();
-        }
+            => await _context.PhpbbGroups.AsNoTracking().ToListAsync();
+        
 
         public async Task<int?> GetUserGroupAsync(int userId)
-        {
-            return (await _context.PhpbbUserGroup.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == userId))?.GroupId;
-        }
+            => (await _context.PhpbbUserGroup.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == userId))?.GroupId;
+        
+
+        public async Task<LoggedUser> GetLoggedUserById(int userId)
+                => await DbUserToLoggedUserAsync(await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == userId));
 
         private async Task<List<PhpbbAclRoles>> GetUserRolesLazy()
         {

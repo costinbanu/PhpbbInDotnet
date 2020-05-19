@@ -18,8 +18,9 @@
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="5.0.0" />
     <PackageReference Include="AutoMapper" Version="9.0.0" />
     <PackageReference Include="AWSSDK.S3" Version="3.3.110.50" />
-    <PackageReference Include="CodeKicker.BBCode.Core" Version="1.0.0-alpha" />
+    <PackageReference Include="CodeKicker.BBCode.Core" Version="1.0.0.1-alpha" />
     <PackageReference Include="Crc32.NET" Version="1.2.0" />
+    <PackageReference Include="CryptSharp.Core" Version="1.0.0" />
     <PackageReference Include="Dapper" Version="2.0.35" />
     <PackageReference Include="Diacritics" Version="2.1.20036.1" />
     <PackageReference Include="JW.Pager" Version="1.0.1" />
@@ -36,9 +37,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="wwwroot\images\" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\CryptSharp.Core\CryptSharp.Core.csproj" />
   </ItemGroup>
   <!-- https://github.com/grpc/grpc-dotnet/issues/329#issuecomment-502309756 IAsyncEnumerable fix -->
   <Target Name="ChangeAliasesOfReactiveExtensions" BeforeTargets="FindReferenceAssembliesForReferences;ResolveReferences">

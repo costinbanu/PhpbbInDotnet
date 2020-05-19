@@ -563,7 +563,7 @@ namespace Serverless.Forum.Pages
                     attachList[i].AttachComment = FileComment[i] ?? string.Empty;
                 }
 
-                await _postService.CascadePostAdd(context, post, usr, isNewTopic);
+                await _postService.CascadePostAdd(context, post, usr, isNewTopic, false);
                 await context.PhpbbAttachments.AddRangeAsync(attachList);
             }
             else

@@ -236,7 +236,7 @@ namespace Serverless.Forum.Pages
                 }
                 await _context.SaveChangesAsync();
             }
-            //ModelState[nameof(ModeratorActionResult)].Errors.Clear();
+
             return Page();
         }
 
@@ -322,19 +322,17 @@ namespace Serverless.Forum.Pages
                 return Forbid();
             }
 
-            if (TopicAction == ModeratorTopicActions.MoveTopic && await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == DestinationForumId) == null)
-            {
-                ModelState.AddModelError(nameof(DestinationForumId), $"Forumul '{DestinationForumId}' nu există.");
-                return await OnGet();
-            }
-
             var (Message, IsSuccess) = TopicAction switch
             {
                 ModeratorTopicActions.MakeTopicNormal => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Normal),
                 ModeratorTopicActions.MakeTopicImportant => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Important),
                 ModeratorTopicActions.MakeTopicAnnouncement => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Announcement),
                 ModeratorTopicActions.MakeTopicGlobal => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Global),
-                _ => throw new NotImplementedException()
+                ModeratorTopicActions.MoveTopic => await _moderatorService.MoveTopic(TopicId.Value, DestinationForumId.Value),
+                ModeratorTopicActions.LockTopic => await _moderatorService.LockUnlockTopic(TopicId.Value, true),
+                ModeratorTopicActions.UnlockTopic => await _moderatorService.LockUnlockTopic(TopicId.Value, false),
+                ModeratorTopicActions.DeleteTopic => await _moderatorService.DeleteTopic(TopicId.Value),
+                _ => throw new NotImplementedException($"Unknown action '{TopicAction}'")
             };
 
             if (!(IsSuccess ?? false))
@@ -356,42 +354,67 @@ namespace Serverless.Forum.Pages
                 return Forbid();
             }
 
-            if (!PostIdsForModerator.Any())
+            var (Message, IsSuccess) = PostAction switch
             {
-                ModelState.AddModelError(nameof(PostIdsForModerator/*ErrorDummy*/), $"Acțiunea {PostAction} nu poate fi efectuată fără mesaje selectate.");
-                return await OnGet();
+                ModeratorPostActions.DeleteSelectedPosts => await _moderatorService.DeletePosts(PostIdsForModerator),
+                ModeratorPostActions.MoveSelectedPosts => await _moderatorService.MovePosts(PostIdsForModerator, DestinationTopicId.Value),
+                ModeratorPostActions.SplitSelectedPosts => await _moderatorService.SplitPosts(PostIdsForModerator, DestinationForumId.Value),
+                _ => throw new NotImplementedException($"Unknown action '{PostAction}'")
+            };
+           
+            if (!(IsSuccess ?? false))
+            {
+                ModeratorActionResult = $"<span style=\"margin-left: 30px; color: red; display:block;\">{Message}</span>";
+            }
+            else
+            {
+                ModeratorActionResult = $"<span style=\"margin-left: 30px; color: darkgreen; display:block;\">{Message}</span>";
             }
 
-            if (PostAction == ModeratorPostActions.SplitSelectedPosts && await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == DestinationForumId) == null)
+            if((IsSuccess ?? false) && PostAction == ModeratorPostActions.MoveSelectedPosts)
             {
-                ModelState.AddModelError(nameof(DestinationForumId), $"Forumul '{DestinationForumId}' nu există.");
-                return await OnGet();
+                var latestSelectedPost = await (
+                   from p in _context.PhpbbPosts.AsNoTracking()
+                   where PostIdsForModerator.Contains(p.PostId)
+                   group p by p.PostTime into groups
+                   orderby groups.Key descending
+                   select groups.FirstOrDefault()
+                ).FirstOrDefaultAsync();
+
+                var nextRemainingPost = await (
+                    from p in _context.PhpbbPosts.AsNoTracking()
+                    where p.TopicId == TopicId.Value
+                       && !PostIdsForModerator.Contains(p.PostId)
+                       && p.PostTime >= latestSelectedPost.PostTime
+                    group p by p.PostTime into groups
+                    orderby groups.Key ascending
+                    select groups.FirstOrDefault()
+                ).FirstOrDefaultAsync() ?? await (
+                    from p in _context.PhpbbPosts.AsNoTracking()
+                    where p.TopicId == TopicId.Value
+                       && !PostIdsForModerator.Contains(p.PostId)
+                    group p by p.PostTime into groups
+                    orderby groups.Key descending
+                    select groups.FirstOrDefault()
+                ).FirstOrDefaultAsync();
+
+                if (nextRemainingPost != null)
+                {
+                    var destinations = new List<string>
+                    {
+                        await _utils.CompressAndUrlEncode($"<a href=\"./ViewTopic?postId={latestSelectedPost.PostId}&handler=byPostId\">Mergi la noul subiect</a>"),
+                        await _utils.CompressAndUrlEncode($"<a href=\"./ViewTopic?postId={nextRemainingPost.PostId}&handler=byPostId\">Mergi la ultimul subiect vizitat</a>")
+                    };
+                    return RedirectToPage("Confirm", "DestinationConfirmation", new { destinations });
+                }
+                else
+                {
+                    TopicId = null;
+                    PageNum = null;
+                    PostId = latestSelectedPost.PostId;
+                    return await OnGetByPostId();
+                }
             }
-
-            if (PostAction == ModeratorPostActions.MoveSelectedPosts && await _context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(f => f.TopicId == DestinationTopicId) == null)
-            {
-                ModelState.AddModelError(nameof(DestinationTopicId), $"Subiectul '{DestinationTopicId}' nu există.");
-                return await OnGet();
-            }
-
-            //var (Message, IsSuccess) = action switch
-            //{
-            //    ModeratorTopicActions.MakeTopicNormal => await _moderatorService.ChangeTopicType(topicId.Value, TopicType.Normal),
-            //    ModeratorTopicActions.MakeTopicImportant => await _moderatorService.ChangeTopicType(topicId.Value, TopicType.Important),
-            //    ModeratorTopicActions.MakeTopicAnnouncement => await _moderatorService.ChangeTopicType(topicId.Value, TopicType.Announcement),
-            //    ModeratorTopicActions.MakeTopicGlobal => await _moderatorService.ChangeTopicType(topicId.Value, TopicType.Global),
-            //    _ => throw new NotImplementedException()
-            //};
-
-            //if (!(IsSuccess ?? false))
-            //{
-            //    ModeratorActionResult = null;
-            //    ModelState.AddModelError(nameof(ModeratorActionResult), Message);
-            //}
-            //else
-            //{
-            //    ModeratorActionResult = Message;
-            //}
 
             return await OnGet();
         }
@@ -410,12 +433,6 @@ namespace Serverless.Forum.Pages
         private async Task GetPoll()
         {
             var tid = TopicId ?? 0;
-            //var dbPollOptions = await _context.PhpbbPollOptions.AsNoTracking().Where(o => o.TopicId == tid).ToListAsync();
-
-            //if (!dbPollOptions.Any() && string.IsNullOrWhiteSpace(_currentTopic.PollTitle) && _currentTopic.PollStart == 0)
-            //{
-            //    return;
-            //}
             Poll = new PollDisplay
             {
                 PollTitle = _currentTopic.PollTitle,

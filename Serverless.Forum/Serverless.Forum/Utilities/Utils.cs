@@ -22,6 +22,7 @@ using System.Net.Mail;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace Serverless.Forum.Utilities
 {
@@ -64,6 +65,12 @@ namespace Serverless.Forum.Utilities
             await content.FlushAsync();
             return JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(content.ToArray()));
         }
+
+        public async Task<string> CompressAndUrlEncode(string input)
+            => HttpUtility.UrlEncode(Convert.ToBase64String(await CompressObject(input)));
+
+        public async Task<string> UrlDecodeAndDecompress(string input)
+            => await DecompressObject<string>(Convert.FromBase64String(HttpUtility.UrlDecode(input)));
 
         public string RandomString(int length = 8)
         {

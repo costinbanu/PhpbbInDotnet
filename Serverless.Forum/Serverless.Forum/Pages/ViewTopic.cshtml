@@ -12,9 +12,6 @@
     ViewData["Title"] = $"{Model.ForumTitle} - {Model.TopicTitle}";
     Layout = "~/Pages/_Layout.cshtml";
     var IsAnonymous = Model.CurrentUserId == Constants.ANONYMOUS_USER_ID;
-    var IsLocked = Model.IsLocked
-                && !(await Model.IsCurrentUserAdminHereAsync(Model.ForumId.Value))
-                && !(await Model.IsCurrentUserModeratorHereAsync(Model.ForumId.Value));
     var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
     var IsAdmin = await Model.IsCurrentUserAdminHereAsync();
     var IsMod = await Model.IsCurrentUserModeratorHereAsync();
@@ -24,7 +21,7 @@
 <link rel="stylesheet" href="~/css/pagination.css" />
 
 <script type="text/javascript">
-    window.onload = function () {
+    $(document).ready(function () {
         onPostLoad();
         var postId = @Json.Serialize(Model.PostId ?? -1);
         var highlight = @Json.Serialize(Model.Highlight ?? true);
@@ -38,7 +35,7 @@
                 container.addClass("Highlight");
             }
         }
-    }
+    });
 
     //forum tree callback
     function forumSelectCallback(forumId) {
@@ -210,16 +207,23 @@
                     }
                     <br />
                     <div class="PostActions">
-                        @if (!IsLocked && !IsAnonymous && post != Model.Posts.Last())
+                        @if ((!Model.IsLocked || IsMod || IsAdmin) && !IsAnonymous && post != Model.Posts.Last())
                         {
                             <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">
-                                &#x1F5E8; Răspunde cu citat
+                                @if (Model.IsLocked)
+                                {
+                                    <span>&#x1F5E8; Subiect închis</span>
+                                }
+                                else
+                                {
+                                    <span>&#x1F5E8; Răspunde cu citat</span>
+                                }
                             </a>
                         }
                         else if (!IsAnonymous && post != Model.Posts.Last())
                         {
                             <a href="javascript:;" title="Subiectul este închis, nu se mai pot trimite răspunsuri.">
-                                <s>&#x1F5E8; Răspunde cu citat</s>
+                                <s>&#x1F5E8; Subiect închis</s>
                             </a>
                         }
                         @if (await _userService.GetUserRole(await Model.GetCurrentUserAsync()) != 8 && await _userService.GetUserRole(post.AuthorId ?? 1) != 8)
@@ -255,16 +259,26 @@
     index++;
 }
 <hr />
-@if (!IsLocked && !IsAnonymous)
+@if ((!Model.IsLocked || IsMod || IsAdmin) && !IsAnonymous)
 {
-    <a asp-page="/Posting" asp-page-handler="ForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId">Scrie un răspuns</a>
-    <hr />
+    <a asp-page="/Posting" asp-page-handler="ForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId">
+        @if (Model.IsLocked)
+        {
+            <span>Subiect închis</span>
+        }
+        else
+        {
+            <span>Scrie un mesaj nou</span>
+        }
+    </a>
 }
 else if (!IsAnonymous)
 {
-    <a title="Subiectul este închis, nu se mai pot trimite răspunsuri."><s>Scrie un răspuns</s></a>
-    <hr />
+    <a href="javascript:;" title="Subiectul este închis, nu se mai pot trimite răspunsuri.">
+        <s>&#x1F5E8; Subiect închis</s>
+    </a>
 }
+<hr />
 @await Html.PartialAsync(
     "_PaginationControlsPartial",
     new CustomPartials._PaginationControlsPartialModel(
@@ -328,7 +342,7 @@ else if (!IsAnonymous)
         @Html.DropDownList("PostAction", _utils.EnumToDropDownList<ModeratorPostActions>(Model.PostAction), new { onchange = "showPostExtraInput(this)", id = "PostAction" })
         <div id="extraInputPostForum" style="display:@(Model.ShowPostForum ? "block" : "none")">
             <br />
-            <input type="text" asp-for="DestinationForumId" name="targetForum" placeholder="ID forum destinație" /><br />
+            <input type="text" asp-for="DestinationForumId" placeholder="ID forum destinație" /><br />
             <a id="postForumLink" asp-page="Confirm" asp-page-handler="ModeratorConfirmation" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-pageNum="@Model.PageNum" asp-route-showTopicSelector="false">
                 Alege id-ul forumului de destinație
             </a>
@@ -337,7 +351,7 @@ else if (!IsAnonymous)
         </div>
         <div id="extraInputPostTopic" style="display:@(Model.ShowPostTopic ? "block" : "none")">
             <br />
-            <input type="text" asp-for="DestinationTopicId" name="targetForum" placeholder="ID subiect destinație" /><br />
+            <input type="text" asp-for="DestinationTopicId" placeholder="ID subiect destinație" /><br />
             <a id="postTopicLink" asp-page="Confirm" asp-page-handler="ModeratorConfirmation" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-pageNum="@Model.PageNum" asp-route-showTopicSelector="true">
                 Alege id-ul subiectului de destinație
             </a>
@@ -352,7 +366,7 @@ else if (!IsAnonymous)
     @if (!string.IsNullOrWhiteSpace(Model.ModeratorActionResult))
     {
         <br />
-        <span style="margin-left: 30px; color: red; display:block;">@Model.ModeratorActionResult</span>
+        @Html.Raw(Model.ModeratorActionResult)
     }
     <script>
         window.onload = function() {

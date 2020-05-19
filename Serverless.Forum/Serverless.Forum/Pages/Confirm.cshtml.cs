@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Serverless.Forum.Pages
@@ -32,7 +33,12 @@ namespace Serverless.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public bool ShowTopicSelector { get; set; }
 
-        public bool IsModeratorConfirmation { get; private set; }
+        [BindProperty(SupportsGet = true)]
+        public List<string> Destinations { get; set; }
+
+        public bool IsModeratorConfirmation { get; private set; } = false;
+
+        public bool IsDestinationConfirmation { get; private set; } = false;
 
         public ConfirmModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
             : base(utils, context, forumService, userService, cacheService) { }
@@ -103,6 +109,11 @@ namespace Serverless.Forum.Pages
         public void OnGetModeratorConfirmation()
         {
             IsModeratorConfirmation = true;
+        }
+
+        public void OnGetDestinationConfirmation()
+        {
+            IsDestinationConfirmation = true;
         }
     }
 }
