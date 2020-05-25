@@ -50,8 +50,8 @@ namespace Serverless.Forum.Pages
 
         public IEnumerable<ExtendedPostDisplay> Posts { get; private set; }
 
-        public SearchModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, BBCodeRenderingService renderingService)
-            : base(utils, context, forumService, userService, cacheService)
+        public SearchModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, BBCodeRenderingService renderingService)
+            : base(context, forumService, userService, cacheService)
         {
             _renderingService = renderingService;
         }

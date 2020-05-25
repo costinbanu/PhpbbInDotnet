@@ -16,8 +16,8 @@ namespace Serverless.Forum
         public int CurrentPage { get; protected set; }
         public readonly List<SelectListItem> PostsPerPage;
 
-        public ModelWithPagination(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
-            : base(utils, context, forumService, userService, cacheService)
+        public ModelWithPagination(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
+            : base(context, forumService, userService, cacheService)
         {
             PostsPerPage = new List<SelectListItem>
             {

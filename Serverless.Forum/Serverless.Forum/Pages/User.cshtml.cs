@@ -54,12 +54,14 @@ namespace Serverless.Forum.Pages
         [BindProperty]
         public int UserRank { get; set; }
 
+        private readonly Utils _utils;
         private readonly StorageService _storageService;
         private readonly WritingToolsService _writingService;
 
         public UserModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, StorageService storageService, WritingToolsService writingService)
-            : base(utils, context, forumService, userService, cacheService)
+            : base(context, forumService, userService, cacheService)
         {
+            _utils = utils;
             _storageService = storageService;
             _writingService = writingService;
         }

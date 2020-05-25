@@ -7,12 +7,14 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Serverless.Forum.ForumDb;
+using Serverless.Forum.Services;
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
@@ -29,16 +31,16 @@ namespace Serverless.Forum.Utilities
     public class Utils
     {
         private readonly IConfiguration _config;
-        private readonly ILogger<Utils> _logger;
         private readonly ICompositeViewEngine _viewEngine;
         private readonly ITempDataProvider _tempDataProvider;
+        private readonly ErrorReportingService _errorReportingService;
 
-        public Utils(IConfiguration config, ICompositeViewEngine viewEngine, ITempDataProvider tempDataProvider, ILogger<Utils> logger)
+        public Utils(IConfiguration config, ICompositeViewEngine viewEngine, ITempDataProvider tempDataProvider, ErrorReportingService errorReportingService)
         {
             _config = config;
-            _logger = logger;
             _viewEngine = viewEngine;
             _tempDataProvider = tempDataProvider;
+            _errorReportingService = errorReportingService;
         }
 
         public async Task<byte[]> CompressObject<T>(T source)
@@ -192,7 +194,7 @@ namespace Serverless.Forum.Utilities
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Error rendering partial view.");
+                _errorReportingService.LogError(ex);
                 return string.Empty;
             }
         }
@@ -276,6 +278,26 @@ namespace Serverless.Forum.Utilities
                 toReturn.Insert(0, new SelectListItem("Alege o opțiune", string.Empty, true, true));
             }
             return toReturn;
+        }
+
+        public void RunParallel(Func<ForumDbContext, Task> toDo)
+        {
+            Task.Run(async () =>
+            {
+                try
+                {
+                    //https://stackoverflow.com/questions/48767910/entity-framework-core-a-second-operation-started-on-this-context-before-a-previ
+                    needs more testing
+                    var builder = new DbContextOptionsBuilder<ForumDbContext>();
+                    builder.UseMySQL(_config["ForumDbConnectionString"]);
+                    using var context = new ForumDbContext(builder.Options);
+                    await toDo(context);
+                }
+                catch (Exception ex)
+                {
+                    _errorReportingService.LogError(ex);
+                }
+            });
         }
     }
 }

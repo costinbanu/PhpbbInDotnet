@@ -13,14 +13,13 @@ namespace Serverless.Forum.Services
     {
         private readonly ForumDbContext _context;
         private readonly UserService _userService;
+        private readonly Utils _utils;
 
-        private delegate (int index, string match) FirstIndexOf(string haystack, string needle, int startIndex);
-        private delegate (string result, int endIndex) Transform(string haystack, string needle, int startIndex);
-
-        public PostService(ForumDbContext context, UserService userService)
+        public PostService(ForumDbContext context, UserService userService, Utils utils)
         {
             _context = context;
             _userService = userService;
+            _utils = utils;
         }
 
         public async Task<(List<PhpbbPosts> Posts, int Page, int Count)> GetPostPageAsync(int userId, int? topicId, int? page, int? postId)
@@ -36,44 +35,72 @@ namespace Serverless.Forum.Services
                 Count: multi.Read<int>().Single()
             );
 
-            var attachments = from a in _context.PhpbbAttachments
-
-                              join p in toReturn.Posts
-                              on a.PostMsgId equals p.PostId
-
-                              select new PhpbbAttachments
-                              {
-                                  AttachComment = a.AttachComment,
-                                  AttachId = a.AttachId,
-                                  DownloadCount = a.DownloadCount + 1,
-                                  Extension = a.Extension,
-                                  Filesize = a.Filesize,
-                                  Filetime = a.Filetime,
-                                  InMessage = a.InMessage,
-                                  IsOrphan = a.IsOrphan,
-                                  Mimetype = a.Mimetype,
-                                  PhysicalFilename = a.PhysicalFilename,
-                                  PosterId = a.PosterId,
-                                  PostMsgId = a.PostMsgId,
-                                  RealFilename = a.RealFilename,
-                                  Thumbnail = a.Thumbnail,
-                                  TopicId = a.TopicId
-                              };
-
-            _context.PhpbbAttachments.UpdateRange(attachments);
-            await _context.SaveChangesAsync();
+            _utils.RunParallel(async (localContext) =>
+            {
+                var attachments = await (
+                    from a in localContext.PhpbbAttachments
+                    join p in toReturn.Posts
+                    on a.PostMsgId equals p.PostId
+                    select a
+                ).ToListAsync();
+                attachments.ForEach(a => a.DownloadCount++);
+                localContext.PhpbbAttachments.UpdateRange(attachments);
+                await localContext.SaveChangesAsync();
+            });
 
             return toReturn;
         }
 
-        public async Task CascadePostEdit(ForumDbContext context, PhpbbPosts added, LoggedUser usr)
+        public async Task<PollDisplay> GetPoll(PhpbbTopics _currentTopic)
+        {
+            var toReturn = new PollDisplay
+            {
+                PollTitle = _currentTopic.PollTitle,
+                PollStart = _currentTopic.PollStart.ToUtcTime(),
+                PollDurationSecons = _currentTopic.PollLength,
+                PollMaxOptions = _currentTopic.PollMaxOptions,
+                TopicId = _currentTopic.TopicId,
+                VoteCanBeChanged = _currentTopic.PollVoteChange == 1,
+                PollOptions = await (
+                    from o in _context.PhpbbPollOptions.AsNoTracking()
+                    where o.TopicId == _currentTopic.TopicId
+                    let voters = from v in _context.PhpbbPollVotes.AsNoTracking()
+                                 where o.PollOptionId == v.PollOptionId && o.TopicId == v.TopicId
+                                 join u in _context.PhpbbUsers.AsNoTracking()
+                                 on v.VoteUserId equals u.UserId
+                                 into joinedUsers
+
+                                 from ju in joinedUsers.DefaultIfEmpty()
+                                 where ju != null
+                                 select new PollOptionVoter { UserId = ju.UserId, Username = ju.Username }
+
+                    select new PollOption
+                    {
+                        PollOptionId = o.PollOptionId,
+                        PollOptionText = o.PollOptionText,
+                        TopicId = o.TopicId,
+                        PollOptionVoters = voters.ToList()
+                    }
+                ).ToListAsync()
+            };
+
+            if (!toReturn.PollOptions.Any())
+            {
+                toReturn = null;
+            }
+
+            return toReturn;
+        }
+
+        public async Task CascadePostEdit(ForumDbContext context, PhpbbPosts added)
         {
             var curTopic = await context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == added.TopicId);
             var curForum = await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == curTopic.ForumId);
+            var usr = await _userService.GetLoggedUserById(added.PosterId);
 
             if (curTopic.TopicFirstPostId == added.PostId)
             {
-                await SetTopicFirstPost(curTopic, added, usr);
+                await SetTopicFirstPost(curTopic, added, usr, true);
             }
 
             if (curTopic.TopicLastPostId == added.PostId)
@@ -87,10 +114,11 @@ namespace Serverless.Forum.Services
             }
         }
 
-        public async Task CascadePostAdd(ForumDbContext context, PhpbbPosts added, LoggedUser usr, bool isFirstPost, bool ignoreTopic)
+        public async Task CascadePostAdd(ForumDbContext context, PhpbbPosts added, bool isFirstPost, bool ignoreTopic)
         {
             var curTopic = await context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == added.TopicId);
             var curForum = await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == curTopic.ForumId);
+            var usr = await _userService.GetLoggedUserById(added.PosterId);
 
             await SetForumLastPost(curForum, added, usr);
 
@@ -99,18 +127,20 @@ namespace Serverless.Forum.Services
                 await SetTopicLastPost(curTopic, added, usr);
                 if (isFirstPost)
                 {
-                    await SetTopicFirstPost(curTopic, added, usr);
+                    await SetTopicFirstPost(curTopic, added, usr, false);
                 }
             }
         }
 
-        public async Task CascadePostDelete(ForumDbContext context, PhpbbPosts deleted, bool ignoreTopic)
+        public async Task CascadePostDelete(ForumDbContext context, PhpbbPosts deleted, bool ignoreTopic, int? oldTopicId = null)
         {
-            var curTopic = await context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == deleted.TopicId);
+            oldTopicId ??= deleted.TopicId;
+            var curTopic = await context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == oldTopicId);
             var curForum = await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == curTopic.ForumId);
 
-            if (context.PhpbbPosts.Count(p => p.TopicId == deleted.TopicId) == 0 && !ignoreTopic)
+            if (context.PhpbbPosts.Count(p => p.TopicId == oldTopicId.Value) == 0 && !ignoreTopic)
             {
+                this never happens (if is always false?? why?)
                 context.PhpbbTopics.Remove(curTopic);
             }
             else
@@ -118,15 +148,14 @@ namespace Serverless.Forum.Services
                 if (curTopic.TopicLastPostId == deleted.PostId && !ignoreTopic)
                 {
                     var lastTopicPost = await (
-                        from p in context.PhpbbPosts
+                        from p in context.PhpbbPosts.AsNoTracking()
                         where p.TopicId == curTopic.TopicId
+                           && p.PostId != deleted.PostId
                         group p by p.PostTime into grouped
                         orderby grouped.Key descending
                         select grouped.FirstOrDefault()
                     ).FirstOrDefaultAsync();
-                    var lastTopicPostUser = await _userService.DbUserToLoggedUserAsync(
-                        await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == lastTopicPost.PosterId)
-                    );
+                    var lastTopicPostUser = await _userService.GetLoggedUserById(lastTopicPost.PosterId);
 
                     await SetTopicLastPost(curTopic, lastTopicPost, lastTopicPostUser);
                 }
@@ -134,15 +163,14 @@ namespace Serverless.Forum.Services
                 if (curForum.ForumLastPostId == deleted.PostId)
                 {
                     var lastForumPost = await (
-                        from p in context.PhpbbPosts
+                        from p in context.PhpbbPosts.AsNoTracking()
                         where p.ForumId == curForum.ForumId
+                           && p.PostId != deleted.PostId
                         group p by p.PostTime into grouped
                         orderby grouped.Key descending
                         select grouped.FirstOrDefault()
                     ).FirstOrDefaultAsync();
-                    var lastForumPostUser = await _userService.DbUserToLoggedUserAsync(
-                        await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == lastForumPost.PosterId)
-                    );
+                    var lastForumPostUser = await _userService.GetLoggedUserById(lastForumPost.PosterId);
 
                     await SetForumLastPost(curForum, lastForumPost, lastForumPostUser);
                 }
@@ -150,17 +178,16 @@ namespace Serverless.Forum.Services
                 if (curTopic.TopicFirstPostId == deleted.PostId && !ignoreTopic)
                 {
                     var firstPost = await (
-                        from p in context.PhpbbPosts
-                        where p.TopicId == deleted.TopicId
+                        from p in context.PhpbbPosts.AsNoTracking()
+                        where p.TopicId == oldTopicId
+                           && p.PostId != deleted.PostId
                         group p by p.PostTime into grouped
                         orderby grouped.Key ascending
                         select grouped.FirstOrDefault()
                     ).FirstOrDefaultAsync();
-                    var firstPostUser = await _userService.DbUserToLoggedUserAsync(
-                        await context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == firstPost.PosterId)
-                    );
+                    var firstPostUser = await _userService.GetLoggedUserById(firstPost.PosterId);
 
-                    await SetTopicFirstPost(curTopic, firstPost, firstPostUser);
+                    await SetTopicFirstPost(curTopic, firstPost, firstPostUser, false);
                 }
             }
         }
@@ -169,7 +196,7 @@ namespace Serverless.Forum.Services
         {
             if (topic.TopicLastPostTime < post.PostTime)
             {
-                topic.TopicLastPostId = post.PosterId;
+                topic.TopicLastPostId = post.PostId;
                 topic.TopicLastPostSubject = post.PostSubject;
                 topic.TopicLastPostTime = post.PostTime;
                 topic.TopicLastPosterColour = author.UserColor;
@@ -182,7 +209,7 @@ namespace Serverless.Forum.Services
         {
             if (forum.ForumLastPostTime < post.PostTime)
             {
-                forum.ForumLastPostId = post.PosterId;
+                forum.ForumLastPostId = post.PostId;
                 forum.ForumLastPostSubject = post.PostSubject;
                 forum.ForumLastPostTime = post.PostTime;
                 forum.ForumLastPosterColour = author.UserColor;
@@ -191,12 +218,15 @@ namespace Serverless.Forum.Services
             }
         }
 
-        private async Task SetTopicFirstPost(PhpbbTopics topic, PhpbbPosts post, LoggedUser author)
+        private async Task SetTopicFirstPost(PhpbbTopics topic, PhpbbPosts post, LoggedUser author, bool setTopicTitle)
         {
             var curFirstPost = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == topic.TopicFirstPostId);
-            if (curFirstPost.PostTime >= post.PostTime)
+            if (curFirstPost != null && curFirstPost.PostTime >= post.PostTime)
             {
-                topic.TopicTitle = post.PostSubject.Replace(Constants.REPLY, string.Empty).Trim();
+                if (setTopicTitle)
+                {
+                    topic.TopicTitle = post.PostSubject.Replace(Constants.REPLY, string.Empty).Trim();
+                }
                 topic.TopicFirstPostId = post.PostId;
                 topic.TopicFirstPosterColour = author.UserColor;
                 topic.TopicFirstPosterName = author.Username;

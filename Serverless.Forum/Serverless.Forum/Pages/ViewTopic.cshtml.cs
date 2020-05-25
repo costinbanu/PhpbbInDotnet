@@ -54,7 +54,7 @@ namespace Serverless.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public ModeratorPostActions? PostAction { get; set; }
 
-        [BindProperty]
+        [BindProperty(SupportsGet = true)]
         public int[] PostIdsForModerator { get; set; }
 
         public bool ShowTopic => TopicAction == ModeratorTopicActions.MoveTopic && (
@@ -62,7 +62,7 @@ namespace Serverless.Forum.Pages
             DestinationForumId.HasValue
         );
 
-        public bool ShowPostTopic =>PostAction == ModeratorPostActions.MoveSelectedPosts && (
+        public bool ShowPostTopic => PostAction == ModeratorPostActions.MoveSelectedPosts && (
             (ModelState[nameof(DestinationTopicId)]?.Errors?.Any() ?? false) ||
             (ModelState[nameof(PostIdsForModerator)]?.Errors?.Any() ?? false) ||
             DestinationTopicId.HasValue
@@ -80,14 +80,16 @@ namespace Serverless.Forum.Pages
         private List<PhpbbPosts> _dbPosts;
         private int? _page;
         private int? _count;
+        private readonly Utils _utils;
         private readonly PostService _postService;
         private readonly ModeratorService _moderatorService;
         private readonly BBCodeRenderingService _renderingService;
 
-        public ViewTopicModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
-            PostService postService, ModeratorService moderatorService, BBCodeRenderingService renderingService)
-            : base(utils, context, forumService, userService, cacheService)
+        public ViewTopicModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
+            Utils utils, PostService postService, ModeratorService moderatorService, BBCodeRenderingService renderingService)
+            : base(context, forumService, userService, cacheService)
         {
+            _utils = utils;
             _postService = postService;
             _moderatorService = moderatorService;
             _renderingService = renderingService;
@@ -212,30 +214,33 @@ namespace Serverless.Forum.Pages
             await _renderingService.ProcessPosts(Posts, PageContext, HttpContext, true);
             TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
 
-            await GetPoll();
+            Poll = await _postService.GetPoll(_currentTopic);
 
-            if (Posts.Any(p => p.Unread))
+            _utils.RunParallel(async (localContext) =>
             {
-                var existing = await _context.PhpbbTopicsTrack.FirstOrDefaultAsync(t => t.UserId == CurrentUserId && t.TopicId == TopicId);
-                if (existing == null)
+                if (Posts.Any(p => p.Unread))
                 {
-                    await _context.PhpbbTopicsTrack.AddAsync(
-                        new PhpbbTopicsTrack
-                        {
-                            ForumId = ForumId.Value,
-                            MarkTime = DateTime.UtcNow.ToUnixTimestamp(),
-                            TopicId = TopicId.Value,
-                            UserId = CurrentUserId
-                        }
-                    );
+                    var existing = await localContext.PhpbbTopicsTrack.FirstOrDefaultAsync(t => t.UserId == CurrentUserId && t.TopicId == TopicId);
+                    if (existing == null)
+                    {
+                        await localContext.PhpbbTopicsTrack.AddAsync(
+                            new PhpbbTopicsTrack
+                            {
+                                ForumId = ForumId.Value,
+                                MarkTime = DateTime.UtcNow.ToUnixTimestamp(),
+                                TopicId = TopicId.Value,
+                                UserId = CurrentUserId
+                            }
+                        );
+                    }
+                    else
+                    {
+                        existing.ForumId = ForumId.Value;
+                        existing.MarkTime = DateTime.UtcNow.ToUnixTimestamp();
+                    }
+                    await localContext.SaveChangesAsync();
                 }
-                else
-                {
-                    existing.ForumId = ForumId.Value;
-                    existing.MarkTime = DateTime.UtcNow.ToUnixTimestamp();
-                }
-                await _context.SaveChangesAsync();
-            }
+            });
 
             return Page();
         }
@@ -335,13 +340,13 @@ namespace Serverless.Forum.Pages
                 _ => throw new NotImplementedException($"Unknown action '{TopicAction}'")
             };
 
-            if (!(IsSuccess ?? false))
+            if (IsSuccess ?? false)
             {
-                ModeratorActionResult = $"<span style=\"margin-left: 30px; color: red; display:block;\">{Message}</span>";
+                ModeratorActionResult = $"<span style=\"margin-left: 30px; color: darkgreen; display:block;\">{Message}</span>";
             }
             else
             {
-                ModeratorActionResult = $"<span style=\"margin-left: 30px; color: darkgreen; display:block;\">{Message}</span>";
+                ModeratorActionResult = $"<span style=\"margin-left: 30px; color: red; display:block;\">{Message}</span>";
             }
 
             return await OnGet();
@@ -361,17 +366,8 @@ namespace Serverless.Forum.Pages
                 ModeratorPostActions.SplitSelectedPosts => await _moderatorService.SplitPosts(PostIdsForModerator, DestinationForumId.Value),
                 _ => throw new NotImplementedException($"Unknown action '{PostAction}'")
             };
-           
-            if (!(IsSuccess ?? false))
-            {
-                ModeratorActionResult = $"<span style=\"margin-left: 30px; color: red; display:block;\">{Message}</span>";
-            }
-            else
-            {
-                ModeratorActionResult = $"<span style=\"margin-left: 30px; color: darkgreen; display:block;\">{Message}</span>";
-            }
 
-            if((IsSuccess ?? false) && PostAction == ModeratorPostActions.MoveSelectedPosts)
+            if (IsSuccess ?? false)
             {
                 var latestSelectedPost = await (
                    from p in _context.PhpbbPosts.AsNoTracking()
@@ -398,24 +394,25 @@ namespace Serverless.Forum.Pages
                     select groups.FirstOrDefault()
                 ).FirstOrDefaultAsync();
 
+                var destinations = new List<string>();
+                if (latestSelectedPost != null)
+                {
+                    destinations.Add(await _utils.CompressAndUrlEncode($"<a href=\"./ViewTopic?postId={latestSelectedPost.PostId}&handler=byPostId\">Mergi la noul subiect</a>"));
+                };
+
                 if (nextRemainingPost != null)
                 {
-                    var destinations = new List<string>
-                    {
-                        await _utils.CompressAndUrlEncode($"<a href=\"./ViewTopic?postId={latestSelectedPost.PostId}&handler=byPostId\">Mergi la noul subiect</a>"),
-                        await _utils.CompressAndUrlEncode($"<a href=\"./ViewTopic?postId={nextRemainingPost.PostId}&handler=byPostId\">Mergi la ultimul subiect vizitat</a>")
-                    };
-                    return RedirectToPage("Confirm", "DestinationConfirmation", new { destinations });
+                    destinations.Add(await _utils.CompressAndUrlEncode($"<a href=\"./ViewTopic?postId={nextRemainingPost.PostId}&handler=byPostId\">Mergi la ultimul subiect vizitat</a>"));
                 }
                 else
                 {
-                    TopicId = null;
-                    PageNum = null;
-                    PostId = latestSelectedPost.PostId;
-                    return await OnGetByPostId();
+                    destinations.Add(await _utils.CompressAndUrlEncode($"<a href=\"./ViewForum?forumId={ForumId}\">Mergi la ultimul forum vizitat</a>"));
                 }
+
+                return RedirectToPage("Confirm", "DestinationConfirmation", new { destinations });
             }
 
+            ModeratorActionResult = $"<span style=\"margin-left: 30px; color: red; display:block;\">{Message}</span>";
             return await OnGet();
         }
 
@@ -427,46 +424,6 @@ namespace Serverless.Forum.Pages
                 _dbPosts = results.Posts;
                 _page = results.Page;
                 _count = results.Count;
-            }
-        }
-
-        private async Task GetPoll()
-        {
-            var tid = TopicId ?? 0;
-            Poll = new PollDisplay
-            {
-                PollTitle = _currentTopic.PollTitle,
-                PollStart = _currentTopic.PollStart.ToUtcTime(),
-                PollDurationSecons = _currentTopic.PollLength,
-                PollMaxOptions = _currentTopic.PollMaxOptions,
-                TopicId = tid,
-                VoteCanBeChanged = _currentTopic.PollVoteChange == 1,
-                PollOptions = await (
-                    from o in _context.PhpbbPollOptions.AsNoTracking()
-                    where o.TopicId == tid
-                    let voters = from v in _context.PhpbbPollVotes.AsNoTracking()
-                                 where o.PollOptionId == v.PollOptionId && o.TopicId == v.TopicId
-                                 join u in _context.PhpbbUsers.AsNoTracking()
-                                 on v.VoteUserId equals u.UserId
-                                 into joinedUsers
-
-                                 from ju in joinedUsers.DefaultIfEmpty()
-                                 where ju != null
-                                 select new PollOptionVoter { UserId = ju.UserId, Username = ju.Username }
-
-                    select new PollOption
-                    {
-                        PollOptionId = o.PollOptionId,
-                        PollOptionText = o.PollOptionText,
-                        TopicId = o.TopicId,
-                        PollOptionVoters = voters.ToList() 
-                    }
-                ).ToListAsync()
-            };
-
-            if(!Poll.PollOptions.Any())
-            {
-                Poll = null;
             }
         }
     }

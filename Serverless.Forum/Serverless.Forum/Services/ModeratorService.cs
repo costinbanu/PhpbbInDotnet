@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
+using System.Configuration;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -9,13 +10,11 @@ namespace Serverless.Forum.Services
     public class ModeratorService
     {
         private readonly ForumDbContext _context;
-        private readonly UserService _userService;
         private readonly PostService _postService;
 
-        public ModeratorService(ForumDbContext context, UserService userService, PostService postService)
+        public ModeratorService(ForumDbContext context, PostService postService)
         {
             _context = context;
-            _userService = userService;
             _postService = postService;
         }
 
@@ -67,7 +66,7 @@ namespace Serverless.Forum.Services
                 }             
                 
                 var newParent = await _context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == destinationForumId);
-                await _postService.CascadePostAdd(_context, posts.Last(), await _userService.GetLoggedUserById(posts.Last().PosterId), false, true);
+                await _postService.CascadePostAdd(_context, posts.Last(), false, true);
                 await _context.SaveChangesAsync();
 
                 return ("Subiectul a fost modificat cu succes!", true);
@@ -148,16 +147,17 @@ namespace Serverless.Forum.Services
                 topicResult.Entity.TopicId = 0;
                 await _context.SaveChangesAsync();
                 var curTopic = topicResult.Entity;
+                var oldTopicId = posts.First().TopicId;
 
                 foreach (var post in posts)
                 {
-                    await _postService.CascadePostDelete(_context, post, false);
                     post.TopicId = curTopic.TopicId;
                     post.ForumId = curTopic.ForumId;
+                    await _postService.CascadePostDelete(_context, post, false, oldTopicId);
                 }
 
-                await _postService.CascadePostAdd(_context, posts.First(), await _userService.GetLoggedUserById(posts.First().PosterId), true, false);
-                await _postService.CascadePostAdd(_context, posts.Last(), await _userService.GetLoggedUserById(posts.Last().PosterId), false, false);
+                await _postService.CascadePostAdd(_context, posts.First(), true, false);
+                await _postService.CascadePostAdd(_context, posts.Last(), false, false);
                 await _context.SaveChangesAsync();
                 
                 return ("Mesajele au fost separate cu succes!", true);
@@ -183,19 +183,19 @@ namespace Serverless.Forum.Services
                     return ("Cel puțin un mesaj dintre cele selectate a fost mutat sau șters între timp.", false);
                 }
 
-                var curTopic = await _context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == posts.First().TopicId);
                 var newTopic = await _context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == destinationTopicId);
+                var oldTopicId = posts.First().TopicId;
                 foreach (var post in posts)
                 {
-                    await _postService.CascadePostDelete(_context, post, false);
                     post.TopicId = newTopic.TopicId;
                     post.ForumId = newTopic.ForumId;
+                    await _postService.CascadePostDelete(_context, post, false, oldTopicId);
                 }
 
-                await _postService.CascadePostAdd(_context, posts.First(), await _userService.GetLoggedUserById(posts.First().PosterId), true, false);
-                await _postService.CascadePostAdd(_context, posts.Last(), await _userService.GetLoggedUserById(posts.Last().PosterId), false, false);
+                await _postService.CascadePostAdd(_context, posts.First(), true, false);
+                await _postService.CascadePostAdd(_context, posts.Last(), false, false);
                 await _context.SaveChangesAsync();
-                asta muta tot subiectul, care a disparut cu totul? weird
+                //asta muta tot subiectul, care a disparut cu totul? weird
                 return ("Mesajele au fost mutate cu succes!", true);
             }
             catch

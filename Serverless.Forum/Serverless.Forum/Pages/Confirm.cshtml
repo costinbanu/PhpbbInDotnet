@@ -75,15 +75,25 @@
         <input type="hidden" asp-for="PageNum" />
         <input type="hidden" asp-for="TopicAction" />
         <input type="hidden" asp-for="PostAction" />
+        @if (!string.IsNullOrWhiteSpace(Model.SelectedPostIds))
+        {
+            var ids = Model.SelectedPostIds.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            for (var i = 0; i < ids.Length; i++)
+            {
+                <input type="hidden" name="PostIdsForModerator[@i]" value="@ids[i]" />
+            }
+        }
         <p></p>
         <input type="submit" value="Trimite" />
     </form>
 }
 else if (Model.IsDestinationConfirmation)
 {
-    foreach(var destination in Model.Destinations)
+    <span style="font-size:1.2em">@Html.Raw(Model.Message)</span>
+    <p>&nbsp;</p>
+    foreach (var destination in Model.Destinations)
     {
-        Html.Raw(_utils.UrlDecodeAndDecompress(destination));
+        @Html.Raw(await _utils.UrlDecodeAndDecompress(destination));
         <p></p>
     }
 }

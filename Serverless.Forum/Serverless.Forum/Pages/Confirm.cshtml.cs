@@ -36,12 +36,15 @@ namespace Serverless.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public List<string> Destinations { get; set; }
 
+        [BindProperty(SupportsGet = true)]
+        public string SelectedPostIds { get; set; }
+
         public bool IsModeratorConfirmation { get; private set; } = false;
 
         public bool IsDestinationConfirmation { get; private set; } = false;
 
-        public ConfirmModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
-            : base(utils, context, forumService, userService, cacheService) { }
+        public ConfirmModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
+            : base(context, forumService, userService, cacheService) { }
 
         public void OnGetRegistrationComplete()
         {
@@ -109,11 +112,23 @@ namespace Serverless.Forum.Pages
         public void OnGetModeratorConfirmation()
         {
             IsModeratorConfirmation = true;
+            if (ShowTopicSelector)
+            {
+                Title = "Alege forumul și subiectul de destinație";
+            }
+            else
+            {
+                Title = "Alege forumul și subiectul de destinație";
+            }
         }
 
         public void OnGetDestinationConfirmation()
         {
             IsDestinationConfirmation = true;
+            Message =
+                "<span style=\"color=darkgreen\">" +
+                    "Operațiunea a fost efectuată cu succes." +
+                "</span>";
         }
     }
 }

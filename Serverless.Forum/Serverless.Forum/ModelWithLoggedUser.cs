@@ -20,7 +20,6 @@ namespace Serverless.Forum
 {
     public class ModelWithLoggedUser : PageModel
     {
-        protected readonly Utils _utils;
         protected readonly ForumTreeService _forumService;
         protected readonly CacheService _cacheService;
         protected readonly UserService _userService;
@@ -30,9 +29,8 @@ namespace Serverless.Forum
         private LoggedUser _currentUser;
         private ForumDisplay _tree = null;
 
-        public ModelWithLoggedUser(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
+        public ModelWithLoggedUser(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
         {
-            _utils = utils;
             _forumService = forumService;
             _cacheService = cacheService;
             _userService = userService;
@@ -165,10 +163,7 @@ namespace Serverless.Forum
         {
             if (await GetCurrentUserAsync() == await _userService.GetAnonymousLoggedUserAsync())
             {
-                yield return RedirectToPage("Login", new LoginModel(_context, _utils, _cacheService, _userService)
-                {
-                    ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString)
-                });
+                yield return RedirectToPage("Login", new { ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString) });
             }
         }
 

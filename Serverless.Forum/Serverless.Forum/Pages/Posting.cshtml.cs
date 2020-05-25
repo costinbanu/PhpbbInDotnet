@@ -44,6 +44,7 @@ namespace Serverless.Forum.Pages
         public List<string> FileComment { get; set; }
         [BindProperty]
         public List<string> DeleteFileDummyForValidation { get; set; }
+
         [BindProperty]
         public string EditReason { get; set; }
         public PostDisplay PreviewablePost { get; private set; }
@@ -54,15 +55,17 @@ namespace Serverless.Forum.Pages
         private readonly StorageService _storageService;
         private readonly WritingToolsService _writingService;
         private readonly BBCodeRenderingService _renderingService;
+        private readonly Utils _utils;
 
         public PostingModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService,
             PostService postService, StorageService storageService, WritingToolsService writingService, BBCodeRenderingService renderingService)
-            : base(utils, context, forumService, userService, cacheService)
+            : base(context, forumService, userService, cacheService)
         {
             PollExpirationDaysString = "1";
             PollMaxOptions = 1;
             FileComment = new List<string>();
             DeleteFileDummyForValidation = new List<string>();
+            _utils = utils;
             _postService = postService;
             _storageService = storageService;
             _writingService = writingService;
@@ -563,7 +566,7 @@ namespace Serverless.Forum.Pages
                     attachList[i].AttachComment = FileComment[i] ?? string.Empty;
                 }
 
-                await _postService.CascadePostAdd(context, post, usr, isNewTopic, false);
+                await _postService.CascadePostAdd(context, post, isNewTopic, false);
                 await context.PhpbbAttachments.AddRangeAsync(attachList);
             }
             else
@@ -588,7 +591,7 @@ namespace Serverless.Forum.Pages
                     xref.Old.AttachComment = xref.NewComment;
                 }
 
-                await _postService.CascadePostEdit(context, post, usr);
+                await _postService.CascadePostEdit(context, post);
             }
             await context.SaveChangesAsync();
 

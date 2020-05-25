@@ -1,13 +1,10 @@
-﻿using Amazon.S3.Model;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Pages.CustomPartials.Admin;
 using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -28,15 +25,16 @@ namespace Serverless.Forum.Pages
                 _ => "message fail",
             };
 
+        private readonly Utils _utils;
         private readonly AdminUserService _adminUserService;
         private readonly AdminForumService _adminForumService;
         private readonly WritingToolsService _adminWritingService;
 
-        public AdminModel(
-            Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService,
-            AdminUserService adminUserService, AdminForumService adminForumService, WritingToolsService adminWritingService
-        ) : base(utils, context, forumService, userService, cacheService)
+        public AdminModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService,
+            Utils utils, AdminUserService adminUserService, AdminForumService adminForumService, WritingToolsService adminWritingService) 
+            : base(context, forumService, userService, cacheService)
         {
+            _utils = utils;
             _adminUserService = adminUserService;
             _adminForumService = adminForumService;
             _adminWritingService = adminWritingService;

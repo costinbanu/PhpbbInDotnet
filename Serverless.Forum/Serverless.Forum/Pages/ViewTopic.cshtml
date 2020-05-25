@@ -6,7 +6,6 @@
 
 @inject Services.UserService _userService
 @inject Utils _utils
-@inject Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor
 
 @{
     ViewData["Title"] = $"{Model.ForumTitle} - {Model.TopicTitle}";
@@ -19,21 +18,21 @@
 }
 
 <link rel="stylesheet" href="~/css/pagination.css" />
-
+<script type="text/javascript" src="~/js/viewTopic.js"></script>
 <script type="text/javascript">
+    var vt = new ViewTopic(
+        @Json.Serialize(Model.PostId ?? -1),
+        @Json.Serialize(Model.Highlight ?? true),
+        @Model.ScrollToModeratorPanel,
+        '@ModeratorTopicActions.MoveTopic',
+        '@ModeratorPostActions.MoveSelectedPosts',
+        '@ModeratorPostActions.SplitSelectedPosts'
+    );
+
     $(document).ready(function () {
-        onPostLoad();
-        var postId = @Json.Serialize(Model.PostId ?? -1);
-        var highlight = @Json.Serialize(Model.Highlight ?? true);
-        if (postId != -1) {
-            var element = $("#" + postId);
-            var elementTop = element.offset().top;
-            var headerHeight = $("#topBanner").outerHeight(true);
-            window.scrollTo(0, elementTop > headerHeight ? elementTop - headerHeight : elementTop);
-            var container = element.parent().parent();
-            if (container && highlight) {
-                container.addClass("Highlight");
-            }
+        window.onload = function () {
+            onPostLoad();
+            vt.onLoad();
         }
     });
 
@@ -43,19 +42,6 @@
         if (forumInput != null) {
             forumInput.value = forumId;
         }
-    }
-
-    function switchPollPanels(id1, id2, button) {
-        showElement(
-            id1,
-            function () {
-                button.value = "Arată rezultatele";
-            },
-            function () {
-                button.value = "Votează";
-            }
-        );
-        showElement(id2);
     }
 </script>
 
@@ -126,7 +112,7 @@
         @if (Model.Poll.CanVoteNow(Model.CurrentUserId) && IsAdmin)
         {
             <br />
-            <input type="button" value="Arată rezultatele" onclick="switchPollPanels('results', 'votes', this)" />
+            <input type="button" value="Arată rezultatele" onclick="vt.switchPollPanels('results', 'votes', this)" />
         }
     }
     <hr />
@@ -241,7 +227,7 @@
                                 <a href="javascript:return;">&#x2753; Informații</a>
                             </span>
                             <span>
-                                Selectează pentru moderare <input name="PostIdsForModerator" type="checkBox" value="@post.PostId" form="moderatorForm" />
+                                Selectează pentru moderare <input name="PostIdsForModerator" type="checkBox" value="@post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @(post.PostId ?? -1))" @(Model.PostIdsForModerator.Contains(post.PostId ?? -1) ? "checked" : "") />
                             </span>
                         }
                         @if (IsMod || (post.AuthorId == Model.CurrentUserId && DateTime.UtcNow.Subtract(post.PostCreationTime ?? default).TotalMinutes <= EditTime))
@@ -323,11 +309,11 @@ else if (!IsAnonymous)
 {
     <form method="post" asp-page-handler="TopicModerator">
         <span>Acțiuni moderare (cu acest topic): </span>
-        @Html.DropDownList("TopicAction", _utils.EnumToDropDownList<ModeratorTopicActions>(Model.TopicAction), new { onchange = "showTopicExtraInput(this)", id = "TopicAction" })
+        @Html.DropDownList("TopicAction", _utils.EnumToDropDownList<ModeratorTopicActions>(Model.TopicAction), new { onchange = "vt.showTopicExtraInput(this)", id = "TopicAction" })
         <div id="extraInputTopic" style="display:@(Model.ShowTopic ? "block" : "none")">
             <br />
             <input type="text" asp-for="DestinationForumId" placeholder="ID forum destinație" /><br />
-            <a id="topicLink" asp-page="Confirm" asp-page-handler="ModeratorConfirmation" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-pageNum="@Model.PageNum" asp-route-showTopicSelector="false">
+            <a href="javascript:$('#modConfirmation').submit();">
                 Alege id-ul forumului de destinație
             </a>
             <span asp-validation-for="DestinationForumId" class="validation"></span>
@@ -339,11 +325,11 @@ else if (!IsAnonymous)
     <form id="moderatorForm" method="post" asp-page-handler="PostModerator">
         <br />
         <span>Acțiuni moderare (cu mesajele selectate): </span>
-        @Html.DropDownList("PostAction", _utils.EnumToDropDownList<ModeratorPostActions>(Model.PostAction), new { onchange = "showPostExtraInput(this)", id = "PostAction" })
+        @Html.DropDownList("PostAction", _utils.EnumToDropDownList<ModeratorPostActions>(Model.PostAction), new { onchange = "vt.showPostExtraInput(this)", id = "PostAction" })
         <div id="extraInputPostForum" style="display:@(Model.ShowPostForum ? "block" : "none")">
             <br />
             <input type="text" asp-for="DestinationForumId" placeholder="ID forum destinație" /><br />
-            <a id="postForumLink" asp-page="Confirm" asp-page-handler="ModeratorConfirmation" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-pageNum="@Model.PageNum" asp-route-showTopicSelector="false">
+            <a href="javascript:$('#modConfirmation').submit();">
                 Alege id-ul forumului de destinație
             </a>
             <span asp-validation-for="PostIdsForModerator" class="validation"></span>
@@ -352,7 +338,7 @@ else if (!IsAnonymous)
         <div id="extraInputPostTopic" style="display:@(Model.ShowPostTopic ? "block" : "none")">
             <br />
             <input type="text" asp-for="DestinationTopicId" placeholder="ID subiect destinație" /><br />
-            <a id="postTopicLink" asp-page="Confirm" asp-page-handler="ModeratorConfirmation" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-pageNum="@Model.PageNum" asp-route-showTopicSelector="true">
+            <a href="javascript:$('#modConfirmation').submit();">
                 Alege id-ul subiectului de destinație
             </a>
             <span asp-validation-for="PostIdsForModerator" class="validation"></span>
@@ -363,48 +349,19 @@ else if (!IsAnonymous)
         <input asp-for="TopicId" type="hidden" />
         <input asp-for="PageNum" type="hidden" />
     </form>
+    <form id="modConfirmation" asp-page="Confirm" method="get">
+        <input type="hidden" asp-for="ForumId" />
+        <input type="hidden" asp-for="TopicId" />
+        <input type="hidden" asp-for="PageNum" />
+        <input type="hidden" name="showTopicSelector" id="showTopicSelector" value="false" />
+        <input type="hidden" name="selectedPostIds" id="selectedPostIds" value="" />
+        <input type="hidden" name="postAction" id="postAction" value="" />
+        <input type="hidden" name="topicAction" id="topicAction" value="" />
+        <input type="hidden" name="handler" value="ModeratorConfirmation" />
+    </form>
     @if (!string.IsNullOrWhiteSpace(Model.ModeratorActionResult))
     {
         <br />
         @Html.Raw(Model.ModeratorActionResult)
     }
-    <script>
-        window.onload = function() {
-            //$('#TopicAction').val('');
-            //$('#PostAction').val('');
-
-            if (@Model.ScrollToModeratorPanel) {
-                document.getElementById('moderatorForm').scrollIntoView();
-            }
-        }
-
-        function showTopicExtraInput(source) {
-            if ($(source).val() == '@ModeratorTopicActions.MoveTopic') {
-                $('#extraInputPostForum').hide("fast");
-                $('#extraInputPostTopic').hide("fast");
-                $('#extraInputTopic').show("fast");
-                setForumAction('topicLink', 'Topic');
-            }
-        }
-
-        function showPostExtraInput(source) {
-            if ($(source).val() == '@ModeratorPostActions.MoveSelectedPosts') {
-                $('#extraInputPostForum').hide("fast");
-                $('#extraInputTopic').hide("fast");
-                $('#extraInputPostTopic').show("fast");
-                setForumAction('postTopicLink', 'Post');
-            } else if ($(source).val() == '@ModeratorPostActions.SplitSelectedPosts') {
-                $('#extraInputTopic').hide("fast");
-                $('#extraInputPostTopic').hide("fast");
-                $('#extraInputPostForum').show("fast");
-                setForumAction('postForumLink', 'Topic');
-            }
-        }
-
-        function setForumAction(id, kind) {
-            var val = $('#' + id).attr('href');
-            val += '&' + kind + 'Action=' + $('#' + kind + 'Action').val();
-            $('#' + id).attr('href', val);
-        }
-    </script>
 }
