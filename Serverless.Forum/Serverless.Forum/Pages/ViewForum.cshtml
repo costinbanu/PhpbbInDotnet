@@ -111,19 +111,12 @@ else
                 </span>
                 @await Html.PartialAsync(
                     "_SummaryPartial",
-                    new CustomPartials._SummaryPartialModel(
-                        topic.LastPosterId,
-                        topic.LastPosterName,
-                        topic.LastPosterColor,
-                        topic.LastPostTime,
-                        topic.Id.Value,
-                        UserDateFormat, 
-                        false,
-                        null,
+                    new CustomPartials._SummaryPartialModel(topic.LastPosterId, topic.LastPosterName, topic.LastPosterColor, topic.LastPostTime, topic.Id.Value,
+                        UserDateFormat, false, null,
                         topic.LastPostId == null ? null : $"./ViewTopic?postId={topic.LastPostId}&handler=ByPostId",
                         topic.LastPostId == null ? null : "&#x1F4C3;",
                         topic.LastPostId == null ? null : "Vezi ultimul mesaj",
-                        false
+                        false, true, topic.PostCount, topic.ViewCount
                     )
                 )
             </div>

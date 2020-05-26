@@ -140,7 +140,7 @@ namespace Serverless.Forum
 
             if (restrictedAncestor != null)
             {
-                if ((await GetCurrentUserAsync()).AllPermissions.Any(p => p.ForumId == restrictedAncestor.Id && p.AuthRoleId == 16))
+                if ((await GetCurrentUserAsync())?.AllPermissions?.Any(p => p.ForumId == restrictedAncestor.Id && p.AuthRoleId == 16) ?? false)
                 {
                     yield return Unauthorized();
                 }

@@ -18,7 +18,7 @@
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="5.0.0" />
     <PackageReference Include="AutoMapper" Version="9.0.0" />
     <PackageReference Include="AWSSDK.S3" Version="3.3.110.50" />
-    <PackageReference Include="CodeKicker.BBCode.Core" Version="1.0.0.1-alpha" />
+    <PackageReference Include="CodeKicker.BBCode.Core" Version="1.0.0.2-alpha" />
     <PackageReference Include="Crc32.NET" Version="1.2.0" />
     <PackageReference Include="CryptSharp.Core" Version="1.0.0" />
     <PackageReference Include="Dapper" Version="2.0.35" />

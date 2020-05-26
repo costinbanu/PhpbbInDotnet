@@ -22,6 +22,7 @@ namespace Serverless.Forum.ForumDb
         public byte EnableMagicUrl { get; set; } = 1;
         public byte EnableSig { get; set; } = 1;
         public string PostUsername { get; set; } = string.Empty;
+        [StringLength(255)]
         public string PostSubject { get; set; } = string.Empty;
         public string PostText { get; set; } = string.Empty;
         public string PostChecksum { get; set; } = string.Empty;

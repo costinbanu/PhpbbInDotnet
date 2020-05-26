@@ -254,7 +254,7 @@ namespace Serverless.Forum.Pages
             CurrentUser = cur;
             CurrentUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(CurrentUser.UserSig, CurrentUser.UserSigBbcodeUid));
             TotalPosts = await context.PhpbbPosts.AsNoTracking().CountAsync(p => p.PosterId == cur.UserId);
-            var restrictedForums = (await GetCurrentUserAsync()).AllPermissions.Where(p => p.AuthRoleId == 16).Select(p => p.ForumId);
+            var restrictedForums = (await GetCurrentUserAsync())?.AllPermissions?.Where(p => p.AuthRoleId == 16)?.Select(p => p.ForumId) ?? Enumerable.Empty<int>();
             var preferredTopicId = await (
                 from p in context.PhpbbPosts.AsNoTracking()
                 where p.PosterId == cur.UserId

@@ -11,12 +11,12 @@
 @foreach (var category in Model.Categories)
 {
     var catIndex = 0;
-    <div class="FlexRow Category">
+    <div class="FlexRow Category RowMargin">
         @category.Name
     </div>
     @foreach (var forum in category.ChildrenForums)
     {
-        var divClass = forum.Unread ? $"FlexRow Unread Color{catIndex % 2}" : $"FlexRow Color{catIndex % 2}";
+        var divClass = forum.Unread ? $"FlexRow Unread Color{catIndex % 2} RowMargin" : $"FlexRow Color{catIndex % 2} RowMargin";
         catIndex++;
         <div class="@divClass">
             <span class="ForumContent" style="padding-left:20px">
@@ -25,19 +25,12 @@
             </span>
             @await Html.PartialAsync(
                 "_SummaryPartial",
-                new CustomPartials._SummaryPartialModel(
-                    forum.LastPosterId,
-                    forum.LastPosterName,
-                    forum.LastPosterColor,
-                    forum.LastPostTime,
-                    forum.Id ?? 0,
-                    Model.DateFormat,
-                    false,
-                    null,
+                new CustomPartials._SummaryPartialModel(forum.LastPosterId, forum.LastPosterName, forum.LastPosterColor, forum.LastPostTime, forum.Id ?? 0,
+                    Model.DateFormat, false, null,
                     forum.LastPostId == null ? null : $"./ViewTopic?postId={forum.LastPostId}&handler=ByPostId",
                     forum.LastPostId == null ? null : "&#x1F4C3;",
                     forum.LastPostId == null ? null : "Vezi ultimul mesaj",
-                    false
+                    false, true
                 )
             )
         </div>
@@ -57,7 +50,7 @@
 @{ var index = 0; }
 @foreach (var forum in Model.SubForums)
 {
-    var divClass = forum.Unread ? $"FlexRow Unread Color{index % 2}" : $"FlexRow Color{index % 2}";
+    var divClass = forum.Unread ? $"FlexRow Unread Color{index % 2} RowMargin" : $"FlexRow Color{index % 2} RowMargin";
     index++;
     <div class="@divClass">
         <span class="ForumContent">
@@ -66,19 +59,12 @@
         </span>
         @await Html.PartialAsync(
             "_SummaryPartial",
-            new CustomPartials._SummaryPartialModel(
-                forum.LastPosterId,
-                forum.LastPosterName,
-                forum.LastPosterColor,
-                forum.LastPostTime,
-                forum.Id ?? 0,
-                Model.DateFormat,
-                false,
-                null,
+            new CustomPartials._SummaryPartialModel(forum.LastPosterId, forum.LastPosterName, forum.LastPosterColor, forum.LastPostTime, forum.Id ?? 0,
+                Model.DateFormat, false, null,
                 forum.LastPostId == null ? null : $"./ViewTopic?postId={forum.LastPostId}&handler=ByPostId",
                 forum.LastPostId == null ? null : "&#x1F4C3;",
                 forum.LastPostId == null ? null : "Vezi ultimul mesaj",
-                false
+                false, true
             )
         )
     </div>

@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
-using System.Configuration;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -59,14 +58,12 @@ namespace Serverless.Forum.Services
                 var posts = await _context.PhpbbPosts.Where(p => p.TopicId == curTopic.TopicId).OrderBy(p => p.PostTime).ToListAsync();
                 
                 curTopic.ForumId = destinationForumId;
-                foreach (var post in posts)
-                {
-                    await _postService.CascadePostDelete(_context, post, true);
-                    post.ForumId = destinationForumId;
-                }             
-                
-                var newParent = await _context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == destinationForumId);
-                await _postService.CascadePostAdd(_context, posts.Last(), false, true);
+                posts.ForEach(post => post.ForumId = destinationForumId);
+                _context.PhpbbPosts.UpdateRange(posts);
+                await _context.SaveChangesAsync();
+                posts.ForEach(async (post) => await _postService.CascadePostDelete(_context, post, true));
+                await _context.SaveChangesAsync();
+                await _postService.CascadePostAdd(_context, posts.Last(), true);
                 await _context.SaveChangesAsync();
 
                 return ("Subiectul a fost modificat cu succes!", true);
@@ -109,6 +106,7 @@ namespace Serverless.Forum.Services
                 }
                 var posts = await _context.PhpbbPosts.Where(p => p.TopicId == curTopic.TopicId).ToListAsync();
                 _context.PhpbbPosts.RemoveRange(posts);
+                await _context.SaveChangesAsync();
                 posts.ForEach(async (p) => await _postService.CascadePostDelete(_context, p, false));
                 await _context.SaveChangesAsync();
                 return ("Subiectul a fost modificat cu succes!", true);
@@ -153,11 +151,14 @@ namespace Serverless.Forum.Services
                 {
                     post.TopicId = curTopic.TopicId;
                     post.ForumId = curTopic.ForumId;
-                    await _postService.CascadePostDelete(_context, post, false, oldTopicId);
                 }
-
-                await _postService.CascadePostAdd(_context, posts.First(), true, false);
-                await _postService.CascadePostAdd(_context, posts.Last(), false, false);
+                _context.PhpbbPosts.UpdateRange(posts);
+                await _context.SaveChangesAsync();
+                foreach (var post in posts)
+                {
+                    await _postService.CascadePostDelete(_context, post, false, oldTopicId);
+                    await _postService.CascadePostAdd(_context, post, false);
+                }
                 await _context.SaveChangesAsync();
                 
                 return ("Mesajele au fost separate cu succes!", true);
@@ -189,13 +190,15 @@ namespace Serverless.Forum.Services
                 {
                     post.TopicId = newTopic.TopicId;
                     post.ForumId = newTopic.ForumId;
-                    await _postService.CascadePostDelete(_context, post, false, oldTopicId);
                 }
-
-                await _postService.CascadePostAdd(_context, posts.First(), true, false);
-                await _postService.CascadePostAdd(_context, posts.Last(), false, false);
+                _context.PhpbbPosts.UpdateRange(posts);
                 await _context.SaveChangesAsync();
-                //asta muta tot subiectul, care a disparut cu totul? weird
+                foreach (var post in posts)
+                {
+                    await _postService.CascadePostDelete(_context, post, false, oldTopicId);
+                    await _postService.CascadePostAdd(_context, post, false);
+                }
+                await _context.SaveChangesAsync();
                 return ("Mesajele au fost mutate cu succes!", true);
             }
             catch
@@ -222,10 +225,9 @@ namespace Serverless.Forum.Services
 
                 var curTopic = await _context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == posts.First().TopicId);
                 _context.PhpbbPosts.RemoveRange(posts);
-                posts.ForEach(async (p) => await _postService.CascadePostDelete(_context, p, false));
-                
                 await _context.SaveChangesAsync();
-
+                posts.ForEach(async (p) => await _postService.CascadePostDelete(_context, p, false));
+                await _context.SaveChangesAsync();
                 return ("Subiectul a fost modificat cu succes!", true);
             }
             catch

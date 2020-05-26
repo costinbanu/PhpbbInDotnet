@@ -42,7 +42,6 @@
             $('#extraInputPostForum').hide("fast");
             $('#extraInputPostTopic').hide("fast");
             $('#extraInputTopic').show("fast");
-            setForumAction('topicLink', 'Topic');
         }
         $('#topicAction').val($(source).val());
         $('#showTopicSelector').val('false');

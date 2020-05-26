@@ -22,6 +22,30 @@
     font-style: italic;
 }
 
+@font-face {
+    font-family: UbuntuMono;
+    src: url('../fonts/UbuntuMono-Regular.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: UbuntuMono;
+    src: url('../fonts/UbuntuMono-Bold.ttf') format('truetype');
+    font-weight: bold;
+}
+
+@font-face {
+    font-family: UbuntuMono;
+    src: url('../fonts/UbuntuMono-Italic.ttf') format('truetype');
+    font-style: italic;
+}
+
+@font-face {
+    font-family: UbuntuMono;
+    src: url('../fonts/UbuntuMono-BoldItalic.ttf') format('truetype');
+    font-weight: bold;
+    font-style: italic;
+}
+
 body {
     padding-top: 100px;
     padding-bottom: 20px;
@@ -63,15 +87,31 @@ h3 {
 }
 
 .PostQuote {
-    background-color: #fef6e9;
+    background-color: /*#fef6e9*/ #EBEADD;
+    border: solid 1px #DBDBCE;
+    margin: 20px 0px 20px 0px !important;
+}
+
+.CodeBlock {
+    font-family: UbuntuMono;
+    font-size: 0.9em;
+    line-height: 1em;
+    display: inline-block;
+    min-height: 100px;
+    max-height: 100px;
+    overflow-y: scroll;
+    background-color: white;
+    border: solid 1px gray;
+    margin: 10px 20px 10px 10px;
+    padding: 5px 5px;
 }
 
 .Color0 {
-    background-color: #eaf4f4;
+    background-color: /*#eaf4f4*/ #E1E9E9;
 }
 
 .Color1 {
-    background-color: #f8faf9;
+    background-color: /*#f8faf9*/ #e1ebf2;
 }
 
 .FlexRow {
@@ -79,7 +119,7 @@ h3 {
     max-width: 100vw;
     display: flex;
     vertical-align: top;
-    padding: 0.5em;
+    padding: 10px;
     height:auto;
 }
 
@@ -114,6 +154,7 @@ h3 {
 }
 
 .ForumContent {
+    max-width: 100%;
     width: 100%;
     height: auto;
     vertical-align: top;
@@ -122,13 +163,14 @@ h3 {
 
 .Summary {
     min-width: 270px;
-    max-width:270px;
+    max-width: 270px;
     display: inline-block;
     vertical-align: top;
     display: inline-block;
     list-style-type: none;
     margin-bottom: 0px !important;
-    white-space: nowrap;
+    /*padding-left: 10px;
+    text-indent: -10px;*/
 }
 
 .FlexRight {

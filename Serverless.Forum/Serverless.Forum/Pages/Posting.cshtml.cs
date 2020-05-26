@@ -8,6 +8,7 @@ using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
@@ -18,39 +19,56 @@ namespace Serverless.Forum.Pages
     [ValidateAntiForgeryToken]
     public class PostingModel : ModelWithLoggedUser
     {
-        [BindProperty]
+        [BindProperty, MaxLength(255, ErrorMessage = "Titlul trebuie să aibă maxim 255 caractere.")]
         public string PostTitle { get; set; }
+        
         [BindProperty]
         public string PostText { get; set; }
+        
         [BindProperty(SupportsGet = true)]
         public int ForumId { get; set; }
+        
         [BindProperty(SupportsGet = true)]
         public int? TopicId { get; set; }
+        
         [BindProperty(SupportsGet = true)]
         public int? PostId { get; set; }
+        
         [BindProperty]
         public string PollQuestion { get; set; }
+        
         [BindProperty]
         public string PollOptions { get; set; }
+        
         [BindProperty]
         public string PollExpirationDaysString { get; set; }
+        
         [BindProperty]
         public int? PollMaxOptions { get; set; }
+        
         [BindProperty]
         public bool PollCanChangeVote { get; set; }
+        
         [BindProperty]
         public IEnumerable<IFormFile> Files { get; set; }
+        
         [BindProperty]
         public List<string> FileComment { get; set; }
+        
         [BindProperty]
         public List<string> DeleteFileDummyForValidation { get; set; }
 
         [BindProperty]
         public string EditReason { get; set; }
+        
         public PostDisplay PreviewablePost { get; private set; }
+        
         public PollDisplay PreviewablePoll { get; private set; }
+        
         public bool ShowAttach { get; private set; } = false;
+        
         public bool ShowPoll { get; private set; } = false;
+        
         private readonly PostService _postService;
         private readonly StorageService _storageService;
         private readonly WritingToolsService _writingService;
@@ -164,10 +182,9 @@ namespace Serverless.Forum.Pages
 
             await Init(PostingActions.EditForumPost, canCreatePoll, HttpUtility.HtmlDecode(curTopic.TopicTitle), curForum.ForumName, curForum.ForumId);
 
-            await _cacheService.SetInCache(
-                GetActualCacheKey("PostAttachments", true),
-                await _context.PhpbbAttachments.AsNoTracking().Where(a => a.PostMsgId == PostId).ToListAsync()
-            );
+            var attachments = await _context.PhpbbAttachments.AsNoTracking().Where(a => a.PostMsgId == PostId).ToListAsync();
+            await _cacheService.SetInCache(GetActualCacheKey("PostAttachments", true), attachments );
+            ShowAttach = attachments.Any();
 
             await _cacheService.SetInCache(GetActualCacheKey("PostTime", true), curPost.PostTime);
 
@@ -566,7 +583,7 @@ namespace Serverless.Forum.Pages
                     attachList[i].AttachComment = FileComment[i] ?? string.Empty;
                 }
 
-                await _postService.CascadePostAdd(context, post, isNewTopic, false);
+                await _postService.CascadePostAdd(context, post, false);
                 await context.PhpbbAttachments.AddRangeAsync(attachList);
             }
             else
@@ -590,7 +607,7 @@ namespace Serverless.Forum.Pages
                 {
                     xref.Old.AttachComment = xref.NewComment;
                 }
-
+                await context.SaveChangesAsync();
                 await _postService.CascadePostEdit(context, post);
             }
             await context.SaveChangesAsync();

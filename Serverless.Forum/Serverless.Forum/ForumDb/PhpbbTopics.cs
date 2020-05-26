@@ -15,6 +15,7 @@ namespace Serverless.Forum.ForumDb
         public byte TopicAttachment { get; set; } = 0;
         public byte TopicApproved { get; set; } = 1;
         public byte TopicReported { get; set; } = 0;
+        [StringLength(255)]
         public string TopicTitle { get; set; } = string.Empty;
         public int TopicPoster { get; set; } = 0;
         public long TopicTime { get; set; } = 0;

@@ -35,7 +35,7 @@ namespace Serverless.Forum.Services
                 Count: multi.Read<int>().Single()
             );
 
-            _utils.RunParallel(async (localContext) =>
+            _utils.RunParallelDbTask(async (localContext) =>
             {
                 var attachments = await (
                     from a in localContext.PhpbbAttachments
@@ -114,7 +114,7 @@ namespace Serverless.Forum.Services
             }
         }
 
-        public async Task CascadePostAdd(ForumDbContext context, PhpbbPosts added, bool isFirstPost, bool ignoreTopic)
+        public async Task CascadePostAdd(ForumDbContext context, PhpbbPosts added, bool ignoreTopic)
         {
             var curTopic = await context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == added.TopicId);
             var curForum = await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == curTopic.ForumId);
@@ -125,10 +125,9 @@ namespace Serverless.Forum.Services
             if (!ignoreTopic)
             {
                 await SetTopicLastPost(curTopic, added, usr);
-                if (isFirstPost)
-                {
-                    await SetTopicFirstPost(curTopic, added, usr, false);
-                }
+                await SetTopicFirstPost(curTopic, added, usr, false);
+                curTopic.TopicReplies++;
+                curTopic.TopicRepliesReal++;
             }
         }
 
@@ -138,9 +137,8 @@ namespace Serverless.Forum.Services
             var curTopic = await context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == oldTopicId);
             var curForum = await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == curTopic.ForumId);
 
-            if (context.PhpbbPosts.Count(p => p.TopicId == oldTopicId.Value) == 0 && !ignoreTopic)
+            if (await context.PhpbbPosts.CountAsync(p => p.TopicId == oldTopicId.Value) == 0 && !ignoreTopic)
             {
-                this never happens (if is always false?? why?)
                 context.PhpbbTopics.Remove(curTopic);
             }
             else
@@ -189,6 +187,9 @@ namespace Serverless.Forum.Services
 
                     await SetTopicFirstPost(curTopic, firstPost, firstPostUser, false);
                 }
+
+                curTopic.TopicReplies--;
+                curTopic.TopicRepliesReal--;
             }
         }
 
@@ -221,7 +222,7 @@ namespace Serverless.Forum.Services
         private async Task SetTopicFirstPost(PhpbbTopics topic, PhpbbPosts post, LoggedUser author, bool setTopicTitle)
         {
             var curFirstPost = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == topic.TopicFirstPostId);
-            if (curFirstPost != null && curFirstPost.PostTime >= post.PostTime)
+            if (topic.TopicFirstPostId == 0 || (curFirstPost != null && curFirstPost.PostTime >= post.PostTime))
             {
                 if (setTopicTitle)
                 {

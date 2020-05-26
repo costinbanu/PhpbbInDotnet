@@ -2,32 +2,38 @@
 
 @using Serverless.Forum.Utilities
 @inject Utils _utils
+@inject Services.BBCodeRenderingService _renderingService
 
 @if (Model != null)
 {
-    <p>&nbsp;</p>
-    if (Model.MimeType.IsMimeTypeInline())
-    {
-        if (Model.MimeType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase))
+    <div style="background-color: white; padding: 10px 10px; margin: 10px 10px; border: solid 1px gray; width: max-content; height: min-content; max-width: 95%">
+        @if (Model.MimeType.IsMimeTypeInline())
         {
-            <img src="@(Model.FileUrl)" />
+            if (Model.MimeType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase))
+            {
+                <img src="@(Model.FileUrl)" />
+            }
+            else
+            {
+                <div style="display:flex; width:100%; height:100%">
+                    <video style="width:100%; height:100%" controls>
+                        <source src="@(Model.FileUrl)" type="@Model.MimeType" />
+                    </video>
+                </div>
+            }
         }
         else
         {
-            <video style="width:100%; height:100%" controls>
-                <source src="@(Model.FileUrl)" type="@Model.MimeType" />
-                @*<a href="@(Model.FileUrl)">@Model.DisplayName</a>*@
-            </video>
+            <a href="@(Model.FileUrl)">@Model.DisplayName</a>
         }
-    }
-    else
-    {
-        <a href="@(Model.FileUrl)">@Model.DisplayName</a>
-    }
-    <br />
-    <span class="Caption">
-        @Model.Comment <br />
-        @Model.DisplayName (dimensiune: @_utils.ReadableFileSize(Model.FileSize); descărcat @(Model.DownloadCount == 1 ? "o dată" : $"de {Model.DownloadCount} ori"))
-    </span>
-    <p>&nbsp;</p>
+        <span class="Caption">
+            @if (!string.IsNullOrWhiteSpace(Model.Comment))
+            {
+                <br />
+                @Html.Raw(_renderingService.BbCodeToHtml(Model.Comment, string.Empty))
+            }
+            <br />
+            @Html.Raw(Model.DisplayName) (dimensiune: @_utils.ReadableFileSize(Model.FileSize); descărcat @(Model.DownloadCount == 1 ? "o dată" : $"de {Model.DownloadCount} ori"))
+        </span>
+    </div>
 }

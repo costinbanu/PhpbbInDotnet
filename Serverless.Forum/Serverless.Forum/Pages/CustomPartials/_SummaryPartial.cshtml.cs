@@ -17,9 +17,12 @@ namespace Serverless.Forum.Pages.CustomPartials
         public string LinkTooltip { get; }
         public bool Left { get; }
         public string AuthorRank { get; }
+        public bool ShowAsLast { get; }
+        public int? Posts { get; }
+        public int? Views { get; }
 
         public _SummaryPartialModel(int? authorId, string authorName, string authorColor, DateTime? creationTime, int assetId, string dateFormat, 
-            bool showAvatar, string authorRank, string linkHref, string linkText, string linkTooltip, bool left)
+            bool showAvatar, string authorRank, string linkHref, string linkText, string linkTooltip, bool left, bool showAsLast = false, int? posts = null, int? views = null)
         {
             AuthorId = authorId;
             AuthorName = authorName;
@@ -33,6 +36,9 @@ namespace Serverless.Forum.Pages.CustomPartials
             LinkTooltip = linkTooltip;
             Left = left;
             AuthorRank = authorRank;
+            ShowAsLast = showAsLast;
+            Posts = posts;
+            Views = views;
         }
     }
 }

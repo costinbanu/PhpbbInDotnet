@@ -79,11 +79,12 @@ namespace Serverless.Forum.Pages
                                  LastPosterId = g.TopicLastPosterId == Constants.ANONYMOUS_USER_ID ? null as int? : g.TopicLastPosterId,
                                  LastPosterName = HttpUtility.HtmlDecode(g.TopicLastPosterName),
                                  LastPostTime = g.TopicLastPostTime.ToUtcTime(),
-                                 PostCount = _context.PhpbbPosts.Count(p => p.TopicId == g.TopicId),
+                                 PostCount = g.TopicReplies,
                                  Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1),
                                  Unread = IsTopicUnread(g.TopicId),
                                  LastPosterColor = g.TopicLastPosterColour,
-                                 LastPostId = g.TopicLastPostId
+                                 LastPostId = g.TopicLastPostId,
+                                 ViewCount = g.TopicViews
                              }
                 }
             ).ToListAsync();

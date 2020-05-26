@@ -17,8 +17,8 @@ namespace Serverless.Forum.Utilities
             => (long)time.ToUniversalTime().Subtract(DATE_SEED).TotalSeconds;
 
         public static bool IsMimeTypeInline(this string mimeType)
-            => mimeType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase) /*||
-                mimeType.StartsWith("video", StringComparison.InvariantCultureIgnoreCase) ||
+            => mimeType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase) ||
+                mimeType.StartsWith("video", StringComparison.InvariantCultureIgnoreCase)/* ||
                 mimeType.EndsWith("pdf", StringComparison.InvariantCultureIgnoreCase)*/;
 
         public static T RunSync<T>(this Task<T> asyncTask)
