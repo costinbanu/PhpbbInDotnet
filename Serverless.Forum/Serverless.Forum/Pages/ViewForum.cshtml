@@ -87,7 +87,7 @@ else
             <h3 style="float:left">Subiecte</h3>
             topicsDisplayed = true;
         }
-        foreach (var topic in topicGroup?.Topics ?? new List<TopicDisplay>())
+        foreach (var topic in topicGroup?.Topics ?? new List<TopicDto>())
         {
             var divClass = topic.Unread ? $"FlexRow Unread RowMargin Color{index % 2}" : $"FlexRow RowMargin Color{index % 2}";
             index++;

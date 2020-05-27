@@ -11,8 +11,10 @@
 
 <h2>Panoul administratorului</h2>
 
-<script src="https://raw.githack.com/SortableJS/Sortable/master/Sortable.js"></script>
+<script src="~/lib/Sortable.js"></script>
+<script src="~/js/tabbedPage.js"></script>
 <link rel="stylesheet" href="~/css/admin.css" />
+<link rel="stylesheet" href="~/css/tabbedPage.css" />
 
 <div class="tab">
     <button class="@(Model.Category == AdminCategories.Users ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Users')">Administrare utilizatori</button>
@@ -70,19 +72,5 @@
                 content.style.display = "block";
             }
         });
-    }
-
-    function openTab(evt, tabName) {
-        var i, tabcontent, tablinks;
-        tabcontent = document.getElementsByClassName("tabcontent");
-        for (i = 0; i < tabcontent.length; i++) {
-            tabcontent[i].style.display = "none";
-        }
-        tablinks = document.getElementsByClassName("tablinks");
-        for (i = 0; i < tablinks.length; i++) {
-            tablinks[i].className = tablinks[i].className.replace(" active", "");
-        }
-        document.getElementById(tabName).style.display = "block";
-        evt.currentTarget.className += " active";
     }
 </script>

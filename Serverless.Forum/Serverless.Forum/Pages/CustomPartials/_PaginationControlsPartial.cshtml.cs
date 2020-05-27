@@ -1,22 +1,30 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
+using Serverless.Forum.Utilities;
 using System;
 
 namespace Serverless.Forum.Pages.CustomPartials
 {
     public class _PaginationControlsPartialModel : PageModel
     {
-        public int? TopicId { get; private set; }
-        public int? FirstPostId { get; private set; }
-        public bool IncludeEasyNavigation { get; private set; }
-        public string Back { get; private set; }
-        public string Forward { get; private set; }
-        public ModelWithPagination PaginationModel { get; private set; }
-        public string Self { get; private set; }
-        public bool AllowPaginationChange { get; private set; }
+        public int? TopicId { get; }
+        
+        public int? FirstPostId { get; }
+        
+        public bool IncludeEasyNavigation { get; }
+        
+        public string Back { get; }
+        
+        public string Forward { get; }
+        
+        public Paginator Paginator { get; }
+        
+        public string Self { get; }
+       
+        public bool AllowPaginationChange { get; }
 
-        public _PaginationControlsPartialModel(ModelWithPagination pagination, bool allowPaginationChange, string back, string forward, bool includeEasyNavigation, int? topicId = null, int? firstPostId = null) 
+        public _PaginationControlsPartialModel(Paginator paginator, bool allowPaginationChange, string back, string forward, bool includeEasyNavigation, int? topicId = null, int? firstPostId = null) 
         {
-            PaginationModel = pagination;
+            Paginator = paginator;
             Back = back;
             Forward = forward;
             TopicId = topicId;

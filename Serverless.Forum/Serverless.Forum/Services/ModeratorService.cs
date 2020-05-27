@@ -94,7 +94,7 @@ namespace Serverless.Forum.Services
                 return ("A intervenit o eroare, încearcă din nou.", false);
             }
         }
-
+        
         public async Task<(string Message, bool? IsSuccess)> DeleteTopic(int topicId)
         {
             try

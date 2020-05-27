@@ -23,7 +23,7 @@ namespace Serverless.Forum.Services
             _context = context;
         }
 
-        public async Task<ForumDisplay> GetForumTreeAsync(ForumType? parentType = null, LoggedUser usr = null, Func<int, bool> IsForumUnread = null)
+        public async Task<ForumDto> GetForumTreeAsync(ForumType? parentType = null, LoggedUser usr = null, Func<int, bool> IsForumUnread = null)
         {
             if (IsForumUnread == null)
             {
@@ -42,7 +42,7 @@ namespace Serverless.Forum.Services
 
                 select new
                 {
-                    ForumDisplay = new ForumDisplay
+                    ForumDisplay = new ForumDto
                     {
                         Id = f.ForumId,
                         ParentId = f.ParentId,
@@ -58,7 +58,7 @@ namespace Serverless.Forum.Services
                         LastPosterColor = f.ForumLastPosterColour,
                         Topics = (from jt in joinedTopics
                                   orderby jt.TopicLastPostTime descending
-                                  select new TopicDisplay
+                                  select new TopicDto
                                   {
                                       Id = jt.TopicId,
                                       Title = HttpUtility.HtmlDecode(jt.TopicTitle),
@@ -70,7 +70,7 @@ namespace Serverless.Forum.Services
                 }
             ).ToListAsync();
 
-            ForumDisplay traverse(ForumDisplay node)
+            ForumDto traverse(ForumDto node)
             {
                 node.ChildrenForums = (
                     from f in allForums
@@ -100,7 +100,7 @@ namespace Serverless.Forum.Services
                 return node;
             }
 
-            return new ForumDisplay
+            return new ForumDto
             {
                 Id = 0,
                 Name = Constants.FORUM_NAME,
@@ -113,42 +113,42 @@ namespace Serverless.Forum.Services
             };
         }
 
-        public List<ForumDisplay> GetPathInTree(ForumDisplay root, int forumId)
+        public List<ForumDto> GetPathInTree(ForumDto root, int forumId)
         {
-            var track = new List<ForumDisplay>();
+            var track = new List<ForumDto>();
             Traverse(track, root, false, 0, x => x, (x, _) => { }, forumId, -1);
             return track;
         }
 
-        public List<T> GetPathInTree<T>(ForumDisplay root, Func<ForumDisplay, T> mapToType, int forumId, int topicId)
+        public List<T> GetPathInTree<T>(ForumDto root, Func<ForumDto, T> mapToType, int forumId, int topicId)
         {
             var track = new List<T>();
             Traverse(track, root, false, 0, mapToType, (x, _) => { }, forumId, topicId);
             return track;
         }
 
-        public List<T> GetPathInTree<T>(ForumDisplay root, Func<ForumDisplay, T> mapToType, Action<T, int> transformForLevel, int forumId, int topicId) where T : class
+        public List<T> GetPathInTree<T>(ForumDto root, Func<ForumDto, T> mapToType, Action<T, int> transformForLevel, int forumId, int topicId) where T : class
         {
             var track = new List<T>();
             Traverse(track, root, false, 0, mapToType, transformForLevel, forumId, topicId);
             return track;
         }
 
-        public List<T> GetPathInTree<T>(ForumDisplay root, Func<ForumDisplay, T> mapToType)
+        public List<T> GetPathInTree<T>(ForumDto root, Func<ForumDto, T> mapToType)
         {
             var track = new List<T>();
             Traverse(track, root, true, 0, mapToType, (x, _) => { }, -1, -1);
             return track;
         }
 
-        public List<T> GetPathInTree<T>(ForumDisplay root, Func<ForumDisplay, T> mapToType, Action<T, int> transformForLevel) where T : class
+        public List<T> GetPathInTree<T>(ForumDto root, Func<ForumDto, T> mapToType, Action<T, int> transformForLevel) where T : class
         {
             var track = new List<T>();
             Traverse(track, root, true, 0, mapToType, transformForLevel, -1, -1);
             return track;
         }
 
-        private bool Traverse<T>(List<T> track, ForumDisplay node, bool isFullTraversal, int level, Func<ForumDisplay, T> mapToType, Action<T, int> transformForLevel, int forumId, int topicId) 
+        private bool Traverse<T>(List<T> track, ForumDto node, bool isFullTraversal, int level, Func<ForumDto, T> mapToType, Action<T, int> transformForLevel, int forumId, int topicId) 
         {
             if (node == null)
             {

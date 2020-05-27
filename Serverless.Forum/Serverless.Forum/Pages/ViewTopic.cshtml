@@ -122,7 +122,7 @@
 @await Html.PartialAsync(
     "_PaginationControlsPartial",
     new CustomPartials._PaginationControlsPartialModel(
-        pagination: Model,
+        paginator: Model.Paginator,
         allowPaginationChange: true,
         back: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum - 1}",
         forward: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum + 1}",
@@ -132,7 +132,7 @@
     ),
     ViewData
 )
-@if (Model.Pagination.HasPages)
+@if (Model.Paginator.Pagination.HasPages)
 {
     <hr />
 }
@@ -216,7 +216,7 @@
                         @if (await _userService.GetUserRole(await Model.GetCurrentUserAsync()) != 8 && await _userService.GetUserRole(post.AuthorId ?? 1) != 8)
                         {
                             <span>
-                                <a asp-page="/Posting" asp-page-handler="QuotePrivateMessage" asp-route-postId="@post.PostId">&#x2709; Mesaj privat</a>
+                                <a asp-page="/Posting" asp-page-handler="PrivateMessage" asp-route-postId="@post.PostId">&#x2709; Mesaj privat</a>
                             </span>
                         }
                         <span>
@@ -269,7 +269,7 @@ else if (!IsAnonymous)
 @await Html.PartialAsync(
     "_PaginationControlsPartial",
     new CustomPartials._PaginationControlsPartialModel(
-        pagination: Model,
+        paginator: Model.Paginator,
         allowPaginationChange: true,
         back: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum - 1}",
         forward: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum + 1}",
@@ -279,7 +279,7 @@ else if (!IsAnonymous)
     ),
     ViewData
 )
-@if (Model.Pagination.HasPages)
+@if (Model.Paginator.Pagination.HasPages)
 {
     <hr />
 }

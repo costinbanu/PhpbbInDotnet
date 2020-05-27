@@ -16,7 +16,7 @@ namespace Serverless.Forum.Pages
 {
     public class ViewForumModel : ModelWithLoggedUser
     {
-        public List<ForumDisplay> Forums { get; private set; }
+        public List<ForumDto> Forums { get; private set; }
         public List<TopicTransport> Topics { get; private set; }
         public _PaginationPartialModel Pagination { get; private set; }
         public string ForumTitle { get; private set; }
@@ -51,9 +51,7 @@ namespace Serverless.Forum.Pages
             ForumTitle = HttpUtility.HtmlDecode(thisForum?.ForumName ?? "untitled");
 
             ParentForumId = thisForum.ParentId;
-            ParentForumTitle = HttpUtility.HtmlDecode(await (from pf in _context.PhpbbForums.AsNoTracking()
-                                                             where pf.ForumId == thisForum.ParentId
-                                                             select pf.ForumName).FirstOrDefaultAsync() ?? "untitled");
+            ParentForumTitle = HttpUtility.HtmlDecode((await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(pf => pf.ForumId == thisForum.ParentId))?.ForumName ?? "untitled");
 
             Forums = (await GetForum(forumId)).ChildrenForums.ToList();
 
@@ -72,7 +70,7 @@ namespace Serverless.Forum.Pages
                              let postCount = _context.PhpbbPosts.Count(p => p.TopicId == g.TopicId)
                              let pageSize = usr.TopicPostsPerPage.ContainsKey(g.TopicId) ? usr.TopicPostsPerPage[g.TopicId] : 14
 
-                             select new TopicDisplay
+                             select new TopicDto
                              {
                                  Id = g.TopicId,
                                  Title = HttpUtility.HtmlDecode(g.TopicTitle),
@@ -80,7 +78,7 @@ namespace Serverless.Forum.Pages
                                  LastPosterName = HttpUtility.HtmlDecode(g.TopicLastPosterName),
                                  LastPostTime = g.TopicLastPostTime.ToUtcTime(),
                                  PostCount = g.TopicReplies,
-                                 Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1),
+                                 Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1, "PageNum"),
                                  Unread = IsTopicUnread(g.TopicId),
                                  LastPosterColor = g.TopicLastPosterColour,
                                  LastPostId = g.TopicLastPostId,

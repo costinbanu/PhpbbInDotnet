@@ -116,4 +116,11 @@
         Normal,
         PasswordReset
     }
+
+    public enum PrivateMessagesPages
+    {
+        Inbox,
+        Sent,
+        Message
+    }
 }

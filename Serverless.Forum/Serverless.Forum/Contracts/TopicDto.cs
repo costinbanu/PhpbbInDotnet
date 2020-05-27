@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace Serverless.Forum.Pages
 {
-    public class TopicDisplay
+    public class TopicDto
     {
         public int? Id { get; set; } = null;
 
@@ -34,6 +34,6 @@ namespace Serverless.Forum.Pages
     {
         public TopicType? TopicType { get; set; } = null;
 
-        public IEnumerable<TopicDisplay> Topics { get; set; }
+        public IEnumerable<TopicDto> Topics { get; set; }
     }
 }

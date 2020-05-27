@@ -6,7 +6,7 @@
     <span>Mergi la pagina:&nbsp;</span>
     @if (Model.Pager.StartPage > 1)
     {
-        Model.Link.Set("PageNum", "1");
+        Model.Link.Set(Model.PageNumKey, "1");
         <span class="PageNum">
             <a href="@Model.Link.ToString()">1</a>
         </span>
@@ -21,7 +21,7 @@
         }
         else
         {
-            Model.Link.Set("PageNum", curPage.ToString());
+            Model.Link.Set(Model.PageNumKey, curPage.ToString());
             <span class="PageNum">
                 <a href="@Model.Link.ToString()">@curPage</a>
             </span>
@@ -30,7 +30,7 @@
 
     @if (Model.Pager.EndPage + 3 < Model.Pager.TotalPages)
     {
-        Model.Link.Set("PageNum", Model.Pager.TotalPages.ToString());
+        Model.Link.Set(Model.PageNumKey, Model.Pager.TotalPages.ToString());
         <span>&nbsp;...</span>
         <span class="PageNum">
             <a href="@Model.Link.ToString()">@Model.Pager.TotalPages</a>
@@ -40,7 +40,7 @@
     {
         for (var num = Model.Pager.EndPage + 1; num <= Model.Pager.TotalPages; num++)
         {
-            Model.Link.Set("PageNum", num.ToString());
+            Model.Link.Set(Model.PageNumKey, num.ToString());
             <span class="PageNum">
                 <a href="@Model.Link.ToString()">@num</a>
             </span>

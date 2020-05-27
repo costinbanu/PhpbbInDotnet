@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -60,10 +61,16 @@ namespace Serverless.Forum.Pages
 
         [BindProperty]
         public string EditReason { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public int? ReceiverId { get; set; }
+
+        [BindProperty]
+        public string ReceiverName { get; set; }
         
-        public PostDisplay PreviewablePost { get; private set; }
+        public PostDto PreviewablePost { get; private set; }
         
-        public PollDisplay PreviewablePoll { get; private set; }
+        public PollDto PreviewablePoll { get; private set; }
         
         public bool ShowAttach { get; private set; } = false;
         
@@ -205,6 +212,38 @@ namespace Serverless.Forum.Pages
             return Page();
         }
 
+        public async Task<IActionResult> OnGetPrivateMessage()
+        {
+            var responses = await PageAuthorizationResponses().FirstOrDefaultAsync();
+            if (responses != null)
+            {
+                return responses;
+            }
+
+            if ((PostId ?? 0) > 0)
+            {
+                var post = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == PostId);
+                if (post != null)
+                {
+                    var author = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == post.PosterId);
+                    if ((author?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
+                    {
+                        PostTitle = HttpUtility.HtmlDecode(post.PostSubject);
+                        PostText = $"[quote]{HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(post.PostText, post.BbcodeUid))}[/quote]\r\n[url=./ViewTopic?postId={PostId}&handler=byPostId]{PostTitle}[/url]";
+                        ReceiverId = author.UserId;
+                        ReceiverName = author.Username;
+                    }
+                }
+            }
+            else if ((ReceiverId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
+            {
+                ReceiverName = (await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == ReceiverId)).Username;
+            }
+
+            await Init(PostingActions.NewPrivateMessage, false, null, null, 0);
+            return Page();
+        }
+
         #endregion GET
 
         #region POST Attachment
@@ -310,15 +349,20 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPostPreview()
         {
-            var usr = await GetCurrentUserAsync();
-            if (usr == await _userService.GetAnonymousLoggedUserAsync())
+            var response = await PageAuthorizationResponses().FirstOrDefaultAsync();
+            if (response != null)
             {
-                return Unauthorized();
+                return response;
             }
-            var permissionError = await ForumAuthorizationResponses(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), false).FirstOrDefaultAsync();
-            if (permissionError != null)
+            var action = await _cacheService.GetFromCache<PostingActions>(GetActualCacheKey("Action", true));
+
+            if (action != PostingActions.NewPrivateMessage)
             {
-                return permissionError;
+                response = await ForumAuthorizationResponses(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), false).FirstOrDefaultAsync();
+                if (response != null)
+                {
+                    return response;
+                }
             }
 
             if ((PostTitle?.Trim()?.Length ?? 0) < 3)
@@ -333,7 +377,6 @@ namespace Serverless.Forum.Pages
                 return Page();
             }
 
-            var action = await _cacheService.GetFromCache<PostingActions>(GetActualCacheKey("Action", true));
             var currentPost = action == PostingActions.EditForumPost ? await InitEditedPost() : null;
             var userId = action == PostingActions.EditForumPost ? currentPost.PosterId : CurrentUserId;
             var postAuthor = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == userId);
@@ -341,7 +384,7 @@ namespace Serverless.Forum.Pages
             var attachments = await _cacheService.GetFromCache<List<PhpbbAttachments>>(GetActualCacheKey("PostAttachments", true)) ?? new List<PhpbbAttachments>();
             var postTime = action == PostingActions.EditForumPost ? (await _cacheService.GetFromCache<long?>(GetActualCacheKey("PostTime", true)))?.ToUtcTime() : DateTime.UtcNow;
             
-            PreviewablePost = new PostDisplay
+            PreviewablePost = new PostDto
             {
                 Attachments = attachments.Select(x => new _AttachmentPartialModel(x, true)).ToList(),
                 AuthorColor = postAuthor.UserColour,
@@ -349,7 +392,7 @@ namespace Serverless.Forum.Pages
                 AuthorId = postAuthor.UserId,
                 AuthorName = postAuthor.Username,
                 AuthorRank = (await _context.PhpbbRanks.AsNoTracking().FirstOrDefaultAsync(x => x.RankId == rankId))?.RankTitle,
-                AuthorSignature = _renderingService.BbCodeToHtml(postAuthor.UserSig, postAuthor.UserSigBbcodeUid),
+                AuthorSignature = await _renderingService.BbCodeToHtml(postAuthor.UserSig, postAuthor.UserSigBbcodeUid),
                 BbcodeUid = _utils.RandomString(),
                 PostCreationTime = postTime,
                 EditCount = (short)((currentPost?.PostEditCount ?? 0) + 1),
@@ -363,7 +406,7 @@ namespace Serverless.Forum.Pages
 
             if (!string.IsNullOrWhiteSpace(PollOptions))
             {
-                PreviewablePoll = new PollDisplay
+                PreviewablePoll = new PollDto
                 {
                     PollTitle = HttpUtility.HtmlEncode(PollQuestion),
                     PollOptions = new List<PollOption>(PollOptions.Split(Environment.NewLine).Select(x => new PollOption { PollOptionText = HttpUtility.HtmlEncode(x) })),
@@ -426,7 +469,22 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPostPrivateMessage()
         {
-            throw await Task.FromResult(new NotImplementedException());
+            var responses = await PageAuthorizationResponses().FirstOrDefaultAsync();
+            if (responses != null)
+            {
+                return responses;
+            }
+
+            var (Message, IsSuccess) = await _userService.SendPrivateMessage(CurrentUserId, ReceiverId.Value, HttpUtility.HtmlEncode(PostTitle), _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText)));
+            if (IsSuccess ?? false)
+            {
+                return RedirectToPage("PrivateMessages", new { show = PrivateMessagesPages.Sent });
+            }
+            else
+            {
+                ModelState.AddModelError(nameof(ReceiverName), Message);
+                return Page();
+            }
         }
 
         #endregion POST Message
@@ -448,15 +506,17 @@ namespace Serverless.Forum.Pages
                  .ToListAsync()
              );
 
+            var userMap = await (
+                from u in _context.PhpbbUsers.AsNoTracking()
+                where u.UserId != Constants.ANONYMOUS_USER_ID && u.UserType != 2
+                orderby u.Username
+                select KeyValuePair.Create(u.Username, u.UserId)
+            ).ToListAsync();
             await _cacheService.SetInCache(
                 GetActualCacheKey("Users", false),
-                await (
-                    from u in _context.PhpbbUsers.AsNoTracking()
-                    where u.UserId != Constants.ANONYMOUS_USER_ID && u.UserType != 2
-                    orderby u.Username
-                    select KeyValuePair.Create(u.Username, $"[url=\"./User?UserId={u.UserId}\"]{u.Username}[/url]")
-                ).ToListAsync()
+                userMap.Select(map => KeyValuePair.Create(map.Key, $"[url=\"./User?UserId={map.Value}\"]{map.Key}[/url]"))
             );
+            await _cacheService.SetInCache(GetActualCacheKey("UserMap", false), userMap);
 
             var dbBbCodes = await (
                 from c in _context.PhpbbBbcodes.AsNoTracking()

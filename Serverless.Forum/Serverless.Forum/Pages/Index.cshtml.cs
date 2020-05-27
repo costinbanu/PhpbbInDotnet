@@ -10,7 +10,7 @@ namespace Serverless.Forum.Pages
 {
     public class IndexModel : ModelWithLoggedUser
     {
-        public List<ForumDisplay> Forums { get; private set; }
+        public List<ForumDto> Forums { get; private set; }
 
         public IndexModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
             : base(context, forumService, userService, cacheService)

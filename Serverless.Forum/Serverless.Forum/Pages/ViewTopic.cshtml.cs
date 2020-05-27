@@ -14,7 +14,7 @@ using System.Web;
 
 namespace Serverless.Forum.Pages
 {
-    public class ViewTopicModel : ModelWithPagination
+    public class ViewTopicModel : ModelWithLoggedUser
     {
         [BindProperty]
         public int? ForumId { get; set; }
@@ -46,15 +46,17 @@ namespace Serverless.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public int[] PostIdsForModerator { get; set; }
 
-        public PollDisplay Poll { get; set; }
+        public PollDto Poll { get; private set; }
 
-        public List<PostDisplay> Posts { get; set; }
+        public List<PostDto> Posts { get; private set; }
 
-        public string TopicTitle { get; set; }
+        public string TopicTitle { get; private set; }
 
-        public string ForumTitle { get; set; }
+        public string ForumTitle { get; private set; }
 
-        public string ModeratorActionResult { get; set; }
+        public string ModeratorActionResult { get; private set; }
+
+        public Paginator Paginator { get; private set; }
 
         public bool ShowTopic => TopicAction == ModeratorTopicActions.MoveTopic && (
             (ModelState[nameof(DestinationForumId)]?.Errors?.Any() ?? false) ||
@@ -163,7 +165,7 @@ namespace Serverless.Forum.Pages
 
             await GetPostsLazy(TopicId, PageNum, null);
 
-            var paginationTask = ComputePagination(_count.Value, PageNum.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId);
+            Paginator = new Paginator(_count.Value, PageNum.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId, await GetCurrentUserAsync());
             var pollTask = Task.Run(async() => Poll = await _postService.GetPoll(_currentTopic));
             var postProcessingTask = Task.Run(() =>
             {
@@ -189,7 +191,7 @@ namespace Serverless.Forum.Pages
 
                     from jr in joinedRanks.DefaultIfEmpty()
 
-                    select new PostDisplay
+                    select new PostDto
                     {
                         PostSubject = p.PostSubject,
                         PostText = p.PostText,
@@ -203,7 +205,7 @@ namespace Serverless.Forum.Pages
                         BbcodeUid = p.BbcodeUid,
                         Unread = IsPostUnread(p.TopicId, p.PostId),
                         AuthorHasAvatar = ju == null ? false : !string.IsNullOrWhiteSpace(ju.UserAvatar),
-                        AuthorSignature = ju == null ? null : _renderingService.BbCodeToHtml(ju.UserSig, ju.UserSigBbcodeUid),
+                        AuthorSignature = ju == null ? null : _renderingService.BbCodeToHtml(ju.UserSig, ju.UserSigBbcodeUid).RunSync(),
                         AuthorRank = jr == null ? null : jr.RankTitle,
                         LastEditTime = p.PostEditTime,
                         LastEditUser = lastEditUsername,
@@ -214,7 +216,7 @@ namespace Serverless.Forum.Pages
                 TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
             });
 
-            await Task.WhenAll(paginationTask, pollTask, postProcessingTask);
+            await Task.WhenAll(pollTask, postProcessingTask);
 
             await _renderingService.ProcessPosts(Posts, PageContext, HttpContext, true);
 

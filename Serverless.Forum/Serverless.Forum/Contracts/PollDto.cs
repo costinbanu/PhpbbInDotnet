@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Serverless.Forum.Contracts
 {
-    public class PollDisplay
+    public class PollDto
     {
         public int TopicId { get; set; }
 

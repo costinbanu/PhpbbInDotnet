@@ -15,7 +15,7 @@ using System.Web;
 namespace Serverless.Forum.Pages
 {
     [ValidateAntiForgeryToken]
-    public class SearchModel : ModelWithPagination
+    public class SearchModel : ModelWithLoggedUser
     {
         private readonly BBCodeRenderingService _renderingService;
 
@@ -42,13 +42,14 @@ namespace Serverless.Forum.Pages
 
         [BindProperty(SupportsGet = true)]
         public int? TotalResults { get; set; }
-
         [BindProperty(SupportsGet = true)]
         public bool? DoSearch { get; set; }
 
         public List<KeyValuePair<string, int>> Users { get; set; }
 
         public IEnumerable<ExtendedPostDisplay> Posts { get; private set; }
+
+        public Paginator Paginator { get; private set; }
 
         public SearchModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, BBCodeRenderingService renderingService)
             : base(context, forumService, userService, cacheService)
@@ -92,7 +93,7 @@ namespace Serverless.Forum.Pages
                 var postId = int.TryParse(query["postid"], out var i) ? i as int? : null;
                 var post = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(t => t.PostId == postId);
                 TopicId = post?.TopicId;
-                ForumId = post.ForumId;
+                ForumId = post?.ForumId;
             }
 
             if (DoSearch ?? false)
@@ -150,10 +151,10 @@ namespace Serverless.Forum.Pages
             await _renderingService.ProcessPosts(Posts, PageContext, HttpContext, false, SearchText);
             TotalResults = unchecked((int)(await multi.ReadAsync<long>()).Single());
 
-            await ComputePagination(TotalResults.Value, PageNum.Value, GetSearchLinkForPage(PageNum.Value + 1));
+            Paginator = new Paginator(TotalResults.Value, PageNum.Value, GetSearchLinkForPage(PageNum.Value + 1));
         }
 
-        public class ExtendedPostDisplay : PostDisplay
+        public class ExtendedPostDisplay : PostDto
         {
             public string UserAvatar { get; set; }
             public string UserSig { get; set; }

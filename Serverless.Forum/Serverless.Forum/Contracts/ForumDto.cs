@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace Serverless.Forum.Contracts
 {
-    public class ForumDisplay
+    public class ForumDto
     {
         public int? Id { get; set; } = null;
 
@@ -27,9 +27,9 @@ namespace Serverless.Forum.Contracts
 
         public int? LastPostId { get; set; } = null;
 
-        public IEnumerable<ForumDisplay> ChildrenForums { get; set; } = null;
+        public IEnumerable<ForumDto> ChildrenForums { get; set; } = null;
 
-        public IEnumerable<TopicDisplay> Topics { get; set; } = null;
+        public IEnumerable<TopicDto> Topics { get; set; } = null;
 
         public bool Unread { get; set; } = false;
 

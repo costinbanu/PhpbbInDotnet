@@ -50,7 +50,7 @@
 </script>
 
 
-@if (Model.PostId.HasValue)
+@if (Model.PostId.HasValue && !Model.ReceiverId.HasValue)
 {
     <span>
         Forum părinte:
@@ -61,7 +61,7 @@
         <a asp-page="/ViewTopic" asp-route-postId="@Model.PostId.Value" asp-page-handler="ByPostId">@Header</a>
     </h3>
 }
-else if (Model.TopicId.HasValue)
+else if (Model.TopicId.HasValue && !Model.ReceiverId.HasValue)
 {
     <span>
         Forum părinte:
@@ -72,15 +72,24 @@ else if (Model.TopicId.HasValue)
         <a asp-page="/ViewTopic" asp-route-topicId="@Model.TopicId.Value" asp-route-pageNum="1">@Header</a>
     </h3>
 }
-else
+else if (!Model.ReceiverId.HasValue)
 {
     <h3>
         Scrie un subiect nou:
         <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@Header</a>
     </h3>
 }
+else
+{
+    <h3>Scrie un mesaj privat nou:</h3>
+}
 <form name="postform" method="post" enctype="multipart/form-data">
-    <input asp-for="PostTitle" type="text" id="subject" size="45" maxlength="256" tabindex="2" class="InputBox PostInputWidth" placeholder="Subiect">
+    @if (Action == PostingActions.NewPrivateMessage)
+    {
+        <input type="text" asp-for="ReceiverName" placeholder="Alege destinatar..." id="pmToInput" class="PostInputWidth" autocomplete="off" />
+        <p id="tributeHolder" style="position:relative">&nbsp;</p>
+    }
+    <input asp-for="PostTitle" type="text" id="subject" size="45" maxlength="256" tabindex="2" class="InputBox PostInputWidth" placeholder="Subiect" />
     <br />
     <div class="PostingControlsSpacer">&nbsp;</div>
     <div class="PostingControls PostInputWidth" id="controls">
@@ -161,7 +170,10 @@ else
     </div>
     <br />
     <p style="clear:both"></p>
-    <a href="javascript:posting.toggleAttach();" id="attachButton">Adaugă fișiere atașate</a>
+    @if (Action != PostingActions.NewPrivateMessage)
+    {
+        <a href="javascript:posting.toggleAttach();" id="attachButton">Adaugă fișiere atașate</a>
+    }
     @if (CanCreatePoll)
     {
         <span>&nbsp; | &nbsp;</span>
@@ -220,45 +232,49 @@ else
     <input asp-for="ForumId" type="hidden" />
     <input asp-for="TopicId" type="hidden" />
     <input asp-for="PostId" type="hidden" />
-    @{ var attachments = await _cacheService.GetFromCache<List<PhpbbAttachments>>(Model.GetActualCacheKey("PostAttachments", true)) ?? new List<PhpbbAttachments>(); }
-    <div id="attachPanel" style="display:@(Model.ShowAttach ? "block" : "none")" class="PostInputWidth">
-        <br />
-        <h3>Fișiere atașate</h3>
-        <h4>Adaugă fișiere noi</h4>
-        <div class="FlexCenter PostInputWidth">
-            <div>Alege unul sau mai multe fișiere:</div>
-            <div class="PollInput FlexRight">
-                <input asp-for="Files" onchange="posting.submitAttachments()" multiple />
-                @if (!await Model.IsCurrentUserAdminHereAsync())
-                {
-                    <span class="Caption">Minim 1, maxim 10 fișiere. Fiecare fișier trebuie să aibă maxim 2MB.</span>
-                }
-                <span asp-validation-for="Files" class="validation"></span>
-                <div id="fileUploadStatus"></div>
-            </div>
-        </div>
-        <input type="submit" value="Încarcă fișierele alese" asp-page-handler="AddAttachment" style="display:none" id="submitAttachmentsButton" />
-        @if (attachments.Any())
-        {
-            <hr class="SubtypeSeparator" />
-            <h4>Fișiere deja atașate:</h4>
-            @for (var i = 0; i < attachments.Count; i++)
-            {
-                <div style="margin-bottom:20px; padding-bottom:20px">
-                    <b>Nume:</b> @attachments[i].RealFilename <br />
-                    <b>Comentariu fișier:</b>
-                    <br />
-                    <textarea type="text" name="FileComment[@i]" id="FileComment" rows="4" cols="100" style="display:inline-block">@attachments[i].AttachComment</textarea>
-                    <br />
-                    <input type="button" value="Așează în linie" onclick="posting.attach_inline(@i, '@attachments[i].RealFilename')" /> &nbsp;
-                    <input type="submit" value="Șterge fișier" asp-page-handler="DeleteAttachment" onclick="document.getElementById('indexToDelete').value = @i; return true;" />
-                    <br />
-                    <span asp-validation-for="DeleteFileDummyForValidation[i]" class="validation"></span>
+    <input asp-for="ReceiverId" type="hidden" id="pmTo" />
+    @if (Action != PostingActions.NewPrivateMessage)
+    {
+        var attachments = await _cacheService.GetFromCache<List<PhpbbAttachments>>(Model.GetActualCacheKey("PostAttachments", true)) ?? new List<PhpbbAttachments>();
+        <div id="attachPanel" style="display:@(Model.ShowAttach ? "block" : "none")" class="PostInputWidth">
+            <br />
+            <h3>Fișiere atașate</h3>
+            <h4>Adaugă fișiere noi</h4>
+            <div class="FlexCenter PostInputWidth">
+                <div>Alege unul sau mai multe fișiere:</div>
+                <div class="PollInput FlexRight">
+                    <input asp-for="Files" onchange="posting.submitAttachments()" multiple />
+                    @if (!await Model.IsCurrentUserAdminHereAsync())
+                    {
+                        <span class="Caption">Minim 1, maxim 10 fișiere. Fiecare fișier trebuie să aibă maxim 2MB.</span>
+                    }
+                    <span asp-validation-for="Files" class="validation"></span>
+                    <div id="fileUploadStatus"></div>
                 </div>
+            </div>
+            <input type="submit" value="Încarcă fișierele alese" asp-page-handler="AddAttachment" style="display:none" id="submitAttachmentsButton" />
+            @if (attachments.Any())
+            {
+                <hr class="SubtypeSeparator" />
+                <h4>Fișiere deja atașate:</h4>
+                @for (var i = 0; i < attachments.Count; i++)
+                {
+                    <div style="margin-bottom:20px; padding-bottom:20px">
+                        <b>Nume:</b> @attachments[i].RealFilename <br />
+                        <b>Comentariu fișier:</b>
+                        <br />
+                        <textarea type="text" name="FileComment[@i]" id="FileComment" rows="4" cols="100" style="display:inline-block">@attachments[i].AttachComment</textarea>
+                        <br />
+                        <input type="button" value="Așează în linie" onclick="posting.attach_inline(@i, '@attachments[i].RealFilename')" /> &nbsp;
+                        <input type="submit" value="Șterge fișier" asp-page-handler="DeleteAttachment" onclick="document.getElementById('indexToDelete').value = @i; return true;" />
+                        <br />
+                        <span asp-validation-for="DeleteFileDummyForValidation[i]" class="validation"></span>
+                    </div>
+                }
+                <input type="hidden" name="index" id="indexToDelete" value="" />
             }
-            <input type="hidden" name="index" id="indexToDelete" value="" />
-        }
-    </div>
+        </div>
+    }
     @if (Action == PostingActions.EditForumPost)
     {
         <hr />
@@ -304,6 +320,29 @@ else
     if (pollExpiration) {
         posting.showExpirationDate(pollExpiration.value);
     }
+
+    var secondTribute = new Tribute({
+        values: @Html.Raw(_writingService.ToCamelCaseJson(await _cacheService.GetFromCache<List<KeyValuePair<string, int>>>(Model.GetActualCacheKey("UserMap", false)))),
+        selectTemplate: function (item) {
+            return item.original.key;
+        },
+        allowSpaces: true,
+        menuContainer: document.getElementById("tributeHolder"),
+        positionMenu: false,
+        trigger: ' '
+    });
+    var authorInput = document.getElementById("pmToInput");
+
+    secondTribute.attach(authorInput);
+
+    authorInput.addEventListener("tribute-replaced", function (e) {
+        document.getElementById("pmTo").value = e.detail.item.original.value;
+        authorInput.value = e.detail.item.original.key;
+    });
+
+    authorInput.addEventListener("focusin", function (e) {
+        secondTribute.showMenuForCollection(authorInput);
+    });
 </script>
 
 <div id="imgcheckstatus" class="Popup"></div>
@@ -420,7 +459,7 @@ else
                 document.write(
                     "<div style=\"float: right; cursor: pointer; font-weight: bold; margin-top: 10px; margin-bottom: 10px\" onclick=\"showElement('preview')\">Închide [X]</div>"
                 );
-            } 
+            }
         </script>
     </div>
 }

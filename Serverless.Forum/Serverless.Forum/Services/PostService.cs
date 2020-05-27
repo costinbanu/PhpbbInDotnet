@@ -51,9 +51,9 @@ namespace Serverless.Forum.Services
             return toReturn;
         }
 
-        public async Task<PollDisplay> GetPoll(PhpbbTopics _currentTopic)
+        public async Task<PollDto> GetPoll(PhpbbTopics _currentTopic)
         {
-            var toReturn = new PollDisplay
+            var toReturn = new PollDto
             {
                 PollTitle = _currentTopic.PollTitle,
                 PollStart = _currentTopic.PollStart.ToUtcTime(),

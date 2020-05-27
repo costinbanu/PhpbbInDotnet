@@ -1,0 +1,124 @@
+﻿@page
+@model Serverless.Forum.Pages.PrivateMessagesModel
+@{
+    ViewData["Title"] = "PrivateMessages";
+    Layout = "~/Pages/_Layout.cshtml";
+    var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+}
+
+@using Utilities
+@using Contracts
+
+<script src="~/js/tabbedPage.js"></script>
+<link rel="stylesheet" href="~/css/tabbedPage.css" />
+<link rel="stylesheet" href="~/css/pagination.css" />
+
+<h2>Mesaje private</h2>
+
+<div class="tab">
+    <button class="@(Model.Show == PrivateMessagesPages.Inbox ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Inbox')">Primite</button>
+    <button class="@(Model.Show == PrivateMessagesPages.Sent ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Sent')">Trimise</button>
+    @if (Model.Show == PrivateMessagesPages.Message)
+    {
+        <button class="@(Model.Show == PrivateMessagesPages.Message ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Message')">Mesajul selectat</button>
+    }
+</div>
+
+<div id="Inbox" class="tabcontent" style="@(Model.Show == PrivateMessagesPages.Inbox ? "display:inherit" : "display:none")">
+    @await Html.PartialAsync(
+        "_PaginationControlsPartial",
+        new CustomPartials._PaginationControlsPartialModel(
+            paginator: Model.InboxPaginator,
+            allowPaginationChange: false,
+            back: $"PrivateMessages?show=Inbox&InboxPage={Model.InboxPage - 1}",
+            forward: $"PrivateMessages?show=Inbox&InboxPage={Model.InboxPage + 1}",
+            includeEasyNavigation: true,
+            topicId: null,
+            firstPostId: null
+        ),
+        ViewData
+    )
+    @{ var index = 0; }
+    @foreach (var msg in Model.InboxMessages ?? Enumerable.Empty<PrivateMessageDto>())
+    {
+        var divClass = msg.Unread == 1 ? $"FlexRow Unread RowMargin Color{index % 2}" : $"FlexRow RowMargin Color{index % 2}";
+        index++;
+        <div class="@divClass">
+            <span class="ForumContent">
+                <a asp-page="/PrivateMessages" asp-route-show="@PrivateMessagesPages.Message" asp-route-messageId="@msg.MessageId" asp-route-inboxPage="@Model.InboxPage" asp-route-sentPage="@Model.SentPage" class="nav-link" style="font-weight:bold">@Html.Raw(msg.Subject)</a>
+                <br />
+            </span>
+            @await Html.PartialAsync(
+                "_SummaryPartial",
+                new CustomPartials._SummaryPartialModel(msg.OthersId, msg.OthersName, msg.OthersColor, msg.Time, msg.MessageId,
+                    UserDateFormat, false, null, null, null, null, false, false, null, null, "De la: ")
+            )
+        </div>
+    }
+</div>
+
+<div id="Sent" class="tabcontent" style="@(Model.Show == PrivateMessagesPages.Sent ? "display:inherit" : "display:none")">
+    @await Html.PartialAsync(
+        "_PaginationControlsPartial",
+        new CustomPartials._PaginationControlsPartialModel(
+            paginator: Model.SentPaginator,
+            allowPaginationChange: false,
+            back: $"PrivateMessages?show=Sent&SentPage={Model.SentPage - 1}",
+            forward: $"PrivateMessages?show=Sent&SentPage={Model.SentPage + 1}",
+            includeEasyNavigation: true,
+            topicId: null,
+            firstPostId: null
+        ),
+        ViewData
+    )
+    @{ index = 0; }
+    @foreach (var msg in Model.SentMessages ?? Enumerable.Empty<PrivateMessageDto>())
+    {
+        var divClass = $"FlexRow RowMargin Color{index % 2}";
+        index++;
+        <div class="@divClass">
+            <span class="ForumContent">
+                <a asp-page="/PrivateMessages" asp-route-show="@PrivateMessagesPages.Message" asp-route-messageId="@msg.MessageId" asp-route-inboxPage="@Model.InboxPage" asp-route-sentPage="@Model.SentPage" class="nav-link" style="font-weight:bold">@Html.Raw(msg.Subject)</a>
+                <br />
+            </span>
+            @await Html.PartialAsync(
+                "_SummaryPartial",
+                new CustomPartials._SummaryPartialModel(msg.OthersId, msg.OthersName, msg.OthersColor, msg.Time, msg.MessageId,
+                    UserDateFormat, false, null, null, null, null, false, false, null, null, "Pentru: ")
+            )
+        </div>
+    }
+</div>
+@if (Model.Show == PrivateMessagesPages.Message && Model.SelectedMessage != null)
+{
+    <div id="Message" class="tabcontent" style="@(Model.Show == PrivateMessagesPages.Message ? "display:inherit" : "display:none")">
+        <div class="RowMargin">
+            <div class="FlexRow">
+                @await Html.PartialAsync(
+                     "_SummaryPartial",
+                     new CustomPartials._SummaryPartialModel(Model.SelectedMessage.OthersId, Model.SelectedMessage.OthersName, Model.SelectedMessage.OthersColor,
+                         Model.SelectedMessage.Time, Model.SelectedMessage.MessageId, UserDateFormat, true, null, null, null, null, false, false, null, null, 
+                         Model.SelectedMessageIsMine ? "Pentru: " : "De la: ")
+                 )
+                <div class="ForumContent VerticalContent FlexRight" id="@Model.SelectedMessage.MessageId">
+                    <span style="display:flex">
+                        <span class="PostTitle">
+                            <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@Model.SelectedMessage.MessageId">@Html.Raw(Model.SelectedMessage.Subject)</a>
+                        </span>
+                        <span style="margin-left:auto">
+                            <span class="CollapsedMenu" onclick="expandCollapsedMenu('summary@(Model.SelectedMessage.MessageId)', 'button@(Model.SelectedMessage.MessageId)')" id="button@(Model.SelectedMessage.MessageId)" style="color:#@Model.SelectedMessage.OthersColor;margin-left: auto; height:auto; width: min-content">
+                                @Html.Raw(Model.SelectedMessage.OthersName)
+                            </span>
+                        </span>
+                    </span>
+                    <div style="max-width:100%">
+                        <br />
+                        @Html.Raw(Model.SelectedMessage.Text)
+                        <br />
+                    </div>
+                </div>
+                <p>&nbsp;</p>
+            </div>
+        </div>
+    </div>
+}

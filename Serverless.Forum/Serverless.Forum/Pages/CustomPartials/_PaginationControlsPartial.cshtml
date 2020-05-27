@@ -1,13 +1,10 @@
 ﻿@model Serverless.Forum.Pages.CustomPartials._PaginationControlsPartialModel
-@{
-    var IsAnonymous = Model.PaginationModel.CurrentUserId == Utilities.Constants.ANONYMOUS_USER_ID;
-}
 
-@if (Model.PaginationModel?.Pagination?.HasPages ?? false)
+@if (Model.Paginator?.Pagination?.HasPages ?? false)
 {
 
     <div class="PaginationControlsFull@(Model.IncludeEasyNavigation ? " FlexCenter" : "")" style="justify-content:center">
-        @if (!Model.PaginationModel.IsFirstPage && Model.IncludeEasyNavigation)
+        @if (!Model.Paginator.IsFirstPage && Model.IncludeEasyNavigation)
         {
             <div style="padding-right:10px">
                 <a href="@Model.Back" style="text-decoration:none">
@@ -16,22 +13,22 @@
             </div>
         }
         <div>
-            @await Html.PartialAsync("_PaginationPartial", Model.PaginationModel.Pagination, ViewData)
+            @await Html.PartialAsync("_PaginationPartial", Model.Paginator.Pagination, ViewData)
         </div>
-        @if (!IsAnonymous && Model.AllowPaginationChange)
+        @if (!Model.Paginator.IsAnonymous && Model.AllowPaginationChange)
         {
             <div>
                 <form method="post" asp-page-handler="Pagination">
                     <label>Mesaje afișate pe pagină:&nbsp;</label>
                     <input type="hidden" name="topicId" value="@Model.TopicId" />
                     <input type="hidden" name="postId" value="@Model.FirstPostId" />
-                    @Html.DropDownList("userPostsPerPage", Model.PaginationModel.PostsPerPage)
+                    @Html.DropDownList("userPostsPerPage", Model.Paginator.PostsPerPage)
                     &nbsp;
                     <input type="submit" value="Salvează" />
                 </form>
             </div>
         }
-        @if (!Model.PaginationModel.IsLastPage && Model.IncludeEasyNavigation)
+        @if (!Model.Paginator.IsLastPage && Model.IncludeEasyNavigation)
         {
             <div>
                 <a href="@Model.Forward" style="text-decoration:none">
@@ -44,7 +41,7 @@
     <center>
 
         <div class="PaginationControlsCollapsed @(Model.IncludeEasyNavigation ? "FlexCenter" : "") Reordered">
-            @if (!Model.PaginationModel.IsFirstPage && Model.IncludeEasyNavigation)
+            @if (!Model.Paginator.IsFirstPage && Model.IncludeEasyNavigation)
             {
                 <div>
                     <a href="@Model.Back" style="text-decoration:none">
@@ -58,7 +55,7 @@
                     Opțiuni paginare
                 </div>
             </div>
-            @if (!Model.PaginationModel.IsLastPage && Model.IncludeEasyNavigation)
+            @if (!Model.Paginator.IsLastPage && Model.IncludeEasyNavigation)
             {
                 <div>
                     <a href="@Model.Forward" style="text-decoration:none">
@@ -70,15 +67,15 @@
         </div>
         <div id="paginationControls_@(Model.Self)" class="PaginationControls" style="align-self:center">
             <p></p>
-            @await Html.PartialAsync("_PaginationPartial", Model.PaginationModel.Pagination, ViewData)
+            @await Html.PartialAsync("_PaginationPartial", Model.Paginator.Pagination, ViewData)
             <p></p>
-            @if (!IsAnonymous && Model.AllowPaginationChange)
+            @if (!Model.Paginator.IsAnonymous && Model.AllowPaginationChange)
             {
                 <form method="post" asp-page-handler="Pagination">
                     <label>Mesaje afișate pe pagină:&nbsp;</label>
                     <input type="hidden" name="topicId" value="@Model.TopicId" />
                     <input type="hidden" name="postId" value="@Model.FirstPostId" />
-                    @Html.DropDownList("userPostsPerPage", Model.PaginationModel.PostsPerPage)
+                    @Html.DropDownList("userPostsPerPage", Model.Paginator.PostsPerPage)
                     &nbsp;
                     <input type="submit" value="Salvează" />
                 </form>

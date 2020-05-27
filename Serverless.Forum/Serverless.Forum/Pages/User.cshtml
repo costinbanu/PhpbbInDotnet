@@ -8,16 +8,7 @@
 }
 
 @inject Services.UserService _userService
-@*<style>
-        input, textarea {
-            width: 400px;
-        }
 
-        td {
-            padding: 5px;
-            margin-bottom: 10px;
-        }
-    </style>*@
 <link rel="stylesheet" href="~/css/posting.css" />
 <h2>Panoul utilizatorului</h2>
 <hr />
@@ -29,6 +20,11 @@
 else if (Model.ViewAsAnother)
 {
     <a href="?userId=@(Model.CurrentUser.UserId)&viewAsAnother=false">Vezi profilul ca tine însuți</a>
+}
+@if (Model.IsSelf)
+{
+    <br/>
+    <a asp-page="PrivateMessages">Mesaje private</a>
 }
 <form method="post">
     <div class="FlexCenter">
@@ -249,10 +245,17 @@ else if (Model.ViewAsAnother)
             <a href="mailto:@Html.Raw(Model.CurrentUser.UserEmail)">Trimite e-mail</a>
         }
     </div>
-    @if (!Model.IsSelf)
+    @if (await Model.CanEditAsync())
     {
-        <p></p><div class="FlexCenter">
-            <a asp-page="./Posting" asp-route-to="@Model.CurrentUser.UserId" asp-page-handler="SendPM">Trimite mesaj privat</a>
+        <div class="FlexCenter">
+            <a href="mailto:@Html.Raw(Model.CurrentUser.UserEmail)">Trimite e-mail</a>
+        </div>
+    }
+    @if (!Model.IsSelf && await _userService.GetUserRole(await Model.GetCurrentUserAsync()) != 8 && await _userService.GetUserRole(await _userService.DbUserToLoggedUserAsync(Model.CurrentUser)) != 8)
+    {
+        <p></p>
+        <div class="FlexCenter">
+            <a asp-page="/Posting" asp-page-handler="PrivateMessage" asp-route-receiverId="@Model.CurrentUser.UserId">Trimite mesaj privat</a>
         </div>
     }
     <p></p><div class="FlexCenter">

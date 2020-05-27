@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Serverless.Forum.Contracts
 {
-    public class PostDisplay
+    public class PostDto
     {
         public int? PostId { get; set; } = null;
 

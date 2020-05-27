@@ -141,6 +141,48 @@ namespace Serverless.Forum.Services
         public async Task<LoggedUser> GetLoggedUserById(int userId)
                 => await DbUserToLoggedUserAsync(await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == userId));
 
+        public async Task<(string Message, bool? IsSuccess)> SendPrivateMessage(int senderId, int receiverId, string subject, string text)
+        {
+            try
+            {
+                if (await GetUserRole(senderId) == 8)
+                {
+                    return ("Expeditorul nu are dreptul să trimită mesaje private.", false);
+                }
+                if (await GetUserRole(receiverId) == 8)
+                {
+                    return ("Destinatarul nu are dreptul să primească mesaje private.", false);
+                }
+
+                var msgResult = _context.PhpbbPrivmsgs.Add(new PhpbbPrivmsgs
+                {
+                    AuthorId = senderId,
+                    ToAddress = $"u_{receiverId}",
+                    MessageSubject = subject,
+                    MessageText = text,
+                    MessageTime = DateTime.UtcNow.ToUnixTimestamp()
+                });
+                msgResult.Entity.MsgId = 0;
+                await _context.SaveChangesAsync();
+                var msg = msgResult.Entity;
+
+                var readResult = _context.PhpbbPrivmsgsTo.Add(new PhpbbPrivmsgsTo
+                {
+                    AuthorId = senderId,
+                    MsgId = msg.MsgId,
+                    UserId = receiverId
+                });
+                readResult.Entity.Id = 0;
+                await _context.SaveChangesAsync();
+
+                return ("OK", true);
+            }
+            catch
+            {
+                return ("A intervenit o eroare, încearcă mai târziu.", false);
+            }
+        }
+
         private async Task<List<PhpbbAclRoles>> GetUserRolesLazy()
         {
             if (_userRoles != null)

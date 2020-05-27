@@ -74,7 +74,7 @@ namespace Serverless.Forum.Services
             _parser = new BBCodeParser(bbcodes);
         }
 
-        public async Task ProcessPosts(IEnumerable<PostDisplay> Posts, PageContext pageContext, HttpContext httpContext, bool renderAttachments, string toHighlight = null)
+        public async Task ProcessPosts(IEnumerable<PostDto> Posts, PageContext pageContext, HttpContext httpContext, bool renderAttachments, string toHighlight = null)
         {
             var inlineAttachmentsPosts = new ConcurrentBag<(int PostId, int AttachIndex, _AttachmentPartialModel Attach)>();
             var attachRegex = new Regex("#{AttachmentFileName=[^/]+/AttachmentIndex=[0-9]+}#", RegexOptions.Compiled);
@@ -82,12 +82,11 @@ namespace Serverless.Forum.Services
             var bannedWords = (await _writingService.GetBannedWords()).GroupBy(p => p.Word).Select(grp => grp.FirstOrDefault()).ToDictionary(x => x.Word, y => y.Replacement);
             var mutex = new Mutex();
 
-            Parallel.ForEach(Posts, (p, state1) =>
+            Parallel.ForEach(Posts, async (p, state1) =>
             {
                 p.PostSubject = CensorWords(HttpUtility.HtmlDecode(p.PostSubject), bannedWords);
-                p.PostText = CensorWords(p.PostText, bannedWords);
                 p.PostSubject = HighlightWords(p.PostSubject, highlightWords);
-                p.PostText = HighlightWords(BbCodeToHtml(p.PostText, p.BbcodeUid), highlightWords);
+                p.PostText = HighlightWords(await BbCodeToHtml(p.PostText, p.BbcodeUid), highlightWords);
 
                 if (renderAttachments)
                 {
@@ -144,13 +143,15 @@ namespace Serverless.Forum.Services
             });
         }
 
-        public string BbCodeToHtml(string bbCodeText, string bbCodeUid)
+        public async Task<string> BbCodeToHtml(string bbCodeText, string bbCodeUid, Dictionary<string, string> bannedWords = null)
         {
             if (string.IsNullOrWhiteSpace(bbCodeText))
             {
                 return string.Empty;
             }
 
+            bannedWords ??= (await _writingService.GetBannedWords()).GroupBy(p => p.Word).Select(grp => grp.FirstOrDefault()).ToDictionary(x => x.Word, y => y.Replacement);
+            bbCodeText = CensorWords(bbCodeText, bannedWords);
             bbCodeText = _parser.ToHtml(bbCodeText, bbCodeUid);
             bbCodeText = _newLineRegex.Replace(bbCodeText, "<br/>");
             bbCodeText = _htmlCommentRegex.Replace(bbCodeText, string.Empty);

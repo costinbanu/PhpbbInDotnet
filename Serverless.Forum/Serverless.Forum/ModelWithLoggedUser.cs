@@ -27,7 +27,7 @@ namespace Serverless.Forum
 
         private IEnumerable<Tracking> _tracking;
         private LoggedUser _currentUser;
-        private ForumDisplay _tree = null;
+        private ForumDto _tree = null;
 
         public ModelWithLoggedUser(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
         {
@@ -207,13 +207,13 @@ namespace Serverless.Forum
             return unread.FirstOrDefault(t => t.TopicId == topicId)?.Posts?.FirstOrDefault() ?? 0;
         }
 
-        public async Task<ForumDisplay> GetForumTreeAsync(ForumType? parentType = null)
+        public async Task<ForumDto> GetForumTreeAsync(ForumType? parentType = null)
             => _tree ?? (_tree = await _forumService.GetForumTreeAsync(parentType, await GetCurrentUserAsync(), forumId => IsForumUnread(forumId)));
 
         public async Task<List<int>> PathToForumOrTopic(int forumId, int? topicId = null)
             => _forumService.GetPathInTree(await GetForumTreeAsync(), forum => forum.Id ?? 0, forumId, topicId ?? -1);
 
-        public async Task<ForumDisplay> GetForum(int forumId)
+        public async Task<ForumDto> GetForum(int forumId)
             => _forumService.GetPathInTree(await GetForumTreeAsync(), forumId).Last();
 
         private IEnumerable<Tracking> GetUnreadTopicsAndParentsLazy()

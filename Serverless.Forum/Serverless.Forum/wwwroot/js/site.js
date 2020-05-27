@@ -1,26 +1,26 @@
 ﻿// Resize media in posts
 function onPostLoad() {
-    $(".ForumContent").each(function (_, post) {
-        var maxWidth = ($(".FlexRow").width() - ($(".Summary").is(":visible") ? $(".Summary").outerWidth() : 0)) - 50;
-        var maxHeight = $(window).innerHeight() - $("#topBanner").outerHeight() - 40;
-        console.log("max size: w=" + maxWidth + ", h=" + maxHeight + ". parent width = " + $(post).parent().outerWidth());
-        $(post).find("img").each(function (_, img) {
+    $('.ForumContent').each(function (_, post) {
+        var maxWidth = ($('.FlexRow').width() - ($('.Summary').is(':visible') ? $('.Summary').outerWidth() : 0)) - 20;
+        var maxHeight = $(window).innerHeight() - $('#topBanner').outerHeight() - 40;
+        console.log('max size: w=' + maxWidth + ', h=' + maxHeight + '. parent width = ' + $(post).parent().outerWidth());
+        $(post).find('img').each(function (_, img) {
             var originalWidth = img.naturalWidth,
                 originalHeight = img.naturalHeight,
                 ratio = Math.min(maxHeight / originalHeight, maxWidth / originalWidth);
             if (ratio < 1) {
-                $(img).css({ "width": Math.round(originalWidth * ratio) + "px", "height": Math.round(originalHeight * ratio) + "px" });
-                if (!$(img).parent().is("a")) {
-                    $(img).attr({ "onclick": "window.open(this.src);", "title": "Click pentru imaginea mărită." });
-                    $(img).css("cursor", "pointer");
+                $(img).css({ 'width': Math.round(originalWidth * ratio) + 'px', 'height': Math.round(originalHeight * ratio) + 'px' });
+                if (!$(img).parent().is('a')) {
+                    $(img).attr({ 'onclick': 'window.open(this.src);', 'title': 'Click pentru imaginea mărită.' });
+                    $(img).css('cursor', 'pointer');
                 }
             }
         });
-        $(post).find("iframe").each(function (_, frame) {
-            $(frame).attr({ "width": maxWidth, "height": Math.max(Math.round(maxHeight / 1.8), Math.round((maxWidth) * 9 / 16)) });
-            var src = $(frame).attr("src");
-            if (src.indexOf("imgur") !== -1) {
-                $(frame).attr("src", src + "?w=" + maxWidth)
+        $(post).find('iframe').each(function (_, frame) {
+            $(frame).attr({ 'width': maxWidth, 'height': Math.max(Math.round(maxHeight / 1.8), Math.round((maxWidth) * 9 / 16)) });
+            var src = $(frame).attr('src');
+            if (src.indexOf('imgur') !== -1) {
+                $(frame).attr('src', src + '?w=' + maxWidth)
             }
         });
     });
@@ -28,25 +28,25 @@ function onPostLoad() {
 
 //Expand collapsed menus
 function expandCollapsedMenu(summaryId, buttonId, containerIsFixed = false) {
-    var summary = $("#" + summaryId);
-    var button = $("#" + buttonId);
+    var summary = $('#' + summaryId);
+    var button = $('#' + buttonId);
 
-    if (!summary.is(":visible")) {
+    if (!summary.is(':visible')) {
         var top = containerIsFixed ? button.position().top + 10 : button.offset().top;
         summary.css({
-            "right": containerIsFixed ? "20px" : "40px",
-            "top": top + button.height() + 10 + "px"
+            'right': containerIsFixed ? '20px' : '40px',
+            'top': top + button.height() + 10 + 'px'
         });
-        summary.show("fast", function () { });
+        summary.show('fast', function () { });
     }
     else {
-        summary.hide("fast", function () { });
+        summary.hide('fast', function () { });
     }
 }
 
 
 function showElement(id, whenHiding, whenShowing) {
-    var elem = $("#" + id);
+    var elem = $('#' + id);
     if (!whenHiding) {
         whenHiding = function () { }
     }
@@ -54,18 +54,18 @@ function showElement(id, whenHiding, whenShowing) {
         whenShowing = function () { }
     }
 
-    if (elem.is(":visible")) {
-        elem.hide("fast", whenHiding);
+    if (elem.is(':visible')) {
+        elem.hide('fast', whenHiding);
     }
     else {
-        elem.show("fast", whenShowing);
+        elem.show('fast', whenShowing);
     }
 }
 
 function writeDate(dateString, format) {
     var date = new Date(dateString);
     if (!format) {
-        format = "dddd, dd.MM.yyyy HH: mm";
+        format = 'dddd, dd.MM.yyyy HH: mm';
     }
     document.write(date.format(format));
 }
