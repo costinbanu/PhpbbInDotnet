@@ -15,6 +15,8 @@
 
 <h2>Mesaje private</h2>
 
+<a asp-page="/Posting" asp-page-handler="PrivateMessage">Scrie un mesaj privat nou</a>
+<p></p>
 <div class="tab">
     <button class="@(Model.Show == PrivateMessagesPages.Inbox ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Inbox')">Primite</button>
     <button class="@(Model.Show == PrivateMessagesPages.Sent ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Sent')">Trimise</button>
@@ -91,22 +93,23 @@
 </div>
 @if (Model.Show == PrivateMessagesPages.Message && Model.SelectedMessage != null)
 {
+    var fakeId = -Model.SelectedMessage.MessageId;
     <div id="Message" class="tabcontent" style="@(Model.Show == PrivateMessagesPages.Message ? "display:inherit" : "display:none")">
         <div class="RowMargin">
             <div class="FlexRow">
                 @await Html.PartialAsync(
                      "_SummaryPartial",
                      new CustomPartials._SummaryPartialModel(Model.SelectedMessage.OthersId, Model.SelectedMessage.OthersName, Model.SelectedMessage.OthersColor,
-                         Model.SelectedMessage.Time, Model.SelectedMessage.MessageId, UserDateFormat, true, null, null, null, null, false, false, null, null, 
+                         Model.SelectedMessage.Time, fakeId, UserDateFormat, Model.SelectedMessage.OtherHasAvatar, null, null, null, null, true, false, null, null,
                          Model.SelectedMessageIsMine ? "Pentru: " : "De la: ")
                  )
-                <div class="ForumContent VerticalContent FlexRight" id="@Model.SelectedMessage.MessageId">
+                <div class="ForumContent VerticalContent FlexRight" id="@fakeId">
                     <span style="display:flex">
                         <span class="PostTitle">
-                            <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@Model.SelectedMessage.MessageId">@Html.Raw(Model.SelectedMessage.Subject)</a>
+                            @Html.Raw(Model.SelectedMessage.Subject)
                         </span>
                         <span style="margin-left:auto">
-                            <span class="CollapsedMenu" onclick="expandCollapsedMenu('summary@(Model.SelectedMessage.MessageId)', 'button@(Model.SelectedMessage.MessageId)')" id="button@(Model.SelectedMessage.MessageId)" style="color:#@Model.SelectedMessage.OthersColor;margin-left: auto; height:auto; width: min-content">
+                            <span class="CollapsedMenu" onclick="expandCollapsedMenu('summary@(fakeId)', 'button@(fakeId)')" id="button@(fakeId)" style="color:#@Model.SelectedMessage.OthersColor;margin-left: auto; height:auto; width: min-content">
                                 @Html.Raw(Model.SelectedMessage.OthersName)
                             </span>
                         </span>
@@ -117,8 +120,16 @@
                         <br />
                     </div>
                 </div>
-                <p>&nbsp;</p>
             </div>
         </div>
+        <p>&nbsp;</p>
+        <a asp-page="/Posting" asp-page-handler="PrivateMessage" asp-route-privateMessageId="@Model.SelectedMessage.MessageId" asp-route-receiverId="@Model.SelectedMessage.OthersId">Răspunde</a>&nbsp;|&nbsp;
+        <a href="javascript:$('#deleteForm').submit();">Șterge mesajul</a>
+        <form method="post" id="deleteForm">
+            <input type="hidden" asp-for="MessageId" />
+            <input type="hidden" asp-for="InboxPage" />
+            <input type="hidden" asp-for="SentPage" />
+            <input type="hidden" name="Show" value="@(Model.SelectedMessageIsMine ? PrivateMessagesPages.Sent : PrivateMessagesPages.Inbox)" />
+        </form>
     </div>
 }

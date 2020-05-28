@@ -169,8 +169,7 @@ h3 {
     display: inline-block;
     list-style-type: none;
     margin-bottom: 0px !important;
-    /*padding-left: 10px;
-    text-indent: -10px;*/
+    z-index: 99999999;
 }
 
 .FlexRight {

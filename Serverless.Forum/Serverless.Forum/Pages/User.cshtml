@@ -12,7 +12,14 @@
 <link rel="stylesheet" href="~/css/posting.css" />
 <h2>Panoul utilizatorului</h2>
 <hr />
-<h4>@Model.CurrentUser.Username - Privire generală</h4>
+<h4>
+    @Model.CurrentUser.Username - Profil
+    @if (Model.IsSelf)
+    {
+        <span>&nbsp;&bull;&nbsp;</span>
+        <a asp-page="PrivateMessages">Mesaje private</a>
+    }
+</h4>
 @if (await Model.CanEditAsync())
 {
     <a href="?userId=@(Model.CurrentUser.UserId)&viewAsAnother=true">Vezi profilul ca alt utilizator</a>
@@ -21,11 +28,7 @@ else if (Model.ViewAsAnother)
 {
     <a href="?userId=@(Model.CurrentUser.UserId)&viewAsAnother=false">Vezi profilul ca tine însuți</a>
 }
-@if (Model.IsSelf)
-{
-    <br/>
-    <a asp-page="PrivateMessages">Mesaje private</a>
-}
+
 <form method="post">
     <div class="FlexCenter">
         @if (!string.IsNullOrWhiteSpace(Model.CurrentUser.UserAvatar))

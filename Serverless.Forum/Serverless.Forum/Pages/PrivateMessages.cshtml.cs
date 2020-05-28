@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.VisualStudio.Web.CodeGeneration.Contracts.Messaging;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Services;
@@ -127,7 +126,7 @@ namespace Serverless.Forum.Pages
             if (Show == PrivateMessagesPages.Message && MessageId.HasValue)
             {
                 var msg = await _context.PhpbbPrivmsgs.AsNoTracking().FirstOrDefaultAsync(x => x.MsgId == MessageId);
-                var to = await _context.PhpbbPrivmsgsTo.AsNoTracking().FirstOrDefaultAsync(x => x.MsgId == MessageId && x.AuthorId != x.UserId);
+                var to = await _context.PhpbbPrivmsgsTo.FirstOrDefaultAsync(x => x.MsgId == MessageId && x.AuthorId != x.UserId);
                 SelectedMessageIsMine = to.AuthorId == CurrentUserId;
                 var other = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == (SelectedMessageIsMine ? to.UserId : to.AuthorId));
                 SelectedMessage = new PrivateMessageDto
@@ -136,12 +135,43 @@ namespace Serverless.Forum.Pages
                     OthersId = other.UserId,
                     OthersName = other?.Username ?? "Anonymous",
                     OthersColor = other?.UserColour,
+                    OtherHasAvatar = !string.IsNullOrWhiteSpace(other.UserAvatar),
                     Subject = HttpUtility.HtmlDecode(msg.MessageSubject),
                     Text = await _renderingService.BbCodeToHtml(msg.MessageText, msg.BbcodeUid),
                     Time = msg.MessageTime.ToUtcTime()
                 };
+
+                if (to.PmUnread == 1)
+                {
+                    to.PmUnread = 0;
+                    _context.PhpbbPrivmsgsTo.Update(to);
+                    await _context.SaveChangesAsync();
+                }
             }
             return Page();
+        }
+
+        public async Task<IActionResult> OnPost()
+        {
+            var responses = await PageAuthorizationResponses().FirstOrDefaultAsync();
+            if (responses != null)
+            {
+                return responses;
+            }
+
+            var (Message, IsSuccess) = await _userService.DeletePrivateMessage(MessageId.Value);
+
+            if (IsSuccess ?? false)
+            {
+                MessageId = null;
+                return await OnGet();
+            }
+            else
+            {
+                ModelState.AddModelError(nameof(MessageId), Message);
+                Show = PrivateMessagesPages.Message;
+                return await OnGet();
+            }
         }
     }
 }

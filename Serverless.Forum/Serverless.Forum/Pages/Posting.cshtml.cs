@@ -10,7 +10,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
-using System.Reflection.Metadata;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -67,6 +66,9 @@ namespace Serverless.Forum.Pages
 
         [BindProperty]
         public string ReceiverName { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public int? PrivateMessageId { get; set; }
         
         public PostDto PreviewablePost { get; private set; }
         
@@ -233,6 +235,37 @@ namespace Serverless.Forum.Pages
                         ReceiverId = author.UserId;
                         ReceiverName = author.Username;
                     }
+                    else
+                    {
+                        return BadRequest("Destinatarul nu există");
+                    }
+                }
+                else
+                {
+                    return BadRequest("Mesajul nu există");
+                }
+            }
+            else if ((PrivateMessageId ?? 0) > 0 && (ReceiverId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
+            {
+                var msg = await _context.PhpbbPrivmsgs.AsNoTracking().FirstOrDefaultAsync(p => p.MsgId == PrivateMessageId);
+                if (msg != null && ReceiverId == msg.AuthorId)
+                {
+                    var author = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == ReceiverId);
+                    if ((author?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
+                    {
+                        var title = HttpUtility.HtmlDecode(msg.MessageSubject);
+                        PostTitle = title.StartsWith(Constants.REPLY) ? title : $"{Constants.REPLY}{title}";
+                        PostText = $"[quote]{ HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(msg.MessageText, msg.BbcodeUid))}[/quote]";
+                        ReceiverName = author.Username;
+                    }
+                    else
+                    {
+                        return BadRequest("Destinatarul nu există");
+                    }
+                }
+                else
+                {
+                    return BadRequest("Mesajul nu există");
                 }
             }
             else if ((ReceiverId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)

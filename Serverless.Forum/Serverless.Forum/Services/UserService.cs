@@ -1,7 +1,6 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
@@ -182,6 +181,30 @@ namespace Serverless.Forum.Services
                 return ("A intervenit o eroare, încearcă mai târziu.", false);
             }
         }
+
+        public async Task<(string Message, bool? IsSuccess)> DeletePrivateMessage(int messageId)
+        {
+            try
+            {
+                var msg = await _context.PhpbbPrivmsgs.FirstOrDefaultAsync(p => p.MsgId == messageId);
+                if (msg == null)
+                {
+                    return ("Mesajul nu există.", false);
+                }
+                var msgToEntries = await _context.PhpbbPrivmsgsTo.Where(t => t.MsgId == messageId).ToListAsync();
+                _context.PhpbbPrivmsgs.Remove(msg);
+                _context.PhpbbPrivmsgsTo.RemoveRange(msgToEntries);
+                await _context.SaveChangesAsync();
+                return ("OK", true);
+            }
+            catch
+            {
+                return ("A intervenit o eroare, încearcă mai târziu.", false);
+            }
+        }
+
+        public async Task<int> UnreadPMs(int userId)
+            => await _context.PhpbbPrivmsgsTo.AsNoTracking().CountAsync(x => x.UserId == userId && x.AuthorId != x.UserId && x.PmUnread == 1);
 
         private async Task<List<PhpbbAclRoles>> GetUserRolesLazy()
         {

@@ -35,7 +35,7 @@ function expandCollapsedMenu(summaryId, buttonId, containerIsFixed = false) {
         var top = containerIsFixed ? button.position().top + 10 : button.offset().top;
         summary.css({
             'right': containerIsFixed ? '20px' : '40px',
-            'top': top + button.height() + 10 + 'px'
+            'top': top + button.height() + 10 + 'px',
         });
         summary.show('fast', function () { });
     }

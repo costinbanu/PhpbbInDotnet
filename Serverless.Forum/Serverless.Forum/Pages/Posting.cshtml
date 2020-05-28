@@ -88,6 +88,7 @@ else
     {
         <input type="text" asp-for="ReceiverName" placeholder="Alege destinatar..." id="pmToInput" class="PostInputWidth" autocomplete="off" />
         <p id="tributeHolder" style="position:relative">&nbsp;</p>
+        <span asp-validation-for="ReceiverName" class="validation"></span><br/>
     }
     <input asp-for="PostTitle" type="text" id="subject" size="45" maxlength="256" tabindex="2" class="InputBox PostInputWidth" placeholder="Subiect" />
     <br />

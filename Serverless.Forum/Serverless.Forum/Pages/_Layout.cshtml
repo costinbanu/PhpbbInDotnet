@@ -3,10 +3,10 @@
 @using Serverless.Forum.Utilities
 
 
-@inject Services.UserService  _userServices
+@inject Services.UserService  _userService
 
-@{ 
-    var currentUser = await _userServices.ClaimsPrincipalToLoggedUserAsync(User);
+@{
+    var currentUser = await _userService.ClaimsPrincipalToLoggedUserAsync(User);
 }
 
 <!DOCTYPE html>
@@ -47,7 +47,7 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a asp-page="/Index"><div class="headerImg" ></div></a>
+                <a asp-page="/Index"><div class="headerImg"></div></a>
 
             </div>
             <div class="navbar-collapse collapse">
@@ -90,14 +90,28 @@
             <li><a href="https://www.facebook.com/InitiativaMTB/">Inițiativa pentru Muzeul transportului bucureștean</a></li>
             <li><a href="https://metrouusor.com/index.php/implica-te/directoneaza-2-din-impozit">2% pentru Asociația „Metrou Ușor”</a></li>
         </ul>
-        <p>&nbsp;</p>
+        <center>
+            @{ 
+                var pmCount = await _userService.UnreadPMs(currentUser.UserId);
+                if (pmCount > 0)
+                {
+                    <span class="Unread" style="margin:5px; padding:5px; font-size:1.2em">
+                        <a asp-page="/PrivateMessages" asp-route-Show="Inbox">@pmCount mesaj@(pmCount > 1 ? "e" : "") privat@(pmCount > 1 ? "e" : "") necitit@(pmCount > 1 ? "e" : "")</a>
+                    </span>
+                }
+                else
+                {
+                    <p>&nbsp;</p>
+                }
+            }
+        </center>
         @RenderBody()
     </div>
     <center style="color:white;">
         <p>&nbsp;</p>
         <p>&copy; 2009 - @DateTime.Now.Year <a href="https://metrouusor.com" style="color:white; text-decoration:underline">Asociația „Metrou Ușor”</a></p>
         <p><a asp-page="/TermsAndConditions" style="color:white; text-decoration:underline">Termenele și condițiile de utilizare</a></p>
-        @if (await _userServices.IsUserAdminInForum(currentUser, 0))
+        @if (await _userService.IsUserAdminInForum(currentUser, 0))
         {
             <p><a asp-page="./Admin" style="color:white; text-decoration:underline">Panoul administratorului</a></p>
         }

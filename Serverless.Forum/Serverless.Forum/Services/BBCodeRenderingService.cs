@@ -86,7 +86,7 @@ namespace Serverless.Forum.Services
             {
                 p.PostSubject = CensorWords(HttpUtility.HtmlDecode(p.PostSubject), bannedWords);
                 p.PostSubject = HighlightWords(p.PostSubject, highlightWords);
-                p.PostText = HighlightWords(await BbCodeToHtml(p.PostText, p.BbcodeUid), highlightWords);
+                p.PostText = HighlightWords(await BbCodeToHtml(p.PostText, p.BbcodeUid, bannedWords), highlightWords);
 
                 if (renderAttachments)
                 {
