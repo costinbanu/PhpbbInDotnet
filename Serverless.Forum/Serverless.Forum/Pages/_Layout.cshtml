@@ -60,7 +60,7 @@
                 <ul style="float:right; padding-top:10px; list-style:none; line-height:1.85em;">
                     @{
                         var isTopic = ViewContext.RouteData.Values["page"].ToString() == "/ViewTopic";
-                        if (string.IsNullOrWhiteSpace(currentUser?.Username) || (currentUser?.UserId ?? 0) == 1)
+                        if (string.IsNullOrWhiteSpace(currentUser?.Username) || (currentUser?.UserId ?? 1) == 1)
                         {
                             <li><a href="javascript:loginForm.submit()">Login</a></li>
                             <li><a asp-page="/Register">Register</a></li>
@@ -91,8 +91,12 @@
             <li><a href="https://metrouusor.com/index.php/implica-te/directoneaza-2-din-impozit">2% pentru Asociația „Metrou Ușor”</a></li>
         </ul>
         <center>
-            @{ 
-                var pmCount = await _userService.UnreadPMs(currentUser.UserId);
+            @{
+                var pmCount = 0;
+                if ((currentUser?.UserId ?? 1) > 1)
+                {
+                    pmCount = await _userService.UnreadPMs(currentUser.UserId);
+                }
                 if (pmCount > 0)
                 {
                     <span class="Unread" style="margin:5px; padding:5px; font-size:1.2em">
