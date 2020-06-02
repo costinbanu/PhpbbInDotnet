@@ -83,15 +83,16 @@
         }
     }
 }
-<ul id="myUL">
-    @{await showTreeNode(Model.Forums);}
-</ul>
+@{ var style = Html.Raw(Model.ConstrainSize ? "style=\"height:400px; max-height:600px; overflow-y:scroll\"" : ""); }
+<div id="treeContainer" @style>
+    <ul id="myUL">
+        @{await showTreeNode(Model.Forums);}
+    </ul>
+</div>
 
 
-
-<script>
-    //var allInfo = @Json.Serialize(Model.Forums);
-    var path = @Json.Serialize(Model.PathToForumOrTopic);
+    <script>
+    var path = @Json.Serialize(Model.Path);
     var topicId = @Json.Serialize(Model.TopicId);
 
     function select(obj, forumId, topics) {
@@ -122,9 +123,13 @@
             document.getElementById("treeNode" + path[i]).click();
         }
 
+        if (@Html.Raw(Model.ConstrainSize.ToString().ToLower())) {
+            document.getElementById('treeContainer').scrollTop = document.getElementById("treeNode" + path[path.length]).offsetTop;
+        }
+
         if (typeof topicSelectInit === "function") {
             topicSelectInit(topicId);
         }
     });
 
-</script>
+    </script>

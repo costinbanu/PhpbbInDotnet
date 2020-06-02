@@ -84,11 +84,11 @@
     <div class="container body-content size1300">
         <a href="javascript:showElement('metrouusorLinks');" class="Show1300"><b>Site-urile „MetrouUșor” &#x2935;</b></a>
         <ul class="Shortcuts Hide1300" id="metrouusorLinks">
-            <li><a href="https://metrouusor.com">Asociația „Metrou Ușor”</a></li>
-            <li><a href="https://www.facebook.com/MetrouUsor/">Facebook</a></li>
-            <li><a href="https://youtube.com/channel/UCczAlitk6NaUjQsbtCSdEjA">Youtube</a></li>
-            <li><a href="https://www.facebook.com/InitiativaMTB/">Inițiativa pentru Muzeul transportului bucureștean</a></li>
-            <li><a href="https://metrouusor.com/index.php/implica-te/directoneaza-2-din-impozit">2% pentru Asociația „Metrou Ușor”</a></li>
+            <li><a href="https://metrouusor.com" target="_blank">Asociația „Metrou Ușor”</a></li>
+            <li><a href="https://www.facebook.com/MetrouUsor/" target="_blank">Facebook</a></li>
+            <li><a href="https://youtube.com/channel/UCczAlitk6NaUjQsbtCSdEjA" target="_blank">Youtube</a></li>
+            <li><a href="https://www.facebook.com/InitiativaMTB/" target="_blank">Inițiativa pentru Muzeul transportului bucureștean</a></li>
+            <li><a href="https://metrouusor.com/index.php/implica-te/directoneaza-2-din-impozit" target="_blank">2% pentru Asociația „Metrou Ușor”</a></li>
         </ul>
         <center>
             @{
@@ -113,7 +113,7 @@
     </div>
     <center style="color:white;">
         <p>&nbsp;</p>
-        <p>&copy; 2009 - @DateTime.Now.Year <a href="https://metrouusor.com" style="color:white; text-decoration:underline">Asociația „Metrou Ușor”</a></p>
+        <p>&copy; 2009 - @DateTime.UtcNow.Year <a href="https://metrouusor.com" style="color:white; text-decoration:underline">Asociația „Metrou Ușor”</a></p>
         <p><a asp-page="/TermsAndConditions" style="color:white; text-decoration:underline">Termenele și condițiile de utilizare</a></p>
         @if (await _userService.IsUserAdminInForum(currentUser, 0))
         {

@@ -33,7 +33,7 @@ namespace Serverless.Forum.Pages
         {
             if (forumId == 0)
             {
-                return RedirectToPage("/Index");
+                return RedirectToPage("Index");
             }
 
             ForumId = forumId;

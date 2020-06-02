@@ -54,13 +54,12 @@
     <div>
         @await Html.PartialAsync(
             "_ForumTreePartial",
-             new CustomPartials._ForumTreePartialModel
-             {
-                 Forums = await Model.GetForumTreeAsync(),
-                 ForumId = Model.ForumId,
-                 TopicId = Model.TopicId,
-                 PathToForumOrTopic = await Model.PathToForumOrTopic(Model.ForumId ?? 0, Model.TopicId)
-             },
+            new CustomPartials._ForumTreePartialModel (
+                forums: await Model.GetForumTreeAsync(),
+                forumId: Model.ForumId,
+                topicId: Model.TopicId,
+                path: await Model.PathToForumOrTopic(Model.ForumId ?? 0, Model.TopicId)
+            ),
             ViewData
         )
     </div>

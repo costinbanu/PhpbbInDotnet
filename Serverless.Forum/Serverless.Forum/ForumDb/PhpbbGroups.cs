@@ -30,6 +30,6 @@ namespace Serverless.Forum.ForumDb
         public int GroupMaxRecipients { get; set; } = 0;
         public byte GroupLegend { get; set; } = 1;
         public int GroupUserUploadSize { get; set; } = 0;
-        public long GroupEditTime { get; set; } = 60;
+        public int GroupEditTime { get; set; } = 60;
     }
 }

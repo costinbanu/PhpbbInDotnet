@@ -5,12 +5,21 @@ using System.Collections.Generic;
 
 namespace Serverless.Forum.Pages.CustomPartials
 {
-    //[BindProperties(SupportsGet = true), ValidateAntiForgeryToken]
     public class _ForumTreePartialModel : PageModel
     {
-        public ForumDto Forums { get; set; }
-        public List<int> PathToForumOrTopic { get; set; }
-        public int? ForumId { get; set; }
-        public int? TopicId { get; set; }
+        public ForumDto Forums { get; }
+        public IEnumerable<int> Path { get; }
+        public int? ForumId { get; }
+        public int? TopicId { get; }
+        public bool ConstrainSize { get; }
+
+        public _ForumTreePartialModel(ForumDto forums, IEnumerable<int> path = null, int? forumId = null, int? topicId = null, bool constrainSize = false)
+        {
+            Forums = forums;
+            Path = path;
+            ForumId = forumId;
+            TopicId = topicId;
+            ConstrainSize = constrainSize;
+        }
     }
 }

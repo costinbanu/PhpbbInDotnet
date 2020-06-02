@@ -14,19 +14,22 @@
 <p>&nbsp;</p>
 @await Html.PartialAsync(
     "_ForumTreePartial",
-    new CustomPartials._ForumTreePartialModel
-    {
-        Forums = forumTree,
-        ForumId = Model.Forum?.ForumId ?? 0,
-        TopicId = null,
-        PathToForumOrTopic = _forumTreeService.GetPathInTree(forumTree, forum => forum.Id ?? 0, Model.Forum?.ForumId ?? 0, -1)
-    },
+    new CustomPartials._ForumTreePartialModel(
+        forums: forumTree,
+        forumId: Model.Forum?.ForumId ?? 0,
+        topicId: null,
+        path: _forumTreeService.GetPathInTree(forumTree, forum => forum.Id ?? 0, Model.Forum?.ForumId ?? 0, -1)
+    ),
     ViewData
 )
 <form method="post" asp-page-handler="ShowForum">
     <input type="submit" value="Modifică forumul selectat" /> &nbsp;
-    <input type="submit" value="Creează un forum nou" onclick="$('#forumId').val('')" />
-    <input id="forumId" name="forumId" type="hidden" />
+    <input type="submit" value="Șterge forumul selectat" form="deleteForumForm" /> &nbsp;
+    <input type="submit" value="Creează un forum nou" onclick="$('#forumIdUpsert').val('')" />
+    <input id="forumIdUpsert" name="forumId" type="hidden" />
+</form>
+<form method="post" asp-page-handler="DeleteForum" id="deleteForumForm">
+    <input type="hidden" name="forumId" id="forumIdDelete" />
 </form>
 @if (Model.Show)
 {
@@ -152,17 +155,10 @@
 <script type="text/javascript">
     Sortable.create(document.getElementById('children'), { animation: 150 });
 
-    function submitForumForm(form, id) {
-        document.getElementById("forumId").value = id;
-        document.getElementById(form).submit();
-    }
-
     //forum tree callback
     function forumSelectCallback(forumId) {
-        var forumInput = document.getElementById("forumId");
-        if (forumInput != null) {
-            forumInput.value = forumId;
-        }
+        $('#forumIdUpsert').val(forumId);
+        $('#forumIdDelete').val(forumId); 
     }
 
     function Toggle() {

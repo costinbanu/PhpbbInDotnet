@@ -134,19 +134,17 @@ else
 <span onclick="showElement('forumTree')" style="cursor:pointer; font-weight:bold">Navigare - alege destinația &#x2935;</span>
 <p></p>
 <div id="forumTree" style=" display:none">
-    <div style="height:400px; max-height:600px; overflow-y:scroll;">
         @await Html.PartialAsync(
             "_ForumTreePartial",
-             new CustomPartials._ForumTreePartialModel
-             {
-                 Forums = await Model.GetForumTreeAsync(),
-                 ForumId = Model.ForumId,
-                 TopicId = null,
-                 PathToForumOrTopic = await Model.PathToForumOrTopic(Model.ForumId)
-             },
+            new CustomPartials._ForumTreePartialModel(
+                forums: await Model.GetForumTreeAsync(),
+                forumId: Model.ForumId,
+                topicId: null,
+                path: await Model.PathToForumOrTopic(Model.ForumId),
+                constrainSize: true
+            ),
             ViewData
         )
-    </div>
     <p></p>
     <form action="/ViewForum">
         <input type="hidden" name="ForumId" id="ForumIdInput" />

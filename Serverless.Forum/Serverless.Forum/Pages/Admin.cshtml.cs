@@ -45,7 +45,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnGet()
         {
-            var validationResult = await ValidatePermissionsAndInit(AdminCategories.Users);
+            var validationResult = await ValidatePermissionsAndInit();
             if (validationResult != null)
             {
                 return validationResult;
@@ -54,7 +54,7 @@ namespace Serverless.Forum.Pages
             return Page();
         }
 
-        private async Task<IActionResult> ValidatePermissionsAndInit(AdminCategories category)
+        private async Task<IActionResult> ValidatePermissionsAndInit()
             => !await IsCurrentUserAdminHereAsync() ? Forbid() : null;
 
         #region Admin user
@@ -63,7 +63,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPostUserSearch(string username, string email, int? userid)
         {
-            var validationResult = await ValidatePermissionsAndInit(AdminCategories.Users);
+            var validationResult = await ValidatePermissionsAndInit();
             if (validationResult != null)
             {
                 return validationResult;
@@ -81,13 +81,26 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPostUserManagement(AdminUserActions? userAction, int? userId)
         {
-            var validationResult = await ValidatePermissionsAndInit(AdminCategories.Users);
+            var validationResult = await ValidatePermissionsAndInit();
             if (validationResult != null)
             {
                 return validationResult;
             }
 
-            (Message, IsSuccess) = await _adminUserService.ManageUserAsync(userAction, userId);
+            (Message, IsSuccess) = await _adminUserService.ManageUser(userAction, userId);
+            Category = AdminCategories.Users;
+            return Page();
+        }
+
+        public async Task<IActionResult> OnPostGroupManagement(UpsertGroupDto dto)
+        {
+            var validationResult = await ValidatePermissionsAndInit();
+            if (validationResult != null)
+            {
+                return validationResult;
+            }
+
+            (Message, IsSuccess) = await _adminUserService.ManageGroup(dto);
             Category = AdminCategories.Users;
             return Page();
         }
@@ -105,7 +118,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPostShowForum(int? forumId)
         {
-            var validationResult = await ValidatePermissionsAndInit(AdminCategories.Users);
+            var validationResult = await ValidatePermissionsAndInit();
             if (validationResult != null)
             {
                 return validationResult;
@@ -124,7 +137,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPostForumManagement(UpsertForumDto dto)
         {
-            var validationResult = await ValidatePermissionsAndInit(AdminCategories.Users);
+            var validationResult = await ValidatePermissionsAndInit();
             if (validationResult != null)
             {
                 return validationResult;
@@ -137,13 +150,28 @@ namespace Serverless.Forum.Pages
             return Page();
         }
 
+        public async Task<IActionResult> OnPostDeleteForum(int forumId)
+        {
+            var validationResult = await ValidatePermissionsAndInit();
+            if (validationResult != null)
+            {
+                return validationResult;
+            }
+
+            (Message, IsSuccess) = await _adminForumService.DeleteForum(forumId);
+
+            ShowForum = false;
+            Category = AdminCategories.Forums;
+            return Page();
+        }
+
         #endregion Admin forum
 
         #region Admin writing
 
         public async Task<IActionResult> OnGetWriting()
         {
-            var validationResult = await ValidatePermissionsAndInit(AdminCategories.Users);
+            var validationResult = await ValidatePermissionsAndInit();
             if (validationResult != null)
             {
                 return validationResult;
@@ -155,7 +183,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPostBanWords(List<PhpbbWords> words, List<int> toRemove)
         {
-            var validationResult = await ValidatePermissionsAndInit(AdminCategories.Users);
+            var validationResult = await ValidatePermissionsAndInit();
             if (validationResult != null)
             {
                 return validationResult;
@@ -170,7 +198,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPostOrphanedFiles(AdminOrphanedFilesActions action)
         {
-            var validationResult = await ValidatePermissionsAndInit(AdminCategories.Users);
+            var validationResult = await ValidatePermissionsAndInit();
             if (validationResult != null)
             {
                 return validationResult;

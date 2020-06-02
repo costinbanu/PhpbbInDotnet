@@ -93,12 +93,21 @@ namespace Serverless.Forum.Services
 
         public async Task<ClaimsPrincipal> DbUserToClaimsPrincipalAsync(PhpbbUsers user)
         {
+            var editTime = await (
+                from g in _context.PhpbbGroups.AsNoTracking()
+                join ug in _context.PhpbbUserGroup.AsNoTracking()
+                on g.GroupId equals ug.GroupId
+                into joined
+                from j in joined
+                where j.UserId == user.UserId
+                select g.GroupEditTime
+            ).FirstOrDefaultAsync();
             using var connection = _context.Database.GetDbConnection();
             await connection.OpenAsync();
             DefaultTypeMap.MatchNamesWithUnderscores = true;
 
             using var multi = await connection.QueryMultipleAsync("CALL `forum`.`get_user_details`(@UserId);", new { user.UserId });
-            var intermediary = new LoggedUser
+                        var intermediary = new LoggedUser
             {
                 UserId = user.UserId,
                 Username = user.Username,
@@ -108,7 +117,7 @@ namespace Serverless.Forum.Services
                 TopicPostsPerPage = (await multi.ReadAsync()).ToDictionary(key => checked((int)key.topic_id), value => checked((int)value.post_no)),
                 UserDateFormat = user.UserDateformat,
                 UserColor = user.UserColour,
-                PostEditTime = user.UserEditTime
+                PostEditTime = (editTime == 0 || user.UserEditTime == 0) ? editTime + user.UserEditTime : Math.Min(Math.Abs(editTime), Math.Abs(user.UserEditTime))
             };
 
             var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);

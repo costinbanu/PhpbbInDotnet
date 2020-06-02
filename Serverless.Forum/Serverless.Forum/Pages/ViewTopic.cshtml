@@ -50,7 +50,7 @@
     <span>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@Model.ForumTitle</a></span>
 }
 <h2>Subiect: @Model.TopicTitle</h2>
-<span class="Caption">@Model.PostCount mesaje, @Model.ViewCount vizualizări.</span>
+<span class="Caption">@Model.PostCount mesaj@(Model.PostCount == 1 ? "" : "e"), @Model.ViewCount vizualiz@(Model.ViewCount == 1 ? "are" : "ări").</span>
 
 @if (Model.Poll != null)
 {
@@ -77,7 +77,10 @@
                 <br />
                 <input asp-for="TopicId" type="hidden" />
                 <input name="queryString" type="hidden" value="@HttpUtility.UrlEncode(Request.QueryString.ToString())" />
-                <input type="submit" value="Trimite vot" @(IsAnonymous ? "disabled" : "") />
+                @if (!IsAnonymous)
+                {
+                    <input type="submit" value="Trimite vot" />
+                }
             </form>
         </div>
     }
@@ -285,20 +288,18 @@ else if (!IsAnonymous)
 }
 <span onclick="showElement('forumTree')" style="cursor:pointer; font-weight:bold">Navigare - alege destinația &#x2935;</span>
 <p>&nbsp;</p>
-<div id="forumTree" style=" display:none">
-    <div style="height:400px; max-height:600px; overflow-y:scroll;">
+<div id="forumTree" style="display:none">
         @await Html.PartialAsync(
             "_ForumTreePartial",
-             new CustomPartials._ForumTreePartialModel
-             {
-                 Forums = await Model.GetForumTreeAsync(),
-                 ForumId = Model.ForumId,
-                 TopicId = Model.TopicId,
-                 PathToForumOrTopic = await Model.PathToForumOrTopic(Model.ForumId.Value, Model.TopicId)
-             },
+            new CustomPartials._ForumTreePartialModel(
+                forums: await Model.GetForumTreeAsync(),
+                forumId: Model.ForumId,
+                topicId: Model.TopicId,
+                path: await Model.PathToForumOrTopic(Model.ForumId.Value, Model.TopicId),
+                constrainSize: true
+            ),
             ViewData
         )
-    </div>
     <p></p>
     <form action="/ViewForum">
         <input type="hidden" name="ForumId" id="ForumIdInput" />
@@ -319,7 +320,7 @@ else if (!IsAnonymous)
             </a>
             <span asp-validation-for="DestinationForumId" class="validation"></span>
         </div>
-        <input type="submit" value="Trimite" />
+        <input type="submit" value="Trimite" onclick="return vt.confirmAction('#TopicAction');" />
         <input asp-for="ForumId" type="hidden" />
         <input asp-for="TopicId" type="hidden" />
         <input asp-for="PageNum" type="hidden" />
@@ -346,7 +347,7 @@ else if (!IsAnonymous)
             <span asp-validation-for="PostIdsForModerator" class="validation"></span>
             <span asp-validation-for="DestinationTopicId" class="validation"></span>
         </div>
-        <input type="submit" value="Trimite" />
+        <input type="submit" value="Trimite" onclick="return vt.confirmAction('#PostAction');" />
         <br />
         <input asp-for="ForumId" type="hidden" />
         <input asp-for="TopicId" type="hidden" />

@@ -27,7 +27,7 @@ namespace Serverless.Forum.ForumDb
         public string ForumRulesLink { get; set; } = string.Empty;
         public string ForumRulesBitfield { get; set; } = string.Empty;
         public int ForumRulesOptions { get; set; } = 7;
-        public string ForumRulesUid { get; set; }
+        public string ForumRulesUid { get; set; } = string.Empty;
         public byte ForumTopicsPerPage { get; set; } = 0;
         [Column(TypeName = "tinyint(2)")]
         public ForumType ForumType { get; set; } = ForumType.Category;

@@ -26,13 +26,22 @@ namespace Serverless.Forum.Services
         public async Task<(string Message, bool? IsSuccess)> ManageForumsAsync(UpsertForumDto dto)
         {
             var actual = await _context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == dto.ForumId);
+            var isNewForum = false;
             if (string.IsNullOrWhiteSpace(dto.ForumName))
             {
                 return ("Numele forumului nu este valid!", false);
             }
-
+            if ((dto.ForumId ?? 0) > 0 && actual == null)
+            {
+                return ($"Forumul '{dto.ForumId}' nu există.", false);
+            }
+            else if ((dto.ForumId ?? 0) == 0)
+            {
+                actual = new PhpbbForums();
+                isNewForum = true;
+            }
             actual.ForumName = dto.ForumName;
-            actual.ForumDesc = dto.ForumDesc;
+            actual.ForumDesc = dto.ForumDesc ?? string.Empty;
             if (dto.HasPassword.HasValue && !dto.HasPassword.Value)
             {
                 actual.ForumPassword = string.Empty;
@@ -43,21 +52,36 @@ namespace Serverless.Forum.Services
             }
             actual.ParentId = dto.ParentId ?? actual.ParentId;
             actual.ForumType = dto.ForumType ?? actual.ForumType;
+            if (isNewForum)
+            {
+                var result = _context.PhpbbForums.Add(actual);
+                result.Entity.ForumId = 0;
+                await _context.SaveChangesAsync();
+                actual = result.Entity;
+            }
+            else
+            {
+                await _context.SaveChangesAsync();
+            }
 
             var children = await (
                 from f in _context.PhpbbForums
-                where f.ParentId == dto.ForumId
+                where f.ParentId == actual.ForumId
                 orderby f.LeftId
                 select f
             ).ToListAsync();
 
-            if (!children.Select(s => s.ForumId).SequenceEqual(dto.ChildrenForums ?? new List<int>()))
+            if (children.Any())
             {
-                children.ForEach(c => c.LeftId = (dto.ChildrenForums.IndexOf(c.ForumId) + 1) * 2);
+                children.ForEach(c => c.LeftId = ((dto.ChildrenForums?.IndexOf(c.ForumId) ?? 0) + 1) * 2);
             }
 
             (int entityId, int roleId) translatePermission(string permission)
             {
+                if (string.IsNullOrWhiteSpace(permission))
+                {
+                    return (-1, -1);
+                }
                 var items = permission.Split('_', StringSplitOptions.RemoveEmptyEntries);
                 return (int.Parse(items[0]), int.Parse(items[1]));
             }
@@ -71,14 +95,14 @@ namespace Serverless.Forum.Services
 
             foreach (var idx in dto.UserPermissionToRemove ?? new List<int>())
             {
-                var (entityId, roleId) = translatePermission(dto.UserForumPermissions[idx]);
-                _context.PhpbbAclUsers.Remove(await _context.PhpbbAclUsers.FirstOrDefaultAsync(x => x.UserId == entityId && x.AuthRoleId == roleId && x.ForumId == dto.ForumId));
+                var (entityId, roleId) = translatePermission(dto.UserForumPermissions?[idx]);
+                _context.PhpbbAclUsers.Remove(await _context.PhpbbAclUsers.FirstOrDefaultAsync(x => x.UserId == entityId && x.AuthRoleId == roleId && x.ForumId == actual.ForumId));
             }
 
             foreach (var idx in dto.GroupPermissionToRemove ?? new List<int>())
             {
-                var (entityId, roleId) = translatePermission(dto.GroupForumPermissions[idx]);
-                _context.PhpbbAclGroups.Remove(await _context.PhpbbAclGroups.FirstOrDefaultAsync(x => x.GroupId == entityId && x.AuthRoleId == roleId && x.ForumId == dto.ForumId));
+                var (entityId, roleId) = translatePermission(dto.GroupForumPermissions?[idx]);
+                _context.PhpbbAclGroups.Remove(await _context.PhpbbAclGroups.FirstOrDefaultAsync(x => x.GroupId == entityId && x.AuthRoleId == roleId && x.ForumId == actual.ForumId));
             }
 
             var rolesForAclEntity = new Dictionary<AclEntityType, Dictionary<int, int>>
@@ -93,7 +117,7 @@ namespace Serverless.Forum.Services
                 on p.AuthRoleId equals r.RoleId
                 into joined
                 from j in joined
-                where p.ForumId == dto.ForumId
+                where p.ForumId == actual.ForumId
                     && rolesForAclEntity[AclEntityType.User].Keys.Contains(p.UserId)
                     && j.RoleType == "f_"
                 select p
@@ -107,7 +131,7 @@ namespace Serverless.Forum.Services
                 rolesForAclEntity[AclEntityType.User].Select(r =>
                     new PhpbbAclUsers
                     {
-                        ForumId = dto.ForumId.Value,
+                        ForumId = actual.ForumId,
                         UserId = r.Key,
                         AuthRoleId = r.Value,
                         AuthOptionId = 0,
@@ -122,7 +146,7 @@ namespace Serverless.Forum.Services
                 on p.AuthRoleId equals r.RoleId
                 into joined
                 from j in joined
-                where p.ForumId == dto.ForumId
+                where p.ForumId == actual.ForumId
                     && rolesForAclEntity[AclEntityType.Group].Keys.Contains(p.GroupId)
                     && j.RoleType == "f_"
                 select p
@@ -136,7 +160,7 @@ namespace Serverless.Forum.Services
                 rolesForAclEntity[AclEntityType.Group].Select(r =>
                     new PhpbbAclGroups
                     {
-                        ForumId = dto.ForumId.Value,
+                        ForumId = actual.ForumId,
                         GroupId = r.Key,
                         AuthRoleId = r.Value,
                         AuthOptionId = 0,
@@ -146,7 +170,7 @@ namespace Serverless.Forum.Services
             );
             await _context.SaveChangesAsync();
 
-            return ($"Forumul {dto.ForumName} a fost actualizat cu succes!", true);
+            return ($"Forumul {actual.ForumName} a fost actualizat cu succes!", true);
         }
 
         public async Task<(PhpbbForums Forum, List<PhpbbForums> Children)> ShowForum(int forumId)
@@ -163,7 +187,7 @@ namespace Serverless.Forum.Services
         public async Task<List<SelectListItem>> FlatForumTreeAsListItem(int parentId, int forumId)
             => _forumService.GetPathInTree(
                 await _forumService.GetForumTreeAsync(),
-                forum => new SelectListItem(forum.Name, forum.Id.ToString(), forum.Id == parentId, forum.Id == forumId || forum.ParentId == forumId),
+                forum => new SelectListItem(forum.Name, forum.Id.ToString(), forum.Id == parentId/*, forum.Id == forumId || forum.ParentId == forumId*/),
                 (item, level) => item.Text = $"{new string('-', level)} {item.Text}"
             );
 
@@ -173,6 +197,33 @@ namespace Serverless.Forum.Services
             await connection.OpenAsync();
             DefaultTypeMap.MatchNamesWithUnderscores = true;
             return await connection.QueryAsync<ForumPermissions>("CALL `forum`.`get_forum_permissions`(@forumId);", new { forumId });
+        }
+
+        public async Task<(string Message, bool? IsSuccess)> DeleteForum( int forumId)
+        {
+            try
+            {
+                var forum = await _context.PhpbbForums.FirstOrDefaultAsync(x => x.ForumId == forumId);
+                if (forum == null)
+                {
+                    return ($"Forumul '{forumId}' nu există.", false);
+                }
+                if (await _context.PhpbbForums.AsNoTracking().CountAsync(x => x.ParentId == forumId) > 0)
+                {
+                    return ($"Forumul '{forumId}' nu poate fi șters deoarece conține sub-forumuri.", false);
+                }
+                if (await _context.PhpbbTopics.AsNoTracking().CountAsync(x => x.ForumId == forumId) > 0)
+                {
+                    return ($"Forumul '{forumId}' nu poate fi șters deoarece conține subiecte.", false);
+                }
+                _context.PhpbbForums.Remove(forum);
+                await _context.SaveChangesAsync();
+                return ("Forumul a fost șters cu succes.", true);
+            }
+            catch
+            {
+                return ("A intervenit o eroare.", false);
+            }
         }
     }
 }

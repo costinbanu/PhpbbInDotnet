@@ -74,4 +74,12 @@
         }
         $('#selectedPostIds').val(cur.join(','));
     }
+
+    confirmAction(actionSelect) {
+        var action = $(actionSelect).val();
+        if (action.startsWith('Delete')) {
+            return confirm("Am primit comanda '" + action + "'. Continuați?");
+        }
+        return true;
+    }
 }

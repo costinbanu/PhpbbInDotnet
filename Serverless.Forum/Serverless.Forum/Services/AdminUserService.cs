@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System;
@@ -25,7 +26,7 @@ namespace Serverless.Forum.Services
             _cacheService = cacheService;
         }
 
-        public async Task<List<PhpbbUsers>> GetInactiveUsersAsync()
+        public async Task<List<PhpbbUsers>> GetInactiveUsers()
             => await (
                 from u in _context.PhpbbUsers.AsNoTracking()
                 where u.UserInactiveTime > 0
@@ -33,7 +34,7 @@ namespace Serverless.Forum.Services
                 select u
             ).ToListAsync();
 
-        public async Task<(string Message, bool? IsSuccess)> ManageUserAsync(AdminUserActions? action, int? userId)
+        public async Task<(string Message, bool? IsSuccess)> ManageUser(AdminUserActions? action, int? userId)
         {
 
             if (userId == (await _userService.GetAnonymousDbUserAsync()).UserId)
@@ -162,5 +163,121 @@ namespace Serverless.Forum.Services
                     && ((userid ?? 0) == 0 || u.UserId == userid)
                 select u
             ).ToListAsync();
+
+        public async Task<(string Message, bool? IsSuccess)> ManageGroup(UpsertGroupDto dto)
+        {
+            try
+            {
+                void update(PhpbbGroups destination, UpsertGroupDto source)
+                {
+                    destination.GroupName = source.Name;
+                    destination.GroupRank = source.Rank;
+                    destination.GroupColour = source.DbColor;
+                    destination.GroupUserUploadSize = source.UploadLimit * 1024 * 1024;
+                    destination.GroupEditTime = source.EditTime;
+                }
+
+                async Task<bool> roleIsValid(int roleId) => await _context.PhpbbAclRoles.FirstOrDefaultAsync(x => x.RoleId == roleId) != null;
+
+                var action = "";
+                var changedColor = false;
+                PhpbbGroups actual;
+                if (dto.Id == 0)
+                {
+                    actual = new PhpbbGroups();
+                    update(actual, dto);
+                    var result = await _context.PhpbbGroups.AddAsync(actual);
+                    result.Entity.GroupId = 0;
+                    await _context.SaveChangesAsync();
+                    actual = result.Entity;
+                    action = "adăugat";
+                }
+                else
+                {
+                    actual = await _context.PhpbbGroups.FirstOrDefaultAsync(x => x.GroupId == dto.Id);
+                    if (actual == null)
+                    {
+                        return ($"Grupul '{dto.Id}' nu există.", false);
+                    }
+
+                    if (dto.Delete ?? false)
+                    {
+                        if (await _context.PhpbbUsers.AsNoTracking().CountAsync(x => x.GroupId == dto.Id) > 0)
+                        {
+                            return ($"Grupul '{actual.GroupName}' nu poate fi șters deoarece nu este gol.", false);
+                        }
+                        _context.PhpbbGroups.Remove(actual);
+                        actual = null;
+                        action = "șters";
+                    }
+                    else
+                    {
+                        changedColor = !actual.GroupColour.Equals(dto.DbColor, StringComparison.InvariantCultureIgnoreCase);
+                        update(actual, dto);
+                        action = "actualizat";
+                    }
+                    await _context.SaveChangesAsync();
+                }
+
+                if (actual != null)
+                {
+                    var currentRole = await _context.PhpbbAclGroups.FirstOrDefaultAsync(x => x.GroupId == actual.GroupId && x.ForumId == 0);
+                    if (currentRole != null)
+                    {
+                        if (dto.Role == 0)
+                        {
+                            _context.PhpbbAclGroups.Remove(currentRole);
+                        }
+                        else if (currentRole.AuthRoleId != dto.Role && await roleIsValid(dto.Role))
+                        {
+                            _context.PhpbbAclGroups.Remove(currentRole);
+                            await _context.SaveChangesAsync();
+                            currentRole = null;
+                        }
+                    }
+                    if (currentRole == null && dto.Role != 0 && await roleIsValid(dto.Role))
+                    {
+                        var result = _context.PhpbbAclGroups.Add(new PhpbbAclGroups
+                        {
+                            GroupId = actual.GroupId,
+                            AuthRoleId = dto.Role,
+                            ForumId = 0
+                        });
+                        result.Entity.AuthOptionId = result.Entity.AuthSetting = 0;
+                    }
+
+                    await _context.SaveChangesAsync();
+                }
+
+                if (changedColor)
+                {
+                    var affectedUsers = await _context.PhpbbUsers.Where(x => x.GroupId == dto.Id).ToListAsync();
+                    affectedUsers.ForEach(x => x.UserColour = dto.DbColor);
+                    _context.PhpbbUsers.UpdateRange(affectedUsers);
+                    var affectedTopics = await (
+                        from t in _context.PhpbbTopics
+                        join u in affectedUsers on t.TopicLastPosterId equals u.UserId
+                        select t
+                    ).ToListAsync();
+                    affectedTopics.ForEach(t => t.TopicLastPosterColour = dto.DbColor);
+                    _context.PhpbbTopics.UpdateRange(affectedTopics);
+                    var affectedForums = await (
+                        from t in _context.PhpbbForums
+                        join u in affectedUsers on t.ForumLastPosterId equals u.UserId
+                        select t
+                    ).ToListAsync();
+                    affectedForums.ForEach(t => t.ForumLastPosterColour = dto.DbColor);
+                    _context.PhpbbForums.UpdateRange(affectedForums);
+
+                    await _context.SaveChangesAsync();
+                }
+
+                return ($"Grupul a fost {action ?? "actualizat"} cu succes!", true);
+            }
+            catch (Exception ex)
+            {
+                return ("A intervenit o eroare.", false);
+            }
+        }
     }
 }

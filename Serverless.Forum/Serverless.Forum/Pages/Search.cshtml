@@ -71,19 +71,17 @@
         <input asp-for="Author" type="text" placeholder="Caută după autor..." id="AuthorInput" style="width:100%" autocomplete="off" />
         <p id="tributeHolder" style="position:relative">&nbsp;</p>
         Caută în forumul...
-        <div style="height:400px; max-height:600px; overflow-y:scroll">
             @await Html.PartialAsync(
                 "_ForumTreePartial",
-                 new CustomPartials._ForumTreePartialModel
-                 {
-                     Forums = await Model.GetForumTreeAsync(),
-                     ForumId = Model.ForumId,
-                     TopicId = Model.TopicId,
-                     PathToForumOrTopic = await Model.PathToForumOrTopic(Model.ForumId ?? 0, Model.TopicId)
-                 },
+                 new CustomPartials._ForumTreePartialModel(
+                     forums: await Model.GetForumTreeAsync(),
+                     forumId: Model.ForumId,
+                     topicId: Model.TopicId,
+                     path: await Model.PathToForumOrTopic(Model.ForumId ?? 0, Model.TopicId),
+                     constrainSize: true
+                 ),
                 ViewData
             )
-        </div>
         <input asp-for="ForumId" type="hidden" id="ForumIdInput" />
         <p>&nbsp;</p>
         Caută în subiectul...<br />
