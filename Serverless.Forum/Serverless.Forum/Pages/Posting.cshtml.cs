@@ -508,6 +508,24 @@ namespace Serverless.Forum.Pages
                 return responses;
             }
 
+            if ((ReceiverId ?? 1) == 1)
+            {
+                ModelState.AddModelError(nameof(ReceiverName), "Introduceți un destinatar valid.");
+                return Page();
+            }
+
+            if ((PostTitle?.Trim()?.Length ?? 0) < 3)
+            {
+                ModelState.AddModelError(nameof(ReceiverName), "Introduceți un subiect valid.");
+                return Page();
+            }
+
+            if ((PostText?.Trim()?.Length ?? 0) < 3)
+            {
+                ModelState.AddModelError(nameof(ReceiverName), "Introduceți un mesaj valid.");
+                return Page();
+            }
+
             var (Message, IsSuccess) = await _userService.SendPrivateMessage(CurrentUserId, ReceiverId.Value, HttpUtility.HtmlEncode(PostTitle), _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText)));
             if (IsSuccess ?? false)
             {

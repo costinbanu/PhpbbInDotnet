@@ -22,37 +22,47 @@ namespace Serverless.Forum.Pages
 {
     public class UserModel : ModelWithLoggedUser
     {
+        [BindProperty]
+        public PhpbbUsers CurrentUser { get; set; }
+        
+        [BindProperty]
+        public string FirstPassword { get; set; }
+        
+        [BindProperty, Compare(otherProperty: nameof(FirstPassword), ErrorMessage = "Cele două parole trebuie să fie identice")]
+        public string SecondPassword { get; set; }
+        
+        [BindProperty, ValidateFile(ErrorMessage = "Imaginea este coruptă sau prea mare!")]
+        public IFormFile Avatar { get; set; }
+        
+        [BindProperty]
+        public bool DeleteAvatar { get; set; } = false;
+        
+        [BindProperty]
+        public bool ShowEmail { get; set; } = true;
+        
+        [BindProperty]
+        [Required(ErrorMessage = "Trebuie să introduceți o adresă e e-mail validă.")]
+        [EmailAddress(ErrorMessage = "Trebuie să introduceți o adresă e e-mail validă.")]
+        public string Email { get; set; }
+        
+        [BindProperty, ValidateDate(ErrorMessage = "Data introdusă nu este validă")]
+        public string Birthday { get; set; }
+        
+        [BindProperty]
+        public int? AclRole { get; set; }
+        
+        [BindProperty]
+        public int? GroupId { get; set; }
+        
+        [BindProperty]
+        public int UserRank { get; set; }
+
         public bool IsSelf => CurrentUser.UserId == CurrentUserId;
         public async Task<bool> CanEditAsync() => !ViewAsAnother && (IsSelf || await IsCurrentUserAdminHereAsync());
         public int TotalPosts { get; private set; }
         public (int? Id, string Title) PreferredTopic { get; private set; }
         public double PostsPerDay { get; private set; }
         public bool ViewAsAnother { get; set; }
-
-        [BindProperty]
-        public PhpbbUsers CurrentUser { get; set; }
-        [BindProperty]
-        public string FirstPassword { get; set; }
-        [BindProperty, Compare(otherProperty: nameof(FirstPassword), ErrorMessage = "Cele două parole trebuie să fie identice")]
-        public string SecondPassword { get; set; }
-        [BindProperty, ValidateFile(ErrorMessage = "Imaginea este coruptă sau prea mare!")]
-        public IFormFile Avatar { get; set; }
-        [BindProperty]
-        public bool DeleteAvatar { get; set; } = false;
-        [BindProperty]
-        public bool ShowEmail { get; set; } = true;
-        [BindProperty]
-        [Required(ErrorMessage = "Trebuie să introduceți o adresă e e-mail validă.")]
-        [EmailAddress(ErrorMessage = "Trebuie să introduceți o adresă e e-mail validă.")]
-        public string Email { get; set; }
-        [BindProperty, ValidateDate(ErrorMessage = "Data introdusă nu este validă")]
-        public string Birthday { get; set; }
-        [BindProperty]
-        public int? AclRole { get; set; }
-        [BindProperty]
-        public int? GroupId { get; set; }
-        [BindProperty]
-        public int UserRank { get; set; }
 
         private readonly Utils _utils;
         private readonly StorageService _storageService;
@@ -104,6 +114,8 @@ namespace Serverless.Forum.Pages
                 return NotFound($"Utilizatorul cu id '{CurrentUser.UserId}' nu există.");
             }
 
+            var userMustLogIn = false;
+
             dbUser.UserBirthday = Birthday ?? string.Empty;
             dbUser.UserAllowViewemail = (byte)(ShowEmail ? 1 : 0);
             dbUser.UserRank = UserRank;
@@ -152,8 +164,7 @@ namespace Serverless.Forum.Pages
             {
                 dbUser.UserPassword = Crypter.Phpass.Crypt(FirstPassword, Crypter.Phpass.GenerateSalt());
                 dbUser.UserPasschg = DateTime.UtcNow.ToUnixTimestamp();
-                var key = $"UserMustLogIn_{dbUser.UsernameClean}";
-                await _cacheService.SetInCache(key, true);
+                userMustLogIn = true;
             }
 
             if (DeleteAvatar)
@@ -187,10 +198,12 @@ namespace Serverless.Forum.Pages
             if (dbAclRole != null && AclRole == -1)
             {
                 _context.PhpbbAclUsers.Remove(dbAclRole);
+                userMustLogIn = true;
             }
             else if (dbAclRole != null && AclRole.HasValue && AclRole.Value != dbAclRole.AuthRoleId)
             {
                 dbAclRole.AuthRoleId = AclRole.Value;
+                userMustLogIn = true;
             }
             else if (dbAclRole == null && AclRole.HasValue && AclRole.Value != -1)
             {
@@ -202,6 +215,7 @@ namespace Serverless.Forum.Pages
                     ForumId = 0,
                     UserId = dbUser.UserId
                 });
+                userMustLogIn = true;
             }
 
             var dbUserGroup = await _context.PhpbbUserGroup.FirstOrDefaultAsync(g => g.UserId == dbUser.UserId);
@@ -230,6 +244,7 @@ namespace Serverless.Forum.Pages
                     t.TopicLastPosterColour = group.GroupColour;
                 }
                 dbUser.UserColour = group.GroupColour;
+                userMustLogIn = true;
             }
 
             await _context.SaveChangesAsync();
@@ -246,6 +261,13 @@ namespace Serverless.Forum.Pages
                     IsPersistent = true,
                 }
             );
+
+            if (userMustLogIn)
+            {
+                var key = $"UserMustLogIn_{dbUser.UsernameClean}";
+                await _cacheService.SetInCache(key, true);
+            }
+
             return Page();
         }
 

@@ -151,7 +151,7 @@ namespace Serverless.Forum.Services
             }
             catch (Exception ex)
             {
-                return ($"Acțiunea {action} nu a putut fi aplicată utilizatorului '{user.Username}'. Eroare: {ex.Message}", false);
+                return ($"Acțiunea {action} nu a putut fi aplicată utilizatorului '{user.Username}'. ID: {_utils.HandleError(ex)}.", false);
             }
         }
 
@@ -276,7 +276,7 @@ namespace Serverless.Forum.Services
             }
             catch (Exception ex)
             {
-                return ("A intervenit o eroare.", false);
+                return ($"A intervenit o eroare. ID: {_utils.HandleError(ex)}.", false);
             }
         }
     }

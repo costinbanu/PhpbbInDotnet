@@ -372,7 +372,7 @@ namespace Serverless.Forum.Pages
             {
                 return Forbid();
             }
-
+            
             var (Message, IsSuccess) = PostAction switch
             {
                 ModeratorPostActions.DeleteSelectedPosts => await _moderatorService.DeletePosts(PostIdsForModerator),
@@ -390,11 +390,12 @@ namespace Serverless.Forum.Pages
                    orderby groups.Key descending
                    select groups.FirstOrDefault()
                 ).FirstOrDefaultAsync();
-
+                
                 var nextRemainingPost = await (
                     from p in _context.PhpbbPosts.AsNoTracking()
                     where p.TopicId == TopicId.Value
                        && !PostIdsForModerator.Contains(p.PostId)
+                       && latestSelectedPost != null 
                        && p.PostTime >= latestSelectedPost.PostTime
                     group p by p.PostTime into groups
                     orderby groups.Key ascending

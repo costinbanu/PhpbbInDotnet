@@ -52,6 +52,10 @@ namespace Serverless.Forum.Pages
             {
                 return responses;
             }
+            if (!await _userService.HasPrivateMessages(await GetCurrentUserAsync()))
+            {
+                return BadRequest("Utilizatorul nu are acces la mesageria privată.");
+            }
 
             InboxPaginator = new Paginator(
                 count: await _context.PhpbbPrivmsgsTo.CountAsync(x => x.UserId == CurrentUserId && x.AuthorId != x.UserId),
@@ -157,6 +161,10 @@ namespace Serverless.Forum.Pages
             if (responses != null)
             {
                 return responses;
+            }
+            if (!await _userService.HasPrivateMessages(await GetCurrentUserAsync()))
+            {
+                return BadRequest("Utilizatorul nu are acces la mesageria privată.");
             }
 
             var (Message, IsSuccess) = await _userService.DeletePrivateMessage(MessageId.Value);

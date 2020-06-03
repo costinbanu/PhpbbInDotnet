@@ -395,6 +395,7 @@ label {
         position: absolute;
         clear:both;
         width: auto !important;
+        min-width: unset;
         height: auto !important;
         border-radius: 5px;
         border: solid 1px black;

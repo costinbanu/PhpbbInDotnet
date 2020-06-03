@@ -216,7 +216,7 @@
                                 <s>&#x1F5E8; Subiect închis</s>
                             </a>
                         }
-                        @if (await _userService.GetUserRole(await Model.GetCurrentUserAsync()) != 8 && await _userService.GetUserRole(post.AuthorId ?? 1) != 8)
+                        @if (await _userService.HasPrivateMessages(await Model.GetCurrentUserAsync()) && await _userService.HasPrivateMessages(post.AuthorId ?? 1))
                         {
                             <span>
                                 <a asp-page="/Posting" asp-page-handler="PrivateMessage" asp-route-postId="@post.PostId">&#x2709; Mesaj privat</a>

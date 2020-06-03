@@ -59,7 +59,14 @@ namespace Serverless.Forum
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
-            services.AddLogging(log => log.AddConsole());
+            if (Env.IsStaging())
+            {
+                services.AddLogging(log => log.AddEventLog());
+            }
+            else
+            {
+                services.AddLogging(log => log.AddConsole());
+            }
 
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie();
 
@@ -111,7 +118,6 @@ namespace Serverless.Forum
             services.AddTransient<StorageService>();
             services.AddTransient<ModeratorService>();
             services.AddTransient<BBCodeRenderingService>();
-            services.AddTransient<ErrorReportingService>();
             services.AddDbContext<ForumDbContext>(options => options.UseMySQL(Configuration["ForumDbConnectionString"]), ServiceLifetime.Transient);
         }
 
@@ -125,7 +131,7 @@ namespace Serverless.Forum
                              reloadOnChange: true)
                 .AddEnvironmentVariables();
 
-            var reporter = app.ApplicationServices.GetService<ErrorReportingService>();
+            var utils = app.ApplicationServices.GetService<Utils>();
 
             if (env.IsDevelopment())
             {
@@ -139,8 +145,7 @@ namespace Serverless.Forum
                     errorApp.Run(context =>
                     {
                         var handler = context.Features.Get<IExceptionHandlerPathFeature>();
-                        var id = reporter.LogError(handler.Error, handler.Path);
-                        context.Response.Redirect($"/Error?id={id}");
+                        context.Response.Redirect($"/Error?id={utils.HandleError(handler.Error, handler.Path)}");
                         return Task.CompletedTask;
                     });
                 });

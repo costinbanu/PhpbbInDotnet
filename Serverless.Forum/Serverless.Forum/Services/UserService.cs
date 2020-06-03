@@ -55,8 +55,11 @@ namespace Serverless.Forum.Services
                 on up.AuthRoleId equals a.RoleId
                 select up.AuthRoleId as int?).FirstOrDefault();
 
-        public async Task<int?> GetUserRole(int userId)
-            => await GetUserRole(await GetLoggedUserById(userId));
+        public async Task<bool> HasPrivateMessages(LoggedUser user)
+            => await GetUserRole(user) != Constants.NO_PM_ROLE;
+
+        public async Task<bool> HasPrivateMessages(int userId)
+            => await GetUserRole(await GetLoggedUserById(userId)) != Constants.NO_PM_ROLE;
 
         public async Task<PhpbbUsers> GetAnonymousDbUserAsync()
         {
@@ -153,11 +156,11 @@ namespace Serverless.Forum.Services
         {
             try
             {
-                if (await GetUserRole(senderId) == 8)
+                if (!await HasPrivateMessages(senderId))
                 {
                     return ("Expeditorul nu are dreptul să trimită mesaje private.", false);
                 }
-                if (await GetUserRole(receiverId) == 8)
+                if (!await HasPrivateMessages(receiverId))
                 {
                     return ("Destinatarul nu are dreptul să primească mesaje private.", false);
                 }

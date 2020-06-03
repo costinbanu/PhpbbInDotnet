@@ -13,6 +13,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <NoWarn>NU1605</NoWarn>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="5.0.0" />

@@ -155,7 +155,7 @@ namespace Serverless.Forum.Services
                     ).FirstOrDefaultAsync();
                     var lastTopicPostUser = await _userService.GetLoggedUserById(lastTopicPost.PosterId);
 
-                    await SetTopicLastPost(curTopic, lastTopicPost, lastTopicPostUser);
+                    await SetTopicLastPost(curTopic, lastTopicPost, lastTopicPostUser, true);
                 }
 
                 if (curForum.ForumLastPostId == deleted.PostId)
@@ -170,7 +170,7 @@ namespace Serverless.Forum.Services
                     ).FirstOrDefaultAsync();
                     var lastForumPostUser = await _userService.GetLoggedUserById(lastForumPost.PosterId);
 
-                    await SetForumLastPost(curForum, lastForumPost, lastForumPostUser);
+                    await SetForumLastPost(curForum, lastForumPost, lastForumPostUser, true);
                 }
 
                 if (curTopic.TopicFirstPostId == deleted.PostId && !ignoreTopic)
@@ -185,7 +185,7 @@ namespace Serverless.Forum.Services
                     ).FirstOrDefaultAsync();
                     var firstPostUser = await _userService.GetLoggedUserById(firstPost.PosterId);
 
-                    await SetTopicFirstPost(curTopic, firstPost, firstPostUser, false);
+                    await SetTopicFirstPost(curTopic, firstPost, firstPostUser, false, true);
                 }
 
                 curTopic.TopicReplies--;
@@ -193,9 +193,9 @@ namespace Serverless.Forum.Services
             }
         }
 
-        private async Task SetTopicLastPost(PhpbbTopics topic, PhpbbPosts post, LoggedUser author)
+        private async Task SetTopicLastPost(PhpbbTopics topic, PhpbbPosts post, LoggedUser author, bool goBack = false)
         {
-            if (topic.TopicLastPostTime < post.PostTime)
+            if (goBack || topic.TopicLastPostTime < post.PostTime)
             {
                 topic.TopicLastPostId = post.PostId;
                 topic.TopicLastPostSubject = post.PostSubject;
@@ -206,9 +206,9 @@ namespace Serverless.Forum.Services
             }
         }
 
-        private async Task SetForumLastPost(PhpbbForums forum, PhpbbPosts post, LoggedUser author)
+        private async Task SetForumLastPost(PhpbbForums forum, PhpbbPosts post, LoggedUser author, bool goBack = false)
         {
-            if (forum.ForumLastPostTime < post.PostTime)
+            if (goBack || forum.ForumLastPostTime < post.PostTime)
             {
                 forum.ForumLastPostId = post.PostId;
                 forum.ForumLastPostSubject = post.PostSubject;
@@ -219,10 +219,10 @@ namespace Serverless.Forum.Services
             }
         }
 
-        private async Task SetTopicFirstPost(PhpbbTopics topic, PhpbbPosts post, LoggedUser author, bool setTopicTitle)
+        private async Task SetTopicFirstPost(PhpbbTopics topic, PhpbbPosts post, LoggedUser author, bool setTopicTitle, bool goForward = false)
         {
             var curFirstPost = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == topic.TopicFirstPostId);
-            if (topic.TopicFirstPostId == 0 || (curFirstPost != null && curFirstPost.PostTime >= post.PostTime))
+            if (topic.TopicFirstPostId == 0 || goForward || (curFirstPost != null && curFirstPost.PostTime >= post.PostTime))
             {
                 if (setTopicTitle)
                 {

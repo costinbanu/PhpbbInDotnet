@@ -13,6 +13,20 @@
 <link rel="stylesheet" href="~/css/tabbedPage.css" />
 <link rel="stylesheet" href="~/css/pagination.css" />
 
+<style>
+    .MinAuthor {
+        font-weight: bold;
+        display: none;
+    }
+
+    @@media (max-width: 768px) {
+        .MinAuthor {
+            display: inherit;
+            float: right;
+        }
+    }
+</style>
+
 <h2>Mesaje private</h2>
 
 <a asp-page="/Posting" asp-page-handler="PrivateMessage">Scrie un mesaj privat nou</a>
@@ -47,7 +61,13 @@
         index++;
         <div class="@divClass">
             <span class="ForumContent">
-                <a asp-page="/PrivateMessages" asp-route-show="@PrivateMessagesPages.Message" asp-route-messageId="@msg.MessageId" asp-route-inboxPage="@Model.InboxPage" asp-route-sentPage="@Model.SentPage" class="nav-link" style="font-weight:bold">@Html.Raw(msg.Subject)</a>
+                <a asp-page="/PrivateMessages" asp-route-show="@PrivateMessagesPages.Message" asp-route-messageId="@msg.MessageId" asp-route-inboxPage="@Model.InboxPage" asp-route-sentPage="@Model.SentPage" class="nav-link" style="font-weight:bold">
+                    @Html.Raw(msg.Subject)
+                </a>
+                <span class="MinAuthor">
+                    &nbsp;&bull;&nbsp;
+                    <span style="color:#@(msg.OthersColor)">@Html.Raw(msg.OthersName)</span>
+                </span>
                 <br />
             </span>
             @await Html.PartialAsync(
@@ -80,7 +100,13 @@
         index++;
         <div class="@divClass">
             <span class="ForumContent">
-                <a asp-page="/PrivateMessages" asp-route-show="@PrivateMessagesPages.Message" asp-route-messageId="@msg.MessageId" asp-route-inboxPage="@Model.InboxPage" asp-route-sentPage="@Model.SentPage" class="nav-link" style="font-weight:bold">@Html.Raw(msg.Subject)</a>
+                <a asp-page="/PrivateMessages" asp-route-show="@PrivateMessagesPages.Message" asp-route-messageId="@msg.MessageId" asp-route-inboxPage="@Model.InboxPage" asp-route-sentPage="@Model.SentPage" class="nav-link" style="font-weight:bold">
+                    @Html.Raw(msg.Subject)
+                </a>
+                <span class="MinAuthor">
+                    &nbsp;&bull;&nbsp;
+                    <span style="color:#@(msg.OthersColor)">@Html.Raw(msg.OthersName)</span>
+                </span>
                 <br />
             </span>
             @await Html.PartialAsync(

@@ -53,7 +53,7 @@
     @if (Model.Posts.HasValue && Model.Views.HasValue)
     {
         <li class="Caption">
-            @Model.Posts mesaj@(Model.Posts == 1 ? "e" : ""), @Model.Views vizualiz@(Model.Views == 1 ? "ări" : "are").
+            @Model.Posts mesaj@(Model.Posts != 1 ? "e" : ""), @Model.Views vizualiz@(Model.Views != 1 ? "ări" : "are").
         </li>
     }
 </ul>

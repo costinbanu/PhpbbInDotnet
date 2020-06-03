@@ -12,7 +12,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Serverless.Forum.ForumDb;
-using Serverless.Forum.Services;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -33,14 +32,14 @@ namespace Serverless.Forum.Utilities
         private readonly IConfiguration _config;
         private readonly ICompositeViewEngine _viewEngine;
         private readonly ITempDataProvider _tempDataProvider;
-        private readonly ErrorReportingService _errorReportingService;
+        private readonly ILogger<Utils> _logger;
 
-        public Utils(IConfiguration config, ICompositeViewEngine viewEngine, ITempDataProvider tempDataProvider, ErrorReportingService errorReportingService)
+        public Utils(IConfiguration config, ICompositeViewEngine viewEngine, ITempDataProvider tempDataProvider, ILogger<Utils> logger)
         {
             _config = config;
             _viewEngine = viewEngine;
             _tempDataProvider = tempDataProvider;
-            _errorReportingService = errorReportingService;
+            _logger = logger;
         }
 
         public async Task<byte[]> CompressObject<T>(T source)
@@ -194,7 +193,7 @@ namespace Serverless.Forum.Utilities
             }
             catch (Exception ex)
             {
-                _errorReportingService.LogError(ex);
+                _logger.LogError(ex, "Error encountered while rendering a razor view programatically.");
                 return string.Empty;
             }
         }
@@ -295,9 +294,16 @@ namespace Serverless.Forum.Utilities
                 }
                 catch (Exception ex)
                 {
-                    _errorReportingService.LogError(ex);
+                    _logger.LogError(ex, "Error encountered while running a parallel task.");
                 }
             });
+        }
+
+        public string HandleError(Exception ex, string message = null)
+        {
+            var id = Guid.NewGuid().ToString("n");
+            _logger.LogError(ex, $"Exception id '{id}'.\n{message}");
+            return id;
         }
     }
 }

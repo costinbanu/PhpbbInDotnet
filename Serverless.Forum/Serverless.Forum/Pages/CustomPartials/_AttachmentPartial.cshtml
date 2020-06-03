@@ -7,7 +7,6 @@
 @if (Model != null)
 {
     <div style="margin: 20px 0px 20px 0px">
-        @*<div style="background-color: rgba(255, 255, 255, 0.75); padding: 10px 10px; margin: 10px 10px; border: solid 1px gray; width: min-content; height: min-content; white-space:pre-line; max-width: 100%">*@
         @if (Model.MimeType.IsMimeTypeInline())
         {
             if (Model.MimeType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase))
@@ -30,12 +29,11 @@
         <span class="Caption">
             @if (!string.IsNullOrWhiteSpace(Model.Comment))
             {
-
+                <br />
                 @Html.Raw(await _renderingService.BbCodeToHtml(Model.Comment, string.Empty))
             }
             <br />
             @Html.Raw(Model.DisplayName) (dimensiune: @_utils.ReadableFileSize(Model.FileSize); descărcat @(Model.DownloadCount == 1 ? "o dată" : $"de {Model.DownloadCount} ori"))
         </span>
-        @*</div>*@
     </div>
 }

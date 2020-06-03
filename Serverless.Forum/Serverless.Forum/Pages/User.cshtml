@@ -10,11 +10,19 @@
 @inject Services.UserService _userService
 
 <link rel="stylesheet" href="~/css/posting.css" />
+<style>
+    @@media (max-width: 768px) {
+        .FlexRight {
+            text-align: center;
+            padding-left: 0px;
+        }
+    }
+</style>
 <h2>Panoul utilizatorului</h2>
 <hr />
 <h4>
     @Model.CurrentUser.Username - Profil
-    @if (Model.IsSelf)
+    @if (Model.IsSelf && await _userService.HasPrivateMessages(Model.CurrentUser.UserId))
     {
         <span>&nbsp;&bull;&nbsp;</span>
         <a asp-page="PrivateMessages">Mesaje private</a>
@@ -58,7 +66,8 @@ else if (Model.ViewAsAnother)
             }
         </div>
     </div>
-    <p></p><div class="FlexCenter">
+    <p></p>
+    <div class="FlexCenter">
         @if (await Model.CanEditAsync())
         {
             <div style="font-weight:bold; text-align: right">
@@ -82,7 +91,8 @@ else if (Model.ViewAsAnother)
     </div>
     @if (!Model.ViewAsAnother && Model.IsSelf)
     {
-        <p></p><div class="FlexCenter">
+        <p></p>
+        <div class="FlexCenter">
             <div style="font-weight:bold; text-align: right">
                 Parola
             </div>
@@ -91,7 +101,8 @@ else if (Model.ViewAsAnother)
                 <span class="Caption">Lasă necompletat dacă nu dorești să o modifici.</span>
             </div>
         </div>
-        <p></p><div class="FlexCenter">
+        <p></p>
+        <div class="FlexCenter">
             <div style="font-weight:bold; text-align: right">
                 Repetă parola
             </div>
@@ -100,7 +111,8 @@ else if (Model.ViewAsAnother)
             </div>
         </div>
     }
-    <p></p><div class="FlexCenter">
+    <p></p>
+    <div class="FlexCenter">
         <div style="font-weight:bold; text-align: right">
             Prezentare
         </div>
@@ -115,7 +127,8 @@ else if (Model.ViewAsAnother)
             }
         </div>
     </div>
-    <p></p><div class="FlexCenter">
+    <p></p>
+    <div class="FlexCenter">
         <div style="font-weight:bold; text-align: right">
             Interese
         </div>
@@ -132,7 +145,8 @@ else if (Model.ViewAsAnother)
     </div>
     @if (await Model.CanEditAsync())
     {
-        <p></p><div class="FlexCenter">
+        <p></p>
+        <div class="FlexCenter">
             <div style="font-weight:bold; text-align: right">
                 Formatul datelor afișate
             </div>
@@ -141,7 +155,8 @@ else if (Model.ViewAsAnother)
                 <br /><span class="Caption">Exemplu: dd.MM.yyyy HH:mm va afișa data "@DateTime.Now.ToString("dd.MM.yyyy HH:mm")"</span>
             </div>
         </div>
-        <p></p><div class="FlexCenter">
+        <p></p>
+        <div class="FlexCenter">
             <div style="font-weight:bold; text-align: right">
                 Semnătura
             </div>
@@ -150,7 +165,8 @@ else if (Model.ViewAsAnother)
                 <span class="Caption">Este permis codul BB.</span>
             </div>
         </div>
-        <p></p><div class="FlexCenter">
+        <p></p>
+        <div class="FlexCenter">
             <div style="font-weight:bold; text-align: right">
                 Avatar
             </div>
@@ -189,11 +205,12 @@ else if (Model.ViewAsAnother)
                 g => new SelectListItem(g.GroupName, g.GroupId.ToString(), g.GroupId == Model.GroupId)
             )
         );
-
+        <hr />
         <div class="FlexCenter">
             <h4>Administrează cont</h4>
         </div>
-        <p></p><div class="FlexCenter">
+        <p></p>
+        <div class="FlexCenter">
             <div style="font-weight:bold; text-align: right">
                 Timpul cât este permisă<br />editarea mesajelor
             </div>
@@ -202,7 +219,8 @@ else if (Model.ViewAsAnother)
                 <span class="Caption">Minute de la publicarea mesajului.<br />Aceeași setare există și la grupuri și se aplică valoarea cea mai restrictivă.</span><br />
             </div>
         </div>
-        <p></p><div class="FlexCenter">
+        <p></p>
+        <div class="FlexCenter">
             <div style="font-weight:bold; text-align: right">
                 Permisiunile utilizatorului
             </div>
@@ -210,7 +228,8 @@ else if (Model.ViewAsAnother)
                 @Html.DropDownListFor(m => m.AclRole, permissions, new { style = "width:300px", autocomplete = "off" })
             </div>
         </div>
-        <p></p><div class="FlexCenter">
+        <p></p>
+        <div class="FlexCenter">
             <div style="font-weight:bold; text-align: right">
                 Rangul utilizatorului
             </div>
@@ -218,7 +237,8 @@ else if (Model.ViewAsAnother)
                 @Html.DropDownListFor(m => m.UserRank, ranks, new { style = "width:300px", autocomplete = "off" })
             </div>
         </div>
-        <p></p><div class="FlexCenter">
+        <p></p>
+        <div class="FlexCenter">
             <div style="font-weight:bold; text-align: right">
                 Grupul utilizatorului
             </div>
@@ -228,7 +248,9 @@ else if (Model.ViewAsAnother)
         </div>
     }
     <hr />
-    <h4>Contact</h4>
+    <div class="FlexCenter">
+        <h4>Contact</h4>
+    </div>
     <div class="FlexCenter">
         @if (await Model.CanEditAsync())
         {
@@ -254,14 +276,15 @@ else if (Model.ViewAsAnother)
             <a href="mailto:@Html.Raw(Model.CurrentUser.UserEmail)">Trimite e-mail</a>
         </div>
     }
-    @if (!Model.IsSelf && await _userService.GetUserRole(await Model.GetCurrentUserAsync()) != 8 && await _userService.GetUserRole(await _userService.DbUserToLoggedUserAsync(Model.CurrentUser)) != 8)
+    @if (!Model.IsSelf && await _userService.HasPrivateMessages(await Model.GetCurrentUserAsync()) && await _userService.HasPrivateMessages(Model.CurrentUser.UserId))
     {
         <p></p>
         <div class="FlexCenter">
             <a asp-page="/Posting" asp-page-handler="PrivateMessage" asp-route-receiverId="@Model.CurrentUser.UserId">Trimite mesaj privat</a>
         </div>
     }
-    <p></p><div class="FlexCenter">
+    <p></p>
+    <div class="FlexCenter">
         @if (await Model.CanEditAsync())
         {
             <div style="font-weight:bold; text-align: right">
@@ -277,7 +300,9 @@ else if (Model.ViewAsAnother)
         }
     </div>
     <hr />
-    <h4>Statistici</h4>
+    <div class="FlexCenter">
+        <h4>Statistici</h4>
+    </div>
     <div class="FlexCenter">
         <div style="font-weight:bold; text-align: right">
             Membru din
@@ -286,7 +311,8 @@ else if (Model.ViewAsAnother)
             @Model.CurrentUser.UserRegdate.ToUtcTime().ToLocalTime().ToString((await Model.GetCurrentUserAsync()).UserDateFormat)
         </div>
     </div>
-    <p></p><div class="FlexCenter">
+    <p></p>
+    <div class="FlexCenter">
         <div style="font-weight:bold; text-align: right">
             Total mesaje
         </div>
@@ -294,7 +320,8 @@ else if (Model.ViewAsAnother)
             @Model.TotalPosts
         </div>
     </div>
-    <p></p><div class="FlexCenter">
+    <p></p>
+    <div class="FlexCenter">
         <div style="font-weight:bold; text-align: right">
             Mesaje pe zi (în medie)
         </div>
@@ -302,7 +329,8 @@ else if (Model.ViewAsAnother)
             @Model.PostsPerDay.ToString("#########0.##")
         </div>
     </div>
-    <p></p><div class="FlexCenter">
+    <p></p>
+    <div class="FlexCenter">
         <div style="font-weight:bold; text-align: right">
             Cel mai activ în subiectul
         </div>
