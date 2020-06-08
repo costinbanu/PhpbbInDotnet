@@ -155,6 +155,49 @@ namespace Serverless.Forum.Services
             }
         }
 
+        public async Task<(string Message, bool? IsSuccess)> ManageRank(int? rankId, string rankName, bool? deleteRank)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(rankName))
+                {
+                    return ("Numele rangului este invalid", false);
+                }
+                if ((rankId ?? 0) == 0)
+                {
+                    var result = await _context.PhpbbRanks.AddAsync(new PhpbbRanks
+                    {
+                        RankTitle = rankName
+                    });
+                    result.Entity.RankId = 0;
+                }
+                else if (deleteRank ?? false)
+                {
+                    var actual = await _context.PhpbbRanks.FirstOrDefaultAsync(x => x.RankId == rankId);
+                    if (actual == null)
+                    {
+                        return ($"Rangul {rankId} nu există.", false);
+                    }
+                    _context.PhpbbRanks.Remove(actual);
+                }
+                else
+                {
+                    var actual = await _context.PhpbbRanks.FirstOrDefaultAsync(x => x.RankId == rankId);
+                    if (actual == null)
+                    {
+                        return ($"Rangul {rankId} nu există.", false);
+                    }
+                    actual.RankTitle = rankName;
+                }
+                await _context.SaveChangesAsync();
+                return ("Rangul a fost actualizat cu succes!", true);
+            }
+            catch
+            {
+                return ("A intervenit o eroare, încearcă mai târziu", false);
+            }
+        }
+
         public async Task<List<PhpbbUsers>> UserSearchAsync(string username, string email, int? userid)
             => await (
                 from u in _context.PhpbbUsers.AsNoTracking()

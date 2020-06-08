@@ -1,14 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Serverless.Forum.ForumDb
 {
     public partial class PhpbbRanks
     {
-        public int RankId { get; set; }
-        public string RankTitle { get; set; }
-        public int RankMin { get; set; }
-        public byte RankSpecial { get; set; }
-        public string RankImage { get; set; }
+        [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int RankId { get; set; } = 0;
+        public string RankTitle { get; set; } = string.Empty;
+        public int RankMin { get; set; } = 0;
+        public byte RankSpecial { get; set; } = 0;
+        public string RankImage { get; set; } = string.Empty;
     }
 }

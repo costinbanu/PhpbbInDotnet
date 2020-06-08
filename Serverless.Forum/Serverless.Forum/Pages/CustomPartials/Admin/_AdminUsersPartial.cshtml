@@ -67,7 +67,7 @@
 }
 
 <h4>Grupuri</h4>
-@{ 
+@{
     var groups = await (
         from g in _context.PhpbbGroups.AsNoTracking()
         let role = _context.PhpbbAclGroups.AsNoTracking().FirstOrDefault(rg => rg.GroupId == g.GroupId && rg.ForumId == 0)
@@ -82,19 +82,28 @@
             Role = role == null ? 0 : role.AuthRoleId
         }
     ).ToListAsync();
-    var ranks = new List<SelectListItem> { new SelectListItem("Nici unul", "0", true) };
-    ranks.AddRange(_context.PhpbbRanks.AsNoTracking().Select(x => new SelectListItem(x.RankTitle, x.RankId.ToString())));
+    var groupRanks = new List<SelectListItem> { new SelectListItem("Nici unul", "0", true) };
+    groupRanks.AddRange(_context.PhpbbRanks.AsNoTracking().Select(x => new SelectListItem(x.RankTitle, x.RankId.ToString())));
     var roles = new List<SelectListItem> { new SelectListItem("Nici una", "0", true) };
     roles.AddRange(_context.PhpbbAclRoles.AsNoTracking().Where(x => x.RoleType == "u_").Select(x => new SelectListItem(x.RoleName, x.RoleId.ToString())));
+
     foreach (var group in groups)
     {
-        <a href='javascript:populateGroup(@Json.Serialize(group))'>@Html.Raw(group.Name)</a><br />
+        <a href='javascript:populateGroup(@Json.Serialize(group))'>@Html.Raw(group.Name)</a>
+        <br />
     }
 }
 <p>&nbsp;</p>
 <a href="javascript:newGroup()">Adaugă un grup nou</a>
 
 <h4>Ranguri</h4>
+@foreach (var rank in await _context.PhpbbRanks.AsNoTracking().ToListAsync())
+{
+    <a href="javascript:populateRank(@rank.RankId, '@rank.RankTitle')">@rank.RankTitle</a>
+    <br />
+}
+<p>&nbsp;</p>
+<a href="javascript:newRank()">Adaugă un rang nou</a>
 
 
 <script type="text/javascript">
@@ -118,6 +127,8 @@
         $('#colorTitle').text($('#color').val());
         $('#uploadLimit').val(group.uploadLimit / 1024 / 1024);
         $('#editTime').val(group.editTime);
+        $('#deleteGroup').prop('disabled', false);
+        $('#deleteGroup').prop('checked', false);
         showElement('groupAdministration');
     }
 
@@ -139,7 +150,23 @@
         showElement('groupAdministration');
     }
 
-    function validate() {
+    function populateRank(id, name) {
+        $('#rankName').val(name);
+        $('#rankId').val(id);
+        $('#deleteRank').prop('checked', false);
+        $('#deleteRank').prop('disabled', false);
+        showElement('rankAdministration');
+    }
+
+    function newRank(name) {
+        $('#rankName').val(name);
+        $('#rankId').val(0);
+        $('#deleteRank').prop('checked', false);
+        $('#deleteRank').prop('disabled', true);
+        showElement('rankAdministration')
+    }
+
+    function validateGroup() {
         var name = $('#groupName'), uploadLimit = $('#uploadLimit'), editTime = $('#editTime');
         var toReturn = true;
 
@@ -180,7 +207,7 @@
             Rang
         </div>
         <div class="FlexRight PostInputWidth">
-            @Html.DropDownList("dto.rank", ranks, new { id = "rank" })
+            @Html.DropDownList("dto.rank", groupRanks, new { id = "rank" })
         </div>
     </div>
     <p></p>
@@ -199,7 +226,7 @@
             Limită upload (MB)
         </div>
         <div class="FlexRight PostInputWidth">
-            <input type="text" name="dto.uploadLimit" autocomplete="new-password" id="uploadLimit" /><br/>
+            <input type="text" name="dto.uploadLimit" autocomplete="new-password" id="uploadLimit" /><br />
             <span class="Caption">"0" = nelimitat</span>
         </div>
     </div>
@@ -230,6 +257,30 @@
         </div>
     </div>
     <p></p>
-    <input type="submit" value="Salvează modificările" onclick="return validate();" />
+    <input type="submit" value="Salvează modificările" onclick="return validateGroup();" />
     <input type="hidden" name="dto.id" id="groupId" />
+</form>
+
+<form method="post" asp-page-handler="RankManagement" id="rankAdministration" class="MiddleBox" style="display:none">
+    <h4 style="float:left" id="groupNameTitle"></h4>
+    <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('rankAdministration')">Închide [X]</div>
+    <p>&nbsp;</p>
+    <p>&nbsp;</p>
+    <div class="FlexCenter">
+        <div style="font-weight:bold; text-align: right">
+            Nume rang
+        </div>
+        <div class="FlexRight PostInputWidth">
+            <input type="text" name="rankName" autocomplete="new-password" id="rankName" />
+        </div>
+    </div>
+    <p></p>
+    <div class="FlexCenter">
+        <div style="font-weight:bold; text-align: right">
+            @Html.CheckBox("deleteRank", false, new { id = "deleteRank" })
+            &nbsp;Șterge acest rang
+        </div>
+    </div>
+    <input type="hidden" name="rankId" id="rankId" />
+    <input type="submit" value="Salvează modificările" onclick="return $('#rankName').val() ? true : false;" />
 </form>

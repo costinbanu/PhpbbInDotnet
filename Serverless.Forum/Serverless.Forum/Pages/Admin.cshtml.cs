@@ -5,6 +5,7 @@ using Serverless.Forum.ForumDb;
 using Serverless.Forum.Pages.CustomPartials.Admin;
 using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -44,66 +45,48 @@ namespace Serverless.Forum.Pages
         }
 
         public async Task<IActionResult> OnGet()
-        {
-            var validationResult = await ValidatePermissionsAndInit();
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
-
-            return Page();
-        }
-
-        private async Task<IActionResult> ValidatePermissionsAndInit()
-            => !await IsCurrentUserAdminHereAsync() ? Forbid() : null;
+            => await WithPermissionValidation(() => Page());
 
         #region Admin user
 
         public List<PhpbbUsers> UserSearchResults { get; private set; }
 
         public async Task<IActionResult> OnPostUserSearch(string username, string email, int? userid)
-        {
-            var validationResult = await ValidatePermissionsAndInit();
-            if (validationResult != null)
+            => await WithPermissionValidation(async () =>
             {
-                return validationResult;
-            }
-
-            UserSearchResults = await _adminUserService.UserSearchAsync(username, email, userid);
-            Category = AdminCategories.Users;
-            if (!UserSearchResults.Any())
-            {
-                Message = $"Nu a fost găsit nici un utilizator cu username-ul '{username}'.";
-                IsSuccess = false;
-            }
-            return Page();
-        }
+                UserSearchResults = await _adminUserService.UserSearchAsync(username, email, userid);
+                Category = AdminCategories.Users;
+                if (!UserSearchResults.Any())
+                {
+                    Message = $"Nu a fost găsit nici un utilizator cu username-ul '{username}'.";
+                    IsSuccess = false;
+                }
+                return Page();
+            });
 
         public async Task<IActionResult> OnPostUserManagement(AdminUserActions? userAction, int? userId)
-        {
-            var validationResult = await ValidatePermissionsAndInit();
-            if (validationResult != null)
+            => await WithPermissionValidation(async () =>
             {
-                return validationResult;
-            }
-
-            (Message, IsSuccess) = await _adminUserService.ManageUser(userAction, userId);
-            Category = AdminCategories.Users;
-            return Page();
-        }
+                (Message, IsSuccess) = await _adminUserService.ManageUser(userAction, userId);
+                Category = AdminCategories.Users;
+                return Page();
+            });
 
         public async Task<IActionResult> OnPostGroupManagement(UpsertGroupDto dto)
-        {
-            var validationResult = await ValidatePermissionsAndInit();
-            if (validationResult != null)
+            => await WithPermissionValidation(async () =>
             {
-                return validationResult;
-            }
+                (Message, IsSuccess) = await _adminUserService.ManageGroup(dto);
+                Category = AdminCategories.Users;
+                return Page();
+            });
 
-            (Message, IsSuccess) = await _adminUserService.ManageGroup(dto);
-            Category = AdminCategories.Users;
-            return Page();
-        }
+        public async Task<IActionResult> OnPostRankManagement(int? rankId, string rankName, bool? deleteRank)
+            => await WithPermissionValidation(async () =>
+            {
+                (Message, IsSuccess) = await _adminUserService.ManageRank(rankId, rankName, deleteRank);
+                Category = AdminCategories.Users;
+                return Page();
+            });
 
         #endregion Admin user
 
@@ -117,114 +100,95 @@ namespace Serverless.Forum.Pages
         public bool ShowForum { get; private set; }
 
         public async Task<IActionResult> OnPostShowForum(int? forumId)
-        {
-            var validationResult = await ValidatePermissionsAndInit();
-            if (validationResult != null)
+            => await WithPermissionValidation(async () =>
             {
-                return validationResult;
-            }
+                if (forumId != null)
+                {
+                    Permissions = await _adminForumService.GetPermissions(forumId.Value);
+                    (Forum, ForumChildren) = await _adminForumService.ShowForum(forumId.Value);
+                }
 
-            if (forumId != null)
-            {
-                Permissions = await _adminForumService.GetPermissions(forumId.Value);
-                (Forum, ForumChildren) = await _adminForumService.ShowForum(forumId.Value);
-            }
-
-            ShowForum = true;
-            Category = AdminCategories.Forums;
-            return Page();
-        }
+                ShowForum = true;
+                Category = AdminCategories.Forums;
+                return Page();
+            });
 
         public async Task<IActionResult> OnPostForumManagement(UpsertForumDto dto)
-        {
-            var validationResult = await ValidatePermissionsAndInit();
-            if (validationResult != null)
+            => await WithPermissionValidation(async () =>
             {
-                return validationResult;
-            }
+                (Message, IsSuccess) = await _adminForumService.ManageForumsAsync(dto);
 
-            (Message, IsSuccess) = await _adminForumService.ManageForumsAsync(dto);
-
-            ShowForum = false;
-            Category = AdminCategories.Forums;
-            return Page();
-        }
+                ShowForum = false;
+                Category = AdminCategories.Forums;
+                return Page();
+            });
 
         public async Task<IActionResult> OnPostDeleteForum(int forumId)
-        {
-            var validationResult = await ValidatePermissionsAndInit();
-            if (validationResult != null)
+            => await WithPermissionValidation(async () =>
             {
-                return validationResult;
-            }
+                (Message, IsSuccess) = await _adminForumService.DeleteForum(forumId);
 
-            (Message, IsSuccess) = await _adminForumService.DeleteForum(forumId);
-
-            ShowForum = false;
-            Category = AdminCategories.Forums;
-            return Page();
-        }
+                ShowForum = false;
+                Category = AdminCategories.Forums;
+                return Page();
+            });
 
         #endregion Admin forum
 
         #region Admin writing
 
         public async Task<IActionResult> OnGetWriting()
-        {
-            var validationResult = await ValidatePermissionsAndInit();
-            if (validationResult != null)
+            => await WithPermissionValidation(async () =>
             {
-                return validationResult;
-            }
-
-            var result = await _utils.RenderRazorViewToString("_AdminWriting", new _AdminWritingModel(CurrentUserId), PageContext, HttpContext);
-            return Content(result);
-        }
+                var result = await _utils.RenderRazorViewToString("_AdminWriting", new _AdminWritingModel(CurrentUserId), PageContext, HttpContext);
+                return Content(result);
+            });
 
         public async Task<IActionResult> OnPostBanWords(List<PhpbbWords> words, List<int> toRemove)
-        {
-            var validationResult = await ValidatePermissionsAndInit();
-            if (validationResult != null)
+            => await WithPermissionValidation(async () =>
             {
-                return validationResult;
-            }
-
-            (Message, IsSuccess) = await _adminWritingService.ManageBannedWords(words, toRemove);
-
-            Category = AdminCategories.WritingTools;
-
-            return Page();
-        }
+                (Message, IsSuccess) = await _adminWritingService.ManageBannedWords(words, toRemove);
+                Category = AdminCategories.WritingTools;
+                return Page();
+            });
 
         public async Task<IActionResult> OnPostOrphanedFiles(AdminOrphanedFilesActions action)
-        {
-            var validationResult = await ValidatePermissionsAndInit();
-            if (validationResult != null)
+            => await WithPermissionValidation(async () =>
             {
-                return validationResult;
-            }
+                var (inS3, inDb) = await _cacheService.GetFromCache<(IEnumerable<string> inS3, IEnumerable<int> inDb)>(_adminWritingService.GetCacheKey(CurrentUserId));
+                if (action == AdminOrphanedFilesActions.DeleteFromDb)
+                {
+                    (Message, IsSuccess) = await _adminWritingService.DeleteDbOrphanedFiles(inDb);
+                }
+                else if (action == AdminOrphanedFilesActions.DeleteFromS3)
+                {
+                    (Message, IsSuccess) = await _adminWritingService.DeleteS3OrphanedFiles(inS3);
+                }
 
-            var (inS3, inDb) = await _cacheService.GetFromCache<(IEnumerable<string> inS3, IEnumerable<int> inDb)>(_adminWritingService.GetCacheKey(CurrentUserId));
-            if (action == AdminOrphanedFilesActions.DeleteFromDb)
-            {
-                (Message, IsSuccess) = await _adminWritingService.DeleteDbOrphanedFiles(inDb);
-            }
-            else if (action == AdminOrphanedFilesActions.DeleteFromS3)
-            {
-                (Message, IsSuccess) = await _adminWritingService.DeleteS3OrphanedFiles(inS3);
-            }
+                if (IsSuccess ?? false)
+                {
+                    await _cacheService.RemoveFromCache(_adminWritingService.GetCacheKey(CurrentUserId));
+                }
 
-            if(IsSuccess ?? false)
-            {
-                await _cacheService.RemoveFromCache(_adminWritingService.GetCacheKey(CurrentUserId));
-            }
+                Category = AdminCategories.WritingTools;
 
-            Category = AdminCategories.WritingTools;
-
-            return Page();
-        }
+                return Page();
+            });
 
         #endregion Admin writing
 
+
+        private async Task<IActionResult> WithPermissionValidation(Func<Task<IActionResult>> toDo)
+        {
+            var validationResult = !await IsCurrentUserAdminHereAsync() ? Forbid() : null;
+            if (validationResult != null)
+            {
+                return validationResult;
+            }
+            return await toDo();
+        }
+
+        private async Task<IActionResult> WithPermissionValidation(Func<IActionResult> toDo)
+            => await WithPermissionValidation(async () => await Task.FromResult(toDo()));
     }
 }
