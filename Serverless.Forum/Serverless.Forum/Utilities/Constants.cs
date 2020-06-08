@@ -59,5 +59,7 @@ namespace Serverless.Forum.Utilities
         public static readonly int ANONYMOUS_USER_ID = 1;
 
         public static readonly int NO_PM_ROLE = 8;
+
+        public static readonly int OTHER_REPORT_REASON_ID = 4;
     }
 }

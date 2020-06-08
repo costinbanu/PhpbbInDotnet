@@ -41,5 +41,13 @@ namespace Serverless.Forum.Contracts
         public string LastEditReason { get; set; }
 
         public string AuthorRank { get;  set; }
+
+        public string IP { get; set; }
+
+        public int? ReportId { get; set; }
+
+        public int? ReportReasonId { get; set; }
+
+        public string ReportDetails { get; set; }
     }
 }

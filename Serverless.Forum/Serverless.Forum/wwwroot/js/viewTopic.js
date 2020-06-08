@@ -1,11 +1,12 @@
 ﻿class ViewTopic {
-    constructor(postId, highlight, scrollToModPanel, moveTopic, moveSelectedPosts, splitSelectedPosts) {
+    constructor(postId, highlight, scrollToModPanel, moveTopic, moveSelectedPosts, splitSelectedPosts, otherReportReasonId) {
         this.postId = postId;
         this.highlight = highlight;
         this.scrollToModPanel = scrollToModPanel;
         this.moveTopic = moveTopic;
         this.moveSelectedPosts = moveSelectedPosts;
         this.splitSelectedPosts = splitSelectedPosts;
+        this.otherReportReasonId = otherReportReasonId;
     }
 
     onLoad() {
@@ -81,5 +82,38 @@
             return confirm("Am primit comanda '" + action + "'. Continuați?");
         }
         return true;
+    }
+
+    showMessageDetails(ip) {
+        $('#postInfoContent').html('<b>IP:</b> ' + ip);
+        showElement('postInfo');
+    }
+
+    showReportForm(postId, reportId = null, reportReasonId = null, reportDetails = null) {
+        $('#reportPostId').val(postId);
+        $('#reportReason').val(reportReasonId ? reportReasonId : '-1');
+        $('#reportId').val(reportId);
+        $('#reportDetails').val(reportDetails);
+        $('#reportValidation').hide();
+        showElement('report');
+    }
+
+    validateReportForm() {
+        var reason = $('#reportReason').val();
+        var details = $('#reportDetails').val();
+        var validation = $('#reportValidation');
+        if (reason) {
+            if (reason == this.otherReportReasonId && (!details || details.length < 3)) {
+                validation.text('Completează detaliile raportului (min. 3 caractere).');
+                validation.show();
+                return false;
+            }
+            return true;
+        }
+        else {
+            validation.text('Alege un motiv pentru raport.');
+            validation.show();
+            return false;
+        }
     }
 }

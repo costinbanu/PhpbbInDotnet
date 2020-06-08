@@ -1,9 +1,10 @@
 ﻿@using System.Web
 @using  Serverless.Forum.Contracts
 @using Serverless.Forum.Utilities
-
+@using Microsoft.EntityFrameworkCore
 
 @inject Services.UserService  _userService
+@inject ForumDb.ForumDbContext _context
 
 @{
     var currentUser = await _userService.ClaimsPrincipalToLoggedUserAsync(User);
@@ -93,17 +94,46 @@
         <center>
             @{
                 var pmCount = 0;
+                var displayedBox = false;
                 if ((currentUser?.UserId ?? 1) > 1)
                 {
                     pmCount = await _userService.UnreadPMs(currentUser.UserId);
                 }
+
                 if (pmCount > 0)
                 {
                     <span class="Unread" style="margin:5px; padding:5px; font-size:1.2em">
                         <a asp-page="/PrivateMessages" asp-route-Show="Inbox">@pmCount mesaj@(pmCount > 1 ? "e" : "") privat@(pmCount > 1 ? "e" : "") necitit@(pmCount > 1 ? "e" : "")</a>
                     </span>
+                    displayedBox = true;
                 }
-                else
+
+                if (await _userService.IsUserModeratorInForum(currentUser, 0))
+                {
+                    var reports = await (
+                        from r in _context.PhpbbReports.AsNoTracking()
+                        where r.ReportClosed == 0
+                        join rr in _context.PhpbbReportsReasons
+                        on r.ReasonId equals rr.ReasonId
+                        into joinedReasons
+                        from jr in joinedReasons
+                        orderby r.ReportTime descending
+                        select new { r.PostId, jr.ReasonTitle }
+                    ).ToListAsync();
+                    if (reports.Any())
+                    {
+                        <div class="ReportedPost" style="margin:5px; padding:5px; width: max-content; max-width: 100%">
+                            <h4>Rapoarte deschise</h4>
+                            @foreach (var r in reports)
+                            {
+                                <a asp-page="ViewTopic" asp-page-handler="byPostId" asp-route-postId="@r.PostId">@r.ReasonTitle</a> <br />
+                            }
+                        </div>
+                        displayedBox = true;
+                    }
+                }
+
+                if (!displayedBox)
                 {
                     <p>&nbsp;</p>
                 }

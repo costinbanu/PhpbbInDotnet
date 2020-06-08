@@ -1,18 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Serverless.Forum.ForumDb
 {
     public partial class PhpbbReports
     {
-        public int ReportId { get; set; }
-        public short ReasonId { get; set; }
-        public int PostId { get; set; }
-        public int PmId { get; set; }
-        public int UserId { get; set; }
-        public byte UserNotify { get; set; }
-        public byte ReportClosed { get; set; }
-        public int ReportTime { get; set; }
-        public string ReportText { get; set; }
+        [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int ReportId { get; set; } = 0;
+        public short ReasonId { get; set; } = 0;
+        public int PostId { get; set; } = 0;
+        public int PmId { get; set; } = 0;
+        public int UserId { get; set; } = 0;
+        public byte UserNotify { get; set; } = 0;
+        public byte ReportClosed { get; set; } = 0;
+        public long ReportTime { get; set; } = 0;
+        public string ReportText { get; set; } = string.Empty;
     }
 }

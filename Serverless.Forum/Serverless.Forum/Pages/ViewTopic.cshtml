@@ -3,9 +3,11 @@
 
 @using System.Web
 @using Serverless.Forum.Utilities
+@using Microsoft.EntityFrameworkCore
 
 @inject Services.UserService _userService
 @inject Utils _utils
+@inject ForumDb.ForumDbContext _context
 
 @{
     ViewData["Title"] = $"{Model.ForumTitle} - {Model.TopicTitle}";
@@ -18,6 +20,7 @@
 }
 
 <link rel="stylesheet" href="~/css/pagination.css" />
+<link rel="stylesheet" href="~/css/posting.css" />
 <script type="text/javascript" src="~/js/viewTopic.js"></script>
 <script type="text/javascript">
     var vt = new ViewTopic(
@@ -26,7 +29,8 @@
         @Model.ScrollToModeratorPanel,
         '@ModeratorTopicActions.MoveTopic',
         '@ModeratorPostActions.MoveSelectedPosts',
-        '@ModeratorPostActions.SplitSelectedPosts'
+        '@ModeratorPostActions.SplitSelectedPosts',
+        @Constants.OTHER_REPORT_REASON_ID
     );
 
     $(document).ready(function () {
@@ -110,7 +114,7 @@
                             </span>
                         </td>
                     </tr>
-                }
+                                }
             </table>
         </div>
         @if (Model.Poll.CanVoteNow(Model.CurrentUserId) && IsAdmin)
@@ -118,7 +122,7 @@
             <br />
             <input type="button" value="Arată rezultatele" onclick="vt.switchPollPanels('results', 'votes', this)" />
         }
-    }
+                                }
     <hr />
 }
 
@@ -142,13 +146,22 @@
 @{ var index = 0; }
 @foreach (var post in Model.Posts)
 {
-    <div class="RowMargin @(post.Unread ? "Unread" : $"Color{index % 2}")">
+    var rowClass = string.Empty;
+    if (post.ReportId.HasValue)
+    {
+        rowClass = "ReportedPost";
+    }
+    else
+    {
+        rowClass = post.Unread ? "Unread" : $"Color{index % 2}";
+    }
+    <div class="RowMargin @rowClass">
         <div class="FlexRow">
             @await Html.PartialAsync(
-                "_SummaryPartial",
-                new CustomPartials._SummaryPartialModel(post.AuthorId, post.AuthorName, post.AuthorColor, post.PostCreationTime, post.PostId.Value,
-                    UserDateFormat, post.AuthorHasAvatar, post.AuthorRank, null, null, null, true)
-            )
+                 "_SummaryPartial",
+                 new CustomPartials._SummaryPartialModel(post.AuthorId, post.AuthorName, post.AuthorColor, post.PostCreationTime, post.PostId.Value,
+                     UserDateFormat, post.AuthorHasAvatar, post.AuthorRank, null, null, null, true)
+             )
             <div class="ForumContent VerticalContent FlexRight" id="@post.PostId">
                 <span style="display:flex">
                     <span class="PostTitle">
@@ -162,6 +175,10 @@
                 </span>
                 <div style="max-width:100%">
                     <br />
+                    @if (post.ReportId.HasValue)
+                    {
+                        <a href="javascript:vt.showReportForm(@post.PostId, @post.ReportId, @post.ReportReasonId, '@post.ReportDetails')"><b>Arată raportul</b></a> <br />
+                    }
                     @Html.Raw(post.PostText)
                     @foreach (var attachment in post.Attachments)
                     {
@@ -222,13 +239,16 @@
                                 <a asp-page="/Posting" asp-page-handler="PrivateMessage" asp-route-postId="@post.PostId">&#x2709; Mesaj privat</a>
                             </span>
                         }
-                        <span>
-                            <a href="javascript:return;">&#x2757; Raportează</a>
-                        </span>
+                        @if (!post.ReportId.HasValue)
+                        {
+                            <span>
+                                <a href="javascript:vt.showReportForm(@post.PostId);">&#x2757; Raportează</a>
+                            </span>
+                        }
                         @if (IsMod)
                         {
                             <span>
-                                <a href="javascript:return;">&#x2753; Informații</a>
+                                <a href="javascript:vt.showMessageDetails('@post.IP');">&#x2753; Informații</a>
                             </span>
                             <span>
                                 Selectează pentru moderare <input name="PostIdsForModerator" type="checkBox" value="@post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @(post.PostId ?? -1))" @(Model.PostIdsForModerator.Contains(post.PostId ?? -1) ? "checked" : "") />
@@ -286,20 +306,21 @@ else if (!IsAnonymous)
 {
     <hr />
 }
-<span onclick="showElement('forumTree')" style="cursor:pointer; font-weight:bold">Navigare - alege destinația &#x2935;</span>
+@todo do this everywhere else 
+<span onclick="showElement('forumTree', null, () => $('html, body').animate({ scrollTop: $(this).position().top + $('#topBanner').outerHeight() + 1000 }, 'slow'));" style="cursor:pointer; font-weight:bold">Navigare - alege destinația &#x2935;</span>
 <p>&nbsp;</p>
 <div id="forumTree" style="display:none">
-        @await Html.PartialAsync(
-            "_ForumTreePartial",
-            new CustomPartials._ForumTreePartialModel(
-                forums: await Model.GetForumTreeAsync(),
-                forumId: Model.ForumId,
-                topicId: Model.TopicId,
-                path: await Model.PathToForumOrTopic(Model.ForumId.Value, Model.TopicId),
-                constrainSize: true
-            ),
-            ViewData
-        )
+    @await Html.PartialAsync(
+        "_ForumTreePartial",
+        new CustomPartials._ForumTreePartialModel(
+            forums: await Model.GetForumTreeAsync(),
+            forumId: Model.ForumId,
+            topicId: Model.TopicId,
+            path: await Model.PathToForumOrTopic(Model.ForumId.Value, Model.TopicId),
+            constrainSize: true
+        ),
+        ViewData
+    )
     <p></p>
     <form action="/ViewForum">
         <input type="hidden" name="ForumId" id="ForumIdInput" />
@@ -368,4 +389,49 @@ else if (!IsAnonymous)
         <br />
         @Html.Raw(Model.ModeratorActionResult)
     }
+
+    <div class="MiddleBox" id="postInfo" style="display:none">
+        <h4 style="float:left">Informații mesaj</h4>
+        <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('postInfo')">Închide [X]</div>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+        <div id="postInfoContent"></div>
+    </div>
 }
+
+<form asp-page-handler="ReportMessage" method="post" class="MiddleBox" id="report" style="display:none">
+    <h4 style="float:left">Raportează mesaj</h4>
+    <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('report')">Închide [X]</div>
+    <p>&nbsp;</p>
+    <p>&nbsp;</p>
+    <div>
+        <div class="FlexCenter">
+            <div style="font-weight:bold; text-align: right">
+                Motiv
+            </div>
+            <div class="FlexRight PostInputWidth">
+                @{
+                    var reasons = new List<SelectListItem> { new SelectListItem("Alege un motiv", "-1", true, true) };
+                    reasons.AddRange(_context.PhpbbReportsReasons.AsNoTracking().OrderBy(x => x.ReasonOrder).Select(x => new SelectListItem(x.ReasonDescription, x.ReasonId.ToString())));
+                }
+                @Html.DropDownListFor(m => m.ReportReasonId, reasons, new { id = "reportReason", style = "width: 100%" })
+            </div>
+        </div>
+        <p></p>
+        <div class="FlexCenter">
+            <div style="font-weight:bold; text-align: right">
+                Detalii suplimentare
+            </div>
+            <div class="FlexRight PostInputWidth">
+                <textarea asp-for="ReportDetails" rows="4" cols="100" id="reportDetails" style="width:100%"></textarea>
+            </div>
+        </div>
+    </div>
+    <p></p>
+    <input type="hidden" name="reportPostId" id="reportPostId" />
+    <input type="hidden" asp-for="TopicId" />
+    <input type="hidden" asp-for="PageNum" />
+    <input type="hidden" asp-for="PostId" />
+    <input type="hidden" asp-for="ReportId" id="reportId"/>
+    <input type="submit" onclick="return vt.validateReportForm();" value="Trimite" />&nbsp;<span class="validation" id="reportValidation" style="display:none"></span>
+</form>

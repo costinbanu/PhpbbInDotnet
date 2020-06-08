@@ -123,8 +123,9 @@
             document.getElementById("treeNode" + path[i]).click();
         }
 
-        if (@Html.Raw(Model.ConstrainSize.ToString().ToLower())) {
-            document.getElementById('treeContainer').scrollTop = document.getElementById("treeNode" + path[path.length]).offsetTop;
+        var element = document.getElementById("treeNode" + path[path.length]);
+        if (@Html.Raw(Model.ConstrainSize.ToString().ToLower()) && element) {
+            document.getElementById('treeContainer').scrollTop = element.offsetTop;
         }
 
         if (typeof topicSelectInit === "function") {

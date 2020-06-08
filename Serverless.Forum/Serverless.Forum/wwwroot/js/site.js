@@ -3,7 +3,6 @@ function onPostLoad() {
     $('.ForumContent').each(function (_, post) {
         var maxWidth = ($('.FlexRow').width() - ($('.Summary').is(':visible') ? $('.Summary').outerWidth() : 0)) - 20;
         var maxHeight = $(window).innerHeight() - $('#topBanner').outerHeight() - 40;
-        console.log('max size: w=' + maxWidth + ', h=' + maxHeight + '. parent width = ' + $(post).parent().outerWidth());
         $(post).find('img').each(function (_, img) {
             var originalWidth = img.naturalWidth,
                 originalHeight = img.naturalHeight,

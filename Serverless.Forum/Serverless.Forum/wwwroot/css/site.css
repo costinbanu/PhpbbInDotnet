@@ -351,6 +351,11 @@ label {
     color: #BC2A4D;
 }
 
+.ReportedPost {
+    border: solid 3px #BC2A4D;
+    background-color: #F3BFCC;
+}
+
 .FlexCenter {
     display: flex;
     align-items: center;

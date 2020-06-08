@@ -46,6 +46,18 @@ namespace Serverless.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public int[] PostIdsForModerator { get; set; }
 
+        [BindProperty]
+        public int? ReportId { get; set; }
+
+        [BindProperty]
+        public int? ReportPostId { get; set; }
+
+        [BindProperty]
+        public short? ReportReasonId { get; set; }
+
+        [BindProperty]
+        public string ReportDetails { get; set; }
+
         public PollDto Poll { get; private set; }
 
         public List<PostDto> Posts { get; private set; }
@@ -184,6 +196,7 @@ namespace Serverless.Forum.Pages
 
                     let lastEditUser = _context.PhpbbUsers.AsNoTracking().FirstOrDefault(u => u.UserId == p.PostEditUser)
                     let lastEditUsername = lastEditUser == null ? "Anonymous" : lastEditUser.Username
+                    let report = _context.PhpbbReports.AsNoTracking().FirstOrDefault(r => r.PostId == p.PostId)
 
                     join r in _context.PhpbbRanks.AsNoTracking()
                     on ju.UserRank equals r.RankId
@@ -210,7 +223,11 @@ namespace Serverless.Forum.Pages
                         LastEditTime = p.PostEditTime,
                         LastEditUser = lastEditUsername,
                         LastEditReason = p.PostEditReason,
-                        EditCount = p.PostEditCount
+                        EditCount = p.PostEditCount,
+                        IP = p.PosterIp,
+                        ReportId = report == null ? null as int? : report.ReportId,
+                        ReportReasonId = report == null ? null as int? : report.ReasonId,
+                        ReportDetails = report == null ? null as string : report.ReportText
                     }
                 ).ToList();
                 TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
@@ -252,184 +269,184 @@ namespace Serverless.Forum.Pages
         }
 
         public async Task<IActionResult> OnPostPagination(int topicId, int userPostsPerPage, int? postId)
-        {
-            if (CurrentUserId == Constants.ANONYMOUS_USER_ID)
+            => await WithRegisteredUser(async () =>
             {
-                return Forbid();
-            }
-
-            async Task save(ForumDbContext localContext)
-            {
-                await localContext.SaveChangesAsync();
-                await ReloadCurrentUser();
-            }
-
-            var curValue = await _context.PhpbbUserTopicPostNumber.FirstOrDefaultAsync(ppp => ppp.UserId == CurrentUserId && ppp.TopicId == topicId);
-
-            if (curValue == null)
-            {
-                _context.PhpbbUserTopicPostNumber.Add(
-                    new PhpbbUserTopicPostNumber
-                    {
-                        UserId = CurrentUserId,
-                        TopicId = topicId,
-                        PostNo = userPostsPerPage
-                    }
-                );
-                await save(_context);
-            }
-            else if (curValue.PostNo != userPostsPerPage)
-            {
-                curValue.PostNo = userPostsPerPage;
-                await save(_context);
-            }
-            if (postId.HasValue)
-            {
-                return RedirectToPage("ViewTopic", "ByPostId", new { postId = postId.Value, highlight = false });
-            }
-            else
-            {
-                return RedirectToPage("ViewTopic", new { topicId = TopicId.Value, pageNum = 1 });
-            }
-        }
-
-        public async Task<IActionResult> OnPostVote(int topicId, int[] votes, string queryString)
-        {
-            if (CurrentUserId == Constants.ANONYMOUS_USER_ID)
-            {
-                return Forbid();
-            }
-
-            var current = await _context.PhpbbPollVotes.Where(v => v.TopicId == topicId && v.VoteUserId == CurrentUserId).ToListAsync();
-            var id = await _context.PhpbbPollVotes.AsNoTracking().MaxAsync(v => v.Id);
-            if (current.Any())
-            {
-                var topic = await _context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == topicId);
-                if (topic.PollVoteChange == 0)
+                async Task save(ForumDbContext localContext)
                 {
-                    return Forbid("Can't change votes for this poll.");
+                    await localContext.SaveChangesAsync();
+                    await ReloadCurrentUser();
                 }
-                _context.PhpbbPollVotes.RemoveRange(current.Where(v => !votes.Contains(v.PollOptionId)));
-            }
-            foreach (var vote in votes)
-            {
-                await _context.PhpbbPollVotes.AddAsync(new PhpbbPollVotes
+
+                var curValue = await _context.PhpbbUserTopicPostNumber.FirstOrDefaultAsync(ppp => ppp.UserId == CurrentUserId && ppp.TopicId == topicId);
+
+                if (curValue == null)
                 {
-                    Id = ++id,
-                    PollOptionId = (byte)vote,
-                    TopicId = topicId,
-                    VoteUserId = CurrentUserId,
-                    VoteUserIp = HttpContext.Connection.RemoteIpAddress.ToString()
-                });
-            }
-            await _context.SaveChangesAsync();
-            return Redirect($"./ViewTopic{HttpUtility.UrlDecode(queryString)}");
-        }
-
-        public async Task<IActionResult> OnPostTopicModerator()
-        {
-            if (!await IsCurrentUserModeratorHereAsync())
-            {
-                return Forbid();
-            }
-
-            var (Message, IsSuccess) = TopicAction switch
-            {
-                ModeratorTopicActions.MakeTopicNormal => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Normal),
-                ModeratorTopicActions.MakeTopicImportant => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Important),
-                ModeratorTopicActions.MakeTopicAnnouncement => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Announcement),
-                ModeratorTopicActions.MakeTopicGlobal => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Global),
-                ModeratorTopicActions.MoveTopic => await _moderatorService.MoveTopic(TopicId.Value, DestinationForumId.Value),
-                ModeratorTopicActions.LockTopic => await _moderatorService.LockUnlockTopic(TopicId.Value, true),
-                ModeratorTopicActions.UnlockTopic => await _moderatorService.LockUnlockTopic(TopicId.Value, false),
-                ModeratorTopicActions.DeleteTopic => await _moderatorService.DeleteTopic(TopicId.Value),
-                _ => throw new NotImplementedException($"Unknown action '{TopicAction}'")
-            };
-
-            if (TopicAction == ModeratorTopicActions.DeleteTopic)
-            {
-                return RedirectToPage("ViewForum", new { ForumId });
-            }
-            else if (TopicAction == ModeratorTopicActions.MoveTopic)
-            {
-                var destinations = new List<string>
+                    _context.PhpbbUserTopicPostNumber.Add(
+                        new PhpbbUserTopicPostNumber
+                        {
+                            UserId = CurrentUserId,
+                            TopicId = topicId,
+                            PostNo = userPostsPerPage
+                        }
+                    );
+                    await save(_context);
+                }
+                else if (curValue.PostNo != userPostsPerPage)
                 {
-                    await _utils.CompressAndUrlEncode($"<a href=\"./ViewForum?forumId={ForumId}\">Mergi la noul forum</a>"),
-                    await _utils.CompressAndUrlEncode($"<a href=\"./ViewTopic?topicId={TopicId}&pageNum={PageNum}\">Mergi la ultimul subiect vizitat</a>")
-                };
-                return RedirectToPage("Confirm", "DestinationConfirmation", new { destinations });
-            }
-            else
-            {
-                ModeratorActionResult = $"<span style=\"margin-left: 30px; color: {((IsSuccess ?? false) ? "darkgreen" : "red")}; display:block;\">{Message}</span>";
-                return await OnGet();
-            }
-        }
-
-        public async Task<IActionResult> OnPostPostModerator()
-        {
-            if (!await IsCurrentUserModeratorHereAsync())
-            {
-                return Forbid();
-            }
-            
-            var (Message, IsSuccess) = PostAction switch
-            {
-                ModeratorPostActions.DeleteSelectedPosts => await _moderatorService.DeletePosts(PostIdsForModerator),
-                ModeratorPostActions.MoveSelectedPosts => await _moderatorService.MovePosts(PostIdsForModerator, DestinationTopicId.Value),
-                ModeratorPostActions.SplitSelectedPosts => await _moderatorService.SplitPosts(PostIdsForModerator, DestinationForumId.Value),
-                _ => throw new NotImplementedException($"Unknown action '{PostAction}'")
-            };
-
-            if (IsSuccess ?? false)
-            {
-                var latestSelectedPost = await (
-                   from p in _context.PhpbbPosts.AsNoTracking()
-                   where PostIdsForModerator.Contains(p.PostId)
-                   group p by p.PostTime into groups
-                   orderby groups.Key descending
-                   select groups.FirstOrDefault()
-                ).FirstOrDefaultAsync();
-                
-                var nextRemainingPost = await (
-                    from p in _context.PhpbbPosts.AsNoTracking()
-                    where p.TopicId == TopicId.Value
-                       && !PostIdsForModerator.Contains(p.PostId)
-                       && latestSelectedPost != null 
-                       && p.PostTime >= latestSelectedPost.PostTime
-                    group p by p.PostTime into groups
-                    orderby groups.Key ascending
-                    select groups.FirstOrDefault()
-                ).FirstOrDefaultAsync() ?? await (
-                    from p in _context.PhpbbPosts.AsNoTracking()
-                    where p.TopicId == TopicId.Value
-                       && !PostIdsForModerator.Contains(p.PostId)
-                    group p by p.PostTime into groups
-                    orderby groups.Key descending
-                    select groups.FirstOrDefault()
-                ).FirstOrDefaultAsync();
-
-                var destinations = new List<string>();
-                if (latestSelectedPost != null)
+                    curValue.PostNo = userPostsPerPage;
+                    await save(_context);
+                }
+                if (postId.HasValue)
                 {
-                    destinations.Add(await _utils.CompressAndUrlEncode($"<a href=\"./ViewTopic?postId={latestSelectedPost.PostId}&handler=byPostId\">Mergi la noul subiect</a>"));
-                };
-
-                if (nextRemainingPost != null)
-                {
-                    destinations.Add(await _utils.CompressAndUrlEncode($"<a href=\"./ViewTopic?postId={nextRemainingPost.PostId}&handler=byPostId\">Mergi la ultimul subiect vizitat</a>"));
+                    return RedirectToPage("ViewTopic", "ByPostId", new { postId = postId.Value, highlight = false });
                 }
                 else
                 {
-                    destinations.Add(await _utils.CompressAndUrlEncode($"<a href=\"./ViewForum?forumId={ForumId}\">Mergi la ultimul forum vizitat</a>"));
+                    return RedirectToPage("ViewTopic", new { topicId = TopicId.Value, pageNum = 1 });
+                }
+            });
+
+        public async Task<IActionResult> OnPostVote(int topicId, int[] votes, string queryString)
+            => await WithRegisteredUser(async () =>
+            {
+                var current = await _context.PhpbbPollVotes.Where(v => v.TopicId == topicId && v.VoteUserId == CurrentUserId).ToListAsync();
+                var id = await _context.PhpbbPollVotes.AsNoTracking().MaxAsync(v => v.Id);
+                if (current.Any())
+                {
+                    var topic = await _context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == topicId);
+                    if (topic.PollVoteChange == 0)
+                    {
+                        return Forbid("Can't change votes for this poll.");
+                    }
+                    _context.PhpbbPollVotes.RemoveRange(current.Where(v => !votes.Contains(v.PollOptionId)));
+                }
+                foreach (var vote in votes)
+                {
+                    await _context.PhpbbPollVotes.AddAsync(new PhpbbPollVotes
+                    {
+                        Id = ++id,
+                        PollOptionId = (byte)vote,
+                        TopicId = topicId,
+                        VoteUserId = CurrentUserId,
+                        VoteUserIp = HttpContext.Connection.RemoteIpAddress.ToString()
+                    });
+                }
+                await _context.SaveChangesAsync();
+                return Redirect($"./ViewTopic{HttpUtility.UrlDecode(queryString)}");
+            });
+
+        public async Task<IActionResult> OnPostTopicModerator()
+            => await WithModerator(async () =>
+            {
+                var (Message, IsSuccess) = TopicAction switch
+                {
+                    ModeratorTopicActions.MakeTopicNormal => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Normal),
+                    ModeratorTopicActions.MakeTopicImportant => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Important),
+                    ModeratorTopicActions.MakeTopicAnnouncement => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Announcement),
+                    ModeratorTopicActions.MakeTopicGlobal => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Global),
+                    ModeratorTopicActions.MoveTopic => await _moderatorService.MoveTopic(TopicId.Value, DestinationForumId.Value),
+                    ModeratorTopicActions.LockTopic => await _moderatorService.LockUnlockTopic(TopicId.Value, true),
+                    ModeratorTopicActions.UnlockTopic => await _moderatorService.LockUnlockTopic(TopicId.Value, false),
+                    ModeratorTopicActions.DeleteTopic => await _moderatorService.DeleteTopic(TopicId.Value),
+                    _ => throw new NotImplementedException($"Unknown action '{TopicAction}'")
+                };
+
+                if (TopicAction == ModeratorTopicActions.DeleteTopic)
+                {
+                    return RedirectToPage("ViewForum", new { ForumId });
+                }
+                else if (TopicAction == ModeratorTopicActions.MoveTopic)
+                {
+                    var destinations = new List<string>
+                    {
+                        await _utils.CompressAndUrlEncode($"<a href=\"./ViewForum?forumId={ForumId}\">Mergi la noul forum</a>"),
+                        await _utils.CompressAndUrlEncode($"<a href=\"./ViewTopic?topicId={TopicId}&pageNum={PageNum}\">Mergi la ultimul subiect vizitat</a>")
+                    };
+                    return RedirectToPage("Confirm", "DestinationConfirmation", new { destinations });
+                }
+                else
+                {
+                    ModeratorActionResult = $"<span style=\"margin-left: 30px; color: {((IsSuccess ?? false) ? "darkgreen" : "red")}; display:block;\">{Message}</span>";
+                    return await OnGet();
+                }
+            });
+
+        public async Task<IActionResult> OnPostPostModerator()
+            => await WithModerator(async () =>
+            {
+                var (Message, IsSuccess) = PostAction switch
+                {
+                    ModeratorPostActions.DeleteSelectedPosts => await _moderatorService.DeletePosts(PostIdsForModerator),
+                    ModeratorPostActions.MoveSelectedPosts => await _moderatorService.MovePosts(PostIdsForModerator, DestinationTopicId.Value),
+                    ModeratorPostActions.SplitSelectedPosts => await _moderatorService.SplitPosts(PostIdsForModerator, DestinationForumId.Value),
+                    _ => throw new NotImplementedException($"Unknown action '{PostAction}'")
+                };
+
+                if (IsSuccess ?? false)
+                {
+                    var latestSelectedPost = await (
+                       from p in _context.PhpbbPosts.AsNoTracking()
+                       where PostIdsForModerator.Contains(p.PostId)
+                       group p by p.PostTime into groups
+                       orderby groups.Key descending
+                       select groups.FirstOrDefault()
+                    ).FirstOrDefaultAsync();
+
+                    var nextRemainingPost = await (
+                        from p in _context.PhpbbPosts.AsNoTracking()
+                        where p.TopicId == TopicId.Value
+                           && !PostIdsForModerator.Contains(p.PostId)
+                           && latestSelectedPost != null
+                           && p.PostTime >= latestSelectedPost.PostTime
+                        group p by p.PostTime into groups
+                        orderby groups.Key ascending
+                        select groups.FirstOrDefault()
+                    ).FirstOrDefaultAsync() ?? await (
+                        from p in _context.PhpbbPosts.AsNoTracking()
+                        where p.TopicId == TopicId.Value
+                           && !PostIdsForModerator.Contains(p.PostId)
+                        group p by p.PostTime into groups
+                        orderby groups.Key descending
+                        select groups.FirstOrDefault()
+                    ).FirstOrDefaultAsync();
+
+                    var destinations = new List<string>();
+                    if (latestSelectedPost != null)
+                    {
+                        destinations.Add(await _utils.CompressAndUrlEncode($"<a href=\"./ViewTopic?postId={latestSelectedPost.PostId}&handler=byPostId\">Mergi la noul subiect</a>"));
+                    };
+
+                    if (nextRemainingPost != null)
+                    {
+                        destinations.Add(await _utils.CompressAndUrlEncode($"<a href=\"./ViewTopic?postId={nextRemainingPost.PostId}&handler=byPostId\">Mergi la ultimul subiect vizitat</a>"));
+                    }
+                    else
+                    {
+                        destinations.Add(await _utils.CompressAndUrlEncode($"<a href=\"./ViewForum?forumId={ForumId}\">Mergi la ultimul forum vizitat</a>"));
+                    }
+
+                    return RedirectToPage("Confirm", "DestinationConfirmation", new { destinations });
                 }
 
-                return RedirectToPage("Confirm", "DestinationConfirmation", new { destinations });
-            }
+                ModeratorActionResult = $"<span style=\"margin-left: 30px; color: red; display:block;\">{Message}</span>";
+                return await OnGet();
+            });
 
-            ModeratorActionResult = $"<span style=\"margin-left: 30px; color: red; display:block;\">{Message}</span>";
-            return await OnGet();
-        }
+        public async Task<IActionResult> OnPostReportMessage()
+            => await WithRegisteredUser(async () =>
+            {
+                var result = await _context.PhpbbReports.AddAsync(new PhpbbReports
+                {
+                    PostId = ReportPostId.Value,
+                    ReasonId = ReportReasonId.Value,
+                    ReportText = ReportDetails ?? string.Empty,
+                    ReportTime = DateTime.UtcNow.ToUnixTimestamp(),
+                    ReportClosed = 0
+                });
+                result.Entity.ReportId = 0;
+                await _context.SaveChangesAsync();
+                return await OnGet();
+            });
 
         private async Task GetPostsLazy(int? topicId, int? page, int? postId)
         {
@@ -440,6 +457,25 @@ namespace Serverless.Forum.Pages
                 _page = results.Page;
                 _count = results.Count;
             }
+        }
+
+        private async Task<IActionResult> WithRegisteredUser(Func<Task<IActionResult>> toDo)
+        {
+            var validationResult = await PageAuthorizationResponses().FirstOrDefaultAsync();
+            if (validationResult != null)
+            {
+                return validationResult;
+            }
+            return await toDo();
+        }
+
+        private async Task<IActionResult> WithModerator(Func<Task<IActionResult>> toDo)
+        {
+            if (!await IsCurrentUserModeratorHereAsync())
+            {
+                return Forbid();
+            }
+            return await toDo();
         }
     }
 }
