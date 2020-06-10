@@ -8,13 +8,15 @@
     var IsAnonymous = Model.CurrentUserId == Constants.ANONYMOUS_USER_ID;
 }
 
-    <link rel="stylesheet" href="~/css/pagination.css" />
+<link rel="stylesheet" href="~/css/pagination.css" />
 
-<form asp-page-handler="Forums" method="post" name="MarkForumsRead">
-    <input name="forumId" type="hidden" value="@Model.ForumId" />
+<form asp-page-handler="MarkForumsRead" method="post" name="MarkForumsRead">
+    <input asp-for="ForumId" type="hidden" value="@Model.ForumId" />
+    @Html.AntiForgeryToken()
 </form>
-<form asp-page-handler="Topics" method="post" name="MarkTopicsRead">
-    <input name="forumId" type="hidden" value="@Model.ForumId" />
+<form asp-page-handler="MarkTopicsRead" method="post" name="MarkTopicsRead">
+    <input asp-for="ForumId" type="hidden" value="@Model.ForumId" />
+    @Html.AntiForgeryToken()
 </form>
 
 <script type="text/javascript">
@@ -78,7 +80,7 @@ else
             globalsDisplayed = true;
         }
         else if (!announcementsDisplayed && topicGroup.TopicType == TopicType.Announcement)
-        { 
+        {
             <h3 style="float:left">Anunțuri</h3>
             announcementsDisplayed = true;
         }
@@ -131,20 +133,20 @@ else
 }
 
 <p></p>
-<span onclick="showElement('forumTree')" style="cursor:pointer; font-weight:bold">Navigare - alege destinația &#x2935;</span>
+<span onclick="showElement('forumTree', null, () => $('html, body').animate({ scrollTop: $(this).position().top + $('#topBanner').outerHeight() + 1000 }, 'slow'));" style="cursor:pointer; font-weight:bold">Navigare - alege destinația &#x2935;</span>
 <p></p>
 <div id="forumTree" style=" display:none">
-        @await Html.PartialAsync(
-            "_ForumTreePartial",
-            new CustomPartials._ForumTreePartialModel(
-                forums: await Model.GetForumTreeAsync(),
-                forumId: Model.ForumId,
-                topicId: null,
-                path: await Model.PathToForumOrTopic(Model.ForumId),
-                constrainSize: true
-            ),
-            ViewData
-        )
+    @await Html.PartialAsync(
+        "_ForumTreePartial",
+        new CustomPartials._ForumTreePartialModel(
+            forums: await Model.GetForumTreeAsync(),
+            forumId: Model.ForumId,
+            topicId: null,
+            path: await Model.PathToForumOrTopic(Model.ForumId),
+            constrainSize: true
+        ),
+        ViewData
+    )
     <p></p>
     <form action="/ViewForum">
         <input type="hidden" name="ForumId" id="ForumIdInput" />

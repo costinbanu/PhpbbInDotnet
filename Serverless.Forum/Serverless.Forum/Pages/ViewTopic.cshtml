@@ -22,6 +22,9 @@
 <link rel="stylesheet" href="~/css/pagination.css" />
 <link rel="stylesheet" href="~/css/posting.css" />
 <script type="text/javascript" src="~/js/viewTopic.js"></script>
+<script type="text/javascript" src="~/lib/Html2Canvas.js"></script>
+<script type="text/javascript" src="~/lib/SaveAs.js"></script>
+
 <script type="text/javascript">
     var vt = new ViewTopic(
         @Json.Serialize(Model.PostId ?? -1),
@@ -85,6 +88,7 @@
                 {
                     <input type="submit" value="Trimite vot" />
                 }
+                @Html.AntiForgeryToken()
             </form>
         </div>
     }
@@ -114,7 +118,7 @@
                             </span>
                         </td>
                     </tr>
-                                }
+                }
             </table>
         </div>
         @if (Model.Poll.CanVoteNow(Model.CurrentUserId) && IsAdmin)
@@ -122,7 +126,7 @@
             <br />
             <input type="button" value="Arată rezultatele" onclick="vt.switchPollPanels('results', 'votes', this)" />
         }
-                                }
+    }
     <hr />
 }
 
@@ -147,7 +151,7 @@
 @foreach (var post in Model.Posts)
 {
     var rowClass = string.Empty;
-    if (post.ReportId.HasValue)
+    if (post.ReportId.HasValue && (IsMod || post.ReporterId == Model.CurrentUserId))
     {
         rowClass = "ReportedPost";
     }
@@ -175,9 +179,10 @@
                 </span>
                 <div style="max-width:100%">
                     <br />
-                    @if (post.ReportId.HasValue)
+                    @if (post.ReportId.HasValue && (IsMod || post.ReporterId == Model.CurrentUserId))
                     {
-                        <a href="javascript:vt.showReportForm(@post.PostId, @post.ReportId, @post.ReportReasonId, '@post.ReportDetails')"><b>Arată raportul</b></a> <br />
+                        var reason = await _context.PhpbbReportsReasons.AsNoTracking().FirstOrDefaultAsync(x => x.ReasonId == post.ReportReasonId);
+                        <a href="javascript:vt.showReportViewer(@post.PostId, @post.ReportId, '@reason.ReasonTitle', '@reason.ReasonDescription', '@post.ReportDetails')" style="font-weight:bold; font-size:1.2em">Arată raportul</a><br />
                     }
                     @Html.Raw(post.PostText)
                     @foreach (var attachment in post.Attachments)
@@ -239,7 +244,7 @@
                                 <a asp-page="/Posting" asp-page-handler="PrivateMessage" asp-route-postId="@post.PostId">&#x2709; Mesaj privat</a>
                             </span>
                         }
-                        @if (!post.ReportId.HasValue)
+                        @if (!post.ReportId.HasValue && !IsAnonymous)
                         {
                             <span>
                                 <a href="javascript:vt.showReportForm(@post.PostId);">&#x2757; Raportează</a>
@@ -306,7 +311,7 @@ else if (!IsAnonymous)
 {
     <hr />
 }
-@todo do this everywhere else 
+
 <span onclick="showElement('forumTree', null, () => $('html, body').animate({ scrollTop: $(this).position().top + $('#topBanner').outerHeight() + 1000 }, 'slow'));" style="cursor:pointer; font-weight:bold">Navigare - alege destinația &#x2935;</span>
 <p>&nbsp;</p>
 <div id="forumTree" style="display:none">
@@ -345,6 +350,7 @@ else if (!IsAnonymous)
         <input asp-for="ForumId" type="hidden" />
         <input asp-for="TopicId" type="hidden" />
         <input asp-for="PageNum" type="hidden" />
+        @Html.AntiForgeryToken()
     </form>
     <form id="moderatorForm" method="post" asp-page-handler="PostModerator">
         <br />
@@ -373,6 +379,7 @@ else if (!IsAnonymous)
         <input asp-for="ForumId" type="hidden" />
         <input asp-for="TopicId" type="hidden" />
         <input asp-for="PageNum" type="hidden" />
+        @Html.AntiForgeryToken()
     </form>
     <form id="modConfirmation" asp-page="Confirm" method="get">
         <input type="hidden" asp-for="ForumId" />
@@ -383,6 +390,7 @@ else if (!IsAnonymous)
         <input type="hidden" name="postAction" id="postAction" value="" />
         <input type="hidden" name="topicAction" id="topicAction" value="" />
         <input type="hidden" name="handler" value="ModeratorConfirmation" />
+        @Html.AntiForgeryToken()
     </form>
     @if (!string.IsNullOrWhiteSpace(Model.ModeratorActionResult))
     {
@@ -399,22 +407,57 @@ else if (!IsAnonymous)
     </div>
 }
 
-<form asp-page-handler="ReportMessage" method="post" class="MiddleBox" id="report" style="display:none">
-    <h4 style="float:left">Raportează mesaj</h4>
-    <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('report')">Închide [X]</div>
-    <p>&nbsp;</p>
-    <p>&nbsp;</p>
-    <div>
+@if (!IsAnonymous)
+{
+    <form asp-page-handler="ReportMessage" method="post" class="MiddleBox" id="report" style="display:none">
+        <h4 style="float:left">Raportează mesaj</h4>
+        <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('report')">Închide [X]</div>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+        <div>
+            <div class="FlexCenter">
+                <div style="font-weight:bold; text-align: right">
+                    Motiv
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    @{
+                        var reasons = new List<SelectListItem> { new SelectListItem("Alege un motiv", "-1", true, true) };
+                        reasons.AddRange(_context.PhpbbReportsReasons.AsNoTracking().OrderBy(x => x.ReasonOrder).Select(x => new SelectListItem(x.ReasonDescription, x.ReasonId.ToString())));
+                    }
+                    @Html.DropDownList("reportReasonId", reasons, new { id = "reportReason", style = "width: 100%" })
+                </div>
+            </div>
+            <p></p>
+            <div class="FlexCenter">
+                <div style="font-weight:bold; text-align: right">
+                    Detalii suplimentare
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    <textarea name="ReportDetails" rows="4" cols="100" id="reportDetails" style="width:100%"></textarea>
+                </div>
+            </div>
+        </div>
+        <p></p>
+        <input type="hidden" name="reportPostId" id="reportPostId" />
+        <input type="hidden" asp-for="TopicId" />
+        <input type="hidden" asp-for="PageNum" />
+        <input type="hidden" asp-for="PostId" />
+        <input type="hidden" name="ReportId" id="reportId" />
+        <input type="submit" onclick="return vt.validateReportForm();" value="Trimite" />&nbsp;<span class="validation" id="reportValidation" style="display:none"></span>
+        @Html.AntiForgeryToken()
+    </form>
+
+    <div id="reportViewer" class="MiddleBox" style="display:none">
+        <h4 style="float:left">Raport</h4>
+        <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('reportViewer')">Închide [X]</div>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
         <div class="FlexCenter">
             <div style="font-weight:bold; text-align: right">
-                Motiv
+                Motiv:
             </div>
             <div class="FlexRight PostInputWidth">
-                @{
-                    var reasons = new List<SelectListItem> { new SelectListItem("Alege un motiv", "-1", true, true) };
-                    reasons.AddRange(_context.PhpbbReportsReasons.AsNoTracking().OrderBy(x => x.ReasonOrder).Select(x => new SelectListItem(x.ReasonDescription, x.ReasonId.ToString())));
-                }
-                @Html.DropDownListFor(m => m.ReportReasonId, reasons, new { id = "reportReason", style = "width: 100%" })
+                <span id="reportViewerReportReasonTitle"></span> &nbsp;(<span id="reportViewerReportReasonDescription"></span>)
             </div>
         </div>
         <p></p>
@@ -422,16 +465,33 @@ else if (!IsAnonymous)
             <div style="font-weight:bold; text-align: right">
                 Detalii suplimentare
             </div>
-            <div class="FlexRight PostInputWidth">
-                <textarea asp-for="ReportDetails" rows="4" cols="100" id="reportDetails" style="width:100%"></textarea>
+            <div class="FlexRight PostInputWidth" id="reportViewerReportDetails">
             </div>
         </div>
+        @*<p></p>
+            <div class="FlexCenter">
+                <div style="font-weight:bold; text-align: right">
+                    Salvează captura mesajului:
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    <img src="~/images/loading.gif" id="reportViewerPostCapture" />
+                </div>
+            </div>*@
+        @if (IsMod)
+        {
+            <form asp-page-handler="ManageReport" method="post">
+                <input type="hidden" name="reportPostId" id="reportViewerReportPostId" />
+                <input type="hidden" asp-for="TopicId" id="reportViewerPostId" />
+                <input type="hidden" asp-for="PageNum" />
+                <input type="hidden" asp-for="PostId" />
+                <input type="hidden" name="reportId" id="reportViewerReportId" />
+                <br />
+                @Html.CheckBox("redirectToEdit", new { id = "reportViewerEditMessage" }) &nbsp; Modifică mesajul<br />
+                @Html.CheckBox("deletePost", new { id = "reportViewerDeleteMessage" }) &nbsp; Șterge mesajul<br /><br />
+                <input type="submit" value="Închide raport" onclick="vt.confirmDeleteReportedPost()" />
+                @Html.AntiForgeryToken()
+            </form>
+            @*<form id="__AjaxAntiForgeryForm" action="#" method="post">@Html.AntiForgeryToken()</form>*@
+        }
     </div>
-    <p></p>
-    <input type="hidden" name="reportPostId" id="reportPostId" />
-    <input type="hidden" asp-for="TopicId" />
-    <input type="hidden" asp-for="PageNum" />
-    <input type="hidden" asp-for="PostId" />
-    <input type="hidden" asp-for="ReportId" id="reportId"/>
-    <input type="submit" onclick="return vt.validateReportForm();" value="Trimite" />&nbsp;<span class="validation" id="reportValidation" style="display:none"></span>
-</form>
+}

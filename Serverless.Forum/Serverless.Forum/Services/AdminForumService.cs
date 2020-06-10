@@ -186,7 +186,7 @@ namespace Serverless.Forum.Services
 
         public async Task<List<SelectListItem>> FlatForumTreeAsListItem(int parentId, int forumId)
             => _forumService.GetPathInTree(
-                await _forumService.GetForumTreeAsync(),
+                await _forumService.GetForumTree(),
                 forum => new SelectListItem(forum.Name, forum.Id.ToString(), forum.Id == parentId/*, forum.Id == forumId || forum.ParentId == forumId*/),
                 (item, level) => item.Text = $"{new string('-', level)} {item.Text}"
             );

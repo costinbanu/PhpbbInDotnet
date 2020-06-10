@@ -119,54 +119,6 @@ namespace Serverless.Forum
 
         #region Forum for user
 
-        /// <summary>
-        /// No response returned = OK
-        /// </summary>
-        protected async IAsyncEnumerable<IActionResult> ForumAuthorizationResponses(PhpbbForums thisForum, bool allowAnonymous = true)
-        {
-            if (thisForum == null)
-            {
-                yield return NotFound($"Forumul solicitat nu există.");
-            }
-
-            if (!allowAnonymous)
-            {
-                yield return await PageAuthorizationResponses().FirstOrDefaultAsync();
-            }
-
-            var forumAncestors = _forumService.GetPathInTree(await GetForumTreeAsync(), thisForum.ForumId);
-            var restrictedAncestor = forumAncestors.FirstOrDefault(
-                f => !string.IsNullOrEmpty(f.ForumPassword) && (HttpContext.Session.GetInt32($"ForumLogin_{f.Id}") ?? 0) != 1);
-
-            if (restrictedAncestor != null)
-            {
-                if ((await GetCurrentUserAsync())?.AllPermissions?.Any(p => p.ForumId == restrictedAncestor.Id && p.AuthRoleId == 16) ?? false)
-                {
-                    yield return Unauthorized();
-                }
-                else
-                {
-                    yield return RedirectToPage("ForumLogin", new ForumLoginModel(_context)
-                    {
-                        ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString),
-                        ForumId = restrictedAncestor.Id.Value,
-                        ForumName = restrictedAncestor.Name
-                    });
-                }
-            }
-        }
-
-        /// <summary>
-        /// No response returned = OK
-        /// </summary>
-        protected async IAsyncEnumerable<IActionResult> PageAuthorizationResponses()
-        {
-            if (await GetCurrentUserAsync() == await _userService.GetAnonymousLoggedUserAsync())
-            {
-                yield return RedirectToPage("Login", new { ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString) });
-            }
-        }
-
         public bool IsForumUnread(int forumId)
         {
             if (CurrentUserId == Constants.ANONYMOUS_USER_ID)
@@ -208,7 +160,7 @@ namespace Serverless.Forum
         }
 
         public async Task<ForumDto> GetForumTreeAsync(ForumType? parentType = null)
-            => _tree ?? (_tree = await _forumService.GetForumTreeAsync(parentType, await GetCurrentUserAsync(), forumId => IsForumUnread(forumId)));
+            => _tree ?? (_tree = await _forumService.GetForumTree(parentType, await GetCurrentUserAsync(), forumId => IsForumUnread(forumId)));
 
         public async Task<List<int>> PathToForumOrTopic(int forumId, int? topicId = null)
             => _forumService.GetPathInTree(await GetForumTreeAsync(), forum => forum.Id ?? 0, forumId, topicId ?? -1);
@@ -245,6 +197,95 @@ namespace Serverless.Forum
         }
 
         #endregion Forum for user
+
+        #region Permission validation wrappers
+
+        protected async Task<IActionResult> WithRegisteredUser(Func<Task<IActionResult>> toDo)
+        {
+            if (await GetCurrentUserAsync() == await _userService.GetAnonymousLoggedUserAsync())
+            {
+                return RedirectToPage("Login", new { ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString) });
+            }
+            return await toDo();
+        }
+
+        protected async Task<IActionResult> WithModerator(Func<Task<IActionResult>> toDo)
+        {
+            if (!await IsCurrentUserModeratorHereAsync())
+            {
+                return Forbid();
+            }
+            return await toDo();
+        }
+
+        protected async Task<IActionResult> WithAdmin(Func<Task<IActionResult>> toDo)
+        {
+            var validationResult = !await IsCurrentUserAdminHereAsync() ? Forbid() : null;
+            if (validationResult != null)
+            {
+                return validationResult;
+            }
+            return await toDo();
+        }
+
+        protected async Task<IActionResult> WithValidForum(int forumId, bool overrideCheck, Func<PhpbbForums, Task<IActionResult>> toDo)
+        {
+            var curForum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == forumId);
+            if (!overrideCheck)
+            {
+                if (curForum == null)
+                {
+                    return NotFound($"Forumul solicitat nu există.");
+                }
+
+                var forumAncestors = _forumService.GetPathInTree(await GetForumTreeAsync(), curForum.ForumId);
+                var restrictedAncestor = forumAncestors.FirstOrDefault(
+                    f => !string.IsNullOrEmpty(f.ForumPassword) && (HttpContext.Session.GetInt32($"ForumLogin_{f.Id}") ?? 0) != 1);
+
+                if (restrictedAncestor != null)
+                {
+                    if ((await GetCurrentUserAsync())?.AllPermissions?.Any(p => p.ForumId == restrictedAncestor.Id && p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE) ?? false)
+                    {
+                        return Unauthorized();
+                    }
+                    else
+                    {
+                        return RedirectToPage("ForumLogin", new ForumLoginModel(_context)
+                        {
+                            ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString),
+                            ForumId = restrictedAncestor.Id.Value,
+                            ForumName = restrictedAncestor.Name
+                        });
+                    }
+                }
+            }
+            return await toDo(curForum);
+        }
+
+        protected async Task<IActionResult> WithValidForum(int forumId, Func<PhpbbForums, Task<IActionResult>> toDo)
+            => await WithValidForum(forumId, false, toDo);
+
+        protected async Task<IActionResult> WithValidTopic(int topicId, Func<PhpbbForums, PhpbbTopics, Task<IActionResult>> toDo)
+        { 
+            var curTopic = await _context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == topicId);
+            if (curTopic == null)
+            {
+                return NotFound();
+            }
+            return await WithValidForum(curTopic.ForumId, async (curForum) => await toDo(curForum, curTopic));
+        }
+
+        protected async Task<IActionResult> WithValidPost(int postId, Func<PhpbbForums, PhpbbTopics, PhpbbPosts, Task<IActionResult>> toDo)
+        {
+            var curPost = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == postId);
+            if (curPost == null)
+            {
+                return NotFound();
+            }
+            return await WithValidTopic(curPost.TopicId, async (curForum, curTopic) => await toDo(curForum, curTopic, curPost));
+        }
+
+        #endregion Permission validation wrappers
 
         class Tracking
         {

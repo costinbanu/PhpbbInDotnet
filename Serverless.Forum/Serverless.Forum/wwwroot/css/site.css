@@ -46,6 +46,11 @@
     font-style: italic;
 }
 
+html {
+    text-rendering: optimizeLegibility !important;
+    -webkit-font-smoothing: antialiased !important;
+}
+
 body {
     padding-top: 100px;
     padding-bottom: 20px;
@@ -385,6 +390,10 @@ label {
     z-index: 1040;
 }
 
+.PostInputWidth {
+    width: 79%;
+}
+
 @media (max-width: 768px) {
     .headerImg {
         width: 128px;
@@ -491,5 +500,11 @@ label {
 
     .CollapsedActions {
         display: inline-block;
+    }
+}
+
+@media (max-width: 960px) {
+    .PostInputWidth {
+        width: 100%;
     }
 }

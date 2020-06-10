@@ -130,14 +130,17 @@ namespace Serverless.Forum.Pages
             await connection.OpenAsync();
             DefaultTypeMap.MatchNamesWithUnderscores = true;
             PageNum ??= 1;
+            var dummy = _forumService.GetRestrictedForumList(await GetCurrentUserAsync()).Where(f => f != ForumId).ToList();
+            todo: this should default to '0' here not in the SP (currently not working fine)
             using var multi = await connection.QueryMultipleAsync(
-                "CALL `forum`.`search_post_text`(@forum, @topic, @author, @page, @search);",
+                "CALL `forum`.`search_post_text`(@forum, @topic, @author, @page, @excluded_forums, @search);",
                 new
                 {
                     forum = ForumId > 0 ? ForumId : null,
                     topic = TopicId > 0 ? TopicId : null,
                     author = AuthorId > 0 ? AuthorId : null as int?,
                     page = PageNum,
+                    excluded_forums = string.Join(",", dummy),
                     search = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText)
                 }
             );

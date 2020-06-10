@@ -351,4 +351,5 @@ else if (Model.ViewAsAnother)
         <input type="submit" value="Salvează modificările" style="width:auto" />
     }
     <input asp-for="CurrentUser.UserId" type="hidden" />
+    @Html.AntiForgeryToken()
 </form>

@@ -46,140 +46,132 @@ namespace Serverless.Forum.Pages
         }
 
         public async Task<IActionResult> OnGet()
-        {
-            var responses = await PageAuthorizationResponses().FirstOrDefaultAsync();
-            if (responses != null)
+            => await WithRegisteredUser(async () =>
             {
-                return responses;
-            }
-            if (!await _userService.HasPrivateMessages(await GetCurrentUserAsync()))
-            {
-                return BadRequest("Utilizatorul nu are acces la mesageria privată.");
-            }
-
-            InboxPaginator = new Paginator(
-                count: await _context.PhpbbPrivmsgsTo.CountAsync(x => x.UserId == CurrentUserId && x.AuthorId != x.UserId),
-                pageNum: InboxPage ?? 1,
-                link: "/PrivateMessages?show=Inbox",
-                pageNumKey: nameof(InboxPage)
-            );
-
-            SentPaginator = new Paginator(
-                count: await _context.PhpbbPrivmsgsTo.CountAsync(x => x.AuthorId == CurrentUserId && x.AuthorId != x.UserId),
-                pageNum: SentPage ?? 1,
-                link: "/PrivateMessages?show=Sent",
-                pageNumKey: nameof(SentPage)
-            );
-
-            InboxMessages = await (
-                from m in _context.PhpbbPrivmsgs.AsNoTracking()
-                
-                join mt in _context.PhpbbPrivmsgsTo.AsNoTracking()
-                on m.MsgId equals mt.MsgId 
-                into joined
-                
-                from j in joined
-                where j.UserId == CurrentUserId && j.AuthorId != j.UserId
-                
-                join u in _context.PhpbbUsers.AsNoTracking()
-                on j.AuthorId equals u.UserId 
-                into joinedUsers
-                
-                from ju in joinedUsers.DefaultIfEmpty()
-                orderby m.MessageTime descending
-                select new PrivateMessageDto
+                if (!await _userService.HasPrivateMessages(await GetCurrentUserAsync()))
                 {
-                    MessageId = m.MsgId,
-                    OthersId = j.AuthorId,
-                    OthersName = ju == null ? "Anonymous" : ju.Username,
-                    OthersColor = ju == null ? null : ju.UserColour,
-                    Subject = m.MessageSubject,
-                    Time = m.MessageTime.ToUtcTime(),
-                    Unread = j.PmUnread
+                    return BadRequest("Utilizatorul nu are acces la mesageria privată.");
                 }
-            ).Skip(((InboxPage ?? 1) - 1) * InboxPaginator.PageSize).Take(InboxPaginator.PageSize).ToListAsync();
 
-            SentMessages = await (
-                from m in _context.PhpbbPrivmsgs.AsNoTracking()
-                
-                join mt in _context.PhpbbPrivmsgsTo.AsNoTracking()
-                on m.MsgId equals mt.MsgId 
-                into joined
-                
-                from j in joined
-                where j.AuthorId == CurrentUserId && j.AuthorId != j.UserId
+                InboxPaginator = new Paginator(
+                    count: await _context.PhpbbPrivmsgsTo.CountAsync(x => x.UserId == CurrentUserId && x.AuthorId != x.UserId),
+                    pageNum: InboxPage ?? 1,
+                    link: "/PrivateMessages?show=Inbox",
+                    pageNumKey: nameof(InboxPage)
+                );
 
-                join u in _context.PhpbbUsers.AsNoTracking()
-                on j.UserId equals u.UserId 
-                into joinedUsers
-                
-                from ju in joinedUsers.DefaultIfEmpty()
-                orderby m.MessageTime descending
-                select new PrivateMessageDto
+                SentPaginator = new Paginator(
+                    count: await _context.PhpbbPrivmsgsTo.CountAsync(x => x.AuthorId == CurrentUserId && x.AuthorId != x.UserId),
+                    pageNum: SentPage ?? 1,
+                    link: "/PrivateMessages?show=Sent",
+                    pageNumKey: nameof(SentPage)
+                );
+
+                InboxMessages = await (
+                    from m in _context.PhpbbPrivmsgs.AsNoTracking()
+
+                    join mt in _context.PhpbbPrivmsgsTo.AsNoTracking()
+                    on m.MsgId equals mt.MsgId
+                    into joined
+
+                    from j in joined
+                    where j.UserId == CurrentUserId && j.AuthorId != j.UserId
+
+                    join u in _context.PhpbbUsers.AsNoTracking()
+                    on j.AuthorId equals u.UserId
+                    into joinedUsers
+
+                    from ju in joinedUsers.DefaultIfEmpty()
+                    orderby m.MessageTime descending
+                    select new PrivateMessageDto
+                    {
+                        MessageId = m.MsgId,
+                        OthersId = j.AuthorId,
+                        OthersName = ju == null ? "Anonymous" : ju.Username,
+                        OthersColor = ju == null ? null : ju.UserColour,
+                        Subject = m.MessageSubject,
+                        Time = m.MessageTime.ToUtcTime(),
+                        Unread = j.PmUnread
+                    }
+                ).Skip(((InboxPage ?? 1) - 1) * InboxPaginator.PageSize).Take(InboxPaginator.PageSize).ToListAsync();
+
+                SentMessages = await (
+                    from m in _context.PhpbbPrivmsgs.AsNoTracking()
+
+                    join mt in _context.PhpbbPrivmsgsTo.AsNoTracking()
+                    on m.MsgId equals mt.MsgId
+                    into joined
+
+                    from j in joined
+                    where j.AuthorId == CurrentUserId && j.AuthorId != j.UserId
+
+                    join u in _context.PhpbbUsers.AsNoTracking()
+                    on j.UserId equals u.UserId
+                    into joinedUsers
+
+                    from ju in joinedUsers.DefaultIfEmpty()
+                    orderby m.MessageTime descending
+                    select new PrivateMessageDto
+                    {
+                        MessageId = m.MsgId,
+                        OthersId = j.UserId,
+                        OthersName = ju == null ? "Anonymous" : ju.Username,
+                        OthersColor = ju == null ? null : ju.UserColour,
+                        Subject = m.MessageSubject,
+                        Time = m.MessageTime.ToUtcTime(),
+                        Unread = 0
+                    }
+                ).Skip(((SentPage ?? 1) - 1) * SentPaginator.PageSize).Take(SentPaginator.PageSize).ToListAsync();
+
+                if (Show == PrivateMessagesPages.Message && MessageId.HasValue)
                 {
-                    MessageId = m.MsgId,
-                    OthersId = j.UserId,
-                    OthersName = ju == null ? "Anonymous" : ju.Username,
-                    OthersColor = ju == null ? null : ju.UserColour,
-                    Subject = m.MessageSubject,
-                    Time = m.MessageTime.ToUtcTime(),
-                    Unread = 0
+                    var msg = await _context.PhpbbPrivmsgs.AsNoTracking().FirstOrDefaultAsync(x => x.MsgId == MessageId);
+                    var to = await _context.PhpbbPrivmsgsTo.FirstOrDefaultAsync(x => x.MsgId == MessageId && x.AuthorId != x.UserId);
+                    SelectedMessageIsMine = to.AuthorId == CurrentUserId;
+                    var other = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == (SelectedMessageIsMine ? to.UserId : to.AuthorId));
+                    SelectedMessage = new PrivateMessageDto
+                    {
+                        MessageId = msg.MsgId,
+                        OthersId = other.UserId,
+                        OthersName = other?.Username ?? "Anonymous",
+                        OthersColor = other?.UserColour,
+                        OtherHasAvatar = !string.IsNullOrWhiteSpace(other.UserAvatar),
+                        Subject = HttpUtility.HtmlDecode(msg.MessageSubject),
+                        Text = await _renderingService.BbCodeToHtml(msg.MessageText, msg.BbcodeUid),
+                        Time = msg.MessageTime.ToUtcTime()
+                    };
+
+                    if (to.PmUnread == 1)
+                    {
+                        to.PmUnread = 0;
+                        _context.PhpbbPrivmsgsTo.Update(to);
+                        await _context.SaveChangesAsync();
+                    }
                 }
-            ).Skip(((SentPage ?? 1) - 1) * SentPaginator.PageSize).Take(SentPaginator.PageSize).ToListAsync();
-
-            if (Show == PrivateMessagesPages.Message && MessageId.HasValue)
-            {
-                var msg = await _context.PhpbbPrivmsgs.AsNoTracking().FirstOrDefaultAsync(x => x.MsgId == MessageId);
-                var to = await _context.PhpbbPrivmsgsTo.FirstOrDefaultAsync(x => x.MsgId == MessageId && x.AuthorId != x.UserId);
-                SelectedMessageIsMine = to.AuthorId == CurrentUserId;
-                var other = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == (SelectedMessageIsMine ? to.UserId : to.AuthorId));
-                SelectedMessage = new PrivateMessageDto
-                {
-                    MessageId = msg.MsgId,
-                    OthersId = other.UserId,
-                    OthersName = other?.Username ?? "Anonymous",
-                    OthersColor = other?.UserColour,
-                    OtherHasAvatar = !string.IsNullOrWhiteSpace(other.UserAvatar),
-                    Subject = HttpUtility.HtmlDecode(msg.MessageSubject),
-                    Text = await _renderingService.BbCodeToHtml(msg.MessageText, msg.BbcodeUid),
-                    Time = msg.MessageTime.ToUtcTime()
-                };
-
-                if (to.PmUnread == 1)
-                {
-                    to.PmUnread = 0;
-                    _context.PhpbbPrivmsgsTo.Update(to);
-                    await _context.SaveChangesAsync();
-                }
-            }
-            return Page();
-        }
+                return Page();
+            });
 
         public async Task<IActionResult> OnPost()
-        {
-            var responses = await PageAuthorizationResponses().FirstOrDefaultAsync();
-            if (responses != null)
+            => await WithRegisteredUser(async () =>
             {
-                return responses;
-            }
-            if (!await _userService.HasPrivateMessages(await GetCurrentUserAsync()))
-            {
-                return BadRequest("Utilizatorul nu are acces la mesageria privată.");
-            }
+                if (!await _userService.HasPrivateMessages(await GetCurrentUserAsync()))
+                {
+                    return BadRequest("Utilizatorul nu are acces la mesageria privată.");
+                }
 
-            var (Message, IsSuccess) = await _userService.DeletePrivateMessage(MessageId.Value);
+                var (Message, IsSuccess) = await _userService.DeletePrivateMessage(MessageId.Value);
 
-            if (IsSuccess ?? false)
-            {
-                MessageId = null;
-                return await OnGet();
-            }
-            else
-            {
-                ModelState.AddModelError(nameof(MessageId), Message);
-                Show = PrivateMessagesPages.Message;
-                return await OnGet();
-            }
-        }
+                if (IsSuccess ?? false)
+                {
+                    MessageId = null;
+                    return await OnGet();
+                }
+                else
+                {
+                    ModelState.AddModelError(nameof(MessageId), Message);
+                    Show = PrivateMessagesPages.Message;
+                    return await OnGet();
+                }
+            });
     }
 }

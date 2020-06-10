@@ -19,7 +19,6 @@ using System.Web;
 
 namespace Serverless.Forum.Pages
 {
-    [BindProperties]
     [ValidateAntiForgeryToken]
     public class LoginModel : PageModel
     {

@@ -1,4 +1,4 @@
-﻿CREATE DEFINER=`root`@`localhost` PROCEDURE `search_post_text`(forum int, topic int, author int, page_no int, search mediumtext)
+﻿CREATE DEFINER=`root`@`localhost` PROCEDURE `search_post_text`(forum int, topic int, author int, page_no int, excluded_forums mediumtext, search mediumtext)
 BEGIN
     
     if page_no is null
@@ -6,9 +6,11 @@ BEGIN
 		SIGNAL SQLSTATE '45000'
 		SET MESSAGE_TEXT = 'page_no can''t be null', MYSQL_ERRNO = 1001;
 	end if;
-	
-    set @start_idx = (page_no - 1) * 14;
-	PREPARE stmt FROM 
+    if excluded_forums is null
+    then
+		set excluded_forums = '0';
+    end if;    
+	set @sql = CONCAT (
 		"(
 			 SELECT p.post_id,
 					p.post_subject,
@@ -26,15 +28,13 @@ BEGIN
 					u.user_sig_bbcode_uid,
                     p.post_time
 			   FROM phpbb_posts p
-			   JOIN phpbb_topics t
-				 ON p.topic_id = t.topic_id
 			   JOIN phpbb_users u
 				ON p.poster_id = u.user_id
-			  WHERE (? IS NULL OR ? = t.forum_id)
+			  WHERE (? IS NULL OR ? = p.forum_id)
 				AND (? IS NULL OR ? = p.topic_id)
 				AND (? IS NULL OR ? = p.poster_id)
 				AND (? IS NULL OR MATCH(p.post_text) AGAINST(? IN BOOLEAN MODE))
-					
+				AND p.forum_id NOT IN (", excluded_forums, ")	
 			  UNION ALL
 			  
 			  SELECT p.post_id,
@@ -53,17 +53,19 @@ BEGIN
 					u.user_sig_bbcode_uid,
                     p.post_time
 			   FROM phpbb_posts p
-			   JOIN phpbb_topics t
-				 ON p.topic_id = t.topic_id
 			   JOIN phpbb_users u
 				ON p.poster_id = u.user_id
-			  WHERE (? IS NULL OR ? = t.forum_id)
+			  WHERE (? IS NULL OR ? = p.forum_id)
 				AND (? IS NULL OR ? = p.topic_id)
 				AND (? IS NULL OR ? = p.poster_id)
 				AND (? IS NULL OR MATCH(p.post_subject) AGAINST(? IN BOOLEAN MODE))
+                AND p.forum_id NOT IN (", excluded_forums, ")	
 		  )
 		  ORDER BY post_time DESC
-		  LIMIT ?, 14;";
+		  LIMIT ?, 14;"
+    );
+    set @start_idx = (page_no - 1) * 14;
+	PREPARE stmt FROM @sql;
           
     set @forum = forum;
     set @topic = topic;

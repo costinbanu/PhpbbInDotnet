@@ -20,6 +20,7 @@ using System.Web;
 
 namespace Serverless.Forum.Pages
 {
+    [ValidateAntiForgeryToken]
     public class UserModel : ModelWithLoggedUser
     {
         [BindProperty]
@@ -77,29 +78,24 @@ namespace Serverless.Forum.Pages
         }
 
         public async Task<IActionResult> OnGet(int? userId, bool? viewAsAnother)
-        {
-            if ((userId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID)
+            => await WithRegisteredUser(async () =>
             {
-                return Forbid();
-            }
+                if ((userId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID)
+                {
+                    return Forbid();
+                }
 
-            var response = await PageAuthorizationResponses().FirstOrDefaultAsync();
-            if (response != null)
-            {
-                return response;
-            }
+                ViewAsAnother = viewAsAnother ?? false;
 
-            ViewAsAnother = viewAsAnother ?? false;
+                var cur = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == userId);
+                if (cur == null)
+                {
+                    return NotFound($"Utilizatorul cu id '{userId}' nu există.");
+                }
+                await Render(_context, cur);
 
-            var cur = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == userId);
-            if (cur == null)
-            {
-                return NotFound($"Utilizatorul cu id '{userId}' nu există.");
-            }
-            await Render(_context, cur);
-
-            return Page();
-        }
+                return Page();
+            });
 
         public async Task<IActionResult> OnPost()
         {
@@ -276,7 +272,7 @@ namespace Serverless.Forum.Pages
             CurrentUser = cur;
             CurrentUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(CurrentUser.UserSig, CurrentUser.UserSigBbcodeUid));
             TotalPosts = await context.PhpbbPosts.AsNoTracking().CountAsync(p => p.PosterId == cur.UserId);
-            var restrictedForums = (await GetCurrentUserAsync())?.AllPermissions?.Where(p => p.AuthRoleId == 16)?.Select(p => p.ForumId) ?? Enumerable.Empty<int>();
+            var restrictedForums = _forumService.GetRestrictedForumList(await GetCurrentUserAsync());
             var preferredTopicId = await (
                 from p in context.PhpbbPosts.AsNoTracking()
                 where p.PosterId == cur.UserId

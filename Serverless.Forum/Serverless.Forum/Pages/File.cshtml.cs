@@ -30,28 +30,22 @@ namespace Serverless.Forum.Pages
                 return NotFound();
             }
 
-            var forum = await (
-                from f in _context.PhpbbForums.AsNoTracking()
+            var forumId = (
+                await (
+                    from f in _context.PhpbbForums.AsNoTracking()
 
-                join t in _context.PhpbbTopics.AsNoTracking()
-                on f.ForumId equals t.ForumId
+                    join t in _context.PhpbbTopics.AsNoTracking()
+                    on f.ForumId equals t.ForumId
 
-                join p in _context.PhpbbPosts.AsNoTracking()
-                on t.TopicId equals p.TopicId
+                    join p in _context.PhpbbPosts.AsNoTracking()
+                    on t.TopicId equals p.TopicId
 
-                where p.PostId == file.PostMsgId
+                    where p.PostId == file.PostMsgId
+                    select f
+                ).FirstOrDefaultAsync()
+            )?.ForumId;
 
-                select f
-            ).FirstOrDefaultAsync();
-
-            var response = await ForumAuthorizationResponses(forum).FirstOrDefaultAsync();
-
-            if (response != null)
-            {
-                return response;
-            }
-
-            return await SendToClient(file.PhysicalFilename, file.RealFilename, file.Mimetype);
+            return await WithValidForum(forumId ?? 0, async (_) => await SendToClient(file.PhysicalFilename, file.RealFilename, file.Mimetype));
         }
 
         public async Task<IActionResult> OnGetPreview(string physicalFileName, string realFileName, string mimeType)

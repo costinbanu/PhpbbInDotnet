@@ -49,5 +49,7 @@ namespace Serverless.Forum.Contracts
         public int? ReportReasonId { get; set; }
 
         public string ReportDetails { get; set; }
+
+        public int? ReporterId { get; internal set; }
     }
 }

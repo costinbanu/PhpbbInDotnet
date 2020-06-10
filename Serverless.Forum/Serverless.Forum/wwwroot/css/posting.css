@@ -17,9 +17,7 @@
     visibility: hidden;
 }
 
-.PostInputWidth {
-    width: 79%;
-}
+
 
 .PollInput {
     width: 69%;
@@ -86,9 +84,6 @@
 }
 
 @media (max-width: 960px) {
-    .PostInputWidth {
-        width: 100%;
-    }
 
     .PostingControls {
         display: none;

@@ -45,14 +45,14 @@ namespace Serverless.Forum.Pages
         }
 
         public async Task<IActionResult> OnGet()
-            => await WithPermissionValidation(() => Page());
+            => await WithAdmin(async () => await Task.FromResult(Page()));
 
         #region Admin user
 
         public List<PhpbbUsers> UserSearchResults { get; private set; }
 
         public async Task<IActionResult> OnPostUserSearch(string username, string email, int? userid)
-            => await WithPermissionValidation(async () =>
+            => await WithAdmin(async () =>
             {
                 UserSearchResults = await _adminUserService.UserSearchAsync(username, email, userid);
                 Category = AdminCategories.Users;
@@ -65,7 +65,7 @@ namespace Serverless.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostUserManagement(AdminUserActions? userAction, int? userId)
-            => await WithPermissionValidation(async () =>
+            => await WithAdmin(async () =>
             {
                 (Message, IsSuccess) = await _adminUserService.ManageUser(userAction, userId);
                 Category = AdminCategories.Users;
@@ -73,7 +73,7 @@ namespace Serverless.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostGroupManagement(UpsertGroupDto dto)
-            => await WithPermissionValidation(async () =>
+            => await WithAdmin(async () =>
             {
                 (Message, IsSuccess) = await _adminUserService.ManageGroup(dto);
                 Category = AdminCategories.Users;
@@ -81,7 +81,7 @@ namespace Serverless.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostRankManagement(int? rankId, string rankName, bool? deleteRank)
-            => await WithPermissionValidation(async () =>
+            => await WithAdmin(async () =>
             {
                 (Message, IsSuccess) = await _adminUserService.ManageRank(rankId, rankName, deleteRank);
                 Category = AdminCategories.Users;
@@ -100,7 +100,7 @@ namespace Serverless.Forum.Pages
         public bool ShowForum { get; private set; }
 
         public async Task<IActionResult> OnPostShowForum(int? forumId)
-            => await WithPermissionValidation(async () =>
+            => await WithAdmin(async () =>
             {
                 if (forumId != null)
                 {
@@ -114,7 +114,7 @@ namespace Serverless.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostForumManagement(UpsertForumDto dto)
-            => await WithPermissionValidation(async () =>
+            => await WithAdmin(async () =>
             {
                 (Message, IsSuccess) = await _adminForumService.ManageForumsAsync(dto);
 
@@ -124,7 +124,7 @@ namespace Serverless.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostDeleteForum(int forumId)
-            => await WithPermissionValidation(async () =>
+            => await WithAdmin(async () =>
             {
                 (Message, IsSuccess) = await _adminForumService.DeleteForum(forumId);
 
@@ -138,14 +138,14 @@ namespace Serverless.Forum.Pages
         #region Admin writing
 
         public async Task<IActionResult> OnGetWriting()
-            => await WithPermissionValidation(async () =>
+            => await WithAdmin(async () =>
             {
                 var result = await _utils.RenderRazorViewToString("_AdminWriting", new _AdminWritingModel(CurrentUserId), PageContext, HttpContext);
                 return Content(result);
             });
 
         public async Task<IActionResult> OnPostBanWords(List<PhpbbWords> words, List<int> toRemove)
-            => await WithPermissionValidation(async () =>
+            => await WithAdmin(async () =>
             {
                 (Message, IsSuccess) = await _adminWritingService.ManageBannedWords(words, toRemove);
                 Category = AdminCategories.WritingTools;
@@ -153,7 +153,7 @@ namespace Serverless.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostOrphanedFiles(AdminOrphanedFilesActions action)
-            => await WithPermissionValidation(async () =>
+            => await WithAdmin(async () =>
             {
                 var (inS3, inDb) = await _cacheService.GetFromCache<(IEnumerable<string> inS3, IEnumerable<int> inDb)>(_adminWritingService.GetCacheKey(CurrentUserId));
                 if (action == AdminOrphanedFilesActions.DeleteFromDb)
@@ -177,18 +177,5 @@ namespace Serverless.Forum.Pages
 
         #endregion Admin writing
 
-
-        private async Task<IActionResult> WithPermissionValidation(Func<Task<IActionResult>> toDo)
-        {
-            var validationResult = !await IsCurrentUserAdminHereAsync() ? Forbid() : null;
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
-            return await toDo();
-        }
-
-        private async Task<IActionResult> WithPermissionValidation(Func<IActionResult> toDo)
-            => await WithPermissionValidation(async () => await Task.FromResult(toDo()));
     }
 }

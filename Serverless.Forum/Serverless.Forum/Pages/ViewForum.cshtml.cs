@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Pages.CustomPartials;
@@ -22,89 +21,72 @@ namespace Serverless.Forum.Pages
         public string ForumTitle { get; private set; }
         public string ParentForumTitle { get; private set; }
         public int? ParentForumId { get; private set; }
-        public int ForumId { get; private set; }
+
+        [BindProperty(SupportsGet = true)]
+        public int ForumId { get; set; }
 
         public ViewForumModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
             : base(context, forumService, userService, cacheService)
         {
         }
 
-        public async Task<IActionResult> OnGet(int forumId)
-        {
-            if (forumId == 0)
+        public async Task<IActionResult> OnGet()
+            => await WithValidForum(ForumId, async (thisForum) =>
             {
-                return RedirectToPage("Index");
-            }
+                //if (forumId == 0)
+                //{
+                //    return RedirectToPage("Index");
+                //}
 
-            ForumId = forumId;
-            var usr = await GetCurrentUserAsync();
-            var thisForum = await (from f in _context.PhpbbForums.AsNoTracking()
-                                   where f.ForumId == forumId
-                                   select f).FirstOrDefaultAsync();
-
-            var permissionError = await ForumAuthorizationResponses(thisForum).FirstOrDefaultAsync();
-            if (permissionError != null)
-            {
-                return permissionError;
-            }
-
-            ForumTitle = HttpUtility.HtmlDecode(thisForum?.ForumName ?? "untitled");
-
-            ParentForumId = thisForum.ParentId;
-            ParentForumTitle = HttpUtility.HtmlDecode((await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(pf => pf.ForumId == thisForum.ParentId))?.ForumName ?? "untitled");
-
-            Forums = (await GetForum(forumId)).ChildrenForums.ToList();
-
-            Topics = await (
-                from t in _context.PhpbbTopics.AsNoTracking()
-                where t.ForumId == forumId || t.TopicType == TopicType.Global
-                orderby t.TopicLastPostTime descending
-
-                group t by t.TopicType into groups
-                orderby groups.Key descending
-                select new TopicTransport
-                {
-                    TopicType = groups.Key,
-                    Topics = from g in groups
-
-                             let postCount = _context.PhpbbPosts.Count(p => p.TopicId == g.TopicId)
-                             let pageSize = usr.TopicPostsPerPage.ContainsKey(g.TopicId) ? usr.TopicPostsPerPage[g.TopicId] : 14
-
-                             select new TopicDto
-                             {
-                                 Id = g.TopicId,
-                                 Title = HttpUtility.HtmlDecode(g.TopicTitle),
-                                 LastPosterId = g.TopicLastPosterId == Constants.ANONYMOUS_USER_ID ? null as int? : g.TopicLastPosterId,
-                                 LastPosterName = HttpUtility.HtmlDecode(g.TopicLastPosterName),
-                                 LastPostTime = g.TopicLastPostTime.ToUtcTime(),
-                                 PostCount = g.TopicReplies,
-                                 Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1, "PageNum"),
-                                 Unread = IsTopicUnread(g.TopicId),
-                                 LastPosterColor = g.TopicLastPosterColour,
-                                 LastPostId = g.TopicLastPostId,
-                                 ViewCount = g.TopicViews
-                             }
-                }
-            ).ToListAsync();
-
-            return Page();
-        }
-
-        public async Task<IActionResult> OnPostForums(int forumId)
-        {
                 var usr = await GetCurrentUserAsync();
-                var thisForum = await (from f in _context.PhpbbForums
-                                       where f.ForumId == forumId
-                                       select f).FirstOrDefaultAsync();
 
-                var permissionError = await ForumAuthorizationResponses(thisForum).FirstOrDefaultAsync();
-                if (permissionError != null)
-                {
-                    return permissionError;
-                }
+                ForumTitle = HttpUtility.HtmlDecode(thisForum?.ForumName ?? "untitled");
 
+                ParentForumId = thisForum.ParentId;
+                ParentForumTitle = HttpUtility.HtmlDecode((await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(pf => pf.ForumId == thisForum.ParentId))?.ForumName ?? "untitled");
+
+                Forums = (await GetForum(ForumId)).ChildrenForums.ToList();
+
+                Topics = await (
+                    from t in _context.PhpbbTopics.AsNoTracking()
+                    where t.ForumId == ForumId || t.TopicType == TopicType.Global
+                    orderby t.TopicLastPostTime descending
+
+                    group t by t.TopicType into groups
+                    orderby groups.Key descending
+                    select new TopicTransport
+                    {
+                        TopicType = groups.Key,
+                        Topics = from g in groups
+
+                                 let postCount = _context.PhpbbPosts.Count(p => p.TopicId == g.TopicId)
+                                 let pageSize = usr.TopicPostsPerPage.ContainsKey(g.TopicId) ? usr.TopicPostsPerPage[g.TopicId] : 14
+
+                                 select new TopicDto
+                                 {
+                                     Id = g.TopicId,
+                                     Title = HttpUtility.HtmlDecode(g.TopicTitle),
+                                     LastPosterId = g.TopicLastPosterId == Constants.ANONYMOUS_USER_ID ? null as int? : g.TopicLastPosterId,
+                                     LastPosterName = HttpUtility.HtmlDecode(g.TopicLastPosterName),
+                                     LastPostTime = g.TopicLastPostTime.ToUtcTime(),
+                                     PostCount = g.TopicReplies,
+                                     Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1, "PageNum"),
+                                     Unread = IsTopicUnread(g.TopicId),
+                                     LastPosterColor = g.TopicLastPosterColour,
+                                     LastPostId = g.TopicLastPostId,
+                                     ViewCount = g.TopicViews
+                                 }
+                    }
+                ).ToListAsync();
+
+                return Page();
+            });
+
+        public async Task<IActionResult> OnPostMarkForumsRead()
+            => await WithRegisteredUser(async () => await WithValidForum(ForumId, async (_) =>
+            {
                 var childForums = from f in _context.PhpbbForums
-                                  where f.ParentId == forumId
+                                  where f.ParentId == ForumId
                                   select f.ForumId;
                 foreach (var child in childForums)
                 {
@@ -112,26 +94,15 @@ namespace Serverless.Forum.Pages
                 }
                 await _context.SaveChangesAsync();
 
-            return await OnGet(forumId);
-        }
+                return Page();
+            }));
 
-        public async Task<IActionResult> OnPostTopics(int forumId)
-        {
-            var usr = await GetCurrentUserAsync();
-            var thisForum = await (from f in _context.PhpbbForums
-                                    where f.ForumId == forumId
-                                    select f).FirstOrDefaultAsync();
-
-            var permissionError = await ForumAuthorizationResponses(thisForum).FirstOrDefaultAsync();
-            if (permissionError != null)
+        public async Task<IActionResult> OnPostMarkTopicsRead()
+            => await WithRegisteredUser(async() => await WithValidForum(ForumId, async(_) =>
             {
-                return permissionError;
-            }
-
-            await UpdateTracking(_context, forumId);
-            await _context.SaveChangesAsync();
-            return await OnGet(forumId);
-        }
+                await UpdateTracking(_context, ForumId);
+                return Page();
+            }));
 
         private async Task UpdateTracking(ForumDbContext context, int forumId)
         {
@@ -150,12 +121,16 @@ namespace Serverless.Forum.Pages
             ).ToListAsync();
 
             context.PhpbbTopicsTrack.RemoveRange(toRemove);
+            context.PhpbbForumsTrack.Remove(await context.PhpbbForumsTrack.FirstOrDefaultAsync(ft => ft.ForumId == ForumId && ft.UserId == CurrentUserId));
+            await context.SaveChangesAsync();
+
             await context.PhpbbForumsTrack.AddAsync(new PhpbbForumsTrack
             {
                 ForumId = forumId,
                 UserId = CurrentUserId,
                 MarkTime = DateTime.UtcNow.ToUnixTimestamp()
             });
+            await _context.SaveChangesAsync();
         }
     }
 }

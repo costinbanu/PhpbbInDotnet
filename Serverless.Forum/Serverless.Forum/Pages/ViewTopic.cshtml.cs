@@ -14,6 +14,7 @@ using System.Web;
 
 namespace Serverless.Forum.Pages
 {
+    [ValidateAntiForgeryToken]
     public class ViewTopicModel : ModelWithLoggedUser
     {
         [BindProperty]
@@ -46,19 +47,7 @@ namespace Serverless.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public int[] PostIdsForModerator { get; set; }
 
-        [BindProperty]
-        public int? ReportId { get; set; }
-
-        [BindProperty]
-        public int? ReportPostId { get; set; }
-
-        [BindProperty]
-        public short? ReportReasonId { get; set; }
-
-        [BindProperty]
-        public string ReportDetails { get; set; }
-
-        public PollDto Poll { get; private set; }
+         public PollDto Poll { get; private set; }
 
         public List<PostDto> Posts { get; private set; }
 
@@ -115,158 +104,123 @@ namespace Serverless.Forum.Pages
         }
 
         public async Task<IActionResult> OnGetByPostId()
-        {
-            if (_currentTopic == null)
+            => await WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
             {
-                _currentTopic = await (
-                    from p in _context.PhpbbPosts.AsNoTracking()
-                    where p.PostId == PostId
+                _currentTopic = curTopic;
+                
+                await GetPostsLazy(null, null, PostId);
 
-                    join t in _context.PhpbbTopics.AsNoTracking()
-                    on p.TopicId equals t.TopicId
-                    into joined
-
-                    from j in joined
-                    select j
-                    ).FirstOrDefaultAsync();
-            }
-
-            if (_currentTopic == null)
-            {
-                return NotFound($"Mesajul '{PostId}' nu există.");
-            }
-
-            await GetPostsLazy(null, null, PostId);
-
-            TopicId = _currentTopic.TopicId;
-            PageNum = _page.Value;
-            return await OnGet();
-        }
+                TopicId = _currentTopic.TopicId;
+                PageNum = _page.Value;
+                return await OnGet();
+            });
 
         public async Task<IActionResult> OnGet()
-        {
-            PhpbbForums parent = null;
-            if (_currentTopic == null)
+            => await WithValidTopic(TopicId ?? 0, async (curForum, curTopic) =>
             {
-                _currentTopic = await (from t in _context.PhpbbTopics.AsNoTracking()
-                                       where t.TopicId == TopicId
-                                       select t).FirstOrDefaultAsync();
-            }
+                _currentTopic = curTopic;
 
-            if (_currentTopic == null)
-            {
-                return NotFound($"Subiectul '{TopicId}' nu există.");
-            }
-
-            if ((PageNum ?? 0) <= 0)
-            {
-                return BadRequest($"'{PageNum}' nu este o valoare corectă pentru numărul paginii.");
-            }
-
-            parent = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == _currentTopic.ForumId);
-
-            ForumId = parent?.ForumId;
-
-            var permissionError = await ForumAuthorizationResponses(parent).FirstOrDefaultAsync();
-            if (permissionError != null)
-            {
-                return permissionError;
-            }
-
-            ForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? "untitled");
-
-            await GetPostsLazy(TopicId, PageNum, null);
-
-            Paginator = new Paginator(_count.Value, PageNum.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId, await GetCurrentUserAsync());
-            var pollTask = Task.Run(async() => Poll = await _postService.GetPoll(_currentTopic));
-            var postProcessingTask = Task.Run(() =>
-            {
-                Posts = (
-                    from p in _dbPosts
-
-                    join u in _context.PhpbbUsers.AsNoTracking()
-                    on p.PosterId equals u.UserId
-                    into joinedUsers
-
-                    join a in _context.PhpbbAttachments.AsNoTracking()
-                    on p.PostId equals a.PostMsgId
-                    into joinedAttachments
-
-                    from ju in joinedUsers.DefaultIfEmpty()
-
-                    let lastEditUser = _context.PhpbbUsers.AsNoTracking().FirstOrDefault(u => u.UserId == p.PostEditUser)
-                    let lastEditUsername = lastEditUser == null ? "Anonymous" : lastEditUser.Username
-                    let report = _context.PhpbbReports.AsNoTracking().FirstOrDefault(r => r.PostId == p.PostId)
-
-                    join r in _context.PhpbbRanks.AsNoTracking()
-                    on ju.UserRank equals r.RankId
-                    into joinedRanks
-
-                    from jr in joinedRanks.DefaultIfEmpty()
-
-                    select new PostDto
-                    {
-                        PostSubject = p.PostSubject,
-                        PostText = p.PostText,
-                        AuthorName = ju == null ? "Anonymous" : (ju.UserId == Constants.ANONYMOUS_USER_ID ? p.PostUsername : ju.Username),
-                        AuthorId = ju == null ? 1 : (ju.UserId == Constants.ANONYMOUS_USER_ID ? null as int? : ju.UserId),
-                        AuthorColor = ju == null ? null : ju.UserColour,
-                        PostCreationTime = p.PostTime.ToUtcTime(),
-                        PostModifiedTime = p.PostEditTime.ToUtcTime(),
-                        PostId = p.PostId,
-                        Attachments = joinedAttachments.Select(x => new _AttachmentPartialModel(x)).ToList(),
-                        BbcodeUid = p.BbcodeUid,
-                        Unread = IsPostUnread(p.TopicId, p.PostId),
-                        AuthorHasAvatar = ju == null ? false : !string.IsNullOrWhiteSpace(ju.UserAvatar),
-                        AuthorSignature = ju == null ? null : _renderingService.BbCodeToHtml(ju.UserSig, ju.UserSigBbcodeUid).RunSync(),
-                        AuthorRank = jr == null ? null : jr.RankTitle,
-                        LastEditTime = p.PostEditTime,
-                        LastEditUser = lastEditUsername,
-                        LastEditReason = p.PostEditReason,
-                        EditCount = p.PostEditCount,
-                        IP = p.PosterIp,
-                        ReportId = report == null ? null as int? : report.ReportId,
-                        ReportReasonId = report == null ? null as int? : report.ReasonId,
-                        ReportDetails = report == null ? null as string : report.ReportText
-                    }
-                ).ToList();
-                TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
-            });
-
-            await Task.WhenAll(pollTask, postProcessingTask);
-
-            await _renderingService.ProcessPosts(Posts, PageContext, HttpContext, true);
-
-            _utils.RunParallelDbTask(async (localContext) =>
-            {
-                if (Posts.Any(p => p.Unread))
+                if ((PageNum ?? 0) <= 0)
                 {
-                    var existing = await localContext.PhpbbTopicsTrack.FirstOrDefaultAsync(t => t.UserId == CurrentUserId && t.TopicId == TopicId);
-                    if (existing == null)
-                    {
-                        await localContext.PhpbbTopicsTrack.AddAsync(
-                            new PhpbbTopicsTrack
-                            {
-                                ForumId = ForumId.Value,
-                                MarkTime = DateTime.UtcNow.ToUnixTimestamp(),
-                                TopicId = TopicId.Value,
-                                UserId = CurrentUserId
-                            }
-                        );
-                    }
-                    else
-                    {
-                        existing.ForumId = ForumId.Value;
-                        existing.MarkTime = DateTime.UtcNow.ToUnixTimestamp();
-                    }
+                    return BadRequest($"'{PageNum}' nu este o valoare corectă pentru numărul paginii.");
                 }
-                var curTopic = await localContext.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == TopicId);
-                curTopic.TopicViews++;
-                await localContext.SaveChangesAsync();
-            });
 
-            return Page();
-        }
+                ForumId = curForum?.ForumId;
+                ForumTitle = HttpUtility.HtmlDecode(curForum?.ForumName ?? "untitled");
+
+                await GetPostsLazy(TopicId, PageNum, null);
+
+                Paginator = new Paginator(_count.Value, PageNum.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId, await GetCurrentUserAsync());
+                var pollTask = Task.Run(async () => Poll = await _postService.GetPoll(_currentTopic));
+                var postProcessingTask = Task.Run(() =>
+                {
+                    Posts = (
+                        from p in _dbPosts
+
+                        join u in _context.PhpbbUsers.AsNoTracking()
+                        on p.PosterId equals u.UserId
+                        into joinedUsers
+
+                        join a in _context.PhpbbAttachments.AsNoTracking()
+                        on p.PostId equals a.PostMsgId
+                        into joinedAttachments
+
+                        from ju in joinedUsers.DefaultIfEmpty()
+
+                        let lastEditUser = _context.PhpbbUsers.AsNoTracking().FirstOrDefault(u => u.UserId == p.PostEditUser)
+                        let lastEditUsername = lastEditUser == null ? "Anonymous" : lastEditUser.Username
+                        let report = _context.PhpbbReports.AsNoTracking().FirstOrDefault(r => r.PostId == p.PostId && r.ReportClosed == 0)
+
+                        join r in _context.PhpbbRanks.AsNoTracking()
+                        on ju.UserRank equals r.RankId
+                        into joinedRanks
+
+                        from jr in joinedRanks.DefaultIfEmpty()
+
+                        select new PostDto
+                        {
+                            PostSubject = p.PostSubject,
+                            PostText = p.PostText,
+                            AuthorName = ju == null ? "Anonymous" : (ju.UserId == Constants.ANONYMOUS_USER_ID ? p.PostUsername : ju.Username),
+                            AuthorId = ju == null ? 1 : (ju.UserId == Constants.ANONYMOUS_USER_ID ? null as int? : ju.UserId),
+                            AuthorColor = ju == null ? null : ju.UserColour,
+                            PostCreationTime = p.PostTime.ToUtcTime(),
+                            PostModifiedTime = p.PostEditTime.ToUtcTime(),
+                            PostId = p.PostId,
+                            Attachments = joinedAttachments.Select(x => new _AttachmentPartialModel(x)).ToList(),
+                            BbcodeUid = p.BbcodeUid,
+                            Unread = IsPostUnread(p.TopicId, p.PostId),
+                            AuthorHasAvatar = ju == null ? false : !string.IsNullOrWhiteSpace(ju.UserAvatar),
+                            AuthorSignature = ju == null ? null : _renderingService.BbCodeToHtml(ju.UserSig, ju.UserSigBbcodeUid).RunSync(),
+                            AuthorRank = jr == null ? null : jr.RankTitle,
+                            LastEditTime = p.PostEditTime,
+                            LastEditUser = lastEditUsername,
+                            LastEditReason = p.PostEditReason,
+                            EditCount = p.PostEditCount,
+                            IP = p.PosterIp,
+                            ReportId = report == null ? null as int? : report.ReportId,
+                            ReportReasonId = report == null ? null as int? : report.ReasonId,
+                            ReportDetails = report == null ? null as string : report.ReportText,
+                            ReporterId = report == null ? null as int? : report.UserId
+                        }
+                    ).ToList();
+                    TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
+                });
+
+                await Task.WhenAll(pollTask, postProcessingTask);
+
+                await _renderingService.ProcessPosts(Posts, PageContext, HttpContext, true);
+
+                _utils.RunParallelDbTask(async (localContext) =>
+                {
+                    if (Posts.Any(p => p.Unread))
+                    {
+                        var existing = await localContext.PhpbbTopicsTrack.FirstOrDefaultAsync(t => t.UserId == CurrentUserId && t.TopicId == TopicId);
+                        if (existing == null)
+                        {
+                            await localContext.PhpbbTopicsTrack.AddAsync(
+                                new PhpbbTopicsTrack
+                                {
+                                    ForumId = ForumId.Value,
+                                    MarkTime = DateTime.UtcNow.ToUnixTimestamp(),
+                                    TopicId = TopicId.Value,
+                                    UserId = CurrentUserId
+                                }
+                            );
+                        }
+                        else
+                        {
+                            existing.ForumId = ForumId.Value;
+                            existing.MarkTime = DateTime.UtcNow.ToUnixTimestamp();
+                        }
+                    }
+                    var curTopic = await localContext.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == TopicId);
+                    curTopic.TopicViews++;
+                    await localContext.SaveChangesAsync();
+                });
+
+                return Page();
+            });
 
         public async Task<IActionResult> OnPostPagination(int topicId, int userPostsPerPage, int? postId)
             => await WithRegisteredUser(async () =>
@@ -384,41 +338,16 @@ namespace Serverless.Forum.Pages
 
                 if (IsSuccess ?? false)
                 {
-                    var latestSelectedPost = await (
-                       from p in _context.PhpbbPosts.AsNoTracking()
-                       where PostIdsForModerator.Contains(p.PostId)
-                       group p by p.PostTime into groups
-                       orderby groups.Key descending
-                       select groups.FirstOrDefault()
-                    ).FirstOrDefaultAsync();
-
-                    var nextRemainingPost = await (
-                        from p in _context.PhpbbPosts.AsNoTracking()
-                        where p.TopicId == TopicId.Value
-                           && !PostIdsForModerator.Contains(p.PostId)
-                           && latestSelectedPost != null
-                           && p.PostTime >= latestSelectedPost.PostTime
-                        group p by p.PostTime into groups
-                        orderby groups.Key ascending
-                        select groups.FirstOrDefault()
-                    ).FirstOrDefaultAsync() ?? await (
-                        from p in _context.PhpbbPosts.AsNoTracking()
-                        where p.TopicId == TopicId.Value
-                           && !PostIdsForModerator.Contains(p.PostId)
-                        group p by p.PostTime into groups
-                        orderby groups.Key descending
-                        select groups.FirstOrDefault()
-                    ).FirstOrDefaultAsync();
-
+                    var (LatestSelected, NextRemaining) = await GetSelectedAndNextRemainingPostIds(p => PostIdsForModerator.Contains(p.PostId));
                     var destinations = new List<string>();
-                    if (latestSelectedPost != null)
+                    if (LatestSelected != null)
                     {
-                        destinations.Add(await _utils.CompressAndUrlEncode($"<a href=\"./ViewTopic?postId={latestSelectedPost.PostId}&handler=byPostId\">Mergi la noul subiect</a>"));
+                        destinations.Add(await _utils.CompressAndUrlEncode($"<a href=\"./ViewTopic?postId={LatestSelected}&handler=byPostId\">Mergi la noul subiect</a>"));
                     };
 
-                    if (nextRemainingPost != null)
+                    if (NextRemaining != null)
                     {
-                        destinations.Add(await _utils.CompressAndUrlEncode($"<a href=\"./ViewTopic?postId={nextRemainingPost.PostId}&handler=byPostId\">Mergi la ultimul subiect vizitat</a>"));
+                        destinations.Add(await _utils.CompressAndUrlEncode($"<a href=\"./ViewTopic?postId={NextRemaining}&handler=byPostId\">Mergi la ultimul subiect vizitat</a>"));
                     }
                     else
                     {
@@ -432,14 +361,15 @@ namespace Serverless.Forum.Pages
                 return await OnGet();
             });
 
-        public async Task<IActionResult> OnPostReportMessage()
+        public async Task<IActionResult> OnPostReportMessage(int? reportPostId, short? reportReasonId, string reportDetails)
             => await WithRegisteredUser(async () =>
             {
                 var result = await _context.PhpbbReports.AddAsync(new PhpbbReports
                 {
-                    PostId = ReportPostId.Value,
-                    ReasonId = ReportReasonId.Value,
-                    ReportText = ReportDetails ?? string.Empty,
+                    PostId = reportPostId.Value,
+                    UserId = CurrentUserId,
+                    ReasonId = reportReasonId.Value,
+                    ReportText = reportDetails ?? string.Empty,
                     ReportTime = DateTime.UtcNow.ToUnixTimestamp(),
                     ReportClosed = 0
                 });
@@ -447,6 +377,63 @@ namespace Serverless.Forum.Pages
                 await _context.SaveChangesAsync();
                 return await OnGet();
             });
+
+        public async Task<IActionResult> OnPostManageReport(int? reportPostId, int? reportId, bool? redirectToEdit, bool? deletePost)
+            => await WithModerator(async () =>
+            {
+                if (deletePost ?? false)
+                {
+                    var (LatestSelected, NextRemaining) = await GetSelectedAndNextRemainingPostIds(p => p.PostId == reportPostId);
+                    var (Message, IsSuccess) = await _moderatorService.DeletePosts(new[] { reportPostId.Value });
+                    ModeratorActionResult = $"<span style=\"margin-left: 30px; color: {((IsSuccess ?? false) ? "darkgreen" : "red")}; display:block;\">{Message}</span>";
+                }
+                var report = await _context.PhpbbReports.FirstOrDefaultAsync(r => r.ReportId == reportId);
+                report.ReportClosed = 1;
+                await _context.SaveChangesAsync();
+                if (!(deletePost ?? false) && (redirectToEdit ?? false))
+                {
+                    var reportedPost = await _context.PhpbbPosts.FirstOrDefaultAsync(p => p.PostId == reportPostId);
+                    return RedirectToPage("Posting", "editPost", new { reportedPost.ForumId, reportedPost.TopicId, reportedPost.PostId });
+                }
+                else
+                {
+                    return await OnGet();
+                }
+            });
+
+        // requires package NReco.ImageGenerator
+        //        public async Task<IActionResult> OnPostTakeSnapshot(string html)
+        //            => await WithModerator(async () =>
+        //            {
+        //                var completeHtml = 
+        //$@" <html>
+        //        <head>
+        //            <link rel=""stylesheet"" href=""{GetAbsoluteUri("~/css/site.css")}"" />
+        //            <link rel=""stylesheet"" href=""{GetAbsoluteUri("~/lib/bootstrap/dist/css/bootstrap.css")}"" />
+        //            <link rel=""stylesheet"" href=""{GetAbsoluteUri("~/css/pagination.css")}"" />
+        //            <link rel=""stylesheet"" href=""{GetAbsoluteUri("~/css/posting.css")}"" />
+        //            <script type=""text/javascript"" src=""{GetAbsoluteUri("~/js/viewTopic.js")}""></script>
+        //        </head>
+        //        <body>
+        //            <div class=""container body-content size1300"">
+        //                {html}
+        //            </div>
+        //        </body>
+        //    </html>";
+
+        //                var converter = FormatterServices.GetUninitializedObject(typeof(HtmlToImageConverter)) as HtmlToImageConverter;
+        //                converter.ToolPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wkhtmltoimage");
+        //                converter.WkHtmlToImageExeName = "wkhtmltoimage.exe";
+        //                converter.ProcessPriority = ProcessPriorityClass.Normal;
+        //                converter.Zoom = 1f;
+        //                converter.Width = 0;
+        //                converter.Height = 0;
+        //                var img = converter.GenerateImage(completeHtml, ImageFormat.Jpeg);
+        //                return await Task.FromResult(Content(Convert.ToBase64String(img)));
+        //            });
+        //private string GetAbsoluteUri(string relativeUri) 
+        //    => HttpContext.Request.Scheme + "://" + HttpContext.Request.Host + Url.Content(relativeUri);
+
 
         private async Task GetPostsLazy(int? topicId, int? page, int? postId)
         {
@@ -459,23 +446,36 @@ namespace Serverless.Forum.Pages
             }
         }
 
-        private async Task<IActionResult> WithRegisteredUser(Func<Task<IActionResult>> toDo)
-        {
-            var validationResult = await PageAuthorizationResponses().FirstOrDefaultAsync();
-            if (validationResult != null)
-            {
-                return validationResult;
-            }
-            return await toDo();
-        }
 
-        private async Task<IActionResult> WithModerator(Func<Task<IActionResult>> toDo)
+        private async Task<(int? LatestSelected, int? NextRemaining)> GetSelectedAndNextRemainingPostIds(Func<PhpbbPosts, bool> latestSelectedFilter)
         {
-            if (!await IsCurrentUserModeratorHereAsync())
-            {
-                return Forbid();
-            }
-            return await toDo();
+            var latestSelectedPost = await (
+               from p in _context.PhpbbPosts.AsNoTracking()
+               where latestSelectedFilter(p)
+               group p by p.PostTime into groups
+               orderby groups.Key descending
+               select groups.FirstOrDefault()
+            ).FirstOrDefaultAsync();
+
+            var nextRemainingPost = await (
+                from p in _context.PhpbbPosts.AsNoTracking()
+                where p.TopicId == TopicId.Value
+                   && !PostIdsForModerator.Contains(p.PostId)
+                   && latestSelectedPost != null
+                   && p.PostTime >= latestSelectedPost.PostTime
+                group p by p.PostTime into groups
+                orderby groups.Key ascending
+                select groups.FirstOrDefault()
+            ).FirstOrDefaultAsync() ?? await (
+                from p in _context.PhpbbPosts.AsNoTracking()
+                where p.TopicId == TopicId.Value
+                   && !PostIdsForModerator.Contains(p.PostId)
+                group p by p.PostTime into groups
+                orderby groups.Key descending
+                select groups.FirstOrDefault()
+            ).FirstOrDefaultAsync();
+
+            return (latestSelectedPost?.PostId, nextRemainingPost?.PostId);
         }
     }
 }

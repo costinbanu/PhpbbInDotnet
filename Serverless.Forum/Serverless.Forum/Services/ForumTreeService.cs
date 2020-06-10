@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
@@ -22,19 +23,31 @@ namespace Serverless.Forum.Services
             _config = config;
             _context = context;
         }
+        todo: this does not account for child forums; 
+        public IEnumerable<int> GetRestrictedForumList(LoggedUser user, bool includePasswordProtected = true)
+            => (user?.AllPermissions?.Where(p => p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE)?.Select(p => p.ForumId) ?? Enumerable.Empty<int>())
+                .Union(includePasswordProtected ? _context.PhpbbForums.AsNoTracking().Where(f => !string.IsNullOrWhiteSpace(f.ForumPassword)).Select(f => f.ForumId) : Enumerable.Empty<int>());
 
-        public async Task<ForumDto> GetForumTreeAsync(ForumType? parentType = null, LoggedUser usr = null, Func<int, bool> IsForumUnread = null)
+        public async Task<ForumDto> GetForumTree(ForumType? parentType = null, LoggedUser usr = null, Func<int, bool> IsForumUnread = null)
         {
             if (IsForumUnread == null)
             {
                 IsForumUnread = new Func<int, bool>(_ => false);
             }
 
+            var restrictedForums = GetRestrictedForumList(usr, false).ToList();
             var allForums = await (
                 from f in _context.PhpbbForums.AsNoTracking()
                 where (parentType == null || f.ForumType == parentType)
-                   && (usr == null || usr.AllPermissions == null || !usr.AllPermissions.Any(fp => fp.ForumId == f.ForumId && fp.AuthRoleId == 16))
+                   //&& (usr == null || usr.AllPermissions == null || !usr.AllPermissions.Any(fp => fp.ForumId == f.ForumId && fp.AuthRoleId == 16))
                 orderby f.LeftId
+
+                join rf in restrictedForums
+                on f.ForumId equals rf
+                into joinedRestrictedForums
+
+                from rf in joinedRestrictedForums.DefaultIfEmpty()
+                where rf == default
 
                 join t in _context.PhpbbTopics.AsNoTracking()
                 on f.ForumId equals t.ForumId

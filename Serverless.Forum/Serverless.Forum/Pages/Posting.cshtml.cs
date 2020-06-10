@@ -102,441 +102,338 @@ namespace Serverless.Forum.Pages
         #region GET
 
         public async Task<IActionResult> OnGetForumPost()
-        {
-            var curTopic = await _context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == TopicId);
-            var curForum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId);
-            var permissionError = await ForumAuthorizationResponses(curForum, false).FirstOrDefaultAsync();
-            if (permissionError != null)
+            => await WithValidTopic(TopicId ?? 0, async (curForum, curTopic) =>
             {
-                return permissionError;
-            }
-            await Init(PostingActions.NewForumPost, false, HttpUtility.HtmlDecode(curTopic.TopicTitle), curForum.ForumName, curForum.ForumId);
-
-            if (curTopic == null)
-            {
-                return NotFound();
-            }
-            PostTitle = $"{Constants.REPLY}{HttpUtility.HtmlDecode(curTopic.TopicTitle)}";
-            return Page();
-        }
+                await Init(PostingActions.NewForumPost, false, HttpUtility.HtmlDecode(curTopic.TopicTitle), curForum.ForumName, curForum.ForumId);
+                PostTitle = $"{Constants.REPLY}{HttpUtility.HtmlDecode(curTopic.TopicTitle)}";
+                return Page();
+            });
 
         public async Task<IActionResult> OnGetQuoteForumPost()
-        {
-            var curPost = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == PostId);
-            var curForum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId);
-            var curTopic = await _context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == curPost.TopicId);
-
-            if (curPost == null)
+            => await WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
             {
-                return NotFound();
-            }
+                var curAuthor = curPost.PostUsername;
+                if (string.IsNullOrWhiteSpace(curAuthor))
+                {
+                    curAuthor = (await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == curPost.PosterId))?.Username ?? "Anonymous";
+                }
 
-            if (curTopic == null)
-            {
-                return NotFound();
-            }
+                await Init(PostingActions.NewForumPost, false, HttpUtility.HtmlDecode(curTopic.TopicTitle), curForum.ForumName, curForum.ForumId);
 
-            var curAuthor = curPost.PostUsername;
-            if (string.IsNullOrWhiteSpace(curAuthor))
-            {
-                curAuthor = (await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == curPost.PosterId))?.Username ?? "Anonymous";
-            }
+                var title = HttpUtility.HtmlDecode(curPost.PostSubject);
+                PostText = $"[quote=\"{curAuthor}\"]\n{HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid))}\n[/quote]";
+                PostTitle = title.StartsWith(Constants.REPLY) ? title : $"{Constants.REPLY}{title}";
 
-            var permissionError = await ForumAuthorizationResponses(curForum, false).FirstOrDefaultAsync();
-            if (permissionError != null)
-            {
-                return permissionError;
-            }
-            await Init(PostingActions.NewForumPost, false, HttpUtility.HtmlDecode(curTopic.TopicTitle), curForum.ForumName, curForum.ForumId);
-
-            var title = HttpUtility.HtmlDecode(curPost.PostSubject);
-            PostText = $"[quote=\"{curAuthor}\"]\n{HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid))}\n[/quote]";
-            PostTitle = title.StartsWith(Constants.REPLY) ? title : $"{Constants.REPLY}{title}";
-
-            return Page();
-        }
+                return Page();
+            });
 
         public async Task<IActionResult> OnGetNewTopic()
-        {
-            var curForum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(t => t.ForumId == ForumId);
-
-            var permissionError = await ForumAuthorizationResponses(curForum, false).FirstOrDefaultAsync();
-            if (permissionError != null)
+            => await WithValidForum(ForumId, async (curForum) =>
             {
-                return permissionError;
-            }
-
-            await Init(PostingActions.NewTopic, true, HttpUtility.HtmlDecode(curForum.ForumName), curForum.ForumName, curForum.ForumId);
-
-            return Page();
-        }
+                await Init(PostingActions.NewTopic, true, HttpUtility.HtmlDecode(curForum.ForumName), curForum.ForumName, curForum.ForumId);
+                return Page();
+            });
 
         public async Task<IActionResult> OnGetEditPost()
-        {
-            var curPost = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == PostId);
-            var curTopic = await _context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == TopicId);
-            var curForum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId);
-            var permissionError = await ForumAuthorizationResponses(curForum, false).FirstOrDefaultAsync();
-            if (permissionError != null)
+            => await WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
             {
-                return permissionError;
-            }
-            //de testat asta
-            if (!await IsCurrentUserModeratorHereAsync() && DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes > (await GetCurrentUserAsync()).PostEditTime)
-            {
-                return RedirectToPage("ViewTopic", "byPostId", new { PostId });
-            }
+                //de testat asta
+                if (!await IsCurrentUserModeratorHereAsync() && DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes > (await GetCurrentUserAsync()).PostEditTime)
+                {
+                    return RedirectToPage("ViewTopic", "byPostId", new { PostId });
+                }
 
-            var canCreatePoll = (curTopic.TopicFirstPostId == PostId) && (await IsCurrentUserModeratorHereAsync() || (curPost.PosterId == CurrentUserId && DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= (await GetCurrentUserAsync()).PostEditTime));
+                var canCreatePoll = (curTopic.TopicFirstPostId == PostId) && (await IsCurrentUserModeratorHereAsync() || (curPost.PosterId == CurrentUserId && DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= (await GetCurrentUserAsync()).PostEditTime));
 
-            await Init(PostingActions.EditForumPost, canCreatePoll, HttpUtility.HtmlDecode(curTopic.TopicTitle), curForum.ForumName, curForum.ForumId);
+                await Init(PostingActions.EditForumPost, canCreatePoll, HttpUtility.HtmlDecode(curTopic.TopicTitle), curForum.ForumName, curForum.ForumId);
 
-            var attachments = await _context.PhpbbAttachments.AsNoTracking().Where(a => a.PostMsgId == PostId).ToListAsync();
-            await _cacheService.SetInCache(GetActualCacheKey("PostAttachments", true), attachments );
-            ShowAttach = attachments.Any();
+                var attachments = await _context.PhpbbAttachments.AsNoTracking().Where(a => a.PostMsgId == PostId).ToListAsync();
+                await _cacheService.SetInCache(GetActualCacheKey("PostAttachments", true), attachments);
+                ShowAttach = attachments.Any();
 
-            await _cacheService.SetInCache(GetActualCacheKey("PostTime", true), curPost.PostTime);
+                await _cacheService.SetInCache(GetActualCacheKey("PostTime", true), curPost.PostTime);
 
-            if (canCreatePoll && curTopic.PollStart > 0)
-            {
-                var pollOptionsText = await _context.PhpbbPollOptions.AsNoTracking().Where(x => x.TopicId == curTopic.TopicId).Select(x => x.PollOptionText).ToListAsync();
-                PollQuestion = curTopic.PollTitle;
-                PollOptions = string.Join(Environment.NewLine, pollOptionsText);
-                PollCanChangeVote = curTopic.PollVoteChange == 1;
-                PollExpirationDaysString = TimeSpan.FromSeconds(curTopic.PollLength).TotalDays.ToString();
-                PollMaxOptions = curTopic.PollMaxOptions;
-            }
+                if (canCreatePoll && curTopic.PollStart > 0)
+                {
+                    var pollOptionsText = await _context.PhpbbPollOptions.AsNoTracking().Where(x => x.TopicId == curTopic.TopicId).Select(x => x.PollOptionText).ToListAsync();
+                    PollQuestion = curTopic.PollTitle;
+                    PollOptions = string.Join(Environment.NewLine, pollOptionsText);
+                    PollCanChangeVote = curTopic.PollVoteChange == 1;
+                    PollExpirationDaysString = TimeSpan.FromSeconds(curTopic.PollLength).TotalDays.ToString();
+                    PollMaxOptions = curTopic.PollMaxOptions;
+                }
 
-            var subject = curPost.PostSubject.StartsWith(Constants.REPLY) ? curPost.PostSubject.Substring(Constants.REPLY.Length) : curPost.PostSubject;
-            PostText = HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid));
-            PostTitle = HttpUtility.HtmlDecode(curPost.PostSubject);
+                var subject = curPost.PostSubject.StartsWith(Constants.REPLY) ? curPost.PostSubject.Substring(Constants.REPLY.Length) : curPost.PostSubject;
+                PostText = HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid));
+                PostTitle = HttpUtility.HtmlDecode(curPost.PostSubject);
 
-            return Page();
-        }
+                return Page();
+            });
 
         public async Task<IActionResult> OnGetPrivateMessage()
-        {
-            var responses = await PageAuthorizationResponses().FirstOrDefaultAsync();
-            if (responses != null)
+            => await WithRegisteredUser(async () =>
             {
-                return responses;
-            }
-
-            if ((PostId ?? 0) > 0)
-            {
-                var post = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == PostId);
-                if (post != null)
+                if ((PostId ?? 0) > 0)
                 {
-                    var author = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == post.PosterId);
-                    if ((author?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
+                    var post = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == PostId);
+                    if (post != null)
                     {
-                        PostTitle = HttpUtility.HtmlDecode(post.PostSubject);
-                        PostText = $"[quote]{HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(post.PostText, post.BbcodeUid))}[/quote]\r\n[url=./ViewTopic?postId={PostId}&handler=byPostId]{PostTitle}[/url]";
-                        ReceiverId = author.UserId;
-                        ReceiverName = author.Username;
+                        var author = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == post.PosterId);
+                        if ((author?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
+                        {
+                            PostTitle = HttpUtility.HtmlDecode(post.PostSubject);
+                            PostText = $"[quote]{HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(post.PostText, post.BbcodeUid))}[/quote]\r\n[url=./ViewTopic?postId={PostId}&handler=byPostId]{PostTitle}[/url]";
+                            ReceiverId = author.UserId;
+                            ReceiverName = author.Username;
+                        }
+                        else
+                        {
+                            return BadRequest("Destinatarul nu există");
+                        }
                     }
                     else
                     {
-                        return BadRequest("Destinatarul nu există");
+                        return BadRequest("Mesajul nu există");
                     }
                 }
-                else
+                else if ((PrivateMessageId ?? 0) > 0 && (ReceiverId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
                 {
-                    return BadRequest("Mesajul nu există");
-                }
-            }
-            else if ((PrivateMessageId ?? 0) > 0 && (ReceiverId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
-            {
-                var msg = await _context.PhpbbPrivmsgs.AsNoTracking().FirstOrDefaultAsync(p => p.MsgId == PrivateMessageId);
-                if (msg != null && ReceiverId == msg.AuthorId)
-                {
-                    var author = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == ReceiverId);
-                    if ((author?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
+                    var msg = await _context.PhpbbPrivmsgs.AsNoTracking().FirstOrDefaultAsync(p => p.MsgId == PrivateMessageId);
+                    if (msg != null && ReceiverId == msg.AuthorId)
                     {
-                        var title = HttpUtility.HtmlDecode(msg.MessageSubject);
-                        PostTitle = title.StartsWith(Constants.REPLY) ? title : $"{Constants.REPLY}{title}";
-                        PostText = $"[quote]{ HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(msg.MessageText, msg.BbcodeUid))}[/quote]";
-                        ReceiverName = author.Username;
+                        var author = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == ReceiverId);
+                        if ((author?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
+                        {
+                            var title = HttpUtility.HtmlDecode(msg.MessageSubject);
+                            PostTitle = title.StartsWith(Constants.REPLY) ? title : $"{Constants.REPLY}{title}";
+                            PostText = $"[quote]{ HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(msg.MessageText, msg.BbcodeUid))}[/quote]";
+                            ReceiverName = author.Username;
+                        }
+                        else
+                        {
+                            return BadRequest("Destinatarul nu există");
+                        }
                     }
                     else
                     {
-                        return BadRequest("Destinatarul nu există");
+                        return BadRequest("Mesajul nu există");
                     }
                 }
-                else
+                else if ((ReceiverId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
                 {
-                    return BadRequest("Mesajul nu există");
+                    ReceiverName = (await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == ReceiverId)).Username;
                 }
-            }
-            else if ((ReceiverId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
-            {
-                ReceiverName = (await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == ReceiverId)).Username;
-            }
 
-            await Init(PostingActions.NewPrivateMessage, false, null, null, 0);
-            return Page();
-        }
+                await Init(PostingActions.NewPrivateMessage, false, null, null, 0);
+                return Page();
+            });
 
         #endregion GET
 
         #region POST Attachment
 
         public async Task<IActionResult> OnPostAddAttachment()
-        {
-            if (!(Files?.Any() ?? false))
-            {
-                return Page();
-            }
+            => await WithRegisteredUser(async () => await WithValidForum(ForumId, async (_) =>
+             {
+                 if (!(Files?.Any() ?? false))
+                 {
+                     return Page();
+                 }
 
-            if (CurrentUserId == Constants.ANONYMOUS_USER_ID)
-            {
-                return RedirectToPage("Login");
-            }
-            var permissionError = await ForumAuthorizationResponses(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), false).FirstOrDefaultAsync();
-            if (permissionError != null)
-            {
-                return permissionError;
-            }
+                 var tooLargeFiles = Files.Where(f => f.Length > 1024 * 1024 * 2);
+                 if (tooLargeFiles.Any() && !await IsCurrentUserAdminHereAsync())
+                 {
+                     ModelState.AddModelError(nameof(Files), $"Următoarele fișiere sunt mai mari de 2MB: {string.Join(",", tooLargeFiles.Select(f => f.FileName))}");
+                     ShowAttach = true;
+                     return Page();
+                 }
 
-            var tooLargeFiles = Files.Where(f => f.Length > 1024 * 1024 * 2);
-            if (tooLargeFiles.Any() && !await IsCurrentUserAdminHereAsync())
-            {
-                ModelState.AddModelError(nameof(Files), $"Următoarele fișiere sunt mai mari de 2MB: {string.Join(",", tooLargeFiles.Select(f => f.FileName))}");
-                ShowAttach = true;
-                return Page();
-            }
+                 var attachList = (await _cacheService.GetFromCache<List<PhpbbAttachments>>(GetActualCacheKey("PostAttachments", true))) ?? new List<PhpbbAttachments>();
+                 if (attachList.Count + Files.Count() > 10 && !await IsCurrentUserAdminHereAsync())
+                 {
+                     ModelState.AddModelError(nameof(Files), "Sunt permise maxim 10 fișiere per mesaj.");
+                     ShowAttach = true;
+                     return Page();
+                 }
 
-            var attachList = (await _cacheService.GetFromCache<List<PhpbbAttachments>>(GetActualCacheKey("PostAttachments", true))) ?? new List<PhpbbAttachments>();
-            if (attachList.Count + Files.Count() > 10 && !await IsCurrentUserAdminHereAsync())
-            {
-                ModelState.AddModelError(nameof(Files), "Sunt permise maxim 10 fișiere per mesaj.");
-                ShowAttach = true;
-                return Page();
-            }
+                 var (succeeded, failed) = await _storageService.BulkAddAttachments(Files, CurrentUserId);
+                 attachList.AddRange(succeeded);
 
-            var (succeeded, failed) = await _storageService.BulkAddAttachments(Files, CurrentUserId);
-            attachList.AddRange(succeeded);
+                 if (failed.Any())
+                 {
+                     ModelState.AddModelError(nameof(Files), $"Următoarele fișiere nu au putut fi adăugate, vă rugăm să încercați din nou: {string.Join(",", failed)}");
+                 }
+                 ShowAttach = true;
 
-            if (failed.Any())
-            {
-                ModelState.AddModelError(nameof(Files), $"Următoarele fișiere nu au putut fi adăugate, vă rugăm să încercați din nou: {string.Join(",", failed)}");
-            }
-            ShowAttach = true;
-
-            await _cacheService.SetInCache(GetActualCacheKey("PostAttachments", true), attachList);
-            return Page();
-        }
+                 await _cacheService.SetInCache(GetActualCacheKey("PostAttachments", true), attachList);
+                 return Page();
+             }));
 
         public async Task<IActionResult> OnPostDeleteAttachment(int index)
-        {
-            if (CurrentUserId == Constants.ANONYMOUS_USER_ID)
+            => await WithRegisteredUser(async () => await WithValidForum(ForumId, async (_) =>
             {
-                return RedirectToPage("Login");
-            }
-            var permissionError = await ForumAuthorizationResponses(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), false).FirstOrDefaultAsync();
-            if (permissionError != null)
-            {
-                return permissionError;
-            }
+                var attachList = (await _cacheService.GetFromCache<List<PhpbbAttachments>>(GetActualCacheKey("PostAttachments", true))) ?? new List<PhpbbAttachments>();
+                var attachment = attachList.ElementAtOrDefault(index);
 
-            var attachList = (await _cacheService.GetFromCache<List<PhpbbAttachments>>(GetActualCacheKey("PostAttachments", true))) ?? new List<PhpbbAttachments>();
-            var attachment = attachList.ElementAtOrDefault(index);
-
-            if (attachment == null)
-            {
-                ModelState.AddModelError($"{nameof(DeleteFileDummyForValidation)}[{index}]", "Fișierul nu a putut fi șters, vă rugăm încercați din nou.");
-                return Page();
-            }
-
-            if (!await _storageService.DeleteFile(attachment.PhysicalFilename))
-            {
-                ModelState.AddModelError($"{nameof(DeleteFileDummyForValidation)}[{index}]", "Fișierul nu a putut fi șters, vă rugăm încercați din nou.");
-            }
-
-            if (!string.IsNullOrWhiteSpace(PostText))
-            {
-                PostText = PostText.Replace($"[attachment={index}]{attachment.RealFilename}[/attachment]", string.Empty, StringComparison.InvariantCultureIgnoreCase);
-                for (int i = index + 1; i < attachList.Count; i++)
+                if (attachment == null)
                 {
-                    PostText = PostText.Replace($"[attachment={i}]{attachList[i].RealFilename}[/attachment]", $"[attachment={i - 1}]{attachList[i].RealFilename}[/attachment]", StringComparison.InvariantCultureIgnoreCase);
+                    ModelState.AddModelError($"{nameof(DeleteFileDummyForValidation)}[{index}]", "Fișierul nu a putut fi șters, vă rugăm încercați din nou.");
+                    return Page();
                 }
-                ModelState.Remove(nameof(PostText));
-            }
 
-            var dbAttach = await _context.PhpbbAttachments.FirstOrDefaultAsync(a => a.AttachId == attachList[index].AttachId);
-            if (dbAttach != null)
-            {
-                _context.PhpbbAttachments.Remove(dbAttach);
-                await _context.SaveChangesAsync();
-            }
-            ShowAttach = true;
+                if (!await _storageService.DeleteFile(attachment.PhysicalFilename))
+                {
+                    ModelState.AddModelError($"{nameof(DeleteFileDummyForValidation)}[{index}]", "Fișierul nu a putut fi șters, vă rugăm încercați din nou.");
+                }
 
-            attachList.RemoveAt(index);
-            await _cacheService.SetInCache(GetActualCacheKey("PostAttachments", true), attachList);
-            return Page();
-        }
+                if (!string.IsNullOrWhiteSpace(PostText))
+                {
+                    PostText = PostText.Replace($"[attachment={index}]{attachment.RealFilename}[/attachment]", string.Empty, StringComparison.InvariantCultureIgnoreCase);
+                    for (int i = index + 1; i < attachList.Count; i++)
+                    {
+                        PostText = PostText.Replace($"[attachment={i}]{attachList[i].RealFilename}[/attachment]", $"[attachment={i - 1}]{attachList[i].RealFilename}[/attachment]", StringComparison.InvariantCultureIgnoreCase);
+                    }
+                    ModelState.Remove(nameof(PostText));
+                }
+
+                var dbAttach = await _context.PhpbbAttachments.FirstOrDefaultAsync(a => a.AttachId == attachList[index].AttachId);
+                if (dbAttach != null)
+                {
+                    _context.PhpbbAttachments.Remove(dbAttach);
+                    await _context.SaveChangesAsync();
+                }
+                ShowAttach = true;
+
+                attachList.RemoveAt(index);
+                await _cacheService.SetInCache(GetActualCacheKey("PostAttachments", true), attachList);
+                return Page();
+            }));
 
         #endregion POST Attachment
 
         #region POST Message
 
         public async Task<IActionResult> OnPostPreview()
-        {
-            var response = await PageAuthorizationResponses().FirstOrDefaultAsync();
-            if (response != null)
+            => await WithRegisteredUser(async () =>
             {
-                return response;
-            }
-            var action = await _cacheService.GetFromCache<PostingActions>(GetActualCacheKey("Action", true));
-
-            if (action != PostingActions.NewPrivateMessage)
-            {
-                response = await ForumAuthorizationResponses(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), false).FirstOrDefaultAsync();
-                if (response != null)
+                var action = await _cacheService.GetFromCache<PostingActions>(GetActualCacheKey("Action", true));
+                return await WithValidForum(ForumId, action == PostingActions.NewPrivateMessage, async (_) =>
                 {
-                    return response;
-                }
-            }
+                    if ((PostTitle?.Trim()?.Length ?? 0) < 3)
+                    {
+                        ModelState.AddModelError(nameof(PostTitle), "Titlul este prea scurt (minim 3 caractere, exclusiv spații).");
+                        return Page();
+                    }
 
-            if ((PostTitle?.Trim()?.Length ?? 0) < 3)
-            {
-                ModelState.AddModelError(nameof(PostTitle), "Titlul este prea scurt (minim 3 caractere, exclusiv spații).");
-                return Page();
-            }
+                    if ((PostText?.Trim()?.Length ?? 0) < 3)
+                    {
+                        ModelState.AddModelError(nameof(PostText), "Titlul este prea scurt (minim 3 caractere, exclusiv spații).");
+                        return Page();
+                    }
 
-            if ((PostText?.Trim()?.Length ?? 0) < 3)
-            {
-                ModelState.AddModelError(nameof(PostText), "Titlul este prea scurt (minim 3 caractere, exclusiv spații).");
-                return Page();
-            }
+                    var currentPost = action == PostingActions.EditForumPost ? await InitEditedPost() : null;
+                    var userId = action == PostingActions.EditForumPost ? currentPost.PosterId : CurrentUserId;
+                    var postAuthor = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == userId);
+                    var rankId = postAuthor?.UserRank ?? 0;
+                    var attachments = await _cacheService.GetFromCache<List<PhpbbAttachments>>(GetActualCacheKey("PostAttachments", true)) ?? new List<PhpbbAttachments>();
+                    var postTime = action == PostingActions.EditForumPost ? (await _cacheService.GetFromCache<long?>(GetActualCacheKey("PostTime", true)))?.ToUtcTime() : DateTime.UtcNow;
 
-            var currentPost = action == PostingActions.EditForumPost ? await InitEditedPost() : null;
-            var userId = action == PostingActions.EditForumPost ? currentPost.PosterId : CurrentUserId;
-            var postAuthor = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == userId);
-            var rankId = postAuthor?.UserRank ?? 0;
-            var attachments = await _cacheService.GetFromCache<List<PhpbbAttachments>>(GetActualCacheKey("PostAttachments", true)) ?? new List<PhpbbAttachments>();
-            var postTime = action == PostingActions.EditForumPost ? (await _cacheService.GetFromCache<long?>(GetActualCacheKey("PostTime", true)))?.ToUtcTime() : DateTime.UtcNow;
-            
-            PreviewablePost = new PostDto
-            {
-                Attachments = attachments.Select(x => new _AttachmentPartialModel(x, true)).ToList(),
-                AuthorColor = postAuthor.UserColour,
-                AuthorHasAvatar = !string.IsNullOrWhiteSpace(postAuthor?.UserAvatar),
-                AuthorId = postAuthor.UserId,
-                AuthorName = postAuthor.Username,
-                AuthorRank = (await _context.PhpbbRanks.AsNoTracking().FirstOrDefaultAsync(x => x.RankId == rankId))?.RankTitle,
-                AuthorSignature = await _renderingService.BbCodeToHtml(postAuthor.UserSig, postAuthor.UserSigBbcodeUid),
-                BbcodeUid = _utils.RandomString(),
-                PostCreationTime = postTime,
-                EditCount = (short)((currentPost?.PostEditCount ?? 0) + 1),
-                LastEditReason = currentPost?.PostEditReason,
-                LastEditTime = DateTime.UtcNow.ToUnixTimestamp(),
-                LastEditUser = (await GetCurrentUserAsync()).Username,
-                PostId = currentPost?.PostId ?? 0,
-                PostSubject = HttpUtility.HtmlEncode(PostTitle),
-                PostText = _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText))
-            };
+                    PreviewablePost = new PostDto
+                    {
+                        Attachments = attachments.Select(x => new _AttachmentPartialModel(x, true)).ToList(),
+                        AuthorColor = postAuthor.UserColour,
+                        AuthorHasAvatar = !string.IsNullOrWhiteSpace(postAuthor?.UserAvatar),
+                        AuthorId = postAuthor.UserId,
+                        AuthorName = postAuthor.Username,
+                        AuthorRank = (await _context.PhpbbRanks.AsNoTracking().FirstOrDefaultAsync(x => x.RankId == rankId))?.RankTitle,
+                        AuthorSignature = await _renderingService.BbCodeToHtml(postAuthor.UserSig, postAuthor.UserSigBbcodeUid),
+                        BbcodeUid = _utils.RandomString(),
+                        PostCreationTime = postTime,
+                        EditCount = (short)((currentPost?.PostEditCount ?? 0) + 1),
+                        LastEditReason = currentPost?.PostEditReason,
+                        LastEditTime = DateTime.UtcNow.ToUnixTimestamp(),
+                        LastEditUser = (await GetCurrentUserAsync()).Username,
+                        PostId = currentPost?.PostId ?? 0,
+                        PostSubject = HttpUtility.HtmlEncode(PostTitle),
+                        PostText = _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText))
+                    };
 
-            if (!string.IsNullOrWhiteSpace(PollOptions))
-            {
-                PreviewablePoll = new PollDto
-                {
-                    PollTitle = HttpUtility.HtmlEncode(PollQuestion),
-                    PollOptions = new List<PollOption>(PollOptions.Split(Environment.NewLine).Select(x => new PollOption { PollOptionText = HttpUtility.HtmlEncode(x) })),
-                    VoteCanBeChanged = PollCanChangeVote,
-                    PollDurationSecons = (int)TimeSpan.FromDays(double.Parse(PollExpirationDaysString)).TotalSeconds,
-                    PollMaxOptions = PollMaxOptions ?? 1,
-                    PollStart = PreviewablePost.PostCreationTime ?? DateTime.UtcNow
-                };
-            }
-            await _renderingService.ProcessPosts(new[] { PreviewablePost }, PageContext, HttpContext, true);
+                    if (!string.IsNullOrWhiteSpace(PollOptions))
+                    {
+                        PreviewablePoll = new PollDto
+                        {
+                            PollTitle = HttpUtility.HtmlEncode(PollQuestion),
+                            PollOptions = new List<PollOption>(PollOptions.Split(Environment.NewLine).Select(x => new PollOption { PollOptionText = HttpUtility.HtmlEncode(x) })),
+                            VoteCanBeChanged = PollCanChangeVote,
+                            PollDurationSecons = (int)TimeSpan.FromDays(double.Parse(PollExpirationDaysString)).TotalSeconds,
+                            PollMaxOptions = PollMaxOptions ?? 1,
+                            PollStart = PreviewablePost.PostCreationTime ?? DateTime.UtcNow
+                        };
+                    }
+                    await _renderingService.ProcessPosts(new[] { PreviewablePost }, PageContext, HttpContext, true);
 
-            return Page();
-        }
+                    return Page();
+                });
+            });
 
         public async Task<IActionResult> OnPostNewForumPost()
-        {
-            var usr = await GetCurrentUserAsync();
-            if (usr == await _userService.GetAnonymousLoggedUserAsync())
+            => await WithRegisteredUser(async () => await WithValidForum(ForumId, async (_) =>
             {
-                return Unauthorized();
-            }
-            var permissionError = await ForumAuthorizationResponses(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), false).FirstOrDefaultAsync();
-            if (permissionError != null)
-            {
-                return permissionError;
-            }
+                var addedPostId = await UpsertPost(_context, null, await GetCurrentUserAsync());
 
-            var addedPostId = await UpsertPost(_context, null, usr);
+                if (addedPostId == null)
+                {
+                    return Page();
+                }
 
-            if (addedPostId == null)
-            {
-                return Page();
-            }
-
-            return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
-        }
+                return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
+            }));
 
         public async Task<IActionResult> OnPostEditForumPost()
-        {
-            var usr = await GetCurrentUserAsync();
-            if (usr == await _userService.GetAnonymousLoggedUserAsync())
+            => await WithRegisteredUser(async () => await WithValidForum(ForumId, async (_) =>
             {
-                return Unauthorized();
-            }
-            var permissionError = await ForumAuthorizationResponses(await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId), false).FirstOrDefaultAsync();
-            if (permissionError != null)
-            {
-                return permissionError;
-            }
+                var addedPostId = await UpsertPost(_context, await InitEditedPost(), await GetCurrentUserAsync());
 
-            var addedPostId = await UpsertPost(_context, await InitEditedPost(), usr);
+                if (addedPostId == null)
+                {
+                    return Page();
+                }
 
-            if (addedPostId == null)
-            {
-                return Page();
-            }
-
-            return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
-        }
+                return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
+            }));
 
         public async Task<IActionResult> OnPostPrivateMessage()
-        {
-            var responses = await PageAuthorizationResponses().FirstOrDefaultAsync();
-            if (responses != null)
+            => await WithRegisteredUser(async () =>
             {
-                return responses;
-            }
+                if ((ReceiverId ?? 1) == 1)
+                {
+                    ModelState.AddModelError(nameof(ReceiverName), "Introduceți un destinatar valid.");
+                    return Page();
+                }
 
-            if ((ReceiverId ?? 1) == 1)
-            {
-                ModelState.AddModelError(nameof(ReceiverName), "Introduceți un destinatar valid.");
-                return Page();
-            }
+                if ((PostTitle?.Trim()?.Length ?? 0) < 3)
+                {
+                    ModelState.AddModelError(nameof(ReceiverName), "Introduceți un subiect valid.");
+                    return Page();
+                }
 
-            if ((PostTitle?.Trim()?.Length ?? 0) < 3)
-            {
-                ModelState.AddModelError(nameof(ReceiverName), "Introduceți un subiect valid.");
-                return Page();
-            }
+                if ((PostText?.Trim()?.Length ?? 0) < 3)
+                {
+                    ModelState.AddModelError(nameof(ReceiverName), "Introduceți un mesaj valid.");
+                    return Page();
+                }
 
-            if ((PostText?.Trim()?.Length ?? 0) < 3)
-            {
-                ModelState.AddModelError(nameof(ReceiverName), "Introduceți un mesaj valid.");
-                return Page();
-            }
-
-            var (Message, IsSuccess) = await _userService.SendPrivateMessage(CurrentUserId, ReceiverId.Value, HttpUtility.HtmlEncode(PostTitle), _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText)));
-            if (IsSuccess ?? false)
-            {
-                return RedirectToPage("PrivateMessages", new { show = PrivateMessagesPages.Sent });
-            }
-            else
-            {
-                ModelState.AddModelError(nameof(ReceiverName), Message);
-                return Page();
-            }
-        }
+                var (Message, IsSuccess) = await _userService.SendPrivateMessage(CurrentUserId, ReceiverId.Value, HttpUtility.HtmlEncode(PostTitle), _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText)));
+                if (IsSuccess ?? false)
+                {
+                    return RedirectToPage("PrivateMessages", new { show = PrivateMessagesPages.Sent });
+                }
+                else
+                {
+                    ModelState.AddModelError(nameof(ReceiverName), Message);
+                    return Page();
+                }
+            });
 
         #endregion POST Message
 
