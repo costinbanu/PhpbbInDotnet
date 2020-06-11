@@ -19,7 +19,7 @@ using System.Web;
 
 namespace Serverless.Forum.Pages
 {
-    [ValidateAntiForgeryToken]
+    [BindProperties, ValidateAntiForgeryToken]
     public class LoginModel : PageModel
     {
         private readonly ForumDbContext _context;

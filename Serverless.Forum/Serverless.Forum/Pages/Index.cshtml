@@ -6,10 +6,40 @@
     var IsAnonymous = Model.CurrentUserId == Utilities.Constants.ANONYMOUS_USER_ID;
 }
 
-@*<h2>Forumul Metrou Ușor</h2>*@
+<style>
+    .linksContainer {
+        float: right;
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+
+    .bullet {
+        display: inline;
+    }
+
+    .newline {
+        display: none;
+        height: 1px;
+    }
+
+    @@media (max-width: 400px) {
+        .bullet {
+            display: none;
+        }
+        .newline {
+            display: block;
+        }
+    }
+</style>
+
 @if (!IsAnonymous)
 {
-    <a href="#" onclick="MarkForumsRead.submit()" style="float:right; margin-top:10px; margin-bottom:10px">Marchează forumurile ca citite</a>
+    <span class="linksContainer">
+        <a asp-page="ViewForum" asp-page-handler="newPosts">Vezi mesajele noi</a>
+        <span class="bullet">&nbsp;&bull;&nbsp;</span>
+        <p class="newline"></p>
+        <a href="#" onclick="MarkForumsRead.submit()">Marchează forumurile ca citite</a>
+    </span>
 }
 @await Html.PartialAsync(
     "_ForumDisplayPartial",

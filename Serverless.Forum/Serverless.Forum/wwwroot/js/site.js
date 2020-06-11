@@ -57,6 +57,7 @@ function showElement(id, whenHiding, whenShowing) {
         elem.hide('fast', whenHiding);
     }
     else {
+        elem.height(roundToNextEvenNumber(elem.height()));
         elem.show('fast', whenShowing);
     }
 }
@@ -67,4 +68,12 @@ function writeDate(dateString, format) {
         format = 'dddd, dd.MM.yyyy HH: mm';
     }
     document.write(date.format(format));
+}
+
+function roundToNextEvenNumber(value) {
+    value = Math.round(value);
+    if (value % 2 == 1) {
+        value = Math.round(value / 2) * 2;
+    }
+    return value;
 }

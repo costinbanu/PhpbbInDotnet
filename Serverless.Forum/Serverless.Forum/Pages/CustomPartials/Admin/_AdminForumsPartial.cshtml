@@ -158,7 +158,7 @@
     //forum tree callback
     function forumSelectCallback(forumId) {
         $('#forumIdUpsert').val(forumId);
-        $('#forumIdDelete').val(forumId); 
+        $('#forumIdDelete').val(forumId);
     }
 
     function Toggle() {
@@ -171,3 +171,12 @@
         }
     }
 </script>
+
+@if (Model.Show)
+{
+    <script>
+        window.onload = function () {
+            $('#forumFields').height(roundToNextEvenNumber($('#forumFields').height()));
+        }
+    </script>
+}

@@ -15,39 +15,44 @@ namespace Serverless.Forum.Services
 {
     public class ForumTreeService
     {
-        private readonly IConfiguration _config;
         private readonly ForumDbContext _context;
 
-        public ForumTreeService(IConfiguration config, ForumDbContext context)
+        public ForumTreeService(ForumDbContext context)
         {
-            _config = config;
             _context = context;
         }
-        todo: this does not account for child forums; 
-        public IEnumerable<int> GetRestrictedForumList(LoggedUser user, bool includePasswordProtected = true)
-            => (user?.AllPermissions?.Where(p => p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE)?.Select(p => p.ForumId) ?? Enumerable.Empty<int>())
-                .Union(includePasswordProtected ? _context.PhpbbForums.AsNoTracking().Where(f => !string.IsNullOrWhiteSpace(f.ForumPassword)).Select(f => f.ForumId) : Enumerable.Empty<int>());
 
-        public async Task<ForumDto> GetForumTree(ForumType? parentType = null, LoggedUser usr = null, Func<int, bool> IsForumUnread = null)
+        public async Task<List<int>> GetRestrictedForumList(LoggedUser user)
+        {
+            var allowedForums = new List<int>();
+            Traverse(allowedForums, await GetForumTree(null, user, null, true), true, 0, f => f.Id.Value, (_, __) => { }, -1, -1);
+            return await (
+                from f in _context.PhpbbForums.AsNoTracking()
+                
+                join af in allowedForums
+                on f.ForumId equals af
+                into allowed
+                
+                from a in allowed.DefaultIfEmpty()
+                where a == default
+                
+                select f.ForumId
+            ).ToListAsync();
+        }
+
+        public async Task<ForumDto> GetForumTree(ForumType? parentType = null, LoggedUser usr = null, Func<int, bool> IsForumUnread = null, bool excludePasswordProtected = false)
         {
             if (IsForumUnread == null)
             {
                 IsForumUnread = new Func<int, bool>(_ => false);
             }
 
-            var restrictedForums = GetRestrictedForumList(usr, false).ToList();
+            var restrictedForums = (usr?.AllPermissions?.Where(p => p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE)?.Select(p => p.ForumId) ?? Enumerable.Empty<int>())
+                .Union(excludePasswordProtected ? _context.PhpbbForums.AsNoTracking().Where(f => !string.IsNullOrWhiteSpace(f.ForumPassword)).Select(f => f.ForumId) : Enumerable.Empty<int>());
             var allForums = await (
                 from f in _context.PhpbbForums.AsNoTracking()
-                where (parentType == null || f.ForumType == parentType)
-                   //&& (usr == null || usr.AllPermissions == null || !usr.AllPermissions.Any(fp => fp.ForumId == f.ForumId && fp.AuthRoleId == 16))
+                where parentType == null || f.ForumType == parentType
                 orderby f.LeftId
-
-                join rf in restrictedForums
-                on f.ForumId equals rf
-                into joinedRestrictedForums
-
-                from rf in joinedRestrictedForums.DefaultIfEmpty()
-                where rf == default
 
                 join t in _context.PhpbbTopics.AsNoTracking()
                 on f.ForumId equals t.ForumId
@@ -87,7 +92,7 @@ namespace Serverless.Forum.Services
             {
                 node.ChildrenForums = (
                     from f in allForums
-                    where f.Parent == node.Id
+                    where f.Parent == node.Id && !restrictedForums.Contains(f.ForumDisplay.Id ?? -1)
                     orderby f.Order
                     select traverse(f.ForumDisplay)
                 ).ToList();
@@ -119,7 +124,7 @@ namespace Serverless.Forum.Services
                 Name = Constants.FORUM_NAME,
                 ChildrenForums = (
                     from f in allForums
-                    where f.Parent == 0
+                    where f.Parent == 0 && !restrictedForums.Contains(f.ForumDisplay.Id ?? -1)
                     orderby f.Order
                     select traverse(f.ForumDisplay)
                 ).ToList()
@@ -137,20 +142,6 @@ namespace Serverless.Forum.Services
         {
             var track = new List<T>();
             Traverse(track, root, false, 0, mapToType, (x, _) => { }, forumId, topicId);
-            return track;
-        }
-
-        public List<T> GetPathInTree<T>(ForumDto root, Func<ForumDto, T> mapToType, Action<T, int> transformForLevel, int forumId, int topicId) where T : class
-        {
-            var track = new List<T>();
-            Traverse(track, root, false, 0, mapToType, transformForLevel, forumId, topicId);
-            return track;
-        }
-
-        public List<T> GetPathInTree<T>(ForumDto root, Func<ForumDto, T> mapToType)
-        {
-            var track = new List<T>();
-            Traverse(track, root, true, 0, mapToType, (x, _) => { }, -1, -1);
             return track;
         }
 

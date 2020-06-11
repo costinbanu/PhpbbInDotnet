@@ -36,5 +36,7 @@ namespace Serverless.Forum.Contracts
         public string LastPosterColor { get; set; } = null;
 
         public ForumType? ForumType { get; set; } = null;
+
+        public bool RestrictedForUser { get; set; } = false;
     }
 }

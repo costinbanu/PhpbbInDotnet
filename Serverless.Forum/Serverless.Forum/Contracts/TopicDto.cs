@@ -28,6 +28,7 @@ namespace Serverless.Forum.Pages
         public string LastPosterColor { get; set; } = null;
 
         public int ViewCount { get; set; } = 0;
+
     }
 
     public class TopicTransport

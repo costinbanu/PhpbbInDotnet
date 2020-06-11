@@ -1,6 +1,7 @@
 ﻿@page
 @model Serverless.Forum.Pages.ViewForumModel
 @using Serverless.Forum.Utilities
+@inject Services.ForumTreeService _forumService
 @{
     ViewData["Title"] = Model.ForumTitle;
     Layout = "~/Pages/_Layout.cshtml";
@@ -29,7 +30,7 @@
     }
 </script>
 
-@if (Model.ParentForumId != 0)
+@if (Model.ParentForumId != 0 && !Model.IsNewPostView)
 {
     <span>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@Model.ParentForumTitle</a></span>
 }
@@ -37,16 +38,22 @@ else
 {
     <h4><a href="/">Prima pagină</a></h4>
 }
-
-<h2>Forum: @Model.ForumTitle</h2>
-@if (!IsAnonymous)
+@if (Model.IsNewPostView)
+{
+    <h2>Mesaje necitite</h2>
+}
+else
+{
+    <h2>Forum: @Model.ForumTitle</h2>
+}
+@if (!IsAnonymous && !Model.IsNewPostView)
 {
     <ul class="Shortcuts">
-        @if (Model.Forums.Any())
+        @if (Model.Forums?.Any() ?? false)
         {
             <li><a href="javascript:MarkForumsRead.submit()">Marchează forumurile ca citite</a></li>
         }
-        @if (Model.Topics.Any())
+        @if (Model.Topics?.Any() ?? false)
         {
             <li><a href="javascript:MarkTopicsRead.submit()">Marchează subiectele ca citite</a></li>
         }
@@ -54,7 +61,7 @@ else
     </ul>
 }
 
-@if (Model.Forums.Any())
+@if (Model.Forums?.Any() ?? false)
 {
     @await Html.PartialAsync(
         "_ForumDisplayPartial",
@@ -64,7 +71,7 @@ else
     <hr />
 }
 
-@if (Model.Topics.Any())
+@if (Model.Topics?.Any() ?? false)
 {
     /*https://stackoverflow.com/questions/5144265/an-equally-quick-alternative-to-securityelement-escapestring-to-escape-xml-spe#comment88712318_5144356
      * use SecurityElement.Escape when using Html.Raw*/
@@ -95,6 +102,11 @@ else
             index++;
             <div class="@divClass">
                 <span class="ForumContent">
+                    @if (Model.IsNewPostView)
+                    {
+                        @Html.Raw(string.Join(" → ", _forumService.GetPathInTree(await Model.GetForumTreeAsync(), f => f.Name, -1, topic.Id ?? -1).Skip(1)))
+                        <br />
+                    }
                     @if (topicGroup.TopicType == TopicType.Important)
                     {
                         <span>&#x26A0;&#xFE0F;&nbsp;</span>

@@ -168,7 +168,7 @@ namespace Serverless.Forum
         public async Task<ForumDto> GetForum(int forumId)
             => _forumService.GetPathInTree(await GetForumTreeAsync(), forumId).Last();
 
-        private IEnumerable<Tracking> GetUnreadTopicsAndParentsLazy()
+        protected IEnumerable<Tracking> GetUnreadTopicsAndParentsLazy()
         {
             if (_tracking != null)
             {
@@ -287,14 +287,14 @@ namespace Serverless.Forum
 
         #endregion Permission validation wrappers
 
-        class Tracking
+        protected class Tracking
         {
             internal int TopicId { get; set; }
             internal int ForumId { get; set; }
             internal IEnumerable<int> Posts { get; set; }
         }
 
-        class TrackingQueryResult
+        protected class TrackingQueryResult
         {
             internal int ForumId { get; set; }
             internal int TopicId { get; set; }

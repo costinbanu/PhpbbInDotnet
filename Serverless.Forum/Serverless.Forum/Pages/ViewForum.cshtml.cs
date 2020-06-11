@@ -21,6 +21,7 @@ namespace Serverless.Forum.Pages
         public string ForumTitle { get; private set; }
         public string ParentForumTitle { get; private set; }
         public int? ParentForumId { get; private set; }
+        public bool IsNewPostView { get; private set; } = false;
 
         [BindProperty(SupportsGet = true)]
         public int ForumId { get; set; }
@@ -33,20 +34,13 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnGet()
             => await WithValidForum(ForumId, async (thisForum) =>
             {
-                //if (forumId == 0)
-                //{
-                //    return RedirectToPage("Index");
-                //}
-
-                var usr = await GetCurrentUserAsync();
-
                 ForumTitle = HttpUtility.HtmlDecode(thisForum?.ForumName ?? "untitled");
 
                 ParentForumId = thisForum.ParentId;
                 ParentForumTitle = HttpUtility.HtmlDecode((await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(pf => pf.ForumId == thisForum.ParentId))?.ForumName ?? "untitled");
 
                 Forums = (await GetForum(ForumId)).ChildrenForums.ToList();
-
+                var usr = await GetCurrentUserAsync();
                 Topics = await (
                     from t in _context.PhpbbTopics.AsNoTracking()
                     where t.ForumId == ForumId || t.TopicType == TopicType.Global
@@ -79,6 +73,40 @@ namespace Serverless.Forum.Pages
                     }
                 ).ToListAsync();
 
+                return Page();
+            });
+
+        public async Task<IActionResult> OnGetNewPosts()
+            => await WithRegisteredUser(async () =>
+            {
+                var unread = GetUnreadTopicsAndParentsLazy();
+                var usr = await GetCurrentUserAsync();
+                Topics = new List<TopicTransport>
+                {
+                    new TopicTransport
+                    {
+                        Topics = from g in _context.PhpbbTopics.AsNoTracking()
+                                 join ut in unread.Select(t => t.TopicId)
+                                 on g.TopicId equals ut
+                                 let postCount = _context.PhpbbPosts.Count(p => p.TopicId == g.TopicId)
+                                 let pageSize = usr.TopicPostsPerPage.ContainsKey(g.TopicId) ? usr.TopicPostsPerPage[g.TopicId] : 14
+                                 select new TopicDto
+                                 {
+                                     Id = g.TopicId,
+                                     Title = HttpUtility.HtmlDecode(g.TopicTitle),
+                                     LastPosterId = g.TopicLastPosterId == Constants.ANONYMOUS_USER_ID ? null as int? : g.TopicLastPosterId,
+                                     LastPosterName = HttpUtility.HtmlDecode(g.TopicLastPosterName),
+                                     LastPostTime = g.TopicLastPostTime.ToUtcTime(),
+                                     PostCount = g.TopicReplies,
+                                     Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1, "PageNum"),
+                                     Unread = true,
+                                     LastPosterColor = g.TopicLastPosterColour,
+                                     LastPostId = g.TopicLastPostId,
+                                     ViewCount = g.TopicViews
+                                 }
+                    }
+                };
+                IsNewPostView = true;
                 return Page();
             });
 
