@@ -311,10 +311,10 @@ else if (!IsAnonymous)
 {
     <hr />
 }
-
-<span onclick="showElement('forumTree', null, () => $('html, body').animate({ scrollTop: $(this).position().top + $('#topBanner').outerHeight() + 1000 }, 'slow'));" style="cursor:pointer; font-weight:bold">Navigare - alege destinația &#x2935;</span>
 <p>&nbsp;</p>
+<span onclick="showElement('forumTree', null, () => $('html, body').animate({ scrollTop: $(this).position().top + $('#topBanner').outerHeight() + 1000 }, 'slow'));" style="cursor:pointer; font-weight:bold; display: block; clear: both;">Navigare - alege destinația &#x2935;</span>
 <div id="forumTree" style="display:none">
+    <p>&nbsp;</p>
     @await Html.PartialAsync(
         "_ForumTreePartial",
         new CustomPartials._ForumTreePartialModel(

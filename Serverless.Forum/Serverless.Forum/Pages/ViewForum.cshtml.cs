@@ -122,19 +122,19 @@ namespace Serverless.Forum.Pages
                 }
                 await _context.SaveChangesAsync();
 
-                return Page();
+                return await OnGet();
             }));
 
         public async Task<IActionResult> OnPostMarkTopicsRead()
             => await WithRegisteredUser(async() => await WithValidForum(ForumId, async(_) =>
             {
                 await UpdateTracking(_context, ForumId);
-                return Page();
+                return await OnGet();
             }));
 
         private async Task UpdateTracking(ForumDbContext context, int forumId)
         {
-            var toRemove = await (
+            var topicTracksToRemove = await (
                 from t in context.PhpbbTopics
 
                 where t.ForumId == forumId
@@ -148,8 +148,12 @@ namespace Serverless.Forum.Pages
                 select jtt
             ).ToListAsync();
 
-            context.PhpbbTopicsTrack.RemoveRange(toRemove);
-            context.PhpbbForumsTrack.Remove(await context.PhpbbForumsTrack.FirstOrDefaultAsync(ft => ft.ForumId == ForumId && ft.UserId == CurrentUserId));
+            context.PhpbbTopicsTrack.RemoveRange(topicTracksToRemove);
+            var forumTrackToRemove = await context.PhpbbForumsTrack.FirstOrDefaultAsync(ft => ft.ForumId == ForumId && ft.UserId == CurrentUserId);
+            if (forumTrackToRemove != null)
+            {
+                context.PhpbbForumsTrack.Remove(forumTrackToRemove);
+            }
             await context.SaveChangesAsync();
 
             await context.PhpbbForumsTrack.AddAsync(new PhpbbForumsTrack

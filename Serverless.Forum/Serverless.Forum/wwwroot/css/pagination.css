@@ -3,63 +3,81 @@
     background-color: gainsboro;
     padding: 2px;
     white-space: nowrap;
+    line-height: 1.2em !important;
 }
 
 .PaginationControls {
     display: none;
 }
 
-.PaginationControlsCollapsed {
-    display: none !important;
+.PaginationHolder {
+    width: 100%;
+    clear: both;
+    line-height: 50px;
+    display: flex;
+    height: min-content;
+    /*padding-top:10px;
+    padding-bottom: 10px;*/
 }
 
-.PaginationControlsFull {
-    display: flex !important;
-    flex-wrap: wrap;
+.LeftArrow {
+    width: 18%;
+    min-width: max-content;
+    max-width: max-content;
+    text-align: left;
+    float: left;
 }
 
-.PaginationControlsFull div > *:not(span) {
-    float: left !important;
-    height: auto;
+.RightArrow {
+    width: 18%;
+    min-width: max-content;
+    max-width: max-content;
+    text-align: right;
+    float: right;
+
 }
 
-.PaginationControlsFull div:after {
-    content: ' ';
-    padding-right: 10px;
-    padding-left: 10px;
+.ControlsMiddleFull {
+    /*width:64%;
+    min-width:max-content;*/
+    text-align: center;
+    float: left;
+    vertical-align: middle;
+    flex:auto;
+    height: min-content;
 }
 
-.PaginationControlsFull div:last-child:after {
-    padding-right: 0px;
-    padding-left: 0px;
+.ControlsMiddleCollapsed {
+    width: 100%;
+    text-align: center;
+    clear: both;
+    vertical-align: middle;
+    display: none;
+    line-height: 1.1em;
+    /*padding-top: 10px;
+    padding-bottom: 10px;*/
+}
+
+.Filler {
+    display: none;
 }
 
 @media (max-width: 768px) {
-    .PaginationControlsCollapsed {
-        display: table !important;
-    }
-
-    .PaginationControlsCollapsed div > * {
-        float: unset !important;
-        height: auto;
-    }
-
-    .PaginationControlsCollapsed div:after {
-        content: ' ';
-        padding-right: 10px;
-        padding-left: 10px;
-    }
-
-    .PaginationControlsCollapsed div:last-child:after {
-        padding-right: 0px;
-        padding-left: 0px;
-    }
-
-    .PaginationControlsFull {
+   
+    .ControlsMiddleFull {
         display: none;
     }
 
-    .PaginationControlsFull div {
-        display: none;
+    .PaginationHolder {
+        line-height: 0px;
+    }
+
+    .ControlsMiddleCollapsed {
+        display: block;
+    }
+
+    .Filler {
+        display: inline;
+        flex: auto;
     }
 }

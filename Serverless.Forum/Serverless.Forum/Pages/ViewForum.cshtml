@@ -138,10 +138,13 @@ else
         <hr />
     }
 }
-@if (!IsAnonymous)
+else if (Model.IsNewPostView)
+{
+    <h4>Nu există mesaje noi.</h4>
+}
+@if (!IsAnonymous && !Model.IsNewPostView)
 {
     <a asp-page="/Posting" asp-page-handler="NewTopic" asp-route-forumId="@Model.ForumId">Deschide un subiect nou</a>
-
 }
 
 <p></p>
