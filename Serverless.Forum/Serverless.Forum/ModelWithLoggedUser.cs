@@ -119,23 +119,23 @@ namespace Serverless.Forum
 
         #region Forum for user
 
-        public bool IsForumUnread(int forumId)
+        public bool IsForumUnread(int forumId, bool forceRefresh = false)
         {
             if (CurrentUserId == Constants.ANONYMOUS_USER_ID)
             {
                 return false;
             }
-            var unread = GetUnreadTopicsAndParentsLazy();
+            var unread = GetUnreadTopicsAndParentsLazy(forceRefresh);
             return unread.Any(u => u.ForumId == forumId);
         }
 
-        public bool IsTopicUnread(int topicId)
+        public bool IsTopicUnread(int topicId, bool forceRefresh = false)
         {
             if (CurrentUserId == Constants.ANONYMOUS_USER_ID)
             {
                 return false;
             }
-            var unread = GetUnreadTopicsAndParentsLazy();
+            var unread = GetUnreadTopicsAndParentsLazy(forceRefresh);
             return unread.Any(u => u.TopicId == topicId);
         }
 
@@ -159,18 +159,24 @@ namespace Serverless.Forum
             return unread.FirstOrDefault(t => t.TopicId == topicId)?.Posts?.FirstOrDefault() ?? 0;
         }
 
-        public async Task<ForumDto> GetForumTreeAsync(ForumType? parentType = null)
-            => _tree ?? (_tree = await _forumService.GetForumTree(parentType, await GetCurrentUserAsync(), forumId => IsForumUnread(forumId)));
+        public async Task<ForumDto> GetForumTreeAsync(ForumType? parentType = null, bool forceRefresh = false)
+        {
+            if (forceRefresh || _tree == null)
+            {
+                _tree = await _forumService.GetForumTree(parentType, await GetCurrentUserAsync(), forumId => IsForumUnread(forumId, forceRefresh));
+            }
+            return _tree;
+        } 
 
         public async Task<List<int>> PathToForumOrTopic(int forumId, int? topicId = null)
             => _forumService.GetPathInTree(await GetForumTreeAsync(), forum => forum.Id ?? 0, forumId, topicId ?? -1);
 
-        public async Task<ForumDto> GetForum(int forumId)
-            => _forumService.GetPathInTree(await GetForumTreeAsync(), forumId).Last();
+        public async Task<ForumDto> GetForum(int forumId, bool forceRefresh = false)
+            => _forumService.GetPathInTree(await GetForumTreeAsync(forceRefresh: forceRefresh), forumId).Last();
 
-        protected IEnumerable<Tracking> GetUnreadTopicsAndParentsLazy()
+        protected IEnumerable<Tracking> GetUnreadTopicsAndParentsLazy(bool forceRefresh = false)
         {
-            if (_tracking != null)
+            if (_tracking != null && !forceRefresh)
             {
                 return _tracking;
             }

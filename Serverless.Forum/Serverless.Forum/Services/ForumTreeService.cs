@@ -40,7 +40,7 @@ namespace Serverless.Forum.Services
             ).ToListAsync();
         }
 
-        public async Task<ForumDto> GetForumTree(ForumType? parentType = null, LoggedUser usr = null, Func<int, bool> IsForumUnread = null, bool excludePasswordProtected = false)
+        public async Task<ForumDto> GetForumTree(ForumType? parentType = null, LoggedUser usr = null, Func<int, bool> IsForumUnread = null, bool excludePasswordProtected = false, int fromParent = 0)
         {
             if (IsForumUnread == null)
             {
@@ -118,17 +118,19 @@ namespace Serverless.Forum.Services
                 return node;
             }
 
-            return new ForumDto
+            var dummy = new ForumDto
             {
                 Id = 0,
                 Name = Constants.FORUM_NAME,
                 ChildrenForums = (
                     from f in allForums
-                    where f.Parent == 0 && !restrictedForums.Contains(f.ForumDisplay.Id ?? -1)
+                    where f.Parent == fromParent && !restrictedForums.Contains(f.ForumDisplay.Id ?? -1)
                     orderby f.Order
                     select traverse(f.ForumDisplay)
                 ).ToList()
             };
+
+            return dummy;
         }
 
         public List<ForumDto> GetPathInTree(ForumDto root, int forumId)
@@ -142,6 +144,13 @@ namespace Serverless.Forum.Services
         {
             var track = new List<T>();
             Traverse(track, root, false, 0, mapToType, (x, _) => { }, forumId, topicId);
+            return track;
+        }
+
+        public List<T> GetPathInTree<T>(ForumDto root, Func<ForumDto, T> mapToType)
+        {
+            var track = new List<T>();
+            Traverse(track, root, true, 0, mapToType, (x, _) => { }, -1, -1);
             return track;
         }
 

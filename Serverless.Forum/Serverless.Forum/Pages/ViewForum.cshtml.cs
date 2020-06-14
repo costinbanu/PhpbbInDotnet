@@ -26,6 +26,8 @@ namespace Serverless.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public int ForumId { get; set; }
 
+        private bool _forceTreeRefresh = false;
+
         public ViewForumModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
             : base(context, forumService, userService, cacheService)
         {
@@ -39,7 +41,7 @@ namespace Serverless.Forum.Pages
                 ParentForumId = thisForum.ParentId;
                 ParentForumTitle = HttpUtility.HtmlDecode((await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(pf => pf.ForumId == thisForum.ParentId))?.ForumName ?? "untitled");
 
-                Forums = (await GetForum(ForumId)).ChildrenForums.ToList();
+                Forums = (await GetForum(ForumId, _forceTreeRefresh)).ChildrenForums.ToList();
                 var usr = await GetCurrentUserAsync();
                 Topics = await (
                     from t in _context.PhpbbTopics.AsNoTracking()
@@ -65,7 +67,7 @@ namespace Serverless.Forum.Pages
                                      LastPostTime = g.TopicLastPostTime.ToUtcTime(),
                                      PostCount = g.TopicReplies,
                                      Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1, "PageNum"),
-                                     Unread = IsTopicUnread(g.TopicId),
+                                     Unread = IsTopicUnread(g.TopicId, false),
                                      LastPosterColor = g.TopicLastPosterColour,
                                      LastPostId = g.TopicLastPostId,
                                      ViewCount = g.TopicViews
@@ -113,15 +115,14 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnPostMarkForumsRead()
             => await WithRegisteredUser(async () => await WithValidForum(ForumId, async (_) =>
             {
-                var childForums = from f in _context.PhpbbForums
-                                  where f.ParentId == ForumId
-                                  select f.ForumId;
+                var curForum = await _forumService.GetForumTree(usr: await GetCurrentUserAsync(), fromParent: ForumId);
+                var childForums = _forumService.GetPathInTree(curForum, f => f.ChildrenForums.Any() ? 0 : (f.Id ?? 0)).Where(f => f != 0);
                 foreach (var child in childForums)
                 {
                     await UpdateTracking(_context, child);
                 }
                 await _context.SaveChangesAsync();
-
+                _forceTreeRefresh = true;
                 return await OnGet();
             }));
 
@@ -129,6 +130,7 @@ namespace Serverless.Forum.Pages
             => await WithRegisteredUser(async() => await WithValidForum(ForumId, async(_) =>
             {
                 await UpdateTracking(_context, ForumId);
+                _forceTreeRefresh = true;
                 return await OnGet();
             }));
 
@@ -149,7 +151,7 @@ namespace Serverless.Forum.Pages
             ).ToListAsync();
 
             context.PhpbbTopicsTrack.RemoveRange(topicTracksToRemove);
-            var forumTrackToRemove = await context.PhpbbForumsTrack.FirstOrDefaultAsync(ft => ft.ForumId == ForumId && ft.UserId == CurrentUserId);
+            var forumTrackToRemove = await context.PhpbbForumsTrack.FirstOrDefaultAsync(ft => ft.ForumId == forumId && ft.UserId == CurrentUserId);
             if (forumTrackToRemove != null)
             {
                 context.PhpbbForumsTrack.Remove(forumTrackToRemove);
