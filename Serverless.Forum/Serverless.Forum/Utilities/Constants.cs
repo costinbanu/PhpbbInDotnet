@@ -6,7 +6,7 @@ namespace Serverless.Forum.Utilities
     {
         public static readonly string FORUM_NAME = "Forumul Metrou Ușor";
 
-        public static readonly string FORUM_BASE_URL = "http://localhost:54356" ;//"https://forum.metrouusor.com";
+        public static readonly string FORUM_BASE_URL = "https://forum.metrouusor.com";//"http://localhost:54356" ;//
 
         public static readonly string REPLY = "Re: ";
 
@@ -63,5 +63,7 @@ namespace Serverless.Forum.Utilities
         public static readonly int OTHER_REPORT_REASON_ID = 4;
 
         public static readonly int ACCESS_TO_FORUM_DENIED_ROLE = 16;
+
+        public static readonly int ADMIN_GROUP_ID = 5;
     }
 }

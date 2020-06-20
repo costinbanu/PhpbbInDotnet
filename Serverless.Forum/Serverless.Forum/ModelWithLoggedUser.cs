@@ -219,17 +219,16 @@ namespace Serverless.Forum
         {
             if (!await IsCurrentUserModeratorHereAsync())
             {
-                return Forbid();
+                return RedirectToPage("Login", new { ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString) });
             }
             return await toDo();
         }
 
         protected async Task<IActionResult> WithAdmin(Func<Task<IActionResult>> toDo)
         {
-            var validationResult = !await IsCurrentUserAdminHereAsync() ? Forbid() : null;
-            if (validationResult != null)
+            if (!await IsCurrentUserAdminHereAsync())
             {
-                return validationResult;
+                return RedirectToPage("Login", new { ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString) });
             }
             return await toDo();
         }

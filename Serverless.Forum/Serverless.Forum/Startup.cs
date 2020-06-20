@@ -59,7 +59,7 @@ namespace Serverless.Forum
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
-            if (Env.IsStaging())
+            if (Env.IsStaging() || Env.IsProduction())
             {
                 services.AddLogging(log => log.AddEventLog());
             }

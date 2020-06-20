@@ -2,15 +2,20 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.ForumDb;
+using Serverless.Forum.Pages.CustomPartials.Email;
 using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System.Collections.Generic;
+using System.Net.Mail;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace Serverless.Forum.Pages
 {
     public class ConfirmModel : ModelWithLoggedUser
     {
+        private readonly Utils _utils;
+
         public string Message { get; private set; }
         
         public string Title { get; private set; }
@@ -43,8 +48,11 @@ namespace Serverless.Forum.Pages
 
         public bool IsDestinationConfirmation { get; private set; } = false;
 
-        public ConfirmModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
-            : base(context, forumService, userService, cacheService) { }
+        public ConfirmModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, Utils utils)
+            : base(context, forumService, userService, cacheService) 
+        {
+            _utils = utils;
+        }
 
         public void OnGetRegistrationComplete()
         {
@@ -85,6 +93,33 @@ namespace Serverless.Forum.Pages
                 user.UserInactiveReason = UserInactiveReason.NewlyRegisteredConfirmed;
                 user.UserActkey = string.Empty;
                 await _context.SaveChangesAsync();
+
+                var subject = "Cont de utilizator nou";
+                var emailMessage = new MailMessage
+                {
+                    From = new MailAddress($"admin@metrouusor.com", Constants.FORUM_NAME),
+                    Subject = subject,
+                    Body = await _utils.RenderRazorViewToString(
+                        "_NewUserNotification",
+                        new _NewUserNotificationModel(user.Username),
+                        PageContext,
+                        HttpContext
+                    ),
+                    IsBodyHtml = true
+                };
+
+                var adminEmails = await (
+                    from u in _context.PhpbbUsers.AsNoTracking()
+                    join ug in _context.PhpbbUserGroup.AsNoTracking()
+                    on u.UserId equals ug.UserId
+                    into joined
+                    from j in joined
+                    where j.GroupId == Constants.ADMIN_GROUP_ID && !string.IsNullOrWhiteSpace(u.UserEmail)
+                    select u.UserEmail.Trim()
+                ).ToListAsync();
+
+                emailMessage.To.Add(string.Join(',', adminEmails));
+                await _utils.SendEmail(emailMessage);
             }
             Title = "Confirmarea adresei de e-mail";
         }

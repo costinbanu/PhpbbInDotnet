@@ -15,10 +15,7 @@ namespace Serverless.Forum
             WebHost.CreateDefaultBuilder(args)
                 .UseStartup<Startup>()
                 .ConfigureLogging(log => log.AddConsole())
-                .UseKestrel(options =>
-                {
-                    options.Limits.MaxRequestHeadersTotalSize = 1048576;
-                })
+                .UseIIS()
                 .Build();
     }
 }

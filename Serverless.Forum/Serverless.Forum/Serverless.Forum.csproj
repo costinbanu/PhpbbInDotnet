@@ -13,7 +13,6 @@
   </PropertyGroup>
   <PropertyGroup>
     <NoWarn>NU1605</NoWarn>
-    <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="5.0.0" />
@@ -38,6 +37,11 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="wwwroot\images\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Update="web.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <!-- https://github.com/grpc/grpc-dotnet/issues/329#issuecomment-502309756 IAsyncEnumerable fix -->
   <Target Name="ChangeAliasesOfReactiveExtensions" BeforeTargets="FindReferenceAssembliesForReferences;ResolveReferences">

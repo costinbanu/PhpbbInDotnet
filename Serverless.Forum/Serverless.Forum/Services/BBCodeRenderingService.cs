@@ -33,6 +33,8 @@ namespace Serverless.Forum.Services
         private readonly Regex _spaceRegex;
         private BBCodeParser _parser;
 
+        private Dictionary<string, string> _bannedWords;
+
         private delegate (int index, string match) FirstIndexOf(string haystack, string needle, int startIndex);
         private delegate (string result, int endIndex) Transform(string haystack, string needle, int startIndex);
 
@@ -64,6 +66,8 @@ namespace Serverless.Forum.Services
                         new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul" : $"ol type=\"{a.AttributeValue}\"")),
                     new BBTag("url", "<a href=\"${href}\" target=\"_blank\">", "</a>",
                         new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
+                    new BBTag("link", "<a href=\"${href}\">", "</a>",
+                        new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
                     new BBTag("color", "<span style=\"color:${code}\">", "</span>",
                         new BBAttribute("code", "")),
                     new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>",
@@ -79,14 +83,14 @@ namespace Serverless.Forum.Services
             var inlineAttachmentsPosts = new ConcurrentBag<(int PostId, int AttachIndex, _AttachmentPartialModel Attach)>();
             var attachRegex = new Regex("#{AttachmentFileName=[^/]+/AttachmentIndex=[0-9]+}#", RegexOptions.Compiled);
             var highlightWords = SplitHighlightWords(toHighlight);
-            var bannedWords = (await _writingService.GetBannedWords()).GroupBy(p => p.Word).Select(grp => grp.FirstOrDefault()).ToDictionary(x => x.Word, y => y.Replacement);
+            await GetBannedWordsLazy();
             var mutex = new Mutex();
 
             Parallel.ForEach(Posts, async (p, state1) =>
             {
-                p.PostSubject = CensorWords(HttpUtility.HtmlDecode(p.PostSubject), bannedWords);
+                p.PostSubject = CensorWords(HttpUtility.HtmlDecode(p.PostSubject), _bannedWords);
                 p.PostSubject = HighlightWords(p.PostSubject, highlightWords);
-                p.PostText = HighlightWords(await BbCodeToHtml(p.PostText, p.BbcodeUid, bannedWords), highlightWords);
+                p.PostText = HighlightWords(await BbCodeToHtml(p.PostText, p.BbcodeUid), highlightWords);
 
                 if (renderAttachments)
                 {
@@ -143,15 +147,15 @@ namespace Serverless.Forum.Services
             });
         }
 
-        public async Task<string> BbCodeToHtml(string bbCodeText, string bbCodeUid, Dictionary<string, string> bannedWords = null)
+        public async Task<string> BbCodeToHtml(string bbCodeText, string bbCodeUid)
         {
             if (string.IsNullOrWhiteSpace(bbCodeText))
             {
                 return string.Empty;
             }
-
-            bannedWords ??= (await _writingService.GetBannedWords()).GroupBy(p => p.Word).Select(grp => grp.FirstOrDefault()).ToDictionary(x => x.Word, y => y.Replacement);
-            bbCodeText = CensorWords(bbCodeText, bannedWords);
+            
+            await GetBannedWordsLazy();
+            bbCodeText = CensorWords(bbCodeText, _bannedWords);
             bbCodeText = _parser.ToHtml(bbCodeText, bbCodeUid);
             bbCodeText = _newLineRegex.Replace(bbCodeText, "<br/>");
             bbCodeText = _htmlCommentRegex.Replace(bbCodeText, string.Empty);
@@ -313,6 +317,11 @@ namespace Serverless.Forum.Services
                 }
             }
             return input;
+        }
+
+        private async Task GetBannedWordsLazy()
+        {
+            _bannedWords ??= (await _writingService.GetBannedWords()).GroupBy(p => p.Word).Select(grp => grp.FirstOrDefault()).ToDictionary(x => x.Word, y => y.Replacement);
         }
     }
 }

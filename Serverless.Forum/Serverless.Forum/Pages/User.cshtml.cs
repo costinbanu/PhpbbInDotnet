@@ -82,7 +82,7 @@ namespace Serverless.Forum.Pages
             {
                 if ((userId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID)
                 {
-                    return Forbid();
+                    return BadRequest("Nu pot fi schimbate detaliile utilizatorului anonim!");
                 }
 
                 ViewAsAnother = viewAsAnother ?? false;
@@ -101,7 +101,7 @@ namespace Serverless.Forum.Pages
         {
             if (!await CanEditAsync())
             {
-                return Forbid();
+                return RedirectToPage("Login", new { returnUrl = @HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString) });
             }
 
             var dbUser = await _context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == CurrentUser.UserId);
