@@ -43,6 +43,12 @@ namespace Serverless.Forum.Pages
 
                 Forums = (await GetForum(ForumId, _forceTreeRefresh)).ChildrenForums.ToList();
                 var usr = await GetCurrentUserAsync();
+                var postCounts = await (
+                    from p in _context.PhpbbPosts.AsNoTracking()
+                    where p.ForumId == ForumId
+                    group p by p.TopicId into groups
+                    select new { TopicId = groups.Key, Count = groups.Count() }
+                ).ToListAsync();
                 Topics = await (
                     from t in _context.PhpbbTopics.AsNoTracking()
                     where t.ForumId == ForumId || t.TopicType == TopicType.Global
@@ -55,7 +61,8 @@ namespace Serverless.Forum.Pages
                         TopicType = groups.Key,
                         Topics = from g in groups
 
-                                 let postCount = _context.PhpbbPosts.Count(p => p.TopicId == g.TopicId)
+                                 let counts = postCounts.FirstOrDefault(p => p.TopicId == g.TopicId)
+                                 let postCount = counts == null ? 0 : counts.Count
                                  let pageSize = usr.TopicPostsPerPage.ContainsKey(g.TopicId) ? usr.TopicPostsPerPage[g.TopicId] : 14
 
                                  select new TopicDto
@@ -87,25 +94,27 @@ namespace Serverless.Forum.Pages
                 {
                     new TopicTransport
                     {
-                        Topics = from g in _context.PhpbbTopics.AsNoTracking()
-                                 join ut in unread.Select(t => t.TopicId)
-                                 on g.TopicId equals ut
-                                 let postCount = _context.PhpbbPosts.Count(p => p.TopicId == g.TopicId)
-                                 let pageSize = usr.TopicPostsPerPage.ContainsKey(g.TopicId) ? usr.TopicPostsPerPage[g.TopicId] : 14
-                                 select new TopicDto
-                                 {
-                                     Id = g.TopicId,
-                                     Title = HttpUtility.HtmlDecode(g.TopicTitle),
-                                     LastPosterId = g.TopicLastPosterId == Constants.ANONYMOUS_USER_ID ? null as int? : g.TopicLastPosterId,
-                                     LastPosterName = HttpUtility.HtmlDecode(g.TopicLastPosterName),
-                                     LastPostTime = g.TopicLastPostTime.ToUtcTime(),
-                                     PostCount = g.TopicReplies,
-                                     Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1, "PageNum"),
-                                     Unread = true,
-                                     LastPosterColor = g.TopicLastPosterColour,
-                                     LastPostId = g.TopicLastPostId,
-                                     ViewCount = g.TopicViews
-                                 }
+                        Topics = await (
+                            from g in _context.PhpbbTopics.AsNoTracking()
+                            join ut in unread.Select(t => t.TopicId)
+                            on g.TopicId equals ut
+                            let postCount = _context.PhpbbPosts.Count(p => p.TopicId == g.TopicId)
+                            let pageSize = usr.TopicPostsPerPage.ContainsKey(g.TopicId) ? usr.TopicPostsPerPage[g.TopicId] : 14
+                            select new TopicDto
+                            {
+                                Id = g.TopicId,
+                                Title = HttpUtility.HtmlDecode(g.TopicTitle),
+                                LastPosterId = g.TopicLastPosterId == Constants.ANONYMOUS_USER_ID ? null as int? : g.TopicLastPosterId,
+                                LastPosterName = HttpUtility.HtmlDecode(g.TopicLastPosterName),
+                                LastPostTime = g.TopicLastPostTime.ToUtcTime(),
+                                PostCount = g.TopicReplies,
+                                Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1, "PageNum"),
+                                Unread = true,
+                                LastPosterColor = g.TopicLastPosterColour,
+                                LastPostId = g.TopicLastPostId,
+                                ViewCount = g.TopicViews
+                            }
+                        ).ToListAsync()
                     }
                 };
                 IsNewPostView = true;

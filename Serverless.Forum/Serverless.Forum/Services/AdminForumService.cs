@@ -7,6 +7,7 @@ using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -194,7 +195,7 @@ namespace Serverless.Forum.Services
         public async Task<IEnumerable<ForumPermissions>> GetPermissions(int forumId)
         {
             using var connection = _context.Database.GetDbConnection();
-            await connection.OpenAsync();
+            await connection.OpenIfNeeded();
             DefaultTypeMap.MatchNamesWithUnderscores = true;
             return await connection.QueryAsync<ForumPermissions>("CALL `forum`.`get_forum_permissions`(@forumId);", new { forumId });
         }

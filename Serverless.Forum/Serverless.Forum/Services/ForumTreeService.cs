@@ -1,11 +1,14 @@
-﻿using Microsoft.CodeAnalysis.CSharp;
+﻿using Dapper;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Remotion.Linq.Clauses;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Pages;
 using Serverless.Forum.Utilities;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -47,20 +50,25 @@ namespace Serverless.Forum.Services
                 IsForumUnread = new Func<int, bool>(_ => false);
             }
 
-            var restrictedForums = (usr?.AllPermissions?.Where(p => p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE)?.Select(p => p.ForumId) ?? Enumerable.Empty<int>())
-                .Union(excludePasswordProtected ? _context.PhpbbForums.AsNoTracking().Where(f => !string.IsNullOrWhiteSpace(f.ForumPassword)).Select(f => f.ForumId) : Enumerable.Empty<int>());
-            var allForums = await (
-                from f in _context.PhpbbForums.AsNoTracking()
-                where parentType == null || f.ForumType == parentType
-                orderby f.LeftId
+            var passwordProtected = Enumerable.Empty<int>();
+            if (excludePasswordProtected)
+            {
+                using var connection = _context.Database.GetDbConnection();
+                await connection.OpenIfNeeded();
+                passwordProtected = await connection.QueryAsync<int>("SELECT forum_id FROM phpbb_forums WHERE COALESCE(forum_password, '') <> ''");
+            }
 
-                join t in _context.PhpbbTopics.AsNoTracking()
-                on f.ForumId equals t.ForumId
-                into joinedTopics
+            var restrictedForums = (usr?.AllPermissions?.Where(p => p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE)?.Select(p => p.ForumId) ?? Enumerable.Empty<int>()).Union(passwordProtected);
 
-                select new
+            var allForums = new List<(ForumDto ForumDisplay, int Parent, int Order)>();
+            using (var connection = _context.Database.GetDbConnection())
+            {
+                await connection.OpenIfNeeded();
+                var forums = await connection.QueryAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE @parentType is null OR forum_type = @parentType", new { parentType });
+                var topics = await connection.QueryAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE forum_id IN @forumList", new { forumList = forums.Select(f => f.ForumId) });
+                foreach (var f in forums)
                 {
-                    ForumDisplay = new ForumDto
+                    var dto = new ForumDto
                     {
                         Id = f.ForumId,
                         ParentId = f.ParentId,
@@ -74,7 +82,7 @@ namespace Serverless.Forum.Services
                         LastPosterId = f.ForumLastPosterId == 1 ? null as int? : f.ForumLastPosterId,
                         LastPostTime = f.ForumLastPostTime.ToUtcTime(),
                         LastPosterColor = f.ForumLastPosterColour,
-                        Topics = (from jt in joinedTopics
+                        Topics = (from jt in topics
                                   orderby jt.TopicLastPostTime descending
                                   select new TopicDto
                                   {
@@ -82,11 +90,10 @@ namespace Serverless.Forum.Services
                                       Title = HttpUtility.HtmlDecode(jt.TopicTitle),
                                   }).ToList(),
                         ForumType = f.ForumType
-                    },
-                    Parent = f.ParentId,
-                    Order = f.LeftId
+                    };
+                    allForums.Add((dto, f.ParentId, f.LeftId));
                 }
-            ).ToListAsync();
+            }
 
             ForumDto traverse(ForumDto node)
             {

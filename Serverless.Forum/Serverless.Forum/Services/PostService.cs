@@ -4,6 +4,7 @@ using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -13,19 +14,17 @@ namespace Serverless.Forum.Services
     {
         private readonly ForumDbContext _context;
         private readonly UserService _userService;
-        private readonly Utils _utils;
 
-        public PostService(ForumDbContext context, UserService userService, Utils utils)
+        public PostService(ForumDbContext context, UserService userService)
         {
             _context = context;
             _userService = userService;
-            _utils = utils;
         }
 
         public async Task<(List<PhpbbPosts> Posts, int Page, int Count)> GetPostPageAsync(int userId, int? topicId, int? page, int? postId)
         {
             using var connection = _context.Database.GetDbConnection();
-            await connection.OpenAsync();
+            await connection.OpenIfNeeded();
             DefaultTypeMap.MatchNamesWithUnderscores = true;
 
             using var multi = await connection.QueryMultipleAsync("CALL `forum`.`get_posts`(@userId, @topicId, @page, @postId);", new { userId, topicId, page, postId });
@@ -35,18 +34,15 @@ namespace Serverless.Forum.Services
                 Count: multi.Read<int>().Single()
             );
 
-            _utils.RunParallelDbTask(async (localContext) =>
-            {
-                var attachments = await (
-                    from a in localContext.PhpbbAttachments
-                    join p in toReturn.Posts
-                    on a.PostMsgId equals p.PostId
-                    select a
-                ).ToListAsync();
-                attachments.ForEach(a => a.DownloadCount++);
-                localContext.PhpbbAttachments.UpdateRange(attachments);
-                await localContext.SaveChangesAsync();
-            });
+            var attachments = await (
+                from a in _context.PhpbbAttachments
+                join p in toReturn.Posts
+                on a.PostMsgId equals p.PostId
+                select a
+            ).ToListAsync();
+            attachments.ForEach(a => a.DownloadCount++);
+            _context.PhpbbAttachments.UpdateRange(attachments);
+            await _context.SaveChangesAsync();
 
             return toReturn;
         }

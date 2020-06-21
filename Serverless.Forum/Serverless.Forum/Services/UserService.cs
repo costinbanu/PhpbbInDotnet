@@ -6,6 +6,7 @@ using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -19,9 +20,10 @@ namespace Serverless.Forum.Services
         private List<PhpbbAclRoles> _adminRoles;
         private List<PhpbbAclRoles> _modRoles;
         private List<PhpbbAclRoles> _userRoles;
-        private PhpbbUsers _anonymousDbUser;
-        private ClaimsPrincipal _anonymousClaimsPrincipal;
-        private LoggedUser _anonymousLoggedUser;
+
+        private static PhpbbUsers _anonymousDbUser;
+        private static ClaimsPrincipal _anonymousClaimsPrincipal;
+        private static LoggedUser _anonymousLoggedUser;
 
         public UserService(Utils utils, ForumDbContext context)
         {
@@ -67,8 +69,11 @@ namespace Serverless.Forum.Services
             {
                 return _anonymousDbUser;
             }
-
-            _anonymousDbUser = await _context.PhpbbUsers.AsNoTracking().FirstAsync(u => u.UserId == Constants.ANONYMOUS_USER_ID);
+            using (var connection = _context.Database.GetDbConnection())
+            {
+                await connection.OpenIfNeeded();
+                _anonymousDbUser = await connection.QuerySingleAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId = Constants.ANONYMOUS_USER_ID });
+            }
             return _anonymousDbUser;
         }
 
@@ -106,11 +111,11 @@ namespace Serverless.Forum.Services
                 select g.GroupEditTime
             ).FirstOrDefaultAsync();
             using var connection = _context.Database.GetDbConnection();
-            await connection.OpenAsync();
+            await connection.OpenIfNeeded();
             DefaultTypeMap.MatchNamesWithUnderscores = true;
 
             using var multi = await connection.QueryMultipleAsync("CALL `forum`.`get_user_details`(@UserId);", new { user.UserId });
-                        var intermediary = new LoggedUser
+            var intermediary = new LoggedUser
             {
                 UserId = user.UserId,
                 Username = user.Username,
@@ -134,23 +139,35 @@ namespace Serverless.Forum.Services
         public async Task<LoggedUser> DbUserToLoggedUserAsync(PhpbbUsers dbUser)
             => await ClaimsPrincipalToLoggedUserAsync(await DbUserToClaimsPrincipalAsync(dbUser));
 
-        public async Task<List<PhpbbAclRoles>> GetUserRolesListAsync()
-            => await GetUserRolesLazy();
-
         public async Task<List<PhpbbRanks>> GetRankListAsync()
-            => await _context.PhpbbRanks.AsNoTracking().ToListAsync();
-        
+        {
+            using var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeeded();
+            return (await connection.QueryAsync<PhpbbRanks>("SELECT * FROM phpbb_ranks")).ToList();
+        }
 
         public async Task<List<PhpbbGroups>> GetGroupListAsync()
-            => await _context.PhpbbGroups.AsNoTracking().ToListAsync();
-        
+        {
+            using var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeeded();
+            return (await connection.QueryAsync<PhpbbGroups>("SELECT * FROM phpbb_groups")).ToList();
+        }
 
         public async Task<int?> GetUserGroupAsync(int userId)
-            => (await _context.PhpbbUserGroup.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == userId))?.GroupId;
-        
+        {
+            using var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeeded();
+            var usr = await connection.QuerySingleAsync<PhpbbUserGroup>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
+            return usr?.GroupId;
+        }
 
         public async Task<LoggedUser> GetLoggedUserById(int userId)
-                => await DbUserToLoggedUserAsync(await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == userId));
+        {
+            using var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeeded();
+            var usr = await connection.QuerySingleAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
+            return await DbUserToLoggedUserAsync(usr);
+        }
 
         public async Task<(string Message, bool? IsSuccess)> SendPrivateMessage(int senderId, int receiverId, string subject, string text)
         {
@@ -216,20 +233,25 @@ namespace Serverless.Forum.Services
         }
 
         public async Task<int> UnreadPMs(int userId)
-            => await _context.PhpbbPrivmsgsTo.AsNoTracking().CountAsync(x => x.UserId == userId && x.AuthorId != x.UserId && x.PmUnread == 1);
+        {
+            using var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeeded();
+            return await connection.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_privmsgs_to WHERE user_id = @userId AND author_id <> user_id AND pm_unread = 1", new { userId });
+        }
 
-        private async Task<List<PhpbbAclRoles>> GetUserRolesLazy()
+        public async Task<List<PhpbbAclRoles>> GetUserRolesLazy()
         {
             if (_userRoles != null)
             {
                 return _userRoles;
             }
 
-            _userRoles = await (
-                from r in _context.PhpbbAclRoles.AsNoTracking()
-                where r.RoleType == "u_"
-                select r
-            ).ToListAsync();
+            using (var connection = _context.Database.GetDbConnection())
+            {
+                await connection.OpenIfNeeded();
+                _userRoles = (await connection.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'u_'")).ToList();
+            }
+
             return _userRoles;
         }
 
@@ -240,11 +262,12 @@ namespace Serverless.Forum.Services
                 return _modRoles;
             }
 
-            _modRoles = await (
-                from r in _context.PhpbbAclRoles.AsNoTracking()
-                where r.RoleType == "m_"
-                select r
-            ).ToListAsync();
+            using (var connection = _context.Database.GetDbConnection())
+            {
+                await connection.OpenIfNeeded();
+                _modRoles = (await connection.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'm_'")).ToList();
+            }
+
             return _modRoles;
         }
 
@@ -255,11 +278,12 @@ namespace Serverless.Forum.Services
                 return _adminRoles;
             }
 
-            _adminRoles = await (
-                from r in _context.PhpbbAclRoles.AsNoTracking()
-                where r.RoleType == "a_"
-                select r
-            ).ToListAsync();
+            using (var connection = _context.Database.GetDbConnection())
+            {
+                await connection.OpenIfNeeded();
+                _adminRoles = (await connection.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'a_'")).ToList();
+            }
+
             return _adminRoles;
         }
     }

@@ -279,26 +279,6 @@ namespace Serverless.Forum.Utilities
             return toReturn;
         }
 
-        public void RunParallelDbTask(Func<ForumDbContext, Task> toDo)
-        {
-            Task.Run(async () =>
-            {
-                try
-                {
-                    //https://stackoverflow.com/questions/48767910/entity-framework-core-a-second-operation-started-on-this-context-before-a-previ
-                    //needs more testing
-                    var builder = new DbContextOptionsBuilder<ForumDbContext>();
-                    builder.UseMySQL(_config["ForumDbConnectionString"]);
-                    using var context = new ForumDbContext(builder.Options);
-                    await toDo(context);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error encountered while running a parallel task.");
-                }
-            });
-        }
-
         public string HandleError(Exception ex, string message = null)
         {
             var id = Guid.NewGuid().ToString("n");

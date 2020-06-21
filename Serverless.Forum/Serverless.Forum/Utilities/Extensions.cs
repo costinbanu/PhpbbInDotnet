@@ -1,7 +1,12 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Serverless.Forum.Utilities
@@ -40,6 +45,14 @@ namespace Serverless.Forum.Utilities
             catch
             {
                 return null;
+            }
+        }
+
+        public static async Task OpenIfNeeded(this DbConnection connection)
+        {
+            if (connection.State != ConnectionState.Open)
+            {
+                await connection.OpenAsync();
             }
         }
     }

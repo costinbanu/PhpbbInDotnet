@@ -1,6 +1,6 @@
 ﻿CREATE DEFINER=`root`@`localhost` PROCEDURE `get_post_tracking`(user_id_parm int, topic_id_parm int)
 BEGIN
-    IF user_id_parm IS NULL OR user_id_parm = 1 THEN
+    IF user_id_parm IS NULL /*OR user_id_parm = 1*/ THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'NULL or ''1'' is not allowed for user_id.';
     END IF;
     
@@ -41,5 +41,6 @@ BEGIN
 	   NOT (
 			(topic_last_post_time <= topic_mark_time AND NOT ISNULL(topic_mark_time)) OR 
 			(topic_last_post_time <= forum_mark_time AND NOT ISNULL(forum_mark_time))
-	   );
+	   ) AND
+       p.poster_id <> user_id_parm;
 END

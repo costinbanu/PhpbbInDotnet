@@ -104,7 +104,8 @@ else
                 <span class="ForumContent">
                     @if (Model.IsNewPostView)
                     {
-                        @Html.Raw(string.Join(" → ", _forumService.GetPathInTree(await Model.GetForumTreeAsync(), f => f.Name, -1, topic.Id ?? -1).Skip(1)))
+                        var tree = await Model.GetForumTreeAsync();
+                        @Html.Raw(string.Join(" → ", _forumService.GetPathInTree(tree, f => f.Name, -1, topic.Id ?? -1).Skip(1)))
                         <br />
                     }
                     @if (topicGroup.TopicType == TopicType.Important)

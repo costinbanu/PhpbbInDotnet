@@ -187,7 +187,7 @@ else if (Model.ViewAsAnother)
     @if (!Model.ViewAsAnother && await Model.IsCurrentUserAdminHereAsync())
     {
         var permissions = new List<SelectListItem>(
-            (await _userService.GetUserRolesListAsync()).Select(
+            (await _userService.GetUserRolesLazy()).Select(
                 p => new SelectListItem(p.RoleDescription, p.RoleId.ToString(), p.RoleId == Model.AclRole)
             )
         );

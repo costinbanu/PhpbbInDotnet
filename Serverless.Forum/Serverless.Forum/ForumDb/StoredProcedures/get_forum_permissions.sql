@@ -1,4 +1,4 @@
-﻿CREATE DEFINER=`root`@`localhost` PROCEDURE `get_forum_permissions`(forum_id_param int)
+﻿CREATE DEFINER=`dbadmin`@`84.208.184.104` PROCEDURE `get_forum_permissions`(forum_id_param int)
 BEGIN
 	WITH extended_acl_user AS (
 		SELECT
@@ -27,20 +27,12 @@ BEGIN
       , r.role_id
 	  , r.role_name
 	  , r.role_description
-	  , r.has_role
-	FROM extended_acl_user au
-	, LATERAL (
-		SELECT
-			r1.role_id
-		  , r1.role_name
-		  , r1.role_description
-		  , CASE WHEN r1.role_id = au.auth_role_id
+	  , CASE WHEN r.role_id = au.auth_role_id
 			THEN true
 			ELSE false
 			END AS has_role
-		FROM phpbb_acl_roles r1
-		WHERE r1.role_type = 'f_'
-	) AS r
+	FROM extended_acl_user au, phpbb_acl_roles r
+	WHERE r.role_type = 'f_'
 	
     UNION ALL    
     
@@ -51,18 +43,10 @@ BEGIN
       , r.role_id
 	  , r.role_name
 	  , r.role_description
-	  , r.has_role
-	FROM extended_acl_group ag
-	, LATERAL (
-		SELECT
-			r1.role_id
-		  , r1.role_name
-		  , r1.role_description
-		  , CASE WHEN r1.role_id = ag.auth_role_id
+	  , CASE WHEN r.role_id = ag.auth_role_id
 			THEN true
 			ELSE false
 			END AS has_role
-		FROM phpbb_acl_roles r1
-		WHERE r1.role_type = 'f_'
-	) AS r;
+	FROM extended_acl_group ag, phpbb_acl_roles r
+	WHERE r.role_type = 'f_';
 END

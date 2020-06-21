@@ -12,6 +12,7 @@ using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
@@ -35,6 +36,7 @@ namespace Serverless.Forum
             _cacheService = cacheService;
             _userService = userService;
             _context = context;
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
         }
 
         #region User
@@ -163,6 +165,7 @@ namespace Serverless.Forum
         {
             if (forceRefresh || _tree == null)
             {
+                var _ = GetUnreadTopicsAndParentsLazy();
                 _tree = await _forumService.GetForumTree(parentType, await GetCurrentUserAsync(), forumId => IsForumUnread(forumId, forceRefresh));
             }
             return _tree;
@@ -180,15 +183,18 @@ namespace Serverless.Forum
             {
                 return _tracking;
             }
-
+            var curUserId = CurrentUserId;
             using (var connection = _context.Database.GetDbConnection())
             {
-                connection.Open();
+                if (connection.State != ConnectionState.Open)
+                {
+                    connection.Open();
+                }
                 DefaultTypeMap.MatchNamesWithUnderscores = true;
 
                 var result = connection.Query<TrackingQueryResult>(
                     "CALL `forum`.`get_post_tracking`(@userId, @topicId);",
-                    new { userId = CurrentUserId, topicId = null as int? }
+                    new { userId = curUserId, topicId = null as int? }
                 );
                 _tracking = from t in result
                             group t by new { t.ForumId, t.TopicId } into grouped
@@ -235,7 +241,13 @@ namespace Serverless.Forum
 
         protected async Task<IActionResult> WithValidForum(int forumId, bool overrideCheck, Func<PhpbbForums, Task<IActionResult>> toDo)
         {
-            var curForum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == forumId);
+            //var curForum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == forumId);
+            PhpbbForums curForum;
+            using (var connection = _context.Database.GetDbConnection())
+            {
+                await connection.OpenIfNeeded();
+                curForum = await connection.QuerySingleAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { forumId });
+            }
             if (!overrideCheck)
             {
                 if (curForum == null)
@@ -271,8 +283,14 @@ namespace Serverless.Forum
             => await WithValidForum(forumId, false, toDo);
 
         protected async Task<IActionResult> WithValidTopic(int topicId, Func<PhpbbForums, PhpbbTopics, Task<IActionResult>> toDo)
-        { 
-            var curTopic = await _context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == topicId);
+        {
+            //var curTopic = await _context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == topicId);
+            PhpbbTopics curTopic;
+            using (var connection = _context.Database.GetDbConnection())
+            {
+                await connection.OpenIfNeeded();
+                curTopic = await connection.QuerySingleAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
+            }
             if (curTopic == null)
             {
                 return NotFound();
@@ -282,7 +300,13 @@ namespace Serverless.Forum
 
         protected async Task<IActionResult> WithValidPost(int postId, Func<PhpbbForums, PhpbbTopics, PhpbbPosts, Task<IActionResult>> toDo)
         {
-            var curPost = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == postId);
+            //var curPost = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == postId);
+            PhpbbPosts curPost;
+            using (var connection = _context.Database.GetDbConnection())
+            {
+                await connection.OpenIfNeeded();
+                curPost = await connection.QuerySingleAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId });
+            }
             if (curPost == null)
             {
                 return NotFound();

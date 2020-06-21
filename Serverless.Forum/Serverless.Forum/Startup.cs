@@ -107,18 +107,18 @@ namespace Serverless.Forum
 
             services.AddHttpClient();
 
-            services.AddTransient<Utils>();
-            services.AddTransient<AdminForumService>();
-            services.AddTransient<AdminUserService>();
-            services.AddTransient<WritingToolsService>();
-            services.AddTransient<CacheService>();
-            services.AddTransient<ForumTreeService>();
-            services.AddTransient<PostService>();
-            services.AddTransient<UserService>();
-            services.AddTransient<StorageService>();
-            services.AddTransient<ModeratorService>();
-            services.AddTransient<BBCodeRenderingService>();
-            services.AddDbContext<ForumDbContext>(options => options.UseMySQL(Configuration["ForumDbConnectionString"]), ServiceLifetime.Transient);
+            services.AddSingleton<Utils>();
+            services.AddScoped<AdminForumService>();
+            services.AddScoped<AdminUserService>();
+            services.AddScoped<WritingToolsService>();
+            services.AddScoped<CacheService>();
+            services.AddScoped<ForumTreeService>();
+            services.AddScoped<PostService>();
+            services.AddScoped<UserService>();
+            services.AddScoped<StorageService>();
+            services.AddScoped<ModeratorService>();
+            services.AddScoped<BBCodeRenderingService>();
+            services.AddDbContext<ForumDbContext>(options => options.UseMySQL(Configuration["ForumDbConnectionString"], o => o.CommandTimeout(60)), ServiceLifetime.Scoped);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

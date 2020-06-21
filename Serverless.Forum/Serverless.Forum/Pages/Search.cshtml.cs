@@ -126,37 +126,42 @@ namespace Serverless.Forum.Pages
                 ModelState.AddModelError(nameof(SearchText), "Introduceți unul sau mai multe cuvinte!");
                 return;
             }
-            using var connection = _context.Database.GetDbConnection();
-            await connection.OpenAsync();
-            DefaultTypeMap.MatchNamesWithUnderscores = true;
-            PageNum ??= 1;
             var restrictedForums = await _forumService.GetRestrictedForumList(await GetCurrentUserAsync());
             restrictedForums.Remove(ForumId ?? -1);
             if (!restrictedForums.Any())
             {
                 restrictedForums.Add(0);
             }
-            using var multi = await connection.QueryMultipleAsync(
-                "CALL `forum`.`search_post_text`(@forum, @topic, @author, @page, @excluded_forums, @search);",
-                new
-                {
-                    forum = ForumId > 0 ? ForumId : null,
-                    topic = TopicId > 0 ? TopicId : null,
-                    author = AuthorId > 0 ? AuthorId : null as int?,
-                    page = PageNum,
-                    excluded_forums = string.Join(",", restrictedForums),
-                    search = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText)
-                }
-            );
 
-            Posts = await multi.ReadAsync<ExtendedPostDisplay>();
+            using (var connection = _context.Database.GetDbConnection())
+            {
+                await connection.OpenIfNeeded();
+                DefaultTypeMap.MatchNamesWithUnderscores = true;
+                PageNum ??= 1;
+                using var multi = await connection.QueryMultipleAsync(
+                    "CALL `forum`.`search_post_text`(@forum, @topic, @author, @page, @excluded_forums, @search);",
+                    new
+                    {
+                        forum = ForumId > 0 ? ForumId : null,
+                        topic = TopicId > 0 ? TopicId : null,
+                        author = AuthorId > 0 ? AuthorId : null as int?,
+                        page = PageNum,
+                        excluded_forums = string.Join(",", restrictedForums),
+                        search = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText)
+                    }
+                );
+
+                Posts = await multi.ReadAsync<ExtendedPostDisplay>();
+
+                TotalResults = unchecked((int)(await multi.ReadAsync<long>()).Single());
+            }
+
             Parallel.ForEach(Posts, p =>
             {
                 p.AuthorHasAvatar = !string.IsNullOrWhiteSpace(p.UserAvatar);
                 //p.AuthorSignature = p.UserSig == null ? null : _renderingService.BbCodeToHtml(p.UserSig, p.UserSigBbcodeUid);
             });
             await _renderingService.ProcessPosts(Posts, PageContext, HttpContext, false, SearchText);
-            TotalResults = unchecked((int)(await multi.ReadAsync<long>()).Single());
 
             Paginator = new Paginator(TotalResults.Value, PageNum.Value, GetSearchLinkForPage(PageNum.Value + 1));
         }

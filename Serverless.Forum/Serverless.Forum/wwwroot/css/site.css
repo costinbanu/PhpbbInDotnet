@@ -95,6 +95,7 @@ h3 {
     background-color: /*#fef6e9*/ #EBEADD;
     border: solid 1px #DBDBCE;
     margin: 20px 0px 20px 0px !important;
+    font-size: 1em !important;
 }
 
 .CodeBlock {
