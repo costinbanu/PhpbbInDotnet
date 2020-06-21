@@ -46,7 +46,14 @@ namespace Serverless.Forum
             services.AddTransient<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton(Configuration);
 
+            //services.AddDistributedSqlServerCache(options =>
+            //{
+            //    options.ConnectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=DistCache;Integrated Security=True;";
+            //    options.SchemaName = "dbo";
+            //    options.TableName = "ForumCache";
+            //});
             services.AddDistributedMemoryCache();
+
             services.AddSession(options => {
                 options.IdleTimeout = TimeSpan.FromDays(30);
                 options.Cookie.IsEssential = true;
@@ -69,8 +76,8 @@ namespace Serverless.Forum
             }
 
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie();
-
-            var builder = services.AddMvc()
+            
+            var builder = services.AddMvc(o => o.EnableEndpointRouting = false)
                 .SetCompatibilityVersion(CompatibilityVersion.Version_3_0)
                 .AddRazorOptions(o =>
                 {
@@ -151,7 +158,7 @@ namespace Serverless.Forum
                 });
                 app.UseHsts();
             }
-
+            app.UseMiddleware<GCMiddleware>();
             app.UseRouting();
             app.UseRequestLocalization();
             app.UseHttpsRedirection();

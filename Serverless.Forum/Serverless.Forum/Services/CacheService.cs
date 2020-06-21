@@ -31,7 +31,7 @@ namespace Serverless.Forum.Services
             => await _cache.SetAsync(
                 key,
                 await _utils.CompressObject(value),
-                new DistributedCacheEntryOptions { SlidingExpiration = TimeSpan.FromHours(12) }
+                new DistributedCacheEntryOptions { SlidingExpiration = TimeSpan.FromHours(4) }
             );
 
         public async Task<bool> ExistsInCache(string key)
