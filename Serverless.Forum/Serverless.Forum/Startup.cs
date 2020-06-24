@@ -48,11 +48,11 @@ namespace Serverless.Forum
 
             //services.AddDistributedSqlServerCache(options =>
             //{
-            //    options.ConnectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=DistCache;Integrated Security=True;";
+            //    options.ConnectionString = @"Data Source=np:\\.\pipe\LOCALDB#2A91525F\tsql\query;Initial Catalog=DistCache;Integrated Security=True;";
             //    options.SchemaName = "dbo";
             //    options.TableName = "ForumCache";
             //});
-            services.AddDistributedMemoryCache();
+            services.AddMemoryCache();
 
             services.AddSession(options => {
                 options.IdleTimeout = TimeSpan.FromDays(30);
@@ -158,7 +158,7 @@ namespace Serverless.Forum
                 });
                 app.UseHsts();
             }
-            app.UseMiddleware<GCMiddleware>();
+            //app.UseMiddleware<GCMiddleware>();
             app.UseRouting();
             app.UseRequestLocalization();
             app.UseHttpsRedirection();

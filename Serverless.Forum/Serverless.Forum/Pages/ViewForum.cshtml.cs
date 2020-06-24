@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Dapper;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
@@ -37,22 +38,32 @@ namespace Serverless.Forum.Pages
             => await WithValidForum(ForumId, async (thisForum) =>
             {
                 ForumTitle = HttpUtility.HtmlDecode(thisForum?.ForumName ?? "untitled");
+                IEnumerable<dynamic> postCounts;
+                IEnumerable<PhpbbTopics> topics;
 
-                ParentForumId = thisForum.ParentId;
-                ParentForumTitle = HttpUtility.HtmlDecode((await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(pf => pf.ForumId == thisForum.ParentId))?.ForumName ?? "untitled");
+                using (var connection = _context.Database.GetDbConnection())
+                {
+                    await connection.OpenIfNeeded();
+                    var parent = await connection.QuerySingleAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @ParentId", new { thisForum.ParentId });
+                    ParentForumId = parent.ForumId;
+                    ParentForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? "untitled");
+                    postCounts = (
+                        await connection.QueryAsync(
+                            @"SELECT topic_id, count(*) AS count
+                                FROM phpbb_posts
+                               WHERE forum_id = @ForumId
+                               GROUP BY topic_id",
+                            new { ForumId }
+                        )
+                    ).Select(c => new { TopicId = (int)c.topic_id, Count = (int)c.count });
+                    topics = await connection.QueryAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE forum_id = @ForumId OR topic_type = @topicType ORDER BY topic_last_post_time DESC", new { ForumId, topicType = TopicType.Global });
+                }
 
                 Forums = (await GetForum(ForumId, _forceTreeRefresh)).ChildrenForums.ToList();
                 var usr = await GetCurrentUserAsync();
-                var postCounts = await (
-                    from p in _context.PhpbbPosts.AsNoTracking()
-                    where p.ForumId == ForumId
-                    group p by p.TopicId into groups
-                    select new { TopicId = groups.Key, Count = groups.Count() }
-                ).ToListAsync();
-                Topics = await (
-                    from t in _context.PhpbbTopics.AsNoTracking()
-                    where t.ForumId == ForumId || t.TopicType == TopicType.Global
-                    orderby t.TopicLastPostTime descending
+
+                Topics = (
+                    from t in topics
 
                     group t by t.TopicType into groups
                     orderby groups.Key descending
@@ -80,7 +91,7 @@ namespace Serverless.Forum.Pages
                                      ViewCount = g.TopicViews
                                  }
                     }
-                ).ToListAsync();
+                ).ToList();
 
                 return Page();
             });

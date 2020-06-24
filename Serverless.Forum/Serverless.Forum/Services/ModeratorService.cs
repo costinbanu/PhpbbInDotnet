@@ -1,6 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿//using Microsoft.EntityFrameworkCore;
+using Dapper;
+using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -237,5 +242,17 @@ namespace Serverless.Forum.Services
         }
 
         #endregion Post
+
+        public async Task<IEnumerable<Tuple<int, string>>> GetReportedMessages()
+        {
+            using var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeeded();
+            return (await connection.QueryAsync(
+                @"SELECT r.post_id, jr.reason_title
+                    FROM phpbb_reports r
+                    JOIN phpbb_reports_reasons jr ON r.reason_id = jr.reason_id
+                    WHERE r.report_closed = 0"
+            )).Select(r => Tuple.Create((int)r.post_id, (string)r.reason_title));
+        }
     }
 }

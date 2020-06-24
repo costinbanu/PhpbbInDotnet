@@ -105,11 +105,8 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
-            var user = from u in _context.PhpbbUsers.AsNoTracking()
-                       let cryptedPass = Crypter.Phpass.Crypt(Password, u.UserPassword)
-                       where u.UsernameClean == _utils.CleanString(UserName)
-                          && cryptedPass == u.UserPassword
-                       select u;
+            var user = await _context.PhpbbUsers.AsNoTracking().Where(u => u.UsernameClean == _utils.CleanString(UserName)).ToListAsync();
+            user = user.Where(u => Crypter.Phpass.Crypt(Password, u.UserPassword) == u.UserPassword).ToList();
 
             Mode = LoginMode.Normal;
             if (user.Count() != 1)

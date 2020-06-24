@@ -165,7 +165,7 @@ namespace Serverless.Forum.Pages
 
             if (DeleteAvatar)
             {
-                if (!await _storageService.DeleteFile($"{_storageService.FolderPrefix}{_storageService.AvatarsFolder}{dbUser.UserId}{Path.GetExtension(dbUser.UserAvatar)}"))
+                if (!_storageService.DeleteAvatar(dbUser.UserId))
                 {
                     throw new Exception("Failed to delete file");
                 }
@@ -178,7 +178,8 @@ namespace Serverless.Forum.Pages
 
             if (Avatar != null)
             {
-                if (!await _storageService.UploadFile($"{_storageService.FolderPrefix}{_storageService.AvatarsFolder}{dbUser.UserId}{Path.GetExtension(Avatar.FileName)}", Avatar.ContentType, Avatar.OpenReadStream()))
+                var name = await _storageService.UploadAvatar(dbUser.UserId, Avatar);
+                if (string.IsNullOrWhiteSpace(name))
                 {
                     throw new Exception("Failed to upload file");
                 }
@@ -187,7 +188,7 @@ namespace Serverless.Forum.Pages
                 dbUser.UserAvatarType = 1;
                 dbUser.UserAvatarWidth = unchecked((short)bmp.Width);
                 dbUser.UserAvatarHeight = unchecked((short)bmp.Height);
-                dbUser.UserAvatar = $"{dbUser.UserId}_{Avatar.FileName}";
+                dbUser.UserAvatar = name;
             }
 
             var dbAclRole = await _context.PhpbbAclUsers.FirstOrDefaultAsync(r => r.UserId == dbUser.UserId);
@@ -279,13 +280,15 @@ namespace Serverless.Forum.Pages
                 
                 join t in context.PhpbbTopics.AsNoTracking()
                 on p.TopicId equals t.TopicId
+
+                where !restrictedForums.Contains(t.ForumId)
+
+                //join f in restrictedForums
+                //on t.ForumId equals f
+                //into joinedForums
                 
-                join f in restrictedForums
-                on t.ForumId equals f
-                into joinedForums
-                
-                from jf in joinedForums.DefaultIfEmpty()
-                where jf == default
+                //from jf in joinedForums.DefaultIfEmpty()
+                //where jf == default
                 group p by p.TopicId into groups
                 orderby groups.Count() descending
                 select groups.Key as int?
@@ -293,7 +296,7 @@ namespace Serverless.Forum.Pages
             var preferredTopicTitle = (await context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == preferredTopicId))?.TopicTitle;
             if (preferredTopicId.HasValue)
             {
-                var pathParts = new List<string>(_forumService.GetPathInTree(await GetForumTreeAsync(), f => f.Name, -1, preferredTopicId.Value).Skip(1))
+                var pathParts = new List<string>(_forumService.GetPathInTree(await GetForumTree(), f => f.Name, -1, preferredTopicId.Value).Skip(1))
                 {
                     preferredTopicTitle
                 };

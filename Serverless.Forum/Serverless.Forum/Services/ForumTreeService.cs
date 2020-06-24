@@ -1,8 +1,6 @@
 ﻿using Dapper;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Remotion.Linq.Clauses;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Pages;
@@ -19,35 +17,29 @@ namespace Serverless.Forum.Services
     public class ForumTreeService
     {
         private readonly ForumDbContext _context;
+        private HashSet<ForumTree> _tree;
 
         public ForumTreeService(ForumDbContext context)
         {
             _context = context;
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
         }
 
-        public async Task<List<int>> GetRestrictedForumList(LoggedUser user)
+        public async Task<IEnumerable<int>> GetRestrictedForumList(LoggedUser user)
         {
             var allowedForums = new List<int>();
-            Traverse(allowedForums, await GetForumTree(null, user, null, true), true, 0, f => f.Id.Value, (_, __) => { }, -1, -1);
-            return await (
-                from f in _context.PhpbbForums.AsNoTracking()
-                
-                join af in allowedForums
-                on f.ForumId equals af
-                into allowed
-                
-                from a in allowed.DefaultIfEmpty()
-                where a == default
-                
-                select f.ForumId
-            ).ToListAsync();
+            var root = (await GetForumTree(user, true)).FirstOrDefault(f => f.ForumId == 0);
+            await Traverse(allowedForums, root, true, 0, f => f.ForumId, (_, __) => { }, -1, -1);
+            using var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeeded();
+            return await connection.QueryAsync<int>("SELECT forum_id FROM phpbb_forums WHERE forum_id NOT IN @allowedForums", new { allowedForums });
         }
 
-        public async Task<ForumDto> GetForumTree(ForumType? parentType = null, LoggedUser usr = null, Func<int, bool> IsForumUnread = null, bool excludePasswordProtected = false, int fromParent = 0)
+        public async Task<HashSet<ForumTree>> GetForumTree(LoggedUser usr = null, bool excludePasswordProtected = false)
         {
-            if (IsForumUnread == null)
+            if (_tree != null)
             {
-                IsForumUnread = new Func<int, bool>(_ => false);
+                return _tree;
             }
 
             var passwordProtected = Enumerable.Empty<int>();
@@ -59,116 +51,43 @@ namespace Serverless.Forum.Services
             }
 
             var restrictedForums = (usr?.AllPermissions?.Where(p => p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE)?.Select(p => p.ForumId) ?? Enumerable.Empty<int>()).Union(passwordProtected);
-
-            var allForums = new List<(ForumDto ForumDisplay, int Parent, int Order)>();
             using (var connection = _context.Database.GetDbConnection())
             {
-                await connection.OpenIfNeeded();
-                var forums = await connection.QueryAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE @parentType is null OR forum_type = @parentType", new { parentType });
-                var topics = await connection.QueryAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE forum_id IN @forumList", new { forumList = forums.Select(f => f.ForumId) });
-                foreach (var f in forums)
-                {
-                    var dto = new ForumDto
-                    {
-                        Id = f.ForumId,
-                        ParentId = f.ParentId,
-                        Name = HttpUtility.HtmlDecode(f.ForumName),
-                        ForumPassword = f.ForumPassword,
-                        Description = f.ForumDesc,
-                        DescriptionBbCodeUid = f.ForumDescUid,
-                        Unread = IsForumUnread(f.ForumId),
-                        LastPostId = f.ForumLastPostId,
-                        LastPosterName = HttpUtility.HtmlDecode(f.ForumLastPosterName),
-                        LastPosterId = f.ForumLastPosterId == 1 ? null as int? : f.ForumLastPosterId,
-                        LastPostTime = f.ForumLastPostTime.ToUtcTime(),
-                        LastPosterColor = f.ForumLastPosterColour,
-                        Topics = (from jt in topics
-                                  orderby jt.TopicLastPostTime descending
-                                  select new TopicDto
-                                  {
-                                      Id = jt.TopicId,
-                                      Title = HttpUtility.HtmlDecode(jt.TopicTitle),
-                                  }).ToList(),
-                        ForumType = f.ForumType
-                    };
-                    allForums.Add((dto, f.ParentId, f.LeftId));
-                }
+                _tree = new HashSet<ForumTree>(await connection.QueryAsync<ForumTree>("CALL `forum`.`get_forum_tree`(@restricted);", new { restricted = string.Join(',', restrictedForums) }));
             }
 
-            ForumDto traverse(ForumDto node)
-            {
-                node.ChildrenForums = (
-                    from f in allForums
-                    where f.Parent == node.Id && !restrictedForums.Contains(f.ForumDisplay.Id ?? -1)
-                    orderby f.Order
-                    select traverse(f.ForumDisplay)
-                ).ToList();
-
-                var (lastPosterColor, lastPosterId, lastPosterName, lastPostId, lastPostTime) = (
-                    from c in node.ChildrenForums
-                    group c by c.LastPostTime into groups
-                    orderby groups.Key ?? DateTime.MinValue descending
-                    let first = groups.FirstOrDefault()
-                    select (first?.LastPosterColor, first?.LastPosterId, first?.LastPosterName, first?.LastPostId, first?.LastPostTime)
-                ).FirstOrDefault();
-
-                node.Unread |= node.ChildrenForums.Any(c => c.Unread);
-                if (node.LastPostTime < (lastPostTime ?? DateTime.MinValue))
-                {
-                    node.LastPosterColor = lastPosterColor ?? node.LastPosterColor;
-                    node.LastPosterId = lastPosterId ?? node.LastPosterId;
-                    node.LastPosterName = lastPosterName ?? node.LastPosterName;
-                    node.LastPostId = lastPostId ?? node.LastPostId;
-                    node.LastPostTime = lastPostTime ?? node.LastPostTime;
-                }
-
-                return node;
-            }
-
-            var dummy = new ForumDto
-            {
-                Id = 0,
-                Name = Constants.FORUM_NAME,
-                ChildrenForums = (
-                    from f in allForums
-                    where f.Parent == fromParent && !restrictedForums.Contains(f.ForumDisplay.Id ?? -1)
-                    orderby f.Order
-                    select traverse(f.ForumDisplay)
-                ).ToList()
-            };
-
-            return dummy;
+            return _tree;
         }
 
-        public List<ForumDto> GetPathInTree(ForumDto root, int forumId)
+        public async Task<List<ForumTree>> GetPathInTree(ForumTree root, int forumId)
         {
-            var track = new List<ForumDto>();
-            Traverse(track, root, false, 0, x => x, (x, _) => { }, forumId, -1);
+            var track = new List<ForumTree>();
+            await Traverse(track, root, false, 0, x => x, (x, _) => { }, forumId, -1);
             return track;
         }
 
-        public List<T> GetPathInTree<T>(ForumDto root, Func<ForumDto, T> mapToType, int forumId, int topicId)
+        public async Task<List<T>> GetPathInTree<T>(ForumTree root, Func<ForumTree, T> mapToType, int forumId, int topicId)
         {
             var track = new List<T>();
-            Traverse(track, root, false, 0, mapToType, (x, _) => { }, forumId, topicId);
+            await Traverse(track, root, false, 0, mapToType, (x, _) => { }, forumId, topicId);
             return track;
         }
 
-        public List<T> GetPathInTree<T>(ForumDto root, Func<ForumDto, T> mapToType)
+        public async Task<List<T>> GetPathInTree<T>(ForumTree root, Func<ForumTree, T> mapToType)
         {
             var track = new List<T>();
-            Traverse(track, root, true, 0, mapToType, (x, _) => { }, -1, -1);
+            await Traverse(track, root, true, 0, mapToType, (x, _) => { }, -1, -1);
             return track;
         }
 
-        public List<T> GetPathInTree<T>(ForumDto root, Func<ForumDto, T> mapToType, Action<T, int> transformForLevel) where T : class
+        public async Task<List<T>> GetPathInTree<T>(ForumTree root, Func<ForumTree, T> mapToType, Action<T, int> transformForLevel) where T : class
         {
             var track = new List<T>();
-            Traverse(track, root, true, 0, mapToType, transformForLevel, -1, -1);
+            await Traverse(track, root, true, 0, mapToType, transformForLevel, -1, -1);
             return track;
         }
 
-        private bool Traverse<T>(List<T> track, ForumDto node, bool isFullTraversal, int level, Func<ForumDto, T> mapToType, Action<T, int> transformForLevel, int forumId, int topicId) 
+        private async Task<bool> Traverse<T>(List<T> track, ForumTree node, bool isFullTraversal, int level, Func<ForumTree, T> mapToType, Action<T, int> transformForLevel, int forumId, int topicId) 
         {
             if (node == null)
             {
@@ -177,7 +96,7 @@ namespace Serverless.Forum.Services
 
             T item = default;
 
-            if (!isFullTraversal && ((node.Topics?.Any(t => t.Id == topicId) ?? false) || node.Id == forumId))
+            if (!isFullTraversal && ((node.TopicList?.Any(t => t == topicId) ?? false) || node.ForumId == forumId))
             {
                 item = mapToType(node);
                 transformForLevel(item, level);
@@ -189,9 +108,10 @@ namespace Serverless.Forum.Services
             transformForLevel(item, level);
             track.Add(item);
 
-            foreach (var child in node.ChildrenForums)
+            foreach (var childId in node.ChildList)
             {
-                if (Traverse(track, child, isFullTraversal, level + 1, mapToType, transformForLevel, forumId, topicId))
+                var child = (await GetForumTree()).FirstOrDefault(t => t.ForumId == childId);
+                if (await Traverse(track, child, isFullTraversal, level + 1, mapToType, transformForLevel, forumId, topicId))
                 {
                     return true;
                 }

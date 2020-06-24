@@ -1,16 +1,11 @@
-﻿using Amazon;
-using Amazon.S3;
-using Amazon.S3.Model;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 
 namespace Serverless.Forum.Services
@@ -18,89 +13,34 @@ namespace Serverless.Forum.Services
     public class StorageService
     {
         private readonly IConfiguration _config;
-        private readonly IHostEnvironment _hostingEnvironment;
+        private readonly Utils _utils;
 
-        public string FolderPrefix => _config["AWS:S3FolderPrefix"];
-        public string AvatarsFolder => _config["AWS:S3AvatarsFolder"];
+        public string AttachmentsPath => Path.GetFullPath(_config["Storage:Files"]);
+        public string AvatarsPath => Path.GetFullPath(_config["Storage:Avatars"]);
 
-        public StorageService(IConfiguration config, IHostEnvironment hostingEnvironment)
+        public StorageService(IConfiguration config, Utils utils)
         {
             _config = config;
-            _hostingEnvironment = hostingEnvironment;
+            _utils = utils;
         }
 
-        public async Task<bool> FileExists(string fileName)
-        {
-            using var s3client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1);
-            try
-            {
-                await s3client.GetObjectMetadataAsync(
-                    new GetObjectMetadataRequest()
-                    {
-                        BucketName = _config["AwsS3BucketName"],
-                        Key = fileName
-                    }
-                );
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        public async Task<string> GetFileUrl(string name, string contentDisposition, string contentType)
-        {
-            string Impl(string fileName)
-            {
-                using var s3client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1);
-                var request = new GetPreSignedUrlRequest
-                {
-                    BucketName = _config["AwsS3BucketName"],
-                    Key = fileName,
-                    Expires = DateTime.Now.AddMinutes(2),
-                    ResponseHeaderOverrides = new ResponseHeaderOverrides
-                    {
-                        ContentDisposition = contentDisposition,
-                        ContentType = contentType
-                    }
-                };
-                return s3client.GetPreSignedURL(request);
-            }
-
-            if (_hostingEnvironment.IsProduction())
-            {
-                return Impl(name);
-            }
-            else if (await FileExists(name))
-            {
-                return Impl(name);
-            }
-            else if (await FileExists($"{FolderPrefix}{name}"))
-            {
-                return Impl($"{FolderPrefix}{name}");
-            }
-            else
-            {
-                return string.Empty;
-            }
-        }
+        public string GetFileUrl(string name, bool isAvatar)
+            => isAvatar ? $"{_config["Storage:Avatars"]}/{name}" : $"{_config["Storage:Files"]}/{name}";
 
         public async Task<(IEnumerable<PhpbbAttachments> SucceededUploads, IEnumerable<string> FailedUploads)> BulkAddAttachments(IEnumerable<IFormFile> attachedFiles, int userId)
         {
             var succeeded = new List<PhpbbAttachments>();
             var failed = new List<string>();
-            using var s3client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1);
             foreach (var file in attachedFiles)
             {
-                var name = $"{userId}_{Guid.NewGuid():n}";
-
-                if (!await UploadFileImpl(name, file.ContentType, file.OpenReadStream(), s3client))
+                try
                 {
-                    failed.Add(file.FileName);
-                }
-                else
-                {
+                    var name = $"{userId}_{Guid.NewGuid():n}";
+                    using (var input = file.OpenReadStream())
+                    using (var fs = File.Open(Path.Combine(AttachmentsPath, name), FileMode.Create))
+                    {
+                        await input.CopyToAsync(fs);
+                    }
                     succeeded.Add(new PhpbbAttachments
                     {
                         AttachComment = null,
@@ -113,77 +53,99 @@ namespace Serverless.Forum.Services
                         PosterId = userId
                     });
                 }
+                catch (Exception ex)
+                {
+                    _utils.HandleError(ex, "Error uploading attachments.");
+                    failed.Add(file.FileName);
+                }
             }
             return (succeeded, failed);
         }
 
-        public async Task<bool> UploadFile(string name, string contentType, Stream content)
+        public async Task<string> UploadAvatar(int userId, IFormFile file)
         {
-            using var s3client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1);
-            return await UploadFileImpl(name, contentType, content, s3client);
-        }
-
-        public async Task<bool> DeleteFile(string name)
-        {
-            var request = new DeleteObjectRequest
+            try
             {
-                BucketName = _config["AwsS3BucketName"],
-                Key = $"{FolderPrefix}{name}"
-            };
-            using var s3client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1);
-            var response = await s3client.DeleteObjectAsync(request);
-            return response.HttpStatusCode == HttpStatusCode.NoContent;
-        }
-
-        public async Task<bool> BulkDeleteFiles(IEnumerable<string> files)
-        {
-            using var s3client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1);
-            var request = new DeleteObjectsRequest
-            {
-                BucketName = _config["AwsS3BucketName"],
-                Objects = (
-                    from f in files
-                    where string.IsNullOrWhiteSpace(FolderPrefix) || f.StartsWith(FolderPrefix)
-                    select new KeyVersion { Key = f }
-                ).ToList()
-            };
-            var response = await s3client.DeleteObjectsAsync(request);
-            return response.DeletedObjects.Count == files.Count();
-        }
-
-        public async IAsyncEnumerable<S3Object> ListItems(bool onlyCurrentEnvironment = false)
-        {
-            var request = new ListObjectsV2Request
-            {
-                BucketName = _config["AwsS3BucketName"],
-                Prefix = onlyCurrentEnvironment ? FolderPrefix : null
-            };
-            using var s3client = new AmazonS3Client(_config["AwsS3Key"], _config["AwsS3Secret"], RegionEndpoint.EUCentral1);
-            ListObjectsV2Response response;
-
-            do
-            {
-                response = await s3client.ListObjectsV2Async(request);
-                request.ContinuationToken = response.NextContinuationToken;
-                foreach (var obj in response.S3Objects)
+                var name = $"{userId}_{DateTime.UtcNow.ToUnixTimestamp()}{Path.GetExtension(file.FileName)}";
+                using (var input = file.OpenReadStream())
+                using (var fs = File.Open(Path.Combine(AvatarsPath, name), FileMode.Create))
                 {
-                    yield return obj;
+                    await input.CopyToAsync(fs);
                 }
-            } while (response.IsTruncated);
+                return name;
+            }
+            catch (Exception ex)
+            {
+                _utils.HandleError(ex, "Error uploading avatar.");
+                return null;
+            }
         }
 
-        private async Task<bool> UploadFileImpl(string name, string contentType, Stream content, AmazonS3Client s3client)
+        public bool DeleteAvatar(int userId)
         {
-            var request = new PutObjectRequest
+            var name = Directory.GetFiles(AvatarsPath, $"{userId}_*.*").FirstOrDefault();
+            if (File.Exists(name ?? string.Empty))
             {
-                BucketName = _config["AwsS3BucketName"],
-                Key = $"{FolderPrefix}{name}",
-                ContentType = contentType,
-                InputStream = content
-            };
+                return DeleteFile(name, true);
+            }
+            return false;
+        }
 
-            var response = await s3client.PutObjectAsync(request);
-            return response.HttpStatusCode == HttpStatusCode.OK;
+        public bool DeleteFile(string name, bool isAvatar)
+        {
+            try
+            {
+                var path = isAvatar ? Path.Combine(AvatarsPath, name) : Path.Combine(AttachmentsPath, name);
+                File.Delete(path);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _utils.HandleError(ex, $"Error deleting file '{name}'.");
+                return false;
+            }
+        }
+
+        public (IEnumerable<string> Succeeded, IEnumerable<string> Failed) BulkDeleteAttachments(IEnumerable<string> files)
+        {
+            var succeeded = new List<string>();
+            var failed = new List<string>();
+            foreach (var file in files)
+            {
+                try
+                {
+                    File.Delete(Path.Combine(AttachmentsPath, file));
+                    succeeded.Add(file);
+                }
+                catch (Exception ex)
+                {
+                    _utils.HandleError(ex, $"Error deleting file '{file}'.");
+                    failed.Add(file);
+                }
+            }
+            return (succeeded, failed);
+        }
+
+        public IEnumerable<FileInfo> ListAttachments()
+        {
+            try
+            {
+                return Directory.GetFiles(AttachmentsPath).Select(f =>
+                {
+                    FileInfo inf = null;
+                    try
+                    {
+                        inf = new FileInfo(f);
+                    }
+                    catch { }
+                    return inf;
+                }).Where(inf => inf != null);
+            }
+            catch (Exception ex)
+            {
+                _utils.HandleError(ex, "Error listing attachments");
+                return Enumerable.Empty<FileInfo>();
+            }
         }
     }
 }

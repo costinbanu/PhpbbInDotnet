@@ -34,21 +34,45 @@ namespace Serverless.Forum.Services
                 Count: multi.Read<int>().Single()
             );
 
-            var attachments = await (
-                from a in _context.PhpbbAttachments
-                join p in toReturn.Posts
-                on a.PostMsgId equals p.PostId
-                select a
-            ).ToListAsync();
-            attachments.ForEach(a => a.DownloadCount++);
-            _context.PhpbbAttachments.UpdateRange(attachments);
-            await _context.SaveChangesAsync();
+            await connection.ExecuteAsync(
+                "UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE post_msg_id IN @postIds",
+                new { postIds = toReturn.Posts.Select(p => p.PostId) }
+            );
+
+            //var attachments = await (
+            //    from a in _context.PhpbbAttachments
+            //    where toReturn.Posts.Select(p => p.PostId).Contains(a.PostMsgId)
+            //    select a
+            //).ToListAsync();
+            //attachments.ForEach(a => a.DownloadCount++);
+            //_context.PhpbbAttachments.UpdateRange(attachments);
+            //await _context.SaveChangesAsync();
 
             return toReturn;
         }
 
         public async Task<PollDto> GetPoll(PhpbbTopics _currentTopic)
         {
+            var options = Enumerable.Empty<PhpbbPollOptions>();
+            var voters = Enumerable.Empty<PhpbbUsers>();
+
+            using (var connection = _context.Database.GetDbConnection())
+            {
+                await connection.OpenIfNeeded();
+                options = await connection.QueryAsync<PhpbbPollOptions>("SELECT * FROM phpbb_poll_options WHERE topic_id = @TopicId", new { _currentTopic.TopicId });
+                if (options.Any())
+                {
+                    voters = await connection.QueryAsync<PhpbbUsers>(
+                        @"SELECT u.*
+                            FROM phpbb_users u
+                            JOIN phpbb_poll_votes v ON u.user_id = v.vote_user_id
+                           WHERE v.poll_option_id IN (@optionIds)
+                             AND v.topic_id IN (@topicIds)",
+                        new { optionIds = options.Select(o => o.PollOptionId), topicIds = options.Select(o => o.TopicId) }
+                    );
+                }
+            }
+
             var toReturn = new PollDto
             {
                 PollTitle = _currentTopic.PollTitle,
@@ -57,27 +81,17 @@ namespace Serverless.Forum.Services
                 PollMaxOptions = _currentTopic.PollMaxOptions,
                 TopicId = _currentTopic.TopicId,
                 VoteCanBeChanged = _currentTopic.PollVoteChange == 1,
-                PollOptions = await (
-                    from o in _context.PhpbbPollOptions.AsNoTracking()
+                PollOptions = (
+                    from o in options
                     where o.TopicId == _currentTopic.TopicId
-                    let voters = from v in _context.PhpbbPollVotes.AsNoTracking()
-                                 where o.PollOptionId == v.PollOptionId && o.TopicId == v.TopicId
-                                 join u in _context.PhpbbUsers.AsNoTracking()
-                                 on v.VoteUserId equals u.UserId
-                                 into joinedUsers
-
-                                 from ju in joinedUsers.DefaultIfEmpty()
-                                 where ju != null
-                                 select new PollOptionVoter { UserId = ju.UserId, Username = ju.Username }
-
                     select new PollOption
                     {
                         PollOptionId = o.PollOptionId,
                         PollOptionText = o.PollOptionText,
                         TopicId = o.TopicId,
-                        PollOptionVoters = voters.ToList()
+                        PollOptionVoters = voters.Select(v => new PollOptionVoter { UserId = v.UserId, Username = v.Username }).ToList()
                     }
-                ).ToListAsync()
+                ).ToList()
             };
 
             if (!toReturn.PollOptions.Any())

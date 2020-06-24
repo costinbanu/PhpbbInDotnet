@@ -25,7 +25,7 @@
 
 <h4>Cuvinte cenzurate</h4>
 @{
-    var words = await _writingService.GetBannedWords();
+    var words = (await _writingService.GetBannedWords()).ToList();
 
     <form method="post" asp-page-handler="BanWords">
         <table id="bannedWords" class="writingTable">
@@ -85,12 +85,12 @@
 <p>&nbsp;</p>
 <h4>Fișiere orfane</h4>
 @{
-    var (inS3, inDb) = await _writingService.CacheOrphanedFiles(Model.CurrentUserId);
+    var (onDisk, inDb) = await _writingService.CacheOrphanedFiles(Model.CurrentUserId);
     <form method="post" asp-page-handler="OrphanedFiles" id="orphanedFilesForm">
         <input name="action" id="action" type="hidden" />
     </form>
     <h5>
-        <b>Fișiere pe server fără corespondență într-un mesaj (@inS3.Count() fișiere, în total @_utils.ReadableFileSize(inS3.Sum(f => f.Item1.Size)))</b>
+        <b>Fișiere pe server fără corespondență într-un mesaj (@onDisk.Count() fișiere, în total @_utils.ReadableFileSize(onDisk.Sum(f => f.Item1.Length)))</b>
         <br /><i>Click pe titlul coloanei pentru sortare.</i>
         <br /><a href="#!" onclick="submitOrphanedFiles('@Utilities.AdminOrphanedFilesActions.DeleteFromS3')">Șterge aceste fișiere</a>
     </h5>
@@ -102,13 +102,13 @@
             <th onclick="sort(this)" style="cursor:pointer">Dimensiune</th>
         </tr>
 
-        @foreach (var f in inS3)
+        @foreach (var f in onDisk)
         {
             <tr>
-                <td>@f.Item1.Key</td>
+                <td>@f.Item1.Name</td>
                 <td>@f.Item2</td>
-                <td>@f.Item1.LastModified.ToUniversalTime()</td>
-                <td>@_utils.ReadableFileSize(f.Item1.Size)</td>
+                <td>@f.Item1.LastWriteTimeUtc</td>
+                <td>@_utils.ReadableFileSize(f.Item1.Length)</td>
             </tr>
         }
     </table>

@@ -1,4 +1,5 @@
 ﻿using CodeKicker.BBCode.Core;
+using Dapper;
 using Diacritics.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -50,8 +51,13 @@ namespace Serverless.Forum.Services
             _smileyRegex = new Regex("{SMILIES_PATH}", RegexOptions.Compiled | RegexOptions.Singleline);
             _htmlRegex = new Regex(@"<((?=!\-\-)!\-\-[\s\S]*\-\-|((?=\?)\?[\s\S]*\?|((?=\/)\/[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*|[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*(?:\s[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*(?:=(?:""[^""]*""|'[^']*'|[^'""<\s]*))?)*)\s?\/?))>", RegexOptions.Compiled);
 
-            var bbcodes = _context.PhpbbBbcodes.AsNoTracking().Select(c => new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false)).ToList();
+            using var connection = _context.Database.GetDbConnection();
+            connection.OpenIfNeeded().RunSync();
 
+            _bannedWords = _writingService.GetBannedWords().RunSync().GroupBy(p => p.Word).Select(grp => grp.FirstOrDefault()).ToDictionary(x => x.Word, y => y.Replacement);
+
+            var dummy = new BBAttribute[0] { };
+            var bbcodes = connection.Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes").Select(c => new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false, dummy)).ToList();
             bbcodes.AddRange(new[]
             {
                     new BBTag("b", "<b>", "</b>"),
@@ -83,7 +89,6 @@ namespace Serverless.Forum.Services
             var inlineAttachmentsPosts = new ConcurrentBag<(int PostId, int AttachIndex, _AttachmentPartialModel Attach)>();
             var attachRegex = new Regex("#{AttachmentFileName=[^/]+/AttachmentIndex=[0-9]+}#", RegexOptions.Compiled);
             var highlightWords = SplitHighlightWords(toHighlight);
-            await GetBannedWordsLazy();
             var mutex = new Mutex();
 
             Parallel.ForEach(Posts, async (p, state1) =>
@@ -154,7 +159,6 @@ namespace Serverless.Forum.Services
                 return string.Empty;
             }
             
-            await GetBannedWordsLazy();
             bbCodeText = CensorWords(bbCodeText, _bannedWords);
             bbCodeText = _parser.ToHtml(bbCodeText, bbCodeUid);
             bbCodeText = _newLineRegex.Replace(bbCodeText, "<br/>");
@@ -317,11 +321,6 @@ namespace Serverless.Forum.Services
                 }
             }
             return input;
-        }
-
-        private async Task GetBannedWordsLazy()
-        {
-            _bannedWords ??= (await _writingService.GetBannedWords()).GroupBy(p => p.Word).Select(grp => grp.FirstOrDefault()).ToDictionary(x => x.Word, y => y.Replacement);
         }
     }
 }

@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Serverless.Forum.Contracts;
+﻿using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System;

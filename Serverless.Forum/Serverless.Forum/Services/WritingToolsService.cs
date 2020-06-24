@@ -1,5 +1,4 @@
-﻿using Amazon.S3.Model;
-using Microsoft.AspNetCore.Mvc.Rendering;
+﻿using Dapper;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -7,6 +6,7 @@ using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -28,8 +28,12 @@ namespace Serverless.Forum.Services
             _utils = utils;
         }
 
-        public async Task<List<PhpbbWords>> GetBannedWords()
-            => await _context.PhpbbWords.AsNoTracking().ToListAsync();
+        public async Task<IEnumerable<PhpbbWords>> GetBannedWords()
+        {
+            using var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeeded();
+            return await connection.QueryAsync<PhpbbWords>("SELECT * FROM phpbb_words");
+        }
 
         public async Task<(string Message, bool? IsSuccess)> ManageBannedWords(List<PhpbbWords> words, List<int> indexesToRemove)
         {
@@ -80,42 +84,43 @@ namespace Serverless.Forum.Services
             }
         }
 
-        public async Task<(IEnumerable<Tuple<S3Object, string>> inS3, IEnumerable<Tuple<PhpbbAttachments, string>> inDb)> CacheOrphanedFiles(int currentUserId)
+        public async Task<(IEnumerable<Tuple<FileInfo, string>> onDisk, IEnumerable<Tuple<PhpbbAttachments, string>> inDb)> CacheOrphanedFiles(int currentUserId)
         {
-            string getFileName(string s3Path)
-                => !string.IsNullOrWhiteSpace(_storageService.FolderPrefix) ? s3Path.Replace(_storageService.FolderPrefix, string.Empty) : s3Path;
-
             int getUserId(string filename)
             {
-                var cleanName = !string.IsNullOrWhiteSpace(_storageService.FolderPrefix) ? filename.Replace(_storageService.FolderPrefix, string.Empty) : filename;
-                if (!cleanName.Contains('_'))
+                if (!filename.Contains('_'))
                 {
                     return 1;
                 }
-                return int.TryParse(cleanName.Split('_')[0], out var val) ? val : 1;
+                return int.TryParse(filename.Split('_')[0], out var val) ? val : 1;
             }
 
-            var inS3 = (
-                from s in await _storageService.ListItems().ToListAsync()
-                
-                let name = getFileName(s.Key)
-                
-                join u in _context.PhpbbUsers.AsNoTracking()
-                on getUserId(name) equals u.UserId
-                into joinedUsers
-                
-                from ju in joinedUsers.DefaultIfEmpty()
-                where !string.IsNullOrWhiteSpace(name) && !name.StartsWith(_storageService.AvatarsFolder)
-                select Tuple.Create(s, ju == null ? "Anonymous" : ju.Username)
-            ).ToList();
+            var files = _storageService.ListAttachments();
+            IEnumerable<dynamic> users;
+            using (var connection = _context.Database.GetDbConnection())
+            {
+                await connection.OpenIfNeeded();
+                users = await connection.QueryAsync("SELECT user_id, username FROM phpbb_users");
+            }
+
+            var inS3 = from s in files
+
+                       join u in users
+                       on getUserId(s.Name) equals (int)u.user_id
+                       into joinedUsers
+
+                       from ju in joinedUsers.DefaultIfEmpty()
+                       where s != null
+                       select Tuple.Create(s, (string)ju?.username ?? "Anonymous");
+
 
             var inDb = await (
                 from a in _context.PhpbbAttachments.AsNoTracking()
-                
+
                 join u in _context.PhpbbUsers.AsNoTracking()
                 on a.PosterId equals u.UserId
                 into joinedUsers
-                
+
                 from ju in joinedUsers.DefaultIfEmpty()
                 select new { Attach = a, User = ju == null ? "Anonymous" : ju.Username }
             ).ToListAsync();
@@ -124,17 +129,17 @@ namespace Serverless.Forum.Services
                 inS3: from s in inS3
 
                       join d in inDb
-                      on getFileName(s.Item1.Key) equals d.Attach.PhysicalFilename
+                      on s.Item1.Name equals d.Attach.PhysicalFilename
                       into joined
 
                       from j in joined.DefaultIfEmpty()
-                      where j == null && (string.IsNullOrWhiteSpace(_storageService.FolderPrefix) || s.Item1.Key.StartsWith(_storageService.FolderPrefix))
+                      where j == null
                       select s,
 
                 inDb: from d in inDb
 
                       join s in inS3
-                      on d.Attach.PhysicalFilename equals getFileName(s.Item1.Key)
+                      on d.Attach.PhysicalFilename equals s.Item1.Name
                       into joined
 
                       from j in joined.DefaultIfEmpty()
@@ -143,8 +148,8 @@ namespace Serverless.Forum.Services
             );
 
             await _cacheService.SetInCache(
-                GetCacheKey(currentUserId), 
-                (toReturn.inS3.Select(x => x.Item1.Key), toReturn.inDb.Select(x => x.Item1.AttachId))
+                GetCacheKey(currentUserId),
+                (toReturn.inS3.Select(x => x.Item1.Name), toReturn.inDb.Select(x => x.Item1.AttachId))
             );
 
             return toReturn;
@@ -153,21 +158,21 @@ namespace Serverless.Forum.Services
         public string GetCacheKey(int currentUserId)
             => $"{currentUserId}_writingData";
 
-        public async Task<(string Message, bool? IsSuccess)> DeleteS3OrphanedFiles(IEnumerable<string> s3Files)
+        public (string Message, bool? IsSuccess) DeleteOrphanedFiles(IEnumerable<string> files)
         {
-            var success = ($"{s3Files.Count()} fișiere au fost șterse de pe server cu succes!", true);
-            
-            if(!s3Files.Any())
+            if(!files.Any())
             {
-                return success;
+                return ($"Nici un fișier nu a fost șters de pe server.", true);
             }
-            
-            if (await _storageService.BulkDeleteFiles(s3Files))
+            var (Succeeded, Failed) = _storageService.BulkDeleteAttachments(files);
+            if (Failed.Any())
             {
-                return success;
+                return ($"Fișierele {string.Join(',', Succeeded)} au fost șterse cu succes, însă fișierele {string.Join(',', Failed)} nu au fost șterse.", false);
             }
-            
-            return ("A intervenit o eroare, mai încearcă o dată.", false);
+            else
+            {
+                return ($"Fișierele {string.Join(',', Succeeded)} au fost șterse cu succes.", true);
+            }
         }
 
         public async Task<(string Message, bool? IsSuccess)> DeleteDbOrphanedFiles(IEnumerable<int> dbFiles)
@@ -198,14 +203,12 @@ namespace Serverless.Forum.Services
 
         public string PrepareTextForSaving(string text)
         {
-            foreach (var sr in from s in _context.PhpbbSmilies.AsNoTracking()
-                               select new
-                               {
-                                   Regex = new Regex(@$"(?<=(^|\s)){Regex.Escape(s.Code)}(?=($|\s))", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
-                                   Replacement = $"<!-- s{s.Code} --><img src=\"./images/smilies/{s.SmileyUrl.Trim('/')}\" alt=\"{s.Code}\" title=\"{s.Emotion}\" /><!-- s{s.Code} -->"
-                               })
+            foreach (var sr in _context.PhpbbSmilies.AsNoTracking().ToList())
             {
-                text = sr.Regex.Replace(text, sr.Replacement);
+                var regex = new Regex(@$"(?<=(^|\s)){Regex.Escape(sr.Code)}(?=($|\s))", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                var replacement = $"<!-- s{sr.Code} --><img src=\"./images/smilies/{sr.SmileyUrl.Trim('/')}\" alt=\"{sr.Code}\" title=\"{sr.Emotion}\" /><!-- s{sr.Code} -->";
+
+                text = regex.Replace(text, replacement);
             }
 
             var urlRegex = new Regex(@"(?<=(^|\s))(ftp:\/\/|www\.|https?:\/\/){1}[a-zA-Z0-9u00a1-\uffff0-]{2,}\.[a-zA-Z0-9u00a1-\uffff0-]{2,}($|\S*)", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.ExplicitCapture);

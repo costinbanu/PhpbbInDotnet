@@ -1,6 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Pages.CustomPartials.Email;
 using Serverless.Forum.Services;

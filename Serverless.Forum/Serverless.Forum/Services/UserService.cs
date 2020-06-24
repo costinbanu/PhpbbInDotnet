@@ -101,19 +101,27 @@ namespace Serverless.Forum.Services
 
         public async Task<ClaimsPrincipal> DbUserToClaimsPrincipalAsync(PhpbbUsers user)
         {
-            var editTime = await (
-                from g in _context.PhpbbGroups.AsNoTracking()
-                join ug in _context.PhpbbUserGroup.AsNoTracking()
-                on g.GroupId equals ug.GroupId
-                into joined
-                from j in joined
-                where j.UserId == user.UserId
-                select g.GroupEditTime
-            ).FirstOrDefaultAsync();
+
+
+            //var editTime = await (
+            //    from g in _context.PhpbbGroups.AsNoTracking()
+            //    join ug in _context.PhpbbUserGroup.AsNoTracking()
+            //    on g.GroupId equals ug.GroupId
+            //    into joined
+            //    from j in joined
+            //    where j.UserId == user.UserId
+            //    select g.GroupEditTime
+            //).FirstOrDefaultAsync();
             using var connection = _context.Database.GetDbConnection();
             await connection.OpenIfNeeded();
             DefaultTypeMap.MatchNamesWithUnderscores = true;
-
+            var editTime = await connection.QuerySingleAsync<int>(
+                @"SELECT group_edit_time g
+                   FROM phpbb_groups g
+                   JOIN phpbb_user_group ug ON g.group_id = ug.group_id
+                  WHERE ug.user_id = @UserId",
+                new { user.UserId }
+            );
             using var multi = await connection.QueryMultipleAsync("CALL `forum`.`get_user_details`(@UserId);", new { user.UserId });
             var intermediary = new LoggedUser
             {

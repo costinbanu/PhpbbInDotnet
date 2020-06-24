@@ -28,7 +28,8 @@ namespace Serverless.Forum
 
         private IEnumerable<Tracking> _tracking;
         private LoggedUser _currentUser;
-        private ForumDto _tree = null;
+        private HashSet<ForumTree> _tree = null;
+        private ForumTree _root = null;
 
         public ModelWithLoggedUser(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
         {
@@ -75,7 +76,9 @@ namespace Serverless.Forum
                     }
                     else
                     {
-                        var dbUser = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == _currentUser.UserId);
+                        using var connection = _context.Database.GetDbConnection();
+                        await connection.OpenIfNeeded();
+                        var dbUser = await connection.QuerySingleAsync<PhpbbUsers>("SELECT * FROM phpbb_users where user_id = @UserId", new { _currentUser.UserId });
                         if (dbUser == null || dbUser.UserInactiveTime > 0)
                         {
                             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -161,21 +164,39 @@ namespace Serverless.Forum
             return unread.FirstOrDefault(t => t.TopicId == topicId)?.Posts?.FirstOrDefault() ?? 0;
         }
 
-        public async Task<ForumDto> GetForumTreeAsync(ForumType? parentType = null, bool forceRefresh = false)
+        public async Task<HashSet<ForumTree>> GetForumTree(bool forceRefresh = false)
         {
             if (forceRefresh || _tree == null)
             {
-                var _ = GetUnreadTopicsAndParentsLazy();
-                _tree = await _forumService.GetForumTree(parentType, await GetCurrentUserAsync(), forumId => IsForumUnread(forumId, forceRefresh));
+                //var _ = GetUnreadTopicsAndParentsLazy();
+                _tree = await _forumService.GetForumTree(await GetCurrentUserAsync());
             }
             return _tree;
-        } 
+        }
 
-        public async Task<List<int>> PathToForumOrTopic(int forumId, int? topicId = null)
-            => _forumService.GetPathInTree(await GetForumTreeAsync(), forum => forum.Id ?? 0, forumId, topicId ?? -1);
+        public async Task<ForumTree> GetForumRoot(bool forceRefresh = false)
+        {
+            if (forceRefresh || _root == null)
+            {
+                _root = (await GetForumTree(forceRefresh)).FirstOrDefault(f => f.ForumId == 0);
+            }
+            return _root;
+        }
 
-        public async Task<ForumDto> GetForum(int forumId, bool forceRefresh = false)
-            => _forumService.GetPathInTree(await GetForumTreeAsync(forceRefresh: forceRefresh), forumId).Last();
+        //public async Task<List<int>> PathToForumOrTopic(int forumId, int? topicId = null)
+        //{
+        //    //_forumService.GetPathInTree(await GetForumTreeAsync(), forum => forum.Id ?? 0, forumId, topicId ?? -1);
+        //    var entry = (await GetForumTreeAsync()).FirstOrDefault(f => f.ForumId == forumId);
+        //    var path = new List<int>(entry.PathList);
+        //    if (topicId.HasValue && entry.TopicList.Any(t => t == topicId.Value))
+        //    {
+        //        path.Add(topicId.Value);
+        //    }
+        //    return path;
+        //}
+
+        //public async Task<ForumDto> GetForum(int forumId, bool forceRefresh = false)
+        //    => _forumService.GetPathInTree(await GetForumTreeAsync(forceRefresh: forceRefresh), forumId).Last();
 
         protected IEnumerable<Tracking> GetUnreadTopicsAndParentsLazy(bool forceRefresh = false)
         {
@@ -255,13 +276,13 @@ namespace Serverless.Forum
                     return NotFound($"Forumul solicitat nu există.");
                 }
 
-                var forumAncestors = _forumService.GetPathInTree(await GetForumTreeAsync(), curForum.ForumId);
+                var forumAncestors = await _forumService.GetPathInTree(await GetForumRoot(), curForum.ForumId);
                 var restrictedAncestor = forumAncestors.FirstOrDefault(
-                    f => !string.IsNullOrEmpty(f.ForumPassword) && (HttpContext.Session.GetInt32($"ForumLogin_{f.Id}") ?? 0) != 1);
+                    f => !string.IsNullOrEmpty(f.ForumPassword) && (HttpContext.Session.GetInt32($"ForumLogin_{f.ForumId}") ?? 0) != 1);
 
                 if (restrictedAncestor != null)
                 {
-                    if ((await GetCurrentUserAsync())?.AllPermissions?.Any(p => p.ForumId == restrictedAncestor.Id && p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE) ?? false)
+                    if ((await GetCurrentUserAsync())?.AllPermissions?.Any(p => p.ForumId == restrictedAncestor.ForumId && p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE) ?? false)
                     {
                         return Unauthorized();
                     }
@@ -270,8 +291,8 @@ namespace Serverless.Forum
                         return RedirectToPage("ForumLogin", new ForumLoginModel(_context)
                         {
                             ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString),
-                            ForumId = restrictedAncestor.Id.Value,
-                            ForumName = restrictedAncestor.Name
+                            ForumId = restrictedAncestor.ForumId,
+                            ForumName = restrictedAncestor.ForumName
                         });
                     }
                 }
@@ -284,7 +305,6 @@ namespace Serverless.Forum
 
         protected async Task<IActionResult> WithValidTopic(int topicId, Func<PhpbbForums, PhpbbTopics, Task<IActionResult>> toDo)
         {
-            //var curTopic = await _context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == topicId);
             PhpbbTopics curTopic;
             using (var connection = _context.Database.GetDbConnection())
             {

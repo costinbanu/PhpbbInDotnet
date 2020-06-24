@@ -4,8 +4,7 @@
 @using Microsoft.EntityFrameworkCore
 
 @inject Services.UserService  _userService
-@inject ForumDb.ForumDbContext _context
-
+@inject Services.ModeratorService _moderatorService
 @{
     var currentUser = await _userService.ClaimsPrincipalToLoggedUserAsync(User);
 }
@@ -101,23 +100,14 @@
 
                 if (await _userService.IsUserModeratorInForum(currentUser, 0))
                 {
-                    var reports = await (
-                        from r in _context.PhpbbReports.AsNoTracking()
-                        where r.ReportClosed == 0
-                        join rr in _context.PhpbbReportsReasons
-                        on r.ReasonId equals rr.ReasonId
-                        into joinedReasons
-                        from jr in joinedReasons
-                        orderby r.ReportTime descending
-                        select new { r.PostId, jr.ReasonTitle }
-                    ).ToListAsync();
+                    var reports = await _moderatorService.GetReportedMessages();
                     if (reports.Any())
                     {
                         <div class="ReportedPost" style="margin:5px; padding:5px; width: max-content; max-width: 100%">
                             <h4>Rapoarte deschise</h4>
                             @foreach (var r in reports)
                             {
-                                <a asp-page="ViewTopic" asp-page-handler="byPostId" asp-route-postId="@r.PostId">@r.ReasonTitle</a> <br />
+                                <a asp-page="ViewTopic" asp-page-handler="byPostId" asp-route-postId="@r.Item1">@r.Item2</a> <br />
                             }
                         </div>
                         displayedBox = true;

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Dapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.Contracts;
@@ -281,7 +282,7 @@ namespace Serverless.Forum.Pages
                     return Page();
                 }
 
-                if (!await _storageService.DeleteFile(attachment.PhysicalFilename))
+                if (!_storageService.DeleteFile(attachment.PhysicalFilename, false))
                 {
                     ModelState.AddModelError($"{nameof(DeleteFileDummyForValidation)}[{index}]", "Fișierul nu a putut fi șters, vă rugăm încercați din nou.");
                 }
@@ -444,15 +445,12 @@ namespace Serverless.Forum.Pages
 
         private async Task Init(PostingActions action, bool CanCreatePoll, string Header, string forumName, int forumId)
         {
-            await _cacheService.SetInCache(
-                GetActualCacheKey("Smilies", false),
-                await (
-                    from s in _context.PhpbbSmilies.AsNoTracking()
-                    group s by s.SmileyUrl into unique
-                    select unique.First()
-                ).OrderBy(s => s.SmileyOrder)
-                 .ToListAsync()
-             );
+            using (var connection = _context.Database.GetDbConnection())
+            {
+                await connection.OpenIfNeeded();
+                var smileys = await connection.QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies GROUP BY smiley_url ORDER BY smiley_order");
+                await _cacheService.SetInCache(GetActualCacheKey("Smilies", false), smileys.ToList());
+            }
 
             var userMap = await (
                 from u in _context.PhpbbUsers.AsNoTracking()
