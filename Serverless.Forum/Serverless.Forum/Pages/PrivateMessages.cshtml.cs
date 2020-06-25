@@ -53,15 +53,17 @@ namespace Serverless.Forum.Pages
                     return BadRequest("Utilizatorul nu are acces la mesageria privată.");
                 }
 
+                var userId = (await GetCurrentUserAsync()).UserId;
+
                 InboxPaginator = new Paginator(
-                    count: await _context.PhpbbPrivmsgsTo.CountAsync(x => x.UserId == CurrentUserId && x.AuthorId != x.UserId),
+                    count: await _context.PhpbbPrivmsgsTo.CountAsync(x => x.UserId == userId && x.AuthorId != x.UserId),
                     pageNum: InboxPage ?? 1,
                     link: "/PrivateMessages?show=Inbox",
                     pageNumKey: nameof(InboxPage)
                 );
 
                 SentPaginator = new Paginator(
-                    count: await _context.PhpbbPrivmsgsTo.CountAsync(x => x.AuthorId == CurrentUserId && x.AuthorId != x.UserId),
+                    count: await _context.PhpbbPrivmsgsTo.CountAsync(x => x.AuthorId == userId && x.AuthorId != x.UserId),
                     pageNum: SentPage ?? 1,
                     link: "/PrivateMessages?show=Sent",
                     pageNumKey: nameof(SentPage)
@@ -75,7 +77,7 @@ namespace Serverless.Forum.Pages
                     into joined
 
                     from j in joined
-                    where j.UserId == CurrentUserId && j.AuthorId != j.UserId
+                    where j.UserId == userId && j.AuthorId != j.UserId
 
                     join u in _context.PhpbbUsers.AsNoTracking()
                     on j.AuthorId equals u.UserId
@@ -103,7 +105,7 @@ namespace Serverless.Forum.Pages
                     into joined
 
                     from j in joined
-                    where j.AuthorId == CurrentUserId && j.AuthorId != j.UserId
+                    where j.AuthorId == userId && j.AuthorId != j.UserId
 
                     join u in _context.PhpbbUsers.AsNoTracking()
                     on j.UserId equals u.UserId
@@ -127,7 +129,7 @@ namespace Serverless.Forum.Pages
                 {
                     var msg = await _context.PhpbbPrivmsgs.AsNoTracking().FirstOrDefaultAsync(x => x.MsgId == MessageId);
                     var to = await _context.PhpbbPrivmsgsTo.FirstOrDefaultAsync(x => x.MsgId == MessageId && x.AuthorId != x.UserId);
-                    SelectedMessageIsMine = to.AuthorId == CurrentUserId;
+                    SelectedMessageIsMine = to.AuthorId == userId;
                     var other = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == (SelectedMessageIsMine ? to.UserId : to.AuthorId));
                     SelectedMessage = new PrivateMessageDto
                     {

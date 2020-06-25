@@ -195,12 +195,12 @@ namespace Serverless.Forum.Pages
 
                 using (var connection = _context.Database.GetDbConnection())
                 {
-                    var userId = CurrentUserId;
+                    var userId = (await GetCurrentUserAsync()).UserId;
                     await connection.OpenIfNeeded();
                     if (Posts.Any(p => p.Unread))
                     {
                         var existing = await connection.QuerySingleAsync<PhpbbTopicsTrack>("SELECT * FROM phpbb_topics_track WHERE user_id = @userId AND topic_id = @TopicId", new { userId, TopicId });
-                        //await _context.PhpbbTopicsTrack.FirstOrDefaultAsync(t => t.UserId == CurrentUserId && t.TopicId == TopicId).ConfigureAwait(false);
+                        //await _context.PhpbbTopicsTrack.FirstOrDefaultAsync(t => t.UserId == (await GetCurrentUserAsync()).UserId && t.TopicId == TopicId).ConfigureAwait(false);
                         if (existing == null)
                         {
                             await connection.ExecuteAsync(
@@ -246,15 +246,15 @@ namespace Serverless.Forum.Pages
                     await localContext.SaveChangesAsync();
                     await ReloadCurrentUser();
                 }
-
-                var curValue = await _context.PhpbbUserTopicPostNumber.FirstOrDefaultAsync(ppp => ppp.UserId == CurrentUserId && ppp.TopicId == topicId);
+                var usrId = (await GetCurrentUserAsync()).UserId;
+                var curValue = await _context.PhpbbUserTopicPostNumber.FirstOrDefaultAsync(ppp => ppp.UserId == usrId && ppp.TopicId == topicId);
 
                 if (curValue == null)
                 {
                     _context.PhpbbUserTopicPostNumber.Add(
                         new PhpbbUserTopicPostNumber
                         {
-                            UserId = CurrentUserId,
+                            UserId = (await GetCurrentUserAsync()).UserId,
                             TopicId = topicId,
                             PostNo = userPostsPerPage
                         }
@@ -279,7 +279,8 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnPostVote(int topicId, int[] votes, string queryString)
             => await WithRegisteredUser(async () =>
             {
-                var current = await _context.PhpbbPollVotes.Where(v => v.TopicId == topicId && v.VoteUserId == CurrentUserId).ToListAsync();
+                var usrId = (await GetCurrentUserAsync()).UserId;
+                var current = await _context.PhpbbPollVotes.Where(v => v.TopicId == topicId && v.VoteUserId == usrId).ToListAsync();
                 var id = await _context.PhpbbPollVotes.AsNoTracking().MaxAsync(v => v.Id);
                 if (current.Any())
                 {
@@ -297,7 +298,7 @@ namespace Serverless.Forum.Pages
                         Id = ++id,
                         PollOptionId = (byte)vote,
                         TopicId = topicId,
-                        VoteUserId = CurrentUserId,
+                        VoteUserId = (await GetCurrentUserAsync()).UserId,
                         VoteUserIp = HttpContext.Connection.RemoteIpAddress.ToString()
                     });
                 }
@@ -383,7 +384,7 @@ namespace Serverless.Forum.Pages
                 var result = await _context.PhpbbReports.AddAsync(new PhpbbReports
                 {
                     PostId = reportPostId.Value,
-                    UserId = CurrentUserId,
+                    UserId = (await GetCurrentUserAsync()).UserId,
                     ReasonId = reportReasonId.Value,
                     ReportText = reportDetails ?? string.Empty,
                     ReportTime = DateTime.UtcNow.ToUnixTimestamp(),
@@ -455,7 +456,7 @@ namespace Serverless.Forum.Pages
         {
             if (_dbPosts == null || _page == null || _count == null)
             {
-                var results = await _postService.GetPostPageAsync(CurrentUserId, topicId, page, postId);
+                var results = await _postService.GetPostPageAsync((await GetCurrentUserAsync()).UserId, topicId, page, postId);
                 _dbPosts = results.Posts;
                 _page = results.Page;
                 _count = results.Count;

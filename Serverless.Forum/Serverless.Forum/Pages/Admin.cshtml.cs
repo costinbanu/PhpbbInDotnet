@@ -140,7 +140,7 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnGetWriting()
             => await WithAdmin(async () =>
             {
-                var result = await _utils.RenderRazorViewToString("_AdminWriting", new _AdminWritingModel(CurrentUserId), PageContext, HttpContext);
+                var result = await _utils.RenderRazorViewToString("_AdminWriting", new _AdminWritingModel((await GetCurrentUserAsync()).UserId), PageContext, HttpContext);
                 return Content(result);
             });
 
@@ -155,7 +155,7 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnPostOrphanedFiles(AdminOrphanedFilesActions action)
             => await WithAdmin(async () =>
             {
-                var (onDisk, inDb) = await _cacheService.GetFromCache<(IEnumerable<string> onDisk, IEnumerable<int> inDb)>(_adminWritingService.GetCacheKey(CurrentUserId));
+                var (onDisk, inDb) = await _cacheService.GetFromCache<(IEnumerable<string> onDisk, IEnumerable<int> inDb)>(_adminWritingService.GetCacheKey((await GetCurrentUserAsync()).UserId));
                 if (action == AdminOrphanedFilesActions.DeleteFromDb)
                 {
                     (Message, IsSuccess) = await _adminWritingService.DeleteDbOrphanedFiles(inDb);
@@ -167,7 +167,7 @@ namespace Serverless.Forum.Pages
 
                 if (IsSuccess ?? false)
                 {
-                    await _cacheService.RemoveFromCache(_adminWritingService.GetCacheKey(CurrentUserId));
+                    await _cacheService.RemoveFromCache(_adminWritingService.GetCacheKey((await GetCurrentUserAsync()).UserId));
                 }
 
                 Category = AdminCategories.WritingTools;

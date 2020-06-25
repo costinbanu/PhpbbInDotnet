@@ -28,14 +28,14 @@ namespace Serverless.Forum.Services
         public async Task<IEnumerable<int>> GetRestrictedForumList(LoggedUser user)
         {
             var allowedForums = new List<int>();
-            var root = (await GetForumTree(user, true)).FirstOrDefault(f => f.ForumId == 0);
+            var root = (await GetForumTree(usr: user, excludePasswordProtected: true)).FirstOrDefault(f => f.ForumId == 0);
             await Traverse(allowedForums, root, true, 0, f => f.ForumId, (_, __) => { }, -1, -1);
             using var connection = _context.Database.GetDbConnection();
             await connection.OpenIfNeeded();
             return await connection.QueryAsync<int>("SELECT forum_id FROM phpbb_forums WHERE forum_id NOT IN @allowedForums", new { allowedForums });
         }
 
-        public async Task<HashSet<ForumTree>> GetForumTree(LoggedUser usr = null, bool excludePasswordProtected = false)
+        public async Task<HashSet<ForumTree>> GetForumTree(int? forumId = null, LoggedUser usr = null, bool excludePasswordProtected = false, bool fullTraversal = false)
         {
             if (_tree != null)
             {
@@ -53,7 +53,9 @@ namespace Serverless.Forum.Services
             var restrictedForums = (usr?.AllPermissions?.Where(p => p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE)?.Select(p => p.ForumId) ?? Enumerable.Empty<int>()).Union(passwordProtected);
             using (var connection = _context.Database.GetDbConnection())
             {
-                _tree = new HashSet<ForumTree>(await connection.QueryAsync<ForumTree>("CALL `forum`.`get_forum_tree`(@restricted);", new { restricted = string.Join(',', restrictedForums) }));
+                _tree = new HashSet<ForumTree>(await connection.QueryAsync<ForumTree>(
+                    "CALL `forum`.`get_forum_tree`(@restricted, @forumId, @fullTraversal);", 
+                    new { restricted = string.Join(',', restrictedForums), forumId, fullTraversal }));
             }
 
             return _tree;
@@ -96,7 +98,7 @@ namespace Serverless.Forum.Services
 
             T item = default;
 
-            if (!isFullTraversal && ((node.TopicList?.Any(t => t == topicId) ?? false) || node.ForumId == forumId))
+            if (!isFullTraversal && ((node.TopicsList?.Any(t => t == topicId) ?? false) || node.ForumId == forumId))
             {
                 item = mapToType(node);
                 transformForLevel(item, level);
@@ -108,7 +110,7 @@ namespace Serverless.Forum.Services
             transformForLevel(item, level);
             track.Add(item);
 
-            foreach (var childId in node.ChildList)
+            foreach (var childId in node.ChildrenList)
             {
                 var child = (await GetForumTree()).FirstOrDefault(t => t.ForumId == childId);
                 if (await Traverse(track, child, isFullTraversal, level + 1, mapToType, transformForLevel, forumId, topicId))

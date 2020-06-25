@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
@@ -26,9 +27,11 @@ namespace Serverless.Forum
         protected readonly UserService _userService;
         protected readonly ForumDbContext _context;
 
-        private IEnumerable<Tracking> _tracking;
+        private HashSet<Tracking> _tracking;
         private LoggedUser _currentUser;
         private HashSet<ForumTree> _tree = null;
+        private HashSet<PhpbbForums> _forumData = null;
+        private HashSet<PhpbbTopics> _topicData = null;
         private ForumTree _root = null;
 
         public ModelWithLoggedUser(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
@@ -118,67 +121,78 @@ namespace Serverless.Forum
         public async Task<bool> IsCurrentUserModeratorHereAsync(int forumId = 0)
             => await _userService.IsUserModeratorInForum(await GetCurrentUserAsync(), forumId);
 
-        public int CurrentUserId => GetCurrentUserAsync().RunSync().UserId;
+        //public int (await GetCurrentUserAsync()).UserId => GetCurrentUserAsync().RunSync().UserId;
 
         #endregion User
 
         #region Forum for user
 
-        public bool IsForumUnread(int forumId, bool forceRefresh = false)
+        public async Task<bool> IsForumUnread(int forumId, bool forceRefresh = false)
         {
-            if (CurrentUserId == Constants.ANONYMOUS_USER_ID)
+            if ((await GetCurrentUserAsync()).UserId == Constants.ANONYMOUS_USER_ID)
             {
                 return false;
             }
-            var unread = GetUnreadTopicsAndParentsLazy(forceRefresh);
-            return unread.Any(u => u.ForumId == forumId);
+           return (await GetForumTree(forceRefresh)).Tracking.Any(f => f.ForumId == forumId);
         }
 
-        public bool IsTopicUnread(int topicId, bool forceRefresh = false)
+        public async Task<bool> IsTopicUnread(int topicId, bool forceRefresh = false)
         {
-            if (CurrentUserId == Constants.ANONYMOUS_USER_ID)
+            if ((await GetCurrentUserAsync()).UserId == Constants.ANONYMOUS_USER_ID)
             {
                 return false;
             }
-            var unread = GetUnreadTopicsAndParentsLazy(forceRefresh);
-            return unread.Any(u => u.TopicId == topicId);
+            return (await GetForumTree(forceRefresh)).Tracking.Any(f => f.TopicId == topicId);
         }
 
-        public bool IsPostUnread(int topicId, int PostId)
+        public async Task<bool> IsPostUnread(int topicId, int postId)
         {
-            if (CurrentUserId == Constants.ANONYMOUS_USER_ID)
+            if ((await GetCurrentUserAsync()).UserId == Constants.ANONYMOUS_USER_ID)
             {
                 return false;
             }
-            var unread = GetUnreadTopicsAndParentsLazy();
-            return unread.FirstOrDefault(t => t.TopicId == topicId)?.Posts?.Any(p => p == PostId) ?? false;
+            return (await GetForumTree()).Tracking.Any(f => f.TopicId == topicId && f.Posts.Contains(postId));
         }
 
-        public int GetFirstUnreadPost(int topicId)
+        public async Task<int> GetFirstUnreadPost(int topicId)
         {
-            if (CurrentUserId == Constants.ANONYMOUS_USER_ID)
+            if ((await GetCurrentUserAsync()).UserId == Constants.ANONYMOUS_USER_ID)
             {
                 return 0;
             }
-            var unread = GetUnreadTopicsAndParentsLazy();
-            return unread.FirstOrDefault(t => t.TopicId == topicId)?.Posts?.FirstOrDefault() ?? 0;
+            return (await GetForumTree()).Tracking.FirstOrDefault(t => t.TopicId == topicId)?.Posts?.FirstOrDefault() ?? 0;
         }
 
-        public async Task<HashSet<ForumTree>> GetForumTree(bool forceRefresh = false)
+        protected async Task<ForumDto> GetForumTree(bool forceRefresh = false, bool fullTraversal = false)
         {
             if (forceRefresh || _tree == null)
             {
-                //var _ = GetUnreadTopicsAndParentsLazy();
-                _tree = await _forumService.GetForumTree(await GetCurrentUserAsync());
+                _tree = await _forumService.GetForumTree(usr: await GetCurrentUserAsync(), fullTraversal: fullTraversal);
+                var userId = (await GetCurrentUserAsync()).UserId;
+                using var connection = _context.Database.GetDbConnection();
+                await connection.OpenIfNeeded();
+                using var multi = await connection.QueryMultipleAsync(
+                    "SELECT * FROM phpbb_forums WHERE forum_id IN @forumIds; SELECT * FROM phpbb_topics WHERE topic_id IN @topicIds",
+                    new
+                    {
+                        forumIds = _tree.SelectMany(x => x.ChildrenList).Union(_tree.Select(x => x.ForumId)),
+                        topicIds = _tree.SelectMany(x => x.TopicsList)
+                    });
+                _forumData = new HashSet<PhpbbForums>(await multi.ReadAsync<PhpbbForums>());
+                _topicData = new HashSet<PhpbbTopics>(await multi.ReadAsync<PhpbbTopics>());
+                var result = connection.Query<Tracking>(
+                    "CALL `forum`.`get_post_tracking`(@userId, @topicId);",
+                    new { userId, topicId = null as int? }
+                );
             }
-            return _tree;
+            return new ForumDto(_tree.FirstOrDefault(f => f.Level == 0), _tree, _forumData, _topicData, _tracking);
         }
 
         public async Task<ForumTree> GetForumRoot(bool forceRefresh = false)
         {
             if (forceRefresh || _root == null)
             {
-                _root = (await GetForumTree(forceRefresh)).FirstOrDefault(f => f.ForumId == 0);
+                _root = (await GetForumTree(forceRefresh)).Tree.FirstOrDefault(f => f.Level == 0);
             }
             return _root;
         }
@@ -198,36 +212,36 @@ namespace Serverless.Forum
         //public async Task<ForumDto> GetForum(int forumId, bool forceRefresh = false)
         //    => _forumService.GetPathInTree(await GetForumTreeAsync(forceRefresh: forceRefresh), forumId).Last();
 
-        protected IEnumerable<Tracking> GetUnreadTopicsAndParentsLazy(bool forceRefresh = false)
-        {
-            if (_tracking != null && !forceRefresh)
-            {
-                return _tracking;
-            }
-            var curUserId = CurrentUserId;
-            using (var connection = _context.Database.GetDbConnection())
-            {
-                if (connection.State != ConnectionState.Open)
-                {
-                    connection.Open();
-                }
-                DefaultTypeMap.MatchNamesWithUnderscores = true;
+        //protected IEnumerable<Tracking> GetUnreadTopicsAndParentsLazy(bool forceRefresh = false)
+        //{
+        //    if (_tracking != null && !forceRefresh)
+        //    {
+        //        return _tracking;
+        //    }
+        //    var curUserId = (await GetCurrentUserAsync()).UserId;
+        //    using (var connection = _context.Database.GetDbConnection())
+        //    {
+        //        if (connection.State != ConnectionState.Open)
+        //        {
+        //            connection.Open();
+        //        }
+        //        DefaultTypeMap.MatchNamesWithUnderscores = true;
 
-                var result = connection.Query<TrackingQueryResult>(
-                    "CALL `forum`.`get_post_tracking`(@userId, @topicId);",
-                    new { userId = curUserId, topicId = null as int? }
-                );
-                _tracking = from t in result
-                            group t by new { t.ForumId, t.TopicId } into grouped
-                            select new Tracking
-                            {
-                                ForumId = grouped.Key.ForumId,
-                                TopicId = grouped.Key.TopicId,
-                                Posts = grouped.Select(g => g.PostId)
-                            };
-            }
-            return _tracking;
-        }
+        //        var result = connection.Query<Tracking>(
+        //            "CALL `forum`.`get_post_tracking`(@userId, @topicId);",
+        //            new { userId = curUserId, topicId = null as int? }
+        //        );
+        //        _tracking = from t in result
+        //                    group t by new { t.ForumId, t.TopicId } into grouped
+        //                    select new Tracking
+        //                    {
+        //                        ForumId = grouped.Key.ForumId,
+        //                        TopicId = grouped.Key.TopicId,
+        //                        Posts = grouped.Select(g => g.PostId)
+        //                    };
+        //    }
+        //    return _tracking;
+        //}
 
         #endregion Forum for user
 
@@ -276,9 +290,15 @@ namespace Serverless.Forum
                     return NotFound($"Forumul solicitat nu există.");
                 }
 
-                var forumAncestors = await _forumService.GetPathInTree(await GetForumRoot(), curForum.ForumId);
-                var restrictedAncestor = forumAncestors.FirstOrDefault(
-                    f => !string.IsNullOrEmpty(f.ForumPassword) && (HttpContext.Session.GetInt32($"ForumLogin_{f.ForumId}") ?? 0) != 1);
+                var treeAncestors = await _forumService.GetPathInTree(await GetForumRoot(), curForum.ForumId);
+                IEnumerable<PhpbbForums> forumAncestors = null;
+                using (var connection = _context.Database.GetDbConnection())
+                {
+                    await connection.OpenIfNeeded();
+                    forumAncestors = await connection.QueryAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id IN @forumIds", new { forumIds = treeAncestors.Select(x => x.ForumId) });
+                }
+                var restrictedAncestor = forumAncestors?.FirstOrDefault(
+                        f => !string.IsNullOrEmpty(f.ForumPassword) && (HttpContext.Session.GetInt32($"ForumLogin_{f.ForumId}") ?? 0) != 1);
 
                 if (restrictedAncestor != null)
                 {
@@ -335,19 +355,5 @@ namespace Serverless.Forum
         }
 
         #endregion Permission validation wrappers
-
-        protected class Tracking
-        {
-            internal int TopicId { get; set; }
-            internal int ForumId { get; set; }
-            internal IEnumerable<int> Posts { get; set; }
-        }
-
-        protected class TrackingQueryResult
-        {
-            internal int ForumId { get; set; }
-            internal int TopicId { get; set; }
-            internal int PostId { get; set; }
-        }
     }
 }

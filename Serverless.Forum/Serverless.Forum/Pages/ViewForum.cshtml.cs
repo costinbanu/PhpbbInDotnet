@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
@@ -156,6 +157,7 @@ namespace Serverless.Forum.Pages
 
         private async Task UpdateTracking(ForumDbContext context, int forumId)
         {
+            var usrId = (await GetCurrentUserAsync()).UserId;
             var topicTracksToRemove = await (
                 from t in context.PhpbbTopics
 
@@ -166,12 +168,12 @@ namespace Serverless.Forum.Pages
                 into joinedTopicTracks
 
                 from jtt in joinedTopicTracks.DefaultIfEmpty()
-                where jtt.UserId == CurrentUserId
+                where jtt.UserId == usrId
                 select jtt
             ).ToListAsync();
 
             context.PhpbbTopicsTrack.RemoveRange(topicTracksToRemove);
-            var forumTrackToRemove = await context.PhpbbForumsTrack.FirstOrDefaultAsync(ft => ft.ForumId == forumId && ft.UserId == CurrentUserId);
+            var forumTrackToRemove = await context.PhpbbForumsTrack.FirstOrDefaultAsync(ft => ft.ForumId == forumId && ft.UserId == usrId);
             if (forumTrackToRemove != null)
             {
                 context.PhpbbForumsTrack.Remove(forumTrackToRemove);
@@ -181,7 +183,7 @@ namespace Serverless.Forum.Pages
             await context.PhpbbForumsTrack.AddAsync(new PhpbbForumsTrack
             {
                 ForumId = forumId,
-                UserId = CurrentUserId,
+                UserId = usrId,
                 MarkTime = DateTime.UtcNow.ToUnixTimestamp()
             });
             await _context.SaveChangesAsync();

@@ -27,20 +27,19 @@ BEGIN
 			AND topic_last_post_time > u.user_lastmark
             AND (ISNULL(topic_id_parm) OR (t.topic_id = topic_id_parm))
 	)
-	SELECT m.* , p.post_id
+	SELECT m.* , group_concat(p.post_id) as post_ids
 	  FROM marktimes m
 	  JOIN phpbb_posts p
 		ON m.topic_id = p.topic_id
-	   AND (1 AND
-		   NOT (
+	   AND (
+		  1 AND NOT (
 				(p.post_time <= topic_mark_time AND NOT ISNULL(topic_mark_time)) OR 
 				(p.post_time <= forum_mark_time AND NOT ISNULL(forum_mark_time))
 		   )
 	   )
-	 WHERE 1 AND
-	   NOT (
+	 WHERE 1 AND NOT (
 			(topic_last_post_time <= topic_mark_time AND NOT ISNULL(topic_mark_time)) OR 
 			(topic_last_post_time <= forum_mark_time AND NOT ISNULL(forum_mark_time))
-	   ) AND
-       p.poster_id <> user_id_parm;
+	   ) AND p.poster_id <> user_id_parm
+     GROUP BY m.topic_id;
 END

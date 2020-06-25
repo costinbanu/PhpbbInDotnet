@@ -128,7 +128,7 @@ namespace Serverless.Forum.Services
                 UserId = user.UserId,
                 Username = user.Username,
                 UsernameClean = user.UsernameClean,
-                AllPermissions = await multi.ReadAsync<LoggedUser.Permissions>(),
+                AllPermissions = new HashSet<LoggedUser.Permissions>(await multi.ReadAsync<LoggedUser.Permissions>()),
                 Groups = (await multi.ReadAsync<uint>()).Select(x => checked((int)x)),
                 TopicPostsPerPage = (await multi.ReadAsync()).ToDictionary(key => checked((int)key.topic_id), value => checked((int)value.post_no)),
                 UserDateFormat = user.UserDateformat,

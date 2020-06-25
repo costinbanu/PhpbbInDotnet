@@ -123,15 +123,26 @@ namespace Serverless.Forum.Utilities
             return await EntityFrameworkQueryableExtensions.ToListAsync<T>(source);
         }
 
-        public static ForumDto ToForumDto(this ForumTree tree)
-            => new ForumDto
+        public static HashSet<int> ToIntHashSet(this string list)
+        {
+            if (string.IsNullOrWhiteSpace(list))
             {
-                Id = tree.ForumId,
-                Name = tree.ForumName,
-                Description = tree.ForumDesc,
-                DescriptionBbCodeUid = tree.ForumDescUid,
-                ForumPassword = tree.ForumPassword,
-                ForumType = tree.ForumType
+                return new HashSet<int>();
             }
+            var items = list.Split(',');
+            var toReturn = new HashSet<int>(items.Count());
+            foreach (var item in items)
+            {
+                try
+                {
+                    if (int.TryParse(item.Trim(), out var val))
+                    {
+                        toReturn.Add(val);
+                    }
+                }
+                catch { }
+            };
+            return toReturn;
+        }
     }
 }

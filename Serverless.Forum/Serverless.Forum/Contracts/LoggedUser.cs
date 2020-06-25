@@ -13,7 +13,7 @@ namespace Serverless.Forum.Contracts
 
         public IEnumerable<int> Groups { get; set; } = null;
 
-        public IEnumerable<Permissions> AllPermissions { get; set; } = null;
+        public HashSet<Permissions> AllPermissions { get; set; } = null;
 
         public Dictionary<int, int> TopicPostsPerPage { get; set; } = null;
 
@@ -40,6 +40,18 @@ namespace Serverless.Forum.Contracts
             public int AuthRoleId { get; set; } = 0;
 
             public int AuthSetting { get; set; } = 0;
+
+            public override bool Equals(object obj)
+            {
+                if (obj is Permissions perm)
+                {
+                    return ForumId == perm.ForumId && AuthRoleId == perm.AuthRoleId;
+                }
+                return false;
+            }
+
+            public override int GetHashCode()
+                => HashCode.Combine(ForumId, AuthRoleId);
         }
     }
 }

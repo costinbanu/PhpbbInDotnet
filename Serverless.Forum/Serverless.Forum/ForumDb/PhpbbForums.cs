@@ -53,5 +53,11 @@ namespace Serverless.Forum.ForumDb
         public int PruneViewed { get; set; } = 0;
         public int PruneFreq { get; set; } = 0;
         public long ForumEditTime { get; set; } = 0;
+
+        public override bool Equals(object obj)
+            => obj is PhpbbForums f && ForumId == f.ForumId;
+
+        public override int GetHashCode()
+            => HashCode.Combine(ForumId);
     }
 }

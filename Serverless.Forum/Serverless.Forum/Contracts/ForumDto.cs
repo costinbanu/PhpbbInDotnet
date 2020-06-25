@@ -1,42 +1,63 @@
-﻿using Serverless.Forum.Pages;
+﻿using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Serverless.Forum.Contracts
 {
     public class ForumDto
     {
-        public int? Id { get; set; } = null;
+        private readonly ForumTree _node;
+        private readonly Lazy<PhpbbForums> _nodeData;
+        private readonly Lazy<IEnumerable<PhpbbForums>> _childrenForums;
+        private readonly Lazy<IEnumerable<PhpbbTopics>> _topics;
+        private readonly Lazy<bool> _unread;
 
-        public int? ParentId { get; set; } = null;
+        public ForumDto(ForumTree node, HashSet<ForumTree> tree, HashSet<PhpbbForums> forumData, HashSet<PhpbbTopics> topicData, HashSet<Tracking> tracking)
+        {
+            _node = node;
+            _nodeData = new Lazy<PhpbbForums>(() => ForumData.FirstOrDefault(f => f.ForumId == _node.ForumId));
+            _childrenForums = new Lazy<IEnumerable<PhpbbForums>>(() => forumData.Where(t => t.ParentId == node.ForumId));
+            _topics = new Lazy<IEnumerable<PhpbbTopics>>(() => node.TopicsList.Any() ? topicData.Where(t => node.TopicsList.Contains(t.TopicId)) : Enumerable.Empty<PhpbbTopics>());
+            _unread = new Lazy<bool>(() => tracking.Any(t => t.ForumId == node.ForumId));
+            Tree = tree;
+            ForumData = forumData;
+            Tracking = tracking;
+        }
 
-        public string Name { get; set; } = null;
+        public int Id => _node.ForumId;
 
-        public string Description { get; set; } = null;
+        public string Name => _nodeData.Value?.ForumName;
 
-        public string DescriptionBbCodeUid { get; set; } = null;
+        public string Description => _nodeData.Value?.ForumDesc;
 
-        public string ForumPassword { get; set; } = null;
+        public string DescriptionBbCodeUid => _nodeData.Value?.ForumDescUid;
 
-        public int? LastPosterId { get; set; } = null;
+        public string ForumPassword => _nodeData.Value?.ForumPassword;
 
-        public string LastPosterName { get; set; } = null;
+        public int? LastPosterId => _nodeData.Value?.ForumLastPosterId;
 
-        public DateTime? LastPostTime { get; set; } = null;
+        public string LastPosterName => _nodeData.Value?.ForumLastPosterName;
 
-        public int? LastPostId { get; set; } = null;
+        public DateTime? LastPostTime => _nodeData.Value?.ForumLastPostTime.ToUtcTime();
 
-        public IEnumerable<ForumDto> ChildrenForums { get; set; } = null;
+        public int? LastPostId => _nodeData.Value?.ForumLastPostId;
 
-        public IEnumerable<TopicDto> Topics { get; set; } = null;
+        public IEnumerable<PhpbbForums> ChildrenForums => _childrenForums.Value;
 
-        public bool Unread { get; set; } = false;
+        public IEnumerable<PhpbbTopics> Topics => _topics.Value;
 
-        public string LastPosterColor { get; set; } = null;
+        public bool Unread => _unread.Value;
 
-        public ForumType? ForumType { get; set; } = null;
+        public string LastPosterColor => _nodeData.Value?.ForumLastPosterColour;
 
-        public bool RestrictedForUser { get; set; } = false;
+        public ForumType? ForumType => _nodeData.Value?.ForumType;
+
+        public HashSet<Tracking> Tracking { get; }
+
+        public HashSet<ForumTree> Tree { get; }
+
+        public HashSet<PhpbbForums> ForumData { get; }
     }
 }

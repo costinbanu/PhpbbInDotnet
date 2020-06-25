@@ -11,7 +11,7 @@ namespace Serverless.Forum.Pages
 {
     public class IndexModel : ModelWithLoggedUser
     {
-        public ConcurrentBag<ForumDto> Forums { get; private set; }
+        public ForumDto Forum { get; private set; }
 
         public IndexModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
             : base(context, forumService, userService, cacheService)
@@ -20,21 +20,7 @@ namespace Serverless.Forum.Pages
 
         public async Task OnGet()
         {
-            var childrenIds = (await GetForumRoot()).ChildList;
-            Forums = new ConcurrentBag<ForumDto>();
-
-            Parallel.ForEach(childrenIds, async (childId) =>
-            {
-                var child = (await GetForumTree()).FirstOrDefault(f => f.ForumId == childId && f.ForumType == ForumType.Category);
-                var grandChildren = (await GetForumTree()).Where(f => child.ChildList.Contains(f.ForumId));
-                Forums.Add(new ForumDto
-                {
-                    Id = child.ForumId,
-                    Description = child.ForumDesc
-                })
-            });todo find out best way to map this
-
-            Forums = .ToList();
+            Forum = await GetForumTree();
         }
     }
 }

@@ -12,11 +12,11 @@
     ViewData["Title"] = "Posting";
     Layout = "~/Pages/_Layout.cshtml";
     var UserDateFormat = (await Model.GetCurrentUserAsync()).UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
-    var Header = await _cacheService.GetFromCache<string>(Model.GetActualCacheKey("Header", true));
-    var CanCreatePoll = await _cacheService.GetFromCache<bool>(Model.GetActualCacheKey("CanCreatePoll", true));
-    var Action = await _cacheService.GetFromCache<PostingActions>(Model.GetActualCacheKey("Action", true));
-    var ForumName = await _cacheService.GetFromCache<string>(Model.GetActualCacheKey("ForumName", true));
-    var ForumId = await _cacheService.GetFromCache<int>(Model.GetActualCacheKey("ForumId", true));
+    var Header = await _cacheService.GetFromCache<string>(await Model.GetActualCacheKey("Header", true));
+    var CanCreatePoll = await _cacheService.GetFromCache<bool>(await Model.GetActualCacheKey("CanCreatePoll", true));
+    var Action = await _cacheService.GetFromCache<PostingActions>(await Model.GetActualCacheKey("Action", true));
+    var ForumName = await _cacheService.GetFromCache<string>(await Model.GetActualCacheKey("ForumName", true));
+    var ForumId = await _cacheService.GetFromCache<int>(await Model.GetActualCacheKey("ForumId", true));
 }
 
 <script src="~/lib/tribute/dist/tribute.js"></script>
@@ -25,8 +25,8 @@
 <link rel="stylesheet" href="~/css/posting.css" />
 <script type="text/javascript">
     var posting = new Posting(
-        @Json.Serialize(await _cacheService.GetFromCache<List<string>>(Model.GetActualCacheKey("BbCodes", false))),
-        @Json.Serialize(await _cacheService.GetFromCache<Dictionary<string, string>>(Model.GetActualCacheKey("BbCodeHelplines", false))),
+        @Json.Serialize(await _cacheService.GetFromCache<List<string>>(await Model.GetActualCacheKey("BbCodes", false))),
+        @Json.Serialize(await _cacheService.GetFromCache<Dictionary<string, string>>(await Model.GetActualCacheKey("BbCodeHelplines", false))),
         @((await Model.IsCurrentUserAdminHereAsync()).ToString().ToLower()),
         @((Action == PostingActions.EditForumPost).ToString().ToLower()),
         "@UserDateFormat"
@@ -112,9 +112,9 @@ else
             <option value="200">Imens</option>
         </select>
         <input type="button" class="BbCodeButton Hide960" name="bbpalette" id="bbpalette" value="Culoare font" onclick="posting.change_palette();" title="Culoare font: [color=red]text[/color]  Sfat: de asemenea puteţi folosi culorile hexazecimale culoare=#FF0000">
-        @foreach (var code in (await _cacheService.GetFromCache<List<PhpbbBbcodes>>(Model.GetActualCacheKey("DbBbCodes", false))) ?? new List<PhpbbBbcodes>())
+        @foreach (var code in (await _cacheService.GetFromCache<List<PhpbbBbcodes>>(await Model.GetActualCacheKey("DbBbCodes", false))) ?? new List<PhpbbBbcodes>())
         {
-            var index = (await _cacheService.GetFromCache<List<string>>(Model.GetActualCacheKey("BbCodes", false))).IndexOf($"[{code.BbcodeTag}]");
+            var index = (await _cacheService.GetFromCache<List<string>>(await Model.GetActualCacheKey("BbCodes", false))).IndexOf($"[{code.BbcodeTag}]");
             var name = $"addbbcode{index}";
             <input type="button" class="BbCodeButton Hide960" name="@name" value="@code.BbcodeTag" onclick="posting.bbstyle(@index)" title="@code.BbcodeHelpline" />
         }
@@ -150,7 +150,7 @@ else
 
             <strong>Zâmbete</strong><br />
 
-            @foreach (var smiley in ((await _cacheService.GetFromCache<List<PhpbbSmilies>>(Model.GetActualCacheKey("Smilies", false))) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 1))
+            @foreach (var smiley in ((await _cacheService.GetFromCache<List<PhpbbSmilies>>(await Model.GetActualCacheKey("Smilies", false))) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 1))
             {
                 <a href="javascript:posting.insert_text('@smiley.Code', true);">
                     <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
@@ -160,7 +160,7 @@ else
             <a href="javascript:posting.show_hidden_smilies();" id="showHiddenSmiliesButton">Arată mai multe</a>
             <p>&nbsp;</p>
             <div id="hiddenSmilies" style="display:none">
-                @foreach (var smiley in ((await _cacheService.GetFromCache<List<PhpbbSmilies>>(Model.GetActualCacheKey("Smilies", false))) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 0))
+                @foreach (var smiley in ((await _cacheService.GetFromCache<List<PhpbbSmilies>>(await Model.GetActualCacheKey("Smilies", false))) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 0))
                 {
                     <a href="javascript:posting.insert_text('@smiley.Code', true);">
                         <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
@@ -236,7 +236,7 @@ else
     <input asp-for="ReceiverId" type="hidden" id="pmTo" />
     @if (Action != PostingActions.NewPrivateMessage)
     {
-        var attachments = await _cacheService.GetFromCache<List<PhpbbAttachments>>(Model.GetActualCacheKey("PostAttachments", true)) ?? new List<PhpbbAttachments>();
+        var attachments = await _cacheService.GetFromCache<List<PhpbbAttachments>>(await Model.GetActualCacheKey("PostAttachments", true)) ?? new List<PhpbbAttachments>();
         <div id="attachPanel" style="display:@(Model.ShowAttach ? "block" : "none")" class="PostInputWidth">
             <br />
             <h3>Fișiere atașate</h3>
@@ -310,7 +310,7 @@ else
 
 <script>
     var tribute = new Tribute({
-        values: @Html.Raw(_writingService.ToCamelCaseJson(await _cacheService.GetFromCache<List<KeyValuePair<string, string>>>(Model.GetActualCacheKey("Users", false)))),
+        values: @Html.Raw(_writingService.ToCamelCaseJson(await _cacheService.GetFromCache<List<KeyValuePair<string, string>>>(await Model.GetActualCacheKey("Users", false)))),
         trigger: "@@",
         allowSpaces: true
     });
@@ -323,7 +323,7 @@ else
     }
 
     var secondTribute = new Tribute({
-        values: @Html.Raw(_writingService.ToCamelCaseJson(await _cacheService.GetFromCache<List<KeyValuePair<string, int>>>(Model.GetActualCacheKey("UserMap", false)))),
+        values: @Html.Raw(_writingService.ToCamelCaseJson(await _cacheService.GetFromCache<List<KeyValuePair<string, int>>>(await Model.GetActualCacheKey("UserMap", false)))),
         selectTemplate: function (item) {
             return item.original.key;
         },

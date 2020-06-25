@@ -58,8 +58,7 @@ namespace Serverless.Forum.Pages
         [BindProperty]
         public int UserRank { get; set; }
 
-        public bool IsSelf => CurrentUser.UserId == CurrentUserId;
-        public async Task<bool> CanEditAsync() => !ViewAsAnother && (IsSelf || await IsCurrentUserAdminHereAsync());
+        public async Task<bool> CanEditAsync() => !ViewAsAnother && ((await GetCurrentUserAsync()).UserId == CurrentUser.UserId || await IsCurrentUserAdminHereAsync());
         public int TotalPosts { get; private set; }
         public (int? Id, string Title) PreferredTopic { get; private set; }
         public double PostsPerDay { get; private set; }
@@ -283,12 +282,6 @@ namespace Serverless.Forum.Pages
 
                 where !restrictedForums.Contains(t.ForumId)
 
-                //join f in restrictedForums
-                //on t.ForumId equals f
-                //into joinedForums
-                
-                //from jf in joinedForums.DefaultIfEmpty()
-                //where jf == default
                 group p by p.TopicId into groups
                 orderby groups.Count() descending
                 select groups.Key as int?
@@ -296,6 +289,7 @@ namespace Serverless.Forum.Pages
             var preferredTopicTitle = (await context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == preferredTopicId))?.TopicTitle;
             if (preferredTopicId.HasValue)
             {
+                todo: this should be using forumdto not forumtree
                 var pathParts = new List<string>(_forumService.GetPathInTree(await GetForumTree(), f => f.Name, -1, preferredTopicId.Value).Skip(1))
                 {
                     preferredTopicTitle
