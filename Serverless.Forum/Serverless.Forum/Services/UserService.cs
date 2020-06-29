@@ -23,7 +23,6 @@ namespace Serverless.Forum.Services
 
         private static PhpbbUsers _anonymousDbUser;
         private static ClaimsPrincipal _anonymousClaimsPrincipal;
-        private static LoggedUser _anonymousLoggedUser;
 
         public UserService(Utils utils, ForumDbContext context)
         {
@@ -33,7 +32,7 @@ namespace Serverless.Forum.Services
 
         public async Task<bool> IsUserAdminInForum(LoggedUser user, int forumId)
             => user != null && (
-                from up in user.AllPermissions ?? new List<LoggedUser.Permissions>()
+                from up in user.AllPermissions ?? new HashSet<LoggedUser.Permissions>()
                 where up.ForumId == forumId || up.ForumId == 0
                 join a in await GetAdminRolesLazy()
                 on up.AuthRoleId equals a.RoleId
@@ -43,7 +42,7 @@ namespace Serverless.Forum.Services
         public async Task<bool> IsUserModeratorInForum(LoggedUser user, int forumId)
             => (await IsUserAdminInForum(user, forumId)) || (
                 user != null && (
-                    from up in user.AllPermissions ?? new List<LoggedUser.Permissions>()
+                    from up in user.AllPermissions ?? new HashSet<LoggedUser.Permissions>()
                     where up.ForumId == forumId || up.ForumId == 0
                     join a in await GetModRolesLazy()
                     on up.AuthRoleId equals a.RoleId
@@ -52,7 +51,7 @@ namespace Serverless.Forum.Services
             );
 
         public async Task<int?> GetUserRole(LoggedUser user)
-            => (from up in user.AllPermissions ?? new List<LoggedUser.Permissions>()
+            => (from up in user.AllPermissions ?? new HashSet<LoggedUser.Permissions>()
                 join a in await GetUserRolesLazy()
                 on up.AuthRoleId equals a.RoleId
                 select up.AuthRoleId as int?).FirstOrDefault();
@@ -63,7 +62,7 @@ namespace Serverless.Forum.Services
         public async Task<bool> HasPrivateMessages(int userId)
             => await GetUserRole(await GetLoggedUserById(userId)) != Constants.NO_PM_ROLE;
 
-        public async Task<PhpbbUsers> GetAnonymousDbUserAsync()
+        /*public*/ async Task<PhpbbUsers> GetAnonymousDbUserAsync()
         {
             if (_anonymousDbUser != null)
             {
@@ -72,7 +71,7 @@ namespace Serverless.Forum.Services
             using (var connection = _context.Database.GetDbConnection())
             {
                 await connection.OpenIfNeeded();
-                _anonymousDbUser = await connection.QuerySingleAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId = Constants.ANONYMOUS_USER_ID });
+                _anonymousDbUser = await connection.QuerySingleOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId = Constants.ANONYMOUS_USER_ID });
             }
             return _anonymousDbUser;
         }
@@ -88,16 +87,16 @@ namespace Serverless.Forum.Services
             return _anonymousClaimsPrincipal;
         }
 
-        public async Task<LoggedUser> GetAnonymousLoggedUserAsync()
-        {
-            if (_anonymousLoggedUser != null)
-            {
-                return _anonymousLoggedUser;
-            }
+        //public async Task<LoggedUser> GetAnonymousLoggedUserAsync()
+        //{
+        //    if (_anonymousLoggedUser != null)
+        //    {
+        //        return _anonymousLoggedUser;
+        //    }
 
-            _anonymousLoggedUser = await ClaimsPrincipalToLoggedUserAsync(await GetAnonymousClaimsPrincipalAsync());
-            return _anonymousLoggedUser;
-        }
+        //    _anonymousLoggedUser = await ClaimsPrincipalToLoggedUserAsync(await GetAnonymousClaimsPrincipalAsync());
+        //    return _anonymousLoggedUser;
+        //}
 
         public async Task<ClaimsPrincipal> DbUserToClaimsPrincipalAsync(PhpbbUsers user)
         {
@@ -115,7 +114,7 @@ namespace Serverless.Forum.Services
             using var connection = _context.Database.GetDbConnection();
             await connection.OpenIfNeeded();
             DefaultTypeMap.MatchNamesWithUnderscores = true;
-            var editTime = await connection.QuerySingleAsync<int>(
+            var editTime = await connection.QuerySingleOrDefaultAsync<int>(
                 @"SELECT group_edit_time g
                    FROM phpbb_groups g
                    JOIN phpbb_user_group ug ON g.group_id = ug.group_id
@@ -165,7 +164,7 @@ namespace Serverless.Forum.Services
         {
             using var connection = _context.Database.GetDbConnection();
             await connection.OpenIfNeeded();
-            var usr = await connection.QuerySingleAsync<PhpbbUserGroup>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
+            var usr = await connection.QuerySingleOrDefaultAsync<PhpbbUserGroup>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
             return usr?.GroupId;
         }
 
@@ -173,7 +172,7 @@ namespace Serverless.Forum.Services
         {
             using var connection = _context.Database.GetDbConnection();
             await connection.OpenIfNeeded();
-            var usr = await connection.QuerySingleAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
+            var usr = await connection.QuerySingleOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
             return await DbUserToLoggedUserAsync(usr);
         }
 

@@ -5,6 +5,7 @@
 @{
     ViewData["Title"] = "User";
     Layout = "~/Pages/_Layout.cshtml";
+    var isSelf = (await Model.GetCurrentUserAsync()).UserId == Model.CurrentUser.UserId;
 }
 
 @inject Services.UserService _userService
@@ -22,7 +23,7 @@
 <hr />
 <h4>
     @Model.CurrentUser.Username - Profil
-    @if (Model.IsSelf && await _userService.HasPrivateMessages(Model.CurrentUser.UserId))
+    @if (isSelf && await _userService.HasPrivateMessages(Model.CurrentUser.UserId))
     {
         <span>&nbsp;&bull;&nbsp;</span>
         <a asp-page="PrivateMessages">Mesaje private</a>
@@ -58,7 +59,7 @@ else if (Model.ViewAsAnother)
                 <span style="font-weight:bold; color:#@(string.IsNullOrWhiteSpace(Model.CurrentUser.UserColour) ? "000000" : Model.CurrentUser.UserColour)">
                     @Html.Raw(Model.CurrentUser.Username)
                 </span>
-                @if (Model.IsSelf)
+                @if (isSelf)
                 {
                     <br />
                     <span class="Caption">Trimite un e-mail la <a href="mailto:admin@metrouusor.com">admin@metrouusor.com</a> dacă dorești schimbarea numelui de utilizator.</span>
@@ -89,7 +90,7 @@ else if (Model.ViewAsAnother)
             </div>
         }
     </div>
-    @if (!Model.ViewAsAnother && Model.IsSelf)
+    @if (!Model.ViewAsAnother && isSelf)
     {
         <p></p>
         <div class="FlexCenter">
@@ -276,7 +277,7 @@ else if (Model.ViewAsAnother)
             <a href="mailto:@Html.Raw(Model.CurrentUser.UserEmail)">Trimite e-mail</a>
         </div>
     }
-    @if (!Model.IsSelf && await _userService.HasPrivateMessages(await Model.GetCurrentUserAsync()) && await _userService.HasPrivateMessages(Model.CurrentUser.UserId))
+    @if (!isSelf && await _userService.HasPrivateMessages(await Model.GetCurrentUserAsync()) && await _userService.HasPrivateMessages(Model.CurrentUser.UserId))
     {
         <p></p>
         <div class="FlexCenter">

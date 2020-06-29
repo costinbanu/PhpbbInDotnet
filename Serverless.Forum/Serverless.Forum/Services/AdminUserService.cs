@@ -36,7 +36,7 @@ namespace Serverless.Forum.Services
         public async Task<(string Message, bool? IsSuccess)> ManageUser(AdminUserActions? action, int? userId)
         {
 
-            if (userId == (await _userService.GetAnonymousDbUserAsync()).UserId)
+            if (userId == Constants.ANONYMOUS_USER_ID)
             {
                 return ($"Utilizatorul cu id '{userId}' este utilizatorul anonim și nu poate fi șters.", false);
             }
@@ -116,10 +116,10 @@ namespace Serverless.Forum.Services
                                 select p
                             ).ToListAsync();
 
-                            posts.ForEach(async p =>
+                            posts.ForEach(p =>
                             {
                                 p.PostUsername = user.Username;
-                                p.PosterId = (await _userService.GetAnonymousDbUserAsync()).UserId;
+                                p.PosterId = Constants.ANONYMOUS_USER_ID;
                             });
 
                             await flagUserAsChanged();

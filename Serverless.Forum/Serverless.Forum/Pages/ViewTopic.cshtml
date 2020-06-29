@@ -12,8 +12,8 @@
 @{
     ViewData["Title"] = $"{Model.ForumTitle} - {Model.TopicTitle}";
     Layout = "~/Pages/_Layout.cshtml";
-    var IsAnonymous = Model.CurrentUserId == Constants.ANONYMOUS_USER_ID;
     var CurrentUser = await Model.GetCurrentUserAsync();
+    var IsAnonymous = CurrentUser.UserId == Constants.ANONYMOUS_USER_ID;
     var UserDateFormat = CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
     var IsAdmin = await Model.IsCurrentUserAdminHereAsync();
     var IsMod = await Model.IsCurrentUserModeratorHereAsync();
@@ -62,7 +62,7 @@
 
 @if (Model.Poll != null)
 {
-    if (Model.Poll.CanVoteNow(Model.CurrentUserId) || IsAnonymous)
+    if (Model.Poll.CanVoteNow(CurrentUser.UserId) || IsAnonymous)
     {
         <div id="votes" style="display:block">
             <h3>Chestionar: @Html.Raw(HttpUtility.HtmlDecode(Model.Poll.PollTitle))</h3>
@@ -70,7 +70,7 @@
             <form method="post" asp-page-handler="vote">
                 @foreach (var option in Model.Poll.PollOptions)
                 {
-                    var isChecked = option.PollOptionVoters.Any(v => v.UserId == Model.CurrentUserId);
+                    var isChecked = option.PollOptionVoters.Any(v => v.UserId == CurrentUser.UserId);
                     <table style="border:none; padding:unset; margin:unset; width:100%">
                         <tr style="border-bottom:solid 1px black">
                             <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
@@ -93,9 +93,9 @@
             </form>
         </div>
     }
-    if ((!Model.Poll.CanVoteNow(Model.CurrentUserId) && !IsAnonymous) || IsAdmin)
+    if ((!Model.Poll.CanVoteNow(CurrentUser.UserId) && !IsAnonymous) || IsAdmin)
     {
-        <div id="results" style="display:@(Model.Poll.CanVoteNow(Model.CurrentUserId) && IsAdmin ? "none" : "block")">
+        <div id="results" style="display:@(Model.Poll.CanVoteNow(CurrentUser.UserId) && IsAdmin ? "none" : "block")">
             <h3>Chestionar: @Html.Raw(HttpUtility.HtmlDecode(Model.Poll.PollTitle))</h3>
             <div>Chestionarul @(Model.Poll.PollEnded ? "a fost" : "va fi") inchis: @(Model.Poll.PollEnd.HasValue ? Model.Poll.PollEnd.Value.ToString(UserDateFormat) : "niciodată").</div>
             <p></p>
@@ -122,7 +122,7 @@
                 }
             </table>
         </div>
-        @if (Model.Poll.CanVoteNow(Model.CurrentUserId) && IsAdmin)
+        @if (Model.Poll.CanVoteNow(CurrentUser.UserId) && IsAdmin)
         {
             <br />
             <input type="button" value="Arată rezultatele" onclick="vt.switchPollPanels('results', 'votes', this)" />
@@ -152,7 +152,7 @@
 @foreach (var post in Model.Posts)
 {
     var rowClass = string.Empty;
-    if (post.ReportId.HasValue && (IsMod || post.ReporterId == Model.CurrentUserId))
+    if (post.ReportId.HasValue && (IsMod || post.ReporterId == CurrentUser.UserId))
     {
         rowClass = "ReportedPost";
     }
@@ -180,7 +180,7 @@
                 </span>
                 <div style="max-width:100%">
                     <br />
-                    @if (post.ReportId.HasValue && (IsMod || post.ReporterId == Model.CurrentUserId))
+                    @if (post.ReportId.HasValue && (IsMod || post.ReporterId == CurrentUser.UserId))
                     {
                         var reason = await _context.PhpbbReportsReasons.AsNoTracking().FirstOrDefaultAsync(x => x.ReasonId == post.ReportReasonId);
                         <a href="javascript:vt.showReportViewer(@post.PostId, @post.ReportId, '@reason.ReasonTitle', '@reason.ReasonDescription', '@post.ReportDetails')" style="font-weight:bold; font-size:1.2em">Arată raportul</a><br />
@@ -260,7 +260,7 @@
                                 Selectează pentru moderare <input name="PostIdsForModerator" type="checkBox" value="@post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @(post.PostId ?? -1))" @(Model.PostIdsForModerator.Contains(post.PostId ?? -1) ? "checked" : "") />
                             </span>
                         }
-                        @if (IsMod || (post.AuthorId == Model.CurrentUserId && DateTime.UtcNow.Subtract(post.PostCreationTime ?? default).TotalMinutes <= EditTime))
+                        @if (IsMod || (post.AuthorId == CurrentUser.UserId && DateTime.UtcNow.Subtract(post.PostCreationTime ?? default).TotalMinutes <= EditTime))
                         {
                             <span>
                                 <a asp-page="/Posting" asp-page-handler="EditPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">&#x1F4DD; Modifică</a>
@@ -319,10 +319,10 @@ else if (!IsAnonymous)
     @await Html.PartialAsync(
         "_ForumTreePartial",
         new CustomPartials._ForumTreePartialModel(
-            forums: await Model.GetForumTreeAsync(),
+            forums: await Model.GetForumTree(fullTraversal: true),
             forumId: Model.ForumId,
             topicId: Model.TopicId,
-            path: await Model.PathToForumOrTopic(Model.ForumId.Value, Model.TopicId),
+            path: (await Model.GetForumTree(fullTraversal: true)).Tree.FirstOrDefault(t => t.ForumId == Model.ForumId).PathList,
             constrainSize: true
         ),
         ViewData

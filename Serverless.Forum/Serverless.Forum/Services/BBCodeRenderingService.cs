@@ -84,18 +84,18 @@ namespace Serverless.Forum.Services
             _parser = new BBCodeParser(bbcodes);
         }
 
-        public async Task ProcessPosts(IEnumerable<PostDto> Posts, PageContext pageContext, HttpContext httpContext, bool renderAttachments, string toHighlight = null)
+        public void ProcessPosts(IEnumerable<PostDto> Posts, PageContext pageContext, HttpContext httpContext, bool renderAttachments, string toHighlight = null)
         {
             var inlineAttachmentsPosts = new ConcurrentBag<(int PostId, int AttachIndex, _AttachmentPartialModel Attach)>();
             var attachRegex = new Regex("#{AttachmentFileName=[^/]+/AttachmentIndex=[0-9]+}#", RegexOptions.Compiled);
             var highlightWords = SplitHighlightWords(toHighlight);
             var mutex = new Mutex();
 
-            Parallel.ForEach(Posts, async (p, state1) =>
+            Parallel.ForEach(Posts, (p, state1) =>
             {
                 p.PostSubject = CensorWords(HttpUtility.HtmlDecode(p.PostSubject), _bannedWords);
                 p.PostSubject = HighlightWords(p.PostSubject, highlightWords);
-                p.PostText = HighlightWords(await BbCodeToHtml(p.PostText, p.BbcodeUid), highlightWords);
+                p.PostText = HighlightWords(BbCodeToHtml(p.PostText, p.BbcodeUid), highlightWords);
 
                 if (renderAttachments)
                 {
@@ -152,7 +152,7 @@ namespace Serverless.Forum.Services
             });
         }
 
-        public async Task<string> BbCodeToHtml(string bbCodeText, string bbCodeUid)
+        public string BbCodeToHtml(string bbCodeText, string bbCodeUid)
         {
             if (string.IsNullOrWhiteSpace(bbCodeText))
             {

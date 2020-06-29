@@ -74,10 +74,10 @@
             @await Html.PartialAsync(
                 "_ForumTreePartial",
                  new CustomPartials._ForumTreePartialModel(
-                     forums: await Model.GetForumTreeAsync(),
+                     forums: await Model.GetForumTree(fullTraversal: true),
                      forumId: Model.ForumId,
                      topicId: Model.TopicId,
-                     path: await Model.PathToForumOrTopic(Model.ForumId ?? 0, Model.TopicId),
+                     path: (await Model.GetForumTree(fullTraversal: true)).Tree.FirstOrDefault(t => t.ForumId == Model.ForumId).PathList, //await Model.PathToForumOrTopic(Model.ForumId ?? 0, Model.TopicId),
                      constrainSize: true
                  ),
                 ViewData

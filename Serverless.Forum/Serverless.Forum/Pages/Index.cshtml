@@ -2,8 +2,9 @@
 @model IndexModel
 @{
     ViewData["Title"] = "Home page";
-    var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
-    var IsAnonymous = Model.CurrentUserId == Utilities.Constants.ANONYMOUS_USER_ID;
+    var usr = await Model.GetCurrentUserAsync();
+    var UserDateFormat = usr?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+    var IsAnonymous = usr?.UserId == Utilities.Constants.ANONYMOUS_USER_ID;
 }
 
 <style>

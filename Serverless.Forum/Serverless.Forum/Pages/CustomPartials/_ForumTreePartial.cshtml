@@ -48,27 +48,36 @@
         background-color: deepskyblue;
     }
 </style>
+
 @functions {
-    async Task showTreeNode(ForumDto cur)
+    async Task showTreeNode(int? cur)
     {
-        if (cur == null)
+        if ((cur ?? 0) == 0)
         {
             return;
         }
 
-        var treeNodeClass = cur.Id == Model.ForumId ? "treeNode selectedTreeNode" : "treeNode";
-        var topics = (cur?.Topics ?? new List<TopicDto>()).OrderBy(t => t.Title, StringComparer.OrdinalIgnoreCase).ToList();
+        var treeNodeClass = cur == Model.ForumId ? "treeNode selectedTreeNode" : "treeNode";
+        var topics = Model.Forums.TopicData.Where(t => t.ForumId == cur)
+                                           .OrderBy(t => t.TopicTitle, StringComparer.OrdinalIgnoreCase)
+                                           .Select (t => new TopicDto
+                                           {
+                                               Id = t.TopicId,
+                                               Title = t.TopicTitle
+                                           });
 
-        if (cur.ChildrenForums?.Any() ?? false)
+        var children = Model.Forums.ForumData.Where(f => f.ParentId == cur).OrderBy(f => f.LeftId);
+        var thisForum = Model.Forums.ForumData.FirstOrDefault(f => f.ForumId == cur);
+        if (children.Any())
         {
             await Output.WriteAsync(
                 $"<li class='{treeNodeClass}'>" +
-                    $"<span id='treeNode{cur.Id}' class='searchCaret' onclick='select(this, {cur.Id}, {Json.Serialize(topics)});'>{cur.Name}</span>" +
-                    $"<ul class='nestedTreeNode' id='child{cur.Id}'>"
+                    $"<span id='treeNode{cur}' class='searchCaret' onclick='select(this, {cur}, {Json.Serialize(topics)});'>{thisForum.ForumName}</span>" +
+                    $"<ul class='nestedTreeNode' id='child{cur}'>"
             );
-            foreach (var child in cur.ChildrenForums ?? new List<ForumDto>())
+            foreach (var child in children)
             {
-                await showTreeNode(child);
+                await showTreeNode(child.ForumId);
             }
             await Output.WriteAsync(
                     "</ul>" +
@@ -78,7 +87,7 @@
         else
         {
             await Output.WriteAsync(
-                $"<li id='treeNode{cur.Id}' class='{treeNodeClass}' onclick='select(this, {cur.Id}, {Json.Serialize(topics)});'>{cur.Name}</li>"
+                $"<li id='treeNode{cur}' class='{treeNodeClass}' onclick='select(this, {cur}, {Json.Serialize(topics)});'>{thisForum.ForumName}</li>"
             );
         }
     }
@@ -86,7 +95,7 @@
 @{ var style = Html.Raw(Model.ConstrainSize ? "style=\"height:400px; max-height:600px; overflow-y:scroll\"" : ""); }
 <div id="treeContainer" @style>
     <ul id="myUL">
-        @{await showTreeNode(Model.Forums);}
+        @{await showTreeNode(0);}
     </ul>
 </div>
 

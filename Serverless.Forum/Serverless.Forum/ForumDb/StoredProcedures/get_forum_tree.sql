@@ -1,16 +1,16 @@
-﻿CREATE DEFINER=`root`@`localhost` PROCEDURE `get_forum_tree`(exclusion_list mediumtext, forum_id int, full_traversal boolean)
+﻿CREATE DEFINER=`root`@`localhost` PROCEDURE `get_forum_tree`(exclusion_list_param mediumtext, forum_id_param int, full_traversal_param boolean)
 BEGIN
-	SET @forum_id = COALESCE(forum_id, 0);
-    SET @exclusion_list = COALESCE(exclusion_list, '');
-	SET @full_traversal = COALESCE(full_traversal, false);
+	SET @forum_id = COALESCE(forum_id_param, 0);
+    SET @exclusion_list = COALESCE(exclusion_list_param, '');
+	SET @full_traversal = COALESCE(full_traversal_param, false);
     
-    WITH RECURSIVE forum_paths AS (
+		WITH RECURSIVE forum_paths AS (
 	  SELECT f.forum_id, 
 			 cast(f.forum_id AS CHAR(200)) as path,
-             0 AS level,
+             1 AS level,
              f.parent_id
 		FROM phpbb_forums f
-		WHERE parent_id = @forum_id AND NOT find_in_set(cast(forum_id AS CHAR(200)), @exclusion_list)
+		WHERE parent_id = 0 AND NOT find_in_set(cast(forum_id AS CHAR(200)), @exclusion_list)
 	  
       UNION ALL
 	  
@@ -26,7 +26,7 @@ BEGIN
     
 	forums AS (
 		SELECT coalesce(parent.forum_id, 0) as forum_id, 
-               parent.level,
+               coalesce(parent.level, 0) as level,
                parent.parent_id,
 			   parent.path as path_to_forum,
 			   group_concat(child.forum_id) as children
@@ -39,7 +39,7 @@ BEGIN
 		UNION 
 
 		SELECT coalesce(parent.forum_id, 0) as forum_id, 
-               parent.level,
+               coalesce(parent.level, 0) as level,
                parent.parent_id,
 			   coalesce(parent.path, '0') as path_to_forum,
 			   group_concat(no_child.forum_id) as children
@@ -60,6 +60,8 @@ BEGIN
 	  FROM forums f
 	  LEFT JOIN phpbb_topics t
 		ON f.forum_id = t.forum_id AND f.level = 0
-	 WHERE @full_traversal OR level <= 2
-	 GROUP BY f.forum_id;
+	 WHERE @forum_id = 0 OR f.forum_id = @forum_id OR f.parent_id = @forum_id
+	 GROUP BY f.forum_id
+     HAVING @full_traversal OR f.level <= MAX(f.level) + 2
+     ORDER BY level;
 END

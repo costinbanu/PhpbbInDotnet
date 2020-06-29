@@ -1,9 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.EntityFrameworkCore;
-using Serverless.Forum.Contracts;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
@@ -63,20 +60,10 @@ namespace Serverless.Forum.Utilities
             }
         }
 
-        //public static async Task<T> FirstOrDefaultAsync<T>(this DbSet<T> source) where T : class
-        //{
-        //    return await EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(source);
-        //}
-
         public static async Task<T> FirstOrDefaultAsync<T>(this IQueryable<T> source) where T : class
         {
             return await EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(source);
         }
-
-        //public static async Task<T> FirstOrDefaultAsync<T>(this DbSet<T> source, Expression<Func<T, bool>> filter) where T : class
-        //{
-        //    return await EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(source, filter);
-        //}
 
         public static async Task<T> FirstOrDefaultAsync<T>(this IQueryable<T> source, Expression<Func<T, bool>> filter) where T : class
         {
@@ -87,16 +74,6 @@ namespace Serverless.Forum.Utilities
         {
             return EntityFrameworkQueryableExtensions.AsNoTracking(source);
         }
-
-        //public static async Task<int> CountAsync<T>(this DbSet<T> source, Expression<Func<T, bool>> filter) where T : class
-        //{
-        //    return await EntityFrameworkQueryableExtensions.CountAsync(source, filter);
-        //}
-
-        //public static async Task<int> CountAsync<T>(this DbSet<T> source) where T : class
-        //{
-        //    return await EntityFrameworkQueryableExtensions.CountAsync(source);
-        //}
 
         public static async Task<int> CountAsync<T>(this IQueryable<T> source, Expression<Func<T, bool>> filter) where T : class
         {

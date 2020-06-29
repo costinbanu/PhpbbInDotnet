@@ -1,12 +1,17 @@
 ﻿@page
 @model Serverless.Forum.Pages.ViewForumModel
+
 @using Serverless.Forum.Utilities
+@using System.Web
+
 @inject Services.ForumTreeService _forumService
+
 @{
     ViewData["Title"] = Model.ForumTitle;
     Layout = "~/Pages/_Layout.cshtml";
-    var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
-    var IsAnonymous = Model.CurrentUserId == Constants.ANONYMOUS_USER_ID;
+    var CurrentUser = await Model.GetCurrentUserAsync();
+    var UserDateFormat = CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+    var IsAnonymous = CurrentUser.UserId == Constants.ANONYMOUS_USER_ID;
 }
 
 <link rel="stylesheet" href="~/css/pagination.css" />
@@ -49,7 +54,7 @@ else
 @if (!IsAnonymous && !Model.IsNewPostView)
 {
     <ul class="Shortcuts">
-        @if (Model.Forums?.Any() ?? false)
+        @if (Model.Forums?.ForumData?.Any() ?? false)
         {
             <li><a href="javascript:MarkForumsRead.submit()">Marchează forumurile ca citite</a></li>
         }
@@ -61,7 +66,7 @@ else
     </ul>
 }
 
-@if (Model.Forums?.Any() ?? false)
+@if (Model.Forums?.ForumData?.Any() ?? false)
 {
     @await Html.PartialAsync(
         "_ForumDisplayPartial",
@@ -104,8 +109,9 @@ else
                 <span class="ForumContent">
                     @if (Model.IsNewPostView)
                     {
-                        var tree = await Model.GetForumTreeAsync();
-                        @Html.Raw(string.Join(" → ", _forumService.GetPathInTree(tree, f => f.Name, -1, topic.Id ?? -1).Skip(1)))
+                        var tree = await Model.GetForumTree(forumId: topic.ForumId, fullTraversal: true);
+                        var pathParts = tree.Tree.FirstOrDefault(x => x.ForumId == topic.ForumId).ChildrenList;
+                        @Html.Raw(string.Join(" → ", tree.ForumData.Where(f => pathParts.Contains(f.ForumId)).Select(f => HttpUtility.HtmlDecode(f.ForumName)).Union(new[] { HttpUtility.HtmlDecode(topic.Title) })));
                         <br />
                     }
                     @if (topicGroup.TopicType == TopicType.Important)
@@ -155,10 +161,10 @@ else if (Model.IsNewPostView)
     @await Html.PartialAsync(
         "_ForumTreePartial",
         new CustomPartials._ForumTreePartialModel(
-            forums: await Model.GetForumTreeAsync(),
+            forums: await Model.GetForumTree(fullTraversal: true),
             forumId: Model.ForumId,
             topicId: null,
-            path: await Model.PathToForumOrTopic(Model.ForumId),
+            path: (await Model.GetForumTree(fullTraversal: true)).Tree.FirstOrDefault(t => t.ForumId == Model.ForumId).PathList,
             constrainSize: true
         ),
         ViewData

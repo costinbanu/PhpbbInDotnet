@@ -4,7 +4,7 @@
 @inject Services.ForumTreeService _forumTreeService
 @inject Services.AdminForumService _adminForumService
 @{
-    var forumTree = await _forumTreeService.GetForumTree();
+    var (tree, forums, topics, tracking) = await _forumTreeService.GetExtendedForumTree(fullTraversal: true);
 }
 <link rel="stylesheet" href="~/css/posting.css" />
 <div style="float:left">
@@ -15,10 +15,10 @@
 @await Html.PartialAsync(
     "_ForumTreePartial",
     new CustomPartials._ForumTreePartialModel(
-        forums: forumTree,
+        forums: new Contracts.ForumDto(tree.FirstOrDefault(), tree, forums, topics, tracking),
         forumId: Model.Forum?.ForumId ?? 0,
         topicId: null,
-        path: _forumTreeService.GetPathInTree(forumTree, forum => forum.Id ?? 0, Model.Forum?.ForumId ?? 0, -1)
+        path: tree.FirstOrDefault(t => t.ForumId == Model.Forum.ForumId).PathList
     ),
     ViewData
 )

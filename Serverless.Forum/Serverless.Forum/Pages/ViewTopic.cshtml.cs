@@ -144,11 +144,25 @@ namespace Serverless.Forum.Pages
                 using (var connection = _context.Database.GetDbConnection())
                 {
                     await connection.OpenIfNeeded();
-                    users = await connection.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id IN @userList", new { userList = _dbPosts.Select(p => p.PosterId) });
-                    lastEditUsers = await connection.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id IN @userList", new { userList = _dbPosts.Select(p => p.PostEditUser) });
-                    attachments = await connection.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id IN @postList", new { postList = _dbPosts.Select(p => p.PostId) });
-                    reports = await connection.QueryAsync<PhpbbReports>("SELECT * FROM phpbb_reports WHERE report_closed = 0 AND post_id IN @postList", new { postList = _dbPosts.Select(p => p.PostId) });
-                    ranks = await connection.QueryAsync<PhpbbRanks>("SELECT * FROM phpbb_ranks WHERE rank_id IN @rankList", new { rankList = users.Select(u => u.UserRank) });
+                    using var multi = await connection.QueryMultipleAsync(
+                        "SELECT * FROM phpbb_users WHERE user_id IN @authors; " +
+                        "SELECT * FROM phpbb_users WHERE user_id IN @editors; " +
+                        "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @posts; " +
+                        "SELECT * FROM phpbb_reports WHERE report_closed = 0 AND post_id IN @posts; " +
+                        "SELECT r.* FROM phpbb_ranks r JOIN phpbb_users u on u.user_rank = r.rank_id WHERE u.user_id IN @authors;",
+                        new
+                        {
+                            authors = _dbPosts.Select(p => p.PosterId),
+                            editors = _dbPosts.Select(p => p.PostEditUser),
+                            posts = _dbPosts.Select(p => p.PostId)
+                        }
+                    );
+
+                    users = await multi.ReadAsync<PhpbbUsers>();
+                    lastEditUsers = await multi.ReadAsync<PhpbbUsers>();
+                    attachments = await multi.ReadAsync<PhpbbAttachments>();
+                    reports = await multi.ReadAsync<PhpbbReports>();
+                    ranks = await multi.ReadAsync<PhpbbRanks>();
                 }
 
                 Posts = (
@@ -173,10 +187,10 @@ namespace Serverless.Forum.Pages
                         PostId = p.PostId,
                         Attachments = joinedAttachments.Select(x => new _AttachmentPartialModel(x)).ToList(),
                         BbcodeUid = p.BbcodeUid,
-                        Unread = IsPostUnread(p.TopicId, p.PostId),
-                        AuthorHasAvatar = ju == null ? false : !string.IsNullOrWhiteSpace(ju.UserAvatar),
-                        AuthorSignature = ju == null ? null : _renderingService.BbCodeToHtml(ju.UserSig, ju.UserSigBbcodeUid).RunSync(),
-                        AuthorRank = jr == null ? null : jr.RankTitle,
+                        Unread = IsPostUnread(p.TopicId, p.PostId).RunSync(),
+                        AuthorHasAvatar = ju != null && !string.IsNullOrWhiteSpace(ju.UserAvatar),
+                        AuthorSignature = ju == null ? null : _renderingService.BbCodeToHtml(ju.UserSig, ju.UserSigBbcodeUid),
+                        AuthorRank = jr?.RankTitle,
                         LastEditTime = p.PostEditTime,
                         LastEditUser = lastEditUsername,
                         LastEditReason = p.PostEditReason,
@@ -191,7 +205,7 @@ namespace Serverless.Forum.Pages
                 TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
 
 
-                await _renderingService.ProcessPosts(Posts, PageContext, HttpContext, true).ConfigureAwait(false);
+                _renderingService.ProcessPosts(Posts, PageContext, HttpContext, true);
 
                 using (var connection = _context.Database.GetDbConnection())
                 {
@@ -199,8 +213,7 @@ namespace Serverless.Forum.Pages
                     await connection.OpenIfNeeded();
                     if (Posts.Any(p => p.Unread))
                     {
-                        var existing = await connection.QuerySingleAsync<PhpbbTopicsTrack>("SELECT * FROM phpbb_topics_track WHERE user_id = @userId AND topic_id = @TopicId", new { userId, TopicId });
-                        //await _context.PhpbbTopicsTrack.FirstOrDefaultAsync(t => t.UserId == (await GetCurrentUserAsync()).UserId && t.TopicId == TopicId).ConfigureAwait(false);
+                        var existing = await connection.QuerySingleOrDefaultAsync<PhpbbTopicsTrack>("SELECT * FROM phpbb_topics_track WHERE user_id = @userId AND topic_id = @TopicId", new { userId, TopicId });
                         if (existing == null)
                         {
                             await connection.ExecuteAsync(
@@ -210,19 +223,13 @@ namespace Serverless.Forum.Pages
                         }
                         else
                         {
-                            //existing.ForumId = ForumId.Value;
-                            //existing.MarkTime = DateTime.UtcNow.ToUnixTimestamp();
                             await connection.ExecuteAsync(
                                 "UPDATE phpbb_topics_track SET forum_id = @ForumId, mark_time = @markTime WHERE user_id = @userId AND topic_id = @TopicId",
                                 new { ForumId, markTime = DateTime.UtcNow.ToUnixTimestamp(), userId, TopicId }
                             );
                         }
                     }
-                    //var topicToEdit = await connection.QuerySingleAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @TopicId", new { TopicId });
-                    //await _context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == TopicId).ConfigureAwait(false);
-                    //topicToEdit.TopicViews++;
-                    //await connection.UpdateAsync(topicToEdit);
-                    //await _context.SaveChangesAsync().ConfigureAwait(false);
+
                     await connection.ExecuteAsync("UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @TopicId", new { TopicId } );
                 }
                 return Page();
@@ -462,7 +469,6 @@ namespace Serverless.Forum.Pages
                 _count = results.Count;
             }
         }
-
 
         private async Task<(int? LatestSelected, int? NextRemaining)> GetSelectedAndNextRemainingPostIds(Func<PhpbbPosts, bool> latestSelectedFilter)
         {

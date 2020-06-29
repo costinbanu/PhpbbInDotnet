@@ -186,11 +186,18 @@ namespace Serverless.Forum.Services
             );
 
         public async Task<List<SelectListItem>> FlatForumTreeAsListItem(int parentId, int forumId)
-            => _forumService.GetPathInTree(
-                await _forumService.GetForumTree(),
-                forum => new SelectListItem(forum.Name, forum.Id.ToString(), forum.Id == parentId/*, forum.Id == forumId || forum.ParentId == forumId*/),
-                (item, level) => item.Text = $"{new string('-', level)} {item.Text}"
-            );
+        {
+            var tree = await _forumService.GetForumTree(fullTraversal: true);
+            return (
+                from f in await _context.PhpbbForums.AsNoTracking().ToListAsync()
+                join t in tree
+                on f.ForumId equals t.ForumId
+                into joined
+                from jt in joined
+                let indent = new string('-', jt.Level)
+                select new SelectListItem($"{indent}{f.ForumName}", f.ForumId.ToString(), f.ForumId == parentId)
+            ).ToList();
+        }
 
         public async Task<IEnumerable<ForumPermissions>> GetPermissions(int forumId)
         {

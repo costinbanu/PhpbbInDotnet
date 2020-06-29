@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
@@ -14,18 +15,23 @@ namespace Serverless.Forum.Services
     {
         private readonly IConfiguration _config;
         private readonly Utils _utils;
+        private readonly IWebHostEnvironment _environment;
 
-        public string AttachmentsPath => Path.GetFullPath(_config["Storage:Files"]);
-        public string AvatarsPath => Path.GetFullPath(_config["Storage:Avatars"]);
+        public string AttachmentsPath => Path.Combine(_environment.WebRootPath,  _config["Storage:Files"]);
+        public string AvatarsPath => Path.Combine(_environment.WebRootPath, _config["Storage:Avatars"]);
 
-        public StorageService(IConfiguration config, Utils utils)
+        public StorageService(IConfiguration config, Utils utils, IWebHostEnvironment environment)
         {
             _config = config;
             _utils = utils;
+            _environment = environment;
         }
 
         public string GetFileUrl(string name, bool isAvatar)
             => isAvatar ? $"{_config["Storage:Avatars"]}/{name}" : $"{_config["Storage:Files"]}/{name}";
+
+        public string GetFilePath(string name, bool isAvatar)
+            => isAvatar ? Path.Combine(AvatarsPath, name) : Path.Combine(AttachmentsPath, name);
 
         public async Task<(IEnumerable<PhpbbAttachments> SucceededUploads, IEnumerable<string> FailedUploads)> BulkAddAttachments(IEnumerable<IFormFile> attachedFiles, int userId)
         {

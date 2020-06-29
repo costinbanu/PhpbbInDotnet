@@ -273,7 +273,7 @@ namespace Serverless.Forum.Pages
             CurrentUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(CurrentUser.UserSig, CurrentUser.UserSigBbcodeUid));
             TotalPosts = await context.PhpbbPosts.AsNoTracking().CountAsync(p => p.PosterId == cur.UserId);
             var restrictedForums = await _forumService.GetRestrictedForumList(await GetCurrentUserAsync());
-            var preferredTopicId = await (
+            var preferredTopic = await (
                 from p in context.PhpbbPosts.AsNoTracking()
                 where p.PosterId == cur.UserId
                 
@@ -282,21 +282,18 @@ namespace Serverless.Forum.Pages
 
                 where !restrictedForums.Contains(t.ForumId)
 
-                group p by p.TopicId into groups
+                group p by new { t.ForumId, p.TopicId, t.TopicTitle } into groups
                 orderby groups.Count() descending
-                select groups.Key as int?
+                select groups.Key
             ).FirstOrDefaultAsync();
-            var preferredTopicTitle = (await context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == preferredTopicId))?.TopicTitle;
-            if (preferredTopicId.HasValue)
+            string preferredTopicTitle = null;
+            if (preferredTopic != null)
             {
-                todo: this should be using forumdto not forumtree
-                var pathParts = new List<string>(_forumService.GetPathInTree(await GetForumTree(), f => f.Name, -1, preferredTopicId.Value).Skip(1))
-                {
-                    preferredTopicTitle
-                };
-                preferredTopicTitle = string.Join(" → ", pathParts);
+                var tree = await GetForumTree(forumId: preferredTopic.ForumId, fullTraversal: true);
+                var pathParts = tree.Tree.FirstOrDefault(x => x.ForumId == preferredTopic.ForumId).ChildrenList;
+                preferredTopicTitle = string.Join(" → ", tree.ForumData.Where(f => pathParts.Contains(f.ForumId)).Select(f => HttpUtility.HtmlDecode(f.ForumName)).Union(new[] { HttpUtility.HtmlDecode(preferredTopic.TopicTitle) }));
             }
-            PreferredTopic = (preferredTopicId, preferredTopicTitle);
+            PreferredTopic = (preferredTopic.TopicId, preferredTopicTitle);
             PostsPerDay = TotalPosts / DateTime.UtcNow.Subtract(cur.UserRegdate.ToUtcTime()).TotalDays;
             Email = cur.UserEmail;
             Birthday = cur.UserBirthday;

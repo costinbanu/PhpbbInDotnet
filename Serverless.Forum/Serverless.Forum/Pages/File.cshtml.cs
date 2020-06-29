@@ -5,10 +5,9 @@ using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
-using System;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
+using IOFile = System.IO.File;
 
 namespace Serverless.Forum.Pages
 {
@@ -24,24 +23,30 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnGet(int Id)
         {
-            dynamic file;
-            int? forumId;
+            uint? forumId = null;
+            string physicalFilename = null;
+            string realFilename = null;
+            string mimeType = null;
             using (var connection = _context.Database.GetDbConnection())
             {
                 await connection.OpenIfNeeded();
-                file = await connection.QuerySingleAsync("SELECT physical_filename, post_msg_id FROM phpbb_attachments WHERE attach_id = @Id", new { Id });
+                var file = await connection.QuerySingleOrDefaultAsync(
+                    "SELECT a.physical_filename, a.real_filename, a.mimetype, p.forum_id FROM phpbb_attachments a JOIN phpbb_posts p on a.post_msg_id = p.post_id WHERE attach_id = @Id", new { Id });
                 if (file == null)
                 {
                     return NotFound();
                 }
-                forumId = await connection.QuerySingleAsync<int?>("SELECT forum_id FROM phpbb_posts WHERE post_id = @PostMsgId", new { file.PostMsgId });
+                forumId = file?.forum_id;
+                physicalFilename = file?.physical_filename;
+                realFilename = file?.real_filename;
+                mimeType = file?.mimetype;
             }
 
-            return await WithValidForum(forumId ?? 0, async (_) => await SendToClient(file.PhysicalFilename, false));
+            return await WithValidForum(unchecked((int)(forumId ?? 0)), async (_) => await Task.FromResult(SendToClient(physicalFilename, realFilename, mimeType, false)));
         }
 
-        public async Task<IActionResult> OnGetPreview(string physicalFileName/*, string realFileName, string mimeType*/)
-            => await SendToClient(physicalFileName, false);
+        public IActionResult OnGetPreview(string physicalFileName)
+            => SendToClient(physicalFileName, physicalFileName, null, false);
 
         public async Task<IActionResult> OnGetAvatar(int userId)
         {
@@ -49,7 +54,7 @@ namespace Serverless.Forum.Pages
             using (var connection = _context.Database.GetDbConnection())
             {
                 await connection.OpenIfNeeded();
-                file = await connection.QuerySingleAsync<string>("SELECT user_avatar FROM phpbb_users WHERE user_id = @userId", new { userId });
+                file = await connection.QuerySingleOrDefaultAsync<string>("SELECT user_avatar FROM phpbb_users WHERE user_id = @userId", new { userId });
             }
 
             if (file == null)
@@ -57,22 +62,29 @@ namespace Serverless.Forum.Pages
                 return NotFound();
             }
 
-            return await SendToClient(file, true);
+            return SendToClient(file, file, null, true);
         }
 
-        private async Task<IActionResult> SendToClient(string fileName, bool isAvatar /*string displayName, string mimeType = null*/)
+        private IActionResult SendToClient(string physicalFileName, string realFileName, string mimeType, bool isAvatar)
         {
-            //if (string.IsNullOrWhiteSpace(mimeType))
-            //{
-            //    mimeType = new FileExtensionContentTypeProvider().Mappings[Path.GetExtension(fileName)];
-            //}
+            mimeType ??= new FileExtensionContentTypeProvider().Mappings[Path.GetExtension(realFileName)];
 
             //TODO: this doesn't work in chrome
             //var header = $"{(mimeType.IsMimeTypeInline() ? "inline" : "attachment")}; " +
             //    $"filename={Uri.EscapeDataString(displayName)}; " +
             //    $"filename*=UTF-8''{Uri.EscapeDataString(displayName)}";
 
-            return Redirect(_storageService.GetFileUrl(fileName, isAvatar /*header, mimeType*/));
+            //return Redirect(_storageService.GetFileUrl(physicalFileName, isAvatar /*header, mimeType*/));
+
+            var path = _storageService.GetFilePath(physicalFileName, isAvatar);
+            if (IOFile.Exists(path))
+            {
+                return File(IOFile.OpenRead(path), mimeType, realFileName);
+            }
+            else
+            {
+                return NotFound("Fișierul solicitat nu există");
+            }
         }
     }
 }

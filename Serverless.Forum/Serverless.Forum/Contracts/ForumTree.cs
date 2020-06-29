@@ -7,7 +7,7 @@ namespace Serverless.Forum.Contracts
 {
     public class ForumTree
     {
-        private string _path, _children, _topics, _unreadTopics, _unreadPosts;
+        private string _path, _children, _topics;
 
         public int ForumId { get; set; }
 

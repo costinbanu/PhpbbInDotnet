@@ -17,12 +17,13 @@ namespace Serverless.Forum.Contracts
         public ForumDto(ForumTree node, HashSet<ForumTree> tree, HashSet<PhpbbForums> forumData, HashSet<PhpbbTopics> topicData, HashSet<Tracking> tracking)
         {
             _node = node;
-            _nodeData = new Lazy<PhpbbForums>(() => ForumData.FirstOrDefault(f => f.ForumId == _node.ForumId));
+            _nodeData = new Lazy<PhpbbForums>(() => forumData.FirstOrDefault(f => f.ForumId == _node.ForumId));
             _childrenForums = new Lazy<IEnumerable<PhpbbForums>>(() => forumData.Where(t => t.ParentId == node.ForumId));
             _topics = new Lazy<IEnumerable<PhpbbTopics>>(() => node.TopicsList.Any() ? topicData.Where(t => node.TopicsList.Contains(t.TopicId)) : Enumerable.Empty<PhpbbTopics>());
             _unread = new Lazy<bool>(() => tracking.Any(t => t.ForumId == node.ForumId));
             Tree = tree;
             ForumData = forumData;
+            TopicData = topicData;
             Tracking = tracking;
         }
 
@@ -59,5 +60,7 @@ namespace Serverless.Forum.Contracts
         public HashSet<ForumTree> Tree { get; }
 
         public HashSet<PhpbbForums> ForumData { get; }
+
+        public HashSet<PhpbbTopics> TopicData { get; }
     }
 }

@@ -17,7 +17,9 @@ namespace Serverless.Forum.Pages
 {
     public class ViewForumModel : ModelWithLoggedUser
     {
-        public List<ForumDto> Forums { get; private set; }
+        private bool _forceTreeRefresh;
+
+        public ForumDto Forums { get; private set; }
         public List<TopicTransport> Topics { get; private set; }
         public _PaginationPartialModel Pagination { get; private set; }
         public string ForumTitle { get; private set; }
@@ -27,8 +29,6 @@ namespace Serverless.Forum.Pages
 
         [BindProperty(SupportsGet = true)]
         public int ForumId { get; set; }
-
-        private bool _forceTreeRefresh = false;
 
         public ViewForumModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
             : base(context, forumService, userService, cacheService)
@@ -45,7 +45,7 @@ namespace Serverless.Forum.Pages
                 using (var connection = _context.Database.GetDbConnection())
                 {
                     await connection.OpenIfNeeded();
-                    var parent = await connection.QuerySingleAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @ParentId", new { thisForum.ParentId });
+                    var parent = await connection.QuerySingleOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @ParentId", new { thisForum.ParentId });
                     ParentForumId = parent.ForumId;
                     ParentForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? "untitled");
                     postCounts = (
@@ -59,8 +59,7 @@ namespace Serverless.Forum.Pages
                     ).Select(c => new { TopicId = (int)c.topic_id, Count = (int)c.count });
                     topics = await connection.QueryAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE forum_id = @ForumId OR topic_type = @topicType ORDER BY topic_last_post_time DESC", new { ForumId, topicType = TopicType.Global });
                 }
-
-                Forums = (await GetForum(ForumId, _forceTreeRefresh)).ChildrenForums.ToList();
+                Forums = await GetForumTree(forumId: ForumId, forceRefresh: _forceTreeRefresh);
                 var usr = await GetCurrentUserAsync();
 
                 Topics = (
@@ -86,7 +85,7 @@ namespace Serverless.Forum.Pages
                                      LastPostTime = g.TopicLastPostTime.ToUtcTime(),
                                      PostCount = g.TopicReplies,
                                      Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1, "PageNum"),
-                                     Unread = IsTopicUnread(g.TopicId, false),
+                                     Unread = IsTopicUnread(g.TopicId, false).RunSync(),
                                      LastPosterColor = g.TopicLastPosterColour,
                                      LastPostId = g.TopicLastPostId,
                                      ViewCount = g.TopicViews
@@ -100,33 +99,35 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnGetNewPosts()
             => await WithRegisteredUser(async () =>
             {
-                var unread = GetUnreadTopicsAndParentsLazy();
                 var usr = await GetCurrentUserAsync();
+                //var unread = (await GetForumTree(fullTraversal: true)).Tracking;
+                var tree = await GetForumTree(fullTraversal: true);
                 Topics = new List<TopicTransport>
                 {
                     new TopicTransport
                     {
-                        Topics = await (
-                            from g in _context.PhpbbTopics.AsNoTracking()
-                            join ut in unread.Select(t => t.TopicId)
-                            on g.TopicId equals ut
-                            let postCount = _context.PhpbbPosts.Count(p => p.TopicId == g.TopicId)
-                            let pageSize = usr.TopicPostsPerPage.ContainsKey(g.TopicId) ? usr.TopicPostsPerPage[g.TopicId] : 14
+                        Topics = (
+                            from topic in tree.Topics //_context.PhpbbTopics.AsNoTracking()
+                            join track in tree.Tracking
+                            on topic.TopicId equals track.TopicId
+                            let postCount = _context.PhpbbPosts.AsNoTracking().Count(p => p.TopicId == topic.TopicId)
+                            let pageSize = usr.TopicPostsPerPage.ContainsKey(topic.TopicId) ? usr.TopicPostsPerPage[topic.TopicId] : 14
                             select new TopicDto
                             {
-                                Id = g.TopicId,
-                                Title = HttpUtility.HtmlDecode(g.TopicTitle),
-                                LastPosterId = g.TopicLastPosterId == Constants.ANONYMOUS_USER_ID ? null as int? : g.TopicLastPosterId,
-                                LastPosterName = HttpUtility.HtmlDecode(g.TopicLastPosterName),
-                                LastPostTime = g.TopicLastPostTime.ToUtcTime(),
-                                PostCount = g.TopicReplies,
-                                Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1, "PageNum"),
+                                Id = topic.TopicId,
+                                ForumId = topic.ForumId,
+                                Title = HttpUtility.HtmlDecode(topic.TopicTitle),
+                                LastPosterId = topic.TopicLastPosterId == Constants.ANONYMOUS_USER_ID ? null as int? : topic.TopicLastPosterId,
+                                LastPosterName = HttpUtility.HtmlDecode(topic.TopicLastPosterName),
+                                LastPostTime = topic.TopicLastPostTime.ToUtcTime(),
+                                PostCount = topic.TopicReplies,
+                                Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", postCount, pageSize, 1, "PageNum"),
                                 Unread = true,
-                                LastPosterColor = g.TopicLastPosterColour,
-                                LastPostId = g.TopicLastPostId,
-                                ViewCount = g.TopicViews
+                                LastPosterColor = topic.TopicLastPosterColour,
+                                LastPostId = topic.TopicLastPostId,
+                                ViewCount = topic.TopicViews
                             }
-                        ).ToListAsync()
+                        ).ToList()
                     }
                 };
                 IsNewPostView = true;
@@ -136,9 +137,8 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnPostMarkForumsRead()
             => await WithRegisteredUser(async () => await WithValidForum(ForumId, async (_) =>
             {
-                var curForum = await _forumService.GetForumTree(usr: await GetCurrentUserAsync(), fromParent: ForumId);
-                var childForums = _forumService.GetPathInTree(curForum, f => f.ChildrenForums.Any() ? 0 : (f.Id ?? 0)).Where(f => f != 0);
-                foreach (var child in childForums)
+                var curForum = (await _forumService.GetForumTree(usr: await GetCurrentUserAsync(), forumId: ForumId)).FirstOrDefault(f => f.ForumId == ForumId);
+                foreach (var child in curForum.ChildrenList)
                 {
                     await UpdateTracking(_context, child);
                 }

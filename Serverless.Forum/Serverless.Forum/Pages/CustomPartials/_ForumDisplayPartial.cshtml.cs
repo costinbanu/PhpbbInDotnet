@@ -17,8 +17,8 @@ namespace Serverless.Forum.Pages.CustomPartials
 
         public _ForumDisplayPartialModel(ForumDto forum, string dateFormat, bool showTitle)
         {
-            Categories = forum.ChildrenForums.Where(f => f.ForumType == ForumType.Category);
-            SubForums = forum.ChildrenForums.Where(f => f.ForumType == ForumType.SubForum);
+            Categories = forum.ChildrenForums.Where(f => f.ForumType == ForumType.Category).OrderBy(c => c.LeftId);
+            SubForums = forum.ChildrenForums.Where(f => f.ForumType == ForumType.SubForum).OrderBy(f => f.LeftId);
             DateFormat = dateFormat;
             ShowTitle = showTitle;
             Forum = forum;

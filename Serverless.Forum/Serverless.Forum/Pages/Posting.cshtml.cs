@@ -347,7 +347,7 @@ namespace Serverless.Forum.Pages
                         AuthorId = postAuthor.UserId,
                         AuthorName = postAuthor.Username,
                         AuthorRank = (await _context.PhpbbRanks.AsNoTracking().FirstOrDefaultAsync(x => x.RankId == rankId))?.RankTitle,
-                        AuthorSignature = await _renderingService.BbCodeToHtml(postAuthor.UserSig, postAuthor.UserSigBbcodeUid),
+                        AuthorSignature = _renderingService.BbCodeToHtml(postAuthor.UserSig, postAuthor.UserSigBbcodeUid),
                         BbcodeUid = _utils.RandomString(),
                         PostCreationTime = postTime,
                         EditCount = (short)((currentPost?.PostEditCount ?? 0) + 1),
@@ -371,7 +371,7 @@ namespace Serverless.Forum.Pages
                             PollStart = PreviewablePost.PostCreationTime ?? DateTime.UtcNow
                         };
                     }
-                    await _renderingService.ProcessPosts(new[] { PreviewablePost }, PageContext, HttpContext, true);
+                    _renderingService.ProcessPosts(new[] { PreviewablePost }, PageContext, HttpContext, true);
 
                     return Page();
                 });

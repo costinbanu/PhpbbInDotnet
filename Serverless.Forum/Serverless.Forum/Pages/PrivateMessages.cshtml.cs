@@ -139,7 +139,7 @@ namespace Serverless.Forum.Pages
                         OthersColor = other?.UserColour,
                         OtherHasAvatar = !string.IsNullOrWhiteSpace(other.UserAvatar),
                         Subject = HttpUtility.HtmlDecode(msg.MessageSubject),
-                        Text = await _renderingService.BbCodeToHtml(msg.MessageText, msg.BbcodeUid),
+                        Text = _renderingService.BbCodeToHtml(msg.MessageText, msg.BbcodeUid),
                         Time = msg.MessageTime.ToUtcTime()
                     };
 

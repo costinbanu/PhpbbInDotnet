@@ -66,8 +66,8 @@ namespace Serverless.Forum.Services
                         @"SELECT u.*
                             FROM phpbb_users u
                             JOIN phpbb_poll_votes v ON u.user_id = v.vote_user_id
-                           WHERE v.poll_option_id IN (@optionIds)
-                             AND v.topic_id IN (@topicIds)",
+                           WHERE v.poll_option_id IN @optionIds
+                             AND v.topic_id IN @topicIds",
                         new { optionIds = options.Select(o => o.PollOptionId), topicIds = options.Select(o => o.TopicId) }
                     );
                 }
@@ -115,12 +115,12 @@ namespace Serverless.Forum.Services
 
             if (curTopic.TopicLastPostId == added.PostId)
             {
-                await SetTopicLastPost(curTopic, added, usr);
+                SetTopicLastPost(curTopic, added, usr);
             }
 
             if (curForum.ForumLastPostId == added.PostId)
             {
-                await SetForumLastPost(curForum, added, usr);
+                SetForumLastPost(curForum, added, usr);
             }
         }
 
@@ -130,11 +130,11 @@ namespace Serverless.Forum.Services
             var curForum = await context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == curTopic.ForumId);
             var usr = await _userService.GetLoggedUserById(added.PosterId);
 
-            await SetForumLastPost(curForum, added, usr);
+            SetForumLastPost(curForum, added, usr);
 
             if (!ignoreTopic)
             {
-                await SetTopicLastPost(curTopic, added, usr);
+                SetTopicLastPost(curTopic, added, usr);
                 await SetTopicFirstPost(curTopic, added, usr, false);
                 curTopic.TopicReplies++;
                 curTopic.TopicRepliesReal++;
@@ -165,7 +165,7 @@ namespace Serverless.Forum.Services
                     ).FirstOrDefaultAsync();
                     var lastTopicPostUser = await _userService.GetLoggedUserById(lastTopicPost.PosterId);
 
-                    await SetTopicLastPost(curTopic, lastTopicPost, lastTopicPostUser, true);
+                    SetTopicLastPost(curTopic, lastTopicPost, lastTopicPostUser, true);
                 }
 
                 if (curForum.ForumLastPostId == deleted.PostId)
@@ -180,7 +180,7 @@ namespace Serverless.Forum.Services
                     ).FirstOrDefaultAsync();
                     var lastForumPostUser = await _userService.GetLoggedUserById(lastForumPost.PosterId);
 
-                    await SetForumLastPost(curForum, lastForumPost, lastForumPostUser, true);
+                    SetForumLastPost(curForum, lastForumPost, lastForumPostUser, true);
                 }
 
                 if (curTopic.TopicFirstPostId == deleted.PostId && !ignoreTopic)
@@ -203,7 +203,7 @@ namespace Serverless.Forum.Services
             }
         }
 
-        private async Task SetTopicLastPost(PhpbbTopics topic, PhpbbPosts post, LoggedUser author, bool goBack = false)
+        private void SetTopicLastPost(PhpbbTopics topic, PhpbbPosts post, LoggedUser author, bool goBack = false)
         {
             if (goBack || topic.TopicLastPostTime < post.PostTime)
             {
@@ -212,11 +212,11 @@ namespace Serverless.Forum.Services
                 topic.TopicLastPostTime = post.PostTime;
                 topic.TopicLastPosterColour = author.UserColor;
                 topic.TopicLastPosterId = post.PosterId;
-                topic.TopicLastPosterName = author == await _userService.GetAnonymousLoggedUserAsync() ? post.PostUsername : author.Username;
+                topic.TopicLastPosterName = author.UserId == Constants.ANONYMOUS_USER_ID ? post.PostUsername : author.Username;
             }
         }
 
-        private async Task SetForumLastPost(PhpbbForums forum, PhpbbPosts post, LoggedUser author, bool goBack = false)
+        private void SetForumLastPost(PhpbbForums forum, PhpbbPosts post, LoggedUser author, bool goBack = false)
         {
             if (goBack || forum.ForumLastPostTime < post.PostTime)
             {
@@ -225,7 +225,7 @@ namespace Serverless.Forum.Services
                 forum.ForumLastPostTime = post.PostTime;
                 forum.ForumLastPosterColour = author.UserColor;
                 forum.ForumLastPosterId = post.PosterId;
-                forum.ForumLastPosterName = author == await _userService.GetAnonymousLoggedUserAsync() ? post.PostUsername : author.Username;
+                forum.ForumLastPosterName = author.UserId == Constants.ANONYMOUS_USER_ID ? post.PostUsername : author.Username;
             }
         }
 
