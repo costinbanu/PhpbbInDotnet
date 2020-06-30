@@ -55,7 +55,7 @@ namespace Serverless.Forum.ForumDb
         public long ForumEditTime { get; set; } = 0;
 
         public override bool Equals(object obj)
-            => obj is PhpbbForums f && ForumId == f.ForumId;
+            => obj is PhpbbForums f && ForumId == f?.ForumId;
 
         public override int GetHashCode()
             => HashCode.Combine(ForumId);

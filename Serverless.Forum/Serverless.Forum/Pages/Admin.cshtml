@@ -6,7 +6,8 @@
 @{
     ViewData["Title"] = "Admin";
     Layout = "~/Pages/_Layout.cshtml";
-    var dateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+    var user = await Model.GetCurrentUserAsync();
+    var dateFormat = user?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
 }
 
 <h2>Panoul administratorului</h2>
@@ -35,7 +36,7 @@
 <div id="Forums" class="tabcontent" style="@(Model.Category == AdminCategories.Forums ? "display:inherit" : "display:none")">
     @await Html.PartialAsync(
         "_AdminForumsPartial",
-        new _AdminForumsPartialModel(Model.Forum, Model.ForumChildren, Model.Permissions, Model.ShowForum),
+        new _AdminForumsPartialModel(Model.Forum, Model.ForumChildren, Model.Permissions, user, Model.ShowForum),
         ViewData
     )
 </div>

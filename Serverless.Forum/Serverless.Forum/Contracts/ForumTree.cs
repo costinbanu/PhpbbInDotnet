@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace Serverless.Forum.Contracts
 {
-    public class ForumTree
+    public class ForumTree : IComparable
     {
         private string _path, _children, _topics;
 
@@ -45,14 +45,21 @@ namespace Serverless.Forum.Contracts
             }
         }
 
+        public bool Restricted { get; set; }
+
+        public bool PasswordProtected { get; set; }
+
         public HashSet<int> PathList { get; private set; }
 
         public HashSet<int> ChildrenList { get; private set; }
 
         public HashSet<int> TopicsList { get; private set; }
 
+        public int CompareTo(object obj)
+            => obj != null && obj is ForumTree tree ? ForumId.CompareTo(tree.ForumId) : 1;
+
         public override bool Equals(object obj)
-            => obj is ForumTree tree && ForumId == tree.ForumId;
+            => obj is ForumTree tree && ForumId == tree?.ForumId;
 
         public override int GetHashCode()
             => HashCode.Combine(ForumId);

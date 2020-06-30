@@ -45,7 +45,7 @@ namespace Serverless.Forum.Contracts
             {
                 if (obj is Permissions perm)
                 {
-                    return ForumId == perm.ForumId && AuthRoleId == perm.AuthRoleId;
+                    return ForumId == perm?.ForumId && AuthRoleId == perm?.AuthRoleId;
                 }
                 return false;
             }

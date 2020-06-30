@@ -84,7 +84,8 @@ namespace Serverless.Forum.Services
             }
         }
 
-        public async Task<(IEnumerable<Tuple<FileInfo, string>> onDisk, IEnumerable<Tuple<PhpbbAttachments, string>> inDb)> CacheOrphanedFiles(int currentUserId)
+        public async Task<IEnumerable<Tuple<FileInfo, string>>> CacheOrphanedFiles(int currentUserId)
+        //public async Task<(IEnumerable<Tuple<FileInfo, string>> onDisk, IEnumerable<Tuple<PhpbbAttachments, string>> inDb)> CacheOrphanedFiles(int currentUserId)
         {
             int getUserId(string filename)
             {
@@ -125,8 +126,8 @@ namespace Serverless.Forum.Services
                 select new { Attach = a, User = ju == null ? "Anonymous" : ju.Username }
             ).ToListAsync();
 
-            var toReturn = (
-                inS3: from s in inS3
+            var toReturn = /*(
+                inS3:*/ from s in inS3
 
                       join d in inDb
                       on s.Item1.Name equals d.Attach.PhysicalFilename
@@ -134,7 +135,7 @@ namespace Serverless.Forum.Services
 
                       from j in joined.DefaultIfEmpty()
                       where j == null
-                      select s,
+                      select s/*,
 
                 inDb: from d in inDb
 
@@ -145,11 +146,11 @@ namespace Serverless.Forum.Services
                       from j in joined.DefaultIfEmpty()
                       where j == null
                       select Tuple.Create(d.Attach, d.User)
-            );
+            )*/;
 
             await _cacheService.SetInCache(
                 GetCacheKey(currentUserId),
-                (toReturn.inS3.Select(x => x.Item1.Name), toReturn.inDb.Select(x => x.Item1.AttachId))
+                (toReturn/*.inS3*/.Select(x => x.Item1.Name)/*, toReturn.inDb.Select(x => x.Item1.AttachId)*/)
             );
 
             return toReturn;

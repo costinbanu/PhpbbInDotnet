@@ -4,7 +4,7 @@
 @inject Services.ForumTreeService _forumTreeService
 @inject Services.AdminForumService _adminForumService
 @{
-    var (tree, forums, topics, tracking) = await _forumTreeService.GetExtendedForumTree(fullTraversal: true);
+    var (tree, forums, topics, tracking) = await _forumTreeService.GetExtendedForumTree(usr: Model.CurrentUser, fullTraversal: true);
 }
 <link rel="stylesheet" href="~/css/posting.css" />
 <div style="float:left">
@@ -18,7 +18,7 @@
         forums: new Contracts.ForumDto(tree.FirstOrDefault(), tree, forums, topics, tracking),
         forumId: Model.Forum?.ForumId ?? 0,
         topicId: null,
-        path: tree.FirstOrDefault(t => t.ForumId == Model.Forum.ForumId).PathList
+        path: tree.FirstOrDefault(t => t.ForumId == Model.Forum?.ForumId)?.PathList
     ),
     ViewData
 )

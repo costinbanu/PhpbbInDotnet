@@ -25,7 +25,7 @@ namespace Serverless.Forum.Contracts
         public HashSet<int> Posts { get; private set; }
 
         public override bool Equals(object obj)
-            => obj is Tracking tr && TopicId == tr.TopicId && (PostIds?.Equals(tr.PostIds, StringComparison.Ordinal) ?? false);
+            => obj is Tracking tr && TopicId == tr?.TopicId && (PostIds?.Equals(tr?.PostIds, StringComparison.Ordinal) ?? false);
 
         public override int GetHashCode()
             => HashCode.Combine(TopicId, PostIds);

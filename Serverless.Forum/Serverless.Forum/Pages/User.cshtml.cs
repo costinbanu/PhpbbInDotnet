@@ -272,7 +272,7 @@ namespace Serverless.Forum.Pages
             CurrentUser = cur;
             CurrentUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(CurrentUser.UserSig, CurrentUser.UserSigBbcodeUid));
             TotalPosts = await context.PhpbbPosts.AsNoTracking().CountAsync(p => p.PosterId == cur.UserId);
-            var restrictedForums = await _forumService.GetRestrictedForumList(await GetCurrentUserAsync());
+            var restrictedForums = (await _forumService.GetRestrictedForumList(await GetCurrentUserAsync())).Select(f => f.forumId);
             var preferredTopic = await (
                 from p in context.PhpbbPosts.AsNoTracking()
                 where p.PosterId == cur.UserId
@@ -289,9 +289,9 @@ namespace Serverless.Forum.Pages
             string preferredTopicTitle = null;
             if (preferredTopic != null)
             {
-                var tree = await GetForumTree(forumId: preferredTopic.ForumId, fullTraversal: true);
-                var pathParts = tree.Tree.FirstOrDefault(x => x.ForumId == preferredTopic.ForumId).ChildrenList;
-                preferredTopicTitle = string.Join(" → ", tree.ForumData.Where(f => pathParts.Contains(f.ForumId)).Select(f => HttpUtility.HtmlDecode(f.ForumName)).Union(new[] { HttpUtility.HtmlDecode(preferredTopic.TopicTitle) }));
+                var tree = await GetForumTree(forumId: preferredTopic.ForumId, excludePasswordProtected: true);
+                var pathParts = tree.Tree.FirstOrDefault(x => x.ForumId == preferredTopic.ForumId).PathList;
+                preferredTopicTitle = string.Join(" → ", tree.ForumData.Where(f => pathParts?.Contains(f.ForumId) ?? false).Select(f => HttpUtility.HtmlDecode(f.ForumName)).Union(new[] { HttpUtility.HtmlDecode(preferredTopic.TopicTitle) }));
             }
             PreferredTopic = (preferredTopic.TopicId, preferredTopicTitle);
             PostsPerDay = TotalPosts / DateTime.UtcNow.Subtract(cur.UserRegdate.ToUtcTime()).TotalDays;

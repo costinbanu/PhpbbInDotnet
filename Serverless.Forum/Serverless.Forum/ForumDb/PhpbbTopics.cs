@@ -47,7 +47,7 @@ namespace Serverless.Forum.ForumDb
         public byte PollVoteChange { get; set; } = 0;
 
         public override bool Equals(object obj)
-            => obj is PhpbbTopics t && TopicId == t.TopicId;
+            => obj is PhpbbTopics t && TopicId == t?.TopicId;
 
         public override int GetHashCode()
             => HashCode.Combine(TopicId);

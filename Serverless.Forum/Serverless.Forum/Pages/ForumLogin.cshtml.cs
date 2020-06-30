@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.ForumDb;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Web;
 
 namespace Serverless.Forum.Pages
@@ -14,42 +15,54 @@ namespace Serverless.Forum.Pages
     {
         private readonly ForumDbContext _context;
 
+        [BindProperty(SupportsGet = true)]
         public string ReturnUrl { get; set; }
 
+        [BindProperty(SupportsGet = true)]
         public int ForumId { get; set; }
 
-        public string ForumName { get; set; }
+        [BindProperty]
+        public string Password { get; set; }
 
         public string ErrorMessage { get; set; }
+
+        public string ForumName { get; private set; }
+
 
         public ForumLoginModel(ForumDbContext context)
         {
             _context = context;
         }
 
-        public void OnGet(string returnUrl, int forumId, string forumName)
+        public async Task<IActionResult> OnGet()
         {
-            ReturnUrl = returnUrl;
-            ForumId = forumId;
-            ForumName = forumName;
+            ForumName = HttpUtility.HtmlDecode((await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId))?.ForumName ?? string.Empty);
+            return Page();
         }
 
-        public IActionResult OnPost(string password, string returnUrl, int forumId)
+        public async Task<IActionResult> OnPost()
         {
-            var forum = from f in _context.PhpbbForums.AsNoTracking()
-                        let cryptedPass = Crypter.Phpass.Crypt(password, f.ForumPassword)
-                        where f.ForumId == forumId && cryptedPass == f.ForumPassword
-                        select f;
+            var forum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId);
+                        
+            if (forum == null)
+            {
+                return NotFound("Forumul solicitat nu există.");
+            }
 
-            if (forum.Count() != 1)
+            if (string.IsNullOrWhiteSpace(forum.ForumPassword))
+            {
+                return Redirect(HttpUtility.UrlDecode(ReturnUrl));
+            }
+
+            if (forum.ForumPassword != Crypter.Phpass.Crypt(Password, forum.ForumPassword))
             {
                 ErrorMessage = "Numele de utilizator și/sau parola sunt greșite!";
                 return Page();
             }
             else
             {
-                HttpContext.Session.SetInt32($"ForumLogin_{forumId}", 1);
-                return Redirect(HttpUtility.UrlDecode(returnUrl));
+                HttpContext.Session.SetInt32($"ForumLogin_{ForumId}", 1);
+                return Redirect(HttpUtility.UrlDecode(ReturnUrl));
             }
         }
     }

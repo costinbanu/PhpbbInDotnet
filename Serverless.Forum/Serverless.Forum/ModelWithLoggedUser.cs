@@ -4,11 +4,9 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
-using Serverless.Forum.Pages;
 using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System;
@@ -20,6 +18,7 @@ using System.Web;
 
 namespace Serverless.Forum
 {
+    [ResponseCache(NoStore = true, Duration = 0)]
     public class ModelWithLoggedUser : PageModel
     {
         protected readonly ForumTreeService _forumService;
@@ -118,8 +117,6 @@ namespace Serverless.Forum
         public async Task<bool> IsCurrentUserModeratorHereAsync(int forumId = 0)
             => await _userService.IsUserModeratorInForum(await GetCurrentUserAsync(), forumId);
 
-        //public int (await GetCurrentUserAsync()).UserId => GetCurrentUserAsync().RunSync().UserId;
-
         #endregion User
 
         #region Forum for user
@@ -160,15 +157,15 @@ namespace Serverless.Forum
             return (await GetForumTree()).Tracking.FirstOrDefault(t => t.TopicId == topicId)?.Posts?.FirstOrDefault() ?? 0;
         }
 
-        public async Task<ForumDto> GetForumTree(int? forumId = null, bool forceRefresh = false, bool fullTraversal = false)
+        public async Task<ForumDto> GetForumTree(int? forumId = null, bool forceRefresh = false, bool fullTraversal = false, bool excludePasswordProtected = false)
         {
             if (forceRefresh || _tree == null || (fullTraversal && !_wasFullTraversal))
             {
                 var usr = await GetCurrentUserAsync();
-                var (tree, forums, topics, tracking) = await _forumService.GetExtendedForumTree(forumId, usr, forceRefresh, fullTraversal);
+                var (tree, forums, topics, tracking) = await _forumService.GetExtendedForumTree(forumId: forumId, usr: usr, forceRefresh: forceRefresh, fullTraversal: fullTraversal, excludePasswordProtected: excludePasswordProtected);
                 _tree = new ForumDto(tree.FirstOrDefault(), tree, forums, topics, tracking);
-                _wasFullTraversal = fullTraversal;
             }
+            _wasFullTraversal = fullTraversal;
             return _tree;
         }
 
@@ -180,52 +177,6 @@ namespace Serverless.Forum
             }
             return _root;
         }
-
-        //public async Task<List<int>> PathToForumOrTopic(int forumId, int? topicId = null)
-        //{
-        //    //_forumService.GetPathInTree(await GetForumTreeAsync(), forum => forum.Id ?? 0, forumId, topicId ?? -1);
-        //    var entry = (await GetForumTreeAsync()).FirstOrDefault(f => f.ForumId == forumId);
-        //    var path = new List<int>(entry.PathList);
-        //    if (topicId.HasValue && entry.TopicList.Any(t => t == topicId.Value))
-        //    {
-        //        path.Add(topicId.Value);
-        //    }
-        //    return path;
-        //}
-
-        //public async Task<ForumDto> GetForum(int forumId, bool forceRefresh = false)
-        //    => _forumService.GetPathInTree(await GetForumTreeAsync(forceRefresh: forceRefresh), forumId).Last();
-
-        //protected IEnumerable<Tracking> GetUnreadTopicsAndParentsLazy(bool forceRefresh = false)
-        //{
-        //    if (_tracking != null && !forceRefresh)
-        //    {
-        //        return _tracking;
-        //    }
-        //    var curUserId = (await GetCurrentUserAsync()).UserId;
-        //    using (var connection = _context.Database.GetDbConnection())
-        //    {
-        //        if (connection.State != ConnectionState.Open)
-        //        {
-        //            connection.Open();
-        //        }
-        //        DefaultTypeMap.MatchNamesWithUnderscores = true;
-
-        //        var result = connection.Query<Tracking>(
-        //            "CALL `forum`.`get_post_tracking`(@userId, @topicId);",
-        //            new { userId = curUserId, topicId = null as int? }
-        //        );
-        //        _tracking = from t in result
-        //                    group t by new { t.ForumId, t.TopicId } into grouped
-        //                    select new Tracking
-        //                    {
-        //                        ForumId = grouped.Key.ForumId,
-        //                        TopicId = grouped.Key.TopicId,
-        //                        Posts = grouped.Select(g => g.PostId)
-        //                    };
-        //    }
-        //    return _tracking;
-        //}
 
         #endregion Forum for user
 
@@ -260,7 +211,6 @@ namespace Serverless.Forum
 
         protected async Task<IActionResult> WithValidForum(int forumId, bool overrideCheck, Func<PhpbbForums, Task<IActionResult>> toDo)
         {
-            //var curForum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == forumId);
             PhpbbForums curForum;
             using (var connection = _context.Database.GetDbConnection())
             {
@@ -274,19 +224,20 @@ namespace Serverless.Forum
                     return NotFound($"Forumul solicitat nu există.");
                 }
 
-                //var treeAncestors = await _forumService.GetPathInTree(await GetForumRoot(), curForum.ForumId);
-                //IEnumerable<PhpbbForums> forumAncestors = null;
-                //using (var connection = _context.Database.GetDbConnection())
-                //{
-                //    await connection.OpenIfNeeded();
-                //    forumAncestors = await connection.QueryAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id IN @forumIds", new { forumIds = treeAncestors.Select(x => x.ForumId) });
-                //}
                 var usr = await GetCurrentUserAsync();
-                var restrictedAncestor = (await _forumService.GetRestrictedForumList(usr))?.FirstOrDefault(f => f == forumId);
-                    //forumAncestors?.FirstOrDefault(
-                    //    f => !string.IsNullOrEmpty(f.ForumPassword) && (HttpContext.Session.GetInt32($"ForumLogin_{f.ForumId}") ?? 0) != 1);
+                var restricted = await _forumService.GetRestrictedForumList(usr);
+                var tree = await _forumService.GetForumTree(forumId: forumId);
+                var restrictedAncestor = (
+                    from t in tree.FirstOrDefault(f => f.ForumId == forumId)?.PathList?.DefaultIfEmpty() ?? new HashSet<int>()
+                    join r in restricted
+                    on t equals r.forumId
+                    into joined
+                    from j in joined
+                    where j.hasPassword && (HttpContext.Session.GetInt32($"ForumLogin_{t}") ?? 0) != 1
+                    select t
+                ).FirstOrDefault();
 
-                if (restrictedAncestor != null)
+                if (restrictedAncestor != default)
                 {
                     if (usr?.AllPermissions?.Any(p => p.ForumId == restrictedAncestor && p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE) ?? false)
                     {
@@ -294,10 +245,10 @@ namespace Serverless.Forum
                     }
                     else
                     {
-                        return RedirectToPage("ForumLogin", new ForumLoginModel(_context)
+                        return RedirectToPage("ForumLogin", new
                         {
                             ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString),
-                            ForumId = restrictedAncestor.Value
+                            ForumId = restrictedAncestor
                         });
                     }
                 }
@@ -325,7 +276,6 @@ namespace Serverless.Forum
 
         protected async Task<IActionResult> WithValidPost(int postId, Func<PhpbbForums, PhpbbTopics, PhpbbPosts, Task<IActionResult>> toDo)
         {
-            //var curPost = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == postId);
             PhpbbPosts curPost;
             using (var connection = _context.Database.GetDbConnection())
             {

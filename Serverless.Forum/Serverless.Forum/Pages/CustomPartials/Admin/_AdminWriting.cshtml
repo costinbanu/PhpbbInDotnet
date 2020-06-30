@@ -85,7 +85,7 @@
 <p>&nbsp;</p>
 <h4>Fișiere orfane</h4>
 @{
-    var (onDisk, inDb) = await _writingService.CacheOrphanedFiles(Model.CurrentUserId);
+    /*var (onDisk, inDb)*/var onDisk = await _writingService.CacheOrphanedFiles(Model.CurrentUserId);
     <form method="post" asp-page-handler="OrphanedFiles" id="orphanedFilesForm">
         <input name="action" id="action" type="hidden" />
     </form>
@@ -115,7 +115,7 @@
 
     <p>&nbsp;</p>
 
-    <h5>
+    @*<h5>
         <b>Fișiere în mesaje fără corespondență pe server (@inDb.Count() fișiere)</b>
         <br /><i>Click pe titlul coloanei pentru sortare.</i>
         <br /><a href="#!" onclick="submitOrphanedFiles('@Utilities.AdminOrphanedFilesActions.DeleteFromDb')">Șterge aceste fișiere</a>
@@ -140,7 +140,7 @@
                 <td>@_utils.ReadableFileSize(f.Item1.Filesize)</td>
             </tr>
         }
-    </table>
+    </table>*@
 }
 
 <script type="text/javascript">

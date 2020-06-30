@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
@@ -100,17 +99,24 @@ namespace Serverless.Forum.Pages
             => await WithRegisteredUser(async () =>
             {
                 var usr = await GetCurrentUserAsync();
-                //var unread = (await GetForumTree(fullTraversal: true)).Tracking;
                 var tree = await GetForumTree(fullTraversal: true);
+                IEnumerable<dynamic> postCounts = null;
+                using (var connection = _context.Database.GetDbConnection())
+                {
+                    await connection.OpenIfNeeded();
+                    postCounts = await connection.QueryAsync(
+                        "SELECT topic_id, count(post_id) as post_count FROM phpbb_posts WHERE topic_id IN @topicList GROUP BY topic_id",
+                        new { topicList = tree.Tracking.Select(t => t.TopicId).Distinct() }
+                    );
+                }
                 Topics = new List<TopicTransport>
                 {
                     new TopicTransport
                     {
                         Topics = (
-                            from topic in tree.Topics //_context.PhpbbTopics.AsNoTracking()
-                            join track in tree.Tracking
-                            on topic.TopicId equals track.TopicId
-                            let postCount = _context.PhpbbPosts.AsNoTracking().Count(p => p.TopicId == topic.TopicId)
+                            from topic in tree.TopicData
+                            where tree.Tracking.Any(track => track.TopicId == topic.TopicId)
+                            let postCount = (int)(postCounts?.FirstOrDefault(p => p.topic_id == topic.TopicId)?.post_count ?? 0)
                             let pageSize = usr.TopicPostsPerPage.ContainsKey(topic.TopicId) ? usr.TopicPostsPerPage[topic.TopicId] : 14
                             select new TopicDto
                             {

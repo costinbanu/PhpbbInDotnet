@@ -155,10 +155,10 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnPostOrphanedFiles(AdminOrphanedFilesActions action)
             => await WithAdmin(async () =>
             {
-                var (onDisk, inDb) = await _cacheService.GetFromCache<(IEnumerable<string> onDisk, IEnumerable<int> inDb)>(_adminWritingService.GetCacheKey((await GetCurrentUserAsync()).UserId));
+                /*var (onDisk, inDb)*/ var onDisk = await _cacheService.GetFromCache</*(*/IEnumerable<string>/* onDisk, IEnumerable<int> inDb)*/>(_adminWritingService.GetCacheKey((await GetCurrentUserAsync()).UserId));
                 if (action == AdminOrphanedFilesActions.DeleteFromDb)
                 {
-                    (Message, IsSuccess) = await _adminWritingService.DeleteDbOrphanedFiles(inDb);
+                    //(Message, IsSuccess) = await _adminWritingService.DeleteDbOrphanedFiles(inDb);
                 }
                 else if (action == AdminOrphanedFilesActions.DeleteFromS3)
                 {

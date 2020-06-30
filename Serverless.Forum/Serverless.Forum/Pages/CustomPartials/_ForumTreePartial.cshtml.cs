@@ -14,7 +14,7 @@ namespace Serverless.Forum.Pages.CustomPartials
         public bool ConstrainSize { get; }
 
         public _ForumTreePartialModel(ForumDto forums, IEnumerable<int> path = null, int? forumId = null, int? topicId = null, bool constrainSize = false)
-        {
+        {todo: merge oarecum in viewtopic, dar deloc in viewforum
             Forums = forums;
             Path = path;
             ForumId = forumId;

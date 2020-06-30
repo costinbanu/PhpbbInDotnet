@@ -12,6 +12,7 @@
     var CurrentUser = await Model.GetCurrentUserAsync();
     var UserDateFormat = CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
     var IsAnonymous = CurrentUser.UserId == Constants.ANONYMOUS_USER_ID;
+    Serverless.Forum.Contracts.ForumDto tree = null;
 }
 
 <link rel="stylesheet" href="~/css/pagination.css" />
@@ -45,7 +46,7 @@ else
 }
 @if (Model.IsNewPostView)
 {
-    <h2>Mesaje necitite</h2>
+    <h2>Subiecte necitite</h2>
 }
 else
 {
@@ -86,20 +87,23 @@ else
     foreach (var topicGroup in Model.Topics)
     {
         var index = 0;
-        if (!globalsDisplayed && topicGroup.TopicType == TopicType.Global)
+        if (!Model.IsNewPostView)
         {
+            if (!globalsDisplayed && topicGroup.TopicType == TopicType.Global)
+            {
             <h3 style="float:left">Subiecte globale</h3>
-            globalsDisplayed = true;
-        }
-        else if (!announcementsDisplayed && topicGroup.TopicType == TopicType.Announcement)
-        {
+                globalsDisplayed = true;
+            }
+            else if (!announcementsDisplayed && topicGroup.TopicType == TopicType.Announcement)
+            {
             <h3 style="float:left">Anunțuri</h3>
-            announcementsDisplayed = true;
-        }
-        else if (!topicsDisplayed)
-        {
+                announcementsDisplayed = true;
+            }
+            else if (!topicsDisplayed)
+            {
             <h3 style="float:left">Subiecte</h3>
-            topicsDisplayed = true;
+                topicsDisplayed = true;
+            }
         }
         foreach (var topic in topicGroup?.Topics ?? new List<TopicDto>())
         {
@@ -109,9 +113,9 @@ else
                 <span class="ForumContent">
                     @if (Model.IsNewPostView)
                     {
-                        var tree = await Model.GetForumTree(forumId: topic.ForumId, fullTraversal: true);
-                        var pathParts = tree.Tree.FirstOrDefault(x => x.ForumId == topic.ForumId).ChildrenList;
-                        @Html.Raw(string.Join(" → ", tree.ForumData.Where(f => pathParts.Contains(f.ForumId)).Select(f => HttpUtility.HtmlDecode(f.ForumName)).Union(new[] { HttpUtility.HtmlDecode(topic.Title) })));
+                        tree = await Model.GetForumTree(forumId: topic.ForumId/*, fullTraversal: true*/);
+                        var pathParts = tree.Tree.FirstOrDefault(x => x.ForumId == topic.ForumId).PathList;
+                        @Html.Raw(string.Join(" → ", tree.ForumData.Where(f => pathParts?.Contains(f.ForumId) ?? false).Select(f => HttpUtility.HtmlDecode(f.ForumName)).Union(new[] { HttpUtility.HtmlDecode(topic.Title) })));
                         <br />
                     }
                     @if (topicGroup.TopicType == TopicType.Important)
@@ -121,7 +125,7 @@ else
                     @if (topic.Unread)
                     {
 
-                        <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@Model.GetFirstUnreadPost(topic.Id ?? 0)" asp-route-highlight="false" class="nav-link" style="font-weight:bold">@Html.Raw(topic.Title)</a>
+                        <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@await Model.GetFirstUnreadPost(topic.Id ?? 0)" asp-route-highlight="false" class="nav-link" style="font-weight:bold">@Html.Raw(topic.Title)</a>
                     }
                     else
                     {
@@ -131,15 +135,15 @@ else
                     @await Html.PartialAsync("_PaginationPartial", topic.Pagination, ViewData)
                 </span>
                 @await Html.PartialAsync(
-                    "_SummaryPartial",
-                    new CustomPartials._SummaryPartialModel(topic.LastPosterId, topic.LastPosterName, topic.LastPosterColor, topic.LastPostTime, topic.Id.Value,
-                        UserDateFormat, false, null,
-                        topic.LastPostId == null ? null : $"./ViewTopic?postId={topic.LastPostId}&handler=ByPostId",
-                        topic.LastPostId == null ? null : "&#x1F4C3;",
-                        topic.LastPostId == null ? null : "Vezi ultimul mesaj",
-                        false, true, topic.PostCount, topic.ViewCount
-                    )
-                )
+         "_SummaryPartial",
+         new CustomPartials._SummaryPartialModel(topic.LastPosterId, topic.LastPosterName, topic.LastPosterColor, topic.LastPostTime, topic.Id.Value,
+             UserDateFormat, false, null,
+             topic.LastPostId == null ? null : $"./ViewTopic?postId={topic.LastPostId}&handler=ByPostId",
+             topic.LastPostId == null ? null : "&#x1F4C3;",
+             topic.LastPostId == null ? null : "Vezi ultimul mesaj",
+             false, true, topic.PostCount, topic.ViewCount
+         )
+     )
             </div>
         }
         <hr />
@@ -158,17 +162,20 @@ else if (Model.IsNewPostView)
 <span onclick="showElement('forumTree', null, () => $('html, body').animate({ scrollTop: $(this).position().top + $('#topBanner').outerHeight() + 1000 }, 'slow'));" style="cursor:pointer; font-weight:bold">Navigare - alege destinația &#x2935;</span>
 <p></p>
 <div id="forumTree" style=" display:none">
-    @await Html.PartialAsync(
-        "_ForumTreePartial",
-        new CustomPartials._ForumTreePartialModel(
-            forums: await Model.GetForumTree(fullTraversal: true),
-            forumId: Model.ForumId,
-            topicId: null,
-            path: (await Model.GetForumTree(fullTraversal: true)).Tree.FirstOrDefault(t => t.ForumId == Model.ForumId).PathList,
-            constrainSize: true
-        ),
-        ViewData
-    )
+    @{
+        tree = await Model.GetForumTree(fullTraversal: true);
+        await Html.PartialAsync(
+            "_ForumTreePartial",
+            new CustomPartials._ForumTreePartialModel(
+                forums: tree,
+                forumId: Model.ForumId,
+                topicId: null,
+                path: tree.Tree.FirstOrDefault(t => t.ForumId == Model.ForumId)?.PathList,
+                constrainSize: true
+            ),
+            ViewData
+        );
+    }
     <p></p>
     <form action="/ViewForum">
         <input type="hidden" name="ForumId" id="ForumIdInput" />

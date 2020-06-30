@@ -126,7 +126,7 @@ namespace Serverless.Forum.Pages
                 ModelState.AddModelError(nameof(SearchText), "Introduceți unul sau mai multe cuvinte!");
                 return;
             }
-            var restrictedForums = (await _forumService.GetRestrictedForumList(await GetCurrentUserAsync())).ToList();
+            var restrictedForums = (await _forumService.GetRestrictedForumList(await GetCurrentUserAsync())).Select(f => f.forumId).ToList();
             restrictedForums.Remove(ForumId ?? -1);
             if (!restrictedForums.Any())
             {

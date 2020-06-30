@@ -19,7 +19,7 @@ namespace Serverless.Forum.Contracts
             _node = node;
             _nodeData = new Lazy<PhpbbForums>(() => forumData.FirstOrDefault(f => f.ForumId == _node.ForumId));
             _childrenForums = new Lazy<IEnumerable<PhpbbForums>>(() => forumData.Where(t => t.ParentId == node.ForumId));
-            _topics = new Lazy<IEnumerable<PhpbbTopics>>(() => node.TopicsList.Any() ? topicData.Where(t => node.TopicsList.Contains(t.TopicId)) : Enumerable.Empty<PhpbbTopics>());
+            _topics = new Lazy<IEnumerable<PhpbbTopics>>(() => (node.TopicsList?.Any() ?? false) ? topicData.Where(t => node.TopicsList?.Contains(t.TopicId) ?? false) : Enumerable.Empty<PhpbbTopics>());
             _unread = new Lazy<bool>(() => tracking.Any(t => t.ForumId == node.ForumId));
             Tree = tree;
             ForumData = forumData;
