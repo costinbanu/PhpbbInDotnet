@@ -127,7 +127,7 @@ namespace Serverless.Forum
             {
                 return false;
             }
-           return (await GetForumTree(forceRefresh: forceRefresh)).Tracking.Any(f => f.ForumId == forumId);
+           return (await GetForumTree(forceRefresh: forceRefresh)).Tracking.Contains(new Tracking { ForumId = forumId }, new TrackingComparerByForumId());
         }
 
         public async Task<bool> IsTopicUnread(int topicId, bool forceRefresh = false)
@@ -136,7 +136,7 @@ namespace Serverless.Forum
             {
                 return false;
             }
-            return (await GetForumTree(forceRefresh: forceRefresh)).Tracking.Any(f => f.TopicId == topicId);
+            return (await GetForumTree(forceRefresh: forceRefresh)).Tracking.Contains(new Tracking { TopicId = topicId });
         }
 
         public async Task<bool> IsPostUnread(int topicId, int postId)
@@ -145,7 +145,12 @@ namespace Serverless.Forum
             {
                 return false;
             }
-            return (await GetForumTree()).Tracking.Any(f => f.TopicId == topicId && f.Posts.Contains(postId));
+            var found = (await GetForumTree()).Tracking.TryGetValue(new Tracking { TopicId = topicId }, out var item);
+            if (!found)
+            {
+                return false;
+            }
+            return new HashSet<int>(new[] { postId }).IsSubsetOf(item.Posts);
         }
 
         public async Task<int> GetFirstUnreadPost(int topicId)
@@ -154,7 +159,21 @@ namespace Serverless.Forum
             {
                 return 0;
             }
-            return (await GetForumTree()).Tracking.FirstOrDefault(t => t.TopicId == topicId)?.Posts?.FirstOrDefault() ?? 0;
+            var found = (await GetForumTree()).Tracking.TryGetValue(new Tracking { TopicId = topicId }, out var item);
+            if (!found)
+            {
+                return 0;
+            }
+            var post = 0;
+            using (var connection = _context.Database.GetDbConnection())
+            {
+                await connection.OpenIfNeeded();
+                post = unchecked((int)((await connection.QuerySingleOrDefaultAsync(
+                    "SELECT post_id, post_time FROM phpbb_posts WHERE post_id IN @postIds HAVING post_time = MIN(post_time)",
+                    new { postIds = item.Posts }
+                ))?.post_id ?? 0u));
+            }
+            return post;
         }
 
         public async Task<ForumDto> GetForumTree(int? forumId = null, bool forceRefresh = false, bool fullTraversal = false, bool excludePasswordProtected = false)

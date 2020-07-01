@@ -371,7 +371,7 @@ namespace Serverless.Forum.Pages
                             PollStart = PreviewablePost.PostCreationTime ?? DateTime.UtcNow
                         };
                     }
-                    _renderingService.ProcessPosts(new[] { PreviewablePost }, PageContext, HttpContext, true);
+                    await _renderingService.ProcessPosts(new[] { PreviewablePost }, PageContext, HttpContext, true);
 
                     return Page();
                 });

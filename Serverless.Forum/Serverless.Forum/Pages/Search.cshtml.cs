@@ -161,7 +161,7 @@ namespace Serverless.Forum.Pages
                 p.AuthorHasAvatar = !string.IsNullOrWhiteSpace(p.UserAvatar);
                 //p.AuthorSignature = p.UserSig == null ? null : _renderingService.BbCodeToHtml(p.UserSig, p.UserSigBbcodeUid);
             });
-            _renderingService.ProcessPosts(Posts, PageContext, HttpContext, false, SearchText);
+            await _renderingService.ProcessPosts(Posts, PageContext, HttpContext, false, SearchText);
 
             Paginator = new Paginator(TotalResults.Value, PageNum.Value, GetSearchLinkForPage(PageNum.Value + 1));
         }

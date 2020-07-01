@@ -91,5 +91,47 @@ namespace Serverless.Forum.Services
             }
             return (_tree, _forumData, _topicData, _tracking);
         }
+
+        public async Task<PhpbbForums> GetForumWithCompleteSummary(PhpbbForums root)
+        {
+            if (root.ForumLastPostTime > 0)
+            {
+                return root;
+            }
+
+            var (tree, forums, _, _) = await GetExtendedForumTree();
+            if (!tree.TryGetValue(new ForumTree { ForumId = root.ForumId }, out var treeNode))
+            {
+                return root;
+            }
+
+            PhpbbForums maxChild = null;
+            foreach (var child in treeNode.ChildrenList)
+            { 
+                if (!forums.TryGetValue(new PhpbbForums { ForumId = child }, out var childForum))
+                {
+                    continue;
+                }
+                if (childForum.ForumLastPostTime == 0)
+                {
+                    maxChild = await GetForumWithCompleteSummary(childForum);
+                }
+                if ((maxChild?.ForumLastPostTime ?? 0) < childForum.ForumLastPostTime)
+                {
+                    maxChild = childForum;
+                }
+            }
+            if (maxChild == null)
+            {
+                return root;
+            }
+            root.ForumLastPosterColour = maxChild.ForumLastPosterColour;
+            root.ForumLastPosterId = maxChild.ForumLastPosterId;
+            root.ForumLastPosterName = maxChild.ForumLastPosterName;
+            root.ForumLastPostId = maxChild.ForumLastPostId;
+            root.ForumLastPostSubject = maxChild.ForumLastPostSubject;
+            root.ForumLastPostTime = maxChild.ForumLastPostTime;
+            return root;
+        }
     }
 }

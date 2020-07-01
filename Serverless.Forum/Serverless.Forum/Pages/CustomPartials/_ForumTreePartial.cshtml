@@ -1,5 +1,4 @@
 ﻿@model Serverless.Forum.Pages.CustomPartials._ForumTreePartialModel
-@using Serverless.Forum.Contracts
 
 <style>
     ul, #myUL {
@@ -52,18 +51,13 @@
 @functions {
     async Task showTreeNode(int? cur)
     {
-        //if ((cur ?? 0) == 0)
-        //{
-        //    return;
-        //}
-
         var treeNodeClass = cur == Model.ForumId ? "treeNode selectedTreeNode" : "treeNode";
         var topics = Model.Forums.TopicData.Where(t => t.ForumId == cur)
                                            .OrderBy(t => t.TopicTitle, StringComparer.OrdinalIgnoreCase)
-                                           .Select (t => new TopicDto
+                                           .Select(t => new TopicDto
                                            {
                                                Id = t.TopicId,
-                                               Title = t.TopicTitle
+                                               Title = System.Web.HttpUtility.HtmlDecode(t.TopicTitle)
                                            });
 
         var children = Model.Forums.ForumData.Where(f => f.ParentId == cur).OrderBy(f => f.LeftId);
@@ -72,7 +66,7 @@
         {
             await Output.WriteAsync(
                 $"<li class='{treeNodeClass}'>" +
-                    $"<span id='treeNode{cur}' class='searchCaret' onclick='select(this, {cur}, {Json.Serialize(topics)});'>{thisForum?.ForumName ?? "ROOT"}</span>" +
+                    $"<span id='treeNode{cur}' class='searchCaret' onclick='select(this, {cur}, {Json.Serialize(topics)});'>{thisForum?.ForumName ?? Serverless.Forum.Utilities.Constants.FORUM_NAME}</span>" +
                     $"<ul class='nestedTreeNode' id='child{cur}'>"
             );
             foreach (var child in children)
@@ -87,7 +81,7 @@
         else
         {
             await Output.WriteAsync(
-                $"<li id='treeNode{cur}' class='{treeNodeClass}' onclick='select(this, {cur}, {Json.Serialize(topics)});'>{thisForum?.ForumName ?? "ROOT"}</li>"
+                $"<li id='treeNode{cur}' class='{treeNodeClass}' onclick='select(this, {cur}, {Json.Serialize(topics)});'>{thisForum?.ForumName ?? Serverless.Forum.Utilities.Constants.FORUM_NAME}</li>"
             );
         }
     }
@@ -100,46 +94,46 @@
 </div>
 
 
-    <script>
-    var path = @Json.Serialize(Model.Path);
-    var topicId = @Json.Serialize(Model.TopicId);
+<script>
+        var path = [0].concat(@Json.Serialize(Model.Path));
+        var topicId = @Json.Serialize(Model.TopicId);
 
-    function select(obj, forumId, topics) {
-        var toggler = document.getElementsByClassName("selectedTreeNode");
+        function select(obj, forumId, topics) {
+            var toggler = document.getElementsByClassName("selectedTreeNode");
 
-        for (var i = 0; i < toggler.length; i++) {
-            toggler[i].classList.remove("selectedTreeNode")
+            for (var i = 0; i < toggler.length; i++) {
+                toggler[i].classList.remove("selectedTreeNode")
+            }
+
+            var parent = document.getElementById("child" + forumId);
+            if (parent != null) {
+                parent.classList.toggle("activeTreeNode");
+            }
+            obj.classList.toggle("searchCaret-down");
+            obj.classList.toggle("selectedTreeNode");
+
+            if (typeof forumSelectCallback === "function") {
+                forumSelectCallback(forumId);
+            }
+
+            if (typeof topicSelectCallback === "function") {
+                topicSelectCallback(topics);
+            }
         }
 
-        var parent = document.getElementById("child" + forumId);
-        if (parent != null) {
-            parent.classList.toggle("activeTreeNode");
-        }
-        obj.classList.toggle("searchCaret-down");
-        obj.classList.toggle("selectedTreeNode");
+        $(document).ready(function () {
+            for (var i = 0; i < path.length; i++) {
+                document.getElementById("treeNode" + path[i]).click();
+            }
 
-        if (typeof forumSelectCallback === "function") {
-            forumSelectCallback(forumId);
-        }
+            var element = document.getElementById("treeNode" + path[path.length]);
+            if (@Html.Raw(Model.ConstrainSize.ToString().ToLower()) && element) {
+                document.getElementById('treeContainer').scrollTop = element.offsetTop;
+            }
 
-        if (typeof topicSelectCallback === "function") {
-            topicSelectCallback(topics);
-        }
-    }
+            if (typeof topicSelectInit === "function") {
+                topicSelectInit(topicId);
+            }
+        });
 
-    $(document).ready(function () {
-        for (var i = 0; i < path.length; i++) {
-            document.getElementById("treeNode" + path[i]).click();
-        }
-
-        var element = document.getElementById("treeNode" + path[path.length]);
-        if (@Html.Raw(Model.ConstrainSize.ToString().ToLower()) && element) {
-            document.getElementById('treeContainer').scrollTop = element.offsetTop;
-        }
-
-        if (typeof topicSelectInit === "function") {
-            topicSelectInit(topicId);
-        }
-    });
-
-    </script>
+</script>

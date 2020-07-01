@@ -12,7 +12,6 @@
     var CurrentUser = await Model.GetCurrentUserAsync();
     var UserDateFormat = CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
     var IsAnonymous = CurrentUser.UserId == Constants.ANONYMOUS_USER_ID;
-    Serverless.Forum.Contracts.ForumDto tree = null;
 }
 
 <link rel="stylesheet" href="~/css/pagination.css" />
@@ -36,7 +35,7 @@
     }
 </script>
 
-@if (Model.ParentForumId != 0 && !Model.IsNewPostView)
+@if ((Model.ParentForumId ?? 0) != 0 && !Model.IsNewPostView && !Model.IsOwnPostView)
 {
     <span>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@Model.ParentForumTitle</a></span>
 }
@@ -48,11 +47,17 @@ else
 {
     <h2>Subiecte necitite</h2>
 }
+else if (Model.IsOwnPostView)
+{
+    <h2>Subiectele proprii</h2>
+    <span>Subiecte în care ai scris cel puțin un mesaj</span>
+    <p>&nbsp;</p>
+}
 else
 {
     <h2>Forum: @Model.ForumTitle</h2>
 }
-@if (!IsAnonymous && !Model.IsNewPostView)
+@if (!IsAnonymous && !Model.IsNewPostView && !Model.IsOwnPostView)
 {
     <ul class="Shortcuts">
         @if (Model.Forums?.ForumData?.Any() ?? false)
@@ -84,24 +89,42 @@ else
     var topicsDisplayed = false;
     var announcementsDisplayed = false;
     var globalsDisplayed = false;
+
+    if (Model.IsNewPostView || Model.IsOwnPostView)
+    {
+        var view = Model.IsNewPostView ? "new" : "own";
+        @await Html.PartialAsync(
+            "_PaginationControlsPartial",
+            new CustomPartials._PaginationControlsPartialModel(
+                paginator: Model.Paginator,
+                allowPaginationChange: true,
+                back: $"/ViewForum?handler={view}Posts&pageNum={(Model.PageNum ?? 1) - 1}",
+                forward: $"/ViewForum?handler={view}Posts&pageNum={(Model.PageNum ?? 1) + 1}",
+                includeEasyNavigation: true
+            ),
+            ViewData
+        );
+    }
+
+
     foreach (var topicGroup in Model.Topics)
     {
         var index = 0;
-        if (!Model.IsNewPostView)
+        if (!Model.IsNewPostView && !Model.IsOwnPostView)
         {
             if (!globalsDisplayed && topicGroup.TopicType == TopicType.Global)
             {
-            <h3 style="float:left">Subiecte globale</h3>
+                <h3 style="float:left">Subiecte globale</h3>
                 globalsDisplayed = true;
             }
             else if (!announcementsDisplayed && topicGroup.TopicType == TopicType.Announcement)
             {
-            <h3 style="float:left">Anunțuri</h3>
+                <h3 style="float:left">Anunțuri</h3>
                 announcementsDisplayed = true;
             }
             else if (!topicsDisplayed)
             {
-            <h3 style="float:left">Subiecte</h3>
+                <h3 style="float:left">Subiecte</h3>
                 topicsDisplayed = true;
             }
         }
@@ -111,11 +134,13 @@ else
             index++;
             <div class="@divClass">
                 <span class="ForumContent">
-                    @if (Model.IsNewPostView)
+                    @if (Model.IsNewPostView || Model.IsOwnPostView)
                     {
-                        tree = await Model.GetForumTree(forumId: topic.ForumId/*, fullTraversal: true*/);
+                        var tree = await Model.GetForumTree(forumId: topic.ForumId);
                         var pathParts = tree.Tree.FirstOrDefault(x => x.ForumId == topic.ForumId).PathList;
-                        @Html.Raw(string.Join(" → ", tree.ForumData.Where(f => pathParts?.Contains(f.ForumId) ?? false).Select(f => HttpUtility.HtmlDecode(f.ForumName)).Union(new[] { HttpUtility.HtmlDecode(topic.Title) })));
+                        <span class="Caption">
+                            @Html.Raw(string.Join(" → ", tree.ForumData.Where(f => pathParts?.Contains(f.ForumId) ?? false).Select(f => HttpUtility.HtmlDecode(f.ForumName))))
+                        </span>
                         <br />
                     }
                     @if (topicGroup.TopicType == TopicType.Important)
@@ -135,17 +160,37 @@ else
                     @await Html.PartialAsync("_PaginationPartial", topic.Pagination, ViewData)
                 </span>
                 @await Html.PartialAsync(
-         "_SummaryPartial",
-         new CustomPartials._SummaryPartialModel(topic.LastPosterId, topic.LastPosterName, topic.LastPosterColor, topic.LastPostTime, topic.Id.Value,
-             UserDateFormat, false, null,
-             topic.LastPostId == null ? null : $"./ViewTopic?postId={topic.LastPostId}&handler=ByPostId",
-             topic.LastPostId == null ? null : "&#x1F4C3;",
-             topic.LastPostId == null ? null : "Vezi ultimul mesaj",
-             false, true, topic.PostCount, topic.ViewCount
-         )
-     )
+                     "_SummaryPartial",
+                     new CustomPartials._SummaryPartialModel(topic.LastPosterId, topic.LastPosterName, topic.LastPosterColor, topic.LastPostTime, topic.Id.Value,
+                         UserDateFormat, false, null,
+                         topic.LastPostId == null ? null : $"./ViewTopic?postId={topic.LastPostId}&handler=ByPostId",
+                         topic.LastPostId == null ? null : "&#x1F4C3;",
+                         topic.LastPostId == null ? null : "Vezi ultimul mesaj",
+                         false, true, topic.PostCount, topic.ViewCount
+                     )
+                 )
             </div>
         }
+        @if (!Model.IsNewPostView && !Model.IsOwnPostView)
+        {
+            <hr />
+        }
+    }
+
+    if (Model.IsNewPostView || Model.IsOwnPostView)
+    {
+        var view = Model.IsNewPostView ? "new" : "own";
+        @await Html.PartialAsync(
+            "_PaginationControlsPartial",
+            new CustomPartials._PaginationControlsPartialModel(
+                paginator: Model.Paginator,
+                allowPaginationChange: true,
+                back: $"/ViewForum?handler={view}Posts&pageNum={(Model.PageNum ?? 1) - 1}",
+                forward: $"/ViewForum?handler={view}Posts&pageNum={(Model.PageNum ?? 1) + 1}",
+                includeEasyNavigation: true
+            ),
+            ViewData
+        );
         <hr />
     }
 }
@@ -153,7 +198,11 @@ else if (Model.IsNewPostView)
 {
     <h4>Nu există mesaje noi.</h4>
 }
-@if (!IsAnonymous && !Model.IsNewPostView)
+else if (Model.IsOwnPostView)
+{
+    <h4>Nu ai scris nici un mesaj în nici un topic până acum.</h4>
+}
+@if (!IsAnonymous && !Model.IsNewPostView && !Model.IsOwnPostView)
 {
     <a asp-page="/Posting" asp-page-handler="NewTopic" asp-route-forumId="@Model.ForumId">Deschide un subiect nou</a>
 }
@@ -162,20 +211,17 @@ else if (Model.IsNewPostView)
 <span onclick="showElement('forumTree', null, () => $('html, body').animate({ scrollTop: $(this).position().top + $('#topBanner').outerHeight() + 1000 }, 'slow'));" style="cursor:pointer; font-weight:bold">Navigare - alege destinația &#x2935;</span>
 <p></p>
 <div id="forumTree" style=" display:none">
-    @{
-        tree = await Model.GetForumTree(fullTraversal: true);
-        await Html.PartialAsync(
-            "_ForumTreePartial",
-            new CustomPartials._ForumTreePartialModel(
-                forums: tree,
-                forumId: Model.ForumId,
-                topicId: null,
-                path: tree.Tree.FirstOrDefault(t => t.ForumId == Model.ForumId)?.PathList,
-                constrainSize: true
-            ),
-            ViewData
-        );
-    }
+    @await Html.PartialAsync(
+        "_ForumTreePartial",
+        new CustomPartials._ForumTreePartialModel(
+            forums: await Model.GetForumTree(fullTraversal: true),
+            forumId: Model.ForumId,
+            topicId: null,
+            path: (await Model.GetForumTree(fullTraversal: true)).Tree.FirstOrDefault(t => t.ForumId == Model.ForumId).PathList,
+            constrainSize: true
+        ),
+        ViewData
+    )
     <p></p>
     <form action="/ViewForum">
         <input type="hidden" name="ForumId" id="ForumIdInput" />

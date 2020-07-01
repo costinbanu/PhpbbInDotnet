@@ -23,20 +23,18 @@ namespace Serverless.Forum.Utilities
 
         public Paginator(int count, int pageNum, string link, int? topicId = null, LoggedUser usr = null, string pageNumKey = "PageNum")
         {
-            PostsPerPage = new List<SelectListItem>
+            PostsPerPage = new List<SelectListItem>();
+            for (var i = 0; i < 5; i++)
             {
-                new SelectListItem("7", "7", false),
-                new SelectListItem("14", "14", false),
-                new SelectListItem("28", "28", false),
-                new SelectListItem("56", "56", false),
-                new SelectListItem("112", "112", false)
-            };
+                var val = ((1 << i) * Constants.PAGE_SIZE_INCREMENT).ToString();
+                PostsPerPage.Add(new SelectListItem(val, val, false));
+            }
 
-            PageSize = 14;
+            PageSize = Constants.DEFAULT_PAGE_SIZE;
 
             if (topicId != null && usr != null)
             {
-                PageSize = usr.TopicPostsPerPage.ContainsKey(topicId.Value) ? usr.TopicPostsPerPage[topicId.Value] : 14;
+                PageSize = usr.TopicPostsPerPage.ContainsKey(topicId.Value) ? usr.TopicPostsPerPage[topicId.Value] : Constants.DEFAULT_PAGE_SIZE;
             }
 
             IsAnonymous = (usr?.UserId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID;

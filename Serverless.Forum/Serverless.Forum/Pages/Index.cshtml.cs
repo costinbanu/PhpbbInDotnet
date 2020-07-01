@@ -20,7 +20,7 @@ namespace Serverless.Forum.Pages
 
         public async Task OnGet()
         {
-            Forum = await GetForumTree();
+            Forum = await GetForumTree(fullTraversal: true);
         }
     }
 }

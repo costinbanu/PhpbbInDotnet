@@ -1,6 +1,7 @@
 ﻿using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Serverless.Forum.Contracts
 {
@@ -25,9 +26,18 @@ namespace Serverless.Forum.Contracts
         public HashSet<int> Posts { get; private set; }
 
         public override bool Equals(object obj)
-            => obj is Tracking tr && TopicId == tr?.TopicId && (PostIds?.Equals(tr?.PostIds, StringComparison.Ordinal) ?? false);
+            => obj != null && obj is Tracking tr && TopicId == tr.TopicId;
 
         public override int GetHashCode()
-            => HashCode.Combine(TopicId, PostIds);
+            => TopicId.GetHashCode();
+    }
+
+    public class TrackingComparerByForumId : IEqualityComparer<Tracking>
+    {
+        public bool Equals([AllowNull] Tracking x, [AllowNull] Tracking y)
+            => x != null && y != null && x.ForumId == y.ForumId;
+
+        public int GetHashCode([DisallowNull] Tracking obj)
+            => obj.ForumId.GetHashCode();
     }
 }

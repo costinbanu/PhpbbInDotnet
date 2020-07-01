@@ -27,7 +27,7 @@ BEGIN
             AND (ISNULL(topic_id_parm) OR (t.topic_id = topic_id_parm))
             AND (ISNULL(forum_id_parm) OR (t.forum_id = forum_id_parm))
 	)
-	SELECT m.* , p.post_id
+	SELECT m.* , group_concat(p.post_id) AS post_ids
 	  FROM marktimes m
 	  JOIN phpbb_posts p
 		ON m.topic_id = p.topic_id
@@ -43,5 +43,6 @@ BEGIN
 			(topic_last_post_time <= forum_mark_time AND NOT ISNULL(forum_mark_time))
 	   ) AND
        p.poster_id <> @user_id
-       AND @user_id <> 1;
+       AND @user_id <> 1
+       GROUP BY m.topic_id;
 END

@@ -65,5 +65,9 @@ namespace Serverless.Forum.Utilities
         public static readonly int ACCESS_TO_FORUM_DENIED_ROLE = 16;
 
         public static readonly int ADMIN_GROUP_ID = 5;
+
+        public static readonly int PAGE_SIZE_INCREMENT = 7;
+
+        public static readonly int DEFAULT_PAGE_SIZE = PAGE_SIZE_INCREMENT * 2;
     }
 }

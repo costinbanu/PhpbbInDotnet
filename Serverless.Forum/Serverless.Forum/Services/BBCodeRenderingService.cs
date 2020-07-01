@@ -15,7 +15,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -32,9 +31,9 @@ namespace Serverless.Forum.Services
         private readonly Regex _smileyRegex;
         private readonly Regex _tabRegex;
         private readonly Regex _spaceRegex;
-        private BBCodeParser _parser;
+        private readonly Dictionary<string, string> _bannedWords;
+        private readonly BBCodeParser _parser;
 
-        private Dictionary<string, string> _bannedWords;
 
         private delegate (int index, string match) FirstIndexOf(string haystack, string needle, int startIndex);
         private delegate (string result, int endIndex) Transform(string haystack, string needle, int startIndex);
@@ -50,14 +49,11 @@ namespace Serverless.Forum.Services
             _spaceRegex = new Regex(" +", RegexOptions.Compiled | RegexOptions.Singleline);
             _smileyRegex = new Regex("{SMILIES_PATH}", RegexOptions.Compiled | RegexOptions.Singleline);
             _htmlRegex = new Regex(@"<((?=!\-\-)!\-\-[\s\S]*\-\-|((?=\?)\?[\s\S]*\?|((?=\/)\/[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*|[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*(?:\s[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*(?:=(?:""[^""]*""|'[^']*'|[^'""<\s]*))?)*)\s?\/?))>", RegexOptions.Compiled);
+            _bannedWords = _writingService.GetBannedWords().RunSync().GroupBy(p => p.Word).Select(grp => grp.FirstOrDefault()).ToDictionary(x => x.Word, y => y.Replacement);
 
             using var connection = _context.Database.GetDbConnection();
             connection.OpenIfNeeded().RunSync();
-
-            _bannedWords = _writingService.GetBannedWords().RunSync().GroupBy(p => p.Word).Select(grp => grp.FirstOrDefault()).ToDictionary(x => x.Word, y => y.Replacement);
-
-            var dummy = new BBAttribute[0] { };
-            var bbcodes = connection.Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes").Select(c => new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false, dummy)).ToList();
+            var bbcodes = connection.Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes").Select(c => new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false, new BBAttribute[0] { })).ToList();
             bbcodes.AddRange(new[]
             {
                     new BBTag("b", "<b>", "</b>"),
@@ -84,18 +80,26 @@ namespace Serverless.Forum.Services
             _parser = new BBCodeParser(bbcodes);
         }
 
-        public void ProcessPosts(IEnumerable<PostDto> Posts, PageContext pageContext, HttpContext httpContext, bool renderAttachments, string toHighlight = null)
+        public async Task ProcessPosts(IEnumerable<PostDto> Posts, PageContext pageContext, HttpContext httpContext, bool renderAttachments, string toHighlight = null)
         {
             var inlineAttachmentsPosts = new ConcurrentBag<(int PostId, int AttachIndex, _AttachmentPartialModel Attach)>();
             var attachRegex = new Regex("#{AttachmentFileName=[^/]+/AttachmentIndex=[0-9]+}#", RegexOptions.Compiled);
             var highlightWords = SplitHighlightWords(toHighlight);
-            var mutex = new Mutex();
 
-            Parallel.ForEach(Posts, (p, state1) =>
+            foreach (var p in Posts)
+            //var tasks = Posts.Select(async p =>
             {
+                Console.Write($"{p.PostId} start...");
+                if (p.PostId == 281202)
+                {
+
+                }
+
                 p.PostSubject = CensorWords(HttpUtility.HtmlDecode(p.PostSubject), _bannedWords);
                 p.PostSubject = HighlightWords(p.PostSubject, highlightWords);
                 p.PostText = HighlightWords(BbCodeToHtml(p.PostText, p.BbcodeUid), highlightWords);
+
+                Console.Write(" text done;");
 
                 if (renderAttachments)
                 {
@@ -107,49 +111,43 @@ namespace Serverless.Forum.Services
                                   let i = int.Parse(parts[1].Trim("}#".ToCharArray()).Replace("AttachmentIndex=", string.Empty))
                                   select (FileName: fn, AttachIndex: i, Original: m);
 
-                    Parallel.ForEach(matches, async (m, state2) =>
+                    foreach (var (FileName, AttachIndex, Original) in matches)
                     {
                         _AttachmentPartialModel model = null;
-                        int index = m.AttachIndex;
-                        var candidates = p.Attachments.Where(a => a.DisplayName == m.FileName).ToList();
+                        int index = AttachIndex;
+                        var candidates = p.Attachments.Where(a => a.DisplayName == FileName).ToList();
                         if (candidates.Count == 1)
                         {
                             model = candidates.First();
                         }
                         else if (candidates.Count > 1)
                         {
-                            model = candidates.FirstOrDefault(a => a.DisplayName == m.FileName && candidates.IndexOf(a) == index);
+                            model = candidates.FirstOrDefault(a => a.DisplayName == FileName && candidates.IndexOf(a) == index);
                             if (model == null)
                             {
-                                index = candidates.Count - m.AttachIndex - 1;
+                                index = candidates.Count - AttachIndex - 1;
                                 model = candidates.FirstOrDefault(a => candidates.IndexOf(a) == index);
                             }
                         }
 
                         if (model != null)
                         {
-                            try
-                            {
-                                mutex.WaitOne();
-
-                                p.PostText = p.PostText.Replace(
-                                    $"#{{AttachmentFileName={model.DisplayName}/AttachmentIndex={index}}}#",
-                                    await _utils.RenderRazorViewToString("_AttachmentPartial", model, pageContext, httpContext)
-                                );
-                                p.Attachments.Remove(model);
-                            }
-                            finally
-                            {
-                                mutex.ReleaseMutex();
-                            }
+                            p.PostText = p.PostText.Replace(
+                                $"#{{AttachmentFileName={model.DisplayName}/AttachmentIndex={index}}}#",
+                                await _utils.RenderRazorViewToString("_AttachmentPartial", model, pageContext, httpContext)
+                            );
+                            p.Attachments.Remove(model);
                         }
-                    });
+                    }
                 }
                 else
                 {
                     p.PostText = attachRegex.Replace(p.PostText, string.Empty);
                 }
-            });
+
+                Console.WriteLine(" attach done.");
+            }/*);
+            await Task.WhenAll(tasks);*/
         }
 
         public string BbCodeToHtml(string bbCodeText, string bbCodeUid)
@@ -230,7 +228,7 @@ namespace Serverless.Forum.Services
         private string CensorWords(string text, Dictionary<string, string> wordMap)
         {
             Regex getRegex(string wildcard)
-                => new Regex(@"\b" + Regex.Escape(wildcard).Replace(@"\*", @"\w*").Replace(@"\?", @"\w") + @"\b");
+                => new Regex(@"\b" + Regex.Escape(wildcard).Replace(@"\*", @"\w*").Replace(@"\?", @"\w") + @"\b", RegexOptions.None, TimeSpan.FromSeconds(20));
 
             return ProcessAllWords(
                 text,
@@ -296,26 +294,27 @@ namespace Serverless.Forum.Services
                             continue;
                         }
 
+                        var oldValue = index;
                         while (index != -1)
                         {
                             var startIndex = 0;
                             var tag = htmlTagsLocation.FirstOrDefault(x => index >= x.Position && index < x.Position + x.Length);
                             if (tag == default)
                             {
-                                var (result, nextIndex) = transform(input, match, index);
                                 var (cleanedResult, cleanednextIndex) = transform(cleanedInput, cleanedMatch, index);
-                                if (result.RemoveDiacritics().Equals(cleanedResult, StringComparison.InvariantCultureIgnoreCase) && nextIndex == cleanednextIndex)
-                                {
-                                    input = result;
-                                    cleanedInput = cleanedResult;
-                                    startIndex = nextIndex;
-                                }
+                                input = cleanedResult;
+                                cleanedInput = cleanedResult;
+                                startIndex = cleanednextIndex;
                             }
                             else
                             {
                                 startIndex = tag.Position + tag.Length;
                             }
                             index = startIndex > cleanedInput.Length ? -1 : indexOf(cleanedInput, cleanedWord, startIndex).index;
+                            if (index == oldValue)
+                            {
+                                break;
+                            }
                         }
                     }
                 }

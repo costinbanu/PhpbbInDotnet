@@ -205,7 +205,7 @@ namespace Serverless.Forum.Pages
                 TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
 
 
-                _renderingService.ProcessPosts(Posts, PageContext, HttpContext, true);
+                await _renderingService.ProcessPosts(Posts, PageContext, HttpContext, true);
 
                 using (var connection = _context.Database.GetDbConnection())
                 {
@@ -213,24 +213,24 @@ namespace Serverless.Forum.Pages
                     await connection.OpenIfNeeded();
                     if (Posts.Any(p => p.Unread))
                     {
-                        var existing = await connection.QuerySingleOrDefaultAsync<PhpbbTopicsTrack>("SELECT * FROM phpbb_topics_track WHERE user_id = @userId AND topic_id = @TopicId", new { userId, TopicId });
+                        var existing = await connection.QuerySingleOrDefaultAsync<PhpbbTopicsTrack>("SELECT * FROM phpbb_topics_track WHERE user_id = @userId AND topic_id = @topicId", new { userId, topicId = TopicId.Value });
                         if (existing == null)
                         {
                             await connection.ExecuteAsync(
-                                "INSERT INTO phpbb_topics_track VALUES (@ForumId, @markTime, @TopicId, @userId)",
-                                new { ForumId, markTime = DateTime.UtcNow.ToUnixTimestamp(), TopicId, userId }
+                                "INSERT INTO phpbb_topics_track (forum_id, mark_time, topic_id, user_id) VALUES (@forumId, @markTime, @topicId, @userId)",
+                                new { forumId = ForumId.Value, markTime = DateTime.UtcNow.ToUnixTimestamp(), topicId = TopicId.Value, userId }
                             );
                         }
                         else
                         {
                             await connection.ExecuteAsync(
-                                "UPDATE phpbb_topics_track SET forum_id = @ForumId, mark_time = @markTime WHERE user_id = @userId AND topic_id = @TopicId",
-                                new { ForumId, markTime = DateTime.UtcNow.ToUnixTimestamp(), userId, TopicId }
+                                "UPDATE phpbb_topics_track SET forum_id = @forumId, mark_time = @markTime WHERE user_id = @userId AND topic_id = @topicId",
+                                new { forumId = ForumId.Value, markTime = DateTime.UtcNow.ToUnixTimestamp(), userId, topicId = TopicId.Value }
                             );
                         }
                     }
 
-                    await connection.ExecuteAsync("UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @TopicId", new { TopicId } );
+                    await connection.ExecuteAsync("UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId", new { topicId = TopicId.Value } );
                 }
                 return Page();
             }
