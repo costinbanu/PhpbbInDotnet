@@ -190,7 +190,8 @@ namespace Serverless.Forum.Pages
                 dbUser.UserAvatar = name;
             }
 
-            var dbAclRole = await _context.PhpbbAclUsers.FirstOrDefaultAsync(r => r.UserId == dbUser.UserId);
+            var userRoles = (await _userService.GetUserRolesLazy()).Select(r => r.RoleId);
+            var dbAclRole = await _context.PhpbbAclUsers.FirstOrDefaultAsync(r => r.UserId == dbUser.UserId && userRoles.Contains(r.AuthRoleId));
             if (dbAclRole != null && AclRole == -1)
             {
                 _context.PhpbbAclUsers.Remove(dbAclRole);

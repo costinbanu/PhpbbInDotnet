@@ -601,18 +601,8 @@ namespace Serverless.Forum.Pages
                     attachList[i].AttachComment = FileComment[i] ?? string.Empty;
                 }
                 await context.PhpbbAttachments.AddRangeAsync(attachList.Where(a => a.AttachId == 0));
-                var attachXref = await (
-                    from a in context.PhpbbAttachments
-                    join al in attachList
-                    on a.AttachId equals al.AttachId
-                    into joined
-                    from j in joined
-                    select new { Old = a, NewComment = j.AttachComment ?? string.Empty }
-                ).ToListAsync();
-                foreach (var xref in attachXref)
-                {
-                    xref.Old.AttachComment = xref.NewComment;
-                }
+                context.PhpbbAttachments.UpdateRange(attachList.Where(a => a.AttachId != 0));
+
                 await context.SaveChangesAsync();
                 await _postService.CascadePostEdit(context, post);
             }

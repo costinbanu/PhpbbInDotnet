@@ -11,7 +11,7 @@
     Layout = "~/Pages/_Layout.cshtml";
     var CurrentUser = await Model.GetCurrentUserAsync();
     var UserDateFormat = CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
-    var IsAnonymous = CurrentUser.UserId == Constants.ANONYMOUS_USER_ID;
+    var IsAnonymous = (CurrentUser?.UserId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID;
 }
 
 <link rel="stylesheet" href="~/css/pagination.css" />
@@ -76,7 +76,7 @@ else
 {
     @await Html.PartialAsync(
         "_ForumDisplayPartial",
-        new Serverless.Forum.Pages.CustomPartials._ForumDisplayPartialModel(Model.Forums, UserDateFormat, true),
+        new Serverless.Forum.Pages.CustomPartials._ForumDisplayPartialModel(Model.Forums, UserDateFormat, true, CurrentUser),
         ViewData
     )
     <hr />

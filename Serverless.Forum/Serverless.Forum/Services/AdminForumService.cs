@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace Serverless.Forum.Services
 {
@@ -185,18 +186,45 @@ namespace Serverless.Forum.Services
                 ).ToListAsync()
             );
 
-        public async Task<List<SelectListItem>> FlatForumTreeAsListItem(int parentId, int forumId)
+        public async Task<List<SelectListItem>> FlatForumTreeAsListItem(int parentId)
         {
-            var tree = await _forumService.GetForumTree(fullTraversal: true);
-            return (
-                from f in await _context.PhpbbForums.AsNoTracking().ToListAsync()
-                join t in tree
-                on f.ForumId equals t.ForumId
-                into joined
-                from jt in joined
-                let indent = new string('-', jt.Level)
-                select new SelectListItem($"{indent}{f.ForumName}", f.ForumId.ToString(), f.ForumId == parentId)
-            ).ToList();
+            var (tree, forums, topics, tracking) = await _forumService.GetExtendedForumTree(fullTraversal: true);
+            var list = new List<SelectListItem>();
+
+            int getOrder(int forumId)
+            {
+                if (forums.TryGetValue(new PhpbbForums { ForumId = forumId }, out var forum))
+                {
+                    return forum.LeftId;
+                }
+                return forumId;
+            }
+
+            void dfs(int cur)
+            {
+                if (!tree.TryGetValue(new ForumTree { ForumId = cur }, out var node))
+                {
+                    return;
+                }
+
+                if (forums.TryGetValue(new PhpbbForums { ForumId = cur }, out var forum))
+                {
+                    var indent = new string('-', node.Level);
+                    list.Add(new SelectListItem($"{indent}{HttpUtility.HtmlDecode(forum.ForumName)}", forum.ForumId.ToString(), forum.ForumId == parentId));
+                }
+                else
+                {
+                    list.Add(new SelectListItem(Constants.FORUM_NAME, "0", parentId == 0));
+                }
+
+                foreach (var child in node.ChildrenList?.OrderBy(getOrder) ?? Enumerable.Empty<int>())
+                {
+                    dfs(child);
+                }
+            }
+
+            dfs(0);
+            return list;
         }
 
         public async Task<IEnumerable<ForumPermissions>> GetPermissions(int forumId)

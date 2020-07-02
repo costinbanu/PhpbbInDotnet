@@ -136,9 +136,9 @@ namespace Serverless.Forum.Services
             {
                 SetTopicLastPost(curTopic, added, usr);
                 await SetTopicFirstPost(curTopic, added, usr, false);
-                curTopic.TopicReplies++;
-                curTopic.TopicRepliesReal++;
             }
+            curTopic.TopicReplies++;
+            curTopic.TopicRepliesReal++;
         }
 
         public async Task CascadePostDelete(ForumDbContext context, PhpbbPosts deleted, bool ignoreTopic, int? oldTopicId = null)
@@ -198,8 +198,8 @@ namespace Serverless.Forum.Services
                     await SetTopicFirstPost(curTopic, firstPost, firstPostUser, false, true);
                 }
 
-                curTopic.TopicReplies--;
-                curTopic.TopicRepliesReal--;
+                curTopic.TopicReplies -= curTopic.TopicReplies == 0 ? 0 : 1;
+                curTopic.TopicRepliesReal -= curTopic.TopicRepliesReal == 0 ? 0 : 1;
             }
         }
 

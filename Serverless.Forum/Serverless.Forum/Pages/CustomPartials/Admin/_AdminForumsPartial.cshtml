@@ -94,7 +94,7 @@
                 Părinte forum
             </div>
             <div class="FlexRight PostInputWidth">
-                @Html.DropDownList("dto.parentId", await _adminForumService.FlatForumTreeAsListItem(Model.Forum.ParentId, Model.Forum.ForumId))
+                @Html.DropDownList("dto.parentId", await _adminForumService.FlatForumTreeAsListItem(Model.Forum.ParentId))
             </div>
         </div>
         <hr class="SubtypeSeparator" />

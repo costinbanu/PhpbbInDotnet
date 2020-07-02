@@ -333,11 +333,11 @@ namespace Serverless.Forum.Pages
                 {
                     return RedirectToPage("ViewForum", new { ForumId });
                 }
-                else if (TopicAction == ModeratorTopicActions.MoveTopic)
+                else if (TopicAction == ModeratorTopicActions.MoveTopic && (IsSuccess ?? false))
                 {
                     var destinations = new List<string>
                     {
-                        await _utils.CompressAndUrlEncode($"<a href=\"./ViewForum?forumId={ForumId}\">Mergi la noul forum</a>"),
+                        await _utils.CompressAndUrlEncode($"<a href=\"./ViewForum?forumId={DestinationForumId ?? 0}\">Mergi la noul forum</a>"),
                         await _utils.CompressAndUrlEncode($"<a href=\"./ViewTopic?topicId={TopicId}&pageNum={PageNum}\">Mergi la ultimul subiect vizitat</a>")
                     };
                     return RedirectToPage("Confirm", "DestinationConfirmation", new { destinations });

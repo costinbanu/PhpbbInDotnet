@@ -18,7 +18,6 @@ using System.Web;
 
 namespace Serverless.Forum
 {
-    [ResponseCache(NoStore = true, Duration = 0)]
     public class ModelWithLoggedUser : PageModel
     {
         protected readonly ForumTreeService _forumService;
@@ -123,34 +122,32 @@ namespace Serverless.Forum
 
         public async Task<bool> IsForumUnread(int forumId, bool forceRefresh = false)
         {
-            if ((await GetCurrentUserAsync()).UserId == Constants.ANONYMOUS_USER_ID)
+            var usr = await GetCurrentUserAsync();
+            if (usr.UserId == Constants.ANONYMOUS_USER_ID)
             {
                 return false;
             }
-           return (await GetForumTree(forceRefresh: forceRefresh)).Tracking.Contains(new Tracking { ForumId = forumId }, new TrackingComparerByForumId());
+            return await _forumService.IsForumUnread(forumId, usr, forceRefresh);
         }
 
         public async Task<bool> IsTopicUnread(int topicId, bool forceRefresh = false)
         {
-            if ((await GetCurrentUserAsync()).UserId == Constants.ANONYMOUS_USER_ID)
+            var usr = await GetCurrentUserAsync();
+            if (usr.UserId == Constants.ANONYMOUS_USER_ID)
             {
                 return false;
             }
-            return (await GetForumTree(forceRefresh: forceRefresh)).Tracking.Contains(new Tracking { TopicId = topicId });
+            return await _forumService.IsTopicUnread(topicId, usr, forceRefresh);
         }
 
         public async Task<bool> IsPostUnread(int topicId, int postId)
         {
-            if ((await GetCurrentUserAsync()).UserId == Constants.ANONYMOUS_USER_ID)
+            var usr = await GetCurrentUserAsync();
+            if (usr.UserId == Constants.ANONYMOUS_USER_ID)
             {
                 return false;
             }
-            var found = (await GetForumTree()).Tracking.TryGetValue(new Tracking { TopicId = topicId }, out var item);
-            if (!found)
-            {
-                return false;
-            }
-            return new HashSet<int>(new[] { postId }).IsSubsetOf(item.Posts);
+            return await _forumService.IsPostUnread(topicId, postId, usr);
         }
 
         public async Task<int> GetFirstUnreadPost(int topicId)

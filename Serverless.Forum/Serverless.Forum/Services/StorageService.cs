@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System;
@@ -15,16 +16,23 @@ namespace Serverless.Forum.Services
     {
         private readonly IConfiguration _config;
         private readonly Utils _utils;
-        private readonly IWebHostEnvironment _environment;
+        private readonly string _root;
 
-        public string AttachmentsPath => Path.Combine(_environment.WebRootPath,  _config["Storage:Files"]);
-        public string AvatarsPath => Path.Combine(_environment.WebRootPath, _config["Storage:Avatars"]);
+        public string AttachmentsPath => Path.Combine(_root,  _config["Storage:Files"]);
+        public string AvatarsPath => Path.Combine(_root, _config["Storage:Avatars"]);
 
         public StorageService(IConfiguration config, Utils utils, IWebHostEnvironment environment)
         {
             _config = config;
             _utils = utils;
-            _environment = environment;
+            if (environment.IsProduction() && _config.GetValue<bool>("Storage:IsBetaVersion"))
+            {
+                _root = @"C:\Inetpub\vhosts\metrouusor.com\forum.metrouusor.com\wwwroot";
+            }
+            else
+            {
+                _root = environment.WebRootPath;
+            }
         }
 
         public string GetFileUrl(string name, bool isAvatar)

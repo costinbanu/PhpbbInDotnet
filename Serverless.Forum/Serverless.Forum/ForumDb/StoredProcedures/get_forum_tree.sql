@@ -89,7 +89,7 @@ BEGIN
       LEFT JOIN min_level ml 
         ON true
 	  LEFT JOIN phpbb_topics t
-		ON f.forum_id = t.forum_id AND (@full_traversal OR f.level = ml.min_level)
+		ON f.forum_id = t.forum_id
 	 WHERE (@full_traversal OR f.level <= ml.min_level + 2) 
        AND (@forum_id = 0 OR f.forum_id = @forum_id OR f.parent_id = @forum_id)
 	 GROUP BY f.forum_id

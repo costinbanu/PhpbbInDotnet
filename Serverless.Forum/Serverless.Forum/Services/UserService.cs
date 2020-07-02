@@ -62,7 +62,7 @@ namespace Serverless.Forum.Services
         public async Task<bool> HasPrivateMessages(int userId)
             => await GetUserRole(await GetLoggedUserById(userId)) != Constants.NO_PM_ROLE;
 
-        /*public*/ async Task<PhpbbUsers> GetAnonymousDbUserAsync()
+        async Task<PhpbbUsers> GetAnonymousDbUserAsync()
         {
             if (_anonymousDbUser != null)
             {
@@ -87,30 +87,9 @@ namespace Serverless.Forum.Services
             return _anonymousClaimsPrincipal;
         }
 
-        //public async Task<LoggedUser> GetAnonymousLoggedUserAsync()
-        //{
-        //    if (_anonymousLoggedUser != null)
-        //    {
-        //        return _anonymousLoggedUser;
-        //    }
-
-        //    _anonymousLoggedUser = await ClaimsPrincipalToLoggedUserAsync(await GetAnonymousClaimsPrincipalAsync());
-        //    return _anonymousLoggedUser;
-        //}
-
         public async Task<ClaimsPrincipal> DbUserToClaimsPrincipalAsync(PhpbbUsers user)
         {
 
-
-            //var editTime = await (
-            //    from g in _context.PhpbbGroups.AsNoTracking()
-            //    join ug in _context.PhpbbUserGroup.AsNoTracking()
-            //    on g.GroupId equals ug.GroupId
-            //    into joined
-            //    from j in joined
-            //    where j.UserId == user.UserId
-            //    select g.GroupEditTime
-            //).FirstOrDefaultAsync();
             using var connection = _context.Database.GetDbConnection();
             await connection.OpenIfNeeded();
             DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -118,7 +97,8 @@ namespace Serverless.Forum.Services
                 @"SELECT group_edit_time g
                    FROM phpbb_groups g
                    JOIN phpbb_user_group ug ON g.group_id = ug.group_id
-                  WHERE ug.user_id = @UserId",
+                  WHERE ug.user_id = @UserId
+                  LIMIT 1",
                 new { user.UserId }
             );
             using var multi = await connection.QueryMultipleAsync("CALL `forum`.`get_user_details`(@UserId);", new { user.UserId });

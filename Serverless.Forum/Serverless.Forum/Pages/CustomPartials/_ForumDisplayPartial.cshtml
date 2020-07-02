@@ -21,7 +21,12 @@
     @foreach (var f in Model.Forum.ForumData.Where(f => f.ParentId == category.ForumId).OrderBy(f => f.LeftId))
     {
         var forum = await _forumService.GetForumWithCompleteSummary(f);
-        var divClass = Model.Forum.Tracking.Any(f => f.ForumId == forum.ForumId) ? $"FlexRow Unread Color{catIndex % 2} RowMargin" : $"FlexRow Color{catIndex % 2} RowMargin";
+        var isUnread = false;
+        if ((Model.LoggedUser?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
+        {
+            isUnread = await _forumService.IsForumUnread(forum.ForumId, Model.LoggedUser);
+        }
+        var divClass = isUnread ? $"FlexRow Unread Color{catIndex % 2} RowMargin" : $"FlexRow Color{catIndex % 2} RowMargin";
         catIndex++;
         <div class="@divClass">
             <span class="ForumContent" style="padding-left:20px">
@@ -56,7 +61,12 @@
 @foreach (var f in Model.SubForums)
 {
     var forum = await _forumService.GetForumWithCompleteSummary(f);
-    var divClass = Model.Forum.Tracking.Any(f => f.ForumId == forum.ForumId) ? $"FlexRow Unread Color{index % 2} RowMargin" : $"FlexRow Color{index % 2} RowMargin";
+    var isUnread = false;
+    if ((Model.LoggedUser?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
+    {
+        isUnread = await _forumService.IsForumUnread(forum.ForumId, Model.LoggedUser);
+    }
+    var divClass = isUnread ? $"FlexRow Unread Color{index % 2} RowMargin" : $"FlexRow Color{index % 2} RowMargin";
     index++;
     <div class="@divClass">
         <span class="ForumContent">

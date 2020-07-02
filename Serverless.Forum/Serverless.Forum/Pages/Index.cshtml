@@ -47,6 +47,6 @@
 }
 @await Html.PartialAsync(
     "_ForumDisplayPartial",
-    new Serverless.Forum.Pages.CustomPartials._ForumDisplayPartialModel(Model.Forum, UserDateFormat, false),
+    new Serverless.Forum.Pages.CustomPartials._ForumDisplayPartialModel(Model.Forum, UserDateFormat, false, usr),
     ViewData
 )

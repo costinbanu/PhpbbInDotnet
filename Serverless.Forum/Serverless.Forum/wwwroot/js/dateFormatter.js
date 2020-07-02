@@ -171,5 +171,10 @@ Date.prototype.format = function (format) {
         }
         return n;
     }
-    return this.Date(format);
+    try {
+        return this.Date(format);
+    }
+    catch {
+        return this.Date('dd.MM.yyyy HH:mm');
+    }
 } 

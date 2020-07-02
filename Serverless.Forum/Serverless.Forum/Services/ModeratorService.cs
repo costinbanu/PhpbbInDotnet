@@ -15,11 +15,13 @@ namespace Serverless.Forum.Services
     {
         private readonly ForumDbContext _context;
         private readonly PostService _postService;
+        private readonly Utils _utils;
 
-        public ModeratorService(ForumDbContext context, PostService postService)
+        public ModeratorService(ForumDbContext context, PostService postService, Utils utils)
         {
             _context = context;
             _postService = postService;
+            _utils = utils;
         }
 
         #region Topic
@@ -44,8 +46,9 @@ namespace Serverless.Forum.Services
                     return ("Subiectul are deja tipul solicitat.", false);
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                _utils.HandleError(ex);
                 return ("A intervenit o eroare, încearcă din nou.", false);
             }
         }
@@ -70,11 +73,16 @@ namespace Serverless.Forum.Services
                 await _context.SaveChangesAsync();
                 await _postService.CascadePostAdd(_context, posts.Last(), true);
                 await _context.SaveChangesAsync();
+                var tracks = await _context.PhpbbTopicsTrack.Where(tt => tt.TopicId == topicId).ToListAsync();
+                _context.PhpbbTopicsTrack.UpdateRange(tracks);
+                tracks.ForEach(tt => tt.ForumId = destinationForumId);
+                await _context.SaveChangesAsync();
 
                 return ("Subiectul a fost modificat cu succes!", true);
             }
-            catch
+            catch (Exception ex)
             {
+                _utils.HandleError(ex);
                 return ("A intervenit o eroare, încearcă din nou.", false);
             }
         }
@@ -94,8 +102,9 @@ namespace Serverless.Forum.Services
                 
                 return ("Subiectul a fost modificat cu succes!", true);
             }
-            catch
+            catch (Exception ex)
             {
+                _utils.HandleError(ex);
                 return ("A intervenit o eroare, încearcă din nou.", false);
             }
         }
@@ -116,8 +125,9 @@ namespace Serverless.Forum.Services
                 await _context.SaveChangesAsync();
                 return ("Subiectul a fost modificat cu succes!", true);
             }
-            catch
+            catch (Exception ex)
             {
+                _utils.HandleError(ex);
                 return ("A intervenit o eroare, încearcă din nou.", false);
             }
         }
@@ -168,8 +178,9 @@ namespace Serverless.Forum.Services
                 
                 return ("Mesajele au fost separate cu succes!", true);
             }
-            catch
+            catch (Exception ex)
             {
+                _utils.HandleError(ex);
                 return ("A intervenit o eroare, încearcă din nou.", false);
             }
         }
@@ -206,8 +217,9 @@ namespace Serverless.Forum.Services
                 await _context.SaveChangesAsync();
                 return ("Mesajele au fost mutate cu succes!", true);
             }
-            catch
+            catch (Exception ex)
             {
+                _utils.HandleError(ex);
                 return ("A intervenit o eroare, încearcă din nou.", false);
             }
         }
@@ -235,8 +247,9 @@ namespace Serverless.Forum.Services
                 await _context.SaveChangesAsync();
                 return ("Subiectul a fost modificat cu succes!", true);
             }
-            catch
+            catch (Exception ex)
             {
+                _utils.HandleError(ex);
                 return ("A intervenit o eroare, încearcă din nou.", false);
             }
         }

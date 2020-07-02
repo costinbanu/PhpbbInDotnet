@@ -14,14 +14,16 @@ namespace Serverless.Forum.Pages.CustomPartials
         public string DateFormat { get; }
         public bool ShowTitle { get; }
         public ForumDto Forum { get; }
+        public LoggedUser LoggedUser { get; }
 
-        public _ForumDisplayPartialModel(ForumDto forum, string dateFormat, bool showTitle)
+        public _ForumDisplayPartialModel(ForumDto forum, string dateFormat, bool showTitle, LoggedUser loggedUser)
         {
             Categories = forum.ChildrenForums.Where(f => f.ForumType == ForumType.Category).OrderBy(c => c.LeftId);
             SubForums = forum.ChildrenForums.Where(f => f.ForumType == ForumType.SubForum).OrderBy(f => f.LeftId);
             DateFormat = dateFormat;
             ShowTitle = showTitle;
             Forum = forum;
+            LoggedUser = loggedUser;
         }
     }
 }
