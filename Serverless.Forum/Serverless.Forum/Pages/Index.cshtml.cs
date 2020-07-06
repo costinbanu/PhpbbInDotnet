@@ -11,7 +11,9 @@ namespace Serverless.Forum.Pages
 {
     public class IndexModel : ModelWithLoggedUser
     {
-        public ForumDto Forum { get; private set; }
+        public HashSet<ForumTree> Tree { get; private set; }
+
+        public HashSet<Tracking> Tracking { get; private set; }
 
         public IndexModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
             : base(context, forumService, userService, cacheService)
@@ -20,7 +22,7 @@ namespace Serverless.Forum.Pages
 
         public async Task OnGet()
         {
-            Forum = await GetForumTree(fullTraversal: true);
+            (Tree, Tracking) = await GetForumTree();
         }
     }
 }

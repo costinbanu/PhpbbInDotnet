@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
 using Serverless.Forum.Contracts;
-using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,21 +8,33 @@ namespace Serverless.Forum.Pages.CustomPartials
 {
     public class _ForumDisplayPartialModel : PageModel
     {
-        public IEnumerable<PhpbbForums> Categories { get; }
-        public IEnumerable<PhpbbForums> SubForums { get; }
         public string DateFormat { get; }
         public bool ShowTitle { get; }
-        public ForumDto Forum { get; }
         public LoggedUser LoggedUser { get; }
+        public HashSet<ForumTree> Tree { get; }
+        public IEnumerable<ForumTree> Categories { get; }
+        public IEnumerable<ForumTree> SubForums { get; }
 
-        public _ForumDisplayPartialModel(ForumDto forum, string dateFormat, bool showTitle, LoggedUser loggedUser)
+        public _ForumDisplayPartialModel(int forumId, HashSet<ForumTree> tree, string dateFormat, bool showTitle, LoggedUser loggedUser)
         {
-            Categories = forum.ChildrenForums.Where(f => f.ForumType == ForumType.Category).OrderBy(c => c.LeftId);
-            SubForums = forum.ChildrenForums.Where(f => f.ForumType == ForumType.SubForum).OrderBy(f => f.LeftId);
             DateFormat = dateFormat;
             ShowTitle = showTitle;
-            Forum = forum;
             LoggedUser = loggedUser;
+            Tree = tree;
+            Categories = GetChildrenForums(forumId).Where(f => f.ForumType == ForumType.Category).OrderBy(f => f.LeftId);
+            SubForums = GetChildrenForums(forumId).Where(f => f.ForumType == ForumType.SubForum).OrderBy(f => f.LeftId);
+        }
+
+        public IEnumerable<ForumTree> GetChildrenForums(int forumId)
+            => (GetForum(forumId)?.ChildrenList ?? new HashSet<int>()).Select(GetForum);
+
+        private ForumTree GetForum(int forumId)
+        {
+            if (Tree.TryGetValue(new ForumTree { ForumId = forumId }, out var forum))
+            {
+                return forum;
+            }
+            return null;
         }
     }
 }

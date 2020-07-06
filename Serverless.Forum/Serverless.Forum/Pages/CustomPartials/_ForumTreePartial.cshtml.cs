@@ -7,13 +7,13 @@ namespace Serverless.Forum.Pages.CustomPartials
 {
     public class _ForumTreePartialModel : PageModel
     {
-        public ForumDto Forums { get; }
+        public HashSet<ForumTree> Forums { get; }
         public IEnumerable<int> Path { get; }
         public int? ForumId { get; }
         public int? TopicId { get; }
         public bool ConstrainSize { get; }
 
-        public _ForumTreePartialModel(ForumDto forums, IEnumerable<int> path = null, int? forumId = null, int? topicId = null, bool constrainSize = false)
+        public _ForumTreePartialModel(HashSet<ForumTree> forums, IEnumerable<int> path = null, int? forumId = null, int? topicId = null, bool constrainSize = false)
         {
             Forums = forums;
             Path = path;

@@ -7,17 +7,21 @@ namespace Serverless.Forum.Pages
 {
     public class TopicDto
     {
-        public int? Id { get; set; } = null;
+        public int? TopicId { get; set; } = null;
 
         public int? ForumId { get; set; } = null;
 
-        public string Title { get; set; } = null;
+        public string TopicTitle { get; set; } = null;
 
-        public int? LastPosterId { get; set; } = null;
+        public int? TopicLastPosterId { get; set; } = null;
 
-        public string LastPosterName { get; set; } = null;
+        public string TopicLastPosterName { get; set; } = null;
 
-        public DateTime? LastPostTime { get; set; } = null;
+        public DateTime? LastPostTime => TopicLastPostTime?.ToUtcTime();
+
+        public TopicType? TopicType { get; set; } = null;
+
+        public long? TopicLastPostTime { get; set; } = null;
 
         public int? LastPostId { get; set; } = null;
 
@@ -27,7 +31,7 @@ namespace Serverless.Forum.Pages
 
         public bool Unread { get; set; } = false;
 
-        public string LastPosterColor { get; set; } = null;
+        public string TopicLastPosterColor { get; set; } = null;
 
         public int ViewCount { get; set; } = 0;
 

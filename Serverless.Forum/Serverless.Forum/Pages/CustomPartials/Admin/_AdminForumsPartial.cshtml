@@ -3,9 +3,7 @@
 
 @inject Services.ForumTreeService _forumTreeService
 @inject Services.AdminForumService _adminForumService
-@{
-    var (tree, forums, topics, tracking) = await _forumTreeService.GetExtendedForumTree(usr: Model.CurrentUser, fullTraversal: true);
-}
+
 <link rel="stylesheet" href="~/css/posting.css" />
 <div style="float:left">
     <h4>Administrare forumuri</h4>
@@ -94,7 +92,7 @@
                 Părinte forum
             </div>
             <div class="FlexRight PostInputWidth">
-                @Html.DropDownList("dto.parentId", await _adminForumService.FlatForumTreeAsListItem(Model.Forum.ParentId))
+                @Html.DropDownList("dto.parentId", await _adminForumService.FlatForumTreeAsListItem(Model.Forum.ParentId, Model.CurrentUser))
             </div>
         </div>
         <hr class="SubtypeSeparator" />

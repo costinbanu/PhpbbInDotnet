@@ -18,7 +18,7 @@ namespace Serverless.Forum.Pages
     {
         private bool _forceTreeRefresh;
 
-        public ForumDto Forums { get; private set; }
+        public HashSet<ForumTree> Forums { get; private set; }
         public List<TopicTransport> Topics { get; private set; }
         public string ForumTitle { get; private set; }
         public string ParentForumTitle { get; private set; }
@@ -40,8 +40,8 @@ namespace Serverless.Forum.Pages
             => await WithValidForum(ForumId, async (thisForum) =>
             {
                 ForumTitle = HttpUtility.HtmlDecode(thisForum?.ForumName ?? "untitled");
-                IEnumerable<dynamic> postCounts;
-                IEnumerable<PhpbbTopics> topics;
+                //IEnumerable<dynamic> postCounts;
+                IEnumerable<TopicDto> topics;
 
                 using (var connection = _context.Database.GetDbConnection())
                 {
@@ -49,18 +49,38 @@ namespace Serverless.Forum.Pages
                     var parent = await connection.QuerySingleOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @ParentId", new { thisForum.ParentId });
                     ParentForumId = parent?.ForumId;
                     ParentForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? Constants.FORUM_NAME);
-                    postCounts = (
-                        await connection.QueryAsync(
-                            @"SELECT topic_id, count(*) AS count
-                                FROM phpbb_posts
-                               WHERE forum_id = @ForumId
-                               GROUP BY topic_id",
-                            new { ForumId }
-                        )
-                    ).Select(c => new { TopicId = (int)c.topic_id, Count = (int)c.count });
-                    topics = await connection.QueryAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE forum_id = @ForumId OR topic_type = @topicType ORDER BY topic_last_post_time DESC", new { ForumId, topicType = TopicType.Global });
+                    //postCounts = (
+                    //    await connection.QueryAsync(
+                    //        @"SELECT topic_id, count(*) AS count
+                    //            FROM phpbb_posts
+                    //           WHERE forum_id = @ForumId
+                    //           GROUP BY topic_id",
+                    //        new { ForumId }
+                    //    )
+                    //).Select(c => new { TopicId = (int)c.topic_id, Count = (int)c.count });
+                    //topics = await connection.QueryAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE forum_id = @ForumId OR topic_type = @topicType ORDER BY topic_last_post_time DESC", new { ForumId, topicType = TopicType.Global });
+
+                    topics = await connection.QueryAsync<TopicDto>(
+                        @"SELECT t.topic_id, 
+		                        t.forum_id,
+		                        t.topic_title, 
+		                        count(p.post_id) AS post_count,
+		                        t.topic_views AS view_count,
+		                        t.topic_type,
+		                        t.topic_last_poster_id,
+		                        t.topic_last_poster_name,
+		                        t.topic_last_post_time,
+		                        t.topic_last_poster_colour,
+		                        t.topic_last_post_id
+	                        FROM forum.phpbb_topics t
+	                        JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
+                        WHERE t.forum_id = 16 OR topic_type = 3
+                        GROUP BY t.topic_id
+                        ORDER BY topic_last_post_time DESC",
+                        new { ForumId, topicType = TopicType.Global }
+                    );
                 }
-                Forums = await GetForumTree(forumId: ForumId, forceRefresh: _forceTreeRefresh);
+                (Forums, _) = await GetForumTree(forceRefresh: _forceTreeRefresh, forumId: ForumId);
                 var usr = await GetCurrentUserAsync();
 
                 Topics = (
@@ -71,26 +91,7 @@ namespace Serverless.Forum.Pages
                     select new TopicTransport
                     {
                         TopicType = groups.Key,
-                        Topics = from g in groups
-
-                                 let counts = postCounts.FirstOrDefault(p => p.TopicId == g.TopicId)
-                                 let postCount = counts == null ? 0 : counts.Count
-                                 let pageSize = usr.TopicPostsPerPage.ContainsKey(g.TopicId) ? usr.TopicPostsPerPage[g.TopicId] : Constants.DEFAULT_PAGE_SIZE
-
-                                 select new TopicDto
-                                 {
-                                     Id = g.TopicId,
-                                     Title = HttpUtility.HtmlDecode(g.TopicTitle),
-                                     LastPosterId = g.TopicLastPosterId == Constants.ANONYMOUS_USER_ID ? null as int? : g.TopicLastPosterId,
-                                     LastPosterName = HttpUtility.HtmlDecode(g.TopicLastPosterName),
-                                     LastPostTime = g.TopicLastPostTime.ToUtcTime(),
-                                     PostCount = g.TopicReplies,
-                                     Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={g.TopicId}&pageNum=1", postCount, pageSize, 1, "PageNum"),
-                                     Unread = IsTopicUnread(g.TopicId).RunSync(),
-                                     LastPosterColor = g.TopicLastPosterColour,
-                                     LastPostId = g.TopicLastPostId,
-                                     ViewCount = g.TopicViews
-                                 }
+                        Topics = groups
                     }
                 ).ToList();
 
@@ -101,42 +102,54 @@ namespace Serverless.Forum.Pages
             => await WithRegisteredUser(async () =>
             {
                 var usr = await GetCurrentUserAsync();
-                var tree = await GetForumTree(fullTraversal: true);
-                IEnumerable<dynamic> postCounts = null;
+                var tree = await GetForumTree();
+                IEnumerable<TopicDto> topics = null;
                 using (var connection = _context.Database.GetDbConnection())
                 {
                     await connection.OpenIfNeeded();
-                    postCounts = await connection.QueryAsync(
-                        "SELECT topic_id, count(post_id) as post_count FROM phpbb_posts WHERE topic_id IN @topicList GROUP BY topic_id",
+                    topics = await connection.QueryAsync<TopicDto>(
+                        @"SELECT t.topic_id, 
+	                            t.forum_id,
+	                            t.topic_title, 
+                                count(p.post_id) AS post_count,
+                                t.topic_views AS view_count,
+                                t.topic_last_poster_id,
+                                t.topic_last_poster_name,
+                                t.topic_last_post_time,
+                                t.topic_last_poster_colour,
+                                t.topic_last_post_id
+                            FROM forum.phpbb_topics t
+                            JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
+                        WHERE t.topic_id IN @topicList
+                        GROUP BY t.topic_id",
                         new { topicList = tree.Tracking.Select(t => t.TopicId).Distinct() }
                     );
                 }
 
-                var topics = new List<TopicDto>();
-                foreach (var track in tree.Tracking.Skip(((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE).Take(Constants.DEFAULT_PAGE_SIZE))
-                {
-                    if (!tree.TopicData.TryGetValue(new PhpbbTopics { TopicId = track.TopicId }, out var topic))
-                    {
-                        continue;
-                    }
-                    var postCount = (int)(postCounts?.FirstOrDefault(p => p.topic_id == topic.TopicId)?.post_count ?? 0);
-                    var pageSize = usr.TopicPostsPerPage.ContainsKey(topic.TopicId) ? usr.TopicPostsPerPage[topic.TopicId] : Constants.DEFAULT_PAGE_SIZE;
-                    topics.Add(new TopicDto
-                    {
-                        Id = topic.TopicId,
-                        ForumId = topic.ForumId,
-                        Title = HttpUtility.HtmlDecode(topic.TopicTitle),
-                        LastPosterId = topic.TopicLastPosterId == Constants.ANONYMOUS_USER_ID ? null as int? : topic.TopicLastPosterId,
-                        LastPosterName = HttpUtility.HtmlDecode(topic.TopicLastPosterName),
-                        LastPostTime = topic.TopicLastPostTime.ToUtcTime(),
-                        PostCount = topic.TopicReplies,
-                        Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", postCount, pageSize, 1, "PageNum"),
-                        Unread = true,
-                        LastPosterColor = topic.TopicLastPosterColour,
-                        LastPostId = topic.TopicLastPostId,
-                        ViewCount = topic.TopicViews
-                    });
-                }
+                //foreach (var track in tree.Tracking.Skip(((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE).Take(Constants.DEFAULT_PAGE_SIZE))
+                //{
+                //    if (!tree.TopicData.TryGetValue(new PhpbbTopics { TopicId = track.TopicId }, out var topic))
+                //    {
+                //        continue;
+                //    }
+                //    var postCount = (int)(postCounts?.FirstOrDefault(p => p.topic_id == topic.TopicId)?.post_count ?? 0);
+                //    var pageSize = usr.TopicPostsPerPage.ContainsKey(topic.TopicId) ? usr.TopicPostsPerPage[topic.TopicId] : Constants.DEFAULT_PAGE_SIZE;
+                //    topics.Add(new TopicDto
+                //    {
+                //        TopicId = topic.TopicId,
+                //        ForumId = topic.ForumId,
+                //        TopicTitle = HttpUtility.HtmlDecode(topic.TopicTitle),
+                //        TopicLastPosterId = topic.TopicLastPosterId == Constants.ANONYMOUS_USER_ID ? null as int? : topic.TopicLastPosterId,
+                //        TopicLastPosterName = HttpUtility.HtmlDecode(topic.TopicLastPosterName),
+                //        LastPostTime = topic.TopicLastPostTime.ToUtcTime(),
+                //        PostCount = topic.TopicReplies,
+                //        Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", postCount, pageSize, 1, "PageNum"),
+                //        Unread = true,
+                //        TopicLastPosterColor = topic.TopicLastPosterColour,
+                //        LastPostId = topic.TopicLastPostId,
+                //        ViewCount = topic.TopicViews
+                //    });
+                //}
 
                 Topics = new List<TopicTransport> { new TopicTransport { Topics = topics.OrderByDescending(t => t.LastPostTime) } };
                 IsNewPostView = true;
@@ -148,8 +161,8 @@ namespace Serverless.Forum.Pages
             => await WithRegisteredUser(async () =>
             {
                 var usr = await GetCurrentUserAsync();
-                var tree = await GetForumTree(fullTraversal: true);
-                IEnumerable<dynamic> ownTopics = null;
+                var tree = await GetForumTree();
+                IEnumerable<TopicDto> topics = null;
                 var totalCount = 0;
                 using (var connection = _context.Database.GetDbConnection())
                 {
@@ -158,34 +171,33 @@ namespace Serverless.Forum.Pages
                         "CALL `forum`.`get_own_topics`(@userId, @skip, @take)",
                         new { usr.UserId, skip = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE, take = Constants.DEFAULT_PAGE_SIZE }
                     );
-                    ownTopics = await multi.ReadAsync();
+                    topics = await multi.ReadAsync<TopicDto>();
                     totalCount = unchecked((int)await multi.ReadSingleAsync<long>());
                 }
 
-                var topics = new List<TopicDto>();
-                foreach (var ownTopic in ownTopics)
-                {
-                    if (!tree.TopicData.TryGetValue(new PhpbbTopics { TopicId = unchecked((int)ownTopic.topic_id) }, out var topic))
-                    {
-                        continue;
-                    }
-                    var pageSize = usr.TopicPostsPerPage.ContainsKey(topic.TopicId) ? usr.TopicPostsPerPage[topic.TopicId] : Constants.DEFAULT_PAGE_SIZE;
-                    topics.Add(new TopicDto
-                    {
-                        Id = topic.TopicId,
-                        ForumId = topic.ForumId,
-                        Title = HttpUtility.HtmlDecode(topic.TopicTitle),
-                        LastPosterId = topic.TopicLastPosterId == Constants.ANONYMOUS_USER_ID ? null as int? : topic.TopicLastPosterId,
-                        LastPosterName = HttpUtility.HtmlDecode(topic.TopicLastPosterName),
-                        LastPostTime = topic.TopicLastPostTime.ToUtcTime(),
-                        PostCount = topic.TopicReplies,
-                        Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", (int)ownTopic.post_count, pageSize, 1, "PageNum"),
-                        Unread = IsTopicUnread(topic.TopicId).RunSync(),
-                        LastPosterColor = topic.TopicLastPosterColour,
-                        LastPostId = topic.TopicLastPostId,
-                        ViewCount = topic.TopicViews
-                    });
-                }
+                //foreach (var ownTopic in ownTopics)
+                //{
+                //    if (!tree.TopicData.TryGetValue(new PhpbbTopics { TopicId = unchecked((int)ownTopic.topic_id) }, out var topic))
+                //    {
+                //        continue;
+                //    }
+                //    var pageSize = usr.TopicPostsPerPage.ContainsKey(topic.TopicId) ? usr.TopicPostsPerPage[topic.TopicId] : Constants.DEFAULT_PAGE_SIZE;
+                //    topics.Add(new TopicDto
+                //    {
+                //        TopicId = topic.TopicId,
+                //        ForumId = topic.ForumId,
+                //        TopicTitle = HttpUtility.HtmlDecode(topic.TopicTitle),
+                //        TopicLastPosterId = topic.TopicLastPosterId == Constants.ANONYMOUS_USER_ID ? null as int? : topic.TopicLastPosterId,
+                //        TopicLastPosterName = HttpUtility.HtmlDecode(topic.TopicLastPosterName),
+                //        LastPostTime = topic.TopicLastPostTime.ToUtcTime(),
+                //        PostCount = topic.TopicReplies,
+                //        Pagination = new _PaginationPartialModel($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", (int)ownTopic.post_count, pageSize, 1, "PageNum"),
+                //        Unread = IsTopicUnread(topic.TopicId).RunSync(),
+                //        TopicLastPosterColor = topic.TopicLastPosterColour,
+                //        LastPostId = topic.TopicLastPostId,
+                //        ViewCount = topic.TopicViews
+                //    });
+                //}
 
                 Topics = new List<TopicTransport> { new TopicTransport { Topics = topics.OrderByDescending(t => t.LastPostTime) } };
                 IsOwnPostView = true;
@@ -197,7 +209,7 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnPostMarkForumsRead()
             => await WithRegisteredUser(async () => await WithValidForum(ForumId, async (_) =>
             {
-                var curForum = (await _forumService.GetForumTree(usr: await GetCurrentUserAsync(), forumId: ForumId)).FirstOrDefault(f => f.ForumId == ForumId);
+                var curForum = (await _forumService.GetForumTree(await GetCurrentUserAsync(), false, forumId: ForumId)).FirstOrDefault(f => f.ForumId == ForumId);
                 foreach (var child in curForum.ChildrenList)
                 {
                     await UpdateTracking(_context, child);

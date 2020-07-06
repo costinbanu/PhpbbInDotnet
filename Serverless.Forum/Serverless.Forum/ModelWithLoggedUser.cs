@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
@@ -173,26 +174,8 @@ namespace Serverless.Forum
             return post;
         }
 
-        public async Task<ForumDto> GetForumTree(int? forumId = null, bool forceRefresh = false, bool fullTraversal = false, bool excludePasswordProtected = false)
-        {
-            if (forceRefresh || _tree == null || (fullTraversal && !_wasFullTraversal))
-            {
-                var usr = await GetCurrentUserAsync();
-                var (tree, forums, topics, tracking) = await _forumService.GetExtendedForumTree(forumId: forumId, usr: usr, forceRefresh: forceRefresh, fullTraversal: fullTraversal, excludePasswordProtected: excludePasswordProtected);
-                _tree = new ForumDto(tree.FirstOrDefault(), tree, forums, topics, tracking);
-            }
-            _wasFullTraversal = fullTraversal;
-            return _tree;
-        }
-
-        public async Task<ForumTree> GetForumRoot(bool forceRefresh = false)
-        {
-            if (forceRefresh || _root == null)
-            {
-                _root = (await GetForumTree(forceRefresh: forceRefresh)).Tree.FirstOrDefault(f => f.Level == 0);
-            }
-            return _root;
-        }
+        public async Task<(HashSet<ForumTree> Tree, HashSet<Tracking> Tracking)> GetForumTree(bool forceRefresh = false, int? forumId = null)
+            => (await _forumService.GetForumTree(await GetCurrentUserAsync(), forceRefresh, forumId), await _forumService.GetForumTracking(await GetCurrentUserAsync(), forceRefresh));
 
         #endregion Forum for user
 
@@ -242,7 +225,7 @@ namespace Serverless.Forum
 
                 var usr = await GetCurrentUserAsync();
                 var restricted = await _forumService.GetRestrictedForumList(usr);
-                var tree = await _forumService.GetForumTree(forumId: forumId);
+                var tree = await _forumService.GetForumTree(usr, false); //(forumId: forumId);
                 var restrictedAncestor = (
                     from t in tree.FirstOrDefault(f => f.ForumId == forumId)?.PathList?.DefaultIfEmpty() ?? new HashSet<int>()
                     join r in restricted

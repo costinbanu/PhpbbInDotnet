@@ -186,14 +186,15 @@ namespace Serverless.Forum.Services
                 ).ToListAsync()
             );
 
-        public async Task<List<SelectListItem>> FlatForumTreeAsListItem(int parentId)
+        public async Task<List<SelectListItem>> FlatForumTreeAsListItem(int parentId, LoggedUser user)
         {
-            var (tree, forums, topics, tracking) = await _forumService.GetExtendedForumTree(fullTraversal: true);
+            //var (tree, forums, topics, tracking) = await _forumService.GetExtendedForumTree(fullTraversal: true);
+            var tree = await _forumService.GetForumTree(user, false);
             var list = new List<SelectListItem>();
 
             int getOrder(int forumId)
             {
-                if (forums.TryGetValue(new PhpbbForums { ForumId = forumId }, out var forum))
+                if (tree.TryGetValue(new ForumTree { ForumId = forumId }, out var forum))
                 {
                     return forum.LeftId;
                 }
@@ -207,7 +208,7 @@ namespace Serverless.Forum.Services
                     return;
                 }
 
-                if (forums.TryGetValue(new PhpbbForums { ForumId = cur }, out var forum))
+                if (tree.TryGetValue(new ForumTree { ForumId = cur }, out var forum))
                 {
                     var indent = new string('-', node.Level);
                     list.Add(new SelectListItem($"{indent}{HttpUtility.HtmlDecode(forum.ForumName)}", forum.ForumId.ToString(), forum.ForumId == parentId));

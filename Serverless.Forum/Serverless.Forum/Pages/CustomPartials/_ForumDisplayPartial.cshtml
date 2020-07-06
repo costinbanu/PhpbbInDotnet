@@ -7,6 +7,7 @@
 
 <link rel="stylesheet" href="~/css/pagination.css" />
 
+
 @if (Model.ShowTitle && Model.Categories.Any())
 {
     <h3 style="float:left">Categorii</h3>
@@ -18,9 +19,8 @@
     <div class="FlexRow Category RowMargin">
         @Html.Raw(category.ForumName)
     </div>
-    @foreach (var f in Model.Forum.ForumData.Where(f => f.ParentId == category.ForumId).OrderBy(f => f.LeftId))
+    @foreach (var forum in Model.GetChildrenForums(category.ForumId).OrderBy(f => f.LeftId))
     {
-        var forum = await _forumService.GetForumWithCompleteSummary(f);
         var isUnread = false;
         if ((Model.LoggedUser?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
         {
@@ -58,9 +58,8 @@
 }
 
 @{ var index = 0; }
-@foreach (var f in Model.SubForums)
+@foreach (var forum in Model.SubForums)
 {
-    var forum = await _forumService.GetForumWithCompleteSummary(f);
     var isUnread = false;
     if ((Model.LoggedUser?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
     {
