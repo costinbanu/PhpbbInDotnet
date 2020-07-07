@@ -2,9 +2,9 @@
 using Dapper;
 using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.ForumDb;
+using Serverless.Forum.ForumDb.Entities;
 using Serverless.Forum.Utilities;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -48,8 +48,8 @@ namespace Serverless.Forum.Services
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex);
-                return ("A intervenit o eroare, încearcă din nou.", false);
+                var id = _utils.HandleError(ex);
+                return ($"A intervenit o eroare, încearcă din nou. ID: {id}", false);
             }
         }
 
@@ -82,8 +82,8 @@ namespace Serverless.Forum.Services
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex);
-                return ("A intervenit o eroare, încearcă din nou.", false);
+                var id = _utils.HandleError(ex);
+                return ($"A intervenit o eroare, încearcă din nou. ID: {id}", false);
             }
         }
 
@@ -127,8 +127,8 @@ namespace Serverless.Forum.Services
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex);
-                return ("A intervenit o eroare, încearcă din nou.", false);
+                var id = _utils.HandleError(ex);
+                return ($"A intervenit o eroare, încearcă din nou. ID: {id}", false);
             }
         }
 
@@ -180,8 +180,8 @@ namespace Serverless.Forum.Services
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex);
-                return ("A intervenit o eroare, încearcă din nou.", false);
+                var id = _utils.HandleError(ex);
+                return ($"A intervenit o eroare, încearcă din nou. ID: {id}", false);
             }
         }
 
@@ -219,8 +219,8 @@ namespace Serverless.Forum.Services
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex);
-                return ("A intervenit o eroare, încearcă din nou.", false);
+                var id = _utils.HandleError(ex);
+                return ($"A intervenit o eroare, încearcă din nou. ID: {id}", false);
             }
         }
 

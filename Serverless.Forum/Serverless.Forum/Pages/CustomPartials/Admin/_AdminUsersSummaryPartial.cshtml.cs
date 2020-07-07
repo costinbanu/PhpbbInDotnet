@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
-using Serverless.Forum.ForumDb;
+using Serverless.Forum.ForumDb.Entities;
 using System.Collections.Generic;
 
 namespace Serverless.Forum.Pages.CustomPartials.Admin

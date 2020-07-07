@@ -77,3 +77,10 @@ function roundToNextEvenNumber(value) {
     }
     return value;
 }
+
+function showForumTree(caller) {
+    showElement('forumTree', null, () => {
+        $('html, body').animate({ scrollTop: $(caller).position().top + $('#topBanner').outerHeight() + 1000 }, 'slow');
+        $('#treeContainer').scrollTop($('.selectedTreeNode').offset().top - $('#treeContainer').offset().top - 50);
+    });
+}

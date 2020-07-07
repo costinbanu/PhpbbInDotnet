@@ -1,14 +1,19 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Serverless.Forum.Pages
 {
     public class ErrorModel : PageModel
     {
-        public string RequestId { get; set; }
+        [BindProperty(SupportsGet = true)]
+        public string ErrorId { get; set; }
 
-        public void OnGet(string id)
+        [BindProperty(SupportsGet = true)]
+        public bool IsUnauthorized { get; set; }
+
+        public void OnGet()
         {
-            RequestId = id;
+
         }
     }
 }

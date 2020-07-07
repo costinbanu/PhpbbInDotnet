@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
+using Serverless.Forum.ForumDb.Entities;
 using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
@@ -196,7 +197,7 @@ namespace Serverless.Forum.Services
             {
                 if (tree.TryGetValue(new ForumTree { ForumId = forumId }, out var forum))
                 {
-                    return forum.LeftId;
+                    return forum.LeftId ?? 0;
                 }
                 return forumId;
             }

@@ -6,7 +6,9 @@ using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace Serverless.Forum.Services
 {
@@ -15,10 +17,7 @@ namespace Serverless.Forum.Services
         private readonly ForumDbContext _context;
         private HashSet<ForumTree> _tree = null;
         private HashSet<Tracking> _tracking = null;
-        private HashSet<PhpbbForums> _forumData = null;
-        private HashSet<PhpbbTopics> _topicData = null;
         private IEnumerable<(int forumId, bool hasPassword)> _restrictedForums = null;
-        private bool _wasFullTraversal = false;
 
         public ForumTreeService(ForumDbContext context)
         {
@@ -35,31 +34,62 @@ namespace Serverless.Forum.Services
             return _restrictedForums;
         }
 
-        public async Task<HashSet<ForumTree>> GetForumTree(LoggedUser user, bool forceRefresh, int? forumId = null)
+        public async Task<HashSet<ForumTree>> GetForumTree(LoggedUser user, bool forceRefresh)
         {
-            if (_tree != null /*&& fullTraversal && _wasFullTraversal*/ && !forceRefresh)
+            if (_tree != null && !forceRefresh)
             {
                 return _tree;
             }
 
-            //if (_tree != null && !fullTraversal && _wasFullTraversal && forumId.HasValue)
-            //{
-            //    var root = _tree.FirstOrDefault(t => t.ForumId == forumId);
-            //    _wasFullTraversal = fullTraversal;
-            //    return new HashSet<ForumTree>(_tree.Where(t => t.ForumId != forumId && !(t.PathList?.Contains(forumId.Value) ?? false) && Math.Abs(root.Level - t.Level) > 2));
-            //}
-
-            //_wasFullTraversal = fullTraversal;
-
+            var restrictedForums = (user?.AllPermissions?.Where(p => p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE)?.Select(p => p.ForumId) ?? Enumerable.Empty<int>()).ToHashSet();
+            var tracking = await GetForumTracking(user, forceRefresh);
             using (var connection = _context.Database.GetDbConnection())
             {
                 await connection.OpenIfNeeded();
-                var restrictedForums = user?.AllPermissions?.Where(p => p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE)?.Select(p => p.ForumId) ?? Enumerable.Empty<int>();
-                _tree = new HashSet<ForumTree>(await connection.QueryAsync<ForumTree>(
-                    "CALL `forum`.`get_forum_tree`(@restricted, @forumId);",
-                    new { restricted = string.Join(',', restrictedForums), forumId })
-                );
+                _tree = (await connection.QueryAsync<ForumTree>("CALL `forum`.`get_forum_tree`();")).ToHashSet();
             }
+
+            void dfs(int forumId)
+            {
+                var node = GetTreeNode(_tree, forumId);
+                if (node == null)
+                {
+                    return;
+                }
+
+                node.IsUnread = tracking.Contains(new Tracking { ForumId = forumId }, new TrackingComparerByForumId());
+                node.IsRestricted = restrictedForums.Contains(forumId);
+                foreach (var childForumId in node.ChildrenList ?? new HashSet<int>())
+                {
+                    var childForum = GetTreeNode(_tree, childForumId);
+                    if(childForum != null)
+                    {
+                        childForum.IsRestricted = node.IsRestricted;
+                        childForum.HasPassword |= node.HasPassword;
+                        if (childForum.PathList == null)
+                        {
+                            childForum.PathList = new List<int>(node.PathList ?? new List<int>());
+                        }
+                        childForum.PathList.Add(childForumId);
+                        childForum.Level = node.Level + 1;
+
+                        dfs(childForumId);
+
+                        node.IsUnread |= childForum.IsUnread || tracking.Contains(new Tracking { ForumId = childForumId }, new TrackingComparerByForumId());
+                        if ((node.ForumLastPostTime ?? 0) < (childForum.ForumLastPostTime ?? 0))
+                        {
+                            node.ForumLastPosterColour = childForum.ForumLastPosterColour;
+                            node.ForumLastPosterId = childForum.ForumLastPosterId;
+                            node.ForumLastPosterName = childForum.ForumLastPosterName;
+                            node.ForumLastPostId = childForum.ForumLastPostId;
+                            node.ForumLastPostSubject = childForum.ForumLastPostSubject;
+                            node.ForumLastPostTime = childForum.ForumLastPostTime;
+                        }
+                    }
+                }
+            }
+
+            dfs(0);
 
             return _tree;
         }
@@ -77,103 +107,8 @@ namespace Serverless.Forum.Services
             return _tracking;
         }
 
-        //public async Task<(HashSet<ForumTree> tree, HashSet<PhpbbForums> forums, HashSet<PhpbbTopics> topics, HashSet<Tracking> tracking)> GetExtendedForumTree(int? forumId = null, LoggedUser usr = null, bool forceRefresh = false, bool fullTraversal = false, bool excludePasswordProtected = false)
-        //{
-        //    if (new object[] { _tree, _forumData, _topicData }.Any(x => x == null) || forceRefresh || (fullTraversal && !_wasFullTraversal) || (_tracking == null && (usr?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID))
-        //    {
-        //        var tree = await GetForumTree(forumId: forumId, usr: usr, fullTraversal: fullTraversal);
-        //        tree.RemoveWhere(t => t.Restricted && (!excludePasswordProtected || t.PasswordProtected));
-        //        var userId = usr?.UserId;
-        //        using var connection = _context.Database.GetDbConnection();
-        //        await connection.OpenIfNeeded();
-        //        using var multi = await connection.QueryMultipleAsync(
-        //            "SELECT * FROM phpbb_forums WHERE forum_id IN @forumIds; " +
-        //            "SELECT * FROM phpbb_topics WHERE topic_id IN @topicIds; " +
-        //            "CALL `forum`.`get_post_tracking`(@userId, @topicId, @forumId);",
-        //            new
-        //            {
-        //                forumIds = tree.SelectMany(x => x.ChildrenList ?? new HashSet<int>()).Union(tree.Select(x => x.ForumId)).Distinct(),
-        //                topicIds = tree.SelectMany(x => x.TopicsList ?? new HashSet<int>()).Distinct(),
-        //                userId,
-        //                topicId = null as int?,
-        //                forumId = null as int?
-        //            });
-        //        _forumData = new HashSet<PhpbbForums>(await multi.ReadAsync<PhpbbForums>());
-        //        _topicData = new HashSet<PhpbbTopics>(await multi.ReadAsync<PhpbbTopics>());
-        //        _tracking = new HashSet<Tracking>(await multi.ReadAsync<Tracking>());
-        //    }
-        //    return (_tree, _forumData, _topicData, _tracking);
-        //}
-
-        //public async Task<PhpbbForums> GetForumWithCompleteSummary(PhpbbForums root)
-        //{
-        //    var (tree, forums, _, _) = await GetExtendedForumTree(fullTraversal: true);
-        //    if (!tree.TryGetValue(new ForumTree { ForumId = root.ForumId }, out var treeNode))
-        //    {
-        //        return root;
-        //    }
-
-        //    PhpbbForums maxForumChild = null;
-        //    foreach (var child in treeNode.ChildrenList ?? new HashSet<int>())
-        //    { 
-        //        if (!forums.TryGetValue(new PhpbbForums { ForumId = child }, out var childForum))
-        //        {
-        //            continue;
-        //        }
-        //        var curSummary = await GetForumWithCompleteSummary(childForum);
-        //        if ((maxForumChild?.ForumLastPostTime ?? 0) < curSummary.ForumLastPostTime)
-        //        {
-        //            maxForumChild = curSummary;
-        //        }
-        //    }
-
-        //    if (maxForumChild == null)
-        //    {
-        //        return root;
-        //    }
-
-        //    if (root.ForumLastPostTime < (maxForumChild?.ForumLastPostTime ?? 0))
-        //    {
-        //        root.ForumLastPosterColour = maxForumChild.ForumLastPosterColour;
-        //        root.ForumLastPosterId = maxForumChild.ForumLastPosterId;
-        //        root.ForumLastPosterName = maxForumChild.ForumLastPosterName;
-        //        root.ForumLastPostId = maxForumChild.ForumLastPostId;
-        //        root.ForumLastPostSubject = maxForumChild.ForumLastPostSubject;
-        //        root.ForumLastPostTime = maxForumChild.ForumLastPostTime;
-        //    }
-        //    return root;
-        //}
-
         public async Task<bool> IsForumUnread(int forumId, LoggedUser user, bool forceRefresh = false)
-        {
-            var tree = await GetForumTree(user, forceRefresh);
-            var tracking = await GetForumTracking(user, forceRefresh);
-            if (tracking.Contains(new Tracking { ForumId = forumId }, new TrackingComparerByForumId()))
-            {
-                return true;
-            }
-            if (!tree.TryGetValue(new ForumTree { ForumId = forumId }, out var curForum))
-            {
-                return false;
-            }
-            foreach (var topic in curForum.TopicsList ?? new HashSet<int>())
-            {
-                if (await IsTopicUnread(topic, user, forceRefresh))
-                {
-                    return true;
-                }
-            }
-            bool childUnread = false;
-            foreach (var child in curForum.ChildrenList ?? new HashSet<int>())
-            {
-                if (tracking.Contains(new Tracking { ForumId = child }, new TrackingComparerByForumId()))
-                {
-                    return true;
-                }
-                childUnread |= await IsForumUnread(child, user, forceRefresh);
-            }
-            return childUnread;
-        }
+            => GetTreeNode(await GetForumTree(user, forceRefresh), forumId)?.IsUnread ?? false;
 
         public async Task<bool> IsTopicUnread(int topicId, LoggedUser user, bool forceRefresh = false)
         {
@@ -188,6 +123,40 @@ namespace Serverless.Forum.Services
                 return false;
             }
             return new HashSet<int>(new[] { postId }).IsSubsetOf(item.Posts);
+        }
+
+        public ForumTree GetTreeNode(HashSet<ForumTree> tree, int forumId)
+            => tree.TryGetValue(new ForumTree { ForumId = forumId }, out var node) ? node : null;
+
+        public string GetPathText(HashSet<ForumTree> tree, int forumId)
+        {
+            var pathParts = GetTreeNode(tree, forumId).PathList ?? new List<int>();
+            var sb = new StringBuilder();
+            for (var i = 0; i < pathParts.Count; i++)
+            {
+                var node = GetTreeNode(tree, pathParts[i]);
+                if (node?.IsRestricted ?? false)
+                {
+                    continue;
+                }
+                sb = sb.Append(HttpUtility.HtmlDecode(node?.ForumName ?? Constants.FORUM_NAME));
+                if (i < pathParts.Count - 1)
+                {
+                    sb = sb.Append(" → ");
+                }
+            }
+            return sb.ToString();
+        }
+
+        public bool HasUnrestrictedChildren(HashSet<ForumTree> tree, int forumId)
+        {
+            var node = GetTreeNode(tree, forumId);
+            if (node == null)
+            {
+                return false;
+            }
+
+            return node.ChildrenList?.Select(x => GetTreeNode(tree, x))?.Any(x => !x.IsRestricted) ?? false;
         }
     }
 }

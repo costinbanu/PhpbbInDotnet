@@ -31,7 +31,7 @@ namespace Serverless.Forum.Pages
 
         public bool Unread { get; set; } = false;
 
-        public string TopicLastPosterColor { get; set; } = null;
+        public string TopicLastPosterColour { get; set; } = null;
 
         public int ViewCount { get; set; } = 0;
 

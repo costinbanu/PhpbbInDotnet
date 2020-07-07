@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
+using Serverless.Forum.ForumDb.Entities;
 using Serverless.Forum.Pages.CustomPartials;
 using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;

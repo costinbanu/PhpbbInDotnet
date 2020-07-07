@@ -30,7 +30,7 @@ namespace Serverless.Forum.Pages.CustomPartials
 
         private ForumTree GetForum(int forumId)
         {
-            if (Tree.TryGetValue(new ForumTree { ForumId = forumId }, out var forum))
+            if (Tree != null && Tree.TryGetValue(new ForumTree { ForumId = forumId }, out var forum))
             {
                 return forum;
             }

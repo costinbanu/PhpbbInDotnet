@@ -313,16 +313,15 @@ else if (!IsAnonymous)
     <hr />
 }
 
-<span onclick="showElement('forumTree', null, () => $('html, body').animate({ scrollTop: $(this).position().top + $('#topBanner').outerHeight() + 1000 }, 'slow'));" style="cursor:pointer; font-weight:bold; display: block; clear: both;">Navigare - alege destinația &#x2935;</span>
+<span onclick="showForumTree(this)" style="cursor:pointer; font-weight:bold; display: block; clear: both;">Navigare - alege destinația &#x2935;</span>
 <div id="forumTree" style="display:none">
     <p>&nbsp;</p>
     @await Html.PartialAsync(
         "_ForumTreePartial",
         new CustomPartials._ForumTreePartialModel(
-            forums: await Model.GetForumTree(fullTraversal: true),
+            tree: (await Model.GetForumTree()).Tree,
             forumId: Model.ForumId,
             topicId: Model.TopicId,
-            path: (await Model.GetForumTree(fullTraversal: true)).Tree.FirstOrDefault(t => t.ForumId == Model.ForumId).PathList,
             constrainSize: true
         ),
         ViewData

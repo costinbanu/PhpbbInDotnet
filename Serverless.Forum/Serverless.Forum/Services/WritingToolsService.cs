@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Serverless.Forum.ForumDb;
+using Serverless.Forum.ForumDb.Entities;
 using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;

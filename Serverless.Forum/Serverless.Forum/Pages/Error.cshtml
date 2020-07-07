@@ -6,11 +6,19 @@
 
 <h2 class="text-danger">A intervenit o eroare.</h2>
 
-
-<p>
-    <strong>ID: </strong> <code>@Model.RequestId</code>
-</p>
-
-<p>
-    Dacă eroarea persistă, scrieți la <a href="mailto:admin@metrouusor.com">admin@@metrouusor.com</a> și includeți IDul de mai sus.
-</p>
+@if (!Model.IsUnauthorized)
+{
+    if (!string.IsNullOrWhiteSpace(Model.ErrorId))
+    {
+        <p>
+            <strong>ID: </strong> <code>@Model.ErrorId</code>
+        </p>
+    }
+    <p>
+        Dacă eroarea persistă, scrieți la <a href="mailto:admin@metrouusor.com">admin@@metrouusor.com</a> și includeți IDul de mai sus.
+    </p>
+}
+else
+{
+    <p>Nu ești autorizat să vizitezi pagina solicitată.</p>
+}

@@ -5,7 +5,6 @@
     <UserSecretsId>d3c5a46f-f000-450d-b479-599c78119804</UserSecretsId>
     <LangVersion>8.0</LangVersion>
     <TypeScriptToolsVersion>3.1</TypeScriptToolsVersion>
-    <Platforms>AnyCPU;x86</Platforms>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>

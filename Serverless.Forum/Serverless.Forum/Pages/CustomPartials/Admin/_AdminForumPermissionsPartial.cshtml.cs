@@ -1,10 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
 using Serverless.Forum.Contracts;
-using Serverless.Forum.ForumDb;
+using Serverless.Forum.ForumDb.Entities;
 using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Serverless.Forum.Pages.CustomPartials.Admin
 {

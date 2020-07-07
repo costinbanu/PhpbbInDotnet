@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.ForumDb;
+using Serverless.Forum.ForumDb.Entities;
 using Serverless.Forum.Pages.CustomPartials.Email;
 using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
@@ -290,9 +291,7 @@ namespace Serverless.Forum.Pages
             string preferredTopicTitle = null;
             if (preferredTopic != null)
             {
-                var tree = await GetForumTree(forumId: preferredTopic.ForumId, excludePasswordProtected: true);
-                var pathParts = tree.Tree.FirstOrDefault(x => x.ForumId == preferredTopic.ForumId).PathList;
-                preferredTopicTitle = string.Join(" → ", tree.ForumData.Where(f => pathParts?.Contains(f.ForumId) ?? false).Select(f => HttpUtility.HtmlDecode(f.ForumName)).Union(new[] { HttpUtility.HtmlDecode(preferredTopic.TopicTitle) }));
+                preferredTopicTitle = _forumService.GetPathText((await GetForumTree()).Tree, preferredTopic.ForumId);
             }
             PreferredTopic = (preferredTopic.TopicId, preferredTopicTitle);
             PostsPerDay = TotalPosts / DateTime.UtcNow.Subtract(cur.UserRegdate.ToUtcTime()).TotalDays;

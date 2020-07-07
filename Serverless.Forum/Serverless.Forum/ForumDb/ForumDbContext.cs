@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Serverless.Forum.ForumDb.Entities;
 
 namespace Serverless.Forum.ForumDb
 {

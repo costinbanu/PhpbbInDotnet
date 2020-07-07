@@ -27,6 +27,7 @@
         .bullet {
             display: none;
         }
+
         .newline {
             display: block;
         }
@@ -35,6 +36,9 @@
 
 @if (!IsAnonymous)
 {
+    <form asp-page-handler="MarkForumsRead" method="post" name="MarkForumsRead">
+        @Html.AntiForgeryToken()
+    </form>
     <div class="linksContainer">
         <a asp-page="ViewForum" asp-page-handler="ownPosts">Vezi subiectele proprii</a>
         <span class="bullet">&nbsp;&bull;&nbsp;</span>
@@ -42,7 +46,7 @@
         <a asp-page="ViewForum" asp-page-handler="newPosts">Vezi mesajele noi</a>
         <span class="bullet">&nbsp;&bull;&nbsp;</span>
         <p class="newline"></p>
-        <a href="#" onclick="MarkForumsRead.submit()">Marchează forumurile ca citite</a>
+        <a href="javascript:MarkForumsRead.submit()">Marchează forumurile ca citite</a>
     </div>
 }
 @await Html.PartialAsync(

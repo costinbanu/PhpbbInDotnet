@@ -3,6 +3,7 @@
 @using Microsoft.EntityFrameworkCore;
 @using Serverless.Forum.Contracts;
 @using Serverless.Forum.ForumDb;
+@using Serverless.Forum.ForumDb.Entities;
 @using Serverless.Forum.Utilities;
 
 @inject ForumDbContext _context
@@ -40,17 +41,17 @@
 
 @foreach (var permissions in groupedPermissions)
 {
-        <div class="FlexCenter">
-            <div>@permissions.Key.Name</div>
-            <div class="FlexRight PostInputWidth">
-                @Html.DropDownList(
-                    $"dto.{Model.EntityType}ForumPermissions[{index}]",
-                    permissions.Select(p => new SelectListItem(p.RoleDescription, $"{permissions.Key.Id}_{p.RoleId}", p.HasRole)),
-                    new { style = "width:75%" }
-                )
-                &nbsp;Șterge? <input type="checkbox" name="dto.@(Model.EntityType)PermissionToRemove" value="@(index++)" />
-            </div>
+    <div class="FlexCenter">
+        <div>@permissions.Key.Name</div>
+        <div class="FlexRight PostInputWidth">
+            @Html.DropDownList(
+                $"dto.{Model.EntityType}ForumPermissions[{index}]",
+                permissions.Select(p => new SelectListItem(p.RoleDescription, $"{permissions.Key.Id}_{p.RoleId}", p.HasRole)),
+                new { style = "width:75%" }
+            )
+            &nbsp;Șterge? <input type="checkbox" name="dto.@(Model.EntityType)PermissionToRemove" value="@(index++)" />
         </div>
+    </div>
 }
 
 <script type="text/javascript">
@@ -74,23 +75,23 @@
         else
         {
             var dropDownItems = new List<SelectListItem>
-            {
+    {
                 new SelectListItem("Alege un grup", "0", true, true)
             };
             dropDownItems.AddRange(remainingEntities.Select(e => new SelectListItem(e.Key, e.Value.ToString())));
             @Html.DropDownList($"permissionsGroup", dropDownItems, new { onchange = "changeGroupId(this.options[this.selectedIndex].value, this.options[this.selectedIndex].text)" });
         }
         <p id="tributeHolder" style="position:relative">&nbsp;</p>
-            <div class="FlexCenter">
-                <div id="entityName_@(Model.Self)">@entityName nou</div>
-                <div class="FlexRight PostInputWidth">
-                    @Html.DropDownList(
-                        $"dto.{Model.EntityType}ForumPermissions[{index++}]",
-                        roles.Select(p => new SelectListItem(p.RoleDescription, $"0_{p.RoleId}")),
-                        new { id = $"newPermissions_{Model.Self}", style = "width:95%"}
-                    )
-                </div>
+        <div class="FlexCenter">
+            <div id="entityName_@(Model.Self)">@entityName nou</div>
+            <div class="FlexRight PostInputWidth">
+                @Html.DropDownList(
+                    $"dto.{Model.EntityType}ForumPermissions[{index++}]",
+                    roles.Select(p => new SelectListItem(p.RoleDescription, $"0_{p.RoleId}")),
+                    new { id = $"newPermissions_{Model.Self}", style = "width:95%" }
+                )
             </div>
+        </div>
 
     </div>
     @if (Model.EntityType == AclEntityType.User)

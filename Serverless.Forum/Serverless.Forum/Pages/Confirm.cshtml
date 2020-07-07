@@ -6,6 +6,7 @@
 }
 
 @inject Serverless.Forum.Utilities.Utils _utils
+@inject Serverless.Forum.Services.ForumTreeService _forumService
 
 <h2>@Model.Title</h2>
 
@@ -55,10 +56,9 @@
         @await Html.PartialAsync(
             "_ForumTreePartial",
             new CustomPartials._ForumTreePartialModel (
-                forums: await Model.GetForumTree(),
+                tree: (await Model.GetForumTree()).Tree,
                 forumId: Model.ForumId,
-                topicId: Model.TopicId,
-                path: (await Model.GetForumTree(forumId: Model.ForumId)).Tree.FirstOrDefault(f => f.ForumId == Model.ForumId)?.PathList
+                topicId: Model.TopicId
             ),
             ViewData
         )

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using PaulMiami.AspNetCore.Mvc.Recaptcha;
 using Serverless.Forum.ForumDb;
+using Serverless.Forum.ForumDb.Entities;
 using Serverless.Forum.Pages.CustomPartials.Email;
 using Serverless.Forum.Utilities;
 using System;

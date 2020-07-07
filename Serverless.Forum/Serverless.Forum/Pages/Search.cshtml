@@ -1,6 +1,9 @@
 ﻿@page
 
+@using Microsoft.EntityFrameworkCore
+
 @inject Services.WritingToolsService _writingService
+@inject ForumDb.ForumDbContext _context
 
 @model Serverless.Forum.Pages.SearchModel
 @{
@@ -36,8 +39,8 @@
             topicDisplay.add(option);
             topics.forEach(t => {
                 var option = document.createElement('option');
-                option.text = t.title;
-                option.value = t.id;
+                option.text = t.topicTitle;
+                option.value = t.topicId;
                 topicDisplay.add(option);
             });
         }
@@ -74,10 +77,10 @@
             @await Html.PartialAsync(
                 "_ForumTreePartial",
                  new CustomPartials._ForumTreePartialModel(
-                     forums: await Model.GetForumTree(fullTraversal: true),
+                     tree: (await Model.GetForumTree()).Tree,
+                     topicData: await _context.PhpbbTopics.AsNoTracking().ToListAsync(),
                      forumId: Model.ForumId,
                      topicId: Model.TopicId,
-                     path: (await Model.GetForumTree(fullTraversal: true)).Tree.FirstOrDefault(t => t.ForumId == Model.ForumId).PathList, //await Model.PathToForumOrTopic(Model.ForumId ?? 0, Model.TopicId),
                      constrainSize: true
                  ),
                 ViewData

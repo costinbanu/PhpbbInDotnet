@@ -152,13 +152,13 @@ namespace Serverless.Forum
                     errorApp.Run(context =>
                     {
                         var handler = context.Features.Get<IExceptionHandlerPathFeature>();
-                        context.Response.Redirect($"/Error?id={utils.HandleError(handler.Error, handler.Path)}");
+                        context.Response.Redirect($"/Error?errorId={utils.HandleError(handler.Error, handler.Path)}");
                         return Task.CompletedTask;
                     });
                 });
                 app.UseHsts();
             }
-            //app.UseMiddleware<GCMiddleware>();
+
             app.UseRouting();
             app.UseRequestLocalization();
             app.UseHttpsRedirection();

@@ -1,16 +1,16 @@
+using Microsoft.AspNetCore.Mvc;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Services;
-using Serverless.Forum.Utilities;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Serverless.Forum.Pages
 {
     public class IndexModel : ModelWithLoggedUser
     {
+        private bool _forceTreeRefresh = false;
+
         public HashSet<ForumTree> Tree { get; private set; }
 
         public HashSet<Tracking> Tracking { get; private set; }
@@ -20,9 +20,18 @@ namespace Serverless.Forum.Pages
         {
         }
 
-        public async Task OnGet()
+        public async Task<IActionResult> OnGet()
         {
-            (Tree, Tracking) = await GetForumTree();
+            (Tree, Tracking) = await GetForumTree(_forceTreeRefresh);
+            return Page();
         }
+
+        public async Task<IActionResult> OnPostMarkForumsRead()
+            => await WithRegisteredUser(async () => 
+            {
+                await MarkForumAndSubforumsRead(0);
+                _forceTreeRefresh = true;
+                return await OnGet();
+            });
     }
 }

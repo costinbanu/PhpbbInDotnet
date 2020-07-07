@@ -4,10 +4,10 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
+using Serverless.Forum.ForumDb.Entities;
 using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System;
@@ -27,9 +27,6 @@ namespace Serverless.Forum
         protected readonly ForumDbContext _context;
 
         private LoggedUser _currentUser;
-        private ForumDto _tree = null;
-        private ForumTree _root = null;
-        private bool _wasFullTraversal = false;
 
         public ModelWithLoggedUser(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
         {
@@ -174,8 +171,57 @@ namespace Serverless.Forum
             return post;
         }
 
-        public async Task<(HashSet<ForumTree> Tree, HashSet<Tracking> Tracking)> GetForumTree(bool forceRefresh = false, int? forumId = null)
-            => (await _forumService.GetForumTree(await GetCurrentUserAsync(), forceRefresh, forumId), await _forumService.GetForumTracking(await GetCurrentUserAsync(), forceRefresh));
+        public async Task<(HashSet<ForumTree> Tree, HashSet<Tracking> Tracking)> GetForumTree(bool forceRefresh = false)
+            => (await _forumService.GetForumTree(await GetCurrentUserAsync(), forceRefresh), await _forumService.GetForumTracking(await GetCurrentUserAsync(), forceRefresh));
+
+        protected async Task MarkForumAndSubforumsRead(int forumId)
+        {
+            var node = _forumService.GetTreeNode((await GetForumTree()).Tree, forumId);
+            if (node == null)
+            {
+                return;
+            }
+
+            await MarkForumRead(forumId);
+            foreach (var child in node.ChildrenList ?? new HashSet<int>())
+            {
+                await MarkForumAndSubforumsRead(child);
+            }
+        }
+
+        protected async Task MarkForumRead(int forumId)
+        {
+            var usrId = (await GetCurrentUserAsync()).UserId;
+            var topicTracksToRemove = await (
+                from t in _context.PhpbbTopics
+
+                where t.ForumId == forumId
+
+                join tt in _context.PhpbbTopicsTrack
+                on t.TopicId equals tt.TopicId
+                into joinedTopicTracks
+
+                from jtt in joinedTopicTracks.DefaultIfEmpty()
+                where jtt.UserId == usrId
+                select jtt
+            ).ToListAsync();
+
+            _context.PhpbbTopicsTrack.RemoveRange(topicTracksToRemove);
+            var forumTrackToRemove = await _context.PhpbbForumsTrack.FirstOrDefaultAsync(ft => ft.ForumId == forumId && ft.UserId == usrId);
+            if (forumTrackToRemove != null)
+            {
+                _context.PhpbbForumsTrack.Remove(forumTrackToRemove);
+            }
+            await _context.SaveChangesAsync();
+
+            await _context.PhpbbForumsTrack.AddAsync(new PhpbbForumsTrack
+            {
+                ForumId = forumId,
+                UserId = usrId,
+                MarkTime = DateTime.UtcNow.ToUnixTimestamp()
+            });
+            await _context.SaveChangesAsync();
+        }
 
         #endregion Forum for user
 
@@ -225,7 +271,7 @@ namespace Serverless.Forum
 
                 var usr = await GetCurrentUserAsync();
                 var restricted = await _forumService.GetRestrictedForumList(usr);
-                var tree = await _forumService.GetForumTree(usr, false); //(forumId: forumId);
+                var tree = await _forumService.GetForumTree(usr, false);
                 var restrictedAncestor = (
                     from t in tree.FirstOrDefault(f => f.ForumId == forumId)?.PathList?.DefaultIfEmpty() ?? new HashSet<int>()
                     join r in restricted
@@ -240,7 +286,7 @@ namespace Serverless.Forum
                 {
                     if (usr?.AllPermissions?.Any(p => p.ForumId == restrictedAncestor && p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE) ?? false)
                     {
-                        return Unauthorized();
+                        return RedirectToPage("Error", new { isUnauthorized = true });
                     }
                     else
                     {
