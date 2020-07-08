@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.ForumDb.Entities;
-using Serverless.Forum.Pages.CustomPartials;
 using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System;
@@ -51,7 +50,7 @@ namespace Serverless.Forum.Pages
 
          public PollDto Poll { get; private set; }
 
-        public List<PostDto> Posts { get; private set; }
+        public List<PhpbbPosts> Posts { get; private set; }
 
         public string TopicTitle { get; private set; }
 
@@ -86,9 +85,14 @@ namespace Serverless.Forum.Pages
 
         public int ViewCount => _currentTopic?.TopicViews ?? 0;
 
+        public IEnumerable<PhpbbUsers> Users { get; private set; }
+        public IEnumerable<PhpbbUsers> LastEditUsers { get; private set; }
+        public IEnumerable<PhpbbAttachments> Attachments { get; private set; }
+        public IEnumerable<PhpbbReports> Reports { get; private set; }
+        public IEnumerable<PhpbbRanks> Ranks { get; private set; }
+
         private PhpbbTopics _currentTopic;
         private PhpbbForums _currentForum;
-        private List<PhpbbPosts> _dbPosts;
         private int? _page;
         private int? _count;
         private readonly Utils _utils;
@@ -138,10 +142,10 @@ namespace Serverless.Forum.Pages
                 Paginator = new Paginator(_count.Value, PageNum.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId, await GetCurrentUserAsync());
                 Poll = await _postService.GetPoll(_currentTopic);
 
-                IEnumerable<PhpbbUsers> users, lastEditUsers;
-                IEnumerable<PhpbbAttachments> attachments;
-                IEnumerable<PhpbbReports> reports;
-                IEnumerable<PhpbbRanks> ranks;
+                //IEnumerable<PhpbbUsers> users, lastEditUsers;
+                //IEnumerable<PhpbbAttachments> attachments;
+                //IEnumerable<PhpbbReports> reports;
+                //IEnumerable<PhpbbRanks> ranks;
                 using (var connection = _context.Database.GetDbConnection())
                 {
                     await connection.OpenIfNeeded();
@@ -153,67 +157,27 @@ namespace Serverless.Forum.Pages
                         "SELECT r.* FROM phpbb_ranks r JOIN phpbb_users u on u.user_rank = r.rank_id WHERE u.user_id IN @authors;",
                         new
                         {
-                            authors = _dbPosts.Select(p => p.PosterId),
-                            editors = _dbPosts.Select(p => p.PostEditUser),
-                            posts = _dbPosts.Select(p => p.PostId)
+                            authors = Posts.Select(p => p.PosterId),
+                            editors = Posts.Select(p => p.PostEditUser),
+                            posts = Posts.Select(p => p.PostId)
                         }
                     );
 
-                    users = await multi.ReadAsync<PhpbbUsers>();
-                    lastEditUsers = await multi.ReadAsync<PhpbbUsers>();
-                    attachments = await multi.ReadAsync<PhpbbAttachments>();
-                    reports = await multi.ReadAsync<PhpbbReports>();
-                    ranks = await multi.ReadAsync<PhpbbRanks>();
+                    Users = await multi.ReadAsync<PhpbbUsers>();
+                    LastEditUsers = await multi.ReadAsync<PhpbbUsers>();
+                    Attachments = await multi.ReadAsync<PhpbbAttachments>();
+                    Reports = await multi.ReadAsync<PhpbbReports>();
+                    Ranks = await multi.ReadAsync<PhpbbRanks>();
                 }
 
-                Posts = (
-                    from p in _dbPosts
-
-                    let ju = users.FirstOrDefault(u => u.UserId == p.PosterId)
-                    let joinedAttachments = attachments.Where(a => a.PostMsgId == p.PostId)
-                    let jr = ranks.FirstOrDefault(r => ju.UserRank == r.RankId)
-                    let lastEditUser = lastEditUsers.FirstOrDefault(u => u.UserId == p.PostEditUser)
-                    let lastEditUsername = lastEditUser == null ? "Anonymous" : lastEditUser.Username
-                    let report = reports.FirstOrDefault(r => r.PostId == p.PostId)
-
-                    select new PostDto
-                    {
-                        PostSubject = p.PostSubject,
-                        PostText = p.PostText,
-                        AuthorName = ju == null ? "Anonymous" : (ju.UserId == Constants.ANONYMOUS_USER_ID ? p.PostUsername : ju.Username),
-                        AuthorId = ju == null ? 1 : (ju.UserId == Constants.ANONYMOUS_USER_ID ? null as int? : ju.UserId),
-                        AuthorColor = ju == null ? null : ju.UserColour,
-                        PostCreationTime = p.PostTime.ToUtcTime(),
-                        PostModifiedTime = p.PostEditTime.ToUtcTime(),
-                        PostId = p.PostId,
-                        Attachments = joinedAttachments.Select(x => new _AttachmentPartialModel(x)).ToList(),
-                        BbcodeUid = p.BbcodeUid,
-                        Unread = IsPostUnread(p.TopicId, p.PostId).RunSync(),
-                        AuthorHasAvatar = ju != null && !string.IsNullOrWhiteSpace(ju.UserAvatar),
-                        AuthorSignature = ju == null ? null : _renderingService.BbCodeToHtml(ju.UserSig, ju.UserSigBbcodeUid),
-                        AuthorRank = jr?.RankTitle,
-                        LastEditTime = p.PostEditTime,
-                        LastEditUser = lastEditUsername,
-                        LastEditReason = p.PostEditReason,
-                        EditCount = p.PostEditCount,
-                        IP = p.PosterIp,
-                        ReportId = report == null ? null as int? : report.ReportId,
-                        ReportReasonId = report == null ? null as int? : report.ReasonId,
-                        ReportDetails = report == null ? null as string : report.ReportText,
-                        ReporterId = report == null ? null as int? : report.UserId
-                    }
-                ).ToList();
                 TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
-
-
-                await _renderingService.ProcessPosts(Posts, PageContext, HttpContext, true);
 
                 using (var connection = _context.Database.GetDbConnection())
                 {
                     var userId = (await GetCurrentUserAsync()).UserId;
                     await connection.OpenIfNeeded();
-                    if (Posts.Any(p => p.Unread))
-                    {
+                    //if (Posts.Any(p => p.Unread))
+                    //{
                         var existing = await connection.QuerySingleOrDefaultAsync<PhpbbTopicsTrack>("SELECT * FROM phpbb_topics_track WHERE user_id = @userId AND topic_id = @topicId", new { userId, topicId = TopicId.Value });
                         if (existing == null)
                         {
@@ -229,7 +193,7 @@ namespace Serverless.Forum.Pages
                                 new { forumId = ForumId.Value, markTime = DateTime.UtcNow.ToUnixTimestamp(), userId, topicId = TopicId.Value }
                             );
                         }
-                    }
+                    //}
 
                     await connection.ExecuteAsync("UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId", new { topicId = TopicId.Value } );
                 }
@@ -462,10 +426,10 @@ namespace Serverless.Forum.Pages
 
         private async Task GetPostsLazy(int? topicId, int? page, int? postId)
         {
-            if (_dbPosts == null || _page == null || _count == null)
+            if (Posts == null || _page == null || _count == null)
             {
                 var results = await _postService.GetPostPageAsync((await GetCurrentUserAsync()).UserId, topicId, page, postId);
-                _dbPosts = results.Posts;
+                Posts = results.Posts;
                 _page = results.Page;
                 _count = results.Count;
             }

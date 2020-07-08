@@ -4,10 +4,12 @@
 @using System.Web
 @using Serverless.Forum.Utilities
 @using Microsoft.EntityFrameworkCore
+@using Serverless.Forum.Pages.CustomPartials 
 
 @inject Services.UserService _userService
 @inject Utils _utils
 @inject ForumDb.ForumDbContext _context
+@inject Services.BBCodeRenderingService _renderingService
 
 @{
     ViewData["Title"] = $"{Model.ForumTitle} - {Model.TopicTitle}";
@@ -149,8 +151,44 @@
     <hr />
 }
 @{ var index = 0; }
-@foreach (var post in Model.Posts)
+@foreach (var p in Model.Posts)
 {
+    var ju = Model.Users.FirstOrDefault(u => u.UserId == p.PosterId);
+    var joinedAttachments = Model.Attachments.Where(a => a.PostMsgId == p.PostId);
+    var jr = Model.Ranks.FirstOrDefault(r => ju.UserRank == r.RankId);
+    var lastEditUser = Model.LastEditUsers.FirstOrDefault(u => u.UserId == p.PostEditUser);
+    var lastEditUsername = lastEditUser == null ? "Anonymous" : lastEditUser.Username;
+    var report = Model.Reports.FirstOrDefault(r => r.PostId == p.PostId);
+
+    var post = new Contracts.PostDto
+    {
+        PostSubject = p.PostSubject,
+        PostText = p.PostText,
+        AuthorName = ju == null ? "Anonymous" : (ju.UserId == Constants.ANONYMOUS_USER_ID ? p.PostUsername : ju.Username),
+        AuthorId = ju == null ? 1 : (ju.UserId == Constants.ANONYMOUS_USER_ID ? null as int? : ju.UserId),
+        AuthorColor = ju == null ? null : ju.UserColour,
+        PostCreationTime = p.PostTime.ToUtcTime(),
+        PostModifiedTime = p.PostEditTime.ToUtcTime(),
+        PostId = p.PostId,
+        Attachments = joinedAttachments.Select(x => new _AttachmentPartialModel(x)).ToList(),
+        BbcodeUid = p.BbcodeUid,
+        Unread = Model.IsPostUnread(p.TopicId, p.PostId).RunSync(),
+        AuthorHasAvatar = ju != null && !string.IsNullOrWhiteSpace(ju.UserAvatar),
+        AuthorSignature = ju == null ? null : _renderingService.BbCodeToHtml(ju.UserSig, ju.UserSigBbcodeUid),
+        AuthorRank = jr?.RankTitle,
+        LastEditTime = p.PostEditTime,
+        LastEditUser = lastEditUsername,
+        LastEditReason = p.PostEditReason,
+        EditCount = p.PostEditCount,
+        IP = p.PosterIp,
+        ReportId = report == null ? null as int? : report.ReportId,
+        ReportReasonId = report == null ? null as int? : report.ReasonId,
+        ReportDetails = report == null ? null as string : report.ReportText,
+        ReporterId = report == null ? null as int? : report.UserId
+    };
+
+    await _renderingService.ProcessPost(post, Model.PageContext, Model.HttpContext, true);
+
     var rowClass = string.Empty;
     if (post.ReportId.HasValue && (IsMod || post.ReporterId == CurrentUser.UserId))
     {
@@ -220,7 +258,7 @@
                     }
                     <br />
                     <div class="PostActions">
-                        @if ((!Model.IsLocked || IsMod || IsAdmin) && !IsAnonymous && post != Model.Posts.Last())
+                        @if ((!Model.IsLocked || IsMod || IsAdmin) && !IsAnonymous && p != Model.Posts.Last())
                         {
                             <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">
                                 @if (Model.IsLocked)
@@ -233,7 +271,7 @@
                                 }
                             </a>
                         }
-                        else if (!IsAnonymous && post != Model.Posts.Last())
+                        else if (!IsAnonymous && p != Model.Posts.Last())
                         {
                             <a href="javascript:;" title="Subiectul este închis, nu se mai pot trimite răspunsuri.">
                                 <s>&#x1F5E8; Subiect închis</s>

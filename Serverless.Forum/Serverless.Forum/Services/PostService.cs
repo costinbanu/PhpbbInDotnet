@@ -35,10 +35,10 @@ namespace Serverless.Forum.Services
                 Count: multi.Read<int>().Single()
             );
 
-            await connection.ExecuteAsync(
-                "UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE post_msg_id IN @postIds",
-                new { postIds = toReturn.Posts.Select(p => p.PostId) }
-            );
+            //await connection.ExecuteAsync(
+            //    "UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE post_msg_id IN @postIds",
+            //    new { postIds = toReturn.Posts.Select(p => p.PostId) }
+            //);
 
             //var attachments = await (
             //    from a in _context.PhpbbAttachments

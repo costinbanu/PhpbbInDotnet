@@ -30,8 +30,7 @@ namespace Serverless.Forum.Pages
             using (var connection = _context.Database.GetDbConnection())
             {
                 await connection.OpenIfNeeded();
-                var file = await connection.QuerySingleOrDefaultAsync(
-                    "SELECT a.physical_filename, a.real_filename, a.mimetype, p.forum_id FROM phpbb_attachments a JOIN phpbb_posts p on a.post_msg_id = p.post_id WHERE attach_id = @Id", new { Id });
+                var file = await connection.QuerySingleOrDefaultAsync("SELECT a.physical_filename, a.real_filename, a.mimetype, p.forum_id FROM phpbb_attachments a JOIN phpbb_posts p on a.post_msg_id = p.post_id WHERE attach_id = @Id", new { Id });
                 if (file == null)
                 {
                     return NotFound();
@@ -40,13 +39,14 @@ namespace Serverless.Forum.Pages
                 physicalFilename = file?.physical_filename;
                 realFilename = file?.real_filename;
                 mimeType = file?.mimetype;
+                await connection.ExecuteAsync("UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE attach_id = @Id", new { Id });
             }
 
             return await WithValidForum(unchecked((int)(forumId ?? 0)), async (_) => await Task.FromResult(SendToClient(physicalFilename, realFilename, mimeType, false)));
         }
 
-        public IActionResult OnGetPreview(string physicalFileName)
-            => SendToClient(physicalFileName, physicalFileName, null, false);
+        public IActionResult OnGetPreview(string physicalFileName, string realFileName, string mimeType)
+            => SendToClient(physicalFileName, realFileName, mimeType, false);
 
         public async Task<IActionResult> OnGetAvatar(int userId)
         {

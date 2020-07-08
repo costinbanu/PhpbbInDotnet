@@ -81,74 +81,61 @@ namespace Serverless.Forum.Services
             _parser = new BBCodeParser(bbcodes);
         }
 
-        public async Task ProcessPosts(IEnumerable<PostDto> Posts, PageContext pageContext, HttpContext httpContext, bool renderAttachments, string toHighlight = null)
+        public async Task ProcessPost(PostDto post, PageContext pageContext, HttpContext httpContext, bool renderAttachments, string toHighlight = null)
         {
             var inlineAttachmentsPosts = new ConcurrentBag<(int PostId, int AttachIndex, _AttachmentPartialModel Attach)>();
             var attachRegex = new Regex("#{AttachmentFileName=[^/]+/AttachmentIndex=[0-9]+}#", RegexOptions.Compiled);
             var highlightWords = SplitHighlightWords(toHighlight);
 
-            foreach (var p in Posts)
-            //var tasks = Posts.Select(async p =>
+            post.PostSubject = CensorWords(HttpUtility.HtmlDecode(post.PostSubject), _bannedWords);
+            post.PostSubject = HighlightWords(post.PostSubject, highlightWords);
+            post.PostText = HighlightWords(BbCodeToHtml(post.PostText, post.BbcodeUid), highlightWords);
+
+            Console.Write(" text done;");
+
+            if (renderAttachments)
             {
-                Console.Write($"{p.PostId} start...");
-                if (p.PostId == 281202)
+                var matches = from m in attachRegex.Matches(post.PostText).AsEnumerable()
+                              where m.Success
+                              orderby m.Index descending
+                              let parts = m.Value.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries)
+                              let fn = parts[0].Trim("#{".ToCharArray()).Replace("AttachmentFileName=", string.Empty)
+                              let i = int.Parse(parts[1].Trim("}#".ToCharArray()).Replace("AttachmentIndex=", string.Empty))
+                              select (FileName: fn, AttachIndex: i, Original: m);
+
+                foreach (var (FileName, AttachIndex, Original) in matches)
                 {
-
-                }
-
-                p.PostSubject = CensorWords(HttpUtility.HtmlDecode(p.PostSubject), _bannedWords);
-                p.PostSubject = HighlightWords(p.PostSubject, highlightWords);
-                p.PostText = HighlightWords(BbCodeToHtml(p.PostText, p.BbcodeUid), highlightWords);
-
-                Console.Write(" text done;");
-
-                if (renderAttachments)
-                {
-                    var matches = from m in attachRegex.Matches(p.PostText).AsEnumerable()
-                                  where m.Success
-                                  orderby m.Index descending
-                                  let parts = m.Value.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries)
-                                  let fn = parts[0].Trim("#{".ToCharArray()).Replace("AttachmentFileName=", string.Empty)
-                                  let i = int.Parse(parts[1].Trim("}#".ToCharArray()).Replace("AttachmentIndex=", string.Empty))
-                                  select (FileName: fn, AttachIndex: i, Original: m);
-
-                    foreach (var (FileName, AttachIndex, Original) in matches)
+                    _AttachmentPartialModel model = null;
+                    int index = AttachIndex;
+                    var candidates = post.Attachments.Where(a => a.DisplayName == FileName).ToList();
+                    if (candidates.Count == 1)
                     {
-                        _AttachmentPartialModel model = null;
-                        int index = AttachIndex;
-                        var candidates = p.Attachments.Where(a => a.DisplayName == FileName).ToList();
-                        if (candidates.Count == 1)
+                        model = candidates.First();
+                    }
+                    else if (candidates.Count > 1)
+                    {
+                        model = candidates.FirstOrDefault(a => a.DisplayName == FileName && candidates.IndexOf(a) == index);
+                        if (model == null)
                         {
-                            model = candidates.First();
-                        }
-                        else if (candidates.Count > 1)
-                        {
-                            model = candidates.FirstOrDefault(a => a.DisplayName == FileName && candidates.IndexOf(a) == index);
-                            if (model == null)
-                            {
-                                index = candidates.Count - AttachIndex - 1;
-                                model = candidates.FirstOrDefault(a => candidates.IndexOf(a) == index);
-                            }
-                        }
-
-                        if (model != null)
-                        {
-                            p.PostText = p.PostText.Replace(
-                                $"#{{AttachmentFileName={model.DisplayName}/AttachmentIndex={index}}}#",
-                                await _utils.RenderRazorViewToString("_AttachmentPartial", model, pageContext, httpContext)
-                            );
-                            p.Attachments.Remove(model);
+                            index = candidates.Count - AttachIndex - 1;
+                            model = candidates.FirstOrDefault(a => candidates.IndexOf(a) == index);
                         }
                     }
-                }
-                else
-                {
-                    p.PostText = attachRegex.Replace(p.PostText, string.Empty);
-                }
 
-                Console.WriteLine(" attach done.");
-            }/*);
-            await Task.WhenAll(tasks);*/
+                    if (model != null)
+                    {
+                        post.PostText = post.PostText.Replace(
+                            $"#{{AttachmentFileName={model.DisplayName}/AttachmentIndex={index}}}#",
+                            await _utils.RenderRazorViewToString("_AttachmentPartial", model, pageContext, httpContext)
+                        );
+                        post.Attachments.Remove(model);
+                    }
+                }
+            }
+            else
+            {
+                post.PostText = attachRegex.Replace(post.PostText, string.Empty);
+            }
         }
 
         public string BbCodeToHtml(string bbCodeText, string bbCodeUid)

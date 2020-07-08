@@ -88,7 +88,7 @@ else
     {
         <input type="text" asp-for="ReceiverName" placeholder="Alege destinatar..." id="pmToInput" class="PostInputWidth" autocomplete="off" />
         <p id="tributeHolder" style="position:relative">&nbsp;</p>
-        <span asp-validation-for="ReceiverName" class="validation"></span><br/>
+        <span asp-validation-for="ReceiverName" class="validation"></span><br />
     }
     <input asp-for="PostTitle" type="text" id="subject" size="45" maxlength="256" tabindex="2" class="InputBox PostInputWidth" placeholder="Subiect" />
     <br />
@@ -104,7 +104,7 @@ else
         <input type="button" class="BbCodeButton Hide960" accesskey="t" name="addlitsitem" value="[*]" onclick="posting.bbstyle(-1)" title="Listează articolele: [*]text[/*]">
         <input type="button" class="BbCodeButton" accesskey="p" name="addbbcode14" value="Img" onclick="posting.bbstyle(14)" title="Adaugă imagine: [img]http://cale_imagine[/img]">
         <input type="button" class="BbCodeButton" accesskey="w" name="addbbcode16" value="URL" style="text-decoration: underline" onclick="posting.bbstyle(16)" title="Adaugă URL: [url]http://url[/url] sau [url=http://url]text URL[/url]">
-        <select name="addbbcode20" class="BbCodeButton" onchange="bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;" title="Mărime font: [size=85]text mic[/size]">
+        <select name="addbbcode20" class="BbCodeButton" onchange="posting.bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;" title="Mărime font: [size=85]text mic[/size]">
             <option value="50">Micuţ</option>
             <option value="85">Mic</option>
             <option value="100" selected="selected">Normal</option>
@@ -306,6 +306,10 @@ else
             <span class="validation">A intervenit o eroare, pagina nu a fost afișată corect.</span>
             break;
     }
+    <span>&nbsp; </span>
+    <span asp-validation-for="PostTitle" class="validation"></span>
+    <span>&nbsp; </span>
+    <span asp-validation-for="PostText" class="validation"></span>
 </form>
 
 <script>
@@ -321,30 +325,35 @@ else
     if (pollExpiration) {
         posting.showExpirationDate(pollExpiration.value);
     }
-
-    var secondTribute = new Tribute({
+</script>
+@if (Action == PostingActions.NewPrivateMessage)
+{
+    <script>
+        var secondTribute = new Tribute({
         values: @Html.Raw(_writingService.ToCamelCaseJson(await _cacheService.GetFromCache<List<KeyValuePair<string, int>>>(await Model.GetActualCacheKey("UserMap", false)))),
-        selectTemplate: function (item) {
-            return item.original.key;
-        },
+        selectTemplate: function(item) {
+                return item.original.key;
+            },
         allowSpaces: true,
         menuContainer: document.getElementById("tributeHolder"),
         positionMenu: false,
         trigger: ' '
-    });
-    var authorInput = document.getElementById("pmToInput");
+          });
+        var authorInput = document.getElementById("pmToInput");
 
-    secondTribute.attach(authorInput);
+        secondTribute.attach(authorInput);
 
-    authorInput.addEventListener("tribute-replaced", function (e) {
-        document.getElementById("pmTo").value = e.detail.item.original.value;
-        authorInput.value = e.detail.item.original.key;
-    });
+        authorInput.addEventListener("tribute-replaced", function(e) {
+            document.getElementById("pmTo").value = e.detail.item.original.value;
+            authorInput.value = e.detail.item.original.key;
+        });
 
-    authorInput.addEventListener("focusin", function (e) {
-        secondTribute.showMenuForCollection(authorInput);
-    });
-</script>
+        authorInput.addEventListener("focusin", function(e) {
+            secondTribute.showMenuForCollection(authorInput);
+        });
+    </script>
+}
+
 
 <div id="imgcheckstatus" class="Popup"></div>
 

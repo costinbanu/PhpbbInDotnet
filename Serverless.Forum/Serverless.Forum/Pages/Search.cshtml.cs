@@ -156,12 +156,12 @@ namespace Serverless.Forum.Pages
                 TotalResults = unchecked((int)(await multi.ReadAsync<long>()).Single());
             }
 
-            Parallel.ForEach(Posts, p =>
-            {
-                p.AuthorHasAvatar = !string.IsNullOrWhiteSpace(p.UserAvatar);
-                //p.AuthorSignature = p.UserSig == null ? null : _renderingService.BbCodeToHtml(p.UserSig, p.UserSigBbcodeUid);
-            });
-            await _renderingService.ProcessPosts(Posts, PageContext, HttpContext, false, SearchText);
+            //Parallel.ForEach(Posts, p =>
+            //{
+            //    p.AuthorHasAvatar = !string.IsNullOrWhiteSpace(p.UserAvatar);
+            //    //p.AuthorSignature = p.UserSig == null ? null : _renderingService.BbCodeToHtml(p.UserSig, p.UserSigBbcodeUid);
+            //});
+            //await _renderingService.ProcessPosts(Posts, PageContext, HttpContext, false, SearchText);
 
             Paginator = new Paginator(TotalResults.Value, PageNum.Value, GetSearchLinkForPage(PageNum.Value + 1));
         }

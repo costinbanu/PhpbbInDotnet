@@ -6,7 +6,6 @@ using Serverless.Forum.ForumDb;
 using Serverless.Forum.ForumDb.Entities;
 using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -110,7 +109,7 @@ namespace Serverless.Forum.Pages
                             JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
                         WHERE t.topic_id IN @topicList
                         GROUP BY t.topic_id",
-                        new { topicList = tree.Tracking.Select(t => t.TopicId).Distinct() }
+                        new { topicList = tree.Tracking.Select(t => t.TopicId).Distinct().Skip(((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE).Take(Constants.DEFAULT_PAGE_SIZE) }
                     );
                 }
 

@@ -21,8 +21,8 @@ namespace Serverless.Forum.Pages.CustomPartials
             ShowTitle = showTitle;
             LoggedUser = loggedUser;
             Tree = tree;
-            Categories = GetChildrenForums(forumId).Where(f => f.ForumType == ForumType.Category).OrderBy(f => f.LeftId);
-            SubForums = GetChildrenForums(forumId).Where(f => f.ForumType == ForumType.SubForum).OrderBy(f => f.LeftId);
+            Categories = GetChildrenForums(forumId).Where(f => f.ForumType == ForumType.Category);
+            SubForums = GetChildrenForums(forumId).Where(f => f.ForumType == ForumType.SubForum);
         }
 
         public IEnumerable<ForumTree> GetChildrenForums(int forumId)

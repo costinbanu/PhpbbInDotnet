@@ -166,9 +166,9 @@ else
                      "_SummaryPartial",
                      new CustomPartials._SummaryPartialModel(topic.TopicLastPosterId, topic.TopicLastPosterName, topic.TopicLastPosterColour, topic.LastPostTime, topic.TopicId.Value,
                          UserDateFormat, false, null,
-                         topic.LastPostId == null ? null : $"./ViewTopic?postId={topic.LastPostId}&handler=ByPostId",
-                         topic.LastPostId == null ? null : "&#x1F4C3;",
-                         topic.LastPostId == null ? null : "Vezi ultimul mesaj",
+                         topic.TopicLastPostId == null ? null : $"./ViewTopic?postId={topic.TopicLastPostId}&handler=ByPostId",
+                         topic.TopicLastPostId == null ? null : "&#x1F4C3;",
+                         topic.TopicLastPostId == null ? null : "Vezi ultimul mesaj",
                          false, true, topic.PostCount, topic.ViewCount
                      )
                  )

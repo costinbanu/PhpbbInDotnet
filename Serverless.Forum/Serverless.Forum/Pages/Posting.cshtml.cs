@@ -329,7 +329,7 @@ namespace Serverless.Forum.Pages
 
                     if ((PostText?.Trim()?.Length ?? 0) < 3)
                     {
-                        ModelState.AddModelError(nameof(PostText), "Titlul este prea scurt (minim 3 caractere, exclusiv spații).");
+                        ModelState.AddModelError(nameof(PostText), "Mesajul este prea scurt (minim 3 caractere, exclusiv spații).");
                         return Page();
                     }
 
@@ -372,7 +372,7 @@ namespace Serverless.Forum.Pages
                             PollStart = PreviewablePost.PostCreationTime ?? DateTime.UtcNow
                         };
                     }
-                    await _renderingService.ProcessPosts(new[] { PreviewablePost }, PageContext, HttpContext, true);
+                    await _renderingService.ProcessPost(PreviewablePost, PageContext, HttpContext, true);
 
                     return Page();
                 });
@@ -513,7 +513,7 @@ namespace Serverless.Forum.Pages
 
             if ((PostText?.Trim()?.Length ?? 0) < 3)
             {
-                ModelState.AddModelError(nameof(PostText), "Titlul este prea scurt (minim 3 caractere, exclusiv spații).");
+                ModelState.AddModelError(nameof(PostText), "Mesajul este prea scurt (minim 3 caractere, exclusiv spații).");
                 return null;
             }
 

@@ -23,7 +23,7 @@ namespace Serverless.Forum.Pages
 
         public long? TopicLastPostTime { get; set; } = null;
 
-        public int? LastPostId { get; set; } = null;
+        public int? TopicLastPostId { get; set; } = null;
 
         public int? PostCount { get; set; } = null;
 

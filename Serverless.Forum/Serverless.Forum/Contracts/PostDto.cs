@@ -50,6 +50,6 @@ namespace Serverless.Forum.Contracts
 
         public string ReportDetails { get; set; }
 
-        public int? ReporterId { get; internal set; }
+        public int? ReporterId { get; set; }
     }
 }
