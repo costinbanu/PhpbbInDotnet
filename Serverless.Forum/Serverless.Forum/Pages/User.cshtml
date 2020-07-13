@@ -277,7 +277,7 @@ else if (Model.ViewAsAnother)
             <a href="mailto:@Html.Raw(Model.CurrentUser.UserEmail)">Trimite e-mail</a>
         </div>
     }
-    @if (!isSelf && await _userService.HasPrivateMessages(await Model.GetCurrentUserAsync()) && await _userService.HasPrivateMessages(Model.CurrentUser.UserId))
+    @if (!isSelf && _userService.HasPrivateMessages(await Model.GetCurrentUserAsync()) && await _userService.HasPrivateMessages(Model.CurrentUser.UserId))
     {
         <p></p>
         <div class="FlexCenter">

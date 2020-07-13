@@ -114,64 +114,101 @@ namespace Serverless.Forum.Services
                 { AclEntityType.Group, translatePermissions(dto.GroupForumPermissions) }
             };
 
-            var userPermissions = await (
-                from p in _context.PhpbbAclUsers
-                join r in _context.PhpbbAclRoles.AsNoTracking()
-                on p.AuthRoleId equals r.RoleId
-                into joined
-                from j in joined
-                where p.ForumId == actual.ForumId
-                    && rolesForAclEntity[AclEntityType.User].Keys.Contains(p.UserId)
-                    && j.RoleType == "f_"
-                select p
-            ).ToListAsync();
-            foreach (var existing in userPermissions)
-            {
-                existing.AuthRoleId = rolesForAclEntity[AclEntityType.User][existing.UserId];
-                rolesForAclEntity[AclEntityType.User].Remove(existing.UserId);
-            }
-            await _context.PhpbbAclUsers.AddRangeAsync(
-                rolesForAclEntity[AclEntityType.User].Select(r =>
-                    new PhpbbAclUsers
-                    {
-                        ForumId = actual.ForumId,
-                        UserId = r.Key,
-                        AuthRoleId = r.Value,
-                        AuthOptionId = 0,
-                        AuthSetting = 0
-                    }
-                )
-            );
-
-            var groupPermissions = await (
-                from p in _context.PhpbbAclGroups
-                join r in _context.PhpbbAclRoles.AsNoTracking()
-                on p.AuthRoleId equals r.RoleId
-                into joined
-                from j in joined
-                where p.ForumId == actual.ForumId
-                    && rolesForAclEntity[AclEntityType.Group].Keys.Contains(p.GroupId)
-                    && j.RoleType == "f_"
-                select p
-            ).ToListAsync();
-            foreach (var p in groupPermissions)
-            {
-                p.AuthRoleId = rolesForAclEntity[AclEntityType.Group][p.GroupId];
-                rolesForAclEntity[AclEntityType.Group].Remove(p.GroupId);
-            }
-            await _context.PhpbbAclGroups.AddRangeAsync(
-                rolesForAclEntity[AclEntityType.Group].Select(r =>
-                    new PhpbbAclGroups
-                    {
-                        ForumId = actual.ForumId,
-                        GroupId = r.Key,
-                        AuthRoleId = r.Value,
-                        AuthOptionId = 0,
-                        AuthSetting = 0
-                    }
-                )
-            );
             await _context.SaveChangesAsync();
+
+            using var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeeded();
+            var select = @"SELECT t.*
+                             FROM {0} t
+                             JOIN phpbb_acl_roles r ON t.auth_role_id = r.role_id
+                            WHERE t.forum_id = @forumId AND t.{1} = @entityId AND r.role_type = 'f_'";
+            var update = @"UPDATE {0}
+                              SET auth_role_id = @roleId
+                            WHERE {1} = @entityId AND forum_id = @forumId AND auth_option_id = @auth_option_id";
+            var insert = @"INSERT INTO {0} ({1}, forum_id, auth_option_id, auth_role_id, auth_setting) 
+                           VALUES (@entityId, @forumId, 0, @roleId, 0)";
+
+            foreach (var byType in rolesForAclEntity)
+            {
+                foreach (var byId in byType.Value)
+                {
+                    var prefix = byType.Key == AclEntityType.Group ? "group" : "user";
+                    var table = $"phpbb_acl_{prefix}s";
+                    var entityIdColumn = $"{prefix}_id";
+                    var entity = await connection.QueryFirstOrDefaultAsync(string.Format(select, table, entityIdColumn), new { actual.ForumId, entityId = byId.Key });
+                    if (entity == null)
+                    {
+                        await connection.ExecuteAsync(string.Format(insert, table, entityIdColumn), new { entityId = byId.Key, actual.ForumId, roleId = byId.Value });
+                    }
+                    else
+                    {
+                        await connection.ExecuteAsync(string.Format(update, table, entityIdColumn), new { entityId = byId.Key, actual.ForumId, entity.auth_option_id, roleId = byId.Value });
+                    }
+                }
+            }
+
+
+            //var userPermissions = await (
+            //    from p in _context.PhpbbAclUsers
+            //    join r in _context.PhpbbAclRoles.AsNoTracking()
+            //    on p.AuthRoleId equals r.RoleId
+            //    into joined
+            //    from j in joined
+            //    where p.ForumId == actual.ForumId
+            //        && rolesForAclEntity[AclEntityType.User].Keys.Contains(p.UserId)
+            //        && j.RoleType == "f_"
+            //    select p
+            //).ToListAsync();
+            //_context.PhpbbAclUsers.UpdateRange(userPermissions);
+            //foreach (var existing in userPermissions)
+            //{
+            //    existing.AuthRoleId = rolesForAclEntity[AclEntityType.User][existing.UserId];
+            //    rolesForAclEntity[AclEntityType.User].Remove(existing.UserId);
+            //}
+
+            //await _context.PhpbbAclUsers.AddRangeAsync(
+            //    rolesForAclEntity[AclEntityType.User].Select(r =>
+            //        new PhpbbAclUsers
+            //        {
+            //            ForumId = actual.ForumId,
+            //            UserId = r.Key,
+            //            AuthRoleId = r.Value,
+            //            AuthOptionId = 0,
+            //            AuthSetting = 0
+            //        }
+            //    )
+            //);
+
+            //var groupPermissions = await (
+            //    from p in _context.PhpbbAclGroups
+            //    join r in _context.PhpbbAclRoles.AsNoTracking()
+            //    on p.AuthRoleId equals r.RoleId
+            //    into joined
+            //    from j in joined
+            //    where p.ForumId == actual.ForumId
+            //        && rolesForAclEntity[AclEntityType.Group].Keys.Contains(p.GroupId)
+            //        && j.RoleType == "f_"
+            //    select p
+            //).ToListAsync();
+            //_context.PhpbbAclGroups.UpdateRange(groupPermissions);
+            //foreach (var p in groupPermissions)
+            //{
+            //    p.AuthRoleId = rolesForAclEntity[AclEntityType.Group][p.GroupId];
+            //    rolesForAclEntity[AclEntityType.Group].Remove(p.GroupId);
+            //}
+            //await _context.PhpbbAclGroups.AddRangeAsync(
+            //    rolesForAclEntity[AclEntityType.Group].Select(r =>
+            //        new PhpbbAclGroups
+            //        {
+            //            ForumId = actual.ForumId,
+            //            GroupId = r.Key,
+            //            AuthRoleId = r.Value,
+            //            AuthOptionId = 0,
+            //            AuthSetting = 0
+            //        }
+            //    )
+            //);
+
 
             return ($"Forumul {actual.ForumName} a fost actualizat cu succes!", true);
         }

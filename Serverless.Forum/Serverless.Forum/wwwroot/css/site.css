@@ -232,7 +232,8 @@ h3 {
     margin: 3px;
     cursor: pointer;
     font-weight: bold;
-    margin-right: 10px;
+    min-width: 60px;
+    text-align: center;
 }
 
 .CollapsedActions {

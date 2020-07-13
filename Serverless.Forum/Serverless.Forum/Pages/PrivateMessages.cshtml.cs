@@ -48,7 +48,7 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnGet()
             => await WithRegisteredUser(async () =>
             {
-                if (!await _userService.HasPrivateMessages(await GetCurrentUserAsync()))
+                if (!_userService.HasPrivateMessages(await GetCurrentUserAsync()))
                 {
                     return BadRequest("Utilizatorul nu are acces la mesageria privată.");
                 }
@@ -156,7 +156,7 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnPost()
             => await WithRegisteredUser(async () =>
             {
-                if (!await _userService.HasPrivateMessages(await GetCurrentUserAsync()))
+                if (!_userService.HasPrivateMessages(await GetCurrentUserAsync()))
                 {
                     return BadRequest("Utilizatorul nu are acces la mesageria privată.");
                 }

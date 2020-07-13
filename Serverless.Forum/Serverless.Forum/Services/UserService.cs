@@ -57,11 +57,11 @@ namespace Serverless.Forum.Services
                 on up.AuthRoleId equals a.RoleId
                 select up.AuthRoleId as int?).FirstOrDefault();
 
-        public async Task<bool> HasPrivateMessages(LoggedUser user)
-            => await GetUserRole(user) != Constants.NO_PM_ROLE;
+        public bool HasPrivateMessages(LoggedUser user)
+            => user?.AllPermissions?.Contains(new LoggedUser.Permissions { ForumId = 0, AuthRoleId = Constants.NO_PM_ROLE }) ?? false;
 
         public async Task<bool> HasPrivateMessages(int userId)
-            => await GetUserRole(await GetLoggedUserById(userId)) != Constants.NO_PM_ROLE;
+            => HasPrivateMessages(await GetLoggedUserById(userId));
 
         async Task<PhpbbUsers> GetAnonymousDbUserAsync()
         {

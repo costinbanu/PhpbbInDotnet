@@ -264,7 +264,7 @@ else
                         <b>Nume:</b> @attachments[i].RealFilename <br />
                         <b>Comentariu fișier:</b>
                         <br />
-                        <textarea type="text" name="FileComment[@i]" id="FileComment" rows="4" cols="100" style="display:inline-block">@attachments[i].AttachComment</textarea>
+                        <textarea type="text" asp-for="FileComment[i]" rows="4" cols="100" style="display:inline-block"></textarea>
                         <br />
                         <input type="button" value="Așează în linie" onclick="posting.attach_inline(@i, '@attachments[i].RealFilename')" /> &nbsp;
                         <input type="submit" value="Șterge fișier" asp-page-handler="DeleteAttachment" onclick="document.getElementById('indexToDelete').value = @i; return true;" />

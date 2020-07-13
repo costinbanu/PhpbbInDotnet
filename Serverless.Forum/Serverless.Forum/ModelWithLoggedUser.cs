@@ -49,6 +49,7 @@ namespace Serverless.Forum
             if (!(user?.Identity?.IsAuthenticated ?? false))
             {
                 user = await _userService.GetAnonymousClaimsPrincipalAsync();
+                _currentUser = await _userService.ClaimsPrincipalToLoggedUserAsync(user);
                 await HttpContext.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme,
                     user,
@@ -270,21 +271,26 @@ namespace Serverless.Forum
                 }
 
                 var usr = await GetCurrentUserAsync();
-                var restricted = await _forumService.GetRestrictedForumList(usr);
+                var restricted = await _forumService.GetRestrictedForumList(usr, true);
                 var tree = await _forumService.GetForumTree(usr, false);
+                var path = new List<int>();
+                if (tree.TryGetValue(new ForumTree { ForumId = forumId }, out var cur))
+                {
+                    path = cur?.PathList ?? new List<int>();
+                }    
                 var restrictedAncestor = (
-                    from t in tree.FirstOrDefault(f => f.ForumId == forumId)?.PathList?.DefaultIfEmpty() ?? new HashSet<int>()
+                    from t in path
                     join r in restricted
                     on t equals r.forumId
                     into joined
                     from j in joined
-                    where j.hasPassword && (HttpContext.Session.GetInt32($"ForumLogin_{t}") ?? 0) != 1
+                    where !j.hasPassword || (HttpContext.Session.GetInt32($"ForumLogin_{t}") ?? 0) != 1
                     select t
                 ).FirstOrDefault();
 
                 if (restrictedAncestor != default)
                 {
-                    if (usr?.AllPermissions?.Any(p => p.ForumId == restrictedAncestor && p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE) ?? false)
+                    if (usr?.AllPermissions?.Contains(new LoggedUser.Permissions { ForumId = restrictedAncestor, AuthRoleId = Constants.ACCESS_TO_FORUM_DENIED_ROLE }) ?? false)
                     {
                         return RedirectToPage("Error", new { isUnauthorized = true });
                     }

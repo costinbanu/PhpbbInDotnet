@@ -25,11 +25,11 @@ namespace Serverless.Forum.Services
             DefaultTypeMap.MatchNamesWithUnderscores = true;
         }
 
-        public async Task<IEnumerable<(int forumId, bool hasPassword)>> GetRestrictedForumList(LoggedUser user)
+        public async Task<IEnumerable<(int forumId, bool hasPassword)>> GetRestrictedForumList(LoggedUser user, bool includePasswordProtected = false)
         {
             if (_restrictedForums == null)
             {
-                _restrictedForums = (await GetForumTree(user, false)).Where(t => t.IsRestricted).Select(t => (t.ForumId, t.HasPassword));
+                _restrictedForums = (await GetForumTree(user, false)).Where(t => t.IsRestricted || (includePasswordProtected && t.HasPassword)).Select(t => (t.ForumId, t.HasPassword));
             }
             return _restrictedForums;
         }
@@ -65,7 +65,7 @@ namespace Serverless.Forum.Services
                     if(childForum != null)
                     {
                         childForum.IsRestricted = node.IsRestricted;
-                        childForum.HasPassword |= node.HasPassword;
+                        //childForum.HasPassword |= node.HasPassword;
                         if (childForum.PathList == null)
                         {
                             childForum.PathList = new List<int>(node.PathList ?? new List<int>());

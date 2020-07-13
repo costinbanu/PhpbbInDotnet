@@ -80,7 +80,7 @@ function roundToNextEvenNumber(value) {
 
 function showForumTree(caller) {
     showElement('forumTree', null, () => {
-        $('html, body').animate({ scrollTop: $(caller).position().top + $('#topBanner').outerHeight() + 1000 }, 'slow');
+        $('html, body').scrollTop($(caller).offset().top - $('#topBanner').outerHeight() - 10);
         $('#treeContainer').scrollTop($('.selectedTreeNode').offset().top - $('#treeContainer').offset().top - 50);
     });
 }

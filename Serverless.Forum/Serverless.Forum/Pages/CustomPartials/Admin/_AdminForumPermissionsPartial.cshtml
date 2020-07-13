@@ -47,7 +47,7 @@
             @Html.DropDownList(
                 $"dto.{Model.EntityType}ForumPermissions[{index}]",
                 permissions.Select(p => new SelectListItem(p.RoleDescription, $"{permissions.Key.Id}_{p.RoleId}", p.HasRole)),
-                new { style = "width:75%" }
+                new { style = "width:75%; margin-top:10px;" }
             )
             &nbsp;Șterge? <input type="checkbox" name="dto.@(Model.EntityType)PermissionToRemove" value="@(index++)" />
         </div>
@@ -75,7 +75,7 @@
         else
         {
             var dropDownItems = new List<SelectListItem>
-    {
+            {
                 new SelectListItem("Alege un grup", "0", true, true)
             };
             dropDownItems.AddRange(remainingEntities.Select(e => new SelectListItem(e.Key, e.Value.ToString())));

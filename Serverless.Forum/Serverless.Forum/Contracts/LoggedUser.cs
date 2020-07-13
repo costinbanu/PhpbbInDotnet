@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Serverless.Forum.Contracts
 {
@@ -42,16 +43,19 @@ namespace Serverless.Forum.Contracts
             public int AuthSetting { get; set; } = 0;
 
             public override bool Equals(object obj)
-            {
-                if (obj is Permissions perm)
-                {
-                    return ForumId == perm?.ForumId && AuthRoleId == perm?.AuthRoleId;
-                }
-                return false;
-            }
+                => obj != null && obj is Permissions perm && ForumId == perm?.ForumId && AuthRoleId == perm?.AuthRoleId;
 
             public override int GetHashCode()
                 => HashCode.Combine(ForumId, AuthRoleId);
+        }
+
+        public class PermissionsByForumIdComparer : IEqualityComparer<Permissions>
+        {
+            public bool Equals([AllowNull] Permissions x, [AllowNull] Permissions y)
+                => x != null && y != null && x.ForumId == y.ForumId;
+
+            public int GetHashCode([DisallowNull] Permissions obj)
+                => obj.ForumId.GetHashCode();
         }
     }
 }

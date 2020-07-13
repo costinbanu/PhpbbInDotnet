@@ -4,7 +4,7 @@
 @using System.Web
 @using Serverless.Forum.Utilities
 @using Microsoft.EntityFrameworkCore
-@using Serverless.Forum.Pages.CustomPartials 
+@using Serverless.Forum.Pages.CustomPartials
 
 @inject Services.UserService _userService
 @inject Utils _utils
@@ -277,7 +277,7 @@
                                 <s>&#x1F5E8; Subiect închis</s>
                             </a>
                         }
-                        @if (await _userService.HasPrivateMessages(CurrentUser) /*&& await _userService.HasPrivateMessages(post.AuthorId ?? 1)*/)
+                        @if (_userService.HasPrivateMessages(CurrentUser) /*&& await _userService.HasPrivateMessages(post.AuthorId ?? 1)*/)
                         {
                             <span>
                                 <a asp-page="/Posting" asp-page-handler="PrivateMessage" asp-route-postId="@post.PostId">&#x2709; Mesaj privat</a>
@@ -325,14 +325,15 @@
             <span>Scrie un mesaj nou</span>
         }
     </a>
+    <hr />
 }
 else if (!IsAnonymous)
 {
     <a href="javascript:;" title="Subiectul este închis, nu se mai pot trimite răspunsuri.">
         <s>&#x1F5E8; Subiect închis</s>
     </a>
+    <hr />
 }
-<hr />
 @await Html.PartialAsync(
     "_PaginationControlsPartial",
     new CustomPartials._PaginationControlsPartialModel(

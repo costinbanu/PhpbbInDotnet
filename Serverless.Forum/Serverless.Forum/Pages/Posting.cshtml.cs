@@ -152,6 +152,7 @@ namespace Serverless.Forum.Pages
                 var attachments = await _context.PhpbbAttachments.AsNoTracking().Where(a => a.PostMsgId == PostId).ToListAsync();
                 await _cacheService.SetInCache(await GetActualCacheKey("PostAttachments", true), attachments);
                 ShowAttach = attachments.Any();
+                FileComment = attachments.Select(a => HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(a.AttachComment, string.Empty))).ToList();
 
                 await _cacheService.SetInCache(await GetActualCacheKey("PostTime", true), curPost.PostTime);
 
@@ -266,6 +267,7 @@ namespace Serverless.Forum.Pages
                      ModelState.AddModelError(nameof(Files), $"Următoarele fișiere nu au putut fi adăugate, vă rugăm să încercați din nou: {string.Join(",", failed)}");
                  }
                  ShowAttach = true;
+                 FileComment = Enumerable.Repeat(string.Empty, attachList.Count).ToList();
 
                  await _cacheService.SetInCache(await GetActualCacheKey("PostAttachments", true), attachList);
                  return Page();
@@ -342,7 +344,7 @@ namespace Serverless.Forum.Pages
 
                     PreviewablePost = new PostDto
                     {
-                        Attachments = attachments.Select(x => new _AttachmentPartialModel(x, true)).ToList(),
+                        Attachments = new List<_AttachmentPartialModel>(),
                         AuthorColor = postAuthor.UserColour,
                         AuthorHasAvatar = !string.IsNullOrWhiteSpace(postAuthor?.UserAvatar),
                         AuthorId = postAuthor.UserId,
@@ -360,6 +362,12 @@ namespace Serverless.Forum.Pages
                         PostText = _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText))
                     };
 
+                    for (var i = 0; i < attachments.Count; i++)
+                    {
+                        attachments[i].AttachComment = FileComment[i];
+                        PreviewablePost.Attachments.Add(new _AttachmentPartialModel(attachments[i], true));
+                    }
+
                     if (!string.IsNullOrWhiteSpace(PollOptions))
                     {
                         PreviewablePoll = new PollDto
@@ -373,6 +381,7 @@ namespace Serverless.Forum.Pages
                         };
                     }
                     await _renderingService.ProcessPost(PreviewablePost, PageContext, HttpContext, true);
+                    ShowAttach = attachments.Any();
 
                     return Page();
                 });
@@ -587,7 +596,7 @@ namespace Serverless.Forum.Pages
                 {
                     attachList[i].PostMsgId = post.PostId;
                     attachList[i].TopicId = TopicId.Value;
-                    attachList[i].AttachComment = FileComment[i] ?? string.Empty;
+                    attachList[i].AttachComment = _writingService.PrepareTextForSaving(FileComment[i] ?? string.Empty);
                 }
 
                 await _postService.CascadePostAdd(context, post, false);
@@ -599,7 +608,7 @@ namespace Serverless.Forum.Pages
                 {
                     attachList[i].PostMsgId = post.PostId;
                     attachList[i].TopicId = TopicId.Value;
-                    attachList[i].AttachComment = FileComment[i] ?? string.Empty;
+                    attachList[i].AttachComment = _writingService.PrepareTextForSaving(FileComment[i] ?? string.Empty);
                 }
                 await context.PhpbbAttachments.AddRangeAsync(attachList.Where(a => a.AttachId == 0));
                 context.PhpbbAttachments.UpdateRange(attachList.Where(a => a.AttachId != 0));
