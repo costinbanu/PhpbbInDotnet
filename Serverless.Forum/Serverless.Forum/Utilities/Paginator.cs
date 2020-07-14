@@ -37,7 +37,7 @@ namespace Serverless.Forum.Utilities
                 PageSize = usr.TopicPostsPerPage.ContainsKey(topicId.Value) ? usr.TopicPostsPerPage[topicId.Value] : Constants.DEFAULT_PAGE_SIZE;
             }
 
-            IsAnonymous = (usr?.UserId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID;
+            IsAnonymous = usr?.IsAnonymous ?? true;
 
             PostsPerPage.ForEach(ppp => ppp.Selected = int.TryParse(ppp.Value, out var value) && value == PageSize);
             Pagination = new _PaginationPartialModel(link, count, PageSize, pageNum, pageNumKey);

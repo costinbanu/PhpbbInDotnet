@@ -10,7 +10,9 @@
 
 @inject Services.UserService _userService
 
-<link rel="stylesheet" href="~/css/posting.css" />
+<environment include="Development">
+    <link rel="stylesheet" href="~/css/posting.css" />
+</environment>
 <style>
     @@media (max-width: 768px) {
         .FlexRight {

@@ -19,10 +19,13 @@
     var ForumId = await _cacheService.GetFromCache<int>(await Model.GetActualCacheKey("ForumId", true));
 }
 
+<environment include="Development">
+    <script src="~/js/posting.js"></script>
+    <link rel="stylesheet" href="~/css/posting.css" />
+</environment>
 <script src="~/lib/tribute/dist/tribute.js"></script>
-<script src="~/js/posting.js"></script>
 <link rel="stylesheet" href="~/lib/tribute/dist/tribute.css" />
-<link rel="stylesheet" href="~/css/posting.css" />
+
 <script type="text/javascript">
     var posting = new Posting(
         @Json.Serialize(await _cacheService.GetFromCache<List<string>>(await Model.GetActualCacheKey("BbCodes", false))),

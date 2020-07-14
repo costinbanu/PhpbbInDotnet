@@ -58,7 +58,7 @@ namespace Serverless.Forum.Services
                 select up.AuthRoleId as int?).FirstOrDefault();
 
         public bool HasPrivateMessages(LoggedUser user)
-            => user?.AllPermissions?.Contains(new LoggedUser.Permissions { ForumId = 0, AuthRoleId = Constants.NO_PM_ROLE }) ?? false;
+            => !(user?.IsAnonymous ?? true) && !(user?.AllPermissions?.Contains(new LoggedUser.Permissions { ForumId = 0, AuthRoleId = Constants.NO_PM_ROLE }) ?? false);
 
         public async Task<bool> HasPrivateMessages(int userId)
             => HasPrivateMessages(await GetLoggedUserById(userId));

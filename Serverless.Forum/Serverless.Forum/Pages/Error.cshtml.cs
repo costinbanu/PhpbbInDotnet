@@ -11,6 +11,9 @@ namespace Serverless.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public bool IsUnauthorized { get; set; }
 
+        [BindProperty(SupportsGet = true)]
+        public bool IsNotFound { get; set; }
+
         public void OnGet()
         {
 

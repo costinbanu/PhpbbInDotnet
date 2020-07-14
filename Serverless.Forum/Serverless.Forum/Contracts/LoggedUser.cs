@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Serverless.Forum.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
@@ -24,13 +25,7 @@ namespace Serverless.Forum.Contracts
 
         public int PostEditTime { get; set; } = 60;
 
-        public static bool operator == (LoggedUser left, LoggedUser right) => left?.UserId == right?.UserId;
-
-        public static bool operator != (LoggedUser left, LoggedUser right) => !(left == right);
-
-        public override bool Equals(object obj) => obj is LoggedUser other && other == this;
-
-        public override int GetHashCode() => UserId.GetHashCode();
+        public bool IsAnonymous => UserId == Constants.ANONYMOUS_USER_ID;
 
         public class Permissions
         {
@@ -47,15 +42,6 @@ namespace Serverless.Forum.Contracts
 
             public override int GetHashCode()
                 => HashCode.Combine(ForumId, AuthRoleId);
-        }
-
-        public class PermissionsByForumIdComparer : IEqualityComparer<Permissions>
-        {
-            public bool Equals([AllowNull] Permissions x, [AllowNull] Permissions y)
-                => x != null && y != null && x.ForumId == y.ForumId;
-
-            public int GetHashCode([DisallowNull] Permissions obj)
-                => obj.ForumId.GetHashCode();
         }
     }
 }

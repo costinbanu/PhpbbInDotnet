@@ -8,14 +8,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using PaulMiami.AspNetCore.Mvc.Recaptcha;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System;
 using System.Diagnostics;
-using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -43,15 +41,8 @@ namespace Serverless.Forum
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
-            services.AddTransient<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton(Configuration);
 
-            //services.AddDistributedSqlServerCache(options =>
-            //{
-            //    options.ConnectionString = @"Data Source=np:\\.\pipe\LOCALDB#2A91525F\tsql\query;Initial Catalog=DistCache;Integrated Security=True;";
-            //    options.SchemaName = "dbo";
-            //    options.TableName = "ForumCache";
-            //});
             services.AddMemoryCache();
 
             services.AddSession(options => {
@@ -65,15 +56,6 @@ namespace Serverless.Forum
                 options.CheckConsentNeeded = context => false;
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
-
-            if (Env.IsStaging() || Env.IsProduction())
-            {
-                services.AddLogging(log => log.AddEventLog());
-            }
-            else
-            {
-                services.AddLogging(log => log.AddConsole());
-            }
 
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie();
             
@@ -149,11 +131,17 @@ namespace Serverless.Forum
             {
                 app.UseExceptionHandler(errorApp =>
                 {
-                    errorApp.Run(context =>
+                    errorApp.Run(async context =>
                     {
                         var handler = context.Features.Get<IExceptionHandlerPathFeature>();
-                        context.Response.Redirect($"/Error?errorId={utils.HandleError(handler.Error, handler.Path)}");
-                        return Task.CompletedTask;
+                        if ((context.Request?.Path.HasValue ?? false) && !context.Request.Path.Value.Equals("/Error", StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            context.Response.Redirect($"/Error?errorId={utils.HandleError(handler.Error, $"Path: {handler.Path}")}");
+                        }
+                        else
+                        {
+                            await context.Response.WriteAsync($"A intervenit o eroare. ID: {utils.HandleError(handler.Error, $"Path: {handler.Path}")}.");
+                        }
                     });
                 });
                 app.UseHsts();

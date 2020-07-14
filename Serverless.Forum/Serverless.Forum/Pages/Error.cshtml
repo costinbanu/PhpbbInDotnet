@@ -6,7 +6,15 @@
 
 <h2 class="text-danger">A intervenit o eroare.</h2>
 
-@if (!Model.IsUnauthorized)
+@if (Model.IsUnauthorized)
+{
+    <p>Nu ești autorizat să vizitezi pagina solicitată.</p>
+}
+else if (Model.IsNotFound)
+{
+    <p>Pagina solicitată nu există.</p>
+}
+else
 {
     if (!string.IsNullOrWhiteSpace(Model.ErrorId))
     {
@@ -15,10 +23,14 @@
         </p>
     }
     <p>
-        Dacă eroarea persistă, scrieți la <a href="mailto:admin@metrouusor.com">admin@@metrouusor.com</a> și includeți IDul de mai sus.
+        Dacă eroarea persistă, scrieți la <a href="mailto:admin@metrouusor.com">admin@@metrouusor.com</a>
+        @if (!string.IsNullOrWhiteSpace(Model.ErrorId))
+        {
+            <span> și includeți IDul de mai sus.</span>
+        }
+        else
+        {
+            <span>.</span>
+        }
     </p>
-}
-else
-{
-    <p>Nu ești autorizat să vizitezi pagina solicitată.</p>
 }

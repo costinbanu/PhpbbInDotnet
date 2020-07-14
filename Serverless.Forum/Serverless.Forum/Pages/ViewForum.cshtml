@@ -11,12 +11,12 @@
     Layout = "~/Pages/_Layout.cshtml";
     var CurrentUser = await Model.GetCurrentUserAsync();
     var UserDateFormat = CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
-    var IsAnonymous = (CurrentUser?.UserId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID;
+    var IsAnonymous = CurrentUser?.IsAnonymous ?? true;
     var hasSubForums = _forumService.HasUnrestrictedChildren((await Model.GetForumTree()).Tree, Model.ForumId);
 }
-
-<link rel="stylesheet" href="~/css/pagination.css" />
-
+<environment include="Development">
+    <link rel="stylesheet" href="~/css/pagination.css" />
+</environment>
 <form asp-page-handler="MarkForumsRead" method="post" name="MarkForumsRead">
     <input asp-for="ForumId" type="hidden" value="@Model.ForumId" />
     @Html.AntiForgeryToken()

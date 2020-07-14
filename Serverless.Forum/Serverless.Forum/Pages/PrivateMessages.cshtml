@@ -9,10 +9,11 @@
 @using Utilities
 @using Contracts
 
-<script src="~/js/tabbedPage.js"></script>
-<link rel="stylesheet" href="~/css/tabbedPage.css" />
-<link rel="stylesheet" href="~/css/pagination.css" />
-
+<environment include="Development">
+    <script src="~/js/tabbedPage.js"></script>
+    <link rel="stylesheet" href="~/css/tabbedPage.css" />
+    <link rel="stylesheet" href="~/css/pagination.css" />
+</environment>
 <style>
     .MinAuthor {
         font-weight: bold;

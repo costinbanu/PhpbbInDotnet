@@ -11,12 +11,15 @@
 }
 
 <h2>Panoul administratorului</h2>
-
-<script src="~/lib/Sortable.js"></script>
-<script src="~/js/tabbedPage.js"></script>
-<link rel="stylesheet" href="~/css/admin.css" />
-<link rel="stylesheet" href="~/css/tabbedPage.css" />
-
+<environment include="Development">
+    <script src="~/lib/Sortable.js"></script>
+    <script src="~/js/tabbedPage.js"></script>
+    <link rel="stylesheet" href="~/css/admin.css" />
+    <link rel="stylesheet" href="~/css/tabbedPage.css" />
+</environment>
+<environment exclude="Development">
+    <link rel="stylesheet" href="~/css/admin.min.css" />
+</environment>
 <div class="tab">
     <button class="@(Model.Category == AdminCategories.Users ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Users')">Administrare utilizatori</button>
     <button class="@(Model.Category == AdminCategories.Forums ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Forums')">Administrare forumuri</button>

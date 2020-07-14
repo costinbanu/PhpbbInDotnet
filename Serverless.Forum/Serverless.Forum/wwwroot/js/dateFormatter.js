@@ -174,7 +174,7 @@ Date.prototype.format = function (format) {
     try {
         return this.Date(format);
     }
-    catch {
+    catch (e) {
         return this.Date('dd.MM.yyyy HH:mm');
     }
 } 

@@ -4,7 +4,6 @@
     ViewData["Title"] = "Home page";
     var usr = await Model.GetCurrentUserAsync();
     var UserDateFormat = usr?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
-    var IsAnonymous = usr?.UserId == Utilities.Constants.ANONYMOUS_USER_ID;
 }
 
 <style>
@@ -34,7 +33,7 @@
     }
 </style>
 
-@if (!IsAnonymous)
+@if (!usr.IsAnonymous)
 {
     <form asp-page-handler="MarkForumsRead" method="post" name="MarkForumsRead">
         @Html.AntiForgeryToken()

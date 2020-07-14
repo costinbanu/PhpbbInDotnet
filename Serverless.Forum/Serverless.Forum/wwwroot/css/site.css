@@ -13,7 +13,7 @@
     font-family: Ubuntu;
     src: url('../fonts/Ubuntu-Italic.ttf') format('truetype');
     font-style: italic;
-}
+} 
 
 @font-face {
     font-family: Ubuntu;
@@ -390,6 +390,7 @@ label {
     padding: 10px;
     margin: 3px;
     z-index: 1040;
+    backdrop-filter: blur(5px);
 }
 
 .PostInputWidth {

@@ -7,11 +7,9 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Serverless.Forum.ForumDb;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -32,9 +30,9 @@ namespace Serverless.Forum.Utilities
         private readonly IConfiguration _config;
         private readonly ICompositeViewEngine _viewEngine;
         private readonly ITempDataProvider _tempDataProvider;
-        private readonly ILogger<Utils> _logger;
+        private readonly ILogger _logger;
 
-        public Utils(IConfiguration config, ICompositeViewEngine viewEngine, ITempDataProvider tempDataProvider, ILogger<Utils> logger)
+        public Utils(IConfiguration config, ICompositeViewEngine viewEngine, ITempDataProvider tempDataProvider, ILogger logger)
         {
             _config = config;
             _viewEngine = viewEngine;
@@ -73,19 +71,15 @@ namespace Serverless.Forum.Utilities
         public async Task<string> UrlDecodeAndDecompress(string input)
             => await DecompressObject<string>(Convert.FromBase64String(HttpUtility.UrlDecode(input)));
 
-        public string RandomString(int length = 8)
-        {
-            var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-            var stringChars = new char[length];
-            var random = new Random();
+        public string RandomBase36Number()
+            => Math.Abs(Convert.ToInt64($"0x{Guid.NewGuid().ToString("n").Substring(4, 16)}", 16)).ToBase36().ToLowerInvariant();
 
-            for (int i = 0; i < stringChars.Length; i++)
-            {
-                stringChars[i] = chars[random.Next(chars.Length)];
-            }
+        public string NewBbcodeUid(int length = 8)
+            => RandomBase36Number().Substring(0, length);
 
-            return new string(stringChars);
-        }
+        public string NewBitfield(int length = 8)
+            => Convert.ToBase64String(Encoding.UTF8.GetBytes(RandomBase36Number().Substring(0, length)));
+        
 
         public string CalculateMD5Hash(string input)
         {
@@ -193,7 +187,7 @@ namespace Serverless.Forum.Utilities
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error encountered while rendering a razor view programatically.");
+                HandleError(ex, "Error encountered while rendering a razor view programatically.");
                 return string.Empty;
             }
         }
@@ -282,7 +276,7 @@ namespace Serverless.Forum.Utilities
         public string HandleError(Exception ex, string message = null)
         {
             var id = Guid.NewGuid().ToString("n");
-            _logger.LogError(ex, $"Exception id '{id}'.\n{message}");
+            _logger.Error(ex, "Exception id: {id}. Message: {message}", id, message);
             return id;
         }
     }

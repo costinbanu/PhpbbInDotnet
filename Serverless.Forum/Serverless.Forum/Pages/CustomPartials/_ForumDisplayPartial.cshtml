@@ -5,8 +5,9 @@
 
 @using Utilities
 
-<link rel="stylesheet" href="~/css/pagination.css" />
-
+<environment include="Development">
+    <link rel="stylesheet" href="~/css/pagination.css" />
+</environment>
 
 @if (Model.ShowTitle && Model.Categories.Any(x => !x.IsRestricted))
 {
@@ -32,7 +33,7 @@
         }
 
         var isUnread = false;
-        if ((Model.LoggedUser?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
+        if (!(Model.LoggedUser?.IsAnonymous ?? true))
         {
             isUnread = await _forumService.IsForumUnread(forum.ForumId, Model.LoggedUser);
         }
@@ -76,7 +77,7 @@
     }
 
     var isUnread = false;
-    if ((Model.LoggedUser?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
+    if (!(Model.LoggedUser?.IsAnonymous ?? true))
     {
         isUnread = await _forumService.IsForumUnread(forum.ForumId, Model.LoggedUser);
     }

@@ -17,7 +17,6 @@ using System.Web;
 
 namespace Serverless.Forum.Pages
 {
-    //https://stackoverflow.com/questions/54963951/aws-lambda-file-upload-to-asp-net-core-2-1-razor-page-is-corrupting-binary
     [ValidateAntiForgeryToken]
     public class PostingModel : ModelWithLoggedUser
     {
@@ -267,7 +266,14 @@ namespace Serverless.Forum.Pages
                      ModelState.AddModelError(nameof(Files), $"Următoarele fișiere nu au putut fi adăugate, vă rugăm să încercați din nou: {string.Join(",", failed)}");
                  }
                  ShowAttach = true;
-                 FileComment = Enumerable.Repeat(string.Empty, attachList.Count).ToList();
+                 if (FileComment?.Any() ?? false)
+                 {
+                     FileComment = Enumerable.Repeat(string.Empty, attachList.Count).ToList();
+                 }
+                 else
+                 {
+                     FileComment.AddRange(Enumerable.Repeat(string.Empty, Files.Count()));
+                 }
 
                  await _cacheService.SetInCache(await GetActualCacheKey("PostAttachments", true), attachList);
                  return Page();
@@ -351,7 +357,7 @@ namespace Serverless.Forum.Pages
                         AuthorName = postAuthor.Username,
                         AuthorRank = (await _context.PhpbbRanks.AsNoTracking().FirstOrDefaultAsync(x => x.RankId == rankId))?.RankTitle,
                         AuthorSignature = _renderingService.BbCodeToHtml(postAuthor.UserSig, postAuthor.UserSigBbcodeUid),
-                        BbcodeUid = _utils.RandomString(),
+                        BbcodeUid = _utils.NewBbcodeUid(),
                         PostCreationTime = postTime,
                         EditCount = (short)((currentPost?.PostEditCount ?? 0) + 1),
                         LastEditReason = currentPost?.PostEditReason,
@@ -573,7 +579,8 @@ namespace Serverless.Forum.Pages
                     PostTime = DateTime.UtcNow.ToUnixTimestamp(),
                     PostApproved = 1,
                     PostReported = 0,
-                    BbcodeUid = _utils.RandomString(),
+                    BbcodeUid = _utils.NewBbcodeUid(),
+                    BbcodeBitfield = _utils.NewBitfield(),
                     EnableBbcode = 1,
                     EnableMagicUrl = 1,
                     EnableSig = 1,

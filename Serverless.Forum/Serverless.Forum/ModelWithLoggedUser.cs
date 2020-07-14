@@ -64,7 +64,7 @@ namespace Serverless.Forum
             else
             {
                 _currentUser = await _userService.ClaimsPrincipalToLoggedUserAsync(user);
-                if (_currentUser.UserId != Constants.ANONYMOUS_USER_ID)
+                if (!_currentUser.IsAnonymous)
                 {
                     var key = $"UserMustLogIn_{_currentUser.UsernameClean}";
                     if (await _cacheService.GetFromCache<bool?>(key) ?? false)
@@ -122,36 +122,24 @@ namespace Serverless.Forum
         public async Task<bool> IsForumUnread(int forumId, bool forceRefresh = false)
         {
             var usr = await GetCurrentUserAsync();
-            if (usr.UserId == Constants.ANONYMOUS_USER_ID)
-            {
-                return false;
-            }
-            return await _forumService.IsForumUnread(forumId, usr, forceRefresh);
+            return !usr.IsAnonymous && await _forumService.IsForumUnread(forumId, usr, forceRefresh);
         }
 
         public async Task<bool> IsTopicUnread(int topicId, bool forceRefresh = false)
         {
             var usr = await GetCurrentUserAsync();
-            if (usr.UserId == Constants.ANONYMOUS_USER_ID)
-            {
-                return false;
-            }
-            return await _forumService.IsTopicUnread(topicId, usr, forceRefresh);
+            return !usr.IsAnonymous && await _forumService.IsTopicUnread(topicId, usr, forceRefresh);
         }
 
         public async Task<bool> IsPostUnread(int topicId, int postId)
         {
             var usr = await GetCurrentUserAsync();
-            if (usr.UserId == Constants.ANONYMOUS_USER_ID)
-            {
-                return false;
-            }
-            return await _forumService.IsPostUnread(topicId, postId, usr);
+            return !usr.IsAnonymous && await _forumService.IsPostUnread(topicId, postId, usr);
         }
 
         public async Task<int> GetFirstUnreadPost(int topicId)
         {
-            if ((await GetCurrentUserAsync()).UserId == Constants.ANONYMOUS_USER_ID)
+            if ((await GetCurrentUserAsync()).IsAnonymous)
             {
                 return 0;
             }
@@ -230,7 +218,7 @@ namespace Serverless.Forum
 
         protected async Task<IActionResult> WithRegisteredUser(Func<Task<IActionResult>> toDo)
         {
-            if ((await GetCurrentUserAsync()).UserId == Constants.ANONYMOUS_USER_ID)
+            if ((await GetCurrentUserAsync()).IsAnonymous)
             {
                 return RedirectToPage("Login", new { ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString) });
             }
@@ -267,7 +255,7 @@ namespace Serverless.Forum
             {
                 if (curForum == null)
                 {
-                    return NotFound($"Forumul solicitat nu există.");
+                    return RedirectToPage("Error", new { isNotFound = true });
                 }
 
                 var usr = await GetCurrentUserAsync();
@@ -320,7 +308,7 @@ namespace Serverless.Forum
             }
             if (curTopic == null)
             {
-                return NotFound();
+                return RedirectToPage("Error", new { isNotFound = true });
             }
             return await WithValidForum(curTopic.ForumId, async (curForum) => await toDo(curForum, curTopic));
         }
@@ -335,7 +323,7 @@ namespace Serverless.Forum
             }
             if (curPost == null)
             {
-                return NotFound();
+                return RedirectToPage("Error", new { isNotFound = true });
             }
             return await WithValidTopic(curPost.TopicId, async (curForum, curTopic) => await toDo(curForum, curTopic, curPost));
         }

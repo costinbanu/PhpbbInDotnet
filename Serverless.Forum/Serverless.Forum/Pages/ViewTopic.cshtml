@@ -21,12 +21,11 @@
     var IsMod = await Model.IsCurrentUserModeratorHereAsync();
     var EditTime = CurrentUser.PostEditTime;
 }
-
-<link rel="stylesheet" href="~/css/pagination.css" />
-<link rel="stylesheet" href="~/css/posting.css" />
-<script type="text/javascript" src="~/js/viewTopic.js"></script>
-<script type="text/javascript" src="~/lib/Html2Canvas.js"></script>
-<script type="text/javascript" src="~/lib/SaveAs.js"></script>
+<environment include="Development">
+    <link rel="stylesheet" href="~/css/pagination.css" />
+    <script type="text/javascript" src="~/js/viewTopic.js"></script>
+    <link rel="stylesheet" href="~/css/posting.css" />
+</environment>
 
 <script type="text/javascript">
     var vt = new ViewTopic(

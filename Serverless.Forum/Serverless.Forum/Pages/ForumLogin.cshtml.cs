@@ -46,7 +46,7 @@ namespace Serverless.Forum.Pages
                         
             if (forum == null)
             {
-                return NotFound("Forumul solicitat nu există.");
+                return RedirectToPage("Error", new { isNotFound = true });
             }
 
             if (string.IsNullOrWhiteSpace(forum.ForumPassword))

@@ -82,5 +82,5 @@ function showForumTree(caller) {
     showElement('forumTree', null, () => {
         $('html, body').scrollTop($(caller).offset().top - $('#topBanner').outerHeight() - 10);
         $('#treeContainer').scrollTop($('.selectedTreeNode').offset().top - $('#treeContainer').offset().top - 50);
-    });
+    }); 
 }

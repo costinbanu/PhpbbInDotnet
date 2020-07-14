@@ -77,7 +77,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnGet()
         {
-            if ((User?.Identity?.IsAuthenticated ?? false) && (await _userService.ClaimsPrincipalToLoggedUserAsync(User)).UserId != Constants.ANONYMOUS_USER_ID)
+            if ((User?.Identity?.IsAuthenticated ?? false) && !((await _userService.ClaimsPrincipalToLoggedUserAsync(User))?.IsAnonymous ?? true))
             {
                 return RedirectToPage("Logout", new { returnUrl = ReturnUrl ?? "/" });
             }
@@ -87,7 +87,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnGetNewPassword()
         {
-            if ((User?.Identity?.IsAuthenticated ?? false) && (await _userService.ClaimsPrincipalToLoggedUserAsync(User)).UserId != Constants.ANONYMOUS_USER_ID)
+            if ((User?.Identity?.IsAuthenticated ?? false) && !((await _userService.ClaimsPrincipalToLoggedUserAsync(User))?.IsAnonymous ?? true))
             {
                 return RedirectToPage("Logout", new { returnUrl = ReturnUrl ?? "/" });
             }

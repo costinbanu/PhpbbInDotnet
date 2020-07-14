@@ -33,7 +33,7 @@ namespace Serverless.Forum.Pages
                 var file = await connection.QuerySingleOrDefaultAsync("SELECT a.physical_filename, a.real_filename, a.mimetype, p.forum_id FROM phpbb_attachments a JOIN phpbb_posts p on a.post_msg_id = p.post_id WHERE attach_id = @Id", new { Id });
                 if (file == null)
                 {
-                    return NotFound();
+                    return RedirectToPage("Error", new { isNotFound = true });
                 }
                 forumId = file?.forum_id;
                 physicalFilename = file?.physical_filename;
@@ -59,7 +59,7 @@ namespace Serverless.Forum.Pages
 
             if (file == null)
             {
-                return NotFound();
+                return RedirectToPage("Error", new { isNotFound = true });
             }
 
             return SendToClient(file, file, null, true);
@@ -83,7 +83,7 @@ namespace Serverless.Forum.Pages
             }
             else
             {
-                return NotFound("Fișierul solicitat nu există");
+                return RedirectToPage("Error", new { isNotFound = true });
             }
         }
     }

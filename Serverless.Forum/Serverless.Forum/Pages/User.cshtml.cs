@@ -90,7 +90,7 @@ namespace Serverless.Forum.Pages
                 var cur = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == userId);
                 if (cur == null)
                 {
-                    return NotFound($"Utilizatorul cu id '{userId}' nu există.");
+                    return RedirectToPage("Error", new { isNotFound = true });
                 }
                 await Render(_context, cur);
 
@@ -107,7 +107,7 @@ namespace Serverless.Forum.Pages
             var dbUser = await _context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == CurrentUser.UserId);
             if (dbUser == null)
             {
-                return NotFound($"Utilizatorul cu id '{CurrentUser.UserId}' nu există.");
+                return RedirectToPage("Error", new { isNotFound = true });
             }
 
             var userMustLogIn = false;
