@@ -259,4 +259,5 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
-/Serverless.Forum/Serverless.Forum/wwwroot/forumfiles
+#/Serverless.Forum/Serverless.Forum/wwwroot/forumfiles
+/Serverless.Forum/Serverless.Forum/wwwroot/logs
