@@ -91,6 +91,11 @@ namespace Serverless.Forum.Pages
                 var usr = await GetCurrentUserAsync();
                 var tree = await GetForumTree();
                 IEnumerable<TopicDto> topics = null;
+                var topicList = tree.Tracking.Select(t => t.TopicId).Distinct().Skip(((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE).Take(Constants.DEFAULT_PAGE_SIZE);
+                if (!topicList.Any())
+                {
+                    topicList = new[] { 0 };
+                }
                 using (var connection = _context.Database.GetDbConnection())
                 {
                     await connection.OpenIfNeeded();
@@ -109,7 +114,7 @@ namespace Serverless.Forum.Pages
                             JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
                         WHERE t.topic_id IN @topicList
                         GROUP BY t.topic_id",
-                        new { topicList = tree.Tracking.Select(t => t.TopicId).Distinct().Skip(((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE).Take(Constants.DEFAULT_PAGE_SIZE) }
+                        new { topicList }
                     );
                 }
 

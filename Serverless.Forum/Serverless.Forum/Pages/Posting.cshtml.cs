@@ -580,7 +580,7 @@ namespace Serverless.Forum.Pages
                     PostApproved = 1,
                     PostReported = 0,
                     BbcodeUid = _utils.NewBbcodeUid(),
-                    BbcodeBitfield = _utils.NewBitfield(),
+                    BbcodeBitfield = _renderingService.GetBitfield(PostText, string.Empty),
                     EnableBbcode = 1,
                     EnableMagicUrl = 1,
                     EnableSig = 1,
