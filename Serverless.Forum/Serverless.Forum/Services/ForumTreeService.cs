@@ -22,7 +22,6 @@ namespace Serverless.Forum.Services
         public ForumTreeService(ForumDbContext context)
         {
             _context = context;
-            DefaultTypeMap.MatchNamesWithUnderscores = true;
         }
 
         public async Task<IEnumerable<(int forumId, bool hasPassword)>> GetRestrictedForumList(LoggedUser user, bool includePasswordProtected = false)

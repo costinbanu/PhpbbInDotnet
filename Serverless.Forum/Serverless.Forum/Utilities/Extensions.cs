@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Dapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -58,6 +59,7 @@ namespace Serverless.Forum.Utilities
             {
                 await connection.OpenAsync();
             }
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
         }
 
         public static async Task<T> FirstOrDefaultAsync<T>(this IQueryable<T> source) where T : class

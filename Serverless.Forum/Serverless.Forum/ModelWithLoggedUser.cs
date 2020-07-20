@@ -34,7 +34,6 @@ namespace Serverless.Forum
             _cacheService = cacheService;
             _userService = userService;
             _context = context;
-            DefaultTypeMap.MatchNamesWithUnderscores = true;
         }
 
         #region User

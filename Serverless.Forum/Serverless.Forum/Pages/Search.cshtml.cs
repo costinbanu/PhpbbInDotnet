@@ -136,7 +136,6 @@ namespace Serverless.Forum.Pages
             using (var connection = _context.Database.GetDbConnection())
             {
                 await connection.OpenIfNeeded();
-                DefaultTypeMap.MatchNamesWithUnderscores = true;
                 PageNum ??= 1;
                 using var multi = await connection.QueryMultipleAsync(
                     "CALL `forum`.`search_post_text`(@forum, @topic, @author, @page, @excluded_forums, @search);",
@@ -155,13 +154,6 @@ namespace Serverless.Forum.Pages
 
                 TotalResults = unchecked((int)(await multi.ReadAsync<long>()).Single());
             }
-
-            //Parallel.ForEach(Posts, p =>
-            //{
-            //    p.AuthorHasAvatar = !string.IsNullOrWhiteSpace(p.UserAvatar);
-            //    //p.AuthorSignature = p.UserSig == null ? null : _renderingService.BbCodeToHtml(p.UserSig, p.UserSigBbcodeUid);
-            //});
-            //await _renderingService.ProcessPosts(Posts, PageContext, HttpContext, false, SearchText);
 
             Paginator = new Paginator(TotalResults.Value, PageNum.Value, GetSearchLinkForPage(PageNum.Value + 1));
         }

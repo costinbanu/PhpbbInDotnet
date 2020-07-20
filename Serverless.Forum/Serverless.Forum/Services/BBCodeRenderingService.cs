@@ -64,9 +64,9 @@ namespace Serverless.Forum.Services
                     new BBTag("img", "<br/><img src=\"${content}\" /><br/>", string.Empty, false, false, 4),
                     new BBTag("quote", "<blockquote class=\"PostQuote\">${name}", "</blockquote>", 0,
                         new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : $"<b>{HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')}</b> a scris:<br/>")) { GreedyAttributeProcessing = true },
-                    new BBTag("*", "<li>", "</li>", true, false, 20),
+                    new BBTag("*", "<li>", "</li>", true, BBTagClosingStyle.AutoCloseElement, x => x, 20),
                     new BBTag("list", "<${attr}>", "</${attr}>", true, true, 9,
-                        new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul" : $"ol type=\"{a.AttributeValue}\"")),
+                        new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul style='list-style-type: circle'" : $"ol type=\"{a.AttributeValue}\"")),
                     new BBTag("url", "<a href=\"${href}\" target=\"_blank\">", "</a>", 3,
                         new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
                     new BBTag("link", "<a href=\"${href}\">", "</a>", 18,
@@ -170,6 +170,15 @@ namespace Serverless.Forum.Services
                 return string.Empty;
             }
             return _parser.GetBitField(bbCodeText, bbCodeUid);
+        }
+
+        public (string text, string uid) TransformForBackwardsCompatibility(string bbCodeText)
+        {
+            if (string.IsNullOrWhiteSpace(bbCodeText))
+            {
+                return (string.Empty, string.Empty);
+            }
+            return _parser.TransformForBackwardsCompatibility(bbCodeText, 8);
         }
 
         private List<string> SplitHighlightWords(string search)

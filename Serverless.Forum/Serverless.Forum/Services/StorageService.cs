@@ -65,7 +65,8 @@ namespace Serverless.Forum.Services
                         Mimetype = file.ContentType,
                         PhysicalFilename = name,
                         RealFilename = Path.GetFileName(file.FileName),
-                        PosterId = userId
+                        PosterId = userId,
+                        IsOrphan = 0
                     });
                 }
                 catch (Exception ex)

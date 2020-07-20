@@ -6,6 +6,7 @@ using Serverless.Forum.ForumDb;
 using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System.IO;
+using System.Net.Mime;
 using System.Threading.Tasks;
 using IOFile = System.IO.File;
 
@@ -69,16 +70,16 @@ namespace Serverless.Forum.Pages
         {
             mimeType ??= new FileExtensionContentTypeProvider().Mappings[Path.GetExtension(realFileName)];
 
-            //TODO: this doesn't work in chrome
-            //var header = $"{(mimeType.IsMimeTypeInline() ? "inline" : "attachment")}; " +
-            //    $"filename={Uri.EscapeDataString(displayName)}; " +
-            //    $"filename*=UTF-8''{Uri.EscapeDataString(displayName)}";
-
-            //return Redirect(_storageService.GetFileUrl(physicalFileName, isAvatar /*header, mimeType*/));
-
             var path = _storageService.GetFilePath(physicalFileName, isAvatar);
             if (IOFile.Exists(path))
             {
+                var cd = new ContentDisposition
+                {
+                    FileName = realFileName,
+                    Inline = mimeType.IsMimeTypeInline()
+                };
+                Response.Headers.Add("Content-Disposition", cd.ToString());
+                Response.Headers.Add("X-Content-Type-Options", "nosniff");
                 return File(IOFile.OpenRead(path), mimeType, realFileName);
             }
             else

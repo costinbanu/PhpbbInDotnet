@@ -270,7 +270,6 @@ namespace Serverless.Forum.Services
         {
             using var connection = _context.Database.GetDbConnection();
             await connection.OpenIfNeeded();
-            DefaultTypeMap.MatchNamesWithUnderscores = true;
             return await connection.QueryAsync<ForumPermissions>("CALL `forum`.`get_forum_permissions`(@forumId);", new { forumId });
         }
 

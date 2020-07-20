@@ -93,7 +93,6 @@ namespace Serverless.Forum.Services
 
             using var connection = _context.Database.GetDbConnection();
             await connection.OpenIfNeeded();
-            DefaultTypeMap.MatchNamesWithUnderscores = true;
             var editTime = await connection.QuerySingleOrDefaultAsync<int>(
                 @"SELECT group_edit_time g
                    FROM phpbb_groups g

@@ -26,7 +26,6 @@ namespace Serverless.Forum.Services
         {
             using var connection = _context.Database.GetDbConnection();
             await connection.OpenIfNeeded();
-            DefaultTypeMap.MatchNamesWithUnderscores = true;
 
             using var multi = await connection.QueryMultipleAsync("CALL `forum`.`get_posts`(@userId, @topicId, @page, @postId);", new { userId, topicId, page, postId });
             var toReturn = (
@@ -34,20 +33,6 @@ namespace Serverless.Forum.Services
                 Page: multi.Read<int>().Single(),
                 Count: multi.Read<int>().Single()
             );
-
-            //await connection.ExecuteAsync(
-            //    "UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE post_msg_id IN @postIds",
-            //    new { postIds = toReturn.Posts.Select(p => p.PostId) }
-            //);
-
-            //var attachments = await (
-            //    from a in _context.PhpbbAttachments
-            //    where toReturn.Posts.Select(p => p.PostId).Contains(a.PostMsgId)
-            //    select a
-            //).ToListAsync();
-            //attachments.ForEach(a => a.DownloadCount++);
-            //_context.PhpbbAttachments.UpdateRange(attachments);
-            //await _context.SaveChangesAsync();
 
             return toReturn;
         }

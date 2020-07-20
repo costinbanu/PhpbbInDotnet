@@ -1,25 +1,23 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System;
 
 namespace Serverless.Forum.Pages.PhpbbRedirects
 {
     public class fileModel : PageModel
     {
-        public IActionResult OnGet(int? id, int? avatar)
+        public IActionResult OnGet(int? id, string avatar)
         {
             if (id.HasValue)
             {
                 return RedirectToPage("../File", new { Id = id.Value });
             }
-            else if (avatar.HasValue)
+
+            if (!string.IsNullOrWhiteSpace(avatar) && int.TryParse(avatar.Split('_')[0], out var userId))
             {
-                throw new NotImplementedException();
+                return RedirectToPage("../File", "avatar",  new { userId });
             }
-            else
-            {
-                return BadRequest();
-            }
+
+            return BadRequest();
         }
     }
 }

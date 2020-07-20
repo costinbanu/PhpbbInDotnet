@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.ForumDb.Entities;
@@ -11,6 +12,7 @@ using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Configuration;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
@@ -83,10 +85,11 @@ namespace Serverless.Forum.Pages
         private readonly StorageService _storageService;
         private readonly WritingToolsService _writingService;
         private readonly BBCodeRenderingService _renderingService;
+        private readonly IConfiguration _config;
         private readonly Utils _utils;
 
         public PostingModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService,
-            PostService postService, StorageService storageService, WritingToolsService writingService, BBCodeRenderingService renderingService)
+            PostService postService, StorageService storageService, WritingToolsService writingService, BBCodeRenderingService renderingService, IConfiguration config)
             : base(context, forumService, userService, cacheService)
         {
             PollExpirationDaysString = "1";
@@ -98,6 +101,7 @@ namespace Serverless.Forum.Pages
             _storageService = storageService;
             _writingService = writingService;
             _renderingService = renderingService;
+            _config = config;
         }
 
         #region GET
@@ -396,7 +400,7 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnPostNewForumPost()
             => await WithRegisteredUser(async () => await WithValidForum(ForumId, async (_) =>
             {
-                var addedPostId = await UpsertPost(_context, null, await GetCurrentUserAsync());
+                var addedPostId = await UpsertPost(null, await GetCurrentUserAsync());
 
                 if (addedPostId == null)
                 {
@@ -409,7 +413,7 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnPostEditForumPost()
             => await WithRegisteredUser(async () => await WithValidForum(ForumId, async (_) =>
             {
-                var addedPostId = await UpsertPost(_context, await InitEditedPost(), await GetCurrentUserAsync());
+                var addedPostId = await UpsertPost(await InitEditedPost(), await GetCurrentUserAsync());
 
                 if (addedPostId == null)
                 {
@@ -508,7 +512,6 @@ namespace Serverless.Forum.Pages
         {
             var post = await _context.PhpbbPosts.FirstOrDefaultAsync(p => p.PostId == PostId);
 
-            post.PostText = _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText));
             post.PostSubject = HttpUtility.HtmlEncode(PostTitle);
             post.PostEditTime = DateTime.UtcNow.ToUnixTimestamp();
             post.PostEditUser = (await GetCurrentUserAsync()).UserId;
@@ -518,8 +521,34 @@ namespace Serverless.Forum.Pages
             return post;
         }
 
-        private async Task<int?> UpsertPost(ForumDbContext context, PhpbbPosts post, LoggedUser usr)
+        private async Task<int?> UpsertPost(PhpbbPosts post, LoggedUser usr)
         {
+            void processAttachments(List<PhpbbAttachments> attachments, int postId)
+            {
+                for (var i = 0; i < attachments.Count; i++)
+                {
+                    attachments[i].PostMsgId = postId;
+                    attachments[i].TopicId = TopicId.Value;
+                    attachments[i].AttachComment = _writingService.PrepareTextForSaving(FileComment[i] ?? string.Empty);
+                    attachments[i].IsOrphan = 0;
+                }
+            }
+
+            async Task insertAttachments(IEnumerable<PhpbbAttachments> attachments)
+            {
+                using var connection = _context.Database.GetDbConnection();
+                await connection.OpenIfNeeded();
+                var inserted = await connection.ExecuteAsync(
+                    @"INSERT INTO phpbb_attachments (post_msg_id, topic_id, poster_id, is_orphan, physical_filename, real_filename, attach_comment, extension, mimetype, filesize, filetime)
+                           VALUES (@PostMsgId, @TopicId, @PosterId, @IsOrphan, @PhysicalFilename, @RealFilename, @AttachComment, @Extension, @Mimetype, @Filesize, @Filetime);",
+                    attachments.Select(x => new { x.PostMsgId, x.TopicId, x.PosterId, x.IsOrphan, x.PhysicalFilename, x.RealFilename, x.AttachComment, x.Extension, x.Mimetype, x.Filesize, x.Filetime }) 
+                );
+                if (inserted != attachments.Count())
+                {
+                    throw new InvalidOperationException("Not all attachments were inserted.");
+                }
+            }
+
             if ((PostTitle?.Trim()?.Length ?? 0) < 3)
             {
                 ModelState.AddModelError(nameof(PostTitle), "Titlul este prea scurt (minim 3 caractere, exclusiv spații).");
@@ -555,38 +584,47 @@ namespace Serverless.Forum.Pages
             var isNewTopic = await _cacheService.GetAndRemoveFromCache<PostingActions>(await GetActualCacheKey("Action", true)) == PostingActions.NewTopic;
             if (isNewTopic)
             {
-                var topicResult = await context.PhpbbTopics.AddAsync(new PhpbbTopics
+                var topicResult = await _context.PhpbbTopics.AddAsync(new PhpbbTopics
                 {
                     ForumId = ForumId,
                     TopicTitle = PostTitle,
                     TopicTime = DateTime.UtcNow.ToUnixTimestamp()
                 });
                 topicResult.Entity.TopicId = 0;
-                await context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
                 curTopic = topicResult.Entity;
                 TopicId = topicResult.Entity.TopicId;
             }
 
+            var newPostText = PostText;
+            var uid = string.Empty;
+            var bitfield = string.Empty;
+            if (_config.GetValue<bool>("CompatibilityMode"))
+            {
+                (newPostText, uid) = _renderingService.TransformForBackwardsCompatibility(newPostText);
+                bitfield = _renderingService.GetBitfield(newPostText, uid);
+            }
+
             if (post == null)
             {
-                var postResult = await context.PhpbbPosts.AddAsync(new PhpbbPosts
+                var postResult = await _context.PhpbbPosts.AddAsync(new PhpbbPosts
                 {
                     ForumId = ForumId,
                     TopicId = TopicId.Value,
                     PosterId = usr.UserId,
                     PostSubject = HttpUtility.HtmlEncode(PostTitle),
-                    PostText = _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText)),
+                    PostText = _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(newPostText)),
                     PostTime = DateTime.UtcNow.ToUnixTimestamp(),
                     PostApproved = 1,
                     PostReported = 0,
-                    BbcodeUid = _utils.NewBbcodeUid(),
-                    BbcodeBitfield = _renderingService.GetBitfield(PostText, string.Empty),
+                    BbcodeUid = uid,
+                    BbcodeBitfield = bitfield,
                     EnableBbcode = 1,
                     EnableMagicUrl = 1,
                     EnableSig = 1,
                     EnableSmilies = 1,
                     PostAttachment = (byte)(attachList.Any() ? 1 : 0),
-                    PostChecksum = _utils.CalculateMD5Hash(HttpUtility.HtmlEncode(PostText)),
+                    PostChecksum = _utils.CalculateMD5Hash(HttpUtility.HtmlEncode(newPostText)),
                     PostEditCount = 0,
                     PostEditLocked = 0,
                     PostEditReason = string.Empty,
@@ -596,51 +634,46 @@ namespace Serverless.Forum.Pages
                     PostUsername = HttpUtility.HtmlEncode(usr.Username)
                 });
                 postResult.Entity.PostId = 0;
-                await context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
                 post = postResult.Entity;
-
-                for (var i = 0; i < attachList.Count; i++)
-                {
-                    attachList[i].PostMsgId = post.PostId;
-                    attachList[i].TopicId = TopicId.Value;
-                    attachList[i].AttachComment = _writingService.PrepareTextForSaving(FileComment[i] ?? string.Empty);
-                }
-
-                await _postService.CascadePostAdd(context, post, false);
-                await context.PhpbbAttachments.AddRangeAsync(attachList);
+                processAttachments(attachList, post.PostId);
+                
+                await _postService.CascadePostAdd(_context, post, false);
+                //await _context.PhpbbAttachments.AddRangeAsync(attachList);
+                await insertAttachments(attachList);
             }
             else
             {
-                for (var i = 0; i < attachList.Count; i++)
-                {
-                    attachList[i].PostMsgId = post.PostId;
-                    attachList[i].TopicId = TopicId.Value;
-                    attachList[i].AttachComment = _writingService.PrepareTextForSaving(FileComment[i] ?? string.Empty);
-                }
-                await context.PhpbbAttachments.AddRangeAsync(attachList.Where(a => a.AttachId == 0));
-                context.PhpbbAttachments.UpdateRange(attachList.Where(a => a.AttachId != 0));
+                post.PostText = _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(newPostText));
+                post.BbcodeUid = uid;
+                post.BbcodeBitfield = bitfield;
+                processAttachments(attachList, post.PostId);
 
-                await context.SaveChangesAsync();
-                await _postService.CascadePostEdit(context, post);
+                //await _context.PhpbbAttachments.AddRangeAsync(attachList.Where(a => a.AttachId == 0));
+                await insertAttachments(attachList.Where(a => a.AttachId == 0));
+                _context.PhpbbAttachments.UpdateRange(attachList.Where(a => a.AttachId != 0));
+
+                await _context.SaveChangesAsync();
+                await _postService.CascadePostEdit(_context, post);
             }
-            await context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
             if (canCreatePoll && !string.IsNullOrWhiteSpace(PollOptions))
             {
                 byte pollOptionId = 1;
-                ulong id = await context.PhpbbPollOptions.AsNoTracking().MaxAsync(o => o.Id);
+                ulong id = await _context.PhpbbPollOptions.AsNoTracking().MaxAsync(o => o.Id);
 
-                var options = await context.PhpbbPollOptions.Where(o => o.TopicId == TopicId).ToListAsync();
+                var options = await _context.PhpbbPollOptions.Where(o => o.TopicId == TopicId).ToListAsync();
                 if (pollOptionsArray.Intersect(options.Select(x => x.PollOptionText.Trim()), StringComparer.InvariantCultureIgnoreCase).Count() != options.Count)
                 {
-                    context.PhpbbPollOptions.RemoveRange(options);
-                    context.PhpbbPollVotes.RemoveRange(await context.PhpbbPollVotes.Where(v => v.TopicId == TopicId).ToListAsync());
-                    await context.SaveChangesAsync();
+                    _context.PhpbbPollOptions.RemoveRange(options);
+                    _context.PhpbbPollVotes.RemoveRange(await _context.PhpbbPollVotes.Where(v => v.TopicId == TopicId).ToListAsync());
+                    await _context.SaveChangesAsync();
                 }
 
                 foreach (var option in pollOptionsArray)
                 {
-                    var result = await context.PhpbbPollOptions.AddAsync(new PhpbbPollOptions
+                    var result = await _context.PhpbbPollOptions.AddAsync(new PhpbbPollOptions
                     {
                         PollOptionId = pollOptionId++,
                         PollOptionText = HttpUtility.HtmlEncode(option),
@@ -652,7 +685,7 @@ namespace Serverless.Forum.Pages
 
                 if (curTopic == null)
                 {
-                    curTopic = await context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == post.TopicId);
+                    curTopic = await _context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == post.TopicId);
                 }
                 curTopic.PollStart = post.PostTime;
                 curTopic.PollLength = (int)TimeSpan.FromDays(double.Parse(PollExpirationDaysString)).TotalSeconds;
@@ -661,7 +694,7 @@ namespace Serverless.Forum.Pages
                 curTopic.PollVoteChange = (byte)(PollCanChangeVote ? 1 : 0);
             }
 
-            await context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
             await _cacheService.RemoveFromCache(await GetActualCacheKey("Header", true));
 
             return post.PostId;
