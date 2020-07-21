@@ -601,8 +601,7 @@ namespace Serverless.Forum.Pages
             var bitfield = string.Empty;
             if (_config.GetValue<bool>("CompatibilityMode"))
             {
-                (newPostText, uid) = _renderingService.TransformForBackwardsCompatibility(newPostText);
-                bitfield = _renderingService.GetBitfield(newPostText, uid);
+                (newPostText, uid, bitfield) = _renderingService.TransformForBackwardsCompatibility(newPostText);
             }
 
             if (post == null)

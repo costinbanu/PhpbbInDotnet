@@ -35,7 +35,6 @@ namespace Serverless.Forum.Services
         private readonly Dictionary<string, string> _bannedWords;
         private readonly BBCodeParser _parser;
 
-
         private delegate (int index, string match) FirstIndexOf(string haystack, string needle, int startIndex);
         private delegate (string result, int endIndex) Transform(string haystack, string needle, int startIndex);
 
@@ -54,7 +53,7 @@ namespace Serverless.Forum.Services
 
             using var connection = _context.Database.GetDbConnection();
             connection.OpenIfNeeded().RunSync();
-            var bbcodes = connection.Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes WHERE bbcode_id <> 18").Select(c => new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false, c.BbcodeId, new BBAttribute[0] { })).ToList();
+            var bbcodes = connection.Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes WHERE bbcode_id <> 18").Select(c => new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false, c.BbcodeId, "", new BBAttribute[0] { })).ToList();
             bbcodes.AddRange(new[]
             {
                     new BBTag("b", "<b>", "</b>", 1),
@@ -62,20 +61,20 @@ namespace Serverless.Forum.Services
                     new BBTag("u", "<span style=\"text-decoration:underline;\">", "</span>", 7),
                     new BBTag("code", "<span class=\"CodeBlock\">", "</span>", 8),
                     new BBTag("img", "<br/><img src=\"${content}\" /><br/>", string.Empty, false, false, 4),
-                    new BBTag("quote", "<blockquote class=\"PostQuote\">${name}", "</blockquote>", 0,
+                    new BBTag("quote", "<blockquote class=\"PostQuote\">${name}", "</blockquote>", 0, "",
                         new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : $"<b>{HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')}</b> a scris:<br/>")) { GreedyAttributeProcessing = true },
-                    new BBTag("*", "<li>", "</li>", true, BBTagClosingStyle.AutoCloseElement, x => x, 20),
-                    new BBTag("list", "<${attr}>", "</${attr}>", true, true, 9,
+                    new BBTag("*", "<li>", "</li>", true, BBTagClosingStyle.AutoCloseElement, x => x, true, 20),
+                    new BBTag("list", "<${attr}>", "</${attr}>", true, true, 9, "",
                         new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul style='list-style-type: circle'" : $"ol type=\"{a.AttributeValue}\"")),
-                    new BBTag("url", "<a href=\"${href}\" target=\"_blank\">", "</a>", 3,
+                    new BBTag("url", "<a href=\"${href}\" target=\"_blank\">", "</a>", 3, "",
                         new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
-                    new BBTag("link", "<a href=\"${href}\">", "</a>", 18,
+                    new BBTag("link", "<a href=\"${href}\">", "</a>", 18, "",
                         new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
-                    new BBTag("color", "<span style=\"color:${code}\">", "</span>", 6,
+                    new BBTag("color", "<span style=\"color:${code}\">", "</span>", 6, "",
                         new BBAttribute("code", "")),
-                    new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>", 5,
+                    new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>", 5, "",
                         new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
-                    new BBTag("attachment", "#{AttachmentFileName=${content}/AttachmentIndex=${num}}#", "", false, true, 12,
+                    new BBTag("attachment", "#{AttachmentFileName=${content}/AttachmentIndex=${num}}#", "", false, true, 12, "",
                         new BBAttribute("num", ""))
                 });
             _parser = new BBCodeParser(bbcodes);
@@ -163,22 +162,13 @@ namespace Serverless.Forum.Services
             return HttpUtility.HtmlDecode(bbCodeText);
         }
 
-        public string GetBitfield(string bbCodeText, string bbCodeUid)
+        public (string text, string uid, string bitfield) TransformForBackwardsCompatibility(string bbCodeText)
         {
             if (string.IsNullOrWhiteSpace(bbCodeText))
             {
-                return string.Empty;
+                return (string.Empty, string.Empty, string.Empty);
             }
-            return _parser.GetBitField(bbCodeText, bbCodeUid);
-        }
-
-        public (string text, string uid) TransformForBackwardsCompatibility(string bbCodeText)
-        {
-            if (string.IsNullOrWhiteSpace(bbCodeText))
-            {
-                return (string.Empty, string.Empty);
-            }
-            return _parser.TransformForBackwardsCompatibility(bbCodeText, 8);
+            return _parser.TransformForBackwardsCompatibility(bbCodeText);
         }
 
         private List<string> SplitHighlightWords(string search)
