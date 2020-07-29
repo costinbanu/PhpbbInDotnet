@@ -603,6 +603,10 @@ namespace Serverless.Forum.Pages
             {
                 (newPostText, uid, bitfield) = _renderingService.TransformForBackwardsCompatibility(newPostText);
             }
+            else
+            {
+                newPostText = HttpUtility.HtmlEncode(newPostText);
+            }
 
             if (post == null)
             {
@@ -612,7 +616,7 @@ namespace Serverless.Forum.Pages
                     TopicId = TopicId.Value,
                     PosterId = usr.UserId,
                     PostSubject = HttpUtility.HtmlEncode(PostTitle),
-                    PostText = _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(newPostText)),
+                    PostText = _writingService.PrepareTextForSaving(newPostText),
                     PostTime = DateTime.UtcNow.ToUnixTimestamp(),
                     PostApproved = 1,
                     PostReported = 0,

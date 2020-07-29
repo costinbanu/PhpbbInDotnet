@@ -1,28 +1,28 @@
-﻿// Resize media in posts
-function onPostLoad() {
-    $('.ForumContent').each(function (_, post) {
-        var maxWidth = ($('.FlexRow').width() - ($('.Summary').is(':visible') ? $('.Summary').outerWidth() : 0)) - 20;
-        var maxHeight = $(window).innerHeight() - $('#topBanner').outerHeight() - 40;
-        $(post).find('img').each(function (_, img) {
-            var originalWidth = img.naturalWidth,
-                originalHeight = img.naturalHeight,
-                ratio = Math.min(maxHeight / originalHeight, maxWidth / originalWidth);
-            if (ratio < 1) {
-                $(img).css({ 'width': Math.round(originalWidth * ratio) + 'px', 'height': Math.round(originalHeight * ratio) + 'px' });
-                if (!$(img).parent().is('a')) {
-                    $(img).attr({ 'onclick': 'window.open(this.src);', 'title': 'Click pentru imaginea mărită.' });
-                    $(img).css('cursor', 'pointer');
-                }
-            }
-        });
-        $(post).find('iframe').each(function (_, frame) {
-            $(frame).attr({ 'width': maxWidth, 'height': Math.max(Math.round(maxHeight / 1.8), Math.round((maxWidth) * 9 / 16)) });
-            var src = $(frame).attr('src');
-            if (src.indexOf('imgur') !== -1) {
-                $(frame).attr('src', src + '?w=' + maxWidth)
-            }
-        });
-    });
+﻿var maxWidth, maxHeight;
+
+function resizeImage(img) {
+    maxWidth = maxWidth || ($('.FlexRow').width() - ($('.Summary').is(':visible') ? $('.Summary').outerWidth() : 0)) - 20;
+    maxHeight = maxHeight || $(window).innerHeight() - $('#topBanner').outerHeight() - 40;
+    var originalWidth = img.naturalWidth,
+        originalHeight = img.naturalHeight,
+        ratio = Math.min(maxHeight / originalHeight, maxWidth / originalWidth);
+    if (ratio < 1) {
+        $(img).css({ 'width': Math.round(originalWidth * ratio) + 'px', 'height': Math.round(originalHeight * ratio) + 'px' });
+        if (!$(img).parent().is('a')) {
+            $(img).attr({ 'onclick': 'window.open(this.src);', 'title': 'Click pentru imaginea mărită.' });
+            $(img).css('cursor', 'pointer');
+        }
+    }
+}
+
+function resizeIFrame(frame) {
+    maxWidth = maxWidth || ($('.FlexRow').width() - ($('.Summary').is(':visible') ? $('.Summary').outerWidth() : 0)) - 20;
+    maxHeight = maxHeight || $(window).innerHeight() - $('#topBanner').outerHeight() - 40;
+    $(frame).attr({ 'width': maxWidth, 'height': Math.max(Math.round(maxHeight / 1.8), Math.round((maxWidth) * 9 / 16)) });
+    var src = $(frame).attr('src');
+    if (src.indexOf('imgur') !== -1) {
+        $(frame).attr('src', src + '?w=' + maxWidth)
+    }
 }
 
 //Expand collapsed menus

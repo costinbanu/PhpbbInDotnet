@@ -11,7 +11,7 @@
         {
             if (Model.MimeType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase))
             {
-                <img src="@(Model.FileUrl)" />
+                <img src="@(Model.FileUrl)" onload="resizeImage(this)" />
             }
             else
             {

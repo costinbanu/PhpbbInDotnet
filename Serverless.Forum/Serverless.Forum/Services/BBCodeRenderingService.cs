@@ -28,9 +28,6 @@ namespace Serverless.Forum.Services
         private readonly WritingToolsService _writingService;
         private readonly Regex _htmlRegex;
         private readonly Regex _htmlCommentRegex;
-        private readonly Regex _newLineRegex;
-        private readonly Regex _smileyRegex;
-        private readonly Regex _tabRegex;
         private readonly Regex _spaceRegex;
         private readonly Dictionary<string, string> _bannedWords;
         private readonly BBCodeParser _parser;
@@ -44,10 +41,7 @@ namespace Serverless.Forum.Services
             _context = context;
             _writingService = writingService;
             _htmlCommentRegex = new Regex("(<!--.*?-->)|(&lt;!--.*?--&gt;)", RegexOptions.Compiled | RegexOptions.Singleline);
-            _newLineRegex = new Regex("\n", RegexOptions.Compiled | RegexOptions.Singleline);
-            _tabRegex = new Regex("\t", RegexOptions.Compiled | RegexOptions.Singleline);
             _spaceRegex = new Regex(" +", RegexOptions.Compiled | RegexOptions.Singleline);
-            _smileyRegex = new Regex("{SMILIES_PATH}", RegexOptions.Compiled | RegexOptions.Singleline);
             _htmlRegex = new Regex(@"<((?=!\-\-)!\-\-[\s\S]*\-\-|((?=\?)\?[\s\S]*\?|((?=\/)\/[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*|[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*(?:\s[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*(?:=(?:""[^""]*""|'[^']*'|[^'""<\s]*))?)*)\s?\/?))>", RegexOptions.Compiled);
             _bannedWords = _writingService.GetBannedWords().RunSync().GroupBy(p => p.Word).Select(grp => grp.FirstOrDefault()).ToDictionary(x => x.Word, y => y.Replacement);
 
@@ -74,7 +68,7 @@ namespace Serverless.Forum.Services
                         new BBAttribute("code", "")),
                     new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>", 5, "",
                         new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
-                    new BBTag("attachment", "#{AttachmentFileName=${content}/AttachmentIndex=${num}}#", "", false, true, 12, "",
+                    new BBTag("attachment", "#{AttachmentFileName=${content}/AttachmentIndex=${num}}#", "", false, BBTagClosingStyle.AutoCloseElement, x => _htmlCommentRegex.Replace(HttpUtility.HtmlDecode(x), string.Empty), 12, "",
                         new BBAttribute("num", ""))
                 });
             _parser = new BBCodeParser(bbcodes);
@@ -146,10 +140,10 @@ namespace Serverless.Forum.Services
             
             bbCodeText = CensorWords(bbCodeText, _bannedWords);
             bbCodeText = _parser.ToHtml(bbCodeText, bbCodeUid);
-            bbCodeText = _newLineRegex.Replace(bbCodeText, "<br/>");
+            bbCodeText = bbCodeText.Replace("\r", "").Replace("\n", "<br/>");
             bbCodeText = _htmlCommentRegex.Replace(bbCodeText, string.Empty);
-            bbCodeText = _smileyRegex.Replace(bbCodeText, Constants.SMILEY_PATH);
-            bbCodeText = _tabRegex.Replace(bbCodeText, _utils.HtmlSafeWhitespace(4));
+            bbCodeText = bbCodeText.Replace("{SMILIES_PATH}", Constants.SMILEY_PATH);
+            bbCodeText = bbCodeText.Replace("\t", _utils.HtmlSafeWhitespace(4));
 
             var offset = 0;
             foreach (Match m in _spaceRegex.Matches(bbCodeText))
