@@ -20,7 +20,7 @@
     <PackageReference Include="AutoMapper" Version="10.0.0" />
     <PackageReference Include="Base36" Version="1.0.0" />
     <PackageReference Include="BuildBundlerMinifier" Version="3.2.449" />
-    <PackageReference Include="CodeKicker.BBCode.Core" Version="1.3.2-BCHotfixes.6" />
+    <PackageReference Include="CodeKicker.BBCode.Core" Version="1.3.2" />
     <PackageReference Include="Crc32.NET" Version="1.2.0" />
     <PackageReference Include="CryptSharp.Core" Version="1.0.0" />
     <PackageReference Include="Dapper" Version="2.0.35" />
@@ -34,7 +34,7 @@
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="3.1.3" />
     <PackageReference Include="MySql.Data.EntityFrameworkCore" Version="8.0.21" />
     <PackageReference Include="PaulMiami.AspNetCore.Mvc.Recaptcha" Version="1.2.2" />
-    <PackageReference Include="Serilog.AspNetCore" Version="3.4.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="3.2.0" />
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
     <PackageReference Include="System.Drawing.Common" Version="4.7.0" />
     <PackageReference Include="System.Linq.Async" Version="4.1.1" />

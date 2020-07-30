@@ -7,7 +7,7 @@ function resizeImage(img) {
         originalHeight = img.naturalHeight,
         ratio = Math.min(maxHeight / originalHeight, maxWidth / originalWidth);
     if (ratio < 1) {
-        $(img).css({ 'width': Math.round(originalWidth * ratio) + 'px', 'height': Math.round(originalHeight * ratio) + 'px' });
+        $(img).css({ 'width': roundToNextEvenNumber(originalWidth * ratio) + 'px', 'height': roundToNextEvenNumber(originalHeight * ratio) + 'px' });
         if (!$(img).parent().is('a')) {
             $(img).attr({ 'onclick': 'window.open(this.src);', 'title': 'Click pentru imaginea mărită.' });
             $(img).css('cursor', 'pointer');
@@ -18,7 +18,7 @@ function resizeImage(img) {
 function resizeIFrame(frame) {
     maxWidth = maxWidth || ($('.FlexRow').width() - ($('.Summary').is(':visible') ? $('.Summary').outerWidth() : 0)) - 20;
     maxHeight = maxHeight || $(window).innerHeight() - $('#topBanner').outerHeight() - 40;
-    $(frame).attr({ 'width': maxWidth, 'height': Math.max(Math.round(maxHeight / 1.8), Math.round((maxWidth) * 9 / 16)) });
+    $(frame).attr({ 'width': maxWidth, 'height': Math.max(roundToNextEvenNumber(maxHeight / 1.8), roundToNextEvenNumber((maxWidth) * 9 / 16)) });
     var src = $(frame).attr('src');
     if (src.indexOf('imgur') !== -1) {
         $(frame).attr('src', src + '?w=' + maxWidth)

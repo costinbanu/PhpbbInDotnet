@@ -50,41 +50,38 @@ namespace Serverless.Forum.Services
             var bbcodes = connection.Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes WHERE bbcode_id <> 18").Select(c => new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false, c.BbcodeId, "", new BBAttribute[0] { })).ToList();
             bbcodes.AddRange(new[]
             {
-                    new BBTag("b", "<b>", "</b>", 1),
-                    new BBTag("i", "<span style=\"font-style:italic;\">", "</span>", 2),
-                    new BBTag("u", "<span style=\"text-decoration:underline;\">", "</span>", 7),
-                    new BBTag("code", "<span class=\"CodeBlock\">", "</span>", 8),
-                    new BBTag("img", "<br/><img src=\"${content}\" /><br/>", string.Empty, false, false, 4),
-                    new BBTag("quote", "<blockquote class=\"PostQuote\">${name}", "</blockquote>", 0, "",
-                        new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : $"<b>{HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')}</b> a scris:<br/>")) { GreedyAttributeProcessing = true },
-                    new BBTag("*", "<li>", "</li>", true, BBTagClosingStyle.AutoCloseElement, x => x, true, 20),
-                    new BBTag("list", "<${attr}>", "</${attr}>", true, true, 9, "",
-                        new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul style='list-style-type: circle'" : $"ol type=\"{a.AttributeValue}\"")),
-                    new BBTag("url", "<a href=\"${href}\" target=\"_blank\">", "</a>", 3, "",
-                        new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
-                    new BBTag("link", "<a href=\"${href}\">", "</a>", 18, "",
-                        new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
-                    new BBTag("color", "<span style=\"color:${code}\">", "</span>", 6, "",
-                        new BBAttribute("code", "")),
-                    new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>", 5, "",
-                        new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
-                    new BBTag("attachment", "#{AttachmentFileName=${content}/AttachmentIndex=${num}}#", "", false, BBTagClosingStyle.AutoCloseElement, x => _htmlCommentRegex.Replace(HttpUtility.HtmlDecode(x), string.Empty), 12, "",
-                        new BBAttribute("num", ""))
-                });
+                new BBTag("b", "<b>", "</b>", 1),
+                new BBTag("i", "<span style=\"font-style:italic;\">", "</span>", 2),
+                new BBTag("u", "<span style=\"text-decoration:underline;\">", "</span>", 7),
+                new BBTag("code", "<span class=\"CodeBlock\">", "</span>", 8),
+                new BBTag("img", "<br/><img src=\"${content}\" onload=\"resizeImage(this)\" /><br/>", string.Empty, false, false, 4),
+                new BBTag("quote", "<blockquote class=\"PostQuote\">${name}", "</blockquote>", 0, "",
+                    new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : $"<b>{HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')}</b> a scris:<br/>")) { GreedyAttributeProcessing = true },
+                new BBTag("*", "<li>", "</li>", true, BBTagClosingStyle.AutoCloseElement, x => x, true, 20),
+                new BBTag("list", "<${attr}>", "</${attr}>", true, true, 9, "",
+                    new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul style='list-style-type: circle'" : $"ol type=\"{a.AttributeValue}\"")),
+                new BBTag("url", "<a href=\"${href}\" target=\"_blank\">", "</a>", 3, "",
+                    new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
+                new BBTag("link", "<a href=\"${href}\">", "</a>", 18, "",
+                    new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
+                new BBTag("color", "<span style=\"color:${code}\">", "</span>", 6, "",
+                    new BBAttribute("code", "")),
+                new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>", 5, "",
+                    new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
+                new BBTag("attachment", "#{AttachmentFileName=${content}/AttachmentIndex=${num}}#", "", false, BBTagClosingStyle.AutoCloseElement, x => _htmlCommentRegex.Replace(HttpUtility.HtmlDecode(x), string.Empty), 12, "",
+                    new BBAttribute("num", ""))
+            });
             _parser = new BBCodeParser(bbcodes);
         }
 
         public async Task ProcessPost(PostDto post, PageContext pageContext, HttpContext httpContext, bool renderAttachments, string toHighlight = null)
         {
-            var inlineAttachmentsPosts = new ConcurrentBag<(int PostId, int AttachIndex, _AttachmentPartialModel Attach)>();
             var attachRegex = new Regex("#{AttachmentFileName=[^/]+/AttachmentIndex=[0-9]+}#", RegexOptions.Compiled);
             var highlightWords = SplitHighlightWords(toHighlight);
 
             post.PostSubject = CensorWords(HttpUtility.HtmlDecode(post.PostSubject), _bannedWords);
             post.PostSubject = HighlightWords(post.PostSubject, highlightWords);
             post.PostText = HighlightWords(BbCodeToHtml(post.PostText, post.BbcodeUid), highlightWords);
-
-            Console.Write(" text done;");
 
             if (renderAttachments)
             {
@@ -140,7 +137,7 @@ namespace Serverless.Forum.Services
             
             bbCodeText = CensorWords(bbCodeText, _bannedWords);
             bbCodeText = _parser.ToHtml(bbCodeText, bbCodeUid);
-            bbCodeText = bbCodeText.Replace("\r", "").Replace("\n", "<br/>");
+            //bbCodeText = bbCodeText.Replace("\r", "").Replace("\n", "<br/>");
             bbCodeText = _htmlCommentRegex.Replace(bbCodeText, string.Empty);
             bbCodeText = bbCodeText.Replace("{SMILIES_PATH}", Constants.SMILEY_PATH);
             bbCodeText = bbCodeText.Replace("\t", _utils.HtmlSafeWhitespace(4));
