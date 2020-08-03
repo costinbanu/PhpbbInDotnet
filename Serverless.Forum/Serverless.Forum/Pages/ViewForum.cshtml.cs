@@ -19,6 +19,9 @@ namespace Serverless.Forum.Pages
 
         public HashSet<ForumTree> Forums { get; private set; }
         public List<TopicTransport> Topics { get; private set; }
+        public string ForumRulesLink { get; private set; }
+        public string ForumRules { get; private set; }
+        public string ForumRulesUid { get; private set; }
         public string ForumTitle { get; private set; }
         public string ParentForumTitle { get; private set; }
         public int? ParentForumId { get; private set; }
@@ -81,6 +84,10 @@ namespace Serverless.Forum.Pages
                         Topics = groups
                     }
                 ).ToList();
+
+                ForumRulesLink = thisForum.ForumRulesLink;
+                ForumRules = thisForum.ForumRules;
+                ForumRulesUid = thisForum.ForumRulesUid;
 
                 return Page();
             });

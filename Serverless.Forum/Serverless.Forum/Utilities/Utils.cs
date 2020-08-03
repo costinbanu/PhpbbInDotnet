@@ -279,5 +279,8 @@ namespace Serverless.Forum.Utilities
             _logger.Error(ex, "Exception id: {id}. Message: {message}", id, message);
             return id;
         }
+
+        public string TransformSelfLinkToBetaLink(string link)
+            => string.IsNullOrWhiteSpace(link) ? string.Empty : (_config.GetValue<bool>("CompatibilityMode") ? HttpUtility.HtmlDecode(link).Replace("://forum.metrouusor.com", "://beta.forum.metrouusor.com") : link);
     }
 }

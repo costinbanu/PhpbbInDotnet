@@ -21,7 +21,7 @@
             </span>
             @if (!Model.Paginator.IsAnonymous && Model.AllowPaginationChange)
             {
-                <form method="post" asp-page-handler="Pagination" style="line-height:1.1em; display: inline; white-space:nowrap">
+                <form method="post" asp-page-handler="Pagination" style="line-height:1.5em; display: inline; white-space:nowrap">
                     <span style="white-space:nowrap; display: inline">
                         &nbsp;
                         Mesaje afișate pe pagină:&nbsp;
@@ -35,6 +35,7 @@
                     </span>
                 </form>
             }
+            <div style="clear:both">&nbsp;</div>
         </div>
         <div class="Filler">&nbsp;</div>
         <div class="RightArrow">
@@ -54,12 +55,12 @@
         <a href="javascript:showElement('paginationControls_@(Model.Self)')" style="white-space:nowrap; line-height:2em; padding-bottom:10px;">
             Opțiuni paginare
         </a>
-        <div id="paginationControls_@(Model.Self)" style="display: none; width: 100%; line-height: 1.5em; line-height:1.5em">
+        <div id="paginationControls_@(Model.Self)" style="display: none; width: 100%; line-height: 1.5em">
             @await Html.PartialAsync("_PaginationPartial", Model.Paginator.Pagination, ViewData)
             <p></p>
             @if (!Model.Paginator.IsAnonymous && Model.AllowPaginationChange)
             {
-                <form method="post" asp-page-handler="Pagination" style="line-height:1.1em">
+                <form method="post" asp-page-handler="Pagination" style="line-height:1.5em">
                     <span style="white-space:nowrap; display: inline">Mesaje afișate pe pagină:&nbsp;</span>
                     <span style="white-space:nowrap; display: inline">
                         <input type="hidden" name="topicId" value="@Model.TopicId" />
@@ -70,7 +71,7 @@
                     </span>
                 </form>
             }
+            <div style="clear:both">&nbsp;</div>
         </div>
     </div>
-    
 }

@@ -55,6 +55,8 @@ namespace Serverless.Forum.Services
             }
             actual.ParentId = dto.ParentId ?? actual.ParentId;
             actual.ForumType = dto.ForumType ?? actual.ForumType;
+            actual.ForumRules = HttpUtility.HtmlEncode(dto.ForumRules ?? actual.ForumRules ?? string.Empty);
+            actual.ForumRulesLink = HttpUtility.HtmlEncode(dto.ForumRulesLink ?? actual.ForumRules ?? string.Empty);
             if (isNewForum)
             {
                 var result = _context.PhpbbForums.Add(actual);
@@ -147,69 +149,6 @@ namespace Serverless.Forum.Services
                 }
             }
 
-
-            //var userPermissions = await (
-            //    from p in _context.PhpbbAclUsers
-            //    join r in _context.PhpbbAclRoles.AsNoTracking()
-            //    on p.AuthRoleId equals r.RoleId
-            //    into joined
-            //    from j in joined
-            //    where p.ForumId == actual.ForumId
-            //        && rolesForAclEntity[AclEntityType.User].Keys.Contains(p.UserId)
-            //        && j.RoleType == "f_"
-            //    select p
-            //).ToListAsync();
-            //_context.PhpbbAclUsers.UpdateRange(userPermissions);
-            //foreach (var existing in userPermissions)
-            //{
-            //    existing.AuthRoleId = rolesForAclEntity[AclEntityType.User][existing.UserId];
-            //    rolesForAclEntity[AclEntityType.User].Remove(existing.UserId);
-            //}
-
-            //await _context.PhpbbAclUsers.AddRangeAsync(
-            //    rolesForAclEntity[AclEntityType.User].Select(r =>
-            //        new PhpbbAclUsers
-            //        {
-            //            ForumId = actual.ForumId,
-            //            UserId = r.Key,
-            //            AuthRoleId = r.Value,
-            //            AuthOptionId = 0,
-            //            AuthSetting = 0
-            //        }
-            //    )
-            //);
-
-            //var groupPermissions = await (
-            //    from p in _context.PhpbbAclGroups
-            //    join r in _context.PhpbbAclRoles.AsNoTracking()
-            //    on p.AuthRoleId equals r.RoleId
-            //    into joined
-            //    from j in joined
-            //    where p.ForumId == actual.ForumId
-            //        && rolesForAclEntity[AclEntityType.Group].Keys.Contains(p.GroupId)
-            //        && j.RoleType == "f_"
-            //    select p
-            //).ToListAsync();
-            //_context.PhpbbAclGroups.UpdateRange(groupPermissions);
-            //foreach (var p in groupPermissions)
-            //{
-            //    p.AuthRoleId = rolesForAclEntity[AclEntityType.Group][p.GroupId];
-            //    rolesForAclEntity[AclEntityType.Group].Remove(p.GroupId);
-            //}
-            //await _context.PhpbbAclGroups.AddRangeAsync(
-            //    rolesForAclEntity[AclEntityType.Group].Select(r =>
-            //        new PhpbbAclGroups
-            //        {
-            //            ForumId = actual.ForumId,
-            //            GroupId = r.Key,
-            //            AuthRoleId = r.Value,
-            //            AuthOptionId = 0,
-            //            AuthSetting = 0
-            //        }
-            //    )
-            //);
-
-
             return ($"Forumul {actual.ForumName} a fost actualizat cu succes!", true);
         }
 
@@ -226,7 +165,6 @@ namespace Serverless.Forum.Services
 
         public async Task<List<SelectListItem>> FlatForumTreeAsListItem(int parentId, LoggedUser user)
         {
-            //var (tree, forums, topics, tracking) = await _forumService.GetExtendedForumTree(fullTraversal: true);
             var tree = await _forumService.GetForumTree(user, false);
             var list = new List<SelectListItem>();
 

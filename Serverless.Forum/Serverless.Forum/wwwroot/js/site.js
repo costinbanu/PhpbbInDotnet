@@ -1,11 +1,14 @@
 ﻿var maxWidth, maxHeight;
+var quoteWidthBleed, quoteHeightBleed;
 
 function resizeImage(img) {
-    maxWidth = maxWidth || ($('.FlexRow').width() - ($('.Summary').is(':visible') ? $('.Summary').outerWidth() : 0)) - 20;
-    maxHeight = maxHeight || $(window).innerHeight() - $('#topBanner').outerHeight() - 40;
+    lazyInit();
+    var quotes = countQuotes(img, 0);
+    var actualParentWidth = maxWidth - quotes * quoteWidthBleed,
+        actualParentHeight = maxHeight - quotes * quoteHeightBleed;
     var originalWidth = img.naturalWidth,
         originalHeight = img.naturalHeight,
-        ratio = Math.min(maxHeight / originalHeight, maxWidth / originalWidth);
+        ratio = Math.min(actualParentHeight / originalHeight, actualParentWidth/ originalWidth);
     if (ratio < 1) {
         $(img).css({ 'width': roundToNextEvenNumber(originalWidth * ratio) + 'px', 'height': roundToNextEvenNumber(originalHeight * ratio) + 'px' });
         if (!$(img).parent().is('a')) {
@@ -16,13 +19,29 @@ function resizeImage(img) {
 }
 
 function resizeIFrame(frame) {
-    maxWidth = maxWidth || ($('.FlexRow').width() - ($('.Summary').is(':visible') ? $('.Summary').outerWidth() : 0)) - 20;
-    maxHeight = maxHeight || $(window).innerHeight() - $('#topBanner').outerHeight() - 40;
-    $(frame).attr({ 'width': maxWidth, 'height': Math.max(roundToNextEvenNumber(maxHeight / 1.8), roundToNextEvenNumber((maxWidth) * 9 / 16)) });
+    lazyInit();
+    var quotes = countQuotes(frame, 0);
+    var actualParentWidth = maxWidth - quotes * quoteWidthBleed,
+        actualParentHeight = maxHeight - quotes * quoteHeightBleed;
+    $(frame).attr({ 'width': roundToNextEvenNumber(actualParentWidth), 'height': Math.max(roundToNextEvenNumber(actualParentHeight / 1.8), roundToNextEvenNumber((actualParentWidth) * 9 / 16)) });
     var src = $(frame).attr('src');
     if (src.indexOf('imgur') !== -1) {
-        $(frame).attr('src', src + '?w=' + maxWidth)
+        $(frame).attr('src', src + '?w=' + actualParentWidth)
     }
+}
+
+function countQuotes(obj, cur) {
+    if (!obj || !obj.parentElement || obj.parentElement.nodeName.toLowerCase() != 'blockquote') {
+        return cur;
+    }
+    return countQuotes(obj.parentElement, cur + 1);
+}
+
+function lazyInit() {
+    quoteWidthBleed = quoteWidthBleed || $('.PostQuote').outerWidth(true) - $('.PostQuote').width() || 42;
+    quoteHeightBleed = quoteHeightBleed || $('.PostQuote').outerHeight(true) - $('.PostQuote').height() || 42;
+    maxWidth = maxWidth || ($('.FlexRow').width() - ($('.Summary').is(':visible') ? $('.Summary').outerWidth() : 0)) - 20;
+    maxHeight = maxHeight || $(window).innerHeight() - $('#topBanner').outerHeight() - 40;
 }
 
 //Expand collapsed menus

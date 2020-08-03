@@ -64,7 +64,6 @@ namespace Serverless.Forum.Services
                     if(childForum != null)
                     {
                         childForum.IsRestricted = node.IsRestricted;
-                        //childForum.HasPassword |= node.HasPassword;
                         if (childForum.PathList == null)
                         {
                             childForum.PathList = new List<int>(node.PathList ?? new List<int>());
@@ -102,7 +101,7 @@ namespace Serverless.Forum.Services
 
             using var connection = _context.Database.GetDbConnection();
             await connection.OpenIfNeeded();
-            _tracking = new HashSet<Tracking>(await connection.QueryAsync<Tracking>("CALL `forum`.`get_post_tracking`(@userId, null, null);", new { userId = user?.UserId ?? Constants.ANONYMOUS_USER_ID }));
+            _tracking = new HashSet<Tracking>(await connection.QueryAsync<Tracking>("CALL `forum`.`get_post_tracking`(@userId);", new { userId = user?.UserId ?? Constants.ANONYMOUS_USER_ID }));
             return _tracking;
         }
 

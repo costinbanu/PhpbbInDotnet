@@ -209,6 +209,16 @@ namespace Serverless.Forum
                 MarkTime = DateTime.UtcNow.ToUnixTimestamp()
             });
             await _context.SaveChangesAsync();
+
+            await SetLastMark();
+        }
+
+        protected async Task SetLastMark()
+        {
+            var usrId = (await GetCurrentUserAsync()).UserId;
+            var user = await _context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == usrId);
+            user.UserLastmark = DateTime.UtcNow.ToUnixTimestamp();
+            await _context.SaveChangesAsync();
         }
 
         #endregion Forum for user

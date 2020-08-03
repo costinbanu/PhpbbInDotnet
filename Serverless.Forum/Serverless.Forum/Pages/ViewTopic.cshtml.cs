@@ -20,10 +20,10 @@ namespace Serverless.Forum.Pages
     {
         [BindProperty]
         public int? ForumId { get; set; }
-        
+
         [BindProperty(SupportsGet = true)]
         public int? PostId { get; set; }
-        
+
         [BindProperty(SupportsGet = true)]
         public bool? Highlight { get; set; }
 
@@ -48,12 +48,14 @@ namespace Serverless.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public int[] PostIdsForModerator { get; set; }
 
-         public PollDto Poll { get; private set; }
+        public PollDto Poll { get; private set; }
 
         public List<PhpbbPosts> Posts { get; private set; }
 
         public string TopicTitle { get; private set; }
-
+        public string ForumRulesLink { get; private set; }
+        public string ForumRules { get; private set; }
+        public string ForumRulesUid { get; private set; }
         public string ForumTitle { get; private set; }
 
         public string ModeratorActionResult { get; private set; }
@@ -100,7 +102,7 @@ namespace Serverless.Forum.Pages
         private readonly ModeratorService _moderatorService;
         private readonly BBCodeRenderingService _renderingService;
 
-        public ViewTopicModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
+        public ViewTopicModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService,
             Utils utils, PostService postService, ModeratorService moderatorService, BBCodeRenderingService renderingService)
             : base(context, forumService, userService, cacheService)
         {
@@ -142,61 +144,51 @@ namespace Serverless.Forum.Pages
                 Paginator = new Paginator(_count.Value, PageNum.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId, await GetCurrentUserAsync());
                 Poll = await _postService.GetPoll(_currentTopic);
 
-                //IEnumerable<PhpbbUsers> users, lastEditUsers;
-                //IEnumerable<PhpbbAttachments> attachments;
-                //IEnumerable<PhpbbReports> reports;
-                //IEnumerable<PhpbbRanks> ranks;
-                using (var connection = _context.Database.GetDbConnection())
-                {
-                    await connection.OpenIfNeeded();
-                    using var multi = await connection.QueryMultipleAsync(
-                        "SELECT * FROM phpbb_users WHERE user_id IN @authors; " +
-                        "SELECT * FROM phpbb_users WHERE user_id IN @editors; " +
-                        "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @posts; " +
-                        "SELECT * FROM phpbb_reports WHERE report_closed = 0 AND post_id IN @posts; " +
-                        "SELECT r.* FROM phpbb_ranks r JOIN phpbb_users u on u.user_rank = r.rank_id WHERE u.user_id IN @authors;",
-                        new
-                        {
-                            authors = Posts.Select(p => p.PosterId),
-                            editors = Posts.Select(p => p.PostEditUser),
-                            posts = Posts.Select(p => p.PostId)
-                        }
-                    );
+                using var connection = _context.Database.GetDbConnection();
+                await connection.OpenIfNeeded();
+                using var multi = await connection.QueryMultipleAsync(
+                    "SELECT * FROM phpbb_users WHERE user_id IN @authors; " +
+                    "SELECT * FROM phpbb_users WHERE user_id IN @editors; " +
+                    "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @posts; " +
+                    "SELECT * FROM phpbb_reports WHERE report_closed = 0 AND post_id IN @posts; " +
+                    "SELECT r.* FROM phpbb_ranks r JOIN phpbb_users u on u.user_rank = r.rank_id WHERE u.user_id IN @authors;",
+                    new
+                    {
+                        authors = Posts.Select(p => p.PosterId),
+                        editors = Posts.Select(p => p.PostEditUser),
+                        posts = Posts.Select(p => p.PostId)
+                    }
+                );
 
-                    Users = await multi.ReadAsync<PhpbbUsers>();
-                    LastEditUsers = await multi.ReadAsync<PhpbbUsers>();
-                    Attachments = await multi.ReadAsync<PhpbbAttachments>();
-                    Reports = await multi.ReadAsync<PhpbbReports>();
-                    Ranks = await multi.ReadAsync<PhpbbRanks>();
-                }
-
+                Users = await multi.ReadAsync<PhpbbUsers>();
+                LastEditUsers = await multi.ReadAsync<PhpbbUsers>();
+                Attachments = await multi.ReadAsync<PhpbbAttachments>();
+                Reports = await multi.ReadAsync<PhpbbReports>();
+                Ranks = await multi.ReadAsync<PhpbbRanks>();
                 TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
+                ForumRulesLink = curForum.ForumRulesLink;
+                ForumRules = curForum.ForumRules;
+                ForumRulesUid = curForum.ForumRulesUid;
 
-                using (var connection = _context.Database.GetDbConnection())
+                var userId = (await GetCurrentUserAsync()).UserId;
+                var markTime = Paginator.IsLastPage ? DateTime.UtcNow.ToUnixTimestamp() : Posts.Max(p => p.PostTime);
+                var existing = await connection.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_topics_track WHERE user_id = @userId AND topic_id = @topicId", new { userId, topicId = TopicId.Value });
+                if (existing == 0)
                 {
-                    var userId = (await GetCurrentUserAsync()).UserId;
-                    await connection.OpenIfNeeded();
-                    //if (Posts.Any(p => p.Unread))
-                    //{
-                        var existing = await connection.QuerySingleOrDefaultAsync<PhpbbTopicsTrack>("SELECT * FROM phpbb_topics_track WHERE user_id = @userId AND topic_id = @topicId", new { userId, topicId = TopicId.Value });
-                        if (existing == null)
-                        {
-                            await connection.ExecuteAsync(
-                                "INSERT INTO phpbb_topics_track (forum_id, mark_time, topic_id, user_id) VALUES (@forumId, @markTime, @topicId, @userId)",
-                                new { forumId = ForumId.Value, markTime = DateTime.UtcNow.ToUnixTimestamp(), topicId = TopicId.Value, userId }
-                            );
-                        }
-                        else
-                        {
-                            await connection.ExecuteAsync(
-                                "UPDATE phpbb_topics_track SET forum_id = @forumId, mark_time = @markTime WHERE user_id = @userId AND topic_id = @topicId",
-                                new { forumId = ForumId.Value, markTime = DateTime.UtcNow.ToUnixTimestamp(), userId, topicId = TopicId.Value }
-                            );
-                        }
-                    //}
-
-                    await connection.ExecuteAsync("UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId", new { topicId = TopicId.Value } );
+                    await connection.ExecuteAsync(
+                        "INSERT INTO phpbb_topics_track (forum_id, mark_time, topic_id, user_id) VALUES (@forumId, @markTime, @topicId, @userId)",
+                        new { forumId = ForumId.Value, markTime, topicId = TopicId.Value, userId }
+                    );
                 }
+                else
+                {
+                    await connection.ExecuteAsync(
+                        "UPDATE phpbb_topics_track SET forum_id = @forumId, mark_time = @markTime WHERE user_id = @userId AND topic_id = @topicId",
+                        new { forumId = ForumId.Value, markTime, userId, topicId = TopicId.Value }
+                    );
+                }
+
+                await connection.ExecuteAsync("UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId", new { topicId = TopicId.Value });
                 return Page();
             }
 
@@ -249,34 +241,30 @@ namespace Serverless.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostVote(int topicId, int[] votes, string queryString)
-            => await WithRegisteredUser(async () =>
+            => await WithRegisteredUser(async () => await WithValidTopic(topicId, async (_, topic) =>
             {
                 var usrId = (await GetCurrentUserAsync()).UserId;
-                var current = await _context.PhpbbPollVotes.Where(v => v.TopicId == topicId && v.VoteUserId == usrId).ToListAsync();
-                var id = await _context.PhpbbPollVotes.AsNoTracking().MaxAsync(v => v.Id);
-                if (current.Any())
+                using var conn = _context.Database.GetDbConnection();
+                await conn.OpenIfNeeded();
+
+                var count = await conn.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @usrId", new { topicId, usrId });
+                if (count > 0 && topic.PollVoteChange == 0)
                 {
-                    var topic = await _context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == topicId);
-                    if (topic.PollVoteChange == 0)
-                    {
-                        return Forbid("Can't change votes for this poll.");
-                    }
-                    _context.PhpbbPollVotes.RemoveRange(current.Where(v => !votes.Contains(v.PollOptionId)));
+                    return Forbid("Can't change votes for this poll.");
                 }
+
+                await conn.ExecuteAsync("DELETE FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @usrId AND poll_option_id NOT IN @votes", new { topicId, usrId, votes });
+
                 foreach (var vote in votes)
                 {
-                    await _context.PhpbbPollVotes.AddAsync(new PhpbbPollVotes
-                    {
-                        Id = ++id,
-                        PollOptionId = (byte)vote,
-                        TopicId = topicId,
-                        VoteUserId = (await GetCurrentUserAsync()).UserId,
-                        VoteUserIp = HttpContext.Connection.RemoteIpAddress.ToString()
-                    });
+                    await conn.ExecuteAsync(
+                        "INSERT INTO phpbb_poll_votes (topic_id, poll_option_id, vote_user_id, vote_user_ip) VALUES (@topicId, @vote, @usrId, @usrIp)",
+                        new { topicId, vote, usrId, usrIp = HttpContext.Connection.RemoteIpAddress.ToString() }
+                    );
                 }
-                await _context.SaveChangesAsync();
+
                 return Redirect($"./ViewTopic{HttpUtility.UrlDecode(queryString)}");
-            });
+            }));
 
         public async Task<IActionResult> OnPostTopicModerator()
             => await WithModerator(async () =>

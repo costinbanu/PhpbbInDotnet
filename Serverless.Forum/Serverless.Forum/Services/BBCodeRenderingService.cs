@@ -11,7 +11,6 @@ using Serverless.Forum.ForumDb.Entities;
 using Serverless.Forum.Pages.CustomPartials;
 using Serverless.Forum.Utilities;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -47,7 +46,8 @@ namespace Serverless.Forum.Services
 
             using var connection = _context.Database.GetDbConnection();
             connection.OpenIfNeeded().RunSync();
-            var bbcodes = connection.Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes WHERE bbcode_id <> 18").Select(c => new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false, c.BbcodeId, "", new BBAttribute[0] { })).ToList();
+            //we override these temporarily: 18 = link, 13 = youtube
+            var bbcodes = connection.Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes WHERE bbcode_id NOT IN (18, 13)").Select(c => new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false, c.BbcodeId, "", new BBAttribute[0] { })).ToList();
             bbcodes.AddRange(new[]
             {
                 new BBTag("b", "<b>", "</b>", 1),
@@ -62,14 +62,18 @@ namespace Serverless.Forum.Services
                     new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul style='list-style-type: circle'" : $"ol type=\"{a.AttributeValue}\"")),
                 new BBTag("url", "<a href=\"${href}\" target=\"_blank\">", "</a>", 3, "",
                     new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
-                new BBTag("link", "<a href=\"${href}\">", "</a>", 18, "",
-                    new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
+                new BBTag("link", "<a href=\"${href}\">", "</a>", true, BBTagClosingStyle.RequiresClosingTag, x => _utils.TransformSelfLinkToBetaLink(x), 18, "",
+                    new BBAttribute("href", "", a =>
+                    {
+                    return string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : _utils.TransformSelfLinkToBetaLink(a.AttributeValue);
+                    })),
                 new BBTag("color", "<span style=\"color:${code}\">", "</span>", 6, "",
                     new BBAttribute("code", "")),
                 new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>", 5, "",
                     new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
                 new BBTag("attachment", "#{AttachmentFileName=${content}/AttachmentIndex=${num}}#", "", false, BBTagClosingStyle.AutoCloseElement, x => _htmlCommentRegex.Replace(HttpUtility.HtmlDecode(x), string.Empty), 12, "",
-                    new BBAttribute("num", ""))
+                    new BBAttribute("num", "")),
+                new BBTag("youtube", "<br /><iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/${content}?html5=1\" frameborder=\"0\" allowfullscreen onload=\"resizeIFrame(this)\"></iframe><br />", string.Empty, false, false, 13, "")
             });
             _parser = new BBCodeParser(bbcodes);
         }
@@ -126,6 +130,8 @@ namespace Serverless.Forum.Services
             {
                 post.PostText = attachRegex.Replace(post.PostText, string.Empty);
             }
+
+            post.PostText = attachRegex.Replace(post.PostText, string.Empty);
         }
 
         public string BbCodeToHtml(string bbCodeText, string bbCodeUid)
@@ -137,7 +143,6 @@ namespace Serverless.Forum.Services
             
             bbCodeText = CensorWords(bbCodeText, _bannedWords);
             bbCodeText = _parser.ToHtml(bbCodeText, bbCodeUid);
-            //bbCodeText = bbCodeText.Replace("\r", "").Replace("\n", "<br/>");
             bbCodeText = _htmlCommentRegex.Replace(bbCodeText, string.Empty);
             bbCodeText = bbCodeText.Replace("{SMILIES_PATH}", Constants.SMILEY_PATH);
             bbCodeText = bbCodeText.Replace("\t", _utils.HtmlSafeWhitespace(4));

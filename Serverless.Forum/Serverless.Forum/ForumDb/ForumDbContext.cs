@@ -1579,11 +1579,6 @@ namespace Serverless.Forum.ForumDb
                 entity.HasIndex(e => e.VoteUserIp)
                     .HasName("vote_user_ip");
 
-                entity.Property(e => e.Id)
-                    .HasColumnName("id")
-                    .HasColumnType("bigint(20)")
-                    .ValueGeneratedNever();
-
                 entity.Property(e => e.PollOptionId)
                     .HasColumnName("poll_option_id")
                     .HasColumnType("tinyint(4)")
@@ -1604,6 +1599,8 @@ namespace Serverless.Forum.ForumDb
                     .HasColumnName("vote_user_ip")
                     .HasMaxLength(40)
                     .IsUnicode(false);
+
+                entity.HasNoKey();
             });
 
             modelBuilder.Entity<PhpbbPosts>(entity =>

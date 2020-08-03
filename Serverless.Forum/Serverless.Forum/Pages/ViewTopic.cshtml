@@ -59,7 +59,24 @@
 }
 <h2>Subiect: @Model.TopicTitle</h2>
 <span class="Caption">@Model.PostCount mesaj@(Model.PostCount == 1 ? "" : "e"), @Model.ViewCount vizualiz@(Model.ViewCount == 1 ? "are" : "ări").</span>
-
+@if (!string.IsNullOrWhiteSpace(Model.ForumRules))
+{
+    <div style="background-color: #ECD5D8; color: #BC2A4D; padding: 10px">
+        <span>&#x26A0;&nbsp;</span>
+        <b>Reguli forum</b>
+        <br />
+        @Html.Raw(_renderingService.BbCodeToHtml(Model.ForumRules, Model.ForumRulesUid));
+    </div>
+}
+else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
+{
+    <div style="background-color: #ECD5D8; color: #BC2A4D; padding: 10px">
+        <a href="@_utils.TransformSelfLinkToBetaLink(HttpUtility.HtmlDecode(Model.ForumRulesLink))">
+            &#x26A0;&nbsp;
+            <b>Reguli forum</b>
+        </a>
+    </div>
+}
 @if (Model.Poll != null)
 {
     if (Model.Poll.CanVoteNow(CurrentUser.UserId) || IsAnonymous)
@@ -170,7 +187,7 @@
         PostId = p.PostId,
         Attachments = joinedAttachments.Select(x => new _AttachmentPartialModel(x)).ToList(),
         BbcodeUid = p.BbcodeUid,
-        Unread = Model.IsPostUnread(p.TopicId, p.PostId).RunSync(),
+        Unread = await Model.IsPostUnread(p.TopicId, p.PostId),
         AuthorHasAvatar = ju != null && !string.IsNullOrWhiteSpace(ju.UserAvatar),
         AuthorSignature = ju == null ? null : _renderingService.BbCodeToHtml(ju.UserSig, ju.UserSigBbcodeUid),
         AuthorRank = jr?.RankTitle,

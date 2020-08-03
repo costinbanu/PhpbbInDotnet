@@ -1,8 +1,8 @@
-﻿CREATE DEFINER=`root`@`localhost` PROCEDURE `get_post_tracking`(user_id_parm int, topic_id_parm int, forum_id_parm int)
+﻿CREATE DEFINER=`root`@`localhost` PROCEDURE `get_post_tracking`(user_id_parm int)
 BEGIN
-    SET @user_id = COALESCE(user_id_parm, 1);
-    
-    /**
+	SET @user_id = COALESCE(user_id_parm, 1);
+
+	/**
 		https://www.phpbb.com/community/viewtopic.php?t=2165146
 		https://www.phpbb.com/community/viewtopic.php?p=2987015
 	**/
@@ -23,25 +23,14 @@ BEGIN
 				AND ft.user_id = @user_id
 		  WHERE u.user_id = @user_id 
 		    AND @user_id <> 1
-			AND topic_last_post_time > u.user_lastmark
-            AND (ISNULL(topic_id_parm) OR (t.topic_id = topic_id_parm))
-            AND (ISNULL(forum_id_parm) OR (t.forum_id = forum_id_parm))
+            AND t.topic_last_post_time > coalesce(tt.mark_time, ft.mark_time, u.user_lastmark, 0)
 	)
 	SELECT m.* , group_concat(p.post_id) AS post_ids
 	  FROM marktimes m
 	  JOIN phpbb_posts p
 		ON m.topic_id = p.topic_id
-	   AND (1 AND
-		   NOT (
-				(p.post_time <= topic_mark_time AND NOT ISNULL(topic_mark_time)) OR 
-				(p.post_time <= forum_mark_time AND NOT ISNULL(forum_mark_time))
-		   )
-	   )
-	 WHERE 1 AND
-	   NOT (
-			(topic_last_post_time <= topic_mark_time AND NOT ISNULL(topic_mark_time)) OR 
-			(topic_last_post_time <= forum_mark_time AND NOT ISNULL(forum_mark_time))
-	   ) AND
+	   AND p.post_time > coalesce(topic_mark_time, forum_mark_time, user_lastmark, 0)
+	 WHERE
        p.poster_id <> @user_id
        AND @user_id <> 1
        GROUP BY m.topic_id;

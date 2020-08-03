@@ -17,5 +17,7 @@ namespace Serverless.Forum.Contracts
         public List<string> GroupForumPermissions { get; set; }
         public List<int> UserPermissionToRemove { get; set; }
         public List<int> GroupPermissionToRemove { get; set; }
+        public string ForumRules { get; set; }
+        public string ForumRulesLink { get; set; }
     }
 }

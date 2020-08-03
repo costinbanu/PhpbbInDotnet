@@ -3,8 +3,9 @@
 
 @using Serverless.Forum.Utilities
 @using System.Web
-
 @inject Services.ForumTreeService _forumService
+@inject Services.BBCodeRenderingService _renderingService
+@inject Utils _utils
 
 @{
     ViewData["Title"] = Model.ForumTitle;
@@ -14,6 +15,7 @@
     var IsAnonymous = CurrentUser?.IsAnonymous ?? true;
     var hasSubForums = _forumService.HasUnrestrictedChildren((await Model.GetForumTree()).Tree, Model.ForumId);
 }
+
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />
 </environment>
@@ -57,6 +59,24 @@ else if (Model.IsOwnPostView)
 else
 {
     <h2>Forum: @Model.ForumTitle</h2>
+    @if (!string.IsNullOrWhiteSpace(Model.ForumRules))
+    {
+        <div style="background-color: #ECD5D8; color: #BC2A4D; padding: 10px">
+            <span>&#x26A0;&nbsp;</span>
+            <b>Reguli forum</b>
+            <br />
+            @Html.Raw(_renderingService.BbCodeToHtml(Model.ForumRules, Model.ForumRulesUid));
+        </div>
+    }
+    else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
+    {
+        <div style="background-color: #ECD5D8; color: #BC2A4D; padding: 10px">
+            <a href="@_utils.TransformSelfLinkToBetaLink(HttpUtility.HtmlDecode(Model.ForumRulesLink))">
+                &#x26A0;&nbsp;
+                <b>Reguli forum</b>
+            </a>
+        </div>
+    }
 }
 @if (!IsAnonymous && !Model.IsNewPostView && !Model.IsOwnPostView)
 {
@@ -150,14 +170,16 @@ else
                     {
                         <span>&#x26A0;&#xFE0F;&nbsp;</span>
                     }
-                    @if (topic.Unread)
-                    {
-
-                        <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@await Model.GetFirstUnreadPost(topic.TopicId ?? 0)" asp-route-highlight="false" class="nav-link" style="font-weight:bold">@Html.Raw(topic.TopicTitle)</a>
-                    }
-                    else
-                    {
-                        <a asp-page="/ViewTopic" asp-route-topicId="@topic.TopicId" asp-route-pageNum="1" class="nav-link" style="font-weight:bold">@Html.Raw(topic.TopicTitle)</a>
+                    @{
+                        var firstUnreadPost = await Model.GetFirstUnreadPost(topic.TopicId ?? 0);
+                        if (firstUnreadPost > 0)
+                        {
+                            <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@firstUnreadPost" asp-route-highlight="false" class="nav-link" style="font-weight:bold">@Html.Raw(topic.TopicTitle)</a>
+                        }
+                        else
+                        {
+                            <a asp-page="/ViewTopic" asp-route-topicId="@topic.TopicId" asp-route-pageNum="1" class="nav-link" style="font-weight:bold">@Html.Raw(topic.TopicTitle)</a>
+                        }
                     }
                     <br />
                     @await Html.PartialAsync("_PaginationPartial", topic.Pagination, ViewData)

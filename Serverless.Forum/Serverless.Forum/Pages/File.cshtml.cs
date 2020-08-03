@@ -2,12 +2,14 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System.IO;
 using System.Net.Mime;
 using System.Threading.Tasks;
+using System.Web;
 using IOFile = System.IO.File;
 
 namespace Serverless.Forum.Pages
@@ -15,11 +17,13 @@ namespace Serverless.Forum.Pages
     public class FileModel : ModelWithLoggedUser
     {
         private readonly StorageService _storageService;
+        private readonly IConfiguration _config;
 
-        public FileModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, StorageService storageService)
+        public FileModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, StorageService storageService, IConfiguration config)
             : base(context, forumService, userService, cacheService)
         {
             _storageService = storageService;
+            _config = config;
         }
 
         public async Task<IActionResult> OnGet(int Id)
@@ -56,11 +60,16 @@ namespace Serverless.Forum.Pages
             {
                 await connection.OpenIfNeeded();
                 file = await connection.QuerySingleOrDefaultAsync<string>("SELECT user_avatar FROM phpbb_users WHERE user_id = @userId", new { userId });
-            }
+                if (file == null)
+                {
+                    return RedirectToPage("Error", new { isNotFound = true });
+                }
 
-            if (file == null)
-            {
-                return RedirectToPage("Error", new { isNotFound = true });
+                if (_config.GetValue<bool>("CompatibilityMode"))
+                {
+                    var salt = await connection.QuerySingleAsync<string>("SELECT config_value FROM phpbb_config WHERE config_name = 'avatar_salt'");
+                    file = $"{salt}_{userId}{Path.GetExtension(file)}";
+                }
             }
 
             return SendToClient(file, file, null, true);
@@ -75,12 +84,12 @@ namespace Serverless.Forum.Pages
             {
                 var cd = new ContentDisposition
                 {
-                    FileName = realFileName,
+                    FileName = HttpUtility.UrlEncode(realFileName),
                     Inline = mimeType.IsMimeTypeInline()
                 };
                 Response.Headers.Add("Content-Disposition", cd.ToString());
                 Response.Headers.Add("X-Content-Type-Options", "nosniff");
-                return File(IOFile.OpenRead(path), mimeType, realFileName);
+                return File(IOFile.OpenRead(path), mimeType);
             }
             else
             {
