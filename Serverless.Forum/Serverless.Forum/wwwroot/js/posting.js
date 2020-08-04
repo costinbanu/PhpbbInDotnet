@@ -339,10 +339,16 @@
             "hiddenSmilies",
             function () {
                 $("#showHiddenSmiliesButton").text("Arată mai multe");
+                //$('#mainContainer').height($('#mainContainer').height() - $('#hiddenSmilies').height());
             },
             function () {
+                $('#hiddenSmilies').find('img').each((index, element) => {
+                    resizeImage(element, $('#hiddenSmilies').parent()[0].offsetWidth, $('#hiddenSmilies').parent()[0].offsetHeight);
+                });
+                //$('#mainContainer').height($('#mainContainer').height() + $('#hiddenSmilies').height());
                 $("#showHiddenSmiliesButton").text("Arată mai puține");
-            }
+            },
+            false
         )
     }
 

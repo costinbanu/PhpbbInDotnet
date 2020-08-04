@@ -172,15 +172,15 @@ namespace Serverless.Forum.Pages
 
                 var userId = (await GetCurrentUserAsync()).UserId;
                 var markTime = Paginator.IsLastPage ? DateTime.UtcNow.ToUnixTimestamp() : Posts.Max(p => p.PostTime);
-                var existing = await connection.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_topics_track WHERE user_id = @userId AND topic_id = @topicId", new { userId, topicId = TopicId.Value });
-                if (existing == 0)
+                var existing = await connection.ExecuteScalarAsync<long?>("SELECT mark_time FROM phpbb_topics_track WHERE user_id = @userId AND topic_id = @topicId", new { userId, topicId = TopicId.Value });
+                if (existing == null)
                 {
                     await connection.ExecuteAsync(
                         "INSERT INTO phpbb_topics_track (forum_id, mark_time, topic_id, user_id) VALUES (@forumId, @markTime, @topicId, @userId)",
                         new { forumId = ForumId.Value, markTime, topicId = TopicId.Value, userId }
                     );
                 }
-                else
+                else if (markTime > existing)
                 {
                     await connection.ExecuteAsync(
                         "UPDATE phpbb_topics_track SET forum_id = @forumId, mark_time = @markTime WHERE user_id = @userId AND topic_id = @topicId",

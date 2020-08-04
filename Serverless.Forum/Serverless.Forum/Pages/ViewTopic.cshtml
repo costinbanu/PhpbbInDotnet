@@ -65,7 +65,7 @@
         <span>&#x26A0;&nbsp;</span>
         <b>Reguli forum</b>
         <br />
-        @Html.Raw(_renderingService.BbCodeToHtml(Model.ForumRules, Model.ForumRulesUid));
+        @Html.Raw(_renderingService.BbCodeToHtml(Model.ForumRules, Model.ForumRulesUid))
     </div>
 }
 else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
@@ -165,7 +165,10 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
 {
     <hr />
 }
-@{ var index = 0; }
+@{ 
+    var index = 0;
+    var reachedAnUnreadPost = false;
+}
 @foreach (var p in Model.Posts)
 {
     var ju = Model.Users.FirstOrDefault(u => u.UserId == p.PosterId);
@@ -179,27 +182,27 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
     {
         PostSubject = p.PostSubject,
         PostText = p.PostText,
-        AuthorName = ju == null ? "Anonymous" : (ju.UserId == Constants.ANONYMOUS_USER_ID ? p.PostUsername : ju.Username),
-        AuthorId = ju == null ? 1 : (ju.UserId == Constants.ANONYMOUS_USER_ID ? null as int? : ju.UserId),
-        AuthorColor = ju == null ? null : ju.UserColour,
+        AuthorName = ((ju?.UserId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID ? p.PostUsername : ju.Username),
+        AuthorId = ju?.UserId ?? Constants.ANONYMOUS_USER_ID,
+        AuthorColor = ju?.UserColour,
         PostCreationTime = p.PostTime.ToUtcTime(),
         PostModifiedTime = p.PostEditTime.ToUtcTime(),
         PostId = p.PostId,
         Attachments = joinedAttachments.Select(x => new _AttachmentPartialModel(x)).ToList(),
         BbcodeUid = p.BbcodeUid,
-        Unread = await Model.IsPostUnread(p.TopicId, p.PostId),
-        AuthorHasAvatar = ju != null && !string.IsNullOrWhiteSpace(ju.UserAvatar),
-        AuthorSignature = ju == null ? null : _renderingService.BbCodeToHtml(ju.UserSig, ju.UserSigBbcodeUid),
+        Unread = reachedAnUnreadPost || (reachedAnUnreadPost = await Model.IsPostUnread(p.TopicId, p.PostId)),
+        AuthorHasAvatar = !string.IsNullOrWhiteSpace(ju?.UserAvatar),
+        //AuthorSignature = _renderingService.BbCodeToHtml(ju?.UserSig, ju?.UserSigBbcodeUid),
         AuthorRank = jr?.RankTitle,
         LastEditTime = p.PostEditTime,
         LastEditUser = lastEditUsername,
         LastEditReason = p.PostEditReason,
         EditCount = p.PostEditCount,
         IP = p.PosterIp,
-        ReportId = report == null ? null as int? : report.ReportId,
-        ReportReasonId = report == null ? null as int? : report.ReasonId,
-        ReportDetails = report == null ? null as string : report.ReportText,
-        ReporterId = report == null ? null as int? : report.UserId
+        ReportId = report?.ReportId,
+        ReportReasonId = report?.ReasonId,
+        ReportDetails = report?.ReportText,
+        ReporterId = report?.UserId
     };
 
     await _renderingService.ProcessPost(post, Model.PageContext, Model.HttpContext, true);

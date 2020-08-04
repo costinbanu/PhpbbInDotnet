@@ -1,8 +1,8 @@
 ﻿var maxWidth, maxHeight;
 var quoteWidthBleed, quoteHeightBleed;
 
-function resizeImage(img) {
-    lazyInit();
+function resizeImage(img, customMaxWidth, customMaxHeight) {
+    lazyInit(customMaxWidth, customMaxHeight);
     var quotes = countQuotes(img, 0);
     var actualParentWidth = maxWidth - quotes * quoteWidthBleed,
         actualParentHeight = maxHeight - quotes * quoteHeightBleed;
@@ -18,8 +18,8 @@ function resizeImage(img) {
     }
 }
 
-function resizeIFrame(frame) {
-    lazyInit();
+function resizeIFrame(frame, customMaxWidth, customMaxHeight) {
+    lazyInit(customMaxWidth, customMaxHeight);
     var quotes = countQuotes(frame, 0);
     var actualParentWidth = maxWidth - quotes * quoteWidthBleed,
         actualParentHeight = maxHeight - quotes * quoteHeightBleed;
@@ -37,11 +37,11 @@ function countQuotes(obj, cur) {
     return countQuotes(obj.parentElement, cur + 1);
 }
 
-function lazyInit() {
+function lazyInit(customMaxWidth, customMaxHeight) {
     quoteWidthBleed = quoteWidthBleed || $('.PostQuote').outerWidth(true) - $('.PostQuote').width() || 42;
-    quoteHeightBleed = quoteHeightBleed || $('.PostQuote').outerHeight(true) - $('.PostQuote').height() || 42;
-    maxWidth = maxWidth || ($('.FlexRow').width() - ($('.Summary').is(':visible') ? $('.Summary').outerWidth() : 0)) - 20;
-    maxHeight = maxHeight || $(window).innerHeight() - $('#topBanner').outerHeight() - 40;
+    quoteHeightBleed = quoteHeightBleed || $('.PostQuote').outerHeight(true) - $('.PostQuote').height() || 62;
+    maxWidth = maxWidth || customMaxWidth || ($('.FlexRow').width() - ($('.Summary').is(':visible') ? $('.Summary').outerWidth() : 0)) - 20;
+    maxHeight = maxHeight || customMaxHeight || $(window).innerHeight() - $('#topBanner').outerHeight() - 40;
 }
 
 //Expand collapsed menus
@@ -63,7 +63,7 @@ function expandCollapsedMenu(summaryId, buttonId, containerIsFixed = false) {
 }
 
 
-function showElement(id, whenHiding, whenShowing) {
+function showElement(id, whenHiding, whenShowing, roundHeight = true) {
     var elem = $('#' + id);
     if (!whenHiding) {
         whenHiding = function () { }
@@ -76,7 +76,9 @@ function showElement(id, whenHiding, whenShowing) {
         elem.hide('fast', whenHiding);
     }
     else {
-        elem.height(roundToNextEvenNumber(elem.height()));
+        if (roundHeight) {
+            elem.height(roundToNextEvenNumber(elem.height()));
+        }
         elem.show('fast', whenShowing);
     }
 }

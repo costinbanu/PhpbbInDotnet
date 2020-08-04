@@ -109,7 +109,7 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnGetForumPost()
             => await WithValidTopic(TopicId ?? 0, async (curForum, curTopic) =>
             {
-                await Init(PostingActions.NewForumPost, false, HttpUtility.HtmlDecode(curTopic.TopicTitle), curForum.ForumName, curForum.ForumId);
+                await Init(PostingActions.NewForumPost, false, HttpUtility.HtmlDecode(curTopic.TopicTitle), curForum);
                 PostTitle = $"{Constants.REPLY}{HttpUtility.HtmlDecode(curTopic.TopicTitle)}";
                 return Page();
             });
@@ -123,7 +123,7 @@ namespace Serverless.Forum.Pages
                     curAuthor = (await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == curPost.PosterId))?.Username ?? "Anonymous";
                 }
 
-                await Init(PostingActions.NewForumPost, false, HttpUtility.HtmlDecode(curTopic.TopicTitle), curForum.ForumName, curForum.ForumId);
+                await Init(PostingActions.NewForumPost, false, HttpUtility.HtmlDecode(curTopic.TopicTitle), curForum);
 
                 var title = HttpUtility.HtmlDecode(curPost.PostSubject);
                 PostText = $"[quote=\"{curAuthor}\"]\n{HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid))}\n[/quote]";
@@ -135,7 +135,7 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnGetNewTopic()
             => await WithValidForum(ForumId, async (curForum) =>
             {
-                await Init(PostingActions.NewTopic, true, HttpUtility.HtmlDecode(curForum.ForumName), curForum.ForumName, curForum.ForumId);
+                await Init(PostingActions.NewTopic, true, HttpUtility.HtmlDecode(curForum.ForumName), curForum);
                 return Page();
             });
 
@@ -150,7 +150,7 @@ namespace Serverless.Forum.Pages
 
                 var canCreatePoll = (curTopic.TopicFirstPostId == PostId) && (await IsCurrentUserModeratorHereAsync() || (curPost.PosterId == (await GetCurrentUserAsync()).UserId && DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= (await GetCurrentUserAsync()).PostEditTime));
 
-                await Init(PostingActions.EditForumPost, canCreatePoll, HttpUtility.HtmlDecode(curTopic.TopicTitle), curForum.ForumName, curForum.ForumId);
+                await Init(PostingActions.EditForumPost, canCreatePoll, HttpUtility.HtmlDecode(curTopic.TopicTitle), curForum);
 
                 var attachments = await _context.PhpbbAttachments.AsNoTracking().Where(a => a.PostMsgId == PostId).ToListAsync();
                 await _cacheService.SetInCache(await GetActualCacheKey("PostAttachments", true), attachments);
@@ -230,7 +230,7 @@ namespace Serverless.Forum.Pages
                     ReceiverName = (await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == ReceiverId)).Username;
                 }
 
-                await Init(PostingActions.NewPrivateMessage, false, null, null, 0);
+                await Init(PostingActions.NewPrivateMessage, false, null, null);
                 return Page();
             });
 
@@ -463,7 +463,7 @@ namespace Serverless.Forum.Pages
         public async Task<string> GetActualCacheKey(string key, bool isPersonalizedData)
             => isPersonalizedData ? $"{(await GetCurrentUserAsync()).UserId}_{ForumId}_{TopicId ?? 0}_{key ?? throw new ArgumentNullException(nameof(key))}" : key;
 
-        private async Task Init(PostingActions action, bool CanCreatePoll, string Header, string forumName, int forumId)
+        private async Task Init(PostingActions action, bool CanCreatePoll, string Header, PhpbbForums curForum)
         {
             using (var connection = _context.Database.GetDbConnection())
             {
@@ -503,9 +503,12 @@ namespace Serverless.Forum.Pages
             await _cacheService.SetInCache(await GetActualCacheKey("DbBbCodes", false), dbBbCodes);
             await _cacheService.SetInCache(await GetActualCacheKey("Action", true), action);
             await _cacheService.SetInCache(await GetActualCacheKey("Header", true), Header);
-            await _cacheService.SetInCache(await GetActualCacheKey("ForumName", true), forumName);
-            await _cacheService.SetInCache(await GetActualCacheKey("ForumId", true), forumId);
+            await _cacheService.SetInCache(await GetActualCacheKey("ForumName", true), curForum?.ForumName);
+            await _cacheService.SetInCache(await GetActualCacheKey("ForumId", true), curForum?.ForumId ?? 0);
             await _cacheService.SetInCache(await GetActualCacheKey("CanCreatePoll", true), CanCreatePoll);
+            await _cacheService.SetInCache(await GetActualCacheKey("ForumRulesLink", true), curForum?.ForumRulesLink);
+            await _cacheService.SetInCache(await GetActualCacheKey("ForumRules", true), curForum?.ForumRules);
+            await _cacheService.SetInCache(await GetActualCacheKey("ForumRulesUid", true), curForum?.ForumRulesUid);
         }
 
         private async Task<PhpbbPosts> InitEditedPost()

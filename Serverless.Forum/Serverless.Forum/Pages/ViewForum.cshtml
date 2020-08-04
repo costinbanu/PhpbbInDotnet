@@ -65,7 +65,7 @@ else
             <span>&#x26A0;&nbsp;</span>
             <b>Reguli forum</b>
             <br />
-            @Html.Raw(_renderingService.BbCodeToHtml(Model.ForumRules, Model.ForumRulesUid));
+            @Html.Raw(_renderingService.BbCodeToHtml(Model.ForumRules, Model.ForumRulesUid))
         </div>
     }
     else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))

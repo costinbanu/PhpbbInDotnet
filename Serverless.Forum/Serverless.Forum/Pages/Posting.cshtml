@@ -7,6 +7,8 @@
 @model Serverless.Forum.Pages.PostingModel
 @inject Services.CacheService _cacheService
 @inject Services.WritingToolsService _writingService
+@inject Services.BBCodeRenderingService _renderingService
+@inject Utils _utils
 
 @{
     ViewData["Title"] = "Posting";
@@ -17,6 +19,9 @@
     var Action = await _cacheService.GetFromCache<PostingActions>(await Model.GetActualCacheKey("Action", true));
     var ForumName = await _cacheService.GetFromCache<string>(await Model.GetActualCacheKey("ForumName", true));
     var ForumId = await _cacheService.GetFromCache<int>(await Model.GetActualCacheKey("ForumId", true));
+    var ForumRulesLink = await _cacheService.GetFromCache<string>(await Model.GetActualCacheKey("ForumRulesLink", true));
+    var ForumRules = await _cacheService.GetFromCache<string>(await Model.GetActualCacheKey("ForumRules", true));
+    var ForumRulesUid = await _cacheService.GetFromCache<string>(await Model.GetActualCacheKey("ForumRulesUid", true));
 }
 
 <environment include="Development">
@@ -36,7 +41,6 @@
     );
 
     window.onload = function () {
-        onPostLoad();
         if ($('#attachPanel').is(':visible')) {
             $('#attachButton').text(posting.hideAttachText);
         }
@@ -85,6 +89,26 @@ else if (!Model.ReceiverId.HasValue)
 else
 {
     <h3>Scrie un mesaj privat nou:</h3>
+}
+@if (!string.IsNullOrWhiteSpace(ForumRules))
+{
+    <div style="background-color: #ECD5D8; color: #BC2A4D; padding: 10px">
+        <span>&#x26A0;&nbsp;</span>
+        <b>Reguli forum</b>
+        <br />
+        @Html.Raw(_renderingService.BbCodeToHtml(ForumRules, ForumRulesUid))
+    </div>
+    <p></p>
+}
+else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
+{
+    <div style="background-color: #ECD5D8; color: #BC2A4D; padding: 10px">
+        <a href="@_utils.TransformSelfLinkToBetaLink(HttpUtility.HtmlDecode(ForumRulesLink))">
+            &#x26A0;&nbsp;
+            <b>Reguli forum</b>
+        </a>
+    </div>
+    <p></p>
 }
 <form name="postform" method="post" enctype="multipart/form-data">
     @if (Action == PostingActions.NewPrivateMessage)
@@ -162,7 +186,7 @@ else
             <p>&nbsp;</p>
             <a href="javascript:posting.show_hidden_smilies();" id="showHiddenSmiliesButton">Arată mai multe</a>
             <p>&nbsp;</p>
-            <div id="hiddenSmilies" style="display:none">
+            <div id="hiddenSmilies" style="display:none; position:absolute; background-color:white; width:min-content; height: auto">
                 @foreach (var smiley in ((await _cacheService.GetFromCache<List<PhpbbSmilies>>(await Model.GetActualCacheKey("Smilies", false))) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 0))
                 {
                     <a href="javascript:posting.insert_text('@smiley.Code', true);">
@@ -173,13 +197,14 @@ else
         </div>
     </div>
     <p style="clear:both;">&nbsp;</p>
-    <p>
+    <p class="PostInputWidth">
         Includerea imaginilor mai mari de 2MB nu este permisă, indiferent dacă sunt găzduite local sau extern. De asemenea, numerele de înmatriculare ale vehiculelor particulare surprinse in imagini trebuie ascunse.
         Utilizați <a href="https://procesorimagini.metrouusor.com/" target="_blank">procesorul de imagini „Metrou Ușor”</a> pentru a redimensiona imagini și a ascunde numere de înmatriculare.
     </p>
     @if (Action != PostingActions.NewPrivateMessage)
     {
-        <a href="javascript:posting.toggleAttach();" id="attachButton">Adaugă fișiere atașate</a>
+        @*<a href="javascript:posting.toggleAttach();" id="attachButton">Adaugă fișiere atașate</a>*@
+        <button onclick="posting.toggleAttach()" type="button">&#128206; Adaugă fișiere atașate</button>
     }
     @if (CanCreatePoll)
     {
@@ -280,6 +305,7 @@ else
                 }
                 <input type="hidden" name="index" id="indexToDelete" value="" />
             }
+            <p style="clear:both">&nbsp;</p>
         </div>
     }
     @if (Action == PostingActions.EditForumPost)
@@ -411,7 +437,7 @@ else
                 <input type="button" value="Trimite vot" />
             </div>
         }
-        <div class="RowMargin Color0" style="margin-top: 50px; position:relative" onload="onPostLoad()">
+        <div class="RowMargin Color0" style="margin-top: 50px; position:relative">
             <div class="FlexRow">
                 @await Html.PartialAsync(
                  "_SummaryPartial",

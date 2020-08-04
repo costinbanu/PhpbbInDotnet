@@ -142,7 +142,7 @@ namespace Serverless.Forum.Services
             }
             
             bbCodeText = CensorWords(bbCodeText, _bannedWords);
-            bbCodeText = _parser.ToHtml(bbCodeText, bbCodeUid);
+            bbCodeText = _parser.ToHtml(bbCodeText, bbCodeUid ?? string.Empty);
             bbCodeText = _htmlCommentRegex.Replace(bbCodeText, string.Empty);
             bbCodeText = bbCodeText.Replace("{SMILIES_PATH}", Constants.SMILEY_PATH);
             bbCodeText = bbCodeText.Replace("\t", _utils.HtmlSafeWhitespace(4));

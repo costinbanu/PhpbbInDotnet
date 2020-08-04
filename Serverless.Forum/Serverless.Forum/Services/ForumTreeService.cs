@@ -120,7 +120,7 @@ namespace Serverless.Forum.Services
             {
                 return false;
             }
-            return new HashSet<int>(new[] { postId }).IsSubsetOf(item.Posts);
+            return item.Posts.Contains(postId);
         }
 
         public ForumTree GetTreeNode(HashSet<ForumTree> tree, int forumId)
