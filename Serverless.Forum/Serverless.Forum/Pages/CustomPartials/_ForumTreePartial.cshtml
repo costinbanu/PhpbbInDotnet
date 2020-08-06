@@ -1,5 +1,5 @@
 ﻿@model Serverless.Forum.Pages.CustomPartials._ForumTreePartialModel
-
+@using Contracts;
 @inject Services.ForumTreeService _forumService
 
 <style>
@@ -55,12 +55,12 @@
     {
         var treeNodeClass = cur == Model.ForumId ? "treeNode selectedTreeNode" : "treeNode";
         var topics = Model.TopicData?.Where(t => t.ForumId == cur)
-                                    .OrderBy(t => t.TopicTitle, StringComparer.OrdinalIgnoreCase)
-                                    .Select(t => new TopicDto
+                                    ?.OrderBy(t => t.TopicTitle, StringComparer.OrdinalIgnoreCase)
+                                    /*?.Select(t => new TopicDto
                                     {
                                         TopicId = t.TopicId,
                                         TopicTitle = System.Web.HttpUtility.HtmlDecode(t.TopicTitle)
-                                    }) ?? Enumerable.Empty<TopicDto>();
+                                    })*/ ?? Enumerable.Empty<MiniTopicDto>();
 
         var thisForum = _forumService.GetTreeNode(Model.Tree, cur ?? 0);
 

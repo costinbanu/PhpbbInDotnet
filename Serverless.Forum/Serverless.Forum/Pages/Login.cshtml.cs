@@ -1,10 +1,12 @@
 ﻿using CryptSharp.Core;
+using Diacritics.Extensions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Pages.CustomPartials.Email;
 using Serverless.Forum.Services;
@@ -26,7 +28,8 @@ namespace Serverless.Forum.Pages
         private readonly Utils _utils;
         private readonly CacheService _cacheService;
         private readonly UserService _userService;
-        
+        private readonly IConfiguration _config;
+
         [Required]
         public string UserName { get; set; }
         
@@ -67,12 +70,13 @@ namespace Serverless.Forum.Pages
 
         public LoginMode Mode { get; set; }
 
-        public LoginModel(ForumDbContext context, Utils utils, CacheService cacheService, UserService userService)
+        public LoginModel(ForumDbContext context, Utils utils, CacheService cacheService, UserService userService, IConfiguration config)
         {
             _context = context;
             _utils = utils;
             _cacheService = cacheService;
             _userService = userService;
+            _config = config;
         }
 
         public async Task<IActionResult> OnGet()
@@ -107,6 +111,12 @@ namespace Serverless.Forum.Pages
         {
             var user = await _context.PhpbbUsers.AsNoTracking().Where(u => u.UsernameClean == _utils.CleanString(UserName)).ToListAsync();
             user = user.Where(u => Crypter.Phpass.Crypt(Password, u.UserPassword) == u.UserPassword).ToList();
+
+            if (!user.Any() && _config.GetValue<bool>("CompatibilityMode") && "ăîâșțĂÎÂȘȚ".Any(c => UserName.Contains(c)))
+            {
+                var cache = await _context.PhpbbUsers.AsNoTracking().ToListAsync();
+                user = cache.Where(u => _utils.CleanString(u.Username) == _utils.CleanString(UserName) && Crypter.Phpass.Crypt(Password, u.UserPassword) == u.UserPassword).ToList();
+            }
 
             Mode = LoginMode.Normal;
             if (user.Count() != 1)

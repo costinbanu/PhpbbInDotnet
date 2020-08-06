@@ -170,24 +170,35 @@ namespace Serverless.Forum.Pages
                 ForumRules = curForum.ForumRules;
                 ForumRulesUid = curForum.ForumRulesUid;
 
-                var userId = (await GetCurrentUserAsync()).UserId;
-                var markTime = Paginator.IsLastPage ? DateTime.UtcNow.ToUnixTimestamp() : Posts.Max(p => p.PostTime);
-                var existing = await connection.ExecuteScalarAsync<long?>("SELECT mark_time FROM phpbb_topics_track WHERE user_id = @userId AND topic_id = @topicId", new { userId, topicId = TopicId.Value });
-                if (existing == null)
+                if (await IsTopicUnread(ForumId ?? 0, TopicId ?? 0))
                 {
-                    await connection.ExecuteAsync(
-                        "INSERT INTO phpbb_topics_track (forum_id, mark_time, topic_id, user_id) VALUES (@forumId, @markTime, @topicId, @userId)",
-                        new { forumId = ForumId.Value, markTime, topicId = TopicId.Value, userId }
-                    );
+                    if ((await GetForumTree()).Tracking.TryGetValue(ForumId ?? 0, out var tt) && tt.Count == 1)
+                    {
+                        //current topic was the last unread in its forum, mark whole forum read
+                        await MarkForumRead(curForum.ForumId);
+                    }
+                    else
+                    {
+                        //there are other unread topics in this forum, just mark the current topic as read
+                        var markTime = Posts.Max(p => p.PostTime);
+                        var userId = (await GetCurrentUserAsync()).UserId;
+                        var existing = await connection.ExecuteScalarAsync<long?>("SELECT mark_time FROM phpbb_topics_track WHERE user_id = @userId AND topic_id = @topicId", new { userId, topicId = TopicId.Value });
+                        if (existing == null)
+                        {
+                            await connection.ExecuteAsync(
+                                "INSERT INTO phpbb_topics_track (forum_id, mark_time, topic_id, user_id) VALUES (@forumId, @markTime, @topicId, @userId)",
+                                new { forumId = ForumId.Value, markTime, topicId = TopicId.Value, userId }
+                            );
+                        }
+                        else if (markTime > existing)
+                        {
+                            await connection.ExecuteAsync(
+                                "UPDATE phpbb_topics_track SET forum_id = @forumId, mark_time = @markTime WHERE user_id = @userId AND topic_id = @topicId",
+                                new { forumId = ForumId.Value, markTime, userId, topicId = TopicId.Value }
+                            );
+                        }
+                    }
                 }
-                else if (markTime > existing)
-                {
-                    await connection.ExecuteAsync(
-                        "UPDATE phpbb_topics_track SET forum_id = @forumId, mark_time = @markTime WHERE user_id = @userId AND topic_id = @topicId",
-                        new { forumId = ForumId.Value, markTime, userId, topicId = TopicId.Value }
-                    );
-                }
-
                 await connection.ExecuteAsync("UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId", new { topicId = TopicId.Value });
                 return Page();
             }

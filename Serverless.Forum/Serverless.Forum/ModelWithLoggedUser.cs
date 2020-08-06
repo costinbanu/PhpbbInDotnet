@@ -125,25 +125,26 @@ namespace Serverless.Forum
             return !usr.IsAnonymous && await _forumService.IsForumUnread(forumId, usr, forceRefresh);
         }
 
-        public async Task<bool> IsTopicUnread(int topicId, bool forceRefresh = false)
+        public async Task<bool> IsTopicUnread(int forumId, int topicId, bool forceRefresh = false)
         {
             var usr = await GetCurrentUserAsync();
-            return !usr.IsAnonymous && await _forumService.IsTopicUnread(topicId, usr, forceRefresh);
+            return !usr.IsAnonymous && await _forumService.IsTopicUnread(forumId, topicId, usr, forceRefresh);
         }
 
-        public async Task<bool> IsPostUnread(int topicId, int postId)
+        public async Task<bool> IsPostUnread(int forumId, int topicId, int postId)
         {
             var usr = await GetCurrentUserAsync();
-            return !usr.IsAnonymous && await _forumService.IsPostUnread(topicId, postId, usr);
+            return !usr.IsAnonymous && await _forumService.IsPostUnread(forumId, topicId, postId, usr);
         }
 
-        public async Task<int> GetFirstUnreadPost(int topicId)
+        public async Task<int> GetFirstUnreadPost(int forumId, int topicId)
         {
             if ((await GetCurrentUserAsync()).IsAnonymous)
             {
                 return 0;
             }
-            var found = (await GetForumTree()).Tracking.TryGetValue(new Tracking { TopicId = topicId }, out var item);
+            Tracking item = null;
+            var found = (await GetForumTree()).Tracking.TryGetValue(forumId, out var tt) && tt.TryGetValue(new Tracking { TopicId = topicId }, out item);
             if (!found)
             {
                 return 0;
@@ -160,7 +161,7 @@ namespace Serverless.Forum
             return post;
         }
 
-        public async Task<(HashSet<ForumTree> Tree, HashSet<Tracking> Tracking)> GetForumTree(bool forceRefresh = false)
+        public async Task<(HashSet<ForumTree> Tree, Dictionary<int, HashSet<Tracking>> Tracking)> GetForumTree(bool forceRefresh = false)
             => (await _forumService.GetForumTree(await GetCurrentUserAsync(), forceRefresh), await _forumService.GetForumTracking(await GetCurrentUserAsync(), forceRefresh));
 
         protected async Task MarkForumAndSubforumsRead(int forumId)
@@ -181,35 +182,46 @@ namespace Serverless.Forum
         protected async Task MarkForumRead(int forumId)
         {
             var usrId = (await GetCurrentUserAsync()).UserId;
-            var topicTracksToRemove = await (
-                from t in _context.PhpbbTopics
+            using var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeeded();
 
-                where t.ForumId == forumId
+            await connection.ExecuteAsync("DELETE FROM phpbb_topics_track WHERE forum_id = @forumId AND user_id = @usrId", new { forumId, usrId });
+            await connection.ExecuteAsync("DELETE FROM phpbb_forums_track WHERE forum_id = @forumId AND user_id = @usrId", new { forumId, usrId });
+            await connection.ExecuteAsync(
+                "INSERT INTO phpbb_forums_track (forum_id, user_id, mark_time) VALUES (@forumId, @usrId, @markTime)",
+                new { forumId, usrId, markTime = DateTime.UtcNow.ToUnixTimestamp() }
+            );
 
-                join tt in _context.PhpbbTopicsTrack
-                on t.TopicId equals tt.TopicId
-                into joinedTopicTracks
 
-                from jtt in joinedTopicTracks.DefaultIfEmpty()
-                where jtt.UserId == usrId
-                select jtt
-            ).ToListAsync();
+            //var topicTracksToRemove = await (
+            //    from t in _context.PhpbbTopics
 
-            _context.PhpbbTopicsTrack.RemoveRange(topicTracksToRemove);
-            var forumTrackToRemove = await _context.PhpbbForumsTrack.FirstOrDefaultAsync(ft => ft.ForumId == forumId && ft.UserId == usrId);
-            if (forumTrackToRemove != null)
-            {
-                _context.PhpbbForumsTrack.Remove(forumTrackToRemove);
-            }
-            await _context.SaveChangesAsync();
+            //    where t.ForumId == forumId
 
-            await _context.PhpbbForumsTrack.AddAsync(new PhpbbForumsTrack
-            {
-                ForumId = forumId,
-                UserId = usrId,
-                MarkTime = DateTime.UtcNow.ToUnixTimestamp()
-            });
-            await _context.SaveChangesAsync();
+            //    join tt in _context.PhpbbTopicsTrack
+            //    on t.TopicId equals tt.TopicId
+            //    into joinedTopicTracks
+
+            //    from jtt in joinedTopicTracks.DefaultIfEmpty()
+            //    where jtt.UserId == usrId
+            //    select jtt
+            //).ToListAsync();
+
+            //_context.PhpbbTopicsTrack.RemoveRange(topicTracksToRemove);
+            //var forumTrackToRemove = await _context.PhpbbForumsTrack.FirstOrDefaultAsync(ft => ft.ForumId == forumId && ft.UserId == usrId);
+            //if (forumTrackToRemove != null)
+            //{
+            //    _context.PhpbbForumsTrack.Remove(forumTrackToRemove);
+            //}
+            //await _context.SaveChangesAsync();
+
+            //await _context.PhpbbForumsTrack.AddAsync(new PhpbbForumsTrack
+            //{
+            //    ForumId = forumId,
+            //    UserId = usrId,
+            //    MarkTime = DateTime.UtcNow.ToUnixTimestamp()
+            //});
+            //await _context.SaveChangesAsync();
 
             await SetLastMark();
         }
@@ -217,9 +229,13 @@ namespace Serverless.Forum
         protected async Task SetLastMark()
         {
             var usrId = (await GetCurrentUserAsync()).UserId;
-            var user = await _context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == usrId);
-            user.UserLastmark = DateTime.UtcNow.ToUnixTimestamp();
-            await _context.SaveChangesAsync();
+            using var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeeded();
+            await connection.ExecuteAsync("UPDATE phpbb_users SET user_lastmark = @markTime WHERE user_id = @usrId", new { markTime = DateTime.UtcNow.ToUnixTimestamp(), usrId });
+
+            //var user = await _context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == usrId);
+            //user.UserLastmark = DateTime.UtcNow.ToUnixTimestamp();
+            //await _context.SaveChangesAsync();
         }
 
         #endregion Forum for user

@@ -7,23 +7,9 @@ namespace Serverless.Forum.Contracts
 {
     public class Tracking
     {
-        private string _postIds;
-
         public int TopicId { get; set; }
 
-        public int ForumId { get; set; }
-
-        public string PostIds
-        {
-            get => _postIds;
-            set
-            {
-                _postIds = value;
-                Posts = _postIds?.ToIntHashSet() ?? new HashSet<int>();
-            }
-        }
-
-        public HashSet<int> Posts { get; private set; }
+        public HashSet<int> Posts { get; set; }
 
         public override bool Equals(object obj)
             => obj != null && obj is Tracking tr && TopicId == tr.TopicId;
@@ -32,12 +18,9 @@ namespace Serverless.Forum.Contracts
             => TopicId.GetHashCode();
     }
 
-    public class TrackingComparerByForumId : IEqualityComparer<Tracking>
+    public class ExtendedTracking : Tracking
     {
-        public bool Equals([AllowNull] Tracking x, [AllowNull] Tracking y)
-            => x != null && y != null && x.ForumId == y.ForumId;
-
-        public int GetHashCode([DisallowNull] Tracking obj)
-            => obj.ForumId.GetHashCode();
+        public string PostIds { get; set; }
+        public int ForumId { get; set; }
     }
 }

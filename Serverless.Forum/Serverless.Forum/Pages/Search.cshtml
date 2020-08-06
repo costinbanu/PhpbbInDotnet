@@ -79,7 +79,7 @@
             "_ForumTreePartial",
              new CustomPartials._ForumTreePartialModel(
                  tree: (await Model.GetForumTree()).Tree,
-                 topicData: await _context.PhpbbTopics.AsNoTracking().ToListAsync(),
+                 topicData: await _context.PhpbbTopics.AsNoTracking().Select(t => new Contracts.MiniTopicDto(t)).ToListAsync(),
                  forumId: Model.ForumId,
                  topicId: Model.TopicId,
                  constrainSize: true

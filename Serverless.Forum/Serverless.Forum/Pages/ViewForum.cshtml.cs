@@ -98,7 +98,7 @@ namespace Serverless.Forum.Pages
                 var usr = await GetCurrentUserAsync();
                 var tree = await GetForumTree();
                 IEnumerable<TopicDto> topics = null;
-                var topicList = tree.Tracking.Select(t => t.TopicId).Distinct().Skip(((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE).Take(Constants.DEFAULT_PAGE_SIZE);
+                var topicList = tree.Tracking.SelectMany(t => t.Value).Select(t => t.TopicId).Distinct();
                 if (!topicList.Any())
                 {
                     topicList = new[] { 0 };
@@ -120,12 +120,14 @@ namespace Serverless.Forum.Pages
                             FROM forum.phpbb_topics t
                             JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
                         WHERE t.topic_id IN @topicList
-                        GROUP BY t.topic_id",
-                        new { topicList }
+                        GROUP BY t.topic_id
+                        ORDER BY t.topic_last_post_time DESC
+                        LIMIT @pageNum, @pageSize",
+                        new { topicList, pageNum = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE, pageSize = Constants.DEFAULT_PAGE_SIZE }
                     );
                 }
 
-                Topics = new List<TopicTransport> { new TopicTransport { Topics = topics.OrderByDescending(t => t.LastPostTime) } };
+                Topics = new List<TopicTransport> { new TopicTransport { Topics = topics } };
                 IsNewPostView = true;
                 Paginator = new Paginator(tree.Tracking.Count, PageNum ?? 1, "/ViewForum?handler=NewPosts&pageNum=1");
                 return Page();

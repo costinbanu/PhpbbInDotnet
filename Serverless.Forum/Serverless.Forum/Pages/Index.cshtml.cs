@@ -13,8 +13,6 @@ namespace Serverless.Forum.Pages
 
         public HashSet<ForumTree> Tree { get; private set; }
 
-        public HashSet<Tracking> Tracking { get; private set; }
-
         public IndexModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
             : base(context, forumService, userService, cacheService)
         {
@@ -22,7 +20,7 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnGet()
         {
-            (Tree, Tracking) = await GetForumTree(_forceTreeRefresh);
+            (Tree, _) = await GetForumTree(_forceTreeRefresh);
             return Page();
         }
 

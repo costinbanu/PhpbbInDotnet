@@ -151,7 +151,7 @@ namespace Serverless.Forum.Pages
             }
             else
             {
-                Title = "Alege forumul și subiectul de destinație";
+                Title = "Alege forumul de destinație";
             }
         }
 

@@ -17,6 +17,10 @@
     var CurrentUser = await Model.GetCurrentUserAsync();
     var IsAnonymous = CurrentUser.UserId == Constants.ANONYMOUS_USER_ID;
     var UserDateFormat = CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+    if (!DateTime.TryParse(DateTime.Now.ToString(UserDateFormat), out var _))
+    {
+        UserDateFormat = "dddd, dd.MM.yyyy, HH:mm";
+    }
     var IsAdmin = await Model.IsCurrentUserAdminHereAsync();
     var IsMod = await Model.IsCurrentUserModeratorHereAsync();
     var EditTime = CurrentUser.PostEditTime;
@@ -190,7 +194,7 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
         PostId = p.PostId,
         Attachments = joinedAttachments.Select(x => new _AttachmentPartialModel(x)).ToList(),
         BbcodeUid = p.BbcodeUid,
-        Unread = reachedAnUnreadPost || (reachedAnUnreadPost = await Model.IsPostUnread(p.TopicId, p.PostId)),
+        Unread = reachedAnUnreadPost || (reachedAnUnreadPost = await Model.IsPostUnread(p.ForumId, p.TopicId, p.PostId)),
         AuthorHasAvatar = !string.IsNullOrWhiteSpace(ju?.UserAvatar),
         //AuthorSignature = _renderingService.BbCodeToHtml(ju?.UserSig, ju?.UserSigBbcodeUid),
         AuthorRank = jr?.RankTitle,

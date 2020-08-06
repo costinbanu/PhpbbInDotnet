@@ -14,6 +14,10 @@
     ViewData["Title"] = "Posting";
     Layout = "~/Pages/_Layout.cshtml";
     var UserDateFormat = (await Model.GetCurrentUserAsync()).UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+    if (!DateTime.TryParse(DateTime.Now.ToString(UserDateFormat), out var _))
+    {
+        UserDateFormat = "dddd, dd.MM.yyyy, HH:mm";
+    }
     var Header = await _cacheService.GetFromCache<string>(await Model.GetActualCacheKey("Header", true));
     var CanCreatePoll = await _cacheService.GetFromCache<bool>(await Model.GetActualCacheKey("CanCreatePoll", true));
     var Action = await _cacheService.GetFromCache<PostingActions>(await Model.GetActualCacheKey("Action", true));
@@ -203,13 +207,12 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
     </p>
     @if (Action != PostingActions.NewPrivateMessage)
     {
-        @*<a href="javascript:posting.toggleAttach();" id="attachButton">Adaugă fișiere atașate</a>*@
         <button onclick="posting.toggleAttach()" type="button">&#128206; Adaugă fișiere atașate</button>
     }
     @if (CanCreatePoll)
     {
         <span>&nbsp; | &nbsp;</span>
-        <a href="javascript:posting.togglePoll();" id="pollButton">Adaugă chestionar</a>
+        <button onclick="posting.togglePoll()" type="button">&#x1F4DD; Adaugă chestionar</button>
         <div id="pollPanel" style="display:@(Model.ShowPoll ? "block" : "none")" class="PostInputWidth">
             <br />
             <h3>Chestionar</h3>

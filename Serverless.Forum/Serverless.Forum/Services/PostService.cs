@@ -40,7 +40,7 @@ namespace Serverless.Forum.Services
         public async Task<PollDto> GetPoll(PhpbbTopics _currentTopic)
         {
             var options = Enumerable.Empty<PhpbbPollOptions>();
-            var voters = Enumerable.Empty<PhpbbUsers>();
+            var voters = Enumerable.Empty<PollOptionVoter>();
 
             using (var connection = _context.Database.GetDbConnection())
             {
@@ -48,8 +48,8 @@ namespace Serverless.Forum.Services
                 options = await connection.QueryAsync<PhpbbPollOptions>("SELECT * FROM phpbb_poll_options WHERE topic_id = @TopicId", new { _currentTopic.TopicId });
                 if (options.Any())
                 {
-                    voters = await connection.QueryAsync<PhpbbUsers>(
-                        @"SELECT u.*
+                    voters = await connection.QueryAsync<PollOptionVoter>(
+                        @"SELECT u.user_id, u.username, v.poll_option_id
                             FROM phpbb_users u
                             JOIN phpbb_poll_votes v ON u.user_id = v.vote_user_id
                            WHERE v.poll_option_id IN @optionIds
@@ -57,9 +57,13 @@ namespace Serverless.Forum.Services
                         new { optionIds = options.Select(o => o.PollOptionId), topicIds = options.Select(o => o.TopicId) }
                     );
                 }
+                else
+                {
+                    return null;
+                }
             }
 
-            var toReturn = new PollDto
+            return new PollDto
             {
                 PollTitle = _currentTopic.PollTitle,
                 PollStart = _currentTopic.PollStart.ToUtcTime(),
@@ -67,25 +71,15 @@ namespace Serverless.Forum.Services
                 PollMaxOptions = _currentTopic.PollMaxOptions,
                 TopicId = _currentTopic.TopicId,
                 VoteCanBeChanged = _currentTopic.PollVoteChange == 1,
-                PollOptions = (
-                    from o in options
-                    where o.TopicId == _currentTopic.TopicId
-                    select new PollOption
-                    {
-                        PollOptionId = o.PollOptionId,
-                        PollOptionText = o.PollOptionText,
-                        TopicId = o.TopicId,
-                        PollOptionVoters = voters.Select(v => new PollOptionVoter { UserId = v.UserId, Username = v.Username }).ToList()
-                    }
-                ).ToList()
+                PollOptions = options.Select(o => 
+                new PollOption
+                {
+                    PollOptionId = o.PollOptionId,
+                    PollOptionText = o.PollOptionText,
+                    TopicId = o.TopicId,
+                    PollOptionVoters = voters.Where(v => v.PollOptionId == o.PollOptionId).ToList()
+                }).ToList()
             };
-
-            if (!toReturn.PollOptions.Any())
-            {
-                toReturn = null;
-            }
-
-            return toReturn;
         }
 
         public async Task CascadePostEdit(ForumDbContext context, PhpbbPosts added)

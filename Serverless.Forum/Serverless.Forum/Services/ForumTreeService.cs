@@ -16,7 +16,7 @@ namespace Serverless.Forum.Services
     {
         private readonly ForumDbContext _context;
         private HashSet<ForumTree> _tree = null;
-        private HashSet<Tracking> _tracking = null;
+        private Dictionary<int, HashSet<Tracking>> _tracking = null;
         private IEnumerable<(int forumId, bool hasPassword)> _restrictedForums = null;
 
         public ForumTreeService(ForumDbContext context)
@@ -56,7 +56,7 @@ namespace Serverless.Forum.Services
                     return;
                 }
 
-                node.IsUnread = tracking.Contains(new Tracking { ForumId = forumId }, new TrackingComparerByForumId());
+                node.IsUnread = tracking.ContainsKey(forumId);
                 node.IsRestricted = restrictedForums.Contains(forumId);
                 foreach (var childForumId in node.ChildrenList ?? new HashSet<int>())
                 {
@@ -73,7 +73,7 @@ namespace Serverless.Forum.Services
 
                         dfs(childForumId);
 
-                        node.IsUnread |= childForum.IsUnread || tracking.Contains(new Tracking { ForumId = childForumId }, new TrackingComparerByForumId());
+                        node.IsUnread |= childForum.IsUnread || tracking.ContainsKey(childForumId);
                         if ((node.ForumLastPostTime ?? 0) < (childForum.ForumLastPostTime ?? 0))
                         {
                             node.ForumLastPosterColour = childForum.ForumLastPosterColour;
@@ -92,7 +92,7 @@ namespace Serverless.Forum.Services
             return _tree;
         }
 
-        public async Task<HashSet<Tracking>> GetForumTracking(LoggedUser user, bool forceRefresh)
+        public async Task<Dictionary<int, HashSet<Tracking>>> GetForumTracking(LoggedUser user, bool forceRefresh)
         {
             if (_tracking != null && !forceRefresh)
             {
@@ -101,21 +101,43 @@ namespace Serverless.Forum.Services
 
             using var connection = _context.Database.GetDbConnection();
             await connection.OpenIfNeeded();
-            _tracking = new HashSet<Tracking>(await connection.QueryAsync<Tracking>("CALL `forum`.`get_post_tracking`(@userId);", new { userId = user?.UserId ?? Constants.ANONYMOUS_USER_ID }));
+            var dbResults = await connection.QueryAsync<ExtendedTracking>("CALL `forum`.`get_post_tracking`(@userId);", new { userId = user?.UserId ?? Constants.ANONYMOUS_USER_ID });
+            var count = dbResults.Count();
+            _tracking = new Dictionary<int, HashSet<Tracking>>(count);
+            
+            foreach (var result in dbResults)
+            {
+                var track = new Tracking
+                {
+                    Posts = result.PostIds.ToIntHashSet(),
+                    TopicId = result.TopicId
+                };
+
+                if (!_tracking.ContainsKey(result.ForumId))
+                {
+                    _tracking.Add(result.ForumId, new HashSet<Tracking>(count));
+                }
+
+                _tracking[result.ForumId].Add(track);
+            }
+
             return _tracking;
         }
 
         public async Task<bool> IsForumUnread(int forumId, LoggedUser user, bool forceRefresh = false)
             => GetTreeNode(await GetForumTree(user, forceRefresh), forumId)?.IsUnread ?? false;
 
-        public async Task<bool> IsTopicUnread(int topicId, LoggedUser user, bool forceRefresh = false)
+        public async Task<bool> IsTopicUnread(int forumId, int topicId, LoggedUser user, bool forceRefresh = false)
         {
-            return (await GetForumTracking(user, forceRefresh)).Contains(new Tracking { TopicId = topicId });
+            var ft = await GetForumTracking(user, forceRefresh);
+            return ft.TryGetValue(forumId, out var tt) && tt.Contains(new Tracking { TopicId = topicId });
         }
 
-        public async Task<bool> IsPostUnread(int topicId, int postId, LoggedUser user)
+        public async Task<bool> IsPostUnread(int forumId, int topicId, int postId, LoggedUser user)
         {
-            var found = (await GetForumTracking(user, false)).TryGetValue(new Tracking { TopicId = topicId }, out var item);
+            var ft = await GetForumTracking(user, false);
+            Tracking item = null;
+            var found = ft.TryGetValue(forumId, out var tt) && tt.TryGetValue(new Tracking { TopicId = topicId }, out item);
             if (!found)
             {
                 return false;

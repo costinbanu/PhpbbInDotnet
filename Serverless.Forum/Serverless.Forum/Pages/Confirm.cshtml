@@ -5,8 +5,11 @@
     Layout = "~/Pages/_Layout.cshtml";
 }
 
-@inject Serverless.Forum.Utilities.Utils _utils
-@inject Serverless.Forum.Services.ForumTreeService _forumService
+@using Microsoft.EntityFrameworkCore
+
+@inject Utilities.Utils _utils
+@inject Services.ForumTreeService _forumService
+@inject ForumDb.ForumDbContext _dbContext
 
 <h2>@Model.Title</h2>
 
@@ -35,8 +38,8 @@
                     topicDisplay.add(option);
                     topics.forEach(t => {
                         var option = document.createElement('option');
-                        option.text = t.title;
-                        option.value = t.id;
+                        option.text = t.topicTitle;
+                        option.value = t.topicId;
                         topicDisplay.add(option);
                     });
                 }
@@ -57,6 +60,7 @@
             "_ForumTreePartial",
             new CustomPartials._ForumTreePartialModel (
                 tree: (await Model.GetForumTree()).Tree,
+                topicData: Model.ShowTopicSelector ? await _dbContext.PhpbbTopics.AsNoTracking().Select(t => new Contracts.MiniTopicDto(t)).ToListAsync() : null,
                 forumId: Model.ForumId,
                 topicId: Model.TopicId
             ),
