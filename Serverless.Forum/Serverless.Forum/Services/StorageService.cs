@@ -59,7 +59,7 @@ namespace Serverless.Forum.Services
                     succeeded.Add(new PhpbbAttachments
                     {
                         AttachComment = null,
-                        Extension = Path.GetExtension(file.FileName).Trim('.'),
+                        Extension = Path.GetExtension(file.FileName).Trim('.').ToLowerInvariant(),
                         Filetime = DateTime.UtcNow.ToUnixTimestamp(),
                         Filesize = file.Length,
                         Mimetype = file.ContentType,

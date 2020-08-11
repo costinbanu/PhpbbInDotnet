@@ -175,10 +175,10 @@ namespace Serverless.Forum.Pages
 
             try
             {
-                var subject = $"Resetează-ți parola pe \"{Constants.FORUM_NAME}\"";
-                var emailMessage = new MailMessage
+                var subject = $"Resetează-ți parola pe \"{_config.GetValue<string>("ForumName")}\"";
+                using var emailMessage = new MailMessage
                 {
-                    From = new MailAddress($"admin@metrouusor.com", Constants.FORUM_NAME),
+                    From = new MailAddress($"admin@metrouusor.com", _config.GetValue<string>("ForumName")),
                     Subject = subject,
                     Body = await _utils.RenderRazorViewToString(
                         "_ResetPasswordPartial",

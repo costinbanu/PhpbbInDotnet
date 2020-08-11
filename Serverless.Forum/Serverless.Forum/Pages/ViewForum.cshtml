@@ -233,7 +233,15 @@ else if (Model.IsOwnPostView)
 }
 
 <p></p>
-<span onclick="showForumTree(this)" style="cursor:pointer; font-weight:bold">Navigare - alege destinația &#x2935;</span>
+<div style="clear:both">
+    <a href="/">Prima pagină</a> |
+    @if ((Model.ParentForumId ?? 0) != 0 && !Model.IsNewPostView && !Model.IsOwnPostView)
+    {
+        <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">Forum părinte</a>
+        <span> | </span>
+    }
+    <span onclick="showForumTree(this)" class="SpanLikeLink">Alege destinația</span>
+</div>
 <p></p>
 <div id="forumTree" style=" display:none">
     @await Html.PartialAsync(

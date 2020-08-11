@@ -2,6 +2,7 @@
 using Dapper;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.ForumDb.Entities;
@@ -19,11 +20,13 @@ namespace Serverless.Forum.Services
     {
         private readonly ForumDbContext _context;
         private readonly ForumTreeService _forumService;
+        private readonly IConfiguration _config;
 
-        public AdminForumService(ForumDbContext context, ForumTreeService forumService)
+        public AdminForumService(ForumDbContext context, ForumTreeService forumService, IConfiguration config)
         {
             _context = context;
             _forumService = forumService;
+            _config = config;
         }
 
         public async Task<(string Message, bool? IsSuccess)> ManageForumsAsync(UpsertForumDto dto)
@@ -191,7 +194,7 @@ namespace Serverless.Forum.Services
                 }
                 else
                 {
-                    list.Add(new SelectListItem(Constants.FORUM_NAME, "0", parentId == 0));
+                    list.Add(new SelectListItem(_config.GetValue<string>("ForumName"), "0", parentId == 0));
                 }
 
                 foreach (var child in node.ChildrenList?.OrderBy(getOrder) ?? Enumerable.Empty<int>())

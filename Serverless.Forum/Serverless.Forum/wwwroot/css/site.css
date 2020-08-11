@@ -13,7 +13,7 @@
     font-family: Ubuntu;
     src: url('../fonts/Ubuntu-Italic.ttf') format('truetype');
     font-style: italic;
-} 
+}
 
 @font-face {
     font-family: Ubuntu;
@@ -82,14 +82,14 @@ h3 {
     padding-bottom: 10px;
 }
 
-.navbar li > a {
-    color: white !important;
-}
+    .navbar li > a {
+        color: white !important;
+    }
 
-.navbar li:after {
-    content: "\A" !important;
-    white-space: pre !important;
-}
+    .navbar li:after {
+        content: "\A" !important;
+        white-space: pre !important;
+    }
 
 .PostQuote {
     background-color: /*#fef6e9*/ #EBEADD;
@@ -126,7 +126,7 @@ h3 {
     display: flex;
     vertical-align: top;
     padding: 10px;
-    height:auto;
+    height: auto;
 }
 
 .RowMargin {
@@ -140,12 +140,12 @@ h3 {
     margin-bottom: 3px;
 }
 
-.Unread blockquote {
-    border: solid 1px #e2c088;
-}
+    .Unread blockquote {
+        border: solid 1px #e2c088;
+    }
 
 .Highlight {
-    border: solid 5px #87ceeb;
+    border: solid 2px #87ceeb;
 }
 
 .Category {
@@ -209,19 +209,19 @@ h3 {
     padding-bottom: 7px;
 }
 
-.PostActions span {
-    white-space: nowrap;
-}
+    .PostActions span {
+        white-space: nowrap;
+    }
 
-.PostActions span:before {
-    content: '\2022';
-    padding-right: 10px;
-    padding-left: 10px;
-}
+        .PostActions span:before {
+            content: '\2022';
+            padding-right: 10px;
+            padding-left: 10px;
+        }
 
-.PostActions span:first-child:before {
-    content: '';
-}
+        .PostActions span:first-child:before {
+            content: '';
+        }
 
 .CollapsedMenu {
     display: none;
@@ -266,7 +266,7 @@ label {
 .validation {
     margin-left: 30px;
     color: red;
-    display:block;
+    display: block;
 }
 
 #g-recaptcha-response {
@@ -283,14 +283,14 @@ label {
     table-layout: auto;
 }
 
-.formtable tr td {
-    padding: 10px;
-    white-space: nowrap;
-}
+    .formtable tr td {
+        padding: 10px;
+        white-space: nowrap;
+    }
 
-.formtable tr td:last-child {
-    width: 100%;
-}
+        .formtable tr td:last-child {
+            width: 100%;
+        }
 
 .nav {
     float: right;
@@ -322,18 +322,18 @@ label {
     padding-left: 0px !important;
 }
 
-.Shortcuts li {
-    display: inline;
-    white-space: nowrap;
-}
+    .Shortcuts li {
+        display: inline;
+        white-space: nowrap;
+    }
 
-.Shortcuts li:after {
-    content: " \2022 ";
-}
+        .Shortcuts li:after {
+            content: " \2022 ";
+        }
 
-.Shortcuts li:last-child:after {
-    content: none;
-}
+        .Shortcuts li:last-child:after {
+            content: none;
+        }
 
 .Hide1300 {
     display: inline-block;
@@ -349,9 +349,9 @@ label {
     border: none;
 }
 
-.InputTable thead tbody tr {
-    width: 100%;
-}
+    .InputTable thead tbody tr {
+        width: 100%;
+    }
 
 .posthilit {
     background-color: #F3BFCC;
@@ -397,6 +397,17 @@ label {
     width: 79%;
 }
 
+.SpanLikeLink {
+    color: #337ab7;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+    .SpanLikeLink:hover {
+        color: #23527c;
+        text-decoration: underline;
+    }
+
 @media (max-width: 768px) {
     .headerImg {
         width: 128px;
@@ -410,21 +421,21 @@ label {
     .Summary {
         display: none;
         position: absolute;
-        clear:both;
+        clear: both;
         width: auto !important;
         min-width: unset;
         height: auto !important;
         border-radius: 5px;
         border: solid 1px black;
-        background-color:aliceblue;
-        padding:5px !important;
+        background-color: aliceblue;
+        padding: 5px !important;
     }
 
-    .Summary img{
-        display: none;
-    }
+        .Summary img {
+            display: none;
+        }
 
-    .ForumContent{
+    .ForumContent {
         display: inline-block;
         padding-left: 0px;
     }
@@ -479,7 +490,7 @@ label {
 
 @media (max-width: 1300px) {
     .size1300 {
-        width: 95% !important;
+        width: 100% !important;
     }
 
     .Hide1300 {

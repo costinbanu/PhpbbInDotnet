@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Utilities;
@@ -15,13 +16,15 @@ namespace Serverless.Forum.Services
     public class ForumTreeService
     {
         private readonly ForumDbContext _context;
+        private readonly IConfiguration _config;
         private HashSet<ForumTree> _tree = null;
         private Dictionary<int, HashSet<Tracking>> _tracking = null;
         private IEnumerable<(int forumId, bool hasPassword)> _restrictedForums = null;
 
-        public ForumTreeService(ForumDbContext context)
+        public ForumTreeService(ForumDbContext context, IConfiguration config)
         {
             _context = context;
+            _config = config;
         }
 
         public async Task<IEnumerable<(int forumId, bool hasPassword)>> GetRestrictedForumList(LoggedUser user, bool includePasswordProtected = false)
@@ -159,7 +162,7 @@ namespace Serverless.Forum.Services
                 {
                     continue;
                 }
-                sb = sb.Append(HttpUtility.HtmlDecode(node?.ForumName ?? Constants.FORUM_NAME));
+                sb = sb.Append(HttpUtility.HtmlDecode(node?.ForumName ?? _config.GetValue<string>("ForumName")));
                 if (i < pathParts.Count - 1)
                 {
                     sb = sb.Append(" → ");

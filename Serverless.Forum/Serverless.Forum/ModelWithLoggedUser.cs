@@ -169,6 +169,10 @@ namespace Serverless.Forum
             var node = _forumService.GetTreeNode((await GetForumTree()).Tree, forumId);
             if (node == null)
             {
+                if (forumId == 0)
+                {
+                    await SetLastMark();
+                }
                 return;
             }
 
@@ -191,39 +195,6 @@ namespace Serverless.Forum
                 "INSERT INTO phpbb_forums_track (forum_id, user_id, mark_time) VALUES (@forumId, @usrId, @markTime)",
                 new { forumId, usrId, markTime = DateTime.UtcNow.ToUnixTimestamp() }
             );
-
-
-            //var topicTracksToRemove = await (
-            //    from t in _context.PhpbbTopics
-
-            //    where t.ForumId == forumId
-
-            //    join tt in _context.PhpbbTopicsTrack
-            //    on t.TopicId equals tt.TopicId
-            //    into joinedTopicTracks
-
-            //    from jtt in joinedTopicTracks.DefaultIfEmpty()
-            //    where jtt.UserId == usrId
-            //    select jtt
-            //).ToListAsync();
-
-            //_context.PhpbbTopicsTrack.RemoveRange(topicTracksToRemove);
-            //var forumTrackToRemove = await _context.PhpbbForumsTrack.FirstOrDefaultAsync(ft => ft.ForumId == forumId && ft.UserId == usrId);
-            //if (forumTrackToRemove != null)
-            //{
-            //    _context.PhpbbForumsTrack.Remove(forumTrackToRemove);
-            //}
-            //await _context.SaveChangesAsync();
-
-            //await _context.PhpbbForumsTrack.AddAsync(new PhpbbForumsTrack
-            //{
-            //    ForumId = forumId,
-            //    UserId = usrId,
-            //    MarkTime = DateTime.UtcNow.ToUnixTimestamp()
-            //});
-            //await _context.SaveChangesAsync();
-
-            await SetLastMark();
         }
 
         protected async Task SetLastMark()

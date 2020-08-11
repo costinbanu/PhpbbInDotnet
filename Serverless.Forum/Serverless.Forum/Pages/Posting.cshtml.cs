@@ -7,13 +7,14 @@ using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.ForumDb.Entities;
 using Serverless.Forum.Pages.CustomPartials;
+using Serverless.Forum.Pages.CustomPartials.Email;
 using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Configuration;
 using System.Linq;
+using System.Net.Mail;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -447,6 +448,30 @@ namespace Serverless.Forum.Pages
                 var (Message, IsSuccess) = await _userService.SendPrivateMessage((await GetCurrentUserAsync()).UserId, ReceiverId.Value, HttpUtility.HtmlEncode(PostTitle), _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText)));
                 if (IsSuccess ?? false)
                 {
+                    try
+                    {
+                        using var emailMessage = new MailMessage
+                        {
+                            From = new MailAddress($"admin@metrouusor.com", _config.GetValue<string>("ForumName")),
+                            Subject = $"Ai primit un mesaj privat nou pe {_config.GetValue<string>("ForumName")}",
+                            Body = await _utils.RenderRazorViewToString(
+                                "_NewPMEmailPartial",
+                                new _NewPMEmailPartialModel
+                                {
+                                    SenderName = (await GetCurrentUserAsync()).Username
+                                },
+                                PageContext,
+                                HttpContext
+                            ),
+                            IsBodyHtml = true
+                        };
+                        emailMessage.To.Add((await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == ReceiverId.Value)).UserEmail);
+                        await _utils.SendEmail(emailMessage);
+                    }
+                    catch (Exception ex)
+                    {
+                        _utils.HandleError(ex);
+                    }
                     return RedirectToPage("PrivateMessages", new { show = PrivateMessagesPages.Sent });
                 }
                 else

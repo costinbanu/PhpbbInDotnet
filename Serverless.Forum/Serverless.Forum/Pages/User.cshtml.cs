@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.ForumDb.Entities;
 using Serverless.Forum.Pages.CustomPartials.Email;
@@ -68,13 +69,16 @@ namespace Serverless.Forum.Pages
         private readonly Utils _utils;
         private readonly StorageService _storageService;
         private readonly WritingToolsService _writingService;
+        private readonly IConfiguration _config;
 
-        public UserModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, StorageService storageService, WritingToolsService writingService)
+        public UserModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
+            StorageService storageService, WritingToolsService writingService, IConfiguration config)
             : base(context, forumService, userService, cacheService)
         {
             _utils = utils;
             _storageService = storageService;
             _writingService = writingService;
+            _config = config;
         }
 
         public async Task<IActionResult> OnGet(int? userId, bool? viewAsAnother)
@@ -133,10 +137,10 @@ namespace Serverless.Forum.Pages
                 dbUser.UserActkey = registrationCode;
                 dbUser.UserEmailtime = DateTime.UtcNow.ToUnixTimestamp();
 
-                var subject = $"Schimbarea adresei de e-mail de pe \"{Constants.FORUM_NAME}\"";
+                var subject = $"Schimbarea adresei de e-mail de pe \"{_config.GetValue<string>("ForumName")}\"";
                 using var emailMessage = new MailMessage
                 {
-                    From = new MailAddress($"admin@metrouusor.com", Constants.FORUM_NAME),
+                    From = new MailAddress($"admin@metrouusor.com", _config.GetValue<string>("ForumName")),
                     Subject = subject,
                     Body = await _utils.RenderRazorViewToString(
                         "_WelcomeEmailPartial",
@@ -292,8 +296,8 @@ namespace Serverless.Forum.Pages
             if (preferredTopic != null)
             {
                 preferredTopicTitle = _forumService.GetPathText((await GetForumTree()).Tree, preferredTopic.ForumId);
+                PreferredTopic = (preferredTopic.TopicId, preferredTopicTitle);
             }
-            PreferredTopic = (preferredTopic.TopicId, preferredTopicTitle);
             PostsPerDay = TotalPosts / DateTime.UtcNow.Subtract(cur.UserRegdate.ToUtcTime()).TotalDays;
             Email = cur.UserEmail;
             Birthday = cur.UserBirthday;

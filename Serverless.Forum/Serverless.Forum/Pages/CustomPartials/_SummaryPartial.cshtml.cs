@@ -21,10 +21,11 @@ namespace Serverless.Forum.Pages.CustomPartials
         public int? Posts { get; }
         public int? Views { get; }
         public string AuthorTag { get; }
+        public string PMLink { get; }
 
         public _SummaryPartialModel(int? authorId, string authorName, string authorColor, DateTime? creationTime, int assetId, string dateFormat, 
             bool showAvatar, string authorRank, string linkHref, string linkText, string linkTooltip, bool left, bool showAsLast = false, int? posts = null, 
-            int? views = null, string authorTag = null)
+            int? views = null, string authorTag = null, string pmLink = null)
         {
             AuthorId = authorId;
             AuthorName = authorName;
@@ -42,6 +43,7 @@ namespace Serverless.Forum.Pages.CustomPartials
             Posts = posts;
             Views = views;
             AuthorTag = authorTag ?? "Autor: ";
+            PMLink = pmLink;
         }
     }
 }

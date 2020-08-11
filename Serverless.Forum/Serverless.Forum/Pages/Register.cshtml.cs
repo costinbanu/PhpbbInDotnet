@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using PaulMiami.AspNetCore.Mvc.Recaptcha;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.ForumDb.Entities;
@@ -22,6 +23,7 @@ namespace Serverless.Forum.Pages
     {
         private readonly ForumDbContext _context;
         private readonly Utils _utils;
+        private readonly IConfiguration _config;
 
         [Required(ErrorMessage = "Acest câmp este obligatoriu.")]
         [EmailAddress]
@@ -46,10 +48,11 @@ namespace Serverless.Forum.Pages
 
         public string ErrorMessage { get; set; }
 
-        public RegisterModel(ForumDbContext context, Utils utils)
+        public RegisterModel(ForumDbContext context, Utils utils, IConfiguration config)
         {
             _context = context;
             _utils = utils;
+            _config = config;
         }
 
         public async Task<IActionResult> OnPost()
@@ -102,10 +105,10 @@ namespace Serverless.Forum.Pages
 
             await _context.SaveChangesAsync();
 
-            var subject = $"Bine ai venit la \"{Constants.FORUM_NAME}\"";
-            var emailMessage = new MailMessage
+            var subject = $"Bine ai venit la \"{_config.GetValue<string>("ForumName")}\"";
+            using var emailMessage = new MailMessage
             {
-                From = new MailAddress($"admin@metrouusor.com", Constants.FORUM_NAME),
+                From = new MailAddress($"admin@metrouusor.com", _config.GetValue<string>("ForumName")),
                 Subject = subject,
                 Body = await _utils.RenderRazorViewToString(
                     "_WelcomeEmailPartial",

@@ -5,12 +5,14 @@
 @inject Services.WritingToolsService _writingService
 @inject ForumDb.ForumDbContext _context
 @inject Services.BBCodeRenderingService _renderingService
+@inject Services.UserService _userService
 
 @model Serverless.Forum.Pages.SearchModel
 @{
     ViewData["Title"] = "Search";
     Layout = "~/Pages/_Layout.cshtml";
-    var dateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+    var CurrentUser = await Model.GetCurrentUserAsync();
+    var dateFormat = CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
 }
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />
@@ -136,7 +138,11 @@
             null,
             null,
             null,
-            true
+            true,
+            false,
+            null,
+            null,
+            _userService.HasPrivateMessages(CurrentUser) ? $"<a href=\"./Posting?handler=PrivateMessage&postId={post.PostId}\">&#x2709; Mesaj privat</a>" : null
         )
     )
     <div class="ForumContent" id="@post.PostId">

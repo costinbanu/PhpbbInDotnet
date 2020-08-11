@@ -1,8 +1,8 @@
 ﻿@using System.Web
 @using  Serverless.Forum.Contracts
 @using Serverless.Forum.Utilities
-@using Microsoft.EntityFrameworkCore
-
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration _config
 @inject Services.UserService  _userService
 @inject Services.ModeratorService _moderatorService
 @{
@@ -14,7 +14,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1" />
-    <title>@Constants.FORUM_NAME - @ViewData["Title"]</title>
+    <title>@(_config.GetValue<string>("ForumName")) - @ViewData["Title"]</title>
 
     <environment include="Development">
         <script src="~/lib/jquery/dist/jquery.js"></script>
@@ -84,14 +84,17 @@
         </div>
     </nav>
     <div class="container body-content size1300" id="mainContainer">
-        <a href="javascript:showElement('metrouusorLinks');" class="Show1300"><b>Site-urile „MetrouUșor” &#x2935;</b></a>
+        <a href="javascript:showElement('metrouusorLinks');" class="Show1300">Site-urile „MetrouUșor”</a>
         <ul class="Shortcuts Hide1300" id="metrouusorLinks">
             <li><a href="https://metrouusor.com" target="_blank">Asociația „Metrou Ușor”</a></li>
             <li><a href="https://www.facebook.com/MetrouUsor/" target="_blank">Facebook</a></li>
             <li><a href="https://youtube.com/channel/UCczAlitk6NaUjQsbtCSdEjA" target="_blank">Youtube</a></li>
             <li><a href="https://www.facebook.com/InitiativaMTB/" target="_blank">Inițiativa pentru Muzeul transportului bucureștean</a></li>
-            <li><a href="https://metrouusor.com/index.php/implica-te/directoneaza-2-din-impozit" target="_blank">2% pentru Asociația „Metrou Ușor”</a></li>
+            <li><a href="https://metrouusor.com/Content/implica-te/directioneaza-2-din-impozit.html" target="_blank">2% pentru Asociația „Metrou Ușor”</a></li>
+            <li><a href="./ViewTopic?topicId=5252&pageNum=1">Sugestii sau reclamații pentru noul forum</a></li>
+            <li><a href="https://forum.metrouusor.com">Înapoi la vechiul forum</a></li>
         </ul>
+
         <center>
             @{
                 var pmCount = 0;
@@ -103,6 +106,7 @@
 
                 if (pmCount > 0)
                 {
+                    <p style="clear:both"></p>
                     <span class="Unread" style="margin:5px; padding:5px; font-size:1.2em">
                         <a asp-page="/PrivateMessages" asp-route-Show="Inbox">@pmCount mesaj@(pmCount > 1 ? "e" : "") privat@(pmCount > 1 ? "e" : "") necitit@(pmCount > 1 ? "e" : "")</a>
                     </span>
@@ -111,6 +115,10 @@
 
                 if (await _userService.IsUserModeratorInForum(currentUser, 0))
                 {
+                    if (!displayedBox)
+                    {
+                        <p style="clear:both"></p>
+                    }
                     var reports = await _moderatorService.GetReportedMessages();
                     if (reports.Any())
                     {
@@ -125,10 +133,10 @@
                     }
                 }
 
-                if (!displayedBox)
+                @*if (!displayedBox)
                 {
                     <p>&nbsp;</p>
-                }
+                }*@
             }
         </center>
         @RenderBody()

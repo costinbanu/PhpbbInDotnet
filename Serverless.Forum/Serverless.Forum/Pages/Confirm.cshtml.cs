@@ -7,12 +7,14 @@ using System.Collections.Generic;
 using System.Net.Mail;
 using System.Threading.Tasks;
 using System.Linq;
+using Microsoft.Extensions.Configuration;
 
 namespace Serverless.Forum.Pages
 {
     public class ConfirmModel : ModelWithLoggedUser
     {
         private readonly Utils _utils;
+        private readonly IConfiguration _config;
 
         public string Message { get; private set; }
         
@@ -46,10 +48,11 @@ namespace Serverless.Forum.Pages
 
         public bool IsDestinationConfirmation { get; private set; } = false;
 
-        public ConfirmModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, Utils utils)
+        public ConfirmModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, Utils utils, IConfiguration config)
             : base(context, forumService, userService, cacheService) 
         {
             _utils = utils;
+            _config = config;
         }
 
         public void OnGetRegistrationComplete()
@@ -93,9 +96,9 @@ namespace Serverless.Forum.Pages
                 await _context.SaveChangesAsync();
 
                 var subject = "Cont de utilizator nou";
-                var emailMessage = new MailMessage
+                using var emailMessage = new MailMessage
                 {
-                    From = new MailAddress($"admin@metrouusor.com", Constants.FORUM_NAME),
+                    From = new MailAddress($"admin@metrouusor.com", _config.GetValue<string>("ForumName")),
                     Subject = subject,
                     Body = await _utils.RenderRazorViewToString(
                         "_NewUserNotification",

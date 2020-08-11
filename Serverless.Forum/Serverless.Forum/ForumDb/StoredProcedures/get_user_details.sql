@@ -22,8 +22,10 @@ BEGIN
 
 	UNION
 
-	SELECT DISTINCT forum_id, auth_role_id
-	FROM group_permissions;
+	SELECT DISTINCT gp.forum_id, gp.auth_role_id
+	FROM group_permissions gp
+	LEFT JOIN user_permissions up ON gp.forum_id = up.forum_id AND gp.auth_role_id = 16 AND up.auth_role_id in (14, 15, 17)
+	WHERE up.forum_id IS NULL;
 
 	SELECT group_id
 	FROM phpbb_user_group

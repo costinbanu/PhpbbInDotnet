@@ -26,14 +26,15 @@
         {
             <a href="@(Model.FileUrl)">@Model.DisplayName</a>
         }
-        <span class="Caption">
+        <div class="Caption" style="clear:both">
             @if (!string.IsNullOrWhiteSpace(Model.Comment))
             {
                 <br />
                 @Html.Raw(_renderingService.BbCodeToHtml(Model.Comment, string.Empty))
             }
-            <br />
+        <div>
             @Html.Raw(Model.DisplayName) (dimensiune: @_utils.ReadableFileSize(Model.FileSize); descărcat @(Model.DownloadCount == 1 ? "o dată" : $"de {Model.DownloadCount} ori"))
-        </span>
+        </div>
+        </div>
     </div>
 }

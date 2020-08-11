@@ -45,7 +45,7 @@
         }
     </li>
     <li>
-        Scris: 
+        Scris:
         <script>
             writeDate("@Model.CreationTime?.ToString("o")", "@Model.DateFormat");
         </script>
@@ -54,6 +54,12 @@
     {
         <li class="Caption">
             @Model.Posts mesaj@(Model.Posts != 1 ? "e" : ""), @Model.Views vizualiz@(Model.Views != 1 ? "ări" : "are").
+        </li>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.PMLink))
+    {
+        <li>
+            @Html.Raw(Model.PMLink)
         </li>
     }
 </ul>

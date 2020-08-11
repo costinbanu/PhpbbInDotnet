@@ -42,80 +42,94 @@
 </div>
 
 <div id="Inbox" class="tabcontent" style="@(Model.Show == PrivateMessagesPages.Inbox ? "display:inherit" : "display:none")">
-    @await Html.PartialAsync(
-        "_PaginationControlsPartial",
-        new CustomPartials._PaginationControlsPartialModel(
-            paginator: Model.InboxPaginator,
-            allowPaginationChange: false,
-            back: $"PrivateMessages?show=Inbox&InboxPage={Model.InboxPage - 1}",
-            forward: $"PrivateMessages?show=Inbox&InboxPage={Model.InboxPage + 1}",
-            includeEasyNavigation: true,
-            topicId: null,
-            firstPostId: null
-        ),
-        ViewData
-    )
-    @{ var index = 0; }
-    @foreach (var msg in Model.InboxMessages ?? Enumerable.Empty<PrivateMessageDto>())
+    @if (Model.InboxMessages?.Any() ?? false)
     {
-        var divClass = msg.Unread == 1 ? $"FlexRow Unread RowMargin Color{index % 2}" : $"FlexRow RowMargin Color{index % 2}";
-        index++;
-        <div class="@divClass">
-            <span class="ForumContent">
-                <a asp-page="/PrivateMessages" asp-route-show="@PrivateMessagesPages.Message" asp-route-messageId="@msg.MessageId" asp-route-inboxPage="@Model.InboxPage" asp-route-sentPage="@Model.SentPage" class="nav-link" style="font-weight:bold">
-                    @Html.Raw(msg.Subject)
-                </a>
-                <span class="MinAuthor">
-                    &nbsp;&bull;&nbsp;
-                    <span style="color:#@(msg.OthersColor)">@Html.Raw(msg.OthersName)</span>
+        @await Html.PartialAsync(
+            "_PaginationControlsPartial",
+            new CustomPartials._PaginationControlsPartialModel(
+                paginator: Model.InboxPaginator,
+                allowPaginationChange: false,
+                back: $"PrivateMessages?show=Inbox&InboxPage={Model.InboxPage - 1}",
+                forward: $"PrivateMessages?show=Inbox&InboxPage={Model.InboxPage + 1}",
+                includeEasyNavigation: true,
+                topicId: null,
+                firstPostId: null
+            ),
+            ViewData
+        )
+        var index = 0;
+        foreach (var msg in Model.InboxMessages ?? Enumerable.Empty<PrivateMessageDto>())
+        {
+            var divClass = msg.Unread == 1 ? $"FlexRow Unread RowMargin Color{index % 2}" : $"FlexRow RowMargin Color{index % 2}";
+            index++;
+            <div class="@divClass">
+                <span class="ForumContent">
+                    <a asp-page="/PrivateMessages" asp-route-show="@PrivateMessagesPages.Message" asp-route-messageId="@msg.MessageId" asp-route-inboxPage="@Model.InboxPage" asp-route-sentPage="@Model.SentPage" class="nav-link" style="font-weight:bold">
+                        @Html.Raw(msg.Subject)
+                    </a>
+                    <span class="MinAuthor">
+                        &nbsp;&bull;&nbsp;
+                        <span style="color:#@(msg.OthersColor)">@Html.Raw(msg.OthersName)</span>
+                    </span>
+                    <br />
                 </span>
-                <br />
-            </span>
-            @await Html.PartialAsync(
-                "_SummaryPartial",
-                new CustomPartials._SummaryPartialModel(msg.OthersId, msg.OthersName, msg.OthersColor, msg.Time, msg.MessageId,
-                    UserDateFormat, false, null, null, null, null, false, false, null, null, "De la: ")
-            )
-        </div>
+                @await Html.PartialAsync(
+                             "_SummaryPartial",
+                             new CustomPartials._SummaryPartialModel(msg.OthersId, msg.OthersName, msg.OthersColor, msg.Time, msg.MessageId,
+                                 UserDateFormat, false, null, null, null, null, false, false, null, null, "De la: ")
+                         )
+            </div>
+        }
+    }
+    else
+    {
+        <span>Nici un mesaj primit.</span>
     }
 </div>
 
 <div id="Sent" class="tabcontent" style="@(Model.Show == PrivateMessagesPages.Sent ? "display:inherit" : "display:none")">
-    @await Html.PartialAsync(
-        "_PaginationControlsPartial",
-        new CustomPartials._PaginationControlsPartialModel(
-            paginator: Model.SentPaginator,
-            allowPaginationChange: false,
-            back: $"PrivateMessages?show=Sent&SentPage={Model.SentPage - 1}",
-            forward: $"PrivateMessages?show=Sent&SentPage={Model.SentPage + 1}",
-            includeEasyNavigation: true,
-            topicId: null,
-            firstPostId: null
-        ),
-        ViewData
-    )
-    @{ index = 0; }
-    @foreach (var msg in Model.SentMessages ?? Enumerable.Empty<PrivateMessageDto>())
+    @if (Model.SentMessages?.Any() ?? false)
     {
-        var divClass = $"FlexRow RowMargin Color{index % 2}";
-        index++;
-        <div class="@divClass">
-            <span class="ForumContent">
-                <a asp-page="/PrivateMessages" asp-route-show="@PrivateMessagesPages.Message" asp-route-messageId="@msg.MessageId" asp-route-inboxPage="@Model.InboxPage" asp-route-sentPage="@Model.SentPage" class="nav-link" style="font-weight:bold">
-                    @Html.Raw(msg.Subject)
-                </a>
-                <span class="MinAuthor">
-                    &nbsp;&bull;&nbsp;
-                    <span style="color:#@(msg.OthersColor)">@Html.Raw(msg.OthersName)</span>
+        @await Html.PartialAsync(
+            "_PaginationControlsPartial",
+            new CustomPartials._PaginationControlsPartialModel(
+                paginator: Model.SentPaginator,
+                allowPaginationChange: false,
+                back: $"PrivateMessages?show=Sent&SentPage={Model.SentPage - 1}",
+                forward: $"PrivateMessages?show=Sent&SentPage={Model.SentPage + 1}",
+                includeEasyNavigation: true,
+                topicId: null,
+                firstPostId: null
+            ),
+            ViewData
+        )
+        var index = 0;
+        foreach (var msg in Model.SentMessages ?? Enumerable.Empty<PrivateMessageDto>())
+        {
+            var divClass = $"FlexRow RowMargin Color{index % 2}";
+            index++;
+            <div class="@divClass">
+                <span class="ForumContent">
+                    <a asp-page="/PrivateMessages" asp-route-show="@PrivateMessagesPages.Message" asp-route-messageId="@msg.MessageId" asp-route-inboxPage="@Model.InboxPage" asp-route-sentPage="@Model.SentPage" class="nav-link" style="font-weight:bold">
+                        @Html.Raw(msg.Subject)
+                    </a>
+                    <span class="MinAuthor">
+                        &nbsp;&bull;&nbsp;
+                        <span style="color:#@(msg.OthersColor)">@Html.Raw(msg.OthersName)</span>
+                    </span>
+                    <br />
                 </span>
-                <br />
-            </span>
-            @await Html.PartialAsync(
-                "_SummaryPartial",
-                new CustomPartials._SummaryPartialModel(msg.OthersId, msg.OthersName, msg.OthersColor, msg.Time, msg.MessageId,
-                    UserDateFormat, false, null, null, null, null, false, false, null, null, "Pentru: ")
-            )
-        </div>
+                @await Html.PartialAsync(
+                             "_SummaryPartial",
+                             new CustomPartials._SummaryPartialModel(msg.OthersId, msg.OthersName, msg.OthersColor, msg.Time, msg.MessageId,
+                                 UserDateFormat, false, null, null, null, null, false, false, null, null, "Pentru: ")
+                         )
+            </div>
+        }
+    }
+    else
+    {
+        <span>Nici un mesaj trimis.</span>
     }
 </div>
 @if (Model.Show == PrivateMessagesPages.Message && Model.SelectedMessage != null)

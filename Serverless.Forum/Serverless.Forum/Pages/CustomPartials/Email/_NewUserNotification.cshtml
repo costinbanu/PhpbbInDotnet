@@ -1,11 +1,14 @@
 ﻿@model Serverless.Forum.Pages.CustomPartials.Email._NewUserNotificationModel
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration _config
+
 Salut
 <br />
 <br />
 Următorul cont a fost creat recent: @Model.Username
 <br />
 <br />
-<a href="@Utilities.Constants.FORUM_BASE_URL/Admin">Vezi utilizatorii inactivi</a>
+<a href="@(_config.GetValue<string>("ForumName"))/Admin">Vezi utilizatorii inactivi</a>
 <br />
 <br />
 O zi frumoasă!

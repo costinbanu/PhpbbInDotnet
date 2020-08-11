@@ -311,7 +311,16 @@ else if (Model.ViewAsAnother)
             Membru din
         </div>
         <div class="FlexRight PostInputWidth">
-            @Model.CurrentUser.UserRegdate.ToUtcTime().ToLocalTime().ToString((await Model.GetCurrentUserAsync()).UserDateFormat)
+            @{
+                var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+                if (!DateTime.TryParse(DateTime.Now.ToString(UserDateFormat), out var _))
+                {
+                    UserDateFormat = "dddd, dd.MM.yyyy, HH:mm";
+                }
+            }
+            <script>
+                writeDate("@Model.CurrentUser.UserRegdate.ToUtcTime().ToString("o")", "@UserDateFormat");
+            </script>
         </div>
     </div>
     <p></p>

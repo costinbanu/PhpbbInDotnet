@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.ForumDb.Entities;
@@ -16,6 +17,7 @@ namespace Serverless.Forum.Pages
     public class ViewForumModel : ModelWithLoggedUser
     {
         private bool _forceTreeRefresh;
+        private readonly IConfiguration _config;
 
         public HashSet<ForumTree> Forums { get; private set; }
         public List<TopicTransport> Topics { get; private set; }
@@ -35,8 +37,11 @@ namespace Serverless.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public int? PageNum { get; set; }
 
-        public ViewForumModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
-            : base(context, forumService, userService, cacheService) { }
+        public ViewForumModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, IConfiguration config)
+            : base(context, forumService, userService, cacheService) 
+        {
+            _config = config;
+        }
 
         public async Task<IActionResult> OnGet()
             => await WithValidForum(ForumId, async (thisForum) =>
@@ -49,7 +54,7 @@ namespace Serverless.Forum.Pages
                     await connection.OpenIfNeeded();
                     var parent = await connection.QuerySingleOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @ParentId", new { thisForum.ParentId });
                     ParentForumId = parent?.ForumId;
-                    ParentForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? Constants.FORUM_NAME);
+                    ParentForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? _config.GetValue<string>("ForumName"));
                     topics = await connection.QueryAsync<TopicDto>(
                         @"SELECT t.topic_id, 
 		                        t.forum_id,

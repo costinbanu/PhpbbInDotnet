@@ -63,6 +63,7 @@
 }
 <h2>Subiect: @Model.TopicTitle</h2>
 <span class="Caption">@Model.PostCount mesaj@(Model.PostCount == 1 ? "" : "e"), @Model.ViewCount vizualiz@(Model.ViewCount == 1 ? "are" : "ări").</span>
+<p></p>
 @if (!string.IsNullOrWhiteSpace(Model.ForumRules))
 {
     <div style="background-color: #ECD5D8; color: #BC2A4D; padding: 10px">
@@ -225,7 +226,8 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
             @await Html.PartialAsync(
                  "_SummaryPartial",
                  new CustomPartials._SummaryPartialModel(post.AuthorId, post.AuthorName, post.AuthorColor, post.PostCreationTime, post.PostId.Value,
-                     UserDateFormat, post.AuthorHasAvatar, post.AuthorRank, null, null, null, true)
+                     UserDateFormat, post.AuthorHasAvatar, post.AuthorRank, null, null, null, true, false, null, null, null,
+                     _userService.HasPrivateMessages(CurrentUser) ? $"<a href=\"./Posting?handler=PrivateMessage&postId={post.PostId}\">&#x2709; Mesaj privat</a>" : null)
              )
             <div class="ForumContent VerticalContent FlexRight" id="@post.PostId">
                 <span style="display:flex">
@@ -239,24 +241,22 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
                     </span>
                 </span>
                 <div style="max-width:100%">
-                    <br />
                     @if (post.ReportId.HasValue && (IsMod || post.ReporterId == CurrentUser.UserId))
                     {
                         var reason = await _context.PhpbbReportsReasons.AsNoTracking().FirstOrDefaultAsync(x => x.ReasonId == post.ReportReasonId);
                         <a href="javascript:vt.showReportViewer(@post.PostId, @post.ReportId, '@reason.ReasonTitle', '@reason.ReasonDescription', '@post.ReportDetails')" style="font-weight:bold; font-size:1.2em">Arată raportul</a><br />
                     }
+                    <br/>
                     @Html.Raw(post.PostText)
                     @foreach (var attachment in post.Attachments)
                     {
-                        <br />
                         @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
                     }
-                    <br />
                 </div>
                 <div class="PostFooter">
                     @if (post.LastEditTime > 0)
                     {
-                        <br />
+                        <hr />
                         <div class="Caption" style="color:#495d6c">
                             Ultima dată modificat de @post.LastEditUser pe
                             <script>
@@ -269,7 +269,7 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
                             . Modificări în total: @post.EditCount.
                         </div>
                     }
-                    @if (!string.IsNullOrWhiteSpace(post.AuthorSignature))
+                    @*@if (!string.IsNullOrWhiteSpace(post.AuthorSignature))
                     {
                         <div class="Signature">
                             <div style="width:25%; display:inline-block; border-bottom:solid 1px black">&nbsp;</div>
@@ -277,10 +277,10 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
                             @Html.Raw(post.AuthorSignature)
                             <br /> <br />
                         </div>
-                    }
-                    <br />
+                    }*@
+                    <hr />
                     <div class="PostActions">
-                        @if ((!Model.IsLocked || IsMod || IsAdmin) && !IsAnonymous && p != Model.Posts.Last())
+                        @if ((!Model.IsLocked || IsMod || IsAdmin) && !IsAnonymous && (p != Model.Posts.Last() || !Model.Paginator.IsLastPage))
                         {
                             <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">
                                 @if (Model.IsLocked)
@@ -293,17 +293,11 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
                                 }
                             </a>
                         }
-                        else if (!IsAnonymous && p != Model.Posts.Last())
+                        else if (!IsAnonymous && (p != Model.Posts.Last() || !Model.Paginator.IsLastPage))
                         {
                             <a href="javascript:;" title="Subiectul este închis, nu se mai pot trimite răspunsuri.">
                                 <s>&#x1F5E8; Subiect închis</s>
                             </a>
-                        }
-                        @if (_userService.HasPrivateMessages(CurrentUser) /*&& await _userService.HasPrivateMessages(post.AuthorId ?? 1)*/)
-                        {
-                            <span>
-                                <a asp-page="/Posting" asp-page-handler="PrivateMessage" asp-route-postId="@post.PostId">&#x2709; Mesaj privat</a>
-                            </span>
                         }
                         @if (!post.ReportId.HasValue && !IsAnonymous)
                         {
@@ -374,7 +368,16 @@ else if (!IsAnonymous)
     <hr />
 }
 
-<span onclick="showForumTree(this)" style="cursor:pointer; font-weight:bold; display: block; clear: both;">Navigare - alege destinația &#x2935;</span>
+<div style="clear:both">
+    <a href="/">Prima pagină</a> |
+    @if (Model.ForumId != null)
+    {
+        <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">Forum părinte</a>
+        <span> | </span>
+    }
+    <span onclick="showForumTree(this)" class="SpanLikeLink">Alege destinația</span>
+</div>
+
 <div id="forumTree" style="display:none">
     <p>&nbsp;</p>
     @await Html.PartialAsync(

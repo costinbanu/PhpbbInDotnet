@@ -40,8 +40,9 @@ function countQuotes(obj, cur) {
 function lazyInit(customMaxWidth, customMaxHeight) {
     quoteWidthBleed = quoteWidthBleed || $('.PostQuote').outerWidth(true) - $('.PostQuote').width() || 42;
     quoteHeightBleed = quoteHeightBleed || $('.PostQuote').outerHeight(true) - $('.PostQuote').height() || 62;
-    maxWidth = maxWidth || customMaxWidth || ($('.FlexRow').width() - ($('.Summary').is(':visible') ? $('.Summary').outerWidth() : 0)) - 20;
-    maxHeight = maxHeight || customMaxHeight || $(window).innerHeight() - $('#topBanner').outerHeight() - 40;
+    maxWidth = maxWidth || customMaxWidth || roundToNextEvenNumber($('.FlexRow').width() - ($('.Summary').is(':visible') ? $('.Summary').outerWidth() * 1.1 : 0));
+    maxHeight = maxHeight || customMaxHeight || roundToNextEvenNumber($(window).innerHeight() - $('#topBanner').outerHeight());
+    
 }
 
 //Expand collapsed menus
@@ -50,9 +51,10 @@ function expandCollapsedMenu(summaryId, buttonId, containerIsFixed = false) {
     var button = $('#' + buttonId);
 
     if (!summary.is(':visible')) {
-        var top = containerIsFixed ? button.position().top + 10 : button.offset().top;
+        var top = containerIsFixed ? button.position().top + 5 : button.offset().top;
+        var right = $(window).innerWidth() - (containerIsFixed ? button.position().left + button.outerWidth() : button.offset().left) - button.outerWidth();
         summary.css({
-            'right': containerIsFixed ? '20px' : '40px',
+            'right': right + 'px', //containerIsFixed ? '20px' : '40px',
             'top': top + button.height() + 10 + 'px',
         });
         summary.show('fast', function () { });

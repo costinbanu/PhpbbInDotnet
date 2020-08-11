@@ -4,10 +4,6 @@ namespace Serverless.Forum.Utilities
 {
     public static class Constants
     {
-        public static readonly string FORUM_NAME = "Forumul Metrou Ușor";
-
-        public static readonly string FORUM_BASE_URL = "https://forum.metrouusor.com";//"http://localhost:54356" ;//
-
         public static readonly string REPLY = "Re: ";
 
         public static readonly string[] BBCODES = new[]
