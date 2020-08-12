@@ -655,7 +655,7 @@ namespace Serverless.Forum.Pages
                     EnableSig = 1,
                     EnableSmilies = 1,
                     PostAttachment = (byte)(attachList.Any() ? 1 : 0),
-                    PostChecksum = _utils.CalculateMD5Hash(HttpUtility.HtmlEncode(newPostText)),
+                    PostChecksum = _utils.CalculateMD5Hash(newPostText),
                     PostEditCount = 0,
                     PostEditLocked = 0,
                     PostEditReason = string.Empty,
@@ -675,7 +675,7 @@ namespace Serverless.Forum.Pages
             }
             else
             {
-                post.PostText = _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(newPostText));
+                post.PostText = _writingService.PrepareTextForSaving(newPostText);
                 post.BbcodeUid = uid;
                 post.BbcodeBitfield = bitfield;
                 processAttachments(attachList, post.PostId);
