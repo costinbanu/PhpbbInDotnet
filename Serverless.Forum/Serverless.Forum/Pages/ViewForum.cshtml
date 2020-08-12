@@ -61,7 +61,7 @@ else
     <h2>Forum: @Model.ForumTitle</h2>
     @if (!string.IsNullOrWhiteSpace(Model.ForumRules))
     {
-        <div style="background-color: #ECD5D8; color: #BC2A4D; padding: 10px">
+        <div style="background-color: #ECD5D8; color: #BC2A4D; padding: 10px; margin: 10px">
             <span>&#x26A0;&nbsp;</span>
             <b>Reguli forum</b>
             <br />
@@ -70,7 +70,7 @@ else
     }
     else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
     {
-        <div style="background-color: #ECD5D8; color: #BC2A4D; padding: 10px">
+        <div style="background-color: #ECD5D8; color: #BC2A4D; padding: 10px; margin: 10px">
             <a href="@_utils.TransformSelfLinkToBetaLink(HttpUtility.HtmlDecode(Model.ForumRulesLink))">
                 &#x26A0;&nbsp;
                 <b>Reguli forum</b>
@@ -81,6 +81,11 @@ else
 @if (!IsAnonymous && !Model.IsNewPostView && !Model.IsOwnPostView)
 {
     <ul class="Shortcuts">
+        <li>
+            <button onclick="location.href='/Posting?forumId=@Model.ForumId&handler=newTopic'" type="button">
+                &#x1F4DD;&nbsp;Deschide un subiect nou
+            </button>
+        </li>
         @if (hasSubForums)
         {
             <li><a href="javascript:MarkForumsRead.submit()">Marchează forumurile ca citite</a></li>
@@ -89,7 +94,6 @@ else
         {
             <li><a href="javascript:MarkTopicsRead.submit()">Marchează subiectele ca citite</a></li>
         }
-        <li><a asp-page="/Posting" asp-page-handler="NewTopic" asp-route-forumId="@Model.ForumId">Deschide un subiect nou</a></li>
     </ul>
 }
 
@@ -100,7 +104,7 @@ else
         new Serverless.Forum.Pages.CustomPartials._ForumDisplayPartialModel(Model.ForumId, Model.Forums, UserDateFormat, true, CurrentUser),
         ViewData
     )
-    <hr />
+    <p>&nbsp;</p>
 }
 
 @if (Model.Topics?.SelectMany(x => x.Topics).Any() ?? false)
@@ -126,37 +130,46 @@ else
             ViewData
         );
     }
-
-
     foreach (var topicGroup in Model.Topics)
     {
-        var index = 0;
         if (!Model.IsNewPostView && !Model.IsOwnPostView)
         {
             if (!globalsDisplayed && topicGroup.TopicType == TopicType.Global)
             {
+                if (announcementsDisplayed || topicsDisplayed)
+                {
+                    <p>&nbsp;</p>
+                }
                 <h3 style="float:left">Subiecte globale</h3>
                 globalsDisplayed = true;
             }
             else if (!announcementsDisplayed && topicGroup.TopicType == TopicType.Announcement)
             {
+                if (globalsDisplayed || topicsDisplayed)
+                {
+                    <p>&nbsp;</p>
+                } 
                 <h3 style="float:left">Anunțuri</h3>
                 announcementsDisplayed = true;
             }
             else if (!topicsDisplayed)
             {
+                if (globalsDisplayed || announcementsDisplayed)
+                {
+                    <p>&nbsp;</p>
+                } 
                 <h3 style="float:left">Subiecte</h3>
                 topicsDisplayed = true;
             }
         }
-        foreach (var topic in topicGroup?.Topics ?? new List<TopicDto>())
+        var topics = topicGroup?.Topics?.ToList() ?? new List<TopicDto>();
+        foreach (var topic in topics)
         {
             var pageSize = CurrentUser.TopicPostsPerPage.ContainsKey(topic.TopicId ?? 0) ? CurrentUser.TopicPostsPerPage[topic.TopicId ?? 0] : Constants.DEFAULT_PAGE_SIZE;
-            topic.Unread = await Model.IsTopicUnread(topic.ForumId?? 0, topic.TopicId ?? 0);
+            topic.Unread = await Model.IsTopicUnread(topic.ForumId ?? 0, topic.TopicId ?? 0);
             topic.Pagination = new CustomPartials._PaginationPartialModel($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", topic.PostCount ?? 0, pageSize, 1, "PageNum");
 
-            var divClass = topic.Unread ? $"FlexRow Unread RowMargin Color{index % 2}" : $"FlexRow RowMargin Color{index % 2}";
-            index++;
+            var divClass = topic.Unread ? $"FlexRow Unread RowMargin" : $"FlexRow RowMargin";
             <div class="@divClass">
                 <span class="ForumContent">
                     @if (Model.IsNewPostView || Model.IsOwnPostView)
@@ -195,10 +208,10 @@ else
                      )
                  )
             </div>
-        }
-        @if (!Model.IsNewPostView && !Model.IsOwnPostView)
-        {
-            <hr />
+            @if (topic != topics.Last() || (topicGroup.TopicType == TopicType.Important && topicGroup != Model.Topics.Last()))
+            {
+                <hr class="BoxSeparator" />
+            }
         }
     }
 
@@ -216,7 +229,6 @@ else
             ),
             ViewData
         );
-        <hr />
     }
 }
 else if (Model.IsNewPostView)
@@ -229,7 +241,9 @@ else if (Model.IsOwnPostView)
 }
 @if (!IsAnonymous && !Model.IsNewPostView && !Model.IsOwnPostView)
 {
-    <a asp-page="/Posting" asp-page-handler="NewTopic" asp-route-forumId="@Model.ForumId">Deschide un subiect nou</a>
+    <button onclick="location.href='/Posting?forumId=@Model.ForumId&handler=newTopic'" type="button">
+        &#x1F4DD;&nbsp;Deschide un subiect nou
+    </button>
 }
 
 <p></p>

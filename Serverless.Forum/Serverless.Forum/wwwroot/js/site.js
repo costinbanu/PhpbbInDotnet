@@ -40,9 +40,8 @@ function countQuotes(obj, cur) {
 function lazyInit(customMaxWidth, customMaxHeight) {
     quoteWidthBleed = quoteWidthBleed || $('.PostQuote').outerWidth(true) - $('.PostQuote').width() || 42;
     quoteHeightBleed = quoteHeightBleed || $('.PostQuote').outerHeight(true) - $('.PostQuote').height() || 62;
-    maxWidth = maxWidth || customMaxWidth || roundToNextEvenNumber($('.FlexRow').width() - ($('.Summary').is(':visible') ? $('.Summary').outerWidth() * 1.1 : 0));
+    maxWidth = maxWidth || customMaxWidth || roundToNextEvenNumber($('.FlexRow').width() - ($('.Summary').is(':visible') ? $('.Summary').outerWidth() * 1.1 : 2));
     maxHeight = maxHeight || customMaxHeight || roundToNextEvenNumber($(window).innerHeight() - $('#topBanner').outerHeight());
-    
 }
 
 //Expand collapsed menus
@@ -79,7 +78,7 @@ function showElement(id, whenHiding, whenShowing, roundHeight = true) {
     }
     else {
         if (roundHeight) {
-            elem.height(roundToNextEvenNumber(elem.height()));
+            elem.height(roundToNextEvenNumber(elem.outerHeight()));
         }
         elem.show('fast', whenShowing);
     }

@@ -121,10 +121,10 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
         <p id="tributeHolder" style="position:relative">&nbsp;</p>
         <span asp-validation-for="ReceiverName" class="validation"></span><br />
     }
-    <input asp-for="PostTitle" type="text" id="subject" size="45" maxlength="256" tabindex="2" class="InputBox PostInputWidth" placeholder="Subiect" />
+    <input asp-for="PostTitle" type="text" id="subject" size="45" maxlength="256" tabindex="2" class="InputBox" placeholder="Subiect" style="width:100%" />
     <br />
-    <div class="PostingControlsSpacer">&nbsp;</div>
-    <div class="PostingControls PostInputWidth" id="controls">
+
+    <div class="PostingControls" id="controls" style="width:100%">
         <input type="button" class="BbCodeButton" accesskey="b" name="addbbcode0" value=" B " style="font-weight:bold" onclick="posting.bbstyle(0)" title="Text bold: [b]text[/b]">
         <input type="button" class="BbCodeButton" accesskey="i" name="addbbcode2" value=" i " style="font-style:italic" onclick="posting.bbstyle(2)" title="Text italic: [i]text[/i]">
         <input type="button" class="BbCodeButton" accesskey="u" name="addbbcode4" value=" u " style="text-decoration: underline" onclick="posting.bbstyle(4)" title="Text subliniat: [u]text[/u]">
@@ -172,37 +172,13 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
                 }
             }
         </table>
-        <p class="Show960">&nbsp;</p>
+        <input type="button" class="BbCodeButton" value="&#x2754;" onclick="showElement('formattingHelp')" title="Arată un ajutor pentru formatare" />
     </div>
-    <a href="javascript:posting.show_hidden_formatters();" class="PostingControlsButton">Opțiuni formatare</a>
-    <div class="PostingControlsSpacer">&nbsp;</div>
-    <div>
-        <textarea asp-for="PostText" id="message" rows="15" cols="76" tabindex="3" onselect="posting.storeCaret(this);" onclick="posting.storeCaret(this);" onkeyup="posting.storeCaret(this);" onfocus="posting.initInsertions();" class="InputBox PostInputWidth"></textarea>
-        <div id="smiley-box" class="SmileyBox PostingControls">
-
-            <strong>Zâmbete</strong><br />
-
-            @foreach (var smiley in ((await _cacheService.GetFromCache<List<PhpbbSmilies>>(await Model.GetActualCacheKey("Smilies", false))) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 1))
-            {
-                <a href="javascript:posting.insert_text('@smiley.Code', true);">
-                    <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
-                </a>
-            }
-            <p>&nbsp;</p>
-            <a href="javascript:posting.show_hidden_smilies();" id="showHiddenSmiliesButton">Arată mai multe</a>
-            <p>&nbsp;</p>
-            <div id="hiddenSmilies" style="display:none; position:absolute; background-color:white; width:min-content; height: auto">
-                @foreach (var smiley in ((await _cacheService.GetFromCache<List<PhpbbSmilies>>(await Model.GetActualCacheKey("Smilies", false))) ?? new List<PhpbbSmilies>()).Where(s => s.DisplayOnPosting == 0))
-                {
-                    <a href="javascript:posting.insert_text('@smiley.Code', true);">
-                        <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
-                    </a>
-                }
-            </div>
-        </div>
+    <a href="javascript:posting.show_hidden_formatters();" class="PostingControlsButton" style="margin-top:5px">Opțiuni formatare</a>
+    <div style="margin-top:5px">
+        <textarea asp-for="PostText" id="message" rows="15" tabindex="3" onselect="posting.storeCaret(this);" onclick="posting.storeCaret(this);" onkeyup="posting.storeCaret(this);" onfocus="posting.initInsertions();" class="InputBox" style="width:100%"></textarea>
     </div>
-    <p style="clear:both;">&nbsp;</p>
-    <p class="PostInputWidth">
+    <p style="clear:both;width:100%; padding:10px 20px 10px 20px; margin:0px">
         Includerea imaginilor mai mari de 2MB nu este permisă, indiferent dacă sunt găzduite local sau extern. De asemenea, numerele de înmatriculare ale vehiculelor particulare surprinse in imagini trebuie ascunse.
         Utilizați <a href="https://procesorimagini.metrouusor.com/" target="_blank">procesorul de imagini „Metrou Ușor”</a> pentru a redimensiona imagini și a ascunde numere de înmatriculare.
     </p>
@@ -210,6 +186,7 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
     {
         <button onclick="posting.toggleAttach()" type="button">&#128206; Adaugă fișiere atașate</button>
     }
+    <button onclick="showElement('emojis')" type="button" class="Hide960">&#x1F642; Emoji</button>
     @if (CanCreatePoll)
     {
         <span>&nbsp;</span>
@@ -312,6 +289,16 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
             <p style="clear:both">&nbsp;</p>
         </div>
     }
+    <div id="emojis" style="display:none; clear:both;">
+        @foreach (var smiley in ((await _cacheService.GetFromCache<List<PhpbbSmilies>>(await Model.GetActualCacheKey("Smilies", false))) ?? new List<PhpbbSmilies>()))
+        {
+            <a href="javascript:posting.insert_text('@smiley.Code', true);">
+                <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
+            </a>
+        }
+        <p style="clear:both;">&nbsp;</p>
+        <p style="clear:both;">&nbsp;</p>
+    </div>
     @if (Action == PostingActions.EditForumPost)
     {
         <hr />
@@ -390,8 +377,135 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
     </script>
 }
 
-
 <div id="imgcheckstatus" class="Popup"></div>
+
+<div id="formattingHelp" class="MiddleBox" style="display:none">
+    <h4 style="float:left">Ajutor formatare</h4>
+    <div style="float:right; cursor:pointer; font-weight:bold; margin-top:10px; margin-bottom:10px" onclick="showElement('formattingHelp')">Închide [X]</div>
+    <p style="clear:both">&nbsp;</p>
+    <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <div style="margin-right:15px">[b]text bold[/b]</div>
+        <div class="FlexRight PostInputWidth">
+            <b>text bold</b>
+        </div>
+    </div>
+    <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <div style="margin-right:15px">[i]text italic[/i]</div>
+        <div class="FlexRight PostInputWidth">
+            <i>text italic</i>
+        </div>
+    </div>
+    <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <div style="margin-right:15px">[u]text subliniat[/u]</div>
+        <div class="FlexRight PostInputWidth">
+            <u>text subliniat</u>
+        </div>
+    </div>
+    <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <div style="margin-right:15px">[s]text tăiat[/s]</div>
+        <div class="FlexRight PostInputWidth">
+            <s>text tăiat</s>
+        </div>
+    </div>
+    <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <div style="margin-right:15px">[size=150]text cu dimensiunea de 150% din cea normală[/size]</div>
+        <div class="FlexRight PostInputWidth">
+            <span style="font-size:1.5em">text cu dimensiunea de 150% din cea normală</span>
+        </div>
+    </div>
+    <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <div style="margin-right:15px">[color=red]text roșu[/color]</div>
+        <div class="FlexRight PostInputWidth">
+            <span style="color:red">text roșu</span>
+        </div>
+    </div>
+    <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <div style="margin-right:15px">[quote]citat[/quote]</div>
+        <div class="FlexRight PostInputWidth">
+            <blockquote class="PostQuote">citat</blockquote>
+        </div>
+    </div>
+    <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <div style="margin-right:15px">[quote=autor]citat[/quote]</div>
+        <div class="FlexRight PostInputWidth">
+            <blockquote class="PostQuote">
+                <b>autor</b> a scris<br />citat
+            </blockquote>
+        </div>
+    </div>
+    <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <div style="margin-right:15px">[url] www.metrouusor.com [/url]</div>
+        <div class="FlexRight PostInputWidth">
+            <a href="https://metrouusor.com">www.metrouusor.com</a>
+        </div>
+    </div>
+    <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <div style="margin-right:15px">[url=www.metrouusor.com] Asociația Metrou Ușor [/url]</div>
+        <div class="FlexRight PostInputWidth">
+            <a href="https://metrouusor.com">Asociația Metrou Ușor</a>
+        </div>
+    </div>
+    <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <div style="margin-right:15px">[img]url_imagine[/img]</div>
+        <div class="FlexRight PostInputWidth">
+            Afişează imaginea din url-ul respectiv.<br />
+            Nu sunt permise imaginile găzduite pe imageshack sau photobucket.
+            Pentru găzduire externă recomandăm <a href="https://imgur.com">imgur.com</a>.
+        </div>
+    </div>
+    <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <div style="margin-right:15px">
+            [list]<br />
+            [*] elementul unu<br />
+            [*] elementul doi<br />
+            [/list]
+        </div>
+        <div class="FlexRight PostInputWidth">
+            Efect: o listă simplă<br />
+            <ul>
+                <li>elementul unu</li>
+                <li>elementul doi</li>
+            </ul>
+        </div>
+    </div>
+    <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <div style="margin-right:15px">
+            [list=a]<br />
+            [*] elementul unu<br />
+            [*] elementul doi<br />
+            [/list]
+        </div>
+        <div class="FlexRight PostInputWidth">
+            Efect: o listă ordonată (list=1 schimbă numerotarea în 1, 2, 3...)<br />
+            <ol type="a">
+                <li>elementul unu</li>
+                <li>elementul doi</li>
+            </ol>
+        </div>
+    </div>
+    <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <div style="margin-right:15px">[*]</div>
+        <div class="FlexRight PostInputWidth">element într-o listă - vezi mai sus</div>
+    </div>
+    <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <div style="margin-right:15px">[code]bloc preformatat de cod în chemar de dimensiune fixă[/code]</div>
+        <div class="FlexRight PostInputWidth">
+            <span class="CodeBlock">bloc preformatat de cod în chenar de dimensiune fixă</span>
+        </div>
+    </div>
+    <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <div style="margin-right:15px">[youtube]id_video[/youtube]</div>
+        <div class="FlexRight PostInputWidth" id="dummy">
+            id_video este codul de după „v=” în adresa video-ului:<br />
+            <img src="https://forum.metrouusor.com/download/file.php?id=112751" onload="resizeImage(this, $('#formattingHelp').width() * 0.7, $('#formattingHelp').height())" />
+            <br />
+            Efect:
+            <br />
+            <iframe width="560" height="315" src="https://www.youtube.com/embed/Gf7_a2DVl7E?html5=1" frameborder="0" allowfullscreen onload="resizeIFrame(this, $('#formattingHelp').width() * 0.7, $('#formattingHelp').height())"></iframe>
+        </div>
+    </div>
+    <div style="float:right; cursor:pointer; font-weight:bold; margin-top:10px; margin-bottom:10px" onclick="showElement('formattingHelp')">Închide [X]</div>
+</div>
 
 @if (Model.PreviewablePost != null)
 {
@@ -441,7 +555,7 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
                 <input type="button" value="Trimite vot" />
             </div>
         }
-        <div class="RowMargin Color0" style="margin-top: 50px; position:relative">
+        <div class="RowMargin" style="margin-top: 50px; position:relative">
             <div class="FlexRow">
                 @await Html.PartialAsync(
                  "_SummaryPartial",

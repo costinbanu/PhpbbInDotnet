@@ -57,11 +57,9 @@
             ),
             ViewData
         )
-        var index = 0;
         foreach (var msg in Model.InboxMessages ?? Enumerable.Empty<PrivateMessageDto>())
         {
-            var divClass = msg.Unread == 1 ? $"FlexRow Unread RowMargin Color{index % 2}" : $"FlexRow RowMargin Color{index % 2}";
-            index++;
+            var divClass = msg.Unread == 1 ? $"FlexRow Unread RowMargin" : $"FlexRow RowMargin";
             <div class="@divClass">
                 <span class="ForumContent">
                     <a asp-page="/PrivateMessages" asp-route-show="@PrivateMessagesPages.Message" asp-route-messageId="@msg.MessageId" asp-route-inboxPage="@Model.InboxPage" asp-route-sentPage="@Model.SentPage" class="nav-link" style="font-weight:bold">
@@ -79,6 +77,7 @@
                                  UserDateFormat, false, null, null, null, null, false, false, null, null, "De la: ")
                          )
             </div>
+            <hr class="BoxSeparator" />
         }
     }
     else
@@ -103,12 +102,9 @@
             ),
             ViewData
         )
-        var index = 0;
         foreach (var msg in Model.SentMessages ?? Enumerable.Empty<PrivateMessageDto>())
         {
-            var divClass = $"FlexRow RowMargin Color{index % 2}";
-            index++;
-            <div class="@divClass">
+            <div class="FlexRow RowMargin">
                 <span class="ForumContent">
                     <a asp-page="/PrivateMessages" asp-route-show="@PrivateMessagesPages.Message" asp-route-messageId="@msg.MessageId" asp-route-inboxPage="@Model.InboxPage" asp-route-sentPage="@Model.SentPage" class="nav-link" style="font-weight:bold">
                         @Html.Raw(msg.Subject)
@@ -125,6 +121,7 @@
                                  UserDateFormat, false, null, null, null, null, false, false, null, null, "Pentru: ")
                          )
             </div>
+            <hr class="BoxSeparator" />
         }
     }
     else

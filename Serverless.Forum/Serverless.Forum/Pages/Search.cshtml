@@ -102,76 +102,90 @@
 
 @if (Model.Posts != null && Model.Posts.Any())
 {
-<h2>Rezultate</h2>
-@await Html.PartialAsync(
-    "_PaginationControlsPartial",
-    new CustomPartials._PaginationControlsPartialModel(
-        paginator: Model.Paginator,
-        allowPaginationChange: false,
-        back: Model.GetSearchLinkForPage(Model.PageNum.Value - 1),
-        forward: Model.GetSearchLinkForPage(Model.PageNum.Value + 1),
-        includeEasyNavigation: false,
-        topicId: null,
-        firstPostId: Model.Posts?.FirstOrDefault()?.PostId
-    ),
-    ViewData
-)
-
+    <h2>Rezultate</h2>
+    @await Html.PartialAsync(
+        "_PaginationControlsPartial",
+        new CustomPartials._PaginationControlsPartialModel(
+            paginator: Model.Paginator,
+            allowPaginationChange: false,
+            back: Model.GetSearchLinkForPage(Model.PageNum.Value - 1),
+            forward: Model.GetSearchLinkForPage(Model.PageNum.Value + 1),
+            includeEasyNavigation: false,
+            topicId: null,
+            firstPostId: Model.Posts?.FirstOrDefault()?.PostId
+        ),
+        ViewData
+    )
+    <hr class="BoxSeparator" />
     var index = 0;
     foreach (var post in Model.Posts)
     {
         post.AuthorHasAvatar = !string.IsNullOrWhiteSpace(post.UserAvatar);
         await _renderingService.ProcessPost(post, Model.PageContext, Model.HttpContext, false, Model.SearchText);
 
-<div class="RowMargin FlexRow @($"Color{index % 2}")">
-    @await Html.PartialAsync(
-        "_SummaryPartial",
-        new CustomPartials._SummaryPartialModel(
-            post.AuthorId,
-            post.AuthorName,
-            post.AuthorColor,
-            post.PostCreationTime,
-            post.PostId.Value,
-            dateFormat,
-            post.AuthorHasAvatar,
-            post.AuthorRank,
-            null,
-            null,
-            null,
-            true,
-            false,
-            null,
-            null,
-            _userService.HasPrivateMessages(CurrentUser) ? $"<a href=\"./Posting?handler=PrivateMessage&postId={post.PostId}\">&#x2709; Mesaj privat</a>" : null
-        )
-    )
-    <div class="ForumContent" id="@post.PostId">
-        <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@post.PostId" class="PostTitle">@Html.Raw(post.PostSubject)</a>
-        <p style="clear:both">@Html.Raw(post.PostText)</p>
-    </div>
-</div>
+        <div class="RowMargin FlexRow">
+            @await Html.PartialAsync(
+                "_SummaryPartial",
+                new CustomPartials._SummaryPartialModel(
+                    post.AuthorId,
+                    post.AuthorName,
+                    post.AuthorColor,
+                    post.PostCreationTime,
+                    post.PostId.Value,
+                    dateFormat,
+                    post.AuthorHasAvatar,
+                    post.AuthorRank,
+                    null,
+                    null,
+                    null,
+                    true,
+                    false,
+                    null,
+                    null,
+                    null,
+                    _userService.HasPrivateMessages(CurrentUser) ? $"<a href=\"./Posting?handler=PrivateMessage&postId={post.PostId}\">&#x2709; Mesaj privat</a>" : null
+                )
+            )
+            <div class="ForumContent" id="@post.PostId">
+                <span style="display:flex">
+                    <span class="PostTitle">
+                        <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@post.PostId">@Html.Raw(post.PostSubject)</a>
+                    </span>
+                    <span style="margin-left:auto">
+                        <span class="CollapsedMenu" onclick="expandCollapsedMenu('summary@(post.PostId.Value)', 'button@(post.PostId.Value)')" id="button@(post.PostId.Value)" style="color:#@post.AuthorColor;margin-left: auto; height:auto; width: min-content">
+                            @Html.Raw(post.AuthorName)
+                        </span>
+                    </span>
+                </span>
+                <p>&nbsp;</p>
+                <div style="max-width:100%">
+                    <p style="clear:both">@Html.Raw(post.PostText)</p>
+                </div>
+            </div>
+        </div>
+        <hr class="BoxSeparator" />
         index++;
     }
 
-<p>&nbsp;</p>
-@await Html.PartialAsync(
-    "_PaginationControlsPartial",
-    new CustomPartials._PaginationControlsPartialModel(
-        paginator: Model.Paginator,
-        allowPaginationChange: false,
-        back: Model.GetSearchLinkForPage(Model.PageNum.Value - 1),
-        forward: Model.GetSearchLinkForPage(Model.PageNum.Value + 1),
-        includeEasyNavigation: true,
-        topicId: null,
-        firstPostId: Model.Posts?.FirstOrDefault()?.PostId
-    ),
-    ViewData
-)
+    <p>&nbsp;</p>
+    @await Html.PartialAsync(
+        "_PaginationControlsPartial",
+        new CustomPartials._PaginationControlsPartialModel(
+            paginator: Model.Paginator,
+            allowPaginationChange: false,
+            back: Model.GetSearchLinkForPage(Model.PageNum.Value - 1),
+            forward: Model.GetSearchLinkForPage(Model.PageNum.Value + 1),
+            includeEasyNavigation: true,
+            topicId: null,
+            firstPostId: Model.Posts?.FirstOrDefault()?.PostId
+        ),
+        ViewData
+    )
 }
 else if (Model.Posts != null)
 {
-<p></p>
-<p>Nu a fost găsit nici un rezultat.</p>
+    <p></p>
+    <p>Nu a fost găsit nici un rezultat.</p>
 }
 <link rel="stylesheet" href="~/lib/tribute/dist/tribute.css" />
 <script src="~/lib/tribute/dist/tribute.js"></script>

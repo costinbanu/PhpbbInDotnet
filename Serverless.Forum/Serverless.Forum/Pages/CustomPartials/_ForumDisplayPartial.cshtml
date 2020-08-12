@@ -13,7 +13,7 @@
 {
     <h3 style="float:left">Categorii</h3>
 }
-
+@{ var categoriesShown = false; }
 @foreach (var category in Model.Categories)
 {
     if (category.IsRestricted)
@@ -25,7 +25,8 @@
     <div class="FlexRow Category RowMargin">
         @Html.Raw(category.ForumName)
     </div>
-    @foreach (var forum in Model.GetChildrenForums(category.ForumId).OrderBy(f => f.LeftId))
+    var children = Model.GetChildrenForums(category.ForumId).OrderBy(f => f.LeftId);
+    @foreach (var forum in children)
     {
         if (forum.IsRestricted)
         {
@@ -37,39 +38,42 @@
         {
             isUnread = await _forumService.IsForumUnread(forum.ForumId, Model.LoggedUser);
         }
-        var divClass = isUnread ? $"FlexRow Unread Color{catIndex % 2} RowMargin" : $"FlexRow Color{catIndex % 2} RowMargin";
+        var divClass = isUnread ? $"FlexRow Unread RowMargin" : $"FlexRow RowMargin";
         catIndex++;
         <div class="@divClass">
-            <span class="ForumContent" style="padding-left:20px">
+            <span class="ForumContent">
                 <a asp-page="/ViewForum" asp-route-forumId="@forum.ForumId" class="nav-link" style="font-weight:bold">@Html.Raw(forum.ForumName)</a><br />
                 @Html.Raw(_renderingService.BbCodeToHtml(forum.ForumDesc, forum.ForumDescUid))
             </span>
             @await Html.PartialAsync(
-                "_SummaryPartial",
-                new CustomPartials._SummaryPartialModel(forum.ForumLastPosterId, forum.ForumLastPosterName, forum.ForumLastPosterColour, forum.ForumLastPostTime?.ToUtcTime(), forum.ForumId,
-                    Model.DateFormat, false, null,
-                    forum.ForumLastPostId == 0 ? null : $"./ViewTopic?postId={forum.ForumLastPostId}&handler=ByPostId",
-                    forum.ForumLastPostId == 0 ? null : "&#x1F4C3;",
-                    forum.ForumLastPostId == 0 ? null : "Vezi ultimul mesaj",
-                    false, true
-                )
-            )
+                  "_SummaryPartial",
+                  new CustomPartials._SummaryPartialModel(forum.ForumLastPosterId, forum.ForumLastPosterName, forum.ForumLastPosterColour, forum.ForumLastPostTime?.ToUtcTime(), forum.ForumId,
+                      Model.DateFormat, false, null,
+                      forum.ForumLastPostId == 0 ? null : $"./ViewTopic?postId={forum.ForumLastPostId}&handler=ByPostId",
+                      forum.ForumLastPostId == 0 ? null : "&#x1F4C3;",
+                      forum.ForumLastPostId == 0 ? null : "Vezi ultimul mesaj",
+                      false, true
+                  )
+              )
         </div>
+        if (forum != children.Last())
+        {
+            <hr class="BoxSeparator" />
+        }
     }
-}
-
-@if (Model.Categories.Any(x => !x.IsRestricted) && Model.SubForums.Any(x => !x.IsRestricted))
-{
-    <hr />
+    categoriesShown = true;
 }
 
 @if (Model.ShowTitle && Model.SubForums.Any(x => !x.IsRestricted))
 {
+    @if (categoriesShown)
+    {
+        <p>&nbsp;</p>
+    }
     <h3 style="float:left">Forumuri</h3>
 }
-
-@{ var index = 0; }
-@foreach (var forum in Model.SubForums)
+@{ var subforums = Model.SubForums.ToList(); }
+@foreach (var forum in subforums)
 {
     if (forum.IsRestricted)
     {
@@ -81,8 +85,7 @@
     {
         isUnread = await _forumService.IsForumUnread(forum.ForumId, Model.LoggedUser);
     }
-    var divClass = isUnread ? $"FlexRow Unread Color{index % 2} RowMargin" : $"FlexRow Color{index % 2} RowMargin";
-    index++;
+    var divClass = isUnread ? $"FlexRow Unread RowMargin" : $"FlexRow RowMargin";
     <div class="@divClass">
         <span class="ForumContent">
             <a asp-page="/ViewForum" asp-route-forumId="@forum.ForumId" class="nav-link" style="font-weight:bold">@Html.Raw(forum.ForumName)</a><br />
@@ -99,4 +102,8 @@
             )
         )
     </div>
+    @if (forum != subforums.Last())
+    {
+        <hr class="BoxSeparator" />
+    }
 }

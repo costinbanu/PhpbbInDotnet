@@ -63,10 +63,10 @@
 }
 <h2>Subiect: @Model.TopicTitle</h2>
 <span class="Caption">@Model.PostCount mesaj@(Model.PostCount == 1 ? "" : "e"), @Model.ViewCount vizualiz@(Model.ViewCount == 1 ? "are" : "ări").</span>
-<p></p>
 @if (!string.IsNullOrWhiteSpace(Model.ForumRules))
 {
-    <div style="background-color: #ECD5D8; color: #BC2A4D; padding: 10px">
+    <p></p>
+    <div style="background-color: #ECD5D8; color: #BC2A4D; padding: 10px; margin: 10px">
         <span>&#x26A0;&nbsp;</span>
         <b>Reguli forum</b>
         <br />
@@ -75,7 +75,8 @@
 }
 else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
 {
-    <div style="background-color: #ECD5D8; color: #BC2A4D; padding: 10px">
+    <p></p>
+    <div style="background-color: #ECD5D8; color: #BC2A4D; padding: 10px; margin: 10px">
         <a href="@_utils.TransformSelfLinkToBetaLink(HttpUtility.HtmlDecode(Model.ForumRulesLink))">
             &#x26A0;&nbsp;
             <b>Reguli forum</b>
@@ -124,7 +125,7 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
             <table style="border:none; padding:unset; margin:unset; width:100%">
                 @foreach (var option in Model.Poll.PollOptions)
                 {
-                    <tr style="border-bottom:solid 1px black">
+                    <tr style="@(option != Model.Poll.PollOptions.Last() ? "border-bottom:solid 1px black" : "border-bottom:none")">
                         <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
                             @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText))
                             @if (await Model.IsCurrentUserAdminHereAsync(Model.ForumId ?? 0))
@@ -150,9 +151,11 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
             <input type="button" value="Arată rezultatele" onclick="vt.switchPollPanels('results', 'votes', this)" />
         }
     }
+}
+@if (Model.Paginator.Pagination.HasPages)
+{
     <hr />
 }
-
 @await Html.PartialAsync(
     "_PaginationControlsPartial",
     new CustomPartials._PaginationControlsPartialModel(
@@ -166,11 +169,8 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
     ),
     ViewData
 )
-@if (Model.Paginator.Pagination.HasPages)
-{
-    <hr />
-}
-@{ 
+<hr />
+@{
     var index = 0;
     var reachedAnUnreadPost = false;
 }
@@ -219,7 +219,7 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
     }
     else
     {
-        rowClass = post.Unread ? "Unread" : $"Color{index % 2}";
+        rowClass = post.Unread ? "Unread" : ""; // $"Color{index % 2}";
     }
     <div class="RowMargin @rowClass">
         <div class="FlexRow">
@@ -246,19 +246,23 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
                         var reason = await _context.PhpbbReportsReasons.AsNoTracking().FirstOrDefaultAsync(x => x.ReasonId == post.ReportReasonId);
                         <a href="javascript:vt.showReportViewer(@post.PostId, @post.ReportId, '@reason.ReasonTitle', '@reason.ReasonDescription', '@post.ReportDetails')" style="font-weight:bold; font-size:1.2em">Arată raportul</a><br />
                     }
-                    <br/>
+                    <br />
                     @Html.Raw(post.PostText)
                     @foreach (var attachment in post.Attachments)
                     {
                         @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
                     }
                 </div>
+
                 <div class="PostFooter">
-                    @if (post.LastEditTime > 0)
+                    @if (!IsAnonymous || post.LastEditTime > 0)
                     {
-                        <hr />
+                        <hr class="SubtypeSeparator" />
+                    }                    @if (post.LastEditTime > 0)
+                    {
+                        @*<hr />*@
                         <div class="Caption" style="color:#495d6c">
-                            Ultima dată modificat de @post.LastEditUser pe
+                            Ultima dată modificat de @post.LastEditUser
                             <script>
                                     writeDate("@post.LastEditTime.ToUtcTime().ToString("o")", "@UserDateFormat");
                             </script>
@@ -268,17 +272,18 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
                             }
                             . Modificări în total: @post.EditCount.
                         </div>
+                        <p></p>
                     }
                     @*@if (!string.IsNullOrWhiteSpace(post.AuthorSignature))
-                    {
-                        <div class="Signature">
-                            <div style="width:25%; display:inline-block; border-bottom:solid 1px black">&nbsp;</div>
-                            <br />
-                            @Html.Raw(post.AuthorSignature)
-                            <br /> <br />
-                        </div>
-                    }*@
-                    <hr />
+                        {
+                            <div class="Signature">
+                                <div style="width:25%; display:inline-block; border-bottom:solid 1px black">&nbsp;</div>
+                                <br />
+                                @Html.Raw(post.AuthorSignature)
+                                <br /> <br />
+                            </div>
+                        }*@
+                    @*<hr />*@
                     <div class="PostActions">
                         @if ((!Model.IsLocked || IsMod || IsAdmin) && !IsAnonymous && (p != Model.Posts.Last() || !Model.Paginator.IsLastPage))
                         {
@@ -299,6 +304,7 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
                                 <s>&#x1F5E8; Subiect închis</s>
                             </a>
                         }
+
                         @if (!post.ReportId.HasValue && !IsAnonymous)
                         {
                             <span>
@@ -323,32 +329,11 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
                     </div>
                 </div>
             </div>
-            <p>&nbsp;</p>
+            @*<p>&nbsp;</p>*@
         </div>
     </div>
+    <hr />
     index++;
-}
-<hr />
-@if ((!Model.IsLocked || IsMod || IsAdmin) && !IsAnonymous)
-{
-    <a asp-page="/Posting" asp-page-handler="ForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId">
-        @if (Model.IsLocked)
-        {
-            <span>Subiect închis</span>
-        }
-        else
-        {
-            <span>Scrie un mesaj nou</span>
-        }
-    </a>
-    <hr />
-}
-else if (!IsAnonymous)
-{
-    <a href="javascript:;" title="Subiectul este închis, nu se mai pot trimite răspunsuri.">
-        <s>&#x1F5E8; Subiect închis</s>
-    </a>
-    <hr />
 }
 @await Html.PartialAsync(
     "_PaginationControlsPartial",
@@ -367,7 +352,25 @@ else if (!IsAnonymous)
 {
     <hr />
 }
-
+@if ((!Model.IsLocked || IsMod || IsAdmin) && !IsAnonymous)
+{
+    <button onclick="location.href='/Posting?forumId=@Model.ForumId&topicId=@Model.TopicId&handler=forumPost'" type="button">
+        &#x1F4DD;
+        @if (Model.IsLocked)
+        {
+            <span>Subiect închis</span>
+        }
+        else
+        {
+            <span>Scrie un mesaj nou</span>
+        }
+    </button>
+}
+else if (!IsAnonymous)
+{
+    <button type="button" disabled>&#x1F4DD; Subiect închis</button>
+}
+<p></p>
 <div style="clear:both">
     <a href="/">Prima pagină</a> |
     @if (Model.ForumId != null)
@@ -396,9 +399,9 @@ else if (!IsAnonymous)
         <input type="submit" value="Du-te" />
     </form>
 </div>
-<hr />
 @if (IsMod)
 {
+    <hr />
     <form method="post" asp-page-handler="TopicModerator">
         <span>Moderează subiectul: </span>
         @Html.DropDownList("TopicAction", _utils.EnumToDropDownList<ModeratorTopicActions>(Model.TopicAction), new { onchange = "vt.showTopicExtraInput(this)", id = "TopicAction" })
