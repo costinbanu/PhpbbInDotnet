@@ -15,7 +15,7 @@ using System.Web;
 
 namespace Serverless.Forum.Pages
 {
-    [ValidateAntiForgeryToken]
+    [ValidateAntiForgeryToken, ResponseCache(Location = ResponseCacheLocation.None, NoStore = true, Duration = 0)]
     public class ViewTopicModel : ModelWithLoggedUser
     {
         [BindProperty]
@@ -100,16 +100,14 @@ namespace Serverless.Forum.Pages
         private readonly Utils _utils;
         private readonly PostService _postService;
         private readonly ModeratorService _moderatorService;
-        private readonly BBCodeRenderingService _renderingService;
 
         public ViewTopicModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService,
-            Utils utils, PostService postService, ModeratorService moderatorService, BBCodeRenderingService renderingService)
+            Utils utils, PostService postService, ModeratorService moderatorService)
             : base(context, forumService, userService, cacheService)
         {
             _utils = utils;
             _postService = postService;
             _moderatorService = moderatorService;
-            _renderingService = renderingService;
         }
 
         public async Task<IActionResult> OnGetByPostId()
@@ -326,14 +324,14 @@ namespace Serverless.Forum.Pages
                 var (Message, IsSuccess) = PostAction switch
                 {
                     ModeratorPostActions.DeleteSelectedPosts => await _moderatorService.DeletePosts(PostIdsForModerator),
-                    ModeratorPostActions.MoveSelectedPosts => await _moderatorService.MovePosts(PostIdsForModerator, DestinationTopicId.Value),
-                    ModeratorPostActions.SplitSelectedPosts => await _moderatorService.SplitPosts(PostIdsForModerator, DestinationForumId.Value),
+                    ModeratorPostActions.MoveSelectedPosts => await _moderatorService.MovePosts(PostIdsForModerator, DestinationTopicId),
+                    ModeratorPostActions.SplitSelectedPosts => await _moderatorService.SplitPosts(PostIdsForModerator, DestinationForumId),
                     _ => throw new NotImplementedException($"Unknown action '{PostAction}'")
                 };
 
                 if (IsSuccess ?? false)
                 {
-                    var (LatestSelected, NextRemaining) = await GetSelectedAndNextRemainingPostIds(p => PostIdsForModerator.Contains(p.PostId));
+                    var (LatestSelected, NextRemaining) = await GetSelectedAndNextRemainingPostIds(PostIdsForModerator);
                     var destinations = new List<string>();
                     if (LatestSelected != null)
                     {
@@ -369,6 +367,8 @@ namespace Serverless.Forum.Pages
                     ReportClosed = 0
                 });
                 result.Entity.ReportId = 0;
+                var topic = await _context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == TopicId);
+                topic.TopicReported = 1;
                 await _context.SaveChangesAsync();
                 return await OnGet();
             });
@@ -378,12 +378,14 @@ namespace Serverless.Forum.Pages
             {
                 if (deletePost ?? false)
                 {
-                    var (LatestSelected, NextRemaining) = await GetSelectedAndNextRemainingPostIds(p => p.PostId == reportPostId);
+                    var (LatestSelected, NextRemaining) = await GetSelectedAndNextRemainingPostIds(reportPostId ?? 0);
                     var (Message, IsSuccess) = await _moderatorService.DeletePosts(new[] { reportPostId.Value });
                     ModeratorActionResult = $"<span style=\"margin-left: 30px; color: {((IsSuccess ?? false) ? "darkgreen" : "red")}; display:block;\">{Message}</span>";
                 }
                 var report = await _context.PhpbbReports.FirstOrDefaultAsync(r => r.ReportId == reportId);
                 report.ReportClosed = 1;
+                var topic = await _context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == TopicId);
+                topic.TopicReported = 0;
                 await _context.SaveChangesAsync();
                 if (!(deletePost ?? false) && (redirectToEdit ?? false))
                 {
@@ -396,59 +398,21 @@ namespace Serverless.Forum.Pages
                 }
             });
 
-        // requires package NReco.ImageGenerator
-        //        public async Task<IActionResult> OnPostTakeSnapshot(string html)
-        //            => await WithModerator(async () =>
-        //            {
-        //                var completeHtml = 
-        //$@" <html>
-        //        <head>
-        //            <link rel=""stylesheet"" href=""{GetAbsoluteUri("~/css/site.css")}"" />
-        //            <link rel=""stylesheet"" href=""{GetAbsoluteUri("~/lib/bootstrap/dist/css/bootstrap.css")}"" />
-        //            <link rel=""stylesheet"" href=""{GetAbsoluteUri("~/css/pagination.css")}"" />
-        //            <link rel=""stylesheet"" href=""{GetAbsoluteUri("~/css/posting.css")}"" />
-        //            <script type=""text/javascript"" src=""{GetAbsoluteUri("~/js/viewTopic.js")}""></script>
-        //        </head>
-        //        <body>
-        //            <div class=""container body-content size1300"">
-        //                {html}
-        //            </div>
-        //        </body>
-        //    </html>";
-
-        //                var converter = FormatterServices.GetUninitializedObject(typeof(HtmlToImageConverter)) as HtmlToImageConverter;
-        //                converter.ToolPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wkhtmltoimage");
-        //                converter.WkHtmlToImageExeName = "wkhtmltoimage.exe";
-        //                converter.ProcessPriority = ProcessPriorityClass.Normal;
-        //                converter.Zoom = 1f;
-        //                converter.Width = 0;
-        //                converter.Height = 0;
-        //                var img = converter.GenerateImage(completeHtml, ImageFormat.Jpeg);
-        //                return await Task.FromResult(Content(Convert.ToBase64String(img)));
-        //            });
-        //private string GetAbsoluteUri(string relativeUri) 
-        //    => HttpContext.Request.Scheme + "://" + HttpContext.Request.Host + Url.Content(relativeUri);
-
-
         private async Task GetPostsLazy(int? topicId, int? page, int? postId)
         {
             if (Posts == null || _page == null || _count == null)
             {
-                var results = await _postService.GetPostPageAsync((await GetCurrentUserAsync()).UserId, topicId, page, postId);
-                Posts = results.Posts;
-                _page = results.Page;
-                _count = results.Count;
+                (Posts, _page, _count) = await _postService.GetPostPageAsync((await GetCurrentUserAsync()).UserId, topicId, page, postId);
             }
         }
 
-        private async Task<(int? LatestSelected, int? NextRemaining)> GetSelectedAndNextRemainingPostIds(Func<PhpbbPosts, bool> latestSelectedFilter)
+        private async Task<(int? LatestSelected, int? NextRemaining)> GetSelectedAndNextRemainingPostIds(params int[] idsToInclude)
         {
             var latestSelectedPost = await (
                from p in _context.PhpbbPosts.AsNoTracking()
-               where latestSelectedFilter(p)
-               group p by p.PostTime into groups
-               orderby groups.Key descending
-               select groups.FirstOrDefault()
+               where idsToInclude.Contains(p.PostId)
+               orderby p.PostTime descending
+               select p
             ).FirstOrDefaultAsync();
 
             var nextRemainingPost = await (
@@ -457,16 +421,14 @@ namespace Serverless.Forum.Pages
                    && !PostIdsForModerator.Contains(p.PostId)
                    && latestSelectedPost != null
                    && p.PostTime >= latestSelectedPost.PostTime
-                group p by p.PostTime into groups
-                orderby groups.Key ascending
-                select groups.FirstOrDefault()
+                orderby p.PostTime ascending
+                select p
             ).FirstOrDefaultAsync() ?? await (
                 from p in _context.PhpbbPosts.AsNoTracking()
                 where p.TopicId == TopicId.Value
                    && !PostIdsForModerator.Contains(p.PostId)
-                group p by p.PostTime into groups
-                orderby groups.Key descending
-                select groups.FirstOrDefault()
+                orderby p.PostTime descending
+                select p
             ).FirstOrDefaultAsync();
 
             return (latestSelectedPost?.PostId, nextRemainingPost?.PostId);

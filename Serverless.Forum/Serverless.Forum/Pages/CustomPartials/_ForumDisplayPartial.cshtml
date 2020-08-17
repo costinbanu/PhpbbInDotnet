@@ -56,7 +56,7 @@
                   )
               )
         </div>
-        if (forum != children.Last())
+        if (forum != children.Last() || category == Model.Categories.Last())
         {
             <hr class="BoxSeparator" />
         }
@@ -72,8 +72,7 @@
     }
     <h3 style="float:left">Forumuri</h3>
 }
-@{ var subforums = Model.SubForums.ToList(); }
-@foreach (var forum in subforums)
+@foreach (var forum in Model.SubForums)
 {
     if (forum.IsRestricted)
     {
@@ -102,8 +101,5 @@
             )
         )
     </div>
-    @if (forum != subforums.Last())
-    {
-        <hr class="BoxSeparator" />
-    }
+    <hr class="BoxSeparator" />
 }

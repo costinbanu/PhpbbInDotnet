@@ -30,8 +30,6 @@ namespace Serverless.Forum.Contracts
 
         public bool AuthorHasAvatar { get; set; } = false;
 
-        public string AuthorSignature { get; set; }
-
         public long LastEditTime { get; set; } = 0;
 
         public string LastEditUser { get; set; }
@@ -51,5 +49,7 @@ namespace Serverless.Forum.Contracts
         public string ReportDetails { get; set; }
 
         public int? ReporterId { get; set; }
+
+        public string ReporterUsername { get; set; }
     }
 }

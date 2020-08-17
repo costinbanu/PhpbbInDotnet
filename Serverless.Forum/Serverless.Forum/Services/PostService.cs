@@ -139,9 +139,8 @@ namespace Serverless.Forum.Services
                         from p in context.PhpbbPosts.AsNoTracking()
                         where p.TopicId == curTopic.TopicId
                            && p.PostId != deleted.PostId
-                        group p by p.PostTime into grouped
-                        orderby grouped.Key descending
-                        select grouped.FirstOrDefault()
+                        orderby p.PostTime descending
+                        select p
                     ).FirstOrDefaultAsync();
                     var lastTopicPostUser = await _userService.GetLoggedUserById(lastTopicPost.PosterId);
 
@@ -154,9 +153,8 @@ namespace Serverless.Forum.Services
                         from p in context.PhpbbPosts.AsNoTracking()
                         where p.ForumId == curForum.ForumId
                            && p.PostId != deleted.PostId
-                        group p by p.PostTime into grouped
-                        orderby grouped.Key descending
-                        select grouped.FirstOrDefault()
+                        orderby p.PostTime descending
+                        select p
                     ).FirstOrDefaultAsync();
                     var lastForumPostUser = await _userService.GetLoggedUserById(lastForumPost.PosterId);
 
@@ -169,9 +167,8 @@ namespace Serverless.Forum.Services
                         from p in context.PhpbbPosts.AsNoTracking()
                         where p.TopicId == oldTopicId
                            && p.PostId != deleted.PostId
-                        group p by p.PostTime into grouped
-                        orderby grouped.Key ascending
-                        select grouped.FirstOrDefault()
+                        orderby p.PostTime ascending
+                        select p
                     ).FirstOrDefaultAsync();
                     var firstPostUser = await _userService.GetLoggedUserById(firstPost.PosterId);
 

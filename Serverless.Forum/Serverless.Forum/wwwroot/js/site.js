@@ -3,7 +3,7 @@ var quoteWidthBleed, quoteHeightBleed;
 
 function resizeImage(img, customMaxWidth, customMaxHeight) {
     lazyInit(customMaxWidth, customMaxHeight);
-    var quotes = countQuotes(img, 0);
+    var quotes = $(img).parents("blockquote").length;
     var actualParentWidth = maxWidth - quotes * quoteWidthBleed,
         actualParentHeight = maxHeight - quotes * quoteHeightBleed;
     var originalWidth = img.naturalWidth,
@@ -20,7 +20,7 @@ function resizeImage(img, customMaxWidth, customMaxHeight) {
 
 function resizeIFrame(frame, customMaxWidth, customMaxHeight) {
     lazyInit(customMaxWidth, customMaxHeight);
-    var quotes = countQuotes(frame, 0);
+    var quotes = $(frame).parents("blockquote").length;
     var actualParentWidth = maxWidth - quotes * quoteWidthBleed,
         actualParentHeight = maxHeight - quotes * quoteHeightBleed;
     $(frame).attr({ 'width': roundToNextEvenNumber(actualParentWidth), 'height': Math.max(roundToNextEvenNumber(actualParentHeight / 1.8), roundToNextEvenNumber((actualParentWidth) * 9 / 16)) });
@@ -28,13 +28,6 @@ function resizeIFrame(frame, customMaxWidth, customMaxHeight) {
     if (src.indexOf('imgur') !== -1) {
         $(frame).attr('src', src + '?w=' + actualParentWidth)
     }
-}
-
-function countQuotes(obj, cur) {
-    if (!obj || !obj.parentElement || obj.parentElement.nodeName.toLowerCase() != 'blockquote') {
-        return cur;
-    }
-    return countQuotes(obj.parentElement, cur + 1);
 }
 
 function lazyInit(customMaxWidth, customMaxHeight) {
@@ -64,7 +57,7 @@ function expandCollapsedMenu(summaryId, buttonId, containerIsFixed = false) {
 }
 
 
-function showElement(id, whenHiding, whenShowing, roundHeight = true) {
+function showElement(id, whenHiding, whenShowing, roundSize = false) {
     var elem = $('#' + id);
     if (!whenHiding) {
         whenHiding = function () { }
@@ -77,8 +70,9 @@ function showElement(id, whenHiding, whenShowing, roundHeight = true) {
         elem.hide('fast', whenHiding);
     }
     else {
-        if (roundHeight) {
-            elem.height(roundToNextEvenNumber(elem.outerHeight()));
+        if (roundSize) {
+            elem.height(roundToNextEvenNumber(elem.height()));
+            elem.width(roundToNextEvenNumber(elem.width()));
         }
         elem.show('fast', whenShowing);
     }

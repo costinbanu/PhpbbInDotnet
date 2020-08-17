@@ -22,7 +22,7 @@ using System.Web;
 
 namespace Serverless.Forum.Pages
 {
-    [ValidateAntiForgeryToken]
+    [ValidateAntiForgeryToken, ResponseCache(Location = ResponseCacheLocation.None, NoStore = true, Duration = 0)]
     public class UserModel : ModelWithLoggedUser
     {
         [BindProperty]

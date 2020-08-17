@@ -16,9 +16,7 @@ using System.Threading.Tasks;
 
 namespace Serverless.Forum.Pages
 {
-    [ValidateRecaptcha]
-    [BindProperties]
-    [ValidateAntiForgeryToken]
+    [ValidateRecaptcha, BindProperties, ValidateAntiForgeryToken, ResponseCache(Location = ResponseCacheLocation.None, NoStore = true, Duration = 0)]
     public class RegisterModel : PageModel
     {
         private readonly ForumDbContext _context;

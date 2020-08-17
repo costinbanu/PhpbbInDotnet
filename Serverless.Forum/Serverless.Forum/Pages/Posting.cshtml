@@ -3,17 +3,23 @@
 @using System.Web
 @using Serverless.Forum.Utilities
 @using Serverless.Forum.ForumDb.Entities
+@using Microsoft.EntityFrameworkCore
 
 @model Serverless.Forum.Pages.PostingModel
+
 @inject Services.CacheService _cacheService
 @inject Services.WritingToolsService _writingService
 @inject Services.BBCodeRenderingService _renderingService
+@inject Services.PostService _postService
+@inject ForumDb.ForumDbContext _context
 @inject Utils _utils
 
 @{
     ViewData["Title"] = "Posting";
     Layout = "~/Pages/_Layout.cshtml";
-    var UserDateFormat = (await Model.GetCurrentUserAsync()).UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+
+    var CurrentUser = await Model.GetCurrentUserAsync();
+    var UserDateFormat = CurrentUser.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
     if (!DateTime.TryParse(DateTime.Now.ToString(UserDateFormat), out var _))
     {
         UserDateFormat = "dddd, dd.MM.yyyy, HH:mm";
@@ -65,7 +71,7 @@
 {
     <span>
         Forum părinte:
-        <a asp-page="/ViewForum" asp-route-forumId="@ForumId">@ForumName</a>
+        <a asp-page="/ViewForum" asp-route-forumId="@ForumId">@HttpUtility.HtmlDecode(ForumName)</a>
     </span>
     <h3>
         Răspunde:
@@ -76,7 +82,7 @@ else if (Model.TopicId.HasValue && !Model.ReceiverId.HasValue)
 {
     <span>
         Forum părinte:
-        <a asp-page="/ViewForum" asp-route-forumId="@ForumId">@ForumName</a>
+        <a asp-page="/ViewForum" asp-route-forumId="@ForumId">@HttpUtility.HtmlDecode(@ForumName)</a>
     </span>
     <h3>
         Răspunde:
@@ -150,6 +156,7 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
             var name = $"addbbcode{index}";
             <input type="button" class="BbCodeButton@(code.BbcodeTag == "youtube" ? "" : " Hide960")" name="@name" value="@code.BbcodeTag" onclick="posting.bbstyle(@index)" title="@code.BbcodeHelpline" />
         }
+        <input type="button" class="BbCodeButton" value="&#x2754;" onclick="showElement('formattingHelp', null, null, true)" title="Arată un ajutor pentru formatare" />
         <table class="ColorPalette" id="colour_palette">
             @{
                 var color = new[] { 0x0, 0x40, 0x80, 0xbf, 0xff };
@@ -172,7 +179,6 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
                 }
             }
         </table>
-        <input type="button" class="BbCodeButton" value="&#x2754;" onclick="showElement('formattingHelp')" title="Arată un ajutor pentru formatare" />
     </div>
     <a href="javascript:posting.show_hidden_formatters();" class="PostingControlsButton" style="margin-top:5px">Opțiuni formatare</a>
     <div style="margin-top:5px">
@@ -190,7 +196,7 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
     @if (CanCreatePoll)
     {
         <span>&nbsp;</span>
-        <button onclick="posting.togglePoll()" type="button">&#x1F4DD; Adaugă chestionar</button>
+        <button onclick="posting.togglePoll()" type="button">&#x2714; Adaugă chestionar</button>
         <div id="pollPanel" style="display:@(Model.ShowPoll ? "block" : "none")" class="PostInputWidth">
             <br />
             <h3>Chestionar</h3>
@@ -246,6 +252,7 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
     <input asp-for="TopicId" type="hidden" />
     <input asp-for="PostId" type="hidden" />
     <input asp-for="ReceiverId" type="hidden" id="pmTo" />
+    <input type="hidden" asp-for="PageNum" />
     @if (Action != PostingActions.NewPrivateMessage)
     {
         var attachments = await _cacheService.GetFromCache<List<PhpbbAttachments>>(await Model.GetActualCacheKey("PostAttachments", true)) ?? new List<PhpbbAttachments>();
@@ -335,6 +342,71 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
     <span asp-validation-for="PostText" class="validation"></span>
 </form>
 
+@{
+    var (previousPosts, users) = await Model.GetPreviousPosts(Action);
+    if (previousPosts.Any())
+    {
+        <script>
+            var texts = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(previousPosts.ToDictionary(k => k.PostId, v =>_writingService.CleanBbTextForDisplay(v.PostText, v.BbcodeUid))))
+        </script>
+
+        <h3>Mesaje precedente</h3>
+
+        foreach (var p in previousPosts)
+        {
+            var ju = users.FirstOrDefault(u => u.UserId == p.PosterId);
+            var post = new Contracts.PostDto
+            {
+                PostSubject = p.PostSubject,
+                PostText = p.PostText,
+                AuthorName = ((ju?.UserId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID ? p.PostUsername : ju.Username),
+                AuthorId = ju?.UserId ?? Constants.ANONYMOUS_USER_ID,
+                AuthorColor = ju?.UserColour,
+                PostCreationTime = p.PostTime.ToUtcTime(),
+                PostModifiedTime = p.PostEditTime.ToUtcTime(),
+                PostId = p.PostId,
+                BbcodeUid = p.BbcodeUid,
+                AuthorHasAvatar = false,
+                LastEditTime = p.PostEditTime,
+                LastEditReason = p.PostEditReason,
+                EditCount = p.PostEditCount,
+                IP = p.PosterIp
+            };
+
+            post.AuthorHasAvatar = false;
+            await _renderingService.ProcessPost(post, Model.PageContext, Model.HttpContext, false);
+
+            <div class="RowMargin FlexRow">
+                @await Html.PartialAsync(
+                    "_SummaryPartial",
+                    new CustomPartials._SummaryPartialModel(post.AuthorId, post.AuthorName, post.AuthorColor, post.PostCreationTime, post.PostId.Value, UserDateFormat,
+                        post.AuthorHasAvatar, post.AuthorRank, null, null, null, true, false, null, null, null, null)
+                )
+                <div class="ForumContent">
+                    <span style="display:flex">
+                        <span class="PostTitle">
+                            <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@post.PostId">@Html.Raw(post.PostSubject)</a>
+                        </span>
+                        <span style="margin-left:auto">
+                            <span class="CollapsedMenu" onclick="expandCollapsedMenu('summary@(post.PostId.Value)', 'button@(post.PostId.Value)')" id="button@(post.PostId.Value)" style="color:#@post.AuthorColor;margin-left: auto; height:auto; width: min-content">
+                                @Html.Raw(post.AuthorName)
+                            </span>
+                        </span>
+                        <span style="margin-left: auto; min-width: max-content; padding-top: 3px; padding-bottom: 30px; margin-top: 4px; margin-bottom: 4px">
+                            <a href="javascript:posting.addquote(texts['@post.PostId'], '@post.AuthorName')">&#x1F4AC; Citează</a>
+                        </span>
+                    </span>
+                    <p>&nbsp;</p>
+                    <div style="max-width:100%; overflow-wrap: break-word" id="@post.PostId">
+                        <p style="clear:both">@Html.Raw(post.PostText)</p>
+                    </div>
+                </div>
+            </div>
+            <hr class="BoxSeparator" />
+        }
+    }
+}
+
 <script>
     var tribute = new Tribute({
         values: @Html.Raw(_writingService.ToCamelCaseJson(await _cacheService.GetFromCache<List<KeyValuePair<string, string>>>(await Model.GetActualCacheKey("Users", false)))),
@@ -349,6 +421,7 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
         posting.showExpirationDate(pollExpiration.value);
     }
 </script>
+
 @if (Action == PostingActions.NewPrivateMessage)
 {
     <script>
@@ -402,7 +475,7 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
         </div>
     </div>
     <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
-        <div style="margin-right:15px">[s]text tăiat[/s]</div>
+        <div style="margin-right:15px">[strike]text tăiat[/strike]</div>
         <div class="FlexRight PostInputWidth">
             <s>text tăiat</s>
         </div>
@@ -453,7 +526,7 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
             Pentru găzduire externă recomandăm <a href="https://imgur.com">imgur.com</a>.
         </div>
     </div>
-    <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+    <div class="FlexCenter Hide960Flex" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
         <div style="margin-right:15px">
             [list]<br />
             [*] elementul unu<br />
@@ -468,7 +541,7 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
             </ul>
         </div>
     </div>
-    <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+    <div class="FlexCenter Hide960Flex" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
         <div style="margin-right:15px">
             [list=a]<br />
             [*] elementul unu<br />
@@ -483,12 +556,12 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
             </ol>
         </div>
     </div>
-    <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+    <div class="FlexCenter Hide960Flex" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
         <div style="margin-right:15px">[*]</div>
         <div class="FlexRight PostInputWidth">element într-o listă - vezi mai sus</div>
     </div>
-    <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
-        <div style="margin-right:15px">[code]bloc preformatat de cod în chemar de dimensiune fixă[/code]</div>
+    <div class="FlexCenter Hide960Flex" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <div style="margin-right:15px">[code]bloc preformatat de cod în chenar de dimensiune fixă[/code]</div>
         <div class="FlexRight PostInputWidth">
             <span class="CodeBlock">bloc preformatat de cod în chenar de dimensiune fixă</span>
         </div>
@@ -509,7 +582,7 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
 
 @if (Model.PreviewablePost != null)
 {
-    <div class="MiddleBox" id="preview">
+    <div class="MiddleBox" id="preview" style="display:none">
         <h4 style="float:left">Previzualizează</h4>
         <div style="float:right; cursor:pointer; font-weight:bold; margin-top:10px; margin-bottom:10px" onclick="showElement('preview')">Închide [X]</div>
 
@@ -573,7 +646,7 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
                             </span>
                         </span>
                     </span>
-                    <div>
+                    <div style="max-width:100%; overflow-wrap: break-word">
                         <br />
                         @Html.Raw(Model.PreviewablePost.PostText)
                         @foreach (var attachment in Model.PreviewablePost.Attachments)
@@ -599,15 +672,6 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
                                 . Modificări în total: @Model.PreviewablePost.EditCount.
                             </div>
                         }
-                        @if (!string.IsNullOrWhiteSpace(Model.PreviewablePost.AuthorSignature))
-                        {
-                            <div class="Signature">
-                                <div style="width:25%; display:inline-block; border-bottom:solid 1px black">&nbsp;</div>
-                                <br />
-                                @Html.Raw(Model.PreviewablePost.AuthorSignature)
-                                <br /> <br />
-                            </div>
-                        }
                         <br />
                     </div>
                 </div>
@@ -622,4 +686,7 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
             }
         </script>
     </div>
+    <script>
+        showElement('preview', null, null, true);
+    </script>
 }

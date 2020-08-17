@@ -236,31 +236,27 @@ namespace Serverless.Forum.Services
             var cleanTextTemp = uidRegex.Replace(text, string.Empty);
             var noUid = tagRegex.Replace(cleanTextTemp, "$2");
 
-            var noSmileys = noUid;
-            var smileyRegex = new Regex("<!-- s(:?.+?) -->.+?<!-- s:?.+?:? -->", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-            var smileyMatches = smileyRegex.Matches(noSmileys);
-            try
+            string replace(string input, string pattern)
             {
-                foreach (Match m in smileyMatches)
+                var output = input;
+                var smileyRegex = new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                var smileyMatches = smileyRegex.Matches(output);
+                try
                 {
-                    noSmileys = noSmileys.Replace(m.Value, m.Groups[1].Value);
+                    foreach (Match m in smileyMatches)
+                    {
+                        output = output.Replace(m.Value, m.Groups[1].Value);
+                    }
                 }
+                catch { }
+                return output;
             }
-            catch { }
 
-            var noLinks = noSmileys;
-            var linkRegex = new Regex(@"<!-- m --><a\s+(?:[^>]*?\s+)?href=([""'])(.*?)\1.+?<!-- m -->", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-            var linkMatches = linkRegex.Matches(noLinks);
-            try
-            {
-                foreach (Match m in linkMatches)
-                {
-                    noLinks = noLinks.Replace(m.Value, m.Groups[2].Value);
-                }
-            }
-            catch { }
+            var noSmileys = replace(noUid, "<!-- s(:?.+?) -->.+?<!-- s:?.+?:? -->");
+            var noLinks = replace(noSmileys, @"<!-- m --><a\s+(?:[^>]*?\s+)?href=([""'])(.*?)\1.+?<!-- m -->");
+            var noComments = replace(noLinks, @"<!-- .* -->");
 
-            return noLinks;
+            return noComments;
         }
 
         public string ToCamelCaseJson<T>(T @object)

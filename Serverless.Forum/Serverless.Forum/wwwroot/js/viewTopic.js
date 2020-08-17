@@ -117,34 +117,15 @@
         }
     }
 
-    showReportViewer(postId, reportId, reportReasonTitle, reportReasonDescription, reportDetails) {
-        //let AddAntiForgeryToken = function (data) {
-        //    data.__RequestVerificationToken = $('#__AjaxAntiForgeryForm input[name=__RequestVerificationToken]').val();
-        //    return data;
-        //};
-
+    showReportViewer(postId, reportId, reportReasonTitle, reportReasonDescription, reportDetails, reportUsername) {
         $('#reportViewerReportPostId').val(postId);
         $('#reportViewerReportReasonTitle').text(reportReasonTitle);
         $('#reportViewerReportReasonDescription').text(reportReasonDescription);
         $('#reportViewerReportId').val(reportId);
         $('#reportViewerReportDetails').text(reportDetails);
+        $('#reportViewerReporter').text(reportUsername);
         $('#reportViewerEditMessage').prop("checked", false);
         $('#reportViewerDeleteMessage').prop("checked", false);
-
-        //var div = $('#' + postId).parent().parent();
-        //$.ajax({
-        //    method: 'POST',
-        //    url: '/ViewTopic?handler=takeSnapshot',
-        //    data: AddAntiForgeryToken({ html: /*encodeURIComponent(*/div.html()/*)*/ })
-        //}).done(function (msg) {
-        //    $('#reportViewerPostCapture').attr({
-        //        src: 'data:image/jpg;base64,' + msg,
-        //        width: '50%',
-        //        height: '50%'
-        //    })
-        //}).fail(function (msg) {
-        //    $('#reportViewerPostCapture').parent().html('Nu a putut fi generată o captură a mesajului: ' + msg.statusText);
-        //});
         showElement('reportViewer');
 
     }

@@ -32,7 +32,7 @@
 </form>
 @if (Model.Show)
 {
-    <form id="forumFields" method="post" asp-page-handler="ForumManagement" class="MiddleBox">
+    <form id="forumFields" method="post" asp-page-handler="ForumManagement" class="MiddleBox" style="display: none;">
         @if ((Model.Forum?.ForumId ?? 0) != 0)
         {
             <h4 style="float:left">Administrează forum - @Model.Forum?.ForumName</h4>
@@ -192,8 +192,6 @@
 @if (Model.Show)
 {
     <script>
-        window.onload = function () {
-            $('#forumFields').height(roundToNextEvenNumber($('#forumFields').height()));
-        }
+        showElement('forumFields', null, null, true);
     </script>
 }

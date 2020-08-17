@@ -139,6 +139,7 @@
     * Insert text at position
     */
     insert_text(text, spaces, popup) {
+        console.log(text);
         var textarea;
 
         if (!popup) {
@@ -180,8 +181,7 @@
     * Add inline attachment at position
     */
     attach_inline(index, filename) {
-        this.insert_text('[attachment=' + index + ']' + filename + '[/attachment]');
-        document.forms[this.form_name].elements[this.text_name].focus();
+        this.insert_text('[attachment=' + index + ']' + filename + '[/attachment]', false, false);
     }
 
     /**
@@ -224,55 +224,30 @@
     /**
     * Add quote text to message
     */
-    //addquote(post_id, username) {
-    //    var message_name = 'message_' + post_id;
-    //    this.theSelection = '';
-    //    var divarea = false;
+    addquote(text, username) {
+        this.theSelection = '';
 
-    //    if (document.all) {
-    //        divarea = document.all[message_name];
-    //    }
-    //    else {
-    //        divarea = document.getElementById(message_name);
-    //    }
+        // Get text selection - not only the post content :(
+        if (window.getSelection) {
+            this.theSelection = window.getSelection().toString();
+        }
+        else if (document.getSelection) {
+            this.theSelection = document.getSelection();
+        }
+        else if (document.selection) {
+            this.theSelection = document.selection.createRange().text;
+        }
 
-    //    // Get text selection - not only the post content :(
-    //    if (window.getSelection) {
-    //        this.theSelection = window.getSelection().toString();
-    //    }
-    //    else if (document.getSelection) {
-    //        this.theSelection = document.getSelection();
-    //    }
-    //    else if (document.selection) {
-    //        this.theSelection = document.selection.createRange().text;
-    //    }
+        if (this.theSelection == '' || typeof this.theSelection == 'undefined' || this.theSelection == null) {
+            this.theSelection = text;
+        }
 
-    //    if (this.theSelection == '' || typeof this.theSelection == 'undefined' || this.theSelection == null) {
-    //        if (divarea.innerHTML) {
-    //            this.theSelection = divarea.innerHTML.replace(/<br>/ig, '\n');
-    //            this.theSelection = this.theSelection.replace(/<br\/>/ig, '\n');
-    //            this.theSelection = this.theSelection.replace(/&lt\;/ig, '<');
-    //            this.theSelection = this.theSelection.replace(/&gt\;/ig, '>');
-    //            this.theSelection = this.theSelection.replace(/&amp\;/ig, '&');
-    //            this.theSelection = this.theSelection.replace(/&nbsp\;/ig, ' ');
-    //        }
-    //        else if (document.all) {
-    //            this.theSelection = divarea.innerText;
-    //        }
-    //        else if (divarea.textContent) {
-    //            this.theSelection = divarea.textContent;
-    //        }
-    //        else if (divarea.firstChild.nodeValue) {
-    //            this.theSelection = divarea.firstChild.nodeValue;
-    //        }
-    //    }
+        if (this.theSelection) {
+            this.insert_text('[quote="' + username + '"]' + this.theSelection + '[/quote]');
+        }
 
-    //    if (this.theSelection) {
-    //        this.insert_text('[quote="' + username + '"]' + this.theSelection + '[/quote]');
-    //    }
-
-    //    return;
-    //}
+        return;
+    }
 
     /**
     * From http://www.massless.org/mozedit/

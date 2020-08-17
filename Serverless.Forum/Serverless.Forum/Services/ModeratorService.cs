@@ -136,10 +136,15 @@ namespace Serverless.Forum.Services
 
         #region Post
 
-        public async Task<(string Message, bool? IsSuccess)> SplitPosts(int[] postIds, int destinationForumId)
+        public async Task<(string Message, bool? IsSuccess)> SplitPosts(int[] postIds, int? destinationForumId)
         {
             try
             {
+                if ((destinationForumId ?? 0) == 0)
+                {
+                    return ("Forumul destinație nu este valid.", false); 
+                }
+
                 if (!(postIds?.Any() ?? false))
                 {
                     return ("Această acțiune necesită măcar un mesaj selectat.", false);
@@ -153,7 +158,7 @@ namespace Serverless.Forum.Services
 
                 var topicResult = await _context.PhpbbTopics.AddAsync(new PhpbbTopics
                 {
-                    ForumId = destinationForumId,
+                    ForumId = destinationForumId.Value,
                     TopicTitle = posts.First().PostSubject,
                     TopicTime = posts.First().PostTime
                 });
@@ -185,10 +190,15 @@ namespace Serverless.Forum.Services
             }
         }
 
-        public async Task<(string Message, bool? IsSuccess)> MovePosts(int[] postIds, int destinationTopicId)
+        public async Task<(string Message, bool? IsSuccess)> MovePosts(int[] postIds, int? destinationTopicId)
         {
             try
             {
+                if ((destinationTopicId ?? 0) == 0)
+                {
+                    return ("Subiectul destinație nu este valid.", false);
+                }
+
                 if (!(postIds?.Any() ?? false))
                 {
                     return ("Această acțiune necesită măcar un mesaj selectat.", false);

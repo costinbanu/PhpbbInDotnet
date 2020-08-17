@@ -21,7 +21,7 @@ using System.Web;
 
 namespace Serverless.Forum.Pages
 {
-    [BindProperties, ValidateAntiForgeryToken]
+    [BindProperties, ValidateAntiForgeryToken, ResponseCache(Location = ResponseCacheLocation.None, NoStore = true, Duration = 0)]
     public class LoginModel : PageModel
     {
         private readonly ForumDbContext _context;

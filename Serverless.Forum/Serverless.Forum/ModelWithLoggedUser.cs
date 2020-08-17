@@ -19,7 +19,6 @@ using System.Web;
 
 namespace Serverless.Forum
 {
-    [ResponseCache(NoStore = true, Duration = 0)]
     public class ModelWithLoggedUser : PageModel
     {
         protected readonly ForumTreeService _forumService;

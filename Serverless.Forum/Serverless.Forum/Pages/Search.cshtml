@@ -17,7 +17,10 @@
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />
 </environment>
-<h2>Caută</h2>
+@if (!Model.IsAuthorSearch)
+{
+    <h2>Caută</h2>
+}
 <script type="text/javascript">
     window.onload = function () {
         onPostLoad();
@@ -56,53 +59,65 @@
         }
     }
 </script>
+@if (!Model.IsAuthorSearch)
+{
+    <form method="post">
+        <input asp-for="QueryString" type="hidden" />
+        <input asp-for="PageNum" type="hidden" />
+        <input asp-for="TotalResults" type="hidden" />
+        <input asp-for="AuthorId" type="hidden" id="authorId" />
 
-<form method="post">
-    <input asp-for="QueryString" type="hidden" />
-    <input asp-for="PageNum" type="hidden" />
-    <input asp-for="TotalResults" type="hidden" />
-    <input asp-for="AuthorId" type="hidden" id="authorId" />
-
-    <input asp-for="SearchText" type="text" placeholder="Caută după text..." style="width:100%" />
-    <span class="Caption">
-        Dacă doriți să căutați după o frază exactă, puneți-o între ghilimele.
-        De exemplu căutarea <b><i>autobuz galben</i></b> va returna mesaje care conțin fie <b><i>autobuz</i></b>, fie <b><i>galben</i></b>, fie amândouă.
-        Căutarea <b><i>"autobuz galben"</i></b> va returna mesajele care conțin fraza exactă "autobuz galben".
-    </span>
-    <span asp-validation-for="SearchText" class="validation"></span>
-    <p>&nbsp;</p>
-    <a href="javascript:showElement('advanced')">Căutare avansată</a>
-    <p>&nbsp;</p>
-    <div id="advanced" style="display:none">
-        <input asp-for="Author" type="text" placeholder="Caută după autor..." id="AuthorInput" style="width:100%" autocomplete="off" />
-        <p id="tributeHolder" style="position:relative">&nbsp;</p>
-        Caută în forumul...
-        @await Html.PartialAsync(
-            "_ForumTreePartial",
-             new CustomPartials._ForumTreePartialModel(
-                 tree: (await Model.GetForumTree()).Tree,
-                 topicData: await _context.PhpbbTopics.AsNoTracking().Select(t => new Contracts.MiniTopicDto(t)).ToListAsync(),
-                 forumId: Model.ForumId,
-                 topicId: Model.TopicId,
-                 constrainSize: true
-             ),
-            ViewData
-        )
-        <input asp-for="ForumId" type="hidden" id="ForumIdInput" />
+        <input asp-for="SearchText" type="text" placeholder="Caută după text..." style="width:100%" />
+        <span class="Caption">
+            Dacă doriți să căutați după o frază exactă, puneți-o între ghilimele.
+            De exemplu căutarea <b><i>autobuz galben</i></b> va returna mesaje care conțin fie <b><i>autobuz</i></b>, fie <b><i>galben</i></b>, fie amândouă.
+            Căutarea <b><i>"autobuz galben"</i></b> va returna mesajele care conțin fraza exactă "autobuz galben".
+        </span>
+        <span asp-validation-for="SearchText" class="validation"></span>
         <p>&nbsp;</p>
-        Caută în subiectul...<br />
-        <select name="TopicId" id="TopicIdDisplay" style="width:100%">
-            <option selected disabled value="-1">Caută în subiectul...</option>
-            <option value="0">Caută în toate subiectele</option>
-        </select>
+        <a href="javascript:showElement('advanced')">Căutare avansată</a>
         <p>&nbsp;</p>
-    </div>
-    <input type="submit" value="Trimite" />
-</form>
-
+        <div id="advanced" style="display:none">
+            <input asp-for="Author" type="text" placeholder="Caută după autor..." id="AuthorInput" style="width:100%" autocomplete="off" />
+            <p id="tributeHolder" style="position:relative">&nbsp;</p>
+            Caută în forumul...
+            @await Html.PartialAsync(
+                 "_ForumTreePartial",
+                  new CustomPartials._ForumTreePartialModel(
+                      tree: (await Model.GetForumTree()).Tree,
+                      topicData: await _context.PhpbbTopics.AsNoTracking().Select(t => new Contracts.MiniTopicDto(t)).ToListAsync(),
+                      forumId: Model.ForumId,
+                      topicId: Model.TopicId,
+                      constrainSize: true
+                  ),
+                 ViewData
+             )
+            <input asp-for="ForumId" type="hidden" id="ForumIdInput" />
+            <p>&nbsp;</p>
+            Caută în subiectul...<br />
+            <select name="TopicId" id="TopicIdDisplay" style="width:100%">
+                <option selected disabled value="-1">Caută în subiectul...</option>
+                <option value="0">Caută în toate subiectele</option>
+            </select>
+            <p>&nbsp;</p>
+        </div>
+        <input type="submit" value="Trimite" />
+    </form>
+}
+else
+{
+    var user = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == Model.AuthorId);
+    if (!string.IsNullOrWhiteSpace(user?.Username))
+    {
+        <h3>Mesaje scrise de @System.Web.HttpUtility.HtmlDecode(user.Username)</h3>
+    }
+}
 @if (Model.Posts != null && Model.Posts.Any())
 {
-    <h2>Rezultate</h2>
+    if (!Model.IsAuthorSearch)
+    {
+        <h2>Rezultate</h2>
+    }
     @await Html.PartialAsync(
         "_PaginationControlsPartial",
         new CustomPartials._PaginationControlsPartialModel(
@@ -117,7 +132,6 @@
         ViewData
     )
     <hr class="BoxSeparator" />
-    var index = 0;
     foreach (var post in Model.Posts)
     {
         post.AuthorHasAvatar = !string.IsNullOrWhiteSpace(post.UserAvatar);
@@ -126,23 +140,8 @@
         <div class="RowMargin FlexRow">
             @await Html.PartialAsync(
                 "_SummaryPartial",
-                new CustomPartials._SummaryPartialModel(
-                    post.AuthorId,
-                    post.AuthorName,
-                    post.AuthorColor,
-                    post.PostCreationTime,
-                    post.PostId.Value,
-                    dateFormat,
-                    post.AuthorHasAvatar,
-                    post.AuthorRank,
-                    null,
-                    null,
-                    null,
-                    true,
-                    false,
-                    null,
-                    null,
-                    null,
+                new CustomPartials._SummaryPartialModel(post.AuthorId, post.AuthorName, post.AuthorColor, post.PostCreationTime, post.PostId.Value, dateFormat,
+                    post.AuthorHasAvatar, post.AuthorRank, null, null, null, true, false, null, null, null,
                     _userService.HasPrivateMessages(CurrentUser) ? $"<a href=\"./Posting?handler=PrivateMessage&postId={post.PostId}\">&#x2709; Mesaj privat</a>" : null
                 )
             )
@@ -158,13 +157,12 @@
                     </span>
                 </span>
                 <p>&nbsp;</p>
-                <div style="max-width:100%">
+                <div style="max-width:100%; overflow-wrap: break-word">
                     <p style="clear:both">@Html.Raw(post.PostText)</p>
                 </div>
             </div>
         </div>
         <hr class="BoxSeparator" />
-        index++;
     }
 
     <p>&nbsp;</p>

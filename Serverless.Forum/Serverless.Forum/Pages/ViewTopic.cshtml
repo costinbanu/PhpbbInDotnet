@@ -59,7 +59,7 @@
 
 @if (Model.ForumId != null)
 {
-    <span>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@Model.ForumTitle</a></span>
+    <span>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(@Model.ForumTitle)</a></span>
 }
 <h2>Subiect: @Model.TopicTitle</h2>
 <span class="Caption">@Model.PostCount mesaj@(Model.PostCount == 1 ? "" : "e"), @Model.ViewCount vizualiz@(Model.ViewCount == 1 ? "are" : "ări").</span>
@@ -176,12 +176,12 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
 }
 @foreach (var p in Model.Posts)
 {
-    var ju = Model.Users.FirstOrDefault(u => u.UserId == p.PosterId);
-    var joinedAttachments = Model.Attachments.Where(a => a.PostMsgId == p.PostId);
-    var jr = Model.Ranks.FirstOrDefault(r => ju.UserRank == r.RankId);
-    var lastEditUser = Model.LastEditUsers.FirstOrDefault(u => u.UserId == p.PostEditUser);
+    var ju = Model.Users?.FirstOrDefault(u => u.UserId == p.PosterId);
+    var joinedAttachments = Model.Attachments?.Where(a => a.PostMsgId == p.PostId);
+    var jr = Model.Ranks?.FirstOrDefault(r => ju.UserRank == r.RankId);
+    var lastEditUser = Model.LastEditUsers?.FirstOrDefault(u => u.UserId == p.PostEditUser);
     var lastEditUsername = lastEditUser == null ? "Anonymous" : lastEditUser.Username;
-    var report = Model.Reports.FirstOrDefault(r => r.PostId == p.PostId);
+    var report = Model.Reports?.FirstOrDefault(r => r.PostId == p.PostId);
 
     var post = new Contracts.PostDto
     {
@@ -197,7 +197,6 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
         BbcodeUid = p.BbcodeUid,
         Unread = reachedAnUnreadPost || (reachedAnUnreadPost = await Model.IsPostUnread(p.ForumId, p.TopicId, p.PostId)),
         AuthorHasAvatar = !string.IsNullOrWhiteSpace(ju?.UserAvatar),
-        //AuthorSignature = _renderingService.BbCodeToHtml(ju?.UserSig, ju?.UserSigBbcodeUid),
         AuthorRank = jr?.RankTitle,
         LastEditTime = p.PostEditTime,
         LastEditUser = lastEditUsername,
@@ -210,6 +209,15 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
         ReporterId = report?.UserId
     };
 
+    if ((report?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
+    {
+        var user = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == report.UserId);
+        if ((user?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
+        {
+            post.ReporterUsername = HttpUtility.HtmlDecode(user.Username);
+        }
+    }
+
     await _renderingService.ProcessPost(post, Model.PageContext, Model.HttpContext, true);
 
     var rowClass = string.Empty;
@@ -219,7 +227,7 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
     }
     else
     {
-        rowClass = post.Unread ? "Unread" : ""; // $"Color{index % 2}";
+        rowClass = post.Unread ? "Unread" : "";
     }
     <div class="RowMargin @rowClass">
         <div class="FlexRow">
@@ -240,11 +248,11 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
                         </span>
                     </span>
                 </span>
-                <div style="max-width:100%">
+                <div style="max-width:100%; overflow-wrap: break-word">
                     @if (post.ReportId.HasValue && (IsMod || post.ReporterId == CurrentUser.UserId))
                     {
                         var reason = await _context.PhpbbReportsReasons.AsNoTracking().FirstOrDefaultAsync(x => x.ReasonId == post.ReportReasonId);
-                        <a href="javascript:vt.showReportViewer(@post.PostId, @post.ReportId, '@reason.ReasonTitle', '@reason.ReasonDescription', '@post.ReportDetails')" style="font-weight:bold; font-size:1.2em">Arată raportul</a><br />
+                        <a href="javascript:vt.showReportViewer(@post.PostId, @post.ReportId, '@reason.ReasonTitle', '@reason.ReasonDescription', '@post.ReportDetails', '@post.ReporterUsername')" style="font-weight:bold; font-size:1.2em">Arată raportul</a><br />
                     }
                     <br />
                     @Html.Raw(post.PostText)
@@ -258,9 +266,9 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
                     @if (!IsAnonymous || post.LastEditTime > 0)
                     {
                         <hr class="SubtypeSeparator" />
-                    }                    @if (post.LastEditTime > 0)
+                    }                    
+                    @if (post.LastEditTime > 0 && p != Model.Posts.Last())
                     {
-                        @*<hr />*@
                         <div class="Caption" style="color:#495d6c">
                             Ultima dată modificat de @post.LastEditUser
                             <script>
@@ -268,33 +276,23 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
                             </script>
                             @if (!string.IsNullOrWhiteSpace(post.LastEditReason))
                             {
-                                <span>. Motiv: @post.LastEditReason</span>
+                                <span>. Motiv: @HttpUtility.HtmlDecode(post.LastEditReason)</span>
                             }
                             . Modificări în total: @post.EditCount.
                         </div>
                         <p></p>
                     }
-                    @*@if (!string.IsNullOrWhiteSpace(post.AuthorSignature))
-                        {
-                            <div class="Signature">
-                                <div style="width:25%; display:inline-block; border-bottom:solid 1px black">&nbsp;</div>
-                                <br />
-                                @Html.Raw(post.AuthorSignature)
-                                <br /> <br />
-                            </div>
-                        }*@
-                    @*<hr />*@
                     <div class="PostActions">
                         @if ((!Model.IsLocked || IsMod || IsAdmin) && !IsAnonymous && (p != Model.Posts.Last() || !Model.Paginator.IsLastPage))
                         {
                             <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">
                                 @if (Model.IsLocked)
                                 {
-                                    <span>&#x1F5E8; Subiect închis</span>
+                                    <span>&#x1F4AC; Subiect închis</span>
                                 }
                                 else
                                 {
-                                    <span>&#x1F5E8; Răspunde cu citat</span>
+                                    <span>&#x1F4AC; Răspunde cu citat</span>
                                 }
                             </a>
                         }
@@ -329,7 +327,6 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
                     </div>
                 </div>
             </div>
-            @*<p>&nbsp;</p>*@
         </div>
     </div>
     <hr />
@@ -354,7 +351,7 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
 }
 @if ((!Model.IsLocked || IsMod || IsAdmin) && !IsAnonymous)
 {
-    <button onclick="location.href='/Posting?forumId=@Model.ForumId&topicId=@Model.TopicId&handler=forumPost'" type="button">
+    <button onclick="location.href='/Posting?forumId=@Model.ForumId&topicId=@Model.TopicId&pageNum=@Model.PageNum&handler=forumPost'" type="button">
         &#x1F4DD;
         @if (Model.IsLocked)
         {
@@ -521,10 +518,18 @@ else if (!IsAnonymous)
         <p>&nbsp;</p>
         <div class="FlexCenter">
             <div style="font-weight:bold; text-align: right">
-                Motiv:
+                Motiv
             </div>
             <div class="FlexRight PostInputWidth">
                 <span id="reportViewerReportReasonTitle"></span> &nbsp;(<span id="reportViewerReportReasonDescription"></span>)
+            </div>
+        </div>
+        <p></p>
+        <div class="FlexCenter">
+            <div style="font-weight:bold; text-align: right">
+                Raportor
+            </div>
+            <div class="FlexRight PostInputWidth" id="reportViewerReporter">
             </div>
         </div>
         <p></p>
@@ -535,15 +540,6 @@ else if (!IsAnonymous)
             <div class="FlexRight PostInputWidth" id="reportViewerReportDetails">
             </div>
         </div>
-        @*<p></p>
-            <div class="FlexCenter">
-                <div style="font-weight:bold; text-align: right">
-                    Salvează captura mesajului:
-                </div>
-                <div class="FlexRight PostInputWidth">
-                    <img src="~/images/loading.gif" id="reportViewerPostCapture" />
-                </div>
-            </div>*@
         @if (IsMod)
         {
             <form asp-page-handler="ManageReport" method="post">
@@ -558,7 +554,6 @@ else if (!IsAnonymous)
                 <input type="submit" value="Închide raport" onclick="vt.confirmDeleteReportedPost()" />
                 @Html.AntiForgeryToken()
             </form>
-            @*<form id="__AjaxAntiForgeryForm" action="#" method="post">@Html.AntiForgeryToken()</form>*@
         }
     </div>
 }

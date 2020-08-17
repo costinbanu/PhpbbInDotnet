@@ -330,6 +330,11 @@ else if (Model.ViewAsAnother)
         </div>
         <div class="FlexRight PostInputWidth">
             @Model.TotalPosts
+            @if (Model.TotalPosts > 0)
+            {
+                <span>&nbsp;-&nbsp;</span>
+                <a asp-page="Search" asp-page-handler="byAuthor" asp-route-authorId="@Model.CurrentUser.UserId">Arată mesajele utilizatorului</a>
+            }
         </div>
     </div>
     <p></p>

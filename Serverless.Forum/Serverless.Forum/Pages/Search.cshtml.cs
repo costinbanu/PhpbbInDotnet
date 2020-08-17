@@ -14,11 +14,9 @@ using System.Web;
 
 namespace Serverless.Forum.Pages
 {
-    [ValidateAntiForgeryToken]
+    [ValidateAntiForgeryToken, ResponseCache(Location = ResponseCacheLocation.None, NoStore = true, Duration = 0)]
     public class SearchModel : ModelWithLoggedUser
     {
-        private readonly BBCodeRenderingService _renderingService;
-
         [BindProperty(SupportsGet = true)]
         public string QueryString { get; set; }
 
@@ -42,6 +40,7 @@ namespace Serverless.Forum.Pages
 
         [BindProperty(SupportsGet = true)]
         public int? TotalResults { get; set; }
+
         [BindProperty(SupportsGet = true)]
         public bool? DoSearch { get; set; }
 
@@ -50,12 +49,11 @@ namespace Serverless.Forum.Pages
         public IEnumerable<ExtendedPostDisplay> Posts { get; private set; }
 
         public Paginator Paginator { get; private set; }
+        public bool IsAuthorSearch { get; private set; }
 
-        public SearchModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, BBCodeRenderingService renderingService)
+        public SearchModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
             : base(context, forumService, userService, cacheService)
-        {
-            _renderingService = renderingService;
-        }
+        { }
 
         public async Task OnGet()
         {
@@ -102,6 +100,13 @@ namespace Serverless.Forum.Pages
             }
         }
 
+        public async Task OnGetByAuthor()
+        {
+            IsAuthorSearch = true;
+            await OnGet();
+            await Search();
+        }
+
         public async Task OnPost()
         {
             await OnGet();
@@ -121,7 +126,7 @@ namespace Serverless.Forum.Pages
 
         private async Task Search()
         {
-            if (string.IsNullOrWhiteSpace(SearchText))
+            if (string.IsNullOrWhiteSpace(SearchText) && !IsAuthorSearch)
             {
                 ModelState.AddModelError(nameof(SearchText), "Introduceți unul sau mai multe cuvinte!");
                 return;

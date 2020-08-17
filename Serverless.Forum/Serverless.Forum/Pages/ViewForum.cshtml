@@ -40,7 +40,7 @@
 
 @if ((Model.ParentForumId ?? 0) != 0 && !Model.IsNewPostView && !Model.IsOwnPostView)
 {
-    <span>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@Model.ParentForumTitle</a></span>
+    <span>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@HttpUtility.HtmlDecode(Model.ParentForumTitle)</a></span>
 }
 else
 {
@@ -125,7 +125,7 @@ else
                 allowPaginationChange: true,
                 back: $"/ViewForum?handler={view}Posts&pageNum={(Model.PageNum ?? 1) - 1}",
                 forward: $"/ViewForum?handler={view}Posts&pageNum={(Model.PageNum ?? 1) + 1}",
-                includeEasyNavigation: true
+                includeEasyNavigation: false
             ),
             ViewData
         );
@@ -208,10 +208,7 @@ else
                      )
                  )
             </div>
-            @if (topic != topics.Last() || (topicGroup.TopicType == TopicType.Important && topicGroup != Model.Topics.Last()))
-            {
-                <hr class="BoxSeparator" />
-            }
+            <hr class="BoxSeparator" />
         }
     }
 

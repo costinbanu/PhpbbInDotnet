@@ -20,7 +20,7 @@ using System.Web;
 
 namespace Serverless.Forum.Pages
 {
-    [ValidateAntiForgeryToken]
+    [ValidateAntiForgeryToken, ResponseCache(Location = ResponseCacheLocation.None, NoStore = true, Duration = 0)]
     public class PostingModel : ModelWithLoggedUser
     {
         [BindProperty, MaxLength(255, ErrorMessage = "Titlul trebuie să aibă maxim 255 caractere.")]
@@ -34,7 +34,10 @@ namespace Serverless.Forum.Pages
         
         [BindProperty(SupportsGet = true)]
         public int? TopicId { get; set; }
-        
+
+        [BindProperty(SupportsGet = true)]
+        public int? PageNum { get; set; }
+
         [BindProperty(SupportsGet = true)]
         public int? PostId { get; set; }
         
@@ -361,13 +364,12 @@ namespace Serverless.Forum.Pages
                         AuthorId = postAuthor.UserId,
                         AuthorName = postAuthor.Username,
                         AuthorRank = (await _context.PhpbbRanks.AsNoTracking().FirstOrDefaultAsync(x => x.RankId == rankId))?.RankTitle,
-                        AuthorSignature = _renderingService.BbCodeToHtml(postAuthor.UserSig, postAuthor.UserSigBbcodeUid),
                         BbcodeUid = _utils.NewBbcodeUid(),
                         PostCreationTime = postTime,
-                        EditCount = (short)((currentPost?.PostEditCount ?? 0) + 1),
-                        LastEditReason = currentPost?.PostEditReason,
-                        LastEditTime = DateTime.UtcNow.ToUnixTimestamp(),
-                        LastEditUser = (await GetCurrentUserAsync()).Username,
+                        EditCount = (short)(action == PostingActions.EditForumPost ? (currentPost?.PostEditCount ?? 0) + 1 : 0),
+                        LastEditReason = action == PostingActions.EditForumPost ? currentPost?.PostEditReason : string.Empty,
+                        LastEditTime = action == PostingActions.EditForumPost ? DateTime.UtcNow.ToUnixTimestamp() : 0,
+                        LastEditUser = action == PostingActions.EditForumPost ? (await GetCurrentUserAsync()).Username : string.Empty,
                         PostId = currentPost?.PostId ?? 0,
                         PostSubject = HttpUtility.HtmlEncode(PostTitle),
                         PostText = _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText))
@@ -487,6 +489,19 @@ namespace Serverless.Forum.Pages
 
         public async Task<string> GetActualCacheKey(string key, bool isPersonalizedData)
             => isPersonalizedData ? $"{(await GetCurrentUserAsync()).UserId}_{ForumId}_{TopicId ?? 0}_{key ?? throw new ArgumentNullException(nameof(key))}" : key;
+
+        public async Task<(List<PhpbbPosts> posts, List<PhpbbUsers> users)> GetPreviousPosts(PostingActions action)
+        {
+            if(((TopicId.HasValue && PageNum.HasValue) || PostId.HasValue) && (action == PostingActions.EditForumPost || action == PostingActions.NewForumPost))
+            {
+                var (previousPosts, _, _) = await _postService.GetPostPageAsync((await GetCurrentUserAsync()).UserId, TopicId, PageNum, PostId);
+                using var connection = _context.Database.GetDbConnection();
+                await connection.OpenIfNeeded();
+                var users = (await connection.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id IN @userIds", new { userIds = previousPosts.Select(pp => pp.PosterId) })).ToList();
+                return (previousPosts, users);
+            }
+            return (new List<PhpbbPosts>(), new List<PhpbbUsers>());
+        }
 
         private async Task Init(PostingActions action, bool CanCreatePoll, string Header, PhpbbForums curForum)
         {
@@ -670,7 +685,6 @@ namespace Serverless.Forum.Pages
                 processAttachments(attachList, post.PostId);
                 
                 await _postService.CascadePostAdd(_context, post, false);
-                //await _context.PhpbbAttachments.AddRangeAsync(attachList);
                 await insertAttachments(attachList);
             }
             else
@@ -680,10 +694,10 @@ namespace Serverless.Forum.Pages
                 post.BbcodeBitfield = bitfield;
                 processAttachments(attachList, post.PostId);
 
-                //await _context.PhpbbAttachments.AddRangeAsync(attachList.Where(a => a.AttachId == 0));
                 await insertAttachments(attachList.Where(a => a.AttachId == 0));
                 _context.PhpbbAttachments.UpdateRange(attachList.Where(a => a.AttachId != 0));
 
+                post.PostAttachment = (byte)(attachList.Any(a => a.AttachId == 0) && post.PostAttachment == 0 ? 1 : 0);
                 await _context.SaveChangesAsync();
                 await _postService.CascadePostEdit(_context, post);
             }

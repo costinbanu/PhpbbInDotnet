@@ -81,6 +81,10 @@
     display: inline-block;
 }
 
+.Hide960Flex {
+    display: flex;
+}
+
 .Show960 {
     display: none !important;
 }
@@ -100,6 +104,10 @@
     }
 
     .Hide960 {
+        display: none !important;
+    }
+
+    .Hide960Flex {
         display: none !important;
     }
 
