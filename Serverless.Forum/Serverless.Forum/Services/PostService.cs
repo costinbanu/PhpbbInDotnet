@@ -29,9 +29,9 @@ namespace Serverless.Forum.Services
 
             using var multi = await connection.QueryMultipleAsync("CALL `forum`.`get_posts`(@userId, @topicId, @page, @postId);", new { userId, topicId, page, postId });
             var toReturn = (
-                Posts: multi.Read<PhpbbPosts>().ToList(),
-                Page: multi.Read<int>().Single(),
-                Count: multi.Read<int>().Single()
+                Posts: (await multi.ReadAsync<PhpbbPosts>()).ToList(),
+                Page: await multi.ReadSingleAsync<int>(),
+                Count: unchecked((int)await  multi.ReadSingleAsync<long>())
             );
 
             return toReturn;
@@ -54,7 +54,7 @@ namespace Serverless.Forum.Services
                             JOIN phpbb_poll_votes v ON u.user_id = v.vote_user_id
                            WHERE v.poll_option_id IN @optionIds
                              AND v.topic_id IN @topicIds",
-                        new { optionIds = options.Select(o => o.PollOptionId), topicIds = options.Select(o => o.TopicId) }
+                        new { optionIds = options.Select(o => o.PollOptionId).DefaultIfEmpty(), topicIds = options.Select(o => o.TopicId).DefaultIfEmpty() }
                     );
                 }
                 else

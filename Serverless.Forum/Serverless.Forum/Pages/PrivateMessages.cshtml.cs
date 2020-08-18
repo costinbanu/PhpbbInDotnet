@@ -58,6 +58,7 @@ namespace Serverless.Forum.Pages
                 InboxPaginator = new Paginator(
                     count: await _context.PhpbbPrivmsgsTo.CountAsync(x => x.UserId == userId && x.AuthorId != x.UserId),
                     pageNum: InboxPage ?? 1,
+                    topicId: null,
                     link: "/PrivateMessages?show=Inbox",
                     pageNumKey: nameof(InboxPage)
                 );
@@ -65,6 +66,7 @@ namespace Serverless.Forum.Pages
                 SentPaginator = new Paginator(
                     count: await _context.PhpbbPrivmsgsTo.CountAsync(x => x.AuthorId == userId && x.AuthorId != x.UserId),
                     pageNum: SentPage ?? 1,
+                    topicId: null,
                     link: "/PrivateMessages?show=Sent",
                     pageNumKey: nameof(SentPage)
                 );

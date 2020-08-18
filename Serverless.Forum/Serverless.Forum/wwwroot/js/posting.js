@@ -28,12 +28,6 @@
         this.isEditAction = isEditAction;
 
         this.userDateFormat = userDateFormat;
-
-        this.showPollText = 'Arată opțiuni chestionar';
-        this.hidePollText = 'Ascunde opțiuni chestionar';
-        this.showAttachText = 'Arată opțiuni fișiere atașate';
-        this.hideAttachText = 'Ascunde opțiuni fișiere atașate';
-
     }
     /**
     * Shows the help messages in the helpline window
@@ -139,7 +133,6 @@
     * Insert text at position
     */
     insert_text(text, spaces, popup) {
-        console.log(text);
         var textarea;
 
         if (!popup) {
@@ -400,30 +393,55 @@
         }
     }
 
-    togglePanel(panelId, buttonId, textWhenVisible, textWhenHidden) {
-        showElement(
-            panelId,
-            function () {
-                $('#' + buttonId).text(textWhenHidden);
-            },
-            function () {
-                $('#' + buttonId).text(textWhenVisible)
-            }
-        );
-    }
+    //togglePanel(panelId, buttonId, textWhenVisible, textWhenHidden) {
+    //    showElement(
+    //        panelId,
+    //        function () {
+    //            $('#' + buttonId).text(textWhenHidden);
+    //        },
+    //        function () {
+    //            $('#' + buttonId).text(textWhenVisible)
+    //        }
+    //    );
+    //}
 
     toggleAttach() {
         if ($('#pollPanel').is(':visible')) {
-            this.togglePanel('pollPanel', 'pollButton', this.hidePollText, this.showPollText);
+            //this.togglePanel('pollPanel', 'pollButton', this.hidePollText, this.showPollText);
+            showElement('pollPanel');
         }
-        this.togglePanel('attachPanel', 'attachButton', this.hideAttachText, this.showAttachText);
+        if ($('#emojiPanel').is(':visible')) {
+            //this.togglePanel('pollPanel', 'pollButton', this.hidePollText, this.showPollText);
+            showElement('emojiPanel');
+        }
+        //this.togglePanel('attachPanel', 'attachButton', this.hideAttachText, this.showAttachText);
+        showElement('attachPanel');
     }
 
     togglePoll() {
         if ($('#attachPanel').is(':visible')) {
-            posting.togglePanel('attachPanel', 'attachButton', this.hideAttachText, this.showAttachText);
+            //posting.togglePanel('attachPanel', 'attachButton', this.hideAttachText, this.showAttachText);
+            showElement('attachPanel')
         }
-        this.togglePanel('pollPanel', 'pollButton', this.hidePollText, this.showPollText);
+        if ($('#emojiPanel').is(':visible')) {
+            //this.togglePanel('pollPanel', 'pollButton', this.hidePollText, this.showPollText);
+            showElement('emojiPanel');
+        }
+        //this.togglePanel('pollPanel', 'pollButton', this.hidePollText, this.showPollText);
+        showElement('pollPanel');
+    }
+
+    toggleEmoji() {
+        if ($('#attachPanel').is(':visible')) {
+            //posting.togglePanel('attachPanel', 'attachButton', this.hideAttachText, this.showAttachText);
+            showElement('attachPanel')
+        }
+        if ($('#pollPanel').is(':visible')) {
+            //this.togglePanel('pollPanel', 'pollButton', this.hidePollText, this.showPollText);
+            showElement('pollPanel');
+        }
+        //this.togglePanel('emojiPanel', 'emojiButton', this.hidePollText, this.showPollText);
+        showElement('emojiPanel');
     }
 
     submitAttachments() {

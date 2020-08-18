@@ -72,13 +72,17 @@ namespace Serverless.Forum
                     }
                     else
                     {
-                        using var connection = _context.Database.GetDbConnection();
-                        await connection.OpenIfNeeded();
-                        var dbUser = await connection.QuerySingleOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users where user_id = @UserId", new { _currentUser.UserId });
+                        var dbUser = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == _currentUser.UserId);
                         if (dbUser == null || dbUser.UserInactiveTime > 0)
                         {
                             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                             await _cacheService.SetInCache(key, true);
+                        }
+                        else if (DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()).TotalHours > 1)
+                        {
+                            _context.Update(dbUser);
+                            dbUser.UserLastvisit = DateTime.UtcNow.ToUnixTimestamp();
+                            await _context.SaveChangesAsync();
                         }
                     }
                 }
@@ -154,7 +158,7 @@ namespace Serverless.Forum
                 await connection.OpenIfNeeded();
                 post = unchecked((int)((await connection.QuerySingleOrDefaultAsync(
                     "SELECT post_id, post_time FROM phpbb_posts WHERE post_id IN @postIds HAVING post_time = MIN(post_time)",
-                    new { postIds = item.Posts }
+                    new { postIds = item.Posts.DefaultIfEmpty() }
                 ))?.post_id ?? 0u));
             }
             return post;

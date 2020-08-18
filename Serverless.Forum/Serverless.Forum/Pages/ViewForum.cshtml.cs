@@ -128,13 +128,13 @@ namespace Serverless.Forum.Pages
                         GROUP BY t.topic_id
                         ORDER BY t.topic_last_post_time DESC
                         LIMIT @pageNum, @pageSize",
-                        new { topicList, pageNum = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE, pageSize = Constants.DEFAULT_PAGE_SIZE }
+                        new { topicList = topicList.DefaultIfEmpty(), pageNum = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE, pageSize = Constants.DEFAULT_PAGE_SIZE }
                     );
                 }
 
                 Topics = new List<TopicTransport> { new TopicTransport { Topics = topics } };
                 IsNewPostView = true;
-                Paginator = new Paginator(tree.Tracking.Count, PageNum ?? 1, "/ViewForum?handler=NewPosts&pageNum=1");
+                Paginator = new Paginator(count: tree.Tracking.Count, pageNum: PageNum ?? 1, link: "/ViewForum?handler=NewPosts&pageNum=1", topicId: null);
                 return Page();
             });
 
@@ -158,7 +158,7 @@ namespace Serverless.Forum.Pages
 
                 Topics = new List<TopicTransport> { new TopicTransport { Topics = topics.OrderByDescending(t => t.LastPostTime) } };
                 IsOwnPostView = true;
-                Paginator = new Paginator(totalCount, PageNum ?? 1, "/ViewForum?handler=OwnPosts&pageNum=1");
+                Paginator = new Paginator(count: totalCount, pageNum: PageNum ?? 1, link: "/ViewForum?handler=OwnPosts&pageNum=1", topicId: null);
                 return Page();
             });
 

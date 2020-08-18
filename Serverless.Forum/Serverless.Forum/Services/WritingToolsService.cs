@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace Serverless.Forum.Services
 {
@@ -231,9 +232,14 @@ namespace Serverless.Forum.Services
 
         public string CleanBbTextForDisplay(string text, string uid)
         {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return string.Empty;
+            }
+
             var uidRegex = new Regex($":{uid}", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
             var tagRegex = new Regex(@"(:[a-z])(\]|:)", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-            var cleanTextTemp = uidRegex.Replace(text, string.Empty);
+            var cleanTextTemp = uidRegex.Replace(HttpUtility.HtmlDecode(text), string.Empty);
             var noUid = tagRegex.Replace(cleanTextTemp, "$2");
 
             string replace(string input, string pattern)
@@ -254,7 +260,7 @@ namespace Serverless.Forum.Services
 
             var noSmileys = replace(noUid, "<!-- s(:?.+?) -->.+?<!-- s:?.+?:? -->");
             var noLinks = replace(noSmileys, @"<!-- m --><a\s+(?:[^>]*?\s+)?href=([""'])(.*?)\1.+?<!-- m -->");
-            var noComments = replace(noLinks, @"<!-- .* -->");
+            var noComments = replace(noLinks, @"<!-- .*? -->");
 
             return noComments;
         }

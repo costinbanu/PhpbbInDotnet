@@ -152,9 +152,9 @@ namespace Serverless.Forum.Pages
                     "SELECT r.* FROM phpbb_ranks r JOIN phpbb_users u on u.user_rank = r.rank_id WHERE u.user_id IN @authors;",
                     new
                     {
-                        authors = Posts.Select(p => p.PosterId),
-                        editors = Posts.Select(p => p.PostEditUser),
-                        posts = Posts.Select(p => p.PostId)
+                        authors = Posts.Select(p => p.PosterId).DefaultIfEmpty(),
+                        editors = Posts.Select(p => p.PostEditUser).DefaultIfEmpty(),
+                        posts = Posts.Select(p => p.PostId).DefaultIfEmpty()
                     }
                 );
 
@@ -269,7 +269,7 @@ namespace Serverless.Forum.Pages
                     return Forbid("Can't change votes for this poll.");
                 }
 
-                await conn.ExecuteAsync("DELETE FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @usrId AND poll_option_id NOT IN @votes", new { topicId, usrId, votes });
+                await conn.ExecuteAsync("DELETE FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @usrId AND poll_option_id NOT IN @votes", new { topicId, usrId, votes = votes.DefaultIfEmpty() });
 
                 foreach (var vote in votes)
                 {

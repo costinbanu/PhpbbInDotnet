@@ -95,11 +95,11 @@ h3 {
     }
 
 .PostQuote {
-    background-color: /*#fef6e9*/ #EBEADD;
+    background-color: #fef6e9 /*#EBEADD*/;
     border: solid 1px #DBDBCE;
     margin: 20px 0px 20px 0px !important;
     font-size: 1em !important;
-    /*max-width: 95%;*/
+    border-radius: 3px;
 }
 
 .CodeBlock {
@@ -109,23 +109,13 @@ h3 {
     display: inline-block;
     min-height: 100px;
     max-height: 100px;
+    width: 97%;
     overflow-y: scroll;
     background-color: white;
     border: solid 1px gray;
+    border-radius: 3px;
     margin: 10px 20px 10px 10px;
     padding: 5px 5px;
-}
-
-.Color0 {
-    background-color: /*#eaf4f4*/ #E1E9E9;
-}
-
-.Color1 {
-    background-color: /*#f8faf9*/ #e1ebf2;
-}
-
-.Color {
-    background-color: aliceblue;
 }
 
 .FlexRow {
@@ -143,18 +133,25 @@ h3 {
 }
 
 .Unread {
-    border: solid 2px /*#ffcc00*/ #ff9000 !important;
-    background-color: /*#fffcf2*/ #fdfaf4 !important;
+    border: solid 1px #ff9000 !important;
+    background-color: #fdfaf4 !important;
     margin-top: 3px;
     margin-bottom: 3px;
+    border-radius: 3px;
 }
 
     .Unread blockquote {
         border: solid 1px #e2c088;
+        background-color: #EBEADD;
     }
+
+.UnreadTitle {
+    color: #ff9000 !important;
+}
 
 .Highlight {
     border: solid 2px #87ceeb;
+    border-radius: 3px;
 }
 
 .Category {
@@ -311,10 +308,11 @@ label {
 
 .headerImg {
     width: 682px;
-    height: 100px;
+    height: 110px;
     background-image: url("../images/forumlogo-full.png");
     background-size: contain;
     background-position: left;
+    background-repeat: no-repeat;
 }
 
 .Caption {
@@ -394,8 +392,8 @@ label {
 .MiddleBox {
     position: fixed;
     background-color: rgba(255, 255, 255, 0.95);
-    width: 75%;
-    height: 75%;
+    width: 85%;
+    height: 85%;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
@@ -497,7 +495,7 @@ label {
 @media (max-width:1160px) and (min-width:769px) {
     .headerImg {
         width: 325px;
-        height: 77px;
+        height: 110px;
         background-image: url("../images/forumlogo-medium.png");
         background-size: contain;
         background-repeat: no-repeat;

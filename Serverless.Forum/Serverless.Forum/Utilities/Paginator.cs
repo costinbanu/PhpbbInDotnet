@@ -7,19 +7,28 @@ namespace Serverless.Forum.Utilities
 {
     public class Paginator
     {
-        public _PaginationPartialModel Pagination { get; }
+        public _PaginationPartialModel Pagination { get; private set; }
 
-        public bool IsFirstPage { get; }
+        public bool IsFirstPage { get; private set; }
 
-        public bool IsLastPage { get; }
+        public bool IsLastPage { get; private set; }
 
-        public int CurrentPage { get; }
+        public int CurrentPage { get; private set; }
 
         public List<SelectListItem> PostsPerPage { get; }
 
         public bool IsAnonymous { get; }
 
         public int PageSize { get; }
+
+        public Paginator(int count, int pageNum, string link, int? pageSize = null, string pageNumKey = "PageNum")
+        {
+            PostsPerPage = new List<SelectListItem>();
+            PageSize = pageSize ?? Constants.DEFAULT_PAGE_SIZE;
+            IsAnonymous = true;
+
+            Init(count, pageNum, link, pageNumKey);
+        }
 
         public Paginator(int count, int pageNum, string link, int? topicId = null, LoggedUser usr = null, string pageNumKey = "PageNum")
         {
@@ -42,6 +51,12 @@ namespace Serverless.Forum.Utilities
             PostsPerPage.ForEach(ppp => ppp.Selected = int.TryParse(ppp.Value, out var value) && value == PageSize);
             Pagination = new _PaginationPartialModel(link, count, PageSize, pageNum, pageNumKey);
 
+            Init(count, pageNum, link, pageNumKey);
+        }
+
+        void Init(int count, int pageNum, string link, string pageNumKey)
+        {
+            Pagination = new _PaginationPartialModel(link, count, PageSize, pageNum, pageNumKey);
             var noOfPages = (count / PageSize) + (count % PageSize == 0 ? 0 : 1);
             if (pageNum > noOfPages)
             {

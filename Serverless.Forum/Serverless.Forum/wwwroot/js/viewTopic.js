@@ -13,8 +13,7 @@
         if (this.postId != -1) {
             var element = $("#" + this.postId);
             var elementTop = element.offset().top;
-            var headerHeight = $("#topBanner").outerHeight(true);
-            window.scrollTo(0, elementTop > headerHeight ? elementTop - headerHeight : elementTop);
+            window.scrollTo(0, elementTop);
             var container = element.parent().parent();
             if (container && this.highlight) {
                 container.addClass("Highlight");

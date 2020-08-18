@@ -160,14 +160,14 @@ namespace Serverless.Forum.Pages
                 TotalResults = unchecked((int)(await multi.ReadAsync<long>()).Single());
             }
 
-            Paginator = new Paginator(TotalResults.Value, PageNum.Value, GetSearchLinkForPage(PageNum.Value + 1));
+            Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum.Value, link: GetSearchLinkForPage(PageNum.Value + 1), topicId: null);
         }
 
         public class ExtendedPostDisplay : PostDto
         {
             public string UserAvatar { get; set; }
-            public string UserSig { get; set; }
-            public string UserSigBbcodeUid { get; set; }
+            public int ForumId { get; set; }
+            public string TopicTitle { get; set; }
         }
     }
 }

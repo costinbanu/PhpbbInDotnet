@@ -24,12 +24,14 @@ BEGIN
 				from_unixtime(p.post_time) as post_creation_time,
 				u.user_colour as author_color,
 				u.user_avatar,
-				u.user_sig,
-				u.user_sig_bbcode_uid,
-				p.post_time
+				p.post_time,
+                t.forum_id,
+                t.topic_title
 		   FROM phpbb_posts p
 		   JOIN phpbb_users u
-			ON p.poster_id = u.user_id
+			 ON p.poster_id = u.user_id
+		   JOIN phpbb_topics t
+             ON p.topic_id = t.topic_id
 		  WHERE (? IS NULL OR ? = p.forum_id)
 			AND (? IS NULL OR ? = p.topic_id)
 			AND (? IS NULL OR ? = p.poster_id)

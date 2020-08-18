@@ -59,7 +59,7 @@
                 <form action="/Logout" method="get" name="logoutForm">
                     <input name="ReturnUrl" type="hidden" value="@HttpUtility.UrlEncode(Context.Request.Path + Context.Request.QueryString)" />
                 </form>
-                <ul style="float:right; padding-top:10px; list-style:none; line-height:1.85em;">
+                <ul style="float:right; padding-top:10px; list-style:none; line-height:1.5em;">
                     @{
                         var isTopic = ViewContext.RouteData.Values["page"].ToString() == "/ViewTopic";
                         if (string.IsNullOrWhiteSpace(currentUser?.Username) || (currentUser?.UserId ?? 1) == 1)
@@ -79,6 +79,9 @@
                             </a>
                         </li>
                     }
+                    <li>
+                        <a asp-page="/MemberList">Membrii forumului</a>
+                    </li>
                 </ul><br /> <br />
             </div>
         </div>

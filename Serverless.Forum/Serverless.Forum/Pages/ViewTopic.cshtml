@@ -229,6 +229,7 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
     {
         rowClass = post.Unread ? "Unread" : "";
     }
+    var titleClass = post.Unread ? "UnreadTitle" : "";
     <div class="RowMargin @rowClass">
         <div class="FlexRow">
             @await Html.PartialAsync(
@@ -240,7 +241,7 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
             <div class="ForumContent VerticalContent FlexRight" id="@post.PostId">
                 <span style="display:flex">
                     <span class="PostTitle">
-                        <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@post.PostId">@Html.Raw(post.PostSubject)</a>
+                        <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@post.PostId" class="@titleClass">@Html.Raw(post.PostSubject)</a>
                     </span>
                     <span style="margin-left:auto">
                         <span class="CollapsedMenu" onclick="expandCollapsedMenu('summary@(post.PostId.Value)', 'button@(post.PostId.Value)')" id="button@(post.PostId.Value)" style="color:#@post.AuthorColor;margin-left: auto; height:auto; width: min-content">
@@ -266,8 +267,8 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
                     @if (!IsAnonymous || post.LastEditTime > 0)
                     {
                         <hr class="SubtypeSeparator" />
-                    }                    
-                    @if (post.LastEditTime > 0 && p != Model.Posts.Last())
+                    }
+                    @if (index < Model.Posts.Count - 1 && post.LastEditTime > Model.Posts[index + 1].PostTime)
                     {
                         <div class="Caption" style="color:#495d6c">
                             Ultima dată modificat de @post.LastEditUser
@@ -318,7 +319,7 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
                                 Selectează pentru moderare <input name="PostIdsForModerator" type="checkBox" value="@post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @(post.PostId ?? -1))" @(Model.PostIdsForModerator.Contains(post.PostId ?? -1) ? "checked" : "") />
                             </span>
                         }
-                        @if (IsMod || (post.AuthorId == CurrentUser.UserId && DateTime.UtcNow.Subtract(post.PostCreationTime ?? default).TotalMinutes <= EditTime))
+                        @if (IsMod || (post.AuthorId == CurrentUser.UserId && (EditTime == 0 || DateTime.UtcNow.Subtract(post.PostCreationTime ?? default).TotalMinutes <= EditTime)))
                         {
                             <span>
                                 <a asp-page="/Posting" asp-page-handler="EditPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">&#x1F4DD; Modifică</a>
@@ -331,23 +332,6 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
     </div>
     <hr />
     index++;
-}
-@await Html.PartialAsync(
-    "_PaginationControlsPartial",
-    new CustomPartials._PaginationControlsPartialModel(
-        paginator: Model.Paginator,
-        allowPaginationChange: true,
-        back: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum - 1}",
-        forward: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum + 1}",
-        includeEasyNavigation: true,
-        topicId: Model.TopicId,
-        firstPostId: Model.Posts?.FirstOrDefault()?.PostId
-    ),
-    ViewData
-)
-@if (Model.Paginator.Pagination.HasPages)
-{
-    <hr />
 }
 @if ((!Model.IsLocked || IsMod || IsAdmin) && !IsAnonymous)
 {
@@ -368,6 +352,24 @@ else if (!IsAnonymous)
     <button type="button" disabled>&#x1F4DD; Subiect închis</button>
 }
 <p></p>
+@await Html.PartialAsync(
+    "_PaginationControlsPartial",
+    new CustomPartials._PaginationControlsPartialModel(
+        paginator: Model.Paginator,
+        allowPaginationChange: true,
+        back: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum - 1}",
+        forward: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum + 1}",
+        includeEasyNavigation: true,
+        topicId: Model.TopicId,
+        firstPostId: Model.Posts?.FirstOrDefault()?.PostId
+    ),
+    ViewData
+)
+@if (Model.Paginator.Pagination.HasPages)
+{
+    <hr />
+}
+
 <div style="clear:both">
     <a href="/">Prima pagină</a> |
     @if (Model.ForumId != null)

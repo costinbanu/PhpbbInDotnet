@@ -276,7 +276,7 @@ namespace Serverless.Forum.Pages
         private async Task Render(ForumDbContext context, PhpbbUsers cur)
         {
             CurrentUser = cur;
-            CurrentUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(CurrentUser.UserSig, CurrentUser.UserSigBbcodeUid));
+            CurrentUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : _writingService.CleanBbTextForDisplay(CurrentUser.UserSig, CurrentUser.UserSigBbcodeUid);
             TotalPosts = await context.PhpbbPosts.AsNoTracking().CountAsync(p => p.PosterId == cur.UserId);
             var restrictedForums = (await _forumService.GetRestrictedForumList(await GetCurrentUserAsync())).Select(f => f.forumId);
             var preferredTopic = await (

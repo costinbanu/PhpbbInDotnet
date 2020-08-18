@@ -1,0 +1,86 @@
+﻿@page
+@model Serverless.Forum.Pages.MemberListModel
+
+@using Serverless.Forum.Utilities
+
+@{
+    ViewData["Title"] = "MemberList";
+    Layout = "~/Pages/_Layout.cshtml";
+    var dateFormat = (await Model.GetCurrentUserAsync()).UserDateFormat;
+}
+
+<environment include="Development">
+    <link rel="stylesheet" href="~/css/pagination.css" />
+</environment>
+
+@if (Model.IsSearch)
+{
+    <h2>Rezultatele căutării</h2>
+}
+else
+{
+    <h2>Membrii forumului</h2>
+}
+<form method="get">
+    <input type="hidden" name="handler" value="search" />
+    <input asp-for="Username" placeholder="Caută un membru..." />
+    <input type="submit" value="Caută" />
+</form>
+
+@await Html.PartialAsync(
+    "_PaginationControlsPartial",
+    new CustomPartials._PaginationControlsPartialModel(
+        paginator: Model.Paginator,
+        allowPaginationChange: false,
+        back: $"MemberList?pageNum={Model.PageNum - 1}",
+        forward: $"MemberList?pageNum={Model.PageNum + 1}",
+        includeEasyNavigation: false
+    ),
+    ViewData
+)
+
+@if (!Model.UserList.Any())
+{
+    <h4>Nu a fost găsit nici un rezultat</h4>
+}
+
+
+@foreach (var user in Model.UserList)
+{
+    var color = string.IsNullOrWhiteSpace(user.UserColour) ? "#000000" : $"#{user.UserColour}";
+    var textDecoration = user.UserInactiveTime > 0 ? "line-through" : "none";
+    <div class="FlexCenter">
+        <div class="PostTitle" style="overflow-wrap: break-word">
+            <a asp-page="User" asp-route-UserId="@user.UserId" style="color:@color; text-decoration:@textDecoration">@Html.Raw(user.Username)</a>
+        </div>
+        <div class="FlexRight PostInputWidth">
+            <b>Activ ultima oară:</b>
+            @if (user.UserInactiveTime == 0)
+            {
+                <script>
+                    writeDate("@user.UserLastvisit.ToUtcTime().ToString("o")", "@dateFormat");
+                </script>
+            }
+            else
+            {
+                <span>inactiv</span>
+            }
+            <br />
+            <b>Localitate:</b>
+            @Html.Raw(user.UserFrom)
+        </div>
+    </div>
+    <hr />
+}
+
+@await Html.PartialAsync(
+    "_PaginationControlsPartial",
+    new CustomPartials._PaginationControlsPartialModel(
+        paginator: Model.Paginator,
+        allowPaginationChange: false,
+        back: $"MemberList?pageNum={Model.PageNum - 1}",
+        forward: $"MemberList?pageNum={Model.PageNum + 1}",
+        includeEasyNavigation: true
+    ),
+    ViewData
+)

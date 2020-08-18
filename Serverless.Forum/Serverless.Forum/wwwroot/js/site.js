@@ -34,7 +34,7 @@ function lazyInit(customMaxWidth, customMaxHeight) {
     quoteWidthBleed = quoteWidthBleed || $('.PostQuote').outerWidth(true) - $('.PostQuote').width() || 42;
     quoteHeightBleed = quoteHeightBleed || $('.PostQuote').outerHeight(true) - $('.PostQuote').height() || 62;
     maxWidth = maxWidth || customMaxWidth || roundToNextEvenNumber($('.FlexRow').width() - ($('.Summary').is(':visible') ? $('.Summary').outerWidth() * 1.1 : 2));
-    maxHeight = maxHeight || customMaxHeight || roundToNextEvenNumber($(window).innerHeight() - $('#topBanner').outerHeight());
+    maxHeight = maxHeight || customMaxHeight || roundToNextEvenNumber($(window).innerHeight() - 15);
 }
 
 //Expand collapsed menus

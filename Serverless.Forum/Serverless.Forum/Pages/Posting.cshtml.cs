@@ -130,7 +130,7 @@ namespace Serverless.Forum.Pages
                 await Init(PostingActions.NewForumPost, false, HttpUtility.HtmlDecode(curTopic.TopicTitle), curForum);
 
                 var title = HttpUtility.HtmlDecode(curPost.PostSubject);
-                PostText = $"[quote=\"{curAuthor}\"]\n{HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid))}\n[/quote]";
+                PostText = $"[quote=\"{curAuthor}\"]\n{_writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid)}\n[/quote]";
                 PostTitle = title.StartsWith(Constants.REPLY) ? title : $"{Constants.REPLY}{title}";
 
                 return Page();
@@ -146,20 +146,20 @@ namespace Serverless.Forum.Pages
         public async Task<IActionResult> OnGetEditPost()
             => await WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
             {
-                //de testat asta
-                if (!await IsCurrentUserModeratorHereAsync() && DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes > (await GetCurrentUserAsync()).PostEditTime)
+                var CurrentUser = await GetCurrentUserAsync();
+                if (!(await IsCurrentUserModeratorHereAsync() || (curPost.PosterId == CurrentUser.UserId && (CurrentUser.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= CurrentUser.PostEditTime))))
                 {
                     return RedirectToPage("ViewTopic", "byPostId", new { PostId });
                 }
 
-                var canCreatePoll = (curTopic.TopicFirstPostId == PostId) && (await IsCurrentUserModeratorHereAsync() || (curPost.PosterId == (await GetCurrentUserAsync()).UserId && DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= (await GetCurrentUserAsync()).PostEditTime));
+                var canCreatePoll = curTopic.TopicFirstPostId == PostId;
 
                 await Init(PostingActions.EditForumPost, canCreatePoll, HttpUtility.HtmlDecode(curTopic.TopicTitle), curForum);
 
                 var attachments = await _context.PhpbbAttachments.AsNoTracking().Where(a => a.PostMsgId == PostId).ToListAsync();
                 await _cacheService.SetInCache(await GetActualCacheKey("PostAttachments", true), attachments);
                 ShowAttach = attachments.Any();
-                FileComment = attachments.Select(a => HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(a.AttachComment, string.Empty))).ToList();
+                FileComment = attachments.Select(a => _writingService.CleanBbTextForDisplay(a.AttachComment, string.Empty)).ToList();
 
                 await _cacheService.SetInCache(await GetActualCacheKey("PostTime", true), curPost.PostTime);
 
@@ -174,7 +174,7 @@ namespace Serverless.Forum.Pages
                 }
 
                 var subject = curPost.PostSubject.StartsWith(Constants.REPLY) ? curPost.PostSubject.Substring(Constants.REPLY.Length) : curPost.PostSubject;
-                PostText = HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid));
+                PostText = _writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid);
                 PostTitle = HttpUtility.HtmlDecode(curPost.PostSubject);
 
                 return Page();
@@ -192,7 +192,7 @@ namespace Serverless.Forum.Pages
                         if ((author?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
                         {
                             PostTitle = HttpUtility.HtmlDecode(post.PostSubject);
-                            PostText = $"[quote]{HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(post.PostText, post.BbcodeUid))}[/quote]\r\n[url=./ViewTopic?postId={PostId}&handler=byPostId]{PostTitle}[/url]";
+                            PostText = $"[quote]{_writingService.CleanBbTextForDisplay(post.PostText, post.BbcodeUid)}[/quote]\r\n[url=./ViewTopic?postId={PostId}&handler=byPostId]{PostTitle}[/url]";
                             ReceiverId = author.UserId;
                             ReceiverName = author.Username;
                         }
@@ -216,7 +216,7 @@ namespace Serverless.Forum.Pages
                         {
                             var title = HttpUtility.HtmlDecode(msg.MessageSubject);
                             PostTitle = title.StartsWith(Constants.REPLY) ? title : $"{Constants.REPLY}{title}";
-                            PostText = $"[quote]{ HttpUtility.HtmlDecode(_writingService.CleanBbTextForDisplay(msg.MessageText, msg.BbcodeUid))}[/quote]";
+                            PostText = $"[quote]{_writingService.CleanBbTextForDisplay(msg.MessageText, msg.BbcodeUid)}[/quote]";
                             ReceiverName = author.Username;
                         }
                         else
@@ -409,7 +409,7 @@ namespace Serverless.Forum.Pages
                 {
                     return Page();
                 }
-
+                await EmptyCache();
                 return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
             }));
 
@@ -422,7 +422,7 @@ namespace Serverless.Forum.Pages
                 {
                     return Page();
                 }
-
+                await EmptyCache();
                 return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
             }));
 
@@ -474,6 +474,7 @@ namespace Serverless.Forum.Pages
                     {
                         _utils.HandleError(ex);
                     }
+                    await EmptyCache();
                     return RedirectToPage("PrivateMessages", new { show = PrivateMessagesPages.Sent });
                 }
                 else
@@ -497,7 +498,7 @@ namespace Serverless.Forum.Pages
                 var (previousPosts, _, _) = await _postService.GetPostPageAsync((await GetCurrentUserAsync()).UserId, TopicId, PageNum, PostId);
                 using var connection = _context.Database.GetDbConnection();
                 await connection.OpenIfNeeded();
-                var users = (await connection.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id IN @userIds", new { userIds = previousPosts.Select(pp => pp.PosterId) })).ToList();
+                var users = (await connection.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id IN @userIds", new { userIds = previousPosts.Select(pp => pp.PosterId).DefaultIfEmpty() })).ToList();
                 return (previousPosts, users);
             }
             return (new List<PhpbbPosts>(), new List<PhpbbUsers>());
@@ -549,6 +550,18 @@ namespace Serverless.Forum.Pages
             await _cacheService.SetInCache(await GetActualCacheKey("ForumRulesLink", true), curForum?.ForumRulesLink);
             await _cacheService.SetInCache(await GetActualCacheKey("ForumRules", true), curForum?.ForumRules);
             await _cacheService.SetInCache(await GetActualCacheKey("ForumRulesUid", true), curForum?.ForumRulesUid);
+        }
+
+        private async Task EmptyCache()
+        {
+            await _cacheService.RemoveFromCache(await GetActualCacheKey("Action", true));
+            await _cacheService.RemoveFromCache(await GetActualCacheKey("Header", true));
+            await _cacheService.RemoveFromCache(await GetActualCacheKey("ForumName", true));
+            await _cacheService.RemoveFromCache(await GetActualCacheKey("ForumId", true));
+            await _cacheService.RemoveFromCache(await GetActualCacheKey("CanCreatePoll", true));
+            await _cacheService.RemoveFromCache(await GetActualCacheKey("ForumRulesLink", true));
+            await _cacheService.RemoveFromCache(await GetActualCacheKey("ForumRules", true));
+            await _cacheService.RemoveFromCache(await GetActualCacheKey("ForumRulesUid", true));
         }
 
         private async Task<PhpbbPosts> InitEditedPost()
@@ -692,12 +705,12 @@ namespace Serverless.Forum.Pages
                 post.PostText = _writingService.PrepareTextForSaving(newPostText);
                 post.BbcodeUid = uid;
                 post.BbcodeBitfield = bitfield;
+                post.PostAttachment = (byte)(attachList.Any() ? 1 : 0);
                 processAttachments(attachList, post.PostId);
 
                 await insertAttachments(attachList.Where(a => a.AttachId == 0));
                 _context.PhpbbAttachments.UpdateRange(attachList.Where(a => a.AttachId != 0));
 
-                post.PostAttachment = (byte)(attachList.Any(a => a.AttachId == 0) && post.PostAttachment == 0 ? 1 : 0);
                 await _context.SaveChangesAsync();
                 await _postService.CascadePostEdit(_context, post);
             }

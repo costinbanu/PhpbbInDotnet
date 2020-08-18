@@ -190,13 +190,41 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
     </p>
     @if (Action != PostingActions.NewPrivateMessage)
     {
-        <button onclick="posting.toggleAttach()" type="button">&#128206; Adaugă fișiere atașate</button>
+        <button onclick="posting.toggleAttach()" type="button">&#128206; Fișiere atașate</button>
+        <span>&nbsp; </span>
     }
-    <button onclick="showElement('emojis')" type="button" class="Hide960">&#x1F642; Emoji</button>
+    <button onclick="posting.toggleEmoji()" type="button" class="Hide960">&#x1F642; Emoji</button>
+    <span>&nbsp; </span>
     @if (CanCreatePoll)
     {
+        <button onclick="posting.togglePoll()" type="button">&#x2714; Chestionar</button>
         <span>&nbsp;</span>
-        <button onclick="posting.togglePoll()" type="button">&#x2714; Adaugă chestionar</button>
+    }
+    <input type="submit" value="&#x1F440; Previzualizează" onclick="return posting.censor()" asp-page-handler="Preview" />
+    <span>&nbsp; </span>
+    @switch (Action)
+    {
+        case PostingActions.NewTopic:
+        case PostingActions.NewForumPost:
+            <b><input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="NewForumPost" /></b>
+            break;
+        case PostingActions.EditForumPost:
+            <b><input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="EditForumPost" /></b>
+            break;
+        case PostingActions.NewPrivateMessage:
+            <b><input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="PrivateMessage" /></b>
+            break;
+        default:
+            <span class="validation">A intervenit o eroare, pagina nu a fost afișată corect.</span>
+            break;
+    }
+    <span>&nbsp; </span>
+    <span asp-validation-for="PostTitle" class="validation"></span>
+    <span>&nbsp; </span>
+    <span asp-validation-for="PostText" class="validation"></span>
+
+    @if (CanCreatePoll)
+    {
         <div id="pollPanel" style="display:@(Model.ShowPoll ? "block" : "none")" class="PostInputWidth">
             <br />
             <h3>Chestionar</h3>
@@ -296,15 +324,13 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
             <p style="clear:both">&nbsp;</p>
         </div>
     }
-    <div id="emojis" style="display:none; clear:both;">
+    <div id="emojiPanel" style="display:none; clear:both;">
         @foreach (var smiley in ((await _cacheService.GetFromCache<List<PhpbbSmilies>>(await Model.GetActualCacheKey("Smilies", false))) ?? new List<PhpbbSmilies>()))
         {
             <a href="javascript:posting.insert_text('@smiley.Code', true);">
                 <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
             </a>
         }
-        <p style="clear:both;">&nbsp;</p>
-        <p style="clear:both;">&nbsp;</p>
     </div>
     @if (Action == PostingActions.EditForumPost)
     {
@@ -317,29 +343,6 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
         </div>
         <br />
     }
-    <p></p>
-    <input type="submit" value="Previzualizează" onclick="return posting.censor()" asp-page-handler="Preview" />
-    <span>&nbsp; </span>
-    @switch (Action)
-    {
-        case PostingActions.NewTopic:
-        case PostingActions.NewForumPost:
-            <input type="submit" value="Trimite mesajul" onclick="return posting.censor()" asp-page-handler="NewForumPost" />
-            break;
-        case PostingActions.EditForumPost:
-            <input type="submit" value="Trimite mesajul" onclick="return posting.censor()" asp-page-handler="EditForumPost" />
-            break;
-        case PostingActions.NewPrivateMessage:
-            <input type="submit" value="Trimite mesajul" onclick="return posting.censor()" asp-page-handler="PrivateMessage" />
-            break;
-        default:
-            <span class="validation">A intervenit o eroare, pagina nu a fost afișată corect.</span>
-            break;
-    }
-    <span>&nbsp; </span>
-    <span asp-validation-for="PostTitle" class="validation"></span>
-    <span>&nbsp; </span>
-    <span asp-validation-for="PostText" class="validation"></span>
 </form>
 
 @{
@@ -352,25 +355,25 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
 
         <h3>Mesaje precedente</h3>
 
-        foreach (var p in previousPosts)
+        for (int i = previousPosts.Count - 1; i >= 0; i--)
         {
-            var ju = users.FirstOrDefault(u => u.UserId == p.PosterId);
+            var ju = users.FirstOrDefault(u => u.UserId == previousPosts[i].PosterId);
             var post = new Contracts.PostDto
             {
-                PostSubject = p.PostSubject,
-                PostText = p.PostText,
-                AuthorName = ((ju?.UserId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID ? p.PostUsername : ju.Username),
+                PostSubject = previousPosts[i].PostSubject,
+                PostText = previousPosts[i].PostText,
+                AuthorName = ((ju?.UserId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID ? previousPosts[i].PostUsername : ju.Username),
                 AuthorId = ju?.UserId ?? Constants.ANONYMOUS_USER_ID,
                 AuthorColor = ju?.UserColour,
-                PostCreationTime = p.PostTime.ToUtcTime(),
-                PostModifiedTime = p.PostEditTime.ToUtcTime(),
-                PostId = p.PostId,
-                BbcodeUid = p.BbcodeUid,
+                PostCreationTime = previousPosts[i].PostTime.ToUtcTime(),
+                PostModifiedTime = previousPosts[i].PostEditTime.ToUtcTime(),
+                PostId = previousPosts[i].PostId,
+                BbcodeUid = previousPosts[i].BbcodeUid,
                 AuthorHasAvatar = false,
-                LastEditTime = p.PostEditTime,
-                LastEditReason = p.PostEditReason,
-                EditCount = p.PostEditCount,
-                IP = p.PosterIp
+                LastEditTime = previousPosts[i].PostEditTime,
+                LastEditReason = previousPosts[i].PostEditReason,
+                EditCount = previousPosts[i].PostEditCount,
+                IP = previousPosts[i].PosterIp
             };
 
             post.AuthorHasAvatar = false;
@@ -392,9 +395,12 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
                                 @Html.Raw(post.AuthorName)
                             </span>
                         </span>
-                        <span style="margin-left: auto; min-width: max-content; padding-top: 3px; padding-bottom: 30px; margin-top: 4px; margin-bottom: 4px">
-                            <a href="javascript:posting.addquote(texts['@post.PostId'], '@post.AuthorName')">&#x1F4AC; Citează</a>
-                        </span>
+                        @if (i != previousPosts.Count - 1)
+                        {
+                            <span style="margin-left: auto; min-width: max-content; padding-top: 3px; padding-bottom: 30px; margin-top: 4px; margin-bottom: 4px">
+                                <a href="javascript:posting.addquote(texts['@post.PostId'], '@post.AuthorName')">&#x1F4AC; Citează</a>
+                            </span>
+                        }
                     </span>
                     <p>&nbsp;</p>
                     <div style="max-width:100%; overflow-wrap: break-word" id="@post.PostId">
@@ -570,11 +576,11 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
         <div style="margin-right:15px">[youtube]id_video[/youtube]</div>
         <div class="FlexRight PostInputWidth" id="dummy">
             id_video este codul de după „v=” în adresa video-ului:<br />
-            <img src="https://forum.metrouusor.com/download/file.php?id=112751" onload="resizeImage(this, $('#formattingHelp').width() * 0.7, $('#formattingHelp').height())" />
+            <img src="https://forum.metrouusor.com/download/file.php?id=112751" onload="resizeImage(this, $('#formattingHelp').width() * ($(window).width() > 768 ? 0.7 : 0.9), $('#formattingHelp').height())" />
             <br />
             Efect:
             <br />
-            <iframe width="560" height="315" src="https://www.youtube.com/embed/Gf7_a2DVl7E?html5=1" frameborder="0" allowfullscreen onload="resizeIFrame(this, $('#formattingHelp').width() * 0.7, $('#formattingHelp').height())"></iframe>
+            <iframe width="560" height="315" src="https://www.youtube.com/embed/Gf7_a2DVl7E?html5=1" frameborder="0" allowfullscreen onload="resizeIFrame(this, $('#formattingHelp').width() * ($(window).width() > 768 ? 0.7 : 0.9), $('#formattingHelp').height())"></iframe>
         </div>
     </div>
     <div style="float:right; cursor:pointer; font-weight:bold; margin-top:10px; margin-bottom:10px" onclick="showElement('formattingHelp')">Închide [X]</div>
@@ -677,16 +683,21 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
                 </div>
             </div>
         </div>
-        <script>
-            var element = document.getElementById("preview");
-            if (element.offsetHeight < element.scrollHeight || element.offsetWidth < element.scrollWidth) {
-                document.write(
-                    "<div style=\"float: right; cursor: pointer; font-weight: bold; margin-top: 10px; margin-bottom: 10px\" onclick=\"showElement('preview')\">Închide [X]</div>"
-                );
-            }
-        </script>
+        <div style="float: right; cursor: pointer; font-weight: bold; margin-top: 10px; margin-bottom: 10px; display: none" onclick="showElement('preview')" id="footerButton">
+            Închide [X]
+        </div>
     </div>
     <script>
-        showElement('preview', null, null, true);
+        showElement(
+            'preview',
+            null,
+            function () {
+                var element = document.getElementById("preview");
+                if (element.offsetHeight < element.scrollHeight || element.offsetWidth < element.scrollWidth) {
+                    showElement('footerButton');
+                }
+            },
+            true
+        );
     </script>
 }
