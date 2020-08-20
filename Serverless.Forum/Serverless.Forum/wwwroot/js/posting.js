@@ -393,41 +393,23 @@
         }
     }
 
-    //togglePanel(panelId, buttonId, textWhenVisible, textWhenHidden) {
-    //    showElement(
-    //        panelId,
-    //        function () {
-    //            $('#' + buttonId).text(textWhenHidden);
-    //        },
-    //        function () {
-    //            $('#' + buttonId).text(textWhenVisible)
-    //        }
-    //    );
-    //}
-
     toggleAttach() {
         if ($('#pollPanel').is(':visible')) {
-            //this.togglePanel('pollPanel', 'pollButton', this.hidePollText, this.showPollText);
             showElement('pollPanel');
         }
         if ($('#emojiPanel').is(':visible')) {
-            //this.togglePanel('pollPanel', 'pollButton', this.hidePollText, this.showPollText);
             showElement('emojiPanel');
         }
-        //this.togglePanel('attachPanel', 'attachButton', this.hideAttachText, this.showAttachText);
         showElement('attachPanel');
     }
 
     togglePoll() {
         if ($('#attachPanel').is(':visible')) {
-            //posting.togglePanel('attachPanel', 'attachButton', this.hideAttachText, this.showAttachText);
             showElement('attachPanel')
         }
         if ($('#emojiPanel').is(':visible')) {
-            //this.togglePanel('pollPanel', 'pollButton', this.hidePollText, this.showPollText);
             showElement('emojiPanel');
         }
-        //this.togglePanel('pollPanel', 'pollButton', this.hidePollText, this.showPollText);
         showElement('pollPanel');
     }
 

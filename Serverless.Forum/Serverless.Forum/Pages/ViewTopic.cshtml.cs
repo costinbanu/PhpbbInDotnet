@@ -100,14 +100,16 @@ namespace Serverless.Forum.Pages
         private readonly Utils _utils;
         private readonly PostService _postService;
         private readonly ModeratorService _moderatorService;
+        private readonly WritingToolsService _writingToolsService;
 
         public ViewTopicModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService,
-            Utils utils, PostService postService, ModeratorService moderatorService)
+            Utils utils, PostService postService, ModeratorService moderatorService, WritingToolsService writingToolsService)
             : base(context, forumService, userService, cacheService)
         {
             _utils = utils;
             _postService = postService;
             _moderatorService = moderatorService;
+            _writingToolsService = writingToolsService;
         }
 
         public async Task<IActionResult> OnGetByPostId()
@@ -362,7 +364,7 @@ namespace Serverless.Forum.Pages
                     PostId = reportPostId.Value,
                     UserId = (await GetCurrentUserAsync()).UserId,
                     ReasonId = reportReasonId.Value,
-                    ReportText = reportDetails ?? string.Empty,
+                    ReportText = _writingToolsService.PrepareTextForSaving(HttpUtility.HtmlEncode(reportDetails ?? string.Empty)),
                     ReportTime = DateTime.UtcNow.ToUnixTimestamp(),
                     ReportClosed = 0
                 });

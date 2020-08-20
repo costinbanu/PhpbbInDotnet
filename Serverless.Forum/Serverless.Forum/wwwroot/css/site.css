@@ -135,8 +135,8 @@ h3 {
 .Unread {
     border: solid 1px #ff9000 !important;
     background-color: #fdfaf4 !important;
-    margin-top: 3px;
-    margin-bottom: 3px;
+    margin-top: 10px;
+    margin-bottom: 10px;
     border-radius: 3px;
 }
 

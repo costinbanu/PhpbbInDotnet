@@ -1,4 +1,5 @@
 ﻿using CryptSharp.Core;
+using Dapper;
 using Diacritics.Extensions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.ForumDb;
+using Serverless.Forum.ForumDb.Entities;
 using Serverless.Forum.Pages.CustomPartials.Email;
 using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
@@ -109,14 +111,19 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
-            var user = await _context.PhpbbUsers.AsNoTracking().Where(u => u.UsernameClean == _utils.CleanString(UserName)).ToListAsync();
-            user = user.Where(u => Crypter.Phpass.Crypt(Password, u.UserPassword) == u.UserPassword).ToList();
+            //var user = await _context.PhpbbUsers.AsNoTracking().Where(u => u.UsernameClean == _utils.CleanString(UserName)).ToListAsync();
+            //user = user.Where(u => Crypter.Phpass.Crypt(Password, u.UserPassword) == u.UserPassword).ToList();
 
-            if (!user.Any() && _config.GetValue<bool>("CompatibilityMode") && "ăîâșțĂÎÂȘȚ".Any(c => UserName.Contains(c)))
-            {
-                var cache = await _context.PhpbbUsers.AsNoTracking().ToListAsync();
-                user = cache.Where(u => _utils.CleanString(u.Username) == _utils.CleanString(UserName) && Crypter.Phpass.Crypt(Password, u.UserPassword) == u.UserPassword).ToList();
-            }
+            //if (!user.Any() && _config.GetValue<bool>("CompatibilityMode") && "ăîâșțĂÎÂȘȚ".Any(c => UserName.Contains(c)))
+            //{
+            //    var cache = await _context.PhpbbUsers.AsNoTracking().ToListAsync();
+            //    user = cache.Where(u => _utils.CleanString(u.Username) == _utils.CleanString(UserName) && Crypter.Phpass.Crypt(Password, u.UserPassword) == u.UserPassword).ToList();
+            //}
+
+            using var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeeded();
+
+            var user = await connection.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE CONVERT(LOWER(username) USING utf8) = @username", new { username = _utils.CleanString(UserName) });
 
             Mode = LoginMode.Normal;
             if (user.Count() != 1)

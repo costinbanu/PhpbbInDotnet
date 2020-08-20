@@ -355,29 +355,35 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
 
         <h3>Mesaje precedente</h3>
 
-        for (int i = previousPosts.Count - 1; i >= 0; i--)
+        var isFirst = true;
+        foreach (var p in previousPosts)
         {
-            var ju = users.FirstOrDefault(u => u.UserId == previousPosts[i].PosterId);
+            var ju = users.FirstOrDefault(u => u.UserId == p.PosterId);
             var post = new Contracts.PostDto
             {
-                PostSubject = previousPosts[i].PostSubject,
-                PostText = previousPosts[i].PostText,
-                AuthorName = ((ju?.UserId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID ? previousPosts[i].PostUsername : ju.Username),
+                PostSubject = p.PostSubject,
+                PostText = p.PostText,
+                AuthorName = ((ju?.UserId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID ? p.PostUsername : ju.Username),
                 AuthorId = ju?.UserId ?? Constants.ANONYMOUS_USER_ID,
                 AuthorColor = ju?.UserColour,
-                PostCreationTime = previousPosts[i].PostTime.ToUtcTime(),
-                PostModifiedTime = previousPosts[i].PostEditTime.ToUtcTime(),
-                PostId = previousPosts[i].PostId,
-                BbcodeUid = previousPosts[i].BbcodeUid,
+                PostCreationTime = p.PostTime.ToUtcTime(),
+                PostModifiedTime = p.PostEditTime.ToUtcTime(),
+                PostId = p.PostId,
+                BbcodeUid = p.BbcodeUid,
                 AuthorHasAvatar = false,
-                LastEditTime = previousPosts[i].PostEditTime,
-                LastEditReason = previousPosts[i].PostEditReason,
-                EditCount = previousPosts[i].PostEditCount,
-                IP = previousPosts[i].PosterIp
+                LastEditTime = p.PostEditTime,
+                LastEditReason = p.PostEditReason,
+                EditCount = p.PostEditCount,
+                IP = p.PosterIp
             };
 
             post.AuthorHasAvatar = false;
             await _renderingService.ProcessPost(post, Model.PageContext, Model.HttpContext, false);
+
+            if (!isFirst)
+            {
+                <hr class="BoxSeparator" />
+            }
 
             <div class="RowMargin FlexRow">
                 @await Html.PartialAsync(
@@ -395,7 +401,7 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
                                 @Html.Raw(post.AuthorName)
                             </span>
                         </span>
-                        @if (i != previousPosts.Count - 1)
+                        @if (!isFirst)
                         {
                             <span style="margin-left: auto; min-width: max-content; padding-top: 3px; padding-bottom: 30px; margin-top: 4px; margin-bottom: 4px">
                                 <a href="javascript:posting.addquote(texts['@post.PostId'], '@post.AuthorName')">&#x1F4AC; Citează</a>
@@ -408,7 +414,7 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
                     </div>
                 </div>
             </div>
-            <hr class="BoxSeparator" />
+            isFirst = false;
         }
     }
 }
@@ -576,11 +582,11 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
         <div style="margin-right:15px">[youtube]id_video[/youtube]</div>
         <div class="FlexRight PostInputWidth" id="dummy">
             id_video este codul de după „v=” în adresa video-ului:<br />
-            <img src="https://forum.metrouusor.com/download/file.php?id=112751" onload="resizeImage(this, $('#formattingHelp').width() * ($(window).width() > 768 ? 0.7 : 0.9), $('#formattingHelp').height())" />
+            <img src="https://forum.metrouusor.com/download/file.php?id=112751" onload="resizeImage(this, $('#formattingHelp').width() * ($(window).width() > 768 ? 0.7 : 0.8), $('#formattingHelp').height())" />
             <br />
             Efect:
             <br />
-            <iframe width="560" height="315" src="https://www.youtube.com/embed/Gf7_a2DVl7E?html5=1" frameborder="0" allowfullscreen onload="resizeIFrame(this, $('#formattingHelp').width() * ($(window).width() > 768 ? 0.7 : 0.9), $('#formattingHelp').height())"></iframe>
+            <iframe width="560" height="315" src="https://www.youtube.com/embed/Gf7_a2DVl7E?html5=1" frameborder="0" allowfullscreen onload="resizeIFrame(this, $('#formattingHelp').width() * ($(window).width() > 768 ? 0.7 : 0.8), $('#formattingHelp').height())"></iframe>
         </div>
     </div>
     <div style="float:right; cursor:pointer; font-weight:bold; margin-top:10px; margin-bottom:10px" onclick="showElement('formattingHelp')">Închide [X]</div>

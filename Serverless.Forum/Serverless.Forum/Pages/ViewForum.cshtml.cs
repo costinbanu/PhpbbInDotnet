@@ -104,10 +104,7 @@ namespace Serverless.Forum.Pages
                 var tree = await GetForumTree();
                 IEnumerable<TopicDto> topics = null;
                 var topicList = tree.Tracking.SelectMany(t => t.Value).Select(t => t.TopicId).Distinct();
-                if (!topicList.Any())
-                {
-                    topicList = new[] { 0 };
-                }
+                var restrictedForums = await _forumService.GetRestrictedForumList(await GetCurrentUserAsync());
                 using (var connection = _context.Database.GetDbConnection())
                 {
                     await connection.OpenIfNeeded();
@@ -125,10 +122,17 @@ namespace Serverless.Forum.Pages
                             FROM forum.phpbb_topics t
                             JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
                         WHERE t.topic_id IN @topicList
+                          AND t.forum_id NOT IN @restrictedForumList
                         GROUP BY t.topic_id
                         ORDER BY t.topic_last_post_time DESC
-                        LIMIT @pageNum, @pageSize",
-                        new { topicList = topicList.DefaultIfEmpty(), pageNum = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE, pageSize = Constants.DEFAULT_PAGE_SIZE }
+                        LIMIT @skip, @take",
+                        new 
+                        { 
+                            topicList = topicList.DefaultIfEmpty(), 
+                            skip = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE, 
+                            take = Constants.DEFAULT_PAGE_SIZE,
+                            restrictedForumList = restrictedForums.Select(f => f.forumId).DefaultIfEmpty()
+                        }
                     );
                 }
 
@@ -145,12 +149,18 @@ namespace Serverless.Forum.Pages
                 var tree = await GetForumTree();
                 IEnumerable<TopicDto> topics = null;
                 var totalCount = 0;
+                var restrictedForums = await _forumService.GetRestrictedForumList(await GetCurrentUserAsync());
                 using (var connection = _context.Database.GetDbConnection())
                 {
                     await connection.OpenIfNeeded();
                     using var multi = await connection.QueryMultipleAsync(
-                        "CALL `forum`.`get_own_topics`(@userId, @skip, @take)",
-                        new { usr.UserId, skip = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE, take = Constants.DEFAULT_PAGE_SIZE }
+                        "CALL `forum`.`get_own_topics`(@userId, @skip, @take, @restrictedForumList)",
+                        new 
+                        { 
+                            usr.UserId, 
+                            skip = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE, take = Constants.DEFAULT_PAGE_SIZE,
+                            restrictedForumList = restrictedForums.Select(f => f.forumId).DefaultIfEmpty()
+                        }
                     );
                     topics = await multi.ReadAsync<TopicDto>();
                     totalCount = unchecked((int)await multi.ReadSingleAsync<long>());

@@ -123,4 +123,21 @@
         Sent,
         Message
     }
+
+    public enum MemberListPages
+    {
+        AllUsers,
+        SearchUsers,
+        Groups
+    }
+
+    public enum MemberListOrder
+    {
+        NameAsc,
+        NameDesc,
+        RegistrationDateAsc,
+        RegistrationDateDesc,
+        LastActiveDateAsc,
+        LastActiveDateDesc
+    }
 }

@@ -13,20 +13,78 @@
 {
     <h3 style="float:left">Categorii</h3>
 }
-@{ var categoriesShown = false; }
-@foreach (var category in Model.Categories)
-{
-    if (category.IsRestricted)
+@{
+    var categoriesShown = false;
+    bool isFirst;
+    bool previousIsUnread;
+    foreach (var category in Model.Categories)
     {
-        continue;
+        if (category.IsRestricted)
+        {
+            continue;
+        }
+
+        <div class="FlexRow Category RowMargin">
+            @Html.Raw(category.ForumName)
+        </div>
+
+        var children = Model.GetChildrenForums(category.ForumId).OrderBy(f => f.LeftId);
+        isFirst = true;
+        previousIsUnread = false;
+        @foreach (var forum in children)
+        {
+            if (forum.IsRestricted)
+            {
+                continue;
+            }
+
+            var isUnread = false;
+            if (!(Model.LoggedUser?.IsAnonymous ?? true))
+            {
+                isUnread = await _forumService.IsForumUnread(forum.ForumId, Model.LoggedUser);
+            }
+
+            if (!isFirst && !previousIsUnread && !isUnread)
+            {
+                <hr class="BoxSeparator" />
+            }
+
+            previousIsUnread = isUnread;
+            var divClass = isUnread ? "FlexRow Unread RowMargin" : "FlexRow RowMargin";
+            var titleClass = isUnread ? "nav-link UnreadTitle" : "nav-link";
+            <div class="@divClass">
+                <span class="ForumContent">
+                    <a asp-page="/ViewForum" asp-route-forumId="@forum.ForumId" class="@titleClass" style="font-weight:bold">@Html.Raw(forum.ForumName)</a><br />
+                    @Html.Raw(_renderingService.BbCodeToHtml(forum.ForumDesc, forum.ForumDescUid))
+                </span>
+                @await Html.PartialAsync(
+                         "_SummaryPartial",
+                         new CustomPartials._SummaryPartialModel(forum.ForumLastPosterId, forum.ForumLastPosterName, forum.ForumLastPosterColour, forum.ForumLastPostTime?.ToUtcTime(), forum.ForumId,
+                             Model.DateFormat, false, null,
+                             forum.ForumLastPostId == 0 ? null : $"./ViewTopic?postId={forum.ForumLastPostId}&handler=ByPostId",
+                             forum.ForumLastPostId == 0 ? null : "&#x1F4C3;",
+                             forum.ForumLastPostId == 0 ? null : "Vezi ultimul mesaj",
+                             false, true
+                         )
+                     )
+            </div>
+            isFirst = false;
+        }
+        categoriesShown = true;
     }
 
-    var catIndex = 0;
-    <div class="FlexRow Category RowMargin">
-        @Html.Raw(category.ForumName)
-    </div>
-    var children = Model.GetChildrenForums(category.ForumId).OrderBy(f => f.LeftId);
-    @foreach (var forum in children)
+    @if (Model.ShowTitle && Model.SubForums.Any(x => !x.IsRestricted))
+    {
+        @if (categoriesShown)
+        {
+            <p>&nbsp;</p>
+        }
+        <h3 style="float:left">Forumuri</h3>
+    }
+
+    isFirst = !categoriesShown;
+    previousIsUnread = false;
+    @foreach (var forum in Model.SubForums)
     {
         if (forum.IsRestricted)
         {
@@ -38,70 +96,31 @@
         {
             isUnread = await _forumService.IsForumUnread(forum.ForumId, Model.LoggedUser);
         }
+
+        if (!isFirst && !previousIsUnread && !isUnread)
+        {
+            <hr class="BoxSeparator" />
+        }
+
+        previousIsUnread = isUnread;
         var divClass = isUnread ? "FlexRow Unread RowMargin" : "FlexRow RowMargin";
         var titleClass = isUnread ? "nav-link UnreadTitle" : "nav-link";
-        catIndex++;
         <div class="@divClass">
             <span class="ForumContent">
                 <a asp-page="/ViewForum" asp-route-forumId="@forum.ForumId" class="@titleClass" style="font-weight:bold">@Html.Raw(forum.ForumName)</a><br />
                 @Html.Raw(_renderingService.BbCodeToHtml(forum.ForumDesc, forum.ForumDescUid))
             </span>
             @await Html.PartialAsync(
-                  "_SummaryPartial",
-                  new CustomPartials._SummaryPartialModel(forum.ForumLastPosterId, forum.ForumLastPosterName, forum.ForumLastPosterColour, forum.ForumLastPostTime?.ToUtcTime(), forum.ForumId,
-                      Model.DateFormat, false, null,
-                      forum.ForumLastPostId == 0 ? null : $"./ViewTopic?postId={forum.ForumLastPostId}&handler=ByPostId",
-                      forum.ForumLastPostId == 0 ? null : "&#x1F4C3;",
-                      forum.ForumLastPostId == 0 ? null : "Vezi ultimul mesaj",
-                      false, true
-                  )
-              )
+                         "_SummaryPartial",
+                         new CustomPartials._SummaryPartialModel(forum.ForumLastPosterId, forum.ForumLastPosterName, forum.ForumLastPosterColour, forum.ForumLastPostTime?.ToUtcTime(), forum.ForumId,
+                             Model.DateFormat, false, null,
+                             forum.ForumLastPostId == 0 ? null : $"./ViewTopic?postId={forum.ForumLastPostId}&handler=ByPostId",
+                             forum.ForumLastPostId == 0 ? null : "&#x1F4C3;",
+                             forum.ForumLastPostId == 0 ? null : "Vezi ultimul mesaj",
+                             false, true
+                         )
+                     )
         </div>
-        if (forum != children.Last() || category == Model.Categories.Last())
-        {
-            <hr class="BoxSeparator" />
-        }
+        isFirst = false;
     }
-    categoriesShown = true;
-}
-
-@if (Model.ShowTitle && Model.SubForums.Any(x => !x.IsRestricted))
-{
-    @if (categoriesShown)
-    {
-        <p>&nbsp;</p>
-    }
-    <h3 style="float:left">Forumuri</h3>
-}
-@foreach (var forum in Model.SubForums)
-{
-    if (forum.IsRestricted)
-    {
-        continue;
-    }
-
-    var isUnread = false;
-    if (!(Model.LoggedUser?.IsAnonymous ?? true))
-    {
-        isUnread = await _forumService.IsForumUnread(forum.ForumId, Model.LoggedUser);
-    }
-    var divClass = isUnread ? "FlexRow Unread RowMargin" : "FlexRow RowMargin";
-    var titleClass = isUnread ? "nav-link UnreadTitle" : "nav-link";
-    <div class="@divClass">
-        <span class="ForumContent">
-            <a asp-page="/ViewForum" asp-route-forumId="@forum.ForumId" class="@titleClass" style="font-weight:bold">@Html.Raw(forum.ForumName)</a><br />
-            @Html.Raw(_renderingService.BbCodeToHtml(forum.ForumDesc, forum.ForumDescUid))
-        </span>
-        @await Html.PartialAsync(
-            "_SummaryPartial",
-            new CustomPartials._SummaryPartialModel(forum.ForumLastPosterId, forum.ForumLastPosterName, forum.ForumLastPosterColour, forum.ForumLastPostTime?.ToUtcTime(), forum.ForumId,
-                Model.DateFormat, false, null,
-                forum.ForumLastPostId == 0 ? null : $"./ViewTopic?postId={forum.ForumLastPostId}&handler=ByPostId",
-                forum.ForumLastPostId == 0 ? null : "&#x1F4C3;",
-                forum.ForumLastPostId == 0 ? null : "Vezi ultimul mesaj",
-                false, true
-            )
-        )
-    </div>
-    <hr class="BoxSeparator" />
 }

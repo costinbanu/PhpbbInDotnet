@@ -146,6 +146,22 @@ else if (Model.ViewAsAnother)
             }
         </div>
     </div>
+    <p></p>
+    <div class="FlexCenter">
+        <div style="font-weight:bold; text-align: right">
+            Localitate
+        </div>
+        <div class="FlexRight PostInputWidth">
+            @if (await Model.CanEditAsync())
+            {
+                <input asp-for="CurrentUser.UserFrom" />
+            }
+            else
+            {
+                @Html.Raw(Model.CurrentUser.UserFrom)
+            }
+        </div>
+    </div>
     @if (await Model.CanEditAsync())
     {
         <p></p>
@@ -156,16 +172,6 @@ else if (Model.ViewAsAnother)
             <div class="FlexRight PostInputWidth">
                 <input asp-for="CurrentUser.UserDateformat" />
                 <br /><span class="Caption">Exemplu: dd.MM.yyyy HH:mm va afișa data "@DateTime.Now.ToString("dd.MM.yyyy HH:mm")"</span>
-            </div>
-        </div>
-        <p></p>
-        <div class="FlexCenter">
-            <div style="font-weight:bold; text-align: right">
-                Semnătura
-            </div>
-            <div class="FlexRight PostInputWidth">
-                <textarea asp-for="CurrentUser.UserSig" rows="4"></textarea><br />
-                <span class="Caption">Este permis codul BB.</span>
             </div>
         </div>
         <p></p>

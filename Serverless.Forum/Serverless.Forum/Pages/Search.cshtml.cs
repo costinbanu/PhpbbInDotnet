@@ -55,7 +55,7 @@ namespace Serverless.Forum.Pages
             : base(context, forumService, userService, cacheService)
         { }
 
-        public async Task OnGet()
+        public async Task<IActionResult> OnGet()
         {
             NameValueCollection query = null;
 
@@ -98,31 +98,39 @@ namespace Serverless.Forum.Pages
             {
                 await Search();
             }
+
+            return Page();
         }
 
-        public async Task OnGetByAuthor()
+        public async Task<IActionResult> OnGetByAuthor()
         {
+            if (AuthorId == 0)
+            {
+                return BadRequest("IDul utilizatorului este greșit.");
+            }
             IsAuthorSearch = true;
-            await OnGet();
-            await Search();
+            DoSearch = true;
+            return await OnGet();
         }
 
-        public async Task OnPost()
+        public async Task<IActionResult> OnPost()
         {
-            await OnGet();
-            await Search();
+            DoSearch = true;
+            return await OnGet();
         }
 
         public string GetSearchLinkForPage(int page) =>
             $"/Search" +
                 $"?{nameof(QueryString)}={HttpUtility.UrlEncode(QueryString)}" +
                 $"&{nameof(Author)}={Author}" +
+                $"&{nameof(AuthorId)}={AuthorId}" +
                 $"&{nameof(ForumId)}={ForumId}" +
                 $"&{nameof(TopicId)}={TopicId}" +
                 $"&{nameof(SearchText)}={HttpUtility.UrlEncode(SearchText)}" +
                 $"&{nameof(PageNum)}={page}" +
                 $"&{nameof(TotalResults)}={TotalResults}" +
-                $"&{nameof(DoSearch)}={true}";
+                $"&{nameof(DoSearch)}={true}" +
+                (IsAuthorSearch ? "&handler=byAuthor" : "");
 
         private async Task Search()
         {
@@ -167,7 +175,6 @@ namespace Serverless.Forum.Pages
         {
             public string UserAvatar { get; set; }
             public int ForumId { get; set; }
-            public string TopicTitle { get; set; }
         }
     }
 }

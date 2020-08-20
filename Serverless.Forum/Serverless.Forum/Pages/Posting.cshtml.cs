@@ -491,14 +491,14 @@ namespace Serverless.Forum.Pages
         public async Task<string> GetActualCacheKey(string key, bool isPersonalizedData)
             => isPersonalizedData ? $"{(await GetCurrentUserAsync()).UserId}_{ForumId}_{TopicId ?? 0}_{key ?? throw new ArgumentNullException(nameof(key))}" : key;
 
-        public async Task<(List<PhpbbPosts> posts, List<PhpbbUsers> users)> GetPreviousPosts(PostingActions action)
+        public async Task<(IEnumerable<PhpbbPosts> posts, IEnumerable<PhpbbUsers> users)> GetPreviousPosts(PostingActions action)
         {
             if(((TopicId.HasValue && PageNum.HasValue) || PostId.HasValue) && (action == PostingActions.EditForumPost || action == PostingActions.NewForumPost))
             {
-                var (previousPosts, _, _) = await _postService.GetPostPageAsync((await GetCurrentUserAsync()).UserId, TopicId, PageNum, PostId);
                 using var connection = _context.Database.GetDbConnection();
                 await connection.OpenIfNeeded();
-                var users = (await connection.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id IN @userIds", new { userIds = previousPosts.Select(pp => pp.PosterId).DefaultIfEmpty() })).ToList();
+                var previousPosts = await connection.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC LIMIT 10", new { TopicId });
+                var users = await connection.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id IN @userIds", new { userIds = previousPosts.Select(pp => pp.PosterId).DefaultIfEmpty() });
                 return (previousPosts, users);
             }
             return (new List<PhpbbPosts>(), new List<PhpbbUsers>());

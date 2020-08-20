@@ -148,7 +148,7 @@ else
             )
             <div class="ForumContent" id="@post.PostId">
                 <div class="Caption" style="clear:both">
-                    @Html.Raw($"{_forumService.GetPathText((await Model.GetForumTree()).Tree, post.ForumId)} → {System.Web.HttpUtility.HtmlDecode(post.TopicTitle)}")
+                    @Html.Raw(_forumService.GetPathText((await Model.GetForumTree()).Tree, post.ForumId))
                 </div>
                 <span style="display:flex">
                     <span class="PostTitle">

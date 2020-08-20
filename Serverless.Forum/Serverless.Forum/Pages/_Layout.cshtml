@@ -78,26 +78,18 @@
                                 Caută în @(isTopic ? "subiect" : "forum") &#x1F50E;
                             </a>
                         </li>
+                        if (!(currentUser?.IsAnonymous ?? true))
+                        {
+                            <li>
+                                <a asp-page="/MemberList">Membrii forumului</a>
+                            </li>
+                        }
                     }
-                    <li>
-                        <a asp-page="/MemberList">Membrii forumului</a>
-                    </li>
                 </ul><br /> <br />
             </div>
         </div>
     </nav>
     <div class="container body-content size1300" id="mainContainer">
-        <a href="javascript:showElement('metrouusorLinks');" class="Show1300">Site-urile „MetrouUșor”</a>
-        <ul class="Shortcuts Hide1300" id="metrouusorLinks">
-            <li><a href="https://metrouusor.com" target="_blank">Asociația „Metrou Ușor”</a></li>
-            <li><a href="https://www.facebook.com/MetrouUsor/" target="_blank">Facebook</a></li>
-            <li><a href="https://youtube.com/channel/UCczAlitk6NaUjQsbtCSdEjA" target="_blank">Youtube</a></li>
-            <li><a href="https://www.facebook.com/InitiativaMTB/" target="_blank">Inițiativa pentru Muzeul transportului bucureștean</a></li>
-            <li><a href="https://metrouusor.com/Content/implica-te/directioneaza-2-din-impozit.html" target="_blank">2% pentru Asociația „Metrou Ușor”</a></li>
-            <li><a href="./ViewTopic?topicId=5252&pageNum=1">Sugestii sau reclamații pentru noul forum</a></li>
-            <li><a href="https://forum.metrouusor.com">Înapoi la vechiul forum</a></li>
-        </ul>
-
         <center>
             @{
                 var pmCount = 0;

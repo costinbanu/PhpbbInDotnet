@@ -9,6 +9,7 @@ BEGIN
     then
 		set excluded_forums = '0';
     end if;    
+    
 	set @sql = CONCAT (
 		"SELECT p.post_id,
 				p.post_subject,
@@ -24,16 +25,18 @@ BEGIN
 				u.user_avatar,
 				u.user_sig,
 				u.user_sig_bbcode_uid,
-				p.post_time
+				p.post_time,
+                p.forum_id
 		   FROM phpbb_posts p
 		   JOIN phpbb_users u
-			ON p.poster_id = u.user_id
+			 ON p.poster_id = u.user_id
 		  WHERE (? IS NULL OR ? = p.forum_id)
 			AND (? IS NULL OR ? = p.topic_id)
 			AND (? IS NULL OR ? = p.poster_id)
 			AND (? IS NULL OR MATCH(p.post_text) AGAINST(? IN BOOLEAN MODE))
-			AND p.forum_id NOT IN (", excluded_forums, ")	
-		  UNION ALL
+			AND NOT FIND_IN_SET (p.forum_id, '", excluded_forums, "')	
+		  
+          UNION
 		  
 		  SELECT p.post_id,
 				p.post_subject,
@@ -49,18 +52,20 @@ BEGIN
 				u.user_avatar,
 				u.user_sig,
 				u.user_sig_bbcode_uid,
-				p.post_time
+				p.post_time,
+                p.forum_id
 		   FROM phpbb_posts p
 		   JOIN phpbb_users u
-			ON p.poster_id = u.user_id
+			 ON p.poster_id = u.user_id
 		  WHERE (? IS NULL OR ? = p.forum_id)
 			AND (? IS NULL OR ? = p.topic_id)
 			AND (? IS NULL OR ? = p.poster_id)
 			AND (? IS NULL OR MATCH(p.post_subject) AGAINST(? IN BOOLEAN MODE))
-			AND p.forum_id NOT IN (", excluded_forums, ")	
+			AND NOT FIND_IN_SET (p.forum_id, '", excluded_forums, "')		
 	  ORDER BY post_time DESC
 	  LIMIT ?, 14;"
     );
+    
     set @start_idx = (page_no - 1) * 14;
 	PREPARE stmt FROM @sql;
           
@@ -72,25 +77,26 @@ BEGIN
 	EXECUTE stmt USING @forum, @forum, @topic, @topic, @author, @author, @search, @search, @forum, @forum, @topic, @topic, @author, @author, @search, @search, @start_idx;
 	DEALLOCATE PREPARE stmt;
 
+	WITH search_stmt AS (
+		SELECT p.post_id
+		  FROM phpbb_posts p
+	     WHERE (forum IS NULL OR forum = p.forum_id)
+		   AND (topic IS NULL OR topic = p.topic_id)
+		   AND (author IS NULL OR author = p.poster_id)
+		   AND (search IS NULL OR MATCH(p.post_text) AGAINST(search IN BOOLEAN MODE))
+		   AND NOT FIND_IN_SET (p.forum_id, excluded_forums)	
+		 
+         UNION            
+		
+		SELECT p.post_id
+		  FROM phpbb_posts p
+		 WHERE (forum IS NULL OR forum =p.forum_id)
+		   AND (topic IS NULL OR topic = p.topic_id)
+		   AND (author IS NULL OR author = p.poster_id)
+		   AND (search IS NULL OR MATCH(p.post_subject) AGAINST(search IN BOOLEAN MODE))
+           AND NOT FIND_IN_SET (p.forum_id, excluded_forums)
+    )
 	SELECT count(1) as total_count
-      INTO @post_count
-      FROM phpbb_posts p
-      JOIN phpbb_topics t
-        ON p.topic_id = t.topic_id
-     WHERE (forum IS NULL OR forum = t.forum_id)
-       AND (topic IS NULL OR topic = p.topic_id)
-       AND (author IS NULL OR author = p.poster_id)
-       AND (search IS NULL OR MATCH(p.post_text) AGAINST(search IN BOOLEAN MODE));
-                        
-	SELECT count(1) as total_count
-      INTO @subject_count
-      FROM phpbb_posts p
-      JOIN phpbb_topics t
-        ON p.topic_id = t.topic_id
-     WHERE (forum IS NULL OR forum = t.forum_id)
-       AND (topic IS NULL OR topic = p.topic_id)
-       AND (author IS NULL OR author = p.poster_id)
-	   AND (search IS NULL OR MATCH(p.post_subject) AGAINST(search IN BOOLEAN MODE));
-       
-	SELECT @post_count + @subject_count AS total_count;
+      FROM search_stmt;
+
 END

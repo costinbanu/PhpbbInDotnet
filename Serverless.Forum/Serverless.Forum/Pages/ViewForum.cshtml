@@ -36,6 +36,11 @@
             forumInput.value = forumId;
         }
     }
+
+    $(document).ready(function () {
+        var elementTop = $('.Unread').offset().top;
+        window.scrollTo(0, elementTop - 20);
+    });
 </script>
 
 @if ((Model.ParentForumId ?? 0) != 0 && !Model.IsNewPostView && !Model.IsOwnPostView)
@@ -46,6 +51,7 @@ else
 {
     <h4><a href="/">Prima pagină</a></h4>
 }
+
 @if (Model.IsNewPostView)
 {
     <h2>Subiecte necitite</h2>
@@ -81,11 +87,6 @@ else
 @if (!IsAnonymous && !Model.IsNewPostView && !Model.IsOwnPostView)
 {
     <ul class="Shortcuts">
-        <li>
-            <button onclick="location.href='/Posting?forumId=@Model.ForumId&handler=newTopic'" type="button">
-                &#x1F4DD;&nbsp;Deschide un subiect nou
-            </button>
-        </li>
         @if (hasSubForums)
         {
             <li><a href="javascript:MarkForumsRead.submit()">Marchează forumurile ca citite</a></li>
@@ -104,6 +105,7 @@ else
         new Serverless.Forum.Pages.CustomPartials._ForumDisplayPartialModel(Model.ForumId, Model.Forums, UserDateFormat, true, CurrentUser),
         ViewData
     )
+    <hr class="BoxSeparator" />
     <p>&nbsp;</p>
 }
 
@@ -130,6 +132,7 @@ else
             ViewData
         );
     }
+    var lastTopicType = TopicType.Normal;
     foreach (var topicGroup in Model.Topics)
     {
         if (!Model.IsNewPostView && !Model.IsOwnPostView)
@@ -138,6 +141,7 @@ else
             {
                 if (announcementsDisplayed || topicsDisplayed)
                 {
+                    <hr class="BoxSeparator" />
                     <p>&nbsp;</p>
                 }
                 <h3 style="float:left">Subiecte globale</h3>
@@ -147,8 +151,9 @@ else
             {
                 if (globalsDisplayed || topicsDisplayed)
                 {
+                    <hr class="BoxSeparator" />
                     <p>&nbsp;</p>
-                } 
+                }
                 <h3 style="float:left">Anunțuri</h3>
                 announcementsDisplayed = true;
             }
@@ -156,19 +161,42 @@ else
             {
                 if (globalsDisplayed || announcementsDisplayed)
                 {
+                    <hr class="BoxSeparator" />
                     <p>&nbsp;</p>
-                } 
+                }
                 <h3 style="float:left">Subiecte</h3>
                 topicsDisplayed = true;
             }
         }
-        var topics = topicGroup?.Topics?.ToList() ?? new List<TopicDto>();
-        foreach (var topic in topics)
+
+        var isFirst = true;
+        if (lastTopicType == TopicType.Important && topicGroup?.TopicType == TopicType.Normal)
+        {
+            isFirst = false;
+        }
+        if (isFirst && topicGroup.TopicType <= TopicType.Important)
+        {
+            <span>
+                &nbsp;&bull;&nbsp;
+                <button onclick="location.href='/Posting?forumId=@Model.ForumId&handler=newTopic'" type="button">
+                    &#x1F4DD;&nbsp;Deschide un subiect nou
+                </button>
+            </span>
+        }
+        var previousIsUnread = false;
+        //var topics = topicGroup?.Topics?.ToList() ?? new List<TopicDto>();
+        foreach (var topic in topicGroup?.Topics ?? Enumerable.Empty<TopicDto>())
         {
             var pageSize = CurrentUser.TopicPostsPerPage.ContainsKey(topic.TopicId ?? 0) ? CurrentUser.TopicPostsPerPage[topic.TopicId ?? 0] : Constants.DEFAULT_PAGE_SIZE;
             topic.Unread = await Model.IsTopicUnread(topic.ForumId ?? 0, topic.TopicId ?? 0);
             topic.Pagination = new CustomPartials._PaginationPartialModel($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", topic.PostCount ?? 0, pageSize, 1, "PageNum");
 
+            if (!isFirst && !previousIsUnread && !topic.Unread)
+            {
+                <hr class="BoxSeparator" />
+            }
+
+            previousIsUnread = topic.Unread;
             var divClass = topic.Unread ? "FlexRow Unread RowMargin" : "FlexRow RowMargin";
             <div class="@divClass">
                 <span class="ForumContent">
@@ -208,8 +236,10 @@ else
                      )
                  )
             </div>
-            <hr class="BoxSeparator" />
+            isFirst = false;
         }
+
+        lastTopicType = topicGroup?.TopicType ?? TopicType.Normal;
     }
 
     if (Model.IsNewPostView || Model.IsOwnPostView)
@@ -271,3 +301,4 @@ else if (Model.IsOwnPostView)
         <input type="submit" value="Du-te" />
     </form>
 </div>
+

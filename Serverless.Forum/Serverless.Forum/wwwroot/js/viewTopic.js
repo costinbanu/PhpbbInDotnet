@@ -13,7 +13,7 @@
         if (this.postId != -1) {
             var element = $("#" + this.postId);
             var elementTop = element.offset().top;
-            window.scrollTo(0, elementTop);
+            window.scrollTo(0, elementTop - 20);
             var container = element.parent().parent();
             if (container && this.highlight) {
                 container.addClass("Highlight");

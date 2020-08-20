@@ -116,10 +116,16 @@ namespace Serverless.Forum.Pages
 
             var userMustLogIn = false;
 
+            if (dbUser.UsernameClean != _utils.CleanString(CurrentUser.Username))
+            {
+                dbUser.Username = CurrentUser.Username;
+                dbUser.UsernameClean = _utils.CleanString(CurrentUser.Username);
+            }
             dbUser.UserBirthday = Birthday ?? string.Empty;
             dbUser.UserAllowViewemail = (byte)(ShowEmail ? 1 : 0);
             dbUser.UserRank = UserRank;
             dbUser.UserOcc = CurrentUser.UserOcc ?? string.Empty;
+            dbUser.UserFrom = CurrentUser.UserFrom ?? string.Empty;
             dbUser.UserInterests = CurrentUser.UserInterests ?? string.Empty;
             dbUser.UserDateformat = CurrentUser.UserDateformat ?? "dddd, dd.MM.yyyy, HH:mm";
             dbUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(CurrentUser.UserSig));
@@ -246,28 +252,32 @@ namespace Serverless.Forum.Pages
                     t.TopicLastPosterColour = group.GroupColour;
                 }
                 dbUser.UserColour = group.GroupColour;
+                dbUser.GroupId = group.GroupId;
                 userMustLogIn = true;
             }
 
-            await _context.SaveChangesAsync();
+            var affectedEntries = await _context.SaveChangesAsync();
 
             await Render(_context, dbUser);
 
-            await HttpContext.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme,
-                await _userService.DbUserToClaimsPrincipalAsync(dbUser),
-                new AuthenticationProperties
-                {
-                    AllowRefresh = true,
-                    ExpiresUtc = DateTimeOffset.Now.AddMonths(1),
-                    IsPersistent = true,
-                }
-            );
-
-            if (userMustLogIn)
+            if (affectedEntries > 0 && CurrentUser.UserId != (await GetCurrentUserAsync()).UserId)
             {
-                var key = $"UserMustLogIn_{dbUser.UsernameClean}";
-                await _cacheService.SetInCache(key, true);
+                await HttpContext.SignInAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme,
+                    await _userService.DbUserToClaimsPrincipalAsync(dbUser),
+                    new AuthenticationProperties
+                    {
+                        AllowRefresh = true,
+                        ExpiresUtc = DateTimeOffset.Now.AddMonths(1),
+                        IsPersistent = true,
+                    }
+                );
+
+                if (userMustLogIn)
+                {
+                    var key = $"UserMustLogIn_{dbUser.UsernameClean}";
+                    await _cacheService.SetInCache(key, true);
+                }
             }
 
             return Page();

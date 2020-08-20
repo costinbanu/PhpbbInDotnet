@@ -1,0 +1,81 @@
+﻿@model Serverless.Forum.Pages.CustomPartials._UserSummaryPartialModel
+
+@using Utilities;
+
+@if (!(Model.UserList?.Any() ?? false))
+{
+    <h4>Nu a fost găsit nici un rezultat</h4>
+}
+else
+{
+    <p>&nbsp;</p>
+
+    @await Html.PartialAsync("_PaginationControlsPartial", Model.UpperPagination)
+
+    var isFirst = true;
+    foreach (var user in Model.UserList)
+    {
+        var color = string.IsNullOrWhiteSpace(user.UserColour) ? "#000000" : $"#{user.UserColour}";
+        var textDecoration = user.UserInactiveTime > 0 ? "line-through" : "none";
+
+        if (!isFirst)
+        {
+            <hr />
+        }
+
+        <div class="FlexCenter">
+            <div class="PostTitle" style="overflow-wrap: break-word">
+                <a asp-page="User" asp-route-UserId="@user.UserId" style="color:@color; text-decoration:@textDecoration">@Html.Raw(user.Username)</a>
+            </div>
+            <div class="FlexRight PostInputWidth">
+                <b>Înscris:</b>
+                <script>
+                writeDate("@user.UserRegdate.ToUtcTime().ToString("o")", "@Model.DateFormat");
+                </script>
+                <br />
+                <b>Activ ultima oară:</b>
+                @if (user.UserInactiveTime == 0)
+                {
+                    <script>
+                    writeDate("@user.UserLastvisit.ToUtcTime().ToString("o")", "@Model.DateFormat");
+                    </script>
+                }
+                else
+                {
+                    <span>inactiv</span>
+                }
+                <br />
+                <b>Localitate:</b>
+                @Html.Raw(user.UserFrom)
+                <br />
+                @{
+                    var group = Model.GroupList.FirstOrDefault(g => g.GroupId == user.GroupId);
+                    if (group != null)
+                    {
+                        <b>Grup:</b>
+                        @if ((group.GroupColour ?? "000000") != "000000")
+                        {
+                            <span style="font-weight: bold; color: #@group.GroupColour">
+                                @Html.Raw(group.GroupName)
+                            </span>
+                        }
+                        else
+                        {
+                            @Html.Raw(group.GroupName)
+                        }
+                        <br />
+                    }
+                    var rank = Model.RankList.FirstOrDefault(r => r.RankId == user.UserRank);
+                    if (rank != null)
+                    {
+                        <b>Rang:</b>
+                        @Html.Raw(rank.RankTitle)
+                    }
+                }
+            </div>
+        </div>
+        isFirst = false;
+    }
+
+    @await Html.PartialAsync("_PaginationControlsPartial", Model.LowerPagination)
+}

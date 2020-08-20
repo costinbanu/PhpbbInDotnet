@@ -2,6 +2,9 @@
 @model Serverless.Forum.Pages.MemberListModel
 
 @using Serverless.Forum.Utilities
+@using System.Web
+ 
+@inject Utils _utils
 
 @{
     ViewData["Title"] = "MemberList";
@@ -11,76 +14,102 @@
 
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />
+    <script src="~/js/tabbedPage.js"></script>
+    <link rel="stylesheet" href="~/css/tabbedPage.css" />
 </environment>
 
-@if (Model.IsSearch)
-{
-    <h2>Rezultatele căutării</h2>
-}
-else
-{
+<div class="tab">
+    <button class="@(Model.Mode == MemberListPages.AllUsers ? "tablinks active" : "tablinks")" onclick="openTab(event, 'AllUsers')">Toți utilizatorii</button>
+    <button class="@(Model.Mode == MemberListPages.SearchUsers ? "tablinks active" : "tablinks")" onclick="openTab(event, 'SearchUsers')">Caută un utilizator</button>
+    <button class="@(Model.Mode == MemberListPages.Groups ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Groups')">Toate grupurile</button>
+</div>
+
+<div id="AllUsers" class="tabcontent" style="@(Model.Mode == MemberListPages.AllUsers ? "display:inherit" : "display:none")">
     <h2>Membrii forumului</h2>
-}
-<form method="get">
-    <input type="hidden" name="handler" value="search" />
-    <input asp-for="Username" placeholder="Caută un membru..." />
-    <input type="submit" value="Caută" />
-</form>
+    <form method="get">
+        @Html.DropDownListFor(m => m.Order, _utils.EnumToDropDownList<MemberListOrder>(Model.Order, Model.GetOrderDisplayName, "Ordonează după..."), new { id = "userOrder", style="height:30px" })
+        <input asp-for="Mode" type="hidden" />
+        <input asp-for="PageNum" type="hidden" />
+        <input type="submit" value="Trimite" style="height:32px" />
+    </form>
 
-@await Html.PartialAsync(
-    "_PaginationControlsPartial",
-    new CustomPartials._PaginationControlsPartialModel(
-        paginator: Model.Paginator,
-        allowPaginationChange: false,
-        back: $"MemberList?pageNum={Model.PageNum - 1}",
-        forward: $"MemberList?pageNum={Model.PageNum + 1}",
-        includeEasyNavigation: false
-    ),
-    ViewData
-)
+    @await Html.PartialAsync(
+        "_UserSummaryPartial",
+        new CustomPartials._UserSummaryPartialModel(
+            userList: Model.UserList, groupList: Model.UserGroupList, rankList: Model.UserRankList, dateFormat: dateFormat,
+            paginator: Model.UserPaginator, backLink: $"MemberList?pageNum={Model.PageNum - 1}&order={Model.Order}&mode={MemberListPages.AllUsers}", forwardLink: $"MemberList?pageNum={Model.PageNum + 1}&order={Model.Order}&mode={MemberListPages.AllUsers}"
+        )
+    )
 
-@if (!Model.UserList.Any())
-{
-    <h4>Nu a fost găsit nici un rezultat</h4>
-}
+</div>
 
+<div id="SearchUsers" class="tabcontent" style="@(Model.Mode == MemberListPages.SearchUsers ? "display:inherit" : "display:none")">
+    @if (!(Model.SearchResults?.Any() ?? false))
+    {
+        <h2>Caută un utilizator</h2>
+    }
+    else
+    {
+        <h2>Rezultatele căutării</h2>
+    }
+    <form method="get">
+        <input type="hidden" name="handler" value="search" />
+        <input asp-for="Username" placeholder="Caută după nume..." style="height:30px" id="usernameUserInput" />
+        @Html.DropDownListFor(m => m.Order, _utils.EnumToDropDownList<MemberListOrder>(Model.Order, Model.GetOrderDisplayName, "Ordonează după..."), new { id = "searchOrder", style = "height:30px" })
+        <input asp-for="Mode" type="hidden" />
+        <input asp-for="PageNum" type="hidden" id="pageNumInput" />
+        <input type="hidden" value="@Model.Username" id="usernameOriginalValue" />
+        <input type="submit" value="Trimite" style="height:32px" onclick="return shouldChangePageNum()" />
+    </form>
 
-@foreach (var user in Model.UserList)
-{
-    var color = string.IsNullOrWhiteSpace(user.UserColour) ? "#000000" : $"#{user.UserColour}";
-    var textDecoration = user.UserInactiveTime > 0 ? "line-through" : "none";
-    <div class="FlexCenter">
-        <div class="PostTitle" style="overflow-wrap: break-word">
-            <a asp-page="User" asp-route-UserId="@user.UserId" style="color:@color; text-decoration:@textDecoration">@Html.Raw(user.Username)</a>
-        </div>
-        <div class="FlexRight PostInputWidth">
-            <b>Activ ultima oară:</b>
-            @if (user.UserInactiveTime == 0)
+    @await Html.PartialAsync(
+        "_UserSummaryPartial",
+        new CustomPartials._UserSummaryPartialModel(
+            userList: Model.SearchResults, groupList: Model.SearchGroupList, rankList: Model.SearchRankList, dateFormat: dateFormat,
+            paginator: Model.SearchPaginator, backLink: $"MemberList?pageNum={Model.PageNum - 1}&order={Model.Order}&handler=search&username={HttpUtility.UrlEncode(Model.Username)}", forwardLink: $"MemberList?pageNum={Model.PageNum + 1}&order={Model.Order}&handler=search&username={HttpUtility.UrlEncode(Model.Username)}"
+        )
+    )
+
+</div>
+
+<div id="Groups" class="tabcontent" style="@(Model.Mode == MemberListPages.Groups ? "display:inherit" : "display:none")">
+    <h2>Grupurile forumului</h2>
+    @{
+        var isFirst = true;
+        foreach (var group in Model.GroupList ?? Enumerable.Empty<Serverless.Forum.ForumDb.Entities.PhpbbGroups>())
+        {
+            if (!isFirst)
             {
-                <script>
-                    writeDate("@user.UserLastvisit.ToUtcTime().ToString("o")", "@dateFormat");
-                </script>
+                <hr />
             }
-            else
-            {
-                <span>inactiv</span>
-            }
+
+            <span style="font-weight: bold; color: #@group.GroupColour">
+                @Html.Raw(group.GroupName)
+            </span>
             <br />
-            <b>Localitate:</b>
-            @Html.Raw(user.UserFrom)
-        </div>
-    </div>
-    <hr />
+            @Html.Raw(group.GroupDesc);
+
+            isFirst = false;
+        }
+    }
+    <p></p>
+</div>
+
+@if (!Model.Order.HasValue)
+{
+    <script>
+        $(document).ready(function () {
+            $('#userOrder').val('dummyValue');
+            $('#searchOrder').val('dummyValue');
+        });
+    </script>
 }
 
-@await Html.PartialAsync(
-    "_PaginationControlsPartial",
-    new CustomPartials._PaginationControlsPartialModel(
-        paginator: Model.Paginator,
-        allowPaginationChange: false,
-        back: $"MemberList?pageNum={Model.PageNum - 1}",
-        forward: $"MemberList?pageNum={Model.PageNum + 1}",
-        includeEasyNavigation: true
-    ),
-    ViewData
-)
+<script>
+    function shouldChangePageNum() {
+        if ($('#usernameUserInput').val().toLowerCase() != $('#usernameOriginalValue').val().toLowerCase()) {
+            $('#pageNumInput').val('1');
+        }
+        return true;
+    }
+</script>
