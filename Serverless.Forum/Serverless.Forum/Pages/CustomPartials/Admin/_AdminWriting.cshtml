@@ -85,14 +85,14 @@
 <p>&nbsp;</p>
 <h4>Fișiere orfane</h4>
 @{
-    /*var (onDisk, inDb)*/var onDisk = await _writingService.CacheOrphanedFiles(Model.CurrentUserId);
+    var files = await _writingService.GetOrphanedFiles();
     <form method="post" asp-page-handler="OrphanedFiles" id="orphanedFilesForm">
         <input name="action" id="action" type="hidden" />
     </form>
     <h5>
-        <b>Fișiere pe server fără corespondență într-un mesaj (@onDisk.Count() fișiere, în total @_utils.ReadableFileSize(onDisk.Sum(f => f.Item1.Length)))</b>
+        <b>Fișiere pe server fără corespondență într-un mesaj (@files.Count() fișiere, în total @_utils.ReadableFileSize(files.Sum(f => f.Filesize)))</b>
         <br /><i>Click pe titlul coloanei pentru sortare.</i>
-        <br /><a href="#!" onclick="submitOrphanedFiles('@Utilities.AdminOrphanedFilesActions.DeleteFromS3')">Șterge aceste fișiere</a>
+        <br /><a href="javascript:$('#orphanedFilesForm').submit()">Șterge aceste fișiere</a>
     </h5>
     <table class="writingTable">
         <tr>
@@ -102,45 +102,18 @@
             <th onclick="sort(this)" style="cursor:pointer">Dimensiune</th>
         </tr>
 
-        @foreach (var f in onDisk)
+        @foreach (var f in files)
         {
             <tr>
-                <td>@f.Item1.Name</td>
-                <td>@f.Item2</td>
-                <td>@f.Item1.LastWriteTimeUtc</td>
-                <td>@_utils.ReadableFileSize(f.Item1.Length)</td>
+                <td>@f.RealFilename</td>
+                <td>@System.Web.HttpUtility.HtmlDecode(f.Username)</td>
+                <td>@f.Filetime.ToUtcTime().ToString("o")</td>
+                <td>@_utils.ReadableFileSize(f.Filesize)</td>
             </tr>
         }
     </table>
 
     <p>&nbsp;</p>
-
-    @*<h5>
-        <b>Fișiere în mesaje fără corespondență pe server (@inDb.Count() fișiere)</b>
-        <br /><i>Click pe titlul coloanei pentru sortare.</i>
-        <br /><a href="#!" onclick="submitOrphanedFiles('@Utilities.AdminOrphanedFilesActions.DeleteFromDb')">Șterge aceste fișiere</a>
-    </h5>
-    <table class="writingTable">
-        <tr>
-            <th onclick="sort(this)" style="cursor:pointer">Id fișier</th>
-            <th onclick="sort(this)" style="cursor:pointer">Nume fișier</th>
-            <th onclick="sort(this)" style="cursor:pointer">Id mesaj</th>
-            <th onclick="sort(this)" style="cursor:pointer">Autor</th>
-            <th onclick="sort(this)" style="cursor:pointer">Ultima dată modificat</th>
-            <th onclick="sort(this)" style="cursor:pointer">Dimensiune</th>
-        </tr>
-        @foreach (var f in inDb)
-        {
-            <tr>
-                <td>@f.Item1.AttachId</td>
-                <td style="width:40%; word-break: break-all">@f.Item1.RealFilename</td>
-                <td><a asp-page="ViewTopic" asp-route-postId="@f.Item1.PostMsgId" asp-route-highlight="true" asp-page-handler="byPostId" target="_blank">@f.Item1.PostMsgId</a></td>
-                <td>@f.Item2</td>
-                <td>@f.Item1.Filetime.ToUtcTime()</td>
-                <td>@_utils.ReadableFileSize(f.Item1.Filesize)</td>
-            </tr>
-        }
-    </table>*@
 }
 
 <script type="text/javascript">
@@ -159,17 +132,15 @@
     function comparer(index) {
         return function (a, b) {
             var valA = getCellValue(a, index), valB = getCellValue(b, index);
-            return $.isNumeric(valA) && $.isNumeric(valB) ? valA - valB : valA.toString().localeCompare(valB);
+            var asDates = Date.parse(valA) - Date.parse(valB);
+            console.log(Date.parse(valA));
+            var asNumbers = parseInt(valA) - parseInt(valB);
+            return asDates ? asDates : (asNumbers ? asNumbers : valA.toString().localeCompare(valB));
         }
     }
 
     function getCellValue(row, index) {
         return $(row).children('td').eq(index).text();
-    }
-
-    function submitOrphanedFiles(action) {
-        $("#action").val(action);
-        $("#orphanedFilesForm").submit();
     }
 
 </script>

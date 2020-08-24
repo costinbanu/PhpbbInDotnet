@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.ForumDb.Entities;
@@ -32,9 +33,9 @@ namespace Serverless.Forum.Pages
         private readonly AdminForumService _adminForumService;
         private readonly WritingToolsService _adminWritingService;
 
-        public AdminModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService,
-            Utils utils, AdminUserService adminUserService, AdminForumService adminForumService, WritingToolsService adminWritingService) 
-            : base(context, forumService, userService, cacheService)
+        public AdminModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, Utils utils, 
+            AdminUserService adminUserService, AdminForumService adminForumService, WritingToolsService adminWritingService, IConfiguration config) 
+            : base(context, forumService, userService, cacheService, config)
         {
             _utils = utils;
             _adminUserService = adminUserService;
@@ -153,23 +154,10 @@ namespace Serverless.Forum.Pages
                 return Page();
             });
 
-        public async Task<IActionResult> OnPostOrphanedFiles(AdminOrphanedFilesActions action)
+        public async Task<IActionResult> OnPostOrphanedFiles()
             => await WithAdmin(async () =>
             {
-                /*var (onDisk, inDb)*/ var onDisk = await _cacheService.GetFromCache</*(*/IEnumerable<string>/* onDisk, IEnumerable<int> inDb)*/>(_adminWritingService.GetCacheKey((await GetCurrentUserAsync()).UserId));
-                if (action == AdminOrphanedFilesActions.DeleteFromDb)
-                {
-                    //(Message, IsSuccess) = await _adminWritingService.DeleteDbOrphanedFiles(inDb);
-                }
-                else if (action == AdminOrphanedFilesActions.DeleteFromS3)
-                {
-                    (Message, IsSuccess) = _adminWritingService.DeleteOrphanedFiles(onDisk);
-                }
-
-                if (IsSuccess ?? false)
-                {
-                    await _cacheService.RemoveFromCache(_adminWritingService.GetCacheKey((await GetCurrentUserAsync()).UserId));
-                }
+                (Message, IsSuccess) = _adminWritingService.DeleteOrphanedFiles((await _adminWritingService.GetOrphanedFiles()).Select(f => f.PhysicalFilename));
 
                 Category = AdminCategories.WritingTools;
 

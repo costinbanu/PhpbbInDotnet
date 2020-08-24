@@ -3,9 +3,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Serverless.Forum.ForumDb;
+using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Services;
-using Serverless.Forum.Utilities;
 using System;
 using System.Threading.Tasks;
 using System.Web;
@@ -15,10 +14,12 @@ namespace Serverless.Forum.Pages
     public class LogoutModel : PageModel
     {
         private readonly UserService _userService;
+        private readonly IConfiguration _config;
 
-        public LogoutModel(UserService userService)
+        public LogoutModel(UserService userService, IConfiguration config)
         {
             _userService = userService;
+            _config = config;
         }
 
         public async Task<IActionResult> OnGet(string returnUrl)
@@ -30,7 +31,7 @@ namespace Serverless.Forum.Pages
                 new AuthenticationProperties
                 {
                     AllowRefresh = true,
-                    ExpiresUtc = DateTimeOffset.Now.AddMonths(1),
+                    ExpiresUtc = DateTimeOffset.Now.Add(TimeSpan.FromDays(_config.GetValue<int>("LoginSessionSlidingExpirationDays"))),
                     IsPersistent = true,
                 });
             return Redirect(HttpUtility.UrlDecode(returnUrl));

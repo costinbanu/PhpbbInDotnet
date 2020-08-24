@@ -14,7 +14,6 @@ namespace Serverless.Forum.Pages
     public class ConfirmModel : ModelWithLoggedUser
     {
         private readonly Utils _utils;
-        private readonly IConfiguration _config;
 
         public string Message { get; private set; }
         
@@ -49,10 +48,9 @@ namespace Serverless.Forum.Pages
         public bool IsDestinationConfirmation { get; private set; } = false;
 
         public ConfirmModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, Utils utils, IConfiguration config)
-            : base(context, forumService, userService, cacheService) 
+            : base(context, forumService, userService, cacheService, config) 
         {
             _utils = utils;
-            _config = config;
         }
 
         public void OnGetRegistrationComplete()

@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Services;
@@ -51,8 +52,8 @@ namespace Serverless.Forum.Pages
         public Paginator Paginator { get; private set; }
         public bool IsAuthorSearch { get; private set; }
 
-        public SearchModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
-            : base(context, forumService, userService, cacheService)
+        public SearchModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, IConfiguration config)
+            : base(context, forumService, userService, cacheService, config)
         { }
 
         public async Task<IActionResult> OnGet()
@@ -139,12 +140,7 @@ namespace Serverless.Forum.Pages
                 ModelState.AddModelError(nameof(SearchText), "Introduceți unul sau mai multe cuvinte!");
                 return;
             }
-            var restrictedForums = (await _forumService.GetRestrictedForumList(await GetCurrentUserAsync())).Select(f => f.forumId).ToList();
-            restrictedForums.Remove(ForumId ?? -1);
-            if (!restrictedForums.Any())
-            {
-                restrictedForums.Add(0);
-            }
+            var restrictedForums = (await _forumService.GetRestrictedForumList(await GetCurrentUserAsync())).Where(f => f.forumId != ForumId);
 
             using (var connection = _context.Database.GetDbConnection())
             {
@@ -158,7 +154,7 @@ namespace Serverless.Forum.Pages
                         topic = TopicId > 0 ? TopicId : null,
                         author = AuthorId > 0 ? AuthorId : null as int?,
                         page = PageNum,
-                        excluded_forums = string.Join(",", restrictedForums),
+                        excluded_forums = string.Join(',', restrictedForums.Select(f => f.forumId).DefaultIfEmpty()),
                         search = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText)
                     }
                 );

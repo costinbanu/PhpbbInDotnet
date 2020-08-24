@@ -20,7 +20,6 @@ namespace Serverless.Forum.Pages
         
         const int PAGE_SIZE = 20;
         private readonly Utils _utils;
-        private readonly IConfiguration _config;
 
         [BindProperty(SupportsGet = true)]
         public int PageNum { get; set; } = 1;
@@ -43,10 +42,9 @@ namespace Serverless.Forum.Pages
         public IEnumerable<PhpbbGroups> GroupList { get; private set; }
 
         public MemberListModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, Utils utils, IConfiguration config) 
-            : base (context, forumService, userService, cacheService) 
+            : base (context, forumService, userService, cacheService, config) 
         {
             _utils = utils;
-            _config = config;
         }
 
         public async Task<IActionResult> OnGet()

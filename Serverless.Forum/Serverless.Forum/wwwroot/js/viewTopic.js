@@ -85,7 +85,7 @@
 
     showMessageDetails(ip) {
         $('#postInfoContent').html('<b>IP:</b> ' + ip);
-        showElement('postInfo');
+        showElement('postInfo', null, null, true);
     }
 
     showReportForm(postId, reportId = null, reportReasonId = null, reportDetails = null) {
@@ -94,7 +94,7 @@
         $('#reportId').val(reportId);
         $('#reportDetails').val(reportDetails);
         $('#reportValidation').hide();
-        showElement('report');
+        showElement('report', null, null, true);
     }
 
     validateReportForm() {
@@ -125,8 +125,7 @@
         $('#reportViewerReporter').text(reportUsername);
         $('#reportViewerEditMessage').prop("checked", false);
         $('#reportViewerDeleteMessage').prop("checked", false);
-        showElement('reportViewer');
-
+        showElement('reportViewer', null, null, true);
     }
 
     confirmDeleteReportedPost() {

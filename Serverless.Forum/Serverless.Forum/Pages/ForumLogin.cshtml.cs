@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Serverless.Forum.ForumDb;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
@@ -21,7 +22,7 @@ namespace Serverless.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public int ForumId { get; set; }
 
-        [BindProperty]
+        [BindProperty, Required(ErrorMessage = "Trebuie să introduci o parolă")]
         public string Password { get; set; }
 
         public string ErrorMessage { get; set; }

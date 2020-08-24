@@ -111,15 +111,6 @@ namespace Serverless.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
-            //var user = await _context.PhpbbUsers.AsNoTracking().Where(u => u.UsernameClean == _utils.CleanString(UserName)).ToListAsync();
-            //user = user.Where(u => Crypter.Phpass.Crypt(Password, u.UserPassword) == u.UserPassword).ToList();
-
-            //if (!user.Any() && _config.GetValue<bool>("CompatibilityMode") && "ăîâșțĂÎÂȘȚ".Any(c => UserName.Contains(c)))
-            //{
-            //    var cache = await _context.PhpbbUsers.AsNoTracking().ToListAsync();
-            //    user = cache.Where(u => _utils.CleanString(u.Username) == _utils.CleanString(UserName) && Crypter.Phpass.Crypt(Password, u.UserPassword) == u.UserPassword).ToList();
-            //}
-
             using var connection = _context.Database.GetDbConnection();
             await connection.OpenIfNeeded();
 
@@ -131,33 +122,37 @@ namespace Serverless.Forum.Pages
                 ModelState.AddModelError(nameof(LoginErrorMessage), "Numele de utilizator și/sau parola sunt greșite!");
                 return Page();
             }
-            else if (user.First().UserInactiveReason != UserInactiveReason.NotInactive || user.First().UserInactiveTime != 0)
+
+            var currentUser = user.First();
+            if (currentUser.UserInactiveReason != UserInactiveReason.NotInactive || currentUser.UserInactiveTime != 0)
             {
                 ModelState.AddModelError(nameof(LoginErrorMessage), "Utilizatorul nu este activat!");
                 return Page();
             }
-            else
+
+            if (currentUser.UserPassword != Crypter.Phpass.Crypt(Password, currentUser.UserPassword))
             {
-                var currentUser = user.First();
-
-                await HttpContext.SignInAsync(
-                    CookieAuthenticationDefaults.AuthenticationScheme,
-                    await _userService.DbUserToClaimsPrincipalAsync(currentUser),
-                    new AuthenticationProperties
-                    {
-                        AllowRefresh = true,
-                        ExpiresUtc = DateTimeOffset.Now.AddMonths(1),
-                        IsPersistent = true,
-                    });
-
-                var key = $"UserMustLogIn_{currentUser.UsernameClean}";
-                if (await _cacheService.GetFromCache<bool?>(key) ?? false)
-                {
-                    await _cacheService.RemoveFromCache(key);
-                }
-
-                return Redirect(HttpUtility.UrlDecode(ReturnUrl ?? "/"));
+                ModelState.AddModelError(nameof(LoginErrorMessage), "Numele de utilizator și/sau parola sunt greșite!");
+                return Page();
             }
+
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                await _userService.DbUserToClaimsPrincipalAsync(currentUser),
+                new AuthenticationProperties
+                {
+                    AllowRefresh = true,
+                    ExpiresUtc = DateTimeOffset.Now.Add(TimeSpan.FromDays(_config.GetValue<int>("LoginSessionSlidingExpirationDays"))),
+                    IsPersistent = true,
+                });
+
+            var key = $"UserMustLogIn_{currentUser.UsernameClean}";
+            if (await _cacheService.GetFromCache<bool?>(key) ?? false)
+            {
+                await _cacheService.RemoveFromCache(key);
+            }
+
+            return Redirect(HttpUtility.UrlDecode(ReturnUrl ?? "/"));
         }
 
         public async Task<IActionResult> OnPostResetPassword()

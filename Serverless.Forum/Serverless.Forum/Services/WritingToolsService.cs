@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.ForumDb.Entities;
 using Serverless.Forum.Utilities;
@@ -86,76 +87,11 @@ namespace Serverless.Forum.Services
             }
         }
 
-        public async Task<IEnumerable<Tuple<FileInfo, string>>> CacheOrphanedFiles(int currentUserId)
-        //public async Task<(IEnumerable<Tuple<FileInfo, string>> onDisk, IEnumerable<Tuple<PhpbbAttachments, string>> inDb)> CacheOrphanedFiles(int currentUserId)
+        public async Task<IEnumerable<AttachmentManagementDto>> GetOrphanedFiles()
         {
-            int getUserId(string filename)
-            {
-                if (!filename.Contains('_'))
-                {
-                    return 1;
-                }
-                return int.TryParse(filename.Split('_')[0], out var val) ? val : 1;
-            }
-
-            var files = _storageService.ListAttachments();
-            IEnumerable<dynamic> users;
-            using (var connection = _context.Database.GetDbConnection())
-            {
-                await connection.OpenIfNeeded();
-                users = await connection.QueryAsync("SELECT user_id, username FROM phpbb_users");
-            }
-
-            var inS3 = from s in files
-
-                       join u in users
-                       on getUserId(s.Name) equals (int)u.user_id
-                       into joinedUsers
-
-                       from ju in joinedUsers.DefaultIfEmpty()
-                       where s != null
-                       select Tuple.Create(s, (string)ju?.username ?? "Anonymous");
-
-
-            var inDb = await (
-                from a in _context.PhpbbAttachments.AsNoTracking()
-
-                join u in _context.PhpbbUsers.AsNoTracking()
-                on a.PosterId equals u.UserId
-                into joinedUsers
-
-                from ju in joinedUsers.DefaultIfEmpty()
-                select new { Attach = a, User = ju == null ? "Anonymous" : ju.Username }
-            ).ToListAsync();
-
-            var toReturn = /*(
-                inS3:*/ from s in inS3
-
-                      join d in inDb
-                      on s.Item1.Name equals d.Attach.PhysicalFilename
-                      into joined
-
-                      from j in joined.DefaultIfEmpty()
-                      where j == null
-                      select s/*,
-
-                inDb: from d in inDb
-
-                      join s in inS3
-                      on d.Attach.PhysicalFilename equals s.Item1.Name
-                      into joined
-
-                      from j in joined.DefaultIfEmpty()
-                      where j == null
-                      select Tuple.Create(d.Attach, d.User)
-            )*/;
-
-            await _cacheService.SetInCache(
-                GetCacheKey(currentUserId),
-                (toReturn/*.inS3*/.Select(x => x.Item1.Name)/*, toReturn.inDb.Select(x => x.Item1.AttachId)*/)
-            );
-
-            return toReturn;
+            using var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeeded();
+            return await connection.QueryAsync<AttachmentManagementDto>("SELECT a.*, u.username FROM phpbb_attachments a JOIN phpbb_users u on a.poster_id = u.user_id WHERE a.is_orphan = 1");
         }
 
         public string GetCacheKey(int currentUserId)
@@ -170,11 +106,11 @@ namespace Serverless.Forum.Services
             var (Succeeded, Failed) = _storageService.BulkDeleteAttachments(files);
             if (Failed.Any())
             {
-                return ($"Fișierele {string.Join(',', Succeeded)} au fost șterse cu succes, însă fișierele {string.Join(',', Failed)} nu au fost șterse.", false);
+                return ($"Fișierele {string.Join(",", Succeeded)} au fost șterse cu succes, însă fișierele {string.Join(",", Failed)} nu au fost șterse.", false);
             }
             else
             {
-                return ($"Fișierele {string.Join(',', Succeeded)} au fost șterse cu succes.", true);
+                return ($"Fișierele {string.Join(",", Succeeded)} au fost șterse cu succes.", true);
             }
         }
 

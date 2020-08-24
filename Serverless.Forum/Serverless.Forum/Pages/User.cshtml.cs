@@ -69,16 +69,14 @@ namespace Serverless.Forum.Pages
         private readonly Utils _utils;
         private readonly StorageService _storageService;
         private readonly WritingToolsService _writingService;
-        private readonly IConfiguration _config;
 
         public UserModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
             StorageService storageService, WritingToolsService writingService, IConfiguration config)
-            : base(context, forumService, userService, cacheService)
+            : base(context, forumService, userService, cacheService, config)
         {
             _utils = utils;
             _storageService = storageService;
             _writingService = writingService;
-            _config = config;
         }
 
         public async Task<IActionResult> OnGet(int? userId, bool? viewAsAnother)
@@ -96,7 +94,7 @@ namespace Serverless.Forum.Pages
                 {
                     return RedirectToPage("Error", new { isNotFound = true });
                 }
-                await Render(_context, cur);
+                await Render(cur);
 
                 return Page();
             });
@@ -123,7 +121,6 @@ namespace Serverless.Forum.Pages
             }
             dbUser.UserBirthday = Birthday ?? string.Empty;
             dbUser.UserAllowViewemail = (byte)(ShowEmail ? 1 : 0);
-            dbUser.UserRank = UserRank;
             dbUser.UserOcc = CurrentUser.UserOcc ?? string.Empty;
             dbUser.UserFrom = CurrentUser.UserFrom ?? string.Empty;
             dbUser.UserInterests = CurrentUser.UserInterests ?? string.Empty;
@@ -131,6 +128,7 @@ namespace Serverless.Forum.Pages
             dbUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(CurrentUser.UserSig));
             dbUser.UserEditTime = CurrentUser.UserEditTime;
             dbUser.UserWebsite = CurrentUser.UserWebsite ?? string.Empty;
+            dbUser.UserRank = UserRank;
 
             if (_utils.CalculateCrc32Hash(Email) != dbUser.UserEmailHash)
             {
@@ -203,26 +201,20 @@ namespace Serverless.Forum.Pages
 
             var userRoles = (await _userService.GetUserRolesLazy()).Select(r => r.RoleId);
             var dbAclRole = await _context.PhpbbAclUsers.FirstOrDefaultAsync(r => r.UserId == dbUser.UserId && userRoles.Contains(r.AuthRoleId));
-            if (dbAclRole != null && AclRole == -1)
+            if ((dbAclRole?.AuthRoleId ?? -1) != (AclRole ?? -1))
             {
                 _context.PhpbbAclUsers.Remove(dbAclRole);
-                userMustLogIn = true;
-            }
-            else if (dbAclRole != null && AclRole.HasValue && AclRole.Value != dbAclRole.AuthRoleId)
-            {
-                dbAclRole.AuthRoleId = AclRole.Value;
-                userMustLogIn = true;
-            }
-            else if (dbAclRole == null && AclRole.HasValue && AclRole.Value != -1)
-            {
-                await _context.PhpbbAclUsers.AddAsync(new PhpbbAclUsers
+                if ((AclRole ?? -1) != -1)
                 {
-                    AuthOptionId = 0,
-                    AuthRoleId = AclRole.Value,
-                    AuthSetting = 0,
-                    ForumId = 0,
-                    UserId = dbUser.UserId
-                });
+                    await _context.PhpbbAclUsers.AddAsync(new PhpbbAclUsers
+                    {
+                        AuthOptionId = 0,
+                        AuthRoleId = AclRole.Value,
+                        AuthSetting = 0,
+                        ForumId = 0,
+                        UserId = dbUser.UserId
+                    });
+                }
                 userMustLogIn = true;
             }
 
@@ -258,9 +250,9 @@ namespace Serverless.Forum.Pages
 
             var affectedEntries = await _context.SaveChangesAsync();
 
-            await Render(_context, dbUser);
+            await Render(dbUser);
 
-            if (affectedEntries > 0 && CurrentUser.UserId != (await GetCurrentUserAsync()).UserId)
+            if (affectedEntries > 0 && CurrentUser.UserId == (await GetCurrentUserAsync()).UserId)
             {
                 await HttpContext.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme,
@@ -272,28 +264,28 @@ namespace Serverless.Forum.Pages
                         IsPersistent = true,
                     }
                 );
+            }
 
-                if (userMustLogIn)
-                {
-                    var key = $"UserMustLogIn_{dbUser.UsernameClean}";
-                    await _cacheService.SetInCache(key, true);
-                }
+            if (affectedEntries > 0 && userMustLogIn)
+            {
+                var key = $"UserMustLogIn_{dbUser.UsernameClean}";
+                await _cacheService.SetInCache(key, true, TimeSpan.FromDays(_config.GetValue<int>("LoginSessionSlidingExpirationDays")));
             }
 
             return Page();
         }
 
-        private async Task Render(ForumDbContext context, PhpbbUsers cur)
+        private async Task Render(PhpbbUsers cur)
         {
             CurrentUser = cur;
             CurrentUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : _writingService.CleanBbTextForDisplay(CurrentUser.UserSig, CurrentUser.UserSigBbcodeUid);
-            TotalPosts = await context.PhpbbPosts.AsNoTracking().CountAsync(p => p.PosterId == cur.UserId);
+            TotalPosts = await _context.PhpbbPosts.AsNoTracking().CountAsync(p => p.PosterId == cur.UserId);
             var restrictedForums = (await _forumService.GetRestrictedForumList(await GetCurrentUserAsync())).Select(f => f.forumId);
             var preferredTopic = await (
-                from p in context.PhpbbPosts.AsNoTracking()
+                from p in _context.PhpbbPosts.AsNoTracking()
                 where p.PosterId == cur.UserId
                 
-                join t in context.PhpbbTopics.AsNoTracking()
+                join t in _context.PhpbbTopics.AsNoTracking()
                 on p.TopicId equals t.TopicId
 
                 where !restrictedForums.Contains(t.ForumId)

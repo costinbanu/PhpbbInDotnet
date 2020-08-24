@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.ForumDb.Entities;
@@ -103,8 +104,8 @@ namespace Serverless.Forum.Pages
         private readonly WritingToolsService _writingToolsService;
 
         public ViewTopicModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService,
-            Utils utils, PostService postService, ModeratorService moderatorService, WritingToolsService writingToolsService)
-            : base(context, forumService, userService, cacheService)
+            Utils utils, PostService postService, ModeratorService moderatorService, WritingToolsService writingToolsService, IConfiguration config)
+            : base(context, forumService, userService, cacheService, config)
         {
             _utils = utils;
             _postService = postService;
@@ -149,7 +150,7 @@ namespace Serverless.Forum.Pages
                 using var multi = await connection.QueryMultipleAsync(
                     "SELECT * FROM phpbb_users WHERE user_id IN @authors; " +
                     "SELECT * FROM phpbb_users WHERE user_id IN @editors; " +
-                    "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @posts; " +
+                    "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @posts ORDER BY filetime DESC; " +
                     "SELECT * FROM phpbb_reports WHERE report_closed = 0 AND post_id IN @posts; " +
                     "SELECT r.* FROM phpbb_ranks r JOIN phpbb_users u on u.user_rank = r.rank_id WHERE u.user_id IN @authors;",
                     new

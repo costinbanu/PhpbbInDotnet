@@ -3,7 +3,7 @@
 @using System.Web
 @using Serverless.Forum.Utilities
 @using Serverless.Forum.ForumDb.Entities
-@using Microsoft.EntityFrameworkCore
+@using Microsoft.Extensions.Configuration
 
 @model Serverless.Forum.Pages.PostingModel
 
@@ -13,6 +13,7 @@
 @inject Services.PostService _postService
 @inject ForumDb.ForumDbContext _context
 @inject Utils _utils
+@inject IConfiguration _config
 
 @{
     ViewData["Title"] = "Posting";
@@ -24,14 +25,14 @@
     {
         UserDateFormat = "dddd, dd.MM.yyyy, HH:mm";
     }
-    var Header = await _cacheService.GetFromCache<string>(await Model.GetActualCacheKey("Header", true));
-    var CanCreatePoll = await _cacheService.GetFromCache<bool>(await Model.GetActualCacheKey("CanCreatePoll", true));
-    var Action = await _cacheService.GetFromCache<PostingActions>(await Model.GetActualCacheKey("Action", true));
-    var ForumName = await _cacheService.GetFromCache<string>(await Model.GetActualCacheKey("ForumName", true));
-    var ForumId = await _cacheService.GetFromCache<int>(await Model.GetActualCacheKey("ForumId", true));
-    var ForumRulesLink = await _cacheService.GetFromCache<string>(await Model.GetActualCacheKey("ForumRulesLink", true));
-    var ForumRules = await _cacheService.GetFromCache<string>(await Model.GetActualCacheKey("ForumRules", true));
-    var ForumRulesUid = await _cacheService.GetFromCache<string>(await Model.GetActualCacheKey("ForumRulesUid", true));
+    //var Header = await _cacheService.GetFromCache<string>(await Model.GetActualCacheKey("Header", true));
+    var CanCreatePoll = Model.Action == PostingActions.NewTopic || (Model.Action == PostingActions.EditForumPost && (Model.CurrentTopic?.TopicFirstPostId ?? 0) == Model.PostId);
+    //var Action = await _cacheService.GetFromCache<PostingActions>(await Model.GetActualCacheKey("Action", true));
+    //var ForumName = await _cacheService.GetFromCache<string>(await Model.GetActualCacheKey("ForumName", true));
+    //var ForumId = await _cacheService.GetFromCache<int>(await Model.GetActualCacheKey("ForumId", true));
+    //var ForumRulesLink = await _cacheService.GetFromCache<string>(await Model.GetActualCacheKey("ForumRulesLink", true));
+    //var ForumRules = await _cacheService.GetFromCache<string>(await Model.GetActualCacheKey("ForumRules", true));
+    //var ForumRulesUid = await _cacheService.GetFromCache<string>(await Model.GetActualCacheKey("ForumRulesUid", true));
 }
 
 <environment include="Development">
@@ -46,7 +47,7 @@
         @Json.Serialize(await _cacheService.GetFromCache<List<string>>(await Model.GetActualCacheKey("BbCodes", false))),
         @Json.Serialize(await _cacheService.GetFromCache<Dictionary<string, string>>(await Model.GetActualCacheKey("BbCodeHelplines", false))),
         @((await Model.IsCurrentUserAdminHereAsync()).ToString().ToLower()),
-        @((Action == PostingActions.EditForumPost).ToString().ToLower()),
+        @((Model.Action == PostingActions.EditForumPost).ToString().ToLower()),
         "@UserDateFormat"
     );
 
@@ -67,53 +68,53 @@
 </script>
 
 
-@if (Model.PostId.HasValue && !Model.ReceiverId.HasValue)
+@if (Model.Action == PostingActions.EditForumPost || (Model.Action == PostingActions.NewForumPost && Model.PostId.HasValue))
 {
     <span>
         Forum părinte:
-        <a asp-page="/ViewForum" asp-route-forumId="@ForumId">@HttpUtility.HtmlDecode(ForumName)</a>
+        <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(Model.CurrentForum.ForumName)</a>
     </span>
     <h3>
         Răspunde:
-        <a asp-page="/ViewTopic" asp-route-postId="@Model.PostId.Value" asp-page-handler="ByPostId">@Header</a>
+        <a asp-page="/ViewTopic" asp-route-postId="@Model.PostId.Value" asp-page-handler="ByPostId">@HttpUtility.HtmlDecode(Model.CurrentTopic.TopicTitle)</a>
     </h3>
 }
-else if (Model.TopicId.HasValue && !Model.ReceiverId.HasValue)
+else if (Model.Action == PostingActions.NewForumPost)
 {
     <span>
         Forum părinte:
-        <a asp-page="/ViewForum" asp-route-forumId="@ForumId">@HttpUtility.HtmlDecode(@ForumName)</a>
+        <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(Model.CurrentForum.ForumName)</a>
     </span>
     <h3>
         Răspunde:
-        <a asp-page="/ViewTopic" asp-route-topicId="@Model.TopicId.Value" asp-route-pageNum="1">@Header</a>
+        <a asp-page="/ViewTopic" asp-route-topicId="@Model.TopicId.Value" asp-route-pageNum="1">@HttpUtility.HtmlDecode(Model.CurrentTopic.TopicTitle)</a>
     </h3>
 }
-else if (!Model.ReceiverId.HasValue)
+else if (Model.Action == PostingActions.NewTopic)
 {
     <h3>
         Scrie un subiect nou:
-        <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@Header</a>
+        <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(Model.CurrentForum.ForumName)</a>
     </h3>
 }
-else
+else if (Model.Action == PostingActions.NewPrivateMessage)
 {
     <h3>Scrie un mesaj privat nou:</h3>
 }
-@if (!string.IsNullOrWhiteSpace(ForumRules))
+@if (!string.IsNullOrWhiteSpace(Model.CurrentForum?.ForumRules))
 {
     <div style="background-color: #ECD5D8; color: #BC2A4D; padding: 10px">
         <span>&#x26A0;&nbsp;</span>
         <b>Reguli forum</b>
         <br />
-        @Html.Raw(_renderingService.BbCodeToHtml(ForumRules, ForumRulesUid))
+        @Html.Raw(_renderingService.BbCodeToHtml(Model.CurrentForum?.ForumRules, Model.CurrentForum?.ForumRulesUid))
     </div>
     <p></p>
 }
-else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
+else if (!string.IsNullOrWhiteSpace(Model.CurrentForum?.ForumRulesLink))
 {
     <div style="background-color: #ECD5D8; color: #BC2A4D; padding: 10px">
-        <a href="@_utils.TransformSelfLinkToBetaLink(HttpUtility.HtmlDecode(ForumRulesLink))">
+        <a href="@_utils.TransformSelfLinkToBetaLink(HttpUtility.HtmlDecode(Model.CurrentForum?.ForumRulesLink))">
             &#x26A0;&nbsp;
             <b>Reguli forum</b>
         </a>
@@ -121,7 +122,7 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
     <p></p>
 }
 <form name="postform" method="post" enctype="multipart/form-data">
-    @if (Action == PostingActions.NewPrivateMessage)
+    @if (Model.Action == PostingActions.NewPrivateMessage)
     {
         <input type="text" asp-for="ReceiverName" placeholder="Alege destinatar..." id="pmToInput" class="PostInputWidth" autocomplete="off" />
         <p id="tributeHolder" style="position:relative">&nbsp;</p>
@@ -131,17 +132,17 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
     <br />
 
     <div class="PostingControls" id="controls" style="width:100%">
-        <input type="button" class="BbCodeButton" accesskey="b" name="addbbcode0" value=" B " style="font-weight:bold" onclick="posting.bbstyle(0)" title="Text bold: [b]text[/b]">
-        <input type="button" class="BbCodeButton" accesskey="i" name="addbbcode2" value=" i " style="font-style:italic" onclick="posting.bbstyle(2)" title="Text italic: [i]text[/i]">
-        <input type="button" class="BbCodeButton" accesskey="u" name="addbbcode4" value=" u " style="text-decoration: underline" onclick="posting.bbstyle(4)" title="Text subliniat: [u]text[/u]">
-        <input type="button" class="BbCodeButton" accesskey="q" name="addbbcode6" value="Quote" onclick="posting.bbstyle(6)" title="Citează text: [quote]text[/quote]">
-        <input type="button" class="BbCodeButton Hide960" accesskey="c" name="addbbcode8" value="Code" onclick="posting.bbstyle(8)" title="Afişează cod: [code]cod[/code]">
-        <input type="button" class="BbCodeButton Hide960" accesskey="l" name="addbbcode10" value="List" onclick="posting.bbstyle(10)" title="Listă: [list]text[/list]">
-        <input type="button" class="BbCodeButton Hide960" accesskey="o" name="addbbcode12" value="List=" onclick="posting.bbstyle(12)" title="Listă ordonată: [list=]text[/list]">
-        <input type="button" class="BbCodeButton Hide960" accesskey="t" name="addlitsitem" value="[*]" onclick="posting.bbstyle(-1)" title="Listează articolele: [*]text[/*]">
-        <input type="button" class="BbCodeButton" accesskey="p" name="addbbcode14" value="Img" onclick="posting.bbstyle(14)" title="Adaugă imagine: [img]http://cale_imagine[/img]">
-        <input type="button" class="BbCodeButton" accesskey="w" name="addbbcode16" value="URL" style="text-decoration: underline" onclick="posting.bbstyle(16)" title="Adaugă URL: [url]http://url[/url] sau [url=http://url]text URL[/url]">
-        <select name="addbbcode20" class="BbCodeButton" onchange="posting.bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;" title="Mărime font: [size=85]text mic[/size]">
+        <input type="button" class="BbCodeButton PostingButton" accesskey="b" name="addbbcode0" value=" B " style="font-weight:bold" onclick="posting.bbstyle(0)" title="Text bold: [b]text[/b]">
+        <input type="button" class="BbCodeButton PostingButton" accesskey="i" name="addbbcode2" value=" i " style="font-style:italic" onclick="posting.bbstyle(2)" title="Text italic: [i]text[/i]">
+        <input type="button" class="BbCodeButton PostingButton" accesskey="u" name="addbbcode4" value=" u " style="text-decoration: underline" onclick="posting.bbstyle(4)" title="Text subliniat: [u]text[/u]">
+        <input type="button" class="BbCodeButton PostingButton" accesskey="q" name="addbbcode6" value="Quote" onclick="posting.bbstyle(6)" title="Citează text: [quote]text[/quote]">
+        <input type="button" class="BbCodeButton Hide960 PostingButton" accesskey="c" name="addbbcode8" value="Code" onclick="posting.bbstyle(8)" title="Afişează cod: [code]cod[/code]">
+        <input type="button" class="BbCodeButton Hide960 PostingButton" accesskey="l" name="addbbcode10" value="List" onclick="posting.bbstyle(10)" title="Listă: [list]text[/list]">
+        <input type="button" class="BbCodeButton Hide960 PostingButton" accesskey="o" name="addbbcode12" value="List=" onclick="posting.bbstyle(12)" title="Listă ordonată: [list=]text[/list]">
+        <input type="button" class="BbCodeButton Hide960 PostingButton" accesskey="t" name="addlitsitem" value="[*]" onclick="posting.bbstyle(-1)" title="Listează articolele: [*]text[/*]">
+        <input type="button" class="BbCodeButton PostingButton" accesskey="p" name="addbbcode14" value="Img" onclick="posting.bbstyle(14)" title="Adaugă imagine: [img]http://cale_imagine[/img]">
+        <input type="button" class="BbCodeButton PostingButton" accesskey="w" name="addbbcode16" value="URL" style="text-decoration: underline" onclick="posting.bbstyle(16)" title="Adaugă URL: [url]http://url[/url] sau [url=http://url]text URL[/url]">
+        <select name="addbbcode20" class="BbCodeButton PostingButton" onchange="posting.bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;" title="Mărime font: [size=85]text mic[/size]">
             <option value="" disabled selected>Mărime</option>
             <option value="50">Micuţ (50%)</option>
             <option value="85">Mic (85%)</option>
@@ -149,14 +150,14 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
             <option value="150">Mare (150%)</option>
             <option value="200">Imens (200%)</option>
         </select>
-        <input type="button" class="BbCodeButton Hide960" name="bbpalette" id="bbpalette" value="Culoare font" onclick="posting.change_palette();" title="Culoare font: [color=red]text[/color]  Sfat: de asemenea puteţi folosi culorile hexazecimale culoare=#FF0000">
+        <input type="button" class="BbCodeButton Hide960 PostingButton" name="bbpalette" id="bbpalette" value="Culoare font" onclick="posting.change_palette();" title="Culoare font: [color=red]text[/color]  Sfat: de asemenea puteţi folosi culorile hexazecimale culoare=#FF0000">
         @foreach (var code in (await _cacheService.GetFromCache<List<PhpbbBbcodes>>(await Model.GetActualCacheKey("DbBbCodes", false))) ?? new List<PhpbbBbcodes>())
         {
             var index = (await _cacheService.GetFromCache<List<string>>(await Model.GetActualCacheKey("BbCodes", false))).IndexOf($"[{code.BbcodeTag}]");
             var name = $"addbbcode{index}";
-            <input type="button" class="BbCodeButton@(code.BbcodeTag == "youtube" ? "" : " Hide960")" name="@name" value="@code.BbcodeTag" onclick="posting.bbstyle(@index)" title="@code.BbcodeHelpline" />
+            <input type="button" class="BbCodeButton@(code.BbcodeTag == "youtube" ? "" : " Hide960") PostingButton" name="@name" value="@code.BbcodeTag" onclick="posting.bbstyle(@index)" title="@code.BbcodeHelpline" />
         }
-        <input type="button" class="BbCodeButton" value="&#x2754;" onclick="showElement('formattingHelp', null, null, true)" title="Arată un ajutor pentru formatare" />
+        <input type="button" class="BbCodeButton PostingButton" value="&#x2754;" onclick="showElement('formattingHelp', null, null, true)" title="Arată un ajutor pentru formatare" />
         <table class="ColorPalette" id="colour_palette">
             @{
                 var color = new[] { 0x0, 0x40, 0x80, 0xbf, 0xff };
@@ -188,31 +189,27 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
         Includerea imaginilor mai mari de 2MB nu este permisă, indiferent dacă sunt găzduite local sau extern. De asemenea, numerele de înmatriculare ale vehiculelor particulare surprinse in imagini trebuie ascunse.
         Utilizați <a href="https://procesorimagini.metrouusor.com/" target="_blank">procesorul de imagini „Metrou Ușor”</a> pentru a redimensiona imagini și a ascunde numere de înmatriculare.
     </p>
-    @if (Action != PostingActions.NewPrivateMessage)
+    @if (Model.Action != PostingActions.NewPrivateMessage)
     {
-        <button onclick="posting.toggleAttach()" type="button">&#128206; Fișiere atașate</button>
-        <span>&nbsp; </span>
+        <button onclick="posting.toggleAttach()" type="button" class="PostingButton">&#128206; Fișiere atașate</button>
     }
-    <button onclick="posting.toggleEmoji()" type="button" class="Hide960">&#x1F642; Emoji</button>
-    <span>&nbsp; </span>
+    <button onclick="posting.toggleEmoji()" type="button" class="Hide960 PostingButton">&#x1F642; Emoji</button>
     @if (CanCreatePoll)
     {
-        <button onclick="posting.togglePoll()" type="button">&#x2714; Chestionar</button>
-        <span>&nbsp;</span>
+        <button onclick="posting.togglePoll()" type="button" class="PostingButton">&#x2714; Chestionar</button>
     }
-    <input type="submit" value="&#x1F440; Previzualizează" onclick="return posting.censor()" asp-page-handler="Preview" />
-    <span>&nbsp; </span>
-    @switch (Action)
+    <input type="submit" value="&#x1F440; Previzualizează" onclick="return posting.censor()" asp-page-handler="Preview" class="PostingButton" />
+    @switch (Model.Action)
     {
         case PostingActions.NewTopic:
         case PostingActions.NewForumPost:
-            <b><input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="NewForumPost" /></b>
+            <b><input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="NewForumPost" class="PostingButton" /></b>
             break;
         case PostingActions.EditForumPost:
-            <b><input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="EditForumPost" /></b>
+            <b><input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="EditForumPost" class="PostingButton" /></b>
             break;
         case PostingActions.NewPrivateMessage:
-            <b><input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="PrivateMessage" /></b>
+            <b><input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="PrivateMessage" class="PostingButton" /></b>
             break;
         default:
             <span class="validation">A intervenit o eroare, pagina nu a fost afișată corect.</span>
@@ -275,15 +272,19 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
                 </div>
             </div>
         </div>
+        <hr />
     }
     <input asp-for="ForumId" type="hidden" />
     <input asp-for="TopicId" type="hidden" />
     <input asp-for="PostId" type="hidden" />
     <input asp-for="ReceiverId" type="hidden" id="pmTo" />
     <input type="hidden" asp-for="PageNum" />
-    @if (Action != PostingActions.NewPrivateMessage)
+    <input type="hidden" asp-for="Action" />
+    <input type="hidden" asp-for="CurrentTopic.TopicFirstPostId" />
+    <input type="hidden" asp-for="CurrentTopic.TopicTitle" />
+    <input type="hidden" asp-for="PostTime" />
+    @if (Model.Action != PostingActions.NewPrivateMessage)
     {
-        var attachments = await _cacheService.GetFromCache<List<PhpbbAttachments>>(await Model.GetActualCacheKey("PostAttachments", true)) ?? new List<PhpbbAttachments>();
         <div id="attachPanel" style="display:@(Model.ShowAttach ? "block" : "none")" class="PostInputWidth">
             <br />
             <h3>Fișiere atașate</h3>
@@ -294,34 +295,40 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
                     <input asp-for="Files" onchange="posting.submitAttachments()" multiple />
                     @if (!await Model.IsCurrentUserAdminHereAsync())
                     {
-                        <span class="Caption">Minim 1, maxim 10 fișiere. Fiecare fișier trebuie să aibă maxim 2MB.</span>
+                        <span class="Caption">Minim 1, maxim 10 fișiere. Dimensiune limită: @(_config.GetValue<int>("UploadLimitsMB:Images"))MB pentru imagini, @(_config.GetValue<int>("UploadLimitsMB:OtherFiles"))MB în rest.</span>
                     }
                     <span asp-validation-for="Files" class="validation"></span>
                     <div id="fileUploadStatus"></div>
                 </div>
             </div>
             <input type="submit" value="Încarcă fișierele alese" asp-page-handler="AddAttachment" style="display:none" id="submitAttachmentsButton" />
-            @if (attachments.Any())
+            @if (Model.Attachments?.Any() ?? false)
             {
                 <hr class="SubtypeSeparator" />
                 <h4>Fișiere deja atașate:</h4>
-                @for (var i = 0; i < attachments.Count; i++)
+                @for (var i = 0; i < Model.Attachments.Count; i++)
                 {
                     <div style="margin-bottom:20px; padding-bottom:20px">
-                        <b>Nume:</b> @attachments[i].RealFilename <br />
+                        <b>Nume:</b> @Model.Attachments[i].RealFilename <br />
                         <b>Comentariu fișier:</b>
                         <br />
-                        <textarea type="text" asp-for="FileComment[i]" rows="4" cols="100" style="display:inline-block"></textarea>
+                        <textarea type="text" asp-for="Attachments[i].AttachComment" rows="4" cols="100" style="display:inline-block"></textarea>
                         <br />
-                        <input type="button" value="Așează în linie" onclick="posting.attach_inline(@i, '@attachments[i].RealFilename')" /> &nbsp;
-                        <input type="submit" value="Șterge fișier" asp-page-handler="DeleteAttachment" onclick="document.getElementById('indexToDelete').value = @i; return true;" />
+                        <input type="button" value="Așează în linie" onclick="posting.attach_inline(@i, '@Model.Attachments[i].RealFilename')" /> &nbsp;
+                        <input type="submit" value="Șterge fișier" asp-page-handler="DeleteAttachment" onclick="$('#idToDelete').val(@i); return true;" />
                         <br />
                         <span asp-validation-for="DeleteFileDummyForValidation[i]" class="validation"></span>
                     </div>
+                    <input type="hidden" asp-for="Attachments[i].AttachId" />
+                    <input type="hidden" asp-for="Attachments[i].RealFilename" />
+                    <input type="hidden" asp-for="Attachments[i].PhysicalFilename" />
+                    <input type="hidden" asp-for="Attachments[i].Mimetype" />
+                    <input type="hidden" asp-for="Attachments[i].Filesize" />
                 }
-                <input type="hidden" name="index" id="indexToDelete" value="" />
+                <input type="hidden" name="index" id="idToDelete" value="" />
             }
             <p style="clear:both">&nbsp;</p>
+            <hr />
         </div>
     }
     <div id="emojiPanel" style="display:none; clear:both;">
@@ -331,22 +338,22 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
                 <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
             </a>
         }
-    </div>
-    @if (Action == PostingActions.EditForumPost)
-    {
         <hr />
+    </div>
+    @if (Model.Action == PostingActions.EditForumPost)
+    {
         <div class="FlexCenter PostInputWidth">
             <div>Motivul modificării:</div>
             <div class="PollInput FlexRight">
                 <input asp-for="EditReason" type="text" style="width:100%" />
             </div>
         </div>
-        <br />
+        <hr />
     }
 </form>
 
 @{
-    var (previousPosts, users) = await Model.GetPreviousPosts(Action);
+    var (previousPosts, users) = await Model.GetPreviousPosts(Model.Action);
     if (previousPosts.Any())
     {
         <script>
@@ -434,7 +441,7 @@ else if (!string.IsNullOrWhiteSpace(ForumRulesLink))
     }
 </script>
 
-@if (Action == PostingActions.NewPrivateMessage)
+@if (Model.Action == PostingActions.NewPrivateMessage)
 {
     <script>
         var secondTribute = new Tribute({

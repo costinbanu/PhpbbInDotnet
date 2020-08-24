@@ -102,9 +102,10 @@
                 if (pmCount > 0)
                 {
                     <p style="clear:both"></p>
-                    <span class="Unread" style="margin:5px; padding:5px; font-size:1.2em">
+                    <span class="Unread" style="padding:5px; font-size:1.2em">
                         <a asp-page="/PrivateMessages" asp-route-Show="Inbox">@pmCount mesaj@(pmCount > 1 ? "e" : "") privat@(pmCount > 1 ? "e" : "") necitit@(pmCount > 1 ? "e" : "")</a>
                     </span>
+                    <p style="clear:both"></p>
                     displayedBox = true;
                 }
 
@@ -127,11 +128,6 @@
                         displayedBox = true;
                     }
                 }
-
-                @*if (!displayedBox)
-                {
-                    <p>&nbsp;</p>
-                }*@
             }
         </center>
         @RenderBody()

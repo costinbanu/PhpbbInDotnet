@@ -17,7 +17,6 @@ namespace Serverless.Forum.Pages
     public class ViewForumModel : ModelWithLoggedUser
     {
         private bool _forceTreeRefresh;
-        private readonly IConfiguration _config;
 
         public HashSet<ForumTree> Forums { get; private set; }
         public List<TopicTransport> Topics { get; private set; }
@@ -38,10 +37,7 @@ namespace Serverless.Forum.Pages
         public int? PageNum { get; set; }
 
         public ViewForumModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, IConfiguration config)
-            : base(context, forumService, userService, cacheService) 
-        {
-            _config = config;
-        }
+            : base(context, forumService, userService, cacheService, config) { }
 
         public async Task<IActionResult> OnGet()
             => await WithValidForum(ForumId, async (thisForum) =>
@@ -159,7 +155,7 @@ namespace Serverless.Forum.Pages
                         { 
                             usr.UserId, 
                             skip = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE, take = Constants.DEFAULT_PAGE_SIZE,
-                            restrictedForumList = restrictedForums.Select(f => f.forumId).DefaultIfEmpty()
+                            restrictedForumList = string.Join(',', restrictedForums.Select(f => f.forumId).DefaultIfEmpty())
                         }
                     );
                     topics = await multi.ReadAsync<TopicDto>();

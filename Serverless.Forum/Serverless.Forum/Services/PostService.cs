@@ -29,7 +29,7 @@ namespace Serverless.Forum.Services
 
             using var multi = await connection.QueryMultipleAsync("CALL `forum`.`get_posts`(@userId, @topicId, @page, @postId);", new { userId, topicId, page, postId });
             var toReturn = (
-                Posts: (await multi.ReadAsync<PhpbbPosts>()).ToList(),
+                Posts: (await multi.ReadAsync<PhpbbPosts>()).AsList(),
                 Page: await multi.ReadSingleAsync<int>(),
                 Count: unchecked((int)await  multi.ReadSingleAsync<long>())
             );
@@ -177,6 +177,13 @@ namespace Serverless.Forum.Services
 
                 curTopic.TopicReplies -= curTopic.TopicReplies == 0 ? 0 : 1;
                 curTopic.TopicRepliesReal -= curTopic.TopicRepliesReal == 0 ? 0 : 1;
+
+                var report = await context.PhpbbReports.FirstOrDefaultAsync(r => r.PostId == deleted.PostId);
+                if (report != null)
+                {
+                    context.PhpbbReports.Remove(report);
+                    curTopic.TopicReported = 0;
+                }
             }
         }
 

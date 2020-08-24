@@ -17,13 +17,11 @@ namespace Serverless.Forum.Pages
     public class FileModel : ModelWithLoggedUser
     {
         private readonly StorageService _storageService;
-        private readonly IConfiguration _config;
 
         public FileModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, StorageService storageService, IConfiguration config)
-            : base(context, forumService, userService, cacheService)
+            : base(context, forumService, userService, cacheService, config)
         {
             _storageService = storageService;
-            _config = config;
         }
 
         public async Task<IActionResult> OnGet(int Id)

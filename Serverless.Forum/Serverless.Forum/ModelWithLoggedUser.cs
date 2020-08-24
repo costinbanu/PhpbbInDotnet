@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.ForumDb.Entities;
@@ -25,15 +26,17 @@ namespace Serverless.Forum
         protected readonly CacheService _cacheService;
         protected readonly UserService _userService;
         protected readonly ForumDbContext _context;
-
+        protected readonly IConfiguration _config;
+        
         private LoggedUser _currentUser;
 
-        public ModelWithLoggedUser(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService)
+        public ModelWithLoggedUser(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, IConfiguration config)
         {
             _forumService = forumService;
             _cacheService = cacheService;
             _userService = userService;
             _context = context;
+            _config = config;
         }
 
         #region User
@@ -55,7 +58,7 @@ namespace Serverless.Forum
                     new AuthenticationProperties
                     {
                         AllowRefresh = true,
-                        ExpiresUtc = DateTimeOffset.UtcNow.AddMonths(1),
+                        ExpiresUtc = DateTimeOffset.UtcNow.Add(TimeSpan.FromDays(_config.GetValue<int>("LoginSessionSlidingExpirationDays"))),
                         IsPersistent = true,
                     }
                 );
@@ -76,7 +79,7 @@ namespace Serverless.Forum
                         if (dbUser == null || dbUser.UserInactiveTime > 0)
                         {
                             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                            await _cacheService.SetInCache(key, true);
+                            await _cacheService.SetInCache(key, true, TimeSpan.FromDays(_config.GetValue<int>("LoginSessionSlidingExpirationDays")));
                         }
                         else if (DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()).TotalHours > 1)
                         {

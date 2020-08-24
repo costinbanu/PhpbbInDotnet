@@ -28,7 +28,6 @@
 .BbCodeButton {
     width: auto !important;
     color: #000;
-    height: 27px;
 }
 
 .InputBox {
@@ -87,6 +86,12 @@
 
 .Show960 {
     display: none !important;
+}
+
+.PostingButton {
+    margin-top: 5px;
+    height: 30px;
+    padding: 0px 8px 0px 8px;
 }
 
 @media (max-width: 960px) {

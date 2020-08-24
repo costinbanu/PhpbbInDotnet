@@ -27,11 +27,11 @@ namespace Serverless.Forum.Services
             return toReturn;
         }
         
-        public async Task SetInCache<T>(string key, T value)
+        public async Task SetInCache<T>(string key, T value, TimeSpan? expiration = null)
             => await _cache.SetAsync(
                 key,
                 await _utils.CompressObject(value),
-                new DistributedCacheEntryOptions { SlidingExpiration = TimeSpan.FromHours(4) }
+                new DistributedCacheEntryOptions { SlidingExpiration = expiration ?? TimeSpan.FromHours(4) }
             );
 
         public async Task<bool> ExistsInCache(string key)

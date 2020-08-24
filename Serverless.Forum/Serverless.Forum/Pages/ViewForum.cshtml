@@ -28,7 +28,7 @@
     @Html.AntiForgeryToken()
 </form>
 
-<script type="text/javascript">
+<script>
     //forum tree callback
     function forumSelectCallback(forumId) {
         var forumInput = document.getElementById("ForumIdInput");
@@ -36,12 +36,17 @@
             forumInput.value = forumId;
         }
     }
-
-    $(document).ready(function () {
-        var elementTop = $('.Unread').offset().top;
-        window.scrollTo(0, elementTop - 20);
-    });
 </script>
+
+@if (!Model.IsNewPostView && !Model.IsOwnPostView)
+{
+    <script>
+        $(document).ready(function () {
+            var elementTop = $('.Unread').offset().top;
+            window.scrollTo(0, elementTop - 20);
+        });
+    </script>
+}
 
 @if ((Model.ParentForumId ?? 0) != 0 && !Model.IsNewPostView && !Model.IsOwnPostView)
 {

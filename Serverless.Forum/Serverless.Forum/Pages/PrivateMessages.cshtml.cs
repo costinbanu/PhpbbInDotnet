@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Services;
@@ -39,8 +40,8 @@ namespace Serverless.Forum.Pages
 
         private readonly BBCodeRenderingService _renderingService;
         
-        public PrivateMessagesModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, BBCodeRenderingService renderingService)
-            : base(context, forumService, userService, cacheService)
+        public PrivateMessagesModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, BBCodeRenderingService renderingService, IConfiguration config)
+            : base(context, forumService, userService, cacheService, config)
         {
             _renderingService = renderingService;
         }

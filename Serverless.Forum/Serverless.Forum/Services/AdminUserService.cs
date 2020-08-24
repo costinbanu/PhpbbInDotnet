@@ -1,4 +1,5 @@
-﻿using Serverless.Forum.Contracts;
+﻿using Microsoft.Extensions.Configuration;
+using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.ForumDb.Entities;
 using Serverless.Forum.Utilities;
@@ -16,14 +17,16 @@ namespace Serverless.Forum.Services
         private readonly PostService _postService;
         private readonly UserService _userService;
         private readonly CacheService _cacheService;
+        private readonly IConfiguration _config;
 
-        public AdminUserService(ForumDbContext context, Utils utils, PostService postService, UserService userService, CacheService cacheService)
+        public AdminUserService(ForumDbContext context, Utils utils, PostService postService, UserService userService, CacheService cacheService, IConfiguration config)
         {
             _context = context;
             _utils = utils;
             _postService = postService;
             _userService = userService;
             _cacheService = cacheService;
+            _config = config;
         }
 
         public async Task<List<PhpbbUsers>> GetInactiveUsers()
@@ -51,7 +54,7 @@ namespace Serverless.Forum.Services
             async Task flagUserAsChanged()
             {
                 var key = $"UserMustLogIn_{user.UsernameClean}";
-                await _cacheService.SetInCache(key, true);
+                await _cacheService.SetInCache(key, true, TimeSpan.FromDays(_config.GetValue<int>("LoginSessionSlidingExpirationDays")));
             }
 
             async Task deleteUser()

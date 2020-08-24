@@ -17,15 +17,17 @@ namespace Serverless.Forum.Services
     {
         private readonly IConfiguration _config;
         private readonly Utils _utils;
+        private readonly ForumDbContext _context;
         private readonly string _root;
 
         public string AttachmentsPath => Path.Combine(_root,  _config["Storage:Files"]);
         public string AvatarsPath => Path.Combine(_root, _config["Storage:Avatars"]);
 
-        public StorageService(IConfiguration config, Utils utils, IWebHostEnvironment environment)
+        public StorageService(IConfiguration config, Utils utils, IWebHostEnvironment environment, ForumDbContext context)
         {
             _config = config;
             _utils = utils;
+            _context = context;
             if (environment.IsProduction() && _config.GetValue<bool>("Storage:IsBetaVersion"))
             {
                 _root = @"C:\Inetpub\vhosts\metrouusor.com\forum.metrouusor.com\wwwroot";
@@ -42,7 +44,7 @@ namespace Serverless.Forum.Services
         public string GetFilePath(string name, bool isAvatar)
             => isAvatar ? Path.Combine(AvatarsPath, name) : Path.Combine(AttachmentsPath, name);
 
-        public async Task<(IEnumerable<PhpbbAttachments> SucceededUploads, IEnumerable<string> FailedUploads)> BulkAddAttachments(IEnumerable<IFormFile> attachedFiles, int userId)
+        public async Task<(List<PhpbbAttachments> SucceededUploads, List<string> FailedUploads)> BulkAddAttachments(IEnumerable<IFormFile> attachedFiles, int userId)
         {
             var succeeded = new List<PhpbbAttachments>();
             var failed = new List<string>();
@@ -56,9 +58,9 @@ namespace Serverless.Forum.Services
                     {
                         await input.CopyToAsync(fs);
                     }
-                    succeeded.Add(new PhpbbAttachments
+                    succeeded.Add((await _context.PhpbbAttachments.AddAsync(new PhpbbAttachments
                     {
-                        AttachComment = null,
+                        AttachComment = string.Empty,
                         Extension = Path.GetExtension(file.FileName).Trim('.').ToLowerInvariant(),
                         Filetime = DateTime.UtcNow.ToUnixTimestamp(),
                         Filesize = file.Length,
@@ -66,8 +68,11 @@ namespace Serverless.Forum.Services
                         PhysicalFilename = name,
                         RealFilename = Path.GetFileName(file.FileName),
                         PosterId = userId,
-                        IsOrphan = 0
-                    });
+                        IsOrphan = 1,
+                        AttachId = 0,
+                        PostMsgId = 0,
+                        TopicId = 0
+                    })).Entity);
                 }
                 catch (Exception ex)
                 {
@@ -75,6 +80,7 @@ namespace Serverless.Forum.Services
                     failed.Add(file.FileName);
                 }
             }
+            await _context.SaveChangesAsync();
             return (succeeded, failed);
         }
 
