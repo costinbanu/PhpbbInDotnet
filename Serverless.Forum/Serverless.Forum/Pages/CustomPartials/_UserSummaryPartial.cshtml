@@ -2,16 +2,10 @@
 
 @using Utilities;
 
-@if (!(Model.UserList?.Any() ?? false))
-{
-    <h4>Nu a fost găsit nici un rezultat</h4>
-}
-else
-{
-    <p>&nbsp;</p>
+<p>&nbsp;</p>
 
-    @await Html.PartialAsync("_PaginationControlsPartial", Model.UpperPagination)
-
+@{
+    await Html.PartialAsync("_PaginationControlsPartial", Model.UpperPagination);
     var isFirst = true;
     foreach (var user in Model.UserList)
     {
@@ -76,6 +70,6 @@ else
         </div>
         isFirst = false;
     }
-
-    @await Html.PartialAsync("_PaginationControlsPartial", Model.LowerPagination)
 }
+
+@await Html.PartialAsync("_PaginationControlsPartial", Model.LowerPagination)

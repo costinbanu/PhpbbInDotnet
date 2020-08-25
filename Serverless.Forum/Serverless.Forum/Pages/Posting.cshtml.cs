@@ -160,7 +160,7 @@ namespace Serverless.Forum.Pages
             => await WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
             {
                 var CurrentUser = await GetCurrentUserAsync();
-                if (!(await IsCurrentUserModeratorHereAsync() || (curPost.PosterId == CurrentUser.UserId && (CurrentUser.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= CurrentUser.PostEditTime))))
+                if (!(await IsCurrentUserModeratorHere() || (curPost.PosterId == CurrentUser.UserId && (CurrentUser.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= CurrentUser.PostEditTime))))
                 {
                     return RedirectToPage("ViewTopic", "byPostId", new { PostId });
                 }
@@ -271,14 +271,14 @@ namespace Serverless.Forum.Pages
                  }
 
                  var tooLargeFiles = Files.Where(f => f.Length > 1024 * 1024 * (f.ContentType.StartsWith("image/", StringComparison.InvariantCultureIgnoreCase) ? _config.GetValue<int>("UploadLimitsMB:Images") : _config.GetValue<int>("UploadLimitsMB:OtherFiles")));
-                 if (tooLargeFiles.Any() && !await IsCurrentUserAdminHereAsync())
+                 if (tooLargeFiles.Any() && !await IsCurrentUserAdminHere())
                  {
                      ModelState.AddModelError(nameof(Files), $"Următoarele fișiere sunt prea mari: {string.Join(",", tooLargeFiles.Select(f => f.FileName))}");
                      ShowAttach = true;
                      return Page();
                  }
 
-                 if ((Attachments?.Count ?? 0) + Files.Count() > 10 && !await IsCurrentUserAdminHereAsync())
+                 if ((Attachments?.Count ?? 0) + Files.Count() > 10 && !await IsCurrentUserAdminHere())
                  {
                      ModelState.AddModelError(nameof(Files), "Sunt permise maxim 10 fișiere per mesaj.");
                      ShowAttach = true;

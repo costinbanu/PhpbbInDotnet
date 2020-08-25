@@ -122,7 +122,8 @@
     {
         AllUsers,
         SearchUsers,
-        Groups
+        Groups,
+        ActiveUsers
     }
 
     public enum MemberListOrder

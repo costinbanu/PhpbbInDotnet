@@ -60,7 +60,7 @@ namespace Serverless.Forum.Pages
         [BindProperty]
         public int UserRank { get; set; }
 
-        public async Task<bool> CanEditAsync() => !ViewAsAnother && ((await GetCurrentUserAsync()).UserId == CurrentUser.UserId || await IsCurrentUserAdminHereAsync());
+        public async Task<bool> CanEditAsync() => !ViewAsAnother && ((await GetCurrentUserAsync()).UserId == CurrentUser.UserId || await IsCurrentUserAdminHere());
         public int TotalPosts { get; private set; }
         public (int? Id, string Title) PreferredTopic { get; private set; }
         public double PostsPerDay { get; private set; }

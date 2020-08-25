@@ -21,8 +21,8 @@
     {
         UserDateFormat = "dddd, dd.MM.yyyy, HH:mm";
     }
-    var IsAdmin = await Model.IsCurrentUserAdminHereAsync();
-    var IsMod = await Model.IsCurrentUserModeratorHereAsync();
+    var IsAdmin = await Model.IsCurrentUserAdminHere();
+    var IsMod = await Model.IsCurrentUserModeratorHere();
     var EditTime = CurrentUser.PostEditTime;
 }
 <environment include="Development">
@@ -128,7 +128,7 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
                     <tr style="@(option != Model.Poll.PollOptions.Last() ? "border-bottom:solid 1px black" : "border-bottom:none")">
                         <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
                             @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText))
-                            @if (await Model.IsCurrentUserAdminHereAsync(Model.ForumId ?? 0))
+                            @if (await Model.IsCurrentUserAdminHere(Model.ForumId ?? 0))
                             {
                                 <div class="Caption">
                                     Votanti: @Html.Raw(HttpUtility.HtmlDecode(string.Join(", ", option.PollOptionVoters.Select(v => v.Username))))
@@ -383,11 +383,12 @@ else if (!IsAnonymous)
     <hr />
 }
 
+@*shortcuts*@
 <div style="clear:both">
     <a href="/">Prima pagină</a> |
     @if (Model.ForumId != null)
     {
-        <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">Forum părinte</a>
+        <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(@Model.ForumTitle)</a>
         <span> | </span>
     }
     <span onclick="showForumTree(this)" class="SpanLikeLink">Alege destinația</span>
@@ -411,6 +412,8 @@ else if (!IsAnonymous)
         <input type="submit" value="Du-te" />
     </form>
 </div>
+
+@*moderator menu*@
 @if (IsMod)
 {
     <hr />
@@ -486,6 +489,7 @@ else if (!IsAnonymous)
     </div>
 }
 
+@*message reporting*@
 @if (!IsAnonymous)
 {
     <form asp-page-handler="ReportMessage" method="post" class="MiddleBox" id="report" style="display:none">

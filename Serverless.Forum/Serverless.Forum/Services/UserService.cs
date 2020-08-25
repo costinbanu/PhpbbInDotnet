@@ -111,7 +111,7 @@ namespace Serverless.Forum.Services
                 TopicPostsPerPage = (await multi.ReadAsync()).ToDictionary(key => checked((int)key.topic_id), value => checked((int)value.post_no)),
                 UserDateFormat = user.UserDateformat,
                 UserColor = user.UserColour,
-                PostEditTime = (editTime == 0 || user.UserEditTime == 0) ? editTime + user.UserEditTime : Math.Min(Math.Abs(editTime), Math.Abs(user.UserEditTime))
+                PostEditTime = (editTime == 0 || user.UserEditTime == 0) ? 0 : Math.Min(Math.Abs(editTime), Math.Abs(user.UserEditTime))
             };
 
             var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);

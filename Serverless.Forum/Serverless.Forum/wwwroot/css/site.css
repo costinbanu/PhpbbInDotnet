@@ -423,6 +423,21 @@ label {
         text-decoration: underline;
     }
 
+.linksContainer {
+    float: right;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.bullet {
+    display: inline;
+}
+
+.newline {
+    display: none;
+    height: 1px;
+}
+
 @media (max-width: 768px) {
     .headerImg {
         width: 128px;
@@ -537,5 +552,15 @@ label {
         width: 100%;
         min-width: 100%;
         max-width: 100%
+    }
+}
+
+@media (max-width: 400px) {
+    .bullet {
+        display: none;
+    }
+
+    .newline {
+        display: block;
     }
 }

@@ -52,7 +52,7 @@ else if (Model.ViewAsAnother)
             Nume utilizator
         </div>
         <div class="FlexRight PostInputWidth">
-            @if (!Model.ViewAsAnother && await Model.IsCurrentUserAdminHereAsync())
+            @if (!Model.ViewAsAnother && await Model.IsCurrentUserAdminHere())
             {
                 <input asp-for="CurrentUser.Username" />
             }
@@ -193,7 +193,7 @@ else if (Model.ViewAsAnother)
             </div>
         </div>
     }
-    @if (!Model.ViewAsAnother && await Model.IsCurrentUserAdminHereAsync())
+    @if (!Model.ViewAsAnother && await Model.IsCurrentUserAdminHere())
     {
         var permissions = new List<SelectListItem>(
             (await _userService.GetUserRolesLazy()).Select(
@@ -221,11 +221,15 @@ else if (Model.ViewAsAnother)
         <p></p>
         <div class="FlexCenter">
             <div style="font-weight:bold; text-align: right">
-                Timpul cât este permisă<br />editarea mesajelor
+                Timpul cât este permisă<br />editarea mesajelor proprii:
             </div>
             <div class="FlexRight PostInputWidth">
                 <input asp-for="CurrentUser.UserEditTime" /><br />
-                <span class="Caption">Minute de la publicarea mesajului.<br />Aceeași setare există și la grupuri și se aplică valoarea cea mai restrictivă.</span><br />
+                <span class="Caption">
+                    Minute de la publicarea mesajului.<br />
+                    Aceeași setare există și la grupuri și se aplică valoarea cea mai restrictivă diferită de zero.<br />
+                    Zero semnifică „timp nelimitat” și se aplică chiar dacă cealaltă setare este diferită de zero.
+                </span><br />
             </div>
         </div>
         <p></p>
@@ -273,7 +277,7 @@ else if (Model.ViewAsAnother)
                 <input asp-for="ShowEmail" style="width:auto" /> Arată adresa de e-mail în profil (astfel membrii forumului te pot contacta prin e-mail).
             </div>
         }
-        else if (Model.CurrentUser.UserAllowViewemail == 1 || await Model.IsCurrentUserAdminHereAsync())
+        else if (Model.CurrentUser.UserAllowViewemail == 1 || await Model.IsCurrentUserAdminHere())
         {
 
             <a href="mailto:@Html.Raw(Model.CurrentUser.UserEmail)">Trimite e-mail</a>

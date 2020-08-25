@@ -40,8 +40,13 @@ namespace Serverless.Forum.Pages
             : base(context, forumService, userService, cacheService, config) { }
 
         public async Task<IActionResult> OnGet()
-            => await WithValidForum(ForumId, async (thisForum) =>
+            => await WithValidForum(ForumId, ForumId == 0, async (thisForum) =>
             {
+                if (ForumId == 0)
+                {
+                    return RedirectToPage("Index");
+                }
+
                 ForumTitle = HttpUtility.HtmlDecode(thisForum?.ForumName ?? "untitled");
                 IEnumerable<TopicDto> topics;
 
@@ -168,9 +173,8 @@ namespace Serverless.Forum.Pages
                 return Page();
             });
 
-
         public async Task<IActionResult> OnPostMarkForumsRead()
-            => await WithRegisteredUser(async () => await WithValidForum(ForumId, async (_)  =>
+            => await WithRegisteredUser(async () => await WithValidForum(ForumId, ForumId == 0, async (_)  =>
             {
                 await MarkForumAndSubforumsRead(ForumId);
                 _forceTreeRefresh = true;

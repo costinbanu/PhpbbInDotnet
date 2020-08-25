@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using MySqlX.XDevAPI;
+using Newtonsoft.Json;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.ForumDb.Entities;
@@ -58,7 +60,7 @@ namespace Serverless.Forum
                     new AuthenticationProperties
                     {
                         AllowRefresh = true,
-                        ExpiresUtc = DateTimeOffset.UtcNow.Add(TimeSpan.FromDays(_config.GetValue<int>("LoginSessionSlidingExpirationDays"))),
+                        ExpiresUtc = DateTimeOffset.UtcNow.Add(TimeSpan.FromDays(_config.GetValue<int?>("LoginSessionSlidingExpirationDays") ?? 30)),
                         IsPersistent = true,
                     }
                 );
@@ -79,9 +81,9 @@ namespace Serverless.Forum
                         if (dbUser == null || dbUser.UserInactiveTime > 0)
                         {
                             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                            await _cacheService.SetInCache(key, true, TimeSpan.FromDays(_config.GetValue<int>("LoginSessionSlidingExpirationDays")));
+                            await _cacheService.SetInCache(key, true, TimeSpan.FromDays(_config.GetValue<int?>("LoginSessionSlidingExpirationDays") ?? 30));
                         }
-                        else if (DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()).TotalHours > 1)
+                        else if (DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > TimeSpan.FromMinutes(_config.GetValue<int?>("UserActivityTrackingIntervalMinutes") ?? 60))
                         {
                             _context.Update(dbUser);
                             dbUser.UserLastvisit = DateTime.UtcNow.ToUnixTimestamp();
@@ -115,10 +117,10 @@ namespace Serverless.Forum
             }
         }
 
-        public async Task<bool> IsCurrentUserAdminHereAsync(int forumId = 0)
+        public async Task<bool> IsCurrentUserAdminHere(int forumId = 0)
             => await _userService.IsUserAdminInForum(await GetCurrentUserAsync(), forumId);
 
-        public async Task<bool> IsCurrentUserModeratorHereAsync(int forumId = 0)
+        public async Task<bool> IsCurrentUserModeratorHere(int forumId = 0)
             => await _userService.IsUserModeratorInForum(await GetCurrentUserAsync(), forumId);
 
         #endregion User
@@ -230,7 +232,7 @@ namespace Serverless.Forum
 
         protected async Task<IActionResult> WithModerator(Func<Task<IActionResult>> toDo)
         {
-            if (!await IsCurrentUserModeratorHereAsync())
+            if (!await IsCurrentUserModeratorHere())
             {
                 return RedirectToPage("Login", new { ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString) });
             }
@@ -239,7 +241,7 @@ namespace Serverless.Forum
 
         protected async Task<IActionResult> WithAdmin(Func<Task<IActionResult>> toDo)
         {
-            if (!await IsCurrentUserAdminHereAsync())
+            if (!await IsCurrentUserAdminHere())
             {
                 return RedirectToPage("Login", new { ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString) });
             }

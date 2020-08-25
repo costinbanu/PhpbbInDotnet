@@ -42,8 +42,10 @@
 {
     <script>
         $(document).ready(function () {
-            var elementTop = $('.Unread').offset().top;
-            window.scrollTo(0, elementTop - 20);
+            var element = $('.Unread');
+            if (element && element.offset()) {
+                window.scrollTo(0, element.offset().top - 20);
+            }
         });
     </script>
 }
@@ -60,12 +62,15 @@ else
 @if (Model.IsNewPostView)
 {
     <h2>Subiecte necitite</h2>
+    @if (Model.Topics?.Any() ?? false)
+    {
+        <a href="javascript:MarkForumsRead.submit()">Marchează-le ca citite</a>
+    }
 }
 else if (Model.IsOwnPostView)
 {
     <h2>Subiectele proprii</h2>
     <span>Subiecte în care ai scris cel puțin un mesaj</span>
-    <p>&nbsp;</p>
 }
 else
 {
@@ -89,6 +94,7 @@ else
         </div>
     }
 }
+
 @if (!IsAnonymous && !Model.IsNewPostView && !Model.IsOwnPostView)
 {
     <ul class="Shortcuts">
@@ -283,7 +289,7 @@ else if (Model.IsOwnPostView)
     <a href="/">Prima pagină</a> |
     @if ((Model.ParentForumId ?? 0) != 0 && !Model.IsNewPostView && !Model.IsOwnPostView)
     {
-        <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">Forum părinte</a>
+        <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@HttpUtility.HtmlDecode(Model.ParentForumTitle)</a>
         <span> | </span>
     }
     <span onclick="showForumTree(this)" class="SpanLikeLink">Alege destinația</span>

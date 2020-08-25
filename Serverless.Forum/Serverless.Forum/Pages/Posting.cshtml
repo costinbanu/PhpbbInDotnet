@@ -46,7 +46,7 @@
     var posting = new Posting(
         @Json.Serialize(await _cacheService.GetFromCache<List<string>>(await Model.GetActualCacheKey("BbCodes", false))),
         @Json.Serialize(await _cacheService.GetFromCache<Dictionary<string, string>>(await Model.GetActualCacheKey("BbCodeHelplines", false))),
-        @((await Model.IsCurrentUserAdminHereAsync()).ToString().ToLower()),
+        @((await Model.IsCurrentUserAdminHere()).ToString().ToLower()),
         @((Model.Action == PostingActions.EditForumPost).ToString().ToLower()),
         "@UserDateFormat"
     );
@@ -293,7 +293,7 @@ else if (!string.IsNullOrWhiteSpace(Model.CurrentForum?.ForumRulesLink))
                 <div>Alege unul sau mai multe fișiere:</div>
                 <div class="PollInput FlexRight">
                     <input asp-for="Files" onchange="posting.submitAttachments()" multiple />
-                    @if (!await Model.IsCurrentUserAdminHereAsync())
+                    @if (!await Model.IsCurrentUserAdminHere())
                     {
                         <span class="Caption">Minim 1, maxim 10 fișiere. Dimensiune limită: @(_config.GetValue<int>("UploadLimitsMB:Images"))MB pentru imagini, @(_config.GetValue<int>("UploadLimitsMB:OtherFiles"))MB în rest.</span>
                     }

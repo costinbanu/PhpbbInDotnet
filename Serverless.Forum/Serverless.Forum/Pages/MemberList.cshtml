@@ -3,8 +3,11 @@
 
 @using Serverless.Forum.Utilities
 @using System.Web
- 
+@using Microsoft.Extensions.Configuration
+
 @inject Utils _utils
+@inject Serverless.Forum.Services.BBCodeRenderingService _renderingService
+@inject IConfiguration _config
 
 @{
     ViewData["Title"] = "MemberList";
@@ -18,33 +21,52 @@
     <link rel="stylesheet" href="~/css/tabbedPage.css" />
 </environment>
 
+<script>
+    function setMode(value) {
+        $('#modeInput').val(value);
+        $('#modeForm').submit();
+    }
+</script>
+
+<form method="get" id="modeForm">
+    <input type="hidden" asp-for="Mode" id="modeInput" />
+    <input type="hidden" name="handler" value="setMode" />
+</form>
+
 <div class="tab">
-    <button class="@(Model.Mode == MemberListPages.AllUsers ? "tablinks active" : "tablinks")" onclick="openTab(event, 'AllUsers')">Toți utilizatorii</button>
-    <button class="@(Model.Mode == MemberListPages.SearchUsers ? "tablinks active" : "tablinks")" onclick="openTab(event, 'SearchUsers')">Caută un utilizator</button>
-    <button class="@(Model.Mode == MemberListPages.Groups ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Groups')">Toate grupurile</button>
+    <button class="@(Model.Mode == MemberListPages.AllUsers ? "tablinks active" : "tablinks")" onclick="setMode('AllUsers')">Toți utilizatorii</button>
+    <button class="@(Model.Mode == MemberListPages.ActiveUsers ? "tablinks active" : "tablinks")" onclick="setMode('ActiveUsers')">Utilizatori activi</button>
+    <button class="@(Model.Mode == MemberListPages.SearchUsers ? "tablinks active" : "tablinks")" onclick="setMode('SearchUsers')">Caută un utilizator</button>
+    <button class="@(Model.Mode == MemberListPages.Groups ? "tablinks active" : "tablinks")" onclick="setMode('Groups')">Toate grupurile</button>
 </div>
 
 <div id="AllUsers" class="tabcontent" style="@(Model.Mode == MemberListPages.AllUsers ? "display:inherit" : "display:none")">
     <h2>Membrii forumului</h2>
     <form method="get">
-        @Html.DropDownListFor(m => m.Order, _utils.EnumToDropDownList<MemberListOrder>(Model.Order, Model.GetOrderDisplayName, "Ordonează după..."), new { id = "userOrder", style="height:30px" })
+        @Html.DropDownListFor(m => m.Order, _utils.EnumToDropDownList<MemberListOrder>(Model.Order, Model.GetOrderDisplayName, "Ordonează după..."), new { id = "userOrder", style = "height:30px; margin-top: 5px" })
         <input asp-for="Mode" type="hidden" />
         <input asp-for="PageNum" type="hidden" />
-        <input type="submit" value="Trimite" style="height:32px" />
+        <input type="submit" value="Trimite" style="height:32px; margin-top: 5px" />
     </form>
-
-    @await Html.PartialAsync(
-        "_UserSummaryPartial",
-        new CustomPartials._UserSummaryPartialModel(
-            userList: Model.UserList, groupList: Model.UserGroupList, rankList: Model.UserRankList, dateFormat: dateFormat,
-            paginator: Model.UserPaginator, backLink: $"MemberList?pageNum={Model.PageNum - 1}&order={Model.Order}&mode={MemberListPages.AllUsers}", forwardLink: $"MemberList?pageNum={Model.PageNum + 1}&order={Model.Order}&mode={MemberListPages.AllUsers}"
-        )
-    )
+    @if (Model.UserList?.Any() ?? false)
+    {
+        @await Html.PartialAsync(
+             "_UserSummaryPartial",
+             new CustomPartials._UserSummaryPartialModel(
+                 userList: Model.UserList, groupList: Model.GroupList, rankList: Model.RankList, dateFormat: dateFormat,
+                 paginator: Model.Paginator, backLink: $"MemberList?pageNum={Model.PageNum - 1}&order={Model.Order}&mode={MemberListPages.AllUsers}", forwardLink: $"MemberList?pageNum={Model.PageNum + 1}&order={Model.Order}&mode={MemberListPages.AllUsers}"
+             )
+         );
+    }
+    else
+    {
+        <h4>Nu există nici un utilizator</h4>
+    }
 
 </div>
 
 <div id="SearchUsers" class="tabcontent" style="@(Model.Mode == MemberListPages.SearchUsers ? "display:inherit" : "display:none")">
-    @if (!(Model.SearchResults?.Any() ?? false))
+    @if (!(Model.UserList?.Any() ?? false))
     {
         <h2>Caută un utilizator</h2>
     }
@@ -54,27 +76,39 @@
     }
     <form method="get">
         <input type="hidden" name="handler" value="search" />
-        <input asp-for="Username" placeholder="Caută după nume..." style="height:30px" id="usernameUserInput" />
-        @Html.DropDownListFor(m => m.Order, _utils.EnumToDropDownList<MemberListOrder>(Model.Order, Model.GetOrderDisplayName, "Ordonează după..."), new { id = "searchOrder", style = "height:30px" })
+        <input asp-for="Username" placeholder="Caută după nume..." style="height:30px; margin-top: 5px" id="usernameUserInput" />
+        @Html.DropDownListFor(m => m.Order, _utils.EnumToDropDownList<MemberListOrder>(Model.Order, Model.GetOrderDisplayName, "Ordonează după..."), new { id = "searchOrder", style = "height:30px; margin-top: 5px" })
         <input asp-for="Mode" type="hidden" />
         <input asp-for="PageNum" type="hidden" id="pageNumInput" />
         <input type="hidden" value="@Model.Username" id="usernameOriginalValue" />
-        <input type="submit" value="Trimite" style="height:32px" onclick="return shouldChangePageNum()" />
+        <input type="submit" value="Trimite" style="height:32px; margin-top: 5px" onclick="return shouldChangePageNum()" />
     </form>
 
-    @await Html.PartialAsync(
-        "_UserSummaryPartial",
-        new CustomPartials._UserSummaryPartialModel(
-            userList: Model.SearchResults, groupList: Model.SearchGroupList, rankList: Model.SearchRankList, dateFormat: dateFormat,
-            paginator: Model.SearchPaginator, backLink: $"MemberList?pageNum={Model.PageNum - 1}&order={Model.Order}&handler=search&username={HttpUtility.UrlEncode(Model.Username)}", forwardLink: $"MemberList?pageNum={Model.PageNum + 1}&order={Model.Order}&handler=search&username={HttpUtility.UrlEncode(Model.Username)}"
-        )
-    )
+    @if (Model.UserList?.Any() ?? false)
+    {
+        @await Html.PartialAsync(
+             "_UserSummaryPartial",
+             new CustomPartials._UserSummaryPartialModel(
+                 userList: Model.UserList, groupList: Model.GroupList, rankList: Model.RankList, dateFormat: dateFormat,
+                 paginator: Model.Paginator, backLink: $"MemberList?pageNum={Model.PageNum - 1}&order={Model.Order}&handler=search&username={HttpUtility.UrlEncode(Model.Username)}", forwardLink: $"MemberList?pageNum={Model.PageNum + 1}&order={Model.Order}&handler=search&username={HttpUtility.UrlEncode(Model.Username)}"
+             )
+         )
+    }
+    else if (Model.SearchWasPerformed)
+    {
+        <h4>Nu a fost găsit nici un utilizator.</h4>
+    }
 
 </div>
 
 <div id="Groups" class="tabcontent" style="@(Model.Mode == MemberListPages.Groups ? "display:inherit" : "display:none")">
     <h2>Grupurile forumului</h2>
     @{
+        if (await Model.IsCurrentUserAdminHere())
+        {
+            <span asp-validation-for="ValidationDummy" class="validation"></span>
+        }
+
         var isFirst = true;
         foreach (var group in Model.GroupList ?? Enumerable.Empty<Serverless.Forum.ForumDb.Entities.PhpbbGroups>())
         {
@@ -83,16 +117,79 @@
                 <hr />
             }
 
-            <span style="font-weight: bold; color: #@group.GroupColour">
-                @Html.Raw(group.GroupName)
-            </span>
-            <br />
-            @Html.Raw(group.GroupDesc);
-
+            <div class="FlexCenter">
+                <div class="PostTitle" style="overflow-wrap: break-word; color:#@group.GroupColour">
+                    @Html.Raw(group.GroupName)
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    @if (!await Model.IsCurrentUserAdminHere())
+                    {
+                        @Html.Raw(_renderingService.BbCodeToHtml(group.GroupDesc, group.GroupDescUid));
+                    }
+                    else
+                    {
+                    <form method="post" asp-page-handler="editGroup">
+                        <input type="hidden" name="groupId" value="@group.GroupId" /> <br />
+                        <div class="FlexCenter">
+                            <div>Nume:</div>
+                            <div class="FlexRight PostInputWidth">
+                                <input type="text" name="groupName" value="@group.GroupName" />
+                            </div>
+                        </div>
+                        <p></p>
+                        <div class="FlexCenter">
+                            <div>Descriere:</div>
+                            <div class="FlexRight PostInputWidth">
+                                <input type="text" name="groupDesc" value="@group.GroupDesc" />
+                            </div>
+                        </div>
+                        <p></p>
+                        <div class="FlexCenter">
+                            <div>Culoare:</div>
+                            <div class="FlexRight PostInputWidth">
+                                <input type="text" name="groupColor" value="@group.GroupColour" />
+                            </div>
+                        </div>
+                        <p></p>
+                        <div class="FlexCenter">
+                            <div>Timpul cât este permisă<br />editarea mesajelor proprii:</div>
+                            <div class="FlexRight PostInputWidth">
+                                <input type="text" name="groupEditTime" value="@group.GroupEditTime" /><br />
+                                <span class="Caption">
+                                    Minute de la publicarea mesajului.<br />
+                                    Aceeași setare există și la grupuri și se aplică valoarea cea mai restrictivă diferită de zero.<br />
+                                    Zero semnifică „timp nelimitat” și se aplică chiar dacă cealaltă setare este diferită de zero.
+                                </span>
+                            </div>
+                        </div>
+                        <p></p>
+                        <input type="submit" value="Trimite" />
+                    </form>
+                    }
+                </div>
+            </div>
             isFirst = false;
         }
     }
-    <p></p>
+</div>
+
+<div id="ActiveUsers" class="tabcontent" style="@(Model.Mode == MemberListPages.ActiveUsers ? "display:inherit" : "display:none")">
+    <h2>Membri activi în ultimele @(_config.GetValue<int?>("UserActivityTrackingIntervalMinutes") ?? 60) de minute</h2>
+    @if (Model.UserList?.Any() ?? false)
+    {
+        <h4>@Model.Paginator.Pagination.Pager.TotalItems membri înregistrați</h4>
+        @await Html.PartialAsync(
+             "_UserSummaryPartial",
+             new CustomPartials._UserSummaryPartialModel(
+                 userList: Model.UserList, groupList: Model.GroupList, rankList: Model.RankList, dateFormat: dateFormat,
+                 paginator: Model.Paginator, backLink: $"MemberList?handler=setMode&pageNum={Model.PageNum - 1}&order={Model.Order}&mode={MemberListPages.ActiveUsers}", forwardLink: $"MemberList?handler=setMode&pageNum={Model.PageNum + 1}&order={Model.Order}&mode={MemberListPages.ActiveUsers}"
+             )
+         );
+    }
+    else
+    {
+        <h4>Nu există nici un utilizator</h4>
+    }
 </div>
 
 @if (!Model.Order.HasValue)
