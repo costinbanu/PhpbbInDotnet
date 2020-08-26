@@ -6,8 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using MySqlX.XDevAPI;
-using Newtonsoft.Json;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.ForumDb.Entities;
@@ -211,10 +209,6 @@ namespace Serverless.Forum
             using var connection = _context.Database.GetDbConnection();
             await connection.OpenIfNeeded();
             await connection.ExecuteAsync("UPDATE phpbb_users SET user_lastmark = @markTime WHERE user_id = @usrId", new { markTime = DateTime.UtcNow.ToUnixTimestamp(), usrId });
-
-            //var user = await _context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == usrId);
-            //user.UserLastmark = DateTime.UtcNow.ToUnixTimestamp();
-            //await _context.SaveChangesAsync();
         }
 
         #endregion Forum for user

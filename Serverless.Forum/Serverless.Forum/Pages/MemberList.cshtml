@@ -157,7 +157,7 @@
                                 <input type="text" name="groupEditTime" value="@group.GroupEditTime" /><br />
                                 <span class="Caption">
                                     Minute de la publicarea mesajului.<br />
-                                    Aceeași setare există și la grupuri și se aplică valoarea cea mai restrictivă diferită de zero.<br />
+                                    Aceeași setare există și la utilizatori și se aplică valoarea cea mai restrictivă diferită de zero.<br />
                                     Zero semnifică „timp nelimitat” și se aplică chiar dacă cealaltă setare este diferită de zero.
                                 </span>
                             </div>
@@ -175,6 +175,13 @@
 
 <div id="ActiveUsers" class="tabcontent" style="@(Model.Mode == MemberListPages.ActiveUsers ? "display:inherit" : "display:none")">
     <h2>Membri activi în ultimele @(_config.GetValue<int?>("UserActivityTrackingIntervalMinutes") ?? 60) de minute</h2>
+    <form method="get">
+        @Html.DropDownListFor(m => m.Order, _utils.EnumToDropDownList<MemberListOrder>(Model.Order, Model.GetOrderDisplayName, "Ordonează după..."), new { id = "userOrder", style = "height:30px; margin-top: 5px" })
+        <input asp-for="Mode" type="hidden" />
+        <input asp-for="PageNum" type="hidden" />
+        <input name="handler" value="setMode" type="hidden" />
+        <input type="submit" value="Trimite" style="height:32px; margin-top: 5px" />
+    </form>
     @if (Model.UserList?.Any() ?? false)
     {
         <h4>@Model.Paginator.Pagination.Pager.TotalItems membri înregistrați</h4>

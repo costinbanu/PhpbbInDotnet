@@ -309,8 +309,8 @@ namespace Serverless.Forum.Pages
                 {
                     var destinations = new List<string>
                     {
-                        await _utils.CompressAndUrlEncode($"<a href=\"./ViewForum?forumId={DestinationForumId ?? 0}\">Mergi la noul forum</a>"),
-                        await _utils.CompressAndUrlEncode($"<a href=\"./ViewTopic?topicId={TopicId}&pageNum={PageNum}\">Mergi la ultimul subiect vizitat</a>")
+                        await _utils.CompressAndEncode($"<a href=\"./ViewForum?forumId={DestinationForumId ?? 0}\">Mergi la noul forum</a>"),
+                        await _utils.CompressAndEncode($"<a href=\"./ViewTopic?topicId={TopicId}&pageNum={PageNum}\">Mergi la ultimul subiect vizitat</a>")
                     };
                     return RedirectToPage("Confirm", "DestinationConfirmation", new { destinations });
                 }
@@ -338,16 +338,16 @@ namespace Serverless.Forum.Pages
                     var destinations = new List<string>();
                     if (LatestSelected != null)
                     {
-                        destinations.Add(await _utils.CompressAndUrlEncode($"<a href=\"./ViewTopic?postId={LatestSelected}&handler=byPostId\">Mergi la noul subiect</a>"));
+                        destinations.Add(await _utils.CompressAndEncode($"<a href=\"./ViewTopic?postId={LatestSelected}&handler=byPostId\">Mergi la noul subiect</a>"));
                     };
 
                     if (NextRemaining != null)
                     {
-                        destinations.Add(await _utils.CompressAndUrlEncode($"<a href=\"./ViewTopic?postId={NextRemaining}&handler=byPostId\">Mergi la ultimul subiect vizitat</a>"));
+                        destinations.Add(await _utils.CompressAndEncode($"<a href=\"./ViewTopic?postId={NextRemaining}&handler=byPostId\">Mergi la ultimul subiect vizitat</a>"));
                     }
                     else
                     {
-                        destinations.Add(await _utils.CompressAndUrlEncode($"<a href=\"./ViewForum?forumId={ForumId}\">Mergi la ultimul forum vizitat</a>"));
+                        destinations.Add(await _utils.CompressAndEncode($"<a href=\"./ViewForum?forumId={ForumId}\">Mergi la ultimul forum vizitat</a>"));
                     }
 
                     return RedirectToPage("Confirm", "DestinationConfirmation", new { destinations });
@@ -386,13 +386,23 @@ namespace Serverless.Forum.Pages
                     ModeratorActionResult = $"<span style=\"margin-left: 30px; color: {((IsSuccess ?? false) ? "darkgreen" : "red")}; display:block;\">{Message}</span>";
                 }
                 var report = await _context.PhpbbReports.FirstOrDefaultAsync(r => r.ReportId == reportId);
-                report.ReportClosed = 1;
+                if (report != null)
+                {
+                    report.ReportClosed = 1;
+                }
                 var topic = await _context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == TopicId);
-                topic.TopicReported = 0;
+                if (topic != null)
+                {
+                    topic.TopicReported = 0;
+                }
                 await _context.SaveChangesAsync();
                 if (!(deletePost ?? false) && (redirectToEdit ?? false))
                 {
                     var reportedPost = await _context.PhpbbPosts.FirstOrDefaultAsync(p => p.PostId == reportPostId);
+                    if (reportedPost == null)
+                    {
+                        return await OnGet();
+                    }
                     return RedirectToPage("Posting", "editPost", new { reportedPost.ForumId, reportedPost.TopicId, reportedPost.PostId });
                 }
                 else

@@ -8,7 +8,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.WebEncoders;
 using PaulMiami.AspNetCore.Mvc.Recaptcha;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Services;
@@ -17,8 +16,6 @@ using System;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Text.Unicode;
-using System.Threading.Tasks;
 
 namespace Serverless.Forum
 {
@@ -97,8 +94,6 @@ namespace Serverless.Forum
             });
 
             services.AddHttpClient();
-
-            //services.Configure<WebEncoderOptions>(options => new CodePointFilter(UnicodeRanges.All));
 
             services.AddSingleton<Utils>();
             services.AddScoped<AdminForumService>();

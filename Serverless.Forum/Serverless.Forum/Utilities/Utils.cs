@@ -65,11 +65,11 @@ namespace Serverless.Forum.Utilities
             return JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(content.ToArray()));
         }
 
-        public async Task<string> CompressAndUrlEncode(string input)
-            => HttpUtility.UrlEncode(Convert.ToBase64String(await CompressObject(input)));
+        public async Task<string> CompressAndEncode(string input)
+            => Convert.ToBase64String(await CompressObject(input));
 
-        public async Task<string> UrlDecodeAndDecompress(string input)
-            => await DecompressObject<string>(Convert.FromBase64String(HttpUtility.UrlDecode(input)));
+        public async Task<string> DecodeAndDecompress(string input)
+            => await DecompressObject<string>(Convert.FromBase64String(input));
 
         public string RandomBase36Number()
             => Math.Abs(Convert.ToInt64($"0x{Guid.NewGuid().ToString("n").Substring(4, 16)}", 16)).ToBase36().ToLowerInvariant();

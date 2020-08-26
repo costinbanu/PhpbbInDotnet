@@ -178,25 +178,25 @@ namespace Serverless.Forum.Services
             var cleanTextTemp = uidRegex.Replace(HttpUtility.HtmlDecode(text), string.Empty);
             var noUid = tagRegex.Replace(cleanTextTemp, "$2");
 
-            string replace(string input, string pattern)
+            string replace(string input, string pattern, int groupsIndex)
             {
                 var output = input;
-                var smileyRegex = new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-                var smileyMatches = smileyRegex.Matches(output);
+                var regex = new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                var matches = regex.Matches(output);
                 try
                 {
-                    foreach (Match m in smileyMatches)
+                    foreach (Match m in matches)
                     {
-                        output = output.Replace(m.Value, m.Groups[1].Value);
+                        output = output.Replace(m.Value, m.Groups[groupsIndex].Value);
                     }
                 }
                 catch { }
                 return output;
             }
 
-            var noSmileys = replace(noUid, "<!-- s(:?.+?) -->.+?<!-- s:?.+?:? -->");
-            var noLinks = replace(noSmileys, @"<!-- m --><a\s+(?:[^>]*?\s+)?href=([""'])(.*?)\1.+?<!-- m -->");
-            var noComments = replace(noLinks, @"<!-- .*? -->");
+            var noSmileys = replace(noUid, "<!-- s(:?.+?) -->.+?<!-- s:?.+?:? -->", 1);
+            var noLinks = replace(noSmileys, @"<!-- m --><a\s+(?:[^>]*?\s+)?href=([""'])(.*?)\1.+?<!-- m -->", 2);
+            var noComments = replace(noLinks, @"<!-- .*? -->", 1);
 
             return noComments;
         }

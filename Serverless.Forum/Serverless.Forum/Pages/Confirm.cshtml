@@ -96,7 +96,7 @@ else if (Model.IsDestinationConfirmation)
     <p>&nbsp;</p>
     foreach (var destination in Model.Destinations)
     {
-        @Html.Raw(await _utils.UrlDecodeAndDecompress(destination));
+        @Html.Raw(await _utils.DecodeAndDecompress(destination));
         <p></p>
     }
 }
