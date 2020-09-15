@@ -107,10 +107,12 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
                 }
                 <br />
                 <input asp-for="TopicId" type="hidden" />
+                <input asp-for="PageNum" type="hidden" />
                 <input name="queryString" type="hidden" value="@HttpUtility.UrlEncode(Request.QueryString.ToString())" />
                 @if (!IsAnonymous)
                 {
                     <input type="submit" value="Trimite vot" />
+                    <span asp-validation-for="Poll" class="validation"></span>
                 }
                 @Html.AntiForgeryToken()
             </form>
@@ -175,6 +177,7 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
     var reachedAnUnreadPost = false;
     var isFirst = true;
     var previousIsUnread = false;
+    var useModActions = false;
     @foreach (var p in Model.Posts)
     {
         var ju = Model.Users?.FirstOrDefault(u => u.UserId == p.PosterId);
@@ -241,11 +244,11 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
         <div class="RowMargin @rowClass">
             <div class="FlexRow">
                 @await Html.PartialAsync(
-                          "_SummaryPartial",
-                          new CustomPartials._SummaryPartialModel(post.AuthorId, post.AuthorName, post.AuthorColor, post.PostCreationTime, post.PostId.Value,
-                              UserDateFormat, post.AuthorHasAvatar, post.AuthorRank, null, null, null, true, false, null, null, null,
-                              _userService.HasPrivateMessages(CurrentUser) ? $"<a href=\"./Posting?handler=PrivateMessage&postId={post.PostId}\">&#x2709; Mesaj privat</a>" : null)
-                      )
+                    "_SummaryPartial",
+                    new CustomPartials._SummaryPartialModel(post.AuthorId, post.AuthorName, post.AuthorColor, post.PostCreationTime, post.PostId.Value,
+                        UserDateFormat, post.AuthorHasAvatar, post.AuthorRank, null, null, null, true, false, null, null, null,
+                        _userService.HasPrivateMessages(CurrentUser) ? $"<a href=\"./Posting?handler=PrivateMessage&postId={post.PostId}\">&#x2709; Mesaj privat</a>" : null)
+                )
                 <div class="ForumContent VerticalContent FlexRight" id="@post.PostId">
                     <span style="display:flex">
                         <span class="PostTitle">
@@ -332,6 +335,25 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
                                 <span>
                                     <a asp-page="/Posting" asp-page-handler="EditPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">&#x1F4DD; Modifică</a>
                                 </span>
+                                if (IsMod || index == Model.Posts.Count - 1)
+                                {
+                                    if (!IsMod)
+                                    {
+                                        useModActions = true;
+                                        <input name="PostIdsForModerator" type="checkBox" value="@post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @(post.PostId ?? -1))" @(Model.PostIdsForModerator.Contains(post.PostId ?? -1) ? "checked" : "") style="display:none" />
+                                    }
+                                    int? closestPostIdIndex = null;
+                                    if (Model.Posts.Count > 1)
+                                    {
+                                        if (index == 0) closestPostIdIndex = 1;
+                                        else if (index == Model.Posts.Count - 1) closestPostIdIndex = Model.Posts.Count - 2;
+                                        else closestPostIdIndex = index + 1;
+                                    }
+                                    var closestPostId = closestPostIdIndex.HasValue ? Model.Posts[closestPostIdIndex.Value].PostId : 0;
+                                    <span>
+                                        <a href="javascript:vt.deletePost(@(post.PostId ?? -1), @closestPostId)">&#x274C; Șterge mesaj</a>
+                                    </span>
+                                }
                             }
                         </div>
                     </div>
@@ -344,6 +366,18 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
     if (!previousIsUnread)
     {
         <hr />
+    }
+
+    if (useModActions)
+    {
+        <form id="moderatorForm" method="post" asp-page-handler="DeleteMyMessage" style="display:none">
+            @Html.DropDownList("PostAction", _utils.EnumToDropDownList<ModeratorPostActions>(Model.PostAction, Model.MapModeratorPostActions), new { onchange = "vt.showPostExtraInput(this)", id = "PostAction", style = "display:none" })
+            <input asp-for="ForumId" type="hidden" />
+            <input asp-for="TopicId" type="hidden" />
+            <input asp-for="PageNum" type="hidden" />
+            <input asp-for="ClosestPostId" type="hidden" id="closestPostId" />
+        </form>
+        <span asp-validation-for="PostIdsForModerator" class="validation"></span>
     }
 }
 @if ((!Model.IsLocked || IsMod || IsAdmin) && !IsAnonymous)
@@ -419,7 +453,7 @@ else if (!IsAnonymous)
     <hr />
     <form method="post" asp-page-handler="TopicModerator">
         <span>Moderează subiectul: </span>
-        @Html.DropDownList("TopicAction", _utils.EnumToDropDownList<ModeratorTopicActions>(Model.TopicAction), new { onchange = "vt.showTopicExtraInput(this)", id = "TopicAction" })
+        @Html.DropDownList("TopicAction", _utils.EnumToDropDownList<ModeratorTopicActions>(Model.TopicAction, Model.MapModeratorTopicActions), new { onchange = "vt.showTopicExtraInput(this)", id = "TopicAction" })
         <div id="extraInputTopic" style="display:@(Model.ShowTopic ? "block" : "none")">
             <br />
             <input type="text" asp-for="DestinationForumId" placeholder="ID forum destinație" /><br />
@@ -437,7 +471,7 @@ else if (!IsAnonymous)
     <form id="moderatorForm" method="post" asp-page-handler="PostModerator">
         <br />
         <span>Moderează mesajele selectate: </span>
-        @Html.DropDownList("PostAction", _utils.EnumToDropDownList<ModeratorPostActions>(Model.PostAction), new { onchange = "vt.showPostExtraInput(this)", id = "PostAction" })
+        @Html.DropDownList("PostAction", _utils.EnumToDropDownList<ModeratorPostActions>(Model.PostAction, Model.MapModeratorPostActions), new { onchange = "vt.showPostExtraInput(this)", id = "PostAction" })
         <div id="extraInputPostForum" style="display:@(Model.ShowPostForum ? "block" : "none")">
             <br />
             <input type="text" asp-for="DestinationForumId" placeholder="ID forum destinație" /><br />
@@ -461,6 +495,7 @@ else if (!IsAnonymous)
         <input asp-for="ForumId" type="hidden" />
         <input asp-for="TopicId" type="hidden" />
         <input asp-for="PageNum" type="hidden" />
+        <input asp-for="ClosestPostId" type="hidden" id="closestPostId" />
         @Html.AntiForgeryToken()
     </form>
     <form id="modConfirmation" asp-page="Confirm" method="get">

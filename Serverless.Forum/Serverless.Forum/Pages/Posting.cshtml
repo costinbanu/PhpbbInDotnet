@@ -25,14 +25,7 @@
     {
         UserDateFormat = "dddd, dd.MM.yyyy, HH:mm";
     }
-    //var Header = await _cacheService.GetFromCache<string>(await Model.GetActualCacheKey("Header", true));
     var CanCreatePoll = Model.Action == PostingActions.NewTopic || (Model.Action == PostingActions.EditForumPost && (Model.CurrentTopic?.TopicFirstPostId ?? 0) == Model.PostId);
-    //var Action = await _cacheService.GetFromCache<PostingActions>(await Model.GetActualCacheKey("Action", true));
-    //var ForumName = await _cacheService.GetFromCache<string>(await Model.GetActualCacheKey("ForumName", true));
-    //var ForumId = await _cacheService.GetFromCache<int>(await Model.GetActualCacheKey("ForumId", true));
-    //var ForumRulesLink = await _cacheService.GetFromCache<string>(await Model.GetActualCacheKey("ForumRulesLink", true));
-    //var ForumRules = await _cacheService.GetFromCache<string>(await Model.GetActualCacheKey("ForumRules", true));
-    //var ForumRulesUid = await _cacheService.GetFromCache<string>(await Model.GetActualCacheKey("ForumRulesUid", true));
 }
 
 <environment include="Development">
@@ -215,11 +208,15 @@ else if (!string.IsNullOrWhiteSpace(Model.CurrentForum?.ForumRulesLink))
             <span class="validation">A intervenit o eroare, pagina nu a fost afișată corect.</span>
             break;
     }
-    <span>&nbsp; </span>
-    <span asp-validation-for="PostTitle" class="validation"></span>
-    <span>&nbsp; </span>
-    <span asp-validation-for="PostText" class="validation"></span>
-
+    <b>
+        <span>&nbsp; </span>
+        <span asp-validation-for="PostTitle" class="validation"></span>
+        <span>&nbsp; </span>
+        <span asp-validation-for="PostText" class="validation"></span>
+        <span>&nbsp; </span>
+        <span asp-validation-for="LastPostTime" class="validation"></span>
+        <span>&nbsp; </span>
+    </b>
     @if (CanCreatePoll)
     {
         <div id="pollPanel" style="display:@(Model.ShowPoll ? "block" : "none")" class="PostInputWidth">
@@ -282,7 +279,7 @@ else if (!string.IsNullOrWhiteSpace(Model.CurrentForum?.ForumRulesLink))
     <input type="hidden" asp-for="Action" />
     <input type="hidden" asp-for="CurrentTopic.TopicFirstPostId" />
     <input type="hidden" asp-for="CurrentTopic.TopicTitle" />
-    <input type="hidden" asp-for="PostTime" />
+    <input type="hidden" asp-for="LastPostTime" id="lastPostTime" />
     @if (Model.Action != PostingActions.NewPrivateMessage)
     {
         <div id="attachPanel" style="display:@(Model.ShowAttach ? "block" : "none")" class="PostInputWidth">
@@ -353,17 +350,18 @@ else if (!string.IsNullOrWhiteSpace(Model.CurrentForum?.ForumRulesLink))
 </form>
 
 @{
-    var (previousPosts, users) = await Model.GetPreviousPosts(Model.Action);
-    if (previousPosts.Any())
+    var (posts, users) = await Model.GetPreviousPosts();
+    if (posts.Any())
     {
         <script>
-            var texts = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(previousPosts.ToDictionary(k => k.PostId, v =>_writingService.CleanBbTextForDisplay(v.PostText, v.BbcodeUid))))
+            var texts = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(posts.ToDictionary(k => k.PostId, v => _writingService.CleanBbTextForDisplay(v.PostText, v.BbcodeUid))));
+            $('#lastPostTime').val(@posts.First().PostTime);
         </script>
-
+        <br />
         <h3>Mesaje precedente</h3>
 
         var isFirst = true;
-        foreach (var p in previousPosts)
+        foreach (var p in posts)
         {
             var ju = users.FirstOrDefault(u => u.UserId == p.PosterId);
             var post = new Contracts.PostDto

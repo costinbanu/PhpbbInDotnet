@@ -78,7 +78,7 @@
     confirmAction(actionSelect) {
         var action = $(actionSelect).val();
         if (action.startsWith('Delete')) {
-            return confirm("Am primit comanda '" + action + "'. Continuați?");
+            return confirm("Am primit comanda '" + $(actionSelect).find(':selected').text() + "'. Continuați?");
         }
         return true;
     }
@@ -133,5 +133,23 @@
             return confirm('Ai ales să ștergi mesajul raportat. Ești sigur?');
         }
         return true;
+    }
+
+    deletePost(postId, closestPostId) {
+        $("input[name='PostIdsForModerator']").each(function (_, elem) {
+            if ($(elem).val() == postId) {
+                $(elem).attr('checked', '');
+            }
+            else {
+                $(elem).removeAttr('checked');
+            }
+        });
+        $('#PostAction').val('DeleteSelectedPosts');
+        if (this.confirmAction('#PostAction')) {
+            if (closestPostId) {
+                $('#closestPostId').val(closestPostId);
+            }
+            $('#moderatorForm').submit();
+        }
     }
 }

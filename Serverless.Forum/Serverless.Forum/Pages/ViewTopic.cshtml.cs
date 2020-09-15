@@ -49,6 +49,9 @@ namespace Serverless.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public int[] PostIdsForModerator { get; set; }
 
+        [BindProperty]
+        public int? ClosestPostId { get; set; }
+
         public PollDto Poll { get; private set; }
 
         public List<PhpbbPosts> Posts { get; private set; }
@@ -150,7 +153,7 @@ namespace Serverless.Forum.Pages
                 using var multi = await connection.QueryMultipleAsync(
                     "SELECT * FROM phpbb_users WHERE user_id IN @authors; " +
                     "SELECT * FROM phpbb_users WHERE user_id IN @editors; " +
-                    "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @posts ORDER BY filetime DESC; " +
+                    "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @posts ORDER BY attach_id DESC; " +
                     "SELECT * FROM phpbb_reports WHERE report_closed = 0 AND post_id IN @posts; " +
                     "SELECT r.* FROM phpbb_ranks r JOIN phpbb_users u on u.user_rank = r.rank_id WHERE u.user_id IN @authors;",
                     new
@@ -163,7 +166,7 @@ namespace Serverless.Forum.Pages
 
                 Users = await multi.ReadAsync<PhpbbUsers>();
                 LastEditUsers = await multi.ReadAsync<PhpbbUsers>();
-                Attachments = await multi.ReadAsync<PhpbbAttachments>();
+                Attachments = await multi.ReadAsync<PhpbbAttachments>(); //query should sort according to config['display_order']
                 Reports = await multi.ReadAsync<PhpbbReports>();
                 Ranks = await multi.ReadAsync<PhpbbRanks>();
                 TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
@@ -266,19 +269,49 @@ namespace Serverless.Forum.Pages
                 using var conn = _context.Database.GetDbConnection();
                 await conn.OpenIfNeeded();
 
-                var count = await conn.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @usrId", new { topicId, usrId });
-                if (count > 0 && topic.PollVoteChange == 0)
+                var existingVotes = (await conn.QueryAsync<PhpbbPollVotes>("SELECT * FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @usrId", new { topicId, usrId })).AsList();
+                if (existingVotes.Count > 0 && topic.PollVoteChange == 0)
                 {
-                    return Forbid("Can't change votes for this poll.");
+                    ModelState.AddModelError(nameof(Poll), "Votul nu poate fi schimbat!");
+                    return Page();
                 }
 
-                await conn.ExecuteAsync("DELETE FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @usrId AND poll_option_id NOT IN @votes", new { topicId, usrId, votes = votes.DefaultIfEmpty() });
+                var noLongerVoted = from prev in existingVotes
+                                    join cur in votes
+                                    on prev.PollOptionId equals cur
+                                    into joined
+                                    from j in joined.DefaultIfEmpty()
+                                    where j == default
+                                    select prev.PollOptionId;
+                await conn.ExecuteAsync(
+                    "DELETE FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @usrId AND poll_option_id IN @noLongerVoted",
+                    new { topicId, usrId, noLongerVoted = noLongerVoted.DefaultIfEmpty() }
+                );
+                foreach (var vote in noLongerVoted)
+                {
+                    await conn.ExecuteAsync(
+                        "UPDATE phpbb_poll_options SET poll_option_total = poll_option_total - 1 WHERE topic_id = @topicId AND poll_option_id = @vote",
+                        new { topicId, vote }
+                    );
+                }
 
-                foreach (var vote in votes)
+                var newVotes = from cur in votes
+                               join prev in existingVotes
+                               on cur equals prev.PollOptionId
+                               into joined
+                               from j in joined.DefaultIfEmpty()
+                               where j == default
+                               select cur;
+
+                foreach (var vote in newVotes)
                 {
                     await conn.ExecuteAsync(
                         "INSERT INTO phpbb_poll_votes (topic_id, poll_option_id, vote_user_id, vote_user_ip) VALUES (@topicId, @vote, @usrId, @usrIp)",
                         new { topicId, vote, usrId, usrIp = HttpContext.Connection.RemoteIpAddress.ToString() }
+                    );
+                    await conn.ExecuteAsync(
+                        "UPDATE phpbb_poll_options SET poll_option_total = poll_option_total + 1 WHERE topic_id = @topicId AND poll_option_id = @vote",
+                        new { topicId, vote }
                     );
                 }
 
@@ -322,39 +355,37 @@ namespace Serverless.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostPostModerator()
-            => await WithModerator(async () =>
+            => await WithModerator(async () => await ModeratePosts());
+
+        public async Task<IActionResult> OnPostDeleteMyMessage()
+            => await WithRegisteredUser(async () =>
             {
-                var (Message, IsSuccess) = PostAction switch
+                if (await IsCurrentUserModeratorHere())
                 {
-                    ModeratorPostActions.DeleteSelectedPosts => await _moderatorService.DeletePosts(PostIdsForModerator),
-                    ModeratorPostActions.MoveSelectedPosts => await _moderatorService.MovePosts(PostIdsForModerator, DestinationTopicId),
-                    ModeratorPostActions.SplitSelectedPosts => await _moderatorService.SplitPosts(PostIdsForModerator, DestinationForumId),
-                    _ => throw new NotImplementedException($"Unknown action '{PostAction}'")
-                };
-
-                if (IsSuccess ?? false)
-                {
-                    var (LatestSelected, NextRemaining) = await GetSelectedAndNextRemainingPostIds(PostIdsForModerator);
-                    var destinations = new List<string>();
-                    if (LatestSelected != null)
-                    {
-                        destinations.Add(await _utils.CompressAndEncode($"<a href=\"./ViewTopic?postId={LatestSelected}&handler=byPostId\">Mergi la noul subiect</a>"));
-                    };
-
-                    if (NextRemaining != null)
-                    {
-                        destinations.Add(await _utils.CompressAndEncode($"<a href=\"./ViewTopic?postId={NextRemaining}&handler=byPostId\">Mergi la ultimul subiect vizitat</a>"));
-                    }
-                    else
-                    {
-                        destinations.Add(await _utils.CompressAndEncode($"<a href=\"./ViewForum?forumId={ForumId}\">Mergi la ultimul forum vizitat</a>"));
-                    }
-
-                    return RedirectToPage("Confirm", "DestinationConfirmation", new { destinations });
+                    return await ModeratePosts();
                 }
 
-                ModeratorActionResult = $"<span style=\"margin-left: 30px; color: red; display:block;\">{Message}</span>";
-                return await OnGet();
+                if (PostIdsForModerator.Length != 1 || PostAction != ModeratorPostActions.DeleteSelectedPosts)
+                {
+                    return Unauthorized();
+                }
+
+                var toDelete = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == PostIdsForModerator[0]);
+                var lastPosts = await _context.PhpbbPosts.AsNoTracking().Where(p => p.TopicId == toDelete.TopicId).OrderByDescending(p => p.PostTime).Take(2).ToListAsync();
+                if (toDelete.PostTime < lastPosts[0].PostTime)
+                {
+                    ModelState.AddModelError(nameof(PostIdsForModerator), "Mesajul nu poate fi șters deoarece nu (mai) este ultimul din subiect!");
+                    return await OnGet();
+                }
+
+                var CurrentUser = await GetCurrentUserAsync();
+                if (!(toDelete.PosterId == CurrentUser.UserId && (CurrentUser.PostEditTime == 0 || DateTime.UtcNow.Subtract(toDelete.PostTime.ToUtcTime()).TotalMinutes <= CurrentUser.PostEditTime)))
+                {
+                    ModelState.AddModelError(nameof(PostIdsForModerator), "Mesajul nu poate fi șters deoarece a expirat timul limită de modificare a mesajelor!");
+                    return await OnGet();
+                }
+
+                return await ModeratePosts(lastPosts[1].PostId);
             });
 
         public async Task<IActionResult> OnPostReportMessage(int? reportPostId, short? reportReasonId, string reportDetails)
@@ -410,6 +441,78 @@ namespace Serverless.Forum.Pages
                     return await OnGet();
                 }
             });
+
+        public string MapModeratorTopicActions(ModeratorTopicActions action)
+            => action switch
+            {
+                ModeratorTopicActions.DeleteTopic => "Șterge subiect",
+                ModeratorTopicActions.LockTopic => "Închide subiect",
+                ModeratorTopicActions.MakeTopicAnnouncement => "Transformă subiectul în anunț",
+                ModeratorTopicActions.MakeTopicGlobal => "Transformă subiectul în subiect global",
+                ModeratorTopicActions.MakeTopicImportant => "Transformă subiectul în subiect important",
+                ModeratorTopicActions.MakeTopicNormal => "Transformă subiectul în subiect normal",
+                ModeratorTopicActions.MoveTopic => "Mută subiect",
+                ModeratorTopicActions.UnlockTopic => "Deschide subiect",
+                _ => throw new ArgumentException($"Unknown moderator topic action '{action}'", nameof(action))
+            };
+
+        public string MapModeratorPostActions(ModeratorPostActions action)
+            => action switch
+            {
+                ModeratorPostActions.DeleteSelectedPosts => "Șterge mesajele selectate",
+                ModeratorPostActions.MoveSelectedPosts => "Mută mesajele selectate",
+                ModeratorPostActions.SplitSelectedPosts => "Desparte mesajele selectate într-un nou subiect",
+                _ => throw new ArgumentException($"Unknown moderator post action '{action}'", nameof(action))
+            };
+
+        private async Task<IActionResult> ModeratePosts(int backToPost = 0)
+        {
+            var (Message, IsSuccess) = PostAction switch
+            {
+                ModeratorPostActions.DeleteSelectedPosts => await _moderatorService.DeletePosts(PostIdsForModerator),
+                ModeratorPostActions.MoveSelectedPosts => await _moderatorService.MovePosts(PostIdsForModerator, DestinationTopicId),
+                ModeratorPostActions.SplitSelectedPosts => await _moderatorService.SplitPosts(PostIdsForModerator, DestinationForumId),
+                _ => throw new NotImplementedException($"Unknown action '{PostAction}'")
+            };
+
+            if (backToPost > 0)
+            {
+                PostId = backToPost;
+                return await OnGetByPostId();
+            }
+
+            if (IsSuccess ?? false)
+            {
+                int? LatestSelected, NextRemaining;
+                if (PostAction == ModeratorPostActions.DeleteSelectedPosts)
+                {
+                    (LatestSelected, NextRemaining) = (null, ClosestPostId);
+                }
+                else
+                {
+                    (LatestSelected, NextRemaining) = await GetSelectedAndNextRemainingPostIds(PostIdsForModerator);
+                }
+                var destinations = new List<string>();
+                if (LatestSelected != null)
+                {
+                    destinations.Add(await _utils.CompressAndEncode($"<a href=\"./ViewTopic?postId={LatestSelected}&handler=byPostId\">Mergi la noul subiect</a>"));
+                };
+
+                if (NextRemaining != null)
+                {
+                    destinations.Add(await _utils.CompressAndEncode($"<a href=\"./ViewTopic?postId={NextRemaining}&handler=byPostId\">Mergi la ultimul subiect vizitat</a>"));
+                }
+                else
+                {
+                    destinations.Add(await _utils.CompressAndEncode($"<a href=\"./ViewForum?forumId={ForumId}\">Mergi la ultimul forum vizitat</a>"));
+                }
+
+                return RedirectToPage("Confirm", "DestinationConfirmation", new { destinations });
+            }
+
+            ModeratorActionResult = $"<span style=\"margin-left: 30px; color: red; display:block;\">{Message}</span>";
+            return await OnGet();
+        }
 
         private async Task GetPostsLazy(int? topicId, int? page, int? postId)
         {

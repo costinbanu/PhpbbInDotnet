@@ -6,9 +6,7 @@ using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.ForumDb.Entities;
 using Serverless.Forum.Utilities;
-using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -150,16 +148,21 @@ namespace Serverless.Forum.Services
                 text = regex.Replace(text, replacement);
             }
 
-            var urlRegex = new Regex(@"(?<=(^|\s))(ftp:\/\/|www\.|https?:\/\/){1}[a-zA-Z0-9u00a1-\uffff0-]{2,}\.[a-zA-Z0-9u00a1-\uffff0-]{2,}($|\S*)", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.ExplicitCapture);
+            var urlRegex = new Regex(@"(?<=(^|\s|\S))(ftp:\/\/|www\.|https?:\/\/){1}[a-zA-Z0-9u00a1-\uffff0-]{2,}\.[a-zA-Z0-9u00a1-\uffff0-]{2,}($|\S*)", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.ExplicitCapture);
             var offset = 0;
             foreach (Match match in urlRegex.Matches(text))
             {
-                var linkText = match.Value;
+                var value = match.Value;
+                while (!string.IsNullOrWhiteSpace(value) && !char.IsLetterOrDigit(value[^1]))
+                {
+                    value = value[0..^1];
+                }
+                var linkText = value;
                 if (linkText.Length > 53)
                 {
-                    linkText = $"{linkText.Substring(0, 40)} ... {linkText.Substring(linkText.Length - 8)}";
+                    linkText = $"{linkText[0..40]} ... {linkText[^8..^0]}";
                 }
-                var (result, curOffset) = _utils.ReplaceAtIndex(text, match.Value, match.Result($"<!-- m --><a href=\"{match.Value}\">{linkText}</a><!-- m -->"), match.Index + offset);
+                var (result, curOffset) = _utils.ReplaceAtIndex(text, value, match.Result($"<!-- m --><a href=\"{value}\">{linkText}</a><!-- m -->"), match.Index + offset);
                 text = result;
                 offset += curOffset;
             }

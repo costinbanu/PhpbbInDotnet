@@ -56,7 +56,7 @@ namespace Serverless.Forum.Services
                 new BBTag("code", "<span class=\"CodeBlock\">", "</span>", 8),
                 new BBTag("img", "<br/><img src=\"${content}\" onload=\"resizeImage(this)\" /><br/>", string.Empty, false, false, 4),
                 new BBTag("quote", "<blockquote class=\"PostQuote\">${name}", "</blockquote>", 0, "",
-                    new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : $"<b>{HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')}</b> a scris:<br/>")) { GreedyAttributeProcessing = true },
+                    new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : $"<b>{HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')}</b> a scris:<br/>", HtmlEncodingMode.UnsafeDontEncode)) { GreedyAttributeProcessing = true },
                 new BBTag("*", "<li>", "</li>", true, BBTagClosingStyle.AutoCloseElement, x => x, true, 20),
                 new BBTag("list", "<${attr}>", "</${attr}>", true, true, 9, "",
                     new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul style='list-style-type: circle'" : $"ol type=\"{a.AttributeValue}\"")),
@@ -140,9 +140,9 @@ namespace Serverless.Forum.Services
             {
                 return string.Empty;
             }
-            
-            bbCodeText = CensorWords(bbCodeText, _bannedWords);
-            bbCodeText = _parser.ToHtml(bbCodeText, bbCodeUid ?? string.Empty);
+
+            bbCodeText = CensorWords(HttpUtility.HtmlDecode(bbCodeText), _bannedWords);
+            bbCodeText = HttpUtility.HtmlDecode(_parser.ToHtml(bbCodeText, bbCodeUid ?? string.Empty));
             bbCodeText = _htmlCommentRegex.Replace(bbCodeText, string.Empty);
             bbCodeText = bbCodeText.Replace("{SMILIES_PATH}", Constants.SMILEY_PATH);
             bbCodeText = bbCodeText.Replace("\t", _utils.HtmlSafeWhitespace(4));
@@ -155,7 +155,7 @@ namespace Serverless.Forum.Services
                 offset += curOffset;
             }
 
-            return HttpUtility.HtmlDecode(bbCodeText);
+            return bbCodeText;
         }
 
         public (string text, string uid, string bitfield) TransformForBackwardsCompatibility(string bbCodeText)

@@ -85,13 +85,16 @@ namespace Serverless.Forum.Pages
 
         [BindProperty]
         public PostingActions Action { get; set; }
+
+        [BindProperty]
+        public long? LastPostTime { get; set; }
         
         public PostDto PreviewablePost { get; private set; }
         public PollDto PreviewablePoll { get; private set; }
         public bool ShowAttach { get; private set; } = false;
         public bool ShowPoll { get; private set; } = false;
         public PhpbbForums CurrentForum { get; private set; }
-        
+
         private readonly PostService _postService;
         private readonly StorageService _storageService;
         private readonly WritingToolsService _writingService;
@@ -345,78 +348,70 @@ namespace Serverless.Forum.Pages
         #region POST Message
 
         public async Task<IActionResult> OnPostPreview()
-            => await WithRegisteredUser(async () =>
+            => await WithRegisteredUser(async () => await WithValidForum(ForumId, Action == PostingActions.NewPrivateMessage, async (curForum) => await WithNewestPostSincePageLoad(curForum, async () => 
             {
-                return await WithValidForum(ForumId, Action == PostingActions.NewPrivateMessage, async (curForum) =>
+                if ((PostTitle?.Trim()?.Length ?? 0) < 3)
                 {
-                    CurrentForum = curForum;
+                    return PageWithError(curForum, nameof(PostTitle), "Titlul este prea scurt (minim 3 caractere, exclusiv spații).");
+                }
 
-                    if ((PostTitle?.Trim()?.Length ?? 0) < 3)
+                if ((PostText?.Trim()?.Length ?? 0) < 3)
+                {
+                    return PageWithError(curForum, nameof(PostText), "Mesajul este prea scurt (minim 3 caractere, exclusiv spații).");
+                }
+
+                var currentPost = Action == PostingActions.EditForumPost ? await InitEditedPost() : null;
+                var userId = Action == PostingActions.EditForumPost ? currentPost.PosterId : (await GetCurrentUserAsync()).UserId;
+                var postAuthor = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == userId);
+                var rankId = postAuthor?.UserRank ?? 0;
+
+                PreviewablePost = new PostDto
+                {
+                    Attachments = Attachments?.Select(a => new _AttachmentPartialModel(a.RealFilename, a.AttachComment, 0, a.Mimetype, 0, a.Filesize, a.PhysicalFilename, true))?.ToList() ?? new List<_AttachmentPartialModel>(),
+                    AuthorColor = postAuthor.UserColour,
+                    AuthorHasAvatar = !string.IsNullOrWhiteSpace(postAuthor?.UserAvatar),
+                    AuthorId = postAuthor.UserId,
+                    AuthorName = postAuthor.Username,
+                    AuthorRank = (await _context.PhpbbRanks.AsNoTracking().FirstOrDefaultAsync(x => x.RankId == rankId))?.RankTitle,
+                    BbcodeUid = _utils.NewBbcodeUid(),
+                    PostCreationTime = Action == PostingActions.EditForumPost ? PostTime?.ToUtcTime() : DateTime.UtcNow,
+                    EditCount = (short)(Action == PostingActions.EditForumPost ? (currentPost?.PostEditCount ?? 0) + 1 : 0),
+                    LastEditReason = Action == PostingActions.EditForumPost ? currentPost?.PostEditReason : string.Empty,
+                    LastEditTime = Action == PostingActions.EditForumPost ? DateTime.UtcNow.ToUnixTimestamp() : 0,
+                    LastEditUser = Action == PostingActions.EditForumPost ? (await GetCurrentUserAsync()).Username : string.Empty,
+                    PostId = currentPost?.PostId ?? 0,
+                    PostSubject = HttpUtility.HtmlEncode(PostTitle),
+                    PostText = _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText))
+                };
+
+                if (!string.IsNullOrWhiteSpace(PollOptions))
+                {
+                    PreviewablePoll = new PollDto
                     {
-                        ModelState.AddModelError(nameof(PostTitle), "Titlul este prea scurt (minim 3 caractere, exclusiv spații).");
-                        return Page();
-                    }
-
-                    if ((PostText?.Trim()?.Length ?? 0) < 3)
-                    {
-                        ModelState.AddModelError(nameof(PostText), "Mesajul este prea scurt (minim 3 caractere, exclusiv spații).");
-                        return Page();
-                    }
-
-                    var currentPost = Action == PostingActions.EditForumPost ? await InitEditedPost() : null;
-                    var userId = Action == PostingActions.EditForumPost ? currentPost.PosterId : (await GetCurrentUserAsync()).UserId;
-                    var postAuthor = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == userId);
-                    var rankId = postAuthor?.UserRank ?? 0;
-
-                    PreviewablePost = new PostDto
-                    {
-                        Attachments = Attachments?.Select(a => new _AttachmentPartialModel(a.RealFilename, a.AttachComment, 0, a.Mimetype, 0, a.Filesize, a.PhysicalFilename, true))?.ToList() ?? new List<_AttachmentPartialModel>(),
-                        AuthorColor = postAuthor.UserColour,
-                        AuthorHasAvatar = !string.IsNullOrWhiteSpace(postAuthor?.UserAvatar),
-                        AuthorId = postAuthor.UserId,
-                        AuthorName = postAuthor.Username,
-                        AuthorRank = (await _context.PhpbbRanks.AsNoTracking().FirstOrDefaultAsync(x => x.RankId == rankId))?.RankTitle,
-                        BbcodeUid = _utils.NewBbcodeUid(),
-                        PostCreationTime = Action == PostingActions.EditForumPost ? PostTime?.ToUtcTime() : DateTime.UtcNow,
-                        EditCount = (short)(Action == PostingActions.EditForumPost ? (currentPost?.PostEditCount ?? 0) + 1 : 0),
-                        LastEditReason = Action == PostingActions.EditForumPost ? currentPost?.PostEditReason : string.Empty,
-                        LastEditTime = Action == PostingActions.EditForumPost ? DateTime.UtcNow.ToUnixTimestamp() : 0,
-                        LastEditUser = Action == PostingActions.EditForumPost ? (await GetCurrentUserAsync()).Username : string.Empty,
-                        PostId = currentPost?.PostId ?? 0,
-                        PostSubject = HttpUtility.HtmlEncode(PostTitle),
-                        PostText = _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText))
+                        PollTitle = HttpUtility.HtmlEncode(PollQuestion),
+                        PollOptions = new List<PollOption>(PollOptions.Split(Environment.NewLine).Select(x => new PollOption { PollOptionText = HttpUtility.HtmlEncode(x) })),
+                        VoteCanBeChanged = PollCanChangeVote,
+                        PollDurationSecons = (int)TimeSpan.FromDays(double.Parse(PollExpirationDaysString)).TotalSeconds,
+                        PollMaxOptions = PollMaxOptions ?? 1,
+                        PollStart = PreviewablePost.PostCreationTime ?? DateTime.UtcNow
                     };
-
-                    if (!string.IsNullOrWhiteSpace(PollOptions))
-                    {
-                        PreviewablePoll = new PollDto
-                        {
-                            PollTitle = HttpUtility.HtmlEncode(PollQuestion),
-                            PollOptions = new List<PollOption>(PollOptions.Split(Environment.NewLine).Select(x => new PollOption { PollOptionText = HttpUtility.HtmlEncode(x) })),
-                            VoteCanBeChanged = PollCanChangeVote,
-                            PollDurationSecons = (int)TimeSpan.FromDays(double.Parse(PollExpirationDaysString)).TotalSeconds,
-                            PollMaxOptions = PollMaxOptions ?? 1,
-                            PollStart = PreviewablePost.PostCreationTime ?? DateTime.UtcNow
-                        };
-                    }
-                    await _renderingService.ProcessPost(PreviewablePost, PageContext, HttpContext, true);
-                    ShowAttach = Attachments?.Any() ?? false;
-
-                    return Page();
-                });
-            });
+                }
+                await _renderingService.ProcessPost(PreviewablePost, PageContext, HttpContext, true);
+                ShowAttach = Attachments?.Any() ?? false;
+                CurrentForum = curForum;
+                return Page();
+        })));
 
         public async Task<IActionResult> OnPostNewForumPost()
-            => await WithRegisteredUser(async () => await WithValidForum(ForumId, async (_) =>
+            => await WithRegisteredUser(async () => await WithValidForum(ForumId, async (curForum) => await WithNewestPostSincePageLoad(curForum, async () =>
             {
                 var addedPostId = await UpsertPost(null, await GetCurrentUserAsync());
-
                 if (addedPostId == null)
                 {
-                    return Page();
+                    return PageWithError(curForum, nameof(PostText), "A intervenit o eroare iar mesajul nu a fost publicat. Te rugăm să încerci din nou.");
                 }
                 return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
-            }));
+            })));
 
         public async Task<IActionResult> OnPostEditForumPost()
             => await WithRegisteredUser(async () => await WithValidForum(ForumId, async (_) =>
@@ -494,15 +489,15 @@ namespace Serverless.Forum.Pages
         public async Task<string> GetActualCacheKey(string key, bool isPersonalizedData)
             => isPersonalizedData ? $"{(await GetCurrentUserAsync()).UserId}_{ForumId}_{TopicId ?? 0}_{key ?? throw new ArgumentNullException(nameof(key))}" : key;
 
-        public async Task<(IEnumerable<PhpbbPosts> posts, IEnumerable<PhpbbUsers> users)> GetPreviousPosts(PostingActions action)
+        public async Task<(IEnumerable<PhpbbPosts> posts, IEnumerable<PhpbbUsers> users)> GetPreviousPosts()
         {
-            if(((TopicId.HasValue && PageNum.HasValue) || PostId.HasValue) && (action == PostingActions.EditForumPost || action == PostingActions.NewForumPost))
+            if (((TopicId.HasValue && PageNum.HasValue) || PostId.HasValue) && (Action == PostingActions.EditForumPost || Action == PostingActions.NewForumPost))
             {
                 using var connection = _context.Database.GetDbConnection();
                 await connection.OpenIfNeeded();
-                var previousPosts = await connection.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC LIMIT 10", new { TopicId });
-                var users = await connection.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id IN @userIds", new { userIds = previousPosts.Select(pp => pp.PosterId).DefaultIfEmpty() });
-                return (previousPosts, users);
+                var posts = await connection.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC LIMIT 10", new { TopicId });
+                var users = await connection.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id IN @userIds", new { userIds = posts.Select(pp => pp.PosterId).DefaultIfEmpty() });
+                return (posts, users);
             }
             return (new List<PhpbbPosts>(), new List<PhpbbUsers>());
         }
@@ -679,7 +674,6 @@ namespace Serverless.Forum.Pages
             if (canCreatePoll && !string.IsNullOrWhiteSpace(PollOptions))
             {
                 byte pollOptionId = 1;
-                ulong id = await _context.PhpbbPollOptions.AsNoTracking().MaxAsync(o => o.Id);
 
                 var options = await _context.PhpbbPollOptions.Where(o => o.TopicId == TopicId).ToListAsync();
                 if (pollOptionsArray.Intersect(options.Select(x => x.PollOptionText.Trim()), StringComparer.InvariantCultureIgnoreCase).Count() != options.Count)
@@ -691,14 +685,10 @@ namespace Serverless.Forum.Pages
 
                 foreach (var option in pollOptionsArray)
                 {
-                    var result = await _context.PhpbbPollOptions.AddAsync(new PhpbbPollOptions
-                    {
-                        PollOptionId = pollOptionId++,
-                        PollOptionText = HttpUtility.HtmlEncode(option),
-                        PollOptionTotal = 0,
-                        TopicId = TopicId.Value,
-                        Id = ++id
-                    });
+                    await connection.ExecuteAsync(
+                        "INSERT INTO forum.phpbb_poll_options (poll_option_id, topic_id, poll_option_text, poll_option_total) VALUES (@id, @topicId, @text, 0)",
+                        new { id = pollOptionId++, TopicId, text = HttpUtility.HtmlEncode(option)  }
+                    );
                 }
 
                 curTopic.PollStart = post.PostTime;
@@ -712,6 +702,30 @@ namespace Serverless.Forum.Pages
             await _cacheService.RemoveFromCache(await GetActualCacheKey("Header", true));
 
             return post.PostId;
+        }
+
+        private async Task<IActionResult> WithNewestPostSincePageLoad(PhpbbForums curForum, Func<Task<IActionResult>> toDo)
+        {
+            if ((TopicId ?? 0) > 0 && (LastPostTime ?? 0) > 0)
+            {
+                var currentLastPostTime = await _context.PhpbbPosts.AsNoTracking().Where(p => p.TopicId == TopicId).MaxAsync(p => p.PostTime);
+                if (currentLastPostTime > LastPostTime)
+                {
+                    return PageWithError(curForum, nameof(LastPostTime), "De când a fost încărcată pagina, au mai fost scrie mesaje noi! Verifică mesajele precedente!");
+                }
+                else
+                {
+                    ModelState[nameof(LastPostTime)].Errors.Clear();
+                }
+            }
+            return await toDo();
+        }
+
+        private IActionResult PageWithError(PhpbbForums curForum, string errorKey, string errorMessage)
+        {
+            ModelState.AddModelError(errorKey, errorMessage);
+            CurrentForum = curForum;
+            return Page();
         }
 
         #endregion Helpers

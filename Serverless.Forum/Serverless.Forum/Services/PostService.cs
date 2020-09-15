@@ -147,20 +147,6 @@ namespace Serverless.Forum.Services
                     SetTopicLastPost(curTopic, lastTopicPost, lastTopicPostUser, true);
                 }
 
-                if (curForum.ForumLastPostId == deleted.PostId)
-                {
-                    var lastForumPost = await (
-                        from p in context.PhpbbPosts.AsNoTracking()
-                        where p.ForumId == curForum.ForumId
-                           && p.PostId != deleted.PostId
-                        orderby p.PostTime descending
-                        select p
-                    ).FirstOrDefaultAsync();
-                    var lastForumPostUser = await _userService.GetLoggedUserById(lastForumPost.PosterId);
-
-                    SetForumLastPost(curForum, lastForumPost, lastForumPostUser, true);
-                }
-
                 if (curTopic.TopicFirstPostId == deleted.PostId && !ignoreTopic)
                 {
                     var firstPost = await (
@@ -184,6 +170,20 @@ namespace Serverless.Forum.Services
                     context.PhpbbReports.Remove(report);
                     curTopic.TopicReported = 0;
                 }
+            }
+
+            if (curForum.ForumLastPostId == deleted.PostId)
+            {
+                var lastForumPost = await (
+                    from p in context.PhpbbPosts.AsNoTracking()
+                    where p.ForumId == curForum.ForumId
+                       && p.PostId != deleted.PostId
+                    orderby p.PostTime descending
+                    select p
+                ).FirstOrDefaultAsync();
+                var lastForumPostUser = await _userService.GetLoggedUserById(lastForumPost.PosterId);
+
+                SetForumLastPost(curForum, lastForumPost, lastForumPostUser, true);
             }
         }
 
