@@ -364,6 +364,17 @@ namespace Serverless.Forum.Pages
                 var userId = Action == PostingActions.EditForumPost ? currentPost.PosterId : (await GetCurrentUserAsync()).UserId;
                 var postAuthor = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == userId);
                 var rankId = postAuthor?.UserRank ?? 0;
+                var newPostText = PostText;
+                var uid = string.Empty;
+
+                if (_config.GetValue<bool>("CompatibilityMode"))
+                {
+                    (newPostText, uid, _) = _renderingService.TransformForBackwardsCompatibility(newPostText);
+                }
+                else
+                {
+                    newPostText = HttpUtility.HtmlEncode(newPostText);
+                }
 
                 PreviewablePost = new PostDto
                 {
@@ -373,7 +384,7 @@ namespace Serverless.Forum.Pages
                     AuthorId = postAuthor.UserId,
                     AuthorName = postAuthor.Username,
                     AuthorRank = (await _context.PhpbbRanks.AsNoTracking().FirstOrDefaultAsync(x => x.RankId == rankId))?.RankTitle,
-                    BbcodeUid = _utils.NewBbcodeUid(),
+                    BbcodeUid = uid,
                     PostCreationTime = Action == PostingActions.EditForumPost ? PostTime?.ToUtcTime() : DateTime.UtcNow,
                     EditCount = (short)(Action == PostingActions.EditForumPost ? (currentPost?.PostEditCount ?? 0) + 1 : 0),
                     LastEditReason = Action == PostingActions.EditForumPost ? currentPost?.PostEditReason : string.Empty,
@@ -381,7 +392,7 @@ namespace Serverless.Forum.Pages
                     LastEditUser = Action == PostingActions.EditForumPost ? (await GetCurrentUserAsync()).Username : string.Empty,
                     PostId = currentPost?.PostId ?? 0,
                     PostSubject = HttpUtility.HtmlEncode(PostTitle),
-                    PostText = _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText))
+                    PostText = _writingService.PrepareTextForSaving(newPostText)
                 };
 
                 if (!string.IsNullOrWhiteSpace(PollOptions))
@@ -446,7 +457,7 @@ namespace Serverless.Forum.Pages
                     return Page();
                 }
 
-                var (Message, IsSuccess) = await _userService.SendPrivateMessage((await GetCurrentUserAsync()).UserId, ReceiverId.Value, HttpUtility.HtmlEncode(PostTitle), _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText)));
+                var (Message, IsSuccess) = await _userService.SendPrivateMessage((await GetCurrentUserAsync()).UserId, ReceiverId.Value, HttpUtility.HtmlEncode(PostTitle), _writingService.PrepareTextForSaving(PostText));
                 if (IsSuccess ?? false)
                 {
                     try

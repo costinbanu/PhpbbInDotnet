@@ -71,16 +71,6 @@ namespace Serverless.Forum.Utilities
         public async Task<string> DecodeAndDecompress(string input)
             => await DecompressObject<string>(Convert.FromBase64String(input));
 
-        public string RandomBase36Number()
-            => Math.Abs(Convert.ToInt64($"0x{Guid.NewGuid().ToString("n").Substring(4, 16)}", 16)).ToBase36().ToLowerInvariant();
-
-        public string NewBbcodeUid(int length = 8)
-            => RandomBase36Number().Substring(0, length);
-
-        public string NewBitfield(int length = 8)
-            => Convert.ToBase64String(Encoding.UTF8.GetBytes(RandomBase36Number().Substring(0, length)));
-        
-
         public string CalculateMD5Hash(string input)
         {
             var hash = MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(input));
@@ -126,15 +116,6 @@ namespace Serverless.Forum.Utilities
                 sb.Append(options[i % 2]);
             }
             return sb.ToString();
-        }
-
-        public (string result, int offset) ReplaceAtIndex(string haystack, string needle, string replacement, int index)
-        {
-            if (index + needle.Length > haystack.Length || haystack.Substring(index, needle.Length) != needle)
-            {
-                return (haystack, 0);
-            }
-            return (haystack.Insert(index, replacement).Remove(index + replacement.Length, needle.Length), replacement.Length - needle.Length);
         }
 
         public async Task SendEmail(MailMessage emailMessage)

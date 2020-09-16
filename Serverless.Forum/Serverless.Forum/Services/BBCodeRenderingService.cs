@@ -47,31 +47,31 @@ namespace Serverless.Forum.Services
             using var connection = _context.Database.GetDbConnection();
             connection.OpenIfNeeded().RunSync();
             //we override these temporarily: 18 = link, 13 = youtube
-            var bbcodes = connection.Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes WHERE bbcode_id NOT IN (18, 13)").Select(c => new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false, c.BbcodeId, "", new BBAttribute[0] { })).ToList();
+            var bbcodes = connection.Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes WHERE bbcode_id NOT IN (18, 13)").Select(c => new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false, c.BbcodeId, "", true, new BBAttribute[0] { })).ToList();
             bbcodes.AddRange(new[]
             {
                 new BBTag("b", "<b>", "</b>", 1),
                 new BBTag("i", "<span style=\"font-style:italic;\">", "</span>", 2),
                 new BBTag("u", "<span style=\"text-decoration:underline;\">", "</span>", 7),
                 new BBTag("code", "<span class=\"CodeBlock\">", "</span>", 8),
-                new BBTag("img", "<br/><img src=\"${content}\" onload=\"resizeImage(this)\" /><br/>", string.Empty, false, false, 4),
-                new BBTag("quote", "<blockquote class=\"PostQuote\">${name}", "</blockquote>", 0, "",
+                new BBTag("img", "<br/><img src=\"${content}\" onload=\"resizeImage(this)\" /><br/>", string.Empty, false, false, 4, allowUrlProcessingAsText: false),
+                new BBTag("quote", "<blockquote class=\"PostQuote\">${name}", "</blockquote>", 0, "", true,
                     new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : $"<b>{HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')}</b> a scris:<br/>", HtmlEncodingMode.UnsafeDontEncode)) { GreedyAttributeProcessing = true },
                 new BBTag("*", "<li>", "</li>", true, BBTagClosingStyle.AutoCloseElement, x => x, true, 20),
-                new BBTag("list", "<${attr}>", "</${attr}>", true, true, 9, "",
+                new BBTag("list", "<${attr}>", "</${attr}>", true, true, 9, "", true,
                     new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul style='list-style-type: circle'" : $"ol type=\"{a.AttributeValue}\"")),
-                new BBTag("url", "<a href=\"${href}\" target=\"_blank\">", "</a>", 3, "",
+                new BBTag("url", "<a href=\"${href}\" target=\"_blank\">", "</a>", 3, "", false,
                     new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
-                new BBTag("link", "<a href=\"${href}\">", "</a>", true, BBTagClosingStyle.RequiresClosingTag, x => _utils.TransformSelfLinkToBetaLink(x), 18, "",
+                new BBTag("link", "<a href=\"${href}\">", "</a>", true, BBTagClosingStyle.RequiresClosingTag, x => _utils.TransformSelfLinkToBetaLink(x), 18, "", false,
                     new BBAttribute("href", "", a =>
                     {
                     return string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : _utils.TransformSelfLinkToBetaLink(a.AttributeValue);
                     })),
-                new BBTag("color", "<span style=\"color:${code}\">", "</span>", 6, "",
+                new BBTag("color", "<span style=\"color:${code}\">", "</span>", 6, "", true,
                     new BBAttribute("code", "")),
-                new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>", 5, "",
+                new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>", 5, "", true,
                     new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
-                new BBTag("attachment", "#{AttachmentFileName=${content}/AttachmentIndex=${num}}#", "", false, BBTagClosingStyle.AutoCloseElement, x => _htmlCommentRegex.Replace(HttpUtility.HtmlDecode(x), string.Empty), 12, "",
+                new BBTag("attachment", "#{AttachmentFileName=${content}/AttachmentIndex=${num}}#", "", false, BBTagClosingStyle.AutoCloseElement, x => _htmlCommentRegex.Replace(HttpUtility.HtmlDecode(x), string.Empty), 12, "", true,
                     new BBAttribute("num", "")),
                 new BBTag("youtube", "<br /><iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/${content}?html5=1\" frameborder=\"0\" allowfullscreen onload=\"resizeIFrame(this)\"></iframe><br />", string.Empty, false, false, 13, "")
             });
@@ -150,7 +150,7 @@ namespace Serverless.Forum.Services
             var offset = 0;
             foreach (Match m in _spaceRegex.Matches(bbCodeText))
             {
-                var (result, curOffset) = _utils.ReplaceAtIndex(bbCodeText, m.Value, _utils.HtmlSafeWhitespace(m.Length), m.Index + offset);
+                var (result, curOffset) = TextHelper.ReplaceAtIndex(bbCodeText, m.Value, _utils.HtmlSafeWhitespace(m.Length), m.Index + offset);
                 bbCodeText = result;
                 offset += curOffset;
             }
@@ -238,7 +238,7 @@ namespace Serverless.Forum.Services
                     {
                         return (haystack, index + needle.Length);
                     }
-                    var (result, offset) = _utils.ReplaceAtIndex(haystack, needle, replacement, index);
+                    var (result, offset) = TextHelper.ReplaceAtIndex(haystack, needle, replacement, index);
                     return (result, index + replacement.Length);
                 }
             );

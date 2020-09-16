@@ -140,31 +140,12 @@ namespace Serverless.Forum.Services
 
         public string PrepareTextForSaving(string text)
         {
+            text = HttpUtility.HtmlEncode(text ?? string.Empty);
             foreach (var sr in _context.PhpbbSmilies.AsNoTracking().ToList())
             {
                 var regex = new Regex(@$"(?<=(^|\s)){Regex.Escape(sr.Code)}(?=($|\s))", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
                 var replacement = $"<!-- s{sr.Code} --><img src=\"./images/smilies/{sr.SmileyUrl.Trim('/')}\" alt=\"{sr.Code}\" title=\"{sr.Emotion}\" /><!-- s{sr.Code} -->";
-
                 text = regex.Replace(text, replacement);
-            }
-
-            var urlRegex = new Regex(@"(?<=(^|\s|\S))(ftp:\/\/|www\.|https?:\/\/){1}[a-zA-Z0-9u00a1-\uffff0-]{2,}\.[a-zA-Z0-9u00a1-\uffff0-]{2,}($|\S*)", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.ExplicitCapture);
-            var offset = 0;
-            foreach (Match match in urlRegex.Matches(text))
-            {
-                var value = match.Value;
-                while (!string.IsNullOrWhiteSpace(value) && !char.IsLetterOrDigit(value[^1]))
-                {
-                    value = value[0..^1];
-                }
-                var linkText = value;
-                if (linkText.Length > 53)
-                {
-                    linkText = $"{linkText[0..40]} ... {linkText[^8..^0]}";
-                }
-                var (result, curOffset) = _utils.ReplaceAtIndex(text, value, match.Result($"<!-- m --><a href=\"{value}\">{linkText}</a><!-- m -->"), match.Index + offset);
-                text = result;
-                offset += curOffset;
             }
             return text;
         }

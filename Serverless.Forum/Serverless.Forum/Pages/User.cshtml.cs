@@ -125,7 +125,7 @@ namespace Serverless.Forum.Pages
             dbUser.UserFrom = CurrentUser.UserFrom ?? string.Empty;
             dbUser.UserInterests = CurrentUser.UserInterests ?? string.Empty;
             dbUser.UserDateformat = CurrentUser.UserDateformat ?? "dddd, dd.MM.yyyy, HH:mm";
-            dbUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(CurrentUser.UserSig));
+            dbUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : _writingService.PrepareTextForSaving(CurrentUser.UserSig);
             dbUser.UserEditTime = CurrentUser.UserEditTime;
             dbUser.UserWebsite = CurrentUser.UserWebsite ?? string.Empty;
             dbUser.UserRank = UserRank;

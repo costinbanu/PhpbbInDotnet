@@ -396,7 +396,7 @@ namespace Serverless.Forum.Pages
                     PostId = reportPostId.Value,
                     UserId = (await GetCurrentUserAsync()).UserId,
                     ReasonId = reportReasonId.Value,
-                    ReportText = _writingToolsService.PrepareTextForSaving(HttpUtility.HtmlEncode(reportDetails ?? string.Empty)),
+                    ReportText = _writingToolsService.PrepareTextForSaving(reportDetails),
                     ReportTime = DateTime.UtcNow.ToUnixTimestamp(),
                     ReportClosed = 0
                 });
