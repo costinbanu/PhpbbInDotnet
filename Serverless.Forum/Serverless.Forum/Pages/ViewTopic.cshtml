@@ -56,11 +56,17 @@
         }
     }
 </script>
-
-@if (Model.ForumId != null)
+@if (!CurrentUser.IsAnonymous)
 {
+    <a asp-page="ViewForum" asp-page-handler="ownPosts">Vezi subiectele proprii</a>
+    <span class="bullet">&nbsp;&bull;&nbsp;</span>
+    <div class="newline"></div>
+    <a asp-page="ViewForum" asp-page-handler="newPosts">Vezi mesajele noi</a>
+    <span class="bullet">&nbsp;&bull;&nbsp;</span>
+    <div class="newline"></div>
     <span>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(@Model.ForumTitle)</a></span>
 }
+
 <h2>Subiect: @Model.TopicTitle</h2>
 <span class="Caption">@Model.PostCount mesaj@(Model.PostCount == 1 ? "" : "e"), @Model.ViewCount vizualiz@(Model.ViewCount == 1 ? "are" : "ări").</span>
 @if (!string.IsNullOrWhiteSpace(Model.ForumRules))
@@ -241,15 +247,15 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
 
         previousIsUnread = post.Unread;
         var titleClass = post.Unread ? "UnreadTitle" : "";
-        <div class="RowMargin @rowClass">
-            <div class="FlexRow">
+        <div class="RowMargin @rowClass" style="max-width:100%; overflow-wrap: break-word">
+            <div class="FlexRow" style="max-width:100%; overflow-wrap: break-word">
                 @await Html.PartialAsync(
                     "_SummaryPartial",
                     new CustomPartials._SummaryPartialModel(post.AuthorId, post.AuthorName, post.AuthorColor, post.PostCreationTime, post.PostId.Value,
                         UserDateFormat, post.AuthorHasAvatar, post.AuthorRank, null, null, null, true, false, null, null, null,
                         _userService.HasPrivateMessages(CurrentUser) ? $"<a href=\"./Posting?handler=PrivateMessage&postId={post.PostId}\">&#x2709; Mesaj privat</a>" : null)
                 )
-                <div class="ForumContent VerticalContent FlexRight" id="@post.PostId">
+                <div class="ForumContent VerticalContent FlexRight" id="@post.PostId" style="max-width:100%; overflow-wrap: break-word">
                     <span style="display:flex">
                         <span class="PostTitle">
                             <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@post.PostId" class="@titleClass">@Html.Raw(post.PostSubject)</a>
@@ -295,7 +301,7 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
                             <p></p>
                         }
                         <div class="PostActions">
-                            @if ((!Model.IsLocked || IsMod || IsAdmin) && !IsAnonymous && (p != Model.Posts.Last() || !Model.Paginator.IsLastPage))
+                            @if ((!Model.IsLocked || IsMod) && !IsAnonymous && (p != Model.Posts.Last() || !Model.Paginator.IsLastPage))
                             {
                                 <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">
                                     @if (Model.IsLocked)
@@ -383,20 +389,20 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
 @if ((!Model.IsLocked || IsMod || IsAdmin) && !IsAnonymous)
 {
     <button onclick="location.href='/Posting?forumId=@Model.ForumId&topicId=@Model.TopicId&pageNum=@Model.PageNum&handler=forumPost'" type="button">
-        &#x1F4DD;
+        
         @if (Model.IsLocked)
         {
-            <span>Subiect închis</span>
+            <span>&#x1F512;Subiect închis</span>
         }
         else
         {
-            <span>Scrie un mesaj nou</span>
+            <span>&#x1F4DD;Scrie un mesaj nou</span>
         }
     </button>
 }
 else if (!IsAnonymous)
 {
-    <button type="button" disabled>&#x1F4DD; Subiect închis</button>
+    <button type="button" disabled>&#x1F512; Subiect închis</button>
 }
 <p></p>
 @await Html.PartialAsync(

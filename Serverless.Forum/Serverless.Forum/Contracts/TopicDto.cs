@@ -35,6 +35,10 @@ namespace Serverless.Forum.Pages
 
         public int ViewCount { get; set; } = 0;
 
+        public byte TopicStatus { get; set; }
+
+        public bool IsLocked => TopicStatus == 1;
+
     }
 
     public class TopicTransport

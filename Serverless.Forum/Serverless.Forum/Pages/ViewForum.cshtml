@@ -50,8 +50,25 @@
     </script>
 }
 
+@*@if (!CurrentUser.IsAnonymous && !Model.IsNewPostView && !Model.IsOwnPostView)
+    {
+        <div class="linksContainer">
+            <a asp-page="ViewForum" asp-page-handler="ownPosts">Vezi subiectele proprii</a>
+            <span class="bullet">&nbsp;&bull;&nbsp;</span>
+            <div class="newline"></div>
+            <a asp-page="ViewForum" asp-page-handler="newPosts">Vezi mesajele noi</a>
+        </div>
+        <span style="clear:both"><br /></span>
+    }*@
+
 @if ((Model.ParentForumId ?? 0) != 0 && !Model.IsNewPostView && !Model.IsOwnPostView)
 {
+    <a asp-page="ViewForum" asp-page-handler="ownPosts">Vezi subiectele proprii</a>
+    <span class="bullet">&nbsp;&bull;&nbsp;</span>
+    <div class="newline"></div>
+    <a asp-page="ViewForum" asp-page-handler="newPosts">Vezi mesajele noi</a>
+    <span class="bullet">&nbsp;&bull;&nbsp;</span>
+    <div class="newline"></div>
     <span>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@HttpUtility.HtmlDecode(Model.ParentForumTitle)</a></span>
 }
 else
@@ -95,18 +112,22 @@ else
     }
 }
 
-@if (!IsAnonymous && !Model.IsNewPostView && !Model.IsOwnPostView)
+@if (!IsAnonymous && !Model.IsNewPostView && !Model.IsOwnPostView && (hasSubForums || (Model.Topics?.Any() ?? false)))
 {
-    <ul class="Shortcuts">
-        @if (hasSubForums)
+    @if (hasSubForums)
+    {
+        <a href="javascript:MarkForumsRead.submit()">Marchează forumurile ca citite</a>
+    }
+    @if (Model.Topics?.Any() ?? false)
+    {
+        if (hasSubForums)
         {
-            <li><a href="javascript:MarkForumsRead.submit()">Marchează forumurile ca citite</a></li>
+            <span class="bullet">&nbsp;&bull;&nbsp;</span>
+            <div class="newline"></div>
         }
-        @if (Model.Topics?.Any() ?? false)
-        {
-            <li><a href="javascript:MarkTopicsRead.submit()">Marchează subiectele ca citite</a></li>
-        }
-    </ul>
+        <a href="javascript:MarkTopicsRead.submit()">Marchează subiectele ca citite</a>
+    }
+    <div style="clear:both">&nbsp;</div>
 }
 
 @if (hasSubForums)
@@ -221,6 +242,10 @@ else
                     @if (topicGroup.TopicType == TopicType.Important)
                     {
                         <span>&#x26A0;&#xFE0F;&nbsp;</span>
+                    }
+                    @if (topic.IsLocked)
+                    {
+                        <span>&#x1F512;&nbsp;</span>
                     }
                     @{
                         var firstUnreadPost = await Model.GetFirstUnreadPost(topic.ForumId ?? 0, topic.TopicId ?? 0);

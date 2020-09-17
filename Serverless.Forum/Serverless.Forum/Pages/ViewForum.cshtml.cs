@@ -67,7 +67,8 @@ namespace Serverless.Forum.Pages
 		                        t.topic_last_poster_name,
 		                        t.topic_last_post_time,
 		                        t.topic_last_poster_colour,
-		                        t.topic_last_post_id
+		                        t.topic_last_post_id,
+                                t.topic_status
 	                        FROM forum.phpbb_topics t
 	                        JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
                         WHERE t.forum_id = @forumId OR topic_type = @topicType

@@ -140,7 +140,6 @@ namespace Serverless.Forum.Services
 
         public string PrepareTextForSaving(string text)
         {
-            text = HttpUtility.HtmlEncode(text ?? string.Empty);
             foreach (var sr in _context.PhpbbSmilies.AsNoTracking().ToList())
             {
                 var regex = new Regex(@$"(?<=(^|\s)){Regex.Escape(sr.Code)}(?=($|\s))", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
