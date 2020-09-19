@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -93,6 +95,26 @@ namespace Serverless.Forum
                 SecretKey = Configuration["Recaptcha:SecretKey"],
             });
 
+            services.Configure<IISServerOptions>(options =>
+            {
+                options.MaxRequestBodySize = int.MaxValue;
+            });
+            if (Env.IsDevelopment())
+            {
+                services.Configure<KestrelServerOptions>(options =>
+                {
+                    options.Limits.MaxRequestBodySize = int.MaxValue; // if don't set default value is: 30 MB
+                });
+            }
+            else
+            {
+                services.Configure<FormOptions>(x =>
+                {
+                    x.ValueLengthLimit = int.MaxValue;
+                    x.MultipartBodyLengthLimit = int.MaxValue; // if don't set default value is: 128 MB
+                x.MultipartHeadersLengthLimit = int.MaxValue;
+                });
+            }
             services.AddHttpClient();
 
             services.AddSingleton<Utils>();

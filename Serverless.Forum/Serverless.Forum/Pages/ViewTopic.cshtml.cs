@@ -403,6 +403,8 @@ namespace Serverless.Forum.Pages
                 result.Entity.ReportId = 0;
                 var topic = await _context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == TopicId);
                 topic.TopicReported = 1;
+                var post = await _context.PhpbbPosts.FirstOrDefaultAsync(t => t.PostId == reportPostId);
+                post.PostReported = 1;
                 await _context.SaveChangesAsync();
                 return await OnGet();
             });
@@ -425,6 +427,11 @@ namespace Serverless.Forum.Pages
                 if (topic != null)
                 {
                     topic.TopicReported = 0;
+                }
+                var post = await _context.PhpbbPosts.FirstOrDefaultAsync(t => t.TopicId == reportPostId);
+                if (post != null)
+                {
+                    post.PostReported = 0;
                 }
                 await _context.SaveChangesAsync();
                 if (!(deletePost ?? false) && (redirectToEdit ?? false))
