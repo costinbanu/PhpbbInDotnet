@@ -135,7 +135,7 @@ else
      * use SecurityElement.Escape when using Html.Raw*/
     var topicsDisplayed = false;
     var announcementsDisplayed = false;
-    //var globalsDisplayed = false;
+    var globalsDisplayed = false;
 
     if (Model.IsNewPostView || Model.IsOwnPostView)
     {
@@ -158,20 +158,23 @@ else
     {
         if (!Model.IsNewPostView && !Model.IsOwnPostView)
         {
-            /*if (!globalsDisplayed && topicGroup.TopicType == TopicType.Global)
+            if (!globalsDisplayed && topicGroup.TopicType == TopicType.Global)
             {
                 if (announcementsDisplayed || topicsDisplayed)
                 {
-                    <hr class="BoxSeparator" />
+                    if (!previousIsUnread)
+                    {
+                        <hr class="BoxSeparator" />
+                    }
                     <p>&nbsp;</p>
                 }
                 <h3 style="float:left">Subiecte globale</h3>
                 globalsDisplayed = true;
             }
-            else*/
+            else
             if (!announcementsDisplayed && (topicGroup.TopicType == TopicType.Announcement || topicGroup.TopicType == TopicType.Global))
             {
-                if (/*globalsDisplayed ||*/ topicsDisplayed)
+                if (globalsDisplayed || topicsDisplayed)
                 {
                     if (!previousIsUnread)
                     {
@@ -184,7 +187,7 @@ else
             }
             else if (!topicsDisplayed)
             {
-                if (/*globalsDisplayed ||*/ announcementsDisplayed)
+                if (globalsDisplayed || announcementsDisplayed)
                 {
                     if (!previousIsUnread)
                     {
