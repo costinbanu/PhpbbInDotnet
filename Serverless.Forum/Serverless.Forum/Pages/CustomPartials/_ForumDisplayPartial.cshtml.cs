@@ -14,8 +14,9 @@ namespace Serverless.Forum.Pages.CustomPartials
         public HashSet<ForumTree> Tree { get; }
         public IEnumerable<ForumTree> Categories { get; }
         public IEnumerable<ForumTree> SubForums { get; }
+        public bool ShowLastSeparator { get; }
 
-        public _ForumDisplayPartialModel(int forumId, HashSet<ForumTree> tree, string dateFormat, bool showTitle, LoggedUser loggedUser)
+        public _ForumDisplayPartialModel(int forumId, HashSet<ForumTree> tree, string dateFormat, bool showTitle, LoggedUser loggedUser, bool showLastSeparator)
         {
             DateFormat = dateFormat;
             ShowTitle = showTitle;
@@ -23,6 +24,7 @@ namespace Serverless.Forum.Pages.CustomPartials
             Tree = tree;
             Categories = GetChildrenForums(forumId).Where(f => f.ForumType == ForumType.Category);
             SubForums = GetChildrenForums(forumId).Where(f => f.ForumType == ForumType.SubForum);
+            ShowLastSeparator = showLastSeparator;
         }
 
         public IEnumerable<ForumTree> GetChildrenForums(int forumId)

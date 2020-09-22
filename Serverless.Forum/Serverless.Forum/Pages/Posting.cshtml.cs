@@ -530,7 +530,7 @@ namespace Serverless.Forum.Pages
             ).ToListAsync();
             await _cacheService.SetInCache(
                 await GetActualCacheKey("Users", false),
-                userMap.Select(map => KeyValuePair.Create(map.Key, $"[url=\"./User?UserId={map.Value}\"]{map.Key}[/url]"))
+                userMap.Select(map => KeyValuePair.Create(map.Key, $"[url={_config.GetValue<string>("BaseUrl")}/User?UserId={map.Value}]{map.Key}[/url]"))
             );
             await _cacheService.SetInCache(await GetActualCacheKey("UserMap", false), userMap);
 

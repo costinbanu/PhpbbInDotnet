@@ -78,7 +78,6 @@ namespace Serverless.Forum.Pages
                     );
                 }
                 (Forums, _) = await GetForumTree(_forceTreeRefresh);
-                var usr = await GetCurrentUserAsync();
 
                 Topics = (
                     from t in topics

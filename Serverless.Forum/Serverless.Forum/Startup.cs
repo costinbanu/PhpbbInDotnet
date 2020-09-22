@@ -44,10 +44,11 @@ namespace Serverless.Forum
 
             services.AddSingleton(Configuration);
 
-            services.AddMemoryCache();
+            services.AddDistributedMemoryCache();
 
             services.AddSession(options => {
-                options.IdleTimeout = TimeSpan.FromMinutes(30);
+                options.IdleTimeout = TimeSpan.FromMinutes(Configuration.GetValue<double>("UserActivityTrackingIntervalMinutes"));
+                options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
             });
             services.Configure<CookiePolicyOptions>(options =>

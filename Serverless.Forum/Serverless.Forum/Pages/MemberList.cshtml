@@ -184,7 +184,9 @@
     </form>
     @if (Model.UserList?.Any() ?? false)
     {
-        <h4>@Model.Paginator.Pagination.Pager.TotalItems membri înregistrați</h4>
+        var registered = @Model.Paginator.Pagination.Pager.TotalItems;
+        var anonymous = AnonymousSessionCounter.Instance.GetActiveSessionCount();
+        <h4>@registered membr@(registered == 1 ? "u" : "i") înregistra@(registered == 1 ? "t" : "ți") și @anonymous vizitator@(anonymous == 1 ? "" : "i")</h4>
         @await Html.PartialAsync(
              "_UserSummaryPartial",
              new CustomPartials._UserSummaryPartialModel(

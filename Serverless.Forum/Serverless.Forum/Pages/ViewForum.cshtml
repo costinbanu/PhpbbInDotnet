@@ -50,17 +50,6 @@
     </script>
 }
 
-@*@if (!CurrentUser.IsAnonymous && !Model.IsNewPostView && !Model.IsOwnPostView)
-    {
-        <div class="linksContainer">
-            <a asp-page="ViewForum" asp-page-handler="ownPosts">Vezi subiectele proprii</a>
-            <span class="bullet">&nbsp;&bull;&nbsp;</span>
-            <div class="newline"></div>
-            <a asp-page="ViewForum" asp-page-handler="newPosts">Vezi mesajele noi</a>
-        </div>
-        <span style="clear:both"><br /></span>
-    }*@
-
 @if ((Model.ParentForumId ?? 0) != 0 && !Model.IsNewPostView && !Model.IsOwnPostView)
 {
     <a asp-page="ViewForum" asp-page-handler="ownPosts">Vezi subiectele proprii</a>
@@ -134,10 +123,9 @@ else
 {
     @await Html.PartialAsync(
         "_ForumDisplayPartial",
-        new Serverless.Forum.Pages.CustomPartials._ForumDisplayPartialModel(Model.ForumId, Model.Forums, UserDateFormat, true, CurrentUser),
+        new Serverless.Forum.Pages.CustomPartials._ForumDisplayPartialModel(Model.ForumId, Model.Forums, UserDateFormat, true, CurrentUser, true),
         ViewData
     )
-    <hr class="BoxSeparator" />
     <p>&nbsp;</p>
 }
 
@@ -147,7 +135,7 @@ else
      * use SecurityElement.Escape when using Html.Raw*/
     var topicsDisplayed = false;
     var announcementsDisplayed = false;
-    var globalsDisplayed = false;
+    //var globalsDisplayed = false;
 
     if (Model.IsNewPostView || Model.IsOwnPostView)
     {
@@ -165,11 +153,12 @@ else
         );
     }
     var lastTopicType = TopicType.Normal;
+    var previousIsUnread = false;
     foreach (var topicGroup in Model.Topics)
     {
         if (!Model.IsNewPostView && !Model.IsOwnPostView)
         {
-            if (!globalsDisplayed && topicGroup.TopicType == TopicType.Global)
+            /*if (!globalsDisplayed && topicGroup.TopicType == TopicType.Global)
             {
                 if (announcementsDisplayed || topicsDisplayed)
                 {
@@ -179,11 +168,15 @@ else
                 <h3 style="float:left">Subiecte globale</h3>
                 globalsDisplayed = true;
             }
-            else if (!announcementsDisplayed && topicGroup.TopicType == TopicType.Announcement)
+            else*/
+            if (!announcementsDisplayed && (topicGroup.TopicType == TopicType.Announcement || topicGroup.TopicType == TopicType.Global))
             {
-                if (globalsDisplayed || topicsDisplayed)
+                if (/*globalsDisplayed ||*/ topicsDisplayed)
                 {
-                    <hr class="BoxSeparator" />
+                    if (!previousIsUnread)
+                    {
+                        <hr class="BoxSeparator" />
+                    }
                     <p>&nbsp;</p>
                 }
                 <h3 style="float:left">Anunțuri</h3>
@@ -191,9 +184,12 @@ else
             }
             else if (!topicsDisplayed)
             {
-                if (globalsDisplayed || announcementsDisplayed)
+                if (/*globalsDisplayed ||*/ announcementsDisplayed)
                 {
-                    <hr class="BoxSeparator" />
+                    if (!previousIsUnread)
+                    {
+                        <hr class="BoxSeparator" />
+                    }
                     <p>&nbsp;</p>
                 }
                 <h3 style="float:left">Subiecte</h3>
@@ -215,8 +211,6 @@ else
                 </button>
             </span>
         }
-        var previousIsUnread = false;
-        //var topics = topicGroup?.Topics?.ToList() ?? new List<TopicDto>();
         foreach (var topic in topicGroup?.Topics ?? Enumerable.Empty<TopicDto>())
         {
             var pageSize = CurrentUser.TopicPostsPerPage.ContainsKey(topic.TopicId ?? 0) ? CurrentUser.TopicPostsPerPage[topic.TopicId ?? 0] : Constants.DEFAULT_PAGE_SIZE;

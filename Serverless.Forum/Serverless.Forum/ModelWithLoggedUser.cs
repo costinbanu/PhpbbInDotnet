@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
@@ -27,7 +28,7 @@ namespace Serverless.Forum
         protected readonly UserService _userService;
         protected readonly ForumDbContext _context;
         protected readonly IConfiguration _config;
-        
+
         private LoggedUser _currentUser;
 
         public ModelWithLoggedUser(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, IConfiguration config)
@@ -48,6 +49,8 @@ namespace Serverless.Forum
                 return _currentUser;
             }
             var user = User;
+            var authenticationExpiryDays = _config.GetValue<int?>("LoginSessionSlidingExpirationDays") ?? 30;
+            var sessionTrackingTimeoutMinutes = _config.GetValue<int?>("UserActivityTrackingIntervalMinutes") ?? 60;
             if (!(user?.Identity?.IsAuthenticated ?? false))
             {
                 user = await _userService.GetAnonymousClaimsPrincipalAsync();
@@ -58,7 +61,7 @@ namespace Serverless.Forum
                     new AuthenticationProperties
                     {
                         AllowRefresh = true,
-                        ExpiresUtc = DateTimeOffset.UtcNow.Add(TimeSpan.FromDays(_config.GetValue<int?>("LoginSessionSlidingExpirationDays") ?? 30)),
+                        ExpiresUtc = DateTimeOffset.UtcNow.Add(TimeSpan.FromDays(authenticationExpiryDays)),
                         IsPersistent = true,
                     }
                 );
@@ -79,9 +82,9 @@ namespace Serverless.Forum
                         if (dbUser == null || dbUser.UserInactiveTime > 0)
                         {
                             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                            await _cacheService.SetInCache(key, true, TimeSpan.FromDays(_config.GetValue<int?>("LoginSessionSlidingExpirationDays") ?? 30));
+                            await _cacheService.SetInCache(key, true, TimeSpan.FromDays(authenticationExpiryDays));
                         }
-                        else if (DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > TimeSpan.FromMinutes(_config.GetValue<int?>("UserActivityTrackingIntervalMinutes") ?? 60))
+                        else if (DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > TimeSpan.FromMinutes(sessionTrackingTimeoutMinutes))
                         {
                             _context.Update(dbUser);
                             dbUser.UserLastvisit = DateTime.UtcNow.ToUnixTimestamp();
@@ -89,6 +92,11 @@ namespace Serverless.Forum
                         }
                     }
                 }
+            }
+            if (_currentUser.IsAnonymous && (HttpContext.Session.GetInt32("SessionCounted") ?? 0 ) == 0)
+            {
+                HttpContext.Session.SetInt32("SessionCounted", 1);
+                AnonymousSessionCounter.Instance.UpsertSession(HttpContext.Session.Id, sessionTrackingTimeoutMinutes);
             }
             return _currentUser;
         }
