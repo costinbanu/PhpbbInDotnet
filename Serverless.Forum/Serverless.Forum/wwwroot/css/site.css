@@ -391,7 +391,7 @@ label {
 
 .MiddleBoxControls {
     position: fixed;
-    background-color: rgba(73, 93, 108, 0.95);
+    background-color: #fef6e9; /*rgba(73, 93, 108, 0.95);*/
     width: 85%;
     height: 42px;
     border: solid 1px black;
@@ -400,7 +400,7 @@ label {
     padding-right: 13px;
     z-index: 1040;
     backdrop-filter: blur(5px);
-    color: white;
+    color: black; /*white;*/
 }
 
 .MiddleBox {

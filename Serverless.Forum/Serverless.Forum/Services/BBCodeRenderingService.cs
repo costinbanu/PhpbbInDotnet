@@ -44,6 +44,19 @@ namespace Serverless.Forum.Services
             _htmlRegex = new Regex(@"<((?=!\-\-)!\-\-[\s\S]*\-\-|((?=\?)\?[\s\S]*\?|((?=\/)\/[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*|[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*(?:\s[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*(?:=(?:""[^""]*""|'[^']*'|[^'""<\s]*))?)*)\s?\/?))>", RegexOptions.Compiled);
             _bannedWords = _writingService.GetBannedWords().RunSync().GroupBy(p => p.Word).Select(grp => grp.FirstOrDefault()).ToDictionary(x => x.Word, y => y.Replacement);
 
+            string urlTransformer(string url)
+            {
+                if (!url.StartsWith("www", StringComparison.InvariantCultureIgnoreCase) && !url.StartsWith("http", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    throw new ArgumentException("Bad URL formatting");
+                }
+                else if (url.StartsWith("www", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    url = $"//{url}";
+                }
+                return url;
+            }
+
             using var connection = _context.Database.GetDbConnection();
             connection.OpenIfNeeded().RunSync();
             //we override these temporarily: 18 = link, 13 = youtube
@@ -54,25 +67,22 @@ namespace Serverless.Forum.Services
                 new BBTag("i", "<span style=\"font-style:italic;\">", "</span>", 2),
                 new BBTag("u", "<span style=\"text-decoration:underline;\">", "</span>", 7),
                 new BBTag("code", "<span class=\"CodeBlock\">", "</span>", 8),
-                new BBTag("img", "<br/><img src=\"${content}\" onload=\"resizeImage(this)\" /><br/>", string.Empty, false, false, 4, allowUrlProcessingAsText: false),
+                new BBTag("img", "<br/><img src=\"${content}\" onload=\"resizeImage(this)\" /><br/>", string.Empty, false, BBTagClosingStyle.RequiresClosingTag, content => urlTransformer(content), false, 4, allowUrlProcessingAsText: false),
                 new BBTag("quote", "<blockquote class=\"PostQuote\">${name}", "</blockquote>", 0, "", true,
                     new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : $"<b>{HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')}</b> a scris:<br/>", HtmlEncodingMode.UnsafeDontEncode)) { GreedyAttributeProcessing = true },
                 new BBTag("*", "<li>", "</li>", true, BBTagClosingStyle.AutoCloseElement, x => x, true, 20),
                 new BBTag("list", "<${attr}>", "</${attr}>", true, true, 9, "", true,
                     new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul style='list-style-type: circle'" : $"ol type=\"{a.AttributeValue}\"")),
                 new BBTag("url", "<a href=\"${href}\" target=\"_blank\">", "</a>", 3, "", false,
-                    new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : a.AttributeValue)),
-                new BBTag("link", "<a href=\"${href}\">", "</a>", true, BBTagClosingStyle.RequiresClosingTag, x => _utils.TransformSelfLinkToBetaLink(x), 18, "", false,
-                    new BBAttribute("href", "", a =>
-                    {
-                    return string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : _utils.TransformSelfLinkToBetaLink(a.AttributeValue);
-                    })),
+                    new BBAttribute("href", "", context => urlTransformer(string.IsNullOrWhiteSpace(context?.AttributeValue) ? context.TagContent : context.AttributeValue))),
                 new BBTag("color", "<span style=\"color:${code}\">", "</span>", 6, "", true,
                     new BBAttribute("code", "")),
                 new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>", 5, "", true,
                     new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
                 new BBTag("attachment", "#{AttachmentFileName=${content}/AttachmentIndex=${num}}#", "", false, BBTagClosingStyle.AutoCloseElement, x => _htmlCommentRegex.Replace(HttpUtility.HtmlDecode(x), string.Empty), 12, "", true,
                     new BBAttribute("num", "")),
+                new BBTag("link", "<a href=\"${href}\">", "</a>", true, BBTagClosingStyle.RequiresClosingTag, x => _utils.TransformSelfLinkToBetaLink(x), 18, "", false,
+                    new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : _utils.TransformSelfLinkToBetaLink(a.AttributeValue))),
                 new BBTag("youtube", "<br /><iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/${content}?html5=1\" frameborder=\"0\" allowfullscreen onload=\"resizeIFrame(this)\"></iframe><br />", string.Empty, false, false, 13, "")
             });
             _parser = new BBCodeParser(bbcodes);
