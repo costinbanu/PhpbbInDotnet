@@ -26,8 +26,7 @@ namespace Serverless.Forum.Pages
         public string ForumTitle { get; private set; }
         public string ParentForumTitle { get; private set; }
         public int? ParentForumId { get; private set; }
-        public bool IsNewPostView { get; private set; } = false;
-        public bool IsOwnPostView { get; private set; } = false;
+        public ViewForumMode Mode { get; private set; }
         public Paginator Paginator { get; private set; }
 
         [BindProperty(SupportsGet = true)]
@@ -36,8 +35,8 @@ namespace Serverless.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public int? PageNum { get; set; }
 
-        public ViewForumModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, IConfiguration config)
-            : base(context, forumService, userService, cacheService, config) { }
+        public ViewForumModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, IConfiguration config, AnonymousSessionCounter sessionCounter)
+            : base(context, forumService, userService, cacheService, config, sessionCounter) { }
 
         public async Task<IActionResult> OnGet()
             => await WithValidForum(ForumId, ForumId == 0, async (thisForum) =>
@@ -94,14 +93,14 @@ namespace Serverless.Forum.Pages
                 ForumRulesLink = thisForum.ForumRulesLink;
                 ForumRules = thisForum.ForumRules;
                 ForumRulesUid = thisForum.ForumRulesUid;
+                Mode = ViewForumMode.Forum;
 
                 return Page();
             });
 
         public async Task<IActionResult> OnGetNewPosts()
-            => await WithRegisteredUser(async () =>
+            => await WithRegisteredUser(async (user) =>
             {
-                var usr = await GetCurrentUserAsync();
                 var tree = await GetForumTree();
                 IEnumerable<TopicDto> topics = null;
                 var topicList = tree.Tracking.SelectMany(t => t.Value).Select(t => t.TopicId).Distinct();
@@ -111,15 +110,15 @@ namespace Serverless.Forum.Pages
                     await connection.OpenIfNeeded();
                     topics = await connection.QueryAsync<TopicDto>(
                         @"SELECT t.topic_id, 
-	                            t.forum_id,
-	                            t.topic_title, 
-                                count(p.post_id) AS post_count,
-                                t.topic_views AS view_count,
-                                t.topic_last_poster_id,
-                                t.topic_last_poster_name,
-                                t.topic_last_post_time,
-                                t.topic_last_poster_colour,
-                                t.topic_last_post_id
+	                             t.forum_id,
+	                             t.topic_title, 
+                                 count(p.post_id) AS post_count,
+                                 t.topic_views AS view_count,
+                                 t.topic_last_poster_id,
+                                 t.topic_last_poster_name,
+                                 t.topic_last_post_time,
+                                 t.topic_last_poster_colour,
+                                 t.topic_last_post_id
                             FROM forum.phpbb_topics t
                             JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
                         WHERE t.topic_id IN @topicList
@@ -127,10 +126,10 @@ namespace Serverless.Forum.Pages
                         GROUP BY t.topic_id
                         ORDER BY t.topic_last_post_time DESC
                         LIMIT @skip, @take",
-                        new 
-                        { 
-                            topicList = topicList.DefaultIfEmpty(), 
-                            skip = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE, 
+                        new
+                        {
+                            topicList = topicList.DefaultIfEmpty(),
+                            skip = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE,
                             take = Constants.DEFAULT_PAGE_SIZE,
                             restrictedForumList = restrictedForums.Select(f => f.forumId).DefaultIfEmpty()
                         }
@@ -138,15 +137,14 @@ namespace Serverless.Forum.Pages
                 }
 
                 Topics = new List<TopicTransport> { new TopicTransport { Topics = topics } };
-                IsNewPostView = true;
+                Mode = ViewForumMode.NewPosts;
                 Paginator = new Paginator(count: tree.Tracking.Count, pageNum: PageNum ?? 1, link: "/ViewForum?handler=NewPosts&pageNum=1", topicId: null);
                 return Page();
             });
 
         public async Task<IActionResult> OnGetOwnPosts()
-            => await WithRegisteredUser(async () =>
+            => await WithRegisteredUser(async (user) =>
             {
-                var usr = await GetCurrentUserAsync();
                 var tree = await GetForumTree();
                 IEnumerable<TopicDto> topics = null;
                 var totalCount = 0;
@@ -156,10 +154,11 @@ namespace Serverless.Forum.Pages
                     await connection.OpenIfNeeded();
                     using var multi = await connection.QueryMultipleAsync(
                         "CALL `forum`.`get_own_topics`(@userId, @skip, @take, @restrictedForumList)",
-                        new 
-                        { 
-                            usr.UserId, 
-                            skip = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE, take = Constants.DEFAULT_PAGE_SIZE,
+                        new
+                        {
+                            user.UserId,
+                            skip = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE,
+                            take = Constants.DEFAULT_PAGE_SIZE,
                             restrictedForumList = string.Join(',', restrictedForums.Select(f => f.forumId).DefaultIfEmpty())
                         }
                     );
@@ -168,13 +167,42 @@ namespace Serverless.Forum.Pages
                 }
 
                 Topics = new List<TopicTransport> { new TopicTransport { Topics = topics.OrderByDescending(t => t.LastPostTime) } };
-                IsOwnPostView = true;
+                Mode = ViewForumMode.OwnPosts;
                 Paginator = new Paginator(count: totalCount, pageNum: PageNum ?? 1, link: "/ViewForum?handler=OwnPosts&pageNum=1", topicId: null);
                 return Page();
             });
 
+        public async Task<IActionResult> OnGetDrafts()
+            => await WithRegisteredUser(async (user) =>
+            {
+                IEnumerable<TopicDto> topics = null;
+                var restrictedForums = await _forumService.GetRestrictedForumList(await GetCurrentUserAsync());
+                var count = 0;
+                using (var connection = _context.Database.GetDbConnection())
+                {
+                    await connection.OpenIfNeeded();
+                    using var multi = await connection.QueryMultipleAsync(
+                        "CALL `forum`.`get_drafts`(@userId, @skip, @take, @restrictedForumList);",
+                        new
+                        {
+                            user.UserId,
+                            skip = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE,
+                            take = Constants.DEFAULT_PAGE_SIZE,
+                            restrictedForumList = string.Join(',', restrictedForums.Select(f => f.forumId).DefaultIfEmpty())
+                        }
+                    );
+                    topics = await multi.ReadAsync<TopicDto>();
+                    count = unchecked((int)await multi.ReadSingleAsync<long>());
+                }
+
+                Topics = new List<TopicTransport> { new TopicTransport { Topics = topics } };
+                Mode = ViewForumMode.Drafts;
+                Paginator = new Paginator(count: count, pageNum: PageNum ?? 1, link: "/ViewForum?handler=drafts&pageNum=1", topicId: null);
+                return Page();
+            });
+
         public async Task<IActionResult> OnPostMarkForumsRead()
-            => await WithRegisteredUser(async () => await WithValidForum(ForumId, ForumId == 0, async (_)  =>
+            => await WithRegisteredUser(async (_) => await WithValidForum(ForumId, ForumId == 0, async (_) =>
             {
                 await MarkForumAndSubforumsRead(ForumId);
                 _forceTreeRefresh = true;
@@ -182,11 +210,11 @@ namespace Serverless.Forum.Pages
             }));
 
         public async Task<IActionResult> OnPostMarkTopicsRead()
-            => await WithRegisteredUser(async() => await WithValidForum(ForumId, async(_) =>
-            {
-                await MarkForumRead(ForumId);
-                _forceTreeRefresh = true;
-                return await OnGet();
-            }));
+            => await WithRegisteredUser(async (_) => await WithValidForum(ForumId, async (_) =>
+             {
+                 await MarkForumRead(ForumId);
+                 _forceTreeRefresh = true;
+                 return await OnGet();
+             }));
     }
 }

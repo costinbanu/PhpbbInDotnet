@@ -71,8 +71,8 @@ namespace Serverless.Forum.Pages
         private readonly WritingToolsService _writingService;
 
         public UserModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
-            StorageService storageService, WritingToolsService writingService, IConfiguration config)
-            : base(context, forumService, userService, cacheService, config)
+            StorageService storageService, WritingToolsService writingService, IConfiguration config, AnonymousSessionCounter sessionCounter)
+            : base(context, forumService, userService, cacheService, config, sessionCounter)
         {
             _utils = utils;
             _storageService = storageService;
@@ -80,7 +80,7 @@ namespace Serverless.Forum.Pages
         }
 
         public async Task<IActionResult> OnGet(int? userId, bool? viewAsAnother)
-            => await WithRegisteredUser(async () =>
+            => await WithRegisteredUser(async (_) =>
             {
                 if ((userId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID)
                 {

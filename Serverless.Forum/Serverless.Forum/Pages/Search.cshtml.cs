@@ -52,8 +52,8 @@ namespace Serverless.Forum.Pages
         public Paginator Paginator { get; private set; }
         public bool IsAuthorSearch { get; private set; }
 
-        public SearchModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, IConfiguration config)
-            : base(context, forumService, userService, cacheService, config)
+        public SearchModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, IConfiguration config, AnonymousSessionCounter sessionCounter)
+            : base(context, forumService, userService, cacheService, config, sessionCounter)
         { }
 
         public async Task<IActionResult> OnGet()

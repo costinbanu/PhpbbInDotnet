@@ -1,12 +1,13 @@
 ﻿using Dapper;
+using DeviceDetectorNET;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Net.Http.Headers;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.ForumDb.Entities;
@@ -28,16 +29,18 @@ namespace Serverless.Forum
         protected readonly UserService _userService;
         protected readonly ForumDbContext _context;
         protected readonly IConfiguration _config;
+        private readonly AnonymousSessionCounter _sessionCounter;
 
         private LoggedUser _currentUser;
 
-        public ModelWithLoggedUser(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, IConfiguration config)
+        public ModelWithLoggedUser(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, IConfiguration config, AnonymousSessionCounter sessionCounter)
         {
             _forumService = forumService;
             _cacheService = cacheService;
             _userService = userService;
             _context = context;
             _config = config;
+            _sessionCounter = sessionCounter;
         }
 
         #region User
@@ -93,10 +96,15 @@ namespace Serverless.Forum
                     }
                 }
             }
-            if (_currentUser.IsAnonymous && (HttpContext.Session.GetInt32("SessionCounted") ?? 0 ) == 0)
+            if (_currentUser.IsAnonymous && HttpContext.Request.Headers.TryGetValue(HeaderNames.UserAgent, out var header) && (HttpContext.Session.GetInt32("SessionCounted") ?? 0) == 0 )
             {
-                HttpContext.Session.SetInt32("SessionCounted", 1);
-                AnonymousSessionCounter.Instance.UpsertSession(HttpContext.Session.Id, sessionTrackingTimeoutMinutes);
+                var dd = new DeviceDetector(header.ToString());
+                dd.Parse();
+                if (!dd.IsBot())
+                {
+                    HttpContext.Session.SetInt32("SessionCounted", 1);
+                    _sessionCounter.UpsertSession(HttpContext.Session.Id, TimeSpan.FromMinutes(sessionTrackingTimeoutMinutes));
+                }
             }
             return _currentUser;
         }
@@ -223,13 +231,14 @@ namespace Serverless.Forum
 
         #region Permission validation wrappers
 
-        protected async Task<IActionResult> WithRegisteredUser(Func<Task<IActionResult>> toDo)
+        protected async Task<IActionResult> WithRegisteredUser(Func<LoggedUser, Task<IActionResult>> toDo)
         {
-            if ((await GetCurrentUserAsync()).IsAnonymous)
+            var user = await GetCurrentUserAsync();
+            if (user.IsAnonymous)
             {
                 return RedirectToPage("Login", new { ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString) });
             }
-            return await toDo();
+            return await toDo(user);
         }
 
         protected async Task<IActionResult> WithModerator(Func<Task<IActionResult>> toDo)

@@ -8,6 +8,7 @@
 @inject Utils _utils
 @inject Serverless.Forum.Services.BBCodeRenderingService _renderingService
 @inject IConfiguration _config
+@inject AnonymousSessionCounter _sessionCounter
 
 @{
     ViewData["Title"] = "MemberList";
@@ -185,7 +186,7 @@
     @if (Model.UserList?.Any() ?? false)
     {
         var registered = @Model.Paginator.Pagination.Pager.TotalItems;
-        var anonymous = AnonymousSessionCounter.Instance.GetActiveSessionCount();
+        var anonymous = _sessionCounter.GetActiveSessionCount();
         <h4>@registered membr@(registered == 1 ? "u" : "i") înregistra@(registered == 1 ? "t" : "ți") și @anonymous vizitator@(anonymous == 1 ? "" : "i")</h4>
         @await Html.PartialAsync(
              "_UserSummaryPartial",

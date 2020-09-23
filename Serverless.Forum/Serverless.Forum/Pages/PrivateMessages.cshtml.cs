@@ -40,24 +40,23 @@ namespace Serverless.Forum.Pages
 
         private readonly BBCodeRenderingService _renderingService;
         
-        public PrivateMessagesModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, BBCodeRenderingService renderingService, IConfiguration config)
-            : base(context, forumService, userService, cacheService, config)
+        public PrivateMessagesModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
+            BBCodeRenderingService renderingService, IConfiguration config, AnonymousSessionCounter sessionCounter)
+            : base(context, forumService, userService, cacheService, config, sessionCounter)
         {
             _renderingService = renderingService;
         }
 
         public async Task<IActionResult> OnGet()
-            => await WithRegisteredUser(async () =>
+            => await WithRegisteredUser(async (user) =>
             {
-                if (!_userService.HasPrivateMessages(await GetCurrentUserAsync()))
+                if (!_userService.HasPrivateMessages(user))
                 {
                     return BadRequest("Utilizatorul nu are acces la mesageria privată.");
                 }
 
-                var userId = (await GetCurrentUserAsync()).UserId;
-
                 InboxPaginator = new Paginator(
-                    count: await _context.PhpbbPrivmsgsTo.CountAsync(x => x.UserId == userId && x.AuthorId != x.UserId),
+                    count: await _context.PhpbbPrivmsgsTo.CountAsync(x => x.UserId == user.UserId && x.AuthorId != x.UserId),
                     pageNum: InboxPage ?? 1,
                     topicId: null,
                     link: "/PrivateMessages?show=Inbox",
@@ -65,7 +64,7 @@ namespace Serverless.Forum.Pages
                 );
 
                 SentPaginator = new Paginator(
-                    count: await _context.PhpbbPrivmsgsTo.CountAsync(x => x.AuthorId == userId && x.AuthorId != x.UserId),
+                    count: await _context.PhpbbPrivmsgsTo.CountAsync(x => x.AuthorId == user.UserId && x.AuthorId != x.UserId),
                     pageNum: SentPage ?? 1,
                     topicId: null,
                     link: "/PrivateMessages?show=Sent",
@@ -80,7 +79,7 @@ namespace Serverless.Forum.Pages
                     into joined
 
                     from j in joined
-                    where j.UserId == userId && j.AuthorId != j.UserId
+                    where j.UserId == user.UserId && j.AuthorId != j.UserId
 
                     join u in _context.PhpbbUsers.AsNoTracking()
                     on j.AuthorId equals u.UserId
@@ -108,7 +107,7 @@ namespace Serverless.Forum.Pages
                     into joined
 
                     from j in joined
-                    where j.AuthorId == userId && j.AuthorId != j.UserId
+                    where j.AuthorId == user.UserId && j.AuthorId != j.UserId
 
                     join u in _context.PhpbbUsers.AsNoTracking()
                     on j.UserId equals u.UserId
@@ -132,7 +131,7 @@ namespace Serverless.Forum.Pages
                 {
                     var msg = await _context.PhpbbPrivmsgs.AsNoTracking().FirstOrDefaultAsync(x => x.MsgId == MessageId);
                     var to = await _context.PhpbbPrivmsgsTo.FirstOrDefaultAsync(x => x.MsgId == MessageId && x.AuthorId != x.UserId);
-                    SelectedMessageIsMine = to.AuthorId == userId;
+                    SelectedMessageIsMine = to.AuthorId == user.UserId;
                     var other = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == (SelectedMessageIsMine ? to.UserId : to.AuthorId));
                     SelectedMessage = new PrivateMessageDto
                     {
@@ -157,9 +156,9 @@ namespace Serverless.Forum.Pages
             });
 
         public async Task<IActionResult> OnPost()
-            => await WithRegisteredUser(async () =>
+            => await WithRegisteredUser(async (user) =>
             {
-                if (!_userService.HasPrivateMessages(await GetCurrentUserAsync()))
+                if (!_userService.HasPrivateMessages(user))
                 {
                     return BadRequest("Utilizatorul nu are acces la mesageria privată.");
                 }

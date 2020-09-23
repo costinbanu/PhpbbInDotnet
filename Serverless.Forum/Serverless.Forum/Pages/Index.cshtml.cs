@@ -14,8 +14,8 @@ namespace Serverless.Forum.Pages
 
         public HashSet<ForumTree> Tree { get; private set; }
 
-        public IndexModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, IConfiguration config)
-            : base(context, forumService, userService, cacheService, config)
+        public IndexModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, IConfiguration config, AnonymousSessionCounter sessionCounter)
+            : base(context, forumService, userService, cacheService, config, sessionCounter)
         {
         }
 
@@ -26,7 +26,7 @@ namespace Serverless.Forum.Pages
         }
 
         public async Task<IActionResult> OnPostMarkForumsRead()
-            => await WithRegisteredUser(async () => 
+            => await WithRegisteredUser(async (_) => 
             {
                 await MarkForumAndSubforumsRead(0);
                 _forceTreeRefresh = true;

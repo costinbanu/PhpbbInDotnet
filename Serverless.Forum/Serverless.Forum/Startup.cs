@@ -119,6 +119,7 @@ namespace Serverless.Forum
             services.AddHttpClient();
 
             services.AddSingleton<Utils>();
+            services.AddSingleton<AnonymousSessionCounter>();
             services.AddScoped<AdminForumService>();
             services.AddScoped<AdminUserService>();
             services.AddScoped<WritingToolsService>();

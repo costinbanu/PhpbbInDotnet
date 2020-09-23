@@ -58,13 +58,12 @@
 </script>
 @if (!CurrentUser.IsAnonymous)
 {
-    <a asp-page="ViewForum" asp-page-handler="ownPosts">Vezi subiectele proprii</a>
-    <span class="bullet">&nbsp;&bull;&nbsp;</span>
-    <div class="newline"></div>
-    <a asp-page="ViewForum" asp-page-handler="newPosts">Vezi mesajele noi</a>
-    <span class="bullet">&nbsp;&bull;&nbsp;</span>
-    <div class="newline"></div>
-    <span>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(@Model.ForumTitle)</a></span>
+    @await Html.PartialAsync(
+        "_HeaderLinksPartial",
+        new Serverless.Forum.Pages.CustomPartials._HeaderLinksPartialModel(Model.ForumId ?? 0, Model.ForumTitle),
+        ViewData
+    )
+    <div>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(Model.ForumTitle)</a></div>
 }
 
 <h2>Subiect: @Model.TopicTitle</h2>
@@ -160,10 +159,10 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
         }
     }
 }
-@if (Model.Paginator.Pagination.HasPages)
+@*@if (Model.Paginator.Pagination.HasPages)
 {
     <hr />
-}
+}*@
 @await Html.PartialAsync(
     "_PaginationControlsPartial",
     new CustomPartials._PaginationControlsPartialModel(
@@ -177,7 +176,7 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
     ),
     ViewData
 )
-<hr />
+@*<hr />*@
 @{
     var index = 0;
     var reachedAnUnreadPost = false;
@@ -389,7 +388,7 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
 @if ((!Model.IsLocked || IsMod || IsAdmin) && !IsAnonymous)
 {
     <button onclick="location.href='/Posting?forumId=@Model.ForumId&topicId=@Model.TopicId&pageNum=@Model.PageNum&handler=forumPost'" type="button">
-        
+
         @if (Model.IsLocked)
         {
             <span>&#x1F512;Subiect închis</span>
@@ -425,13 +424,16 @@ else if (!IsAnonymous)
 
 @*shortcuts*@
 <div style="clear:both">
-    <a href="/">Prima pagină</a> |
+    <a href="/" class="nowrap">Prima pagină</a>
+    <span class="bullet">&nbsp;&bull;&nbsp;</span>
+    <div class="newline"></div>
     @if (Model.ForumId != null)
     {
-        <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(@Model.ForumTitle)</a>
-        <span> | </span>
+        <span>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(@Model.ForumTitle)</a></span>
+        <span class="bullet">&nbsp;&bull;&nbsp;</span>
+        <div class="newline"></div>
     }
-    <span onclick="showForumTree(this)" class="SpanLikeLink">Alege destinația</span>
+    <span onclick="showForumTree(this)" class="SpanLikeLink nowrap">Alege destinația</span>
 </div>
 
 <div id="forumTree" style="display:none">

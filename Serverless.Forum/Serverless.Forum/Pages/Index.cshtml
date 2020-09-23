@@ -8,13 +8,34 @@
 
 <a href="javascript:showElement('metrouusorLinks');" class="Show1300">Site-urile „MetrouUșor”</a>
 <ul class="Shortcuts Hide1300" id="metrouusorLinks">
-    <li><a href="https://metrouusor.com" target="_blank">Asociația „Metrou Ușor”</a></li>
-    <li><a href="https://www.facebook.com/MetrouUsor/" target="_blank">Facebook</a></li>
-    <li><a href="https://youtube.com/channel/UCczAlitk6NaUjQsbtCSdEjA" target="_blank">Youtube</a></li>
-    <li><a href="https://www.facebook.com/InitiativaMTB/" target="_blank">Inițiativa pentru Muzeul transportului bucureștean</a></li>
-    <li><a href="https://metrouusor.com/Content/implica-te/directioneaza-2-din-impozit.html" target="_blank">2% pentru Asociația „Metrou Ușor”</a></li>
-    <li><a href="./ViewTopic?topicId=5252&pageNum=1">Sugestii sau reclamații pentru noul forum</a></li>
-    <li><a href="https://forum.metrouusor.com">Înapoi la vechiul forum</a></li>
+    <li>
+        <span class="Show1300">&nbsp; &nbsp; </span>
+        <a href="https://metrouusor.com" target="_blank">Asociația „Metrou Ușor”</a>
+    </li>
+    <li>
+        <span class="Show1300">&nbsp; &nbsp; </span>
+        <a href="https://www.facebook.com/MetrouUsor/" target="_blank">Facebook</a>
+    </li>
+    <li>
+        <span class="Show1300">&nbsp; &nbsp; </span>
+        <a href="https://youtube.com/channel/UCczAlitk6NaUjQsbtCSdEjA" target="_blank">Youtube</a>
+    </li>
+    <li>
+        <span class="Show1300">&nbsp; &nbsp; </span>
+        <a href="https://www.facebook.com/InitiativaMTB/" target="_blank">Inițiativa pentru Muzeul transportului bucureștean</a>
+    </li>
+    <li>
+        <span class="Show1300">&nbsp; &nbsp; </span>
+        <a href="https://metrouusor.com/Content/implica-te/directioneaza-2-din-impozit.html" target="_blank">2% pentru Asociația „Metrou Ușor”</a>
+    </li>
+    <li>
+        <span class="Show1300">&nbsp; &nbsp; </span>
+        <a href="./ViewTopic?topicId=5252&pageNum=1">Sugestii sau reclamații pentru noul forum</a>
+    </li>
+    <li>
+        <span class="Show1300">&nbsp; &nbsp; </span>
+        <a href="https://forum.metrouusor.com">Înapoi la vechiul forum</a>
+    </li>
 </ul>
 
 @if (!usr.IsAnonymous)
@@ -22,15 +43,16 @@
     <form asp-page-handler="MarkForumsRead" method="post" name="MarkForumsRead">
         @Html.AntiForgeryToken()
     </form>
-    <div class="linksContainer">
-        <a asp-page="ViewForum" asp-page-handler="ownPosts">Vezi subiectele proprii</a>
-        <span class="bullet">&nbsp;&bull;&nbsp;</span>
-        <div class="newline"></div>
-        <a asp-page="ViewForum" asp-page-handler="newPosts">Vezi mesajele noi</a>
-        <span class="bullet">&nbsp;&bull;&nbsp;</span>
-        <div class="newline"></div>
-        <a href="javascript:MarkForumsRead.submit()">Marchează forumurile ca citite</a>
-    </div>
+    @*<div class="linksContainer">*@
+    @await Html.PartialAsync(
+        "_HeaderLinksPartial",
+        new Serverless.Forum.Pages.CustomPartials._HeaderLinksPartialModel(),
+        ViewData
+    )
+    @*<span class="bullet">&nbsp;&bull;&nbsp;</span>
+            <div class="newline"></div>
+            <a href="javascript:MarkForumsRead.submit()">Marchează forumurile ca citite</a>
+        </div>*@
 }
 @await Html.PartialAsync(
     "_ForumDisplayPartial",

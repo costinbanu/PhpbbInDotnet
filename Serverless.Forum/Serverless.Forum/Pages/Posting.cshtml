@@ -178,6 +178,11 @@ else if (!string.IsNullOrWhiteSpace(Model.CurrentForum?.ForumRulesLink))
     <div style="margin-top:5px">
         <textarea asp-for="PostText" id="message" rows="15" tabindex="3" onselect="posting.storeCaret(this);" onclick="posting.storeCaret(this);" onkeyup="posting.storeCaret(this);" onfocus="posting.initInsertions();" class="InputBox" style="width:100%"></textarea>
     </div>
+    @if (Model.Action == PostingActions.EditForumPost)
+    {
+        <div style="clear:both">&nbsp;</div>
+        <input asp-for="EditReason" type="text" style="width:100%" placeholder="Motivul modificării" />
+    }
     <p style="clear:both;width:100%; padding:10px 20px 10px 20px; margin:0px">
         Includerea imaginilor mai mari de 2MB nu este permisă, indiferent dacă sunt găzduite local sau extern. De asemenea, numerele de înmatriculare ale vehiculelor particulare surprinse in imagini trebuie ascunse.
         Utilizați <a href="https://procesorimagini.metrouusor.com/" target="_blank">procesorul de imagini „Metrou Ușor”</a> pentru a redimensiona imagini și a ascunde numere de înmatriculare.
@@ -192,10 +197,12 @@ else if (!string.IsNullOrWhiteSpace(Model.CurrentForum?.ForumRulesLink))
         <button onclick="posting.togglePoll()" type="button" class="PostingButton">&#x2714; Chestionar</button>
     }
     <input type="submit" value="&#x1F440; Previzualizează" onclick="return posting.censor()" asp-page-handler="Preview" class="PostingButton" />
+
     @switch (Model.Action)
     {
         case PostingActions.NewTopic:
         case PostingActions.NewForumPost:
+            <input type="submit" value="&#x1F4BE; Salvează mesajul în lucru" onclick="return posting.censor()" asp-page-handler="SaveDraft" class="PostingButton" />
             <b><input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="NewForumPost" class="PostingButton" /></b>
             break;
         case PostingActions.EditForumPost:
@@ -209,13 +216,13 @@ else if (!string.IsNullOrWhiteSpace(Model.CurrentForum?.ForumRulesLink))
             break;
     }
     <b>
-        <span>&nbsp; </span>
         <span asp-validation-for="PostTitle" class="validation"></span>
-        <span>&nbsp; </span>
         <span asp-validation-for="PostText" class="validation"></span>
-        <span>&nbsp; </span>
         <span asp-validation-for="LastPostTime" class="validation"></span>
-        <span>&nbsp; </span>
+        @if (Model.DraftSavedSuccessfully)
+        {
+            <span style="color:darkgreen">Mesajul în lucru a fost salvat cu succes și vei putea lucra în continuare la el mai târziu.</span>
+        }
     </b>
     @if (CanCreatePoll)
     {
@@ -269,7 +276,6 @@ else if (!string.IsNullOrWhiteSpace(Model.CurrentForum?.ForumRulesLink))
                 </div>
             </div>
         </div>
-        <hr />
     }
     <input asp-for="ForumId" type="hidden" />
     <input asp-for="TopicId" type="hidden" />
@@ -337,16 +343,6 @@ else if (!string.IsNullOrWhiteSpace(Model.CurrentForum?.ForumRulesLink))
         }
         <hr />
     </div>
-    @if (Model.Action == PostingActions.EditForumPost)
-    {
-        <div class="FlexCenter PostInputWidth">
-            <div>Motivul modificării:</div>
-            <div class="PollInput FlexRight">
-                <input asp-for="EditReason" type="text" style="width:100%" />
-            </div>
-        </div>
-        <hr />
-    }
 </form>
 
 @{

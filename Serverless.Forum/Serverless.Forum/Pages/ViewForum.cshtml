@@ -13,7 +13,7 @@
     var CurrentUser = await Model.GetCurrentUserAsync();
     var UserDateFormat = CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
     var IsAnonymous = CurrentUser?.IsAnonymous ?? true;
-    var hasSubForums = _forumService.HasUnrestrictedChildren((await Model.GetForumTree()).Tree, Model.ForumId);
+    var hasSubForums = Model.ForumId != 0 && _forumService.HasUnrestrictedChildren((await Model.GetForumTree()).Tree, Model.ForumId);
 }
 
 <environment include="Development">
@@ -38,7 +38,7 @@
     }
 </script>
 
-@if (!Model.IsNewPostView && !Model.IsOwnPostView)
+@if (Model.Mode == ViewForumMode.Forum)
 {
     <script>
         $(document).ready(function () {
@@ -50,58 +50,64 @@
     </script>
 }
 
-@if ((Model.ParentForumId ?? 0) != 0 && !Model.IsNewPostView && !Model.IsOwnPostView)
+@if ((Model.ParentForumId ?? 0) != 0 /*&& !Model.IsNewPostView && !Model.IsOwnPostView*/)
 {
-    <a asp-page="ViewForum" asp-page-handler="ownPosts">Vezi subiectele proprii</a>
-    <span class="bullet">&nbsp;&bull;&nbsp;</span>
-    <div class="newline"></div>
-    <a asp-page="ViewForum" asp-page-handler="newPosts">Vezi mesajele noi</a>
-    <span class="bullet">&nbsp;&bull;&nbsp;</span>
-    <div class="newline"></div>
-    <span>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@HttpUtility.HtmlDecode(Model.ParentForumTitle)</a></span>
+    @await Html.PartialAsync(
+        "_HeaderLinksPartial",
+        new Serverless.Forum.Pages.CustomPartials._HeaderLinksPartialModel(Model.ParentForumId ?? 0, Model.ParentForumTitle),
+        ViewData
+    )
+    <div>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@HttpUtility.HtmlDecode(Model.ParentForumTitle)</a></div>
 }
 else
 {
     <h4><a href="/">Prima pagină</a></h4>
 }
 
-@if (Model.IsNewPostView)
+@switch (Model.Mode)
 {
-    <h2>Subiecte necitite</h2>
-    @if (Model.Topics?.Any() ?? false)
-    {
-        <a href="javascript:MarkForumsRead.submit()">Marchează-le ca citite</a>
-    }
-}
-else if (Model.IsOwnPostView)
-{
-    <h2>Subiectele proprii</h2>
-    <span>Subiecte în care ai scris cel puțin un mesaj</span>
-}
-else
-{
-    <h2>Forum: @Model.ForumTitle</h2>
-    @if (!string.IsNullOrWhiteSpace(Model.ForumRules))
-    {
-        <div style="background-color: #ECD5D8; color: #BC2A4D; padding: 10px; margin: 10px">
-            <span>&#x26A0;&nbsp;</span>
-            <b>Reguli forum</b>
-            <br />
-            @Html.Raw(_renderingService.BbCodeToHtml(Model.ForumRules, Model.ForumRulesUid))
-        </div>
-    }
-    else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
-    {
-        <div style="background-color: #ECD5D8; color: #BC2A4D; padding: 10px; margin: 10px">
-            <a href="@_utils.TransformSelfLinkToBetaLink(HttpUtility.HtmlDecode(Model.ForumRulesLink))">
-                &#x26A0;&nbsp;
+    case ViewForumMode.NewPosts:
+        <h2>Subiecte necitite</h2>
+        @if (Model.Topics?.Any() ?? false)
+        {
+            <a href="javascript:MarkForumsRead.submit()">Marchează-le ca citite</a>
+        }
+        break;
+
+    case ViewForumMode.OwnPosts:
+        <h2>Subiectele proprii</h2>
+        <span>Subiecte în care ai scris cel puțin un mesaj</span>
+        break;
+
+    case ViewForumMode.Drafts:
+        <h2>Mesaje proprii în lucru</h2>
+        <span>Mesaje salvate ca „în lucru” și încă nepublicate</span>
+        break;
+
+    case ViewForumMode.Forum:
+        <h2>Forum: @Model.ForumTitle</h2>
+        @if (!string.IsNullOrWhiteSpace(Model.ForumRules))
+        {
+            <div style="background-color: #ECD5D8; color: #BC2A4D; padding: 10px; margin: 10px">
+                <span>&#x26A0;&nbsp;</span>
                 <b>Reguli forum</b>
-            </a>
-        </div>
-    }
+                <br />
+                @Html.Raw(_renderingService.BbCodeToHtml(Model.ForumRules, Model.ForumRulesUid))
+            </div>
+        }
+        else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
+        {
+            <div style="background-color: #ECD5D8; color: #BC2A4D; padding: 10px; margin: 10px">
+                <a href="@_utils.TransformSelfLinkToBetaLink(HttpUtility.HtmlDecode(Model.ForumRulesLink))">
+                    &#x26A0;&nbsp;
+                    <b>Reguli forum</b>
+                </a>
+            </div>
+        }
+        break;
 }
 
-@if (!IsAnonymous && !Model.IsNewPostView && !Model.IsOwnPostView && (hasSubForums || (Model.Topics?.Any() ?? false)))
+@if (!IsAnonymous && Model.Mode == ViewForumMode.Forum && (hasSubForums || (Model.Topics?.Any() ?? false)))
 {
     @if (hasSubForums)
     {
@@ -136,17 +142,23 @@ else
     var topicsDisplayed = false;
     var announcementsDisplayed = false;
     var globalsDisplayed = false;
-
-    if (Model.IsNewPostView || Model.IsOwnPostView)
+    var handler = Model.Mode switch
     {
-        var view = Model.IsNewPostView ? "new" : "own";
+        ViewForumMode.NewPosts => "newPosts",
+        ViewForumMode.OwnPosts => "ownPosts",
+        ViewForumMode.Drafts => "drafts",
+        _ => string.Empty
+    };
+
+    if (Model.Mode != ViewForumMode.Forum)
+    {
         @await Html.PartialAsync(
             "_PaginationControlsPartial",
             new CustomPartials._PaginationControlsPartialModel(
                 paginator: Model.Paginator,
-                allowPaginationChange: true,
-                back: $"/ViewForum?handler={view}Posts&pageNum={(Model.PageNum ?? 1) - 1}",
-                forward: $"/ViewForum?handler={view}Posts&pageNum={(Model.PageNum ?? 1) + 1}",
+                allowPaginationChange: false,
+                back: $"/ViewForum?handler={handler}&pageNum={(Model.PageNum ?? 1) - 1}",
+                forward: $"/ViewForum?handler={handler}&pageNum={(Model.PageNum ?? 1) + 1}",
                 includeEasyNavigation: false
             ),
             ViewData
@@ -156,7 +168,7 @@ else
     var previousIsUnread = false;
     foreach (var topicGroup in Model.Topics)
     {
-        if (!Model.IsNewPostView && !Model.IsOwnPostView)
+        if (Model.Mode == ViewForumMode.Forum)
         {
             if (!globalsDisplayed && topicGroup.TopicType == TopicType.Global)
             {
@@ -216,9 +228,12 @@ else
         }
         foreach (var topic in topicGroup?.Topics ?? Enumerable.Empty<TopicDto>())
         {
-            var pageSize = CurrentUser.TopicPostsPerPage.ContainsKey(topic.TopicId ?? 0) ? CurrentUser.TopicPostsPerPage[topic.TopicId ?? 0] : Constants.DEFAULT_PAGE_SIZE;
-            topic.Unread = await Model.IsTopicUnread(topic.ForumId ?? 0, topic.TopicId ?? 0);
-            topic.Pagination = new CustomPartials._PaginationPartialModel($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", topic.PostCount ?? 0, pageSize, 1, "PageNum");
+            if (Model.Mode != ViewForumMode.Drafts)
+            {
+                var pageSize = CurrentUser.TopicPostsPerPage.ContainsKey(topic.TopicId ?? 0) ? CurrentUser.TopicPostsPerPage[topic.TopicId ?? 0] : Constants.DEFAULT_PAGE_SIZE;
+                topic.Unread = await Model.IsTopicUnread(topic.ForumId ?? 0, topic.TopicId ?? 0);
+                topic.Pagination = new CustomPartials._PaginationPartialModel($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", topic.PostCount ?? 0, pageSize, 1, "PageNum");
+            }
 
             if (!isFirst && !previousIsUnread && !topic.Unread)
             {
@@ -229,7 +244,7 @@ else
             var divClass = topic.Unread ? "FlexRow Unread RowMargin" : "FlexRow RowMargin";
             <div class="@divClass">
                 <span class="ForumContent">
-                    @if (Model.IsNewPostView || Model.IsOwnPostView)
+                    @if (Model.Mode != ViewForumMode.Forum)
                     {
                         <span class="Caption">
                             @Html.Raw(_forumService.GetPathText((await Model.GetForumTree()).Tree, topic.ForumId ?? 0))
@@ -244,7 +259,8 @@ else
                     {
                         <span>&#x1F512;&nbsp;</span>
                     }
-                    @{
+                    @if (Model.Mode != ViewForumMode.Drafts)
+                    {
                         var firstUnreadPost = await Model.GetFirstUnreadPost(topic.ForumId ?? 0, topic.TopicId ?? 0);
                         if (firstUnreadPost > 0)
                         {
@@ -255,19 +271,42 @@ else
                             <a asp-page="/ViewTopic" asp-route-topicId="@topic.TopicId" asp-route-pageNum="1" class="nav-link" style="font-weight:bold">@Html.Raw(topic.TopicTitle)</a>
                         }
                     }
+                    else
+                    {
+                        if ((topic.TopicId ?? 0) == 0)
+                        {
+                            <a asp-page="/Posting" asp-page-handler="newTopic" asp-route-forumId="@topic.ForumId">Subiect nou: @HttpUtility.HtmlDecode(topic.TopicTitle)</a>
+                        }
+                        else
+                        {
+                            <a asp-page="/Posting" asp-page-handler="forumPost" asp-route-forumId="@topic.ForumId" asp-route-topicId="@topic.TopicId" asp-route-postId="@topic.TopicLastPostId">@HttpUtility.HtmlDecode(topic.TopicTitle)</a>
+                        }
+                        <span>
+                            &nbsp;Scris:
+                            <script>
+                                writeDate("@topic.LastPostTime?.ToString("o")", "@UserDateFormat");
+                            </script>
+                        </span>
+                    }
                     <br />
-                    @await Html.PartialAsync("_PaginationPartial", topic.Pagination, ViewData)
+                    @if (Model.Mode != ViewForumMode.Drafts)
+                    {
+                        @await Html.PartialAsync("_PaginationPartial", topic.Pagination, ViewData)
+                    }
                 </span>
-                @await Html.PartialAsync(
-                     "_SummaryPartial",
-                     new CustomPartials._SummaryPartialModel(topic.TopicLastPosterId, topic.TopicLastPosterName, topic.TopicLastPosterColour, topic.LastPostTime, topic.TopicId.Value,
-                         UserDateFormat, false, null,
-                         topic.TopicLastPostId == null ? null : $"./ViewTopic?postId={topic.TopicLastPostId}&handler=ByPostId",
-                         topic.TopicLastPostId == null ? null : "&#x1F4C3;",
-                         topic.TopicLastPostId == null ? null : "Vezi ultimul mesaj",
-                         false, true, topic.PostCount, topic.ViewCount
-                     )
-                 )
+                @if (Model.Mode != ViewForumMode.Drafts)
+                {
+                    @await Html.PartialAsync(
+                        "_SummaryPartial",
+                        new CustomPartials._SummaryPartialModel(topic.TopicLastPosterId, topic.TopicLastPosterName, topic.TopicLastPosterColour, topic.LastPostTime, topic.TopicId.Value,
+                            UserDateFormat, false, null,
+                            topic.TopicLastPostId == null ? null : $"./ViewTopic?postId={topic.TopicLastPostId}&handler=ByPostId",
+                            topic.TopicLastPostId == null ? null : "&#x1F4C3;",
+                            topic.TopicLastPostId == null ? null : "Vezi ultimul mesaj",
+                            false, true, topic.PostCount, topic.ViewCount
+                        )
+                    );
+                }
             </div>
             isFirst = false;
         }
@@ -275,31 +314,34 @@ else
         lastTopicType = topicGroup?.TopicType ?? TopicType.Normal;
     }
 
-    if (Model.IsNewPostView || Model.IsOwnPostView)
+    if (Model.Mode != ViewForumMode.Forum)
     {
-        var view = Model.IsNewPostView ? "new" : "own";
         @await Html.PartialAsync(
             "_PaginationControlsPartial",
             new CustomPartials._PaginationControlsPartialModel(
                 paginator: Model.Paginator,
-                allowPaginationChange: true,
-                back: $"/ViewForum?handler={view}Posts&pageNum={(Model.PageNum ?? 1) - 1}",
-                forward: $"/ViewForum?handler={view}Posts&pageNum={(Model.PageNum ?? 1) + 1}",
+                allowPaginationChange: false,
+                back: $"/ViewForum?handler={handler}&pageNum={(Model.PageNum ?? 1) - 1}",
+                forward: $"/ViewForum?handler={handler}&pageNum={(Model.PageNum ?? 1) + 1}",
                 includeEasyNavigation: true
             ),
             ViewData
         );
     }
 }
-else if (Model.IsNewPostView)
+else if (Model.Mode == ViewForumMode.NewPosts)
 {
     <h4>Nu există mesaje noi.</h4>
 }
-else if (Model.IsOwnPostView)
+else if (Model.Mode == ViewForumMode.OwnPosts)
 {
     <h4>Nu ai scris nici un mesaj în nici un topic până acum.</h4>
 }
-@if (!IsAnonymous && !Model.IsNewPostView && !Model.IsOwnPostView)
+else if (Model.Mode == ViewForumMode.Drafts)
+{
+    <h4>Nu ai nici un mesaj în lucru.</h4>
+}
+@if (!IsAnonymous && Model.Mode == ViewForumMode.Forum)
 {
     <button onclick="location.href='/Posting?forumId=@Model.ForumId&handler=newTopic'" type="button">
         &#x1F4DD;&nbsp;Deschide un subiect nou
@@ -308,13 +350,16 @@ else if (Model.IsOwnPostView)
 
 <p></p>
 <div style="clear:both">
-    <a href="/">Prima pagină</a> |
-    @if ((Model.ParentForumId ?? 0) != 0 && !Model.IsNewPostView && !Model.IsOwnPostView)
+    <a href="/" class="nowrap">Prima pagină</a>
+    <span class="bullet">&nbsp;&bull;&nbsp;</span>
+    <div class="newline"></div>
+    @if ((Model.ParentForumId ?? 0) != 0 /*&& !Model.IsNewPostView && !Model.IsOwnPostView*/)
     {
-        <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@HttpUtility.HtmlDecode(Model.ParentForumTitle)</a>
-        <span> | </span>
+        <span>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@HttpUtility.HtmlDecode(Model.ParentForumTitle)</a></span>
+        <span class="bullet">&nbsp;&bull;&nbsp;</span>
+        <div class="newline"></div>
     }
-    <span onclick="showForumTree(this)" class="SpanLikeLink">Alege destinația</span>
+    <span onclick="showForumTree(this)" class="SpanLikeLink nowrap">Alege destinația</span>
 </div>
 <p></p>
 <div id="forumTree" style=" display:none">

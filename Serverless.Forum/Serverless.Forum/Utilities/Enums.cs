@@ -1,4 +1,6 @@
-﻿namespace Serverless.Forum.Utilities
+﻿using System;
+
+namespace Serverless.Forum.Utilities
 {
     public enum UserInactiveReason
     {
@@ -134,5 +136,14 @@
         RegistrationDateDesc,
         LastActiveDateAsc,
         LastActiveDateDesc
+    }
+
+    [Flags]
+    public enum ViewForumMode
+    {
+        OwnPosts,
+        NewPosts,
+        Drafts,
+        Forum = ~OwnPosts & ~NewPosts & ~Drafts
     }
 }

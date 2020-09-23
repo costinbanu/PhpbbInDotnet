@@ -47,8 +47,8 @@ namespace Serverless.Forum.Pages
 
         public bool IsDestinationConfirmation { get; private set; } = false;
 
-        public ConfirmModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, Utils utils, IConfiguration config)
-            : base(context, forumService, userService, cacheService, config) 
+        public ConfirmModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, Utils utils, IConfiguration config, AnonymousSessionCounter sessionCounter)
+            : base(context, forumService, userService, cacheService, config, sessionCounter) 
         {
             _utils = utils;
         }

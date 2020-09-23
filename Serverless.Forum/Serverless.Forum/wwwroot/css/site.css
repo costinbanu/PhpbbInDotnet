@@ -452,6 +452,10 @@ label {
     height: 1px;
 }
 
+.nowrap {
+    white-space: nowrap !important;
+}
+
 @media (max-width: 768px) {
     .headerImg {
         width: 128px;

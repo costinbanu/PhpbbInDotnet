@@ -41,8 +41,9 @@ namespace Serverless.Forum.Pages
         public IEnumerable<PhpbbGroups> GroupList { get; private set; }
         public bool SearchWasPerformed { get; private set; }
 
-        public MemberListModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, Utils utils, IConfiguration config, WritingToolsService writingService) 
-            : base (context, forumService, userService, cacheService, config) 
+        public MemberListModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, Utils utils, 
+            IConfiguration config, WritingToolsService writingService, AnonymousSessionCounter sessionCounter) 
+            : base (context, forumService, userService, cacheService, config, sessionCounter) 
         {
             _utils = utils;
             _writingService = writingService;
@@ -61,7 +62,7 @@ namespace Serverless.Forum.Pages
         }
 
         public async Task<IActionResult> OnGetSetMode()
-            => await WithRegisteredUser(async () =>
+            => await WithRegisteredUser(async (_) =>
             {
                 using var connection = _context.Database.GetDbConnection();
                 await connection.OpenIfNeeded();

@@ -24,6 +24,7 @@
     <PackageReference Include="Crc32.NET" Version="1.2.0" />
     <PackageReference Include="CryptSharp.Core" Version="1.0.0" />
     <PackageReference Include="Dapper" Version="2.0.35" />
+    <PackageReference Include="DeviceDetector.NET.NetCore" Version="3.9.2.2" />
     <PackageReference Include="Diacritics" Version="2.1.20036.1" />
     <PackageReference Include="JW.Pager" Version="1.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Formatters.Json" Version="2.2.0" />

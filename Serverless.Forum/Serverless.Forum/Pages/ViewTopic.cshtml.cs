@@ -106,9 +106,9 @@ namespace Serverless.Forum.Pages
         private readonly ModeratorService _moderatorService;
         private readonly WritingToolsService _writingToolsService;
 
-        public ViewTopicModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService,
-            Utils utils, PostService postService, ModeratorService moderatorService, WritingToolsService writingToolsService, IConfiguration config)
-            : base(context, forumService, userService, cacheService, config)
+        public ViewTopicModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, Utils utils, PostService postService, 
+            ModeratorService moderatorService, WritingToolsService writingToolsService, IConfiguration config, AnonymousSessionCounter sessionCounter)
+            : base(context, forumService, userService, cacheService, config, sessionCounter)
         {
             _utils = utils;
             _postService = postService;
@@ -225,15 +225,14 @@ namespace Serverless.Forum.Pages
         }
 
         public async Task<IActionResult> OnPostPagination(int topicId, int userPostsPerPage, int? postId)
-            => await WithRegisteredUser(async () =>
+            => await WithRegisteredUser(async (user) =>
             {
                 async Task save(ForumDbContext localContext)
                 {
                     await localContext.SaveChangesAsync();
                     await ReloadCurrentUser();
                 }
-                var usrId = (await GetCurrentUserAsync()).UserId;
-                var curValue = await _context.PhpbbUserTopicPostNumber.FirstOrDefaultAsync(ppp => ppp.UserId == usrId && ppp.TopicId == topicId);
+                var curValue = await _context.PhpbbUserTopicPostNumber.FirstOrDefaultAsync(ppp => ppp.UserId == user.UserId && ppp.TopicId == topicId);
 
                 if (curValue == null)
                 {
@@ -263,13 +262,12 @@ namespace Serverless.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostVote(int topicId, int[] votes, string queryString)
-            => await WithRegisteredUser(async () => await WithValidTopic(topicId, async (_, topic) =>
+            => await WithRegisteredUser(async (user) => await WithValidTopic(topicId, async (_, topic) =>
             {
-                var usrId = (await GetCurrentUserAsync()).UserId;
                 using var conn = _context.Database.GetDbConnection();
                 await conn.OpenIfNeeded();
 
-                var existingVotes = (await conn.QueryAsync<PhpbbPollVotes>("SELECT * FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @usrId", new { topicId, usrId })).AsList();
+                var existingVotes = (await conn.QueryAsync<PhpbbPollVotes>("SELECT * FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @UserId", new { topicId, user.UserId })).AsList();
                 if (existingVotes.Count > 0 && topic.PollVoteChange == 0)
                 {
                     ModelState.AddModelError(nameof(Poll), "Votul nu poate fi schimbat!");
@@ -284,8 +282,8 @@ namespace Serverless.Forum.Pages
                                     where j == default
                                     select prev.PollOptionId;
                 await conn.ExecuteAsync(
-                    "DELETE FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @usrId AND poll_option_id IN @noLongerVoted",
-                    new { topicId, usrId, noLongerVoted = noLongerVoted.DefaultIfEmpty() }
+                    "DELETE FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @UserId AND poll_option_id IN @noLongerVoted",
+                    new { topicId, user.UserId, noLongerVoted = noLongerVoted.DefaultIfEmpty() }
                 );
                 foreach (var vote in noLongerVoted)
                 {
@@ -306,8 +304,8 @@ namespace Serverless.Forum.Pages
                 foreach (var vote in newVotes)
                 {
                     await conn.ExecuteAsync(
-                        "INSERT INTO phpbb_poll_votes (topic_id, poll_option_id, vote_user_id, vote_user_ip) VALUES (@topicId, @vote, @usrId, @usrIp)",
-                        new { topicId, vote, usrId, usrIp = HttpContext.Connection.RemoteIpAddress.ToString() }
+                        "INSERT INTO phpbb_poll_votes (topic_id, poll_option_id, vote_user_id, vote_user_ip) VALUES (@topicId, @vote, @UserId, @usrIp)",
+                        new { topicId, vote, user.UserId, usrIp = HttpContext.Connection.RemoteIpAddress.ToString() }
                     );
                     await conn.ExecuteAsync(
                         "UPDATE phpbb_poll_options SET poll_option_total = poll_option_total + 1 WHERE topic_id = @topicId AND poll_option_id = @vote",
@@ -358,7 +356,7 @@ namespace Serverless.Forum.Pages
             => await WithModerator(async () => await ModeratePosts());
 
         public async Task<IActionResult> OnPostDeleteMyMessage()
-            => await WithRegisteredUser(async () =>
+            => await WithRegisteredUser(async (user) =>
             {
                 if (await IsCurrentUserModeratorHere())
                 {
@@ -378,8 +376,7 @@ namespace Serverless.Forum.Pages
                     return await OnGet();
                 }
 
-                var CurrentUser = await GetCurrentUserAsync();
-                if (!(toDelete.PosterId == CurrentUser.UserId && (CurrentUser.PostEditTime == 0 || DateTime.UtcNow.Subtract(toDelete.PostTime.ToUtcTime()).TotalMinutes <= CurrentUser.PostEditTime)))
+                if (!(toDelete.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(toDelete.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime)))
                 {
                     ModelState.AddModelError(nameof(PostIdsForModerator), "Mesajul nu poate fi șters deoarece a expirat timul limită de modificare a mesajelor!");
                     return await OnGet();
@@ -389,12 +386,12 @@ namespace Serverless.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostReportMessage(int? reportPostId, short? reportReasonId, string reportDetails)
-            => await WithRegisteredUser(async () =>
+            => await WithRegisteredUser(async (user) =>
             {
                 var result = await _context.PhpbbReports.AddAsync(new PhpbbReports
                 {
                     PostId = reportPostId.Value,
-                    UserId = (await GetCurrentUserAsync()).UserId,
+                    UserId = user.UserId,
                     ReasonId = reportReasonId.Value,
                     ReportText = _writingToolsService.PrepareTextForSaving(reportDetails),
                     ReportTime = DateTime.UtcNow.ToUnixTimestamp(),
