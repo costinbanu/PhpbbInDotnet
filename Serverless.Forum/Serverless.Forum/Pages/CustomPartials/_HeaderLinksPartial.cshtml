@@ -1,8 +1,6 @@
 ﻿@model Serverless.Forum.Pages.CustomPartials._HeaderLinksPartialModel
-@using System.Web
 
 <span class="Show1300">
-    &#x1F3C3;&nbsp;
     <a href="javascript:showElement('headerLinks');">Scurtături</a>
 </span>
 <ul class="Shortcuts Hide1300" id="headerLinks">
@@ -10,23 +8,20 @@
         <span class="Show1300">&nbsp; &nbsp; </span>
         <a asp-page="ViewForum" asp-page-handler="ownPosts" class="nowrap">Vezi subiectele proprii</a>
     </li>
-    @*<span class="bullet">&nbsp;&bull;&nbsp;</span>
-        <div class="newline"></div>*@
     <li>
         <span class="Show1300">&nbsp; &nbsp; </span>
         <a asp-page="ViewForum" asp-page-handler="newPosts" class="nowrap">Vezi mesajele noi</a>
     </li>
-    @*<span class="bullet">&nbsp;&bull;&nbsp;</span>
-        <div class="newline"></div>*@
     <li>
         <span class="Show1300">&nbsp; &nbsp; </span>
         <a asp-page="ViewForum" asp-page-handler="drafts" class="nowrap">Vezi mesajele în lucru</a>
     </li>
-    @if ((Model.ParentForumId ?? 0) != 0 && !string.IsNullOrWhiteSpace(Model.ParentForumTitle))
+    @foreach (var elem in Model.ExtraElements ?? Enumerable.Empty<string>())
     {
-        @*<span class="bullet">&nbsp;&bull;&nbsp;</span>
-            <div class="newline"></div>*@
-        @*<li>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@HttpUtility.HtmlDecode(Model.ParentForumTitle)</a></li>*@
+        <li>
+            <span class="Show1300">&nbsp; &nbsp; </span>
+            @Html.Raw(elem)
+        </li>
     }
 </ul>
 <p></p>

@@ -6,7 +6,7 @@
     var UserDateFormat = usr?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
 }
 
-<a href="javascript:showElement('metrouusorLinks');" class="Show1300">Site-urile „MetrouUșor”</a>
+<a href="javascript:showElement('metrouusorLinks');showElement('bullet');" class="Show1300">Site-urile „MetrouUșor”</a>
 <ul class="Shortcuts Hide1300" id="metrouusorLinks">
     <li>
         <span class="Show1300">&nbsp; &nbsp; </span>
@@ -40,19 +40,15 @@
 
 @if (!usr.IsAnonymous)
 {
+    <span class="Show1300" id="bullet">&nbsp;&bull;&nbsp;</span>
+    @await Html.PartialAsync(
+        "_HeaderLinksPartial",
+        new Serverless.Forum.Pages.CustomPartials._HeaderLinksPartialModel("<a href=\"javascript:MarkForumsRead.submit()\">Marchează forumurile ca citite</a>"),
+        ViewData
+    )
     <form asp-page-handler="MarkForumsRead" method="post" name="MarkForumsRead">
         @Html.AntiForgeryToken()
     </form>
-    @*<div class="linksContainer">*@
-    @await Html.PartialAsync(
-        "_HeaderLinksPartial",
-        new Serverless.Forum.Pages.CustomPartials._HeaderLinksPartialModel(),
-        ViewData
-    )
-    @*<span class="bullet">&nbsp;&bull;&nbsp;</span>
-            <div class="newline"></div>
-            <a href="javascript:MarkForumsRead.submit()">Marchează forumurile ca citite</a>
-        </div>*@
 }
 @await Html.PartialAsync(
     "_ForumDisplayPartial",

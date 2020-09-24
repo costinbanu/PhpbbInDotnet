@@ -150,8 +150,7 @@ h3 {
 }
 
 .Highlight {
-    border: solid 2px #87ceeb;
-    border-radius: 3px;
+    background-color: #e8f5fc !important;
 }
 
 .Category {
@@ -550,7 +549,7 @@ label {
     }
 
     .Show1300 {
-        display: inline-block;
+        display: unset;
     }
 
     .Shortcuts li:after {

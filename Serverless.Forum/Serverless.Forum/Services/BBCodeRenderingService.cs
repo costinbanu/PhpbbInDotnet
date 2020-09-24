@@ -152,7 +152,20 @@ namespace Serverless.Forum.Services
             }
 
             bbCodeText = CensorWords(bbCodeText, _bannedWords);
-            bbCodeText = HttpUtility.HtmlDecode(_parser.ToHtml(bbCodeText, bbCodeUid ?? string.Empty));
+            string html = bbCodeText;
+            try
+            {
+                html = _parser.ToHtml(bbCodeText, bbCodeUid ?? string.Empty);
+            }
+            catch(Exception ex)
+            {
+                if (!string.IsNullOrWhiteSpace(bbCodeUid))
+                {
+                    html = html.Replace($":{bbCodeUid}", string.Empty);
+                }
+                _utils.HandleError(ex, $"Error parsing bbcode text '{bbCodeText}'");
+            }
+            bbCodeText = HttpUtility.HtmlDecode(html);
             bbCodeText = _htmlCommentRegex.Replace(bbCodeText, string.Empty);
             bbCodeText = bbCodeText.Replace("{SMILIES_PATH}", Constants.SMILEY_PATH);
             bbCodeText = bbCodeText.Replace("\t", _utils.HtmlSafeWhitespace(4));

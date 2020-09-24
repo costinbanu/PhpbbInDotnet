@@ -60,7 +60,7 @@
 {
     @await Html.PartialAsync(
         "_HeaderLinksPartial",
-        new Serverless.Forum.Pages.CustomPartials._HeaderLinksPartialModel(Model.ForumId ?? 0, Model.ForumTitle),
+        new Serverless.Forum.Pages.CustomPartials._HeaderLinksPartialModel(),
         ViewData
     )
     <div>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(Model.ForumTitle)</a></div>
@@ -159,10 +159,7 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
         }
     }
 }
-@*@if (Model.Paginator.Pagination.HasPages)
-{
-    <hr />
-}*@
+
 @await Html.PartialAsync(
     "_PaginationControlsPartial",
     new CustomPartials._PaginationControlsPartialModel(
@@ -176,7 +173,6 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
     ),
     ViewData
 )
-@*<hr />*@
 @{
     var index = 0;
     var reachedAnUnreadPost = false;

@@ -50,11 +50,11 @@
     </script>
 }
 
-@if ((Model.ParentForumId ?? 0) != 0 /*&& !Model.IsNewPostView && !Model.IsOwnPostView*/)
+@if ((Model.ParentForumId ?? 0) != 0)
 {
     @await Html.PartialAsync(
         "_HeaderLinksPartial",
-        new Serverless.Forum.Pages.CustomPartials._HeaderLinksPartialModel(Model.ParentForumId ?? 0, Model.ParentForumTitle),
+        new Serverless.Forum.Pages.CustomPartials._HeaderLinksPartialModel(),
         ViewData
     )
     <div>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@HttpUtility.HtmlDecode(Model.ParentForumTitle)</a></div>
@@ -353,7 +353,7 @@ else if (Model.Mode == ViewForumMode.Drafts)
     <a href="/" class="nowrap">Prima pagină</a>
     <span class="bullet">&nbsp;&bull;&nbsp;</span>
     <div class="newline"></div>
-    @if ((Model.ParentForumId ?? 0) != 0 /*&& !Model.IsNewPostView && !Model.IsOwnPostView*/)
+    @if ((Model.ParentForumId ?? 0) != 0)
     {
         <span>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@HttpUtility.HtmlDecode(Model.ParentForumTitle)</a></span>
         <span class="bullet">&nbsp;&bull;&nbsp;</span>
