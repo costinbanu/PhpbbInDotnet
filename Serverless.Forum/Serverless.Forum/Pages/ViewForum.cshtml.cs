@@ -35,6 +35,9 @@ namespace Serverless.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public int? PageNum { get; set; }
 
+        [BindProperty]
+        public int[] SelectedDrafts { get; set; }
+
         public ViewForumModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, IConfiguration config, AnonymousSessionCounter sessionCounter)
             : base(context, forumService, userService, cacheService, config, sessionCounter) { }
 
@@ -216,5 +219,14 @@ namespace Serverless.Forum.Pages
                  _forceTreeRefresh = true;
                  return await OnGet();
              }));
+
+        public async Task<IActionResult> OnPostDeleteDrafts()
+            => await WithRegisteredUser(async (_) =>
+            {
+                using var connection = _context.Database.GetDbConnection();
+                await connection.OpenIfNeeded();
+                await connection.ExecuteAsync("DELETE FROM phpbb_drafts WHERE draft_id IN @ids", new { ids = SelectedDrafts?.DefaultIfEmpty() ?? new[] { 0 } });
+                return await OnGetDrafts();
+            });
     }
 }

@@ -27,6 +27,10 @@
     <input asp-for="ForumId" type="hidden" value="@Model.ForumId" />
     @Html.AntiForgeryToken()
 </form>
+<form asp-page-handler="DeleteDrafts" method="post" id="DeleteDrafts" name="DeleteDrafts">
+    <input asp-for="ForumId" type="hidden" value="@Model.ForumId" />
+    @Html.AntiForgeryToken()
+</form>
 
 <script>
     //forum tree callback
@@ -243,6 +247,10 @@ else
             previousIsUnread = topic.Unread;
             var divClass = topic.Unread ? "FlexRow Unread RowMargin" : "FlexRow RowMargin";
             <div class="@divClass">
+                @if (Model.Mode == ViewForumMode.Drafts)
+                {
+                    <input name="SelectedDrafts" type="checkbox" value="@topic.DraftId" form="DeleteDrafts" />
+                }
                 <span class="ForumContent">
                     @if (Model.Mode != ViewForumMode.Forum)
                     {
@@ -275,7 +283,7 @@ else
                     {
                         if ((topic.TopicId ?? 0) == 0)
                         {
-                            <a asp-page="/Posting" asp-page-handler="newTopic" asp-route-forumId="@topic.ForumId">Subiect nou: @HttpUtility.HtmlDecode(topic.TopicTitle)</a>
+                            <a asp-page="/Posting" asp-page-handler="newTopic" asp-route-forumId="@topic.ForumId" style="white-space:nowrap">Subiect nou: @HttpUtility.HtmlDecode(topic.TopicTitle)</a>
                         }
                         else
                         {
@@ -312,6 +320,20 @@ else
         }
 
         lastTopicType = topicGroup?.TopicType ?? TopicType.Normal;
+    }
+
+    if (Model.Mode == ViewForumMode.Drafts)
+    {
+        <hr />
+        <script>
+            function selectAll() {
+                var checkboxes = $('input[type=checkbox]');
+                checkboxes.prop('checked', !checkboxes.prop('checked'));
+            }
+        </script>
+        <a href="javascript:selectAll()">Selectează toate mesajele</a>
+        <br />
+        <input type="submit" value="Șterge mesajele selectate" form="DeleteDrafts" onclick="return confirm('Ești sigur că dorești ștergerea mesajelor în lucru selectate?');" />
     }
 
     if (Model.Mode != ViewForumMode.Forum)
@@ -379,4 +401,3 @@ else if (Model.Mode == ViewForumMode.Drafts)
         <input type="submit" value="Du-te" />
     </form>
 </div>
-

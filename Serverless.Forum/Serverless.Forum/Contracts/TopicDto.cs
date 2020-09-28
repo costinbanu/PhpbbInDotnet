@@ -7,6 +7,8 @@ namespace Serverless.Forum.Pages
 {
     public class TopicDto
     {
+        public int? DraftId { get; set; } = null;
+
         public int? TopicId { get; set; } = null;
 
         public int? ForumId { get; set; } = null;

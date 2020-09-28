@@ -114,7 +114,7 @@ namespace Serverless.Forum.Pages
 
             var userMustLogIn = false;
 
-            if (dbUser.UsernameClean != _utils.CleanString(CurrentUser.Username))
+            if (await IsCurrentUserAdminHere() && dbUser.UsernameClean != _utils.CleanString(CurrentUser.Username) && !string.IsNullOrWhiteSpace(CurrentUser.Username))
             {
                 dbUser.Username = CurrentUser.Username;
                 dbUser.UsernameClean = _utils.CleanString(CurrentUser.Username);

@@ -150,7 +150,7 @@ h3 {
 }
 
 .Highlight {
-    background-color: #e8f5fc !important;
+    background-color: #e8f5fc;
 }
 
 .Category {
@@ -330,6 +330,9 @@ label {
 
 .Shortcuts {
     padding-left: 0px !important;
+    list-style: disc;
+    line-height: 1.75em;
+    word-break: break-all !important;
 }
 
     .Shortcuts li {
@@ -337,13 +340,15 @@ label {
         white-space: nowrap;
     }
 
-        .Shortcuts li:after {
-            content: " \2022 ";
-        }
-
         .Shortcuts li:last-child:after {
             content: none;
         }
+
+        .Shortcuts li:after {
+            content: "\A";
+            white-space: pre;
+        }
+
 
 .Hide1300 {
     display: inline-block;
@@ -552,7 +557,7 @@ label {
         display: unset;
     }
 
-    .Shortcuts li:after {
+    /*.Shortcuts li:after {
         content: "\A";
         white-space: pre;
     }
@@ -561,7 +566,7 @@ label {
         list-style: disc;
         line-height: 1.75em;
         word-break: break-all !important;
-    }
+    }*/
 
     .CollapsedActions {
         display: inline-block;

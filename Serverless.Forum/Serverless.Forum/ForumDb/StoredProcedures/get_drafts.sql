@@ -5,7 +5,8 @@ BEGIN
     SET @take = COALESCE (take_parm, 14);
     
     SET @sql = concat(
-		"SELECT d.topic_id, 
+		"SELECT  d.draft_id,
+				 d.topic_id, 
 				 d.forum_id,
 				 d.draft_subject as topic_title,
 				 d.save_time as topic_last_post_time,

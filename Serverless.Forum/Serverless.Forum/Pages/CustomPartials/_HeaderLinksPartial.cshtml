@@ -1,25 +1,25 @@
 ﻿@model Serverless.Forum.Pages.CustomPartials._HeaderLinksPartialModel
 
-<span class="Show1300">
+<span>
     <a href="javascript:showElement('headerLinks');">Scurtături</a>
 </span>
-<ul class="Shortcuts Hide1300" id="headerLinks">
+<ul class="Shortcuts" style="display:none" id="headerLinks">
     <li>
-        <span class="Show1300">&nbsp; &nbsp; </span>
+        <span>&nbsp; &nbsp; </span>
         <a asp-page="ViewForum" asp-page-handler="ownPosts" class="nowrap">Vezi subiectele proprii</a>
     </li>
     <li>
-        <span class="Show1300">&nbsp; &nbsp; </span>
+        <span>&nbsp; &nbsp; </span>
         <a asp-page="ViewForum" asp-page-handler="newPosts" class="nowrap">Vezi mesajele noi</a>
     </li>
     <li>
-        <span class="Show1300">&nbsp; &nbsp; </span>
+        <span>&nbsp; &nbsp; </span>
         <a asp-page="ViewForum" asp-page-handler="drafts" class="nowrap">Vezi mesajele în lucru</a>
     </li>
     @foreach (var elem in Model.ExtraElements ?? Enumerable.Empty<string>())
     {
         <li>
-            <span class="Show1300">&nbsp; &nbsp; </span>
+            <span>&nbsp; &nbsp; </span>
             @Html.Raw(elem)
         </li>
     }
