@@ -16,7 +16,7 @@
 @{
     var categoriesShown = false;
     bool isFirst;
-    bool previousIsUnread;
+    bool previousIsUnread = false;
     foreach (var category in Model.Categories)
     {
         if (category.IsRestricted)
@@ -75,8 +75,9 @@
 
     @if (Model.ShowTitle && Model.SubForums.Any(x => !x.IsRestricted))
     {
-        @if (categoriesShown)
+        @if (categoriesShown && !previousIsUnread)
         {
+            <hr class="BoxSeparator" />
             <p>&nbsp;</p>
         }
         <h3 style="float:left">Forumuri</h3>

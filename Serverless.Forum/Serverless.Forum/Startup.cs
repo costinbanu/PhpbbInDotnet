@@ -11,11 +11,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PaulMiami.AspNetCore.Mvc.Recaptcha;
+using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.Services;
 using Serverless.Forum.Utilities;
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -163,7 +165,9 @@ namespace Serverless.Forum
                         }
                         else
                         {
-                            await context.Response.WriteAsync($"A intervenit o eroare. ID: {utils.HandleError(handler.Error, $"Path: {handler.Path}")}.");
+                            var user = await utils.DecompressObject<LoggedUser>(Convert.FromBase64String(context.User?.Claims?.FirstOrDefault()?.Value ?? string.Empty));
+                            var id = utils.HandleError(handler.Error, $"Path: {handler.Path} ({context.Request.Path}{context.Request.QueryString}). User: {user}.");
+                            await context.Response.WriteAsync($"A intervenit o eroare. ID: {id}");
                         }
                     });
                 });

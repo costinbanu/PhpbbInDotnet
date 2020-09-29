@@ -21,6 +21,7 @@
 
     var CurrentUser = await Model.GetCurrentUserAsync();
     var UserDateFormat = CurrentUser.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+    var IsPM = Model.Action == PostingActions.NewPrivateMessage || Model.Action == PostingActions.EditPrivateMessage;
     if (!DateTime.TryParse(DateTime.Now.ToString(UserDateFormat), out var _))
     {
         UserDateFormat = "dddd, dd.MM.yyyy, HH:mm";
@@ -90,36 +91,25 @@ else if (Model.Action == PostingActions.NewTopic)
         <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(Model.CurrentForum.ForumName)</a>
     </h3>
 }
-else if (Model.Action == PostingActions.NewPrivateMessage)
+else if (IsPM)
 {
     <h3>Scrie un mesaj privat nou:</h3>
 }
-@if (!string.IsNullOrWhiteSpace(Model.CurrentForum?.ForumRules))
-{
-    <div style="background-color: #ECD5D8; color: #BC2A4D; padding: 10px">
-        <span>&#x26A0;&nbsp;</span>
-        <b>Reguli forum</b>
-        <br />
-        @Html.Raw(_renderingService.BbCodeToHtml(Model.CurrentForum?.ForumRules, Model.CurrentForum?.ForumRulesUid))
-    </div>
-    <p></p>
-}
-else if (!string.IsNullOrWhiteSpace(Model.CurrentForum?.ForumRulesLink))
-{
-    <div style="background-color: #ECD5D8; color: #BC2A4D; padding: 10px">
-        <a href="@_utils.TransformSelfLinkToBetaLink(HttpUtility.HtmlDecode(Model.CurrentForum?.ForumRulesLink))">
-            &#x26A0;&nbsp;
-            <b>Reguli forum</b>
-        </a>
-    </div>
-    <p></p>
-}
+
+@await Html.PartialAsync("_RulesPartial", new CustomPartials._RulesPartialModel(_renderingService, _utils, Model.CurrentForum?.ForumRules, Model.CurrentForum?.ForumRulesUid, Model.CurrentForum?.ForumRulesLink), ViewData)
+
 <form name="postform" method="post" enctype="multipart/form-data">
     @if (Model.Action == PostingActions.NewPrivateMessage)
     {
-        <input type="text" asp-for="ReceiverName" placeholder="Alege destinatar..." id="pmToInput" class="PostInputWidth" autocomplete="off" />
-        <p id="tributeHolder" style="position:relative">&nbsp;</p>
-        <span asp-validation-for="ReceiverName" class="validation"></span><br />
+        <input type="text" asp-for="ReceiverName" placeholder="Alege destinatar..." id="pmToInput" style="width:100%" autocomplete="off" />
+        <p id="tributeHolder" style="position:relative"></p>
+        <span asp-validation-for="ReceiverName" class="validation"></span>
+    }
+    else if (Model.Action == PostingActions.EditPrivateMessage)
+    {
+        <input type="text" asp-for="ReceiverName" style="width:100%" disabled />
+        <p></p>
+        <span asp-validation-for="ReceiverName" class="validation"></span>
     }
     <input asp-for="PostTitle" type="text" id="subject" size="45" maxlength="256" tabindex="2" class="InputBox" placeholder="Subiect" style="width:100%" />
     <br />
@@ -187,7 +177,7 @@ else if (!string.IsNullOrWhiteSpace(Model.CurrentForum?.ForumRulesLink))
         Includerea imaginilor mai mari de 2MB nu este permisă, indiferent dacă sunt găzduite local sau extern. De asemenea, numerele de înmatriculare ale vehiculelor particulare surprinse in imagini trebuie ascunse.
         Utilizați <a href="https://procesorimagini.metrouusor.com/" target="_blank">procesorul de imagini „Metrou Ușor”</a> pentru a redimensiona imagini și a ascunde numere de înmatriculare.
     </p>
-    @if (Model.Action != PostingActions.NewPrivateMessage)
+    @if (!IsPM)
     {
         <button onclick="posting.toggleAttach()" type="button" class="PostingButton">&#128206; Fișiere atașate</button>
     }
@@ -209,6 +199,7 @@ else if (!string.IsNullOrWhiteSpace(Model.CurrentForum?.ForumRulesLink))
             <b><input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="EditForumPost" class="PostingButton" /></b>
             break;
         case PostingActions.NewPrivateMessage:
+        case PostingActions.EditPrivateMessage:
             <b><input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="PrivateMessage" class="PostingButton" /></b>
             break;
         default:
@@ -281,12 +272,15 @@ else if (!string.IsNullOrWhiteSpace(Model.CurrentForum?.ForumRulesLink))
     <input asp-for="TopicId" type="hidden" />
     <input asp-for="PostId" type="hidden" />
     <input asp-for="ReceiverId" type="hidden" id="pmTo" />
-    <input type="hidden" asp-for="PageNum" />
-    <input type="hidden" asp-for="Action" />
-    <input type="hidden" asp-for="CurrentTopic.TopicFirstPostId" />
-    <input type="hidden" asp-for="CurrentTopic.TopicTitle" />
-    <input type="hidden" asp-for="LastPostTime" id="lastPostTime" />
-    @if (Model.Action != PostingActions.NewPrivateMessage)
+    <input asp-for="PageNum" type="hidden" />
+    <input asp-for="Action" type="hidden" />
+    <input asp-for="CurrentTopic.TopicFirstPostId" type="hidden" />
+    <input asp-for="CurrentTopic.TopicTitle" type="hidden" />
+    <input asp-for="LastPostTime" type="hidden" id="lastPostTime" />
+    <input asp-for="PrivateMessageId" type="hidden" />
+    <input asp-for="ReceiverId" type="hidden" />
+    <input asp-for="ReceiverName" type="hidden" />
+    @if (!IsPM)
     {
         <div id="attachPanel" style="display:@(Model.ShowAttach ? "block" : "none")" class="PostInputWidth">
             <br />

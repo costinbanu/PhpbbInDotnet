@@ -330,6 +330,7 @@ namespace Serverless.Forum.Pages
                 "DELETE FROM forum.phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId",
                 new { usr.UserId, forumId = ForumId, topicId = Action == PostingActions.NewTopic ? 0 : TopicId }
             );
+            await _cacheService.RemoveFromCache(await GetActualCacheKey("Text", true));
             return post.PostId;
         }
 
@@ -355,6 +356,27 @@ namespace Serverless.Forum.Pages
             ModelState.AddModelError(errorKey, errorMessage);
             CurrentForum = curForum;
             return Page();
+        }
+
+        private async Task<IActionResult> WithCachedText(Func<Task<IActionResult>> toDo)
+        {
+            await _cacheService.SetInCache(await GetActualCacheKey("Text", true), new CachedText { Text = PostText, CacheTime = DateTime.UtcNow });
+            return await toDo();
+        }
+
+        private async Task RestoreCachedTextIfAny(DateTime? minCacheAge = null)
+        {
+            var cachedText = await _cacheService.GetAndRemoveFromCache<CachedText>(await GetActualCacheKey("Text", true));
+            if (!string.IsNullOrWhiteSpace(cachedText?.Text) && (cachedText?.CacheTime ?? DateTime.MinValue) > (minCacheAge ?? DateTime.UtcNow))
+            {
+                PostText = cachedText.Text;
+            }
+        }
+
+        public class CachedText
+        {
+            public string Text { get; set; }
+            public DateTime CacheTime { get; set; }
         }
     }
 }

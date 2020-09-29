@@ -38,6 +38,7 @@ namespace Serverless.Forum.Pages
                 {
                     PostTitle = $"{Constants.REPLY}{HttpUtility.HtmlDecode(curTopic.TopicTitle)}";
                 }
+                await RestoreCachedTextIfAny(draft?.SaveTime.ToUtcTime());
                 return Page();
             }));
 
@@ -59,7 +60,7 @@ namespace Serverless.Forum.Pages
                 var title = HttpUtility.HtmlDecode(curPost.PostSubject);
                 PostText = $"[quote=\"{curAuthor}\"]\n{_writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid)}\n[/quote]";
                 PostTitle = title.StartsWith(Constants.REPLY) ? title : $"{Constants.REPLY}{title}";
-
+                await RestoreCachedTextIfAny();
                 return Page();
             }));
 
@@ -76,6 +77,7 @@ namespace Serverless.Forum.Pages
                     PostTitle = HttpUtility.HtmlDecode(draft.DraftSubject);
                     PostText = HttpUtility.HtmlDecode(draft.DraftMessage);
                 }
+                await RestoreCachedTextIfAny(draft?.SaveTime.ToUtcTime());
                 return Page();
             }));
 
@@ -115,7 +117,7 @@ namespace Serverless.Forum.Pages
                 PostText = _writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid);
                 PostTitle = HttpUtility.HtmlDecode(curPost.PostSubject);
                 PostTime = curPost.PostTime;
-
+                await RestoreCachedTextIfAny();
                 return Page();
             }));
 
@@ -180,12 +182,27 @@ namespace Serverless.Forum.Pages
                 return Page();
             });
 
+        public async Task<IActionResult> OnGetEditPrivateMessage()
+            => await WithRegisteredUser(async (user) =>
+            {
+                var pm = await _context.PhpbbPrivmsgs.AsNoTracking().FirstOrDefaultAsync(x => x.MsgId == PrivateMessageId);
+                PostText = _writingService.CleanBbTextForDisplay(pm.MessageText, pm.BbcodeUid);
+                PostTitle = HttpUtility.HtmlDecode(pm.MessageSubject);
+                if ((ReceiverId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
+                {
+                    ReceiverName = (await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == ReceiverId)).Username;
+                }
+                Action = PostingActions.EditPrivateMessage;
+                await Init();
+                return Page();
+            });
+
         #endregion GET
 
         #region POST Attachment
 
         public async Task<IActionResult> OnPostAddAttachment()
-            => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, async (curForum) =>
+            => await WithCachedText(async () => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, async (curForum) =>
             {
                 CurrentForum = curForum;
 
@@ -227,10 +244,10 @@ namespace Serverless.Forum.Pages
                 }
                 ModelState.Clear();
                 return Page();
-            }));
+            })));
 
         public async Task<IActionResult> OnPostDeleteAttachment(int index)
-            => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, async (curForum) =>
+            => await WithCachedText(async () => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, async (curForum) =>
             {
                 var attachment = Attachments?.ElementAtOrDefault(index);
                 CurrentForum = curForum;
@@ -262,14 +279,14 @@ namespace Serverless.Forum.Pages
                 ShowAttach = Attachments.Any();
                 ModelState.Clear();
                 return Page();
-            }));
+            })));
 
         #endregion POST Attachment
 
         #region POST Message
 
         public async Task<IActionResult> OnPostPreview()
-            => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, Action == PostingActions.NewPrivateMessage, async (curForum) => await WithNewestPostSincePageLoad(curForum, async () =>
+            => await WithCachedText(async () => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, Action == PostingActions.NewPrivateMessage, async (curForum) => await WithNewestPostSincePageLoad(curForum, async () =>
             {
                 if ((PostTitle?.Trim()?.Length ?? 0) < 3)
                 {
@@ -332,7 +349,7 @@ namespace Serverless.Forum.Pages
                 ShowAttach = Attachments?.Any() ?? false;
                 CurrentForum = curForum;
                 return Page();
-            })));
+            }))));
 
         public async Task<IActionResult> OnPostNewForumPost()
             => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, async (curForum) => await WithNewestPostSincePageLoad(curForum, async () =>
@@ -362,56 +379,31 @@ namespace Serverless.Forum.Pages
             {
                 if ((ReceiverId ?? 1) == 1)
                 {
-                    ModelState.AddModelError(nameof(ReceiverName), "Introduceți un destinatar valid.");
-                    return Page();
+                    return PageWithError(null, nameof(ReceiverName), "Introduceți un destinatar valid.");
                 }
 
                 if ((PostTitle?.Trim()?.Length ?? 0) < 3)
                 {
-                    ModelState.AddModelError(nameof(PostTitle), "Subiectul este prea scurt (minim 3 caractere, exclusiv spații).");
-                    return Page();
+                    return PageWithError(null, nameof(PostTitle), "Subiectul este prea scurt (minim 3 caractere, exclusiv spații).");
                 }
 
                 if ((PostText?.Trim()?.Length ?? 0) < 3)
                 {
-                    ModelState.AddModelError(nameof(PostText), "Mesajul este prea scurt (minim 3 caractere, exclusiv spații).");
-                    return Page();
+                    return PageWithError(null, nameof(PostText), "Mesajul este prea scurt (minim 3 caractere, exclusiv spații).");
                 }
 
-                var (Message, IsSuccess) = await _userService.SendPrivateMessage(user.UserId, ReceiverId.Value, HttpUtility.HtmlEncode(PostTitle), _writingService.PrepareTextForSaving(PostText));
-                if (IsSuccess ?? false)
+                var (Message, IsSuccess) = Action switch
                 {
-                    try
-                    {
-                        using var emailMessage = new MailMessage
-                        {
-                            From = new MailAddress($"admin@metrouusor.com", _config.GetValue<string>("ForumName")),
-                            Subject = $"Ai primit un mesaj privat nou pe {_config.GetValue<string>("ForumName")}",
-                            Body = await _utils.RenderRazorViewToString(
-                                "_NewPMEmailPartial",
-                                new _NewPMEmailPartialModel
-                                {
-                                    SenderName = user.Username
-                                },
-                                PageContext,
-                                HttpContext
-                            ),
-                            IsBodyHtml = true
-                        };
-                        emailMessage.To.Add((await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == ReceiverId.Value)).UserEmail);
-                        await _utils.SendEmail(emailMessage);
-                    }
-                    catch (Exception ex)
-                    {
-                        _utils.HandleError(ex);
-                    }
-                    return RedirectToPage("PrivateMessages", new { show = PrivateMessagesPages.Sent });
-                }
-                else
+                    PostingActions.NewPrivateMessage => await _userService.SendPrivateMessage(user.UserId, user.Username, ReceiverId.Value, HttpUtility.HtmlEncode(PostTitle), _writingService.PrepareTextForSaving(PostText), PageContext, HttpContext),
+                    PostingActions.EditPrivateMessage => await _userService.EditPrivateMessage(PrivateMessageId.Value, HttpUtility.HtmlEncode(PostTitle), _writingService.PrepareTextForSaving(PostText)),
+                    _ => ("Unknown action", false)
+                };
+
+                return IsSuccess switch
                 {
-                    ModelState.AddModelError(nameof(ReceiverName), Message);
-                    return Page();
-                }
+                    true => RedirectToPage("PrivateMessages", new { show = PrivateMessagesPages.Sent }),
+                    _ => PageWithError(null, nameof(PostText), Message)
+                };
             });
 
         public async Task<IActionResult> OnPostSaveDraft()
@@ -449,8 +441,9 @@ namespace Serverless.Forum.Pages
                     draft.SaveTime = DateTime.UtcNow.ToUnixTimestamp();
                 }
                 await _context.SaveChangesAsync();
-
+                await _cacheService.RemoveFromCache(await GetActualCacheKey("Text", true));
                 DraftSavedSuccessfully = true;
+
                 if (Action == PostingActions.NewForumPost)
                 {
                     return await OnGetForumPost();

@@ -1,14 +1,19 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Serverless.Forum.Contracts;
 using Serverless.Forum.ForumDb;
 using Serverless.Forum.ForumDb.Entities;
+using Serverless.Forum.Pages.CustomPartials.Email;
 using Serverless.Forum.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Net.Mail;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -18,6 +23,7 @@ namespace Serverless.Forum.Services
     {
         private readonly Utils _utils;
         private readonly ForumDbContext _context;
+        private readonly IConfiguration _config;
         private IEnumerable<PhpbbAclRoles> _adminRoles;
         private IEnumerable<PhpbbAclRoles> _modRoles;
         private IEnumerable<PhpbbAclRoles> _userRoles;
@@ -25,10 +31,11 @@ namespace Serverless.Forum.Services
         private static PhpbbUsers _anonymousDbUser;
         private static ClaimsPrincipal _anonymousClaimsPrincipal;
 
-        public UserService(Utils utils, ForumDbContext context)
+        public UserService(Utils utils, ForumDbContext context, IConfiguration config)
         {
             _utils = utils;
             _context = context;
+            _config = config;
         }
 
         public async Task<bool> IsUserAdminInForum(LoggedUser user, int forumId)
@@ -120,7 +127,7 @@ namespace Serverless.Forum.Services
         }
 
         public async Task<LoggedUser> ClaimsPrincipalToLoggedUserAsync(ClaimsPrincipal principal)
-            => await _utils.DecompressObject<LoggedUser>(Convert.FromBase64String(principal.Claims.FirstOrDefault()?.Value ?? string.Empty));
+            => await _utils.DecompressObject<LoggedUser>(Convert.FromBase64String(principal?.Claims?.FirstOrDefault()?.Value ?? string.Empty));
 
         public async Task<LoggedUser> DbUserToLoggedUserAsync(PhpbbUsers dbUser)
             => await ClaimsPrincipalToLoggedUserAsync(await DbUserToClaimsPrincipalAsync(dbUser));
@@ -155,7 +162,7 @@ namespace Serverless.Forum.Services
             return await DbUserToLoggedUserAsync(usr);
         }
 
-        public async Task<(string Message, bool? IsSuccess)> SendPrivateMessage(int senderId, int receiverId, string subject, string text)
+        public async Task<(string Message, bool? IsSuccess)> SendPrivateMessage(int senderId, string senderName, int receiverId, string subject, string text, PageContext pageContext, HttpContext httpContext)
         {
             try
             {
@@ -189,10 +196,51 @@ namespace Serverless.Forum.Services
                 readResult.Entity.Id = 0;
                 await _context.SaveChangesAsync();
 
+                using var emailMessage = new MailMessage
+                {
+                    From = new MailAddress($"admin@metrouusor.com", _config.GetValue<string>("ForumName")),
+                    Subject = $"Ai primit un mesaj privat nou pe {_config.GetValue<string>("ForumName")}",
+                    Body = await _utils.RenderRazorViewToString(
+                        "_NewPMEmailPartial",
+                        new _NewPMEmailPartialModel
+                        {
+                            SenderName = senderName
+                        },
+                        pageContext,
+                        httpContext
+                    ),
+                    IsBodyHtml = true
+                };
+                emailMessage.To.Add((await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == receiverId)).UserEmail);
+                await _utils.SendEmail(emailMessage);
+
                 return ("OK", true);
             }
-            catch
+            catch (Exception ex)
             {
+                _utils.HandleError(ex);
+                return ("A intervenit o eroare, încearcă mai târziu.", false);
+            }
+        }
+
+        public async Task<(string Message, bool? IsSuccess)> EditPrivateMessage(int messageId, string subject, string text)
+        {
+            try
+            {
+                var to = await _context.PhpbbPrivmsgsTo.AsNoTracking().FirstOrDefaultAsync(x => x.MsgId == messageId && x.AuthorId != x.UserId);
+                if (to.PmUnread != 1)
+                {
+                    return ("Mesajul a fost deja citit și nu mai poate fi actualizat.", false);
+                }
+                var pm = await _context.PhpbbPrivmsgs.FirstOrDefaultAsync(x => x.MsgId == messageId);
+                pm.MessageSubject = subject;
+                pm.MessageText = text;
+                await _context.SaveChangesAsync();
+                return ("OK", true);
+            }
+            catch (Exception ex)
+            {
+                _utils.HandleError(ex);
                 return ("A intervenit o eroare, încearcă mai târziu.", false);
             }
         }
@@ -207,13 +255,19 @@ namespace Serverless.Forum.Services
                     return ("Mesajul nu există.", false);
                 }
                 var msgToEntries = await _context.PhpbbPrivmsgsTo.Where(t => t.MsgId == messageId).ToListAsync();
+                var to = msgToEntries.FirstOrDefault(x => x.AuthorId != x.UserId);
+                if (to.PmUnread != 1)
+                {
+                    return ("Mesajul a fost deja citit și nu mai poate fi șters.", false);
+                }
                 _context.PhpbbPrivmsgs.Remove(msg);
                 _context.PhpbbPrivmsgsTo.RemoveRange(msgToEntries);
                 await _context.SaveChangesAsync();
                 return ("OK", true);
             }
-            catch
+            catch (Exception ex)
             {
+                _utils.HandleError(ex);
                 return ("A intervenit o eroare, încearcă mai târziu.", false);
             }
         }

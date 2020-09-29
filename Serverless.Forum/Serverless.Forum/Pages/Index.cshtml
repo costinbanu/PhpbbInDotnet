@@ -1,12 +1,21 @@
 ﻿@page
 @model IndexModel
+
+@inject Services.UserService _userService
 @{
     ViewData["Title"] = "Home page";
-    var usr = await Model.GetCurrentUserAsync();
-    var UserDateFormat = usr?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+    var CurrentUser = await Model.GetCurrentUserAsync();
+    var UserDateFormat = CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
 }
 
-<a href="javascript:showElement('metrouusorLinks');showElement('bullet');">Site-urile „MetrouUșor”</a>
+<script>
+    function showLinks() {
+        $('#bullet').toggle();
+        showElement('metrouusorLinks');
+    }
+</script>
+
+<a href="javascript:showLinks();">Site-urile „Metrou Ușor”</a>
 <ul class="Shortcuts" style="display:none" id="metrouusorLinks">
     <li>
         <span>&nbsp; &nbsp; </span>
@@ -18,11 +27,11 @@
     </li>
     <li>
         <span>&nbsp; &nbsp; </span>
-        <a href="https://youtube.com/channel/UCczAlitk6NaUjQsbtCSdEjA" target="_blank">Youtube</a>
+        <a href="https://youtube.com/channel/UCczAlitk6NaUjQsbtCSdEjA" target="_blank">YouTube</a>
     </li>
     <li>
         <span>&nbsp; &nbsp; </span>
-        <a href="https://www.facebook.com/InitiativaMTB/" target="_blank">Inițiativa pentru Muzeul transportului bucureștean</a>
+        <a href="https://campaniamea.declic.ro/petitions/petitie-pentru-infiintarea-muzeului-transportului-bucurestean" target="_blank">Inițiativa pentru Muzeul transportului bucureștean</a>
     </li>
     <li>
         <span>&nbsp; &nbsp; </span>
@@ -38,12 +47,12 @@
     </li>
 </ul>
 
-@if (!usr.IsAnonymous)
+@if (!CurrentUser.IsAnonymous)
 {
     <span id="bullet">&nbsp;&bull;&nbsp;</span>
     @await Html.PartialAsync(
         "_HeaderLinksPartial",
-        new Serverless.Forum.Pages.CustomPartials._HeaderLinksPartialModel("<a href=\"javascript:MarkForumsRead.submit()\">Marchează forumurile ca citite</a>"),
+        new Serverless.Forum.Pages.CustomPartials._HeaderLinksPartialModel(_userService.HasPrivateMessages(CurrentUser), "<a href=\"javascript:MarkForumsRead.submit()\">Marchează forumurile ca citite</a>"),
         ViewData
     )
     <form asp-page-handler="MarkForumsRead" method="post" name="MarkForumsRead">
@@ -52,6 +61,6 @@
 }
 @await Html.PartialAsync(
     "_ForumDisplayPartial",
-    new Serverless.Forum.Pages.CustomPartials._ForumDisplayPartialModel(0, Model.Tree, UserDateFormat, false, usr, false),
+    new Serverless.Forum.Pages.CustomPartials._ForumDisplayPartialModel(0, Model.Tree, UserDateFormat, false, CurrentUser, false),
     ViewData
 )

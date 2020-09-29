@@ -25,11 +25,6 @@
 <hr />
 <h4>
     @Model.CurrentUser.Username - Profil
-    @if (isSelf && await _userService.HasPrivateMessages(Model.CurrentUser.UserId))
-    {
-        <span>&nbsp;&bull;&nbsp;</span>
-        <a asp-page="PrivateMessages">Mesaje private</a>
-    }
 </h4>
 @if (await Model.CanEditAsync())
 {

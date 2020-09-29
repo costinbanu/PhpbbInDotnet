@@ -1,21 +1,28 @@
 ﻿@model Serverless.Forum.Pages.CustomPartials._HeaderLinksPartialModel
 
 <span>
-    <a href="javascript:showElement('headerLinks');">Scurtături</a>
+    <a href="javascript:showElement('headerLinks');">Legături utile</a>
 </span>
 <ul class="Shortcuts" style="display:none" id="headerLinks">
     <li>
         <span>&nbsp; &nbsp; </span>
-        <a asp-page="ViewForum" asp-page-handler="ownPosts" class="nowrap">Vezi subiectele proprii</a>
+        <a asp-page="ViewForum" asp-page-handler="ownPosts" class="nowrap">Subiecte proprii</a>
     </li>
     <li>
         <span>&nbsp; &nbsp; </span>
-        <a asp-page="ViewForum" asp-page-handler="newPosts" class="nowrap">Vezi mesajele noi</a>
+        <a asp-page="ViewForum" asp-page-handler="newPosts" class="nowrap">Mesaje noi</a>
     </li>
     <li>
         <span>&nbsp; &nbsp; </span>
-        <a asp-page="ViewForum" asp-page-handler="drafts" class="nowrap">Vezi mesajele în lucru</a>
+        <a asp-page="ViewForum" asp-page-handler="drafts" class="nowrap">Mesaje în lucru</a>
     </li>
+    @if (Model.HasPrivateMessages)
+    {
+        <li>
+            <span>&nbsp; &nbsp; </span>
+            <a asp-page="PrivateMessages">Mesaje private</a>
+        </li>
+    }
     @foreach (var elem in Model.ExtraElements ?? Enumerable.Empty<string>())
     {
         <li>
@@ -24,4 +31,3 @@
         </li>
     }
 </ul>
-<p></p>

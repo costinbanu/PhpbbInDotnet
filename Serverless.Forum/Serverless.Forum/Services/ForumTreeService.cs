@@ -17,14 +17,16 @@ namespace Serverless.Forum.Services
     {
         private readonly ForumDbContext _context;
         private readonly IConfiguration _config;
+        private readonly Utils _utils;
         private HashSet<ForumTree> _tree = null;
         private Dictionary<int, HashSet<Tracking>> _tracking = null;
         private IEnumerable<(int forumId, bool hasPassword)> _restrictedForums = null;
 
-        public ForumTreeService(ForumDbContext context, IConfiguration config)
+        public ForumTreeService(ForumDbContext context, IConfiguration config, Utils utils)
         {
             _context = context;
             _config = config;
+            _utils = utils;
         }
 
         public async Task<IEnumerable<(int forumId, bool hasPassword)>> GetRestrictedForumList(LoggedUser user, bool includePasswordProtected = false)
@@ -102,9 +104,19 @@ namespace Serverless.Forum.Services
                 return _tracking;
             }
 
-            using var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeeded();
-            var dbResults = await connection.QueryAsync<ExtendedTracking>("CALL `forum`.`get_post_tracking`(@userId);", new { userId = user?.UserId ?? Constants.ANONYMOUS_USER_ID });
+            var dbResults = Enumerable.Empty<ExtendedTracking>();
+            using (var connection = _context.Database.GetDbConnection())
+            {
+                try
+                {
+                    await connection.OpenIfNeeded();
+                    dbResults = await connection.QueryAsync<ExtendedTracking>("CALL `forum`.`get_post_tracking`(@userId);", new { userId = user?.UserId ?? Constants.ANONYMOUS_USER_ID });
+                }
+                catch (Exception ex)
+                {
+                    _utils.HandleError(ex, $"Error getting the forum tracking for user {user?.UserId ?? Constants.ANONYMOUS_USER_ID}");
+                }
+            }
             var count = dbResults.Count();
             _tracking = new Dictionary<int, HashSet<Tracking>>(count);
             

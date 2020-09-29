@@ -104,7 +104,8 @@ namespace Serverless.Forum.Utilities
         NewTopic,
         NewForumPost,
         EditForumPost,
-        NewPrivateMessage
+        NewPrivateMessage,
+        EditPrivateMessage
     }
 
     public enum LoginMode

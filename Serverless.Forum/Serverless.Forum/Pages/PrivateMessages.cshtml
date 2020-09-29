@@ -57,11 +57,17 @@
             ),
             ViewData
         )
+        var isFirst = true;
         foreach (var msg in Model.InboxMessages ?? Enumerable.Empty<PrivateMessageDto>())
         {
+            if (!isFirst)
+            {
+                <hr class="BoxSeparator" />
+            }
             var divClass = msg.Unread == 1 ? $"FlexRow Unread RowMargin" : $"FlexRow RowMargin";
             <div class="@divClass">
-                <span class="ForumContent">
+                <input name="SelectedMessages" type="checkbox" value="@msg.MessageId" form="MarkAsRead" style="margin-right:10px" />
+                <span class="ForumContent" style="align-self:safe center">
                     <a asp-page="/PrivateMessages" asp-route-show="@PrivateMessagesPages.Message" asp-route-messageId="@msg.MessageId" asp-route-inboxPage="@Model.InboxPage" asp-route-sentPage="@Model.SentPage" class="nav-link" style="font-weight:bold">
                         @Html.Raw(msg.Subject)
                     </a>
@@ -77,7 +83,23 @@
                                  UserDateFormat, false, null, null, null, null, false, false, null, null, "De la: ")
                          )
             </div>
-            <hr class="BoxSeparator" />
+            isFirst = false;
+        }
+
+        if (Model.InboxMessages.Any())
+        {
+            <hr />
+            <script>
+                function selectAll() {
+                    var checkboxes = $('input[type=checkbox]');
+                    checkboxes.prop('checked', !checkboxes.prop('checked'));
+                }
+            </script>
+            <a href="javascript:selectAll()">Selectează toate mesajele</a>
+            <p></p>
+            <form asp-page-handler="MarkAsRead" method="post" id="MarkAsRead" name="MarkAsRead">
+                <input type="submit" value="Marchează mesajele selectate ca citite" onclick="return confirm('Sigur dorești să marchezi ca citite mesajele selectate?');" />
+            </form>
         }
     }
     else
@@ -102,10 +124,15 @@
             ),
             ViewData
         )
+        var isFirst = true;
         foreach (var msg in Model.SentMessages ?? Enumerable.Empty<PrivateMessageDto>())
         {
+            if (!isFirst)
+            {
+                <hr class="BoxSeparator" />
+            }
             <div class="FlexRow RowMargin">
-                <span class="ForumContent">
+                <span class="ForumContent" style="align-self:safe center">
                     <a asp-page="/PrivateMessages" asp-route-show="@PrivateMessagesPages.Message" asp-route-messageId="@msg.MessageId" asp-route-inboxPage="@Model.InboxPage" asp-route-sentPage="@Model.SentPage" class="nav-link" style="font-weight:bold">
                         @Html.Raw(msg.Subject)
                     </a>
@@ -121,7 +148,7 @@
                                  UserDateFormat, false, null, null, null, null, false, false, null, null, "Pentru: ")
                          )
             </div>
-            <hr class="BoxSeparator" />
+            isFirst = false;
         }
     }
     else
@@ -129,6 +156,7 @@
         <span>Nici un mesaj trimis.</span>
     }
 </div>
+
 @if (Model.Show == PrivateMessagesPages.Message && Model.SelectedMessage != null)
 {
     var fakeId = -Model.SelectedMessage.MessageId;
@@ -161,13 +189,21 @@
             </div>
         </div>
         <p>&nbsp;</p>
-        <a asp-page="/Posting" asp-page-handler="PrivateMessage" asp-route-privateMessageId="@Model.SelectedMessage.MessageId" asp-route-receiverId="@Model.SelectedMessage.OthersId">Răspunde</a>&nbsp;|&nbsp;
-        <a href="javascript:$('#deleteForm').submit();">Șterge mesajul</a>
-        <form method="post" id="deleteForm">
-            <input type="hidden" asp-for="MessageId" />
-            <input type="hidden" asp-for="InboxPage" />
-            <input type="hidden" asp-for="SentPage" />
-            <input type="hidden" name="Show" value="@(Model.SelectedMessageIsMine ? PrivateMessagesPages.Sent : PrivateMessagesPages.Inbox)" />
-        </form>
+        <a asp-page="/Posting" asp-page-handler="PrivateMessage" asp-route-privateMessageId="@Model.SelectedMessage.MessageId" asp-route-receiverId="@Model.SelectedMessage.OthersId">Răspunde</a>
+        @if (Model.SelectedMessageIsMine && Model.SelectedMessageIsUnread)
+        {
+            <span>&nbsp;&bull;&nbsp;</span>
+            <a asp-page="/Posting" asp-page-handler="EditPrivateMessage" asp-route-privateMessageId="@Model.SelectedMessage.MessageId" asp-route-receiverId="@Model.SelectedMessage.OthersId">Modifică mesajul</a>
+            <span>&nbsp;&bull;&nbsp;</span>
+            <a href="javascript:$('#deleteForm').submit();">Șterge mesajul</a>
+            <form method="post" id="deleteForm" asp-page-handler="DeleteMessage">
+                <input type="hidden" asp-for="MessageId" />
+                <input type="hidden" asp-for="InboxPage" />
+                <input type="hidden" asp-for="SentPage" />
+                <input type="hidden" name="Show" value="@(Model.SelectedMessageIsMine ? PrivateMessagesPages.Sent : PrivateMessagesPages.Inbox)" />
+            </form>
+        }
+        <p></p>
+        <span asp-validation-for="MessageId" class="validation"></span>
     </div>
 }
