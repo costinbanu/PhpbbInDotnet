@@ -29,11 +29,13 @@ namespace Serverless.Forum
         protected readonly UserService _userService;
         protected readonly ForumDbContext _context;
         protected readonly IConfiguration _config;
-        private readonly AnonymousSessionCounter _sessionCounter;
+        protected readonly Utils _utils;
 
+        private readonly AnonymousSessionCounter _sessionCounter;
         private LoggedUser _currentUser;
 
-        public ModelWithLoggedUser(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, IConfiguration config, AnonymousSessionCounter sessionCounter)
+        public ModelWithLoggedUser(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
+            IConfiguration config, AnonymousSessionCounter sessionCounter, Utils utils)
         {
             _forumService = forumService;
             _cacheService = cacheService;
@@ -41,6 +43,7 @@ namespace Serverless.Forum
             _context = context;
             _config = config;
             _sessionCounter = sessionCounter;
+            _utils = utils;
         }
 
         #region User
@@ -98,12 +101,19 @@ namespace Serverless.Forum
             }
             if (_currentUser.IsAnonymous && HttpContext.Request.Headers.TryGetValue(HeaderNames.UserAgent, out var header) && (HttpContext.Session.GetInt32("SessionCounted") ?? 0) == 0 )
             {
-                var dd = new DeviceDetector(header.ToString());
-                dd.Parse();
-                if (!dd.IsBot())
+                try
                 {
-                    HttpContext.Session.SetInt32("SessionCounted", 1);
-                    _sessionCounter.UpsertSession(HttpContext.Session.Id, TimeSpan.FromMinutes(sessionTrackingTimeoutMinutes));
+                    var dd = new DeviceDetector(header.ToString());
+                    dd.Parse();
+                    if (!dd.IsBot())
+                    {
+                        HttpContext.Session.SetInt32("SessionCounted", 1);
+                        _sessionCounter.UpsertSession(HttpContext.Session.Id, TimeSpan.FromMinutes(sessionTrackingTimeoutMinutes));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _utils.HandleError(ex, "Failed to detect anonymous session type.");
                 }
             }
             return _currentUser;

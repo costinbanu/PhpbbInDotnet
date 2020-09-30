@@ -97,16 +97,14 @@ namespace Serverless.Forum.Pages
         private readonly StorageService _storageService;
         private readonly WritingToolsService _writingService;
         private readonly BBCodeRenderingService _renderingService;
-        private readonly Utils _utils;
 
         public PostingModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, PostService postService, 
             StorageService storageService, WritingToolsService writingService, BBCodeRenderingService renderingService, IConfiguration config, AnonymousSessionCounter sessionCounter)
-            : base(context, forumService, userService, cacheService, config, sessionCounter)
+            : base(context, forumService, userService, cacheService, config, sessionCounter, utils)
         {
             PollExpirationDaysString = "1";
             PollMaxOptions = 1;
             DeleteFileDummyForValidation = new List<string>();
-            _utils = utils;
             _postService = postService;
             _storageService = storageService;
             _writingService = writingService;
@@ -358,19 +356,25 @@ namespace Serverless.Forum.Pages
             return Page();
         }
 
-        private async Task<IActionResult> WithCachedText(Func<Task<IActionResult>> toDo)
+        private async Task<IActionResult> WithBackup(Func<Task<IActionResult>> toDo)
         {
             await _cacheService.SetInCache(await GetActualCacheKey("Text", true), new CachedText { Text = PostText, CacheTime = DateTime.UtcNow });
+            await _cacheService.SetInCache(await GetActualCacheKey("ForumId", true), ForumId);
+            await _cacheService.SetInCache(await GetActualCacheKey("TopicId", true), TopicId);
+            await _cacheService.SetInCache(await GetActualCacheKey("PostId", true), PostId);
             return await toDo();
         }
 
-        private async Task RestoreCachedTextIfAny(DateTime? minCacheAge = null)
+        private async Task RestoreBackupIfAny(DateTime? minCacheAge = null)
         {
             var cachedText = await _cacheService.GetAndRemoveFromCache<CachedText>(await GetActualCacheKey("Text", true));
             if (!string.IsNullOrWhiteSpace(cachedText?.Text) && (cachedText?.CacheTime ?? DateTime.MinValue) > (minCacheAge ?? DateTime.UtcNow))
             {
                 PostText = cachedText.Text;
             }
+            ForumId = await _cacheService.GetAndRemoveFromCache<int>(await GetActualCacheKey("ForumId", true));
+            TopicId = await _cacheService.GetAndRemoveFromCache<int?>(await GetActualCacheKey("TopicId", true));
+            PostId = await _cacheService.GetAndRemoveFromCache<int?>(await GetActualCacheKey("PostId", true));
         }
 
         public class CachedText

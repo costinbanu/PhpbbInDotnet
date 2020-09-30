@@ -101,16 +101,14 @@ namespace Serverless.Forum.Pages
         private PhpbbForums _currentForum;
         private int? _page;
         private int? _count;
-        private readonly Utils _utils;
         private readonly PostService _postService;
         private readonly ModeratorService _moderatorService;
         private readonly WritingToolsService _writingToolsService;
 
         public ViewTopicModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, Utils utils, PostService postService, 
             ModeratorService moderatorService, WritingToolsService writingToolsService, IConfiguration config, AnonymousSessionCounter sessionCounter)
-            : base(context, forumService, userService, cacheService, config, sessionCounter)
+            : base(context, forumService, userService, cacheService, config, sessionCounter, utils)
         {
-            _utils = utils;
             _postService = postService;
             _moderatorService = moderatorService;
             _writingToolsService = writingToolsService;

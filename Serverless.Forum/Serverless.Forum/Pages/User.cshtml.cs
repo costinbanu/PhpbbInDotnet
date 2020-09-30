@@ -48,7 +48,7 @@ namespace Serverless.Forum.Pages
         [EmailAddress(ErrorMessage = "Trebuie să introduceți o adresă e e-mail validă.")]
         public string Email { get; set; }
         
-        [BindProperty, ValidateDate(ErrorMessage = "Data introdusă nu este validă")]
+        [BindProperty, ValidateDate(ErrorMessage = "Data introdusă nu este validă"), MaxLength(10, ErrorMessage = "Lungimea maximă este 10 caractere!")]
         public string Birthday { get; set; }
         
         [BindProperty]
@@ -66,15 +66,13 @@ namespace Serverless.Forum.Pages
         public double PostsPerDay { get; private set; }
         public bool ViewAsAnother { get; set; }
 
-        private readonly Utils _utils;
         private readonly StorageService _storageService;
         private readonly WritingToolsService _writingService;
 
         public UserModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
             StorageService storageService, WritingToolsService writingService, IConfiguration config, AnonymousSessionCounter sessionCounter)
-            : base(context, forumService, userService, cacheService, config, sessionCounter)
+            : base(context, forumService, userService, cacheService, config, sessionCounter, utils)
         {
-            _utils = utils;
             _storageService = storageService;
             _writingService = writingService;
         }

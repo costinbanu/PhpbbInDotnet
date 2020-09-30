@@ -34,6 +34,10 @@ namespace Serverless.Forum.Pages
                     ExpiresUtc = DateTimeOffset.Now.Add(TimeSpan.FromDays(_config.GetValue<int>("LoginSessionSlidingExpirationDays"))),
                     IsPersistent = true,
                 });
+            if (string.IsNullOrWhiteSpace(returnUrl))
+            {
+                returnUrl = "/";
+            }
             return Redirect(HttpUtility.UrlDecode(returnUrl));
         }
     }

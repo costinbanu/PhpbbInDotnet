@@ -100,22 +100,22 @@ namespace Serverless.Forum
 
             services.Configure<IISServerOptions>(options =>
             {
-                options.MaxRequestBodySize = int.MaxValue;
+                options.MaxRequestBodySize = 1073741824;
             });
             if (Env.IsDevelopment())
             {
                 services.Configure<KestrelServerOptions>(options =>
                 {
-                    options.Limits.MaxRequestBodySize = int.MaxValue; // if don't set default value is: 30 MB
+                    options.Limits.MaxRequestBodySize = 1073741824; // if don't set default value is: 30 MB
                 });
             }
             else
             {
                 services.Configure<FormOptions>(x =>
                 {
-                    x.ValueLengthLimit = int.MaxValue;
-                    x.MultipartBodyLengthLimit = int.MaxValue; // if don't set default value is: 128 MB
-                x.MultipartHeadersLengthLimit = int.MaxValue;
+                    x.ValueLengthLimit = 1073741824;
+                    x.MultipartBodyLengthLimit = 1073741824; // if don't set default value is: 128 MB
+                x.MultipartHeadersLengthLimit = 1073741824;
                 });
             }
             services.AddHttpClient();

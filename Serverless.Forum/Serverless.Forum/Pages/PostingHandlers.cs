@@ -38,7 +38,7 @@ namespace Serverless.Forum.Pages
                 {
                     PostTitle = $"{Constants.REPLY}{HttpUtility.HtmlDecode(curTopic.TopicTitle)}";
                 }
-                await RestoreCachedTextIfAny(draft?.SaveTime.ToUtcTime());
+                await RestoreBackupIfAny(draft?.SaveTime.ToUtcTime());
                 return Page();
             }));
 
@@ -60,7 +60,7 @@ namespace Serverless.Forum.Pages
                 var title = HttpUtility.HtmlDecode(curPost.PostSubject);
                 PostText = $"[quote=\"{curAuthor}\"]\n{_writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid)}\n[/quote]";
                 PostTitle = title.StartsWith(Constants.REPLY) ? title : $"{Constants.REPLY}{title}";
-                await RestoreCachedTextIfAny();
+                await RestoreBackupIfAny();
                 return Page();
             }));
 
@@ -77,7 +77,7 @@ namespace Serverless.Forum.Pages
                     PostTitle = HttpUtility.HtmlDecode(draft.DraftSubject);
                     PostText = HttpUtility.HtmlDecode(draft.DraftMessage);
                 }
-                await RestoreCachedTextIfAny(draft?.SaveTime.ToUtcTime());
+                await RestoreBackupIfAny(draft?.SaveTime.ToUtcTime());
                 return Page();
             }));
 
@@ -117,7 +117,7 @@ namespace Serverless.Forum.Pages
                 PostText = _writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid);
                 PostTitle = HttpUtility.HtmlDecode(curPost.PostSubject);
                 PostTime = curPost.PostTime;
-                await RestoreCachedTextIfAny();
+                await RestoreBackupIfAny();
                 return Page();
             }));
 
@@ -202,7 +202,7 @@ namespace Serverless.Forum.Pages
         #region POST Attachment
 
         public async Task<IActionResult> OnPostAddAttachment()
-            => await WithCachedText(async () => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, async (curForum) =>
+            => await WithBackup(async () => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, async (curForum) =>
             {
                 CurrentForum = curForum;
 
@@ -247,7 +247,7 @@ namespace Serverless.Forum.Pages
             })));
 
         public async Task<IActionResult> OnPostDeleteAttachment(int index)
-            => await WithCachedText(async () => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, async (curForum) =>
+            => await WithBackup(async () => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, async (curForum) =>
             {
                 var attachment = Attachments?.ElementAtOrDefault(index);
                 CurrentForum = curForum;
@@ -286,7 +286,7 @@ namespace Serverless.Forum.Pages
         #region POST Message
 
         public async Task<IActionResult> OnPostPreview()
-            => await WithCachedText(async () => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, Action == PostingActions.NewPrivateMessage, async (curForum) => await WithNewestPostSincePageLoad(curForum, async () =>
+            => await WithBackup(async () => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, Action == PostingActions.NewPrivateMessage, async (curForum) => await WithNewestPostSincePageLoad(curForum, async () =>
             {
                 if ((PostTitle?.Trim()?.Length ?? 0) < 3)
                 {

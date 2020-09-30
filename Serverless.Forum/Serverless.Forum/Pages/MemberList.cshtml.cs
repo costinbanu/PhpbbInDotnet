@@ -17,7 +17,6 @@ namespace Serverless.Forum.Pages
     public class MemberListModel : ModelWithLoggedUser
     {
         const int PAGE_SIZE = 20;
-        private readonly Utils _utils;
         private readonly WritingToolsService _writingService;
 
         [BindProperty(SupportsGet = true)]
@@ -43,9 +42,8 @@ namespace Serverless.Forum.Pages
 
         public MemberListModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, Utils utils, 
             IConfiguration config, WritingToolsService writingService, AnonymousSessionCounter sessionCounter) 
-            : base (context, forumService, userService, cacheService, config, sessionCounter) 
+            : base (context, forumService, userService, cacheService, config, sessionCounter, utils) 
         {
-            _utils = utils;
             _writingService = writingService;
         }
 

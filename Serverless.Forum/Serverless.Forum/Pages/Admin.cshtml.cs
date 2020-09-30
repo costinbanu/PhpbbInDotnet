@@ -28,16 +28,14 @@ namespace Serverless.Forum.Pages
                 _ => "message fail",
             };
 
-        private readonly Utils _utils;
         private readonly AdminUserService _adminUserService;
         private readonly AdminForumService _adminForumService;
         private readonly WritingToolsService _adminWritingService;
 
         public AdminModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, Utils utils, 
             AdminUserService adminUserService, AdminForumService adminForumService, WritingToolsService adminWritingService, IConfiguration config, AnonymousSessionCounter sessionCounter) 
-            : base(context, forumService, userService, cacheService, config, sessionCounter)
+            : base(context, forumService, userService, cacheService, config, sessionCounter, utils)
         {
-            _utils = utils;
             _adminUserService = adminUserService;
             _adminForumService = adminForumService;
             _adminWritingService = adminWritingService;

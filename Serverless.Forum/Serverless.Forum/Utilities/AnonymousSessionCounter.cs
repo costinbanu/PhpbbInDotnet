@@ -2,7 +2,7 @@
 using System.Collections.Concurrent;
 using System.Timers;
 
-namespace Serverless.Forum
+namespace Serverless.Forum.Utilities
 {
     public class AnonymousSessionCounter
     {

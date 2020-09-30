@@ -18,8 +18,9 @@ namespace Serverless.Forum.Pages
     {
         private readonly StorageService _storageService;
 
-        public FileModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, StorageService storageService, IConfiguration config, AnonymousSessionCounter sessionCounter)
-            : base(context, forumService, userService, cacheService, config, sessionCounter)
+        public FileModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, StorageService storageService, 
+            IConfiguration config, AnonymousSessionCounter sessionCounter, Utils utils)
+            : base(context, forumService, userService, cacheService, config, sessionCounter, utils)
         {
             _storageService = storageService;
         }

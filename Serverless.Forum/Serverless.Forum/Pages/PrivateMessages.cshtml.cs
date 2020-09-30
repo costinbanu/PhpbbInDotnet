@@ -47,8 +47,8 @@ namespace Serverless.Forum.Pages
         private readonly BBCodeRenderingService _renderingService;
         
         public PrivateMessagesModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
-            BBCodeRenderingService renderingService, IConfiguration config, AnonymousSessionCounter sessionCounter)
-            : base(context, forumService, userService, cacheService, config, sessionCounter)
+            BBCodeRenderingService renderingService, IConfiguration config, AnonymousSessionCounter sessionCounter, Utils utils)
+            : base(context, forumService, userService, cacheService, config, sessionCounter, utils)
         {
             _renderingService = renderingService;
         }
