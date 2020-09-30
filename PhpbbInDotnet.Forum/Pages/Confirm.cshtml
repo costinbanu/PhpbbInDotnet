@@ -1,0 +1,110 @@
+﻿@page
+@model PhpbbInDotnet.Forum.Pages.ConfirmModel
+@{
+    ViewData["Title"] = "Confirm";
+    Layout = "~/Pages/_Layout.cshtml";
+}
+
+@using Microsoft.EntityFrameworkCore
+
+@inject Utilities.Utils _utils
+@inject Services.ForumTreeService _forumService
+@inject ForumDb.ForumDbContext _dbContext
+
+<h2>@Model.Title</h2>
+
+@if (Model.IsModeratorConfirmation)
+{
+    <script type="text/javascript">
+        //forum tree callback
+        function forumSelectCallback(forumId) {
+            var forumInput = document.getElementById("DestinationForumId");
+            if (forumInput != null) {
+                forumInput.value = forumId;
+            }
+        }
+    </script>
+    @if (Model.ShowTopicSelector)
+    {
+        <script type="text/javascript">
+            //forum tree callback
+            function topicSelectCallback(topics) {
+                var topicDisplay = document.getElementById("DestinationTopicId");
+                if (topicDisplay != null) {
+                    topicDisplay.options.length = 0;
+                    var option = document.createElement('option');
+                    option.text = "Alege subiectul...";
+                    option.value = 0;
+                    topicDisplay.add(option);
+                    topics.forEach(t => {
+                        var option = document.createElement('option');
+                        option.text = t.topicTitle;
+                        option.value = t.topicId;
+                        topicDisplay.add(option);
+                    });
+                }
+            }
+
+            //forum tree callback
+            function topicSelectInit(topicId) {
+                if (topicId != null) {
+                    $("#DestinationTopicId").val(topicId).change();
+                }
+            }
+        </script>
+    }
+
+    <h3>Alege forumul de destinație...</h3>
+    <div>
+        @await Html.PartialAsync(
+            "_ForumTreePartial",
+            new CustomPartials._ForumTreePartialModel (
+                tree: (await Model.GetForumTree()).Tree,
+                topicData: Model.ShowTopicSelector ? await _dbContext.PhpbbTopics.AsNoTracking().Select(t => new Contracts.MiniTopicDto(t)).ToListAsync() : null,
+                forumId: Model.ForumId,
+                topicId: Model.TopicId
+            ),
+            ViewData
+        )
+    </div>
+    <form action="./ViewTopic" method="get">
+        <input type="hidden" name="DestinationForumId" id="DestinationForumId" />
+        @if (Model.ShowTopicSelector)
+        {
+            <h3>Alege subiectul de destinație...</h3>
+            <select name="DestinationTopicId" id="DestinationTopicId" />
+        }
+        <input type="hidden" asp-for="TopicId" />
+        <input type="hidden" asp-for="PageNum" />
+        <input type="hidden" asp-for="TopicAction" />
+        <input type="hidden" asp-for="PostAction" />
+        @if (!string.IsNullOrWhiteSpace(Model.SelectedPostIds))
+        {
+            var ids = Model.SelectedPostIds.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            for (var i = 0; i < ids.Length; i++)
+            {
+                <input type="hidden" name="PostIdsForModerator[@i]" value="@ids[i]" />
+            }
+        }
+        <p></p>
+        <input type="submit" value="Trimite" />
+    </form>
+}
+else if (Model.IsDestinationConfirmation)
+{
+    <span style="font-size:1.2em">@Html.Raw(Model.Message)</span>
+    <p>&nbsp;</p>
+    foreach (var destination in Model.Destinations)
+    {
+        @Html.Raw(await _utils.DecodeAndDecompress(destination));
+        <p></p>
+    }
+}
+else
+{
+    <span style="font-size:1.2em">@Html.Raw(Model.Message)</span>
+    <p>&nbsp;</p>
+    <a asp-page="./Login">Login</a>
+    <br />
+    <a asp-page="./">Prima pagină</a>
+}

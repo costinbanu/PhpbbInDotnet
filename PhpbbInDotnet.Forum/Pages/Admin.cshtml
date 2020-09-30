@@ -1,0 +1,80 @@
+﻿@page
+@using PhpbbInDotnet.Forum.Utilities
+@using PhpbbInDotnet.Forum.Pages.CustomPartials.Admin;
+
+@model PhpbbInDotnet.Forum.Pages.AdminModel
+@{
+    ViewData["Title"] = "Admin";
+    Layout = "~/Pages/_Layout.cshtml";
+    var user = await Model.GetCurrentUserAsync();
+    var dateFormat = user?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+}
+
+<h2>Panoul administratorului</h2>
+<environment include="Development">
+    <script src="~/lib/Sortable.js"></script>
+    <script src="~/js/tabbedPage.js"></script>
+    <link rel="stylesheet" href="~/css/admin.css" />
+    <link rel="stylesheet" href="~/css/tabbedPage.css" />
+</environment>
+<environment exclude="Development">
+    <link rel="stylesheet" href="~/css/admin.min.css" />
+</environment>
+<div class="tab">
+    <button class="@(Model.Category == AdminCategories.Users ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Users')">Administrare utilizatori</button>
+    <button class="@(Model.Category == AdminCategories.Forums ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Forums')">Administrare forumuri</button>
+    <button class="@(Model.Category == AdminCategories.WritingTools ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Writing')">Unelte scriere</button>
+</div>
+
+<span class="@Model.MessageClass">@Model.Message</span>
+
+<div id="Users" class="tabcontent" style="@(Model.Category == AdminCategories.Users ? "display:inherit" : "display:none")">
+    @await Html.PartialAsync(
+    "_AdminUsersPartial",
+    new _AdminUsersPartialModel(dateFormat, Model.UserSearchResults),
+    ViewData
+)
+</div>
+
+<div id="Forums" class="tabcontent" style="@(Model.Category == AdminCategories.Forums ? "display:inherit" : "display:none")">
+    @await Html.PartialAsync(
+        "_AdminForumsPartial",
+        new _AdminForumsPartialModel(Model.Forum, Model.ForumChildren, Model.Permissions, user, Model.ShowForum),
+        ViewData
+    )
+</div>
+
+<div id="Writing" class="tabcontent" style="@(Model.Category == AdminCategories.WritingTools ? "display:inherit" : "display:none")">
+    <center>
+        <img src="~/images/loading.gif" width="50" height="50" alt="loading..." />
+    </center>
+</div>
+
+<script type="text/javascript" async>
+    $.ajax({
+        type: "GET",
+        url: "/Admin?handler=Writing",
+        success: function (data) {
+            $("#Writing").html(data);
+        }, error: function (data) {
+            $("#Writing").html(data);
+        }
+    });
+</script>
+
+<script type="text/javascript">
+    var coll = document.getElementsByClassName("collapsible");
+    var i;
+
+    for (i = 0; i < coll.length; i++) {
+        coll[i].addEventListener("click", function () {
+            this.classList.toggle("active");
+            var content = this.nextElementSibling;
+            if (content.style.display === "block") {
+                content.style.display = "none";
+            } else {
+                content.style.display = "block";
+            }
+        });
+    }
+</script>

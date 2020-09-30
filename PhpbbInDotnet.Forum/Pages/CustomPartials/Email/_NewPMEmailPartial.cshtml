@@ -1,0 +1,12 @@
+﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials.Email._NewPMEmailPartialModel
+@using Microsoft.Extensions.Configuration;
+@inject IConfiguration _config
+Salut
+<br />
+<br />
+Ai primit un nou mesaj privat de la "@Model.SenderName".
+<br />
+Accesează-ți căsuța poștală <a href="@(_config.GetValue<string>("BaseUrl"))/PrivateMessages">aici</a>.
+<br />
+<br />
+O zi frumoasă!

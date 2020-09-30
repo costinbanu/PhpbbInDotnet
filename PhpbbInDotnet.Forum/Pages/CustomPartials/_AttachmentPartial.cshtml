@@ -1,0 +1,40 @@
+﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._AttachmentPartialModel
+
+@using PhpbbInDotnet.Forum.Utilities
+@inject Utils _utils
+@inject Services.BBCodeRenderingService _renderingService
+
+@if (Model != null)
+{
+    <div style="margin: 20px 0px 20px 0px">
+        @if (Model.MimeType.IsMimeTypeInline())
+        {
+            if (Model.MimeType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase))
+            {
+                <img src="@(Model.FileUrl)" onload="resizeImage(this)" />
+            }
+            else
+            {
+                <div style="display:flex; width:100%; height:100%">
+                    <video style="width:100%; height:100%" controls>
+                        <source src="@(Model.FileUrl)" type="@Model.MimeType" />
+                    </video>
+                </div>
+            }
+        }
+        else
+        {
+            <a href="@(Model.FileUrl)">@Model.DisplayName</a>
+        }
+        <div class="Caption" style="clear:both">
+            @if (!string.IsNullOrWhiteSpace(Model.Comment))
+            {
+                <br />
+                @Html.Raw(_renderingService.BbCodeToHtml(Model.Comment, string.Empty))
+            }
+        <div>
+            @Html.Raw(Model.DisplayName) (@_utils.ReadableFileSize(Model.FileSize); descărcat @(Model.DownloadCount == 1 ? "o dată" : $"de {Model.DownloadCount} ori"))
+        </div>
+        </div>
+    </div>
+}

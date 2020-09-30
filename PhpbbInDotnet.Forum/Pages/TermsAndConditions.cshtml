@@ -1,0 +1,129 @@
+﻿@page
+@model PhpbbInDotnet.Forum.Pages.TermsAndConditionsModel
+@{
+    ViewData["Title"] = "TermsAndConditions";
+    Layout = "~/Pages/_Layout.cshtml";
+}
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration _config
+<style>
+    .paragraph {
+        text-align: justify;
+        line-height: 2em;
+        padding-bottom: 20px;
+    }
+</style>
+<h2>Termene și condiții de utilizare ale site-ului „@(_config.GetValue<string>("ForumName"))”</h2>
+
+<h3>Termene și condiții generale</h3>
+<h4>Dispoziții generale</h4>
+<p class="paragraph">
+    Accesând „@(_config.GetValue<string>("ForumName"))”, sunteţi de acord să intraţi din punct de vedere legal sub incidenţa următorilor termeni.
+    Dacă nu sunteţi de acord cu toţi aceşti termeni, vă rugăm să nu accesaţi şi/sau folosiţi „@(_config.GetValue<string>("ForumName"))”.
+    Putem schimba acest lucru oricând şi ne vom strădui să vă informăm, deşi ar fi prudent să verificaţi aceşti termeni în mod regulat în timp ce
+    folosiţi „@(_config.GetValue<string>("ForumName"))” pentru că după modificări sunteţi de acord să intraţi sub incidenţa legală a acestor termeni din momentul
+    actualizării/amendării lor.
+</p>
+<p class="paragraph">
+    Sunteți de acord cu <a asp-page="/ViewTopic" asp-route-TopicId="2827" asp-route-PageNum="1" target="_blank">termenele și condițiile specifice forumului</a>.
+</p>
+<h4>Dispoziții legale</h4>
+<p class="paragraph">
+    Sunteţi de acord să nu scrieţi niciun material abuziv, obscen, vulgar, calomnios, de ură, ameninţare, orientare-sexuală sau orice alt material care
+    poate viola prevederile legale ale ţării dumneavoastră, ale ţării unde „@(_config.GetValue<string>("ForumName"))” este găzduit sau ale legislaţiei internaţionale.
+    Nerespectarea acestor prevederi poate duce la blocarea imediată şi permanentă însoţită de notificarea Internet-Service-Provider-ului dumneavoastră dacă vom
+    considera necesar. Adresele IP ale tuturor mesajelor sunt înregistrate pentru a ajuta la întărirea acestor condiţii.
+    Sunteţi de acord ca „@(_config.GetValue<string>("ForumName"))” să aibă dreptul de a şterge, modifica, muta sau închide orice subiect în orice moment în care consideră
+    potrivit. Ca utilizator sunteţi de acord ca orice informaţie introdusă să fie stocată în baza de date. Aceste informaţii nu vor fi dezvăluite niciunei terţe
+    părţi fără consimţământul dumneavoastră, iar „@(_config.GetValue<string>("ForumName"))” nu poate fi considerat responsabil pentru vreo încercare de hacking
+    care poate duce la compromiterea datelor.
+</p>
+<p class="paragraph">
+    Declarați pe propria răspundere că aveți peste 16 ani împliniți la momentul înregistrării. Este interzisă înregistrarea persoanelor sub 16 ani.
+</p>
+
+<h3>Politica de confidențialitate</h3>
+<p class="paragraph">
+    Această politică explică în detaliu cum „@(_config.GetValue<string>("ForumName"))” împreună cu Asociația Metrou Ușor (denumite în continuare „noi”) și software-ul
+    ce stă la baza acestui website (denumit în continuare „software-ul”) utilizează informaţiile colectate în timpul fiecărei sesiuni utilizate de dumneavoastră
+    („informaţiile”).
+</p>
+
+<h4>Comunicații</h4>
+<p class="paragraph">
+    Sunteți de acord să primiți pe e-mail comunicațiile strict necesare pentru buna funcționare a contului dumneavoastră pe forum. Exemple de asemenea comunicații 
+    strict necesare ar fi, fără a fi o listă completă, următoarele: mesaje e-mail care să vă înștiințeze în legătură cu starea contului dumneavoastră (a fost activat, 
+    dezactivat etc), mesaje e-mail care să vă înștiințete în legătură cu mesageria privată (mesaj nou) etc.
+</p>
+<p class="paragraph">
+    Noi ne angajăm să nu vă trimitem niciodată nici un mesaj fără legătură directă cu contul dumneavoastră de pe forum. Dacă primiți un asemenea mesaj, vă invităm să îl 
+    semnalați prin email la <a href="mailto:admin@metrouusor.com">admin@metrouusor.com</a>.
+</p> 
+
+<h4>Colectarea și procesarea datelor personale</h4>
+
+
+<p class="paragraph">
+    Informaţiile dumneavoastră sunt colectate prin două căi. Prima, prin navigarea „@(_config.GetValue<string>("ForumName"))” software-ul va crea un număr
+    de cookie-uri, care sunt fişiere text mici care sunt descărcate în fişierele temporare al browserului computerului dumneavoastră. Primele două cookie-uri
+    conţin un identificator de utilizator (sau „user-id”) şi un identificator al sesiunii anonime (sau „session-id”), repartizate automat de software-ul
+    forumului. Un al treilea cookie va fi creat odată ce aţi deschis subiecte din „@(_config.GetValue<string>("ForumName"))” şi este folosit pentru a stoca informaţii
+    despre ce subiecte aţi citit, aşadar pentru îmbunătăţirea experienţei de utilizator.
+</p>
+<p class="paragraph">
+    De asemenea, se crează cookie-uri externe software-ului în timp ce navigaţi prin „@(_config.GetValue<string>("ForumName"))” dar acestea sunt în afara scopului
+    acestui document care intenţionează să acopere paginile create de software-ul nostru propriu. A doua cale prin care colectăm informaţiile este prin ceea ce trimiteţi
+    dumneavoastră. Acest lucru poate fi, şi nu este limitat la: expedierea unui mesaj ca utilizator anonim (denumite „mesaje anonime”), înregistrarea la
+    „@(_config.GetValue<string>("ForumName"))” (sau „contul dumneavoastră de utilizator”) şi mesajele transmise de către dumneavoastră după înregistrare cât timp sunteţi
+    autentificat (sau „mesajele dumneavoastră”).
+</p>
+<p class="paragraph">
+    Contul dumneavoastră va conţine cel puţin un nume identificabil (sau „numele dumneavoastră de utilizator”), o parolă personală folosită pentru autentificarea
+    în contul dumneavoastră (sau „parola dumneavoastră”) şi o adresă personală de e-mail validă (sau „e-mail-ul dumneavoastră”). Informaţiile dumneavoastră pentru
+    contul de utilizator de la „@(_config.GetValue<string>("ForumName"))” sunt protejate de <a href="https://ec.europa.eu/info/priorities/justice-and-fundamental-rights/data-protection/2018-reform-eu-data-protection-rules/eu-data-protection-rules_en" target="_blank">GDPR</a>.
+    Orice informaţie în afara numelui de utilizator, parolei sau a adresei de e-mail cerută de „@(_config.GetValue<string>("ForumName"))” în timpul înregistrării este fie
+    obligatorie sau opţională la discreţia „@(_config.GetValue<string>("ForumName"))”. În toate cazurile, aveţi opţiunea să alegeţi ce informaţii din contul dumneavoastră
+    să fie afişate public. Mai mult decât atât, în contul dumneavoastră aveţi opţiunea de a opta sau nu pentru a primi e-mail-uri generate automat de software-ul nostru.
+</p>
+<p class="paragraph">
+    Parola dumneavoastră este cifrată (hash într-o singură direcţie), aşadar este securizată. Totuşi, este recomandat să nu folosiţi aceeaşi parolă în mai multe
+    site-uri web. Parola dumneavoastră este mijlocul de accesare al contului de utilizator la „@(_config.GetValue<string>("ForumName"))”, aşadar vă rugăm să o păziţi cu
+    grijă. În niciun caz cineva afiliat cu „@(_config.GetValue<string>("ForumName"))” sau o terţă parte nu vă poate cere în mod legitim parola. Dacă uitaţi parola,
+    puteţi folosi interfaţa „Am uitat parola” oferită de software-ul. Această procedură vă va genera o nouă parolă prin transmiterea numelui de utilizator
+    şi a adresei e-mail.
+</p>
+<p class="paragraph">
+    Prin acceptarea prezentei politici de confidențialitate, vă dați acordul ca noi să stocăm în baza de date adresa dumneavoastră de mail, aceasta fiind necesară
+    pentru crearea contului dumneavoastră. Opțional, dumneavoastră puteți completa mai multe detalii personale, cum ar fi data nașterii, localitatea, id-uri de
+    mesagerie instant sau interese (hobby-uri). Completarea acestor câmpuri nu este obligatorie, dar dacă o faceți, și aceste informații vor fi stocate în baza
+    noastră de date.
+</p>
+<p class="paragraph">
+    Noi ne angajăm să nu partajăm nici un fel de informații (nici brute și nici prelucrate) despre utilizatorii noștri către părți terțe, însă nu garantăm pentru modul 
+    în care cookie-urile terțe sunt utilizate sau procesate de către terți. Este posibil ca noi să prelucrăm și să agregăm date despre utilizatorii noștri, exclusiv 
+    pentru utilizare internă.
+</p>
+
+<h4>Accesul la datele proprii, dreptul de a fi uitat și/sau de a vă retrage acordul privind politica de confidențialitate</h4>
+
+<p class="paragraph">
+    Noi oferim tuturor utilizatorilor noștri dreptul de a accesa toate datele despre ei, la cerere, printr-un email la <a href="mailto:admin@metrouusor.com">admin@metrouusor.com</a>.
+</p>
+<p class="paragraph">
+    Noi oferim tuturor utilizatorilor noștri dreptul de „a fi uitați” (adică ștergerea tuturor informațiilor personale asociate cu utilizatorul în cauză),
+    la cerere, printr-un email la <a href="mailto:admin@metrouusor.com">admin@metrouusor.com</a>. Ștergerea contului și a datelor personale NU implică ștergerea mesajelor publicate de utilizatorul respectiv.
+    Mesajele publicate de utilizatorul în cauză NU vor fi șterse deoarece acest lucru va denatura firul logic al discuțiilor la care utilizatorul respectiv a participat
+    de-a lungul timpului. <br />
+    Dacă utilizatorul respectiv a publicat mesaje ce conțin date personale proprii, această situație va fi comunicată în cererea de „uitare” prin indicarea unui
+    link direct către mesajul sau mesajele ce conțin datele personale, iar echipa administrativă va decide soluția optimă astfel încât datele personale să fie eliminate
+    fără ruperea firului logic al discuțiilor. Nesemnalarea mesajelor ce conțin datele personale ale solicitantului denotă implicit faptul că acestea nu există, iar noi
+    NU le vom identifica din proprie inițiativă.
+</p>
+<p class="paragraph">
+    Vă puteți retrage oricând acceptul privind prezenta politică de confidențialitate, acest lucru fiind echivalent cu dezactivarea contului dumneavoastra pe
+    „@(_config.GetValue<string>("ForumName"))”; retragerea acceptului se face la cerere, printr-un email la <a href="mailto:admin@metrouusor.com">admin@metrouusor.com</a> și are efecte numai pe viitor și nu
+    retroactive (datele stocate și/sau procesate până la momentul cererii rămân în continuare în baza noastră de date).
+</p>
+
+
+

@@ -1,0 +1,78 @@
+﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._PaginationControlsPartialModel
+
+@if (Model.Paginator?.Pagination?.HasPages ?? false)
+{
+    <div class="PaginationHolder">
+        <div class="LeftArrow">
+            @if ((Model.Paginator?.Pagination?.HasPages ?? false) && !Model.Paginator.IsFirstPage && Model.IncludeEasyNavigation)
+            {
+                <a href="@Model.Back" style="text-decoration:none">
+                    <img src="~/images/prev.png" />
+                </a>
+            }
+            else
+            {
+                <span>&nbsp;</span>
+            }
+        </div>
+        <div class="ControlsMiddleFull">
+            <span style="white-space:nowrap; display: inline">
+                @await Html.PartialAsync("_PaginationPartial", Model.Paginator.Pagination, ViewData)
+            </span>
+            @if (!Model.Paginator.IsAnonymous && Model.AllowPaginationChange)
+            {
+                <form method="post" asp-page-handler="Pagination" style="line-height:1.5em; display: inline; white-space:nowrap">
+                    <span style="white-space:nowrap; display: inline">
+                        &nbsp;
+                        Mesaje afișate pe pagină:&nbsp;
+                    </span>
+                    <span style="white-space:nowrap; display: inline">
+                        <input type="hidden" name="topicId" value="@Model.TopicId" />
+                        <input type="hidden" name="postId" value="@Model.FirstPostId" />
+                        @Html.DropDownList("userPostsPerPage", Model.Paginator.PostsPerPage)
+                        &nbsp;
+                        <input type="submit" value="Salvează" />
+                    </span>
+                </form>
+            }
+            @*<div style="clear:both">&nbsp;</div>*@
+        </div>
+        <div class="Filler">&nbsp;</div>
+        <div class="RightArrow">
+            @if ((Model.Paginator?.Pagination?.HasPages ?? false) && !Model.Paginator.IsLastPage && Model.IncludeEasyNavigation)
+            {
+                <a href="@Model.Forward" style="text-decoration:none">
+                    <img src="~/images/next.png" />
+                </a>
+            }
+            else
+            {
+                <span>&nbsp;</span>
+            }
+        </div>
+    </div>
+    <div class="ControlsMiddleCollapsed">
+        &#x1F4D6;&nbsp;
+        <a href="javascript:showElement('paginationControls_@(Model.Self)')" style="white-space:nowrap; line-height:2em; padding-bottom:10px;">
+            Opțiuni paginare
+        </a>
+        <div id="paginationControls_@(Model.Self)" style="display: none; width: 100%; line-height: 1.5em">
+            @await Html.PartialAsync("_PaginationPartial", Model.Paginator.Pagination, ViewData)
+            <p></p>
+            @if (!Model.Paginator.IsAnonymous && Model.AllowPaginationChange)
+            {
+                <form method="post" asp-page-handler="Pagination" style="line-height:1.5em">
+                    <span style="white-space:nowrap; display: inline">Mesaje afișate pe pagină:&nbsp;</span>
+                    <span style="white-space:nowrap; display: inline">
+                        <input type="hidden" name="topicId" value="@Model.TopicId" />
+                        <input type="hidden" name="postId" value="@Model.FirstPostId" />
+                        @Html.DropDownList("userPostsPerPage", Model.Paginator.PostsPerPage)
+                        &nbsp;
+                        <input type="submit" value="Salvează" />
+                    </span>
+                </form>
+            }
+            @*<div style="clear:both">&nbsp;</div>*@
+        </div>
+    </div>
+}

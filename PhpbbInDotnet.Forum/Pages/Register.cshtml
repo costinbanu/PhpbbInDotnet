@@ -1,0 +1,90 @@
+﻿@page
+@model PhpbbInDotnet.Forum.Pages.RegisterModel
+@{
+    ViewData["Title"] = "Register";
+    Layout = "~/Pages/_Layout.cshtml";
+}
+
+@inject Microsoft.Extensions.Configuration.IConfiguration _config;
+
+<style>
+    input, textarea {
+        width: 100%;
+    }
+
+    td {
+        padding: 5px;
+        margin-bottom: 10px;
+    }
+</style>
+
+<h2>Înregistrează-te</h2>
+
+<form asp-controller="Home" method="post" onsubmit="return validateCaptcha();">
+
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <input type="text" name="Email" asp-for="Email" placeholder="Email" />
+<br/>
+                <span asp-validation-for="Email" class="validation"></span>
+<p></p>
+                <input type="text" name="UserName" asp-for="UserName" placeholder="Nume utilizator" />
+                <br />
+                <span asp-validation-for="UserName" class="validation"></span>
+<p></p>
+                <input type="password" name="Password" asp-for="Password" placeholder="Parola" />
+                <br />
+                    <span asp-validation-for="Password" class="validation"></span>
+<p></p>
+                <input type="password" name="SecondPassword" asp-for="SecondPassword" placeholder="Repetă parola" />
+                <br />
+                <span asp-validation-for="SecondPassword" class="validation"></span>
+<p></p>
+               <input type="checkbox" asp-for="Agree" style="width:auto"/> Sunt de acord cu <a asp-page="/TermsAndConditions" target="_blank">termenele și condițiile de utilizare</a>
+                                                                                            <br />
+                <span asp-validation-for="Agree" class="validation"></span>
+<p></p>
+                    <div class="g-recaptcha" data-sitekey="@_config["Recaptcha:SiteKey"]" data-callback="recaptchaCallback"></div>
+<br/>
+                <span class="validation" style="visibility:hidden" id="reCaptchaErrorMessage">Te rugăm să bifezi aici.</span>
+<p></p>
+                <input type="submit" value="Trimite" style="width:auto"/>
+
+    @Html.AntiForgeryToken()
+</form>
+
+
+
+<script>
+    var defaultRangeValidator = $.validator.methods.range;
+    $.validator.methods.range = function (value, element, param) {
+        if (element.type === 'checkbox') {
+            return element.checked;
+        } else {
+            return defaultRangeValidator.call(this, value, element, param);
+        }
+    }
+
+    window.onload = function () {
+        var $recaptcha = document.querySelector('#g-recaptcha-response');
+        if ($recaptcha) {
+            $recaptcha.setAttribute("required", "required");
+        };
+    };
+
+    function recaptchaCallback() {
+        var error = document.getElementById("reCaptchaErrorMessage");
+        if (error.style.visibility == "visible") {
+            error.style.visibility = "hidden";
+        }
+    }
+
+    function validateCaptcha() {
+        var response = grecaptcha.getResponse();
+        if (response.length === 0) {
+            document.getElementById("reCaptchaErrorMessage").style.visibility = "visible";
+            return false;
+        }
+        return true;
+    }
+</script>

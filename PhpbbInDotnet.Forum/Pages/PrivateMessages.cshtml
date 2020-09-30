@@ -1,0 +1,209 @@
+﻿@page
+@model PhpbbInDotnet.Forum.Pages.PrivateMessagesModel
+@{
+    ViewData["Title"] = "PrivateMessages";
+    Layout = "~/Pages/_Layout.cshtml";
+    var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+}
+
+@using Utilities
+@using Contracts
+
+<environment include="Development">
+    <script src="~/js/tabbedPage.js"></script>
+    <link rel="stylesheet" href="~/css/tabbedPage.css" />
+    <link rel="stylesheet" href="~/css/pagination.css" />
+</environment>
+<style>
+    .MinAuthor {
+        font-weight: bold;
+        display: none;
+    }
+
+    @@media (max-width: 768px) {
+        .MinAuthor {
+            display: inherit;
+            float: right;
+        }
+    }
+</style>
+
+<h2>Mesaje private</h2>
+
+<a asp-page="/Posting" asp-page-handler="PrivateMessage">Scrie un mesaj privat nou</a>
+<p></p>
+<div class="tab">
+    <button class="@(Model.Show == PrivateMessagesPages.Inbox ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Inbox')">Primite</button>
+    <button class="@(Model.Show == PrivateMessagesPages.Sent ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Sent')">Trimise</button>
+    @if (Model.Show == PrivateMessagesPages.Message)
+    {
+        <button class="@(Model.Show == PrivateMessagesPages.Message ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Message')">Mesajul selectat</button>
+    }
+</div>
+
+<div id="Inbox" class="tabcontent" style="@(Model.Show == PrivateMessagesPages.Inbox ? "display:inherit" : "display:none")">
+    @if (Model.InboxMessages?.Any() ?? false)
+    {
+        @await Html.PartialAsync(
+            "_PaginationControlsPartial",
+            new CustomPartials._PaginationControlsPartialModel(
+                paginator: Model.InboxPaginator,
+                allowPaginationChange: false,
+                back: $"PrivateMessages?show=Inbox&InboxPage={Model.InboxPage - 1}",
+                forward: $"PrivateMessages?show=Inbox&InboxPage={Model.InboxPage + 1}",
+                includeEasyNavigation: true,
+                topicId: null,
+                firstPostId: null
+            ),
+            ViewData
+        )
+        var isFirst = true;
+        foreach (var msg in Model.InboxMessages ?? Enumerable.Empty<PrivateMessageDto>())
+        {
+            if (!isFirst)
+            {
+                <hr class="BoxSeparator" />
+            }
+            var divClass = msg.Unread == 1 ? $"FlexRow Unread RowMargin" : $"FlexRow RowMargin";
+            <div class="@divClass">
+                <input name="SelectedMessages" type="checkbox" value="@msg.MessageId" form="MarkAsRead" style="margin-right:10px" />
+                <span class="ForumContent" style="align-self:safe center">
+                    <a asp-page="/PrivateMessages" asp-route-show="@PrivateMessagesPages.Message" asp-route-messageId="@msg.MessageId" asp-route-inboxPage="@Model.InboxPage" asp-route-sentPage="@Model.SentPage" class="nav-link" style="font-weight:bold">
+                        @Html.Raw(msg.Subject)
+                    </a>
+                    <span class="MinAuthor">
+                        &nbsp;&bull;&nbsp;
+                        <span style="color:#@(msg.OthersColor)">@Html.Raw(msg.OthersName)</span>
+                    </span>
+                    <br />
+                </span>
+                @await Html.PartialAsync(
+                             "_SummaryPartial",
+                             new CustomPartials._SummaryPartialModel(msg.OthersId, msg.OthersName, msg.OthersColor, msg.Time, msg.MessageId,
+                                 UserDateFormat, false, null, null, null, null, false, false, null, null, "De la: ")
+                         )
+            </div>
+            isFirst = false;
+        }
+
+        if (Model.InboxMessages.Any())
+        {
+            <hr />
+            <script>
+                function selectAll() {
+                    var checkboxes = $('input[type=checkbox]');
+                    checkboxes.prop('checked', !checkboxes.prop('checked'));
+                }
+            </script>
+            <a href="javascript:selectAll()">Selectează toate mesajele</a>
+            <p></p>
+            <form asp-page-handler="MarkAsRead" method="post" id="MarkAsRead" name="MarkAsRead">
+                <input type="submit" value="Marchează mesajele selectate ca citite" onclick="return confirm('Sigur dorești să marchezi ca citite mesajele selectate?');" />
+            </form>
+        }
+    }
+    else
+    {
+        <span>Nici un mesaj primit.</span>
+    }
+</div>
+
+<div id="Sent" class="tabcontent" style="@(Model.Show == PrivateMessagesPages.Sent ? "display:inherit" : "display:none")">
+    @if (Model.SentMessages?.Any() ?? false)
+    {
+        @await Html.PartialAsync(
+            "_PaginationControlsPartial",
+            new CustomPartials._PaginationControlsPartialModel(
+                paginator: Model.SentPaginator,
+                allowPaginationChange: false,
+                back: $"PrivateMessages?show=Sent&SentPage={Model.SentPage - 1}",
+                forward: $"PrivateMessages?show=Sent&SentPage={Model.SentPage + 1}",
+                includeEasyNavigation: true,
+                topicId: null,
+                firstPostId: null
+            ),
+            ViewData
+        )
+        var isFirst = true;
+        foreach (var msg in Model.SentMessages ?? Enumerable.Empty<PrivateMessageDto>())
+        {
+            if (!isFirst)
+            {
+                <hr class="BoxSeparator" />
+            }
+            <div class="FlexRow RowMargin">
+                <span class="ForumContent" style="align-self:safe center">
+                    <a asp-page="/PrivateMessages" asp-route-show="@PrivateMessagesPages.Message" asp-route-messageId="@msg.MessageId" asp-route-inboxPage="@Model.InboxPage" asp-route-sentPage="@Model.SentPage" class="nav-link" style="font-weight:bold">
+                        @Html.Raw(msg.Subject)
+                    </a>
+                    <span class="MinAuthor">
+                        &nbsp;&bull;&nbsp;
+                        <span style="color:#@(msg.OthersColor)">@Html.Raw(msg.OthersName)</span>
+                    </span>
+                    <br />
+                </span>
+                @await Html.PartialAsync(
+                             "_SummaryPartial",
+                             new CustomPartials._SummaryPartialModel(msg.OthersId, msg.OthersName, msg.OthersColor, msg.Time, msg.MessageId,
+                                 UserDateFormat, false, null, null, null, null, false, false, null, null, "Pentru: ")
+                         )
+            </div>
+            isFirst = false;
+        }
+    }
+    else
+    {
+        <span>Nici un mesaj trimis.</span>
+    }
+</div>
+
+@if (Model.Show == PrivateMessagesPages.Message && Model.SelectedMessage != null)
+{
+    var fakeId = -Model.SelectedMessage.MessageId;
+    <div id="Message" class="tabcontent" style="@(Model.Show == PrivateMessagesPages.Message ? "display:inherit" : "display:none")">
+        <div class="RowMargin">
+            <div class="FlexRow">
+                @await Html.PartialAsync(
+                     "_SummaryPartial",
+                     new CustomPartials._SummaryPartialModel(Model.SelectedMessage.OthersId, Model.SelectedMessage.OthersName, Model.SelectedMessage.OthersColor,
+                         Model.SelectedMessage.Time, fakeId, UserDateFormat, Model.SelectedMessage.OtherHasAvatar, null, null, null, null, true, false, null, null,
+                         Model.SelectedMessageIsMine ? "Pentru: " : "De la: ")
+                 )
+                <div class="ForumContent VerticalContent FlexRight" id="@fakeId">
+                    <span style="display:flex">
+                        <span class="PostTitle">
+                            @Html.Raw(Model.SelectedMessage.Subject)
+                        </span>
+                        <span style="margin-left:auto">
+                            <span class="CollapsedMenu" onclick="expandCollapsedMenu('summary@(fakeId)', 'button@(fakeId)')" id="button@(fakeId)" style="color:#@Model.SelectedMessage.OthersColor;margin-left: auto; height:auto; width: min-content">
+                                @Html.Raw(Model.SelectedMessage.OthersName)
+                            </span>
+                        </span>
+                    </span>
+                    <div style="max-width:100%">
+                        <br />
+                        @Html.Raw(Model.SelectedMessage.Text)
+                        <br />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p>&nbsp;</p>
+        <a asp-page="/Posting" asp-page-handler="PrivateMessage" asp-route-privateMessageId="@Model.SelectedMessage.MessageId" asp-route-receiverId="@Model.SelectedMessage.OthersId">Răspunde</a>
+        @if (Model.SelectedMessageIsMine && Model.SelectedMessageIsUnread)
+        {
+            <span>&nbsp;&bull;&nbsp;</span>
+            <a asp-page="/Posting" asp-page-handler="EditPrivateMessage" asp-route-privateMessageId="@Model.SelectedMessage.MessageId" asp-route-receiverId="@Model.SelectedMessage.OthersId">Modifică mesajul</a>
+            <span>&nbsp;&bull;&nbsp;</span>
+            <a href="javascript:$('#deleteForm').submit();">Șterge mesajul</a>
+            <form method="post" id="deleteForm" asp-page-handler="DeleteMessage">
+                <input type="hidden" asp-for="MessageId" />
+                <input type="hidden" asp-for="InboxPage" />
+                <input type="hidden" asp-for="SentPage" />
+                <input type="hidden" name="Show" value="@(Model.SelectedMessageIsMine ? PrivateMessagesPages.Sent : PrivateMessagesPages.Inbox)" />
+            </form>
+        }
+        <p></p>
+        <span asp-validation-for="MessageId" class="validation"></span>
+    </div>
+}

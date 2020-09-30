@@ -1,0 +1,218 @@
+﻿@page
+
+@using Microsoft.EntityFrameworkCore
+
+@inject Services.WritingToolsService _writingService
+@inject ForumDb.ForumDbContext _context
+@inject Services.BBCodeRenderingService _renderingService
+@inject Services.UserService _userService
+@inject Services.ForumTreeService _forumService
+
+@model PhpbbInDotnet.Forum.Pages.SearchModel
+@{
+    ViewData["Title"] = "Search";
+    Layout = "~/Pages/_Layout.cshtml";
+    var CurrentUser = await Model.GetCurrentUserAsync();
+    var dateFormat = CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+}
+<environment include="Development">
+    <link rel="stylesheet" href="~/css/pagination.css" />
+</environment>
+@if (!Model.IsAuthorSearch)
+{
+    <h2>Caută</h2>
+}
+<script type="text/javascript">
+    window.onload = function () {
+        onPostLoad();
+    }
+
+    //forum tree callback
+    function forumSelectCallback(forumId) {
+        var forumInput = document.getElementById("ForumIdInput");
+        if (forumInput != null) {
+            forumInput.value = forumId;
+        }
+    }
+
+    //forum tree callback
+    function topicSelectCallback(topics) {
+        var topicDisplay = document.getElementById("TopicIdDisplay");
+        if (topicDisplay != null) {
+            topicDisplay.options.length = 0;
+            var option = document.createElement('option');
+            option.text = "Caută în toate subiectele";
+            option.value = 0;
+            topicDisplay.add(option);
+            topics.forEach(t => {
+                var option = document.createElement('option');
+                option.text = t.topicTitle;
+                option.value = t.topicId;
+                topicDisplay.add(option);
+            });
+        }
+    }
+
+    //forum tree callback
+    function topicSelectInit(topicId) {
+        if (topicId != null) {
+            $("#TopicIdDisplay").val(topicId).change();
+        }
+    }
+</script>
+@if (!Model.IsAuthorSearch)
+{
+    <form method="post">
+        <input asp-for="QueryString" type="hidden" />
+        <input asp-for="PageNum" type="hidden" />
+        <input asp-for="TotalResults" type="hidden" />
+        <input asp-for="AuthorId" type="hidden" id="authorId" />
+
+        <input asp-for="SearchText" type="text" placeholder="Caută după text..." style="width:100%" />
+        <span class="Caption">
+            Dacă doriți să căutați după o frază exactă, puneți-o între ghilimele.
+            De exemplu căutarea <b><i>autobuz galben</i></b> va returna mesaje care conțin fie <b><i>autobuz</i></b>, fie <b><i>galben</i></b>, fie amândouă.
+            Căutarea <b><i>"autobuz galben"</i></b> va returna mesajele care conțin fraza exactă "autobuz galben".
+        </span>
+        <span asp-validation-for="SearchText" class="validation"></span>
+        <p>&nbsp;</p>
+        <a href="javascript:showElement('advanced')">Căutare avansată</a>
+        <p>&nbsp;</p>
+        <div id="advanced" style="display:none">
+            <input asp-for="Author" type="text" placeholder="Caută după autor..." id="AuthorInput" style="width:100%" autocomplete="off" />
+            <p id="tributeHolder" style="position:relative">&nbsp;</p>
+            Caută în forumul...
+            @await Html.PartialAsync(
+                 "_ForumTreePartial",
+                  new CustomPartials._ForumTreePartialModel(
+                      tree: (await Model.GetForumTree()).Tree,
+                      topicData: await _context.PhpbbTopics.AsNoTracking().Select(t => new Contracts.MiniTopicDto(t)).ToListAsync(),
+                      forumId: Model.ForumId,
+                      topicId: Model.TopicId,
+                      constrainSize: true
+                  ),
+                 ViewData
+             )
+            <input asp-for="ForumId" type="hidden" id="ForumIdInput" />
+            <p>&nbsp;</p>
+            Caută în subiectul...<br />
+            <select name="TopicId" id="TopicIdDisplay" style="width:100%">
+                <option selected disabled value="-1">Caută în subiectul...</option>
+                <option value="0">Caută în toate subiectele</option>
+            </select>
+            <p>&nbsp;</p>
+        </div>
+        <input type="submit" value="Trimite" />
+    </form>
+}
+else
+{
+    var user = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == Model.AuthorId);
+    if (!string.IsNullOrWhiteSpace(user?.Username))
+    {
+        <h3>Mesaje scrise de @System.Web.HttpUtility.HtmlDecode(user.Username)</h3>
+    }
+}
+@if (Model.Posts != null && Model.Posts.Any())
+{
+    if (!Model.IsAuthorSearch)
+    {
+        <h2>Rezultate</h2>
+    }
+    @await Html.PartialAsync(
+        "_PaginationControlsPartial",
+        new CustomPartials._PaginationControlsPartialModel(
+            paginator: Model.Paginator,
+            allowPaginationChange: false,
+            back: Model.GetSearchLinkForPage(Model.PageNum.Value - 1),
+            forward: Model.GetSearchLinkForPage(Model.PageNum.Value + 1),
+            includeEasyNavigation: false,
+            topicId: null,
+            firstPostId: Model.Posts?.FirstOrDefault()?.PostId
+        ),
+        ViewData
+    )
+    <hr class="BoxSeparator" />
+    foreach (var post in Model.Posts)
+    {
+        post.AuthorHasAvatar = !string.IsNullOrWhiteSpace(post.UserAvatar);
+        await _renderingService.ProcessPost(post, Model.PageContext, Model.HttpContext, false, Model.SearchText);
+
+        <div class="RowMargin FlexRow">
+            @await Html.PartialAsync(
+                "_SummaryPartial",
+                new CustomPartials._SummaryPartialModel(post.AuthorId, post.AuthorName, post.AuthorColor, post.PostCreationTime, post.PostId.Value, dateFormat,
+                    post.AuthorHasAvatar, post.AuthorRank, null, null, null, true, false, null, null, null,
+                    _userService.HasPrivateMessages(CurrentUser) ? $"<a href=\"./Posting?handler=PrivateMessage&postId={post.PostId}\">&#x2709; Mesaj privat</a>" : null
+                )
+            )
+            <div class="ForumContent" id="@post.PostId">
+                <div class="Caption" style="clear:both">
+                    @Html.Raw(_forumService.GetPathText((await Model.GetForumTree()).Tree, post.ForumId))
+                </div>
+                <span style="display:flex">
+                    <span class="PostTitle">
+                        <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@post.PostId">@Html.Raw(post.PostSubject)</a>
+                    </span>
+                    <span style="margin-left:auto">
+                        <span class="CollapsedMenu" onclick="expandCollapsedMenu('summary@(post.PostId.Value)', 'button@(post.PostId.Value)')" id="button@(post.PostId.Value)" style="color:#@post.AuthorColor;margin-left: auto; height:auto; width: min-content">
+                            @Html.Raw(post.AuthorName)
+                        </span>
+                    </span>
+                </span>
+                <p>&nbsp;</p>
+                <div style="max-width:100%; overflow-wrap: break-word">
+                    <p style="clear:both">@Html.Raw(post.PostText)</p>
+                </div>
+            </div>
+        </div>
+        <hr class="BoxSeparator" />
+    }
+
+    <p>&nbsp;</p>
+    @await Html.PartialAsync(
+        "_PaginationControlsPartial",
+        new CustomPartials._PaginationControlsPartialModel(
+            paginator: Model.Paginator,
+            allowPaginationChange: false,
+            back: Model.GetSearchLinkForPage(Model.PageNum.Value - 1),
+            forward: Model.GetSearchLinkForPage(Model.PageNum.Value + 1),
+            includeEasyNavigation: true,
+            topicId: null,
+            firstPostId: Model.Posts?.FirstOrDefault()?.PostId
+        ),
+        ViewData
+    )
+}
+else if (Model.Posts != null)
+{
+    <p></p>
+    <p>Nu a fost găsit nici un rezultat.</p>
+}
+<link rel="stylesheet" href="~/lib/tribute/dist/tribute.css" />
+<script src="~/lib/tribute/dist/tribute.js"></script>
+<script>
+    var tribute = new Tribute({
+        values: @Html.Raw(_writingService.ToCamelCaseJson(Model.Users)),
+        selectTemplate: function (item) {
+            return item.original.key;
+        },
+        allowSpaces: true,
+        menuContainer: document.getElementById("tributeHolder"),
+        positionMenu: false,
+        trigger: ' '
+    });
+
+    var authorInput = document.getElementById("AuthorInput");
+
+    tribute.attach(authorInput);
+
+    authorInput.addEventListener("tribute-replaced", function (e) {
+        document.getElementById("authorId").value = e.detail.item.original.value;
+        authorInput.value = e.detail.item.original.key;
+    });
+
+    authorInput.addEventListener("focusin", function (e) {
+        tribute.showMenuForCollection(authorInput);
+    });
+</script>

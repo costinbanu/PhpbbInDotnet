@@ -1,0 +1,66 @@
+﻿@page
+@model IndexModel
+
+@inject Services.UserService _userService
+@{
+    ViewData["Title"] = "Home page";
+    var CurrentUser = await Model.GetCurrentUserAsync();
+    var UserDateFormat = CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+}
+
+<script>
+    function showLinks() {
+        $('#bullet').toggle();
+        showElement('metrouusorLinks');
+    }
+</script>
+
+<a href="javascript:showLinks();">Site-urile „Metrou Ușor”</a>
+<ul class="Shortcuts" style="display:none" id="metrouusorLinks">
+    <li>
+        <span>&nbsp; &nbsp; </span>
+        <a href="https://metrouusor.com" target="_blank">Asociația „Metrou Ușor”</a>
+    </li>
+    <li>
+        <span>&nbsp; &nbsp; </span>
+        <a href="https://www.facebook.com/MetrouUsor/" target="_blank">Facebook</a>
+    </li>
+    <li>
+        <span>&nbsp; &nbsp; </span>
+        <a href="https://youtube.com/channel/UCczAlitk6NaUjQsbtCSdEjA" target="_blank">YouTube</a>
+    </li>
+    <li>
+        <span>&nbsp; &nbsp; </span>
+        <a href="https://campaniamea.declic.ro/petitions/petitie-pentru-infiintarea-muzeului-transportului-bucurestean" target="_blank">Inițiativa pentru Muzeul transportului bucureștean</a>
+    </li>
+    <li>
+        <span>&nbsp; &nbsp; </span>
+        <a href="https://metrouusor.com/Content/implica-te/directioneaza-2-din-impozit.html" target="_blank">2% pentru Asociația „Metrou Ușor”</a>
+    </li>
+    <li>
+        <span>&nbsp; &nbsp; </span>
+        <a href="./ViewTopic?topicId=5252&pageNum=1">Sugestii sau reclamații pentru noul forum</a>
+    </li>
+    <li>
+        <span>&nbsp; &nbsp; </span>
+        <a href="https://forum.metrouusor.com">Înapoi la vechiul forum</a>
+    </li>
+</ul>
+
+@if (!CurrentUser.IsAnonymous)
+{
+    <span id="bullet">&nbsp;&bull;&nbsp;</span>
+    @await Html.PartialAsync(
+        "_HeaderLinksPartial",
+        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(_userService.HasPrivateMessages(CurrentUser), "<a href=\"javascript:MarkForumsRead.submit()\">Marchează forumurile ca citite</a>"),
+        ViewData
+    )
+    <form asp-page-handler="MarkForumsRead" method="post" name="MarkForumsRead">
+        @Html.AntiForgeryToken()
+    </form>
+}
+@await Html.PartialAsync(
+    "_ForumDisplayPartial",
+    new PhpbbInDotnet.Forum.Pages.CustomPartials._ForumDisplayPartialModel(0, Model.Tree, UserDateFormat, false, CurrentUser, false),
+    ViewData
+)
