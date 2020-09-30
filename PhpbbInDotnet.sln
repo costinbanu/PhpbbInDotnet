@@ -5,13 +5,19 @@ VisualStudioVersion = 16.0.30002.166
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhpbbInDotnet.Forum", "PhpbbInDotnet.Forum\PhpbbInDotnet.Forum.csproj", "{147E5805-3F1B-441F-9E01-B78D8ADC5C9C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhpbbInDotnet.Services", "PhpbbInDotnet.Services\PhpbbInDotnet.Services.csproj", "{B3B631B5-562E-43B8-B257-E5F2AB0669F2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhpbbInDotnet.Services", "PhpbbInDotnet.Services\PhpbbInDotnet.Services.csproj", "{B3B631B5-562E-43B8-B257-E5F2AB0669F2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhpbbInDotnet.Database", "PhpbbInDotnet.Database\PhpbbInDotnet.Database.csproj", "{A3FDD6FA-9F66-4FCF-94B6-54B1BBC8C6B4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhpbbInDotnet.Database", "PhpbbInDotnet.Database\PhpbbInDotnet.Database.csproj", "{A3FDD6FA-9F66-4FCF-94B6-54B1BBC8C6B4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhpbbInDotnet.Utilities", "PhpbbInDotnet.Utilities\PhpbbInDotnet.Utilities.csproj", "{BAF93D03-8500-408B-909C-7B9AEE8C00D4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhpbbInDotnet.Utilities", "PhpbbInDotnet.Utilities\PhpbbInDotnet.Utilities.csproj", "{BAF93D03-8500-408B-909C-7B9AEE8C00D4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhpbbInDotnet.DTOs", "PhpbbInDotnet.DTOs\PhpbbInDotnet.DTOs.csproj", "{50ED7AFB-09B9-483F-A2DA-2D62C375327C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhpbbInDotnet.DTOs", "PhpbbInDotnet.DTOs\PhpbbInDotnet.DTOs.csproj", "{50ED7AFB-09B9-483F-A2DA-2D62C375327C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{51DF4AF8-F47B-45DE-86AC-1611A648F29C}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
