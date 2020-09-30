@@ -1,10 +1,10 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials.Admin._AdminForumPermissionsPartialModel
 
 @using Microsoft.EntityFrameworkCore;
-@using PhpbbInDotnet.Forum.Contracts;
-@using PhpbbInDotnet.Forum.ForumDb;
-@using PhpbbInDotnet.Forum.ForumDb.Entities;
-@using PhpbbInDotnet.Forum.Utilities;
+@using PhpbbInDotnet.DTOs;
+@using PhpbbInDotnet.Database;
+@using PhpbbInDotnet.Database.Entities;
+@using PhpbbInDotnet.Utilities;
 
 @inject ForumDbContext _context
 @inject Services.WritingToolsService _writingSerivce

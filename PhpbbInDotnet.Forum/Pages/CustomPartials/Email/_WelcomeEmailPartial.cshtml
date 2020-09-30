@@ -1,7 +1,7 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials.Email._WelcomeEmailPartialModel
 @using Microsoft.Extensions.Configuration 
-@using PhpbbInDotnet.Forum.Utilities
-@inject Utils _utils
+@using PhpbbInDotnet.Utilities
+@inject Services.CommonUtils _utils
 @inject IConfiguration _config
 
 <h2>@Model.Subject</h2>

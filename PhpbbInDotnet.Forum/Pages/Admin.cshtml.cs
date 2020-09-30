@@ -1,13 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Forum.Contracts;
-using PhpbbInDotnet.Forum.ForumDb;
-using PhpbbInDotnet.Forum.ForumDb.Entities;
+using PhpbbInDotnet.DTOs;
+using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Forum.Pages.CustomPartials.Admin;
-using PhpbbInDotnet.Forum.Services;
-using PhpbbInDotnet.Forum.Utilities;
-using System;
+using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Utilities;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -32,7 +31,7 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly AdminForumService _adminForumService;
         private readonly WritingToolsService _adminWritingService;
 
-        public AdminModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, Utils utils, 
+        public AdminModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, CommonUtils utils, 
             AdminUserService adminUserService, AdminForumService adminForumService, WritingToolsService adminWritingService, IConfiguration config, AnonymousSessionCounter sessionCounter) 
             : base(context, forumService, userService, cacheService, config, sessionCounter, utils)
         {

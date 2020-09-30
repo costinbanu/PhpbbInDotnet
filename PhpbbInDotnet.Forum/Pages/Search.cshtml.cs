@@ -2,10 +2,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Forum.Contracts;
-using PhpbbInDotnet.Forum.ForumDb;
-using PhpbbInDotnet.Forum.Services;
-using PhpbbInDotnet.Forum.Utilities;
+using PhpbbInDotnet.DTOs;
+using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Utilities;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Data;
@@ -53,7 +53,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool IsAuthorSearch { get; private set; }
 
         public SearchModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, IConfiguration config, 
-            AnonymousSessionCounter sessionCounter, Utils utils)
+            AnonymousSessionCounter sessionCounter, CommonUtils utils)
             : base(context, forumService, userService, cacheService, config, sessionCounter, utils)
         { }
 

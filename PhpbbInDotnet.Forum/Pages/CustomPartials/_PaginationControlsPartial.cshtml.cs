@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
-using PhpbbInDotnet.Forum.Utilities;
+using PhpbbInDotnet.Utilities;
 using System;
 
 namespace PhpbbInDotnet.Forum.Pages.CustomPartials

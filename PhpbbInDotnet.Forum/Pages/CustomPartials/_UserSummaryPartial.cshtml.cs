@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
-using PhpbbInDotnet.Forum.Contracts;
-using PhpbbInDotnet.Forum.ForumDb.Entities;
-using PhpbbInDotnet.Forum.Utilities;
+using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Utilities;
 using System.Collections.Generic;
 
 namespace PhpbbInDotnet.Forum.Pages.CustomPartials

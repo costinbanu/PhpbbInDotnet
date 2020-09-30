@@ -5,6 +5,14 @@ VisualStudioVersion = 16.0.30002.166
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhpbbInDotnet.Forum", "PhpbbInDotnet.Forum\PhpbbInDotnet.Forum.csproj", "{147E5805-3F1B-441F-9E01-B78D8ADC5C9C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhpbbInDotnet.Services", "PhpbbInDotnet.Services\PhpbbInDotnet.Services.csproj", "{B3B631B5-562E-43B8-B257-E5F2AB0669F2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhpbbInDotnet.Database", "PhpbbInDotnet.Database\PhpbbInDotnet.Database.csproj", "{A3FDD6FA-9F66-4FCF-94B6-54B1BBC8C6B4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhpbbInDotnet.Utilities", "PhpbbInDotnet.Utilities\PhpbbInDotnet.Utilities.csproj", "{BAF93D03-8500-408B-909C-7B9AEE8C00D4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhpbbInDotnet.DTOs", "PhpbbInDotnet.DTOs\PhpbbInDotnet.DTOs.csproj", "{50ED7AFB-09B9-483F-A2DA-2D62C375327C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +23,22 @@ Global
 		{147E5805-3F1B-441F-9E01-B78D8ADC5C9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{147E5805-3F1B-441F-9E01-B78D8ADC5C9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{147E5805-3F1B-441F-9E01-B78D8ADC5C9C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B3B631B5-562E-43B8-B257-E5F2AB0669F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B3B631B5-562E-43B8-B257-E5F2AB0669F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B3B631B5-562E-43B8-B257-E5F2AB0669F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B3B631B5-562E-43B8-B257-E5F2AB0669F2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A3FDD6FA-9F66-4FCF-94B6-54B1BBC8C6B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A3FDD6FA-9F66-4FCF-94B6-54B1BBC8C6B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A3FDD6FA-9F66-4FCF-94B6-54B1BBC8C6B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A3FDD6FA-9F66-4FCF-94B6-54B1BBC8C6B4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BAF93D03-8500-408B-909C-7B9AEE8C00D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BAF93D03-8500-408B-909C-7B9AEE8C00D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BAF93D03-8500-408B-909C-7B9AEE8C00D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BAF93D03-8500-408B-909C-7B9AEE8C00D4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{50ED7AFB-09B9-483F-A2DA-2D62C375327C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{50ED7AFB-09B9-483F-A2DA-2D62C375327C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{50ED7AFB-09B9-483F-A2DA-2D62C375327C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{50ED7AFB-09B9-483F-A2DA-2D62C375327C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

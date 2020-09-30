@@ -2,15 +2,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Forum.Contracts;
-using PhpbbInDotnet.Forum.ForumDb.Entities;
-using PhpbbInDotnet.Forum.Pages.CustomPartials;
-using PhpbbInDotnet.Forum.Pages.CustomPartials.Email;
-using PhpbbInDotnet.Forum.Utilities;
+using PhpbbInDotnet.DTOs;
+using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Mail;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -316,7 +313,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 PreviewablePost = new PostDto
                 {
-                    Attachments = Attachments?.Select(a => new _AttachmentPartialModel(a.RealFilename, a.AttachComment, 0, a.Mimetype, 0, a.Filesize, a.PhysicalFilename, true))?.ToList() ?? new List<_AttachmentPartialModel>(),
+                    Attachments = Attachments?.Select(a => new AttachmentDto(a.RealFilename, a.AttachComment, 0, a.Mimetype, 0, a.Filesize, a.PhysicalFilename, true))?.ToList() ?? new List<AttachmentDto>(),
                     AuthorColor = postAuthor.UserColour,
                     AuthorHasAvatar = !string.IsNullOrWhiteSpace(postAuthor?.UserAvatar),
                     AuthorId = postAuthor.UserId,

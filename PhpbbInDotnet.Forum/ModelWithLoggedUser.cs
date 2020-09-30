@@ -8,11 +8,11 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Net.Http.Headers;
-using PhpbbInDotnet.Forum.Contracts;
-using PhpbbInDotnet.Forum.ForumDb;
-using PhpbbInDotnet.Forum.ForumDb.Entities;
-using PhpbbInDotnet.Forum.Services;
-using PhpbbInDotnet.Forum.Utilities;
+using PhpbbInDotnet.DTOs;
+using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -29,13 +29,13 @@ namespace PhpbbInDotnet.Forum
         protected readonly UserService _userService;
         protected readonly ForumDbContext _context;
         protected readonly IConfiguration _config;
-        protected readonly Utils _utils;
+        protected readonly CommonUtils _utils;
 
         private readonly AnonymousSessionCounter _sessionCounter;
         private LoggedUser _currentUser;
 
         public ModelWithLoggedUser(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
-            IConfiguration config, AnonymousSessionCounter sessionCounter, Utils utils)
+            IConfiguration config, AnonymousSessionCounter sessionCounter, CommonUtils utils)
         {
             _forumService = forumService;
             _cacheService = cacheService;

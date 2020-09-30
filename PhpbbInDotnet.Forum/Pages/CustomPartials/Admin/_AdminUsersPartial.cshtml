@@ -1,7 +1,7 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials.Admin._AdminUsersPartialModel
 @using Microsoft.EntityFrameworkCore
 @inject Services.AdminUserService _adminUserService
-@inject ForumDb.ForumDbContext _context
+@inject Database.ForumDbContext _context
 
 <h4>Utilizatori inactivi</h4>
 
@@ -71,7 +71,7 @@
     var groups = await (
         from g in _context.PhpbbGroups.AsNoTracking()
         let role = _context.PhpbbAclGroups.AsNoTracking().FirstOrDefault(rg => rg.GroupId == g.GroupId && rg.ForumId == 0)
-        select new PhpbbInDotnet.Forum.Contracts.UpsertGroupDto
+        select new PhpbbInDotnet.DTOs.UpsertGroupDto
         {
             Id = g.GroupId,
             Name = g.GroupName,

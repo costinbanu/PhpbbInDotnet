@@ -1,8 +1,8 @@
 ﻿@page
 
 @using System.Web
-@using PhpbbInDotnet.Forum.Utilities
-@using PhpbbInDotnet.Forum.ForumDb.Entities
+@using PhpbbInDotnet.Utilities
+@using PhpbbInDotnet.Database.Entities
 @using Microsoft.Extensions.Configuration
 
 @model PhpbbInDotnet.Forum.Pages.PostingModel
@@ -11,8 +11,8 @@
 @inject Services.WritingToolsService _writingService
 @inject Services.BBCodeRenderingService _renderingService
 @inject Services.PostService _postService
-@inject ForumDb.ForumDbContext _context
-@inject Utils _utils
+@inject Database.ForumDbContext _context
+@inject Services.CommonUtils _utils
 @inject IConfiguration _config
 
 @{
@@ -354,7 +354,7 @@ else if (IsPM)
         foreach (var p in posts)
         {
             var ju = users.FirstOrDefault(u => u.UserId == p.PosterId);
-            var post = new Contracts.PostDto
+            var post = new DTOs.PostDto
             {
                 PostSubject = p.PostSubject,
                 PostText = p.PostText,

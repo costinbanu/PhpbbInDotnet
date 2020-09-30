@@ -1,13 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
-using PhpbbInDotnet.Forum.Services;
-using PhpbbInDotnet.Forum.Utilities;
+using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Utilities;
 using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages.CustomPartials
 {
     public class _RulesPartialModel : PageModel
     {
-        public _RulesPartialModel(BBCodeRenderingService renderingService, Utils utils, string forumRules, string forumRulesUid, string forumRulesLink)
+        public _RulesPartialModel(BBCodeRenderingService renderingService, CommonUtils utils, string forumRules, string forumRulesUid, string forumRulesLink)
         {
             if (!string.IsNullOrWhiteSpace(forumRules))
             {

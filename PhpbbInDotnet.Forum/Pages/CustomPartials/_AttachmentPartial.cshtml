@@ -1,7 +1,7 @@
-﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._AttachmentPartialModel
+﻿@model PhpbbInDotnet.DTOs.AttachmentDto
 
-@using PhpbbInDotnet.Forum.Utilities
-@inject Utils _utils
+@using PhpbbInDotnet.Utilities
+@inject Services.CommonUtils _utils
 @inject Services.BBCodeRenderingService _renderingService
 
 @if (Model != null)

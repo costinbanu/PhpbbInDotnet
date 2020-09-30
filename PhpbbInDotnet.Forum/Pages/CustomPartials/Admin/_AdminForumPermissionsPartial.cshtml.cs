@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
-using PhpbbInDotnet.Forum.Contracts;
-using PhpbbInDotnet.Forum.ForumDb.Entities;
-using PhpbbInDotnet.Forum.Utilities;
+using PhpbbInDotnet.DTOs;
+using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
 

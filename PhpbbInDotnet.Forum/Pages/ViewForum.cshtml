@@ -1,12 +1,12 @@
 ﻿@page
 @model PhpbbInDotnet.Forum.Pages.ViewForumModel
 
-@using PhpbbInDotnet.Forum.Utilities
+@using PhpbbInDotnet.Utilities
 @using System.Web
 @inject Services.ForumTreeService _forumService
 @inject Services.BBCodeRenderingService _renderingService
 @inject Services.UserService _userService
-@inject Utils _utils
+@inject Services.CommonUtils _utils
 
 @{
     ViewData["Title"] = Model.ForumTitle;
@@ -225,7 +225,7 @@ else
             {
                 var pageSize = CurrentUser.TopicPostsPerPage.ContainsKey(topic.TopicId ?? 0) ? CurrentUser.TopicPostsPerPage[topic.TopicId ?? 0] : Constants.DEFAULT_PAGE_SIZE;
                 topic.Unread = await Model.IsTopicUnread(topic.ForumId ?? 0, topic.TopicId ?? 0);
-                topic.Pagination = new CustomPartials._PaginationPartialModel($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", topic.PostCount ?? 0, pageSize, 1, "PageNum");
+                topic.Pagination = new DTOs.PaginationDto($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", topic.PostCount ?? 0, pageSize, 1, "PageNum");
             }
 
             if (!isFirst && !previousIsUnread && !topic.Unread)

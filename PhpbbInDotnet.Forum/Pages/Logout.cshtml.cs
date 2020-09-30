@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Forum.Services;
+using PhpbbInDotnet.Services;
 using System;
 using System.Threading.Tasks;
 using System.Web;

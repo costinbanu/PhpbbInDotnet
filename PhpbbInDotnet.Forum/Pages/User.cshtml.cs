@@ -6,15 +6,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Forum.ForumDb;
-using PhpbbInDotnet.Forum.ForumDb.Entities;
+using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Forum.Pages.CustomPartials.Email;
-using PhpbbInDotnet.Forum.Services;
-using PhpbbInDotnet.Forum.Utilities;
+using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Utilities;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.IO;
 using System.Linq;
 using System.Net.Mail;
 using System.Threading.Tasks;
@@ -69,7 +67,7 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly StorageService _storageService;
         private readonly WritingToolsService _writingService;
 
-        public UserModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
+        public UserModel(CommonUtils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
             StorageService storageService, WritingToolsService writingService, IConfiguration config, AnonymousSessionCounter sessionCounter)
             : base(context, forumService, userService, cacheService, config, sessionCounter, utils)
         {

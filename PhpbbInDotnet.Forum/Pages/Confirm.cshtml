@@ -7,9 +7,9 @@
 
 @using Microsoft.EntityFrameworkCore
 
-@inject Utilities.Utils _utils
+@inject Services.CommonUtils _utils
 @inject Services.ForumTreeService _forumService
-@inject ForumDb.ForumDbContext _dbContext
+@inject Database.ForumDbContext _dbContext
 
 <h2>@Model.Title</h2>
 
@@ -60,7 +60,7 @@
             "_ForumTreePartial",
             new CustomPartials._ForumTreePartialModel (
                 tree: (await Model.GetForumTree()).Tree,
-                topicData: Model.ShowTopicSelector ? await _dbContext.PhpbbTopics.AsNoTracking().Select(t => new Contracts.MiniTopicDto(t)).ToListAsync() : null,
+                topicData: Model.ShowTopicSelector ? await _dbContext.PhpbbTopics.AsNoTracking().Select(t => new DTOs.MiniTopicDto(t)).ToListAsync() : null,
                 forumId: Model.ForumId,
                 topicId: Model.TopicId
             ),

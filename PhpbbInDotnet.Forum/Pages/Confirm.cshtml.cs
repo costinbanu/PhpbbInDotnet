@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using PhpbbInDotnet.Forum.ForumDb;
+using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Forum.Pages.CustomPartials.Email;
-using PhpbbInDotnet.Forum.Services;
-using PhpbbInDotnet.Forum.Utilities;
+using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Utilities;
 using System.Collections.Generic;
 using System.Net.Mail;
 using System.Threading.Tasks;
@@ -45,7 +45,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public bool IsDestinationConfirmation { get; private set; } = false;
 
-        public ConfirmModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, Utils utils, IConfiguration config, AnonymousSessionCounter sessionCounter)
+        public ConfirmModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, CommonUtils utils, IConfiguration config, AnonymousSessionCounter sessionCounter)
             : base(context, forumService, userService, cacheService, config, sessionCounter, utils) 
         { }
 

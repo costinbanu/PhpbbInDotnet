@@ -1,12 +1,12 @@
 ﻿@page
 @model PhpbbInDotnet.Forum.Pages.MemberListModel
 
-@using PhpbbInDotnet.Forum.Utilities
+@using PhpbbInDotnet.Utilities
 @using System.Web
 @using Microsoft.Extensions.Configuration
 
-@inject Utils _utils
-@inject PhpbbInDotnet.Forum.Services.BBCodeRenderingService _renderingService
+@inject Services.CommonUtils _utils
+@inject Services.BBCodeRenderingService _renderingService
 @inject IConfiguration _config
 @inject AnonymousSessionCounter _sessionCounter
 
@@ -111,7 +111,7 @@
         }
 
         var isFirst = true;
-        foreach (var group in Model.GroupList ?? Enumerable.Empty<PhpbbInDotnet.Forum.ForumDb.Entities.PhpbbGroups>())
+        foreach (var group in Model.GroupList ?? Enumerable.Empty<PhpbbInDotnet.Database.Entities.PhpbbGroups>())
         {
             if (!isFirst)
             {

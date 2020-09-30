@@ -2,13 +2,13 @@
 @model PhpbbInDotnet.Forum.Pages.ViewTopicModel
 
 @using System.Web
-@using PhpbbInDotnet.Forum.Utilities
+@using PhpbbInDotnet.Utilities
 @using Microsoft.EntityFrameworkCore
-@using PhpbbInDotnet.Forum.Pages.CustomPartials
+@using PhpbbInDotnet.DTOs
 
 @inject Services.UserService _userService
-@inject Utils _utils
-@inject ForumDb.ForumDbContext _context
+@inject Services.CommonUtils _utils
+@inject Database.ForumDbContext _context
 @inject Services.BBCodeRenderingService _renderingService
 
 @{
@@ -172,7 +172,7 @@
         var lastEditUsername = lastEditUser == null ? "Anonymous" : lastEditUser.Username;
         var report = Model.Reports?.FirstOrDefault(r => r.PostId == p.PostId);
 
-        var post = new Contracts.PostDto
+        var post = new DTOs.PostDto
         {
             PostSubject = p.PostSubject,
             PostText = p.PostText,
@@ -182,7 +182,7 @@
             PostCreationTime = p.PostTime.ToUtcTime(),
             PostModifiedTime = p.PostEditTime.ToUtcTime(),
             PostId = p.PostId,
-            Attachments = joinedAttachments.Select(x => new _AttachmentPartialModel(x)).ToList(),
+            Attachments = joinedAttachments.Select(x => new AttachmentDto(x)).ToList(),
             BbcodeUid = p.BbcodeUid,
             Unread = reachedAnUnreadPost || (reachedAnUnreadPost = await Model.IsPostUnread(p.ForumId, p.TopicId, p.PostId)),
             AuthorHasAvatar = !string.IsNullOrWhiteSpace(ju?.UserAvatar),

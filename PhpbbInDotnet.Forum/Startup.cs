@@ -11,10 +11,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PaulMiami.AspNetCore.Mvc.Recaptcha;
-using PhpbbInDotnet.Forum.Contracts;
-using PhpbbInDotnet.Forum.ForumDb;
-using PhpbbInDotnet.Forum.Services;
-using PhpbbInDotnet.Forum.Utilities;
+using PhpbbInDotnet.DTOs;
+using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Utilities;
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -120,7 +120,7 @@ namespace PhpbbInDotnet.Forum
             }
             services.AddHttpClient();
 
-            services.AddSingleton<Utils>();
+            services.AddSingleton<CommonUtils>();
             services.AddSingleton<AnonymousSessionCounter>();
             services.AddScoped<AdminForumService>();
             services.AddScoped<AdminUserService>();
@@ -145,7 +145,7 @@ namespace PhpbbInDotnet.Forum
                              reloadOnChange: true)
                 .AddEnvironmentVariables();
 
-            var utils = app.ApplicationServices.GetService<Utils>();
+            var utils = app.ApplicationServices.GetService<CommonUtils>();
 
             if (env.IsDevelopment())
             {

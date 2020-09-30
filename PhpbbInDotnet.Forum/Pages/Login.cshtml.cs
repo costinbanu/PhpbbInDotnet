@@ -1,6 +1,5 @@
 ﻿using CryptSharp.Core;
 using Dapper;
-using Diacritics.Extensions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
@@ -8,11 +7,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Forum.ForumDb;
-using PhpbbInDotnet.Forum.ForumDb.Entities;
+using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Forum.Pages.CustomPartials.Email;
-using PhpbbInDotnet.Forum.Services;
-using PhpbbInDotnet.Forum.Utilities;
+using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Utilities;
 using System;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
@@ -27,7 +26,7 @@ namespace PhpbbInDotnet.Forum.Pages
     public class LoginModel : PageModel
     {
         private readonly ForumDbContext _context;
-        private readonly Utils _utils;
+        private readonly CommonUtils _utils;
         private readonly CacheService _cacheService;
         private readonly UserService _userService;
         private readonly IConfiguration _config;
@@ -72,7 +71,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public LoginMode Mode { get; set; }
 
-        public LoginModel(ForumDbContext context, Utils utils, CacheService cacheService, UserService userService, IConfiguration config)
+        public LoginModel(ForumDbContext context, CommonUtils utils, CacheService cacheService, UserService userService, IConfiguration config)
         {
             _context = context;
             _utils = utils;

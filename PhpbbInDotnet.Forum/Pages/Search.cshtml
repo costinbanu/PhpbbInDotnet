@@ -3,7 +3,7 @@
 @using Microsoft.EntityFrameworkCore
 
 @inject Services.WritingToolsService _writingService
-@inject ForumDb.ForumDbContext _context
+@inject Database.ForumDbContext _context
 @inject Services.BBCodeRenderingService _renderingService
 @inject Services.UserService _userService
 @inject Services.ForumTreeService _forumService
@@ -86,7 +86,7 @@
                  "_ForumTreePartial",
                   new CustomPartials._ForumTreePartialModel(
                       tree: (await Model.GetForumTree()).Tree,
-                      topicData: await _context.PhpbbTopics.AsNoTracking().Select(t => new Contracts.MiniTopicDto(t)).ToListAsync(),
+                      topicData: await _context.PhpbbTopics.AsNoTracking().Select(t => new DTOs.MiniTopicDto(t)).ToListAsync(),
                       forumId: Model.ForumId,
                       topicId: Model.TopicId,
                       constrainSize: true

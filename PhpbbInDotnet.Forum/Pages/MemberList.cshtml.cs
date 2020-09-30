@@ -2,10 +2,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Forum.ForumDb;
-using PhpbbInDotnet.Forum.ForumDb.Entities;
-using PhpbbInDotnet.Forum.Services;
-using PhpbbInDotnet.Forum.Utilities;
+using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,7 +40,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public IEnumerable<PhpbbGroups> GroupList { get; private set; }
         public bool SearchWasPerformed { get; private set; }
 
-        public MemberListModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, Utils utils, 
+        public MemberListModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, CommonUtils utils, 
             IConfiguration config, WritingToolsService writingService, AnonymousSessionCounter sessionCounter) 
             : base (context, forumService, userService, cacheService, config, sessionCounter, utils) 
         {

@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Forum.ForumDb;
-using PhpbbInDotnet.Forum.Services;
-using PhpbbInDotnet.Forum.Utilities;
+using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Utilities;
 using System.IO;
 using System.Net.Mime;
 using System.Threading.Tasks;
@@ -19,7 +19,7 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly StorageService _storageService;
 
         public FileModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, StorageService storageService, 
-            IConfiguration config, AnonymousSessionCounter sessionCounter, Utils utils)
+            IConfiguration config, AnonymousSessionCounter sessionCounter, CommonUtils utils)
             : base(context, forumService, userService, cacheService, config, sessionCounter, utils)
         {
             _storageService = storageService;

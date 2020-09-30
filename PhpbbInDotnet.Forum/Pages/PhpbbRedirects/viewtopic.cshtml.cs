@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
-using PhpbbInDotnet.Forum.ForumDb;
+using PhpbbInDotnet.Database;
 using System.Linq;
 using System.Threading.Tasks;
 

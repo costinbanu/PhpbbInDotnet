@@ -3,11 +3,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Forum.Contracts;
-using PhpbbInDotnet.Forum.ForumDb;
-using PhpbbInDotnet.Forum.ForumDb.Entities;
-using PhpbbInDotnet.Forum.Services;
-using PhpbbInDotnet.Forum.Utilities;
+using PhpbbInDotnet.DTOs;
+using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -98,7 +98,7 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly WritingToolsService _writingService;
         private readonly BBCodeRenderingService _renderingService;
 
-        public PostingModel(Utils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, PostService postService, 
+        public PostingModel(CommonUtils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, PostService postService, 
             StorageService storageService, WritingToolsService writingService, BBCodeRenderingService renderingService, IConfiguration config, AnonymousSessionCounter sessionCounter)
             : base(context, forumService, userService, cacheService, config, sessionCounter, utils)
         {
@@ -372,9 +372,10 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 PostText = cachedText.Text;
             }
-            ForumId = await _cacheService.GetAndRemoveFromCache<int>(await GetActualCacheKey("ForumId", true));
-            TopicId = await _cacheService.GetAndRemoveFromCache<int?>(await GetActualCacheKey("TopicId", true));
-            PostId = await _cacheService.GetAndRemoveFromCache<int?>(await GetActualCacheKey("PostId", true));
+            var cachedForumId = await _cacheService.GetAndRemoveFromCache<int>(await GetActualCacheKey("ForumId", true));
+            ForumId = cachedForumId != 0 ? cachedForumId : ForumId;
+            TopicId ??= await _cacheService.GetAndRemoveFromCache<int?>(await GetActualCacheKey("TopicId", true));
+            PostId ??= await _cacheService.GetAndRemoveFromCache<int?>(await GetActualCacheKey("PostId", true));
         }
 
         public class CachedText

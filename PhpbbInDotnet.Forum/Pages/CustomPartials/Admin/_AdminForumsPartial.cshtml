@@ -1,5 +1,5 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials.Admin._AdminForumsPartialModel
-@using PhpbbInDotnet.Forum.Utilities
+@using PhpbbInDotnet.Utilities
 
 @inject Services.ForumTreeService _forumTreeService
 @inject Services.AdminForumService _adminForumService
@@ -103,7 +103,7 @@
             </div>
             <div class="FlexRight PostInputWidth">
                 <div id="children" style="width:100%">
-                    @foreach (var child in Model?.ForumChildren ?? Enumerable.Empty<ForumDb.Entities.PhpbbForums>())
+                    @foreach (var child in Model?.ForumChildren ?? Enumerable.Empty<Database.Entities.PhpbbForums>())
                     {
                         <div style="padding:5px; margin:5px; border: solid 1px black; border-radius:5px; cursor:move; width: 95%">
                             @Html.Raw(child.ForumName)

@@ -4,10 +4,11 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PaulMiami.AspNetCore.Mvc.Recaptcha;
-using PhpbbInDotnet.Forum.ForumDb;
-using PhpbbInDotnet.Forum.ForumDb.Entities;
+using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Forum.Pages.CustomPartials.Email;
-using PhpbbInDotnet.Forum.Utilities;
+using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Utilities;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -20,7 +21,7 @@ namespace PhpbbInDotnet.Forum.Pages
     public class RegisterModel : PageModel
     {
         private readonly ForumDbContext _context;
-        private readonly Utils _utils;
+        private readonly CommonUtils _utils;
         private readonly IConfiguration _config;
 
         [Required(ErrorMessage = "Acest câmp este obligatoriu.")]
@@ -46,7 +47,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public string ErrorMessage { get; set; }
 
-        public RegisterModel(ForumDbContext context, Utils utils, IConfiguration config)
+        public RegisterModel(ForumDbContext context, CommonUtils utils, IConfiguration config)
         {
             _context = context;
             _utils = utils;
