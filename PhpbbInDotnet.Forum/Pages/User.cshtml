@@ -76,6 +76,9 @@ else if (Model.ViewAsAnother)
                 <span class="Caption">Dacă este completată, se va afișa doar vârsta.<br />Completează cu data în format ZZ.LL.AAAA sau ZZ-LL-AAAA sau lasă necompletat pentru a nu afișa vârsta. </span><br />
                 <span asp-validation-for="Birthday" class="validation"></span>
             </div>
+            @*
+                TODO: date picker    
+            *@
         }
         else if (DateTime.TryParse(Model.CurrentUser.UserBirthday, out var birthday))
         {
@@ -168,6 +171,15 @@ else if (Model.ViewAsAnother)
                 <input asp-for="CurrentUser.UserDateformat" />
                 <br /><span class="Caption">Exemplu: dd.MM.yyyy HH:mm va afișa data "@DateTime.Now.ToString("dd.MM.yyyy HH:mm")"</span>
             </div>
+            @*
+                TODO:
+                var now = DateTime.Now.AddDays(-1);
+                var formats = new[] { "dddd, dd.MM.yyyy HH:mm", "ddd, dd.MM.yyyy HH:mm", "dd.MM.yyyy HH:mm", "dd.MM.yy HH:mm" };
+                foreach (var format  in formats)
+                {
+                    now.ToString(format).Dump();
+                }
+            *@
         </div>
         <p></p>
         <div class="FlexCenter">

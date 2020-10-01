@@ -219,7 +219,14 @@ else if (IsPM)
     {
         <div id="pollPanel" style="display:@(Model.ShowPoll ? "block" : "none")" class="PostInputWidth">
             <br />
-            <h3>Chestionar</h3>
+            <h3 style="float:left">Chestionar</h3>
+            @if (Model.Action == PostingActions.EditForumPost)
+            {
+                <span style="margin-bottom:10px">
+                    &nbsp;&bull;&nbsp;
+                    <input type="submit" value="Șterge chestionarul" asp-page-handler="DeletePoll" onclick="return confirm('Sigur dorești ștergerea chestionarului?')" />
+                </span>
+            }
             <p>&nbsp;</p>
             <div class="FlexCenter">
                 <div>Întrebarea chestionarului</div>
@@ -232,7 +239,7 @@ else if (IsPM)
             <div class="FlexCenter">
                 <div>Opțiuni (una pe rând)</div>
                 <div class="FlexRight PollInput">
-                    <textarea asp-for="PollOptions" rows="4" onmousedown="posting.confirmPollChange()" class="InputBox" style="width:100%"></textarea>
+                    <textarea asp-for="PollOptions" rows="4" class="InputBox" style="width:100%" onkeydown="return posting.confirmPollChange(this)"></textarea>
                     <span asp-validation-for="PollOptions" class="validation"></span>
                 </div>
             </div>

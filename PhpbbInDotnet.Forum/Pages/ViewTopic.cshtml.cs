@@ -151,7 +151,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 using var multi = await connection.QueryMultipleAsync(
                     "SELECT * FROM phpbb_users WHERE user_id IN @authors; " +
                     "SELECT * FROM phpbb_users WHERE user_id IN @editors; " +
-                    "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @posts ORDER BY attach_id DESC; " +
+                    "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @posts ORDER BY attach_id; " +
                     "SELECT * FROM phpbb_reports WHERE report_closed = 0 AND post_id IN @posts; " +
                     "SELECT r.* FROM phpbb_ranks r JOIN phpbb_users u on u.user_rank = r.rank_id WHERE u.user_id IN @authors;",
                     new

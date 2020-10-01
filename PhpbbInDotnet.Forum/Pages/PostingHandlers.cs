@@ -81,8 +81,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetEditPost()
             => await WithRegisteredUser(async (user) => await WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
             {
-                var CurrentUser = await GetCurrentUserAsync();
-                if (!(await IsCurrentUserModeratorHere() || (curPost.PosterId == CurrentUser.UserId && (CurrentUser.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= CurrentUser.PostEditTime))))
+                if (!(await IsCurrentUserModeratorHere() || (curPost.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime))))
                 {
                     return RedirectToPage("ViewTopic", "byPostId", new { PostId });
                 }
@@ -108,6 +107,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     PollCanChangeVote = curTopic.PollVoteChange == 1;
                     PollExpirationDaysString = TimeSpan.FromSeconds(curTopic.PollLength).TotalDays.ToString();
                     PollMaxOptions = curTopic.PollMaxOptions;
+                    ShowPoll = true;
                 }
 
                 var subject = curPost.PostSubject.StartsWith(Constants.REPLY) ? curPost.PostSubject.Substring(Constants.REPLY.Length) : curPost.PostSubject;
@@ -202,6 +202,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithBackup(async () => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, async (curForum) =>
             {
                 CurrentForum = curForum;
+                ShowAttach = true;
 
                 if (!(Files?.Any() ?? false))
                 {
@@ -211,25 +212,20 @@ namespace PhpbbInDotnet.Forum.Pages
                 var tooLargeFiles = Files.Where(f => f.Length > 1024 * 1024 * (f.ContentType.StartsWith("image/", StringComparison.InvariantCultureIgnoreCase) ? _config.GetValue<int>("UploadLimitsMB:Images") : _config.GetValue<int>("UploadLimitsMB:OtherFiles")));
                 if (tooLargeFiles.Any() && !await IsCurrentUserAdminHere())
                 {
-                    ModelState.AddModelError(nameof(Files), $"Următoarele fișiere sunt prea mari: {string.Join(",", tooLargeFiles.Select(f => f.FileName))}");
-                    ShowAttach = true;
-                    return Page();
+                    return PageWithError(curForum, nameof(Files), $"Următoarele fișiere sunt prea mari: {string.Join(",", tooLargeFiles.Select(f => f.FileName))}");
                 }
 
                 if ((Attachments?.Count ?? 0) + Files.Count() > 10 && !await IsCurrentUserAdminHere())
                 {
-                    ModelState.AddModelError(nameof(Files), "Sunt permise maxim 10 fișiere per mesaj.");
-                    ShowAttach = true;
-                    return Page();
+                    return PageWithError(curForum, nameof(Files), "Sunt permise maxim 10 fișiere per mesaj.");
                 }
 
                 var (succeeded, failed) = await _storageService.BulkAddAttachments(Files, user.UserId);
 
                 if (failed.Any())
                 {
-                    ModelState.AddModelError(nameof(Files), $"Următoarele fișiere nu au putut fi adăugate, vă rugăm să încercați din nou: {string.Join(",", failed)}");
+                    return PageWithError(curForum, nameof(Files), $"Următoarele fișiere nu au putut fi adăugate, vă rugăm să încercați din nou: {string.Join(",", failed)}");
                 }
-                ShowAttach = true;
 
                 if (Attachments == null)
                 {
@@ -239,7 +235,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     Attachments.AddRange(succeeded);
                 }
-                ModelState.Clear();
+
                 return Page();
             })));
 
@@ -251,8 +247,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (attachment == null)
                 {
-                    ModelState.AddModelError($"{nameof(DeleteFileDummyForValidation)}[{index}]", "Fișierul nu a putut fi șters, vă rugăm încercați din nou.");
-                    return Page();
+                    return PageWithError(curForum, $"{nameof(DeleteFileDummyForValidation)}[{index}]", "Fișierul nu a putut fi șters, vă rugăm încercați din nou.");
                 }
 
                 if (!_storageService.DeleteFile(attachment.PhysicalFilename, false))
@@ -360,12 +355,22 @@ namespace PhpbbInDotnet.Forum.Pages
             })));
 
         public async Task<IActionResult> OnPostEditForumPost()
-            => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, async (_) =>
+            => await WithRegisteredUser(async (user) => await WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
             {
+                if (!(await IsCurrentUserModeratorHere() || (curPost.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime))))
+                {
+                    return RedirectToPage("ViewTopic", "byPostId", new { PostId });
+                }
+
                 var addedPostId = await UpsertPost(await InitEditedPost(), user);
 
                 if (addedPostId == null)
                 {
+                    CurrentForum = curForum;
+                    CurrentTopic = curTopic;
+                    ForumId = curForum.ForumId;
+                    Action = PostingActions.EditForumPost;
+                    await Init();
                     return Page();
                 }
                 return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
@@ -453,6 +458,53 @@ namespace PhpbbInDotnet.Forum.Pages
             })));
 
         #endregion POST Message
+
+        #region POST Poll
+
+        public async Task<IActionResult> OnPostDeletePoll()
+            => await WithBackup(async () => await WithRegisteredUser(async (user) => await WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
+            {
+                if (!(await IsCurrentUserModeratorHere() || (curPost.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime))))
+                {
+                    return RedirectToPage("ViewTopic", "byPostId", new { PostId });
+                }
+
+                var entity = _context.PhpbbTopics.Update(curTopic).Entity;
+                entity.PollStart = 0;
+                entity.PollLength = 0;
+                entity.PollMaxOptions = 1;
+                entity.PollTitle = string.Empty;
+                entity.PollVoteChange = 0;
+                await _context.SaveChangesAsync();
+
+                PollQuestion = PollOptions = null;
+                PollCanChangeVote = false;
+                PollMaxOptions = 1;
+                PollExpirationDaysString = "1";
+                ModelState.Remove(nameof(PollQuestion));
+                ModelState.Remove(nameof(PollOptions));
+                ModelState.Remove(nameof(PollExpirationDaysString));
+                ModelState.Remove(nameof(PollCanChangeVote));
+                ModelState.Remove(nameof(PollMaxOptions));
+
+                var connection = _context.Database.GetDbConnection();
+                await connection.OpenAsync();
+                await connection.ExecuteAsync(
+                    "DELETE FROM phpbb_poll_options WHERE topic_id = @topicId;" +
+                    "DELETE FROM phpbb_poll_votes WHERE topic_id = @topicId",
+                    new { TopicId }
+                );
+
+                CurrentForum = curForum;
+                CurrentTopic = curTopic;
+                ForumId = curForum.ForumId;
+                Action = PostingActions.EditForumPost;
+                await Init();
+
+                return Page();
+            })));
+
+        #endregion POST Poll
 
     }
 }

@@ -45,7 +45,7 @@ namespace PhpbbInDotnet.Services
             using (var connection = _context.Database.GetDbConnection())
             {
                 await connection.OpenIfNeeded();
-                options = await connection.QueryAsync<PhpbbPollOptions>("SELECT * FROM phpbb_poll_options WHERE topic_id = @TopicId", new { _currentTopic.TopicId });
+                options = await connection.QueryAsync<PhpbbPollOptions>("SELECT * FROM phpbb_poll_options WHERE topic_id = @TopicId ORDER BY poll_option_id", new { _currentTopic.TopicId });
                 if (options.Any())
                 {
                     voters = await connection.QueryAsync<PollOptionVoter>(

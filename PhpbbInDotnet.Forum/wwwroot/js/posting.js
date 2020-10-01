@@ -387,10 +387,17 @@
         target.innerText = "Chestionarul expiră " + t.format(this.userDateFormat);
     }
 
-    confirmPollChange() {
-        if (this.isEditAction && !this.hasConfirmation && confirm("Dacă modificați opțiunile, toate voturile înregistrate până acum vor fi șterse. Continuați?")) {
+    confirmPollChange(opts) {
+        if (!this.hasConfirmation && !opts.value) {
             this.hasConfirmation = true;
+            return true;
         }
+        if (this.isEditAction && !this.hasConfirmation && opts.value
+            && confirm("Dacă modificați opțiunile, toate voturile înregistrate până acum vor fi șterse. Continuați?")) {
+            this.hasConfirmation = true;
+            return true;
+        }
+        return this.hasConfirmation;
     }
 
     toggleAttach() {

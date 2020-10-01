@@ -298,25 +298,31 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (canCreatePoll && !string.IsNullOrWhiteSpace(PollOptions))
             {
-                byte pollOptionId = 1;
-
-                var options = await _context.PhpbbPollOptions.Where(o => o.TopicId == TopicId).ToListAsync();
-                if (pollOptionsArray.Intersect(options.Select(x => x.PollOptionText.Trim()), StringComparer.InvariantCultureIgnoreCase).Count() != options.Count)
+                var existing = await connection.QueryAsync<string>("SELECT LTRIM(RTRIM(poll_option_text)) FROM phpbb_poll_options WHERE topic_id = @topicId", new { TopicId });
+                var shouldInsertOptions = Action == PostingActions.NewForumPost || Action == PostingActions.NewTopic;
+                if (!existing.SequenceEqual(pollOptionsArray, StringComparer.InvariantCultureIgnoreCase))
                 {
-                    _context.PhpbbPollOptions.RemoveRange(options);
-                    _context.PhpbbPollVotes.RemoveRange(await _context.PhpbbPollVotes.Where(v => v.TopicId == TopicId).ToListAsync());
-                    await _context.SaveChangesAsync();
-                }
-
-                foreach (var option in pollOptionsArray)
-                {
+                    shouldInsertOptions = true;
                     await connection.ExecuteAsync(
-                        "INSERT INTO forum.phpbb_poll_options (poll_option_id, topic_id, poll_option_text, poll_option_total) VALUES (@id, @topicId, @text, 0)",
-                        new { id = pollOptionId++, TopicId, text = HttpUtility.HtmlEncode(option)  }
+                        "DELETE FROM phpbb_poll_options WHERE topic_id = @topicId;" +
+                        "DELETE FROM phpbb_poll_votes WHERE topic_id = @topicId",
+                        new { TopicId }
                     );
                 }
 
-                curTopic.PollStart = post.PostTime;
+                if (shouldInsertOptions)
+                {
+                    byte id = 1;
+                    foreach (var option in pollOptionsArray)
+                    {
+                        await connection.ExecuteAsync(
+                            "INSERT INTO forum.phpbb_poll_options (poll_option_id, topic_id, poll_option_text, poll_option_total) VALUES (@id, @topicId, @text, 0)",
+                            new { id = id++, TopicId, text = HttpUtility.HtmlEncode(option) }
+                        );
+                    }
+                }
+
+                curTopic.PollStart = curTopic.PollStart == 0 ? DateTime.UtcNow.ToUnixTimestamp() : curTopic.PollStart;
                 curTopic.PollLength = (int)TimeSpan.FromDays(double.Parse(PollExpirationDaysString)).TotalSeconds;
                 curTopic.PollMaxOptions = (byte)(PollMaxOptions ?? 1);
                 curTopic.PollTitle = HttpUtility.HtmlEncode(PollQuestion);
@@ -329,6 +335,9 @@ namespace PhpbbInDotnet.Forum.Pages
                 new { usr.UserId, forumId = ForumId, topicId = Action == PostingActions.NewTopic ? 0 : TopicId }
             );
             await _cacheService.RemoveFromCache(await GetActualCacheKey("Text", true));
+            await _cacheService.RemoveFromCache(await GetActualCacheKey("ForumId", true));
+            await _cacheService.RemoveFromCache(await GetActualCacheKey("TopicId", true));
+            await _cacheService.RemoveFromCache(await GetActualCacheKey("PostId", true));
             return post.PostId;
         }
 
