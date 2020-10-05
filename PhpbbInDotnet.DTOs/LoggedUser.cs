@@ -26,6 +26,9 @@ namespace PhpbbInDotnet.DTOs
 
         public bool IsAnonymous => UserId == Constants.ANONYMOUS_USER_ID;
 
+        public bool AllowPM { get; set; }
+        public HashSet<int> Foes { get; set; }
+
         public class Permissions
         {
             public int ForumId { get; set; } = 0;

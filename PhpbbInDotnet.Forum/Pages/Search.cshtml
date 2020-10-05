@@ -136,6 +136,16 @@ else
     foreach (var post in Model.Posts)
     {
         post.AuthorHasAvatar = !string.IsNullOrWhiteSpace(post.UserAvatar);
+
+        if (CurrentUser.Foes?.Contains(post.AuthorId ?? 1) ?? false)
+        {
+            post.AuthorHasAvatar = false;
+            post.Attachments?.Clear();
+            post.BbcodeUid = string.Empty;
+            post.PostSubject = "Re:";
+            post.PostText = "[i]Autorul acestui mesaj este pe lista ta de persoane neagreate, drept urmare nu poți vedea conținutul mesajelor sale[/i]";
+        }
+
         await _renderingService.ProcessPost(post, Model.PageContext, Model.HttpContext, false, Model.SearchText);
 
         <div class="RowMargin FlexRow">

@@ -1,9 +1,11 @@
 ﻿@page
 @model PhpbbInDotnet.Forum.Pages.PrivateMessagesModel
+@inject Services.UserService _userService
 @{
     ViewData["Title"] = "PrivateMessages";
     Layout = "~/Pages/_Layout.cshtml";
-    var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+    var CurrentUser = await Model.GetCurrentUserAsync();
+    var UserDateFormat = CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
 }
 
 @using Utilities
@@ -27,11 +29,21 @@
         }
     }
 </style>
-
-<h2>Mesaje private</h2>
-
-<a asp-page="/Posting" asp-page-handler="PrivateMessage">Scrie un mesaj privat nou</a>
-<p></p>
+@if (!CurrentUser.IsAnonymous)
+{
+    @await Html.PartialAsync(
+        "_HeaderLinksPartial",
+        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(_userService.HasPrivateMessages(CurrentUser)),
+        ViewData
+    )
+}
+<p style="clear:both"></p>
+<h2 style="float: left; margin-top: 0px">Mesaje private</h2>
+<span style="line-height:33px">
+    &nbsp;&bull;&nbsp;
+    <button onclick="localtion.href='/Posting?handler=PrivateMessage'" style="line-height:21px">Scrie un mesaj privat nou</button>
+</span>
+<p style="clear:both"></p>
 <div class="tab">
     <button class="@(Model.Show == PrivateMessagesPages.Inbox ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Inbox')">Primite</button>
     <button class="@(Model.Show == PrivateMessagesPages.Sent ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Sent')">Trimise</button>
@@ -195,7 +207,7 @@
             <span>&nbsp;&bull;&nbsp;</span>
             <a asp-page="/Posting" asp-page-handler="EditPrivateMessage" asp-route-privateMessageId="@Model.SelectedMessage.MessageId" asp-route-receiverId="@Model.SelectedMessage.OthersId">Modifică mesajul</a>
             <span>&nbsp;&bull;&nbsp;</span>
-            <a href="javascript:$('#deleteForm').submit();">Șterge mesajul</a>
+            <a href="javascript:submit('deleteForm', 'Mesajul va fi șters pentru tine și destinatar(i). Continui?')">Șterge mesajul pentru expeditor și destinatar(i)</a>
             <form method="post" id="deleteForm" asp-page-handler="DeleteMessage">
                 <input type="hidden" asp-for="MessageId" />
                 <input type="hidden" asp-for="InboxPage" />
@@ -203,7 +215,22 @@
                 <input type="hidden" name="Show" value="@(Model.SelectedMessageIsMine ? PrivateMessagesPages.Sent : PrivateMessagesPages.Inbox)" />
             </form>
         }
+        <span>&nbsp;&bull;&nbsp;</span>
+        <a href="javascript:submit('hideForm', 'Mesajul va fi șters pentru tine, însă va rămâne disponibil destinatarului/destinatarilor. Continui?')">Șterge mesajul doar pentru mine</a>
+        <form method="post" id="hideForm" asp-page-handler="HideMessage">
+            <input type="hidden" asp-for="MessageId" />
+            <input type="hidden" asp-for="InboxPage" />
+            <input type="hidden" asp-for="SentPage" />
+            <input type="hidden" name="Show" value="@(Model.SelectedMessageIsMine ? PrivateMessagesPages.Sent : PrivateMessagesPages.Inbox)" />
+        </form>
         <p></p>
         <span asp-validation-for="MessageId" class="validation"></span>
+        <script>
+            function submit(formName, confirmation) {
+                if (confirm(confirmation)) {
+                    $('#' + formName).submit();
+                }
+            }
+        </script>
     </div>
 }

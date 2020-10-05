@@ -59,7 +59,7 @@ namespace PhpbbInDotnet.Database.Entities
         public byte UserNotifyType { get; set; } = 0;
         public byte UserAllowPm { get; set; } = 1;
         public byte UserAllowViewonline { get; set; } = 1;
-        public byte UserAllowViewemail { get; set; } = 1;
+        public byte UserAllowViewemail { get; set; } = 0;
         public byte UserAllowMassemail { get; set; } = 0;
         public int UserOptions { get; set; } = 230271;
         public string UserAvatar { get; set; } = string.Empty;

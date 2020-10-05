@@ -2,7 +2,7 @@
 BEGIN
 	SET @user_id = coalesce(user_id_parm, 1);
     
-		WITH user_permissions AS (
+	WITH user_permissions AS (
 		SELECT forum_id, auth_role_id
 		FROM phpbb_acl_users
 		WHERE user_id = @user_id
@@ -27,4 +27,8 @@ BEGIN
 	FROM phpbb_user_topic_post_number
 	WHERE user_id = @user_id
 	GROUP BY topic_id;
+    
+    SELECT zebra_id
+    FROM phpbb_zebra
+    WHERE user_id = @user_id AND foe = 1;
 END

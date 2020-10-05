@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [ValidateRecaptcha, BindProperties, ValidateAntiForgeryToken, ResponseCache(Location = ResponseCacheLocation.None, NoStore = true, Duration = 0)]
+    [ValidateRecaptcha, BindProperties, ValidateAntiForgeryToken]
     public class RegisterModel : PageModel
     {
         private readonly ForumDbContext _context;

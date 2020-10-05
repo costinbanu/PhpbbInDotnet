@@ -16,7 +16,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [ValidateAntiForgeryToken, ResponseCache(Location = ResponseCacheLocation.None, NoStore = true, Duration = 0)]
+    [ValidateAntiForgeryToken]
     public class ViewTopicModel : ModelWithLoggedUser
     {
         [BindProperty]

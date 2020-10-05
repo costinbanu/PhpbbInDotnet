@@ -1,4 +1,5 @@
 ﻿using CryptSharp.Core;
+using Dapper;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
@@ -20,7 +21,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [ValidateAntiForgeryToken, ResponseCache(Location = ResponseCacheLocation.None, NoStore = true, Duration = 0)]
+    [ValidateAntiForgeryToken]
     public class UserModel : ModelWithLoggedUser
     {
         [BindProperty]
@@ -54,15 +55,22 @@ namespace PhpbbInDotnet.Forum.Pages
         
         [BindProperty]
         public int? GroupId { get; set; }
-        
+
+        [BindProperty(SupportsGet = true)]
+        public int? UserId { get; set; }
+
         [BindProperty]
         public int UserRank { get; set; }
 
-        public async Task<bool> CanEditAsync() => !ViewAsAnother && ((await GetCurrentUserAsync()).UserId == CurrentUser.UserId || await IsCurrentUserAdminHere());
+        [BindProperty(SupportsGet = true)]
+        public bool? ViewAsAnother { get; set; }
+
+        [BindProperty]
+        public bool AllowPM { get; set; }
+
         public int TotalPosts { get; private set; }
         public (int? Id, string Title) PreferredTopic { get; private set; }
         public double PostsPerDay { get; private set; }
-        public bool ViewAsAnother { get; set; }
 
         private readonly StorageService _storageService;
         private readonly WritingToolsService _writingService;
@@ -75,17 +83,17 @@ namespace PhpbbInDotnet.Forum.Pages
             _writingService = writingService;
         }
 
-        public async Task<IActionResult> OnGet(int? userId, bool? viewAsAnother)
+        public async Task<IActionResult> OnGet()
             => await WithRegisteredUser(async (_) =>
             {
-                if ((userId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID)
+                if ((UserId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID)
                 {
                     return BadRequest("Nu pot fi schimbate detaliile utilizatorului anonim!");
                 }
 
-                ViewAsAnother = viewAsAnother ?? false;
+                ViewAsAnother ??= true;
 
-                var cur = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == userId);
+                var cur = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == UserId);
                 if (cur == null)
                 {
                     return RedirectToPage("Error", new { isNotFound = true });
@@ -97,7 +105,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
-            if (!await CanEditAsync())
+            if (!await CanEdit())
             {
                 return RedirectToPage("Login", new { returnUrl = @HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString) });
             }
@@ -125,6 +133,7 @@ namespace PhpbbInDotnet.Forum.Pages
             dbUser.UserEditTime = CurrentUser.UserEditTime;
             dbUser.UserWebsite = CurrentUser.UserWebsite ?? string.Empty;
             dbUser.UserRank = UserRank;
+            dbUser.UserAllowPm = (byte)(AllowPM ? 1 : 0);
 
             if (_utils.CalculateCrc32Hash(Email) != dbUser.UserEmailHash)
             {
@@ -271,6 +280,43 @@ namespace PhpbbInDotnet.Forum.Pages
             return Page();
         }
 
+        public async Task<IActionResult> OnPostAddFoe()
+            => await WithRegisteredUser(async (user) =>
+            {
+                var cur = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
+                using var connection = _context.Database.GetDbConnection();
+                await connection.OpenIfNeeded();
+                await connection.ExecuteAsync(
+                    "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;" +
+                    "INSERT INTO phpbb_zebra (user_id, zebra_id, friend, foe) VALUES (@userId, @otherId, 0, 1)",
+                    new { user.UserId, otherId = cur.UserId }
+                );
+                var key = $"UserMustLogIn_{user.UsernameClean}";
+                await _cacheService.SetInCache(key, true, TimeSpan.FromDays(_config.GetValue<int>("LoginSessionSlidingExpirationDays")));
+                await Render(cur);
+                return Page();
+            });
+
+        public async Task<IActionResult> OnPostRemoveFoe()
+            => await WithRegisteredUser(async (user) =>
+            {
+                var cur = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
+                using var connection = _context.Database.GetDbConnection();
+                await connection.OpenIfNeeded();
+                await connection.ExecuteAsync(
+                    "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;",
+                    new { user.UserId, otherId = cur.UserId }
+                );
+                var key = $"UserMustLogIn_{user.UsernameClean}";
+                await _cacheService.SetInCache(key, true, TimeSpan.FromDays(_config.GetValue<int>("LoginSessionSlidingExpirationDays")));
+                await Render(cur);
+                return Page();
+            });
+
+        public async Task<bool> CanEdit() 
+            => !(ViewAsAnother ?? false) && ((await GetCurrentUserAsync()).UserId == CurrentUser.UserId || await IsCurrentUserAdminHere());
+
+
         private async Task Render(PhpbbUsers cur)
         {
             CurrentUser = cur;
@@ -302,6 +348,7 @@ namespace PhpbbInDotnet.Forum.Pages
             AclRole = await _userService.GetUserRole(await _userService.DbUserToLoggedUserAsync(cur));
             GroupId = await _userService.GetUserGroupAsync(cur.UserId);
             UserRank = cur.UserRank;
+            AllowPM = cur.UserAllowPm == 1;
         }
     }
 }

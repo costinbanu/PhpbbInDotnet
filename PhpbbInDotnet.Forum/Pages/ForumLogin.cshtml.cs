@@ -11,7 +11,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [ValidateAntiForgeryToken, ResponseCache(Location = ResponseCacheLocation.None, NoStore = true, Duration = 0)]
+    [ValidateAntiForgeryToken]
     public class ForumLoginModel : PageModel
     {
         private readonly ForumDbContext _context;

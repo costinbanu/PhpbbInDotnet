@@ -15,7 +15,18 @@
         </tr>
         <tr>
             <td style="font-weight:bold; padding:5px">Data inactivării</td>
-            <td>@(user.UserInactiveTime == 0 ? "-" : user.UserInactiveTime.ToUtcTime().ToLocalTime().ToString(Model.DateFormat))</td>
+            <td>
+                @if(user.UserInactiveTime != 0)
+                {
+                    <script>
+                        writeDate('@user.UserInactiveTime.ToUtcTime().ToString("o")', '@Model.DateFormat')
+                    </script>
+                }
+                else
+                {
+                    <span>N/A</span>
+                }
+            </td>
         </tr>
         <tr>
             <td style="font-weight:bold; padding:5px">Motivul inactivării</td>

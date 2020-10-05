@@ -22,7 +22,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [BindProperties, ValidateAntiForgeryToken, ResponseCache(Location = ResponseCacheLocation.None, NoStore = true, Duration = 0)]
+    [BindProperties, ValidateAntiForgeryToken]
     public class LoginModel : PageModel
     {
         private readonly ForumDbContext _context;

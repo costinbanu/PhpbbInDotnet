@@ -2,16 +2,20 @@
 @using PhpbbInDotnet.Utilities
 
 @model PhpbbInDotnet.Forum.Pages.UserModel
+@inject Services.UserService _userService
 @{
     ViewData["Title"] = "User";
     Layout = "~/Pages/_Layout.cshtml";
-    var isSelf = (await Model.GetCurrentUserAsync()).UserId == Model.CurrentUser.UserId;
+    var viewingUser = await Model.GetCurrentUserAsync();
+    var pageUser = await _userService.DbUserToLoggedUserAsync(Model.CurrentUser);
+    var isSelf = viewingUser.UserId == Model.CurrentUser.UserId;
+    var canEdit = await Model.CanEdit();
 }
-
-@inject Services.UserService _userService
 
 <environment include="Development">
     <link rel="stylesheet" href="~/css/posting.css" />
+    <script src="~/js/tabbedPage.js"></script>
+    <link rel="stylesheet" href="~/css/tabbedPage.css" />
 </environment>
 <style>
     @@media (max-width: 768px) {
@@ -21,369 +25,453 @@
         }
     }
 </style>
-<h2>Panoul utilizatorului</h2>
-<hr />
-<h4>
-    @Model.CurrentUser.Username - Profil
-</h4>
-@if (await Model.CanEditAsync())
-{
-    <a href="?userId=@(Model.CurrentUser.UserId)&viewAsAnother=true">Vezi profilul ca alt utilizator</a>
-}
-else if (Model.ViewAsAnother)
-{
-    <a href="?userId=@(Model.CurrentUser.UserId)&viewAsAnother=false">Vezi profilul ca tine însuți</a>
-}
 
-<form method="post">
-    <div class="FlexCenter">
-        @if (!string.IsNullOrWhiteSpace(Model.CurrentUser.UserAvatar))
-        {
-            <img src="./File?userId=@Model.CurrentUser.UserId&handler=avatar" />
-        }
-    </div>
-    <div class="FlexCenter">
-        <div style="font-weight:bold; text-align: right">
-            Nume utilizator
-        </div>
-        <div class="FlexRight PostInputWidth">
-            @if (!Model.ViewAsAnother && await Model.IsCurrentUserAdminHere())
-            {
-                <input asp-for="CurrentUser.Username" />
-            }
-            else
-            {
-                <span style="font-weight:bold; color:#@(string.IsNullOrWhiteSpace(Model.CurrentUser.UserColour) ? "000000" : Model.CurrentUser.UserColour)">
-                    @Html.Raw(Model.CurrentUser.Username)
-                </span>
-                @if (isSelf)
-                {
-                    <br />
-                    <span class="Caption">Trimite un e-mail la <a href="mailto:admin@metrouusor.com">admin@metrouusor.com</a> dacă dorești schimbarea numelui de utilizator.</span>
-                }
-            }
-        </div>
-    </div>
-    <p></p>
-    <div class="FlexCenter">
-        @if (await Model.CanEditAsync())
-        {
-            <div style="font-weight:bold; text-align: right">
-                Data nașterii
-            </div>
-            <div class="FlexRight PostInputWidth">
-                <input asp-for="Birthday" /><br />
-                <span class="Caption">Dacă este completată, se va afișa doar vârsta.<br />Completează cu data în format ZZ.LL.AAAA sau ZZ-LL-AAAA sau lasă necompletat pentru a nu afișa vârsta. </span><br />
-                <span asp-validation-for="Birthday" class="validation"></span>
-            </div>
-            @*
-                TODO: date picker    
-            *@
-        }
-        else if (DateTime.TryParse(Model.CurrentUser.UserBirthday, out var birthday))
-        {
-            <div style="font-weight:bold; text-align: right">
-                Vârsta
-            </div>
-            <div class="FlexRight PostInputWidth">
-                @((int)(DateTime.UtcNow.Subtract(birthday).TotalDays / 365.25)) ani
-            </div>
-        }
-    </div>
-    @if (!Model.ViewAsAnother && isSelf)
-    {
-        <p></p>
-        <div class="FlexCenter">
-            <div style="font-weight:bold; text-align: right">
-                Parola
-            </div>
-            <div class="FlexRight PostInputWidth">
-                <input asp-for="FirstPassword" type="password" /><br />
-                <span class="Caption">Lasă necompletat dacă nu dorești să o modifici.</span>
-            </div>
-        </div>
-        <p></p>
-        <div class="FlexCenter">
-            <div style="font-weight:bold; text-align: right">
-                Repetă parola
-            </div>
-            <div class="FlexRight PostInputWidth">
-                <input asp-for="SecondPassword" type="password" /><span asp-validation-for="SecondPassword" class="validation"></span>
-            </div>
-        </div>
+<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+<script>
+    var $ = jQuery.noConflict();
+    $(function () {
+        $("#datepicker").datepicker({
+            dateFormat: 'dd.mm.yy',
+            firstDay: 1,
+            dayNamesMin: ['Du', 'Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ'],
+            dayNamesShort: ['Dum', 'Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm'],
+            dayNames: ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'],
+            monthNames: ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'],
+            monthNamesShort: ['Ian', 'Feb', 'Mar', 'Apr', 'Mai', 'Iun', 'Iul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        });
+    });
+
+    function changeTab(edit) {
+        $('#changeModeViewAsAnother').val(!edit);
+        $('#changeMode').submit();
     }
-    <p></p>
-    <div class="FlexCenter">
-        <div style="font-weight:bold; text-align: right">
-            Prezentare
-        </div>
-        <div class="FlexRight PostInputWidth">
-            @if (await Model.CanEditAsync())
-            {
-                <input asp-for="CurrentUser.UserOcc" />
-            }
-            else
-            {
-                @Html.Raw(Model.CurrentUser.UserOcc)
-            }
-        </div>
-    </div>
-    <p></p>
-    <div class="FlexCenter">
-        <div style="font-weight:bold; text-align: right">
-            Interese
-        </div>
-        <div class="FlexRight PostInputWidth">
-            @if (await Model.CanEditAsync())
-            {
-                <input asp-for="CurrentUser.UserInterests" />
-            }
-            else
-            {
-                @Html.Raw(Model.CurrentUser.UserInterests)
-            }
-        </div>
-    </div>
-    <p></p>
-    <div class="FlexCenter">
-        <div style="font-weight:bold; text-align: right">
-            Localitate
-        </div>
-        <div class="FlexRight PostInputWidth">
-            @if (await Model.CanEditAsync())
-            {
-                <input asp-for="CurrentUser.UserFrom" />
-            }
-            else
-            {
-                @Html.Raw(Model.CurrentUser.UserFrom)
-            }
-        </div>
-    </div>
-    @if (await Model.CanEditAsync())
+</script>
+
+<form method="get" id="changeMode">
+    <input type="hidden" asp-for="UserId" id="changeModeUserId" />
+    <input type="hidden" asp-for="ViewAsAnother" id="changeModeViewAsAnother" />
+</form>
+
+@if (!viewingUser.IsAnonymous)
+{
+    @await Html.PartialAsync(
+            "_HeaderLinksPartial",
+            new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(_userService.HasPrivateMessages(viewingUser)),
+            ViewData
+        )
+}
+
+<h2>
+    Panoul utilizatorului
+    @if (!isSelf && !canEdit)
     {
-        <p></p>
-        <div class="FlexCenter">
-            <div style="font-weight:bold; text-align: right">
-                Formatul datelor afișate
-            </div>
-            <div class="FlexRight PostInputWidth">
-                <input asp-for="CurrentUser.UserDateformat" />
-                <br /><span class="Caption">Exemplu: dd.MM.yyyy HH:mm va afișa data "@DateTime.Now.ToString("dd.MM.yyyy HH:mm")"</span>
-            </div>
-            @*
-                TODO:
-                var now = DateTime.Now.AddDays(-1);
-                var formats = new[] { "dddd, dd.MM.yyyy HH:mm", "ddd, dd.MM.yyyy HH:mm", "dd.MM.yyyy HH:mm", "dd.MM.yy HH:mm" };
-                foreach (var format  in formats)
-                {
-                    now.ToString(format).Dump();
-                }
-            *@
-        </div>
-        <p></p>
-        <div class="FlexCenter">
-            <div style="font-weight:bold; text-align: right">
-                Avatar
-            </div>
-            <div class="FlexRight PostInputWidth">
-                @if (!string.IsNullOrWhiteSpace(Model.CurrentUser.UserAvatar))
-                {
-                    <img src="./File?userId=@Model.CurrentUser.UserId&handler=avatar" /><br />
-                    @Html.Raw(Model.CurrentUser.UserAvatar)<br />
-                    <input asp-for="DeleteAvatar" style="width:auto" /> <span>Șterge acest avatar?</span><br />
-                    <span class="Caption">Bifează pentru a șterge avatarul curent.</span><br /><br />
-                }
-                <input asp-for="Avatar" />
-                <span class="Caption">Sunt permise imagini cu dimensiunea maximă 200 px / 200 px.</span><br />
-                <span asp-validation-for="Avatar" class="validation"></span>
-            </div>
-        </div>
+        <span>&nbsp;-&nbsp;@Model.CurrentUser.Username</span>
     }
-    @if (!Model.ViewAsAnother && await Model.IsCurrentUserAdminHere())
+</h2>
+
+@if (isSelf)
+{
+    <div class="tab">
+        <button class="@(canEdit ? "tablinks" : "tablinks active")" onclick="changeTab(false)">Pofil - privire generală</button>
+        <button class="@(canEdit ? "tablinks active" : "tablinks")" onclick="changeTab(true)">Modifică profil</button>
+    </div>
+}
+
+<div class="@(isSelf ? "tabcontent" : "")" style="@(isSelf ? "display:block !important" : "")">
+
+
+    @if (!isSelf && !canEdit)
     {
-        var permissions = new List<SelectListItem>(
-            (await _userService.GetUserRolesLazy()).Select(
-                p => new SelectListItem(p.RoleDescription, p.RoleId.ToString(), p.RoleId == Model.AclRole)
-            )
-        );
-        permissions.Add(new SelectListItem("Nici un rol atribuit", "-1", !permissions.Any(p => p.Selected)));
+        if (!await _userService.IsUserModeratorInForum(pageUser, 0) && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false))
+        {
+            <span>
+                &nbsp;&bull;&nbsp;
+                <input type="submit" form="AddFoe" value="Adaugă la persoane neagreate" onclick="return confirm('Dacă îl/o adaugi pe @Model.CurrentUser.UsernameClean la persoane neagreate, nu vei mai vedea mesajele lui/ei, și nici nu veți mai putea comunica prin mesageria privată.\nDupă salvarea opțiunii, vei fi deconectat/ă și va trebui să te re-autentifici. Continui?')" />
+            </span>
+            <form method="post" asp-page-handler="AddFoe" id="AddFoe" name="AddFoe">
+                <input type="hidden" asp-for="UserId" />
+                <input type="hidden" asp-for="ViewAsAnother" />
+            </form>
+            <p>&nbsp;</p>
+        }
+        if (!await _userService.IsUserModeratorInForum(pageUser, 0) && (viewingUser.Foes?.Contains(pageUser.UserId) ?? false))
+        {
+            <span>
+                &nbsp;&bull;&nbsp;
+                <input type="submit" form="RemoveFoe" value="Elimină din lista de persoane neagreate" onclick="return confirm('Dacă îl/o elimini pe @Model.CurrentUser.UsernameClean din lista de persoane neagreate, vei putea vedea mesajele lui/ei, și veți putea comunica prin mesageria privată.\nDupă salvarea opțiunii, vei fi deconectat/ă și va trebui să te re-autentifici. Continui?')" />
+            </span>
+            <form method="post" asp-page-handler="RemoveFoe" id="RemoveFoe" name="RemoveFoe">
+                <input type="hidden" asp-for="UserId" />
+                <input type="hidden" asp-for="ViewAsAnother" />
+            </form>
+            <p>&nbsp;</p>
+        }
+    }
 
-        var ranks = new List<SelectListItem>(
-            (await _userService.GetRankListAsync()).Select(
-                r => new SelectListItem(r.RankTitle, r.RankId.ToString(), r.RankId == Model.CurrentUser.UserRank)
-            )
-        );
-        ranks.Add(new SelectListItem("Nici un rang atribuit", "0", !ranks.Any(p => p.Selected)));
+    <form method="post">
+        <div class="FlexCenter">
+            @if (!string.IsNullOrWhiteSpace(Model.CurrentUser.UserAvatar) && !isSelf && !canEdit)
+            {
+                <img src="./File?userId=@Model.CurrentUser.UserId&handler=avatar" />
+            }
+        </div>
+        <div class="FlexCenter">
+            <div style="font-weight:bold; text-align: right">
+                Nume utilizator
+            </div>
+            <div class="FlexRight PostInputWidth">
+                @if (!(Model.ViewAsAnother ?? false) && await Model.IsCurrentUserAdminHere())
+                {
+                    <input asp-for="CurrentUser.Username" />
+                }
+                else
+                {
+                    <span style="font-weight:bold; color:#@(string.IsNullOrWhiteSpace(Model.CurrentUser.UserColour) ? "000000" : Model.CurrentUser.UserColour)">
+                        @Html.Raw(Model.CurrentUser.Username)
+                    </span>
+                    @if (isSelf && canEdit)
+                    {
+                        <br />
+                        <span class="Caption">Trimite un e-mail la <a href="mailto:admin@metrouusor.com">admin@metrouusor.com</a> dacă dorești schimbarea numelui de utilizator.</span>
+                    }
+                }
+            </div>
+        </div>
+        
+        @{
+            var birthday = DateTime.MinValue;
+            if (canEdit || DateTime.TryParse(Model.CurrentUser.UserBirthday, out birthday))
+            {
+                <p></p>
+                <div class="FlexCenter">
+                    @if (canEdit)
+                    {
+                        <div style="font-weight:bold; text-align: right">
+                            Data nașterii
+                        </div>
+                        <div class="FlexRight PostInputWidth">
+                            <input asp-for="Birthday" autocomplete="new-password" id="datepicker" /><br />
+                            <span class="Caption">Dacă este completată, se va afișa doar vârsta.</span><br />
+                            <span asp-validation-for="Birthday" class="validation"></span>
+                        </div>
+                    }
+                    else if (birthday != DateTime.MinValue)
+                    {
+                        <div style="font-weight:bold; text-align: right">
+                            Vârsta
+                        </div>
+                        <div class="FlexRight PostInputWidth">
+                            @((int)(DateTime.UtcNow.Subtract(birthday).TotalDays / 365.25)) ani
+                        </div>
+                    }
+                </div>
+            }
+        }
+        @if (!(Model.ViewAsAnother ?? false) && isSelf)
+        {
+            <p></p>
+            <div class="FlexCenter">
+                <div style="font-weight:bold; text-align: right">
+                    Parola
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    <input asp-for="FirstPassword" type="password" autocomplete="new-password" /><br />
+                    <span class="Caption">Lasă necompletat dacă nu dorești să o modifici.</span>
+                </div>
+            </div>
+            <p></p>
+            <div class="FlexCenter">
+                <div style="font-weight:bold; text-align: right">
+                    Repetă parola
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    <input asp-for="SecondPassword" type="password" autocomplete="new-password" /><span asp-validation-for="SecondPassword" class="validation"></span>
+                </div>
+            </div>
+        }
+        <p></p>
+        <div class="FlexCenter">
+            <div style="font-weight:bold; text-align: right">
+                Prezentare
+            </div>
+            <div class="FlexRight PostInputWidth">
+                @if (canEdit)
+                {
+                    <input asp-for="CurrentUser.UserOcc" />
+                }
+                else
+                {
+                    @Html.Raw(Model.CurrentUser.UserOcc)
+                }
+            </div>
+        </div>
+        <p></p>
+        <div class="FlexCenter">
+            <div style="font-weight:bold; text-align: right">
+                Interese
+            </div>
+            <div class="FlexRight PostInputWidth">
+                @if (canEdit)
+                {
+                    <input asp-for="CurrentUser.UserInterests" />
+                }
+                else
+                {
+                    @Html.Raw(Model.CurrentUser.UserInterests)
+                }
+            </div>
+        </div>
+        <p></p>
+        <div class="FlexCenter">
+            <div style="font-weight:bold; text-align: right">
+                Localitate
+            </div>
+            <div class="FlexRight PostInputWidth">
+                @if (canEdit)
+                {
+                    <input asp-for="CurrentUser.UserFrom" />
+                }
+                else
+                {
+                    @Html.Raw(Model.CurrentUser.UserFrom)
+                }
+            </div>
+        </div>
+        @if (canEdit)
+        {
+            <p></p>
+            <div class="FlexCenter">
+                <div style="font-weight:bold; text-align: right">
+                    Formatul datelor afișate
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    @Html.DropDownListFor(m => m.CurrentUser.UserDateformat, new List<SelectListItem>
+                       {
+                           new SelectListItem(DateTime.UtcNow.ToString("dddd, dd.MM.yyyy HH:mm"), "dddd, dd.MM.yyyy HH:mm"),
+                           new SelectListItem(DateTime.UtcNow.ToString("ddd, dd.MM.yyyy HH:mm"), "ddd, dd.MM.yyyy HH:mm"),
+                           new SelectListItem(DateTime.UtcNow.ToString("dd.MM.yyyy HH:mm"), "dd.MM.yyyy HH:mm")
+                       })
+                </div>
+            </div>
+            <p></p>
+            <div class="FlexCenter">
+                <div style="font-weight:bold; text-align: right">
+                    Avatar
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    @if (!string.IsNullOrWhiteSpace(Model.CurrentUser.UserAvatar))
+                    {
+                        <img src="./File?userId=@Model.CurrentUser.UserId&handler=avatar" /><br />
+                        @Html.Raw(Model.CurrentUser.UserAvatar)<br />
+                        <input asp-for="DeleteAvatar" style="width:auto" /> <span>Șterge acest avatar?</span><br />
+                        <span class="Caption">Bifează pentru a șterge avatarul curent.</span><br /><br />
+                    }
+                    <input asp-for="Avatar" />
+                    <span class="Caption">Sunt permise imagini cu dimensiunea maximă 200 px / 200 px.</span><br />
+                    <span asp-validation-for="Avatar" class="validation"></span>
+                </div>
+            </div>
+        }
+        @if (!(Model.ViewAsAnother ?? false) && await Model.IsCurrentUserAdminHere())
+        {
+            var permissions = new List<SelectListItem>(
+                (await _userService.GetUserRolesLazy()).Select(
+                    p => new SelectListItem(p.RoleDescription, p.RoleId.ToString(), p.RoleId == Model.AclRole)
+                )
+            );
+            permissions.Add(new SelectListItem("Nici un rol atribuit", "-1", !permissions.Any(p => p.Selected)));
 
-        var groups = new List<SelectListItem>(
-            (await _userService.GetGroupListAsync()).Select(
-                g => new SelectListItem(g.GroupName, g.GroupId.ToString(), g.GroupId == Model.GroupId)
-            )
-        );
+            var ranks = new List<SelectListItem>(
+                (await _userService.GetRankListAsync()).Select(
+                    r => new SelectListItem(r.RankTitle, r.RankId.ToString(), r.RankId == Model.CurrentUser.UserRank)
+                )
+            );
+            ranks.Add(new SelectListItem("Nici un rang atribuit", "0", !ranks.Any(p => p.Selected)));
+
+            var groups = new List<SelectListItem>(
+                (await _userService.GetGroupListAsync()).Select(
+                    g => new SelectListItem(g.GroupName, g.GroupId.ToString(), g.GroupId == Model.GroupId)
+                )
+            );
+            <hr />
+            <div class="FlexCenter">
+                <h4>Administrează cont</h4>
+            </div>
+            <p></p>
+            <div class="FlexCenter">
+                <div style="font-weight:bold; text-align: right">
+                    Timpul cât este permisă<br />editarea mesajelor proprii:
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    <input asp-for="CurrentUser.UserEditTime" /><br />
+                    <span class="Caption">
+                        Minute de la publicarea mesajului.<br />
+                        Aceeași setare există și la grupuri și se aplică valoarea cea mai restrictivă diferită de zero.<br />
+                        Zero semnifică „timp nelimitat” și se aplică chiar dacă cealaltă setare este diferită de zero.
+                    </span><br />
+                </div>
+            </div>
+            <p></p>
+            <div class="FlexCenter">
+                <div style="font-weight:bold; text-align: right">
+                    Permisiunile utilizatorului
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    @Html.DropDownListFor(m => m.AclRole, permissions, new { style = "width:300px", autocomplete = "off" })
+                </div>
+            </div>
+            <p></p>
+            <div class="FlexCenter">
+                <div style="font-weight:bold; text-align: right">
+                    Rangul utilizatorului
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    @Html.DropDownListFor(m => m.UserRank, ranks, new { style = "width:300px", autocomplete = "off" })
+                </div>
+            </div>
+            <p></p>
+            <div class="FlexCenter">
+                <div style="font-weight:bold; text-align: right">
+                    Grupul utilizatorului
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    @Html.DropDownListFor(m => m.GroupId, groups, new { style = "width:300px", autocomplete = "off" })
+                </div>
+            </div>
+        }
         <hr />
         <div class="FlexCenter">
-            <h4>Administrează cont</h4>
+            <h4>Contact</h4>
         </div>
-        <p></p>
         <div class="FlexCenter">
-            <div style="font-weight:bold; text-align: right">
-                Timpul cât este permisă<br />editarea mesajelor proprii:
-            </div>
-            <div class="FlexRight PostInputWidth">
-                <input asp-for="CurrentUser.UserEditTime" /><br />
-                <span class="Caption">
-                    Minute de la publicarea mesajului.<br />
-                    Aceeași setare există și la grupuri și se aplică valoarea cea mai restrictivă diferită de zero.<br />
-                    Zero semnifică „timp nelimitat” și se aplică chiar dacă cealaltă setare este diferită de zero.
-                </span><br />
-            </div>
+            @if (canEdit)
+            {
+                <div style="font-weight:bold; text-align: right">
+                    E-mail
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    <input asp-for="Email" /><br />
+                    <span class="Caption">Dacă modifici acest câmp, contul va deveni inactiv. Vei primi pe noua adresă de e-mail un mesaj cu instrucțiuni pentru reactivare.</span><br />
+                    <span asp-validation-for="Email" class="validation"></span><br />
+                    <input asp-for="ShowEmail" style="width:auto" /> Arată adresa de e-mail în profil (astfel membrii forumului te pot contacta prin e-mail).
+                </div>
+            }
+            else if (Model.CurrentUser.UserAllowViewemail == 1 || await Model.IsCurrentUserAdminHere())
+            {
+                <a href="mailto:@Html.Raw(Model.CurrentUser.UserEmail)">Trimite e-mail</a>
+            }
         </div>
-        <p></p>
-        <div class="FlexCenter">
-            <div style="font-weight:bold; text-align: right">
-                Permisiunile utilizatorului
-            </div>
-            <div class="FlexRight PostInputWidth">
-                @Html.DropDownListFor(m => m.AclRole, permissions, new { style = "width:300px", autocomplete = "off" })
-            </div>
-        </div>
-        <p></p>
-        <div class="FlexCenter">
-            <div style="font-weight:bold; text-align: right">
-                Rangul utilizatorului
-            </div>
-            <div class="FlexRight PostInputWidth">
-                @Html.DropDownListFor(m => m.UserRank, ranks, new { style = "width:300px", autocomplete = "off" })
-            </div>
-        </div>
-        <p></p>
-        <div class="FlexCenter">
-            <div style="font-weight:bold; text-align: right">
-                Grupul utilizatorului
-            </div>
-            <div class="FlexRight PostInputWidth">
-                @Html.DropDownListFor(m => m.GroupId, groups, new { style = "width:300px", autocomplete = "off" })
-            </div>
-        </div>
-    }
-    <hr />
-    <div class="FlexCenter">
-        <h4>Contact</h4>
-    </div>
-    <div class="FlexCenter">
-        @if (await Model.CanEditAsync())
+        @if (!isSelf && _userService.HasPrivateMessages(await Model.GetCurrentUserAsync()) && _userService.HasPrivateMessages(pageUser))
         {
-            <div style="font-weight:bold; text-align: right">
-                E-mail
-            </div>
-            <div class="FlexRight PostInputWidth">
-                <input asp-for="Email" /><br />
-                <span class="Caption">Dacă modifici acest câmp, contul va deveni inactiv. Vei primi pe noua adresă de e-mail un mesaj cu instrucțiuni pentru reactivare.</span><br />
-                <span asp-validation-for="Email" class="validation"></span><br />
-                <input asp-for="ShowEmail" style="width:auto" /> Arată adresa de e-mail în profil (astfel membrii forumului te pot contacta prin e-mail).
+            <p></p>
+            <div class="FlexCenter">
+                <a asp-page="/Posting" asp-page-handler="PrivateMessage" asp-route-receiverId="@Model.CurrentUser.UserId">Trimite mesaj privat</a>
             </div>
         }
-        else if (Model.CurrentUser.UserAllowViewemail == 1 || await Model.IsCurrentUserAdminHere())
-        {
-
-            <a href="mailto:@Html.Raw(Model.CurrentUser.UserEmail)">Trimite e-mail</a>
-        }
-    </div>
-    @if (await Model.CanEditAsync())
-    {
-        <div class="FlexCenter">
-            <a href="mailto:@Html.Raw(Model.CurrentUser.UserEmail)">Trimite e-mail</a>
-        </div>
-    }
-    @if (!isSelf && _userService.HasPrivateMessages(await Model.GetCurrentUserAsync()) && await _userService.HasPrivateMessages(Model.CurrentUser.UserId))
-    {
         <p></p>
         <div class="FlexCenter">
-            <a asp-page="/Posting" asp-page-handler="PrivateMessage" asp-route-receiverId="@Model.CurrentUser.UserId">Trimite mesaj privat</a>
-        </div>
-    }
-    <p></p>
-    <div class="FlexCenter">
-        @if (await Model.CanEditAsync())
-        {
-            <div style="font-weight:bold; text-align: right">
-                Website
-            </div>
-            <div class="FlexRight PostInputWidth">
-                <input asp-for="CurrentUser.UserWebsite" />
-            </div>
-        }
-        else if (!string.IsNullOrEmpty(Model.CurrentUser.UserWebsite))
-        {
-            <a href="@Html.Raw(Model.CurrentUser.UserWebsite)" target="_blank">Vizitează website</a>
-        }
-    </div>
-    <hr />
-    <div class="FlexCenter">
-        <h4>Statistici</h4>
-    </div>
-    <div class="FlexCenter">
-        <div style="font-weight:bold; text-align: right">
-            Membru din
-        </div>
-        <div class="FlexRight PostInputWidth">
-            @{
-                var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
-                if (!DateTime.TryParse(DateTime.Now.ToString(UserDateFormat), out var _))
+            @if (canEdit)
+            {
+                <div style="font-weight:bold; text-align: right">
+                    Website
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    <input asp-for="CurrentUser.UserWebsite" />
+                </div>
+            }
+            else if (!string.IsNullOrEmpty(Model.CurrentUser.UserWebsite))
+            {
+                var website = Model.CurrentUser.UserWebsite;
+                if (!website.StartsWith("http", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    UserDateFormat = "dddd, dd.MM.yyyy, HH:mm";
+                    website = $"//{website}";
                 }
-            }
-            <script>
-                writeDate("@Model.CurrentUser.UserRegdate.ToUtcTime().ToString("o")", "@UserDateFormat");
-            </script>
-        </div>
-    </div>
-    <p></p>
-    <div class="FlexCenter">
-        <div style="font-weight:bold; text-align: right">
-            Total mesaje
-        </div>
-        <div class="FlexRight PostInputWidth">
-            @Model.TotalPosts
-            @if (Model.TotalPosts > 0)
-            {
-                <span>&nbsp;-&nbsp;</span>
-                <a asp-page="Search" asp-page-handler="byAuthor" asp-route-authorId="@Model.CurrentUser.UserId">Arată mesajele utilizatorului</a>
+                <a href="@Html.Raw(website)" target="_blank">Vizitează website</a>
             }
         </div>
-    </div>
-    <p></p>
-    <div class="FlexCenter">
-        <div style="font-weight:bold; text-align: right">
-            Mesaje pe zi (în medie)
-        </div>
-        <div class="FlexRight PostInputWidth">
-            @Model.PostsPerDay.ToString("#########0.##")
-        </div>
-    </div>
-    <p></p>
-    <div class="FlexCenter">
-        <div style="font-weight:bold; text-align: right">
-            Cel mai activ în subiectul
-        </div>
-        <div class="FlexRight PostInputWidth">
-            @if (Model.PreferredTopic.Id == null || Model.PreferredTopic.Title == null)
-            {
-                <span>-</span>
-            }
-            else
-            {
-                <a asp-page="./ViewTopic" asp-route-topicId="@Model.PreferredTopic.Id" asp-route-pageNum="1">@Html.Raw(Model.PreferredTopic.Title)</a>
-            }
-        </div>
-    </div>
-
-    @if (await Model.CanEditAsync())
-    {
-        <input type="submit" value="Salvează modificările" style="width:auto" />
-    }
-    <input asp-for="CurrentUser.UserId" type="hidden" />
-    @Html.AntiForgeryToken()
-</form>
+        @if (canEdit && _userService.HasPrivateMessagePermissions(pageUser))
+        {
+            <p></p>
+            <div class="FlexCenter">
+                <div style="font-weight:bold; text-align: right">
+                    Permite mesageria privată
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    <input asp-for="AllowPM" /> Utilizatorii mă pot contacta prin mesageria privată
+                </div>
+            </div>
+        }
+        @if (!canEdit)
+        {
+            <hr />
+            <div class="FlexCenter">
+                <h4>Statistici</h4>
+            </div>
+            <div class="FlexCenter">
+                <div style="font-weight:bold; text-align: right">
+                    Membru din
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    @{
+                        var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+                        if (!DateTime.TryParse(DateTime.Now.ToString(UserDateFormat), out var _))
+                        {
+                            UserDateFormat = "dddd, dd.MM.yyyy, HH:mm";
+                        }
+                    }
+                    <script>
+                        writeDate("@Model.CurrentUser.UserRegdate.ToUtcTime().ToString("o")", "@UserDateFormat");
+                    </script>
+                </div>
+            </div>
+            <p></p>
+            <div class="FlexCenter">
+                <div style="font-weight:bold; text-align: right">
+                    Total mesaje
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    @Model.TotalPosts
+                    @if (Model.TotalPosts > 0)
+                    {
+                        <span>&nbsp;-&nbsp;</span>
+                        <a asp-page="Search" asp-page-handler="byAuthor" asp-route-authorId="@Model.CurrentUser.UserId">Arată mesajele utilizatorului</a>
+                    }
+                </div>
+            </div>
+            <p></p>
+            <div class="FlexCenter">
+                <div style="font-weight:bold; text-align: right">
+                    Mesaje pe zi (în medie)
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    @Model.PostsPerDay.ToString("#########0.##")
+                </div>
+            </div>
+            <p></p>
+            <div class="FlexCenter">
+                <div style="font-weight:bold; text-align: right">
+                    Cel mai activ în subiectul
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    @if (Model.PreferredTopic.Id == null || Model.PreferredTopic.Title == null)
+                    {
+                        <span>-</span>
+                    }
+                    else
+                    {
+                        <a asp-page="./ViewTopic" asp-route-topicId="@Model.PreferredTopic.Id" asp-route-pageNum="1">@Html.Raw(Model.PreferredTopic.Title)</a>
+                    }
+                </div>
+            </div>
+        }
+        @if (canEdit)
+        {
+            <p>&nbsp;</p>
+            <input type="submit" value="Salvează modificările" style="width:auto" />
+        }
+        <input asp-for="CurrentUser.UserId" type="hidden" />
+        @Html.AntiForgeryToken()
+    </form>
+</div>

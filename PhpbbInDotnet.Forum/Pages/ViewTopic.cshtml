@@ -199,6 +199,15 @@
             ReporterId = report?.UserId
         };
 
+        if (CurrentUser.Foes?.Contains(p.PosterId) ?? false)
+        {
+            post.AuthorHasAvatar = false;
+            post.Attachments?.Clear();
+            post.BbcodeUid = string.Empty;
+            post.PostSubject = "Re:";
+            post.PostText = "[i]Autorul acestui mesaj este pe lista ta de persoane neagreate, drept urmare nu poți vedea conținutul mesajelor sale[/i]";
+        }
+
         if ((report?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
         {
             var user = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == report.UserId);
@@ -260,89 +269,92 @@
                         }
                     </div>
 
-                    <div class="PostFooter">
-                        @if (!IsAnonymous || post.LastEditTime > 0)
-                        {
-                            <hr class="SubtypeSeparator" />
-                        }
-                        @if (index < Model.Posts.Count - 1 && post.LastEditTime > Model.Posts[index + 1].PostTime)
-                        {
-                            <div class="Caption" style="color:#495d6c">
-                                Ultima dată modificat de @post.LastEditUser
-                                <script>
+                    @if (!(CurrentUser.Foes?.Contains(post.AuthorId ?? 1) ?? false))
+                    {
+                        <div class="PostFooter">
+                            @if (!IsAnonymous || post.LastEditTime > 0)
+                            {
+                                <hr class="SubtypeSeparator" />
+                            }
+                            @if (index < Model.Posts.Count - 1 && post.LastEditTime > Model.Posts[index + 1].PostTime)
+                            {
+                                <div class="Caption" style="color:#495d6c">
+                                    Ultima dată modificat de @post.LastEditUser
+                                    <script>
                                     writeDate("@post.LastEditTime.ToUtcTime().ToString("o")", "@UserDateFormat");
-                                </script>
-                                @if (!string.IsNullOrWhiteSpace(post.LastEditReason))
+                                    </script>
+                                    @if (!string.IsNullOrWhiteSpace(post.LastEditReason))
+                                    {
+                                        <span>. Motiv: @HttpUtility.HtmlDecode(post.LastEditReason)</span>
+                                    }
+                                    . Modificări în total: @post.EditCount.
+                                </div>
+                                <p></p>
+                            }
+                            <div class="PostActions">
+                                @if ((!Model.IsLocked || IsMod) && !IsAnonymous && (p != Model.Posts.Last() || !Model.Paginator.IsLastPage))
                                 {
-                                    <span>. Motiv: @HttpUtility.HtmlDecode(post.LastEditReason)</span>
+                                    <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">
+                                        @if (Model.IsLocked)
+                                        {
+                                            <span>&#x1F4AC; Subiect închis</span>
+                                        }
+                                        else
+                                        {
+                                            <span>&#x1F4AC; Răspunde cu citat</span>
+                                        }
+                                    </a>
                                 }
-                                . Modificări în total: @post.EditCount.
-                            </div>
-                            <p></p>
-                        }
-                        <div class="PostActions">
-                            @if ((!Model.IsLocked || IsMod) && !IsAnonymous && (p != Model.Posts.Last() || !Model.Paginator.IsLastPage))
-                            {
-                                <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">
-                                    @if (Model.IsLocked)
-                                    {
-                                        <span>&#x1F4AC; Subiect închis</span>
-                                    }
-                                    else
-                                    {
-                                        <span>&#x1F4AC; Răspunde cu citat</span>
-                                    }
-                                </a>
-                            }
-                            else if (!IsAnonymous && (p != Model.Posts.Last() || !Model.Paginator.IsLastPage))
-                            {
-                                <a href="javascript:;" title="Subiectul este închis, nu se mai pot trimite răspunsuri.">
-                                    <s>&#x1F5E8; Subiect închis</s>
-                                </a>
-                            }
-
-                            @if (!post.ReportId.HasValue && !IsAnonymous)
-                            {
-                                <span>
-                                    <a href="javascript:vt.showReportForm(@post.PostId);">&#x2757; Raportează</a>
-                                </span>
-                            }
-                            @if (IsMod)
-                            {
-                                <span>
-                                    <a href="javascript:vt.showMessageDetails('@post.IP');">&#x2753; Informații</a>
-                                </span>
-                                <span>
-                                    Selectează pentru moderare <input name="PostIdsForModerator" type="checkBox" value="@post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @(post.PostId ?? -1))" @(Model.PostIdsForModerator.Contains(post.PostId ?? -1) ? "checked" : "") />
-                                </span>
-                            }
-                            @if (IsMod || (post.AuthorId == CurrentUser.UserId && (EditTime == 0 || DateTime.UtcNow.Subtract(post.PostCreationTime ?? default).TotalMinutes <= EditTime)))
-                            {
-                                <span>
-                                    <a asp-page="/Posting" asp-page-handler="EditPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">&#x1F4DD; Modifică</a>
-                                </span>
-                                if (IsMod || index == Model.Posts.Count - 1)
+                                else if (!IsAnonymous && (p != Model.Posts.Last() || !Model.Paginator.IsLastPage))
                                 {
-                                    if (!IsMod)
-                                    {
-                                        useModActions = true;
-                                        <input name="PostIdsForModerator" type="checkBox" value="@post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @(post.PostId ?? -1))" @(Model.PostIdsForModerator.Contains(post.PostId ?? -1) ? "checked" : "") style="display:none" />
-                                    }
-                                    int? closestPostIdIndex = null;
-                                    if (Model.Posts.Count > 1)
-                                    {
-                                        if (index == 0) closestPostIdIndex = 1;
-                                        else if (index == Model.Posts.Count - 1) closestPostIdIndex = Model.Posts.Count - 2;
-                                        else closestPostIdIndex = index + 1;
-                                    }
-                                    var closestPostId = closestPostIdIndex.HasValue ? Model.Posts[closestPostIdIndex.Value].PostId : 0;
+                                    <a href="javascript:;" title="Subiectul este închis, nu se mai pot trimite răspunsuri.">
+                                        <s>&#x1F5E8; Subiect închis</s>
+                                    </a>
+                                }
+
+                                @if (!post.ReportId.HasValue && !IsAnonymous)
+                                {
                                     <span>
-                                        <a href="javascript:vt.deletePost(@(post.PostId ?? -1), @closestPostId)">&#x274C; Șterge mesaj</a>
+                                        <a href="javascript:vt.showReportForm(@post.PostId);">&#x2757; Raportează</a>
                                     </span>
                                 }
-                            }
+                                @if (IsMod)
+                                {
+                                    <span>
+                                        <a href="javascript:vt.showMessageDetails('@post.IP');">&#x2753; Informații</a>
+                                    </span>
+                                    <span>
+                                        Selectează pentru moderare <input name="PostIdsForModerator" type="checkBox" value="@post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @(post.PostId ?? -1))" @(Model.PostIdsForModerator.Contains(post.PostId ?? -1) ? "checked" : "") />
+                                    </span>
+                                }
+                                @if (IsMod || (post.AuthorId == CurrentUser.UserId && (EditTime == 0 || DateTime.UtcNow.Subtract(post.PostCreationTime ?? default).TotalMinutes <= EditTime)))
+                                {
+                                    <span>
+                                        <a asp-page="/Posting" asp-page-handler="EditPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">&#x1F4DD; Modifică</a>
+                                    </span>
+                                    if (IsMod || index == Model.Posts.Count - 1)
+                                    {
+                                        if (!IsMod)
+                                        {
+                                            useModActions = true;
+                                            <input name="PostIdsForModerator" type="checkBox" value="@post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @(post.PostId ?? -1))" @(Model.PostIdsForModerator.Contains(post.PostId ?? -1) ? "checked" : "") style="display:none" />
+                                        }
+                                        int? closestPostIdIndex = null;
+                                        if (Model.Posts.Count > 1)
+                                        {
+                                            if (index == 0) closestPostIdIndex = 1;
+                                            else if (index == Model.Posts.Count - 1) closestPostIdIndex = Model.Posts.Count - 2;
+                                            else closestPostIdIndex = index + 1;
+                                        }
+                                        var closestPostId = closestPostIdIndex.HasValue ? Model.Posts[closestPostIdIndex.Value].PostId : 0;
+                                        <span>
+                                            <a href="javascript:vt.deletePost(@(post.PostId ?? -1), @closestPostId)">&#x274C; Șterge mesaj</a>
+                                        </span>
+                                    }
+                                }
+                            </div>
                         </div>
-                    </div>
+                    }
                 </div>
             </div>
         </div>

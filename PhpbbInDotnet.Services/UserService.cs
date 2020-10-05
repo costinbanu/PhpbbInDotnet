@@ -63,8 +63,14 @@ namespace PhpbbInDotnet.Services
                 on up.AuthRoleId equals a.RoleId
                 select up.AuthRoleId as int?).FirstOrDefault();
 
-        public bool HasPrivateMessages(LoggedUser user)
+        public async Task<bool> HasPrivateMessagePermissions(int userId)
+            => HasPrivateMessagePermissions(await GetLoggedUserById(userId));
+
+        public bool HasPrivateMessagePermissions(LoggedUser user)
             => !(user?.IsAnonymous ?? true) && !(user?.AllPermissions?.Contains(new LoggedUser.Permissions { ForumId = 0, AuthRoleId = Constants.NO_PM_ROLE }) ?? false);
+
+        public bool HasPrivateMessages(LoggedUser user)
+            => user.AllowPM && HasPrivateMessagePermissions(user);
 
         public async Task<bool> HasPrivateMessages(int userId)
             => HasPrivateMessages(await GetLoggedUserById(userId));
@@ -115,9 +121,11 @@ namespace PhpbbInDotnet.Services
                 UsernameClean = user.UsernameClean,
                 AllPermissions = new HashSet<LoggedUser.Permissions>(await multi.ReadAsync<LoggedUser.Permissions>()),
                 TopicPostsPerPage = (await multi.ReadAsync()).ToDictionary(key => checked((int)key.topic_id), value => checked((int)value.post_no)),
+                Foes = new HashSet<int>((await multi.ReadAsync<uint>()).Select(x => unchecked((int)x))),
                 UserDateFormat = user.UserDateformat,
                 UserColor = user.UserColour,
-                PostEditTime = (editTime == 0 || user.UserEditTime == 0) ? 0 : Math.Min(Math.Abs(editTime), Math.Abs(user.UserEditTime))
+                PostEditTime = (editTime == 0 || user.UserEditTime == 0) ? 0 : Math.Min(Math.Abs(editTime), Math.Abs(user.UserEditTime)),
+                AllowPM = user.UserAllowPm == 1
             };
 
             var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -169,9 +177,15 @@ namespace PhpbbInDotnet.Services
                 {
                     return ("Expeditorul nu are dreptul să trimită mesaje private.", false);
                 }
-                if (!await HasPrivateMessages(receiverId))
+                
+                var receiver = await GetLoggedUserById(receiverId);
+                if (!HasPrivateMessages(receiver))
                 {
-                    return ("Destinatarul nu are dreptul să primească mesaje private.", false);
+                    return ("Destinatarul nu poate primi mesaje private.", false);
+                }
+                if (receiver.Foes?.Contains(senderId) ?? false)
+                {
+                    return ("Destinatarul te-a adăugat pe lista sa de persoane neagreate, drept urmare nu îi poți trimite mesaje private.", false);
                 }
 
                 var msgResult = _context.PhpbbPrivmsgs.Add(new PhpbbPrivmsgs
@@ -193,6 +207,13 @@ namespace PhpbbInDotnet.Services
                     UserId = receiverId
                 });
                 readResult.Entity.Id = 0;
+                var readResult2 = _context.PhpbbPrivmsgsTo.Add(new PhpbbPrivmsgsTo
+                {
+                    AuthorId = senderId,
+                    MsgId = msg.MsgId,
+                    UserId = senderId
+                });
+                readResult2.Entity.Id = 0;
                 await _context.SaveChangesAsync();
 
                 using var emailMessage = new MailMessage
@@ -261,6 +282,26 @@ namespace PhpbbInDotnet.Services
                 }
                 _context.PhpbbPrivmsgs.Remove(msg);
                 _context.PhpbbPrivmsgsTo.RemoveRange(msgToEntries);
+                await _context.SaveChangesAsync();
+                return ("OK", true);
+            }
+            catch (Exception ex)
+            {
+                _utils.HandleError(ex);
+                return ("A intervenit o eroare, încearcă mai târziu.", false);
+            }
+        }
+
+        public async Task<(string Message, bool? IsSuccess)> HidePrivateMessage(int messageId, int senderId, int receiverId)
+        {
+            try
+            {
+                var to = await _context.PhpbbPrivmsgsTo.FirstOrDefaultAsync(t => t.MsgId == messageId && t.AuthorId == senderId && t.UserId == receiverId);
+                if (to == null)
+                {
+                    return ("Mesajul nu există.", false);
+                }
+                to.FolderId = -1;
                 await _context.SaveChangesAsync();
                 return ("OK", true);
             }

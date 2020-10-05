@@ -85,7 +85,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     into joined
 
                     from j in joined
-                    where j.UserId == user.UserId && j.AuthorId != j.UserId
+                    where j.UserId == user.UserId && j.AuthorId != j.UserId && j.FolderId != -1
 
                     join u in _context.PhpbbUsers.AsNoTracking()
                     on j.AuthorId equals u.UserId
@@ -113,7 +113,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     into joined
 
                     from j in joined
-                    where j.AuthorId == user.UserId && j.AuthorId != j.UserId
+                    where j.AuthorId == user.UserId && j.AuthorId != j.UserId && j.FolderId != -1
 
                     join u in _context.PhpbbUsers.AsNoTracking()
                     on j.UserId equals u.UserId
@@ -171,6 +171,30 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
 
                 var (Message, IsSuccess) = await _userService.DeletePrivateMessage(MessageId.Value);
+
+                if (IsSuccess ?? false)
+                {
+                    MessageId = null;
+                    return await OnGet();
+                }
+                else
+                {
+                    ModelState.AddModelError(nameof(MessageId), Message);
+                    Show = PrivateMessagesPages.Message;
+                    return await OnGet();
+                }
+            });
+
+        public async Task<IActionResult> OnPostHideMessage()
+            => await WithRegisteredUser(async (user) =>
+            {
+                if (!_userService.HasPrivateMessages(user))
+                {
+                    return BadRequest("Utilizatorul nu are acces la mesageria privată.");
+                }
+
+                var to = await _context.PhpbbPrivmsgsTo.FirstOrDefaultAsync(x => x.MsgId == MessageId && x.AuthorId != x.UserId);
+                var (Message, IsSuccess) = await _userService.HidePrivateMessage(MessageId ?? 0, to.AuthorId, to.UserId);
 
                 if (IsSuccess ?? false)
                 {

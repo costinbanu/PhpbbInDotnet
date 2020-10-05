@@ -347,7 +347,7 @@ else if (IsPM)
 </form>
 
 @{
-    var (posts, users) = await Model.GetPreviousPosts();
+    var (posts, attachments, users) = await Model.GetPreviousPosts();
     if (posts.Any())
     {
         <script>
@@ -361,6 +361,7 @@ else if (IsPM)
         foreach (var p in posts)
         {
             var ju = users.FirstOrDefault(u => u.UserId == p.PosterId);
+            var ja = attachments.Where(a => a.PostMsgId == p.PostId);
             var post = new DTOs.PostDto
             {
                 PostSubject = p.PostSubject,
@@ -368,6 +369,7 @@ else if (IsPM)
                 AuthorName = ((ju?.UserId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID ? p.PostUsername : ju.Username),
                 AuthorId = ju?.UserId ?? Constants.ANONYMOUS_USER_ID,
                 AuthorColor = ju?.UserColour,
+                Attachments = ja.Select(a => new DTOs.AttachmentDto(a)).ToList(),
                 PostCreationTime = p.PostTime.ToUtcTime(),
                 PostModifiedTime = p.PostEditTime.ToUtcTime(),
                 PostId = p.PostId,
@@ -379,8 +381,17 @@ else if (IsPM)
                 IP = p.PosterIp
             };
 
+            if (CurrentUser.Foes?.Contains(p.PosterId) ?? false)
+            {
+                post.AuthorHasAvatar = false;
+                post.Attachments?.Clear();
+                post.BbcodeUid = string.Empty;
+                post.PostSubject = "Re:";
+                post.PostText = "[i]Autorul acestui mesaj este pe lista ta de persoane neagreate, drept urmare nu poți vedea conținutul mesajelor sale[/i]";
+            }
+
             post.AuthorHasAvatar = false;
-            await _renderingService.ProcessPost(post, Model.PageContext, Model.HttpContext, false);
+            await _renderingService.ProcessPost(post, Model.PageContext, Model.HttpContext, true);
 
             if (!isFirst)
             {
@@ -403,7 +414,7 @@ else if (IsPM)
                                 @Html.Raw(post.AuthorName)
                             </span>
                         </span>
-                        @if (!isFirst)
+                        @if (!isFirst && !(CurrentUser.Foes?.Contains(post.AuthorId ?? 1) ?? false))
                         {
                             <span style="margin-left: auto; min-width: max-content; padding-top: 3px; padding-bottom: 30px; margin-top: 4px; margin-bottom: 4px">
                                 <a href="javascript:posting.addquote(texts['@post.PostId'], '@post.AuthorName')">&#x1F4AC; Citează</a>

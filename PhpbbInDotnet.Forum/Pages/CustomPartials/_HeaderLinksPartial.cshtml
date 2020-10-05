@@ -1,7 +1,7 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel
 
 <span>
-    <a href="javascript:showElement('headerLinks');">Legături utile</a>
+    <a href="javascript:showElement('headerLinks');">Meniu</a>
 </span>
 <ul class="Shortcuts" style="display:none" id="headerLinks">
     <li>
@@ -30,4 +30,8 @@
             @Html.Raw(elem)
         </li>
     }
+    <li>
+        <span>&nbsp; &nbsp; </span>
+        <a asp-page="FAQ" class="nowrap">Întrebări frecvente - ghid de utilizare</a>
+    </li>
 </ul>

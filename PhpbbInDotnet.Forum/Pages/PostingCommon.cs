@@ -17,7 +17,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [ValidateAntiForgeryToken, ResponseCache(Location = ResponseCacheLocation.None, NoStore = true, Duration = 0)]
+    [ValidateAntiForgeryToken]
     public partial class PostingModel : ModelWithLoggedUser
     {
         [BindProperty, MaxLength(255, ErrorMessage = "Titlul trebuie să aibă maxim 255 caractere.")]
@@ -114,17 +114,23 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<string> GetActualCacheKey(string key, bool isPersonalizedData)
             => isPersonalizedData ? $"{(await GetCurrentUserAsync()).UserId}_{ForumId}_{TopicId ?? 0}_{key ?? throw new ArgumentNullException(nameof(key))}" : key;
 
-        public async Task<(IEnumerable<PhpbbPosts> posts, IEnumerable<PhpbbUsers> users)> GetPreviousPosts()
+        public async Task<(IEnumerable<PhpbbPosts> posts, IEnumerable<PhpbbAttachments> attachments, IEnumerable<PhpbbUsers> users)> GetPreviousPosts()
         {
             if (((TopicId.HasValue && PageNum.HasValue) || PostId.HasValue) && (Action == PostingActions.EditForumPost || Action == PostingActions.NewForumPost))
             {
                 using var connection = _context.Database.GetDbConnection();
                 await connection.OpenIfNeeded();
                 var posts = await connection.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC LIMIT 10", new { TopicId });
-                var users = await connection.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id IN @userIds", new { userIds = posts.Select(pp => pp.PosterId).DefaultIfEmpty() });
-                return (posts, users);
+                using var multi = await connection.QueryMultipleAsync(
+                    "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @postIds;" +
+                    "SELECT * FROM phpbb_users WHERE user_id IN @userIds", 
+                    new { postIds = posts.Select(pp => pp.PostId).DefaultIfEmpty(), userIds = posts.Select(pp => pp.PosterId).DefaultIfEmpty() }
+                );
+                var attachments = await multi.ReadAsync<PhpbbAttachments>();
+                var users = await multi.ReadAsync<PhpbbUsers>();
+                return (posts, attachments, users);
             }
-            return (new List<PhpbbPosts>(), new List<PhpbbUsers>());
+            return (new List<PhpbbPosts>(), new List<PhpbbAttachments>(), new List<PhpbbUsers>());
         }
 
         private async Task Init()

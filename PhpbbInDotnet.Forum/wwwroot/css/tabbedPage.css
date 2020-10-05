@@ -29,3 +29,10 @@
     border: 1px solid #ccc;
     border-top: none;
 }
+
+@media (max-width: 768px) {
+    .tab button {
+        padding: 4px 6px;
+        font-size: 14px;
+    }
+}
