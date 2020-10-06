@@ -1,7 +1,6 @@
 ﻿@page
 @model IndexModel
 
-@inject Services.UserService _userService
 @{
     ViewData["Title"] = "Home page";
     var CurrentUser = await Model.GetCurrentUserAsync();
@@ -52,7 +51,7 @@
     <span id="bullet">&nbsp;&bull;&nbsp;</span>
     @await Html.PartialAsync(
         "_HeaderLinksPartial",
-        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(_userService.HasPrivateMessages(CurrentUser), "<a href=\"javascript:MarkForumsRead.submit()\">Marchează forumurile ca citite</a>"),
+        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel("<a href=\"javascript:MarkForumsRead.submit()\">Marchează forumurile ca citite</a>"),
         ViewData
     )
     <form asp-page-handler="MarkForumsRead" method="post" name="MarkForumsRead">

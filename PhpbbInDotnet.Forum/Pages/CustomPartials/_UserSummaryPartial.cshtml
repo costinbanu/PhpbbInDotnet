@@ -24,14 +24,14 @@
             <div class="FlexRight PostInputWidth">
                 <b>Înscris:</b>
                 <script>
-                writeDate("@user.UserRegdate.ToUtcTime().ToString("o")", "@Model.DateFormat");
+                    writeDate("@user.UserRegdate.ToUtcTime().ToString("o")", "@Model.DateFormat");
                 </script>
                 <br />
                 <b>Activ ultima oară:</b>
                 @if (user.UserInactiveTime == 0)
                 {
                     <script>
-                    writeDate("@user.UserLastvisit.ToUtcTime().ToString("o")", "@Model.DateFormat");
+                        writeDate("@user.UserLastvisit.ToUtcTime().ToString("o")", "@Model.DateFormat");
                     </script>
                 }
                 else

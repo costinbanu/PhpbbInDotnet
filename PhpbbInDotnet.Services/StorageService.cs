@@ -84,29 +84,27 @@ namespace PhpbbInDotnet.Services
             return (succeeded, failed);
         }
 
-        public async Task<string> UploadAvatar(int userId, IFormFile file)
+        public async Task<bool> UploadAvatar(int userId, Stream contents, string fileName)
         {
             try
             {
-                var name = $"{userId}_{DateTime.UtcNow.ToUnixTimestamp()}{Path.GetExtension(file.FileName)}";
-                using (var input = file.OpenReadStream())
-                using (var fs = File.Open(Path.Combine(AvatarsPath, name), FileMode.Create))
-                {
-                    await input.CopyToAsync(fs);
-                }
-                return name;
+                var name = $"{_config.GetValue<string>("AvatarSalt")}_{userId}{Path.GetExtension(fileName)}";
+                using var fs = File.Open(Path.Combine(AvatarsPath, name), FileMode.Create);
+                await contents.CopyToAsync(fs);
+                await fs.FlushAsync();
+                return true;
             }
             catch (Exception ex)
             {
                 _utils.HandleError(ex, "Error uploading avatar.");
-                return null;
+                return false;
             }
         }
 
-        public bool DeleteAvatar(int userId)
+        public bool DeleteAvatar(int userId, string extension)
         {
-            var name = Directory.GetFiles(AvatarsPath, $"{userId}_*.*").FirstOrDefault();
-            if (File.Exists(name ?? string.Empty))
+            var name = $"{_config.GetValue<string>("AvatarSalt")}_{userId}.{extension.TrimStart('.')}";
+            if (File.Exists(name))
             {
                 return DeleteFile(name, true);
             }

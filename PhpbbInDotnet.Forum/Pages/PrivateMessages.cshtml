@@ -1,6 +1,5 @@
 ﻿@page
 @model PhpbbInDotnet.Forum.Pages.PrivateMessagesModel
-@inject Services.UserService _userService
 @{
     ViewData["Title"] = "PrivateMessages";
     Layout = "~/Pages/_Layout.cshtml";
@@ -33,7 +32,7 @@
 {
     @await Html.PartialAsync(
         "_HeaderLinksPartial",
-        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(_userService.HasPrivateMessages(CurrentUser)),
+        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(),
         ViewData
     )
 }
@@ -41,7 +40,7 @@
 <h2 style="float: left; margin-top: 0px">Mesaje private</h2>
 <span style="line-height:33px">
     &nbsp;&bull;&nbsp;
-    <button onclick="localtion.href='/Posting?handler=PrivateMessage'" style="line-height:21px">Scrie un mesaj privat nou</button>
+    <button onclick="location.href = '/Posting?handler=PrivateMessage'" style="line-height:21px">Scrie un mesaj privat nou</button>
 </span>
 <p style="clear:both"></p>
 <div class="tab">
@@ -76,7 +75,7 @@
             {
                 <hr class="BoxSeparator" />
             }
-            var divClass = msg.Unread == 1 ? $"FlexRow Unread RowMargin" : $"FlexRow RowMargin";
+            var divClass = msg.Unread.ToBool() ? $"FlexRow Unread RowMargin" : $"FlexRow RowMargin";
             <div class="@divClass">
                 <input name="SelectedMessages" type="checkbox" value="@msg.MessageId" form="MarkAsRead" style="margin-right:10px" />
                 <span class="ForumContent" style="align-self:safe center">

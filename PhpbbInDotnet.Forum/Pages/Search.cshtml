@@ -153,7 +153,7 @@ else
                 "_SummaryPartial",
                 new CustomPartials._SummaryPartialModel(post.AuthorId, post.AuthorName, post.AuthorColor, post.PostCreationTime, post.PostId.Value, dateFormat,
                     post.AuthorHasAvatar, post.AuthorRank, null, null, null, true, false, null, null, null,
-                    _userService.HasPrivateMessages(CurrentUser) ? $"<a href=\"./Posting?handler=PrivateMessage&postId={post.PostId}\">&#x2709; Mesaj privat</a>" : null
+                    _userService.HasPrivateMessagePermissions(CurrentUser) ? $"<a href=\"./Posting?handler=PrivateMessage&postId={post.PostId}\">&#x1F5E8; Mesaj privat</a>" : null
                 )
             )
             <div class="ForumContent" id="@post.PostId">

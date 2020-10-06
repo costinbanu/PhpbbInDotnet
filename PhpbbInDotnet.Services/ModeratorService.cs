@@ -96,8 +96,8 @@ namespace PhpbbInDotnet.Services
                 {
                     return ($"Subiectul {topicId} nu există", false);
                 }
-                
-                curTopic.TopicStatus = (byte)(@lock ? 1 : 0);
+
+                curTopic.TopicStatus = @lock.ToByte();
                 await _context.SaveChangesAsync();
                 
                 return ("Subiectul a fost modificat cu succes!", true);

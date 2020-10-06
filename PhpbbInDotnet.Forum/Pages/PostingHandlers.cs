@@ -104,7 +104,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     var pollOptionsText = await _context.PhpbbPollOptions.AsNoTracking().Where(x => x.TopicId == curTopic.TopicId).Select(x => x.PollOptionText).ToListAsync();
                     PollQuestion = curTopic.PollTitle;
                     PollOptions = string.Join(Environment.NewLine, pollOptionsText);
-                    PollCanChangeVote = curTopic.PollVoteChange == 1;
+                    PollCanChangeVote = curTopic.PollVoteChange.ToBool();
                     PollExpirationDaysString = TimeSpan.FromSeconds(curTopic.PollLength).TotalDays.ToString();
                     PollMaxOptions = curTopic.PollMaxOptions;
                     ShowPoll = true;

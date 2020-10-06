@@ -59,17 +59,13 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 await connection.OpenIfNeeded();
                 file = await connection.QuerySingleOrDefaultAsync<string>("SELECT user_avatar FROM phpbb_users WHERE user_id = @userId", new { userId });
-                if (file == null)
-                {
-                    return RedirectToPage("Error", new { isNotFound = true });
-                }
-
-                if (_config.GetValue<bool>("CompatibilityMode"))
-                {
-                    var salt = await connection.QuerySingleAsync<string>("SELECT config_value FROM phpbb_config WHERE config_name = 'avatar_salt'");
-                    file = $"{salt}_{userId}{Path.GetExtension(file)}";
-                }
             }
+
+            if (file == null)
+            {
+                return RedirectToPage("Error", new { isNotFound = true });
+            }
+            file = $"{_config.GetValue<string>("AvatarSalt")}_{userId}{Path.GetExtension(file)}";
 
             return SendToClient(file, file, null, true);
         }

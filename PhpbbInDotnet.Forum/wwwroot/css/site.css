@@ -531,6 +531,12 @@ label {
         width: 90%;
         height: 90%;
     }
+
+    .PostInputWidth {
+        width: 100%;
+        min-width: 100%;
+        max-width: 100%
+    }
 }
 
 @media (max-width:1160px) and (min-width:769px) {
@@ -573,13 +579,13 @@ label {
     }
 }
 
-@media (max-width: 960px) {
+/*@media (max-width: 960px) {
     .PostInputWidth {
         width: 100%;
         min-width: 100%;
         max-width: 100%
     }
-}
+}*/
 
 @media (max-width: 400px) {
     .bullet {

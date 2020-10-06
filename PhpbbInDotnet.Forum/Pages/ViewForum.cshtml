@@ -5,7 +5,6 @@
 @using System.Web
 @inject Services.ForumTreeService _forumService
 @inject Services.BBCodeRenderingService _renderingService
-@inject Services.UserService _userService
 @inject Services.CommonUtils _utils
 
 @{
@@ -70,7 +69,7 @@ else
     <span> &bull;&nbsp;</span>
     @await Html.PartialAsync(
         "_HeaderLinksPartial",
-        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(_userService.HasPrivateMessages(CurrentUser)),
+        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(),
         ViewData
     )
 }

@@ -13,7 +13,10 @@ using PhpbbInDotnet.Forum.Pages.CustomPartials.Email;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Net.Mail;
 using System.Threading.Tasks;
@@ -33,14 +36,14 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty, Compare(otherProperty: nameof(FirstPassword), ErrorMessage = "Cele două parole trebuie să fie identice")]
         public string SecondPassword { get; set; }
         
-        [BindProperty, ValidateFile(ErrorMessage = "Imaginea este coruptă sau prea mare!")]
+        [BindProperty]
         public IFormFile Avatar { get; set; }
         
         [BindProperty]
         public bool DeleteAvatar { get; set; } = false;
         
         [BindProperty]
-        public bool ShowEmail { get; set; } = true;
+        public bool ShowEmail { get; set; } = false;
         
         [BindProperty]
         [Required(ErrorMessage = "Trebuie să introduceți o adresă e e-mail validă.")]
@@ -116,7 +119,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return RedirectToPage("Error", new { isNotFound = true });
             }
 
-            var userMustLogIn = false;
+            var userMustLogIn = dbUser.UserAllowPm.ToBool() != AllowPM || dbUser.UserDateformat != CurrentUser.UserDateformat;
 
             if (await IsCurrentUserAdminHere() && dbUser.UsernameClean != _utils.CleanString(CurrentUser.Username) && !string.IsNullOrWhiteSpace(CurrentUser.Username))
             {
@@ -124,7 +127,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 dbUser.UsernameClean = _utils.CleanString(CurrentUser.Username);
             }
             dbUser.UserBirthday = Birthday ?? string.Empty;
-            dbUser.UserAllowViewemail = (byte)(ShowEmail ? 1 : 0);
+            dbUser.UserAllowViewemail = ShowEmail.ToByte();
+            dbUser.UserAllowPm = AllowPM.ToByte();
             dbUser.UserOcc = CurrentUser.UserOcc ?? string.Empty;
             dbUser.UserFrom = CurrentUser.UserFrom ?? string.Empty;
             dbUser.UserInterests = CurrentUser.UserInterests ?? string.Empty;
@@ -133,7 +137,20 @@ namespace PhpbbInDotnet.Forum.Pages
             dbUser.UserEditTime = CurrentUser.UserEditTime;
             dbUser.UserWebsite = CurrentUser.UserWebsite ?? string.Empty;
             dbUser.UserRank = UserRank;
-            dbUser.UserAllowPm = (byte)(AllowPM ? 1 : 0);
+
+            var newColour = CurrentUser.UserColour?.TrimStart('#') ?? string.Empty;
+            if (dbUser.UserColour != newColour)
+            {
+                dbUser.UserColour = newColour;
+                foreach (var f in _context.PhpbbForums.Where(f => f.ForumLastPosterId == dbUser.UserId))
+                {
+                    f.ForumLastPosterColour = newColour;
+                }
+                foreach (var t in _context.PhpbbTopics.Where(t => t.TopicLastPosterId == dbUser.UserId))
+                {
+                    t.TopicLastPosterColour = newColour;
+                }
+            }
 
             if (_utils.CalculateCrc32Hash(Email) != dbUser.UserEmailHash)
             {
@@ -176,11 +193,11 @@ namespace PhpbbInDotnet.Forum.Pages
                 userMustLogIn = true;
             }
 
-            if (DeleteAvatar)
+            if (DeleteAvatar && !string.IsNullOrWhiteSpace(dbUser.UserAvatar))
             {
-                if (!_storageService.DeleteAvatar(dbUser.UserId))
+                if (!_storageService.DeleteAvatar(dbUser.UserId, Path.GetExtension(dbUser.UserAvatar)))
                 {
-                    throw new Exception("Failed to delete file");
+                    ModelState.AddModelError(nameof(Avatar), "Imaginea nu a putut fi ștearsă");
                 }
 
                 dbUser.UserAvatarType = 0;
@@ -191,17 +208,39 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (Avatar != null)
             {
-                var name = await _storageService.UploadAvatar(dbUser.UserId, Avatar);
-                if (string.IsNullOrWhiteSpace(name))
+                try
                 {
-                    throw new Exception("Failed to upload file");
+                    using var stream = Avatar.OpenReadStream();
+                    using var bmp = new Bitmap(stream);
+                    stream.Seek(0, SeekOrigin.Begin);
+                    if (bmp.Width >200 || bmp.Height > 200)
+                    {
+                        ModelState.AddModelError(nameof(Avatar), "Fișierul trebuie să fie o imagine de dimensiuni maxime 200px x 200px.");
+                    }
+                    else
+                    {
+                        if (!string.IsNullOrWhiteSpace(dbUser.UserAvatar))
+                        {
+                            _storageService.DeleteAvatar(dbUser.UserId, Path.GetExtension(dbUser.UserAvatar));
+                        }
+                        if (!await _storageService.UploadAvatar(dbUser.UserId, stream, Avatar.FileName))
+                        {
+                            ModelState.AddModelError(nameof(Avatar), "Imaginea nu a putut fi încărcată");
+                        }
+                        else
+                        {
+                            dbUser.UserAvatarType = 1;
+                            dbUser.UserAvatarWidth = unchecked((short)bmp.Width);
+                            dbUser.UserAvatarHeight = unchecked((short)bmp.Height);
+                            dbUser.UserAvatar = Avatar.FileName;
+                        }
+                    }
                 }
-
-                using var bmp = Avatar.ToImage();
-                dbUser.UserAvatarType = 1;
-                dbUser.UserAvatarWidth = unchecked((short)bmp.Width);
-                dbUser.UserAvatarHeight = unchecked((short)bmp.Height);
-                dbUser.UserAvatar = name;
+                catch (Exception ex)
+                {
+                    _utils.HandleError(ex, $"Failed to upload avatar for {CurrentUser?.UserId ?? dbUser?.UserId ?? 1}");
+                    ModelState.AddModelError(nameof(Avatar), "Imaginea nu a putut fi încărcată");
+                }
             }
 
             var userRoles = (await _userService.GetUserRolesLazy()).Select(r => r.RoleId);
@@ -253,7 +292,16 @@ namespace PhpbbInDotnet.Forum.Pages
                 userMustLogIn = true;
             }
 
-            var affectedEntries = await _context.SaveChangesAsync();
+            var affectedEntries = 0;
+            try
+            {
+                affectedEntries = await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _utils.HandleError(ex, $"Error updating user profile for {CurrentUser?.UserId ?? dbUser?.UserId ?? 1}");
+                ModelState.AddModelError(nameof(CurrentUser), "A intervenit o eroare, iar modificările nu au putut fi salvate.");
+            }
 
             await Render(dbUser);
 
@@ -348,7 +396,8 @@ namespace PhpbbInDotnet.Forum.Pages
             AclRole = await _userService.GetUserRole(await _userService.DbUserToLoggedUserAsync(cur));
             GroupId = await _userService.GetUserGroupAsync(cur.UserId);
             UserRank = cur.UserRank;
-            AllowPM = cur.UserAllowPm == 1;
+            AllowPM = cur.UserAllowPm.ToBool();
+            ShowEmail = cur.UserAllowViewemail.ToBool();
         }
     }
 }

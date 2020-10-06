@@ -70,7 +70,7 @@ namespace PhpbbInDotnet.Services
                 PollDurationSecons = _currentTopic.PollLength,
                 PollMaxOptions = _currentTopic.PollMaxOptions,
                 TopicId = _currentTopic.TopicId,
-                VoteCanBeChanged = _currentTopic.PollVoteChange == 1,
+                VoteCanBeChanged = _currentTopic.PollVoteChange.ToBool(),
                 PollOptions = options.Select(o => 
                 new PollOption
                 {

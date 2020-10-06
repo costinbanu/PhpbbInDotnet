@@ -56,7 +56,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGet()
             => await WithRegisteredUser(async (user) =>
             {
-                if (!_userService.HasPrivateMessages(user))
+                if (!_userService.HasPrivateMessagePermissions(user))
                 {
                     return BadRequest("Utilizatorul nu are acces la mesageria privată.");
                 }
@@ -138,7 +138,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     var msg = await _context.PhpbbPrivmsgs.AsNoTracking().FirstOrDefaultAsync(x => x.MsgId == MessageId);
                     var to = await _context.PhpbbPrivmsgsTo.FirstOrDefaultAsync(x => x.MsgId == MessageId && x.AuthorId != x.UserId);
                     SelectedMessageIsMine = to.AuthorId == user.UserId;
-                    SelectedMessageIsUnread = to.PmUnread == 1;
+                    SelectedMessageIsUnread = to.PmUnread.ToBool();
                     var other = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == (SelectedMessageIsMine ? to.UserId : to.AuthorId));
                     SelectedMessage = new PrivateMessageDto
                     {
@@ -152,7 +152,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         Time = msg.MessageTime.ToUtcTime()
                     };
 
-                    if (to.PmUnread == 1 && !SelectedMessageIsMine)
+                    if (to.PmUnread.ToBool() && !SelectedMessageIsMine)
                     {
                         to.PmUnread = 0;
                         _context.PhpbbPrivmsgsTo.Update(to);
@@ -165,7 +165,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostDeleteMessage()
             => await WithRegisteredUser(async (user) =>
             {
-                if (!_userService.HasPrivateMessages(user))
+                if (!_userService.HasPrivateMessagePermissions(user))
                 {
                     return BadRequest("Utilizatorul nu are acces la mesageria privată.");
                 }
@@ -188,7 +188,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostHideMessage()
             => await WithRegisteredUser(async (user) =>
             {
-                if (!_userService.HasPrivateMessages(user))
+                if (!_userService.HasPrivateMessagePermissions(user))
                 {
                     return BadRequest("Utilizatorul nu are acces la mesageria privată.");
                 }

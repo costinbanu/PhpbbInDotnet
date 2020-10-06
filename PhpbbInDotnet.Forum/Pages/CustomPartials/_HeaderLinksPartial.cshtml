@@ -16,13 +16,11 @@
         <span>&nbsp; &nbsp; </span>
         <a asp-page="ViewForum" asp-page-handler="drafts" class="nowrap">Mesaje în lucru</a>
     </li>
-    @if (Model.HasPrivateMessages)
-    {
-        <li>
-            <span>&nbsp; &nbsp; </span>
-            <a asp-page="PrivateMessages">Mesaje private</a>
-        </li>
-    }
+    <li>
+        <span>&nbsp; &nbsp; </span>
+        <a asp-page="/MemberList">Membrii forumului</a>
+    </li>
+
     @foreach (var elem in Model.ExtraElements ?? Enumerable.Empty<string>())
     {
         <li>
@@ -30,8 +28,4 @@
             @Html.Raw(elem)
         </li>
     }
-    <li>
-        <span>&nbsp; &nbsp; </span>
-        <a asp-page="FAQ" class="nowrap">Întrebări frecvente - ghid de utilizare</a>
-    </li>
 </ul>

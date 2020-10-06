@@ -122,8 +122,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 await connection.OpenIfNeeded();
                 var posts = await connection.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC LIMIT 10", new { TopicId });
                 using var multi = await connection.QueryMultipleAsync(
-                    "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @postIds;" +
-                    "SELECT * FROM phpbb_users WHERE user_id IN @userIds", 
+                    "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @postIds ORDER BY attach_id;" +
+                    "SELECT * FROM phpbb_users WHERE user_id IN @userIds;", 
                     new { postIds = posts.Select(pp => pp.PostId).DefaultIfEmpty(), userIds = posts.Select(pp => pp.PosterId).DefaultIfEmpty() }
                 );
                 var attachments = await multi.ReadAsync<PhpbbAttachments>();
@@ -262,7 +262,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     EnableMagicUrl = 1,
                     EnableSig = 1,
                     EnableSmilies = 1,
-                    PostAttachment = (byte)(hasAttachments ? 1 : 0),
+                    PostAttachment = hasAttachments.ToByte(),
                     PostChecksum = _utils.CalculateMD5Hash(newPostText),
                     PostEditCount = 0,
                     PostEditLocked = 0,
@@ -282,7 +282,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 post.PostText = _writingService.PrepareTextForSaving(newPostText);
                 post.BbcodeUid = uid;
                 post.BbcodeBitfield = bitfield;
-                post.PostAttachment = (byte)(hasAttachments ? 1 : 0);
+                post.PostAttachment = hasAttachments.ToByte();
 
                 await _context.SaveChangesAsync();
                 await _postService.CascadePostEdit(_context, post);

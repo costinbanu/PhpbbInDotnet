@@ -62,7 +62,7 @@
     <span> &bull;&nbsp;</span>
     @await Html.PartialAsync(
         "_HeaderLinksPartial",
-        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(_userService.HasPrivateMessages(CurrentUser)),
+        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(),
         ViewData
     )
 }
@@ -242,7 +242,7 @@
                     "_SummaryPartial",
                     new CustomPartials._SummaryPartialModel(post.AuthorId, post.AuthorName, post.AuthorColor, post.PostCreationTime, post.PostId.Value,
                         UserDateFormat, post.AuthorHasAvatar, post.AuthorRank, null, null, null, true, false, null, null, null,
-                        _userService.HasPrivateMessages(CurrentUser) ? $"<a href=\"./Posting?handler=PrivateMessage&postId={post.PostId}\">&#x2709; Mesaj privat</a>" : null)
+                        _userService.HasPrivateMessagePermissions(CurrentUser) ? $"<a href=\"./Posting?handler=PrivateMessage&postId={post.PostId}\">&#x1F5E8; Mesaj privat</a>" : null)
                 )
                 <div class="ForumContent VerticalContent FlexRight" id="@post.PostId" style="max-width:100%; overflow-wrap: break-word">
                     <span style="display:flex">

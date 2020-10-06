@@ -125,7 +125,7 @@ namespace PhpbbInDotnet.Services
                 UserDateFormat = user.UserDateformat,
                 UserColor = user.UserColour,
                 PostEditTime = (editTime == 0 || user.UserEditTime == 0) ? 0 : Math.Min(Math.Abs(editTime), Math.Abs(user.UserEditTime)),
-                AllowPM = user.UserAllowPm == 1
+                AllowPM = user.UserAllowPm.ToBool()
             };
 
             var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -173,7 +173,7 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                if (!await HasPrivateMessages(senderId))
+                if (!await HasPrivateMessagePermissions(senderId))
                 {
                     return ("Expeditorul nu are dreptul să trimită mesaje private.", false);
                 }

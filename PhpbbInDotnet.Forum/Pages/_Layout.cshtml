@@ -62,15 +62,19 @@
                 <ul style="float:right; padding-top:10px; list-style:none; line-height:1.5em;">
                     @{
                         var isTopic = ViewContext.RouteData.Values["page"].ToString() == "/ViewTopic";
-                        if (string.IsNullOrWhiteSpace(currentUser?.Username) || (currentUser?.UserId ?? 1) == 1)
+                        if (string.IsNullOrWhiteSpace(currentUser?.Username) || (currentUser?.IsAnonymous ?? true))
                         {
-                            <li><a href="javascript:loginForm.submit()">Login</a></li>
-                            <li><a asp-page="/Register">Register</a></li>
+                            <li><a href="javascript:loginForm.submit()">Conectare</a></li>
+                            <li><a asp-page="/Register">Înregistrare</a></li>
                         }
                         else
                         {
                             <li><a asp-page="/User" asp-route-UserId="@currentUser.UserId">Contul meu [@currentUser.Username]</a></li>
-                            <li><a href="javascript:logoutForm.submit()">Logout</a></li>
+                            if (_userService.HasPrivateMessagePermissions(currentUser))
+                            {
+                                <li><a asp-page="/PrivateMessages" asp-route-UserId="@currentUser.UserId">Mesagerie privată</a></li>
+                            }
+
                         }
 
                         <li>
@@ -78,11 +82,10 @@
                                 Caută în @(isTopic ? "subiect" : "forum") &#x1F50E;
                             </a>
                         </li>
-                        if (!(currentUser?.IsAnonymous ?? true))
+
+                        if (!(string.IsNullOrWhiteSpace(currentUser?.Username) || (currentUser?.IsAnonymous ?? true)))
                         {
-                            <li>
-                                <a asp-page="/MemberList">Membrii forumului</a>
-                            </li>
+                            <li><a href="javascript:logoutForm.submit()">Deconectare</a></li>
                         }
                     }
                 </ul><br /> <br />
@@ -140,6 +143,7 @@
         {
             <p><a asp-page="./Admin" style="color:white; text-decoration:underline">Panoul administratorului</a></p>
         }
+        <p><a asp-page="FAQ" style="color:white; text-decoration:underline">Întrebări frecvente - ghid de utilizare</a></p>
     </center>
 
     @RenderSection("Scripts", required: false)

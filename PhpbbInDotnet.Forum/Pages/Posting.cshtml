@@ -423,7 +423,13 @@ else if (IsPM)
                     </span>
                     <p>&nbsp;</p>
                     <div style="max-width:100%; overflow-wrap: break-word" id="@post.PostId">
-                        <p style="clear:both">@Html.Raw(post.PostText)</p>
+                        <p style="clear:both">
+                            @Html.Raw(post.PostText)
+                            @foreach (var attachment in post.Attachments)
+                            {
+                                @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
+                            }
+                        </p>
                     </div>
                 </div>
             </div>

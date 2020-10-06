@@ -23,6 +23,12 @@ namespace PhpbbInDotnet.Utilities
         public static long ToUnixTimestamp(this DateTime time)
             => (long)time.ToUniversalTime().Subtract(DATE_SEED).TotalSeconds;
 
+        public static bool ToBool(this byte @byte)
+            => @byte == 1;
+
+        public static byte ToByte(this bool @bool)
+            => (byte)(@bool ? 1 : 0);
+
         public static bool IsMimeTypeInline(this string mimeType)
             => mimeType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase) ||
                 mimeType.StartsWith("video", StringComparison.InvariantCultureIgnoreCase)/* ||
@@ -33,25 +39,6 @@ namespace PhpbbInDotnet.Utilities
 
         public static T RunSync<T>(this Task<T> asyncTask)
             => asyncTask.GetAwaiter().GetResult();
-
-        public static Bitmap ToImage(this IFormFile file)
-        {
-            if (file == null)
-            {
-                return null;
-            }
-            try
-            {
-                var stream = file.OpenReadStream();
-                using var bmp = new Bitmap(stream);
-                stream.Seek(0, SeekOrigin.Begin);
-                return bmp;
-            }
-            catch
-            {
-                return null;
-            }
-        }
 
         public static async Task OpenIfNeeded(this DbConnection connection)
         {
