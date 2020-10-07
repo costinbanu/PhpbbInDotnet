@@ -64,28 +64,33 @@
                         var isTopic = ViewContext.RouteData.Values["page"].ToString() == "/ViewTopic";
                         if (string.IsNullOrWhiteSpace(currentUser?.Username) || (currentUser?.IsAnonymous ?? true))
                         {
-                            <li><a href="javascript:loginForm.submit()">Conectare</a></li>
-                            <li><a asp-page="/Register">Înregistrare</a></li>
+                            <li><a href="javascript:loginForm.submit()">&#x2705; Conectare</a></li>
+                            <li><a asp-page="/Register">&#x1F4C3; Înregistrare</a></li>
                         }
                         else
                         {
-                            <li><a asp-page="/User" asp-route-UserId="@currentUser.UserId">Contul meu [@currentUser.Username]</a></li>
+                            <li>
+                                <a asp-page="/User" asp-route-UserId="@currentUser.UserId">
+                                    <span style="text-shadow: 0 0 4px white">&#x1F464;</span>
+                                    Contul meu [@currentUser.Username]
+                                </a>
+                            </li>
                             if (_userService.HasPrivateMessagePermissions(currentUser))
                             {
-                                <li><a asp-page="/PrivateMessages" asp-route-UserId="@currentUser.UserId">Mesagerie privată</a></li>
+                                <li><a asp-page="/PrivateMessages" asp-route-UserId="@currentUser.UserId">&#x1F5E8; Mesagerie privată</a></li>
                             }
 
                         }
 
                         <li>
                             <a asp-page="/Search" asp-route-QueryString="@HttpUtility.UrlEncode(Context.Request.QueryString.ToString())">
-                                Caută în @(isTopic ? "subiect" : "forum") &#x1F50E;
+                                &#x1F50E; Caută în @(isTopic ? "subiect" : "forum")
                             </a>
                         </li>
 
                         if (!(string.IsNullOrWhiteSpace(currentUser?.Username) || (currentUser?.IsAnonymous ?? true)))
                         {
-                            <li><a href="javascript:logoutForm.submit()">Deconectare</a></li>
+                            <li><a href="javascript:logoutForm.submit()">&#x274C; Deconectare</a></li>
                         }
                     }
                 </ul><br /> <br />

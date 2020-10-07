@@ -138,8 +138,8 @@ namespace PhpbbInDotnet.Forum.Pages
             dbUser.UserWebsite = CurrentUser.UserWebsite ?? string.Empty;
             dbUser.UserRank = UserRank;
 
-            var newColour = CurrentUser.UserColour?.TrimStart('#') ?? string.Empty;
-            if (dbUser.UserColour != newColour)
+            var newColour = CurrentUser.UserColour?.TrimStart('#');
+            if (!string.IsNullOrWhiteSpace(newColour) && dbUser.UserColour != newColour)
             {
                 dbUser.UserColour = newColour;
                 foreach (var f in _context.PhpbbForums.Where(f => f.ForumLastPosterId == dbUser.UserId))
@@ -394,8 +394,9 @@ namespace PhpbbInDotnet.Forum.Pages
             Email = cur.UserEmail;
             Birthday = cur.UserBirthday;
             AclRole = await _userService.GetUserRole(await _userService.DbUserToLoggedUserAsync(cur));
-            GroupId = await _userService.GetUserGroupAsync(cur.UserId);
-            UserRank = cur.UserRank;
+            var group = await _userService.GetUserGroupAsync(cur.UserId);
+            GroupId = group?.GroupId;
+            UserRank = cur.UserRank == 0 ? group.GroupRank : cur.UserRank;
             AllowPM = cur.UserAllowPm.ToBool();
             ShowEmail = cur.UserAllowViewemail.ToBool();
         }

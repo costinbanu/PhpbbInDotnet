@@ -38,16 +38,16 @@ function lazyInit(customMaxWidth, customMaxHeight) {
 }
 
 //Expand collapsed menus
-function expandCollapsedMenu(summaryId, buttonId, containerIsFixed = false) {
+function expandCollapsedMenu(summaryId, buttonId) {
     var summary = $('#' + summaryId);
     var button = $('#' + buttonId);
 
     if (!summary.is(':visible')) {
-        var top = containerIsFixed ? button.position().top + 5 : button.offset().top;
-        var right = $(window).innerWidth() - (containerIsFixed ? button.position().left + button.outerWidth() : button.offset().left) - button.outerWidth();
+        var top = button.offset().top + button.height() + 10;
+        var right = $(window).innerWidth() - button.offset().left - button.outerWidth();
         summary.css({
-            'right': right + 'px', //containerIsFixed ? '20px' : '40px',
-            'top': top + button.height() + 10 + 'px',
+            'right': right + 'px',
+            'top': top + 'px'
         });
         summary.show('fast', function () { });
     }

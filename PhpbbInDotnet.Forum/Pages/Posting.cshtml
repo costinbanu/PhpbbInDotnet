@@ -59,6 +59,33 @@
             $('#pollButton').text(posting.showPollText);
         }
     }
+
+    function toggleFormattingHelp() {
+        showElement(
+            'formattingHelp',
+            function () {
+                $('#formattingHelpHeader').toggle();
+            },
+            function () {
+                var header = $('#formattingHelpHeader');
+                header.toggle({
+                    duration: 'fast',
+                    start: function () {
+                        var boxPosition = $('#formattingHelp').offset();
+                        header.offset({ top: boxPosition.top - 40, left: boxPosition.left });
+                    }
+                });
+                $('#formattingHelp img, iframe').each(function () {
+                    var parent = $('#formattingHelp');
+                    $(this).css({
+                        'max-width': parent.width() * 0.9 + 'px',
+                        'max-height': parent.height() * 0.9 + 'px'
+                    });
+                });
+            },
+            true
+        );
+    }
 </script>
 
 
@@ -97,6 +124,104 @@ else if (IsPM)
 }
 
 @await Html.PartialAsync("_RulesPartial", new CustomPartials._RulesPartialModel(_renderingService, _utils, Model.CurrentForum?.ForumRules, Model.CurrentForum?.ForumRulesUid, Model.CurrentForum?.ForumRulesLink), ViewData)
+
+@if (Model.PreviewablePost != null)
+{
+    <hr />
+    @if (Model.PreviewablePoll != null)
+    {
+        <div id="votes" style="display:block; clear: both;">
+            <h3>Chestionar: @Html.Raw(HttpUtility.HtmlDecode(Model.PreviewablePoll.PollTitle))</h3>
+            <div>Chestionarul @(Model.PreviewablePoll.PollEnded ? "a fost" : "va fi") inchis: @(Model.PreviewablePoll.PollEnd.HasValue ? Model.PreviewablePoll.PollEnd.Value.ToString(UserDateFormat) : "niciodată").</div>
+
+            @if (Model.PreviewablePoll.PollMaxOptions > 1)
+            {
+                foreach (var option in Model.PreviewablePoll.PollOptions)
+                {
+                    <table style="border:none; padding:unset; margin:unset; width:100%">
+                        <tr style="border-bottom:solid 1px black">
+                            <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
+                                @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText))
+                            </td>
+                            <td>
+                                <input type="checkbox" name="Votes" value="@option.PollOptionId" />
+                            </td>
+                        </tr>
+                    </table>
+                }
+            }
+            else
+            {
+                foreach (var option in Model.PreviewablePoll.PollOptions)
+                {
+                    <table style="border:none; padding:unset; margin:unset; width:100%">
+                        <tr style="border-bottom:solid 1px black">
+                            <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
+                                @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText))
+                            </td>
+                            <td>
+                                <input type="radio" name="Votes" value="@option.PollOptionId" />
+                            </td>
+                        </tr>
+                    </table>
+                }
+            }
+            <br />
+            <input type="button" value="Trimite vot" />
+        </div>
+    }
+    <div class="RowMargin">
+        <div class="FlexRow">
+            @await Html.PartialAsync(
+             "_SummaryPartial",
+             new CustomPartials._SummaryPartialModel(Model.PreviewablePost.AuthorId, Model.PreviewablePost.AuthorName, Model.PreviewablePost.AuthorColor, Model.PreviewablePost.PostCreationTime, Model.PreviewablePost.PostId.Value,
+                 UserDateFormat, Model.PreviewablePost.AuthorHasAvatar, Model.PreviewablePost.AuthorRank, null, null, null, true)
+            )
+            <div class="ForumContent VerticalContent FlexRight" id="@Model.PreviewablePost.PostId">
+                <span style="display:flex">
+                    <span class="PostTitle">
+                        <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@Model.PreviewablePost.PostId">@Html.Raw(Model.PreviewablePost.PostSubject)</a>
+                    </span>
+                    <span style="margin-left:auto">
+                        <span class="CollapsedMenu" onclick="expandCollapsedMenu('summary@(Model.PreviewablePost.PostId.Value)', 'button@(Model.PreviewablePost.PostId.Value)', false)" id="button@(Model.PreviewablePost.PostId.Value)" style="color:#@Model.PreviewablePost.AuthorColor;margin-left: auto; height:auto">
+                            @Html.Raw(Model.PreviewablePost.AuthorName)
+                        </span>
+                    </span>
+                </span>
+                <div style="max-width:100%; overflow-wrap: break-word">
+                    <br />
+                    @Html.Raw(Model.PreviewablePost.PostText)
+                    @foreach (var attachment in Model.PreviewablePost.Attachments)
+                    {
+                        <br />
+                        @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
+                    }
+                    <br />
+                </div>
+                <div class="PostFooter">
+                    @if (Model.PreviewablePost.LastEditTime > 0)
+                    {
+                        <br />
+                        <div class="Caption" style="color:#495d6c">
+                            Ultima dată modificat de @Model.PreviewablePost.LastEditUser
+                            <script>
+                                    writeDate("@Model.PreviewablePost.LastEditTime.ToUtcTime().ToString("o")", "@UserDateFormat");
+                            </script>
+                            @if (!string.IsNullOrWhiteSpace(Model.PreviewablePost.LastEditReason))
+                            {
+                                <span>. Motiv: @Model.PreviewablePost.LastEditReason</span>
+                            }
+                            . Modificări în total: @Model.PreviewablePost.EditCount.
+                        </div>
+                    }
+                    <br />
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr />
+}
+
 
 <form name="postform" method="post" enctype="multipart/form-data">
     @if (Model.Action == PostingActions.NewPrivateMessage)
@@ -140,7 +265,7 @@ else if (IsPM)
             var name = $"addbbcode{index}";
             <input type="button" class="BbCodeButton@(code.BbcodeTag == "youtube" ? "" : " Hide960") PostingButton" name="@name" value="@code.BbcodeTag" onclick="posting.bbstyle(@index)" title="@code.BbcodeHelpline" />
         }
-        <input type="button" class="BbCodeButton PostingButton" value="&#x2754;" onclick="showMiddleBox('formattingHelp')" title="Arată un ajutor pentru formatare" />
+        <input type="button" class="BbCodeButton PostingButton" value="&#x2754;" onclick="toggleFormattingHelp()" title="Arată un ajutor pentru formatare" />
         <table class="ColorPalette" id="colour_palette">
             @{
                 var color = new[] { 0x0, 0x40, 0x80, 0xbf, 0xff };
@@ -275,18 +400,6 @@ else if (IsPM)
             </div>
         </div>
     }
-    <input asp-for="ForumId" type="hidden" />
-    <input asp-for="TopicId" type="hidden" />
-    <input asp-for="PostId" type="hidden" />
-    <input asp-for="ReceiverId" type="hidden" id="pmTo" />
-    <input asp-for="PageNum" type="hidden" />
-    <input asp-for="Action" type="hidden" />
-    <input asp-for="CurrentTopic.TopicFirstPostId" type="hidden" />
-    <input asp-for="CurrentTopic.TopicTitle" type="hidden" />
-    <input asp-for="LastPostTime" type="hidden" id="lastPostTime" />
-    <input asp-for="PrivateMessageId" type="hidden" />
-    <input asp-for="ReceiverId" type="hidden" />
-    <input asp-for="ReceiverName" type="hidden" />
     @if (!IsPM)
     {
         <div id="attachPanel" style="display:@(Model.ShowAttach ? "block" : "none")" class="PostInputWidth">
@@ -344,6 +457,21 @@ else if (IsPM)
         }
         <hr />
     </div>
+
+    <input asp-for="ForumId" type="hidden" />
+    <input asp-for="TopicId" type="hidden" />
+    <input asp-for="PostId" type="hidden" />
+    <input asp-for="ReceiverId" type="hidden" id="pmTo" />
+    <input asp-for="PageNum" type="hidden" />
+    <input asp-for="Action" type="hidden" />
+    <input asp-for="CurrentTopic.TopicFirstPostId" type="hidden" />
+    <input asp-for="CurrentTopic.TopicTitle" type="hidden" />
+    <input asp-for="LastPostTime" type="hidden" id="lastPostTime" />
+    <input asp-for="PrivateMessageId" type="hidden" />
+    <input asp-for="ReceiverId" type="hidden" />
+    <input asp-for="ReceiverName" type="hidden" />
+    <input asp-for="PostTime" type="hidden" />
+
 </form>
 
 @{
@@ -482,29 +610,10 @@ else if (IsPM)
 }
 
 <div id="imgcheckstatus" class="Popup"></div>
-<script>
-    function showMiddleBox(name) {
-        showElement(
-            name,
-            null,
-            function () {
-                showElement(name + 'Header',
-                    null,
-                    function () {
-                        var boxPosition = $('#' + name).offset();
-                        console.log($('#' + name + 'Header').offset().top);
-                        $('#' + name + 'Header').offset({ top: boxPosition.top - 40, left: boxPosition.left });
-                    },
-                    true
-                );
-            },
-            true
-        );
-    }
-</script>
+
 <div class="MiddleBoxControls" style="display:none" id="formattingHelpHeader">
     <h4 style="float:left">Ajutor formatare</h4>
-    <div style="float:right; cursor:pointer; font-weight:bold; margin-top:10px; margin-bottom:10px" onclick="showElement('formattingHelp'); showElement('formattingHelpHeader')">Închide [X]</div>
+    <div style="float:right; cursor:pointer; font-weight:bold; margin-top:10px; margin-bottom:10px" onclick="toggleFormattingHelp()">Închide [X]</div>
 </div>
 <div id="formattingHelp" class="MiddleBox" style="display:none">
     <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
@@ -620,116 +729,12 @@ else if (IsPM)
     <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
         <div style="margin-right:15px">[youtube]id_video[/youtube]</div>
         <div class="FlexRight PostInputWidth" id="dummy">
-            id_video este codul de după „v=” în adresa video-ului:<br />
-            <img src="https://forum.metrouusor.com/download/file.php?id=112751" onload="resizeImage(this, $('#formattingHelp').width() * ($(window).width() > 768 ? 0.7 : 0.8), $('#formattingHelp').height())" />
+            id_video este codul cuprins între „v=” și „&” (dacă există) în adresa video-ului:<br />
+            <img src="https://forum.metrouusor.com/download/file.php?id=112751" />
             <br />
             Efect:
             <br />
-            <iframe width="560" height="315" src="https://www.youtube.com/embed/Gf7_a2DVl7E?html5=1" frameborder="0" allowfullscreen onload="resizeIFrame(this, $('#formattingHelp').width() * ($(window).width() > 768 ? 0.7 : 0.8), $('#formattingHelp').height())"></iframe>
+            <iframe width="560" height="315" src="https://www.youtube.com/embed/Gf7_a2DVl7E?html5=1" frameborder="0" allowfullscreen ></iframe>
         </div>
     </div>
 </div>
-
-@if (Model.PreviewablePost != null)
-{
-    <div class="MiddleBoxControls" style="display:none" id="previewHeader">
-        <h4 style="float:left">Previzualizează</h4>
-        <div style="float:right; cursor:pointer; font-weight:bold; margin-top:10px; margin-bottom:10px" onclick="showElement('preview'); showElement('previewHeader')">Închide [X]</div>
-    </div>
-    <div class="MiddleBox" id="preview" style="display:none">
-        @if (Model.PreviewablePoll != null)
-        {
-            <div id="votes" style="display:block; clear: both;">
-                <h3>Chestionar: @Html.Raw(HttpUtility.HtmlDecode(Model.PreviewablePoll.PollTitle))</h3>
-                <div>Chestionarul @(Model.PreviewablePoll.PollEnded ? "a fost" : "va fi") inchis: @(Model.PreviewablePoll.PollEnd.HasValue ? Model.PreviewablePoll.PollEnd.Value.ToString(UserDateFormat) : "niciodată").</div>
-
-                @if (Model.PreviewablePoll.PollMaxOptions > 1)
-                {
-                    foreach (var option in Model.PreviewablePoll.PollOptions)
-                    {
-                        <table style="border:none; padding:unset; margin:unset; width:100%">
-                            <tr style="border-bottom:solid 1px black">
-                                <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
-                                    @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText))
-                                </td>
-                                <td>
-                                    <input type="checkbox" name="Votes" value="@option.PollOptionId" />
-                                </td>
-                            </tr>
-                        </table>
-                    }
-                }
-                else
-                {
-                    foreach (var option in Model.PreviewablePoll.PollOptions)
-                    {
-                        <table style="border:none; padding:unset; margin:unset; width:100%">
-                            <tr style="border-bottom:solid 1px black">
-                                <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
-                                    @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText))
-                                </td>
-                                <td>
-                                    <input type="radio" name="Votes" value="@option.PollOptionId" />
-                                </td>
-                            </tr>
-                        </table>
-                    }
-                }
-                <br />
-                <input type="button" value="Trimite vot" />
-            </div>
-        }
-        <div class="RowMargin" style="position:relative">
-            <div class="FlexRow">
-                @await Html.PartialAsync(
-                 "_SummaryPartial",
-                 new CustomPartials._SummaryPartialModel(Model.PreviewablePost.AuthorId, Model.PreviewablePost.AuthorName, Model.PreviewablePost.AuthorColor, Model.PreviewablePost.PostCreationTime, Model.PreviewablePost.PostId.Value,
-                     UserDateFormat, Model.PreviewablePost.AuthorHasAvatar, Model.PreviewablePost.AuthorRank, null, null, null, true)
-                )
-                <div class="ForumContent VerticalContent FlexRight" id="@Model.PreviewablePost.PostId">
-                    <span style="display:flex">
-                        <span class="PostTitle">
-                            <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@Model.PreviewablePost.PostId">@Html.Raw(Model.PreviewablePost.PostSubject)</a>
-                        </span>
-                        <span style="margin-left:auto">
-                            <span class="CollapsedMenu" onclick="expandCollapsedMenu('summary@(Model.PreviewablePost.PostId.Value)', 'button@(Model.PreviewablePost.PostId.Value)', true)" id="button@(Model.PreviewablePost.PostId.Value)" style="color:#@Model.PreviewablePost.AuthorColor;margin-left: auto; height:auto">
-                                @Html.Raw(Model.PreviewablePost.AuthorName)
-                            </span>
-                        </span>
-                    </span>
-                    <div style="max-width:100%; overflow-wrap: break-word">
-                        <br />
-                        @Html.Raw(Model.PreviewablePost.PostText)
-                        @foreach (var attachment in Model.PreviewablePost.Attachments)
-                        {
-                            <br />
-                            @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
-                        }
-                        <br />
-                    </div>
-                    <div class="PostFooter">
-                        @if (Model.PreviewablePost.LastEditTime > 0)
-                        {
-                            <br />
-                            <div class="Caption" style="color:#495d6c">
-                                Ultima dată modificat de @Model.PreviewablePost.LastEditUser pe
-                                <script>
-                                    writeDate("@Model.PreviewablePost.LastEditTime.ToUtcTime().ToString("o")", "@UserDateFormat");
-                                </script>
-                                @if (!string.IsNullOrWhiteSpace(Model.PreviewablePost.LastEditReason))
-                                {
-                                    <span>. Motiv: @Model.PreviewablePost.LastEditReason</span>
-                                }
-                                . Modificări în total: @Model.PreviewablePost.EditCount.
-                            </div>
-                        }
-                        <br />
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <script>
-        showMiddleBox('preview');
-    </script>
-}

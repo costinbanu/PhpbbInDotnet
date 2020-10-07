@@ -8,7 +8,7 @@
 
 .Popup {
     border: solid 1px black;
-    border-radius: 15px;
+    border-radius: 5px;
     padding: 15px;
     position: fixed;
     text-align: center;
@@ -18,7 +18,7 @@
     background-color: white;
     z-index: 100;
     font-size: 1em;
-    visibility: hidden;
+    display: none;
 }
 
 .PollInput {

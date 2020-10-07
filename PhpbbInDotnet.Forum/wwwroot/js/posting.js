@@ -307,13 +307,11 @@
             "hiddenSmilies",
             function () {
                 $("#showHiddenSmiliesButton").text("Arată mai multe");
-                //$('#mainContainer').height($('#mainContainer').height() - $('#hiddenSmilies').height());
             },
             function () {
                 $('#hiddenSmilies').find('img').each((index, element) => {
                     resizeImage(element, $('#hiddenSmilies').parent()[0].offsetWidth, $('#hiddenSmilies').parent()[0].offsetHeight);
                 });
-                //$('#mainContainer').height($('#mainContainer').height() + $('#hiddenSmilies').height());
                 $("#showHiddenSmiliesButton").text("Arată mai puține");
             },
             false
@@ -333,18 +331,22 @@
                 return false;
             }
             else {
-                var imgs = textinput.value.match(/\[img\](.*?)\[\/img\]/g).map((val) => {
+                var matches = textinput.value.match(/\[img\](.*?)\[\/img\]/g);
+                if (!matches) {
+                    return true;
+                }
+                var imgs = matches.map((val) => {
                     return val.replace(/\[\/?img\]/g, '');
                 });
-                document.getElementById('imgcheckstatus').style.visibility = 'visible';
+                $('#imgcheckstatus').toggle();
                 var isok = true;
                 var badimgs = [];
                 for (var i = 0; i < imgs.length; i++) {
+                    $('#imgcheckstatus').html('Sunt verificate imaginile incluse în mesaj.<br/>Vă rugăm așteptați...<br/>' + Math.round((i * 100) / imgs.length) + '%');
                     if (imgs[i].indexOf("metrouusor") != -1) {
                         continue;
                     }
-                    document.getElementById('imgcheckstatus').innerHTML = 'Sunt verificate imaginile incluse in mesaj.<br/>Va rugam asteptati...<br/>' + Math.round((i * 100) / imgs.length) + '%';
-                    var xhr = $.ajax({
+                    var response = $.ajax({
                         type: "GET",
                         async: false,
                         url: imgs[i],
@@ -354,18 +356,18 @@
                                 badimgs.push(imgs[i]);
                             }
                         },
-                        error: (jqXHR, textStatus, errorThrown) => {
+                        error: (_, textStatus, errorThrown) => {
                             console.log(textStatus, errorThrown);
                         }
                     });
                 }
                 if (!isok && !this.isAdmin) {
-                    document.getElementById('imgcheckstatus').style.visibility = 'hidden';
-                    alert('Nu este permisa includerea unor imagini avand peste 2MB dimensiune. Urmatoarele imagini sunt mai mari:\n' + badimgs.join('\n'));
+                    $('#imgcheckstatus').toggle();
+                    alert('Nu este permisă includerea unor imagini de peste 2MB dimensiune. Următoarele imagini sunt mai mari:\n' + badimgs.join('\n'));
                     return false;
                 }
                 else {
-                    document.getElementById('imgcheckstatus').style.visibility = 'hidden';
+                    $('#imgcheckstatus').toggle();
                     return true;
                 }
             }
@@ -422,14 +424,11 @@
 
     toggleEmoji() {
         if ($('#attachPanel').is(':visible')) {
-            //posting.togglePanel('attachPanel', 'attachButton', this.hideAttachText, this.showAttachText);
             showElement('attachPanel')
         }
         if ($('#pollPanel').is(':visible')) {
-            //this.togglePanel('pollPanel', 'pollButton', this.hidePollText, this.showPollText);
             showElement('pollPanel');
         }
-        //this.togglePanel('emojiPanel', 'emojiButton', this.hidePollText, this.showPollText);
         showElement('emojiPanel');
     }
 

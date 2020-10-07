@@ -527,22 +527,27 @@
         }
         @if (!isSelf && !canEdit)
         {
-            <hr />
-            <div class="FlexCenter">
-                @if (!await _userService.IsUserModeratorInForum(pageUser, 0) && !await _userService.IsUserModeratorInForum(viewingUser, 0) && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false))
-                {
-                    <input type="submit" form="AddFoe" value="Adaugă la persoane neagreate" style="font-size: 15px; margin-top:5px; vertical-align: top"
-                           onclick="return confirm('Dacă îl/o adaugi pe @Model.CurrentUser.UsernameClean la persoane neagreate, nu vei mai vedea mesajele lui/ei, și nici nu veți mai putea comunica prin mesageria privată.\nDupă salvarea opțiunii, vei fi deconectat/ă și va trebui să te re-autentifici. Continui?')" />
-                }
-                else if (!await _userService.IsUserModeratorInForum(pageUser, 0) && !await _userService.IsUserModeratorInForum(viewingUser, 0) && (viewingUser.Foes?.Contains(pageUser.UserId) ?? false))
-                {
-                    <input type="submit" form="RemoveFoe" value="Elimină din lista de persoane neagreate" style="font-size: 15px; margin-top:5px; vertical-align: top"
-                           onclick="return confirm('Dacă îl/o elimini pe @Model.CurrentUser.UsernameClean din lista de persoane neagreate, vei putea vedea mesajele lui/ei, și veți putea comunica prin mesageria privată.\nDupă salvarea opțiunii, vei fi deconectat/ă și va trebui să te re-autentifici. Continui?')" />
-                }
-            </div>
+            var showAddFoe = !await _userService.IsUserModeratorInForum(pageUser, 0) && !await _userService.IsUserModeratorInForum(viewingUser, 0) && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false);
+            var showRemoveFoe = !await _userService.IsUserModeratorInForum(pageUser, 0) && !await _userService.IsUserModeratorInForum(viewingUser, 0) && (viewingUser.Foes?.Contains(pageUser.UserId) ?? false);
+            if (showAddFoe || showRemoveFoe)
+            {
+                <hr />
+                <div class="FlexCenter">
+                    @if (showAddFoe)
+                    {
+                        <input type="submit" form="AddFoe" value="Adaugă la persoane neagreate" style="font-size: 15px; margin-top:5px; vertical-align: top"
+                               onclick="return confirm('Dacă îl/o adaugi pe @Model.CurrentUser.UsernameClean la persoane neagreate, nu vei mai vedea mesajele lui/ei, și nici nu veți mai putea comunica prin mesageria privată.\nDupă salvarea opțiunii, vei fi deconectat/ă și va trebui să te re-autentifici. Continui?')" />
+                    }
+                    else if (showRemoveFoe)
+                    {
+                        <input type="submit" form="RemoveFoe" value="Elimină din lista de persoane neagreate" style="font-size: 15px; margin-top:5px; vertical-align: top"
+                               onclick="return confirm('Dacă îl/o elimini pe @Model.CurrentUser.UsernameClean din lista de persoane neagreate, vei putea vedea mesajele lui/ei, și veți putea comunica prin mesageria privată.\nDupă salvarea opțiunii, vei fi deconectat/ă și va trebui să te re-autentifici. Continui?')" />
+                    }
+                </div>
+            }
         }
-
         <input asp-for="CurrentUser.UserId" type="hidden" />
         @Html.AntiForgeryToken()
     </form>
+    <p></p>
 </div>

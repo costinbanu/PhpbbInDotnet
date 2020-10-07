@@ -153,12 +153,16 @@ namespace PhpbbInDotnet.Services
             return await connection.QueryAsync<PhpbbGroups>("SELECT * FROM phpbb_groups ORDER BY group_name");
         }
 
-        public async Task<int?> GetUserGroupAsync(int userId)
+        public async Task<PhpbbGroups> GetUserGroupAsync(int userId)
         {
             using var connection = _context.Database.GetDbConnection();
             await connection.OpenIfNeeded();
-            var usr = await connection.QuerySingleOrDefaultAsync<PhpbbUserGroup>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
-            return usr?.GroupId;
+            return await connection.QuerySingleOrDefaultAsync<PhpbbGroups> (
+                "SELECT g.* FROM phpbb_groups g " +
+                "JOIN phpbb_user_group ug on g.group_id = ug.group_id " +
+                "WHERE ug.user_id = @userId", 
+                new { userId }
+            );
         }
 
         public async Task<LoggedUser> GetLoggedUserById(int userId)
