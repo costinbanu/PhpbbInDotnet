@@ -157,7 +157,7 @@ namespace PhpbbInDotnet.Services
         {
             using var connection = _context.Database.GetDbConnection();
             await connection.OpenIfNeeded();
-            return await connection.QuerySingleOrDefaultAsync<PhpbbGroups> (
+            return await connection.QueryFirstOrDefaultAsync<PhpbbGroups> (
                 "SELECT g.* FROM phpbb_groups g " +
                 "JOIN phpbb_user_group ug on g.group_id = ug.group_id " +
                 "WHERE ug.user_id = @userId", 
