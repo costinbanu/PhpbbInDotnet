@@ -159,7 +159,11 @@
                     </div>
                 }
                 @{
-                    var rank = rankList.FirstOrDefault(x => x.RankId == Model.UserRank);
+                    var rank = rankList.FirstOrDefault(x => x.RankId == Model.UserRank)?.RankTitle;
+                    if (string.IsNullOrWhiteSpace(rank))
+                    {
+                        rank = "Membru înregistrat";
+                    }
                     if (!canEdit && rank != null)
                     {
                         <p></p>
@@ -168,7 +172,7 @@
                                 Rang
                             </div>
                             <div class="FlexRight PostInputWidth">
-                                @Html.Raw(rank.RankTitle)
+                                @Html.Raw(rank)
                             </div>
                         </div>
                     }
@@ -261,14 +265,18 @@
                     Formatul datelor afișate
                 </div>
                 <div class="FlexRight PostInputWidth">
-                    @Html.DropDownListFor(m => m.CurrentUser.UserDateformat, new List<SelectListItem>
-                    {
-                        new SelectListItem(DateTime.UtcNow.ToString("dddd, dd.MM.yyyy, HH:mm"), "dddd, dd.MM.yyyy, HH:mm"),
-                        new SelectListItem(DateTime.UtcNow.ToString("ddd, dd.MM.yyyy, HH:mm"), "ddd, dd.MM.yyyy, HH:mm"),
-                        new SelectListItem(DateTime.UtcNow.ToString("dd.MM.yyyy, HH:mm"), "dd.MM.yyyy, HH:mm"),
-                        new SelectListItem(DateTime.UtcNow.ToString("dd MMMM yyyy, HH:mm"), "dd MMMM yyyy, HH:mm"),
-                        new SelectListItem(DateTime.UtcNow.ToString("dddd, dd MMMM yyyy, HH:mm"), "dddd, dd MMMM yyyy, HH:mm")
-                    })
+                    <select id="CurrentUser_UserDateformat" name="CurrentUser.UserDateformat">
+                    </select>
+                    <script>
+                        var dateFormats = @Json.Serialize(new[] { "dddd, dd.MM.yyyy, HH:mm", "ddd, dd.MM.yyyy, HH:mm", "dd.MM.yyyy, HH:mm", "d MMMM yyyy, HH:mm", "dddd, d MMMM yyyy, HH:mm", "ddd, d MMMM yyyy, ora HH:mm", "dddd, d MMMM yyyy, ora HH:mm" });
+                        var now = new Date('@DateTime.UtcNow.ToString("o")');
+                        dateFormats.forEach(format => {
+                            var text = now.format(format);
+                            var o = new Option(text, format, false, format == '@pageUser.UserDateFormat');
+                            $(o).html(text);
+                            $('#CurrentUser_UserDateformat').append(o);
+                        })
+                    </script>
                 </div>
             </div>
             <p></p>
@@ -283,7 +291,7 @@
                         @Html.Raw(Model.CurrentUser.UserAvatar)<br />
                         <input asp-for="DeleteAvatar" style="width:auto" /> <span>Șterge acestă imagine de profil</span><br /><br />
                     }
-                    <input asp-for="Avatar" />
+                    <input asp-for="Avatar" style="width:auto" />
                     <span class="Caption">Sunt permise imagini cu dimensiunea maximă 200 px / 200 px.</span><br />
                     <span asp-validation-for="Avatar" class="validation"></span>
                 </div>
@@ -397,42 +405,47 @@
             }
             else
             {
-                var showMail = !isSelf && (Model.CurrentUser.UserAllowViewemail.ToBool() || await Model.IsCurrentUserAdminHere());
+                var showMail = Model.CurrentUser.UserAllowViewemail.ToBool() || await Model.IsCurrentUserAdminHere();
                 if (showMail)
                 {
-                    <button onclick="location.href='mailto:@Html.Raw(Model.CurrentUser.UserEmail)'" type="button">&#x2709;&nbsp;Trimite e-mail</button>
+                    <button onclick="location.href='mailto:@Html.Raw(Model.CurrentUser.UserEmail)'" type="button" @(isSelf ? "disabled" : "")>&#x2709;&nbsp;Trimite e-mail</button>
                 }
-                @if (!isSelf && _userService.HasPrivateMessagePermissions(viewingUser) && _userService.HasPrivateMessages(pageUser))
+                var showPMs = _userService.HasPrivateMessagePermissions(viewingUser) && _userService.HasPrivateMessages(pageUser);
+                if (showPMs)
                 {
                     if (showMail)
                     {
                         <span style="height:5px; width: 5px;">&nbsp;</span>
                     }
-                    <button onclick="location.href='/Posting?handler=PrivateMessage&receiverId=@Model.CurrentUser.UserId'" type="button">&#x1F5E8;&nbsp;Trimite mesaj privat</button>
+                    <button onclick="location.href='/Posting?handler=PrivateMessage&receiverId=@Model.CurrentUser.UserId'" type="button" @(isSelf ? "disabled" : "")>&#x1F5E8;&nbsp;Trimite mesaj privat</button>
+                }
+                if (!canEdit && !string.IsNullOrEmpty(Model.CurrentUser.UserWebsite))
+                {
+                    var website = Model.CurrentUser.UserWebsite;
+                    if (!website.StartsWith("http", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        website = $"//{website}";
+                    }
+                    if (showPMs)
+                    {
+                        <span style="height:5px; width: 5px;">&nbsp;</span>
+                    }
+                    <button onclick="location.href='@website'" type="button">&#x1F310;&nbsp;Vizitează website</button>
                 }
             }
         </div>
-        <p></p>
-        <div class="FlexCenter">
-            @if (canEdit)
-            {
+        @if (canEdit)
+        {
+            <p></p>
+            <div class="FlexCenter">
                 <div class="FlexCaption">
                     Website
                 </div>
                 <div class="FlexRight PostInputWidth">
                     <input asp-for="CurrentUser.UserWebsite" />
                 </div>
-            }
-            else if (!string.IsNullOrEmpty(Model.CurrentUser.UserWebsite))
-            {
-                var website = Model.CurrentUser.UserWebsite;
-                if (!website.StartsWith("http", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    website = $"//{website}";
-                }
-                <a href="@Html.Raw(website)" target="_blank">Vizitează website</a>
-            }
-        </div>
+            </div>
+        }
         @if (canEdit && _userService.HasPrivateMessagePermissions(pageUser))
         {
             <p></p>
@@ -535,12 +548,12 @@
                 <div class="FlexCenter">
                     @if (showAddFoe)
                     {
-                        <input type="submit" form="AddFoe" value="Adaugă la persoane neagreate" style="font-size: 15px; margin-top:5px; vertical-align: top"
+                        <input type="submit" form="AddFoe" value="&#x1F6AB;&nbsp;Adaugă la persoane neagreate" style="font-size: 15px; margin-top:5px; vertical-align: top"
                                onclick="return confirm('Dacă îl/o adaugi pe @Model.CurrentUser.UsernameClean la persoane neagreate, nu vei mai vedea mesajele lui/ei, și nici nu veți mai putea comunica prin mesageria privată.\nDupă salvarea opțiunii, vei fi deconectat/ă și va trebui să te re-autentifici. Continui?')" />
                     }
                     else if (showRemoveFoe)
                     {
-                        <input type="submit" form="RemoveFoe" value="Elimină din lista de persoane neagreate" style="font-size: 15px; margin-top:5px; vertical-align: top"
+                        <input type="submit" form="RemoveFoe" value="&#x2705;&nbsp;Elimină din lista de persoane neagreate" style="font-size: 15px; margin-top:5px; vertical-align: top"
                                onclick="return confirm('Dacă îl/o elimini pe @Model.CurrentUser.UsernameClean din lista de persoane neagreate, vei putea vedea mesajele lui/ei, și veți putea comunica prin mesageria privată.\nDupă salvarea opțiunii, vei fi deconectat/ă și va trebui să te re-autentifici. Continui?')" />
                     }
                 </div>

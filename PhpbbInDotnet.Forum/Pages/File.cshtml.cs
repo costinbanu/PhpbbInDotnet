@@ -33,7 +33,7 @@ namespace PhpbbInDotnet.Forum.Pages
             string mimeType = null;
             using (var connection = _context.Database.GetDbConnection())
             {
-                await connection.OpenIfNeeded();
+                await connection.OpenIfNeededAsync();
                 var file = await connection.QuerySingleOrDefaultAsync("SELECT a.physical_filename, a.real_filename, a.mimetype, p.forum_id FROM phpbb_attachments a JOIN phpbb_posts p on a.post_msg_id = p.post_id WHERE attach_id = @Id", new { Id });
                 if (file == null)
                 {
@@ -57,7 +57,7 @@ namespace PhpbbInDotnet.Forum.Pages
             string file;
             using (var connection = _context.Database.GetDbConnection())
             {
-                await connection.OpenIfNeeded();
+                await connection.OpenIfNeededAsync();
                 file = await connection.QuerySingleOrDefaultAsync<string>("SELECT user_avatar FROM phpbb_users WHERE user_id = @userId", new { userId });
             }
 

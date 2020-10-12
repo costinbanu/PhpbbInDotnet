@@ -119,7 +119,7 @@ namespace PhpbbInDotnet.Forum.Pages
             if (((TopicId.HasValue && PageNum.HasValue) || PostId.HasValue) && (Action == PostingActions.EditForumPost || Action == PostingActions.NewForumPost))
             {
                 using var connection = _context.Database.GetDbConnection();
-                await connection.OpenIfNeeded();
+                await connection.OpenIfNeededAsync();
                 var posts = await connection.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC LIMIT 10", new { TopicId });
                 using var multi = await connection.QueryMultipleAsync(
                     "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @postIds ORDER BY attach_id;" +
@@ -137,7 +137,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             using (var connection = _context.Database.GetDbConnection())
             {
-                await connection.OpenIfNeeded();
+                await connection.OpenIfNeededAsync();
                 var smileys = await connection.QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies GROUP BY smiley_url ORDER BY smiley_order");
                 await _cacheService.SetInCache(await GetActualCacheKey("Smilies", false), smileys.ToList());
             }
@@ -154,23 +154,23 @@ namespace PhpbbInDotnet.Forum.Pages
             );
             await _cacheService.SetInCache(await GetActualCacheKey("UserMap", false), userMap);
 
-            var dbBbCodes = await (
-                from c in _context.PhpbbBbcodes.AsNoTracking()
-                where c.DisplayOnPosting == 1
-                select c
-            ).ToListAsync();
-            var helplines = new Dictionary<string, string>(Constants.BBCODE_HELPLINES);
-            var bbcodes = new List<string>(Constants.BBCODES);
-            foreach (var bbCode in dbBbCodes)
-            {
-                bbcodes.Add($"[{bbCode.BbcodeTag}]");
-                bbcodes.Add($"[/{bbCode.BbcodeTag}]");
-                var index = bbcodes.IndexOf($"[{bbCode.BbcodeTag}]");
-                helplines.Add($"cb_{index}", bbCode.BbcodeHelpline);
-            }
-            await _cacheService.SetInCache(await GetActualCacheKey("BbCodeHelplines", false), helplines);
-            await _cacheService.SetInCache(await GetActualCacheKey("BbCodes", false), bbcodes);
-            await _cacheService.SetInCache(await GetActualCacheKey("DbBbCodes", false), dbBbCodes);
+            //var dbBbCodes = await (
+            //    from c in _context.PhpbbBbcodes.AsNoTracking()
+            //    where c.DisplayOnPosting == 1
+            //    select c
+            //).ToListAsync();
+            //var helplines = new Dictionary<string, string>(Constants.BBCODE_HELPLINES);
+            //var bbcodes = new List<string>(Constants.BBCODES);
+            //foreach (var bbCode in dbBbCodes)
+            //{
+            //    bbcodes.Add($"[{bbCode.BbcodeTag}]");
+            //    bbcodes.Add($"[/{bbCode.BbcodeTag}]");
+            //    var index = bbcodes.IndexOf($"[{bbCode.BbcodeTag}]");
+            //    helplines.Add($"cb_{index}", bbCode.BbcodeHelpline);
+            //}
+            //await _cacheService.SetInCache(await GetActualCacheKey("BbCodeHelplines", false), helplines);
+            //await _cacheService.SetInCache(await GetActualCacheKey("BbCodes", false), bbcodes);
+            //await _cacheService.SetInCache(await GetActualCacheKey("DbBbCodes", false), dbBbCodes);
         }
 
         private async Task<PhpbbPosts> InitEditedPost()
@@ -290,7 +290,7 @@ namespace PhpbbInDotnet.Forum.Pages
             await _context.SaveChangesAsync();
 
             using var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeeded();
+            await connection.OpenIfNeededAsync();
             var attachments = (await connection.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE attach_id IN @attachmentIds", new { attachmentIds = Attachments?.Select(a => a.AttachId).DefaultIfEmpty() })).AsList();
             _context.PhpbbAttachments.UpdateRange(attachments);
             for (var i = 0; i < (attachments?.Count ?? 0); i++)

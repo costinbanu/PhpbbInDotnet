@@ -184,7 +184,7 @@ namespace PhpbbInDotnet.Forum
             var post = 0;
             using (var connection = _context.Database.GetDbConnection())
             {
-                await connection.OpenIfNeeded();
+                await connection.OpenIfNeededAsync();
                 post = unchecked((int)((await connection.QuerySingleOrDefaultAsync(
                     "SELECT post_id, post_time FROM phpbb_posts WHERE post_id IN @postIds HAVING post_time = MIN(post_time)",
                     new { postIds = item.Posts.DefaultIfEmpty() }
@@ -219,7 +219,7 @@ namespace PhpbbInDotnet.Forum
         {
             var usrId = (await GetCurrentUserAsync()).UserId;
             using var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeeded();
+            await connection.OpenIfNeededAsync();
 
             await connection.ExecuteAsync(
                 "DELETE FROM phpbb_topics_track WHERE forum_id = @forumId AND user_id = @usrId; " +
@@ -233,7 +233,7 @@ namespace PhpbbInDotnet.Forum
         {
             var usrId = (await GetCurrentUserAsync()).UserId;
             using var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeeded();
+            await connection.OpenIfNeededAsync();
             await connection.ExecuteAsync("UPDATE phpbb_users SET user_lastmark = @markTime WHERE user_id = @usrId", new { markTime = DateTime.UtcNow.ToUnixTimestamp(), usrId });
         }
 
@@ -274,7 +274,7 @@ namespace PhpbbInDotnet.Forum
             PhpbbForums curForum;
             using (var connection = _context.Database.GetDbConnection())
             {
-                await connection.OpenIfNeeded();
+                await connection.OpenIfNeededAsync();
                 curForum = await connection.QuerySingleOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { forumId });
             }
             if (!overrideCheck)
@@ -306,7 +306,7 @@ namespace PhpbbInDotnet.Forum
                 {
                     if (usr?.AllPermissions?.Contains(new LoggedUser.Permissions { ForumId = restrictedAncestor, AuthRoleId = Constants.ACCESS_TO_FORUM_DENIED_ROLE }) ?? false)
                     {
-                        return RedirectToPage("Error", new { isUnauthorized = true });
+                        return RedirectToPage("/");
                     }
                     else
                     {
@@ -329,7 +329,7 @@ namespace PhpbbInDotnet.Forum
             PhpbbTopics curTopic;
             using (var connection = _context.Database.GetDbConnection())
             {
-                await connection.OpenIfNeeded();
+                await connection.OpenIfNeededAsync();
                 curTopic = await connection.QuerySingleOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
             }
             if (curTopic == null)
@@ -344,7 +344,7 @@ namespace PhpbbInDotnet.Forum
             PhpbbPosts curPost;
             using (var connection = _context.Database.GetDbConnection())
             {
-                await connection.OpenIfNeeded();
+                await connection.OpenIfNeededAsync();
                 curPost = await connection.QuerySingleOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId });
             }
             if (curPost == null)

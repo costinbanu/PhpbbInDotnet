@@ -49,7 +49,7 @@ namespace PhpbbInDotnet.Services
             var tracking = await GetForumTracking(user, forceRefresh);
             using (var connection = _context.Database.GetDbConnection())
             {
-                await connection.OpenIfNeeded();
+                await connection.OpenIfNeededAsync();
                 _tree = (await connection.QueryAsync<ForumTree>("CALL `forum`.`get_forum_tree`();")).ToHashSet();
             }
 
@@ -109,7 +109,7 @@ namespace PhpbbInDotnet.Services
             {
                 try
                 {
-                    await connection.OpenIfNeeded();
+                    await connection.OpenIfNeededAsync();
                     dbResults = await connection.QueryAsync<ExtendedTracking>("CALL `forum`.`get_post_tracking`(@userId);", new { userId = user?.UserId ?? Constants.ANONYMOUS_USER_ID });
                 }
                 catch (Exception ex)

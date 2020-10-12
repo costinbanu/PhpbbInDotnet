@@ -212,7 +212,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostMarkAsRead()
         {
             using var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeeded();
+            await connection.OpenIfNeededAsync();
             await connection.ExecuteAsync("UPDATE phpbb_privmsgs_to SET pm_unread = 0 WHERE msg_id IN @ids AND author_id <> user_id", new { ids = SelectedMessages?.DefaultIfEmpty() ?? new[] { 0 } });
 
             return await OnGet();

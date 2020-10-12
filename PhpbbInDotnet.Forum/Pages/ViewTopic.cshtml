@@ -7,7 +7,7 @@
 @using PhpbbInDotnet.DTOs
 
 @inject Services.UserService _userService
-@inject Services.CommonUtils _utils
+@inject CommonUtils _utils
 @inject Database.ForumDbContext _context
 @inject Services.BBCodeRenderingService _renderingService
 
@@ -172,6 +172,7 @@
         var lastEditUser = Model.LastEditUsers?.FirstOrDefault(u => u.UserId == p.PostEditUser);
         var lastEditUsername = lastEditUser == null ? "Anonymous" : lastEditUser.Username;
         var report = Model.Reports?.FirstOrDefault(r => r.PostId == p.PostId);
+        var mpText = _userService.HasPrivateMessagePermissions(CurrentUser) ? $"<a href=\"./Posting?handler=PrivateMessage&postId={p.PostId}\">&#x1F5E8; Mesaj privat</a>" : null;
 
         var post = new DTOs.PostDto
         {
@@ -201,6 +202,10 @@
 
         if (CurrentUser.Foes?.Contains(p.PosterId) ?? false)
         {
+            mpText = null;
+            post.AuthorId = 1;
+            post.AuthorName = "[Ascuns]";
+            post.AuthorColor = null;
             post.AuthorHasAvatar = false;
             post.Attachments?.Clear();
             post.BbcodeUid = string.Empty;
@@ -241,8 +246,7 @@
                 @await Html.PartialAsync(
                     "_SummaryPartial",
                     new CustomPartials._SummaryPartialModel(post.AuthorId, post.AuthorName, post.AuthorColor, post.PostCreationTime, post.PostId.Value,
-                        UserDateFormat, post.AuthorHasAvatar, post.AuthorRank, null, null, null, true, false, null, null, null,
-                        _userService.HasPrivateMessagePermissions(CurrentUser) ? $"<a href=\"./Posting?handler=PrivateMessage&postId={post.PostId}\">&#x1F5E8; Mesaj privat</a>" : null)
+                        UserDateFormat, post.AuthorHasAvatar, post.AuthorRank, null, null, null, true, false, null, null, null, mpText)
                 )
                 <div class="ForumContent VerticalContent FlexRight" id="@post.PostId" style="max-width:100%; overflow-wrap: break-word">
                     <span style="display:flex">
@@ -348,7 +352,7 @@
                                         }
                                         var closestPostId = closestPostIdIndex.HasValue ? Model.Posts[closestPostIdIndex.Value].PostId : 0;
                                         <span>
-                                            <a href="javascript:vt.deletePost(@(post.PostId ?? -1), @closestPostId)">&#x1F6AE; Șterge mesaj</a>
+                                            <a href="javascript:vt.deletePost(@(post.PostId ?? -1), @closestPostId)">&#x1F6AE; Șterge</a>
                                         </span>
                                     }
                                 }

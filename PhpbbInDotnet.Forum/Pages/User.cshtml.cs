@@ -91,7 +91,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 if ((UserId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID)
                 {
-                    return BadRequest("Nu pot fi schimbate detaliile utilizatorului anonim!");
+                    return RedirectToPage("Error", new { isNotFound = true });
                 }
 
                 ViewAsAnother ??= true;
@@ -245,7 +245,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             var userRoles = (await _userService.GetUserRolesLazy()).Select(r => r.RoleId);
             var dbAclRole = await _context.PhpbbAclUsers.FirstOrDefaultAsync(r => r.UserId == dbUser.UserId && userRoles.Contains(r.AuthRoleId));
-            if ((dbAclRole?.AuthRoleId ?? -1) != (AclRole ?? -1))
+            if (dbAclRole != null && dbAclRole.AuthRoleId != (AclRole ?? -1))
             {
                 _context.PhpbbAclUsers.Remove(dbAclRole);
                 if ((AclRole ?? -1) != -1)
@@ -333,7 +333,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 var cur = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
                 using var connection = _context.Database.GetDbConnection();
-                await connection.OpenIfNeeded();
+                await connection.OpenIfNeededAsync();
                 await connection.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;" +
                     "INSERT INTO phpbb_zebra (user_id, zebra_id, friend, foe) VALUES (@userId, @otherId, 0, 1)",
@@ -350,7 +350,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 var cur = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
                 using var connection = _context.Database.GetDbConnection();
-                await connection.OpenIfNeeded();
+                await connection.OpenIfNeededAsync();
                 await connection.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;",
                     new { user.UserId, otherId = cur.UserId }

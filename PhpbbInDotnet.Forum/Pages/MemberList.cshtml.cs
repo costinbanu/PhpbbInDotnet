@@ -63,7 +63,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (_) =>
             {
                 using var connection = _context.Database.GetDbConnection();
-                await connection.OpenIfNeeded();
+                await connection.OpenIfNeededAsync();
                 switch (Mode)
                 {
                     case MemberListPages.AllUsers:

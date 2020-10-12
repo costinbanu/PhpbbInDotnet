@@ -40,11 +40,20 @@ namespace PhpbbInDotnet.Utilities
         public static T RunSync<T>(this Task<T> asyncTask)
             => asyncTask.GetAwaiter().GetResult();
 
-        public static async Task OpenIfNeeded(this DbConnection connection)
+        public static async Task OpenIfNeededAsync(this DbConnection connection)
         {
             if (connection.State != ConnectionState.Open)
             {
                 await connection.OpenAsync();
+            }
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+        }
+
+        public static void OpenIfNeeded(this DbConnection connection)
+        {
+            if (connection.State != ConnectionState.Open)
+            {
+                connection.Open();
             }
             DefaultTypeMap.MatchNamesWithUnderscores = true;
         }

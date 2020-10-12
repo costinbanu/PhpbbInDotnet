@@ -5,7 +5,7 @@
 @using PhpbbInDotnet.Services
 
 @inject WritingToolsService _writingService
-@inject Services.CommonUtils _utils
+@inject CommonUtils _utils
 
 <style>
     .writingTable {
@@ -25,7 +25,7 @@
 
 <h4>Cuvinte cenzurate</h4>
 @{
-    var words = (await _writingService.GetBannedWords()).ToList();
+    var words = (await _writingService.GetBannedWordsAsync()).ToList();
 
     <form method="post" asp-page-handler="BanWords">
         <table id="bannedWords" class="writingTable">

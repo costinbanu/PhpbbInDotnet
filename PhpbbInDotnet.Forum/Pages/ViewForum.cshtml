@@ -5,13 +5,17 @@
 @using System.Web
 @inject Services.ForumTreeService _forumService
 @inject Services.BBCodeRenderingService _renderingService
-@inject Services.CommonUtils _utils
+@inject CommonUtils _utils
 
 @{
     ViewData["Title"] = Model.ForumTitle;
     Layout = "~/Pages/_Layout.cshtml";
     var CurrentUser = await Model.GetCurrentUserAsync();
     var UserDateFormat = CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+    if (!DateTime.TryParse(DateTime.UtcNow.ToString(UserDateFormat), out _))
+    {
+        UserDateFormat = "dddd, dd.MM.yyyy, HH:mm";
+    }
     var IsAnonymous = CurrentUser?.IsAnonymous ?? true;
     var hasSubForums = Model.ForumId != 0 && _forumService.HasUnrestrictedChildren((await Model.GetForumTree()).Tree, Model.ForumId);
     var hasTopics = Model.Topics?.SelectMany(x => x.Topics).Any() ?? false;

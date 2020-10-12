@@ -21,70 +21,36 @@ namespace PhpbbInDotnet.Services
 {
     public class BBCodeRenderingService
     {
+        private static readonly Regex _htmlRegex = new Regex(@"<((?=!\-\-)!\-\-[\s\S]*\-\-|((?=\?)\?[\s\S]*\?|((?=\/)\/[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*|[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*(?:\s[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*(?:=(?:""[^""]*""|'[^']*'|[^'""<\s]*))?)*)\s?\/?))>", RegexOptions.Compiled);
+        private static readonly Regex _spaceRegex = new Regex(" +", RegexOptions.Compiled | RegexOptions.Singleline);
+
         private readonly CommonUtils _utils;
         private readonly ForumDbContext _context;
         private readonly WritingToolsService _writingService;
-        private readonly Regex _htmlRegex;
-        private readonly Regex _htmlCommentRegex;
-        private readonly Regex _spaceRegex;
-        private readonly Dictionary<string, string> _bannedWords;
         private readonly BBCodeParser _parser;
+        private readonly Lazy<Dictionary<string, string>> _bannedWords;
 
         private delegate (int index, string match) FirstIndexOf(string haystack, string needle, int startIndex);
         private delegate (string result, int endIndex) Transform(string haystack, string needle, int startIndex);
 
-        public BBCodeRenderingService(CommonUtils utils, ForumDbContext context, WritingToolsService writingService)
+        public Dictionary<string, BBTagSummary> TagMap { get; }
+
+        public BBCodeRenderingService(CommonUtils utils, ForumDbContext context, WritingToolsService writingService, BBTagFactory bbTagFactory)
         {
             _utils = utils;
             _context = context;
             _writingService = writingService;
-            _htmlCommentRegex = new Regex("(<!--.*?-->)|(&lt;!--.*?--&gt;)", RegexOptions.Compiled | RegexOptions.Singleline);
-            _spaceRegex = new Regex(" +", RegexOptions.Compiled | RegexOptions.Singleline);
-            _htmlRegex = new Regex(@"<((?=!\-\-)!\-\-[\s\S]*\-\-|((?=\?)\?[\s\S]*\?|((?=\/)\/[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*|[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*(?:\s[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*(?:=(?:""[^""]*""|'[^']*'|[^'""<\s]*))?)*)\s?\/?))>", RegexOptions.Compiled);
-            _bannedWords = _writingService.GetBannedWords().RunSync().GroupBy(p => p.Word).Select(grp => grp.FirstOrDefault()).ToDictionary(x => x.Word, y => y.Replacement);
-
-            string urlTransformer(string url)
-            {
-                if (!url.StartsWith("www", StringComparison.InvariantCultureIgnoreCase) && !url.StartsWith("http", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    throw new ArgumentException("Bad URL formatting");
-                }
-                else if (url.StartsWith("www", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    url = $"//{url}";
-                }
-                return url;
-            }
-
+            _bannedWords = new Lazy<Dictionary<string, string>>(() => _writingService.GetBannedWords().GroupBy(p => p.Word).Select(grp => grp.FirstOrDefault()).ToDictionary(x => x.Word, y => y.Replacement));
             using var connection = _context.Database.GetDbConnection();
-            connection.OpenIfNeeded().RunSync();
+            connection.OpenIfNeeded();
+
             //we override these temporarily: 18 = link, 13 = youtube
-            var bbcodes = connection.Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes WHERE bbcode_id NOT IN (18, 13)").Select(c => new BBTag(c.BbcodeTag, c.BbcodeTpl, string.Empty, false, false, c.BbcodeId, "", true, new BBAttribute[0] { })).ToList();
-            bbcodes.AddRange(new[]
-            {
-                new BBTag("b", "<b>", "</b>", 1),
-                new BBTag("i", "<span style=\"font-style:italic;\">", "</span>", 2),
-                new BBTag("u", "<span style=\"text-decoration:underline;\">", "</span>", 7),
-                new BBTag("code", "<span class=\"CodeBlock\">", "</span>", 8, allowUrlProcessingAsText: false),
-                new BBTag("img", "<br/><img src=\"${content}\" onload=\"resizeImage(this)\" /><br/>", string.Empty, false, BBTagClosingStyle.RequiresClosingTag, content => urlTransformer(content), false, 4, allowUrlProcessingAsText: false),
-                new BBTag("quote", "<blockquote class=\"PostQuote\">${name}", "</blockquote>", 0, "", true,
-                    new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : $"<b>{HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')}</b> a scris:<br/>", HtmlEncodingMode.UnsafeDontEncode)) { GreedyAttributeProcessing = true },
-                new BBTag("*", "<li>", "</li>", true, BBTagClosingStyle.AutoCloseElement, x => x, true, 20),
-                new BBTag("list", "<${attr}>", "</${attr}>", true, true, 9, "", true,
-                    new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul style='list-style-type: circle'" : $"ol type=\"{a.AttributeValue}\"")),
-                new BBTag("url", "<a href=\"${href}\" target=\"_blank\">", "</a>", 3, "", false,
-                    new BBAttribute("href", "", context => urlTransformer(string.IsNullOrWhiteSpace(context?.AttributeValue) ? context.TagContent : context.AttributeValue), HtmlEncodingMode.UnsafeDontEncode)),
-                new BBTag("color", "<span style=\"color:${code}\">", "</span>", 6, "", true,
-                    new BBAttribute("code", "")),
-                new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>", 5, "", true,
-                    new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
-                new BBTag("attachment", "#{AttachmentFileName=${content}/AttachmentIndex=${num}}#", "", false, BBTagClosingStyle.AutoCloseElement, x => _htmlCommentRegex.Replace(HttpUtility.HtmlDecode(x), string.Empty), 12, "", true,
-                    new BBAttribute("num", "")),
-                new BBTag("link", "<a href=\"${href}\">", "</a>", true, BBTagClosingStyle.RequiresClosingTag, x => _utils.TransformSelfLinkToBetaLink(x), 18, "", false,
-                    new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : _utils.TransformSelfLinkToBetaLink(a.AttributeValue))),
-                new BBTag("youtube", "<br /><iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/${content}?html5=1\" frameborder=\"0\" allowfullscreen onload=\"resizeIFrame(this)\"></iframe><br />", string.Empty, false, false, 13, "")
-            });
-            _parser = new BBCodeParser(bbcodes);
+            //we override this for good: 17 = strike (TODO: remove from DB after migration)
+            var tagList = connection.Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes WHERE bbcode_id NOT IN (18, 13, 17)").AsList();
+
+            var (bbTags, tagMap) = bbTagFactory.GenerateCompleteTagListAndMap(tagList);
+            _parser = new BBCodeParser(bbTags);
+            TagMap = tagMap;
         }
 
         public async Task ProcessPost(PostDto post, PageContext pageContext, HttpContext httpContext, bool renderAttachments, string toHighlight = null)
@@ -92,7 +58,7 @@ namespace PhpbbInDotnet.Services
             var attachRegex = new Regex("#{AttachmentFileName=[^/]+/AttachmentIndex=[0-9]+}#", RegexOptions.Compiled);
             var highlightWords = SplitHighlightWords(toHighlight);
 
-            post.PostSubject = CensorWords(HttpUtility.HtmlDecode(post.PostSubject), _bannedWords);
+            post.PostSubject = CensorWords(HttpUtility.HtmlDecode(post.PostSubject), _bannedWords.Value);
             post.PostSubject = HighlightWords(post.PostSubject, highlightWords);
             post.PostText = HighlightWords(BbCodeToHtml(post.PostText, post.BbcodeUid), highlightWords);
 
@@ -150,7 +116,7 @@ namespace PhpbbInDotnet.Services
                 return string.Empty;
             }
 
-            bbCodeText = CensorWords(bbCodeText, _bannedWords);
+            bbCodeText = CensorWords(bbCodeText, _bannedWords.Value);
             string html = bbCodeText;
             try
             {
@@ -165,7 +131,7 @@ namespace PhpbbInDotnet.Services
                 _utils.HandleError(ex, $"Error parsing bbcode text '{bbCodeText}'");
             }
             bbCodeText = HttpUtility.HtmlDecode(html);
-            bbCodeText = _htmlCommentRegex.Replace(bbCodeText, string.Empty);
+            bbCodeText = _utils.HtmlCommentRegex.Replace(bbCodeText, string.Empty);
             bbCodeText = bbCodeText.Replace("{SMILIES_PATH}", Constants.SMILEY_PATH);
             bbCodeText = bbCodeText.Replace("\t", _utils.HtmlSafeWhitespace(4));
 

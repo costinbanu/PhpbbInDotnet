@@ -1,14 +1,11 @@
 ﻿class Posting {
-    constructor(bbtags, bbHelpLines, isAdmin, isEditAction, userDateFormat) {
+    constructor(bbtags, isAdmin, isEditAction, userDateFormat) {
         this.form_name = 'postform';
         this.text_name = 'message';
 
         // Define the bbcode tags
         this.bbcode = new Array();
         this.bbtags = bbtags;
-
-        // Helpline messages
-        this.help_line = bbHelpLines;
 
         // Startup variables
         this.theSelection = false;
@@ -28,12 +25,6 @@
         this.isEditAction = isEditAction;
 
         this.userDateFormat = userDateFormat;
-    }
-    /**
-    * Shows the help messages in the helpline window
-    */
-    helpline(help) {
-        document.forms[this.form_name].helpbox.value = this.help_line[help];
     }
 
     /**
@@ -65,14 +56,17 @@
     /**
     * bbstyle
     */
-    bbstyle(bbnumber) {
-        if (bbnumber != -1) {
-            this.bbfontstyle(this.bbtags[bbnumber], this.bbtags[bbnumber + 1]);
-        }
-        else {
-            this.insert_text('[*]');
-            document.forms[this.form_name].elements[this.text_name].focus();
-        }
+    //bbstyle(bbnumber) {
+    //    if (bbnumber != -1) {
+    //        this.bbfontstyle(this.bbtags[bbnumber], this.bbtags[bbnumber + 1]);
+    //    }
+    //    else {
+    //        this.insert_text('[*]');
+    //        document.forms[this.form_name].elements[this.text_name].focus();
+    //    }
+    //}
+    bbstyle(code) {
+        this.bbfontstyle(this.bbtags[code].openTag, this.bbtags[code].closeTag);
     }
 
     /**

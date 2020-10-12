@@ -20,10 +20,11 @@ using System.Net;
 using System.Net.Mail;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
 
-namespace PhpbbInDotnet.Services
+namespace PhpbbInDotnet.Utilities
 {
     public class CommonUtils
     {
@@ -32,12 +33,15 @@ namespace PhpbbInDotnet.Services
         private readonly ITempDataProvider _tempDataProvider;
         private readonly ILogger _logger;
 
+        public Regex HtmlCommentRegex { get; }
+
         public CommonUtils(IConfiguration config, ICompositeViewEngine viewEngine, ITempDataProvider tempDataProvider, ILogger logger)
         {
             _config = config;
             _viewEngine = viewEngine;
             _tempDataProvider = tempDataProvider;
             _logger = logger;
+            HtmlCommentRegex = new Regex("(<!--.*?-->)|(&lt;!--.*?--&gt;)", RegexOptions.Compiled | RegexOptions.Singleline);
         }
 
         public async Task<byte[]> CompressObject<T>(T source)

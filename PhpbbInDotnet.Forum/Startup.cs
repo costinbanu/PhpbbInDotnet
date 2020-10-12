@@ -122,6 +122,7 @@ namespace PhpbbInDotnet.Forum
 
             services.AddSingleton<CommonUtils>();
             services.AddSingleton<AnonymousSessionCounter>();
+            services.AddSingleton<BBTagFactory>();
             services.AddScoped<AdminForumService>();
             services.AddScoped<AdminUserService>();
             services.AddScoped<WritingToolsService>();

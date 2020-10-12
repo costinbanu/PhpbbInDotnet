@@ -145,7 +145,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             using (var connection = _context.Database.GetDbConnection())
             {
-                await connection.OpenIfNeeded();
+                await connection.OpenIfNeededAsync();
                 PageNum ??= 1;
                 using var multi = await connection.QueryMultipleAsync(
                     "CALL `forum`.`search_post_text`(@forum, @topic, @author, @page, @excluded_forums, @search);",

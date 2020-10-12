@@ -265,7 +265,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
 
                 using var connection = _context.Database.GetDbConnection();
-                await connection.OpenIfNeeded();
+                await connection.OpenIfNeededAsync();
                 await connection.ExecuteAsync("DELETE FROM phpbb_attachments WHERE attach_id = @attachId", new { attachment.AttachId });
                 var dummy = Attachments.Remove(attachment);
                 ShowAttach = Attachments.Any();

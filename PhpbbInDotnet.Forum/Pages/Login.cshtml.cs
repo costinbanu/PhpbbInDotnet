@@ -111,7 +111,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPost()
         {
             using var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeeded();
+            await connection.OpenIfNeededAsync();
 
             var user = await connection.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE CONVERT(LOWER(username) USING utf8) = @username", new { username = _utils.CleanString(UserName) });
 

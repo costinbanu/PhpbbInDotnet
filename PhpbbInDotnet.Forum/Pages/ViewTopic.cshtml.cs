@@ -147,7 +147,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 Poll = await _postService.GetPoll(_currentTopic);
 
                 using var connection = _context.Database.GetDbConnection();
-                await connection.OpenIfNeeded();
+                await connection.OpenIfNeededAsync();
                 using var multi = await connection.QueryMultipleAsync(
                     "SELECT * FROM phpbb_users WHERE user_id IN @authors; " +
                     "SELECT * FROM phpbb_users WHERE user_id IN @editors; " +
@@ -263,7 +263,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (user) => await WithValidTopic(topicId, async (_, topic) =>
             {
                 using var conn = _context.Database.GetDbConnection();
-                await conn.OpenIfNeeded();
+                await conn.OpenIfNeededAsync();
 
                 var existingVotes = (await conn.QueryAsync<PhpbbPollVotes>("SELECT * FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @UserId", new { topicId, user.UserId })).AsList();
                 if (existingVotes.Count > 0 && topic.PollVoteChange == 0)

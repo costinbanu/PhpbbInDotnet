@@ -1,19 +1,20 @@
-﻿var dayNames = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'];
-var monthNames = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
+﻿var dayNames = ['duminică', 'luni', 'marți', 'miercuri', 'joi', 'vineri', 'sâmbătă'];
+var monthNames = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie', 'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
+
+String.prototype.replaceAt = function (index, replacement) {
+    return this.substr(0, index) + replacement + this.substr(index + replacement.length);
+}
 
 Date.prototype.format = function (format) {
     var wordSplitter = /\W+/, _date = this;
     this.Date = function (format) {
         var words = format.split(wordSplitter);
-        words.forEach(function (w) {
+        words.forEach(function (w, index) {
             if (typeof (wordReplacer[w]) === "function") {
-                format = format.replace(w, wordReplacer[w]());
-            }
-            else {
-                wordReplacer['e'](w);
+                format = format.replace(new RegExp('\\b' + w + '\\b'), wordReplacer[w]());
             }
         });
-        return format; //.replace(/\s+(?=\b(?:st|nd|rd|th)\b)/g, "");
+        return format;
     };
     var wordReplacer = {
         //The day of the month, from 1 through 31. (eg. 5/1/2014 1:45:30 PM, Output: 1)

@@ -83,7 +83,7 @@ namespace PhpbbInDotnet.Services
             }
             using (var connection = _context.Database.GetDbConnection())
             {
-                await connection.OpenIfNeeded();
+                await connection.OpenIfNeededAsync();
                 _anonymousDbUser = await connection.QuerySingleOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId = Constants.ANONYMOUS_USER_ID });
             }
             return _anonymousDbUser;
@@ -104,7 +104,7 @@ namespace PhpbbInDotnet.Services
         {
 
             using var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeeded();
+            await connection.OpenIfNeededAsync();
             var editTime = await connection.QuerySingleOrDefaultAsync<int>(
                 @"SELECT group_edit_time g
                    FROM phpbb_groups g
@@ -142,21 +142,21 @@ namespace PhpbbInDotnet.Services
         public async Task<IEnumerable<PhpbbRanks>> GetRankListAsync()
         {
             using var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeeded();
+            await connection.OpenIfNeededAsync();
             return await connection.QueryAsync<PhpbbRanks>("SELECT * FROM phpbb_ranks ORDER BY rank_title");
         }
 
         public async Task<IEnumerable<PhpbbGroups>> GetGroupListAsync()
         {
             using var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeeded();
+            await connection.OpenIfNeededAsync();
             return await connection.QueryAsync<PhpbbGroups>("SELECT * FROM phpbb_groups ORDER BY group_name");
         }
 
         public async Task<PhpbbGroups> GetUserGroupAsync(int userId)
         {
             using var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeeded();
+            await connection.OpenIfNeededAsync();
             return await connection.QueryFirstOrDefaultAsync<PhpbbGroups> (
                 "SELECT g.* FROM phpbb_groups g " +
                 "JOIN phpbb_user_group ug on g.group_id = ug.group_id " +
@@ -168,7 +168,7 @@ namespace PhpbbInDotnet.Services
         public async Task<LoggedUser> GetLoggedUserById(int userId)
         {
             using var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeeded();
+            await connection.OpenIfNeededAsync();
             var usr = await connection.QuerySingleOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
             return await DbUserToLoggedUserAsync(usr);
         }
@@ -319,7 +319,7 @@ namespace PhpbbInDotnet.Services
         public async Task<int> UnreadPMs(int userId)
         {
             using var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeeded();
+            await connection.OpenIfNeededAsync();
             return await connection.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_privmsgs_to WHERE user_id = @userId AND author_id <> user_id AND pm_unread = 1", new { userId });
         }
 
@@ -332,7 +332,7 @@ namespace PhpbbInDotnet.Services
 
             using (var connection = _context.Database.GetDbConnection())
             {
-                await connection.OpenIfNeeded();
+                await connection.OpenIfNeededAsync();
                 _userRoles = await connection.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'u_'");
             }
 
@@ -348,7 +348,7 @@ namespace PhpbbInDotnet.Services
 
             using (var connection = _context.Database.GetDbConnection())
             {
-                await connection.OpenIfNeeded();
+                await connection.OpenIfNeededAsync();
                 _modRoles = await connection.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'm_'");
             }
 
@@ -364,7 +364,7 @@ namespace PhpbbInDotnet.Services
 
             using (var connection = _context.Database.GetDbConnection())
             {
-                await connection.OpenIfNeeded();
+                await connection.OpenIfNeededAsync();
                 _adminRoles = await connection.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'a_'");
             }
 

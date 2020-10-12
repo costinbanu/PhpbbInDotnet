@@ -12,7 +12,7 @@
 @inject Services.BBCodeRenderingService _renderingService
 @inject Services.PostService _postService
 @inject Database.ForumDbContext _context
-@inject Services.CommonUtils _utils
+@inject CommonUtils _utils
 @inject IConfiguration _config
 
 @{
@@ -38,8 +38,7 @@
 
 <script type="text/javascript">
     var posting = new Posting(
-        @Json.Serialize(await _cacheService.GetFromCache<List<string>>(await Model.GetActualCacheKey("BbCodes", false))),
-        @Json.Serialize(await _cacheService.GetFromCache<Dictionary<string, string>>(await Model.GetActualCacheKey("BbCodeHelplines", false))),
+        @Json.Serialize(_renderingService.TagMap),
         @((await Model.IsCurrentUserAdminHere()).ToString().ToLower()),
         @((Model.Action == PostingActions.EditForumPost).ToString().ToLower()),
         "@UserDateFormat"
@@ -93,7 +92,7 @@
 {
     <span>
         Forum părinte:
-        <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(Model.CurrentForum.ForumName)</a>
+        <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(Model.CurrentForum?.ForumName ?? string.Empty)</a>
     </span>
     <h3>
         Răspunde:
@@ -104,7 +103,7 @@ else if (Model.Action == PostingActions.NewForumPost)
 {
     <span>
         Forum părinte:
-        <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(Model.CurrentForum.ForumName)</a>
+        <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(Model.CurrentForum?.ForumName ?? string.Empty)</a>
     </span>
     <h3>
         Răspunde:
@@ -115,7 +114,7 @@ else if (Model.Action == PostingActions.NewTopic)
 {
     <h3>
         Scrie un subiect nou:
-        <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(Model.CurrentForum.ForumName)</a>
+        <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(Model.CurrentForum?.ForumName ?? string.Empty)</a>
     </h3>
 }
 else if (IsPM)
@@ -240,18 +239,47 @@ else if (IsPM)
     <br />
 
     <div class="PostingControls" id="controls" style="width:100%">
-        <input type="button" class="BbCodeButton PostingButton" accesskey="b" name="addbbcode0" value=" B " style="font-weight:bold" onclick="posting.bbstyle(0)" title="Text bold: [b]text[/b]">
-        <input type="button" class="BbCodeButton PostingButton" accesskey="i" name="addbbcode2" value=" i " style="font-style:italic" onclick="posting.bbstyle(2)" title="Text italic: [i]text[/i]">
-        <input type="button" class="BbCodeButton PostingButton" accesskey="u" name="addbbcode4" value=" u " style="text-decoration: underline" onclick="posting.bbstyle(4)" title="Text subliniat: [u]text[/u]">
-        <input type="button" class="BbCodeButton PostingButton" accesskey="q" name="addbbcode6" value="Quote" onclick="posting.bbstyle(6)" title="Citează text: [quote]text[/quote]">
-        <input type="button" class="BbCodeButton Hide960 PostingButton" accesskey="c" name="addbbcode8" value="Code" onclick="posting.bbstyle(8)" title="Afişează cod: [code]cod[/code]">
-        <input type="button" class="BbCodeButton Hide960 PostingButton" accesskey="l" name="addbbcode10" value="List" onclick="posting.bbstyle(10)" title="Listă: [list]text[/list]">
-        <input type="button" class="BbCodeButton Hide960 PostingButton" accesskey="o" name="addbbcode12" value="List=" onclick="posting.bbstyle(12)" title="Listă ordonată: [list=]text[/list]">
-        <input type="button" class="BbCodeButton Hide960 PostingButton" accesskey="t" name="addlitsitem" value="[*]" onclick="posting.bbstyle(-1)" title="Listează articolele: [*]text[/*]">
-        <input type="button" class="BbCodeButton PostingButton" accesskey="p" name="addbbcode14" value="Img" onclick="posting.bbstyle(14)" title="Adaugă imagine: [img]http://cale_imagine[/img]">
-        <input type="button" class="BbCodeButton PostingButton" accesskey="w" name="addbbcode16" value="URL" style="text-decoration: underline" onclick="posting.bbstyle(16)" title="Adaugă URL: [url]http://url[/url] sau [url=http://url]text URL[/url]">
+        @foreach (var code in _renderingService.TagMap)
+        {
+            if (code.Key == "size")
+            {
+                <select name="addbbcode20" class="BbCodeButton PostingButton" onchange="posting.bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;" title="@code.Value.ToolTip">
+                    <option value="" disabled selected>@Html.Raw(code.Value.ButtonText)</option>
+                    <option value="50">Micuţ (50%)</option>
+                    <option value="85">Mic (85%)</option>
+                    <option value="100">Normal (100%)</option>
+                    <option value="150">Mare (150%)</option>
+                    <option value="200">Imens (200%)</option>
+                </select>
+            }
+            else if (code.Key == "color")
+            {
+                <button type="button" class="BbCodeButton Hide960 PostingButton" onclick="posting.change_palette();" title="@code.Value.ToolTip">
+                    @Html.Raw(code.Value.ButtonText)
+                </button>
+            }
+            else
+            {
+                <button type="button" class="BbCodeButton PostingButton @(code.Value.ShowWhenCollapsed ? "" : "Hide960")" onclick="posting.bbstyle('@code.Key')" title="@code.Value.ToolTip">
+                    @Html.Raw(code.Value.ButtonText)
+                </button>
+            }
+        }
+
+
+        @*<input type="button" class="BbCodeButton PostingButton" accesskey="b" name="addbbcode0" value=" B " style="font-weight:bold" onclick="posting.bbstyle('b')" title="Text bold: [b]text[/b]">
+        <input type="button" class="BbCodeButton PostingButton" accesskey="i" name="addbbcode2" value=" i " style="font-style:italic" onclick="posting.bbstyle('i')" title="Text italic: [i]text[/i]">
+        <input type="button" class="BbCodeButton PostingButton" accesskey="u" name="addbbcode4" value=" u " style="text-decoration: underline" onclick="posting.bbstyle('u')" title="Text subliniat: [u]text[/u]">
+        <input type="button" class="BbCodeButton Hide960 PostingButton" accesskey="s" name="addbbcode4" value=" S " style="text-decoration: line-through" onclick="posting.bbstyle('strike')" title="Text subliniat: [u]text[/u]">
+        <input type="button" class="BbCodeButton PostingButton" accesskey="q" name="addbbcode6" value="Citează" onclick="posting.bbstyle('quote')" title="Citează text: [quote]text[/quote]">
+        <input type="button" class="BbCodeButton Hide960 PostingButton" accesskey="c" name="addbbcode8" value="Cod" onclick="posting.bbstyle('code')" title="Afişează cod: [code]cod[/code]">
+        <input type="button" class="BbCodeButton Hide960 PostingButton" accesskey="l" name="addbbcode10" value="Listă" onclick="posting.bbstyle('list')" title="Listă: [list]text[/list]">
+        <input type="button" class="BbCodeButton Hide960 PostingButton" accesskey="o" name="addbbcode12" value="List ordonată" onclick="posting.bbstyle('list')" title="Listă ordonată: [list=]text[/list]">
+        <input type="button" class="BbCodeButton Hide960 PostingButton" accesskey="t" name="addlitsitem" value="Element listă" onclick="posting.bbstyle(-1)" title="Listează articolele: [*]text[/*]">
+        <input type="button" class="BbCodeButton PostingButton" accesskey="p" name="addbbcode14" value="Imagine" onclick="posting.bbstyle(14)" title="Adaugă imagine: [img]http://cale_imagine[/img]">
+        <input type="button" class="BbCodeButton PostingButton" accesskey="w" name="addbbcode16" value="Link" style="text-decoration: underline" onclick="posting.bbstyle(16)" title="Adaugă URL: [url]http://url[/url] sau [url=http://url]text URL[/url]">
         <select name="addbbcode20" class="BbCodeButton PostingButton" onchange="posting.bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;" title="Mărime font: [size=85]text mic[/size]">
-            <option value="" disabled selected>Mărime</option>
+            <option value="" disabled selected>Mărime font</option>
             <option value="50">Micuţ (50%)</option>
             <option value="85">Mic (85%)</option>
             <option value="100">Normal (100%)</option>
@@ -259,13 +287,11 @@ else if (IsPM)
             <option value="200">Imens (200%)</option>
         </select>
         <input type="button" class="BbCodeButton Hide960 PostingButton" name="bbpalette" id="bbpalette" value="Culoare font" onclick="posting.change_palette();" title="Culoare font: [color=red]text[/color]  Sfat: de asemenea puteţi folosi culorile hexazecimale culoare=#FF0000">
-        @foreach (var code in (await _cacheService.GetFromCache<List<PhpbbBbcodes>>(await Model.GetActualCacheKey("DbBbCodes", false))) ?? new List<PhpbbBbcodes>())
+        @foreach (var code in _renderingService.DbBBTags.Where(t => t.DisplayOnPosting.ToBool()))
         {
-            var index = (await _cacheService.GetFromCache<List<string>>(await Model.GetActualCacheKey("BbCodes", false))).IndexOf($"[{code.BbcodeTag}]");
-            var name = $"addbbcode{index}";
-            <input type="button" class="BbCodeButton@(code.BbcodeTag == "youtube" ? "" : " Hide960") PostingButton" name="@name" value="@code.BbcodeTag" onclick="posting.bbstyle(@index)" title="@code.BbcodeHelpline" />
-        }
-        <input type="button" class="BbCodeButton PostingButton" value="&#x2754;" onclick="toggleFormattingHelp()" title="Arată un ajutor pentru formatare" />
+            <input type="button" class="BbCodeButton Hide960 PostingButton" name="addbbcode_@(code.BbcodeTag)" value="@code.BbcodeTag" onclick="posting.bbstyle('@code.BbcodeTag')" title="@code.BbcodeHelpline" />
+        }*@
+        <button type="button" class="BbCodeButton PostingButton" onclick="toggleFormattingHelp()" title="Arată un ajutor pentru formatare">&#x2754;</button>
         <table class="ColorPalette" id="colour_palette">
             @{
                 var color = new[] { 0x0, 0x40, 0x80, 0xbf, 0xff };

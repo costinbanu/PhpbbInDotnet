@@ -269,7 +269,7 @@ namespace PhpbbInDotnet.Services
         public async Task<IEnumerable<Tuple<int, string>>> GetReportedMessages()
         {
             using var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeeded();
+            await connection.OpenIfNeededAsync();
             return (await connection.QueryAsync(
                 @"SELECT r.post_id, jr.reason_title
                     FROM phpbb_reports r
