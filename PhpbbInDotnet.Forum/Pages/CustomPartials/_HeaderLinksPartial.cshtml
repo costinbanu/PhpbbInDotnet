@@ -1,7 +1,7 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel
 
 <span>
-    <a href="javascript:showElement('headerLinks');">Meniu</a>
+    <a href="javascript:toggleHeaderLinks('headerLinks', 'metrouusorLinks');" id="headerLinksButton" style="padding-right: 10px; padding-left: 10px; padding-bottom: 10px">Meniu</a>
 </span>
 <ul class="Shortcuts" style="display:none" id="headerLinks">
     <li>
@@ -21,7 +21,7 @@
         <a asp-page="/MemberList">Membrii forumului</a>
     </li>
 
-    @foreach (var elem in Model.ExtraElements ?? Enumerable.Empty<string>())
+    @foreach (var elem in (Model.ExtraElements ?? Enumerable.Empty<string>()).Where(elem => !string.IsNullOrWhiteSpace(elem)))
     {
         <li>
             <span>&nbsp; &nbsp; </span>

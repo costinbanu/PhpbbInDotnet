@@ -56,10 +56,10 @@
         }
     }
 </script>
+<span style="padding-top: 10px; padding-bottom: 10px; padding-right: 10px">Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(Model.ForumTitle)</a></span>
 @if (!CurrentUser.IsAnonymous)
 {
-    <span>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(Model.ForumTitle)</a></span>
-    <span> &bull;&nbsp;</span>
+    <span>&bull;</span>
     @await Html.PartialAsync(
         "_HeaderLinksPartial",
         new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(),
@@ -173,6 +173,7 @@
         var lastEditUsername = lastEditUser == null ? "Anonymous" : lastEditUser.Username;
         var report = Model.Reports?.FirstOrDefault(r => r.PostId == p.PostId);
         var mpText = _userService.HasPrivateMessagePermissions(CurrentUser) ? $"<a href=\"./Posting?handler=PrivateMessage&postId={p.PostId}\">&#x1F5E8; Mesaj privat</a>" : null;
+        var originalPosterId = p.PosterId;
 
         var post = new DTOs.PostDto
         {
@@ -273,7 +274,7 @@
                         }
                     </div>
 
-                    @if (!(CurrentUser.Foes?.Contains(post.AuthorId ?? 1) ?? false))
+                    @if (!(CurrentUser.Foes?.Contains(originalPosterId) ?? false))
                     {
                         <div class="PostFooter">
                             @if (!IsAnonymous || post.LastEditTime > 0)

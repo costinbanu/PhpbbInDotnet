@@ -27,6 +27,10 @@
         {
             <span style="text-decoration: line-through">@Html.Raw(Model.AuthorName)</span>
         }
+        else if (Model.AuthorId == 1)
+        {
+            @Html.Raw(Model.AuthorName)
+        }
         else
         {
             var color = $"#{(string.IsNullOrWhiteSpace(Model.AuthorColor) ? "000000" : Model.AuthorColor)}";

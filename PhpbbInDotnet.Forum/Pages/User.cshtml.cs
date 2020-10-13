@@ -71,9 +71,16 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public bool AllowPM { get; set; }
 
+        [BindProperty(SupportsGet = true)]
+        public bool? ManageFoes { get; set; }
+
+        [BindProperty]
+        public int SelectedFoeId { get; set; }
+
         public int TotalPosts { get; private set; }
         public (int? Id, string Title) PreferredTopic { get; private set; }
         public double PostsPerDay { get; private set; }
+        public List<PhpbbUsers> Foes { get; private set; }
 
         private readonly StorageService _storageService;
         private readonly WritingToolsService _writingService;
@@ -87,15 +94,13 @@ namespace PhpbbInDotnet.Forum.Pages
         }
 
         public async Task<IActionResult> OnGet()
-            => await WithRegisteredUser(async (_) =>
+            => await WithRegisteredUser(async (viewingUser) =>
             {
                 if ((UserId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID)
                 {
                     return RedirectToPage("Error", new { isNotFound = true });
                 }
-
-                ViewAsAnother ??= true;
-
+              
                 var cur = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == UserId);
                 if (cur == null)
                 {
@@ -103,6 +108,9 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 await Render(cur);
 
+                ManageFoes = (ManageFoes ?? false) && await CanEdit();
+                ViewAsAnother = (ViewAsAnother ?? true) && !ManageFoes.Value;
+                
                 return Page();
             });
 
@@ -110,7 +118,8 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             if (!await CanEdit())
             {
-                return RedirectToPage("Login", new { returnUrl = @HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString) });
+                //return RedirectToPage("Login", new { returnUrl = @HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString) });
+                return RedirectToPage("Error", new { isUnauthorised = true });
             }
 
             var dbUser = await _context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == CurrentUser.UserId);
@@ -303,28 +312,29 @@ namespace PhpbbInDotnet.Forum.Pages
                 ModelState.AddModelError(nameof(CurrentUser), "A intervenit o eroare, iar modificările nu au putut fi salvate.");
             }
 
-            await Render(dbUser);
-
-            if (affectedEntries > 0 && CurrentUser.UserId == (await GetCurrentUserAsync()).UserId)
+            var isSelf = CurrentUser.UserId == (await GetCurrentUserAsync()).UserId;
+            if (affectedEntries > 0 && isSelf)
             {
-                await HttpContext.SignInAsync(
-                    CookieAuthenticationDefaults.AuthenticationScheme,
-                    await _userService.DbUserToClaimsPrincipalAsync(dbUser),
-                    new AuthenticationProperties
-                    {
-                        AllowRefresh = true,
-                        ExpiresUtc = DateTimeOffset.Now.AddMonths(1),
-                        IsPersistent = true,
-                    }
-                );
+                //await HttpContext.SignInAsync(
+                //    CookieAuthenticationDefaults.AuthenticationScheme,
+                //    await _userService.DbUserToClaimsPrincipalAsync(dbUser),
+                //    new AuthenticationProperties
+                //    {
+                //        AllowRefresh = true,
+                //        ExpiresUtc = DateTimeOffset.Now.AddMonths(1),
+                //        IsPersistent = true,
+                //    }
+                //);
+                return RedirectToPage("Logout", new { returnUrl = "/Login" });
             }
-
-            if (affectedEntries > 0 && userMustLogIn)
+            else if (affectedEntries > 0 && userMustLogIn)
             {
                 var key = $"UserMustLogIn_{dbUser.UsernameClean}";
                 await _cacheService.SetInCache(key, true, TimeSpan.FromDays(_config.GetValue<int>("LoginSessionSlidingExpirationDays")));
             }
 
+            await Render(dbUser);
+            
             return Page();
         }
 
@@ -339,10 +349,11 @@ namespace PhpbbInDotnet.Forum.Pages
                     "INSERT INTO phpbb_zebra (user_id, zebra_id, friend, foe) VALUES (@userId, @otherId, 0, 1)",
                     new { user.UserId, otherId = cur.UserId }
                 );
-                var key = $"UserMustLogIn_{user.UsernameClean}";
-                await _cacheService.SetInCache(key, true, TimeSpan.FromDays(_config.GetValue<int>("LoginSessionSlidingExpirationDays")));
-                await Render(cur);
-                return Page();
+                //var key = $"UserMustLogIn_{user.UsernameClean}";
+                //await _cacheService.SetInCache(key, true, TimeSpan.FromDays(_config.GetValue<int>("LoginSessionSlidingExpirationDays")));
+                //await Render(cur);
+                //return Page();
+                return RedirectToPage("Logout", new { returnUrl = "/Login" });
             });
 
         public async Task<IActionResult> OnPostRemoveFoe()
@@ -355,10 +366,11 @@ namespace PhpbbInDotnet.Forum.Pages
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;",
                     new { user.UserId, otherId = cur.UserId }
                 );
-                var key = $"UserMustLogIn_{user.UsernameClean}";
-                await _cacheService.SetInCache(key, true, TimeSpan.FromDays(_config.GetValue<int>("LoginSessionSlidingExpirationDays")));
-                await Render(cur);
-                return Page();
+                //var key = $"UserMustLogIn_{user.UsernameClean}";
+                //await _cacheService.SetInCache(key, true, TimeSpan.FromDays(_config.GetValue<int>("LoginSessionSlidingExpirationDays")));
+                //await Render(cur);
+                //return Page();
+                return RedirectToPage("Logout", new { returnUrl = "/Login" });
             });
 
         public async Task<bool> CanEdit() 
@@ -399,6 +411,17 @@ namespace PhpbbInDotnet.Forum.Pages
             UserRank = cur.UserRank == 0 ? group.GroupRank : cur.UserRank;
             AllowPM = cur.UserAllowPm.ToBool();
             ShowEmail = cur.UserAllowViewemail.ToBool();
+            Foes = await (
+                from z in _context.PhpbbZebra.AsNoTracking()
+                where z.UserId == cur.UserId && z.Foe == 1
+
+                join u in _context.PhpbbUsers.AsNoTracking()
+                on z.ZebraId equals u.UserId
+                into joined
+
+                from j in joined
+                select j
+            ).ToListAsync();
         }
     }
 }

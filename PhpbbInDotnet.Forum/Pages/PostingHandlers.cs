@@ -454,7 +454,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     return await OnGetNewTopic();
                 }
-                else return RedirectToPage("/");
+                else return RedirectToPage("Index");
             })));
 
         #endregion POST Message

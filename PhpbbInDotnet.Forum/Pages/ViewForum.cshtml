@@ -61,19 +61,31 @@
 
 @if ((Model.ParentForumId ?? 0) != 0)
 {
-    <span>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@HttpUtility.HtmlDecode(Model.ParentForumTitle)</a></span>
+    <span style="padding-bottom: 10px; padding-right: 10px">Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@HttpUtility.HtmlDecode(Model.ParentForumTitle)</a></span>
 }
 else
 {
-    <a href="/">Prima pagină</a>
+    <a href="/" style="padding-bottom: 10px; padding-right: 10px">Prima pagină</a>
 }
 
-@if (!CurrentUser.IsAnonymous)
+@if (!IsAnonymous)
 {
-    <span> &bull;&nbsp;</span>
+    var additionalLinks = new List<string>();
+    @if (Model.Mode == ViewForumMode.Forum && (hasSubForums || hasTopics))
+    {
+        @if (hasSubForums)
+        {
+            additionalLinks.Add("<a href=\"javascript:MarkForumsRead.submit()\">Marchează forumurile ca citite</a>");
+        }
+        @if (hasTopics)
+        {
+            additionalLinks.Add("<a href=\"javascript:MarkTopicsRead.submit()\">Marchează subiectele ca citite</a>");
+        }
+    }
+    <span>&bull;</span>
     @await Html.PartialAsync(
         "_HeaderLinksPartial",
-        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(),
+        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(additionalLinks.ToArray()),
         ViewData
     )
 }
@@ -103,25 +115,7 @@ else
         @await Html.PartialAsync("_RulesPartial", new CustomPartials._RulesPartialModel(_renderingService, _utils, Model.ForumRules, Model.ForumRulesUid, Model.ForumRulesLink), ViewData)
         break;
 }
-
-@if (!IsAnonymous && Model.Mode == ViewForumMode.Forum && (hasSubForums || hasTopics))
-{
-    @if (hasSubForums)
-    {
-        <a href="javascript:MarkForumsRead.submit()">Marchează forumurile ca citite</a>
-    }
-    @if (hasTopics)
-    {
-        if (hasSubForums)
-        {
-            <span class="bullet">&nbsp;&bull;&nbsp;</span>
-            <div class="newline"></div>
-        }
-        <a href="javascript:MarkTopicsRead.submit()">Marchează subiectele ca citite</a>
-    }
-    <div style="clear:both">&nbsp;</div>
-}
-
+<p>&nbsp;</p>
 @if (hasSubForums)
 {
     @await Html.PartialAsync(
@@ -129,7 +123,6 @@ else
         new PhpbbInDotnet.Forum.Pages.CustomPartials._ForumDisplayPartialModel(Model.ForumId, Model.Forums, UserDateFormat, true, CurrentUser, true),
         ViewData
     )
-    <p>&nbsp;</p>
 }
 
 @if (hasTopics)
@@ -138,7 +131,6 @@ else
      * use SecurityElement.Escape when using Html.Raw*/
     var topicsDisplayed = false;
     var announcementsDisplayed = false;
-    var globalsDisplayed = false;
     var handler = Model.Mode switch
     {
         ViewForumMode.NewPosts => "newPosts",
@@ -161,67 +153,39 @@ else
             ViewData
         );
     }
-    var lastTopicType = TopicType.Normal;
     var previousIsUnread = false;
     foreach (var topicGroup in Model.Topics)
     {
+        var isFirstInGroup = false;
         if (Model.Mode == ViewForumMode.Forum)
         {
-            if (!globalsDisplayed && topicGroup.TopicType == TopicType.Global)
+            @switch (topicGroup.TopicType)
             {
-                if (announcementsDisplayed || topicsDisplayed)
-                {
+                case TopicType.Announcement when !announcementsDisplayed:
+                case TopicType.Global when !announcementsDisplayed:
+                    <p>&nbsp;</p>
+                    <h3 style="float:left">Anunțuri</h3>
+                    announcementsDisplayed = isFirstInGroup = true;
+                    break;
+                case TopicType.Important when !topicsDisplayed:
+                case TopicType.Normal when !topicsDisplayed:
                     if (!previousIsUnread)
                     {
                         <hr class="BoxSeparator" />
                     }
                     <p>&nbsp;</p>
-                }
-                <h3 style="float:left">Subiecte globale</h3>
-                globalsDisplayed = true;
-            }
-            else if (!announcementsDisplayed && (topicGroup.TopicType == TopicType.Announcement || topicGroup.TopicType == TopicType.Global))
-            {
-                if (globalsDisplayed || topicsDisplayed)
-                {
-                    if (!previousIsUnread)
-                    {
-                        <hr class="BoxSeparator" />
-                    }
-                    <p>&nbsp;</p>
-                }
-                <h3 style="float:left">Anunțuri</h3>
-                announcementsDisplayed = true;
-            }
-            else if (!topicsDisplayed)
-            {
-                if (globalsDisplayed || announcementsDisplayed)
-                {
-                    if (!previousIsUnread)
-                    {
-                        <hr class="BoxSeparator" />
-                    }
-                    <p>&nbsp;</p>
-                }
-                <h3 style="float:left">Subiecte</h3>
-                topicsDisplayed = true;
+                    <h3 style="float:left">Subiecte</h3>
+                    <span>
+                        &nbsp;&bull;&nbsp;
+                        <button onclick="location.href='/Posting?forumId=@Model.ForumId&handler=newTopic'" type="button">
+                            &#x1F4DD;&nbsp;Deschide un subiect nou
+                        </button>
+                    </span>
+                    topicsDisplayed = isFirstInGroup = true;
+                    break;
             }
         }
 
-        var isFirst = true;
-        if (lastTopicType == TopicType.Important && topicGroup?.TopicType == TopicType.Normal)
-        {
-            isFirst = false;
-        }
-        if (isFirst && topicGroup.TopicType <= TopicType.Important)
-        {
-            <span>
-                &nbsp;&bull;&nbsp;
-                <button onclick="location.href='/Posting?forumId=@Model.ForumId&handler=newTopic'" type="button">
-                    &#x1F4DD;&nbsp;Deschide un subiect nou
-                </button>
-            </span>
-        }
         foreach (var topic in topicGroup?.Topics ?? Enumerable.Empty<TopicDto>())
         {
             if (Model.Mode != ViewForumMode.Drafts)
@@ -231,7 +195,7 @@ else
                 topic.Pagination = new DTOs.PaginationDto($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", topic.PostCount ?? 0, pageSize, 1, "PageNum");
             }
 
-            if (!isFirst && !previousIsUnread && !topic.Unread)
+            if (!isFirstInGroup && !previousIsUnread && !topic.Unread)
             {
                 <hr class="BoxSeparator" />
             }
@@ -296,6 +260,12 @@ else
                 </span>
                 @if (Model.Mode != ViewForumMode.Drafts)
                 {
+                    if (CurrentUser.Foes?.Contains(topic.TopicLastPosterId ?? 0) ?? false)
+                    {
+                        topic.TopicLastPosterColour = null;
+                        topic.TopicLastPosterName = "[Ascuns]";
+                        topic.TopicLastPosterId = 1;
+                    }
                     @await Html.PartialAsync(
                         "_SummaryPartial",
                         new CustomPartials._SummaryPartialModel(topic.TopicLastPosterId, topic.TopicLastPosterName, topic.TopicLastPosterColour, topic.LastPostTime, topic.TopicId.Value,
@@ -308,10 +278,8 @@ else
                     );
                 }
             </div>
-            isFirst = false;
+            isFirstInGroup = false;
         }
-
-        lastTopicType = topicGroup?.TopicType ?? TopicType.Normal;
     }
 
     if (Model.Mode == ViewForumMode.Drafts && hasTopics)
@@ -364,6 +332,7 @@ else if (Model.Mode == ViewForumMode.Drafts)
 }
 @if (!IsAnonymous && Model.Mode == ViewForumMode.Forum)
 {
+    <p></p>
     <button onclick="location.href='/Posting?forumId=@Model.ForumId&handler=newTopic'" type="button">
         &#x1F4DD;&nbsp;Deschide un subiect nou
     </button>

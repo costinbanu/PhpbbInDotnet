@@ -14,6 +14,10 @@
     Layout = "~/Pages/_Layout.cshtml";
     var CurrentUser = await Model.GetCurrentUserAsync();
     var dateFormat = CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+    if (!DateTime.TryParse(DateTime.Now.ToString(dateFormat), out var _))
+    {
+        dateFormat = "dddd, dd.MM.yyyy, HH:mm";
+    }
 }
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />

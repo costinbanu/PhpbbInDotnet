@@ -306,7 +306,7 @@ namespace PhpbbInDotnet.Forum
                 {
                     if (usr?.AllPermissions?.Contains(new LoggedUser.Permissions { ForumId = restrictedAncestor, AuthRoleId = Constants.ACCESS_TO_FORUM_DENIED_ROLE }) ?? false)
                     {
-                        return RedirectToPage("/");
+                        return RedirectToPage("Index");
                     }
                     else
                     {

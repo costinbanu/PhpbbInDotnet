@@ -49,6 +49,13 @@
                 <hr class="BoxSeparator" />
             }
 
+            if (Model.LoggedUser?.Foes?.Contains(forum.ForumLastPosterId ?? 0) ?? false)
+            {
+                forum.ForumLastPosterColour = null;
+                forum.ForumLastPosterName = "[Ascuns]";
+                forum.ForumLastPosterId = 1;
+            }
+
             previousIsUnread = isUnread;
             var divClass = isUnread ? "FlexRow Unread RowMargin" : "FlexRow RowMargin";
             var titleClass = isUnread ? "nav-link UnreadTitle" : "nav-link";
@@ -101,6 +108,13 @@
         if (!isFirst && !previousIsUnread && !isUnread)
         {
             <hr class="BoxSeparator" />
+        }
+
+        if (Model.LoggedUser?.Foes?.Contains(forum.ForumLastPosterId ?? 0) ?? false)
+        {
+            forum.ForumLastPosterColour = null;
+            forum.ForumLastPosterName = "[Ascuns]";
+            forum.ForumLastPosterId = 1;
         }
 
         previousIsUnread = isUnread;

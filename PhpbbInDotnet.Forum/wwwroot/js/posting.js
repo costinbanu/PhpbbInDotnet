@@ -12,11 +12,11 @@
 
         // Check for Browser & Platform for PC & IE specific bits
         // More details from: http://www.mozilla.org/docs/web-developer/sniffer/browser_type.html
-        var clientPC = navigator.userAgent.toLowerCase(); // Get client info
+        /*var clientPC = navigator.userAgent.toLowerCase(); // Get client info
 
         this.clientVer = parseInt(navigator.appVersion); // Get browser version
         this.is_ie = ((clientPC.indexOf('msie') != -1) && (clientPC.indexOf('opera') == -1));
-        this.is_win = ((clientPC.indexOf('win') != -1) || (clientPC.indexOf('16bit') != -1));
+        this.is_win = ((clientPC.indexOf('win') != -1) || (clientPC.indexOf('16bit') != -1));*/
 
         this.baseHeight = 0;
 
@@ -43,28 +43,19 @@
 
         var textarea = doc.forms[this.form_name].elements[this.text_name];
 
-        if (this.is_ie && typeof (this.baseHeight) != 'number') {
+        /*if (this.is_ie && typeof (this.baseHeight) != 'number') {
             textarea.focus();
             this.baseHeight = doc.selection.createRange().duplicate().boundingHeight;
 
             if (!document.forms[this.form_name]) {
                 document.body.focus();
             }
-        }
+        }*/
     }
 
     /**
     * bbstyle
     */
-    //bbstyle(bbnumber) {
-    //    if (bbnumber != -1) {
-    //        this.bbfontstyle(this.bbtags[bbnumber], this.bbtags[bbnumber + 1]);
-    //    }
-    //    else {
-    //        this.insert_text('[*]');
-    //        document.forms[this.form_name].elements[this.text_name].focus();
-    //    }
-    //}
     bbstyle(code) {
         this.bbfontstyle(this.bbtags[code].openTag, this.bbtags[code].closeTag);
     }
@@ -79,7 +70,7 @@
 
         textarea.focus();
 
-        if ((this.clientVer >= 4) && this.is_ie && this.is_win) {
+        /*if ((this.clientVer >= 4) && this.is_ie && this.is_win) {
             // Get text selection
             this.theSelection = document.selection.createRange().text;
 
@@ -91,7 +82,7 @@
                 return;
             }
         }
-        else if (document.forms[this.form_name].elements[this.text_name].selectionEnd && (document.forms[this.form_name].elements[this.text_name].selectionEnd - document.forms[this.form_name].elements[this.text_name].selectionStart > 0)) {
+        else*/ if (document.forms[this.form_name].elements[this.text_name].selectionEnd && (document.forms[this.form_name].elements[this.text_name].selectionEnd - document.forms[this.form_name].elements[this.text_name].selectionStart > 0)) {
             this.mozWrap(document.forms[this.form_name].elements[this.text_name], bbopen, bbclose);
             document.forms[this.form_name].elements[this.text_name].focus();
             this.theSelection = '';

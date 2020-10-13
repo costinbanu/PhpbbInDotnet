@@ -59,6 +59,7 @@ function expandCollapsedMenu(summaryId, buttonId) {
 
 function showElement(id, whenHiding, whenShowing, roundSize = false) {
     var elem = $('#' + id);
+
     if (!whenHiding) {
         whenHiding = function () { }
     }
@@ -99,4 +100,34 @@ function showForumTree(caller) {
         $('html, body').scrollTop($(caller).offset().top - $('#topBanner').outerHeight() - 10);
         $('#treeContainer').scrollTop($('.selectedTreeNode').offset().top - $('#treeContainer').offset().top - 50);
     }); 
+}
+
+function toggleHeaderLinks(curId, otherId) {
+    var other = $('#' + otherId);
+    var cur = $('#' + curId);
+    var curButton = $('#' + curId + 'Button');
+    var otherButton = $('#' + otherId + 'Button');
+    var highlightedCss = {
+        'background-color': '#ededed',
+        //'padding': '10px 10px'
+    };
+    var unsetCss = {
+        'background-color': 'unset',
+        //'padding': 'unset'
+    };
+    if (other && other.is(':visible') && !cur.is(':visible')) {
+        showElement(otherId);
+        other.css(unsetCss);
+        otherButton.css(unsetCss);
+    }
+    if (cur.is(':visible')) {
+        cur.css(unsetCss);
+        curButton.css(unsetCss);
+    }
+    else {
+
+        cur.css(highlightedCss);
+        curButton.css(highlightedCss);
+    }
+    showElement(curId);
 }

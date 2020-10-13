@@ -161,7 +161,7 @@ namespace PhpbbInDotnet.Services
 
             var uidRegex = new Regex($":{uid}", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
             var tagRegex = new Regex(@"(:[a-z])(\]|:)", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-            var cleanTextTemp = uidRegex.Replace(HttpUtility.HtmlDecode(text), string.Empty);
+            var cleanTextTemp = string.IsNullOrWhiteSpace(uid) ? HttpUtility.HtmlDecode(text) : uidRegex.Replace(HttpUtility.HtmlDecode(text), string.Empty);
             var noUid = tagRegex.Replace(cleanTextTemp, "$2");
 
             string replace(string input, string pattern, int groupsIndex)
