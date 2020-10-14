@@ -157,7 +157,7 @@ namespace PhpbbInDotnet.Services
             {
                 return false;
             }
-            return item.Posts.Contains(postId);
+            return item?.Posts?.Contains(postId) ?? false;
         }
 
         public ForumTree GetTreeNode(HashSet<ForumTree> tree, int forumId)
@@ -165,7 +165,7 @@ namespace PhpbbInDotnet.Services
 
         public string GetPathText(HashSet<ForumTree> tree, int forumId)
         {
-            var pathParts = GetTreeNode(tree, forumId).PathList ?? new List<int>();
+            var pathParts = GetTreeNode(tree, forumId)?.PathList ?? new List<int>();
             var sb = new StringBuilder();
             for (var i = 0; i < pathParts.Count; i++)
             {

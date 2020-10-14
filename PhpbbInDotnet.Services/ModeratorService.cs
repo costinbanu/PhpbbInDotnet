@@ -62,6 +62,10 @@ namespace PhpbbInDotnet.Services
                 {
                     return ($"Subiectul {topicId} nu există", false);
                 }
+                if (!await _context.PhpbbForums.AsNoTracking().AnyAsync(f => f.ForumId == destinationForumId))
+                {
+                    return ("Forumul de destinație nu există", false);
+                }
                 var curParent = await _context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == curTopic.ForumId);
                 var posts = await _context.PhpbbPosts.Where(p => p.TopicId == curTopic.TopicId).OrderBy(p => p.PostTime).ToListAsync();
                 
@@ -210,7 +214,11 @@ namespace PhpbbInDotnet.Services
                     return ("Cel puțin un mesaj dintre cele selectate a fost mutat sau șters între timp.", false);
                 }
 
-                var newTopic = await _context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == destinationTopicId);
+                var newTopic = await _context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == destinationTopicId);
+                if (newTopic == null)
+                {
+                    return ("Subiectul de destinație nu există", false);
+                }
                 var oldTopicId = posts.First().TopicId;
                 foreach (var post in posts)
                 {
