@@ -80,14 +80,6 @@
     <input type="hidden" asp-for="ManageFoes" id="changeModeManageFoes" />
 </form>
 
-@if (!viewingUser.IsAnonymous)
-{
-    @await Html.PartialAsync(
-        "_HeaderLinksPartial",
-        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(),
-        ViewData
-    )
-}
 <form method="post" asp-page-handler="RemoveFoe" id="RemoveFoe" name="RemoveFoe">
     <input type="hidden" asp-for="UserId" />
     <input type="hidden" asp-for="ViewAsAnother" />
@@ -96,13 +88,13 @@
     <input type="hidden" asp-for="UserId" />
     <input type="hidden" asp-for="ViewAsAnother" />
 </form>
-<h2>
+<h3>
     Panoul utilizatorului
     @if (!isSelf && !canEdit)
     {
         <span> -&nbsp;@Model.CurrentUser.Username</span>
     }
-</h2>
+</h3>
 @if (hasTabs)
 {
     <div class="tab">
@@ -320,7 +312,8 @@ else
                             @Html.Raw(Model.CurrentUser.UserAvatar)<br />
                             <input asp-for="DeleteAvatar" style="width:auto" /> <span>Șterge acestă imagine de profil</span><br /><br />
                         }
-                        <input asp-for="Avatar" style="width:auto" />
+                        <input asp-for="Avatar" class="HiddenFileInput" />
+                        <label for="Avatar" class="MyButton">Alege o imagine de profil nouă</label><br />
                         <span class="Caption">Sunt permise imagini cu dimensiunea maximă 200 px / 200 px.</span><br />
                         <span asp-validation-for="Avatar" class="validation"></span>
                     </div>
@@ -428,7 +421,7 @@ else
                     <div class="FlexRight PostInputWidth">
                         <input asp-for="Email" /><br />
                         <span class="Caption">Dacă modifici acest câmp, contul va deveni inactiv. Vei primi pe noua adresă de e-mail un mesaj cu instrucțiuni pentru reactivare.</span><br />
-                        <input asp-for="ShowEmail" style="width:auto" /> Arată adresa de e-mail în profil (astfel membrii forumului te pot contacta prin e-mail).<br />
+                        <input asp-for="ShowEmail" style="width:auto" />  Utilizatorii mă pot contacta prin intermediul email-ului.<br />
                         <span asp-validation-for="Email" class="validation"></span>
                     </div>
                 }
@@ -437,7 +430,7 @@ else
                     var showMail = Model.CurrentUser.UserAllowViewemail.ToBool() || await Model.IsCurrentUserAdminHere();
                     if (showMail)
                     {
-                        <button onclick="location.href='mailto:@Html.Raw(Model.CurrentUser.UserEmail)'" type="button" @(isSelf ? "disabled" : "")>&#x2709;&nbsp;Trimite e-mail</button>
+                        <button class="MyButton" onclick="location.href='mailto:@Html.Raw(Model.CurrentUser.UserEmail)'" type="button" @(isSelf ? "disabled" : "")>&#x2709;&nbsp;Trimite e-mail</button>
                     }
                     var showPMs = _userService.HasPrivateMessagePermissions(viewingUser) && _userService.HasPrivateMessages(pageUser);
                     if (showPMs)
@@ -446,7 +439,7 @@ else
                         {
                             <span style="height:5px; width: 5px;">&nbsp;</span>
                         }
-                        <button onclick="location.href='/Posting?handler=PrivateMessage&receiverId=@Model.CurrentUser.UserId'" type="button" @(isSelf ? "disabled" : "")>&#x1F5E8;&nbsp;Trimite mesaj privat</button>
+                        <button class="MyButton" onclick="location.href='/Posting?handler=PrivateMessage&receiverId=@Model.CurrentUser.UserId'" type="button" @(isSelf ? "disabled" : "")>&#x1F5E8;&nbsp;Trimite mesaj privat</button>
                     }
                     if (!canEdit && !string.IsNullOrEmpty(Model.CurrentUser.UserWebsite))
                     {
@@ -459,7 +452,7 @@ else
                         {
                             <span style="height:5px; width: 5px;">&nbsp;</span>
                         }
-                        <button onclick="location.href='@website'" type="button">&#x1F310;&nbsp;Vizitează website</button>
+                        <button class="MyButton" onclick="window.open('@website', '_blank')" type="button">&#x1F310;&nbsp;Vizitează website</button>
                     }
                 }
             </div>
@@ -564,7 +557,7 @@ else
             @if (canEdit)
             {
                 <p>&nbsp;</p>
-                <input type="submit" value="Salvează modificările" style="width:auto" onclick="return confirmSubmit();" />
+                <input class="MyButton" type="submit" value="Salvează modificările" style="width:auto" onclick="return confirmSubmit();" />
                 <span asp-validation-for="CurrentUser" class="validation"></span>
             }
             @if (!isSelf && !canEdit)
@@ -577,12 +570,12 @@ else
                     <div class="FlexCenter">
                         @if (showAddFoe)
                         {
-                            <input type="submit" form="AddFoe" value="&#x1F6AB;&nbsp;Adaugă la persoane neagreate" style="font-size: 15px; margin-top:5px; vertical-align: top"
+                            <input class="MyButton" type="submit" form="AddFoe" value="&#x1F6AB;&nbsp;Adaugă la persoane neagreate" style="font-size: 15px; margin-top:5px; vertical-align: top"
                                    onclick="return confirm('Dacă îl/o adaugi pe @Model.CurrentUser.UsernameClean la persoane neagreate, nu vei mai vedea mesajele lui/ei, și nici nu veți mai putea comunica prin mesageria privată.\nDupă salvarea opțiunii, vei fi deconectat/ă și va trebui să te re-autentifici. Continui?')" />
                         }
                         else if (showRemoveFoe)
                         {
-                            <input type="submit" form="RemoveFoe" value="&#x2705;&nbsp;Elimină din lista de persoane neagreate" style="font-size: 15px; margin-top:5px; vertical-align: top"
+                            <input class="MyButton" type="submit" form="RemoveFoe" value="&#x2705;&nbsp;Elimină din lista de persoane neagreate" style="font-size: 15px; margin-top:5px; vertical-align: top"
                                    onclick="return confirm('Dacă îl/o elimini pe @Model.CurrentUser.UsernameClean din lista de persoane neagreate, vei putea vedea mesajele lui/ei, și veți putea comunica prin mesageria privată.\nDupă salvarea opțiunii, vei fi deconectat/ă și va trebui să te re-autentifici. Continui?')" />
                         }
                     </div>

@@ -10,14 +10,6 @@
         // Startup variables
         this.theSelection = false;
 
-        // Check for Browser & Platform for PC & IE specific bits
-        // More details from: http://www.mozilla.org/docs/web-developer/sniffer/browser_type.html
-        /*var clientPC = navigator.userAgent.toLowerCase(); // Get client info
-
-        this.clientVer = parseInt(navigator.appVersion); // Get browser version
-        this.is_ie = ((clientPC.indexOf('msie') != -1) && (clientPC.indexOf('opera') == -1));
-        this.is_win = ((clientPC.indexOf('win') != -1) || (clientPC.indexOf('16bit') != -1));*/
-
         this.baseHeight = 0;
 
         this.hasConfirmation = false;
@@ -40,17 +32,6 @@
         else {
             doc = opener.document;
         }
-
-        var textarea = doc.forms[this.form_name].elements[this.text_name];
-
-        /*if (this.is_ie && typeof (this.baseHeight) != 'number') {
-            textarea.focus();
-            this.baseHeight = doc.selection.createRange().duplicate().boundingHeight;
-
-            if (!document.forms[this.form_name]) {
-                document.body.focus();
-            }
-        }*/
     }
 
     /**

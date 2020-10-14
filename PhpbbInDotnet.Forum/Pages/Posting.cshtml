@@ -165,16 +165,23 @@ else if (IsPM)
                 }
             }
             <br />
-            <input type="button" value="Trimite vot" />
+            <input type="button" value="Trimite vot" class="MyButton" />
         </div>
     }
     <div class="RowMargin">
         <div class="FlexRow">
-            @await Html.PartialAsync(
-             "_SummaryPartial",
-             new CustomPartials._SummaryPartialModel(Model.PreviewablePost.AuthorId, Model.PreviewablePost.AuthorName, Model.PreviewablePost.AuthorColor, Model.PreviewablePost.PostCreationTime, Model.PreviewablePost.PostId.Value,
-                 UserDateFormat, Model.PreviewablePost.AuthorHasAvatar, Model.PreviewablePost.AuthorRank, null, null, null, true)
-            )
+            @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
+            {
+                AuthorId = Model.PreviewablePost.AuthorId,
+                AuthorName = Model.PreviewablePost.AuthorName,
+                AuthorColor = Model.PreviewablePost.AuthorColor,
+                CreationTime = Model.PreviewablePost.PostCreationTime,
+                AssetId = Model.PreviewablePost.PostId.Value,
+                DateFormat = UserDateFormat,
+                ShowAvatar = Model.PreviewablePost.AuthorHasAvatar,
+                AuthorRank = Model.PreviewablePost.AuthorRank,
+                Left = true
+            })
             <div class="ForumContent VerticalContent FlexRight" id="@Model.PreviewablePost.PostId">
                 <span style="display:flex">
                     <span class="PostTitle">
@@ -242,7 +249,7 @@ else if (IsPM)
         {
             if (code.Key == "size")
             {
-                <select name="addbbcode20" class="BbCodeButton PostingButton" onchange="posting.bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;" title="@code.Value.ToolTip">
+                <select name="addbbcode20" class="BbCodeButton PostingButton" style="border-radius: 2px; border: 1px solid #dcdcdc;" onchange="posting.bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;" title="@code.Value.ToolTip">
                     <option value="" disabled selected>@Html.Raw(code.Value.ButtonText)</option>
                     <option value="50">Micuţ (50%)</option>
                     <option value="85">Mic (85%)</option>
@@ -253,44 +260,19 @@ else if (IsPM)
             }
             else if (code.Key == "color")
             {
-                <button type="button" class="BbCodeButton Hide960 PostingButton" onclick="posting.change_palette();" title="@code.Value.ToolTip">
+                <button type="button" class="BbCodeButton Hide960 PostingButton MyButton" onclick="posting.change_palette();" title="@code.Value.ToolTip">
                     @Html.Raw(code.Value.ButtonText)
                 </button>
             }
             else
             {
-                <button type="button" class="BbCodeButton PostingButton @(code.Value.ShowWhenCollapsed ? "" : "Hide960")" onclick="posting.bbstyle('@code.Key')" title="@code.Value.ToolTip">
+                <button type="button" class="BbCodeButton PostingButton @(code.Value.ShowWhenCollapsed ? "" : "Hide960") MyButton" onclick="posting.bbstyle('@code.Key')" title="@code.Value.ToolTip">
                     @Html.Raw(code.Value.ButtonText)
                 </button>
             }
         }
 
-
-        @*<input type="button" class="BbCodeButton PostingButton" accesskey="b" name="addbbcode0" value=" B " style="font-weight:bold" onclick="posting.bbstyle('b')" title="Text bold: [b]text[/b]">
-        <input type="button" class="BbCodeButton PostingButton" accesskey="i" name="addbbcode2" value=" i " style="font-style:italic" onclick="posting.bbstyle('i')" title="Text italic: [i]text[/i]">
-        <input type="button" class="BbCodeButton PostingButton" accesskey="u" name="addbbcode4" value=" u " style="text-decoration: underline" onclick="posting.bbstyle('u')" title="Text subliniat: [u]text[/u]">
-        <input type="button" class="BbCodeButton Hide960 PostingButton" accesskey="s" name="addbbcode4" value=" S " style="text-decoration: line-through" onclick="posting.bbstyle('strike')" title="Text subliniat: [u]text[/u]">
-        <input type="button" class="BbCodeButton PostingButton" accesskey="q" name="addbbcode6" value="Citează" onclick="posting.bbstyle('quote')" title="Citează text: [quote]text[/quote]">
-        <input type="button" class="BbCodeButton Hide960 PostingButton" accesskey="c" name="addbbcode8" value="Cod" onclick="posting.bbstyle('code')" title="Afişează cod: [code]cod[/code]">
-        <input type="button" class="BbCodeButton Hide960 PostingButton" accesskey="l" name="addbbcode10" value="Listă" onclick="posting.bbstyle('list')" title="Listă: [list]text[/list]">
-        <input type="button" class="BbCodeButton Hide960 PostingButton" accesskey="o" name="addbbcode12" value="List ordonată" onclick="posting.bbstyle('list')" title="Listă ordonată: [list=]text[/list]">
-        <input type="button" class="BbCodeButton Hide960 PostingButton" accesskey="t" name="addlitsitem" value="Element listă" onclick="posting.bbstyle(-1)" title="Listează articolele: [*]text[/*]">
-        <input type="button" class="BbCodeButton PostingButton" accesskey="p" name="addbbcode14" value="Imagine" onclick="posting.bbstyle(14)" title="Adaugă imagine: [img]http://cale_imagine[/img]">
-        <input type="button" class="BbCodeButton PostingButton" accesskey="w" name="addbbcode16" value="Link" style="text-decoration: underline" onclick="posting.bbstyle(16)" title="Adaugă URL: [url]http://url[/url] sau [url=http://url]text URL[/url]">
-        <select name="addbbcode20" class="BbCodeButton PostingButton" onchange="posting.bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;" title="Mărime font: [size=85]text mic[/size]">
-            <option value="" disabled selected>Mărime font</option>
-            <option value="50">Micuţ (50%)</option>
-            <option value="85">Mic (85%)</option>
-            <option value="100">Normal (100%)</option>
-            <option value="150">Mare (150%)</option>
-            <option value="200">Imens (200%)</option>
-        </select>
-        <input type="button" class="BbCodeButton Hide960 PostingButton" name="bbpalette" id="bbpalette" value="Culoare font" onclick="posting.change_palette();" title="Culoare font: [color=red]text[/color]  Sfat: de asemenea puteţi folosi culorile hexazecimale culoare=#FF0000">
-        @foreach (var code in _renderingService.DbBBTags.Where(t => t.DisplayOnPosting.ToBool()))
-        {
-            <input type="button" class="BbCodeButton Hide960 PostingButton" name="addbbcode_@(code.BbcodeTag)" value="@code.BbcodeTag" onclick="posting.bbstyle('@code.BbcodeTag')" title="@code.BbcodeHelpline" />
-        }*@
-        <button type="button" class="BbCodeButton PostingButton" onclick="toggleFormattingHelp()" title="Arată un ajutor pentru formatare">&#x2754;</button>
+        <button type="button" class="BbCodeButton PostingButton MyButton" onclick="toggleFormattingHelp()" title="Arată un ajutor pentru formatare">&#x2754;</button>
         <table class="ColorPalette" id="colour_palette">
             @{
                 var color = new[] { 0x0, 0x40, 0x80, 0xbf, 0xff };
@@ -329,28 +311,28 @@ else if (IsPM)
     </p>
     @if (!IsPM)
     {
-        <button onclick="posting.toggleAttach()" type="button" class="PostingButton">&#128206; Fișiere atașate</button>
+        <button onclick="posting.toggleAttach()" type="button" class="PostingButton MyButton">&#128206; Fișiere atașate</button>
     }
-    <button onclick="posting.toggleEmoji()" type="button" class="Hide960 PostingButton">&#x1F642; Emoji</button>
+    <button onclick="posting.toggleEmoji()" type="button" class="Hide960 PostingButton MyButton">&#x1F642; Emoji</button>
     @if (CanCreatePoll)
     {
-        <button onclick="posting.togglePoll()" type="button" class="PostingButton">&#x2714; Chestionar</button>
+        <button onclick="posting.togglePoll()" type="button" class="PostingButton MyButton">&#x2714; Chestionar</button>
     }
-    <input type="submit" value="&#x1F440; Previzualizează" onclick="return posting.censor()" asp-page-handler="Preview" class="PostingButton" />
+    <input type="submit" value="&#x1F440; Previzualizează" onclick="return posting.censor()" asp-page-handler="Preview" class="PostingButton MyButton" />
 
     @switch (Model.Action)
     {
         case PostingActions.NewTopic:
         case PostingActions.NewForumPost:
-            <input type="submit" value="&#x1F4BE; Salvează mesajul în lucru" onclick="return posting.censor()" asp-page-handler="SaveDraft" class="PostingButton" />
-            <b><input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="NewForumPost" class="PostingButton" /></b>
+            <input type="submit" value="&#x1F4BE; Salvează mesajul în lucru" onclick="return posting.censor()" asp-page-handler="SaveDraft" class="PostingButton MyButton" />
+            <b><input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="NewForumPost" class="PostingButton MyButton" /></b>
             break;
         case PostingActions.EditForumPost:
-            <b><input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="EditForumPost" class="PostingButton" /></b>
+            <b><input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="EditForumPost" class="PostingButton MyButton" /></b>
             break;
         case PostingActions.NewPrivateMessage:
         case PostingActions.EditPrivateMessage:
-            <b><input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="PrivateMessage" class="PostingButton" /></b>
+            <b><input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="PrivateMessage" class="PostingButton MyButton" /></b>
             break;
         default:
             <span class="validation">A intervenit o eroare, pagina nu a fost afișată corect.</span>
@@ -427,22 +409,17 @@ else if (IsPM)
     }
     @if (!IsPM)
     {
-        <div id="attachPanel" style="display:@(Model.ShowAttach ? "block" : "none")" class="PostInputWidth">
+        <div id="attachPanel" style="display:@(Model.ShowAttach ? "block" : "none")">
             <br />
             <h3>Fișiere atașate</h3>
-            <h4>Adaugă fișiere noi</h4>
-            <div class="FlexCenter PostInputWidth">
-                <div>Alege unul sau mai multe fișiere:</div>
-                <div class="PollInput FlexRight">
-                    <input asp-for="Files" onchange="posting.submitAttachments()" multiple />
-                    @if (!await Model.IsCurrentUserAdminHere())
-                    {
-                        <span class="Caption">Minim 1, maxim 10 fișiere. Dimensiune limită: @(_config.GetValue<int>("UploadLimitsMB:Images"))MB pentru imagini, @(_config.GetValue<int>("UploadLimitsMB:OtherFiles"))MB în rest.</span>
-                    }
-                    <span asp-validation-for="Files" class="validation"></span>
-                    <div id="fileUploadStatus"></div>
-                </div>
-            </div>
+            <input asp-for="Files" onchange="posting.submitAttachments()" multiple class="HiddenFileInput" />
+            <label for="Files" class="MyButton">Alege unul sau mai multe fișiere</label><br />
+            @if (!await Model.IsCurrentUserAdminHere())
+            {
+                <span class="Caption">Minim 1, maxim 10 fișiere. Dimensiune limită: @(_config.GetValue<int>("UploadLimitsMB:Images"))MB pentru imagini, @(_config.GetValue<int>("UploadLimitsMB:OtherFiles"))MB în rest.</span>
+            }
+            <span asp-validation-for="Files" class="validation"></span>
+            <div id="fileUploadStatus"></div>
             <input type="submit" value="Încarcă fișierele alese" asp-page-handler="AddAttachment" style="display:none" id="submitAttachmentsButton" />
             @if (Model.Attachments?.Any() ?? false)
             {
@@ -456,8 +433,8 @@ else if (IsPM)
                         <br />
                         <textarea type="text" asp-for="Attachments[i].AttachComment" rows="4" cols="100" style="display:inline-block"></textarea>
                         <br />
-                        <input type="button" value="Așează în linie" onclick="posting.attach_inline(@i, '@Model.Attachments[i].RealFilename')" /> &nbsp;
-                        <input type="submit" value="Șterge fișier" asp-page-handler="DeleteAttachment" onclick="$('#idToDelete').val(@i); return true;" />
+                        <input type="button" value="Așează în linie" onclick="posting.attach_inline(@i, '@Model.Attachments[i].RealFilename')" class="MyButton" /> &nbsp;
+                        <input type="submit" value="Șterge fișier" asp-page-handler="DeleteAttachment" onclick="$('#idToDelete').val(@i); return true;" class="MyButton" />
                         <br />
                         <span asp-validation-for="DeleteFileDummyForValidation[i]" class="validation"></span>
                     </div>
@@ -469,8 +446,7 @@ else if (IsPM)
                 }
                 <input type="hidden" name="index" id="idToDelete" value="" />
             }
-            <p style="clear:both">&nbsp;</p>
-            <hr />
+            <hr class="BoxSeparator" />
         </div>
     }
     <div id="emojiPanel" style="display:none; clear:both;">
@@ -552,11 +528,20 @@ else if (IsPM)
             }
 
             <div class="RowMargin FlexRow">
-                @await Html.PartialAsync(
-                    "_SummaryPartial",
-                    new CustomPartials._SummaryPartialModel(post.AuthorId, post.AuthorName, post.AuthorColor, post.PostCreationTime, post.PostId.Value, UserDateFormat,
-                        post.AuthorHasAvatar, post.AuthorRank, null, null, null, true, false, null, null, null, null)
-                )
+                @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
+                {
+                    AuthorId = post.AuthorId,
+                    AuthorName = post.AuthorName,
+                    AuthorColor = post.AuthorColor,
+                    CreationTime = post.PostCreationTime,
+                    AssetId = post.PostId.Value,
+                    DateFormat = UserDateFormat,
+                    ShowAvatar = post.AuthorHasAvatar,
+                    AuthorRank = post.AuthorRank,
+                    Left = true,
+                    ShowAsLast = false
+                })
+
                 <div class="ForumContent">
                     <span style="display:flex">
                         <span class="PostTitle">

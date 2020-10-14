@@ -64,16 +64,22 @@
                     <a asp-page="/ViewForum" asp-route-forumId="@forum.ForumId" class="@titleClass" style="font-weight:bold">@Html.Raw(forum.ForumName)</a><br />
                     @Html.Raw(_renderingService.BbCodeToHtml(forum.ForumDesc, forum.ForumDescUid))
                 </span>
-                @await Html.PartialAsync(
-                         "_SummaryPartial",
-                         new CustomPartials._SummaryPartialModel(forum.ForumLastPosterId, forum.ForumLastPosterName, forum.ForumLastPosterColour, forum.ForumLastPostTime?.ToUtcTime(), forum.ForumId,
-                             Model.DateFormat, false, null,
-                             forum.ForumLastPostId == 0 ? null : $"./ViewTopic?postId={forum.ForumLastPostId}&handler=ByPostId",
-                             forum.ForumLastPostId == 0 ? null : "&#x1F4C3;",
-                             forum.ForumLastPostId == 0 ? null : "Vezi ultimul mesaj",
-                             false, true
-                         )
-                     )
+                @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
+               {
+                   AuthorId = forum.ForumLastPosterId,
+                   AuthorName = forum.ForumLastPosterName,
+                   AuthorColor = forum.ForumLastPosterColour,
+                   CreationTime = forum.ForumLastPostTime?.ToUtcTime(),
+                   AssetId = forum.ForumId,
+                   DateFormat = Model.DateFormat,
+                   ShowAvatar = false,
+                   LinkHref = forum.ForumLastPostId == 0 ? null : $"./ViewTopic?postId={forum.ForumLastPostId}&handler=ByPostId",
+                   Left = false,
+                   ShowAsLast = true,
+                                        Forums = forum.TotalSubforumCount,
+                   Topics = forum.TotalTopicCount
+               })
+
             </div>
             isFirst = false;
         }
@@ -125,16 +131,21 @@
                 <a asp-page="/ViewForum" asp-route-forumId="@forum.ForumId" class="@titleClass" style="font-weight:bold">@Html.Raw(forum.ForumName)</a><br />
                 @Html.Raw(_renderingService.BbCodeToHtml(forum.ForumDesc, forum.ForumDescUid))
             </span>
-            @await Html.PartialAsync(
-                         "_SummaryPartial",
-                         new CustomPartials._SummaryPartialModel(forum.ForumLastPosterId, forum.ForumLastPosterName, forum.ForumLastPosterColour, forum.ForumLastPostTime?.ToUtcTime(), forum.ForumId,
-                             Model.DateFormat, false, null,
-                             forum.ForumLastPostId == 0 ? null : $"./ViewTopic?postId={forum.ForumLastPostId}&handler=ByPostId",
-                             forum.ForumLastPostId == 0 ? null : "&#x1F4C3;",
-                             forum.ForumLastPostId == 0 ? null : "Vezi ultimul mesaj",
-                             false, true
-                         )
-                     )
+            @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
+            {
+                AuthorId = forum.ForumLastPosterId,
+                AuthorName = forum.ForumLastPosterName,
+                AuthorColor = forum.ForumLastPosterColour,
+                CreationTime = forum.ForumLastPostTime?.ToUtcTime(),
+                AssetId = forum.ForumId,
+                DateFormat = Model.DateFormat,
+                ShowAvatar = false,
+                LinkHref = forum.ForumLastPostId == 0 ? null : $"./ViewTopic?postId={forum.ForumLastPostId}&handler=ByPostId",
+                Left = false,
+                ShowAsLast = true,
+                Forums = forum.TotalSubforumCount,
+                Topics = forum.TotalTopicCount
+            })
         </div>
         isFirst = false;
     }

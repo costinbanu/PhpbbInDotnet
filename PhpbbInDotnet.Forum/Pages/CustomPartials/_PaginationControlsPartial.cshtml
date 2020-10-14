@@ -31,7 +31,7 @@
                         <input type="hidden" name="postId" value="@Model.FirstPostId" />
                         @Html.DropDownList("userPostsPerPage", Model.Paginator.PostsPerPage, new { style = "height:26px; margin-top: 2px" })
                         &nbsp;
-                        <input type="submit" value="Salvează" />
+                        <input type="submit" value="Salvează" class="MyButton" />
                     </span>
                 </form>
             }
@@ -51,11 +51,12 @@
         </div>
     </div>
     <div class="ControlsMiddleCollapsed">
-        &#x1F4D6;&nbsp;
-        <a href="javascript:showElement('paginationControls_@(Model.Self)')" style="white-space:nowrap; line-height:2em; padding-bottom:10px;">
-            Opțiuni paginare
-        </a>
+        <p></p>
+        <span class="MyButton MyMiniButton" onclick="showElement('paginationControls_@(Model.Self)')" style="white-space:nowrap">
+            &#x1F4D6;&nbsp;Opțiuni paginare
+        </span>
         <div id="paginationControls_@(Model.Self)" style="display: none; width: 100%; line-height: 1.5em">
+            <p></p>
             @await Html.PartialAsync("_PaginationPartial", Model.Paginator.Pagination, ViewData)
             <p></p>
             @if (!Model.Paginator.IsAnonymous && Model.AllowPaginationChange)
@@ -67,7 +68,7 @@
                         <input type="hidden" name="postId" value="@Model.FirstPostId" />
                         @Html.DropDownList("userPostsPerPage", Model.Paginator.PostsPerPage, new { style = "height:26px; margin-top: 2px" })
                         &nbsp;
-                        <input type="submit" value="Salvează" />
+                        <input type="submit" value="Salvează" class="MyButton"/>
                     </span>
                 </form>
             }

@@ -19,6 +19,7 @@ namespace PhpbbInDotnet.Services
         private readonly IConfiguration _config;
         private readonly CommonUtils _utils;
         private HashSet<ForumTree> _tree = null;
+        private HashSet<ForumTopicCount> _forumTopicCount;
         private Dictionary<int, HashSet<Tracking>> _tracking = null;
         private IEnumerable<(int forumId, bool hasPassword)> _restrictedForums = null;
 
@@ -49,7 +50,10 @@ namespace PhpbbInDotnet.Services
             var tracking = await GetForumTracking(user, forceRefresh);
             var connection = _context.Database.GetDbConnection();
             await connection.OpenIfNeededAsync();
-            _tree = (await connection.QueryAsync<ForumTree>("CALL `forum`.`get_forum_tree`();")).ToHashSet();
+
+            using var multi = await connection.QueryMultipleAsync("CALL `forum`.`get_forum_tree`(); SELECT forum_id, count(topic_id) as topic_count FROM phpbb_topics GROUP BY forum_id;");
+            _tree = (await multi.ReadAsync<ForumTree>()).ToHashSet();
+            _forumTopicCount = (await multi.ReadAsync<ForumTopicCount>()).ToHashSet();
 
             void dfs(int forumId)
             {
@@ -61,6 +65,8 @@ namespace PhpbbInDotnet.Services
 
                 node.IsUnread = tracking.ContainsKey(forumId);
                 node.IsRestricted = restrictedForums.Contains(forumId);
+                node.TotalSubforumCount = node.ChildrenList?.Count ?? 0;
+                node.TotalTopicCount = GetTopicCount(forumId);
                 foreach (var childForumId in node.ChildrenList ?? new HashSet<int>())
                 {
                     var childForum = GetTreeNode(_tree, childForumId);
@@ -76,6 +82,8 @@ namespace PhpbbInDotnet.Services
 
                         dfs(childForumId);
 
+                        node.TotalSubforumCount += childForum.TotalSubforumCount;
+                        node.TotalTopicCount += childForum.TotalTopicCount;
                         node.IsUnread |= childForum.IsUnread || tracking.ContainsKey(childForumId);
                         if ((node.ForumLastPostTime ?? 0) < (childForum.ForumLastPostTime ?? 0))
                         {
@@ -190,5 +198,8 @@ namespace PhpbbInDotnet.Services
 
             return node.ChildrenList?.Select(x => GetTreeNode(tree, x))?.Any(x => !x.IsRestricted) ?? false;
         }
+
+        private int GetTopicCount(int forumId)
+            => _forumTopicCount.TryGetValue(new ForumTopicCount { ForumId = forumId }, out var val) ? (val?.TopicCount ?? 0) : 0;
     }
 }

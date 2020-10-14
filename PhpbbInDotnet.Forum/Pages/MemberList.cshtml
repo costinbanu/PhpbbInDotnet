@@ -42,7 +42,7 @@
 </div>
 
 <div id="AllUsers" class="tabcontent" style="@(Model.Mode == MemberListPages.AllUsers ? "display:inherit" : "display:none")">
-    <h2>Membrii forumului</h2>
+    <h3>Membrii forumului</h3>
     <form method="get">
         @Html.DropDownListFor(m => m.Order, _utils.EnumToDropDownList<MemberListOrder>(Model.Order, Model.GetOrderDisplayName, "Ordonează după..."), new { id = "userOrder", style = "height:30px; margin-top: 5px" })
         <input asp-for="Mode" type="hidden" />
@@ -69,11 +69,11 @@
 <div id="SearchUsers" class="tabcontent" style="@(Model.Mode == MemberListPages.SearchUsers ? "display:inherit" : "display:none")">
     @if (!(Model.UserList?.Any() ?? false))
     {
-        <h2>Caută un utilizator</h2>
+        <h3>Caută un utilizator</h3>
     }
     else
     {
-        <h2>Rezultatele căutării</h2>
+        <h3>Rezultatele căutării</h3>
     }
     <form method="get">
         <input type="hidden" name="handler" value="search" />
@@ -103,7 +103,7 @@
 </div>
 
 <div id="Groups" class="tabcontent" style="@(Model.Mode == MemberListPages.Groups ? "display:inherit" : "display:none")">
-    <h2>Grupurile forumului</h2>
+    <h3>Grupurile forumului</h3>
     @{
         if (await Model.IsCurrentUserAdminHere())
         {
@@ -175,7 +175,7 @@
 </div>
 
 <div id="ActiveUsers" class="tabcontent" style="@(Model.Mode == MemberListPages.ActiveUsers ? "display:inherit" : "display:none")">
-    <h2>Membri activi în ultimele @(_config.GetValue<int?>("UserActivityTrackingIntervalMinutes") ?? 60) de minute</h2>
+    <h3>Membri activi în ultimele @(_config.GetValue<int?>("UserActivityTrackingIntervalMinutes") ?? 60) de minute</h3>
     <form method="get">
         @Html.DropDownListFor(m => m.Order, _utils.EnumToDropDownList<MemberListOrder>(Model.Order, Model.GetOrderDisplayName, "Ordonează după..."), new { id = "userOrder", style = "height:30px; margin-top: 5px" })
         <input asp-for="Mode" type="hidden" />

@@ -68,6 +68,20 @@ namespace PhpbbInDotnet.Services
                     }
                 ),
 
+                ["color"] = (
+                    Tag: new BBTag("color", "<span style=\"color:${code}\">", "</span>", 6, "", true,
+                        new BBAttribute("code", "")),
+                    Summary: new BBTagSummary
+                    {
+                        ButtonText = "Culoare text",
+                        OpenTag = "[color]",
+                        CloseTag = "[/color]",
+                        ShowOnPage = true,
+                        ToolTip = "Culoare font: [color=red]text[/color]  Sfat: de asemenea puteţi folosi culorile hexazecimale culoare=#FF0000",
+                        ShowWhenCollapsed = false
+                    }
+                ),
+
                 ["size"] = (
                     Tag: new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>", 5, "", true,
                         new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
@@ -123,20 +137,6 @@ namespace PhpbbInDotnet.Services
                         ShowOnPage = true,
                         ToolTip = "Adaugă URL: [url]http://url[/url] sau [url=http://url]text URL[/url]",
                         ShowWhenCollapsed = true
-                    }
-                ),
-
-                ["color"] = (
-                    Tag: new BBTag("color", "<span style=\"color:${code}\">", "</span>", 6, "", true,
-                        new BBAttribute("code", "")),
-                    Summary: new BBTagSummary
-                    {
-                        ButtonText = "Culoare text",
-                        OpenTag = "[color]",
-                        CloseTag = "[/color]",
-                        ShowOnPage = true,
-                        ToolTip = "Culoare font: [color=red]text[/color]  Sfat: de asemenea puteţi folosi culorile hexazecimale culoare=#FF0000",
-                        ShowWhenCollapsed = false
                     }
                 ),
 

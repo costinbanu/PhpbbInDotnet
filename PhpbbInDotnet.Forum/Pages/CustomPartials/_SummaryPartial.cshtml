@@ -36,11 +36,11 @@
             var color = $"#{(string.IsNullOrWhiteSpace(Model.AuthorColor) ? "000000" : Model.AuthorColor)}";
             <a asp-page="/User" asp-route-UserId="@Model.AuthorId" style="color:@color;font-weight:bold">@Html.Raw(Model.AuthorName)</a>
         }
-        @if (!string.IsNullOrWhiteSpace(Model.LinkHref) && !string.IsNullOrWhiteSpace(Model.LinkText) && !Model.ShowAsLast)
+        @*@if (!string.IsNullOrWhiteSpace(Model.LinkHref) && !string.IsNullOrWhiteSpace(Model.LinkText) && !Model.ShowAsLast)
         {
             <span>&nbsp;</span>
             <a href="@Model.LinkHref" style="text-decoration:none" title="@(Model.LinkTooltip)">@Html.Raw(Model.LinkText)</a>
-        }
+        }*@
     </li>
     <li>
         @if (!string.IsNullOrWhiteSpace(Model.AuthorRank))
@@ -58,6 +58,12 @@
     {
         <li class="Caption">
             @Model.Posts mesaj@(Model.Posts != 1 ? "e" : ""), @Model.Views vizualiz@(Model.Views != 1 ? "ări" : "are").
+        </li>
+    }
+    else if (Model.Forums.HasValue && Model.Topics.HasValue)
+    {
+        <li class="Caption">
+            @Model.Forums forum@(Model.Forums != 1 ? "uri" : ""), @Model.Topics subiect@(Model.Topics != 1 ? "e" : "").
         </li>
     }
     @if (!string.IsNullOrWhiteSpace(Model.PMLink))

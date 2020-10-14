@@ -60,10 +60,10 @@
         }
     }
 </script>
-<span style="padding-top: 10px; padding-bottom: 10px; padding-right: 10px">Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(Model.ForumTitle)</a></span>
+<span style="padding-top: 10px; padding-bottom: 10px">Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(Model.ForumTitle)</a></span>
 @if (!CurrentUser.IsAnonymous)
 {
-    <span>&bull;</span>
+    <span>&nbsp;&bull;&nbsp;</span>
     @await Html.PartialAsync(
         "_HeaderLinksPartial",
         new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(),
@@ -71,7 +71,7 @@
     )
 }
 
-<h2>Subiect: @Model.TopicTitle</h2>
+<h3>Subiect: @Model.TopicTitle</h3>
 <span class="Caption">@Model.PostCount mesaj@(Model.PostCount == 1 ? "" : "e"), @Model.ViewCount vizualiz@(Model.ViewCount == 1 ? "are" : "ări").</span>
 
 @await Html.PartialAsync("_RulesPartial", new CustomPartials._RulesPartialModel(_renderingService, _utils, Model.ForumRules, Model.ForumRulesUid, Model.ForumRulesLink), ViewData)
@@ -241,18 +241,27 @@
 
         if (!isFirst && !previousIsUnread && !post.Unread)
         {
-            <hr />
+            <hr class="BoxSeparator" style="margin-top: 0px"/>
         }
 
         previousIsUnread = post.Unread;
         var titleClass = post.Unread ? "UnreadTitle" : "";
         <div class="RowMargin @rowClass" style="max-width:100%; overflow-wrap: break-word">
-            <div class="FlexRow" style="max-width:100%; overflow-wrap: break-word">
-                @await Html.PartialAsync(
-                    "_SummaryPartial",
-                    new CustomPartials._SummaryPartialModel(post.AuthorId, post.AuthorName, post.AuthorColor, post.PostCreationTime, post.PostId.Value,
-                        UserDateFormat, post.AuthorHasAvatar, post.AuthorRank, null, null, null, true, false, null, null, null, mpText)
-                )
+            <div class="FlexRow" style="max-width:100%; overflow-wrap: break-word; padding-bottom: 0px">
+                @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
+                {
+                    AuthorId = post.AuthorId,
+                    AuthorName = post.AuthorName,
+                    AuthorColor = post.AuthorColor,
+                    CreationTime = post.PostCreationTime,
+                    AssetId = post.PostId.Value,
+                    DateFormat = UserDateFormat,
+                    ShowAvatar = post.AuthorHasAvatar,
+                    AuthorRank = post.AuthorRank,
+                    Left = true,
+                    ShowAsLast = false,
+                    PMLink = mpText
+                })
                 <div class="ForumContent VerticalContent FlexRight" id="@post.PostId" style="max-width:100%; overflow-wrap: break-word">
                     <span style="display:flex">
                         <span class="PostTitle">
@@ -281,10 +290,10 @@
                     @if (!(CurrentUser.Foes?.Contains(originalPosterId) ?? false))
                     {
                         <div class="PostFooter">
-                            @if (!IsAnonymous || post.LastEditTime > 0)
+                            @*@if (!IsAnonymous || post.LastEditTime > 0)
                             {
                                 <hr class="SubtypeSeparator" />
-                            }
+                            }*@
                             @if (index < Model.Posts.Count - 1 && post.LastEditTime > Model.Posts[index + 1].PostTime)
                             {
                                 <div class="Caption" style="color:#495d6c">
@@ -372,7 +381,7 @@
     }
     if (!previousIsUnread)
     {
-        <hr />
+        <hr class="BoxSeparator" style="margin-top: 0px" />
     }
 
     if (useModActions)
@@ -389,7 +398,7 @@
 }
 @if ((!Model.IsLocked || IsMod || IsAdmin) && !IsAnonymous)
 {
-    <button onclick="location.href='/Posting?forumId=@Model.ForumId&topicId=@Model.TopicId&pageNum=@Model.PageNum&handler=forumPost'" type="button">
+    <button onclick="location.href='/Posting?forumId=@Model.ForumId&topicId=@Model.TopicId&pageNum=@Model.PageNum&handler=forumPost'" type="button" class="MyButton">
 
         @if (Model.IsLocked)
         {
@@ -397,13 +406,13 @@
         }
         else
         {
-            <span>&#x1F4DD;Scrie un mesaj nou</span>
+            <span>&#x1F4DD;&nbsp;Scrie un mesaj nou</span>
         }
     </button>
 }
 else if (!IsAnonymous)
 {
-    <button type="button" disabled>&#x1F512; Subiect închis</button>
+    <button type="button" disabled class="MyButton">&#x1F512; Subiect închis</button>
 }
 <p></p>
 @await Html.PartialAsync(
@@ -421,11 +430,11 @@ else if (!IsAnonymous)
 )
 @if (Model.Paginator.Pagination.HasPages)
 {
-    <hr />
+    <hr class="BoxSeparator" />
 }
 
 @*shortcuts*@
-<div style="clear:both">
+<div style="clear:both; margin: 10px 0px 10px 0px">
     <a href="/" class="nowrap">Prima pagină</a>
     <span class="bullet">&nbsp;&bull;&nbsp;</span>
     <div class="newline"></div>
@@ -453,61 +462,64 @@ else if (!IsAnonymous)
     <p></p>
     <form action="/ViewForum">
         <input type="hidden" name="ForumId" id="ForumIdInput" />
-        <input type="submit" value="Du-te" />
+        <input type="submit" value="Du-te" class="MyButton" />
     </form>
 </div>
 
 @*moderator menu*@
 @if (IsMod)
 {
-    <hr />
-    <form method="post" asp-page-handler="TopicModerator">
-        <span>Moderează subiectul: </span>
-        @Html.DropDownList("TopicAction", _utils.EnumToDropDownList<ModeratorTopicActions>(Model.TopicAction, Model.MapModeratorTopicActions), new { onchange = "vt.showTopicExtraInput(this)", id = "TopicAction" })
-        <div id="extraInputTopic" style="display:@(Model.ShowTopic ? "block" : "none")">
+    <hr class="BoxSeparator" />
+    <p>
+        <form method="post" asp-page-handler="TopicModerator">
+            <span>Moderează subiectul: </span>
+            @Html.DropDownList("TopicAction", _utils.EnumToDropDownList<ModeratorTopicActions>(Model.TopicAction, Model.MapModeratorTopicActions), new { onchange = "vt.showTopicExtraInput(this)", id = "TopicAction", style = "max-width:70%; height: 26px" })
+            <div id="extraInputTopic" style="display:@(Model.ShowTopic ? "block" : "none")">
+                <br />
+                <input type="text" asp-for="DestinationForumId" placeholder="ID forum destinație" /><br />
+                <a href="javascript:$('#modConfirmation').submit();">
+                    Alege id-ul forumului de destinație
+                </a>
+                <span asp-validation-for="DestinationForumId" class="validation"></span>
+            </div>
+            <input type="submit" value="Trimite" onclick="return vt.confirmAction('#TopicAction');" class="MyButton" />
+            <input asp-for="ForumId" type="hidden" />
+            <input asp-for="TopicId" type="hidden" />
+            <input asp-for="PageNum" type="hidden" />
+            @Html.AntiForgeryToken()
+        </form>
+    </p>
+    <p>
+        <form id="moderatorForm" method="post" asp-page-handler="PostModerator">
+            <span>Moderează mesajele selectate: </span>
+            @Html.DropDownList("PostAction", _utils.EnumToDropDownList<ModeratorPostActions>(Model.PostAction, Model.MapModeratorPostActions), new { onchange = "vt.showPostExtraInput(this)", id = "PostAction", style = "max-width:70%; height: 26px" })
+            <div id="extraInputPostForum" style="display:@(Model.ShowPostForum ? "block" : "none")">
+                <br />
+                <input type="text" asp-for="DestinationForumId" placeholder="ID forum destinație" /><br />
+                <a href="javascript:$('#modConfirmation').submit();">
+                    Alege id-ul forumului de destinație
+                </a>
+                <span asp-validation-for="PostIdsForModerator" class="validation"></span>
+                <span asp-validation-for="DestinationForumId" class="validation"></span>
+            </div>
+            <div id="extraInputPostTopic" style="display:@(Model.ShowPostTopic ? "block" : "none")">
+                <br />
+                <input type="text" asp-for="DestinationTopicId" placeholder="ID subiect destinație" /><br />
+                <a href="javascript:$('#modConfirmation').submit();">
+                    Alege id-ul subiectului de destinație
+                </a>
+                <span asp-validation-for="PostIdsForModerator" class="validation"></span>
+                <span asp-validation-for="DestinationTopicId" class="validation"></span>
+            </div>
+            <input type="submit" value="Trimite" onclick="return vt.confirmAction('#PostAction');" class="MyButton" />
             <br />
-            <input type="text" asp-for="DestinationForumId" placeholder="ID forum destinație" /><br />
-            <a href="javascript:$('#modConfirmation').submit();">
-                Alege id-ul forumului de destinație
-            </a>
-            <span asp-validation-for="DestinationForumId" class="validation"></span>
-        </div>
-        <input type="submit" value="Trimite" onclick="return vt.confirmAction('#TopicAction');" />
-        <input asp-for="ForumId" type="hidden" />
-        <input asp-for="TopicId" type="hidden" />
-        <input asp-for="PageNum" type="hidden" />
-        @Html.AntiForgeryToken()
-    </form>
-    <form id="moderatorForm" method="post" asp-page-handler="PostModerator">
-        <br />
-        <span>Moderează mesajele selectate: </span>
-        @Html.DropDownList("PostAction", _utils.EnumToDropDownList<ModeratorPostActions>(Model.PostAction, Model.MapModeratorPostActions), new { onchange = "vt.showPostExtraInput(this)", id = "PostAction" })
-        <div id="extraInputPostForum" style="display:@(Model.ShowPostForum ? "block" : "none")">
-            <br />
-            <input type="text" asp-for="DestinationForumId" placeholder="ID forum destinație" /><br />
-            <a href="javascript:$('#modConfirmation').submit();">
-                Alege id-ul forumului de destinație
-            </a>
-            <span asp-validation-for="PostIdsForModerator" class="validation"></span>
-            <span asp-validation-for="DestinationForumId" class="validation"></span>
-        </div>
-        <div id="extraInputPostTopic" style="display:@(Model.ShowPostTopic ? "block" : "none")">
-            <br />
-            <input type="text" asp-for="DestinationTopicId" placeholder="ID subiect destinație" /><br />
-            <a href="javascript:$('#modConfirmation').submit();">
-                Alege id-ul subiectului de destinație
-            </a>
-            <span asp-validation-for="PostIdsForModerator" class="validation"></span>
-            <span asp-validation-for="DestinationTopicId" class="validation"></span>
-        </div>
-        <input type="submit" value="Trimite" onclick="return vt.confirmAction('#PostAction');" />
-        <br />
-        <input asp-for="ForumId" type="hidden" />
-        <input asp-for="TopicId" type="hidden" />
-        <input asp-for="PageNum" type="hidden" />
-        <input asp-for="ClosestPostId" type="hidden" id="closestPostId" />
-        @Html.AntiForgeryToken()
-    </form>
+            <input asp-for="ForumId" type="hidden" />
+            <input asp-for="TopicId" type="hidden" />
+            <input asp-for="PageNum" type="hidden" />
+            <input asp-for="ClosestPostId" type="hidden" id="closestPostId" />
+            @Html.AntiForgeryToken()
+        </form>
+    </p>
     <form id="modConfirmation" asp-page="Confirm" method="get">
         <input type="hidden" asp-for="ForumId" />
         <input type="hidden" asp-for="TopicId" />
@@ -571,7 +583,7 @@ else if (!IsAnonymous)
         <input type="hidden" asp-for="PageNum" />
         <input type="hidden" asp-for="PostId" />
         <input type="hidden" name="ReportId" id="reportId" />
-        <input type="submit" onclick="return vt.validateReportForm();" value="Trimite" />&nbsp;<span class="validation" id="reportValidation" style="display:none"></span>
+        <input type="submit" onclick="return vt.validateReportForm();" value="Trimite" class="MyButton" />&nbsp;<span class="validation" id="reportValidation" style="display:none"></span>
         @Html.AntiForgeryToken()
     </form>
 
@@ -615,7 +627,7 @@ else if (!IsAnonymous)
                 <br />
                 @Html.CheckBox("redirectToEdit", new { id = "reportViewerEditMessage" }) &nbsp; Modifică mesajul<br />
                 @Html.CheckBox("deletePost", new { id = "reportViewerDeleteMessage" }) &nbsp; Șterge mesajul<br /><br />
-                <input type="submit" value="Închide raport" onclick="vt.confirmDeleteReportedPost()" />
+                <input type="submit" value="Închide raport" onclick="vt.confirmDeleteReportedPost()" class="MyButton" />
                 @Html.AntiForgeryToken()
             </form>
         }

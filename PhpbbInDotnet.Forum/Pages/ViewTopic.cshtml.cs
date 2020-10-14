@@ -153,7 +153,27 @@ namespace PhpbbInDotnet.Forum.Pages
                     "SELECT * FROM phpbb_users WHERE user_id IN @editors; " +
                     "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @posts ORDER BY attach_id; " +
                     "SELECT * FROM phpbb_reports WHERE report_closed = 0 AND post_id IN @posts; " +
-                    "SELECT r.* FROM phpbb_ranks r JOIN phpbb_users u on u.user_rank = r.rank_id WHERE u.user_id IN @authors;",
+                    @"WITH usr AS (
+	                    SELECT user_rank
+                            FROM phpbb_users
+	                        WHERE user_id IN @authors
+                    ), grp AS (
+	                    SELECT g.group_rank
+                            FROM phpbb_groups g
+                            JOIN phpbb_users u ON g.group_id = u.group_id
+	                        WHERE u.user_id IN @authors
+                    ), all_ids AS (
+	                    SELECT user_rank as rank_id
+                            FROM usr
+      
+	                        UNION
+     
+                            SELECT group_rank as rank_id
+                            FROM grp
+                    )
+                    SELECT r.* 
+                    FROM phpbb_ranks r 
+                    JOIN all_ids ids on ids.rank_id = r.rank_id",
                     new
                     {
                         authors = Posts.Select(p => p.PosterId).DefaultIfEmpty(),

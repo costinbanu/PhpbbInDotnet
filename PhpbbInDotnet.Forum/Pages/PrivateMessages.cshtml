@@ -28,19 +28,13 @@
         }
     }
 </style>
-@if (!CurrentUser.IsAnonymous)
-{
-    @await Html.PartialAsync(
-        "_HeaderLinksPartial",
-        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(),
-        ViewData
-    )
-}
-<p style="clear:both"></p>
-<h2 style="float: left; margin-top: 0px">Mesaje private</h2>
-<span style="line-height:33px">
+
+<h3 style="float: left; margin-top: 0px">Mesaje private</h3>
+<span>
     &nbsp;&bull;&nbsp;
-    <button onclick="location.href = '/Posting?handler=PrivateMessage'" style="line-height:21px; margin-top: 6px;">Scrie un mesaj privat nou</button>
+    <button onclick="location.href = '/Posting?handler=PrivateMessage'" style="height: 26px; padding-top: 1px; padding-bottom: 1px" class="MyButton">
+        &#x1F4DD;&nbsp;Scrie un mesaj privat nou
+    </button>
 </span>
 <p style="clear:both"></p>
 <div class="tab">
@@ -88,11 +82,16 @@
                     </span>
                     <br />
                 </span>
-                @await Html.PartialAsync(
-                             "_SummaryPartial",
-                             new CustomPartials._SummaryPartialModel(msg.OthersId, msg.OthersName, msg.OthersColor, msg.Time, msg.MessageId,
-                                 UserDateFormat, false, null, null, null, null, false, false, null, null, "De la: ")
-                         )
+                @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
+                {
+                    AuthorId = msg.OthersId,
+                    AuthorName = msg.OthersName,
+                    AuthorColor = msg.OthersColor,
+                    CreationTime = msg.Time,
+                    AssetId = msg.MessageId,
+                    DateFormat = UserDateFormat,
+                    AuthorTag = "De la: "
+                })
             </div>
             isFirst = false;
         }
@@ -109,7 +108,7 @@
             <a href="javascript:selectAll()">Selectează toate mesajele</a>
             <p></p>
             <form asp-page-handler="MarkAsRead" method="post" id="MarkAsRead" name="MarkAsRead">
-                <input type="submit" value="Marchează mesajele selectate ca citite" onclick="return confirm('Sigur dorești să marchezi ca citite mesajele selectate?');" />
+                <input type="submit" value="Marchează mesajele selectate ca citite" onclick="return confirm('Sigur dorești să marchezi ca citite mesajele selectate?');" class="MyButton" />
             </form>
         }
     }
@@ -153,11 +152,16 @@
                     </span>
                     <br />
                 </span>
-                @await Html.PartialAsync(
-                             "_SummaryPartial",
-                             new CustomPartials._SummaryPartialModel(msg.OthersId, msg.OthersName, msg.OthersColor, msg.Time, msg.MessageId,
-                                 UserDateFormat, false, null, null, null, null, false, false, null, null, "Pentru: ")
-                         )
+                @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
+                {
+                    AuthorId = msg.OthersId,
+                    AuthorName = msg.OthersName,
+                    AuthorColor = msg.OthersColor,
+                    CreationTime = msg.Time,
+                    AssetId = msg.MessageId,
+                    DateFormat = UserDateFormat,
+                    AuthorTag = "Pentru: "
+                })
             </div>
             isFirst = false;
         }
@@ -174,12 +178,18 @@
     <div id="Message" class="tabcontent" style="@(Model.Show == PrivateMessagesPages.Message ? "display:inherit" : "display:none")">
         <div class="RowMargin">
             <div class="FlexRow">
-                @await Html.PartialAsync(
-                     "_SummaryPartial",
-                     new CustomPartials._SummaryPartialModel(Model.SelectedMessage.OthersId, Model.SelectedMessage.OthersName, Model.SelectedMessage.OthersColor,
-                         Model.SelectedMessage.Time, fakeId, UserDateFormat, Model.SelectedMessage.OtherHasAvatar, null, null, null, null, true, false, null, null,
-                         Model.SelectedMessageIsMine ? "Pentru: " : "De la: ")
-                 )
+                @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
+                {
+                    AuthorId = Model.SelectedMessage.OthersId,
+                    AuthorName = Model.SelectedMessage.OthersName,
+                    AuthorColor = Model.SelectedMessage.OthersColor,
+                    CreationTime = Model.SelectedMessage.Time,
+                    AssetId = fakeId,
+                    DateFormat = UserDateFormat,
+                    ShowAvatar = Model.SelectedMessage.OtherHasAvatar,
+                    Left = true,
+                    AuthorTag = Model.SelectedMessageIsMine ? "Pentru: " : "De la: "
+                })
                 <div class="ForumContent VerticalContent FlexRight" id="@fakeId">
                     <span style="display:flex">
                         <span class="PostTitle">

@@ -6,7 +6,7 @@ namespace PhpbbInDotnet.DTOs
 {
     public class ForumTree
     {
-        private string _children, _topics;
+        private string _children;
 
         public int ForumId { get; set; }
 
@@ -53,21 +53,13 @@ namespace PhpbbInDotnet.DTOs
             }
         }
 
-        public string Topics 
-        {
-            get => _topics;
-            set
-            {
-                _topics = value;
-                TopicsList = _topics.ToIntHashSet();
-            }
-        }
-
         public List<int> PathList { get; set; }
 
         public HashSet<int> ChildrenList { get; private set; }
 
-        public HashSet<int> TopicsList { get; private set; }
+        public int TotalTopicCount { get; set; }
+
+        public int TotalSubforumCount { get; set; }
 
         public override bool Equals(object obj)
             => obj != null && obj is ForumTree tree && ForumId == tree?.ForumId;

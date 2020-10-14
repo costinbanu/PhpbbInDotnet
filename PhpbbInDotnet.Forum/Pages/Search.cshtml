@@ -30,7 +30,7 @@
 </environment>
 @if (!Model.IsAuthorSearch)
 {
-    <h2>Caută</h2>
+    <h3>Caută</h3>
 }
 <script type="text/javascript">
     window.onload = function () {
@@ -120,14 +120,14 @@ else
     var user = await connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @authorId", new { Model.AuthorId });
     if (!string.IsNullOrWhiteSpace(user?.Username))
     {
-        <h3>Mesaje scrise de @System.Web.HttpUtility.HtmlDecode(user.Username)</h3>
+        <h4>Mesaje scrise de @System.Web.HttpUtility.HtmlDecode(user.Username)</h4>
     }
 }
 @if (Model.Posts != null && Model.Posts.Any())
 {
     if (!Model.IsAuthorSearch)
     {
-        <h2>Rezultate</h2>
+        <h3>Rezultate</h3>
     }
     @await Html.PartialAsync(
         "_PaginationControlsPartial",
@@ -159,13 +159,20 @@ else
         await _renderingService.ProcessPost(post, Model.PageContext, Model.HttpContext, false, Model.SearchText);
 
         <div class="RowMargin FlexRow">
-            @await Html.PartialAsync(
-                "_SummaryPartial",
-                new CustomPartials._SummaryPartialModel(post.AuthorId, post.AuthorName, post.AuthorColor, post.PostCreationTime, post.PostId.Value, dateFormat,
-                    post.AuthorHasAvatar, post.AuthorRank, null, null, null, true, false, null, null, null,
-                    _userService.HasPrivateMessagePermissions(CurrentUser) ? $"<a href=\"./Posting?handler=PrivateMessage&postId={post.PostId}\">&#x1F5E8; Mesaj privat</a>" : null
-                )
-            )
+            @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
+            {
+                AuthorId = post.AuthorId,
+                AuthorName = post.AuthorName,
+                AuthorColor = post.AuthorColor,
+                CreationTime = post.PostCreationTime,
+                AssetId = post.PostId.Value,
+                DateFormat = dateFormat,
+                ShowAvatar = post.AuthorHasAvatar,
+                AuthorRank = post.AuthorRank,
+                Left = true,
+                ShowAsLast = false,
+                PMLink = _userService.HasPrivateMessagePermissions(CurrentUser) ? $"<a href=\"./Posting?handler=PrivateMessage&postId={post.PostId}\">&#x1F5E8; Mesaj privat</a>" : null
+            })
             <div class="ForumContent" id="@post.PostId">
                 <div class="Caption" style="clear:both">
                     @Html.Raw(_forumService.GetPathText((await Model.GetForumTree()).Tree, post.ForumId))

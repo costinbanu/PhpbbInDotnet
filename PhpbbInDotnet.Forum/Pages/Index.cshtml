@@ -11,14 +11,16 @@
     }
 }
 
-<a href="javascript:toggleHeaderLinks('metrouusorLinks', 'headerLinks');" id="metrouusorLinksButton" style="padding-right: 10px; padding-left: 10px; padding-bottom: 10px">Site-urile „Metrou Ușor”</a>
+<span onclick="toggleHeaderLinks('metrouusorLinks', 'headerLinks');" id="metrouusorLinksButton" class="MyButton MyMiniButton" style="line-height:1.1em">
+    &#x1F310;&nbsp;Site-urile „Metrou Ușor”
+</span>
 
 @if (!CurrentUser.IsAnonymous)
 {
-    <span>&bull;</span>
+    <span>&nbsp;&bull;&nbsp;</span>
     @await Html.PartialAsync(
         "_HeaderLinksPartial",
-        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel("<a href=\"javascript:MarkForumsRead.submit()\">Marchează forumurile ca citite</a>"),
+        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(true, "<a href=\"javascript:MarkForumsRead.submit()\">Marchează forumurile ca citite</a>"),
         ViewData
     )
     <form asp-page-handler="MarkForumsRead" method="post" name="MarkForumsRead">
@@ -27,31 +29,31 @@
 }
 <ul class="Shortcuts" style="display:none" id="metrouusorLinks">
     <li>
-        <span>&nbsp; &nbsp; </span>
+        <span> &nbsp;</span>
         <a href="https://metrouusor.com" target="_blank">Asociația „Metrou Ușor”</a>
     </li>
     <li>
-        <span>&nbsp; &nbsp; </span>
+        <span> &nbsp;</span>
         <a href="https://www.facebook.com/MetrouUsor/" target="_blank">Facebook</a>
     </li>
     <li>
-        <span>&nbsp; &nbsp; </span>
+        <span> &nbsp;</span>
         <a href="https://youtube.com/channel/UCczAlitk6NaUjQsbtCSdEjA" target="_blank">YouTube</a>
     </li>
     <li>
-        <span>&nbsp; &nbsp; </span>
+        <span> &nbsp;</span>
         <a href="https://campaniamea.declic.ro/petitions/petitie-pentru-infiintarea-muzeului-transportului-bucurestean" target="_blank">Inițiativa pentru Muzeul transportului bucureștean</a>
     </li>
     <li>
-        <span>&nbsp; &nbsp; </span>
+        <span> &nbsp;</span>
         <a href="https://metrouusor.com/Content/implica-te/directioneaza-2-din-impozit.html" target="_blank">2% pentru Asociația „Metrou Ușor”</a>
     </li>
     <li>
-        <span>&nbsp; &nbsp; </span>
+        <span> &nbsp;</span>
         <a href="./ViewTopic?topicId=5252&pageNum=1">Sugestii sau reclamații pentru noul forum</a>
     </li>
     <li>
-        <span>&nbsp; &nbsp; </span>
+        <span> &nbsp;</span>
         <a href="https://forum.metrouusor.com">Înapoi la vechiul forum</a>
     </li>
 </ul>

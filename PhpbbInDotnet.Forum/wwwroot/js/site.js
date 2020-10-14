@@ -107,27 +107,26 @@ function toggleHeaderLinks(curId, otherId) {
     var cur = $('#' + curId);
     var curButton = $('#' + curId + 'Button');
     var otherButton = $('#' + otherId + 'Button');
-    var highlightedCss = {
-        'background-color': '#ededed',
-        //'padding': '10px 10px'
-    };
-    var unsetCss = {
-        'background-color': 'unset',
-        //'padding': 'unset'
-    };
-    if (other && other.is(':visible') && !cur.is(':visible')) {
-        showElement(otherId);
-        other.css(unsetCss);
-        otherButton.css(unsetCss);
+    if (other.length && other.is(':visible') && !cur.is(':visible')) {
+        showElement(
+            otherId,
+            function () {
+                otherButton.css('font-weight', 'normal');
+            },
+            null
+        );
     }
-    if (cur.is(':visible')) {
-        cur.css(unsetCss);
-        curButton.css(unsetCss);
-    }
-    else {
-
-        cur.css(highlightedCss);
-        curButton.css(highlightedCss);
-    }
-    showElement(curId);
+    showElement(
+        curId,
+        function () {
+            if (otherButton.length) {
+                curButton.css('font-weight', 'normal');
+            }
+        },
+        function () {
+            if (otherButton.length) {
+                curButton.css('font-weight', 'bold');
+            }
+        }
+    );
 }
