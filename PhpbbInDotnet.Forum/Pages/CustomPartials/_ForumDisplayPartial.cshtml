@@ -16,7 +16,6 @@
 @{
     var categoriesShown = false;
     bool isFirst;
-    bool previousIsUnread = false;
     foreach (var category in Model.Categories)
     {
         if (category.IsRestricted)
@@ -30,7 +29,6 @@
 
         var children = Model.GetChildrenForums(category.ForumId).OrderBy(f => f.LeftId);
         isFirst = true;
-        previousIsUnread = false;
         @foreach (var forum in children)
         {
             if (forum.IsRestricted)
@@ -44,7 +42,7 @@
                 isUnread = await _forumService.IsForumUnread(forum.ForumId, Model.LoggedUser);
             }
 
-            if (!isFirst && !previousIsUnread && !isUnread)
+            if (!isFirst)
             {
                 <hr class="BoxSeparator" />
             }
@@ -56,8 +54,7 @@
                 forum.ForumLastPosterId = 1;
             }
 
-            previousIsUnread = isUnread;
-            var divClass = isUnread ? "FlexRow Unread RowMargin" : "FlexRow RowMargin";
+            var divClass = "FlexRow RowMargin";
             var titleClass = isUnread ? "nav-link UnreadTitle" : "nav-link";
             <div class="@divClass">
                 <span class="ForumContent">
@@ -88,7 +85,7 @@
 
     @if (Model.ShowTitle && Model.SubForums.Any(x => !x.IsRestricted))
     {
-        @if (categoriesShown && !previousIsUnread)
+        @if (categoriesShown)
         {
             <hr class="BoxSeparator" />
             <p>&nbsp;</p>
@@ -97,7 +94,6 @@
     }
 
     isFirst = true;
-    previousIsUnread = false;
     @foreach (var forum in Model.SubForums)
     {
         if (forum.IsRestricted)
@@ -111,7 +107,7 @@
             isUnread = await _forumService.IsForumUnread(forum.ForumId, Model.LoggedUser);
         }
 
-        if (!isFirst && !previousIsUnread && !isUnread)
+        if (!isFirst)
         {
             <hr class="BoxSeparator" />
         }
@@ -123,8 +119,7 @@
             forum.ForumLastPosterId = 1;
         }
 
-        previousIsUnread = isUnread;
-        var divClass = isUnread ? "FlexRow Unread RowMargin" : "FlexRow RowMargin";
+        var divClass = "FlexRow RowMargin";
         var titleClass = isUnread ? "nav-link UnreadTitle" : "nav-link";
         <div class="@divClass">
             <span class="ForumContent">
@@ -150,7 +145,7 @@
         isFirst = false;
     }
 
-    if (Model.ShowLastSeparator && !previousIsUnread)
+    if (Model.ShowLastSeparator)
     {
         <hr class="BoxSeparator" />
     }

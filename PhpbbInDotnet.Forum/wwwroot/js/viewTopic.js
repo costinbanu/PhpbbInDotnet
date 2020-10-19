@@ -1,7 +1,6 @@
 ﻿class ViewTopic {
-    constructor(postId, highlight, scrollToModPanel, moveTopic, moveSelectedPosts, splitSelectedPosts, otherReportReasonId) {
+    constructor(postId, scrollToModPanel, moveTopic, moveSelectedPosts, splitSelectedPosts, otherReportReasonId) {
         this.postId = postId;
-        this.highlight = highlight;
         this.scrollToModPanel = scrollToModPanel;
         this.moveTopic = moveTopic;
         this.moveSelectedPosts = moveSelectedPosts;
@@ -14,10 +13,6 @@
             var element = $("#" + this.postId);
             var elementTop = element.offset().top;
             window.scrollTo(0, elementTop - 20);
-            var container = element.parent().parent();
-            if (container && this.highlight) {
-                container.addClass("Highlight");
-            }
         }
         if (this.scrollToModPanel) {
             document.getElementById('moderatorForm').scrollIntoView();
@@ -83,8 +78,13 @@
         return true;
     }
 
-    showMessageDetails(ip) {
-        $('#postInfoContent').html('<b>IP:</b> ' + ip);
+    showMessageDetails(ip, editTime, timeFormat, editCount, editUser) {
+        var content = '<b>IP:</b> ' + ip + '<br/>';
+        if (editCount > 0) {
+            content = content + '<b>Modificat ultima dată:</b> ' + new Date(editTime).format(timeFormat) + ', <b>de către</b> ' + editUser + '<br /> ' +
+                '<b>Total modificări:</b> ' + editCount + '<br/>';
+        }
+        $('#postInfoContent').html(content);
         showElement('postInfo', null, null, true);
     }
 

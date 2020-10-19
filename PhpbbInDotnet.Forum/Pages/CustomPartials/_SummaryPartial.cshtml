@@ -36,11 +36,6 @@
             var color = $"#{(string.IsNullOrWhiteSpace(Model.AuthorColor) ? "000000" : Model.AuthorColor)}";
             <a asp-page="/User" asp-route-UserId="@Model.AuthorId" style="color:@color;font-weight:bold">@Html.Raw(Model.AuthorName)</a>
         }
-        @*@if (!string.IsNullOrWhiteSpace(Model.LinkHref) && !string.IsNullOrWhiteSpace(Model.LinkText) && !Model.ShowAsLast)
-        {
-            <span>&nbsp;</span>
-            <a href="@Model.LinkHref" style="text-decoration:none" title="@(Model.LinkTooltip)">@Html.Raw(Model.LinkText)</a>
-        }*@
     </li>
     <li>
         @if (!string.IsNullOrWhiteSpace(Model.AuthorRank))
@@ -70,6 +65,12 @@
     {
         <li>
             @Html.Raw(Model.PMLink)
+        </li>
+    }
+    @if (!Model.ShowAsLast)
+    {
+        <li class="Hide768">
+            <p>&nbsp;</p>
         </li>
     }
 </ul>

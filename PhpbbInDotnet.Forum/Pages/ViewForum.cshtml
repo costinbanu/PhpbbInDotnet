@@ -154,7 +154,6 @@ else
             ViewData
         );
     }
-    var previousIsUnread = false;
     var isFirstTopicType = true;
     foreach (var topicGroup in Model.Topics)
     {
@@ -171,7 +170,7 @@ else
                     break;
                 case TopicType.Important when !topicsDisplayed:
                 case TopicType.Normal when !topicsDisplayed:
-                    if (!isFirstTopicType && !previousIsUnread)
+                    if (!isFirstTopicType)
                     {
                         <hr class="BoxSeparator" />
                     }
@@ -197,13 +196,12 @@ else
                 topic.Pagination = new DTOs.PaginationDto($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", topic.PostCount ?? 0, pageSize, 1, "PageNum");
             }
 
-            if (!isFirstInGroup && !previousIsUnread && !topic.Unread)
+            if (!isFirstInGroup)
             {
                 <hr class="BoxSeparator" />
             }
 
-            previousIsUnread = topic.Unread;
-            var divClass = topic.Unread ? "FlexRow Unread RowMargin" : "FlexRow RowMargin";
+            var divClass = "FlexRow RowMargin";
             <div class="@divClass">
                 @if (Model.Mode == ViewForumMode.Drafts)
                 {
@@ -290,7 +288,6 @@ else
 
     if (Model.Mode == ViewForumMode.Drafts && hasTopics)
     {
-        <hr />
         <script>
             function selectAll() {
                 var checkboxes = $('input[type=checkbox]');
@@ -336,6 +333,12 @@ else if (Model.Mode == ViewForumMode.Drafts)
     <h4>Nu ai nici un mesaj în lucru.</h4>
     <p>&nbsp;</p>
 }
+
+@if (hasTopics)
+{
+    <hr class="BoxSeparator" />
+}
+
 @if (!IsAnonymous && Model.Mode == ViewForumMode.Forum)
 {
     <p></p>
@@ -344,8 +347,7 @@ else if (Model.Mode == ViewForumMode.Drafts)
     </button>
 }
 
-<p></p>
-<div style="clear:both">
+<div style="clear:both; margin: 10px 0px 10px 0px">
     @if (hasSubForums || hasTopics)
     {
         <a href="/" class="nowrap">Prima pagină</a>

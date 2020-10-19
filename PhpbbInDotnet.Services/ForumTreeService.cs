@@ -55,7 +55,7 @@ namespace PhpbbInDotnet.Services
             _tree = (await multi.ReadAsync<ForumTree>()).ToHashSet();
             _forumTopicCount = (await multi.ReadAsync<ForumTopicCount>()).ToHashSet();
 
-            void dfs(int forumId)
+            void traverse(int forumId)
             {
                 var node = GetTreeNode(_tree, forumId);
                 if (node == null)
@@ -80,7 +80,7 @@ namespace PhpbbInDotnet.Services
                         childForum.PathList.Add(childForumId);
                         childForum.Level = node.Level + 1;
 
-                        dfs(childForumId);
+                        traverse(childForumId);
 
                         node.TotalSubforumCount += childForum.TotalSubforumCount;
                         node.TotalTopicCount += childForum.TotalTopicCount;
@@ -98,7 +98,7 @@ namespace PhpbbInDotnet.Services
                 }
             }
 
-            dfs(0);
+            traverse(0);
 
             return _tree;
         }

@@ -180,7 +180,7 @@ namespace PhpbbInDotnet.Services
                 return forumId;
             }
 
-            void dfs(int cur)
+            void traverse(int cur)
             {
                 if (!tree.TryGetValue(new ForumTree { ForumId = cur }, out var node))
                 {
@@ -199,11 +199,11 @@ namespace PhpbbInDotnet.Services
 
                 foreach (var child in node.ChildrenList?.OrderBy(getOrder) ?? Enumerable.Empty<int>())
                 {
-                    dfs(child);
+                    traverse(child);
                 }
             }
 
-            dfs(0);
+            traverse(0);
             return list;
         }
 
