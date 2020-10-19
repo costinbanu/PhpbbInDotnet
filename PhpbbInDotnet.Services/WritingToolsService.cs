@@ -18,11 +18,13 @@ namespace PhpbbInDotnet.Services
     {
         private readonly ForumDbContext _context;
         private readonly StorageService _storageService;
+        private readonly CommonUtils _utils;
 
-        public WritingToolsService(ForumDbContext context, StorageService storageService)
+        public WritingToolsService(ForumDbContext context, StorageService storageService, CommonUtils utils)
         {
             _context = context;
             _storageService = storageService;
+            _utils = utils;
         }
 
         public async Task<IEnumerable<PhpbbWords>> GetBannedWordsAsync()
@@ -181,7 +183,7 @@ namespace PhpbbInDotnet.Services
             }
 
             var noSmileys = replace(noUid, "<!-- s(:?.+?) -->.+?<!-- s:?.+?:? -->", 1);
-            var noLinks = replace(noSmileys, @"<!-- m --><a\s+(?:[^>]*?\s+)?href=([""'])(.*?)\1.+?<!-- m -->", 2);
+            var noLinks = replace(noSmileys, @"<a\s+(?:[^>]*?\s+)?href=([""'])(.*?)\1.+?</a>", 2);
             var noComments = replace(noLinks, @"<!-- .*? -->", 1);
 
             return noComments;

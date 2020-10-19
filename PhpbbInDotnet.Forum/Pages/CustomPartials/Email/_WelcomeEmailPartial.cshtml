@@ -4,12 +4,12 @@
 @inject CommonUtils _utils
 @inject IConfiguration _config
 
-<h2>@Model.Subject</h2>
+<h3>@Model.Subject</h3>
 <p>
     Pentru a continua, trebuie să îți confirmi adresa de email.<br />
     <a href="@(_config.GetValue<string>("BaseUrl"))/Confirm?code=@Model.RegistrationCode&username=@_utils.CleanString(Model.UserName)&handler=ConfirmEmail">Apasă aici</a> pentru a o confirma.
 </p>
-<p style="font-size:0.7em">
+<p style="font-size:0.85em">
     Ai primit acest mesaj deoarece această adresă de e-mail a fost folosită pentru a înregistra contul '@Model.UserName' pe <a href="@(_config.GetValue<string>("BaseUrl"))">@(_config.GetValue<string>("ForumName"))</a>.<br />
     Dacă această solicitare de înregistrare nu îți aparține, te rugăm să răspunzi imediat la acest mesaj (reply) și să semnalezi problema. Cineva din echipa administrativă va răspunde în cel mai scurt timp.
 </p>

@@ -188,7 +188,7 @@ namespace PhpbbInDotnet.Forum.Pages
                             Code = resetKey,
                             IV = iv,
                             UserId = user.UserId,
-                            UserName = UserName
+                            UserName = user.Username
                         },
                         PageContext,
                         HttpContext
