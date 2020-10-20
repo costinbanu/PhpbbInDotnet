@@ -5,8 +5,8 @@
 @using Microsoft.EntityFrameworkCore
 @using Dapper 
 @using PhpbbInDotnet.Utilities
-@using PhpbbInDotnet.DTOs
 @using PhpbbInDotnet.Database.Entities
+@using PhpbbInDotnet.Objects
 
 @inject Services.UserService _userService
 @inject CommonUtils _utils
@@ -69,7 +69,7 @@
         ViewData
     )
 }
-
+<p>&nbsp;</p>
 <h3>Subiect: @Model.TopicTitle</h3>
 <span class="Caption">@Model.PostCount mesaj@(Model.PostCount == 1 ? "" : "e"), @Model.ViewCount vizualiz@(Model.ViewCount == 1 ? "are" : "ări").</span>
 
@@ -170,14 +170,14 @@
     {
         var ju = Model.Users?.FirstOrDefault(u => u.UserId == p.PosterId);
         var joinedAttachments = Model.Attachments?.Where(a => a.PostMsgId == p.PostId);
-        var jr = Model.Ranks?.FirstOrDefault(r => ju.UserRank == r.RankId);
+        var jr = Model.Ranks?.FirstOrDefault(r => ju.UserId == r.UserId);
         var lastEditUser = Model.LastEditUsers?.FirstOrDefault(u => u.UserId == p.PostEditUser);
         var lastEditUsername = lastEditUser == null ? "Anonymous" : lastEditUser.Username;
         var report = Model.Reports?.FirstOrDefault(r => r.PostId == p.PostId);
         var mpText = _userService.HasPrivateMessagePermissions(CurrentUser) ? $"<a href=\"./Posting?handler=PrivateMessage&postId={p.PostId}\">&#x1F5E8; Mesaj privat</a>" : null;
         var originalPosterId = p.PosterId;
 
-        var post = new DTOs.PostDto
+        var post = new Objects.PostDto
         {
             PostSubject = p.PostSubject,
             PostText = p.PostText,
@@ -191,7 +191,7 @@
             BbcodeUid = p.BbcodeUid,
             Unread = reachedAnUnreadPost || (reachedAnUnreadPost = await Model.IsPostUnread(p.ForumId, p.TopicId, p.PostId)),
             AuthorHasAvatar = !string.IsNullOrWhiteSpace(ju?.UserAvatar),
-            AuthorRank = jr?.RankTitle,
+            AuthorRank = jr?.RankTitle ?? "Membru înregistrat",
             LastEditTime = p.PostEditTime,
             LastEditUser = lastEditUsername,
             LastEditReason = p.PostEditReason,
@@ -452,7 +452,7 @@ else if (!IsAnonymous)
 {
     <form method="post" asp-page-handler="TopicModerator" style="padding-top:5px">
         <span>Moderează subiectul: </span>
-        @Html.DropDownList("TopicAction", _utils.EnumToDropDownList<ModeratorTopicActions>(Model.TopicAction, Model.MapModeratorTopicActions), new { onchange = "vt.showTopicExtraInput(this)", id = "TopicAction", style = "max-width:70%; height: 26px" })
+        @Html.DropDownList("TopicAction", _utils.EnumToDropDownList<ModeratorTopicActions>(Model.TopicAction, Model.MapModeratorTopicActions), new { onchange = "vt.showTopicExtraInput(this)", id = "TopicAction", style = "max-width:70%; height: 28px" })
         <div id="extraInputTopic" style="display:@(Model.ShowTopic ? "block" : "none")">
             <br />
             <input type="text" asp-for="DestinationForumId" placeholder="ID forum destinație" /><br />
@@ -470,7 +470,7 @@ else if (!IsAnonymous)
 
     <form id="moderatorForm" method="post" asp-page-handler="PostModerator" style="padding-top:5px">
         <span>Moderează mesajele selectate: </span>
-        @Html.DropDownList("PostAction", _utils.EnumToDropDownList<ModeratorPostActions>(Model.PostAction, Model.MapModeratorPostActions), new { onchange = "vt.showPostExtraInput(this)", id = "PostAction", style = "max-width:70%; height: 26px" })
+        @Html.DropDownList("PostAction", _utils.EnumToDropDownList<ModeratorPostActions>(Model.PostAction, Model.MapModeratorPostActions), new { onchange = "vt.showPostExtraInput(this)", id = "PostAction", style = "max-width:70%; height: 28px" })
         <div id="extraInputPostForum" style="display:@(Model.ShowPostForum ? "block" : "none")">
             <br />
             <input type="text" asp-for="DestinationForumId" placeholder="ID forum destinație" /><br />

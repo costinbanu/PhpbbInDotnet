@@ -11,7 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PaulMiami.AspNetCore.Mvc.Recaptcha;
-using PhpbbInDotnet.DTOs;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;

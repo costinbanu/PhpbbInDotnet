@@ -58,7 +58,18 @@
     else if (Model.Forums.HasValue && Model.Topics.HasValue)
     {
         <li class="Caption">
-            @Model.Forums forum@(Model.Forums != 1 ? "uri" : ""), @Model.Topics subiect@(Model.Topics != 1 ? "e" : "").
+            @if (Model.Forums > 0)
+            {
+                <span>
+                    @Model.Forums forum@(Model.Forums != 1 ? "uri" : "")@(Model.Topics > 0 ? "," : "")
+                </span>
+            }
+            @if (Model.Topics > 0)
+            {
+                <span>
+                    @Model.Topics subiect@(Model.Topics != 1 ? "e" : "")
+                </span>
+            }
         </li>
     }
     @if (!string.IsNullOrWhiteSpace(Model.PMLink))
@@ -67,7 +78,7 @@
             @Html.Raw(Model.PMLink)
         </li>
     }
-    @if (!Model.ShowAsLast)
+    @if (!Model.ShowAsLast && Model.Left)
     {
         <li class="Hide768">
             <p>&nbsp;</p>

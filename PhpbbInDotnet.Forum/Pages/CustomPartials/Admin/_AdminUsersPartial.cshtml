@@ -71,7 +71,7 @@
     var groups = await (
         from g in _context.PhpbbGroups.AsNoTracking()
         let role = _context.PhpbbAclGroups.AsNoTracking().FirstOrDefault(rg => rg.GroupId == g.GroupId && rg.ForumId == 0)
-        select new PhpbbInDotnet.DTOs.UpsertGroupDto
+        select new PhpbbInDotnet.Objects.UpsertGroupDto
         {
             Id = g.GroupId,
             Name = g.GroupName,

@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
-using PhpbbInDotnet.DTOs;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
 using System.Collections.Generic;
 using System.Linq;

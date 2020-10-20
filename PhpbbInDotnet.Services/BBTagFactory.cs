@@ -1,6 +1,6 @@
 ﻿using CodeKicker.BBCode.Core;
 using PhpbbInDotnet.Database.Entities;
-using PhpbbInDotnet.DTOs;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;

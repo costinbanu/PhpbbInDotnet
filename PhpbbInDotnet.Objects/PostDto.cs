@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace PhpbbInDotnet.DTOs
+namespace PhpbbInDotnet.Objects
 {
     public class PostDto
     {

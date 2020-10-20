@@ -38,17 +38,26 @@ function lazyInit(customMaxWidth, customMaxHeight) {
 }
 
 //Expand collapsed menus
-function expandCollapsedMenu(summaryId, buttonId) {
-    var summary = $('#' + summaryId);
+function expandCollapsedMenu(menuId, buttonId, left = false) {
+    var summary = $('#' + menuId);
     var button = $('#' + buttonId);
 
     if (!summary.is(':visible')) {
         var top = button.offset().top + button.height() + 10;
-        var right = $(window).innerWidth() - button.offset().left - button.outerWidth();
-        summary.css({
-            'right': right + 'px',
-            'top': top + 'px'
-        });
+        if (left) {
+            var left = button.offset().left;
+            summary.css({
+                'left': left + 'px',
+                'top': top + 'px'
+            });
+        }
+        else {
+            var right = $(window).innerWidth() - button.offset().left - button.outerWidth();
+            summary.css({
+                'right': right + 'px',
+                'top': top + 'px'
+            });
+        }
         summary.show('fast', function () { });
     }
     else {
@@ -129,4 +138,9 @@ function toggleHeaderLinks(curId, otherId) {
             }
         }
     );
+}
+
+function selectAllCheckboxes() {
+    var checkboxes = $('input[type=checkbox]');
+    checkboxes.prop('checked', !checkboxes.prop('checked'));
 }

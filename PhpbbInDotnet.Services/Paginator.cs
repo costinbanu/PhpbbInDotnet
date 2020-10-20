@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc.Rendering;
-using PhpbbInDotnet.DTOs;
+using PhpbbInDotnet.Objects;
 using System.Collections.Generic;
 
 namespace PhpbbInDotnet.Utilities

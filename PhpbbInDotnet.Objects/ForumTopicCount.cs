@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace PhpbbInDotnet.DTOs
+namespace PhpbbInDotnet.Objects
 {
     public class ForumTopicCount
     {

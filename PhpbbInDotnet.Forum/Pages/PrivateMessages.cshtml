@@ -8,7 +8,7 @@
 }
 
 @using Utilities
-@using DTOs
+@using Objects
 
 <environment include="Development">
     <script src="~/js/tabbedPage.js"></script>
@@ -71,7 +71,7 @@
             }
             var divClass = msg.Unread.ToBool() ? $"FlexRow Unread RowMargin" : $"FlexRow RowMargin";
             <div class="@divClass">
-                <input name="SelectedMessages" type="checkbox" value="@msg.MessageId" form="MarkAsRead" style="margin-right:10px" />
+                <input name="SelectedMessages" type="checkbox" value="@msg.MessageId" form="MarkAsRead" style="margin-right:10px; align-self:safe center" />
                 <span class="ForumContent" style="align-self:safe center">
                     <a asp-page="/PrivateMessages" asp-route-show="@PrivateMessagesPages.Message" asp-route-messageId="@msg.MessageId" asp-route-inboxPage="@Model.InboxPage" asp-route-sentPage="@Model.SentPage" class="nav-link" style="font-weight:bold">
                         @Html.Raw(msg.Subject)
@@ -98,17 +98,11 @@
 
         if (Model.InboxMessages.Any())
         {
-            <hr />
-            <script>
-                function selectAll() {
-                    var checkboxes = $('input[type=checkbox]');
-                    checkboxes.prop('checked', !checkboxes.prop('checked'));
-                }
-            </script>
-            <a href="javascript:selectAll()">Selectează toate mesajele</a>
-            <p></p>
+            <hr class="BoxSeparator" />
             <form asp-page-handler="MarkAsRead" method="post" id="MarkAsRead" name="MarkAsRead">
-                <input type="submit" value="Marchează mesajele selectate ca citite" onclick="return confirm('Sigur dorești să marchezi ca citite mesajele selectate?');" class="MyButton" />
+                <button onclick="selectAllCheckboxes()" type="button" class="MyButton">&#x2714;&nbsp;Selectează toate mesajele</button>
+                <span>&nbsp;&bull;&nbsp;</span>
+                <input type="submit" value="&#x2705;&nbsp;Marchează mesajele selectate ca citite" onclick="return confirm('Sigur dorești să marchezi ca citite mesajele selectate?');" class="MyButton" />
             </form>
         }
     }

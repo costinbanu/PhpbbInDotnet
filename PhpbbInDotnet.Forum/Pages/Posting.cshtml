@@ -260,7 +260,7 @@ else if (IsPM)
             }
             else if (code.Key == "color")
             {
-                <button type="button" class="BbCodeButton Hide960 PostingButton MyButton" onclick="posting.change_palette();" title="@code.Value.ToolTip">
+                <button type="button" class="BbCodeButton Hide960 PostingButton MyButton" onclick="posting.change_palette();" title="@code.Value.ToolTip" id="colour_palette_button">
                     @Html.Raw(code.Value.ButtonText)
                 </button>
             }
@@ -273,28 +273,30 @@ else if (IsPM)
         }
 
         <button type="button" class="BbCodeButton PostingButton MyButton" onclick="toggleFormattingHelp()" title="Arată un ajutor pentru formatare">&#x2754;</button>
-        <table class="ColorPalette" id="colour_palette">
-            @{
-                var color = new[] { 0x0, 0x40, 0x80, 0xbf, 0xff };
-                for (var r = 0; r < 5; r++)
-                {
-                    <tr>
-                        @for (var g = 0; g < 5; g++)
-                        {
-                            for (var b = 0; b < 5; b++)
+        <div class="ColorPalette" id="colour_palette">
+            <table>
+                @{
+                    var color = new[] { 0x0, 0x40, 0x80, 0xbf, 0xff };
+                    for (var r = 0; r < 5; r++)
+                    {
+                        <tr>
+                            @for (var g = 0; g < 5; g++)
                             {
-                                var value = $"#{color[r]:X2}{color[g]:X2}{color[b]:X2}";
-                                <td style="width: 15px; height: 10px; background-color: @value; border:solid 1px white">
-                                    <a href="javascript:posting.bbfontstyle('[color=@value]', '[/color]');">
-                                        <img src="./images/spacer.gif" alt="@value" title="@value" style="width: 15px; height: 10px">
-                                    </a>
-                                </td>
+                                for (var b = 0; b < 5; b++)
+                                {
+                                    var value = $"#{color[r]:X2}{color[g]:X2}{color[b]:X2}";
+                                    <td style="width: 15px; height: 10px; background-color: @value; border:solid 1px white">
+                                        <a href="javascript:posting.bbfontstyle('[color=@value]', '[/color]');">
+                                            <img src="./images/spacer.gif" alt="@value" title="@value" style="width: 15px; height: 10px">
+                                        </a>
+                                    </td>
+                                }
                             }
-                        }
-                    </tr>
+                        </tr>
+                    }
                 }
-            }
-        </table>
+            </table>
+        </div>
     </div>
     <a href="javascript:posting.show_hidden_formatters();" class="PostingControlsButton" style="margin-top:5px">Opțiuni formatare</a>
     <div style="margin-top:5px">
@@ -311,28 +313,28 @@ else if (IsPM)
     </p>
     @if (!IsPM)
     {
-        <button onclick="posting.toggleAttach()" type="button" class="PostingButton MyButton">&#128206; Fișiere atașate</button>
+        <button onclick="posting.toggleAttach()" type="button" class="PostingButton MyButton FooterButton">&#128206; Fișiere atașate</button>
     }
-    <button onclick="posting.toggleEmoji()" type="button" class="Hide960 PostingButton MyButton">&#x1F642; Emoji</button>
+    <button onclick="posting.toggleEmoji()" type="button" class="Hide960 PostingButton MyButton FooterButton">&#x1F642; Emoji</button>
     @if (CanCreatePoll)
     {
-        <button onclick="posting.togglePoll()" type="button" class="PostingButton MyButton">&#x2714; Chestionar</button>
+        <button onclick="posting.togglePoll()" type="button" class="PostingButton MyButton FooterButton">&#x2714; Chestionar</button>
     }
-    <input type="submit" value="&#x1F440; Previzualizează" onclick="return posting.censor()" asp-page-handler="Preview" class="PostingButton MyButton" />
+    <input type="submit" value="&#x1F440; Previzualizează" onclick="return posting.censor()" asp-page-handler="Preview" class="PostingButton MyButton FooterButton" />
 
     @switch (Model.Action)
     {
         case PostingActions.NewTopic:
         case PostingActions.NewForumPost:
-            <input type="submit" value="&#x1F4BE; Salvează mesajul în lucru" onclick="return posting.censor()" asp-page-handler="SaveDraft" class="PostingButton MyButton" />
-            <b><input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="NewForumPost" class="PostingButton MyButton" style="font-weight: bold" /></b>
+            <input type="submit" value="&#x1F4BE; Salvează mesajul în lucru" onclick="return posting.censor()" asp-page-handler="SaveDraft" class="PostingButton MyButton FooterButton" />
+            <input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="NewForumPost" class="PostingButton MyButton FooterButton MyMainButton" />
             break;
         case PostingActions.EditForumPost:
-            <b><input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="EditForumPost" class="PostingButton MyButton" style="font-weight: bold" /></b>
+            <input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="EditForumPost" class="PostingButton MyButton FooterButton MyMainButton" />
             break;
         case PostingActions.NewPrivateMessage:
         case PostingActions.EditPrivateMessage:
-            <b><input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="PrivateMessage" class="PostingButton MyButton" style="font-weight: bold" /></b>
+            <input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="PrivateMessage" class="PostingButton MyButton FooterButton MyMainButton" />
             break;
         default:
             <span class="validation">A intervenit o eroare, pagina nu a fost afișată corect.</span>
@@ -360,7 +362,7 @@ else if (IsPM)
                 </span>
             }
             <p style="clear:both"></p>
-            <div class="FlexCenter">
+            <hr class="BoxSeparator" /><div class="FlexCenter">
                 <div>Întrebarea chestionarului</div>
                 <div class="FlexRight PollInput">
                     <input asp-for="PollQuestion" class="InputBox" style="width:100%" /> <br />
@@ -368,7 +370,7 @@ else if (IsPM)
                 </div>
             </div>
             <hr class="SubtypeSeparator" />
-            <div class="FlexCenter">
+            <hr class="BoxSeparator" /><div class="FlexCenter">
                 <div>Opțiuni (una pe rând)</div>
                 <div class="FlexRight PollInput">
                     <textarea asp-for="PollOptions" rows="4" class="InputBox" style="width:100%" onkeydown="return posting.confirmPollChange(this)"></textarea>
@@ -376,7 +378,7 @@ else if (IsPM)
                 </div>
             </div>
             <hr class="SubtypeSeparator" />
-            <div class="FlexCenter">
+            <hr class="BoxSeparator" /><div class="FlexCenter">
                 <div>Timp pentru votare (zile)</div>
                 <div class="FlexRight PollInput">
                     <input asp-for="PollExpirationDaysString" onchange="posting.showExpirationDate(this.value)" id="pollExpiration" class="InputBox" style="width:100%" /><br />
@@ -389,7 +391,7 @@ else if (IsPM)
                 </div>
             </div>
             <hr class="SubtypeSeparator" />
-            <div class="FlexCenter">
+            <hr class="BoxSeparator" /><div class="FlexCenter">
                 <div>Opțiuni per votant</div>
                 <div class="FlexRight PollInput">
                     <input asp-for="PollMaxOptions" class="InputBox" style="width:100%" />
@@ -397,7 +399,7 @@ else if (IsPM)
                 </div>
             </div>
             <hr class="SubtypeSeparator" />
-            <div class="FlexCenter">
+            <hr class="BoxSeparator" /><div class="FlexCenter">
                 <div>Votanții își pot schimba votul</div>
                 <div class="FlexRight PollInput">
                     <input asp-for="PollCanChangeVote" class="InputBox" />
@@ -489,14 +491,14 @@ else if (IsPM)
         {
             var ju = users.FirstOrDefault(u => u.UserId == p.PosterId);
             var ja = attachments.Where(a => a.PostMsgId == p.PostId);
-            var post = new DTOs.PostDto
+            var post = new Objects.PostDto
             {
                 PostSubject = p.PostSubject,
                 PostText = p.PostText,
                 AuthorName = ((ju?.UserId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID ? p.PostUsername : ju.Username),
                 AuthorId = ju?.UserId ?? Constants.ANONYMOUS_USER_ID,
                 AuthorColor = ju?.UserColour,
-                Attachments = ja.Select(a => new DTOs.AttachmentDto(a)).ToList(),
+                Attachments = ja.Select(a => new Objects.AttachmentDto(a)).ToList(),
                 PostCreationTime = p.PostTime.ToUtcTime(),
                 PostModifiedTime = p.PostEditTime.ToUtcTime(),
                 PostId = p.PostId,
@@ -620,55 +622,55 @@ else if (IsPM)
 <div id="imgcheckstatus" class="Popup"></div>
 
 <div id="formattingHelp" class="MiddleBox" style="display:none">
-    <div style="padding: 0px 10px 0px 10px">
-        <h4 style="float:left">Ajutor formatare</h4>
-        <div style="float:right; cursor:pointer; font-weight:bold; margin-top:10px; margin-bottom:10px" onclick="showElement('formattingHelp')">Închide [X]</div>
+    <div style="padding: 0px 15px 0px 10px">
+        <h4 style="float:left; padding-left:10px; font-weight: bold">Ajutor formatare</h4>
+        <div style="float:right; cursor:pointer; font-weight:bold; margin: 10px 0px 10px 0px; padding-right:10px" onclick="showElement('formattingHelp')">Închide [X]</div>
+        <p style="clear:both"></p>
     </div>
-    <p style="clear:both"></p>
     <div style="overflow-y:scroll; height: calc(100% - 51px); padding: 0px 10px 0px 10px">
-        <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <div class="FlexCenter" style="padding: 15px 0px 15px 15px; align-items:start">
             <div style="margin-right:15px">[b]text bold[/b]</div>
             <div class="FlexRight PostInputWidth">
                 <b>text bold</b>
             </div>
         </div>
-        <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <hr class="BoxSeparator" /><div class="FlexCenter" style="padding: 15px 0px 15px 15px; align-items:start">
             <div style="margin-right:15px">[i]text italic[/i]</div>
             <div class="FlexRight PostInputWidth">
                 <i>text italic</i>
             </div>
         </div>
-        <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <hr class="BoxSeparator" /><div class="FlexCenter" style="padding: 15px 0px 15px 15px; align-items:start">
             <div style="margin-right:15px">[u]text subliniat[/u]</div>
             <div class="FlexRight PostInputWidth">
                 <u>text subliniat</u>
             </div>
         </div>
-        <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <hr class="BoxSeparator" /><div class="FlexCenter" style="padding: 15px 0px 15px 15px; align-items:start">
             <div style="margin-right:15px">[strike]text tăiat[/strike]</div>
             <div class="FlexRight PostInputWidth">
                 <s>text tăiat</s>
             </div>
         </div>
-        <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <hr class="BoxSeparator" /><div class="FlexCenter" style="padding: 15px 0px 15px 15px; align-items:start">
             <div style="margin-right:15px">[size=150]text cu dimensiunea de 150% din cea normală[/size]</div>
             <div class="FlexRight PostInputWidth">
                 <span style="font-size:1.5em">text cu dimensiunea de 150% din cea normală</span>
             </div>
         </div>
-        <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <hr class="BoxSeparator" /><div class="FlexCenter" style="padding: 15px 0px 15px 15px; align-items:start">
             <div style="margin-right:15px">[color=red]text roșu[/color]</div>
             <div class="FlexRight PostInputWidth">
                 <span style="color:red">text roșu</span>
             </div>
         </div>
-        <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <hr class="BoxSeparator" /><div class="FlexCenter" style="padding: 15px 0px 15px 15px; align-items:start">
             <div style="margin-right:15px">[quote]citat[/quote]</div>
             <div class="FlexRight PostInputWidth">
                 <blockquote class="PostQuote">citat</blockquote>
             </div>
         </div>
-        <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <hr class="BoxSeparator" /><div class="FlexCenter" style="padding: 15px 0px 15px 15px; align-items:start">
             <div style="margin-right:15px">[quote=autor]citat[/quote]</div>
             <div class="FlexRight PostInputWidth">
                 <blockquote class="PostQuote">
@@ -676,19 +678,19 @@ else if (IsPM)
                 </blockquote>
             </div>
         </div>
-        <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <hr class="BoxSeparator" /><div class="FlexCenter" style="padding: 15px 0px 15px 15px; align-items:start">
             <div style="margin-right:15px">[url] www.metrouusor.com [/url]</div>
             <div class="FlexRight PostInputWidth">
                 <a href="https://metrouusor.com">www.metrouusor.com</a>
             </div>
         </div>
-        <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <hr class="BoxSeparator" /><div class="FlexCenter" style="padding: 15px 0px 15px 15px; align-items:start">
             <div style="margin-right:15px">[url=www.metrouusor.com] Asociația Metrou Ușor [/url]</div>
             <div class="FlexRight PostInputWidth">
                 <a href="https://metrouusor.com">Asociația Metrou Ușor</a>
             </div>
         </div>
-        <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <hr class="BoxSeparator" /><div class="FlexCenter" style="padding: 15px 0px 15px 15px; align-items:start">
             <div style="margin-right:15px">[img]url_imagine[/img]</div>
             <div class="FlexRight PostInputWidth">
                 Afişează imaginea din url-ul respectiv.<br />
@@ -696,7 +698,7 @@ else if (IsPM)
                 Pentru găzduire externă recomandăm <a href="https://imgur.com">imgur.com</a>.
             </div>
         </div>
-        <div class="FlexCenter Hide960Flex" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <hr class="BoxSeparator" /><div class="FlexCenter Hide960Flex" style="padding: 15px 0px 15px 15px; align-items:start">
             <div style="margin-right:15px">
                 [list]<br />
                 [*] elementul unu<br />
@@ -711,7 +713,7 @@ else if (IsPM)
                 </ul>
             </div>
         </div>
-        <div class="FlexCenter Hide960Flex" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <hr class="BoxSeparator" /><div class="FlexCenter Hide960Flex" style="padding: 15px 0px 15px 15px; align-items:start">
             <div style="margin-right:15px">
                 [list=a]<br />
                 [*] elementul unu<br />
@@ -726,17 +728,17 @@ else if (IsPM)
                 </ol>
             </div>
         </div>
-        <div class="FlexCenter Hide960Flex" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <hr class="BoxSeparator" /><div class="FlexCenter Hide960Flex" style="padding: 15px 0px 15px 15px; align-items:start">
             <div style="margin-right:15px">[*]</div>
             <div class="FlexRight PostInputWidth">element într-o listă - vezi mai sus</div>
         </div>
-        <div class="FlexCenter Hide960Flex" style="padding-top:15px; padding-bottom:15px; align-items:start; border-bottom: solid 1px black">
+        <hr class="BoxSeparator" /><div class="FlexCenter Hide960Flex" style="padding: 15px 0px 15px 15px; align-items:start">
             <div style="margin-right:15px">[code]bloc preformatat de cod în chenar de dimensiune fixă[/code]</div>
             <div class="FlexRight PostInputWidth">
                 <span class="CodeBlock">bloc preformatat de cod în chenar de dimensiune fixă</span>
             </div>
         </div>
-        <div class="FlexCenter" style="padding-top:15px; padding-bottom:15px; align-items:start">
+        <hr class="BoxSeparator" /><div class="FlexCenter" style="padding: 15px 0px 15px 15px; align-items:start">
             <div style="margin-right:15px">[youtube]id_video[/youtube]</div>
             <div class="FlexRight PostInputWidth" id="dummy">
                 id_video este codul cuprins între „v=” și „&” (dacă există) în adresa video-ului:<br />

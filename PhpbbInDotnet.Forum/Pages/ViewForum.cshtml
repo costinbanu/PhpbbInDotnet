@@ -51,7 +51,7 @@
 {
     <script>
         $(document).ready(function () {
-            var element = $('.Unread');
+            var element = $('.UnreadTitle');
             if (element && element.offset()) {
                 window.scrollTo(0, element.offset().top - 20);
             }
@@ -89,15 +89,17 @@ else
         ViewData
     )
 }
-
+<p>&nbsp;</p>
 @switch (Model.Mode)
 {
     case ViewForumMode.NewPosts:
-        <h3>Subiecte necitite</h3>
+        <h3 style="float:left;">Mesaje noi</h3>
         @if (hasTopics)
         {
-            <a href="javascript:MarkForumsRead.submit()">Marchează-le ca citite</a>
+            <span>&nbsp;&bull;&nbsp;</span>
+            <input type="submit" form="MarkForumsRead" value="&#x2705;&nbsp;Marchează-le ca citite" />
         }
+        <p style="clear:both"></p>
         break;
 
     case ViewForumMode.OwnPosts:
@@ -193,7 +195,7 @@ else
             {
                 var pageSize = CurrentUser.TopicPostsPerPage.ContainsKey(topic.TopicId ?? 0) ? CurrentUser.TopicPostsPerPage[topic.TopicId ?? 0] : Constants.DEFAULT_PAGE_SIZE;
                 topic.Unread = await Model.IsTopicUnread(topic.ForumId ?? 0, topic.TopicId ?? 0);
-                topic.Pagination = new DTOs.PaginationDto($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", topic.PostCount ?? 0, pageSize, 1, "PageNum");
+                topic.Pagination = new Objects.PaginationDto($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", topic.PostCount ?? 0, pageSize, 1, "PageNum");
             }
 
             if (!isFirstInGroup)
@@ -288,15 +290,16 @@ else
 
     if (Model.Mode == ViewForumMode.Drafts && hasTopics)
     {
+        <hr class="BoxSeparator" />
         <script>
             function selectAll() {
                 var checkboxes = $('input[type=checkbox]');
                 checkboxes.prop('checked', !checkboxes.prop('checked'));
             }
         </script>
-        <a href="javascript:selectAll()">Selectează toate mesajele</a>
-        <p></p>
-        <input type="submit" value="Șterge mesajele selectate" form="DeleteDrafts" onclick="return confirm('Sigur dorești ștergerea mesajelor în lucru selectate?');" class="MyButton" />
+        <button onclick="selectAll()" type="button" class="MyButton">&#x2714;&nbsp;Selectează toate mesajele</button>
+        <span>&nbsp;&bull;&nbsp;</span>
+        <input type="submit" value="&#x1F6AE;&nbsp;Șterge mesajele selectate" form="DeleteDrafts" onclick="return confirm('Sigur dorești ștergerea mesajelor în lucru selectate?');" class="MyButton" />
         <p>&nbsp;</p>
     }
 
@@ -334,7 +337,7 @@ else if (Model.Mode == ViewForumMode.Drafts)
     <p>&nbsp;</p>
 }
 
-@if (hasTopics)
+@if (hasTopics && Model.Mode != ViewForumMode.Drafts)
 {
     <hr class="BoxSeparator" />
 }

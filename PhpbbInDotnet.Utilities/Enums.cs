@@ -147,4 +147,13 @@ namespace PhpbbInDotnet.Utilities
         Drafts,
         Forum = ~OwnPosts & ~NewPosts & ~Drafts
     }
+
+    public enum UserPageMode
+    {
+        View,
+        Edit,
+        AddFoe,
+        RemoveFoe,
+        RemoveMultipleFoes
+    }
 }

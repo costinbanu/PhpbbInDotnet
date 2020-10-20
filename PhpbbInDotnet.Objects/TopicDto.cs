@@ -1,4 +1,4 @@
-﻿using PhpbbInDotnet.DTOs;
+﻿using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;

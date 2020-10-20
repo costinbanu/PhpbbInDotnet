@@ -94,6 +94,10 @@
     padding: 0px 8px 0px 8px;
 }
 
+.FooterButton {
+    margin: 5px 5px 5px 5px !important;
+}
+
 @media (max-width: 960px) {
 
     .PostingControls {

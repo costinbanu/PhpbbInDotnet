@@ -1,5 +1,5 @@
 ﻿@using System.Web
-@using  PhpbbInDotnet.DTOs
+@using  PhpbbInDotnet.Objects
 @using PhpbbInDotnet.Utilities
 @using Microsoft.Extensions.Configuration
 @inject IConfiguration _config
@@ -118,13 +118,13 @@
 
                 if (await _userService.IsUserModeratorInForum(currentUser, 0))
                 {
-                    if (!displayedBox)
-                    {
-                        <p style="clear:both"></p>
-                    }
                     var reports = await _moderatorService.GetReportedMessages();
                     if (reports.Any())
                     {
+                        if (!displayedBox)
+                        {
+                            <p style="clear:both"></p>
+                        }
                         <div class="ReportedPost" style="margin:5px; padding:5px; width: max-content; max-width: 100%">
                             <h4>Rapoarte deschise</h4>
                             @foreach (var r in reports)

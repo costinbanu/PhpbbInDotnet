@@ -107,17 +107,46 @@
 @if (Model.ManageFoes ?? false)
 {
     <div class="tabcontent" style="display:block !important">
-        @foreach (var foe in Model.Foes)
-        {
-            <div style="margin: 15px 15px">
-                <a asp-page="User" asp-route-userId="@foe.UserId">
-                    @Html.Raw(System.Web.HttpUtility.HtmlDecode(foe.Username))
-                </a>
-            </div>
-        }
         @if (!Model.Foes.Any())
         {
             <i>Nici un utilizator pe lista de persoane neagreate.</i>
+        }
+        else
+        {
+            <i>Utilizatorilor din lista de mai jos nu le vezi postările și nici nu puteți comunica prin mesageria privată. Utilizatorii nu știu că i-ai trecut în lista persoanelor neagreate.</i>
+            <form method="post" name="RemoveFoes" id="RemoveFoes" asp-page-handler="RemoveMultipleFoes">
+                @foreach (var foe in Model.Foes)
+                {
+                    <div style="margin: 15px 15px">
+                        <input name="SelectedFoes" type="checkbox" value="@foe.UserId" style="margin-right:10px" />
+                        <a asp-page="User" asp-route-userId="@foe.UserId">
+                            @Html.Raw(System.Web.HttpUtility.HtmlDecode(foe.Username))
+                        </a>
+                    </div>
+                }
+                <hr class="BoxSeparator" />
+                <script>
+                    function selectAll() {
+                        var checkboxes = $('input[type=checkbox]');
+                        checkboxes.prop('checked', !checkboxes.prop('checked'));
+                    }
+                </script>
+                <button onclick="selectAll()" type="button" class="MyButton">&#x2714;&nbsp;Selectează toți utilizatorii</button>
+                <span>&nbsp;&bull;&nbsp;</span>
+                <input type="submit" value="&#x1F91D;&nbsp;Elimină utilizatorii selectați din listă"
+                       onclick="return confirm('Dacă elimini utilizatorii selectați din lista persoanelor neagreate, vei putea vedea mesajele lor și veți putea comunica prin mesageria privată.\n\nUtilizatorii nu vor fi notificați.\n\nContinui?');" 
+                       class="MyButton" />
+                <input type="hidden" asp-for="UserId" />
+                <input type="hidden" asp-for="ViewAsAnother" />
+                <input type="hidden" asp-for="ManageFoes" />
+            </form>
+        }
+        <p></p>
+        @if (Model.Mode == UserPageMode.RemoveMultipleFoes)
+        {
+            <span style="color:darkgreen; font-weight: bold">
+                Utilizatorii selectați au fost eliminați din lista ta de persoane neagreate. Te rugăm să te deconectezi și apoi să te reconectezi la forum pentru ca modificarea să aibă efect.
+            </span>
         }
     </div>
 }
@@ -340,7 +369,7 @@ else
                         g => new SelectListItem(g.GroupName, g.GroupId.ToString(), g.GroupId == Model.GroupId)
                     )
                 );
-                <hr />
+                <hr class="BoxSeparator" />
                 <div class="FlexCenter">
                     <h4>Administrează cont</h4>
                 </div>
@@ -408,7 +437,7 @@ else
                     </div>
                 </div>
             }
-            <hr />
+            <hr class="BoxSeparator" />
             <div class="FlexCenter">
                 <h4>Contact</h4>
             </div>
@@ -427,12 +456,12 @@ else
                 }
                 else
                 {
-                    var showMail = Model.CurrentUser.UserAllowViewemail.ToBool() || await Model.IsCurrentUserAdminHere();
+                    var showMail = (Model.CurrentUser.UserAllowViewemail.ToBool() && !viewingUser.Foes.Contains(pageUser.UserId) && !pageUser.Foes.Contains(viewingUser.UserId)) || await Model.IsCurrentUserAdminHere();
                     if (showMail)
                     {
                         <button class="MyButton" onclick="location.href='mailto:@Html.Raw(Model.CurrentUser.UserEmail)'" type="button" @(isSelf ? "disabled" : "")>&#x2709;&nbsp;Trimite e-mail</button>
                     }
-                    var showPMs = _userService.HasPrivateMessagePermissions(viewingUser) && _userService.HasPrivateMessages(pageUser);
+                    var showPMs = (_userService.HasPrivateMessagePermissions(viewingUser) && _userService.HasPrivateMessages(pageUser) && !viewingUser.Foes.Contains(pageUser.UserId) && !pageUser.Foes.Contains(viewingUser.UserId)) || (await Model.IsCurrentUserAdminHere() && _userService.HasPrivateMessagePermissions(pageUser));
                     if (showPMs)
                     {
                         if (showMail)
@@ -482,7 +511,7 @@ else
             }
             @if (!canEdit)
             {
-                <hr />
+                <hr class="BoxSeparator" />
                 <div class="FlexCenter">
                     <h4>Statistici</h4>
                 </div>
@@ -557,7 +586,7 @@ else
             @if (canEdit)
             {
                 <p>&nbsp;</p>
-                <input class="MyButton" type="submit" value="Salvează modificările" style="width:auto" onclick="return confirmSubmit();" />
+                <input class="MyButton" type="submit" value="Salvează modificările" style="width:auto" />
                 <span asp-validation-for="CurrentUser" class="validation"></span>
             }
             @if (!isSelf && !canEdit)
@@ -566,17 +595,17 @@ else
                 var showRemoveFoe = viewingUser.Foes?.Contains(pageUser.UserId) ?? false;
                 if (showAddFoe || showRemoveFoe)
                 {
-                    <hr />
+                    <hr class="BoxSeparator" />
                     <div class="FlexCenter">
                         @if (showAddFoe)
                         {
                             <input class="MyButton" type="submit" form="AddFoe" value="&#x1F6AB;&nbsp;Adaugă la persoane neagreate" style="font-size: 15px; margin-top:5px; vertical-align: top"
-                                   onclick="return confirm('Dacă îl/o adaugi pe @Model.CurrentUser.UsernameClean la persoane neagreate, nu vei mai vedea mesajele lui/ei, și nici nu veți mai putea comunica prin mesageria privată.\nDupă salvarea opțiunii, vei fi deconectat/ă și va trebui să te re-autentifici. Continui?')" />
+                                   onclick="return confirm('Dacă adaugi utilizatorul \'@Model.CurrentUser.Username\' în lista persoanelor neagreate, nu vei mai vedea mesajele lui și nu veți mai putea comunica prin mesageria privată.\n\nUtilizatorul nu va fi notificat.\n\nContinui?')" />
                         }
                         else if (showRemoveFoe)
                         {
-                            <input class="MyButton" type="submit" form="RemoveFoe" value="&#x2705;&nbsp;Elimină din lista de persoane neagreate" style="font-size: 15px; margin-top:5px; vertical-align: top"
-                                   onclick="return confirm('Dacă îl/o elimini pe @Model.CurrentUser.UsernameClean din lista de persoane neagreate, vei putea vedea mesajele lui/ei, și veți putea comunica prin mesageria privată.\nDupă salvarea opțiunii, vei fi deconectat/ă și va trebui să te re-autentifici. Continui?')" />
+                            <input class="MyButton" type="submit" form="RemoveFoe" value="&#x1F91D;&nbsp;Elimină din lista de persoane neagreate" style="font-size: 15px; margin-top:5px; vertical-align: top"
+                                   onclick="return confirm('Dacă elimini utilizatorul \'@Model.CurrentUser.Username\' din lista persoanelor neagreate, vei putea vedea mesajele lui și veți putea comunica prin mesageria privată.\n\nUtilizatorul nu va fi notificat.\n\nContinui?')" />
                         }
                     </div>
                 }
@@ -585,5 +614,19 @@ else
             @Html.AntiForgeryToken()
         </form>
         <p></p>
+        <span style="color:darkgreen; font-weight: bold">
+            @switch (Model.Mode)
+            {
+                case UserPageMode.Edit:
+                    @Html.Raw("Modificările au fost salvate. Te rugăm să te deconectezi și apoi să te reconectezi la forum pentru ca acestea să aibă efect.");
+                    break;
+                case UserPageMode.AddFoe:
+                    @Html.Raw($"{Model.CurrentUser.Username} a fost adăugat la lista ta de persoane neagreate. Te rugăm să te deconectezi și apoi să te reconectezi la forum pentru ca modificarea să aibă efect.");
+                    break;
+                case UserPageMode.RemoveFoe:
+                    @Html.Raw($"{Model.CurrentUser.Username} a fost eliminat din lista ta de persoane neagreate. Te rugăm să te deconectezi și apoi să te reconectezi la forum pentru ca modificarea să aibă efect.");
+                    break;
+            }
+        </span>
     </div>
 }

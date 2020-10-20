@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.DTOs;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Services;
@@ -95,7 +95,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public IEnumerable<PhpbbUsers> LastEditUsers { get; private set; }
         public IEnumerable<PhpbbAttachments> Attachments { get; private set; }
         public IEnumerable<PhpbbReports> Reports { get; private set; }
-        public IEnumerable<PhpbbRanks> Ranks { get; private set; }
+        public IEnumerable<UserRankDto> Ranks { get; private set; }
 
         private PhpbbTopics _currentTopic;
         private PhpbbForums _currentForum;
@@ -154,26 +154,24 @@ namespace PhpbbInDotnet.Forum.Pages
                     "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @posts ORDER BY attach_id; " +
                     "SELECT * FROM phpbb_reports WHERE report_closed = 0 AND post_id IN @posts; " +
                     @"WITH usr AS (
-	                    SELECT user_rank
-                            FROM phpbb_users
-	                        WHERE user_id IN @authors
+	                    SELECT user_id, user_rank
+	                      FROM phpbb_users
+	                     WHERE user_id IN @authors
                     ), grp AS (
-	                    SELECT g.group_rank
-                            FROM phpbb_groups g
-                            JOIN phpbb_users u ON g.group_id = u.group_id
-	                        WHERE u.user_id IN @authors
+	                    SELECT u.user_id, g.group_rank
+	                      FROM phpbb_groups g
+	                      JOIN phpbb_users u ON g.group_id = u.group_id
+	                     WHERE u.user_id IN @authors
                     ), all_ids AS (
-	                    SELECT user_rank as rank_id
-                            FROM usr
-      
-	                        UNION
-     
-                            SELECT group_rank as rank_id
-                            FROM grp
+	                    SELECT user_id, user_rank as rank_id
+	                      FROM usr
+	                     UNION
+	                    SELECT user_id, group_rank as rank_id
+	                      FROM grp
                     )
-                    SELECT r.* 
-                    FROM phpbb_ranks r 
-                    JOIN all_ids ids on ids.rank_id = r.rank_id",
+                    SELECT ids.user_id, r.rank_id, r.rank_title
+                      FROM phpbb_ranks r 
+                      JOIN all_ids ids ON ids.rank_id = r.rank_id",
                     new
                     {
                         authors = Posts.Select(p => p.PosterId).DefaultIfEmpty(),
@@ -186,7 +184,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 LastEditUsers = await multi.ReadAsync<PhpbbUsers>();
                 Attachments = await multi.ReadAsync<PhpbbAttachments>(); //query should sort according to config['display_order']
                 Reports = await multi.ReadAsync<PhpbbReports>();
-                Ranks = await multi.ReadAsync<PhpbbRanks>();
+                Ranks = await multi.ReadAsync<UserRankDto>();
                 TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
                 ForumRulesLink = curForum.ForumRulesLink;
                 ForumRules = curForum.ForumRules;

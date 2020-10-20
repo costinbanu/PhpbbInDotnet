@@ -1,6 +1,6 @@
 ﻿using Dapper;
 using Microsoft.EntityFrameworkCore;
-using PhpbbInDotnet.DTOs;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Utilities;

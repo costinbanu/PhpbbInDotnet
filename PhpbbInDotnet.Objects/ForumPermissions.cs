@@ -1,6 +1,6 @@
 ﻿using PhpbbInDotnet.Utilities;
 
-namespace PhpbbInDotnet.DTOs
+namespace PhpbbInDotnet.Objects
 {
     public class ForumPermissions
     {

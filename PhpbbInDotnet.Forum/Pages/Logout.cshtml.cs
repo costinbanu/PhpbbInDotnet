@@ -34,10 +34,16 @@ namespace PhpbbInDotnet.Forum.Pages
                     ExpiresUtc = DateTimeOffset.Now.Add(TimeSpan.FromDays(_config.GetValue<int>("LoginSessionSlidingExpirationDays"))),
                     IsPersistent = true,
                 });
-            if (string.IsNullOrWhiteSpace(returnUrl))
+
+            if (string.IsNullOrWhiteSpace(returnUrl) || (
+                    returnUrl.Contains("user", StringComparison.InvariantCultureIgnoreCase) && 
+                    returnUrl.Contains("foe", StringComparison.InvariantCultureIgnoreCase)
+                )
+            )
             {
                 returnUrl = "/";
             }
+
             return Redirect(HttpUtility.UrlDecode(returnUrl));
         }
     }

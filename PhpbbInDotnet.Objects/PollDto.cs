@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace PhpbbInDotnet.DTOs
+namespace PhpbbInDotnet.Objects
 {
     public class PollDto
     {

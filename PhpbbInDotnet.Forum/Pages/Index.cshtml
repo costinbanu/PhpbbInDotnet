@@ -11,22 +11,22 @@
     }
 }
 
-<span onclick="toggleHeaderLinks('metrouusorLinks', 'headerLinks');" id="metrouusorLinksButton" class="MyButton MyMiniButton" style="line-height:1.1em">
-    &#x1F310;&nbsp;Site-urile „Metrou Ușor”
-</span>
-
 @if (!CurrentUser.IsAnonymous)
 {
-    <span>&nbsp;&bull;&nbsp;</span>
+    <form asp-page-handler="MarkForumsRead" method="post" name="MarkForumsRead">
+        @Html.AntiForgeryToken()
+    </form>
     @await Html.PartialAsync(
         "_HeaderLinksPartial",
         new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(true, "<a href=\"javascript:MarkForumsRead.submit()\">Marchează forumurile ca citite</a>"),
         ViewData
     )
-    <form asp-page-handler="MarkForumsRead" method="post" name="MarkForumsRead">
-        @Html.AntiForgeryToken()
-    </form>
+    <span>&nbsp;&bull;&nbsp;</span>
 }
+<span onclick="toggleHeaderLinks('metrouusorLinks', 'headerLinks');" id="metrouusorLinksButton" class="MyButton MyMiniButton" style="line-height:1.1em">
+    &#x1F310;&nbsp;Site-urile „Metrou Ușor”
+</span>
+
 <ul class="Shortcuts" style="display:none" id="metrouusorLinks">
     <li>
         <span> &nbsp;</span>
@@ -57,6 +57,21 @@
         <a href="https://forum.metrouusor.com">Înapoi la vechiul forum</a>
     </li>
 </ul>
+
+<div id="target"></div>
+
+<script>
+    $(document).ready(function () {
+        window.onload = function () {
+            var header = $('#headerLinks');
+            if (header.length) {
+                var element = header.detach();
+                $('#target').append(element);
+            }
+        }
+    });
+</script>
+
 @await Html.PartialAsync(
     "_ForumDisplayPartial",
     new PhpbbInDotnet.Forum.Pages.CustomPartials._ForumDisplayPartialModel(0, Model.Tree, UserDateFormat, false, CurrentUser, false),

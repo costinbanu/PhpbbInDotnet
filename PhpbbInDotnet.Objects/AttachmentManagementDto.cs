@@ -1,6 +1,6 @@
 ﻿using PhpbbInDotnet.Database.Entities;
 
-namespace PhpbbInDotnet.DTOs
+namespace PhpbbInDotnet.Objects
 {
     public class AttachmentManagementDto : PhpbbAttachments
     {

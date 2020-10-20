@@ -78,19 +78,18 @@
         <input asp-for="TotalResults" type="hidden" />
         <input asp-for="AuthorId" type="hidden" id="authorId" />
 
-        <input asp-for="SearchText" type="text" placeholder="Caută după text..." style="width:100%" />
+        <input asp-for="SearchText" type="text" placeholder="Caută după text..." style="width:100%" autofocus />
         <span class="Caption">
             Dacă doriți să căutați după o frază exactă, puneți-o între ghilimele.
             De exemplu căutarea <b><i>autobuz galben</i></b> va returna mesaje care conțin fie <b><i>autobuz</i></b>, fie <b><i>galben</i></b>, fie amândouă.
             Căutarea <b><i>"autobuz galben"</i></b> va returna mesajele care conțin fraza exactă "autobuz galben".
         </span>
         <span asp-validation-for="SearchText" class="validation"></span>
-        <p>&nbsp;</p>
         <a href="javascript:showElement('advanced')">Căutare avansată</a>
-        <p>&nbsp;</p>
         <div id="advanced" style="display:none">
+            <p></p>
             <input asp-for="Author" type="text" placeholder="Caută după autor..." id="AuthorInput" style="width:100%" autocomplete="off" />
-            <p id="tributeHolder" style="position:relative">&nbsp;</p>
+            <p id="tributeHolder" style="position:relative"></p>
             Caută în forumul...
             @await Html.PartialAsync(
                  "_ForumTreePartial",
@@ -104,16 +103,17 @@
                  ViewData
              )
             <input asp-for="ForumId" type="hidden" id="ForumIdInput" />
-            <p>&nbsp;</p>
-            Caută în subiectul...<br />
+            <p></p>
             <select name="TopicId" id="TopicIdDisplay" style="width:100%">
                 <option selected disabled value="-1">Caută în subiectul...</option>
                 <option value="0">Caută în toate subiectele</option>
             </select>
-            <p>&nbsp;</p>
+            <p></p>
         </div>
-        <input type="submit" value="Trimite" />
+        <p></p>
+        <input type="submit" value="Trimite" class="MyButton" />
     </form>
+    <p>&nbsp;</p>
 }
 else
 {

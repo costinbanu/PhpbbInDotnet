@@ -1,7 +1,7 @@
 ﻿using PhpbbInDotnet.Database.Entities;
 using System.Web;
 
-namespace PhpbbInDotnet.DTOs
+namespace PhpbbInDotnet.Objects
 {
     public class MiniTopicDto
     {
