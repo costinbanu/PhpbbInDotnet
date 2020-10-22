@@ -190,42 +190,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumRules = curForum.ForumRules;
                 ForumRulesUid = curForum.ForumRulesUid;
 
-                if (await IsTopicUnread(ForumId ?? 0, TopicId ?? 0))
-                {
-                    var tracking = (await GetForumTree()).Tracking;
-                    if (tracking.TryGetValue(ForumId ?? 0, out var tt) && tt.Count == 1 && Paginator.IsLastPage)
-                    {
-                        //current topic was the last unread in its forum, and it is the last page of unread messages, so mark the whole forum read
-                        await MarkForumRead(curForum.ForumId);
-                        
-                        //current forum is the user's last unread forum, and it has just been read; set the mark time.
-                        if (tracking.Count == 1)
-                        {
-                            await SetLastMark();
-                        }
-                    }
-                    else
-                    {
-                        //there are other unread topics in this forum, or unread pages in this topic, so just mark the current page as read
-                        var markTime = Posts.Max(p => p.PostTime);
-                        var userId = (await GetCurrentUserAsync()).UserId;
-                        var existing = await connection.ExecuteScalarAsync<long?>("SELECT mark_time FROM phpbb_topics_track WHERE user_id = @userId AND topic_id = @topicId", new { userId, topicId = TopicId.Value });
-                        if (existing == null)
-                        {
-                            await connection.ExecuteAsync(
-                                "INSERT INTO phpbb_topics_track (forum_id, mark_time, topic_id, user_id) VALUES (@forumId, @markTime, @topicId, @userId)",
-                                new { forumId = ForumId.Value, markTime, topicId = TopicId.Value, userId }
-                            );
-                        }
-                        else if (markTime > existing)
-                        {
-                            await connection.ExecuteAsync(
-                                "UPDATE phpbb_topics_track SET forum_id = @forumId, mark_time = @markTime WHERE user_id = @userId AND topic_id = @topicId",
-                                new { forumId = ForumId.Value, markTime, userId, topicId = TopicId.Value }
-                            );
-                        }
-                    }
-                }
                 await connection.ExecuteAsync("UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId", new { topicId = TopicId.Value });
                 return Page();
             }

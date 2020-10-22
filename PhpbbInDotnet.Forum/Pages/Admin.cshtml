@@ -26,7 +26,7 @@
     <button class="@(Model.Category == AdminCategories.WritingTools ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Writing')">Unelte scriere</button>
 </div>
 
-<span class="@Model.MessageClass">@Model.Message</span>
+<span class="@Model.MessageClass">@Html.Raw(Model.Message)</span>
 
 <div id="Users" class="tabcontent" style="@(Model.Category == AdminCategories.Users ? "display:inherit" : "display:none")">
     @await Html.PartialAsync(

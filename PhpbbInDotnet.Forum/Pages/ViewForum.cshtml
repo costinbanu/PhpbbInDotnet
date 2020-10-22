@@ -36,6 +36,10 @@
     <input asp-for="ForumId" type="hidden" value="@Model.ForumId" />
     @Html.AntiForgeryToken()
 </form>
+<form asp-page-handler="MarkNewPostsRead" method="post" name="MarkNewPostsRead" id="MarkNewPostsRead">
+    <input asp-for="ForumId" type="hidden" value="@Model.ForumId" />
+    @Html.AntiForgeryToken()
+</form>
 
 <script>
     //forum tree callback
@@ -93,13 +97,7 @@ else
 @switch (Model.Mode)
 {
     case ViewForumMode.NewPosts:
-        <h3 style="float:left;">Mesaje noi</h3>
-        @if (hasTopics)
-        {
-            <span>&nbsp;&bull;&nbsp;</span>
-            <input type="submit" form="MarkForumsRead" value="&#x2705;&nbsp;Marchează-le ca citite" />
-        }
-        <p style="clear:both"></p>
+        <h3>Mesaje noi</h3>
         break;
 
     case ViewForumMode.OwnPosts:
@@ -179,8 +177,8 @@ else
                     <p>&nbsp;</p>
                     <h3 style="float:left">Subiecte</h3>
                     <span>
-                        &nbsp;&bull;&nbsp;
-                        <button onclick="location.href='/Posting?forumId=@Model.ForumId&handler=newTopic'" type="button" class="MyButton" style="height:26px; padding-top:1px; padding-bottom: 1px">
+                        &nbsp;
+                        <button onclick="location.href='/Posting?forumId=@Model.ForumId&handler=newTopic'" type="button" class="MyButton SpacedButtonNotTop" style="height:26px; padding-top:1px; padding-bottom: 1px">
                             &#x1F4DD;&nbsp;Deschide un subiect nou
                         </button>
                     </span>
@@ -207,7 +205,11 @@ else
             <div class="@divClass">
                 @if (Model.Mode == ViewForumMode.Drafts)
                 {
-                    <input name="SelectedDrafts" type="checkbox" value="@topic.DraftId" form="DeleteDrafts" style="margin-right:10px" />
+                    <input name="SelectedDrafts" type="checkbox" value="@topic.DraftId" form="DeleteDrafts" style="margin-right:10px; align-self:safe center" />
+                }
+                else if (Model.Mode == ViewForumMode.NewPosts)
+                {
+                    <input name="SelectedNewPosts" type="checkbox" value="@($"{topic.ForumId};{topic.TopicId}")" form="MarkNewPostsRead" style="margin-right:10px; align-self:safe center" />
                 }
                 <span class="ForumContent">
                     @if (Model.Mode != ViewForumMode.Forum)
@@ -291,15 +293,17 @@ else
     if (Model.Mode == ViewForumMode.Drafts && hasTopics)
     {
         <hr class="BoxSeparator" />
-        <script>
-            function selectAll() {
-                var checkboxes = $('input[type=checkbox]');
-                checkboxes.prop('checked', !checkboxes.prop('checked'));
-            }
-        </script>
-        <button onclick="selectAll()" type="button" class="MyButton">&#x2714;&nbsp;Selectează toate mesajele</button>
+        <button onclick="selectAllCheckboxes()" type="button" class="MyButton">&#x2714;&nbsp;Selectează toate mesajele</button>
         <span>&nbsp;&bull;&nbsp;</span>
         <input type="submit" value="&#x1F6AE;&nbsp;Șterge mesajele selectate" form="DeleteDrafts" onclick="return confirm('Sigur dorești ștergerea mesajelor în lucru selectate?');" class="MyButton" />
+        <p>&nbsp;</p>
+    }
+    else if (Model.Mode == ViewForumMode.NewPosts && hasTopics)
+    {
+        <hr class="BoxSeparator" />
+        <button onclick="selectAllCheckboxes()" type="button" class="MyButton">&#x2714;&nbsp;Selectează toate mesajele</button>
+        <span>&nbsp;&bull;&nbsp;</span>
+        <input type="submit" value="&#x2705;&nbsp;Marchează mesajele selectate ca citite" form="MarkNewPostsRead" class="MyButton" />
         <p>&nbsp;</p>
     }
 
@@ -337,7 +341,7 @@ else if (Model.Mode == ViewForumMode.Drafts)
     <p>&nbsp;</p>
 }
 
-@if (hasTopics && Model.Mode != ViewForumMode.Drafts)
+@if (hasTopics && Model.Mode != ViewForumMode.Drafts && Model.Mode != ViewForumMode.NewPosts)
 {
     <hr class="BoxSeparator" />
 }

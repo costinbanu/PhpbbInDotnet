@@ -31,8 +31,8 @@
 
 <h3 style="float: left; margin-top: 0px">Mesaje private</h3>
 <span>
-    &nbsp;&bull;&nbsp;
-    <button onclick="location.href = '/Posting?handler=PrivateMessage'" style="height: 26px; padding-top: 1px; padding-bottom: 1px" class="MyButton">
+    &nbsp;
+    <button onclick="location.href = '/Posting?handler=PrivateMessage'" style="height: 26px; padding-top: 1px; padding-bottom: 1px" class="MyButton SpacedButtonNotTop">
         &#x1F4DD;&nbsp;Scrie un mesaj privat nou
     </button>
 </span>
@@ -204,27 +204,24 @@
             </div>
         </div>
         <p>&nbsp;</p>
-        <a asp-page="/Posting" asp-page-handler="PrivateMessage" asp-route-privateMessageId="@Model.SelectedMessage.MessageId" asp-route-receiverId="@Model.SelectedMessage.OthersId">Răspunde</a>
+        <button onclick="location.href='/Posting?handler=PrivateMessage&privateMessageId=@Model.SelectedMessage.MessageId&receiverId=@Model.SelectedMessage.OthersId'" type="button" class="MyButton SpacedButtonNotBottom">&#x1F5E8;&nbsp;Răspunde</button>
         @if (Model.SelectedMessageIsMine && Model.SelectedMessageIsUnread)
         {
-            <span>&nbsp;&bull;&nbsp;</span>
-            <a asp-page="/Posting" asp-page-handler="EditPrivateMessage" asp-route-privateMessageId="@Model.SelectedMessage.MessageId" asp-route-receiverId="@Model.SelectedMessage.OthersId">Modifică mesajul</a>
-            <span>&nbsp;&bull;&nbsp;</span>
-            <a href="javascript:submit('deleteForm', 'Mesajul va fi șters pentru tine și destinatar(i). Continui?')">Șterge mesajul pentru expeditor și destinatar(i)</a>
-            <form method="post" id="deleteForm" asp-page-handler="DeleteMessage">
+            <button onclick="location.href='/Posting?handler=EditPrivateMessage&privateMessageId=@Model.SelectedMessage.MessageId&receiverId=@Model.SelectedMessage.OthersId'" type="button" class="MyButton SpacedButtonNotBottom">&#x1F4DD;&nbsp;Modifică mesajul</button>
+            <form method="post" asp-page-handler="DeleteMessage" style="display:inline">
                 <input type="hidden" asp-for="MessageId" />
                 <input type="hidden" asp-for="InboxPage" />
                 <input type="hidden" asp-for="SentPage" />
                 <input type="hidden" name="Show" value="@(Model.SelectedMessageIsMine ? PrivateMessagesPages.Sent : PrivateMessagesPages.Inbox)" />
+                <input type="submit" onclick="return confirm('Mesajul va fi șters și pentru tine, și pentru destinatar. Continui?');" value="&#x1F6AE;&nbsp;Șterge mesajul pentru mine și destinatar" class="MyButton SpacedButtonNotBottom" />
             </form>
         }
-        <span>&nbsp;&bull;&nbsp;</span>
-        <a href="javascript:submit('hideForm', 'Mesajul va fi șters pentru tine, însă va rămâne disponibil destinatarului/destinatarilor. Continui?')">Șterge mesajul doar pentru mine</a>
-        <form method="post" id="hideForm" asp-page-handler="HideMessage">
+        <form method="post" id="hideForm" asp-page-handler="HideMessage" style="display:inline">
             <input type="hidden" asp-for="MessageId" />
             <input type="hidden" asp-for="InboxPage" />
             <input type="hidden" asp-for="SentPage" />
             <input type="hidden" name="Show" value="@(Model.SelectedMessageIsMine ? PrivateMessagesPages.Sent : PrivateMessagesPages.Inbox)" />
+            <input type="submit" onclick="return confirm('Mesajul va fi șters pentru tine, însă va rămâne disponibil destinatarului. Continui?');" value="&#x1F6AE;&nbsp;Șterge mesajul doar pentru mine" class="MyButton SpacedButtonNotBottom" />
         </form>
         <p></p>
         <span asp-validation-for="MessageId" class="validation"></span>

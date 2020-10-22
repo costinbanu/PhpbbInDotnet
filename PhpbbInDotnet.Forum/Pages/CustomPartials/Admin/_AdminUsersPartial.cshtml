@@ -1,11 +1,12 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials.Admin._AdminUsersPartialModel
 @using Microsoft.EntityFrameworkCore
+@using Utilities
 @inject Services.AdminUserService _adminUserService
 @inject Database.ForumDbContext _context
 
 <h4>Utilizatori inactivi</h4>
 
-<form method="post" id="userManagement" asp-page-handler="UserManagement">
+<form method="post" id="userManagement" name="userManagement" asp-page-handler="UserManagement">
     <input type="hidden" name="userAction" id="userAction" />
     <input type="hidden" name="userId" id="userId" />
 </form>
@@ -18,7 +19,11 @@
     ),
     ViewData
 )
-
+<p></p>
+<form method="post" id="batchAdminUsers" name="batchAdminUsers" asp-page-handler="BatchUserManagement">
+    <input type="submit" value="Șterge utilizatorii inactivi selectați" />
+</form>
+<p>&nbsp;</p>
 <h4>Caută utilizatori</h4>
 <form method="post" id="userSearch" asp-page-handler="UserSearch">
     <table class="mainTable">

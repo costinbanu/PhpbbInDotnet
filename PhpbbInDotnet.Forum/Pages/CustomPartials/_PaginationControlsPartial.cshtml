@@ -29,9 +29,9 @@
                     <span style="white-space:nowrap; display: inline">
                         <input type="hidden" name="topicId" value="@Model.TopicId" />
                         <input type="hidden" name="postId" value="@Model.FirstPostId" />
-                        @Html.DropDownList("userPostsPerPage", Model.Paginator.PostsPerPage, new { style = "height:26px; margin-top: 2px" })
+                        @Html.DropDownList("userPostsPerPage", Model.Paginator.PostsPerPage, new { style = "height:30px" })
                         &nbsp;
-                        <input type="submit" value="Salvează" class="MyButton" />
+                        <input type="submit" value="Salvează" class="MyButton" style="height:30px" />
                     </span>
                 </form>
             }
@@ -66,9 +66,9 @@
                     <span style="white-space:nowrap; display: inline">
                         <input type="hidden" name="topicId" value="@Model.TopicId" />
                         <input type="hidden" name="postId" value="@Model.FirstPostId" />
-                        @Html.DropDownList("userPostsPerPage", Model.Paginator.PostsPerPage, new { style = "height:26px; margin-top: 2px" })
+                        @Html.DropDownList("userPostsPerPage", Model.Paginator.PostsPerPage, new { style = "height:30px" })
                         &nbsp;
-                        <input type="submit" value="Salvează" class="MyButton"/>
+                        <input type="submit" value="Salvează" class="MyButton" style="height:30px" />
                     </span>
                 </form>
             }

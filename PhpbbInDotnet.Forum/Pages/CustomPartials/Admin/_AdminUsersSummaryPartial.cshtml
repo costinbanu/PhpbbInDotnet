@@ -5,6 +5,15 @@
 {
     <button type="button" class="collapsible">@user.Username</button>
     <table class="content" style="border:none; padding:5px">
+        @if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed)
+        {
+            <tr>
+                <td colspan="2">
+                    <input type="checkbox" name="userIds" value="@user.UserId" form="batchAdminUsers" />
+                    Selectează pentru ștergere
+                </td>
+            </tr>
+        }
         <tr>
             <td style="font-weight:bold; padding:5px">E-mail</td>
             <td>@user.UserEmail</td>

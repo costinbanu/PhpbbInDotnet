@@ -313,28 +313,28 @@ else if (IsPM)
     </p>
     @if (!IsPM)
     {
-        <button onclick="posting.toggleAttach()" type="button" class="PostingButton MyButton FooterButton">&#128206; Fișiere atașate</button>
+        <button onclick="posting.toggleAttach()" type="button" class="PostingButton MyButton SpacedButton">&#128206; Fișiere atașate</button>
     }
-    <button onclick="posting.toggleEmoji()" type="button" class="Hide960 PostingButton MyButton FooterButton">&#x1F642; Emoji</button>
+    <button onclick="posting.toggleEmoji()" type="button" class="Hide960 PostingButton MyButton SpacedButton">&#x1F642; Emoji</button>
     @if (CanCreatePoll)
     {
-        <button onclick="posting.togglePoll()" type="button" class="PostingButton MyButton FooterButton">&#x2714; Chestionar</button>
+        <button onclick="posting.togglePoll()" type="button" class="PostingButton MyButton SpacedButton">&#x2714; Chestionar</button>
     }
-    <input type="submit" value="&#x1F440; Previzualizează" onclick="return posting.censor()" asp-page-handler="Preview" class="PostingButton MyButton FooterButton" />
+    <input type="submit" value="&#x1F440; Previzualizează" onclick="return posting.censor()" asp-page-handler="Preview" class="PostingButton MyButton SpacedButton" />
 
     @switch (Model.Action)
     {
         case PostingActions.NewTopic:
         case PostingActions.NewForumPost:
-            <input type="submit" value="&#x1F4BE; Salvează mesajul în lucru" onclick="return posting.censor()" asp-page-handler="SaveDraft" class="PostingButton MyButton FooterButton" />
-            <input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="NewForumPost" class="PostingButton MyButton FooterButton MyMainButton" />
+            <input type="submit" value="&#x1F4BE; Salvează mesajul în lucru" onclick="return posting.censor()" asp-page-handler="SaveDraft" class="PostingButton MyButton SpacedButton" />
+            <input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="NewForumPost" class="PostingButton MyButton SpacedButton MyMainButton" />
             break;
         case PostingActions.EditForumPost:
-            <input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="EditForumPost" class="PostingButton MyButton FooterButton MyMainButton" />
+            <input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="EditForumPost" class="PostingButton MyButton SpacedButton MyMainButton" />
             break;
         case PostingActions.NewPrivateMessage:
         case PostingActions.EditPrivateMessage:
-            <input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="PrivateMessage" class="PostingButton MyButton FooterButton MyMainButton" />
+            <input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="PrivateMessage" class="PostingButton MyButton SpacedButton MyMainButton" />
             break;
         default:
             <span class="validation">A intervenit o eroare, pagina nu a fost afișată corect.</span>

@@ -30,13 +30,18 @@
 }
 
 .success {
-    display: block;
+    display: block !important;
     background-color: darkgreen;
 }
 
 .fail {
-    display: block;
+    display: block !important;
     background-color: darkred;
+}
+
+.warning {
+    display: block !important;
+    background-color: #ff6200;
 }
 
 input[type='text'], input[type='password'], select, textarea, option {

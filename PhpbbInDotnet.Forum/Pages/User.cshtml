@@ -125,13 +125,7 @@
                     </div>
                 }
                 <hr class="BoxSeparator" />
-                <script>
-                    function selectAll() {
-                        var checkboxes = $('input[type=checkbox]');
-                        checkboxes.prop('checked', !checkboxes.prop('checked'));
-                    }
-                </script>
-                <button onclick="selectAll()" type="button" class="MyButton">&#x2714;&nbsp;Selectează toți utilizatorii</button>
+                <button onclick="selectAllCheckboxes()" type="button" class="MyButton">&#x2714;&nbsp;Selectează toți utilizatorii</button>
                 <span>&nbsp;&bull;&nbsp;</span>
                 <input type="submit" value="&#x1F91D;&nbsp;Elimină utilizatorii selectați din listă"
                        onclick="return confirm('Dacă elimini utilizatorii selectați din lista persoanelor neagreate, vei putea vedea mesajele lor și veți putea comunica prin mesageria privată.\n\nUtilizatorii nu vor fi notificați.\n\nContinui?');" 
@@ -456,12 +450,12 @@ else
                 }
                 else
                 {
-                    var showMail = (Model.CurrentUser.UserAllowViewemail.ToBool() && !viewingUser.Foes.Contains(pageUser.UserId) && !pageUser.Foes.Contains(viewingUser.UserId)) || await Model.IsCurrentUserAdminHere();
+                    var showMail = (Model.CurrentUser.UserAllowViewemail.ToBool() && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false) && !(pageUser.Foes?.Contains(viewingUser.UserId) ?? false)) || await Model.IsCurrentUserAdminHere();
                     if (showMail)
                     {
                         <button class="MyButton" onclick="location.href='mailto:@Html.Raw(Model.CurrentUser.UserEmail)'" type="button" @(isSelf ? "disabled" : "")>&#x2709;&nbsp;Trimite e-mail</button>
                     }
-                    var showPMs = (_userService.HasPrivateMessagePermissions(viewingUser) && _userService.HasPrivateMessages(pageUser) && !viewingUser.Foes.Contains(pageUser.UserId) && !pageUser.Foes.Contains(viewingUser.UserId)) || (await Model.IsCurrentUserAdminHere() && _userService.HasPrivateMessagePermissions(pageUser));
+                    var showPMs = (_userService.HasPrivateMessagePermissions(viewingUser) && _userService.HasPrivateMessages(pageUser) && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false) && !(pageUser.Foes?.Contains(viewingUser.UserId) ?? false)) || (await Model.IsCurrentUserAdminHere() && _userService.HasPrivateMessagePermissions(pageUser));
                     if (showPMs)
                     {
                         if (showMail)

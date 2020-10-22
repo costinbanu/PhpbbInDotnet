@@ -52,7 +52,6 @@ html {
 }
 
 body {
-    /*padding-top: 100px;*/
     padding-bottom: 20px;
     background-image: url('../images/bg.gif');
     background-repeat: repeat;
@@ -80,6 +79,7 @@ h3 {
     padding: 2px 6px;
     text-decoration: none;
     text-shadow: 0px 1px 0px #ffffff;
+    outline: none !important;
 }
 
     .MyButton:hover {
@@ -119,6 +119,18 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
         background: linear-gradient(to bottom, #445664 5%, #8b9caa 100%) !important;
         background-color: #445664 !important;
     }
+
+.SpacedButton {
+    margin: 5px 5px 5px 5px !important;
+}
+
+.SpacedButtonNotTop {
+    margin: 0px 5px 5px 5px !important;
+}
+
+.SpacedButtonNotBottom {
+    margin: 5px 5px 0px 5px !important;
+}
 
 .body-content {
     padding: 15px 15px;

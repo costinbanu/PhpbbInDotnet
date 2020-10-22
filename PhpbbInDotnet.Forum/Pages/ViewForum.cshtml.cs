@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
+using System;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -37,6 +38,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
         [BindProperty]
         public int[] SelectedDrafts { get; set; }
+
+        [BindProperty]
+        public string[] SelectedNewPosts { get; set; }
 
         public ViewForumModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, IConfiguration config, 
             AnonymousSessionCounter sessionCounter, CommonUtils utils)
@@ -141,7 +145,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 Topics = new List<TopicTransport> { new TopicTransport { Topics = topics } };
                 Mode = ViewForumMode.NewPosts;
-                Paginator = new Paginator(count: tree.Tracking.Count, pageNum: PageNum ?? 1, link: "/ViewForum?handler=NewPosts&pageNum=1", topicId: null);
+                Paginator = new Paginator(count: topicList.Count(), pageNum: PageNum ?? 1, link: "/ViewForum?handler=NewPosts&pageNum=1", topicId: null);
                 return Page();
             });
 
@@ -218,6 +222,24 @@ namespace PhpbbInDotnet.Forum.Pages
                  _forceTreeRefresh = true;
                  return await OnGet();
              }));
+
+        public async Task<IActionResult> OnPostMarkNewPostsRead()
+            => await WithRegisteredUser(async (_) => 
+            {
+                foreach (var post in SelectedNewPosts ?? Enumerable.Empty<string>())
+                {
+                    var values = post?.Split(';');
+                    if ((values?.Length ?? 0) != 2)
+                    {
+                        continue;
+                    }
+                    var forumId = int.TryParse(values[0], out var val) ? val : 0;
+                    var topicId = int.TryParse(values[1], out val) ? val : 0;
+                    await MarkTopicRead(forumId, topicId, true, DateTime.UtcNow.ToUnixTimestamp());
+                }
+                _forceTreeRefresh = true;
+                return await OnGetNewPosts();
+            });
 
         public async Task<IActionResult> OnPostDeleteDrafts()
             => await WithRegisteredUser(async (_) =>

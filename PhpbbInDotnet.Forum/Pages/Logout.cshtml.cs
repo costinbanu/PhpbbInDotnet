@@ -35,10 +35,10 @@ namespace PhpbbInDotnet.Forum.Pages
                     IsPersistent = true,
                 });
 
-            if (string.IsNullOrWhiteSpace(returnUrl) || (
-                    returnUrl.Contains("user", StringComparison.InvariantCultureIgnoreCase) && 
-                    returnUrl.Contains("foe", StringComparison.InvariantCultureIgnoreCase)
-                )
+            if (string.IsNullOrWhiteSpace(returnUrl) ||
+                (returnUrl.Contains("user", StringComparison.InvariantCultureIgnoreCase) && returnUrl.Contains("foe", StringComparison.InvariantCultureIgnoreCase)) ||
+                returnUrl.Contains("logout", StringComparison.InvariantCultureIgnoreCase) ||
+                returnUrl.Contains("register", StringComparison.InvariantCultureIgnoreCase)
             )
             {
                 returnUrl = "/";

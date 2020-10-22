@@ -32,8 +32,47 @@ namespace PhpbbInDotnet.Services
                 from u in _context.PhpbbUsers.AsNoTracking()
                 where u.UserInactiveTime > 0
                     && u.UserInactiveReason != UserInactiveReason.NotInactive
+                orderby u.UserInactiveTime descending
                 select u
             ).ToListAsync();
+
+        public async Task<(string Message, bool? IsSuccess)> DeleteUsersWithEmailNotConfirmed(int[] userIds)
+        {
+            if (!(userIds?.Any() ?? false))
+            {
+                return ("Nici un utilizator selectat.", null);
+            }
+
+            try
+            {
+                var users = await (
+                    from u in _context.PhpbbUsers
+                    where userIds.Contains(u.UserId) && u.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed
+                    select u
+                ).ToListAsync();
+
+                _context.PhpbbUsers.RemoveRange(users);
+                await _context.SaveChangesAsync();
+
+                if (users.Count == userIds.Length)
+                {
+                    return ("Utilizatorii au fost șterși cu succes!", true);
+                }
+
+                var dbUserIds = users.Select(u => u.UserId).ToList();
+                var changedStatus = userIds.Where(u => !dbUserIds.Contains(u));
+
+                return (
+                    $"Următorii utilizatori au fost șterși cu succes: {string.Join(", ", dbUserIds)}.<br />" +
+                        $"Următorii utilizatori NU au fost șterși deoarece nu mai aveau acelasi status ({UserInactiveReason.NewlyRegisteredNotConfirmed}): {string.Join(", ", changedStatus)}"
+                    , null
+                );
+            }
+            catch (Exception ex)
+            {
+                return ($"Nici un utilizator nu au fost șters. ID eroare: {_utils.HandleError(ex)}.", false);
+            }
+        }
 
         public async Task<(string Message, bool? IsSuccess)> ManageUser(AdminUserActions? action, int? userId)
         {
@@ -152,7 +191,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                return ($"Acțiunea {action} nu a putut fi aplicată utilizatorului '{user.Username}'. ID: {_utils.HandleError(ex)}.", false);
+                return ($"Acțiunea {action} nu a putut fi aplicată utilizatorului '{user.Username}'. ID eroare: {_utils.HandleError(ex)}.", false);
             }
         }
 
@@ -320,7 +359,8 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                return ($"A intervenit o eroare. ID: {_utils.HandleError(ex)}.", false);
+                _utils.HandleError(ex);
+                return ($"A intervenit o eroare. ID eroare: {_utils.HandleError(ex)}.", false);
             }
         }
     }

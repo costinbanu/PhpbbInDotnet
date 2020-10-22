@@ -22,7 +22,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public string MessageClass
             => IsSuccess switch
             {
-                null => "message",
+                null => "message warning",
                 true => "message success",
                 _ => "message fail",
             };
@@ -67,6 +67,14 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithAdmin(async () =>
             {
                 (Message, IsSuccess) = await _adminUserService.ManageUser(userAction, userId);
+                Category = AdminCategories.Users;
+                return Page();
+            });
+
+        public async Task<IActionResult> OnPostBatchUserManagement(int[] userIds)
+            => await WithAdmin(async () =>
+            {
+                (Message, IsSuccess) = await _adminUserService.DeleteUsersWithEmailNotConfirmed(userIds);
                 Category = AdminCategories.Users;
                 return Page();
             });

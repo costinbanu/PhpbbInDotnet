@@ -428,6 +428,11 @@ else if (!IsAnonymous)
     <span onclick="showForumTree(this)" class="SpanLikeLink nowrap">Alege destinația</span>
 </div>
 
+@* this changes the read/unread tracking, needs to happen AFTER rendering the posts but BEFORE rendering the forum tree *@
+@if (await Model.IsTopicUnread(Model.ForumId ?? 0, Model.TopicId ?? 0))
+{
+    await Model.MarkTopicRead(Model.ForumId ?? 0, Model.TopicId ?? 0, Model.Paginator.IsLastPage, Model.Posts.Max(p => p.PostTime));
+}
 <div id="forumTree" style="display:none">
     <p>&nbsp;</p>
     @await Html.PartialAsync(
@@ -452,7 +457,7 @@ else if (!IsAnonymous)
 {
     <form method="post" asp-page-handler="TopicModerator" style="padding-top:5px">
         <span>Moderează subiectul: </span>
-        @Html.DropDownList("TopicAction", _utils.EnumToDropDownList<ModeratorTopicActions>(Model.TopicAction, Model.MapModeratorTopicActions), new { onchange = "vt.showTopicExtraInput(this)", id = "TopicAction", style = "max-width:70%; height: 28px" })
+        @Html.DropDownList("TopicAction", _utils.EnumToDropDownList<ModeratorTopicActions>(Model.TopicAction, Model.MapModeratorTopicActions), new { onchange = "vt.showTopicExtraInput(this)", id = "TopicAction", style = "max-width:70%; height: 30px; padding-top: 0px" })
         <div id="extraInputTopic" style="display:@(Model.ShowTopic ? "block" : "none")">
             <br />
             <input type="text" asp-for="DestinationForumId" placeholder="ID forum destinație" /><br />
@@ -461,7 +466,7 @@ else if (!IsAnonymous)
             </a>
             <span asp-validation-for="DestinationForumId" class="validation"></span>
         </div>
-        <input type="submit" value="Trimite" onclick="return vt.confirmAction('#TopicAction');" class="MyButton" />
+        <input type="submit" value="Trimite" onclick="return vt.confirmAction('#TopicAction');" class="MyButton" style="height:30px" />
         <input asp-for="ForumId" type="hidden" />
         <input asp-for="TopicId" type="hidden" />
         <input asp-for="PageNum" type="hidden" />
@@ -470,7 +475,7 @@ else if (!IsAnonymous)
 
     <form id="moderatorForm" method="post" asp-page-handler="PostModerator" style="padding-top:5px">
         <span>Moderează mesajele selectate: </span>
-        @Html.DropDownList("PostAction", _utils.EnumToDropDownList<ModeratorPostActions>(Model.PostAction, Model.MapModeratorPostActions), new { onchange = "vt.showPostExtraInput(this)", id = "PostAction", style = "max-width:70%; height: 28px" })
+        @Html.DropDownList("PostAction", _utils.EnumToDropDownList<ModeratorPostActions>(Model.PostAction, Model.MapModeratorPostActions), new { onchange = "vt.showPostExtraInput(this)", id = "PostAction", style = "max-width:70%; height: 30px; padding-top: 0px" })
         <div id="extraInputPostForum" style="display:@(Model.ShowPostForum ? "block" : "none")">
             <br />
             <input type="text" asp-for="DestinationForumId" placeholder="ID forum destinație" /><br />
@@ -489,7 +494,7 @@ else if (!IsAnonymous)
             <span asp-validation-for="PostIdsForModerator" class="validation"></span>
             <span asp-validation-for="DestinationTopicId" class="validation"></span>
         </div>
-        <input type="submit" value="Trimite" onclick="return vt.confirmAction('#PostAction');" class="MyButton" />
+        <input type="submit" value="Trimite" onclick="return vt.confirmAction('#PostAction');" class="MyButton" style="height:30px" />
         <br />
         <input asp-for="ForumId" type="hidden" />
         <input asp-for="TopicId" type="hidden" />

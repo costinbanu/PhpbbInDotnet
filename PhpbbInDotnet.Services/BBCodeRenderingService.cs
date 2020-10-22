@@ -236,11 +236,11 @@ namespace PhpbbInDotnet.Services
         {
             var htmlTagsLocation = new List<(int Position, int Length)>();
             var cleanedInput = string.Empty;
-            var shouldProcess = words.Any();
+            var shouldProcess = !string.IsNullOrWhiteSpace(input) && words.Any();
 
             if (shouldProcess)
             {
-                cleanedInput = input.RemoveDiacritics();
+                cleanedInput = HttpUtility.HtmlDecode(input).RemoveDiacritics();
                 if (cleanedInput.Length == input.Length && expectHtmlInInput)
                 {
                     foreach (Match m in _htmlRegex.Matches(cleanedInput))

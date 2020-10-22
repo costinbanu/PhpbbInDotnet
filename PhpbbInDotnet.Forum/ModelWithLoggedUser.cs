@@ -231,6 +231,53 @@ namespace PhpbbInDotnet.Forum
             );
         }
 
+        public async Task MarkTopicRead(int forumId, int topicId, bool isLastPage, long markTime)
+        {
+            var (tree, tracking) = await GetForumTree();
+            if (tracking.TryGetValue(forumId, out var tt) && tt.Count == 1 && isLastPage)
+            {
+                //current topic was the last unread in its forum, and it is the last page of unread messages, so mark the whole forum read
+                await MarkForumRead(forumId);
+
+                //current forum is the user's last unread forum, and it has just been read; set the mark time.
+                if (tracking.Count == 1)
+                {
+                    await SetLastMark();
+                }
+
+                //remove forum from tracking so that the forum tree in the navigator no longer displays it as unread
+                //tracking.Remove(forumId);
+                //var node = _forumService.GetTreeNode(tree, forumId);
+                //if (node != null)
+                //{
+                //    node.IsUnread = false;
+                //}
+            }
+            else
+            {
+                //there are other unread topics in this forum, or unread pages in this topic, so just mark the current page as read
+                var userId = (await GetCurrentUserAsync()).UserId;
+                using var connection = _context.Database.GetDbConnection();
+                await connection.OpenIfNeededAsync();
+                var existing = await connection.ExecuteScalarAsync<long?>("SELECT mark_time FROM phpbb_topics_track WHERE user_id = @userId AND topic_id = @topicId", new { userId, topicId = topicId });
+                if (existing == null)
+                {
+                    await connection.ExecuteAsync(
+                        "INSERT INTO phpbb_topics_track (forum_id, mark_time, topic_id, user_id) VALUES (@forumId, @markTime, @topicId, @userId)",
+                        new { forumId, markTime, topicId, userId }
+                    );
+                }
+                else if (markTime > existing)
+                {
+                    await connection.ExecuteAsync(
+                        "UPDATE phpbb_topics_track SET forum_id = @forumId, mark_time = @markTime WHERE user_id = @userId AND topic_id = @topicId",
+                        new { forumId, markTime, userId, topicId }
+                    );
+                }
+                //tt.Remove(new Tracking { TopicId = topicId });
+            }
+        }
+
         protected async Task SetLastMark()
         {
             var usrId = (await GetCurrentUserAsync()).UserId;

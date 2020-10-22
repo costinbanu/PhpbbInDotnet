@@ -71,7 +71,7 @@
 
         if (children.Any())
         {
-            var nodeClass = thisForum.IsUnread ? "searchCaret UnreadTitle" : "searchCaret";
+            var nodeClass = /*thisForum.IsUnread ? "searchCaret UnreadTitle" :*/ "searchCaret";
             await Output.WriteAsync(
                 $"<li class='{treeNodeClass}'>" +
                     $"<span id='treeNode{cur}' class='{nodeClass}' onclick='select(this, {cur}, {Json.Serialize(topics)});'>{thisForum?.ForumName ?? _config.GetValue<string>("ForumName")}</span>" +
@@ -88,7 +88,7 @@
         }
         else
         {
-            treeNodeClass += thisForum.IsUnread ? " UnreadTitle" : "";
+            //treeNodeClass += thisForum.IsUnread ? " UnreadTitle" : "";
             await Output.WriteAsync(
                 $"<li id='treeNode{cur}' class='{treeNodeClass}' onclick='select(this, {cur}, {Json.Serialize(topics)});' style='max-width:max-content'>{thisForum?.ForumName ?? _config.GetValue<string>("ForumName")}</li>"
             );

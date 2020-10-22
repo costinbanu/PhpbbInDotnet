@@ -128,6 +128,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return RedirectToPage("Error", new { isNotFound = true });
             }
 
+            var isSelf = CurrentUser.UserId == (await GetCurrentUserAsync()).UserId;
             var userMustLogIn = dbUser.UserAllowPm.ToBool() != AllowPM || dbUser.UserDateformat != CurrentUser.UserDateformat;
 
             if (await IsCurrentUserAdminHere() && dbUser.UsernameClean != _utils.CleanString(CurrentUser.Username) && !string.IsNullOrWhiteSpace(CurrentUser.Username))
@@ -161,7 +162,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             }
 
-            if (_utils.CalculateCrc32Hash(Email) != dbUser.UserEmailHash)
+            if (_utils.CalculateCrc32Hash(Email) != dbUser.UserEmailHash && isSelf)
             {
                 var registrationCode = Guid.NewGuid().ToString("n");
 
@@ -312,7 +313,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 ModelState.AddModelError(nameof(CurrentUser), "A intervenit o eroare, iar modificările nu au putut fi salvate.");
             }
 
-            var isSelf = CurrentUser.UserId == (await GetCurrentUserAsync()).UserId;
             if (affectedEntries > 0 && isSelf)
             {
                 Mode = UserPageMode.Edit;
