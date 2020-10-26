@@ -135,47 +135,30 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task Init()
         {
-            using (var connection = _context.Database.GetDbConnection())
-            {
-                await connection.OpenIfNeededAsync();
-                var smileys = await connection.QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies GROUP BY smiley_url ORDER BY smiley_order");
-                await _cacheService.SetInCache(await GetActualCacheKey("Smilies", false), smileys.ToList());
-            }
+            using var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeededAsync();
+            var smileys = await connection.QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies GROUP BY smiley_url ORDER BY smiley_order");
+            await _cacheService.SetInCache(await GetActualCacheKey("Smilies", false), smileys.ToList());
 
-            var userMap = await (
-                from u in _context.PhpbbUsers.AsNoTracking()
-                where u.UserId != Constants.ANONYMOUS_USER_ID && u.UserType != 2
-                orderby u.Username
-                select KeyValuePair.Create(u.Username, u.UserId)
-            ).ToListAsync();
+            var userMap = (await connection.QueryAsync<PhpbbUsers>(
+                "SELECT * FROM phpbb_users WHERE user_id <> @anon AND user_type <> 2", 
+                new { anon = Constants.ANONYMOUS_USER_ID })
+            ).Select(u => KeyValuePair.Create(u.Username, u.UserId)).ToList();
+
             await _cacheService.SetInCache(
                 await GetActualCacheKey("Users", false),
                 userMap.Select(map => KeyValuePair.Create(map.Key, $"[url={_config.GetValue<string>("BaseUrl")}/User?UserId={map.Value}]{map.Key}[/url]"))
             );
-            await _cacheService.SetInCache(await GetActualCacheKey("UserMap", false), userMap);
 
-            //var dbBbCodes = await (
-            //    from c in _context.PhpbbBbcodes.AsNoTracking()
-            //    where c.DisplayOnPosting == 1
-            //    select c
-            //).ToListAsync();
-            //var helplines = new Dictionary<string, string>(Constants.BBCODE_HELPLINES);
-            //var bbcodes = new List<string>(Constants.BBCODES);
-            //foreach (var bbCode in dbBbCodes)
-            //{
-            //    bbcodes.Add($"[{bbCode.BbcodeTag}]");
-            //    bbcodes.Add($"[/{bbCode.BbcodeTag}]");
-            //    var index = bbcodes.IndexOf($"[{bbCode.BbcodeTag}]");
-            //    helplines.Add($"cb_{index}", bbCode.BbcodeHelpline);
-            //}
-            //await _cacheService.SetInCache(await GetActualCacheKey("BbCodeHelplines", false), helplines);
-            //await _cacheService.SetInCache(await GetActualCacheKey("BbCodes", false), bbcodes);
-            //await _cacheService.SetInCache(await GetActualCacheKey("DbBbCodes", false), dbBbCodes);
+            await _cacheService.SetInCache(await GetActualCacheKey("UserMap", false), userMap);
         }
 
         private async Task<PhpbbPosts> InitEditedPost()
         {
-            var post = await _context.PhpbbPosts.FirstOrDefaultAsync(p => p.PostId == PostId);
+            using var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeededAsync();
+
+            var post = await connection.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { PostId });
 
             post.PostSubject = HttpUtility.HtmlEncode(PostTitle);
             post.PostEditTime = DateTime.UtcNow.ToUnixTimestamp();
@@ -200,7 +183,10 @@ namespace PhpbbInDotnet.Forum.Pages
                 return null;
             }
 
-            var curTopic = Action != PostingActions.NewTopic ? await _context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == TopicId) : null;
+            using var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeededAsync();
+
+            var curTopic = Action != PostingActions.NewTopic ? await connection.QuerySingleOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { TopicId }) : null;
             var canCreatePoll = Action == PostingActions.NewTopic || (Action == PostingActions.EditForumPost && (curTopic?.TopicFirstPostId ?? 0) == PostId);
             if (canCreatePoll && (string.IsNullOrWhiteSpace(PollExpirationDaysString) || !double.TryParse(PollExpirationDaysString, out var val) || val < 0 || val > 365))
             {
@@ -219,16 +205,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (Action == PostingActions.NewTopic)
             {
-                var topicResult = await _context.PhpbbTopics.AddAsync(new PhpbbTopics
-                {
-                    ForumId = ForumId,
-                    TopicTitle = PostTitle,
-                    TopicTime = DateTime.UtcNow.ToUnixTimestamp()
-                });
-                topicResult.Entity.TopicId = 0;
-                await _context.SaveChangesAsync();
-                curTopic = topicResult.Entity;
-                TopicId = topicResult.Entity.TopicId;
+                await connection.ExecuteAsync("INSERT INTO phpbb_topics (forum_id, topic_title, topic_time) VALUES (@forumId, @postTitle, @now)", new { ForumId, PostTitle, now = DateTime.UtcNow.ToUnixTimestamp() });
+                TopicId = await connection.ExecuteScalarAsync<int>("SELECT LAST_INSERT_ID()");
             }
 
             var newPostText = PostText;
@@ -246,61 +224,44 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (post == null)
             {
-                var postResult = await _context.PhpbbPosts.AddAsync(new PhpbbPosts
-                {
-                    ForumId = ForumId,
-                    TopicId = TopicId.Value,
-                    PosterId = usr.UserId,
-                    PostSubject = HttpUtility.HtmlEncode(PostTitle),
-                    PostText = _writingService.PrepareTextForSaving(newPostText),
-                    PostTime = DateTime.UtcNow.ToUnixTimestamp(),
-                    PostApproved = 1,
-                    PostReported = 0,
-                    BbcodeUid = uid,
-                    BbcodeBitfield = bitfield,
-                    EnableBbcode = 1,
-                    EnableMagicUrl = 1,
-                    EnableSig = 1,
-                    EnableSmilies = 1,
-                    PostAttachment = hasAttachments.ToByte(),
-                    PostChecksum = _utils.CalculateMD5Hash(newPostText),
-                    PostEditCount = 0,
-                    PostEditLocked = 0,
-                    PostEditReason = string.Empty,
-                    PostEditTime = 0,
-                    PostEditUser = 0,
-                    PosterIp = HttpContext.Connection.RemoteIpAddress.ToString(),
-                    PostUsername = HttpUtility.HtmlEncode(usr.Username)
-                });
-                postResult.Entity.PostId = 0;
-                await _context.SaveChangesAsync();
-                post = postResult.Entity;
+                post = await connection.QueryFirstOrDefaultAsync<PhpbbPosts>(
+                    "INSERT INTO phpbb_posts (forum_id, topic_id, poster_id, post_subject, post_text, post_time, bbcode_uid, bbcode_bitfield, post_attachment, post_checksum, poster_ip, post_username) " +
+                        "VALUES (@forumId, @topicId, @userId, @subject, @text, @now, @uid, @bitfield, @attachment, @checksum, @ip, @username); " +
+                    "SELECT * FROM phpbb_posts WHERE post_id = LAST_INSERT_ID();",
+                    new
+                    {
+                        ForumId,
+                        topicId = TopicId.Value,
+                        usr.UserId,
+                        subject = HttpUtility.HtmlEncode(PostTitle),
+                        text = _writingService.PrepareTextForSaving(newPostText),
+                        now = DateTime.UtcNow.ToUnixTimestamp(),
+                        uid,
+                        bitfield,
+                        attachment = hasAttachments.ToByte(),
+                        checksum = _utils.CalculateMD5Hash(newPostText),
+                        ip = HttpContext.Connection.RemoteIpAddress.ToString(),
+                        username = HttpUtility.HtmlEncode(usr.Username)
+                    }
+                );
+
                 await _postService.CascadePostAdd(_context, post, false);
             }
             else
             {
-                post.PostText = _writingService.PrepareTextForSaving(newPostText);
-                post.BbcodeUid = uid;
-                post.BbcodeBitfield = bitfield;
-                post.PostAttachment = hasAttachments.ToByte();
+                await connection.ExecuteAsync(
+                    "UPDATE phpbb_posts SET post_text = @text, ubbcode_uid = @uid, bbcode_bitfield = @bitfield, post_attachment = @attachment",
+                    new { text = _writingService.PrepareTextForSaving(newPostText), uid, bitfield, attachment = hasAttachments.ToByte() }
+                );
 
-                await _context.SaveChangesAsync();
                 await _postService.CascadePostEdit(_context, post);
             }
             await _context.SaveChangesAsync();
 
-            using var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeededAsync();
-            var attachments = (await connection.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE attach_id IN @attachmentIds", new { attachmentIds = Attachments?.Select(a => a.AttachId).DefaultIfEmpty() })).AsList();
-            _context.PhpbbAttachments.UpdateRange(attachments);
-            for (var i = 0; i < (attachments?.Count ?? 0); i++)
-            {
-                attachments[i].PostMsgId = post.PostId;
-                attachments[i].TopicId = TopicId.Value;
-                attachments[i].AttachComment = _writingService.PrepareTextForSaving(Attachments?[i]?.AttachComment ?? string.Empty);
-                attachments[i].IsOrphan = 0;
-            }
-            await _context.SaveChangesAsync();
+            await connection.ExecuteAsync(
+                "UPDATE phpbb_attachments SET post_msg_id = @postId, topic_id = @topicId, attach_comment = @comment, is_orphan = 0 WHERE attach_id = @attachId",
+                Attachments?.Select(a => new { PostId, topicId = TopicId.Value, comment = _writingService.PrepareTextForSaving(a?.AttachComment ?? string.Empty), a.AttachId })
+            );
 
             if (canCreatePoll && !string.IsNullOrWhiteSpace(PollOptions))
             {
@@ -351,7 +312,9 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             if ((TopicId ?? 0) > 0 && (LastPostTime ?? 0) > 0)
             {
-                var currentLastPostTime = await _context.PhpbbPosts.AsNoTracking().Where(p => p.TopicId == TopicId).MaxAsync(p => p.PostTime);
+                using var connection = _context.Database.GetDbConnection();
+                await connection.OpenIfNeededAsync();
+                var currentLastPostTime = await connection.ExecuteScalarAsync<long>("SELECT MAX(post_time) FROM phpbb_posts WHERE topic_id = @topicId", new { TopicId });
                 if (currentLastPostTime > LastPostTime)
                 {
                     return PageWithError(curForum, nameof(LastPostTime), "De când a fost încărcată pagina, au mai fost scrie mesaje noi! Verifică mesajele precedente!");

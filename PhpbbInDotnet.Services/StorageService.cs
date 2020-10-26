@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Hosting;
+﻿using Dapper;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using PhpbbInDotnet.Database;
@@ -9,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
@@ -48,17 +51,23 @@ namespace PhpbbInDotnet.Services
         {
             var succeeded = new List<PhpbbAttachments>();
             var failed = new List<string>();
+            using var conn = _context.Database.GetDbConnection();
+            await conn.OpenIfNeededAsync();
+
+            var text = new StringBuilder("INSERT INTO phpbb_attachments (attach_comment, extension, filetime, filesize, mimetype, physical_filename, real_filename, poster_id, is_orphan) VALUES ");
             foreach (var file in attachedFiles)
             {
-                try
-                {
+                //try
+                //{
                     var name = $"{userId}_{Guid.NewGuid():n}";
                     using (var input = file.OpenReadStream())
                     using (var fs = File.Open(Path.Combine(AttachmentsPath, name), FileMode.Create))
                     {
                         await input.CopyToAsync(fs);
                     }
-                    succeeded.Add((await _context.PhpbbAttachments.AddAsync(new PhpbbAttachments
+                    text.Append("('', @Extension, @Filetime, @Filesize, @Mimetype, @PhysicalFilename, @RealFilename, @PosterId, 1),");
+
+                    succeeded.Add(new PhpbbAttachments
                     {
                         AttachComment = string.Empty,
                         Extension = Path.GetExtension(file.FileName).Trim('.').ToLowerInvariant(),
@@ -72,15 +81,23 @@ namespace PhpbbInDotnet.Services
                         AttachId = 0,
                         PostMsgId = 0,
                         TopicId = 0
-                    })).Entity);
-                }
-                catch (Exception ex)
-                {
-                    _utils.HandleError(ex, "Error uploading attachments.");
-                    failed.Add(file.FileName);
-                }
+                    });
+                //}
+                //catch (Exception ex)
+                //{
+                //    _utils.HandleError(ex, "Error uploading attachments.");
+                //    failed.Add(file.FileName);
+                //}
             }
-            await _context.SaveChangesAsync();
+            try
+            {
+                await conn.ExecuteAsync(text.ToString().TrimEnd(','), succeeded);
+            }
+            catch (Exception ex)
+            {
+                _utils.HandleError(ex, "Error uploading attachments.");
+                succeeded.Clear();
+            }
             return (succeeded, failed);
         }
 

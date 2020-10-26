@@ -84,7 +84,10 @@ namespace PhpbbInDotnet.Forum
                     }
                     else
                     {
-                        var dbUser = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == _currentUser.UserId);
+                        var connection = _context.Database.GetDbConnection();
+                        await connection.OpenIfNeededAsync();
+
+                        var dbUser = await connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { _currentUser.UserId });
                         if (dbUser == null || dbUser.UserInactiveTime > 0)
                         {
                             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -92,9 +95,7 @@ namespace PhpbbInDotnet.Forum
                         }
                         else if (DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > TimeSpan.FromMinutes(sessionTrackingTimeoutMinutes))
                         {
-                            _context.Update(dbUser);
-                            dbUser.UserLastvisit = DateTime.UtcNow.ToUnixTimestamp();
-                            await _context.SaveChangesAsync();
+                            await connection.ExecuteAsync("UPDATE phpbb_users SET user_lastvisit = @now WHERE user_id = @userId", new { now = DateTime.UtcNow.ToUnixTimestamp(), _currentUser.UserId });
                         }
                     }
                 }
@@ -126,10 +127,14 @@ namespace PhpbbInDotnet.Forum
             {
                 var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 await HttpContext.SignOutAsync();
+                var connection = _context.Database.GetDbConnection();
+                await connection.OpenIfNeededAsync();
+
+                var dbUser = await connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId = current });
 
                 await HttpContext.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme,
-                    await _userService.DbUserToClaimsPrincipalAsync(await _context.PhpbbUsers.AsNoTracking().FirstAsync(u => u.UserId == current)),
+                    await _userService.DbUserToClaimsPrincipalAsync(dbUser),
                     new AuthenticationProperties
                     {
                         AllowRefresh = true,

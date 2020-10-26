@@ -225,30 +225,20 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostPagination(int topicId, int userPostsPerPage, int? postId)
             => await WithRegisteredUser(async (user) =>
             {
-                async Task save(ForumDbContext localContext)
+                using var connection = _context.Database.GetDbConnection();
+                await connection.OpenIfNeededAsync();
+                var cur = await connection.QueryFirstOrDefaultAsync<PhpbbUserTopicPostNumber>("SELECT * FROM phpbb_user_topic_post_number WHERE user_id = @userId AND topic_id = @topicId", new { user.UserId, topicId });
+                if (cur == null)
                 {
-                    await localContext.SaveChangesAsync();
-                    await ReloadCurrentUser();
+                    await connection.ExecuteAsync("INSERT INTO phpbb_user_topic_post_number (user_id, topic_id, post_no) VALUES (@userId, @topicId, @userPostsPerPage)", new { user.UserId, topicId, userPostsPerPage });
                 }
-                var curValue = await _context.PhpbbUserTopicPostNumber.FirstOrDefaultAsync(ppp => ppp.UserId == user.UserId && ppp.TopicId == topicId);
+                else
+                {
+                    await connection.ExecuteAsync("UPDATE phpbb_user_topic_post_number SET post_no = @userPostsPerPage WHERE user_id = @userId AND topic_id = @topicId", new { user.UserId, topicId, userPostsPerPage });
+                }
 
-                if (curValue == null)
-                {
-                    _context.PhpbbUserTopicPostNumber.Add(
-                        new PhpbbUserTopicPostNumber
-                        {
-                            UserId = (await GetCurrentUserAsync()).UserId,
-                            TopicId = topicId,
-                            PostNo = userPostsPerPage
-                        }
-                    );
-                    await save(_context);
-                }
-                else if (curValue.PostNo != userPostsPerPage)
-                {
-                    curValue.PostNo = userPostsPerPage;
-                    await save(_context);
-                }
+                await ReloadCurrentUser();
+
                 if (postId.HasValue)
                 {
                     return RedirectToPage("ViewTopic", "ByPostId", new { postId = postId.Value, highlight = false });
