@@ -192,33 +192,16 @@ namespace PhpbbInDotnet.Services
                     return ("Destinatarul te-a adăugat pe lista sa de persoane neagreate, drept urmare nu îi poți trimite mesaje private.", false);
                 }
 
-                var msgResult = _context.PhpbbPrivmsgs.Add(new PhpbbPrivmsgs
-                {
-                    AuthorId = senderId,
-                    ToAddress = $"u_{receiverId}",
-                    MessageSubject = subject,
-                    MessageText = text,
-                    MessageTime = DateTime.UtcNow.ToUnixTimestamp()
-                });
-                msgResult.Entity.MsgId = 0;
-                await _context.SaveChangesAsync();
-                var msg = msgResult.Entity;
+                var connection = _context.Database.GetDbConnection();
+                await connection.OpenIfNeededAsync();
 
-                var readResult = _context.PhpbbPrivmsgsTo.Add(new PhpbbPrivmsgsTo
-                {
-                    AuthorId = senderId,
-                    MsgId = msg.MsgId,
-                    UserId = receiverId
-                });
-                readResult.Entity.Id = 0;
-                var readResult2 = _context.PhpbbPrivmsgsTo.Add(new PhpbbPrivmsgsTo
-                {
-                    AuthorId = senderId,
-                    MsgId = msg.MsgId,
-                    UserId = senderId
-                });
-                readResult2.Entity.Id = 0;
-                await _context.SaveChangesAsync();
+                await connection.ExecuteAsync(
+                    @"INSERT INTO phpbb_privmsgs (author_id, to_address, bcc_address, message_subject, message_text, message_time) VALUES (@senderId, @to, '', @subject, @text, @time); 
+                      SELECT LAST_INSERT_ID() INTO @inserted_id;
+                      INSERT INTO phpbb_privmsgs_to (author_id, msg_id, user_id) VALUES (@senderId, @inserted_id, @receiverId); 
+                      INSERT INTO phpbb_privmsgs_to (author_id, msg_id, user_id) VALUES (@senderId, @inserted_id, @senderId); ",
+                    new { senderId, receiverId, to = $"u_{receiverId}", subject, text, time = DateTime.UtcNow.ToUnixTimestamp() }
+                );
 
                 using var emailMessage = new MailMessage
                 {
@@ -251,15 +234,20 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                var to = await _context.PhpbbPrivmsgsTo.AsNoTracking().FirstOrDefaultAsync(x => x.MsgId == messageId && x.AuthorId != x.UserId);
-                if (to.PmUnread != 1)
+                var connection = _context.Database.GetDbConnection();
+                await connection.OpenIfNeededAsync();
+
+                var rows = await connection.ExecuteAsync(
+                    "UPDATE phpbb_privmsgs SET message_subject = @subject, message_text = @text " +
+                    "WHERE msg_id = @messageId AND EXISTS(SELECT 1 FROM phpbb_privmsgs_to WHERE msg_id = @messageId AND pm_unread = 1 AND user_id <> author_id)",
+                    new { subject, text, messageId }
+                );
+
+                if (rows == 0)
                 {
                     return ("Mesajul a fost deja citit și nu mai poate fi actualizat.", false);
                 }
-                var pm = await _context.PhpbbPrivmsgs.FirstOrDefaultAsync(x => x.MsgId == messageId);
-                pm.MessageSubject = subject;
-                pm.MessageText = text;
-                await _context.SaveChangesAsync();
+
                 return ("OK", true);
             }
             catch (Exception ex)
@@ -273,20 +261,20 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                var msg = await _context.PhpbbPrivmsgs.FirstOrDefaultAsync(p => p.MsgId == messageId);
-                if (msg == null)
+                var connection = _context.Database.GetDbConnection();
+                await connection.OpenIfNeededAsync();
+
+                var rows = await connection.ExecuteAsync(
+                    "DELETE m FROM phpbb_privmsgs m JOIN phpbb_privmsgs_to tt ON m.msg_id = tt.msg_id AND tt.pm_unread = 1 WHERE m.msg_id = @messageId; " +
+                    "DELETE t FROM phpbb_privmsgs_to t JOIN phpbb_privmsgs_to tt ON t.msg_id = tt.msg_id AND tt.pm_unread = 1 WHERE t.msg_id = @messageId;",
+                    new { messageId }
+                );
+
+                if (rows == 0)
                 {
-                    return ("Mesajul nu există.", false);
+                    return ("Mesajul nu există sau a fost deja citit. Drept urmare nu mai poate fi șters.", false);
                 }
-                var msgToEntries = await _context.PhpbbPrivmsgsTo.Where(t => t.MsgId == messageId).ToListAsync();
-                var to = msgToEntries.FirstOrDefault(x => x.AuthorId != x.UserId);
-                if (to.PmUnread != 1)
-                {
-                    return ("Mesajul a fost deja citit și nu mai poate fi șters.", false);
-                }
-                _context.PhpbbPrivmsgs.Remove(msg);
-                _context.PhpbbPrivmsgsTo.RemoveRange(msgToEntries);
-                await _context.SaveChangesAsync();
+
                 return ("OK", true);
             }
             catch (Exception ex)
@@ -296,17 +284,23 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<(string Message, bool? IsSuccess)> HidePrivateMessage(int messageId, int senderId, int receiverId)
+        public async Task<(string Message, bool? IsSuccess)> HidePrivateMessages(params int[] messageIds)
         {
             try
             {
-                var to = await _context.PhpbbPrivmsgsTo.FirstOrDefaultAsync(t => t.MsgId == messageId && t.AuthorId == senderId && t.UserId == receiverId);
-                if (to == null)
+                using var connection = _context.Database.GetDbConnection();
+                await connection.OpenIfNeededAsync();
+                var rows = await connection.ExecuteAsync(
+                    @"UPDATE phpbb_privmsgs_to t
+                        JOIN phpbb_privmsgs m ON t.msg_id = m.msg_id
+                         SET t.folder_id = -1
+                       WHERE m.msg_id IN @messageIds AND t.author_id <> t.user_id",
+                    new { messageIds }
+                );
+                if (rows < messageIds.Length)
                 {
-                    return ("Mesajul nu există.", false);
+                    return ($"{rows} mesaje au fost șterse cu succes, însă {messageIds.Length - rows} nu au fost găsite.", false);
                 }
-                to.FolderId = -1;
-                await _context.SaveChangesAsync();
                 return ("OK", true);
             }
             catch (Exception ex)

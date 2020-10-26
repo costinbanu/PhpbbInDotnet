@@ -1,14 +1,10 @@
-﻿CREATE DEFINER=`root`@`localhost` PROCEDURE `search_post_text`(forum int, topic int, author int, page_no int, excluded_forums mediumtext, search mediumtext)
+﻿CREATE DEFINER=`root`@`localhost` PROCEDURE `search_post_text`(forums mediumtext, topic int, author int, page_no int, search mediumtext)
 BEGIN
     if page_no is null
     then 
 		SIGNAL SQLSTATE '45000'
 		SET MESSAGE_TEXT = 'page_no can''t be null', MYSQL_ERRNO = 1001;
 	end if;
-    if excluded_forums is null
-    then
-		set excluded_forums = '0';
-    end if;    
     
 	set @sql = CONCAT (
 		"SELECT p.post_id,
@@ -30,11 +26,10 @@ BEGIN
 		   FROM phpbb_posts p
 		   JOIN phpbb_users u
 			 ON p.poster_id = u.user_id
-		  WHERE (? IS NULL OR ? = p.forum_id)
+		  WHERE FIND_IN_SET (p.forum_id, '", forums, "')
 			AND (? IS NULL OR ? = p.topic_id)
 			AND (? IS NULL OR ? = p.poster_id)
 			AND (? IS NULL OR MATCH(p.post_text) AGAINST(? IN BOOLEAN MODE))
-			AND NOT FIND_IN_SET (p.forum_id, '", excluded_forums, "')	
 		  
           UNION
 		  
@@ -57,11 +52,10 @@ BEGIN
 		   FROM phpbb_posts p
 		   JOIN phpbb_users u
 			 ON p.poster_id = u.user_id
-		  WHERE (? IS NULL OR ? = p.forum_id)
+		  WHERE FIND_IN_SET (p.forum_id, '", forums, "')
 			AND (? IS NULL OR ? = p.topic_id)
 			AND (? IS NULL OR ? = p.poster_id)
 			AND (? IS NULL OR MATCH(p.post_subject) AGAINST(? IN BOOLEAN MODE))
-			AND NOT FIND_IN_SET (p.forum_id, '", excluded_forums, "')		
 	  ORDER BY post_time DESC
 	  LIMIT ?, 14;"
     );
@@ -69,32 +63,29 @@ BEGIN
     set @start_idx = (page_no - 1) * 14;
 	PREPARE stmt FROM @sql;
           
-    set @forum = forum;
     set @topic = topic;
     set @author = author;
     set @search = search;
     
-	EXECUTE stmt USING @forum, @forum, @topic, @topic, @author, @author, @search, @search, @forum, @forum, @topic, @topic, @author, @author, @search, @search, @start_idx;
+	EXECUTE stmt USING @topic, @topic, @author, @author, @search, @search, @topic, @topic, @author, @author, @search, @search, @start_idx;
 	DEALLOCATE PREPARE stmt;
 
 	WITH search_stmt AS (
 		SELECT p.post_id
 		  FROM phpbb_posts p
-	     WHERE (forum IS NULL OR forum = p.forum_id)
+	     WHERE FIND_IN_SET (p.forum_id, forums)
 		   AND (topic IS NULL OR topic = p.topic_id)
 		   AND (author IS NULL OR author = p.poster_id)
 		   AND (search IS NULL OR MATCH(p.post_text) AGAINST(search IN BOOLEAN MODE))
-		   AND NOT FIND_IN_SET (p.forum_id, excluded_forums)	
 		 
          UNION            
 		
 		SELECT p.post_id
 		  FROM phpbb_posts p
-		 WHERE (forum IS NULL OR forum =p.forum_id)
+		 WHERE FIND_IN_SET (p.forum_id, forums)
 		   AND (topic IS NULL OR topic = p.topic_id)
 		   AND (author IS NULL OR author = p.poster_id)
 		   AND (search IS NULL OR MATCH(p.post_subject) AGAINST(search IN BOOLEAN MODE))
-           AND NOT FIND_IN_SET (p.forum_id, excluded_forums)
     )
 	SELECT count(1) as total_count
       FROM search_stmt;

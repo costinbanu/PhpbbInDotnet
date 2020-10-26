@@ -142,28 +142,54 @@ namespace PhpbbInDotnet.Forum.Pages
                 ModelState.AddModelError(nameof(SearchText), "Introduceți unul sau mai multe cuvinte!");
                 return;
             }
-            var restrictedForums = (await _forumService.GetRestrictedForumList(await GetCurrentUserAsync())).Where(f => f.forumId != ForumId);
+
+            var (tree, _) = await GetForumTree();
+            var forumIds = new List<int>(tree.Count);
+
+            if ((ForumId ?? 0) > 0)
+            {
+                void traverse(int fid)
+                {
+                    var node = _forumService.GetTreeNode(tree, fid);
+                    if (node != null)
+                    {
+                        if (!_forumService.IsNodeRestricted(node))
+                        {
+                            forumIds.Add(fid);
+                        }
+                        foreach (var child in node?.ChildrenList ?? new HashSet<int>())
+                        {
+                            traverse(child);
+                        }
+                    }
+                }
+                traverse(ForumId.Value);
+            }
+            else
+            {
+                forumIds.AddRange(tree.Where(t => !_forumService.IsNodeRestricted(t)).Select(t => t.ForumId));
+            }
 
             var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeededAsync();
+            
+                await connection.OpenIfNeededAsync();
+                PageNum ??= 1;
 
-            PageNum ??= 1;
-            using var multi = await connection.QueryMultipleAsync(
-                "CALL `forum`.`search_post_text`(@forum, @topic, @author, @page, @excluded_forums, @search);",
-                new
-                {
-                    forum = ForumId > 0 ? ForumId : null,
-                    topic = TopicId > 0 ? TopicId : null,
-                    author = AuthorId > 0 ? AuthorId : null as int?,
-                    page = PageNum,
-                    excluded_forums = string.Join(',', restrictedForums.Select(f => f.forumId).DefaultIfEmpty()),
-                    search = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText)
-                }
-            );
+                using var multi = await connection.QueryMultipleAsync(
+                    "CALL `forum`.`search_post_text`(@forums, @topic, @author, @page, @search);",
+                    new
+                    {
+                        forums = string.Join(',', forumIds),
+                        topic = TopicId > 0 ? TopicId : null,
+                        author = AuthorId > 0 ? AuthorId : null as int?,
+                        page = PageNum,
+                        search = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText)
+                    }
+                );
 
-            Posts = await multi.ReadAsync<ExtendedPostDisplay>();
-
-            TotalResults = unchecked((int)(await multi.ReadAsync<long>()).Single());
+                Posts = await multi.ReadAsync<ExtendedPostDisplay>();
+                TotalResults = unchecked((int)await multi.ReadFirstOrDefaultAsync<long>());
+            
 
             Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum.Value, link: GetSearchLinkForPage(PageNum.Value + 1), topicId: null);
         }

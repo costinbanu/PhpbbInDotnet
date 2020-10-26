@@ -25,8 +25,6 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty, Required(ErrorMessage = "Trebuie să introduci o parolă")]
         public string Password { get; set; }
 
-        public string ErrorMessage { get; set; }
-
         public string ForumName { get; private set; }
 
 
@@ -37,7 +35,12 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnGet()
         {
-            ForumName = HttpUtility.HtmlDecode((await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId))?.ForumName ?? string.Empty);
+            var forum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId);
+            if (forum == null)
+            {
+                return RedirectToPage("Error", new { isNotFound = true });
+            }
+            ForumName = HttpUtility.HtmlDecode(forum.ForumName ?? string.Empty);
             return Page();
         }
 
@@ -57,12 +60,16 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (forum.ForumPassword != Crypter.Phpass.Crypt(Password, forum.ForumPassword))
             {
-                ErrorMessage = "Numele de utilizator și/sau parola sunt greșite!";
-                return Page();
+                ModelState.AddModelError(nameof(Password), "Parola este greșită!");
+                return await OnGet();
             }
             else
             {
                 HttpContext.Session.SetInt32($"ForumLogin_{ForumId}", 1);
+                if (string.IsNullOrWhiteSpace(ReturnUrl))
+                {
+                    return RedirectToPage("ViewForum", new { ForumId });
+                }
                 return Redirect(HttpUtility.UrlDecode(ReturnUrl));
             }
         }

@@ -10,7 +10,6 @@
     foreach (var user in Model.UserList)
     {
         var color = string.IsNullOrWhiteSpace(user.UserColour) ? "#000000" : $"#{user.UserColour}";
-        var textDecoration = user.UserInactiveTime > 0 ? "line-through" : "none";
 
         if (!isFirst)
         {
@@ -19,7 +18,14 @@
 
         <div class="FlexCenter">
             <div class="PostTitle" style="overflow-wrap: break-word">
-                <a asp-page="User" asp-route-UserId="@user.UserId" style="color:@color; text-decoration:@textDecoration">@Html.Raw(user.Username)</a>
+                @if (user.GroupId == Constants.BOTS_GROUP_ID || user.UserId == Constants.ANONYMOUS_USER_ID)
+                {
+                    <span style="color:@color">@Html.Raw(user.Username)</span>
+                }
+                else
+                {
+                    <a asp-page="User" asp-route-UserId="@user.UserId" style="color:@color">@Html.Raw(user.Username)</a>
+                }
             </div>
             <div class="FlexRight PostInputWidth">
                 <b>Înscris:</b>
@@ -28,7 +34,7 @@
                 </script>
                 <br />
                 <b>Activ ultima oară:</b>
-                @if (user.UserInactiveTime == 0)
+                @if (user.UserInactiveTime == 0 && user.UserLastvisit >= user.UserRegdate)
                 {
                     <script>
                         writeDate("@user.UserLastvisit.ToUtcTime().ToString("o")", "@Model.DateFormat");
@@ -38,9 +44,12 @@
                 {
                     <span>inactiv</span>
                 }
-                <br />
-                <b>Localitate:</b>
-                @Html.Raw(user.UserFrom)
+                @if (!string.IsNullOrWhiteSpace(user.UserFrom))
+                {
+                    <br />
+                    <b>Localitate:</b>
+                    @Html.Raw(user.UserFrom)
+                }
                 <br />
                 @{
                     var group = Model.GroupList.FirstOrDefault(g => g.GroupId == user.GroupId);

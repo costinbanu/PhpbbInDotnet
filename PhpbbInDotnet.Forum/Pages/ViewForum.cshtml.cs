@@ -109,7 +109,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetNewPosts()
             => await WithRegisteredUser(async (user) =>
             {
-                var tree = await GetForumTree();
+                var tree = await GetForumTree(_forceTreeRefresh);
                 IEnumerable<TopicDto> topics = null;
                 var topicList = tree.Tracking.SelectMany(t => t.Value).Select(t => t.TopicId).Distinct();
                 var restrictedForums = await _forumService.GetRestrictedForumList(await GetCurrentUserAsync());

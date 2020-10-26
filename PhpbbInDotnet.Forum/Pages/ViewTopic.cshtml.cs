@@ -190,6 +190,11 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumRules = curForum.ForumRules;
                 ForumRulesUid = curForum.ForumRulesUid;
 
+                if (await IsTopicUnread(ForumId ?? 0, TopicId ?? 0))
+                {
+                    await MarkTopicRead(ForumId ?? 0, TopicId ?? 0, Paginator.IsLastPage, Posts.Max(p => p.PostTime));
+                }
+
                 await connection.ExecuteAsync("UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId", new { topicId = TopicId.Value });
                 return Page();
             }

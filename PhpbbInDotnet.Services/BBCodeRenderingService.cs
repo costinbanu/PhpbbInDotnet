@@ -23,6 +23,7 @@ namespace PhpbbInDotnet.Services
     {
         private static readonly Regex _htmlRegex = new Regex(@"<((?=!\-\-)!\-\-[\s\S]*\-\-|((?=\?)\?[\s\S]*\?|((?=\/)\/[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*|[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*(?:\s[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*(?:=(?:""[^""]*""|'[^']*'|[^'""<\s]*))?)*)\s?\/?))>", RegexOptions.Compiled);
         private static readonly Regex _spaceRegex = new Regex(" +", RegexOptions.Compiled | RegexOptions.Singleline);
+        private static readonly Regex _attachRegex = new Regex("#{AttachmentFileName=[^/]+/AttachmentIndex=[0-9]+}#", RegexOptions.Compiled);
 
         private readonly CommonUtils _utils;
         private readonly ForumDbContext _context;
@@ -55,7 +56,6 @@ namespace PhpbbInDotnet.Services
 
         public async Task ProcessPost(PostDto post, PageContext pageContext, HttpContext httpContext, bool renderAttachments, string toHighlight = null)
         {
-            var attachRegex = new Regex("#{AttachmentFileName=[^/]+/AttachmentIndex=[0-9]+}#", RegexOptions.Compiled);
             var highlightWords = SplitHighlightWords(toHighlight);
 
             post.PostSubject = CensorWords(HttpUtility.HtmlDecode(post.PostSubject), _bannedWords.Value);
@@ -64,7 +64,7 @@ namespace PhpbbInDotnet.Services
 
             if (renderAttachments)
             {
-                var matches = from m in attachRegex.Matches(post.PostText).AsEnumerable()
+                var matches = from m in _attachRegex.Matches(post.PostText).AsEnumerable()
                               where m.Success
                               orderby m.Index descending
                               let parts = m.Value.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries)
@@ -101,12 +101,8 @@ namespace PhpbbInDotnet.Services
                     }
                 }
             }
-            else
-            {
-                post.PostText = attachRegex.Replace(post.PostText, string.Empty);
-            }
 
-            post.PostText = attachRegex.Replace(post.PostText, string.Empty);
+            post.PostText = _attachRegex.Replace(post.PostText, string.Empty);
         }
 
         public string BbCodeToHtml(string bbCodeText, string bbCodeUid)
@@ -191,11 +187,11 @@ namespace PhpbbInDotnet.Services
 
         private string HighlightWords(string text, List<string> words)
             => ProcessAllWords(
-                text,
-                words,
-                false,
-                (haystack, needle, startIndex) => (haystack.IndexOf(needle, startIndex, StringComparison.InvariantCultureIgnoreCase), needle),
-                (haystack, needle, index) =>
+                initialString: text,
+                words: words,
+                expectHtmlInInput: true,
+                indexOf: (haystack, needle, startIndex) => (haystack.IndexOf(needle, startIndex, StringComparison.InvariantCultureIgnoreCase), needle),
+                transform: (haystack, needle, index) =>
                 {
                     var openTag = "<span class=\"posthilit\">";
                     var closeTag = "</span>";
@@ -211,15 +207,15 @@ namespace PhpbbInDotnet.Services
                 => new Regex(@"\b" + Regex.Escape(wildcard).Replace(@"\*", @"\w*").Replace(@"\?", @"\w") + @"\b", RegexOptions.None, TimeSpan.FromSeconds(20));
 
             return ProcessAllWords(
-                text,
-                wordMap.Keys,
-                false,
-                (haystack, needle, startIndex) =>
+                initialString: text,
+                words: wordMap.Keys,
+                expectHtmlInInput: true,
+                indexOf: (haystack, needle, startIndex) =>
                 {
                     var match = getRegex(needle).Match(haystack, startIndex);
                     return match.Success ? (match.Index, match.Value) : (-1, needle);
                 },
-                (haystack, needle, index) =>
+                transform: (haystack, needle, index) =>
                 {
                     var replacement = wordMap.Select(x => KeyValuePair.Create(getRegex(x.Key), x.Value)).FirstOrDefault(x => x.Key.IsMatch(needle)).Value;
                     if (replacement == null)
@@ -232,15 +228,17 @@ namespace PhpbbInDotnet.Services
             );
         }
 
-        private string ProcessAllWords(string input, IEnumerable<string> words, bool expectHtmlInInput, FirstIndexOf indexOf, Transform transform)
+        private string ProcessAllWords(string initialString, IEnumerable<string> words, bool expectHtmlInInput, FirstIndexOf indexOf, Transform transform)
         {
             var htmlTagsLocation = new List<(int Position, int Length)>();
             var cleanedInput = string.Empty;
-            var shouldProcess = !string.IsNullOrWhiteSpace(input) && words.Any();
+            var shouldProcess = !string.IsNullOrWhiteSpace(initialString) && words.Any();
+            var input = string.Empty;
 
             if (shouldProcess)
             {
-                cleanedInput = HttpUtility.HtmlDecode(input).RemoveDiacritics();
+                input = HttpUtility.HtmlDecode(initialString);
+                cleanedInput = input.RemoveDiacritics();
                 if (cleanedInput.Length == input.Length && expectHtmlInInput)
                 {
                     foreach (Match m in _htmlRegex.Matches(cleanedInput))

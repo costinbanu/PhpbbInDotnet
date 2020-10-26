@@ -37,12 +37,23 @@
     </button>
 </span>
 <p style="clear:both"></p>
+<form method="get" id="switcher" name="switcher">
+    <input type="hidden" asp-for="Show" id="show" />
+    <input type="hidden" asp-for="InboxPage" />
+    <input type="hidden" asp-for="SentPage" />
+</form>
+<script>
+    function submitSwitcher(val) {
+        $('#show').val(val);
+        $('#switcher').submit();
+    }
+</script>
 <div class="tab">
-    <button class="@(Model.Show == PrivateMessagesPages.Inbox ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Inbox')">Primite</button>
-    <button class="@(Model.Show == PrivateMessagesPages.Sent ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Sent')">Trimise</button>
+    <button class="@(Model.Show == PrivateMessagesPages.Inbox ? "tablinks active" : "tablinks")" onclick="submitSwitcher('@PrivateMessagesPages.Inbox')" type="button">Primite</button>
+    <button class="@(Model.Show == PrivateMessagesPages.Sent ? "tablinks active" : "tablinks")" onclick="submitSwitcher('@PrivateMessagesPages.Sent')" type="button">Trimise</button>
     @if (Model.Show == PrivateMessagesPages.Message)
     {
-        <button class="@(Model.Show == PrivateMessagesPages.Message ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Message')">Mesajul selectat</button>
+        <button class="@(Model.Show == PrivateMessagesPages.Message ? "tablinks active" : "tablinks")" type="button">Mesajul selectat</button>
     }
 </div>
 
@@ -69,11 +80,11 @@
             {
                 <hr class="BoxSeparator" />
             }
-            var divClass = msg.Unread.ToBool() ? $"FlexRow Unread RowMargin" : $"FlexRow RowMargin";
-            <div class="@divClass">
-                <input name="SelectedMessages" type="checkbox" value="@msg.MessageId" form="MarkAsRead" style="margin-right:10px; align-self:safe center" />
+            var linkClass = msg.PmUnread.ToBool() ? "nav-link UnreadTitle" : "nav-link";
+            <div class="FlexRow RowMargin">
+                <input name="SelectedMessages" type="checkbox" value="@msg.MessageId" form="InboxActions" style="margin-right:10px; align-self:safe center" />
                 <span class="ForumContent" style="align-self:safe center">
-                    <a asp-page="/PrivateMessages" asp-route-show="@PrivateMessagesPages.Message" asp-route-messageId="@msg.MessageId" asp-route-inboxPage="@Model.InboxPage" asp-route-sentPage="@Model.SentPage" class="nav-link" style="font-weight:bold">
+                    <a asp-page="/PrivateMessages" asp-route-show="@PrivateMessagesPages.Message" asp-route-messageId="@msg.MessageId" asp-route-inboxPage="@Model.InboxPage" asp-route-sentPage="@Model.SentPage" class="@linkClass" style="font-weight:bold">
                         @Html.Raw(msg.Subject)
                     </a>
                     <span class="MinAuthor">
@@ -96,15 +107,14 @@
             isFirst = false;
         }
 
-        if (Model.InboxMessages.Any())
-        {
-            <hr class="BoxSeparator" />
-            <form asp-page-handler="MarkAsRead" method="post" id="MarkAsRead" name="MarkAsRead">
-                <button onclick="selectAllCheckboxes()" type="button" class="MyButton">&#x2714;&nbsp;Selectează toate mesajele</button>
-                <span>&nbsp;&bull;&nbsp;</span>
-                <input type="submit" value="&#x2705;&nbsp;Marchează mesajele selectate ca citite" onclick="return confirm('Sigur dorești să marchezi ca citite mesajele selectate?');" class="MyButton" />
-            </form>
-        }
+        <hr class="BoxSeparator" />
+        <form method="post" id="InboxActions" name="InboxActions">
+            <button onclick="selectAllCheckboxes()" type="button" class="MyButton SpacedButton">&#x2714;&nbsp;Selectează toate mesajele</button>
+            <input type="hidden" asp-for="Show" />
+            <input type="hidden" asp-for="InboxPage" />
+            <input type="submit" asp-page-handler="MarkAsRead" value="&#x2705;&nbsp;Marchează mesajele selectate ca citite" onclick="return confirm('Sigur dorești să marchezi ca citite mesajele selectate?');" class="MyButton SpacedButton" />
+            <input type="submit" asp-page-handler="HideSelectedMessages" value="&#x1F6AE;&nbsp;Șterge mesajele selectate pentru mine" onclick="return confirm('Mesajele selectate vor fi șterse pentru tine, însă vor rămâne disponibile expeditorului. Continui?');" class="MyButton SpacedButton" />
+        </form>
     }
     else
     {
@@ -136,6 +146,7 @@
                 <hr class="BoxSeparator" />
             }
             <div class="FlexRow RowMargin">
+                <input name="SelectedMessages" type="checkbox" value="@msg.MessageId" form="SentActions" style="margin-right:10px; align-self:safe center" />
                 <span class="ForumContent" style="align-self:safe center">
                     <a asp-page="/PrivateMessages" asp-route-show="@PrivateMessagesPages.Message" asp-route-messageId="@msg.MessageId" asp-route-inboxPage="@Model.InboxPage" asp-route-sentPage="@Model.SentPage" class="nav-link" style="font-weight:bold">
                         @Html.Raw(msg.Subject)
@@ -159,6 +170,14 @@
             </div>
             isFirst = false;
         }
+
+        <hr class="BoxSeparator" />
+        <form method="post" id="SentActions" name="SentActions">
+            <button onclick="selectAllCheckboxes()" type="button" class="MyButton SpacedButton">&#x2714;&nbsp;Selectează toate mesajele</button>
+            <input type="hidden" asp-for="Show" />
+            <input type="hidden" asp-for="SentPage" />
+            <input type="submit" asp-page-handler="HideSelectedMessages" value="&#x1F6AE;&nbsp;Șterge mesajele selectate pentru mine" onclick="return confirm('Mesajele selectate vor fi șterse pentru tine, însă vor rămâne disponibile destinatarului. Continui?');" class="MyButton SpacedButton" />
+        </form>
     }
     else
     {
@@ -221,7 +240,7 @@
             <input type="hidden" asp-for="InboxPage" />
             <input type="hidden" asp-for="SentPage" />
             <input type="hidden" name="Show" value="@(Model.SelectedMessageIsMine ? PrivateMessagesPages.Sent : PrivateMessagesPages.Inbox)" />
-            <input type="submit" onclick="return confirm('Mesajul va fi șters pentru tine, însă va rămâne disponibil destinatarului. Continui?');" value="&#x1F6AE;&nbsp;Șterge mesajul doar pentru mine" class="MyButton SpacedButtonNotBottom" />
+            <input type="submit" onclick="return confirm('Mesajul va fi șters pentru tine, însă va rămâne disponibil @(Model.SelectedMessageIsMine ? "destinatarului" : "expeditorului"). Continui?');" value="&#x1F6AE;&nbsp;Șterge mesajul doar pentru mine" class="MyButton SpacedButtonNotBottom" />
         </form>
         <p></p>
         <span asp-validation-for="MessageId" class="validation"></span>

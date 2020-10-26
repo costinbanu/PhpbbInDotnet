@@ -34,10 +34,13 @@ namespace PhpbbInDotnet.Services
         {
             if (_restrictedForums == null)
             {
-                _restrictedForums = (await GetForumTree(user, false)).Where(t => t.IsRestricted || (includePasswordProtected && t.HasPassword)).Select(t => (t.ForumId, t.HasPassword));
+                _restrictedForums = (await GetForumTree(user, false)).Where(t => IsNodeRestricted(t, includePasswordProtected)).Select(t => (t.ForumId, t.HasPassword));
             }
             return _restrictedForums;
         }
+
+        public bool IsNodeRestricted(ForumTree tree, bool includePasswordProtected = false)
+            => tree.IsRestricted || (includePasswordProtected && tree.HasPassword);
 
         public async Task<HashSet<ForumTree>> GetForumTree(LoggedUser user, bool forceRefresh)
         {

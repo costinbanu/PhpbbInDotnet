@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PhpbbInDotnet.Utilities;
+using System;
 
 namespace PhpbbInDotnet.Objects
 {
@@ -10,8 +11,9 @@ namespace PhpbbInDotnet.Objects
         public bool OtherHasAvatar { get; set; }
         public string Subject { get; set; }
         public string Text { get; set; }
-        public DateTime Time { get; set; }
-        public byte Unread { get; set; }
+        public long MessageTime { get; set; }
+        public DateTime Time => MessageTime.ToUtcTime();
+        public byte PmUnread { get; set; }
         public int MessageId { get; set; }
     }
 }

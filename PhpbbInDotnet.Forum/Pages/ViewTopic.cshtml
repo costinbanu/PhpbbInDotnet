@@ -428,11 +428,6 @@ else if (!IsAnonymous)
     <span onclick="showForumTree(this)" class="SpanLikeLink nowrap">Alege destinația</span>
 </div>
 
-@* this changes the read/unread tracking, needs to happen AFTER rendering the posts but BEFORE rendering the forum tree *@
-@if (await Model.IsTopicUnread(Model.ForumId ?? 0, Model.TopicId ?? 0))
-{
-    await Model.MarkTopicRead(Model.ForumId ?? 0, Model.TopicId ?? 0, Model.Paginator.IsLastPage, Model.Posts.Max(p => p.PostTime));
-}
 <div id="forumTree" style="display:none">
     <p>&nbsp;</p>
     @await Html.PartialAsync(
