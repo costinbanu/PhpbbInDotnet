@@ -53,33 +53,33 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumTitle = HttpUtility.HtmlDecode(thisForum?.ForumName ?? "untitled");
                 IEnumerable<TopicDto> topics;
 
-                using (var connection = _context.Database.GetDbConnection())
-                {
-                    await connection.OpenIfNeededAsync();
-                    var parent = await connection.QuerySingleOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @ParentId", new { thisForum.ParentId });
-                    ParentForumId = parent?.ForumId;
-                    ParentForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? _config.GetValue<string>("ForumName"));
-                    topics = await connection.QueryAsync<TopicDto>(
-                        @"SELECT t.topic_id, 
-		                        t.forum_id,
-		                        t.topic_title, 
-		                        count(p.post_id) AS post_count,
-		                        t.topic_views AS view_count,
-		                        t.topic_type,
-		                        t.topic_last_poster_id,
-		                        t.topic_last_poster_name,
-		                        t.topic_last_post_time,
-		                        t.topic_last_poster_colour,
-		                        t.topic_last_post_id,
-                                t.topic_status
-	                        FROM forum.phpbb_topics t
-	                        JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
-                        WHERE t.forum_id = @forumId OR topic_type = @topicType
-                        GROUP BY t.topic_id
-                        ORDER BY topic_last_post_time DESC",
-                        new { ForumId, topicType = TopicType.Global }
-                    );
-                }
+                using var connection = _context.Database.GetDbConnection();
+                await connection.OpenIfNeededAsync();
+                
+                var parent = await connection.QuerySingleOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @ParentId", new { thisForum.ParentId });
+                ParentForumId = parent?.ForumId;
+                ParentForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? _config.GetValue<string>("ForumName"));
+                topics = await connection.QueryAsync<TopicDto>(
+                    @"SELECT t.topic_id, 
+		                    t.forum_id,
+		                    t.topic_title, 
+		                    count(p.post_id) AS post_count,
+		                    t.topic_views AS view_count,
+		                    t.topic_type,
+		                    t.topic_last_poster_id,
+		                    t.topic_last_poster_name,
+		                    t.topic_last_post_time,
+		                    t.topic_last_poster_colour,
+		                    t.topic_last_post_id,
+                            t.topic_status
+	                    FROM forum.phpbb_topics t
+	                    JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
+                    WHERE t.forum_id = @forumId OR topic_type = @topicType
+                    GROUP BY t.topic_id
+                    ORDER BY topic_last_post_time DESC",
+                    new { ForumId, topicType = TopicType.Global }
+                );
+                
                 (Forums, _) = await GetForumTree(_forceTreeRefresh);
 
                 Topics = (
@@ -109,36 +109,35 @@ namespace PhpbbInDotnet.Forum.Pages
                 IEnumerable<TopicDto> topics = null;
                 var topicList = tree.Tracking.SelectMany(t => t.Value).Select(t => t.TopicId).Distinct();
                 var restrictedForums = await _forumService.GetRestrictedForumList(await GetCurrentUserAsync());
-                using (var connection = _context.Database.GetDbConnection())
-                {
-                    await connection.OpenIfNeededAsync();
-                    topics = await connection.QueryAsync<TopicDto>(
-                        @"SELECT t.topic_id, 
-	                             t.forum_id,
-	                             t.topic_title, 
-                                 count(p.post_id) AS post_count,
-                                 t.topic_views AS view_count,
-                                 t.topic_last_poster_id,
-                                 t.topic_last_poster_name,
-                                 t.topic_last_post_time,
-                                 t.topic_last_poster_colour,
-                                 t.topic_last_post_id
-                            FROM forum.phpbb_topics t
-                            JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
-                        WHERE t.topic_id IN @topicList
-                          AND t.forum_id NOT IN @restrictedForumList
-                        GROUP BY t.topic_id
-                        ORDER BY t.topic_last_post_time DESC
-                        LIMIT @skip, @take",
-                        new
-                        {
-                            topicList = topicList.DefaultIfEmpty(),
-                            skip = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE,
-                            take = Constants.DEFAULT_PAGE_SIZE,
-                            restrictedForumList = restrictedForums.Select(f => f.forumId).DefaultIfEmpty()
-                        }
-                    );
-                }
+                using var connection = _context.Database.GetDbConnection();
+                await connection.OpenIfNeededAsync();
+
+                topics = await connection.QueryAsync<TopicDto>(
+                    @"SELECT t.topic_id, 
+	                            t.forum_id,
+	                            t.topic_title, 
+                                count(p.post_id) AS post_count,
+                                t.topic_views AS view_count,
+                                t.topic_last_poster_id,
+                                t.topic_last_poster_name,
+                                t.topic_last_post_time,
+                                t.topic_last_poster_colour,
+                                t.topic_last_post_id
+                        FROM forum.phpbb_topics t
+                        JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
+                    WHERE t.topic_id IN @topicList
+                        AND t.forum_id NOT IN @restrictedForumList
+                    GROUP BY t.topic_id
+                    ORDER BY t.topic_last_post_time DESC
+                    LIMIT @skip, @take",
+                    new
+                    {
+                        topicList = topicList.DefaultIfEmpty(),
+                        skip = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE,
+                        take = Constants.DEFAULT_PAGE_SIZE,
+                        restrictedForumList = restrictedForums.Select(f => f.forumId).DefaultIfEmpty()
+                    }
+                );
 
                 Topics = new List<TopicTransport> { new TopicTransport { Topics = topics } };
                 Mode = ViewForumMode.NewPosts;
@@ -153,22 +152,21 @@ namespace PhpbbInDotnet.Forum.Pages
                 IEnumerable<TopicDto> topics = null;
                 var totalCount = 0;
                 var restrictedForums = await _forumService.GetRestrictedForumList(await GetCurrentUserAsync());
-                using (var connection = _context.Database.GetDbConnection())
-                {
-                    await connection.OpenIfNeededAsync();
-                    using var multi = await connection.QueryMultipleAsync(
-                        "CALL `forum`.`get_own_topics`(@userId, @skip, @take, @restrictedForumList)",
-                        new
-                        {
-                            user.UserId,
-                            skip = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE,
-                            take = Constants.DEFAULT_PAGE_SIZE,
-                            restrictedForumList = string.Join(',', restrictedForums.Select(f => f.forumId).DefaultIfEmpty())
-                        }
-                    );
-                    topics = await multi.ReadAsync<TopicDto>();
-                    totalCount = unchecked((int)await multi.ReadSingleAsync<long>());
-                }
+                using var connection = _context.Database.GetDbConnection();
+                await connection.OpenIfNeededAsync();
+                
+                using var multi = await connection.QueryMultipleAsync(
+                    "CALL `forum`.`get_own_topics`(@userId, @skip, @take, @restrictedForumList)",
+                    new
+                    {
+                        user.UserId,
+                        skip = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE,
+                        take = Constants.DEFAULT_PAGE_SIZE,
+                        restrictedForumList = string.Join(',', restrictedForums.Select(f => f.forumId).DefaultIfEmpty())
+                    }
+                );
+                topics = await multi.ReadAsync<TopicDto>();
+                totalCount = unchecked((int)await multi.ReadSingleAsync<long>());
 
                 Topics = new List<TopicTransport> { new TopicTransport { Topics = topics.OrderByDescending(t => t.LastPostTime) } };
                 Mode = ViewForumMode.OwnPosts;
@@ -182,22 +180,22 @@ namespace PhpbbInDotnet.Forum.Pages
                 IEnumerable<TopicDto> topics = null;
                 var restrictedForums = await _forumService.GetRestrictedForumList(await GetCurrentUserAsync());
                 var count = 0;
-                using (var connection = _context.Database.GetDbConnection())
-                {
-                    await connection.OpenIfNeededAsync();
-                    using var multi = await connection.QueryMultipleAsync(
-                        "CALL `forum`.`get_drafts`(@userId, @skip, @take, @restrictedForumList);",
-                        new
-                        {
-                            user.UserId,
-                            skip = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE,
-                            take = Constants.DEFAULT_PAGE_SIZE,
-                            restrictedForumList = string.Join(',', restrictedForums.Select(f => f.forumId).DefaultIfEmpty())
-                        }
-                    );
-                    topics = await multi.ReadAsync<TopicDto>();
-                    count = unchecked((int)await multi.ReadSingleAsync<long>());
-                }
+                using var connection = _context.Database.GetDbConnection();
+                await connection.OpenIfNeededAsync();
+                
+                using var multi = await connection.QueryMultipleAsync(
+                    "CALL `forum`.`get_drafts`(@userId, @skip, @take, @restrictedForumList);",
+                    new
+                    {
+                        user.UserId,
+                        skip = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE,
+                        take = Constants.DEFAULT_PAGE_SIZE,
+                        restrictedForumList = string.Join(',', restrictedForums.Select(f => f.forumId).DefaultIfEmpty())
+                    }
+                );
+                topics = await multi.ReadAsync<TopicDto>();
+                count = unchecked((int)await multi.ReadSingleAsync<long>());
+                
 
                 Topics = new List<TopicTransport> { new TopicTransport { Topics = topics } };
                 Mode = ViewForumMode.Drafts;

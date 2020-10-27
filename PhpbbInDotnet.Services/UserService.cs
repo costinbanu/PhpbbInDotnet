@@ -81,11 +81,11 @@ namespace PhpbbInDotnet.Services
             {
                 return _anonymousDbUser;
             }
-            using (var connection = _context.Database.GetDbConnection())
-            {
-                await connection.OpenIfNeededAsync();
-                _anonymousDbUser = await connection.QuerySingleOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId = Constants.ANONYMOUS_USER_ID });
-            }
+            using var connection = _context.Database.GetDbConnection();          
+            await connection.OpenIfNeededAsync();
+
+            _anonymousDbUser = await connection.QuerySingleOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId = Constants.ANONYMOUS_USER_ID });
+            
             return _anonymousDbUser;
         }
 
@@ -330,11 +330,10 @@ namespace PhpbbInDotnet.Services
                 return _userRoles;
             }
 
-            using (var connection = _context.Database.GetDbConnection())
-            {
-                await connection.OpenIfNeededAsync();
-                _userRoles = await connection.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'u_'");
-            }
+            using var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeededAsync();
+            
+            _userRoles = await connection.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'u_'");
 
             return _userRoles;
         }
@@ -346,11 +345,10 @@ namespace PhpbbInDotnet.Services
                 return _modRoles;
             }
 
-            using (var connection = _context.Database.GetDbConnection())
-            {
-                await connection.OpenIfNeededAsync();
-                _modRoles = await connection.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'm_'");
-            }
+            using var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeededAsync();
+
+            _modRoles = await connection.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'm_'");           
 
             return _modRoles;
         }
@@ -362,11 +360,10 @@ namespace PhpbbInDotnet.Services
                 return _adminRoles;
             }
 
-            using (var connection = _context.Database.GetDbConnection())
-            {
-                await connection.OpenIfNeededAsync();
-                _adminRoles = await connection.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'a_'");
-            }
+            using var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeededAsync();
+
+            _adminRoles = await connection.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'a_'");            
 
             return _adminRoles;
         }

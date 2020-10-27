@@ -135,7 +135,7 @@ namespace PhpbbInDotnet.Services
                             var toDelete = await _context.PhpbbPosts.Where(p => p.PosterId == userId).ToListAsync();
                             _context.PhpbbPosts.RemoveRange(toDelete);
                             await _context.SaveChangesAsync();
-                            toDelete.ForEach(async p => await _postService.CascadePostDelete(_context, p, false));
+                            toDelete.ForEach(async p => await _postService.CascadePostDelete(p, false));
 
                             await flagUserAsChanged();
                             await deleteUser();

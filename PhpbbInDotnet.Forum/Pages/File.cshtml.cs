@@ -27,25 +27,20 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnGet(int Id)
         {
-            uint? forumId = null;
-            string physicalFilename = null;
-            string realFilename = null;
-            string mimeType = null;
-            using (var connection = _context.Database.GetDbConnection())
+            using var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeededAsync();
+   
+            var file = await connection.QuerySingleOrDefaultAsync("SELECT a.physical_filename, a.real_filename, a.mimetype, p.forum_id FROM phpbb_attachments a JOIN phpbb_posts p on a.post_msg_id = p.post_id WHERE attach_id = @Id", new { Id });
+            if (file == null)
             {
-                await connection.OpenIfNeededAsync();
-                var file = await connection.QuerySingleOrDefaultAsync("SELECT a.physical_filename, a.real_filename, a.mimetype, p.forum_id FROM phpbb_attachments a JOIN phpbb_posts p on a.post_msg_id = p.post_id WHERE attach_id = @Id", new { Id });
-                if (file == null)
-                {
-                    return RedirectToPage("Error", new { isNotFound = true });
-                }
-                forumId = file?.forum_id;
-                physicalFilename = file?.physical_filename;
-                realFilename = file?.real_filename;
-                mimeType = file?.mimetype;
-                await connection.ExecuteAsync("UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE attach_id = @Id", new { Id });
+                return RedirectToPage("Error", new { isNotFound = true });
             }
-
+            uint? forumId = file?.forum_id;
+            string physicalFilename = file?.physical_filename;
+            string realFilename = file?.real_filename;
+            string mimeType = file?.mimetype;
+            await connection.ExecuteAsync("UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE attach_id = @Id", new { Id });
+            
             return await WithValidForum(unchecked((int)(forumId ?? 0)), async (_) => await Task.FromResult(SendToClient(physicalFilename, realFilename, mimeType, false)));
         }
 
@@ -55,12 +50,10 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetAvatar(int userId)
         {
             string file;
-            using (var connection = _context.Database.GetDbConnection())
-            {
-                await connection.OpenIfNeededAsync();
-                file = await connection.QuerySingleOrDefaultAsync<string>("SELECT user_avatar FROM phpbb_users WHERE user_id = @userId", new { userId });
-            }
+            using var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeededAsync();
 
+            file = await connection.QueryFirstOrDefaultAsync<string>("SELECT user_avatar FROM phpbb_users WHERE user_id = @userId", new { userId });
             if (file == null)
             {
                 return RedirectToPage("Error", new { isNotFound = true });

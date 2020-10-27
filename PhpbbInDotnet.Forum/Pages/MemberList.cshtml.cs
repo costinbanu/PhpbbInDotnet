@@ -135,7 +135,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
 
                 group.GroupName = HttpUtility.HtmlEncode(groupName);
-                group.GroupDesc = _writingService.PrepareTextForSaving(groupDesc ?? string.Empty);
+                group.GroupDesc = _writingService.PrepareTextForSaving(groupDesc);
                 group.GroupColour = (groupColor ?? string.Empty).Trim('#').ToUpperInvariant();
                 group.GroupEditTime = groupEditTime;
 

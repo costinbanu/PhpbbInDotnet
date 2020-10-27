@@ -143,27 +143,26 @@ namespace PhpbbInDotnet.Forum.Pages
             }
             var restrictedForums = (await _forumService.GetRestrictedForumList(await GetCurrentUserAsync())).Where(f => f.forumId != ForumId);
 
-            using (var connection = _context.Database.GetDbConnection())
-            {
-                await connection.OpenIfNeededAsync();
-                PageNum ??= 1;
-                using var multi = await connection.QueryMultipleAsync(
-                    "CALL `forum`.`search_post_text`(@forum, @topic, @author, @page, @excluded_forums, @search);",
-                    new
-                    {
-                        forum = ForumId > 0 ? ForumId : null,
-                        topic = TopicId > 0 ? TopicId : null,
-                        author = AuthorId > 0 ? AuthorId : null as int?,
-                        page = PageNum,
-                        excluded_forums = string.Join(',', restrictedForums.Select(f => f.forumId).DefaultIfEmpty()),
-                        search = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText)
-                    }
-                );
+            using var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeededAsync();
 
-                Posts = await multi.ReadAsync<ExtendedPostDisplay>();
+            PageNum ??= 1;
+            using var multi = await connection.QueryMultipleAsync(
+                "CALL `forum`.`search_post_text`(@forum, @topic, @author, @page, @excluded_forums, @search);",
+                new
+                {
+                    forum = ForumId > 0 ? ForumId : null,
+                    topic = TopicId > 0 ? TopicId : null,
+                    author = AuthorId > 0 ? AuthorId : null as int?,
+                    page = PageNum,
+                    excluded_forums = string.Join(',', restrictedForums.Select(f => f.forumId).DefaultIfEmpty()),
+                    search = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText)
+                }
+            );
 
-                TotalResults = unchecked((int)(await multi.ReadAsync<long>()).Single());
-            }
+            Posts = await multi.ReadAsync<ExtendedPostDisplay>();
+
+            TotalResults = unchecked((int)(await multi.ReadAsync<long>()).Single());
 
             Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum.Value, link: GetSearchLinkForPage(PageNum.Value + 1), topicId: null);
         }

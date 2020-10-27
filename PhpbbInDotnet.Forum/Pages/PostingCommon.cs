@@ -245,22 +245,21 @@ namespace PhpbbInDotnet.Forum.Pages
                     }
                 );
 
-                await _postService.CascadePostAdd(_context, post, false);
+                await _postService.CascadePostAdd(post, false);
             }
             else
             {
                 await connection.ExecuteAsync(
-                    "UPDATE phpbb_posts SET post_text = @text, ubbcode_uid = @uid, bbcode_bitfield = @bitfield, post_attachment = @attachment",
-                    new { text = _writingService.PrepareTextForSaving(newPostText), uid, bitfield, attachment = hasAttachments.ToByte() }
+                    "UPDATE phpbb_posts SET post_text = @text, ubbcode_uid = @uid, bbcode_bitfield = @bitfield, post_attachment = @attachment WHERE post_id = @postId",
+                    new { text = _writingService.PrepareTextForSaving(newPostText), uid, bitfield, attachment = hasAttachments.ToByte(), post.PostId }
                 );
 
-                await _postService.CascadePostEdit(_context, post);
+                await _postService.CascadePostEdit(post);
             }
-            await _context.SaveChangesAsync();
 
             await connection.ExecuteAsync(
                 "UPDATE phpbb_attachments SET post_msg_id = @postId, topic_id = @topicId, attach_comment = @comment, is_orphan = 0 WHERE attach_id = @attachId",
-                Attachments?.Select(a => new { PostId, topicId = TopicId.Value, comment = _writingService.PrepareTextForSaving(a?.AttachComment ?? string.Empty), a.AttachId })
+                Attachments?.Select(a => new { post.PostId, topicId = TopicId.Value, comment = _writingService.PrepareTextForSaving(a.AttachComment), a.AttachId })
             );
 
             if (canCreatePoll && !string.IsNullOrWhiteSpace(PollOptions))
@@ -296,7 +295,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 curTopic.PollVoteChange = (byte)(PollCanChangeVote ? 1 : 0);
             }
 
-            await _context.SaveChangesAsync();
             await connection.ExecuteAsync(
                 "DELETE FROM forum.phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId",
                 new { usr.UserId, forumId = ForumId, topicId = Action == PostingActions.NewTopic ? 0 : TopicId }

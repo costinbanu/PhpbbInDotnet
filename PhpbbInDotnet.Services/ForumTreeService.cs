@@ -47,11 +47,9 @@ namespace PhpbbInDotnet.Services
 
             var restrictedForums = (user?.AllPermissions?.Where(p => p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE)?.Select(p => p.ForumId) ?? Enumerable.Empty<int>()).ToHashSet();
             var tracking = await GetForumTracking(user, forceRefresh);
-            using (var connection = _context.Database.GetDbConnection())
-            {
-                await connection.OpenIfNeededAsync();
-                _tree = (await connection.QueryAsync<ForumTree>("CALL `forum`.`get_forum_tree`();")).ToHashSet();
-            }
+            using var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeededAsync();
+            _tree = (await connection.QueryAsync<ForumTree>("CALL `forum`.`get_forum_tree`();")).ToHashSet();
 
             void dfs(int forumId)
             {
@@ -105,18 +103,17 @@ namespace PhpbbInDotnet.Services
             }
 
             var dbResults = Enumerable.Empty<ExtendedTracking>();
-            using (var connection = _context.Database.GetDbConnection())
+            using var connection = _context.Database.GetDbConnection();
+            try
             {
-                try
-                {
-                    await connection.OpenIfNeededAsync();
-                    dbResults = await connection.QueryAsync<ExtendedTracking>("CALL `forum`.`get_post_tracking`(@userId);", new { userId = user?.UserId ?? Constants.ANONYMOUS_USER_ID });
-                }
-                catch (Exception ex)
-                {
-                    _utils.HandleError(ex, $"Error getting the forum tracking for user {user?.UserId ?? Constants.ANONYMOUS_USER_ID}");
-                }
+                await connection.OpenIfNeededAsync();
+                dbResults = await connection.QueryAsync<ExtendedTracking>("CALL `forum`.`get_post_tracking`(@userId);", new { userId = user?.UserId ?? Constants.ANONYMOUS_USER_ID });
             }
+            catch (Exception ex)
+            {
+                _utils.HandleError(ex, $"Error getting the forum tracking for user {user?.UserId ?? Constants.ANONYMOUS_USER_ID}");
+            }
+            
             var count = dbResults.Count();
             _tracking = new Dictionary<int, HashSet<Tracking>>(count);
             

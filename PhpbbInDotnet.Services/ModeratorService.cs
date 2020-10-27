@@ -73,9 +73,9 @@ namespace PhpbbInDotnet.Services
                 posts.ForEach(post => post.ForumId = destinationForumId);
                 _context.PhpbbPosts.UpdateRange(posts);
                 await _context.SaveChangesAsync();
-                posts.ForEach(async (post) => await _postService.CascadePostDelete(_context, post, true));
+                posts.ForEach(async (post) => await _postService.CascadePostDelete(post, true));
                 await _context.SaveChangesAsync();
-                await _postService.CascadePostAdd(_context, posts.Last(), true);
+                await _postService.CascadePostAdd(posts.Last(), true);
                 await _context.SaveChangesAsync();
                 var tracks = await _context.PhpbbTopicsTrack.Where(tt => tt.TopicId == topicId).ToListAsync();
                 _context.PhpbbTopicsTrack.UpdateRange(tracks);
@@ -125,7 +125,7 @@ namespace PhpbbInDotnet.Services
                 var posts = await _context.PhpbbPosts.Where(p => p.TopicId == curTopic.TopicId).ToListAsync();
                 _context.PhpbbPosts.RemoveRange(posts);
                 await _context.SaveChangesAsync();
-                posts.ForEach(async (p) => await _postService.CascadePostDelete(_context, p, false));
+                posts.ForEach(async (p) => await _postService.CascadePostDelete(p, false));
                 await _context.SaveChangesAsync();
                 return ("Subiectul a fost modificat cu succes!", true);
             }
@@ -180,8 +180,8 @@ namespace PhpbbInDotnet.Services
                 await _context.SaveChangesAsync();
                 foreach (var post in posts)
                 {
-                    await _postService.CascadePostDelete(_context, post, false, oldTopicId);
-                    await _postService.CascadePostAdd(_context, post, false);
+                    await _postService.CascadePostDelete(post, false, oldTopicId);
+                    await _postService.CascadePostAdd(post, false);
                 }
                 await _context.SaveChangesAsync();
                 
@@ -229,8 +229,8 @@ namespace PhpbbInDotnet.Services
                 await _context.SaveChangesAsync();
                 foreach (var post in posts)
                 {
-                    await _postService.CascadePostDelete(_context, post, false, oldTopicId);
-                    await _postService.CascadePostAdd(_context, post, false);
+                    await _postService.CascadePostDelete(post, false, oldTopicId);
+                    await _postService.CascadePostAdd(post, false);
                 }
                 await _context.SaveChangesAsync();
                 return ("Mesajele au fost mutate cu succes!", true);
@@ -261,7 +261,7 @@ namespace PhpbbInDotnet.Services
                 var curTopic = await _context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == posts.First().TopicId);
                 _context.PhpbbPosts.RemoveRange(posts);
                 await _context.SaveChangesAsync();
-                posts.ForEach(async (p) => await _postService.CascadePostDelete(_context, p, false));
+                posts.ForEach(async (p) => await _postService.CascadePostDelete(p, false));
                 await _context.SaveChangesAsync();
                 return ("Subiectul a fost modificat cu succes!", true);
             }
