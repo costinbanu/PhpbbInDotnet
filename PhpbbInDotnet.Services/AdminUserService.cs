@@ -40,7 +40,7 @@ namespace PhpbbInDotnet.Services
         {
             if (!(userIds?.Any() ?? false))
             {
-                return ("Nici un utilizator selectat.", null);
+                return ("<span class=\"warning\">Nici un utilizator selectat.</span>", null);
             }
 
             try
@@ -63,8 +63,8 @@ namespace PhpbbInDotnet.Services
                 var changedStatus = userIds.Where(u => !dbUserIds.Contains(u));
 
                 return (
-                    $"Următorii utilizatori au fost șterși cu succes: {string.Join(", ", dbUserIds)}.<br />" +
-                        $"Următorii utilizatori NU au fost șterși deoarece nu mai aveau acelasi status ({UserInactiveReason.NewlyRegisteredNotConfirmed}): {string.Join(", ", changedStatus)}"
+                    $"<span class=\"warning\">Următorii utilizatori au fost șterși cu succes: {string.Join(", ", dbUserIds)}.<br />" +
+                        $"Următorii utilizatori NU au fost șterși deoarece nu mai aveau acelasi status ({UserInactiveReason.NewlyRegisteredNotConfirmed}): {string.Join(", ", changedStatus)}</span>"
                     , null
                 );
             }

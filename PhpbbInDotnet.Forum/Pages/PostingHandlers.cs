@@ -59,7 +59,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 await Init();
 
                 var title = HttpUtility.HtmlDecode(curPost.PostSubject);
-                PostText = $"[quote=\"{curAuthor}\"]\n{_writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid)}\n[/quote]";
+                PostText = $"[quote=\"{curAuthor}\"]\n{_writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid)}\n[/quote]\n";
                 PostTitle = title.StartsWith(Constants.REPLY) ? title : $"{Constants.REPLY}{title}";
                 await RestoreBackupIfAny();
                 return Page();
@@ -142,7 +142,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         if ((author?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
                         {
                             PostTitle = HttpUtility.HtmlDecode(post.PostSubject);
-                            PostText = $"[quote]{_writingService.CleanBbTextForDisplay(post.PostText, post.BbcodeUid)}[/quote]\r\n[url=./ViewTopic?postId={PostId}&handler=byPostId]{PostTitle}[/url]";
+                            PostText = $"[quote]\n{_writingService.CleanBbTextForDisplay(post.PostText, post.BbcodeUid)}\n[/quote]\n[url=./ViewTopic?postId={PostId}&handler=byPostId]{PostTitle}[/url]\n";
                             ReceiverId = author.UserId;
                             ReceiverName = author.Username;
                         }
@@ -166,7 +166,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         {
                             var title = HttpUtility.HtmlDecode(msg.MessageSubject);
                             PostTitle = title.StartsWith(Constants.REPLY) ? title : $"{Constants.REPLY}{title}";
-                            PostText = $"[quote]{_writingService.CleanBbTextForDisplay(msg.MessageText, msg.BbcodeUid)}[/quote]";
+                            PostText = $"[quote]\n{_writingService.CleanBbTextForDisplay(msg.MessageText, msg.BbcodeUid)}\n[/quote]\n";
                             ReceiverName = author.Username;
                         }
                         else

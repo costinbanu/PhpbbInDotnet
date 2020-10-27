@@ -187,7 +187,7 @@ namespace PhpbbInDotnet.Services
 
         private string HighlightWords(string text, List<string> words)
             => ProcessAllWords(
-                initialString: text,
+                input: text,
                 words: words,
                 expectHtmlInInput: true,
                 indexOf: (haystack, needle, startIndex) => (haystack.IndexOf(needle, startIndex, StringComparison.InvariantCultureIgnoreCase), needle),
@@ -207,7 +207,7 @@ namespace PhpbbInDotnet.Services
                 => new Regex(@"\b" + Regex.Escape(wildcard).Replace(@"\*", @"\w*").Replace(@"\?", @"\w") + @"\b", RegexOptions.None, TimeSpan.FromSeconds(20));
 
             return ProcessAllWords(
-                initialString: text,
+                input: text,
                 words: wordMap.Keys,
                 expectHtmlInInput: true,
                 indexOf: (haystack, needle, startIndex) =>
@@ -228,16 +228,15 @@ namespace PhpbbInDotnet.Services
             );
         }
 
-        private string ProcessAllWords(string initialString, IEnumerable<string> words, bool expectHtmlInInput, FirstIndexOf indexOf, Transform transform)
+        private string ProcessAllWords(string input, IEnumerable<string> words, bool expectHtmlInInput, FirstIndexOf indexOf, Transform transform)
         {
             var htmlTagsLocation = new List<(int Position, int Length)>();
             var cleanedInput = string.Empty;
-            var shouldProcess = !string.IsNullOrWhiteSpace(initialString) && words.Any();
-            var input = string.Empty;
+            var shouldProcess = !string.IsNullOrWhiteSpace(input) && words.Any();
 
             if (shouldProcess)
             {
-                input = HttpUtility.HtmlDecode(initialString);
+                input = HttpUtility.HtmlDecode(input);
                 cleanedInput = input.RemoveDiacritics();
                 if (cleanedInput.Length == input.Length && expectHtmlInInput)
                 {
@@ -279,7 +278,7 @@ namespace PhpbbInDotnet.Services
                             var tag = htmlTagsLocation.FirstOrDefault(x => index >= x.Position && index < x.Position + x.Length);
                             if (tag == default)
                             {
-                                var (cleanedResult, cleanednextIndex) = transform(cleanedInput, cleanedMatch, index);
+                                var (cleanedResult, cleanednextIndex) = transform(input, cleanedMatch, index);
                                 input = cleanedResult;
                                 cleanedInput = cleanedResult;
                                 startIndex = cleanednextIndex;
@@ -297,6 +296,7 @@ namespace PhpbbInDotnet.Services
                     }
                 }
             }
+
             return input;
         }
     }

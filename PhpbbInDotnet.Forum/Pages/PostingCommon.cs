@@ -141,7 +141,7 @@ namespace PhpbbInDotnet.Forum.Pages
             await _cacheService.SetInCache(await GetActualCacheKey("Smilies", false), smileys.ToList());
 
             var userMap = (await connection.QueryAsync<PhpbbUsers>(
-                "SELECT * FROM phpbb_users WHERE user_id <> @anon AND user_type <> 2", 
+                "SELECT * FROM phpbb_users WHERE user_id <> @anon AND user_type <> 2 ORDER BY username", 
                 new { anon = Constants.ANONYMOUS_USER_ID })
             ).Select(u => KeyValuePair.Create(u.Username, u.UserId)).ToList();
 

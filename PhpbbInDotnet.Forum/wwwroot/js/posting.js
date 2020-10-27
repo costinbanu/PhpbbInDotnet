@@ -202,7 +202,7 @@
         }
 
         if (this.theSelection) {
-            this.insert_text('[quote="' + username + '"]' + this.theSelection + '[/quote]');
+            this.insert_text('[quote="' + username + '"]\n' + this.theSelection + '\n[/quote]\n');
         }
 
         return;

@@ -315,6 +315,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (affectedEntries > 0 && isSelf)
             {
+                await ReloadCurrentUser();
                 Mode = UserPageMode.Edit;
                 return await OnGet();
             }

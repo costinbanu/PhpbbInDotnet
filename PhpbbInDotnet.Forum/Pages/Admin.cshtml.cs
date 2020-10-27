@@ -22,7 +22,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public string MessageClass
             => IsSuccess switch
             {
-                null => "message warning",
+                null => "message",
                 true => "message success",
                 _ => "message fail",
             };
