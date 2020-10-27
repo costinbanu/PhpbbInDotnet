@@ -118,7 +118,6 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             if (!await CanEdit())
             {
-                //return RedirectToPage("Login", new { returnUrl = @HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString) });
                 return RedirectToPage("Error", new { isUnauthorised = true });
             }
 
@@ -342,7 +341,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (user) =>
             {
                 var cur = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
-                using var connection = _context.Database.GetDbConnection();
+                var connection = _context.Database.GetDbConnection();
                 await connection.OpenIfNeededAsync();
                 await connection.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;" +
@@ -360,7 +359,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (user) =>
             {
                 var cur = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
-                using var connection = _context.Database.GetDbConnection();
+                var connection = _context.Database.GetDbConnection();
                 await connection.OpenIfNeededAsync();
                 await connection.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;",

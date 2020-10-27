@@ -29,14 +29,14 @@ namespace PhpbbInDotnet.Services
 
         public async Task<IEnumerable<PhpbbWords>> GetBannedWordsAsync()
         {
-            using var connection = _context.Database.GetDbConnection();
+            var connection = _context.Database.GetDbConnection();
             await connection.OpenIfNeededAsync();
             return await connection.QueryAsync<PhpbbWords>("SELECT * FROM phpbb_words");
         }
 
         public IEnumerable<PhpbbWords> GetBannedWords()
         {
-            using var connection = _context.Database.GetDbConnection();
+            var connection = _context.Database.GetDbConnection();
             connection.OpenIfNeeded();
             return connection.Query<PhpbbWords>("SELECT * FROM phpbb_words");
         }
@@ -92,7 +92,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<IEnumerable<AttachmentManagementDto>> GetOrphanedFiles()
         {
-            using var connection = _context.Database.GetDbConnection();
+            var connection = _context.Database.GetDbConnection();
             await connection.OpenIfNeededAsync();
             return await connection.QueryAsync<AttachmentManagementDto>("SELECT a.*, u.username FROM phpbb_attachments a JOIN phpbb_users u on a.poster_id = u.user_id WHERE a.is_orphan = 1");
         }
@@ -149,7 +149,7 @@ namespace PhpbbInDotnet.Services
             {
                 return string.Empty;
             }
-            using var connection = _context.Database.GetDbConnection();
+            var connection = _context.Database.GetDbConnection();
             await connection.OpenIfNeededAsync();
             foreach (var sr in await connection.QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies"))
             {

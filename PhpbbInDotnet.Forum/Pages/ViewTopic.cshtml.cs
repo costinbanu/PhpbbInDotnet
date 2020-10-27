@@ -146,7 +146,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 Paginator = new Paginator(_count.Value, PageNum.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId, await GetCurrentUserAsync());
                 Poll = await _postService.GetPoll(_currentTopic);
 
-                using var connection = _context.Database.GetDbConnection();
+                var connection = _context.Database.GetDbConnection();
                 await connection.OpenIfNeededAsync();
                 using var multi = await connection.QueryMultipleAsync(
                     "SELECT * FROM phpbb_users WHERE user_id IN @authors; " +
@@ -225,7 +225,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostPagination(int topicId, int userPostsPerPage, int? postId)
             => await WithRegisteredUser(async (user) =>
             {
-                using var connection = _context.Database.GetDbConnection();
+                var connection = _context.Database.GetDbConnection();
                 await connection.OpenIfNeededAsync();
                 var cur = await connection.QueryFirstOrDefaultAsync<PhpbbUserTopicPostNumber>("SELECT * FROM phpbb_user_topic_post_number WHERE user_id = @userId AND topic_id = @topicId", new { user.UserId, topicId });
                 if (cur == null)
@@ -252,7 +252,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostVote(int topicId, int[] votes, string queryString)
             => await WithRegisteredUser(async (user) => await WithValidTopic(topicId, async (_, topic) =>
             {
-                using var conn = _context.Database.GetDbConnection();
+                var conn = _context.Database.GetDbConnection();
                 await conn.OpenIfNeededAsync();
 
                 var existingVotes = (await conn.QueryAsync<PhpbbPollVotes>("SELECT * FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @UserId", new { topicId, user.UserId })).AsList();
@@ -353,11 +353,15 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (PostIdsForModerator.Length != 1 || PostAction != ModeratorPostActions.DeleteSelectedPosts)
                 {
-                    return Unauthorized();
+                    return RedirectToPage("Error", new { isUnauthorised = true });
                 }
 
-                var toDelete = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == PostIdsForModerator[0]);
-                var lastPosts = await _context.PhpbbPosts.AsNoTracking().Where(p => p.TopicId == toDelete.TopicId).OrderByDescending(p => p.PostTime).Take(2).ToListAsync();
+                var conn = _context.Database.GetDbConnection();
+                await conn.OpenIfNeededAsync();
+
+                var toDelete = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId = PostIdsForModerator[0] });
+                var lastPosts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC LIMIT 0, 2", new { toDelete.TopicId })).AsList();
+
                 if (toDelete.PostTime < lastPosts[0].PostTime)
                 {
                     ModelState.AddModelError(nameof(PostIdsForModerator), "Mesajul nu poate fi șters deoarece nu (mai) este ultimul din subiect!");
@@ -376,21 +380,25 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostReportMessage(int? reportPostId, short? reportReasonId, string reportDetails)
             => await WithRegisteredUser(async (user) =>
             {
-                var result = await _context.PhpbbReports.AddAsync(new PhpbbReports
-                {
-                    PostId = reportPostId.Value,
-                    UserId = user.UserId,
-                    ReasonId = reportReasonId.Value,
-                    ReportText = await _writingToolsService.PrepareTextForSaving(reportDetails),
-                    ReportTime = DateTime.UtcNow.ToUnixTimestamp(),
-                    ReportClosed = 0
-                });
-                result.Entity.ReportId = 0;
-                var topic = await _context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == TopicId);
-                topic.TopicReported = 1;
-                var post = await _context.PhpbbPosts.FirstOrDefaultAsync(t => t.PostId == reportPostId);
-                post.PostReported = 1;
-                await _context.SaveChangesAsync();
+                var conn = _context.Database.GetDbConnection();
+                await conn.OpenIfNeededAsync();
+
+                await conn.ExecuteAsync(
+                    "INSERT INTO phpbb_reports (post_id, user_id, reason_id, report_text, report_time, report_closed) VALUES (@PostId, @UserId, @ReasonId, @ReportText, @ReportTime, 0); " +
+                    "UPDATE phpbb_topics SET topic_reported = 1 WHERE topic_id = @TopicId; " +
+                    "UPDATE phpbb_posts SET post_reported = 1 WHERE post_id = @reportPostId",
+                    new
+                    {
+                        PostId = reportPostId.Value,
+                        user.UserId,
+                        ReasonId = reportReasonId.Value,
+                        ReportText = await _writingToolsService.PrepareTextForSaving(reportDetails),
+                        ReportTime = DateTime.UtcNow.ToUnixTimestamp(),
+                        TopicId,
+                        reportPostId
+                    }
+                );
+
                 return await OnGet();
             });
 
@@ -403,25 +411,20 @@ namespace PhpbbInDotnet.Forum.Pages
                     var (Message, IsSuccess) = await _moderatorService.DeletePosts(new[] { reportPostId.Value });
                     ModeratorActionResult = $"<span style=\"margin-left: 30px; color: {((IsSuccess ?? false) ? "darkgreen" : "red")}; display:block;\">{Message}</span>";
                 }
-                var report = await _context.PhpbbReports.FirstOrDefaultAsync(r => r.ReportId == reportId);
-                if (report != null)
-                {
-                    report.ReportClosed = 1;
-                }
-                var topic = await _context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == TopicId);
-                if (topic != null)
-                {
-                    topic.TopicReported = 0;
-                }
-                var post = await _context.PhpbbPosts.FirstOrDefaultAsync(t => t.TopicId == reportPostId);
-                if (post != null)
-                {
-                    post.PostReported = 0;
-                }
-                await _context.SaveChangesAsync();
+
+                var conn = _context.Database.GetDbConnection();
+                await conn.OpenIfNeededAsync();
+
+                await conn.ExecuteAsync(
+                    "UPDATE phpbb_reports SET report_closed = 1 WHERE report_id = @reportId; " +
+                    "UPDATE phpbb_topics SET topic_reported = 0 WHERE topic_id = @TopicId; " +
+                    "UPDATE phpbb_posts SET post_reported = 0 WHERE post_id = @reportPostId",
+                    new { reportId, TopicId, reportPostId }
+                );
+
                 if (!(deletePost ?? false) && (redirectToEdit ?? false))
                 {
-                    var reportedPost = await _context.PhpbbPosts.FirstOrDefaultAsync(p => p.PostId == reportPostId);
+                    var reportedPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @reportPostId", new { reportPostId });
                     if (reportedPost == null)
                     {
                         return await OnGet();
@@ -516,29 +519,22 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task<(int? LatestSelected, int? NextRemaining)> GetSelectedAndNextRemainingPostIds(params int[] idsToInclude)
         {
-            var latestSelectedPost = await (
-               from p in _context.PhpbbPosts.AsNoTracking()
-               where idsToInclude.Contains(p.PostId)
-               orderby p.PostTime descending
-               select p
-            ).FirstOrDefaultAsync();
+            var conn = _context.Database.GetDbConnection();
+            await conn.OpenIfNeededAsync();
 
-            var nextRemainingPost = await (
-                from p in _context.PhpbbPosts.AsNoTracking()
-                where p.TopicId == TopicId.Value
-                   && !PostIdsForModerator.Contains(p.PostId)
-                   && latestSelectedPost != null
-                   && p.PostTime >= latestSelectedPost.PostTime
-                orderby p.PostTime ascending
-                select p
-            ).FirstOrDefaultAsync() ?? await (
-                from p in _context.PhpbbPosts.AsNoTracking()
-                where p.TopicId == TopicId.Value
-                   && !PostIdsForModerator.Contains(p.PostId)
-                orderby p.PostTime descending
-                select p
-            ).FirstOrDefaultAsync();
+            var latestSelectedPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(
+                "SELECT * FROM phpbb_posts WHERE post_id IN @ids ORDER BY post_time DESC", 
+                new { ids = idsToInclude.DefaultIfEmpty() }
+            );
 
+            var nextRemainingPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(
+                "SELECT * FROM phpbb_posts WHERE topic_id = @topicId AND post_id NOT IN @ids AND post_time >= @time ORDER BY post_time ASC",
+                new { topicId = TopicId.Value, ids = PostIdsForModerator.DefaultIfEmpty(), time = latestSelectedPost?.PostTime }
+            ) ?? await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(
+                "SELECT * FROM phpbb_posts WHERE topic_id = @topicId AND post_id NOT IN @ids ORDER BY post_time DESC",
+                new { topicId = TopicId.Value, ids = PostIdsForModerator.DefaultIfEmpty() }
+            );
+                
             return (latestSelectedPost?.PostId, nextRemainingPost?.PostId);
         }
     }

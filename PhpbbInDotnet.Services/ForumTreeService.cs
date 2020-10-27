@@ -47,7 +47,7 @@ namespace PhpbbInDotnet.Services
 
             var restrictedForums = (user?.AllPermissions?.Where(p => p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE)?.Select(p => p.ForumId) ?? Enumerable.Empty<int>()).ToHashSet();
             var tracking = await GetForumTracking(user, forceRefresh);
-            using var connection = _context.Database.GetDbConnection();
+            var connection = _context.Database.GetDbConnection();
             await connection.OpenIfNeededAsync();
             _tree = (await connection.QueryAsync<ForumTree>("CALL `forum`.`get_forum_tree`();")).ToHashSet();
 
@@ -103,7 +103,7 @@ namespace PhpbbInDotnet.Services
             }
 
             var dbResults = Enumerable.Empty<ExtendedTracking>();
-            using var connection = _context.Database.GetDbConnection();
+            var connection = _context.Database.GetDbConnection();
             try
             {
                 await connection.OpenIfNeededAsync();

@@ -12,6 +12,7 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
+using PhpbbInDotnet.Database.Entities;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -76,22 +77,22 @@ namespace PhpbbInDotnet.Forum.Pages
                 TopicId = int.TryParse(query["topicid"], out var i) ? i as int? : null;
             }
 
-            Users = await (
-                from u in _context.PhpbbUsers.AsNoTracking()
-                where u.UserId != Constants.ANONYMOUS_USER_ID && u.UserType != 2
-                orderby u.Username
-                select KeyValuePair.Create(u.Username, u.UserId)
-            ).ToListAsync();
+            var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeededAsync();
+
+            Users = (
+                await connection.QueryAsync("SELECT username, user_id FROM phpbb_users WHERE user_id <> @id AND user_type <> 2", new { id = Constants.ANONYMOUS_USER_ID })
+            ).Select(u => KeyValuePair.Create((string)u.username, (int)u.user_id)).ToList();
 
             if (ForumId == null && TopicId != null)
             {
-                ForumId = (await _context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == TopicId))?.ForumId;
+                ForumId = (await connection.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { TopicId }))?.ForumId;
             }
 
             if (ForumId == null && TopicId == null && query != null)
             {
                 var postId = int.TryParse(query["postid"], out var i) ? i as int? : null;
-                var post = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(t => t.PostId == postId);
+                var post = await connection.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId });
                 TopicId = post?.TopicId;
                 ForumId = post?.ForumId;
             }
@@ -143,7 +144,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }
             var restrictedForums = (await _forumService.GetRestrictedForumList(await GetCurrentUserAsync())).Where(f => f.forumId != ForumId);
 
-            using var connection = _context.Database.GetDbConnection();
+            var connection = _context.Database.GetDbConnection();
             await connection.OpenIfNeededAsync();
 
             PageNum ??= 1;

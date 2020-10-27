@@ -62,7 +62,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetSetMode()
             => await WithRegisteredUser(async (_) =>
             {
-                using var connection = _context.Database.GetDbConnection();
+                var connection = _context.Database.GetDbConnection();
                 await connection.OpenIfNeededAsync();
                 switch (Mode)
                 {

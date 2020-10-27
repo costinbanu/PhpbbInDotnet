@@ -24,7 +24,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(List<PhpbbPosts> Posts, int Page, int Count)> GetPostPageAsync(int userId, int? topicId, int? page, int? postId)
         {
-            using var connection = _context.Database.GetDbConnection();
+            var connection = _context.Database.GetDbConnection();
             await connection.OpenIfNeededAsync();
 
             using var multi = await connection.QueryMultipleAsync("CALL `forum`.`get_posts`(@userId, @topicId, @page, @postId);", new { userId, topicId, page, postId });
@@ -42,7 +42,7 @@ namespace PhpbbInDotnet.Services
             var options = Enumerable.Empty<PhpbbPollOptions>();
             var voters = Enumerable.Empty<PollOptionVoter>();
 
-            using var connection = _context.Database.GetDbConnection();
+            var connection = _context.Database.GetDbConnection();
             await connection.OpenIfNeededAsync();
             
             options = await connection.QueryAsync<PhpbbPollOptions>("SELECT * FROM phpbb_poll_options WHERE topic_id = @TopicId ORDER BY poll_option_id", new { _currentTopic.TopicId });
@@ -123,8 +123,11 @@ namespace PhpbbInDotnet.Services
                 await SetTopicLastPost(curTopic, added, usr);
                 await SetTopicFirstPost(curTopic, added, usr, false);
             }
-            curTopic.TopicReplies++;
-            curTopic.TopicRepliesReal++;
+
+            await conn.ExecuteAsync(
+                "UPDATE phpbb_topics SET topic_replies = topic_replies + 1, topic_replies_real = topic_replies_real + 1 WHERE topic_id = @topicId",
+                new { curTopic.TopicId }
+            );
         }
 
         public async Task CascadePostDelete(PhpbbPosts deleted, bool ignoreTopic, int? oldTopicId = null)
@@ -164,14 +167,18 @@ namespace PhpbbInDotnet.Services
                     await SetTopicFirstPost(curTopic, firstPost, firstPostUser, false, true);
                 }
 
-                curTopic.TopicReplies -= curTopic.TopicReplies == 0 ? 0 : 1;
-                curTopic.TopicRepliesReal -= curTopic.TopicRepliesReal == 0 ? 0 : 1;
+                await conn.ExecuteAsync(
+                    "UPDATE phpbb_topics SET topic_replies = GREATEST(topic_replies - 1, 0), topic_replies_real = GREATEST(topic_replies_real - 1, 0) WHERE topic_id = @topicId",
+                    new { curTopic.TopicId }
+                );
 
-                var report = await conn.QueryFirstOrDefaultAsync<PhpbbReports>("SELECT * FROM phpbb_topics WHERE post_id = @postId", new { deleted.PostId });
+                var report = await conn.QueryFirstOrDefaultAsync<PhpbbReports>("SELECT * FROM phpbb_reports WHERE post_id = @postId", new { deleted.PostId });
                 if (report != null)
                 {
-                    await conn.ExecuteAsync("DELETE FROM phpbb_reports WHERE report_id = @reportId", new { report.ReportId });
-                    curTopic.TopicReported = 0;
+                    await conn.ExecuteAsync(
+                        "DELETE FROM phpbb_reports WHERE report_id = @reportId; UPDATE phpbb_topics SET topic_reported = 0 WHERE topic_id = @topicId", 
+                        new { report.ReportId, curTopic.TopicId }
+                    );
                 }
             }
 

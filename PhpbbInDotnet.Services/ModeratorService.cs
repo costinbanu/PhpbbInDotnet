@@ -1,5 +1,4 @@
-﻿//using Microsoft.EntityFrameworkCore;
-using Dapper;
+﻿using Dapper;
 using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
@@ -30,21 +29,20 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                var topic = await _context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == topicId);
-                if (topic != null && topic.TopicType != topicType)
+                var conn = _context.Database.GetDbConnection();
+                await conn.OpenIfNeededAsync();
+
+                var rows = await conn.ExecuteAsync("UPDATE phpbb_topics SET topic_type = @topicType WHERE topic_id = @topicId", new { topicType, topicId });
+
+                if (rows == 1)
                 {
-                    topic.TopicType = topicType;
-                    await _context.SaveChangesAsync();
                     return ("Subiectul a fost modificat cu succes!", true);
-                }
-                else if (topic == null)
-                {
-                    return ($"Subiectul {topicId} nu există.", false);
                 }
                 else
                 {
-                    return ("Subiectul are deja tipul solicitat.", false);
+                    return ($"Subiectul {topicId} nu există.", false);
                 }
+
             }
             catch (Exception ex)
             {
@@ -57,30 +55,31 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                var curTopic = await _context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == topicId);
-                if (curTopic == null)
+                var conn = _context.Database.GetDbConnection();
+                await conn.OpenIfNeededAsync();
+
+                var topicRows = await conn.ExecuteAsync(
+                    "UPDATE phpbb_topics SET forum_id = @destinationForumId WHERE topic_id = @topicID AND EXISTS(SELECT 1 FROM phpbb_forums WHERE forum_id = @destinationForumId)",
+                    new { topicId, destinationForumId }
+                );
+
+                if (topicRows == 0)
                 {
-                    return ($"Subiectul {topicId} nu există", false);
+                    return ("Subiectul sau forumul de destinație nu există", false);
                 }
-                if (!await _context.PhpbbForums.AsNoTracking().AnyAsync(f => f.ForumId == destinationForumId))
+
+                var oldPosts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC", new { topicId })).AsList();
+                await conn.ExecuteAsync(
+                    "UPDATE phpbb_posts SET forum_id = @destinationForumId WHERE topic_id = @topicId; " +
+                    "UPDATE phpbb_topics_track SET forum_id = @destinationForumId WHERE topic_id = @topicId", 
+                    new { destinationForumId, topicId }
+                );
+                foreach (var post in oldPosts)
                 {
-                    return ("Forumul de destinație nu există", false);
+                    await _postService.CascadePostDelete(post, true);
+                    post.ForumId = destinationForumId;
+                    await _postService.CascadePostAdd(post, true);
                 }
-                var curParent = await _context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == curTopic.ForumId);
-                var posts = await _context.PhpbbPosts.Where(p => p.TopicId == curTopic.TopicId).OrderBy(p => p.PostTime).ToListAsync();
-                
-                curTopic.ForumId = destinationForumId;
-                posts.ForEach(post => post.ForumId = destinationForumId);
-                _context.PhpbbPosts.UpdateRange(posts);
-                await _context.SaveChangesAsync();
-                posts.ForEach(async (post) => await _postService.CascadePostDelete(post, true));
-                await _context.SaveChangesAsync();
-                await _postService.CascadePostAdd(posts.Last(), true);
-                await _context.SaveChangesAsync();
-                var tracks = await _context.PhpbbTopicsTrack.Where(tt => tt.TopicId == topicId).ToListAsync();
-                _context.PhpbbTopicsTrack.UpdateRange(tracks);
-                tracks.ForEach(tt => tt.ForumId = destinationForumId);
-                await _context.SaveChangesAsync();
 
                 return ("Subiectul a fost modificat cu succes!", true);
             }
@@ -95,14 +94,15 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                var curTopic = await _context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == topicId);
-                if (curTopic == null)
+                var conn = _context.Database.GetDbConnection();
+                await conn.OpenIfNeededAsync();
+
+                var rows = await conn.ExecuteAsync("UPDATE phpbb_topics SET topic_status = @status WHERE topic_id = @topicId", new { status = @lock.ToByte(), topicId });
+
+                if (rows == 0)
                 {
                     return ($"Subiectul {topicId} nu există", false);
                 }
-
-                curTopic.TopicStatus = @lock.ToByte();
-                await _context.SaveChangesAsync();
                 
                 return ("Subiectul a fost modificat cu succes!", true);
             }
@@ -117,17 +117,20 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                var curTopic = await _context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == topicId);
-                if (curTopic == null)
+                var conn = _context.Database.GetDbConnection();
+                await conn.OpenIfNeededAsync();
+
+                var posts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId", new { topicId })).AsList();
+                
+                if (!posts.Any())
                 {
                     return ($"Subiectul {topicId} nu există", false);
                 }
-                var posts = await _context.PhpbbPosts.Where(p => p.TopicId == curTopic.TopicId).ToListAsync();
-                _context.PhpbbPosts.RemoveRange(posts);
-                await _context.SaveChangesAsync();
+
+                await conn.ExecuteAsync("DELETE FROM phpbb_posts WHERE topic_id = @topicId", new { topicId });
                 posts.ForEach(async (p) => await _postService.CascadePostDelete(p, false));
-                await _context.SaveChangesAsync();
-                return ("Subiectul a fost modificat cu succes!", true);
+
+                return ("Subiectul a fost șters cu succes!", true);
             }
             catch (Exception ex)
             {
@@ -154,36 +157,32 @@ namespace PhpbbInDotnet.Services
                     return ("Această acțiune necesită măcar un mesaj selectat.", false);
                 }
 
-                var posts = await _context.PhpbbPosts.Where(p => postIds.Contains(p.PostId)).OrderBy(p => p.PostTime).ToListAsync();
+                var conn = _context.Database.GetDbConnection();
+                await conn.OpenIfNeededAsync();
+
+                var posts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
+
                 if (posts.Count != postIds.Length)
                 {
                     return ("Cel puțin un mesaj dintre cele selectate a fost mutat sau șters între timp.", false);
                 }
 
-                var topicResult = await _context.PhpbbTopics.AddAsync(new PhpbbTopics
-                {
-                    ForumId = destinationForumId.Value,
-                    TopicTitle = posts.First().PostSubject,
-                    TopicTime = posts.First().PostTime
-                });
-                topicResult.Entity.TopicId = 0;
-                await _context.SaveChangesAsync();
-                var curTopic = topicResult.Entity;
+                var curTopic = await conn.QueryFirstOrDefaultAsync<PhpbbTopics>(
+                    "INSERT INTO phpbb_topics (forum_id, topic_title, topic_time) VALUES (@forumId, @title, @time); " +
+                    "SELECT * FROM phpbb_topics WHERE topic_id = LAST_INSERT_ID();",
+                    new { forumId = destinationForumId.Value, title = posts.First().PostSubject, time = posts.First().PostTime }
+                );
                 var oldTopicId = posts.First().TopicId;
+
+                await conn.ExecuteAsync("UPDATE phpbb_posts SET topic_id = @topicId, forum_id = @forumId WHERE post_id IN @postIds", new { curTopic.TopicId, curTopic.ForumId, postIds });
 
                 foreach (var post in posts)
                 {
+                    await _postService.CascadePostDelete(post, false);
                     post.TopicId = curTopic.TopicId;
                     post.ForumId = curTopic.ForumId;
-                }
-                _context.PhpbbPosts.UpdateRange(posts);
-                await _context.SaveChangesAsync();
-                foreach (var post in posts)
-                {
-                    await _postService.CascadePostDelete(post, false, oldTopicId);
                     await _postService.CascadePostAdd(post, false);
                 }
-                await _context.SaveChangesAsync();
                 
                 return ("Mesajele au fost separate cu succes!", true);
             }
@@ -208,31 +207,32 @@ namespace PhpbbInDotnet.Services
                     return ("Această acțiune necesită măcar un mesaj selectat.", false);
                 }
 
-                var posts = await _context.PhpbbPosts.Where(p => postIds.Contains(p.PostId)).OrderBy(p => p.PostTime).ToListAsync();
+                var conn = _context.Database.GetDbConnection();
+                await conn.OpenIfNeededAsync();
+
+                var posts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
                 if (posts.Count != postIds.Length || posts.Select(p => p.TopicId).Distinct().Count() != 1)
                 {
                     return ("Cel puțin un mesaj dintre cele selectate a fost mutat sau șters între timp.", false);
                 }
 
-                var newTopic = await _context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == destinationTopicId);
+                var newTopic = await conn.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @destinationTopicId", new { destinationTopicId });
                 if (newTopic == null)
                 {
                     return ("Subiectul de destinație nu există", false);
                 }
+
+                await conn.ExecuteAsync("UPDATE phpbb_posts SET topic_id = @topicId, forum_id = @forumId WHERE post_id IN @postIds", new { newTopic.TopicId, newTopic.ForumId, postIds });
+
                 var oldTopicId = posts.First().TopicId;
                 foreach (var post in posts)
                 {
+                    await _postService.CascadePostDelete(post, false);
                     post.TopicId = newTopic.TopicId;
                     post.ForumId = newTopic.ForumId;
-                }
-                _context.PhpbbPosts.UpdateRange(posts);
-                await _context.SaveChangesAsync();
-                foreach (var post in posts)
-                {
-                    await _postService.CascadePostDelete(post, false, oldTopicId);
                     await _postService.CascadePostAdd(post, false);
                 }
-                await _context.SaveChangesAsync();
+
                 return ("Mesajele au fost mutate cu succes!", true);
             }
             catch (Exception ex)
@@ -252,17 +252,18 @@ namespace PhpbbInDotnet.Services
                     return ("Această acțiune necesită măcar un mesaj selectat.", false);
                 }
 
-                var posts = await _context.PhpbbPosts.Where(p => postIds.Contains(p.PostId)).OrderBy(p => p.PostTime).ToListAsync();
+                var conn = _context.Database.GetDbConnection();
+                await conn.OpenIfNeededAsync();
+
+                var posts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
                 if (posts.Count != postIds.Length || posts.Select(p => p.TopicId).Distinct().Count() != 1)
                 {
                     return ("Cel puțin un mesaj dintre cele selectate a fost mutat sau șters între timp.", false);
                 }
 
-                var curTopic = await _context.PhpbbTopics.FirstOrDefaultAsync(t => t.TopicId == posts.First().TopicId);
-                _context.PhpbbPosts.RemoveRange(posts);
-                await _context.SaveChangesAsync();
+                await conn.ExecuteAsync("DELETE FROM phpbb_posts WHERE post_id IN @postIds", new { postIds });
                 posts.ForEach(async (p) => await _postService.CascadePostDelete(p, false));
-                await _context.SaveChangesAsync();
+
                 return ("Subiectul a fost modificat cu succes!", true);
             }
             catch (Exception ex)
@@ -276,7 +277,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<IEnumerable<Tuple<int, string>>> GetReportedMessages()
         {
-            using var connection = _context.Database.GetDbConnection();
+            var connection = _context.Database.GetDbConnection();
             await connection.OpenIfNeededAsync();
             return (await connection.QueryAsync(
                 @"SELECT r.post_id, jr.reason_title

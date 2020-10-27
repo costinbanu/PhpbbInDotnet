@@ -25,7 +25,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumId = curForum.ForumId;
                 Action = PostingActions.NewForumPost;
                 await Init();
-                using var conn = _context.Database.GetDbConnection();
+                var conn = _context.Database.GetDbConnection();
                 await conn.OpenIfNeededAsync();
                 var draft = conn.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = TopicId.Value });
                 if (draft != null)
@@ -47,7 +47,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var curAuthor = curPost.PostUsername;
                 if (string.IsNullOrWhiteSpace(curAuthor))
                 {
-                    using var conn = _context.Database.GetDbConnection();
+                    var conn = _context.Database.GetDbConnection();
                     await conn.OpenIfNeededAsync();
                     curAuthor = (await conn.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @posterId", new { curPost.PosterId }))?.Username ?? "Anonymous";
                 }
@@ -72,7 +72,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 CurrentTopic = null;
                 Action = PostingActions.NewTopic;
                 await Init();
-                using var conn = _context.Database.GetDbConnection();
+                var conn = _context.Database.GetDbConnection();
                 await conn.OpenIfNeededAsync();
                 var draft = conn.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = 0 }); 
                 if (draft != null)
@@ -100,7 +100,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 Action = PostingActions.EditForumPost;
                 await Init();
 
-                using var conn = _context.Database.GetDbConnection();
+                var conn = _context.Database.GetDbConnection();
                 await conn.OpenIfNeededAsync();
 
                 Attachments = (await conn.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id = @postId", new { PostId })).AsList();
@@ -130,7 +130,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetPrivateMessage()
             => await WithRegisteredUser(async (usr) =>
             {
-                using var conn = _context.Database.GetDbConnection();
+                var conn = _context.Database.GetDbConnection();
                 await conn.OpenIfNeededAsync();
 
                 if ((PostId ?? 0) > 0)
@@ -194,7 +194,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetEditPrivateMessage()
             => await WithRegisteredUser(async (user) =>
             {
-                using var conn = _context.Database.GetDbConnection();
+                var conn = _context.Database.GetDbConnection();
                 await conn.OpenIfNeededAsync();
 
                 var pm = await conn.QueryFirstOrDefaultAsync<PhpbbPrivmsgs>("SELECT * FROM phpbb_privmsgs WHERE msg_id = @privateMessageId", new { PrivateMessageId });
@@ -279,7 +279,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     }
                 }
 
-                using var connection = _context.Database.GetDbConnection();
+                var connection = _context.Database.GetDbConnection();
                 await connection.OpenIfNeededAsync();
                 await connection.ExecuteAsync("DELETE FROM phpbb_attachments WHERE attach_id = @attachId", new { attachment.AttachId });
                 var dummy = Attachments.Remove(attachment);
@@ -305,7 +305,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return PageWithError(curForum, nameof(PostText), "Mesajul este prea scurt (minim 3 caractere, exclusiv spații).");
                 }
 
-                using var conn = _context.Database.GetDbConnection();
+                var conn = _context.Database.GetDbConnection();
                 await conn.OpenIfNeededAsync();
 
                 var currentPost = Action == PostingActions.EditForumPost ? await InitEditedPost() : null;
@@ -439,7 +439,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return PageWithError(curForum, nameof(PostText), "Mesajul este prea scurt (minim 3 caractere, exclusiv spații).");
                 }
                 
-                using var conn = _context.Database.GetDbConnection();
+                var conn = _context.Database.GetDbConnection();
                 await conn.OpenIfNeededAsync();
                 var topicId = Action == PostingActions.NewTopic ? 0 : TopicId ?? 0;
                 var draft = conn.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId });
