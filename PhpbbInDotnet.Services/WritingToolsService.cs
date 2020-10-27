@@ -143,13 +143,15 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public string PrepareTextForSaving(string text)
+        public async Task<string> PrepareTextForSaving(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
                 return string.Empty;
             }
-            foreach (var sr in _context.PhpbbSmilies.AsNoTracking().ToList())
+            using var connection = _context.Database.GetDbConnection();
+            await connection.OpenIfNeededAsync();
+            foreach (var sr in await connection.QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies"))
             {
                 var regex = new Regex(@$"(?<=(^|\s)){Regex.Escape(sr.Code)}(?=($|\s))", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
                 var replacement = $"<!-- s{sr.Code} --><img src=\"./images/smilies/{sr.SmileyUrl.Trim('/')}\" alt=\"{sr.Code}\" title=\"{sr.Emotion}\" /><!-- s{sr.Code} -->";

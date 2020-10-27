@@ -234,7 +234,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         topicId = TopicId.Value,
                         usr.UserId,
                         subject = HttpUtility.HtmlEncode(PostTitle),
-                        text = _writingService.PrepareTextForSaving(newPostText),
+                        text = await _writingService.PrepareTextForSaving(newPostText),
                         now = DateTime.UtcNow.ToUnixTimestamp(),
                         uid,
                         bitfield,
@@ -251,7 +251,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 await connection.ExecuteAsync(
                     "UPDATE phpbb_posts SET post_text = @text, ubbcode_uid = @uid, bbcode_bitfield = @bitfield, post_attachment = @attachment WHERE post_id = @postId",
-                    new { text = _writingService.PrepareTextForSaving(newPostText), uid, bitfield, attachment = hasAttachments.ToByte(), post.PostId }
+                    new { text = await _writingService.PrepareTextForSaving(newPostText), uid, bitfield, attachment = hasAttachments.ToByte(), post.PostId }
                 );
 
                 await _postService.CascadePostEdit(post);
@@ -259,7 +259,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             await connection.ExecuteAsync(
                 "UPDATE phpbb_attachments SET post_msg_id = @postId, topic_id = @topicId, attach_comment = @comment, is_orphan = 0 WHERE attach_id = @attachId",
-                Attachments?.Select(a => new { post.PostId, topicId = TopicId.Value, comment = _writingService.PrepareTextForSaving(a.AttachComment), a.AttachId })
+                Attachments?.Select(a => new { post.PostId, topicId = TopicId.Value, comment = _writingService.PrepareTextForSaving(a.AttachComment).RunSync(), a.AttachId })
             );
 
             if (canCreatePoll && !string.IsNullOrWhiteSpace(PollOptions))

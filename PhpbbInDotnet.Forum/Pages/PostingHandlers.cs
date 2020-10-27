@@ -340,7 +340,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     LastEditUser = Action == PostingActions.EditForumPost ? user.Username : string.Empty,
                     PostId = currentPost?.PostId ?? 0,
                     PostSubject = HttpUtility.HtmlEncode(PostTitle),
-                    PostText = _writingService.PrepareTextForSaving(newPostText)
+                    PostText = await _writingService.PrepareTextForSaving(newPostText)
                 };
 
                 if (!string.IsNullOrWhiteSpace(PollOptions))
@@ -414,8 +414,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 var (Message, IsSuccess) = Action switch
                 {
-                    PostingActions.NewPrivateMessage => await _userService.SendPrivateMessage(user.UserId, user.Username, ReceiverId.Value, HttpUtility.HtmlEncode(PostTitle), _writingService.PrepareTextForSaving(PostText), PageContext, HttpContext),
-                    PostingActions.EditPrivateMessage => await _userService.EditPrivateMessage(PrivateMessageId.Value, HttpUtility.HtmlEncode(PostTitle), _writingService.PrepareTextForSaving(PostText)),
+                    PostingActions.NewPrivateMessage => await _userService.SendPrivateMessage(user.UserId, user.Username, ReceiverId.Value, HttpUtility.HtmlEncode(PostTitle), await _writingService.PrepareTextForSaving(PostText), PageContext, HttpContext),
+                    PostingActions.EditPrivateMessage => await _userService.EditPrivateMessage(PrivateMessageId.Value, HttpUtility.HtmlEncode(PostTitle), await _writingService.PrepareTextForSaving(PostText)),
                     _ => ("Unknown action", false)
                 };
 

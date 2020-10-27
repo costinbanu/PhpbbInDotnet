@@ -1,12 +1,16 @@
 ﻿@page
 
 @using Microsoft.EntityFrameworkCore
-
+@using Dapper
+@using PhpbbInDotnet.Database.Entities 
+@using PhpbbInDotnet.Utilities
+ 
 @inject Services.WritingToolsService _writingService
 @inject Database.ForumDbContext _context
 @inject Services.BBCodeRenderingService _renderingService
 @inject Services.UserService _userService
 @inject Services.ForumTreeService _forumService
+
 
 @model PhpbbInDotnet.Forum.Pages.SearchModel
 @{
@@ -18,6 +22,8 @@
     {
         dateFormat = "dddd, dd.MM.yyyy, HH:mm";
     }
+    var connection = _context.Database.GetDbConnection();
+    await connection.OpenIfNeededAsync();
 }
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />
@@ -90,7 +96,7 @@
                  "_ForumTreePartial",
                   new CustomPartials._ForumTreePartialModel(
                       tree: (await Model.GetForumTree()).Tree,
-                      topicData: await _context.PhpbbTopics.AsNoTracking().Select(t => new DTOs.MiniTopicDto(t)).ToListAsync(),
+                      topicData: (await connection.QueryAsync<DTOs.MiniTopicDto>("SELECT * FROM phpbb_topics")).AsList(),
                       forumId: Model.ForumId,
                       topicId: Model.TopicId,
                       constrainSize: true
@@ -111,7 +117,7 @@
 }
 else
 {
-    var user = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == Model.AuthorId);
+    var user = await connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @authorId", new { Model.AuthorId });
     if (!string.IsNullOrWhiteSpace(user?.Username))
     {
         <h3>Mesaje scrise de @System.Web.HttpUtility.HtmlDecode(user.Username)</h3>

@@ -381,7 +381,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     PostId = reportPostId.Value,
                     UserId = user.UserId,
                     ReasonId = reportReasonId.Value,
-                    ReportText = _writingToolsService.PrepareTextForSaving(reportDetails),
+                    ReportText = await _writingToolsService.PrepareTextForSaving(reportDetails),
                     ReportTime = DateTime.UtcNow.ToUnixTimestamp(),
                     ReportClosed = 0
                 });

@@ -1,15 +1,21 @@
 ﻿@page
 @model PhpbbInDotnet.Forum.Pages.ConfirmModel
-@{
-    ViewData["Title"] = "Confirm";
-    Layout = "~/Pages/_Layout.cshtml";
-}
 
 @using Microsoft.EntityFrameworkCore
+@using Dapper
+@using Utilities
 
 @inject Utilities.CommonUtils _utils
 @inject Services.ForumTreeService _forumService
 @inject Database.ForumDbContext _dbContext
+
+
+@{
+    ViewData["Title"] = "Confirm";
+    Layout = "~/Pages/_Layout.cshtml";
+    var connection = _dbContext.Database.GetDbConnection();
+    await connection.OpenIfNeededAsync();
+}
 
 <h2>@Model.Title</h2>
 
@@ -58,9 +64,9 @@
     <div>
         @await Html.PartialAsync(
             "_ForumTreePartial",
-            new CustomPartials._ForumTreePartialModel (
+            new CustomPartials._ForumTreePartialModel(
                 tree: (await Model.GetForumTree()).Tree,
-                topicData: Model.ShowTopicSelector ? await _dbContext.PhpbbTopics.AsNoTracking().Select(t => new DTOs.MiniTopicDto(t)).ToListAsync() : null,
+                topicData: Model.ShowTopicSelector ? (await connection.QueryAsync<DTOs.MiniTopicDto>("SELECT * FROM phpbb_topics")).AsList() : null,
                 forumId: Model.ForumId,
                 topicId: Model.TopicId
             ),

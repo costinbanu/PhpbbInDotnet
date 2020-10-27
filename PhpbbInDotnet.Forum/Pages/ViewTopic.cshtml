@@ -2,9 +2,11 @@
 @model PhpbbInDotnet.Forum.Pages.ViewTopicModel
 
 @using System.Web
-@using PhpbbInDotnet.Utilities
 @using Microsoft.EntityFrameworkCore
+@using Dapper 
+@using PhpbbInDotnet.Utilities
 @using PhpbbInDotnet.DTOs
+@using PhpbbInDotnet.Database.Entities
 
 @inject Services.UserService _userService
 @inject CommonUtils _utils
@@ -24,6 +26,8 @@
     var IsAdmin = await Model.IsCurrentUserAdminHere();
     var IsMod = await Model.IsCurrentUserModeratorHere();
     var EditTime = CurrentUser.PostEditTime;
+    var connection = _context.Database.GetDbConnection();
+    await connection.OpenIfNeededAsync();
 }
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />
@@ -216,7 +220,7 @@
 
         if ((report?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
         {
-            var user = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == report.UserId);
+            var user = await connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { report.UserId });
             if ((user?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
             {
                 post.ReporterUsername = HttpUtility.HtmlDecode(user.Username);
@@ -263,7 +267,7 @@
                     <div style="max-width:100%; overflow-wrap: break-word">
                         @if (post.ReportId.HasValue && (IsMod || post.ReporterId == CurrentUser.UserId))
                         {
-                            var reason = await _context.PhpbbReportsReasons.AsNoTracking().FirstOrDefaultAsync(x => x.ReasonId == post.ReportReasonId);
+                            var reason = await connection.QueryFirstOrDefaultAsync<PhpbbReportsReasons>("SELECT * FROM phpbb_reports_reasons WHERE reason_id = @reportReasonId", new { post.ReportReasonId });
                             <a href="javascript:vt.showReportViewer(@post.PostId, @post.ReportId, '@reason.ReasonTitle', '@reason.ReasonDescription', '@HttpUtility.HtmlDecode(post.ReportDetails)', '@post.ReporterUsername')" style="font-weight:bold; font-size:1.2em">Arată raportul</a><br />
                         }
                         <br />
@@ -546,7 +550,7 @@ else if (!IsAnonymous)
                 <div class="FlexRight PostInputWidth">
                     @{
                         var reasons = new List<SelectListItem> { new SelectListItem("Alege un motiv", "-1", true, true) };
-                        reasons.AddRange(_context.PhpbbReportsReasons.AsNoTracking().OrderBy(x => x.ReasonOrder).Select(x => new SelectListItem(x.ReasonDescription, x.ReasonId.ToString())));
+                        reasons.AddRange((await connection.QueryAsync("SELECT reason_description, reason_id FROM phpbb_reports_reasons ORDER BY reason_order")).Select(x => new SelectListItem(x.reason_description.ToString(), x.reason_id.ToString())));
                     }
                     @Html.DropDownList("reportReasonId", reasons, new { id = "reportReason", style = "width: 100%" })
                 </div>
