@@ -95,7 +95,7 @@
                  "_ForumTreePartial",
                   new CustomPartials._ForumTreePartialModel(
                       tree: (await Model.GetForumTree()).Tree,
-                      topicData: (await connection.QueryAsync<DTOs.MiniTopicDto>("SELECT * FROM phpbb_topics")).AsList(),
+                      topicData: (await connection.QueryAsync<Objects.MiniTopicDto>("SELECT * FROM phpbb_topics")).AsList(),
                       forumId: Model.ForumId,
                       topicId: Model.TopicId,
                       constrainSize: true

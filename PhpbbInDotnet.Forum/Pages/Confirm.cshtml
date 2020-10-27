@@ -66,7 +66,7 @@
             "_ForumTreePartial",
             new CustomPartials._ForumTreePartialModel(
                 tree: (await Model.GetForumTree()).Tree,
-                topicData: Model.ShowTopicSelector ? (await connection.QueryAsync<DTOs.MiniTopicDto>("SELECT * FROM phpbb_topics")).AsList() : null,
+                topicData: Model.ShowTopicSelector ? (await connection.QueryAsync<Objects.MiniTopicDto>("SELECT * FROM phpbb_topics")).AsList() : null,
                 forumId: Model.ForumId,
                 topicId: Model.TopicId
             ),
