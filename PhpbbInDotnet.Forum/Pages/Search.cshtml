@@ -22,8 +22,7 @@
     {
         dateFormat = "dddd, dd.MM.yyyy, HH:mm";
     }
-    var connection = _context.Database.GetDbConnection();
-    await connection.OpenIfNeededAsync();
+    var connection = await _context.GetDbConnectionAndOpenAsync();
 }
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />

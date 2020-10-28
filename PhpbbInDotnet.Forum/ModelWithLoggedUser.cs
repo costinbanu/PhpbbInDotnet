@@ -84,8 +84,7 @@ namespace PhpbbInDotnet.Forum
                     }
                     else
                     {
-                        var connection = _context.Database.GetDbConnection();
-                        await connection.OpenIfNeededAsync();
+                        var connection = await _context.GetDbConnectionAndOpenAsync();
 
                         var dbUser = await connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { _currentUser.UserId });
                         if (dbUser == null || dbUser.UserInactiveTime > 0)
@@ -127,8 +126,7 @@ namespace PhpbbInDotnet.Forum
             {
                 var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 await HttpContext.SignOutAsync();
-                var connection = _context.Database.GetDbConnection();
-                await connection.OpenIfNeededAsync();
+                var connection = await _context.GetDbConnectionAndOpenAsync();
 
                 var dbUser = await connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId = current });
 
@@ -187,8 +185,7 @@ namespace PhpbbInDotnet.Forum
                 return 0;
             }
 
-            var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeededAsync();
+            var connection = await _context.GetDbConnectionAndOpenAsync();
             return unchecked((int)((await connection.QuerySingleOrDefaultAsync(
                 "SELECT post_id, post_time FROM phpbb_posts WHERE post_id IN @postIds HAVING post_time = MIN(post_time)",
                 new { postIds = item.Posts.DefaultIfEmpty() }
@@ -220,8 +217,7 @@ namespace PhpbbInDotnet.Forum
         protected async Task MarkForumRead(int forumId)
         {
             var usrId = (await GetCurrentUserAsync()).UserId;
-            var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeededAsync();
+            var connection = await _context.GetDbConnectionAndOpenAsync();
 
             await connection.ExecuteAsync(
                 "DELETE FROM phpbb_topics_track WHERE forum_id = @forumId AND user_id = @usrId; " +
@@ -257,8 +253,7 @@ namespace PhpbbInDotnet.Forum
             {
                 //there are other unread topics in this forum, or unread pages in this topic, so just mark the current page as read
                 var userId = (await GetCurrentUserAsync()).UserId;
-                using var connection = _context.Database.GetDbConnection();
-                await connection.OpenIfNeededAsync();
+                using var connection = await _context.GetDbConnectionAndOpenAsync();
                 var existing = await connection.ExecuteScalarAsync<long?>("SELECT mark_time FROM phpbb_topics_track WHERE user_id = @userId AND topic_id = @topicId", new { userId, topicId = topicId });
                 if (existing == null)
                 {
@@ -281,8 +276,7 @@ namespace PhpbbInDotnet.Forum
         protected async Task SetLastMark()
         {
             var usrId = (await GetCurrentUserAsync()).UserId;
-            var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeededAsync();
+            var connection = await _context.GetDbConnectionAndOpenAsync();
             await connection.ExecuteAsync("UPDATE phpbb_users SET user_lastmark = @markTime WHERE user_id = @usrId", new { markTime = DateTime.UtcNow.ToUnixTimestamp(), usrId });
         }
 
@@ -320,8 +314,7 @@ namespace PhpbbInDotnet.Forum
 
         protected async Task<IActionResult> WithValidForum(int forumId, bool overrideCheck, Func<PhpbbForums, Task<IActionResult>> toDo)
         {
-            var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeededAsync();
+            var connection = await _context.GetDbConnectionAndOpenAsync();
             var curForum = await connection.QuerySingleOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { forumId });
 
             if (!overrideCheck)
@@ -373,8 +366,7 @@ namespace PhpbbInDotnet.Forum
 
         protected async Task<IActionResult> WithValidTopic(int topicId, Func<PhpbbForums, PhpbbTopics, Task<IActionResult>> toDo)
         {
-            var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeededAsync();
+            var connection = await _context.GetDbConnectionAndOpenAsync();
             
             var curTopic = await connection.QuerySingleOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
             
@@ -387,8 +379,7 @@ namespace PhpbbInDotnet.Forum
 
         protected async Task<IActionResult> WithValidPost(int postId, Func<PhpbbForums, PhpbbTopics, PhpbbPosts, Task<IActionResult>> toDo)
         {
-            var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeededAsync();
+            var connection = await _context.GetDbConnectionAndOpenAsync();
 
             var curPost = await connection.QuerySingleOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId });
             if (curPost == null)

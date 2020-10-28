@@ -13,8 +13,7 @@
 @{
     ViewData["Title"] = "Confirm";
     Layout = "~/Pages/_Layout.cshtml";
-    var connection = _dbContext.Database.GetDbConnection();
-    await connection.OpenIfNeededAsync();
+    var connection = await _dbContext.GetDbConnectionAndOpenAsync();
 }
 
 <h2>@Model.Title</h2>

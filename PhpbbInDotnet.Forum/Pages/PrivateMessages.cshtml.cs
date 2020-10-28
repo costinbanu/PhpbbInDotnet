@@ -62,8 +62,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return BadRequest("Utilizatorul nu are acces la mesageria privată.");
                 }
 
-                using var connection = _context.Database.GetDbConnection();
-                await connection.OpenIfNeededAsync();
+                using var connection = await _context.GetDbConnectionAndOpenAsync();
 
                 if (Show != PrivateMessagesPages.Message)
                 {
@@ -219,8 +218,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     return BadRequest("Utilizatorul nu are acces la mesageria privată.");
                 }
-                var connection = _context.Database.GetDbConnection();
-                await connection.OpenIfNeededAsync();
+                var connection = await _context.GetDbConnectionAndOpenAsync();
                 await connection.ExecuteAsync("UPDATE phpbb_privmsgs_to SET pm_unread = 0 WHERE msg_id IN @ids AND author_id <> user_id", new { ids = SelectedMessages?.DefaultIfEmpty() ?? new[] { 0 } });
 
                 return await OnGet();

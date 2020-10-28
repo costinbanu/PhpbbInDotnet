@@ -51,8 +51,7 @@ namespace PhpbbInDotnet.Services
 
             var restrictedForums = (user?.AllPermissions?.Where(p => p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE)?.Select(p => p.ForumId) ?? Enumerable.Empty<int>()).ToHashSet();
             var tracking = await GetForumTracking(user, forceRefresh);
-            var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeededAsync();
+            var connection = await _context.GetDbConnectionAndOpenAsync();
 
             using var multi = await connection.QueryMultipleAsync("CALL `forum`.`get_forum_tree`(); SELECT forum_id, count(topic_id) as topic_count FROM phpbb_topics GROUP BY forum_id;");
             _tree = (await multi.ReadAsync<ForumTree>()).ToHashSet();

@@ -334,8 +334,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (user) =>
             {
                 var cur = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
-                var connection = _context.Database.GetDbConnection();
-                await connection.OpenIfNeededAsync();
+                var connection = await _context.GetDbConnectionAndOpenAsync();
                 await connection.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;" +
                     "INSERT INTO phpbb_zebra (user_id, zebra_id, friend, foe) VALUES (@userId, @otherId, 0, 1)",
@@ -349,8 +348,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (user) =>
             {
                 var cur = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
-                var connection = _context.Database.GetDbConnection();
-                await connection.OpenIfNeededAsync();
+                var connection = await _context.GetDbConnectionAndOpenAsync();
                 await connection.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;",
                     new { user.UserId, otherId = cur.UserId }
@@ -363,8 +361,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (user) =>
             {
                 var cur = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
-                using var connection = _context.Database.GetDbConnection();
-                await connection.OpenIfNeededAsync();
+                using var connection = await _context.GetDbConnectionAndOpenAsync();
                 await connection.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id IN @otherIds;",
                     new { user.UserId, otherIds = SelectedFoes.DefaultIfEmpty() }

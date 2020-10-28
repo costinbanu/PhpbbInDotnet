@@ -42,8 +42,7 @@ namespace PhpbbInDotnet.Services
             _context = context;
             _writingService = writingService;
             _bannedWords = new Lazy<Dictionary<string, string>>(() => _writingService.GetBannedWords().GroupBy(p => p.Word).Select(grp => grp.FirstOrDefault()).ToDictionary(x => x.Word, y => y.Replacement));
-            var connection = _context.Database.GetDbConnection();
-            connection.OpenIfNeeded();
+            var connection = _context.GetDbConnectionAndOpen();
 
             //we override these temporarily: 18 = link, 13 = youtube
             //we override this for good: 17 = strike (TODO: remove from DB after migration)

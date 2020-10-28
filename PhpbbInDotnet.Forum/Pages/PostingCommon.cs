@@ -118,8 +118,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             if (((TopicId.HasValue && PageNum.HasValue) || PostId.HasValue) && (Action == PostingActions.EditForumPost || Action == PostingActions.NewForumPost))
             {
-                var connection = _context.Database.GetDbConnection();
-                await connection.OpenIfNeededAsync();
+                var connection = await _context.GetDbConnectionAndOpenAsync();
                 var posts = await connection.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC LIMIT 10", new { TopicId });
                 using var multi = await connection.QueryMultipleAsync(
                     "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @postIds ORDER BY attach_id;" +
@@ -135,8 +134,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task Init()
         {
-            var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeededAsync();
+            var connection = await _context.GetDbConnectionAndOpenAsync();
             var smileys = await connection.QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies GROUP BY smiley_url ORDER BY smiley_order");
             await _cacheService.SetInCache(await GetActualCacheKey("Smilies", false), smileys.ToList());
 
@@ -155,8 +153,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task<PhpbbPosts> InitEditedPost()
         {
-            var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeededAsync();
+            var connection = await _context.GetDbConnectionAndOpenAsync();
 
             var post = await connection.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { PostId });
 
@@ -183,8 +180,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return null;
             }
 
-            var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeededAsync();
+            var connection = await _context.GetDbConnectionAndOpenAsync();
 
             var curTopic = Action != PostingActions.NewTopic ? await connection.QuerySingleOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { TopicId }) : null;
             var canCreatePoll = Action == PostingActions.NewTopic || (Action == PostingActions.EditForumPost && (curTopic?.TopicFirstPostId ?? 0) == PostId);
@@ -250,7 +246,7 @@ namespace PhpbbInDotnet.Forum.Pages
             else
             {
                 await connection.ExecuteAsync(
-                    "UPDATE phpbb_posts SET post_text = @text, ubbcode_uid = @uid, bbcode_bitfield = @bitfield, post_attachment = @attachment WHERE post_id = @postId",
+                    "UPDATE phpbb_posts SET post_text = @text, bbcode_uid = @uid, bbcode_bitfield = @bitfield, post_attachment = @attachment WHERE post_id = @postId",
                     new { text = await _writingService.PrepareTextForSaving(newPostText), uid, bitfield, attachment = hasAttachments.ToByte(), post.PostId }
                 );
 
@@ -310,8 +306,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             if ((TopicId ?? 0) > 0 && (LastPostTime ?? 0) > 0)
             {
-                var connection = _context.Database.GetDbConnection();
-                await connection.OpenIfNeededAsync();
+                var connection = await _context.GetDbConnectionAndOpenAsync();
                 var currentLastPostTime = await connection.ExecuteScalarAsync<long>("SELECT MAX(post_time) FROM phpbb_posts WHERE topic_id = @topicId", new { TopicId });
                 if (currentLastPostTime > LastPostTime)
                 {

@@ -29,15 +29,13 @@ namespace PhpbbInDotnet.Services
 
         public async Task<IEnumerable<PhpbbWords>> GetBannedWordsAsync()
         {
-            var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeededAsync();
+            var connection = await _context.GetDbConnectionAndOpenAsync();
             return await connection.QueryAsync<PhpbbWords>("SELECT * FROM phpbb_words");
         }
 
         public IEnumerable<PhpbbWords> GetBannedWords()
         {
-            var connection = _context.Database.GetDbConnection();
-            connection.OpenIfNeeded();
+            var connection = _context.GetDbConnectionAndOpen();
             return connection.Query<PhpbbWords>("SELECT * FROM phpbb_words");
         }
 
@@ -92,8 +90,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<IEnumerable<AttachmentManagementDto>> GetOrphanedFiles()
         {
-            var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeededAsync();
+            var connection = await _context.GetDbConnectionAndOpenAsync();
             return await connection.QueryAsync<AttachmentManagementDto>("SELECT a.*, u.username FROM phpbb_attachments a JOIN phpbb_users u on a.poster_id = u.user_id WHERE a.is_orphan = 1");
         }
 
@@ -149,8 +146,7 @@ namespace PhpbbInDotnet.Services
             {
                 return string.Empty;
             }
-            var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeededAsync();
+            var connection = await _context.GetDbConnectionAndOpenAsync();
             foreach (var sr in await connection.QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies"))
             {
                 var regex = new Regex(@$"(?<=(^|\s)){Regex.Escape(sr.Code)}(?=($|\s))", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);

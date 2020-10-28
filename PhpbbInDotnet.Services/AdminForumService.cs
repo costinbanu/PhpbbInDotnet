@@ -121,8 +121,7 @@ namespace PhpbbInDotnet.Services
 
             await _context.SaveChangesAsync();
 
-            var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeededAsync();
+            var connection = await _context.GetDbConnectionAndOpenAsync();
             var select = @"SELECT t.*
                              FROM {0} t
                              JOIN phpbb_acl_roles r ON t.auth_role_id = r.role_id
@@ -209,8 +208,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<IEnumerable<ForumPermissions>> GetPermissions(int forumId)
         {
-            var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeededAsync();
+            var connection = await _context.GetDbConnectionAndOpenAsync();
             return await connection.QueryAsync<ForumPermissions>("CALL `forum`.`get_forum_permissions`(@forumId);", new { forumId });
         }
 

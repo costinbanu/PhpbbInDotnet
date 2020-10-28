@@ -77,8 +77,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 TopicId = int.TryParse(query["topicid"], out var i) ? i as int? : null;
             }
 
-            var connection = _context.Database.GetDbConnection();
-            await connection.OpenIfNeededAsync();
+            var connection = await _context.GetDbConnectionAndOpenAsync();
 
             Users = (
                 await connection.QueryAsync("SELECT username, user_id FROM phpbb_users WHERE user_id <> @id AND user_type <> 2", new { id = Constants.ANONYMOUS_USER_ID })
@@ -170,9 +169,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 forumIds.AddRange(tree.Where(t => !_forumService.IsNodeRestricted(t)).Select(t => t.ForumId));
             }
 
-            var connection = _context.Database.GetDbConnection();
-            
-                await connection.OpenIfNeededAsync();
+            var connection = await _context.GetDbConnectionAndOpenAsync();
                 PageNum ??= 1;
 
                 using var multi = await connection.QueryMultipleAsync(

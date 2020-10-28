@@ -1,11 +1,17 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Dapper;
+using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database.Entities;
+using System.Data;
+using System.Data.Common;
+using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Database
 {
     public partial class ForumDbContext : DbContext
     {
         public ForumDbContext(DbContextOptions<ForumDbContext> options) : base(options) { }
+
+        #region Entities
 
         public virtual DbSet<PhpbbAclGroups> PhpbbAclGroups { get; set; }
         public virtual DbSet<PhpbbAclOptions> PhpbbAclOptions { get; set; }
@@ -73,6 +79,30 @@ namespace PhpbbInDotnet.Database
         public virtual DbSet<PhpbbWarnings> PhpbbWarnings { get; set; }
         public virtual DbSet<PhpbbWords> PhpbbWords { get; set; }
         public virtual DbSet<PhpbbZebra> PhpbbZebra { get; set; }
+
+        #endregion Entities
+
+        public async Task<DbConnection> GetDbConnectionAndOpenAsync()
+        {
+            var connection = Database.GetDbConnection();
+            if (connection.State != ConnectionState.Open)
+            {
+                await connection.OpenAsync();
+            }
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            return connection;
+        }
+
+        public DbConnection GetDbConnectionAndOpen()
+        {
+            var connection = Database.GetDbConnection();
+            if (connection.State != ConnectionState.Open)
+            {
+                connection.Open();
+            }
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+            return connection;
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

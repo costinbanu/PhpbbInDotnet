@@ -57,8 +57,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumTitle = HttpUtility.HtmlDecode(thisForum?.ForumName ?? "untitled");
                 IEnumerable<TopicDto> topics;
 
-                var connection = _context.Database.GetDbConnection();
-                await connection.OpenIfNeededAsync();
+                var connection = await _context.GetDbConnectionAndOpenAsync();
                 
                 var parent = await connection.QuerySingleOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @ParentId", new { thisForum.ParentId });
                 ParentForumId = parent?.ForumId;
@@ -113,8 +112,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 IEnumerable<TopicDto> topics = null;
                 var topicList = tree.Tracking.SelectMany(t => t.Value).Select(t => t.TopicId).Distinct();
                 var restrictedForums = await _forumService.GetRestrictedForumList(await GetCurrentUserAsync());
-                var connection = _context.Database.GetDbConnection();
-                await connection.OpenIfNeededAsync();
+                var connection = await _context.GetDbConnectionAndOpenAsync();
 
                 topics = await connection.QueryAsync<TopicDto>(
                     @"SELECT t.topic_id, 
@@ -156,8 +154,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 IEnumerable<TopicDto> topics = null;
                 var totalCount = 0;
                 var restrictedForums = await _forumService.GetRestrictedForumList(await GetCurrentUserAsync());
-                var connection = _context.Database.GetDbConnection();
-                await connection.OpenIfNeededAsync();
+                var connection = await _context.GetDbConnectionAndOpenAsync();
                 
                 using var multi = await connection.QueryMultipleAsync(
                     "CALL `forum`.`get_own_topics`(@userId, @skip, @take, @restrictedForumList)",
@@ -184,8 +181,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 IEnumerable<TopicDto> topics = null;
                 var restrictedForums = await _forumService.GetRestrictedForumList(await GetCurrentUserAsync());
                 var count = 0;
-                var connection = _context.Database.GetDbConnection();
-                await connection.OpenIfNeededAsync();
+                var connection = await _context.GetDbConnectionAndOpenAsync();
                 
                 using var multi = await connection.QueryMultipleAsync(
                     "CALL `forum`.`get_drafts`(@userId, @skip, @take, @restrictedForumList);",
@@ -244,8 +240,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostDeleteDrafts()
             => await WithRegisteredUser(async (_) =>
             {
-                var connection = _context.Database.GetDbConnection();
-                await connection.OpenIfNeededAsync();
+                var connection = await _context.GetDbConnectionAndOpenAsync();
                 await connection.ExecuteAsync("DELETE FROM phpbb_drafts WHERE draft_id IN @ids", new { ids = SelectedDrafts?.DefaultIfEmpty() ?? new[] { 0 } });
                 return await OnGetDrafts();
             });

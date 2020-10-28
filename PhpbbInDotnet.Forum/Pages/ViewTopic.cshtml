@@ -26,8 +26,7 @@
     var IsAdmin = await Model.IsCurrentUserAdminHere();
     var IsMod = await Model.IsCurrentUserModeratorHere();
     var EditTime = CurrentUser.PostEditTime;
-    var connection = _context.Database.GetDbConnection();
-    await connection.OpenIfNeededAsync();
+    var connection = await _context.GetDbConnectionAndOpenAsync();
 }
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />
