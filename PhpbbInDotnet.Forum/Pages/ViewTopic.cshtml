@@ -265,7 +265,7 @@
                         @if (post.ReportId.HasValue && (IsMod || post.ReporterId == CurrentUser.UserId))
                         {
                             var reason = await connection.QueryFirstOrDefaultAsync<PhpbbReportsReasons>("SELECT * FROM phpbb_reports_reasons WHERE reason_id = @reportReasonId", new { post.ReportReasonId });
-                            <a href="javascript:vt.showReportViewer(@post.PostId, @post.ReportId, '@reason.ReasonTitle', '@reason.ReasonDescription', '@HttpUtility.HtmlDecode(post.ReportDetails)', '@post.ReporterUsername')" style="font-weight:bold; font-size:1.2em">Arată raportul</a><br />
+                            <a href="javascript:vt.showReportViewer(@post.PostId, @post.ReportId, '@reason.ReasonTitle', '@reason.ReasonDescription', '@_renderingService.BbCodeToHtml(post.ReportDetails, string.Empty)', '@post.ReporterUsername')" style="font-weight:bold; font-size:1.2em">Arată raportul</a><br />
                         }
                         <br />
                         @Html.Raw(post.PostText)
@@ -525,7 +525,7 @@ else if (!IsAnonymous)
 @*message reporting*@
 @if (!IsAnonymous)
 {
-    <form asp-page-handler="ReportMessage" method="post" class="MiddleBox" id="report" style="display:none">
+    <form asp-page-handler="ReportMessage" method="post" class="MiddleBox" id="report" style="display:none; padding: 10px">
         <h4 style="float:left">Raportează mesaj</h4>
         <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('report')">Închide [X]</div>
         <p>&nbsp;</p>
@@ -563,7 +563,7 @@ else if (!IsAnonymous)
         @Html.AntiForgeryToken()
     </form>
 
-    <div id="reportViewer" class="MiddleBox" style="display:none">
+    <div id="reportViewer" class="MiddleBox" style="display:none; padding: 10px">
         <h4 style="float:left">Raport</h4>
         <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('reportViewer')">Închide [X]</div>
         <p>&nbsp;</p>

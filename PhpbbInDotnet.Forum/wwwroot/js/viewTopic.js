@@ -121,7 +121,7 @@
         $('#reportViewerReportReasonTitle').text(reportReasonTitle);
         $('#reportViewerReportReasonDescription').text(reportReasonDescription);
         $('#reportViewerReportId').val(reportId);
-        $('#reportViewerReportDetails').text(reportDetails);
+        $('#reportViewerReportDetails').html(reportDetails);
         $('#reportViewerReporter').text(reportUsername);
         $('#reportViewerEditMessage').prop("checked", false);
         $('#reportViewerDeleteMessage').prop("checked", false);
