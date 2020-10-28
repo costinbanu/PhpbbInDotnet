@@ -170,7 +170,10 @@
 }
 
 <script type="text/javascript">
-    Sortable.create(document.getElementById('children'), { animation: 150 });
+    var children = document.getElementById('children');
+    if (children) {
+        Sortable.create(children, { animation: 150 });
+    }
 
     //forum tree callback
     function forumSelectCallback(forumId) {

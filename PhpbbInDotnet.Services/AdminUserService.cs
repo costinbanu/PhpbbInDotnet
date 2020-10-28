@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Dapper;
 
 namespace PhpbbInDotnet.Services
 {
@@ -232,9 +233,9 @@ namespace PhpbbInDotnet.Services
                 await _context.SaveChangesAsync();
                 return ("Rangul a fost actualizat cu succes!", true);
             }
-            catch
+            catch (Exception ex)
             {
-                return ("A intervenit o eroare, încearcă mai târziu", false);
+                return ($"A intervenit o eroare, încearcă mai târziu. ID: {_utils.HandleError(ex)}", false);
             }
         }
 
@@ -359,8 +360,34 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex);
                 return ($"A intervenit o eroare. ID eroare: {_utils.HandleError(ex)}.", false);
+            }
+        }
+
+        public async Task<(string Message, bool? IsSuccess)> BanUser(List<PhpbbBanlist> banlist, List<int> toRemove)
+        {
+            try
+            {
+                var conn = await _context.GetDbConnectionAndOpenAsync();
+
+                await conn.ExecuteAsync (
+                    "INSERT INTO phpbb_banlist (ban_ip, ban_email) VALUES (@ip, @email)",
+                    banlist.Where(b => b.BanId == 0).Select(b => new { ip = b.BanIp ?? string.Empty, email = b.BanEmail ?? string.Empty } )
+                );
+
+                await conn.ExecuteAsync(
+                    "UPDATE phpbb_banlist SET ban_ip = @ip, ban_email = @email WHERE ban_id = @banId",
+                    banlist.Where(b => b.BanId != 0 && !toRemove.Contains(b.BanId)).Select(b => new { b.BanId, ip = b.BanIp ?? string.Empty, email = b.BanEmail ?? string.Empty })
+                );
+
+                await conn.ExecuteAsync("DELETE FROM phpbb_banlist WHERE ban_id IN @ids", new { ids = toRemove?.DefaultIfEmpty() ?? new[] { 0 } });
+
+                return ("Interzicerile au fost actualizate cu succes!", true);
+            }
+            catch (Exception ex)
+            {
+                var id = _utils.HandleError(ex, "Error while banning user");
+                return ($"A intervenit o eroare - ID: {id}", false);
             }
         }
     }

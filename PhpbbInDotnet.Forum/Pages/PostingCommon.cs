@@ -201,8 +201,12 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (Action == PostingActions.NewTopic)
             {
-                await connection.ExecuteAsync("INSERT INTO phpbb_topics (forum_id, topic_title, topic_time) VALUES (@forumId, @postTitle, @now)", new { ForumId, PostTitle, now = DateTime.UtcNow.ToUnixTimestamp() });
-                TopicId = await connection.ExecuteScalarAsync<int>("SELECT LAST_INSERT_ID()");
+                curTopic = await connection.QueryFirstOrDefaultAsync<PhpbbTopics>(
+                    "INSERT INTO phpbb_topics (forum_id, topic_title, topic_time) VALUES (@forumId, @postTitle, @now); " +
+                    "SELECT * FROM phpbb_topics WHERE topic_id = LAST_INSERT_ID();", 
+                    new { ForumId, PostTitle, now = DateTime.UtcNow.ToUnixTimestamp() }
+                );
+                TopicId = curTopic.TopicId;
             }
 
             var newPostText = PostText;
@@ -262,7 +266,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 var existing = await connection.QueryAsync<string>("SELECT LTRIM(RTRIM(poll_option_text)) FROM phpbb_poll_options WHERE topic_id = @topicId", new { TopicId });
                 var shouldInsertOptions = Action == PostingActions.NewForumPost || Action == PostingActions.NewTopic;
-                if (!existing.SequenceEqual(pollOptionsArray, StringComparer.InvariantCultureIgnoreCase))
+                if (existing.Any() && !existing.SequenceEqual(pollOptionsArray, StringComparer.InvariantCultureIgnoreCase))
                 {
                     shouldInsertOptions = true;
                     await connection.ExecuteAsync(
@@ -284,21 +288,30 @@ namespace PhpbbInDotnet.Forum.Pages
                     }
                 }
 
-                curTopic.PollStart = curTopic.PollStart == 0 ? DateTime.UtcNow.ToUnixTimestamp() : curTopic.PollStart;
-                curTopic.PollLength = (int)TimeSpan.FromDays(double.Parse(PollExpirationDaysString)).TotalSeconds;
-                curTopic.PollMaxOptions = (byte)(PollMaxOptions ?? 1);
-                curTopic.PollTitle = HttpUtility.HtmlEncode(PollQuestion);
-                curTopic.PollVoteChange = (byte)(PollCanChangeVote ? 1 : 0);
+                await connection.ExecuteAsync(
+                    "UPDATE phpbb_topics SET poll_start = @start, poll_length = @length, poll_max_options = @maxOptions, poll_title = @title, poll_vote_change = @change WHERE topic_id = @topicId",
+                    new 
+                    { 
+                        start = curTopic.PollStart == 0 ? DateTime.UtcNow.ToUnixTimestamp() : curTopic.PollStart,
+                        length = (int)TimeSpan.FromDays(double.Parse(PollExpirationDaysString)).TotalSeconds,
+                        maxOptions = (byte)(PollMaxOptions ?? 1),
+                        title = HttpUtility.HtmlEncode(PollQuestion),
+                        change = PollCanChangeVote.ToByte(),
+                        TopicId
+                    }
+                );
             }
 
             await connection.ExecuteAsync(
                 "DELETE FROM forum.phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId",
                 new { usr.UserId, forumId = ForumId, topicId = Action == PostingActions.NewTopic ? 0 : TopicId }
             );
+
             await _cacheService.RemoveFromCache(await GetActualCacheKey("Text", true));
             await _cacheService.RemoveFromCache(await GetActualCacheKey("ForumId", true));
             await _cacheService.RemoveFromCache(await GetActualCacheKey("TopicId", true));
             await _cacheService.RemoveFromCache(await GetActualCacheKey("PostId", true));
+
             return post.PostId;
         }
 

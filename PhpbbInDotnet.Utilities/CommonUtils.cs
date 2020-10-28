@@ -26,12 +26,13 @@ using System.Web;
 
 namespace PhpbbInDotnet.Utilities
 {
-    public class CommonUtils
+    public class CommonUtils : IDisposable
     {
         private readonly IConfiguration _config;
         private readonly ICompositeViewEngine _viewEngine;
         private readonly ITempDataProvider _tempDataProvider;
         private readonly ILogger _logger;
+        private readonly MD5 _md5;
 
         public Regex HtmlCommentRegex { get; }
 
@@ -42,6 +43,7 @@ namespace PhpbbInDotnet.Utilities
             _tempDataProvider = tempDataProvider;
             _logger = logger;
             HtmlCommentRegex = new Regex("(<!--.*?-->)|(&lt;!--.*?--&gt;)", RegexOptions.Compiled | RegexOptions.Singleline);
+            _md5 = MD5.Create();
         }
 
         public async Task<byte[]> CompressObject<T>(T source)
@@ -77,7 +79,7 @@ namespace PhpbbInDotnet.Utilities
 
         public string CalculateMD5Hash(string input)
         {
-            var hash = MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(input));
+            var hash = _md5.ComputeHash(Encoding.UTF8.GetBytes(input));
             var sb = new StringBuilder();
             for (int i = 0; i < hash.Length; i++)
             {
@@ -268,5 +270,10 @@ namespace PhpbbInDotnet.Utilities
 
         public string TransformSelfLinkToBetaLink(string link)
             => string.IsNullOrWhiteSpace(link) ? string.Empty : (_config.GetValue<bool>("CompatibilityMode") ? HttpUtility.HtmlDecode(link).Replace("://forum.metrouusor.com", "://beta.forum.metrouusor.com") : link);
+
+        public void Dispose()
+        {
+            _md5?.Dispose();
+        }
     }
 }

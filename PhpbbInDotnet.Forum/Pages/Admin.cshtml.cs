@@ -95,6 +95,14 @@ namespace PhpbbInDotnet.Forum.Pages
                 return Page();
             });
 
+        public async Task<IActionResult> OnPostBanUser(List<PhpbbBanlist> banlist, List<int> toRemove)
+            => await WithAdmin(async () =>
+            {
+                (Message, IsSuccess) = await _adminUserService.BanUser(banlist, toRemove);
+                Category = AdminCategories.Users;
+                return Page();
+            });
+
         #endregion Admin user
 
         #region Admin forum

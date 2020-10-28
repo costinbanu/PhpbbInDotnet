@@ -1,6 +1,7 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials.Admin._AdminUsersPartialModel
 @using Microsoft.EntityFrameworkCore
 @using Utilities
+
 @inject Services.AdminUserService _adminUserService
 @inject Database.ForumDbContext _context
 
@@ -109,6 +110,74 @@
 }
 <p>&nbsp;</p>
 <a href="javascript:newRank()">Adaugă un rang nou</a>
+
+<h4>Interziceri</h4>
+@{
+    var banlist = await _context.PhpbbBanlist.AsNoTracking().ToListAsync();
+
+    <form method="post" asp-page-handler="BanUser">
+        <table id="bannedItems" class="writingTable">
+            <tr>
+                <th style="width:45%">IP</th>
+                <th style="width:45%">E-mail</th>
+                <th style="width:10%">Șterge?</th>
+            </tr>
+
+            @for (var i = 0; i < banlist.Count; i++)
+            {
+                <tr>
+                    <td>
+                        <input type="hidden" name="banlist[@i].BanId" value="@banlist[i].BanId" />
+                        <input type="text" name="banlist[@i].BanIp" value="@banlist[i].BanIp" />
+                    </td>
+                    <td>
+                        <input type="text" name="banlist[@i].BanEmail" value="@banlist[i].BanEmail" />
+                    </td>
+                    <td>
+                        <input type="checkbox" name="toRemove" value="@banlist[i].BanId" />
+                    </td>
+                </tr>
+            }
+
+        </table>
+        <input type="button" onclick="addBannedItem()" value="Adaugă o interzicere nouă" class="MyButton" /> &nbsp; 
+        <input type="submit" value="Salvează modificările" class="MyButton" />
+    </form>
+    <script type="text/javascript">
+        var cur = @banlist.Count;
+
+        function addBannedItem(email = '', ip = '') {
+            var elem = $(
+                "<tr>" +
+                    "<td>" +
+                        "<input type='hidden' name='banlist[" + cur + "].BanId' value='0'/>" +
+                        "<input type='text' name='banlist[" + cur + "].BanIp' value='" + ip + "' />" +
+                    "</td>" +
+                    "<td>" +
+                        "<input type='text' name='banlist[" + cur + "].BanEmail' value='" + email + "' />" +
+                    "</td>" +
+                    "<td>" +
+                        "<a href=\"#!\" onclick=\"cancelAddBannedItem(this)\">Anulează</a>" +
+                    "</td>" +
+                "</tr>"
+            );
+
+            elem.appendTo($("#bannedItems > tbody:last-child"));
+            cur++;
+
+            if ((email || ip) && elem.offset()) {
+                $("html,body").animate({ "scrollTop": elem.offset().top }, 300, function () {
+                    elem.fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100);
+                });
+            }
+        }
+
+        function cancelAddBannedItem(elem) {
+            $(elem).parent().parent().remove();
+            cur--;
+        }
+    </script>
+}
 
 
 <script type="text/javascript">

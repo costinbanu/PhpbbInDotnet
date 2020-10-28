@@ -13,19 +13,19 @@
 
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-    <input type="text" name="Email" asp-for="Email" placeholder="Email"  class="form"/>
+    <input type="text" name="Email" asp-for="Email" placeholder="Email" class="form" autocomplete="new-password"/>
     <br />
     <span asp-validation-for="Email" class="validation"></span>
     <p></p>
-    <input type="text" name="UserName" asp-for="UserName" placeholder="Nume utilizator" class="form" />
+    <input type="text" name="UserName" asp-for="UserName" placeholder="Nume utilizator" class="form" autocomplete="new-password" />
     <br />
     <span asp-validation-for="UserName" class="validation"></span>
     <p></p>
-    <input type="password" name="Password" asp-for="Password" placeholder="Parola" class="form" />
+    <input type="password" name="Password" asp-for="Password" placeholder="Parola" class="form" autocomplete="new-password" />
     <br />
     <span asp-validation-for="Password" class="validation"></span>
     <p></p>
-    <input type="password" name="SecondPassword" asp-for="SecondPassword" placeholder="Repetă parola" class="form" />
+    <input type="password" name="SecondPassword" asp-for="SecondPassword" placeholder="Repetă parola" class="form" autocomplete="new-password" />
     <br />
     <span asp-validation-for="SecondPassword" class="validation"></span>
     <p></p>

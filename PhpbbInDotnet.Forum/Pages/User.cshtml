@@ -133,7 +133,7 @@
         @if (Model.Mode == UserPageMode.RemoveMultipleFoes)
         {
             <span style="color:darkgreen; font-weight: bold">
-                Utilizatorii selectați au fost eliminați din lista ta de persoane neagreate. Te rugăm să te deconectezi și apoi să te reconectezi la forum pentru ca modificarea să aibă efect.
+                Utilizatorii selectați au fost eliminați din lista ta de persoane neagreate.
             </span>
         }
     </div>
@@ -606,13 +606,13 @@ else
             @switch (Model.Mode)
             {
                 case UserPageMode.Edit:
-                    @Html.Raw("Modificările au fost salvate. Te rugăm să te deconectezi și apoi să te reconectezi la forum pentru ca acestea să aibă efect.");
+                    @Html.Raw("Modificările au fost salvate.");
                     break;
                 case UserPageMode.AddFoe:
-                    @Html.Raw($"{Model.CurrentUser.Username} a fost adăugat la lista ta de persoane neagreate. Te rugăm să te deconectezi și apoi să te reconectezi la forum pentru ca modificarea să aibă efect.");
+                    @Html.Raw($"{Model.CurrentUser.Username} a fost adăugat la lista ta de persoane neagreate.");
                     break;
                 case UserPageMode.RemoveFoe:
-                    @Html.Raw($"{Model.CurrentUser.Username} a fost eliminat din lista ta de persoane neagreate. Te rugăm să te deconectezi și apoi să te reconectezi la forum pentru ca modificarea să aibă efect.");
+                    @Html.Raw($"{Model.CurrentUser.Username} a fost eliminat din lista ta de persoane neagreate.");
                     break;
             }
         </span>

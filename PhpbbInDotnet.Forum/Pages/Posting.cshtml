@@ -358,27 +358,28 @@ else if (IsPM)
             {
                 <span style="margin-bottom:10px">
                     &nbsp;&bull;&nbsp;
-                    <input type="submit" value="Șterge chestionarul" asp-page-handler="DeletePoll" onclick="return confirm('Sigur dorești ștergerea chestionarului?')" />
+                    <input type="submit" value="Șterge chestionarul" asp-page-handler="DeletePoll" onclick="return confirm('Sigur dorești ștergerea chestionarului?')" class="MyButton" />
                 </span>
             }
             <p style="clear:both"></p>
-            <hr class="BoxSeparator" /><div class="FlexCenter">
+            <hr class="BoxSeparator" />
+            <div class="FlexCenter">
                 <div>Întrebarea chestionarului</div>
                 <div class="FlexRight PollInput">
                     <input asp-for="PollQuestion" class="InputBox" style="width:100%" /> <br />
                     <span asp-validation-for="PollQuestion" class="validation"></span>
                 </div>
             </div>
-            <hr class="SubtypeSeparator" />
-            <hr class="BoxSeparator" /><div class="FlexCenter">
+            <hr class="BoxSeparator" />
+            <div class="FlexCenter">
                 <div>Opțiuni (una pe rând)</div>
                 <div class="FlexRight PollInput">
                     <textarea asp-for="PollOptions" rows="4" class="InputBox" style="width:100%" onkeydown="return posting.confirmPollChange(this)"></textarea>
                     <span asp-validation-for="PollOptions" class="validation"></span>
                 </div>
             </div>
-            <hr class="SubtypeSeparator" />
-            <hr class="BoxSeparator" /><div class="FlexCenter">
+            <hr class="BoxSeparator" />
+            <div class="FlexCenter">
                 <div>Timp pentru votare (zile)</div>
                 <div class="FlexRight PollInput">
                     <input asp-for="PollExpirationDaysString" onchange="posting.showExpirationDate(this.value)" id="pollExpiration" class="InputBox" style="width:100%" /><br />
@@ -390,16 +391,16 @@ else if (IsPM)
                     <span asp-validation-for="PollExpirationDaysString" class="validation"></span>
                 </div>
             </div>
-            <hr class="SubtypeSeparator" />
-            <hr class="BoxSeparator" /><div class="FlexCenter">
+            <hr class="BoxSeparator" />
+            <div class="FlexCenter">
                 <div>Opțiuni per votant</div>
                 <div class="FlexRight PollInput">
                     <input asp-for="PollMaxOptions" class="InputBox" style="width:100%" />
                     <span asp-validation-for="PollMaxOptions" class="validation"></span>
                 </div>
             </div>
-            <hr class="SubtypeSeparator" />
-            <hr class="BoxSeparator" /><div class="FlexCenter">
+            <hr class="BoxSeparator" />
+            <div class="FlexCenter">
                 <div>Votanții își pot schimba votul</div>
                 <div class="FlexRight PollInput">
                     <input asp-for="PollCanChangeVote" class="InputBox" />

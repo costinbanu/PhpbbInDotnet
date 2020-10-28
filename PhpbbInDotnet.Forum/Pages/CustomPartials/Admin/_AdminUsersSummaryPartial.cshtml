@@ -18,11 +18,18 @@
         }
         <tr>
             <td style="font-weight:bold; padding:5px">E-mail</td>
-            <td>@user.UserEmail</td>
+            <td>
+                @user.UserEmail 
+                <a href="#" onclick="addBannedItem('@user.UserEmail', '')">INTERZICE e-mail</a>
+            </td>
         </tr>
         <tr>
             <td style="font-weight:bold; padding:5px">IP</td>
-            <td>@user.UserIp <a href="https://whatismyipaddress.com/ip/@user.UserIp" target="_blank">[IP Lookup]</a></td>
+            <td>
+                @user.UserIp 
+                <a href="https://whatismyipaddress.com/ip/@user.UserIp" target="_blank">[IP Lookup]</a> 
+                <a href="#" onclick="addBannedItem('', '@user.UserIp')">INTERZICE IP</a>
+            </td>
         </tr>
         <tr>
             <td style="font-weight:bold; padding:5px">Data inactivării</td>
