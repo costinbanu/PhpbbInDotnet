@@ -2,7 +2,6 @@
 @model PhpbbInDotnet.Forum.Pages.ViewTopicModel
 
 @using System.Web
-@using Microsoft.EntityFrameworkCore
 @using Dapper 
 @using PhpbbInDotnet.Utilities
 @using PhpbbInDotnet.Database.Entities
@@ -330,7 +329,7 @@
                                         Selectează pentru moderare <input name="PostIdsForModerator" type="checkBox" value="@post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @(post.PostId ?? -1))" @(Model.PostIdsForModerator.Contains(post.PostId ?? -1) ? "checked" : "") />
                                     </span>
                                 }
-                                @if (IsMod || (post.AuthorId == CurrentUser.UserId && (EditTime == 0 || DateTime.UtcNow.Subtract(post.PostCreationTime ?? default).TotalMinutes <= EditTime)))
+                                @if (IsMod || (post.AuthorId == CurrentUser.UserId && (EditTime == 0 || DateTime.UtcNow.Subtract(post.PostCreationTime ?? default).TotalMinutes <= EditTime) && p == Model.Posts.Last() && Model.Paginator.IsLastPage))
                                 {
                                     <span>
                                         <a asp-page="/Posting" asp-page-handler="EditPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">&#x1F4DD; Modifică</a>

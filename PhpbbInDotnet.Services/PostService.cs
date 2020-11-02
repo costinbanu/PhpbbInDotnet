@@ -268,7 +268,7 @@ namespace PhpbbInDotnet.Services
                              topic_first_post_id = @TopicFirstPostId, 
                              topic_first_poster_colour = @TopicFirstPosterColour, 
                              topic_first_poster_name = @TopicFirstPosterName
-                    WHERE topic_id = @topicId AND (topic_first_post_id = 0 OR @goForward OR topic_last_post_time < @postTime OR @goBack)",
+                    WHERE topic_id = @topicId",
                     topic
                 );
             }

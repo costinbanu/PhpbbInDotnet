@@ -84,7 +84,7 @@
             <div class="FlexRow RowMargin">
                 <input name="SelectedMessages" type="checkbox" value="@msg.MessageId" form="InboxActions" style="margin-right:10px; align-self:safe center" />
                 <span class="ForumContent" style="align-self:safe center">
-                    <a asp-page="/PrivateMessages" asp-route-show="@PrivateMessagesPages.Message" asp-route-messageId="@msg.MessageId" asp-route-inboxPage="@Model.InboxPage" asp-route-sentPage="@Model.SentPage" class="@linkClass" style="font-weight:bold">
+                    <a asp-page="/PrivateMessages" asp-route-show="@PrivateMessagesPages.Message" asp-route-messageId="@msg.MessageId" asp-route-inboxPage="@Model.InboxPage" asp-route-sentPage="@Model.SentPage" asp-route-source="@Model.Show" class="@linkClass" style="font-weight:bold">
                         @Html.Raw(msg.Subject)
                     </a>
                     <span class="MinAuthor">
@@ -148,7 +148,7 @@
             <div class="FlexRow RowMargin">
                 <input name="SelectedMessages" type="checkbox" value="@msg.MessageId" form="SentActions" style="margin-right:10px; align-self:safe center" />
                 <span class="ForumContent" style="align-self:safe center">
-                    <a asp-page="/PrivateMessages" asp-route-show="@PrivateMessagesPages.Message" asp-route-messageId="@msg.MessageId" asp-route-inboxPage="@Model.InboxPage" asp-route-sentPage="@Model.SentPage" class="nav-link" style="font-weight:bold">
+                    <a asp-page="/PrivateMessages" asp-route-show="@PrivateMessagesPages.Message" asp-route-messageId="@msg.MessageId" asp-route-inboxPage="@Model.InboxPage" asp-route-sentPage="@Model.SentPage" asp-route-source="@Model.Show" class="nav-link" style="font-weight:bold">
                         @Html.Raw(msg.Subject)
                     </a>
                     <span class="MinAuthor">

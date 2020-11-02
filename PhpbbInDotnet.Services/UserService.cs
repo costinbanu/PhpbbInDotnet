@@ -191,8 +191,8 @@ namespace PhpbbInDotnet.Services
                 await connection.ExecuteAsync(
                     @"INSERT INTO phpbb_privmsgs (author_id, to_address, bcc_address, message_subject, message_text, message_time) VALUES (@senderId, @to, '', @subject, @text, @time); 
                       SELECT LAST_INSERT_ID() INTO @inserted_id;
-                      INSERT INTO phpbb_privmsgs_to (author_id, msg_id, user_id) VALUES (@senderId, @inserted_id, @receiverId); 
-                      INSERT INTO phpbb_privmsgs_to (author_id, msg_id, user_id) VALUES (@senderId, @inserted_id, @senderId); ",
+                      INSERT INTO phpbb_privmsgs_to (author_id, msg_id, user_id, folder_id, pm_unread) VALUES (@senderId, @inserted_id, @receiverId, 0, 1); 
+                      INSERT INTO phpbb_privmsgs_to (author_id, msg_id, user_id, folder_id, pm_unread) VALUES (@senderId, @inserted_id, @senderId, -1, 0); ",
                     new { senderId, receiverId, to = $"u_{receiverId}", subject, text, time = DateTime.UtcNow.ToUnixTimestamp() }
                 );
 
@@ -275,17 +275,16 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<(string Message, bool? IsSuccess)> HidePrivateMessages(params int[] messageIds)
+        public async Task<(string Message, bool? IsSuccess)> HidePrivateMessages(int userId, params int[] messageIds)
         {
             try
             {
                 using var connection = await _context.GetDbConnectionAndOpenAsync();
                 var rows = await connection.ExecuteAsync(
-                    @"UPDATE phpbb_privmsgs_to t
-                        JOIN phpbb_privmsgs m ON t.msg_id = m.msg_id
-                         SET t.folder_id = -1
-                       WHERE m.msg_id IN @messageIds AND t.author_id <> t.user_id",
-                    new { messageIds }
+                    @"UPDATE phpbb_privmsgs_to
+                         SET folder_id = -10
+                       WHERE msg_id IN @messageIds AND user_id = @userId",
+                    new { messageIds, userId }
                 );
                 if (rows < messageIds.Length)
                 {
@@ -303,7 +302,7 @@ namespace PhpbbInDotnet.Services
         public async Task<int> UnreadPMs(int userId)
         {
             var connection = await _context.GetDbConnectionAndOpenAsync();
-            return await connection.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_privmsgs_to WHERE user_id = @userId AND author_id <> user_id AND pm_unread = 1", new { userId });
+            return await connection.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_privmsgs_to WHERE user_id = @userId AND folder_id >= 0 AND pm_unread = 1", new { userId });
         }
 
         public async Task<IEnumerable<PhpbbAclRoles>> GetUserRolesLazy()

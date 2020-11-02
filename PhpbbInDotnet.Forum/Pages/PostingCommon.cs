@@ -250,8 +250,16 @@ namespace PhpbbInDotnet.Forum.Pages
             else
             {
                 await connection.ExecuteAsync(
-                    "UPDATE phpbb_posts SET post_text = @text, bbcode_uid = @uid, bbcode_bitfield = @bitfield, post_attachment = @attachment WHERE post_id = @postId",
-                    new { text = await _writingService.PrepareTextForSaving(newPostText), uid, bitfield, attachment = hasAttachments.ToByte(), post.PostId }
+                    "UPDATE phpbb_posts SET post_subject = @subject, post_text = @text, bbcode_uid = @uid, bbcode_bitfield = @bitfield, post_attachment = @attachment WHERE post_id = @postId",
+                    new 
+                    { 
+                        subject = HttpUtility.HtmlEncode(post.PostSubject), 
+                        text = await _writingService.PrepareTextForSaving(newPostText), 
+                        uid, 
+                        bitfield, 
+                        attachment = hasAttachments.ToByte(), 
+                        post.PostId 
+                    }
                 );
 
                 await _postService.CascadePostEdit(post);
@@ -265,19 +273,14 @@ namespace PhpbbInDotnet.Forum.Pages
             if (canCreatePoll && !string.IsNullOrWhiteSpace(PollOptions))
             {
                 var existing = await connection.QueryAsync<string>("SELECT LTRIM(RTRIM(poll_option_text)) FROM phpbb_poll_options WHERE topic_id = @topicId", new { TopicId });
-                var shouldInsertOptions = Action == PostingActions.NewForumPost || Action == PostingActions.NewTopic;
-                if (existing.Any() && !existing.SequenceEqual(pollOptionsArray, StringComparer.InvariantCultureIgnoreCase))
+                if (!existing.SequenceEqual(pollOptionsArray, StringComparer.InvariantCultureIgnoreCase))
                 {
-                    shouldInsertOptions = true;
                     await connection.ExecuteAsync(
                         "DELETE FROM phpbb_poll_options WHERE topic_id = @topicId;" +
                         "DELETE FROM phpbb_poll_votes WHERE topic_id = @topicId",
                         new { TopicId }
                     );
-                }
-
-                if (shouldInsertOptions)
-                {
+                    
                     byte id = 1;
                     foreach (var option in pollOptionsArray)
                     {
@@ -286,20 +289,20 @@ namespace PhpbbInDotnet.Forum.Pages
                             new { id = id++, TopicId, text = HttpUtility.HtmlEncode(option) }
                         );
                     }
-                }
 
-                await connection.ExecuteAsync(
-                    "UPDATE phpbb_topics SET poll_start = @start, poll_length = @length, poll_max_options = @maxOptions, poll_title = @title, poll_vote_change = @change WHERE topic_id = @topicId",
-                    new 
-                    { 
-                        start = curTopic.PollStart == 0 ? DateTime.UtcNow.ToUnixTimestamp() : curTopic.PollStart,
-                        length = (int)TimeSpan.FromDays(double.Parse(PollExpirationDaysString)).TotalSeconds,
-                        maxOptions = (byte)(PollMaxOptions ?? 1),
-                        title = HttpUtility.HtmlEncode(PollQuestion),
-                        change = PollCanChangeVote.ToByte(),
-                        TopicId
-                    }
-                );
+                    await connection.ExecuteAsync(
+                        "UPDATE phpbb_topics SET poll_start = @start, poll_length = @length, poll_max_options = @maxOptions, poll_title = @title, poll_vote_change = @change WHERE topic_id = @topicId",
+                        new
+                        {
+                            start = curTopic.PollStart == 0 ? DateTime.UtcNow.ToUnixTimestamp() : curTopic.PollStart,
+                            length = (int)TimeSpan.FromDays(double.Parse(PollExpirationDaysString)).TotalSeconds,
+                            maxOptions = (byte)(PollMaxOptions ?? 1),
+                            title = HttpUtility.HtmlEncode(PollQuestion),
+                            change = PollCanChangeVote.ToByte(),
+                            TopicId
+                        }
+                    );
+                }
             }
 
             await connection.ExecuteAsync(

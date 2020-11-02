@@ -483,7 +483,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return RedirectToPage("ViewTopic", "byPostId", new { PostId });
                 }
                 var connection = _context.Database.GetDbConnection();
-                await connection.OpenAsync();
+                await connection.OpenIfNeededAsync();
 
                 await connection.ExecuteAsync("UPDATE phpbb_topics SET poll_start = 0, poll_length = 0, poll_max_options = 1, poll_title = '', poll_vote_change = 0 WHERE topic_id = @topicId", new { curTopic.TopicId });
 

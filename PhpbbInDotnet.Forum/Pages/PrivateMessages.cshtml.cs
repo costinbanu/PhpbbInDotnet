@@ -11,6 +11,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
 using PhpbbInDotnet.Database.Entities;
+using System;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -30,6 +31,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
         [BindProperty]
         public int[] SelectedMessages { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public PrivateMessagesPages? Source { get; set; }
 
         public List<PrivateMessageDto> InboxMessages { get; private set; }
 
@@ -55,13 +59,8 @@ namespace PhpbbInDotnet.Forum.Pages
         }
 
         public async Task<IActionResult> OnGet()
-            => await WithRegisteredUser(async (user) =>
+            => await WithUserHavingPM(async (user) =>
             {
-                if (!_userService.HasPrivateMessagePermissions(user))
-                {
-                    return BadRequest("Utilizatorul nu are acces la mesageria privată.");
-                }
-
                 using var connection = await _context.GetDbConnectionAndOpenAsync();
 
                 if (Show != PrivateMessagesPages.Message)
@@ -89,8 +88,8 @@ namespace PhpbbInDotnet.Forum.Pages
                           JOIN other t ON m.msg_id = t.msg_id
                           JOIN phpbb_privmsgs_to tt ON m.msg_id = tt.msg_id
                          WHERE tt.user_id = @userId 
-                           AND ((@isInbox AND tt.author_id <> @userId) OR (NOT @isInbox AND tt.author_id = @userId))
-                           AND tt.folder_id <> -1
+                           AND ((@isInbox AND tt.folder_id >= 0) OR (NOT @isInbox AND tt.folder_id = -1))
+                           AND tt.folder_id <> -10
                          ORDER BY message_time DESC
                          LIMIT @skip, @take;
  
@@ -99,11 +98,11 @@ namespace PhpbbInDotnet.Forum.Pages
                            JOIN phpbb_privmsgs_to t ON m.msg_id = t.msg_id AND t.user_id <> t.author_id AND (t.user_id <> @userId OR t.author_id <> @userId)
                            JOIN  phpbb_privmsgs_to tt ON m.msg_id = tt.msg_id
                           WHERE tt.user_id = @userId
-                            AND tt.folder_id <> -1
-                            AND ((@isInbox AND tt.author_id <> @userId) OR (NOT @isInbox AND tt.author_id = @userId))",
-                        new 
-                        { 
-                            user.UserId, 
+                            AND tt.folder_id <> -10
+                            AND ((@isInbox AND tt.folder_id >= 0) OR (NOT @isInbox AND tt.folder_id = -1))",
+                        new
+                        {
+                            user.UserId,
                             isInbox = Show == PrivateMessagesPages.Inbox,
                             skip = Show switch
                             {
@@ -111,7 +110,7 @@ namespace PhpbbInDotnet.Forum.Pages
                                 PrivateMessagesPages.Sent => ((SentPage ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE,
                                 _ => 0
                             },
-                            take = Constants.DEFAULT_PAGE_SIZE 
+                            take = Constants.DEFAULT_PAGE_SIZE
                         }
                     );
 
@@ -126,7 +125,7 @@ namespace PhpbbInDotnet.Forum.Pages
                             pageNumKey: nameof(InboxPage)
                         );
                     }
-                    else if(Show == PrivateMessagesPages.Sent)
+                    else if (Show == PrivateMessagesPages.Sent)
                     {
                         SentMessages = (await multi.ReadAsync<PrivateMessageDto>()).AsList();
                         SentPaginator = new Paginator(
@@ -138,41 +137,45 @@ namespace PhpbbInDotnet.Forum.Pages
                         );
                     }
                 }
-                else if (MessageId.HasValue)
+                else if (MessageId.HasValue && Source.HasValue)
                 {
-                    var msg = await connection.QueryFirstOrDefaultAsync<PhpbbPrivmsgs>("SELECT * FROM phpbb_privmsgs WHERE msg_id = @messageId", new { MessageId });
-                    var to = await connection.QueryFirstOrDefaultAsync<PhpbbPrivmsgsTo>("SELECT * FROM phpbb_privmsgs_to WHERE msg_id = @messageId AND user_id = @userId", new { MessageId, user.UserId });
-                    SelectedMessageIsMine = to.AuthorId == user.UserId;
-                    SelectedMessageIsUnread = to.PmUnread.ToBool();
-                    var other = await connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId = SelectedMessageIsMine ? to.UserId : to.AuthorId });
+                    SelectedMessageIsMine = Source == PrivateMessagesPages.Sent;
+                    using var multi = await connection.QueryMultipleAsync(
+                        "SELECT * FROM phpbb_privmsgs WHERE msg_id = @messageId; " +
+                        "SELECT * FROM phpbb_privmsgs_to WHERE msg_id = @messageId AND folder_id >= 0; " +
+                        "SELECT user_id, author_id FROM phpbb_privmsgs_to WHERE msg_id = @messageId AND user_id <> author_id",
+                        new { MessageId, isInbox = Source == PrivateMessagesPages.Inbox }
+                    );
+                    var message = await multi.ReadFirstOrDefaultAsync<PhpbbPrivmsgs>();
+                    var inboxEntry = await multi.ReadFirstOrDefaultAsync<PhpbbPrivmsgsTo>();
+                    var userIds = await multi.ReadFirstOrDefaultAsync();
+                    SelectedMessageIsUnread = inboxEntry?.PmUnread.ToBool() ?? false;
+                    var otherUser = await connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", 
+                        new { userId = userIds.author_id != user.UserId ? userIds.author_id : userIds.user_id}
+                    );
                     SelectedMessage = new PrivateMessageDto
                     {
-                        MessageId = msg.MsgId,
-                        OthersId = other.UserId,
-                        OthersName = other?.Username ?? "Anonymous",
-                        OthersColor = other?.UserColour,
-                        OtherHasAvatar = !string.IsNullOrWhiteSpace(other.UserAvatar),
-                        Subject = HttpUtility.HtmlDecode(msg.MessageSubject),
-                        Text = _renderingService.BbCodeToHtml(msg.MessageText, msg.BbcodeUid),
-                        MessageTime = msg.MessageTime
+                        MessageId = message.MsgId,
+                        OthersId = otherUser.UserId,
+                        OthersName = otherUser?.Username ?? "Anonymous",
+                        OthersColor = otherUser?.UserColour,
+                        OtherHasAvatar = !string.IsNullOrWhiteSpace(otherUser.UserAvatar),
+                        Subject = HttpUtility.HtmlDecode(message.MessageSubject),
+                        Text = _renderingService.BbCodeToHtml(message.MessageText, message.BbcodeUid),
+                        MessageTime = message.MessageTime
                     };
 
-                    if (to.PmUnread.ToBool() && !SelectedMessageIsMine)
+                    if (SelectedMessageIsUnread && !SelectedMessageIsMine)
                     {
-                        await connection.ExecuteAsync("UPDATE phpbb_privmsgs_to SET pm_unread = 0 WHERE id = @id", new { to.Id });
+                        await connection.ExecuteAsync("UPDATE phpbb_privmsgs_to SET pm_unread = 0 WHERE id = @id", new { id = inboxEntry?.Id ?? 0 });
                     }
                 }
                 return Page();
             });
 
         public async Task<IActionResult> OnPostDeleteMessage()
-            => await WithRegisteredUser(async (user) =>
+            => await WithUserHavingPM(async (user) =>
             {
-                if (!_userService.HasPrivateMessagePermissions(user))
-                {
-                    return BadRequest("Utilizatorul nu are acces la mesageria privată.");
-                }
-
                 var (Message, IsSuccess) = await _userService.DeletePrivateMessage(MessageId.Value);
 
                 if (IsSuccess ?? false)
@@ -189,14 +192,9 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostHideMessage()
-            => await WithRegisteredUser(async (user) =>
+            => await WithUserHavingPM(async (user) =>
             {
-                if (!_userService.HasPrivateMessagePermissions(user))
-                {
-                    return BadRequest("Utilizatorul nu are acces la mesageria privată.");
-                }
-
-                var (Message, IsSuccess) = await _userService.HidePrivateMessages(MessageId ?? 0);
+                var (Message, IsSuccess) = await _userService.HidePrivateMessages(user.UserId, MessageId ?? 0);
 
                 if (IsSuccess ?? false)
                 {
@@ -212,12 +210,8 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostMarkAsRead()
-            => await WithRegisteredUser(async (user) =>
+            => await WithUserHavingPM(async (user) =>
             {
-                if (!_userService.HasPrivateMessagePermissions(user))
-                {
-                    return BadRequest("Utilizatorul nu are acces la mesageria privată.");
-                }
                 var connection = await _context.GetDbConnectionAndOpenAsync();
                 await connection.ExecuteAsync("UPDATE phpbb_privmsgs_to SET pm_unread = 0 WHERE msg_id IN @ids AND author_id <> user_id", new { ids = SelectedMessages?.DefaultIfEmpty() ?? new[] { 0 } });
 
@@ -225,20 +219,26 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public async Task OnPostHideSelectedMessages()
-            => await WithRegisteredUser(async (user) =>
+            => await WithUserHavingPM(async (user) =>
             {
-                if (!_userService.HasPrivateMessagePermissions(user))
-                {
-                    return BadRequest("Utilizatorul nu are acces la mesageria privată.");
-                }
-
-                var (Message, IsSuccess) = await _userService.HidePrivateMessages(SelectedMessages);
+                var (Message, IsSuccess) = await _userService.HidePrivateMessages(user.UserId, SelectedMessages);
 
                 if (!(IsSuccess ?? false))
                 {
                     ModelState.AddModelError(nameof(MessageId), Message);
                 }
                 return await OnGet();
+            });
+
+        private async Task<IActionResult> WithUserHavingPM(Func<LoggedUser, Task<IActionResult>> toDo)
+            => await WithRegisteredUser(async (user) =>
+            {
+                if (!_userService.HasPrivateMessagePermissions(user))
+                {
+                    return RedirectToPage("Error", new { isUnauthorised = true });
+                }
+
+                return await toDo(user);
             });
     }
 }
