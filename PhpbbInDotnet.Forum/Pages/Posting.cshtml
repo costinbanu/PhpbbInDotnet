@@ -56,6 +56,7 @@
         else {
             $('#pollButton').text(posting.showPollText);
         }
+        $('#message').focus();
     }
 
     function toggleFormattingHelp() {
@@ -521,7 +522,7 @@ else if (IsPM)
             }
 
             post.AuthorHasAvatar = false;
-            await _renderingService.ProcessPost(post, Model.PageContext, Model.HttpContext, true);
+            await _renderingService.ProcessPost(post, Model.PageContext, Model.HttpContext, !Model.IsBot);
 
             if (!isFirst)
             {

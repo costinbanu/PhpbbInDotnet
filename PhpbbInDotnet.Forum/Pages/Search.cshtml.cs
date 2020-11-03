@@ -42,7 +42,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         [BindProperty(SupportsGet = true)]
         public int? TotalResults { get; set; }
-
+        public IEnumerable<PhpbbAttachments> Attachments { get; private set; }
         [BindProperty(SupportsGet = true)]
         public bool? DoSearch { get; set; }
 
@@ -53,7 +53,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public Paginator Paginator { get; private set; }
         public bool IsAuthorSearch { get; private set; }
 
-        public SearchModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, IConfiguration config, 
+        public SearchModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, IConfiguration config,
             AnonymousSessionCounter sessionCounter, CommonUtils utils)
             : base(context, forumService, userService, cacheService, config, sessionCounter, utils)
         { }
@@ -77,10 +77,10 @@ namespace PhpbbInDotnet.Forum.Pages
                 TopicId = int.TryParse(query["topicid"], out var i) ? i as int? : null;
             }
 
-            var connection = await _context.GetDbConnectionAndOpenAsync();
+            var connection = await Context.GetDbConnectionAndOpenAsync();
 
             Users = (
-                await connection.QueryAsync("SELECT username, user_id FROM phpbb_users WHERE user_id <> @id AND user_type <> 2", new { id = Constants.ANONYMOUS_USER_ID })
+                await connection.QueryAsync("SELECT username, user_id FROM phpbb_users WHERE user_id <> @id AND user_type <> 2 ORDER BY username", new { id = Constants.ANONYMOUS_USER_ID })
             ).Select(u => KeyValuePair.Create((string)u.username, (int)u.user_id)).ToList();
 
             if (ForumId == null && TopicId != null)
@@ -149,10 +149,10 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 void traverse(int fid)
                 {
-                    var node = _forumService.GetTreeNode(tree, fid);
+                    var node = ForumService.GetTreeNode(tree, fid);
                     if (node != null)
                     {
-                        if (!_forumService.IsNodeRestricted(node))
+                        if (!ForumService.IsNodeRestricted(node))
                         {
                             forumIds.Add(fid);
                         }
@@ -166,27 +166,27 @@ namespace PhpbbInDotnet.Forum.Pages
             }
             else
             {
-                forumIds.AddRange(tree.Where(t => !_forumService.IsNodeRestricted(t)).Select(t => t.ForumId));
+                forumIds.AddRange(tree.Where(t => !ForumService.IsNodeRestricted(t)).Select(t => t.ForumId));
             }
 
-            var connection = await _context.GetDbConnectionAndOpenAsync();
-                PageNum ??= 1;
+            var connection = await Context.GetDbConnectionAndOpenAsync();
+            PageNum ??= 1;
 
-                using var multi = await connection.QueryMultipleAsync(
-                    "CALL `forum`.`search_post_text`(@forums, @topic, @author, @page, @search);",
-                    new
-                    {
-                        forums = string.Join(',', forumIds),
-                        topic = TopicId > 0 ? TopicId : null,
-                        author = AuthorId > 0 ? AuthorId : null as int?,
-                        page = PageNum,
-                        search = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText)
-                    }
-                );
+            using var multi = await connection.QueryMultipleAsync(
+                "CALL `forum`.`search_post_text`(@forums, @topic, @author, @page, @search);",
+                new
+                {
+                    forums = string.Join(',', forumIds),
+                    topic = TopicId > 0 ? TopicId : null,
+                    author = AuthorId > 0 ? AuthorId : null as int?,
+                    page = PageNum,
+                    search = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText)
+                }
+            );
 
-                Posts = await multi.ReadAsync<ExtendedPostDisplay>();
-                TotalResults = unchecked((int)await multi.ReadFirstOrDefaultAsync<long>());
-            
+            Posts = await multi.ReadAsync<ExtendedPostDisplay>();
+            TotalResults = unchecked((int)await multi.ReadFirstOrDefaultAsync<long>());
+            Attachments = await connection.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id IN @postIds", new { postIds = Posts.Select(p => p.PostId).DefaultIfEmpty() });
 
             Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum.Value, link: GetSearchLinkForPage(PageNum.Value + 1), topicId: null);
         }

@@ -118,7 +118,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             if (((TopicId.HasValue && PageNum.HasValue) || PostId.HasValue) && (Action == PostingActions.EditForumPost || Action == PostingActions.NewForumPost))
             {
-                var connection = await _context.GetDbConnectionAndOpenAsync();
+                var connection = await Context.GetDbConnectionAndOpenAsync();
                 var posts = await connection.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC LIMIT 10", new { TopicId });
                 using var multi = await connection.QueryMultipleAsync(
                     "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @postIds ORDER BY attach_id;" +
@@ -134,26 +134,26 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task Init()
         {
-            var connection = await _context.GetDbConnectionAndOpenAsync();
+            var connection = await Context.GetDbConnectionAndOpenAsync();
             var smileys = await connection.QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies GROUP BY smiley_url ORDER BY smiley_order");
-            await _cacheService.SetInCache(await GetActualCacheKey("Smilies", false), smileys.ToList());
+            await CacheService.SetInCache(await GetActualCacheKey("Smilies", false), smileys.ToList());
 
             var userMap = (await connection.QueryAsync<PhpbbUsers>(
                 "SELECT * FROM phpbb_users WHERE user_id <> @anon AND user_type <> 2 ORDER BY username", 
                 new { anon = Constants.ANONYMOUS_USER_ID })
             ).Select(u => KeyValuePair.Create(u.Username, u.UserId)).ToList();
 
-            await _cacheService.SetInCache(
+            await CacheService.SetInCache(
                 await GetActualCacheKey("Users", false),
-                userMap.Select(map => KeyValuePair.Create(map.Key, $"[url={_config.GetValue<string>("BaseUrl")}/User?UserId={map.Value}]{map.Key}[/url]"))
+                userMap.Select(map => KeyValuePair.Create(map.Key, $"[url={Config.GetValue<string>("BaseUrl")}/User?UserId={map.Value}]{map.Key}[/url]"))
             );
 
-            await _cacheService.SetInCache(await GetActualCacheKey("UserMap", false), userMap);
+            await CacheService.SetInCache(await GetActualCacheKey("UserMap", false), userMap);
         }
 
         private async Task<PhpbbPosts> InitEditedPost()
         {
-            var connection = await _context.GetDbConnectionAndOpenAsync();
+            var connection = await Context.GetDbConnectionAndOpenAsync();
 
             var post = await connection.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { PostId });
 
@@ -180,7 +180,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return null;
             }
 
-            var connection = await _context.GetDbConnectionAndOpenAsync();
+            var connection = await Context.GetDbConnectionAndOpenAsync();
 
             var curTopic = Action != PostingActions.NewTopic ? await connection.QuerySingleOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { TopicId }) : null;
             var canCreatePoll = Action == PostingActions.NewTopic || (Action == PostingActions.EditForumPost && (curTopic?.TopicFirstPostId ?? 0) == PostId);
@@ -213,7 +213,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var uid = string.Empty;
             var bitfield = string.Empty;
             var hasAttachments = Attachments?.Any() ?? false;
-            if (_config.GetValue<bool>("CompatibilityMode"))
+            if (Config.GetValue<bool>("CompatibilityMode"))
             {
                 (newPostText, uid, bitfield) = _renderingService.TransformForBackwardsCompatibility(newPostText);
             }
@@ -239,7 +239,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         uid,
                         bitfield,
                         attachment = hasAttachments.ToByte(),
-                        checksum = _utils.CalculateMD5Hash(newPostText),
+                        checksum = Utils.CalculateMD5Hash(newPostText),
                         ip = HttpContext.Connection.RemoteIpAddress.ToString(),
                         username = HttpUtility.HtmlEncode(usr.Username)
                     }
@@ -310,10 +310,10 @@ namespace PhpbbInDotnet.Forum.Pages
                 new { usr.UserId, forumId = ForumId, topicId = Action == PostingActions.NewTopic ? 0 : TopicId }
             );
 
-            await _cacheService.RemoveFromCache(await GetActualCacheKey("Text", true));
-            await _cacheService.RemoveFromCache(await GetActualCacheKey("ForumId", true));
-            await _cacheService.RemoveFromCache(await GetActualCacheKey("TopicId", true));
-            await _cacheService.RemoveFromCache(await GetActualCacheKey("PostId", true));
+            await CacheService.RemoveFromCache(await GetActualCacheKey("Text", true));
+            await CacheService.RemoveFromCache(await GetActualCacheKey("ForumId", true));
+            await CacheService.RemoveFromCache(await GetActualCacheKey("TopicId", true));
+            await CacheService.RemoveFromCache(await GetActualCacheKey("PostId", true));
 
             return post.PostId;
         }
@@ -322,7 +322,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             if ((TopicId ?? 0) > 0 && (LastPostTime ?? 0) > 0)
             {
-                var connection = await _context.GetDbConnectionAndOpenAsync();
+                var connection = await Context.GetDbConnectionAndOpenAsync();
                 var currentLastPostTime = await connection.ExecuteScalarAsync<long>("SELECT MAX(post_time) FROM phpbb_posts WHERE topic_id = @topicId", new { TopicId });
                 if (currentLastPostTime > LastPostTime)
                 {
@@ -345,24 +345,24 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task<IActionResult> WithBackup(Func<Task<IActionResult>> toDo)
         {
-            await _cacheService.SetInCache(await GetActualCacheKey("Text", true), new CachedText { Text = PostText, CacheTime = DateTime.UtcNow });
-            await _cacheService.SetInCache(await GetActualCacheKey("ForumId", true), ForumId);
-            await _cacheService.SetInCache(await GetActualCacheKey("TopicId", true), TopicId);
-            await _cacheService.SetInCache(await GetActualCacheKey("PostId", true), PostId);
+            await CacheService.SetInCache(await GetActualCacheKey("Text", true), new CachedText { Text = PostText, CacheTime = DateTime.UtcNow });
+            await CacheService.SetInCache(await GetActualCacheKey("ForumId", true), ForumId);
+            await CacheService.SetInCache(await GetActualCacheKey("TopicId", true), TopicId);
+            await CacheService.SetInCache(await GetActualCacheKey("PostId", true), PostId);
             return await toDo();
         }
 
         private async Task RestoreBackupIfAny(DateTime? minCacheAge = null)
         {
-            var cachedText = await _cacheService.GetAndRemoveFromCache<CachedText>(await GetActualCacheKey("Text", true));
+            var cachedText = await CacheService.GetAndRemoveFromCache<CachedText>(await GetActualCacheKey("Text", true));
             if (!string.IsNullOrWhiteSpace(cachedText?.Text) && (cachedText?.CacheTime ?? DateTime.MinValue) > (minCacheAge ?? DateTime.UtcNow))
             {
                 PostText = cachedText.Text;
             }
-            var cachedForumId = await _cacheService.GetAndRemoveFromCache<int>(await GetActualCacheKey("ForumId", true));
+            var cachedForumId = await CacheService.GetAndRemoveFromCache<int>(await GetActualCacheKey("ForumId", true));
             ForumId = cachedForumId != 0 ? cachedForumId : ForumId;
-            TopicId ??= await _cacheService.GetAndRemoveFromCache<int?>(await GetActualCacheKey("TopicId", true));
-            PostId ??= await _cacheService.GetAndRemoveFromCache<int?>(await GetActualCacheKey("PostId", true));
+            TopicId ??= await CacheService.GetAndRemoveFromCache<int?>(await GetActualCacheKey("TopicId", true));
+            PostId ??= await CacheService.GetAndRemoveFromCache<int?>(await GetActualCacheKey("PostId", true));
         }
 
         public class CachedText

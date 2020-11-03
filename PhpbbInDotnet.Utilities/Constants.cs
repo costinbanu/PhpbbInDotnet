@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System;
 
 namespace PhpbbInDotnet.Utilities
 {
@@ -23,5 +23,7 @@ namespace PhpbbInDotnet.Utilities
         public static readonly int DEFAULT_PAGE_SIZE = PAGE_SIZE_INCREMENT * 2;
 
         public static readonly int BOTS_GROUP_ID = 6;
+
+        public static readonly TimeSpan REGEX_TIMEOUT = TimeSpan.FromSeconds(20);
     }
 }

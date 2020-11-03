@@ -145,6 +145,7 @@ else
     foreach (var post in Model.Posts)
     {
         post.AuthorHasAvatar = !string.IsNullOrWhiteSpace(post.UserAvatar);
+        post.Attachments = Model.Attachments?.Where(a => a.PostMsgId == post.PostId).Select(a => new Objects.AttachmentDto(a)).ToList();
 
         if (CurrentUser.Foes?.Contains(post.AuthorId ?? 1) ?? false)
         {
@@ -155,7 +156,7 @@ else
             post.PostText = "[i]Autorul acestui mesaj este pe lista ta de persoane neagreate, drept urmare nu poți vedea conținutul mesajelor sale[/i]";
         }
 
-        await _renderingService.ProcessPost(post, Model.PageContext, Model.HttpContext, false, Model.SearchText);
+        await _renderingService.ProcessPost(post, Model.PageContext, Model.HttpContext, !Model.IsBot, Model.SearchText);
 
         <div class="RowMargin FlexRow">
             @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
@@ -188,7 +189,13 @@ else
                 </span>
                 <p>&nbsp;</p>
                 <div style="max-width:100%; overflow-wrap: break-word">
-                    <p style="clear:both">@Html.Raw(post.PostText)</p>
+                    <p style="clear:both">
+                        @Html.Raw(post.PostText)
+                        @foreach (var attachment in post.Attachments)
+                        {
+                            @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
+                        }
+                    </p>
                 </div>
             </div>
         </div>

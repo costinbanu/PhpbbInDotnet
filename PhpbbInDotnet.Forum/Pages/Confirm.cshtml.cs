@@ -61,7 +61,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task OnGetConfirmEmail(string code, string username)
         {
-            var user = await _context.PhpbbUsers.FirstOrDefaultAsync(u =>
+            var user = await Context.PhpbbUsers.FirstOrDefaultAsync(u =>
                 u.UsernameClean == username &&
                 u.UserActkey == code &&
                 u.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed
@@ -87,14 +87,14 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 user.UserInactiveReason = UserInactiveReason.NewlyRegisteredConfirmed;
                 user.UserActkey = string.Empty;
-                await _context.SaveChangesAsync();
+                await Context.SaveChangesAsync();
 
                 var subject = "Cont de utilizator nou";
                 using var emailMessage = new MailMessage
                 {
-                    From = new MailAddress($"admin@metrouusor.com", _config.GetValue<string>("ForumName")),
+                    From = new MailAddress($"admin@metrouusor.com", Config.GetValue<string>("ForumName")),
                     Subject = subject,
-                    Body = await _utils.RenderRazorViewToString(
+                    Body = await Utils.RenderRazorViewToString(
                         "_NewUserNotification",
                         new _NewUserNotificationModel(user.Username),
                         PageContext,
@@ -104,8 +104,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 };
 
                 var adminEmails = await (
-                    from u in _context.PhpbbUsers.AsNoTracking()
-                    join ug in _context.PhpbbUserGroup.AsNoTracking()
+                    from u in Context.PhpbbUsers.AsNoTracking()
+                    join ug in Context.PhpbbUserGroup.AsNoTracking()
                     on u.UserId equals ug.UserId
                     into joined
                     from j in joined
@@ -114,7 +114,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 ).ToListAsync();
 
                 emailMessage.To.Add(string.Join(',', adminEmails));
-                await _utils.SendEmail(emailMessage);
+                await Utils.SendEmail(emailMessage);
             }
             Title = "Confirmarea adresei de e-mail";
         }

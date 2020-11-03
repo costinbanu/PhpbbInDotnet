@@ -42,7 +42,8 @@ namespace PhpbbInDotnet.Utilities
             _viewEngine = viewEngine;
             _tempDataProvider = tempDataProvider;
             _logger = logger;
-            HtmlCommentRegex = new Regex("(<!--.*?-->)|(&lt;!--.*?--&gt;)", RegexOptions.Compiled | RegexOptions.Singleline);
+            
+            HtmlCommentRegex = new Regex("(<!--.*?-->)|(&lt;!--.*?--&gt;)", RegexOptions.Compiled | RegexOptions.Singleline, Constants.REGEX_TIMEOUT);
             _md5 = MD5.Create();
         }
 

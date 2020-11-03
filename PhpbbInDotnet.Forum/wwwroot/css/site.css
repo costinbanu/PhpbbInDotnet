@@ -214,6 +214,13 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
     color: #ff6200 !important;
 }
 
+    .UnreadTitle:hover {
+        color: #cc550c !important;
+    }
+    .UnreadTitle:active {
+        color: #cc550c !important;
+    }
+
 /*.Highlight {
     background-color: #e8f5fc;
 }*/

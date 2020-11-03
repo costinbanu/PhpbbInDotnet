@@ -155,7 +155,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetWriting()
             => await WithAdmin(async () =>
             {
-                var result = await _utils.RenderRazorViewToString("_AdminWriting", new _AdminWritingModel((await GetCurrentUserAsync()).UserId), PageContext, HttpContext);
+                var result = await Utils.RenderRazorViewToString("_AdminWriting", new _AdminWritingModel((await GetCurrentUserAsync()).UserId), PageContext, HttpContext);
                 return Content(result);
             });
 

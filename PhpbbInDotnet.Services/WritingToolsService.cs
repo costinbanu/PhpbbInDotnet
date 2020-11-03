@@ -18,13 +18,11 @@ namespace PhpbbInDotnet.Services
     {
         private readonly ForumDbContext _context;
         private readonly StorageService _storageService;
-        private readonly CommonUtils _utils;
 
-        public WritingToolsService(ForumDbContext context, StorageService storageService, CommonUtils utils)
+        public WritingToolsService(ForumDbContext context, StorageService storageService)
         {
             _context = context;
             _storageService = storageService;
-            _utils = utils;
         }
 
         public async Task<IEnumerable<PhpbbWords>> GetBannedWordsAsync()
@@ -149,7 +147,7 @@ namespace PhpbbInDotnet.Services
             var connection = await _context.GetDbConnectionAndOpenAsync();
             foreach (var sr in await connection.QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies"))
             {
-                var regex = new Regex(@$"(?<=(^|\s)){Regex.Escape(sr.Code)}(?=($|\s))", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                var regex = new Regex(@$"(?<=(^|\s)){Regex.Escape(sr.Code)}(?=($|\s))", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, Constants.REGEX_TIMEOUT);
                 var replacement = $"<!-- s{sr.Code} --><img src=\"./images/smilies/{sr.SmileyUrl.Trim('/')}\" alt=\"{sr.Code}\" title=\"{sr.Emotion}\" /><!-- s{sr.Code} -->";
                 text = regex.Replace(text, replacement);
             }
@@ -163,15 +161,15 @@ namespace PhpbbInDotnet.Services
                 return string.Empty;
             }
 
-            var uidRegex = new Regex($":{uid}", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-            var tagRegex = new Regex(@"(:[a-z])(\]|:)", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            var uidRegex = new Regex($":{uid}", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, Constants.REGEX_TIMEOUT);
+            var tagRegex = new Regex(@"(:[a-z])(\]|:)", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, Constants.REGEX_TIMEOUT);
             var cleanTextTemp = string.IsNullOrWhiteSpace(uid) ? HttpUtility.HtmlDecode(text) : uidRegex.Replace(HttpUtility.HtmlDecode(text), string.Empty);
             var noUid = tagRegex.Replace(cleanTextTemp, "$2");
 
             string replace(string input, string pattern, int groupsIndex)
             {
                 var output = input;
-                var regex = new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                var regex = new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, Constants.REGEX_TIMEOUT);
                 var matches = regex.Matches(output);
                 try
                 {

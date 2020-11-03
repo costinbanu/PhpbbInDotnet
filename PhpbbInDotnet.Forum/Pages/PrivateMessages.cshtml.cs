@@ -61,7 +61,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGet()
             => await WithUserHavingPM(async (user) =>
             {
-                using var connection = await _context.GetDbConnectionAndOpenAsync();
+                using var connection = await Context.GetDbConnectionAndOpenAsync();
 
                 if (Show != PrivateMessagesPages.Message)
                 {
@@ -176,7 +176,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostDeleteMessage()
             => await WithUserHavingPM(async (user) =>
             {
-                var (Message, IsSuccess) = await _userService.DeletePrivateMessage(MessageId.Value);
+                var (Message, IsSuccess) = await UserService.DeletePrivateMessage(MessageId.Value);
 
                 if (IsSuccess ?? false)
                 {
@@ -194,7 +194,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostHideMessage()
             => await WithUserHavingPM(async (user) =>
             {
-                var (Message, IsSuccess) = await _userService.HidePrivateMessages(user.UserId, MessageId ?? 0);
+                var (Message, IsSuccess) = await UserService.HidePrivateMessages(user.UserId, MessageId ?? 0);
 
                 if (IsSuccess ?? false)
                 {
@@ -212,7 +212,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostMarkAsRead()
             => await WithUserHavingPM(async (user) =>
             {
-                var connection = await _context.GetDbConnectionAndOpenAsync();
+                var connection = await Context.GetDbConnectionAndOpenAsync();
                 await connection.ExecuteAsync("UPDATE phpbb_privmsgs_to SET pm_unread = 0 WHERE msg_id IN @ids AND author_id <> user_id", new { ids = SelectedMessages?.DefaultIfEmpty() ?? new[] { 0 } });
 
                 return await OnGet();
@@ -221,7 +221,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task OnPostHideSelectedMessages()
             => await WithUserHavingPM(async (user) =>
             {
-                var (Message, IsSuccess) = await _userService.HidePrivateMessages(user.UserId, SelectedMessages);
+                var (Message, IsSuccess) = await UserService.HidePrivateMessages(user.UserId, SelectedMessages);
 
                 if (!(IsSuccess ?? false))
                 {
@@ -233,7 +233,7 @@ namespace PhpbbInDotnet.Forum.Pages
         private async Task<IActionResult> WithUserHavingPM(Func<LoggedUser, Task<IActionResult>> toDo)
             => await WithRegisteredUser(async (user) =>
             {
-                if (!_userService.HasPrivateMessagePermissions(user))
+                if (!UserService.HasPrivateMessagePermissions(user))
                 {
                     return RedirectToPage("Error", new { isUnauthorised = true });
                 }

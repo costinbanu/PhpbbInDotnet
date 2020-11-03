@@ -24,12 +24,14 @@ namespace PhpbbInDotnet.Forum
 {
     public class ModelWithLoggedUser : PageModel
     {
-        protected readonly ForumTreeService _forumService;
-        protected readonly CacheService _cacheService;
-        protected readonly UserService _userService;
-        protected readonly ForumDbContext _context;
-        protected readonly IConfiguration _config;
-        protected readonly CommonUtils _utils;
+        protected readonly ForumTreeService ForumService;
+        protected readonly CacheService CacheService;
+        protected readonly UserService UserService;
+        protected readonly ForumDbContext Context;
+        protected readonly IConfiguration Config;
+        protected readonly CommonUtils Utils;
+
+        public bool IsBot { get; private set; }
 
         private readonly AnonymousSessionCounter _sessionCounter;
         private LoggedUser _currentUser;
@@ -37,13 +39,13 @@ namespace PhpbbInDotnet.Forum
         public ModelWithLoggedUser(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
             IConfiguration config, AnonymousSessionCounter sessionCounter, CommonUtils utils)
         {
-            _forumService = forumService;
-            _cacheService = cacheService;
-            _userService = userService;
-            _context = context;
-            _config = config;
+            ForumService = forumService;
+            CacheService = cacheService;
+            UserService = userService;
+            Context = context;
+            Config = config;
             _sessionCounter = sessionCounter;
-            _utils = utils;
+            Utils = utils;
         }
 
         #region User
@@ -55,12 +57,12 @@ namespace PhpbbInDotnet.Forum
                 return _currentUser;
             }
             var user = User;
-            var authenticationExpiryDays = _config.GetValue<int?>("LoginSessionSlidingExpirationDays") ?? 30;
-            var sessionTrackingTimeoutMinutes = _config.GetValue<int?>("UserActivityTrackingIntervalMinutes") ?? 60;
+            var authenticationExpiryDays = Config.GetValue<int?>("LoginSessionSlidingExpirationDays") ?? 30;
+            var sessionTrackingTimeoutMinutes = Config.GetValue<int?>("UserActivityTrackingIntervalMinutes") ?? 60;
             if (!(user?.Identity?.IsAuthenticated ?? false))
             {
-                user = await _userService.GetAnonymousClaimsPrincipalAsync();
-                _currentUser = await _userService.ClaimsPrincipalToLoggedUserAsync(user);
+                user = await UserService.GetAnonymousClaimsPrincipalAsync();
+                _currentUser = await UserService.ClaimsPrincipalToLoggedUserAsync(user);
                 await HttpContext.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme,
                     user,
@@ -74,23 +76,23 @@ namespace PhpbbInDotnet.Forum
             }
             else
             {
-                _currentUser = await _userService.ClaimsPrincipalToLoggedUserAsync(user);
+                _currentUser = await UserService.ClaimsPrincipalToLoggedUserAsync(user);
                 if (!_currentUser.IsAnonymous)
                 {
                     var key = $"UserMustLogIn_{_currentUser.UsernameClean}";
-                    if (await _cacheService.GetFromCache<bool?>(key) ?? false)
+                    if (await CacheService.GetFromCache<bool?>(key) ?? false)
                     {
                         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                     }
                     else
                     {
-                        var connection = await _context.GetDbConnectionAndOpenAsync();
+                        var connection = await Context.GetDbConnectionAndOpenAsync();
 
                         var dbUser = await connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { _currentUser.UserId });
                         if (dbUser == null || dbUser.UserInactiveTime > 0)
                         {
                             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                            await _cacheService.SetInCache(key, true, TimeSpan.FromDays(authenticationExpiryDays));
+                            await CacheService.SetInCache(key, true, TimeSpan.FromDays(authenticationExpiryDays));
                         }
                         else if (DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > TimeSpan.FromMinutes(sessionTrackingTimeoutMinutes))
                         {
@@ -99,13 +101,20 @@ namespace PhpbbInDotnet.Forum
                     }
                 }
             }
+
             if (_currentUser.IsAnonymous && HttpContext.Request.Headers.TryGetValue(HeaderNames.UserAgent, out var header) && (HttpContext.Session.GetInt32("SessionCounted") ?? 0) == 0 )
             {
                 try
                 {
-                    var dd = new DeviceDetector(header.ToString());
+                    var userAgent = header.ToString();
+                    var dd = new DeviceDetector(userAgent);
                     dd.Parse();
-                    if (!dd.IsBot())
+                    IsBot = dd.IsBot();
+                    if (IsBot)
+                    {
+                        _sessionCounter.UpsertIP(HttpContext.Connection.RemoteIpAddress.ToString(), userAgent, TimeSpan.FromMinutes(sessionTrackingTimeoutMinutes));
+                    }
+                    else
                     {
                         HttpContext.Session.SetInt32("SessionCounted", 1);
                         _sessionCounter.UpsertSession(HttpContext.Session.Id, TimeSpan.FromMinutes(sessionTrackingTimeoutMinutes));
@@ -113,7 +122,7 @@ namespace PhpbbInDotnet.Forum
                 }
                 catch (Exception ex)
                 {
-                    _utils.HandleError(ex, "Failed to detect anonymous session type.");
+                    Utils.HandleError(ex, "Failed to detect anonymous session type.");
                 }
             }
             return _currentUser;
@@ -126,13 +135,13 @@ namespace PhpbbInDotnet.Forum
             {
                 var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 await HttpContext.SignOutAsync();
-                var connection = await _context.GetDbConnectionAndOpenAsync();
+                var connection = await Context.GetDbConnectionAndOpenAsync();
 
                 var dbUser = await connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId = current });
 
                 await HttpContext.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme,
-                    await _userService.DbUserToClaimsPrincipalAsync(dbUser),
+                    await UserService.DbUserToClaimsPrincipalAsync(dbUser),
                     new AuthenticationProperties
                     {
                         AllowRefresh = true,
@@ -145,10 +154,10 @@ namespace PhpbbInDotnet.Forum
         }
 
         public async Task<bool> IsCurrentUserAdminHere(int forumId = 0)
-            => await _userService.IsUserAdminInForum(await GetCurrentUserAsync(), forumId);
+            => await UserService.IsUserAdminInForum(await GetCurrentUserAsync(), forumId);
 
         public async Task<bool> IsCurrentUserModeratorHere(int forumId = 0)
-            => await _userService.IsUserModeratorInForum(await GetCurrentUserAsync(), forumId);
+            => await UserService.IsUserModeratorInForum(await GetCurrentUserAsync(), forumId);
 
         #endregion User
 
@@ -157,19 +166,19 @@ namespace PhpbbInDotnet.Forum
         public async Task<bool> IsForumUnread(int forumId, bool forceRefresh = false)
         {
             var usr = await GetCurrentUserAsync();
-            return !usr.IsAnonymous && await _forumService.IsForumUnread(forumId, usr, forceRefresh);
+            return !usr.IsAnonymous && await ForumService.IsForumUnread(forumId, usr, forceRefresh);
         }
 
         public async Task<bool> IsTopicUnread(int forumId, int topicId, bool forceRefresh = false)
         {
             var usr = await GetCurrentUserAsync();
-            return !usr.IsAnonymous && await _forumService.IsTopicUnread(forumId, topicId, usr, forceRefresh);
+            return !usr.IsAnonymous && await ForumService.IsTopicUnread(forumId, topicId, usr, forceRefresh);
         }
 
         public async Task<bool> IsPostUnread(int forumId, int topicId, int postId)
         {
             var usr = await GetCurrentUserAsync();
-            return !usr.IsAnonymous && await _forumService.IsPostUnread(forumId, topicId, postId, usr);
+            return !usr.IsAnonymous && await ForumService.IsPostUnread(forumId, topicId, postId, usr);
         }
 
         public async Task<int> GetFirstUnreadPost(int forumId, int topicId)
@@ -185,7 +194,7 @@ namespace PhpbbInDotnet.Forum
                 return 0;
             }
 
-            var connection = await _context.GetDbConnectionAndOpenAsync();
+            var connection = await Context.GetDbConnectionAndOpenAsync();
             return unchecked((int)((await connection.QuerySingleOrDefaultAsync(
                 "SELECT post_id, post_time FROM phpbb_posts WHERE post_id IN @postIds HAVING post_time = MIN(post_time)",
                 new { postIds = item.Posts.DefaultIfEmpty() }
@@ -193,11 +202,11 @@ namespace PhpbbInDotnet.Forum
         }
 
         public async Task<(HashSet<ForumTree> Tree, Dictionary<int, HashSet<Tracking>> Tracking)> GetForumTree(bool forceRefresh = false)
-            => (await _forumService.GetForumTree(await GetCurrentUserAsync(), forceRefresh), await _forumService.GetForumTracking(await GetCurrentUserAsync(), forceRefresh));
+            => (await ForumService.GetForumTree(await GetCurrentUserAsync(), forceRefresh), await ForumService.GetForumTracking(await GetCurrentUserAsync(), forceRefresh));
 
         protected async Task MarkForumAndSubforumsRead(int forumId)
         {
-            var node = _forumService.GetTreeNode((await GetForumTree()).Tree, forumId);
+            var node = ForumService.GetTreeNode((await GetForumTree()).Tree, forumId);
             if (node == null)
             {
                 if (forumId == 0)
@@ -217,7 +226,7 @@ namespace PhpbbInDotnet.Forum
         protected async Task MarkForumRead(int forumId)
         {
             var usrId = (await GetCurrentUserAsync()).UserId;
-            var connection = await _context.GetDbConnectionAndOpenAsync();
+            var connection = await Context.GetDbConnectionAndOpenAsync();
 
             await connection.ExecuteAsync(
                 "DELETE FROM phpbb_topics_track WHERE forum_id = @forumId AND user_id = @usrId; " +
@@ -253,7 +262,7 @@ namespace PhpbbInDotnet.Forum
             {
                 //there are other unread topics in this forum, or unread pages in this topic, so just mark the current page as read
                 var userId = (await GetCurrentUserAsync()).UserId;
-                using var connection = await _context.GetDbConnectionAndOpenAsync();
+                using var connection = await Context.GetDbConnectionAndOpenAsync();
                 var existing = await connection.ExecuteScalarAsync<long?>("SELECT mark_time FROM phpbb_topics_track WHERE user_id = @userId AND topic_id = @topicId", new { userId, topicId = topicId });
                 if (existing == null)
                 {
@@ -276,7 +285,7 @@ namespace PhpbbInDotnet.Forum
         protected async Task SetLastMark()
         {
             var usrId = (await GetCurrentUserAsync()).UserId;
-            var connection = await _context.GetDbConnectionAndOpenAsync();
+            var connection = await Context.GetDbConnectionAndOpenAsync();
             await connection.ExecuteAsync("UPDATE phpbb_users SET user_lastmark = @markTime WHERE user_id = @usrId", new { markTime = DateTime.UtcNow.ToUnixTimestamp(), usrId });
         }
 
@@ -314,7 +323,7 @@ namespace PhpbbInDotnet.Forum
 
         protected async Task<IActionResult> WithValidForum(int forumId, bool overrideCheck, Func<PhpbbForums, Task<IActionResult>> toDo)
         {
-            var connection = await _context.GetDbConnectionAndOpenAsync();
+            var connection = await Context.GetDbConnectionAndOpenAsync();
             var curForum = await connection.QuerySingleOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { forumId });
 
             if (!overrideCheck)
@@ -325,8 +334,8 @@ namespace PhpbbInDotnet.Forum
                 }
 
                 var usr = await GetCurrentUserAsync();
-                var restricted = await _forumService.GetRestrictedForumList(usr, true);
-                var tree = await _forumService.GetForumTree(usr, false);
+                var restricted = await ForumService.GetRestrictedForumList(usr, true);
+                var tree = await ForumService.GetForumTree(usr, false);
                 var path = new List<int>();
                 if (tree.TryGetValue(new ForumTree { ForumId = forumId }, out var cur))
                 {
@@ -366,7 +375,7 @@ namespace PhpbbInDotnet.Forum
 
         protected async Task<IActionResult> WithValidTopic(int topicId, Func<PhpbbForums, PhpbbTopics, Task<IActionResult>> toDo)
         {
-            var connection = await _context.GetDbConnectionAndOpenAsync();
+            var connection = await Context.GetDbConnectionAndOpenAsync();
             
             var curTopic = await connection.QuerySingleOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
             
@@ -379,7 +388,7 @@ namespace PhpbbInDotnet.Forum
 
         protected async Task<IActionResult> WithValidPost(int postId, Func<PhpbbForums, PhpbbTopics, PhpbbPosts, Task<IActionResult>> toDo)
         {
-            var connection = await _context.GetDbConnectionAndOpenAsync();
+            var connection = await Context.GetDbConnectionAndOpenAsync();
 
             var curPost = await connection.QuerySingleOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId });
             if (curPost == null)

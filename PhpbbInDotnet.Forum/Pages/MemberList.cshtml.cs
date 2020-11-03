@@ -62,7 +62,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetSetMode()
             => await WithRegisteredUser(async (_) =>
             {
-                var connection = await _context.GetDbConnectionAndOpenAsync();
+                var connection = await Context.GetDbConnectionAndOpenAsync();
                 switch (Mode)
                 {
                     case MemberListPages.AllUsers:
@@ -88,7 +88,7 @@ namespace PhpbbInDotnet.Forum.Pages
                                 $"SELECT count(distinct user_id) FROM phpbb_users WHERE CONVERT(LOWER(username) USING utf8) LIKE @search;" +
                                 $"SELECT * FROM phpbb_groups;" +
                                 $"SELECT * FROM phpbb_ranks;",
-                                new { search = $"%{_utils.CleanString(Username)}%", skip = PAGE_SIZE * (PageNum - 1), take = PAGE_SIZE }
+                                new { search = $"%{Utils.CleanString(Username)}%", skip = PAGE_SIZE * (PageNum - 1), take = PAGE_SIZE }
                             );
                             UserList = await multi.ReadAsync<PhpbbUsers>();
                             Paginator = new Paginator(unchecked((int)await multi.ReadSingleAsync<long>()), PageNum, $"/MemberList?username={HttpUtility.UrlEncode(Username)}&order={Order}&handler=search", PAGE_SIZE, "pageNum");
@@ -106,7 +106,7 @@ namespace PhpbbInDotnet.Forum.Pages
                             $"SELECT count(distinct user_id) FROM phpbb_users WHERE user_lastvisit >= @lastVisit;" +
                             $"SELECT * FROM phpbb_groups;" +
                             $"SELECT * FROM phpbb_ranks;",
-                            new { lastVisit = DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(_config.GetValue<int?>("UserActivityTrackingIntervalMinutes") ?? 60)).ToUnixTimestamp(), skip = PAGE_SIZE * (PageNum - 1), take = PAGE_SIZE }
+                            new { lastVisit = DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(Config.GetValue<int?>("UserActivityTrackingIntervalMinutes") ?? 60)).ToUnixTimestamp(), skip = PAGE_SIZE * (PageNum - 1), take = PAGE_SIZE }
                         ))
                         {
                             UserList = await multi.ReadAsync<PhpbbUsers>();
@@ -126,7 +126,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithAdmin(async () =>
             {
                 Mode = MemberListPages.Groups;
-                var group = await _context.PhpbbGroups.FirstOrDefaultAsync(g => g.GroupId == groupId);
+                var group = await Context.PhpbbGroups.FirstOrDefaultAsync(g => g.GroupId == groupId);
                 if (group == null)
                 {
                     ModelState.AddModelError(nameof(ValidationDummy), $"Grupul {groupId} nu există.");
@@ -138,7 +138,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 group.GroupColour = (groupColor ?? string.Empty).Trim('#').ToUpperInvariant();
                 group.GroupEditTime = groupEditTime;
 
-                await _context.SaveChangesAsync();
+                await Context.SaveChangesAsync();
 
                 return await OnGetSetMode();
             });

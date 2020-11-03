@@ -3,11 +3,10 @@ using Dapper;
 using Diacritics.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
@@ -21,9 +20,9 @@ namespace PhpbbInDotnet.Services
 {
     public class BBCodeRenderingService
     {
-        private static readonly Regex _htmlRegex = new Regex(@"<((?=!\-\-)!\-\-[\s\S]*\-\-|((?=\?)\?[\s\S]*\?|((?=\/)\/[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*|[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*(?:\s[^.\-\d][^\/\]'""[!#$%&()*+,;<=>?@^`{|}~ ]*(?:=(?:""[^""]*""|'[^']*'|[^'""<\s]*))?)*)\s?\/?))>", RegexOptions.Compiled);
-        private static readonly Regex _spaceRegex = new Regex(" +", RegexOptions.Compiled | RegexOptions.Singleline);
-        private static readonly Regex _attachRegex = new Regex("#{AttachmentFileName=[^/]+/AttachmentIndex=[0-9]+}#", RegexOptions.Compiled);
+        private static readonly Regex _htmlRegex = new Regex("<.+?>", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
+        private static readonly Regex _spaceRegex = new Regex(" +", RegexOptions.Compiled | RegexOptions.Singleline, Constants.REGEX_TIMEOUT);
+        private static readonly Regex _attachRegex = new Regex("#{AttachmentFileName=[^/]+/AttachmentIndex=[0-9]+}#", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
 
         private readonly CommonUtils _utils;
         private readonly ForumDbContext _context;
@@ -56,10 +55,8 @@ namespace PhpbbInDotnet.Services
         public async Task ProcessPost(PostDto post, PageContext pageContext, HttpContext httpContext, bool renderAttachments, string toHighlight = null)
         {
             var highlightWords = SplitHighlightWords(toHighlight);
-
-            post.PostSubject = CensorWords(HttpUtility.HtmlDecode(post.PostSubject), _bannedWords.Value);
-            post.PostSubject = HighlightWords(post.PostSubject, highlightWords);
-            post.PostText = HighlightWords(BbCodeToHtml(post.PostText, post.BbcodeUid), highlightWords);
+            post.PostSubject = HighlightWords(CensorWords(HttpUtility.HtmlDecode(post.PostSubject), _bannedWords.Value), highlightWords);
+            post.PostText = HighlightWords(CensorWords(BbCodeToHtml(post.PostText, post.BbcodeUid), _bannedWords.Value), highlightWords);
 
             if (renderAttachments)
             {
@@ -111,7 +108,6 @@ namespace PhpbbInDotnet.Services
                 return string.Empty;
             }
 
-            bbCodeText = CensorWords(bbCodeText, _bannedWords.Value);
             string html = bbCodeText;
             try
             {
@@ -188,7 +184,6 @@ namespace PhpbbInDotnet.Services
             => ProcessAllWords(
                 input: text,
                 words: words,
-                expectHtmlInInput: true,
                 indexOf: (haystack, needle, startIndex) => (haystack.IndexOf(needle, startIndex, StringComparison.InvariantCultureIgnoreCase), needle),
                 transform: (haystack, needle, index) =>
                 {
@@ -203,12 +198,11 @@ namespace PhpbbInDotnet.Services
         private string CensorWords(string text, Dictionary<string, string> wordMap)
         {
             Regex getRegex(string wildcard)
-                => new Regex(@"\b" + Regex.Escape(wildcard).Replace(@"\*", @"\w*").Replace(@"\?", @"\w") + @"\b", RegexOptions.None, TimeSpan.FromSeconds(20));
+                => new Regex(@"\b" + Regex.Escape(wildcard).Replace(@"\*", @"\w*").Replace(@"\?", @"\w") + @"\b", RegexOptions.None, Constants.REGEX_TIMEOUT);
 
             return ProcessAllWords(
                 input: text,
                 words: wordMap.Keys,
-                expectHtmlInInput: true,
                 indexOf: (haystack, needle, startIndex) =>
                 {
                     var match = getRegex(needle).Match(haystack, startIndex);
@@ -227,9 +221,8 @@ namespace PhpbbInDotnet.Services
             );
         }
 
-        private string ProcessAllWords(string input, IEnumerable<string> words, bool expectHtmlInInput, FirstIndexOf indexOf, Transform transform)
+        private string ProcessAllWords(string input, IEnumerable<string> words, FirstIndexOf indexOf, Transform transform)
         {
-            var htmlTagsLocation = new List<(int Position, int Length)>();
             var cleanedInput = string.Empty;
             var shouldProcess = !string.IsNullOrWhiteSpace(input) && words.Any();
 
@@ -237,24 +230,14 @@ namespace PhpbbInDotnet.Services
             {
                 input = HttpUtility.HtmlDecode(input);
                 cleanedInput = input.RemoveDiacritics();
-                if (cleanedInput.Length == input.Length && expectHtmlInInput)
-                {
-                    foreach (Match m in _htmlRegex.Matches(cleanedInput))
-                    {
-                        htmlTagsLocation.Add((m.Groups[0].Index, m.Groups[0].Length));
-                    }
-                }
-                else if (cleanedInput.Length != input.Length)
-                {
-                    shouldProcess = false;
-                }
+                shouldProcess = cleanedInput.Length == input.Length;
             }
 
             if (shouldProcess)
             {
                 foreach (var word in words)
                 {
-                    var cleanedWord = word.RemoveDiacritics();
+                    var cleanedWord = HttpUtility.HtmlDecode(word.RemoveDiacritics());
                     if (cleanedWord.Length == word.Length)
                     {
                         var (index, cleanedMatch) = indexOf(cleanedInput, cleanedWord, 0);
@@ -270,33 +253,53 @@ namespace PhpbbInDotnet.Services
                             continue;
                         }
 
-                        var oldValue = index;
-                        while (index != -1)
+                        var htmlMatch = _htmlRegex.Match(cleanedInput, 0);
+                        var attachMatch = _attachRegex.Match(cleanedInput, 0);
+                        var start = DateTime.UtcNow;
+
+                        while (true)
                         {
                             var startIndex = 0;
-                            var tag = htmlTagsLocation.FirstOrDefault(x => index >= x.Position && index < x.Position + x.Length);
-                            if (tag == default)
+                            var ignoreOffset = GetIgnoreOffset(index, htmlMatch, attachMatch);
+                            
+                            if (ignoreOffset == 0)
                             {
-                                var (cleanedResult, cleanednextIndex) = transform(input, cleanedMatch, index);
-                                input = cleanedResult;
-                                cleanedInput = cleanedResult;
-                                startIndex = cleanednextIndex;
+                                var (transformedResult, transformednextIndex) = transform(input, cleanedMatch, index);
+                                input = transformedResult;
+                                cleanedInput = transformedResult.RemoveDiacritics();
+                                startIndex = transformednextIndex;
                             }
                             else
                             {
-                                startIndex = tag.Position + tag.Length;
+                                startIndex = ignoreOffset;
                             }
+
+                            var oldIndex = index;
                             index = startIndex > cleanedInput.Length ? -1 : indexOf(cleanedInput, cleanedWord, startIndex).index;
-                            if (index == oldValue)
+                            
+                            if (index == oldIndex || index == -1 || DateTime.UtcNow.Subtract(start) >= Constants.REGEX_TIMEOUT)
                             {
                                 break;
                             }
+
+                            htmlMatch = _htmlRegex.Match(cleanedInput, oldIndex);
+                            attachMatch = _attachRegex.Match(cleanedInput, oldIndex);
                         }
                     }
                 }
             }
 
             return input;
+        }
+
+        private int GetIgnoreOffset(int index, params Match[] matches)
+        {
+            var match = matches?.Where(m => m.Success && index >= m.Index && index < m.Index + m.Length)?.OrderBy(m => m.Length)?.LastOrDefault();
+            if (match != null)
+            {
+                return match.Index + match.Length;
+            }
+            return 0;
         }
     }
 }

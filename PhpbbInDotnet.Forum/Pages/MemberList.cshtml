@@ -129,43 +129,43 @@
                     }
                     else
                     {
-                    <form method="post" asp-page-handler="editGroup">
-                        <input type="hidden" name="groupId" value="@group.GroupId" /> <br />
-                        <div class="FlexCenter">
-                            <div>Nume:</div>
-                            <div class="FlexRight PostInputWidth">
-                                <input type="text" name="groupName" value="@group.GroupName" />
+                        <form method="post" asp-page-handler="editGroup">
+                            <input type="hidden" name="groupId" value="@group.GroupId" /> <br />
+                            <div class="FlexCenter">
+                                <div>Nume:</div>
+                                <div class="FlexRight PostInputWidth">
+                                    <input type="text" name="groupName" value="@group.GroupName" />
+                                </div>
                             </div>
-                        </div>
-                        <p></p>
-                        <div class="FlexCenter">
-                            <div>Descriere:</div>
-                            <div class="FlexRight PostInputWidth">
-                                <input type="text" name="groupDesc" value="@group.GroupDesc" />
+                            <p></p>
+                            <div class="FlexCenter">
+                                <div>Descriere:</div>
+                                <div class="FlexRight PostInputWidth">
+                                    <input type="text" name="groupDesc" value="@group.GroupDesc" />
+                                </div>
                             </div>
-                        </div>
-                        <p></p>
-                        <div class="FlexCenter">
-                            <div>Culoare:</div>
-                            <div class="FlexRight PostInputWidth">
-                                <input type="text" name="groupColor" value="@group.GroupColour" />
+                            <p></p>
+                            <div class="FlexCenter">
+                                <div>Culoare:</div>
+                                <div class="FlexRight PostInputWidth">
+                                    <input type="text" name="groupColor" value="@group.GroupColour" />
+                                </div>
                             </div>
-                        </div>
-                        <p></p>
-                        <div class="FlexCenter">
-                            <div>Timpul cât este permisă<br />editarea mesajelor proprii:</div>
-                            <div class="FlexRight PostInputWidth">
-                                <input type="text" name="groupEditTime" value="@group.GroupEditTime" /><br />
-                                <span class="Caption">
-                                    Minute de la publicarea mesajului.<br />
-                                    Aceeași setare există și la utilizatori și se aplică valoarea cea mai restrictivă diferită de zero.<br />
-                                    Zero semnifică „timp nelimitat” și se aplică chiar dacă cealaltă setare este diferită de zero.
-                                </span>
+                            <p></p>
+                            <div class="FlexCenter">
+                                <div>Timpul cât este permisă<br />editarea mesajelor proprii:</div>
+                                <div class="FlexRight PostInputWidth">
+                                    <input type="text" name="groupEditTime" value="@group.GroupEditTime" /><br />
+                                    <span class="Caption">
+                                        Minute de la publicarea mesajului.<br />
+                                        Aceeași setare există și la utilizatori și se aplică valoarea cea mai restrictivă diferită de zero.<br />
+                                        Zero semnifică „timp nelimitat” și se aplică chiar dacă cealaltă setare este diferită de zero.
+                                    </span>
+                                </div>
                             </div>
-                        </div>
-                        <p></p>
-                        <input type="submit" value="Trimite" />
-                    </form>
+                            <p></p>
+                            <input type="submit" value="Trimite" />
+                        </form>
                     }
                 </div>
             </div>
@@ -187,14 +187,15 @@
     {
         var registered = @Model.Paginator.Pagination.Pager.TotalItems;
         var anonymous = _sessionCounter.GetActiveSessionCount();
-        <h4>@registered membr@(registered == 1 ? "u" : "i") înregistra@(registered == 1 ? "t" : "ți") și @anonymous vizitator@(anonymous == 1 ? "" : "i")</h4>
+        var bots = _sessionCounter.GetActiveIPCount();
+        <h4>@registered membr@(registered == 1 ? "u" : "i") înregistra@(registered == 1 ? "t" : "ți"), @anonymous vizitator@(anonymous == 1 ? "" : "i") și @bots bo@(bots == 1 ? "t" : "ți")</h4>
         @await Html.PartialAsync(
-             "_UserSummaryPartial",
-             new CustomPartials._UserSummaryPartialModel(
-                 userList: Model.UserList, groupList: Model.GroupList, rankList: Model.RankList, dateFormat: dateFormat,
-                 paginator: Model.Paginator, backLink: $"MemberList?handler=setMode&pageNum={Model.PageNum - 1}&order={Model.Order}&mode={MemberListPages.ActiveUsers}", forwardLink: $"MemberList?handler=setMode&pageNum={Model.PageNum + 1}&order={Model.Order}&mode={MemberListPages.ActiveUsers}"
-             )
-         );
+                "_UserSummaryPartial",
+                new CustomPartials._UserSummaryPartialModel(
+                    userList: Model.UserList, groupList: Model.GroupList, rankList: Model.RankList, dateFormat: dateFormat,
+                    paginator: Model.Paginator, backLink: $"MemberList?handler=setMode&pageNum={Model.PageNum - 1}&order={Model.Order}&mode={MemberListPages.ActiveUsers}", forwardLink: $"MemberList?handler=setMode&pageNum={Model.PageNum + 1}&order={Model.Order}&mode={MemberListPages.ActiveUsers}"
+                )
+            );
     }
     else
     {

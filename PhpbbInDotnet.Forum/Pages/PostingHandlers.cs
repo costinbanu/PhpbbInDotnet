@@ -25,7 +25,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumId = curForum.ForumId;
                 Action = PostingActions.NewForumPost;
                 await Init();
-                var conn = _context.Database.GetDbConnection();
+                var conn = Context.Database.GetDbConnection();
                 await conn.OpenIfNeededAsync();
                 var draft = conn.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = TopicId.Value });
                 if (draft != null)
@@ -47,7 +47,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var curAuthor = curPost.PostUsername;
                 if (string.IsNullOrWhiteSpace(curAuthor))
                 {
-                    var conn = _context.Database.GetDbConnection();
+                    var conn = Context.Database.GetDbConnection();
                     await conn.OpenIfNeededAsync();
                     curAuthor = (await conn.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @posterId", new { curPost.PosterId }))?.Username ?? "Anonymous";
                 }
@@ -72,7 +72,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 CurrentTopic = null;
                 Action = PostingActions.NewTopic;
                 await Init();
-                var conn = _context.Database.GetDbConnection();
+                var conn = Context.Database.GetDbConnection();
                 await conn.OpenIfNeededAsync();
                 var draft = conn.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = 0 }); 
                 if (draft != null)
@@ -100,13 +100,13 @@ namespace PhpbbInDotnet.Forum.Pages
                 Action = PostingActions.EditForumPost;
                 await Init();
 
-                var conn = _context.Database.GetDbConnection();
+                var conn = Context.Database.GetDbConnection();
                 await conn.OpenIfNeededAsync();
 
                 Attachments = (await conn.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id = @postId", new { PostId })).AsList();
                 ShowAttach = Attachments.Any();
 
-                await _cacheService.SetInCache(await GetActualCacheKey("PostTime", true), curPost.PostTime);
+                await CacheService.SetInCache(await GetActualCacheKey("PostTime", true), curPost.PostTime);
 
                 if (canCreatePoll && curTopic.PollStart > 0)
                 {
@@ -130,7 +130,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetPrivateMessage()
             => await WithRegisteredUser(async (usr) =>
             {
-                var conn = _context.Database.GetDbConnection();
+                var conn = Context.Database.GetDbConnection();
                 await conn.OpenIfNeededAsync();
 
                 if ((PostId ?? 0) > 0)
@@ -194,7 +194,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetEditPrivateMessage()
             => await WithRegisteredUser(async (user) =>
             {
-                var conn = _context.Database.GetDbConnection();
+                var conn = Context.Database.GetDbConnection();
                 await conn.OpenIfNeededAsync();
 
                 var pm = await conn.QueryFirstOrDefaultAsync<PhpbbPrivmsgs>("SELECT * FROM phpbb_privmsgs WHERE msg_id = @privateMessageId", new { PrivateMessageId });
@@ -224,7 +224,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return Page();
                 }
 
-                var tooLargeFiles = Files.Where(f => f.Length > 1024 * 1024 * (f.ContentType.StartsWith("image/", StringComparison.InvariantCultureIgnoreCase) ? _config.GetValue<int>("UploadLimitsMB:Images") : _config.GetValue<int>("UploadLimitsMB:OtherFiles")));
+                var tooLargeFiles = Files.Where(f => f.Length > 1024 * 1024 * (f.ContentType.StartsWith("image/", StringComparison.InvariantCultureIgnoreCase) ? Config.GetValue<int>("UploadLimitsMB:Images") : Config.GetValue<int>("UploadLimitsMB:OtherFiles")));
                 if (tooLargeFiles.Any() && !await IsCurrentUserAdminHere())
                 {
                     return PageWithError(curForum, nameof(Files), $"Următoarele fișiere sunt prea mari: {string.Join(",", tooLargeFiles.Select(f => f.FileName))}");
@@ -279,7 +279,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     }
                 }
 
-                var connection = await _context.GetDbConnectionAndOpenAsync();
+                var connection = await Context.GetDbConnectionAndOpenAsync();
                 await connection.ExecuteAsync("DELETE FROM phpbb_attachments WHERE attach_id = @attachId", new { attachment.AttachId });
                 var dummy = Attachments.Remove(attachment);
                 ShowAttach = Attachments.Any();
@@ -304,7 +304,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return PageWithError(curForum, nameof(PostText), "Mesajul este prea scurt (minim 3 caractere, exclusiv spații).");
                 }
 
-                var conn = _context.Database.GetDbConnection();
+                var conn = Context.Database.GetDbConnection();
                 await conn.OpenIfNeededAsync();
 
                 var currentPost = Action == PostingActions.EditForumPost ? await InitEditedPost() : null;
@@ -314,7 +314,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var newPostText = PostText;
                 var uid = string.Empty;
 
-                if (_config.GetValue<bool>("CompatibilityMode"))
+                if (Config.GetValue<bool>("CompatibilityMode"))
                 {
                     (newPostText, uid, _) = _renderingService.TransformForBackwardsCompatibility(newPostText);
                 }
@@ -413,8 +413,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 var (Message, IsSuccess) = Action switch
                 {
-                    PostingActions.NewPrivateMessage => await _userService.SendPrivateMessage(user.UserId, user.Username, ReceiverId.Value, HttpUtility.HtmlEncode(PostTitle), await _writingService.PrepareTextForSaving(PostText), PageContext, HttpContext),
-                    PostingActions.EditPrivateMessage => await _userService.EditPrivateMessage(PrivateMessageId.Value, HttpUtility.HtmlEncode(PostTitle), await _writingService.PrepareTextForSaving(PostText)),
+                    PostingActions.NewPrivateMessage => await UserService.SendPrivateMessage(user.UserId, user.Username, ReceiverId.Value, HttpUtility.HtmlEncode(PostTitle), await _writingService.PrepareTextForSaving(PostText), PageContext, HttpContext),
+                    PostingActions.EditPrivateMessage => await UserService.EditPrivateMessage(PrivateMessageId.Value, HttpUtility.HtmlEncode(PostTitle), await _writingService.PrepareTextForSaving(PostText)),
                     _ => ("Unknown action", false)
                 };
 
@@ -438,7 +438,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return PageWithError(curForum, nameof(PostText), "Mesajul este prea scurt (minim 3 caractere, exclusiv spații).");
                 }
                 
-                var conn = _context.Database.GetDbConnection();
+                var conn = Context.Database.GetDbConnection();
                 await conn.OpenIfNeededAsync();
                 var topicId = Action == PostingActions.NewTopic ? 0 : TopicId ?? 0;
                 var draft = conn.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId });
@@ -457,7 +457,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         new { message = HttpUtility.HtmlEncode(PostText), subject = HttpUtility.HtmlEncode(PostTitle), now = DateTime.UtcNow.ToUnixTimestamp(), draft.DraftId }
                     );
                 }
-                await _cacheService.RemoveFromCache(await GetActualCacheKey("Text", true));
+                await CacheService.RemoveFromCache(await GetActualCacheKey("Text", true));
                 DraftSavedSuccessfully = true;
 
                 if (Action == PostingActions.NewForumPost)
@@ -482,7 +482,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     return RedirectToPage("ViewTopic", "byPostId", new { PostId });
                 }
-                var connection = _context.Database.GetDbConnection();
+                var connection = Context.Database.GetDbConnection();
                 await connection.OpenIfNeededAsync();
 
                 await connection.ExecuteAsync("UPDATE phpbb_topics SET poll_start = 0, poll_length = 0, poll_max_options = 1, poll_title = '', poll_vote_change = 0 WHERE topic_id = @topicId", new { curTopic.TopicId });

@@ -146,7 +146,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 Paginator = new Paginator(_count.Value, PageNum.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId, await GetCurrentUserAsync());
                 Poll = await _postService.GetPoll(_currentTopic);
 
-                var connection = await _context.GetDbConnectionAndOpenAsync();
+                var connection = await Context.GetDbConnectionAndOpenAsync();
                 using var multi = await connection.QueryMultipleAsync(
                     "SELECT * FROM phpbb_users WHERE user_id IN @authors; " +
                     "SELECT * FROM phpbb_users WHERE user_id IN @editors; " +
@@ -211,7 +211,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostPagination(int topicId, int userPostsPerPage, int? postId)
             => await WithRegisteredUser(async (user) =>
             {
-                var connection = await _context.GetDbConnectionAndOpenAsync();
+                var connection = await Context.GetDbConnectionAndOpenAsync();
                 var cur = await connection.QueryFirstOrDefaultAsync<PhpbbUserTopicPostNumber>("SELECT * FROM phpbb_user_topic_post_number WHERE user_id = @userId AND topic_id = @topicId", new { user.UserId, topicId });
                 if (cur == null)
                 {
@@ -237,7 +237,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostVote(int topicId, int[] votes, string queryString)
             => await WithRegisteredUser(async (user) => await WithValidTopic(topicId, async (_, topic) =>
             {
-                var conn = _context.Database.GetDbConnection();
+                var conn = Context.Database.GetDbConnection();
                 await conn.OpenIfNeededAsync();
 
                 var existingVotes = (await conn.QueryAsync<PhpbbPollVotes>("SELECT * FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @UserId", new { topicId, user.UserId })).AsList();
@@ -313,8 +313,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     var destinations = new List<string>
                     {
-                        await _utils.CompressAndEncode($"<a href=\"./ViewForum?forumId={DestinationForumId ?? 0}\">Mergi la noul forum</a>"),
-                        await _utils.CompressAndEncode($"<a href=\"./ViewTopic?topicId={TopicId}&pageNum={PageNum}\">Mergi la ultimul subiect vizitat</a>")
+                        await Utils.CompressAndEncode($"<a href=\"./ViewForum?forumId={DestinationForumId ?? 0}\">Mergi la noul forum</a>"),
+                        await Utils.CompressAndEncode($"<a href=\"./ViewTopic?topicId={TopicId}&pageNum={PageNum}\">Mergi la ultimul subiect vizitat</a>")
                     };
                     return RedirectToPage("Confirm", "DestinationConfirmation", new { destinations });
                 }
@@ -341,7 +341,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return RedirectToPage("Error", new { isUnauthorised = true });
                 }
 
-                var conn = _context.Database.GetDbConnection();
+                var conn = Context.Database.GetDbConnection();
                 await conn.OpenIfNeededAsync();
 
                 var toDelete = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId = PostIdsForModerator[0] });
@@ -365,7 +365,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostReportMessage(int? reportPostId, short? reportReasonId, string reportDetails)
             => await WithRegisteredUser(async (user) =>
             {
-                var conn = _context.Database.GetDbConnection();
+                var conn = Context.Database.GetDbConnection();
                 await conn.OpenIfNeededAsync();
 
                 await conn.ExecuteAsync(
@@ -397,7 +397,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     ModeratorActionResult = $"<span style=\"margin-left: 30px; color: {((IsSuccess ?? false) ? "darkgreen" : "red")}; display:block;\">{Message}</span>";
                 }
 
-                var conn = _context.Database.GetDbConnection();
+                var conn = Context.Database.GetDbConnection();
                 await conn.OpenIfNeededAsync();
 
                 await conn.ExecuteAsync(
@@ -475,16 +475,16 @@ namespace PhpbbInDotnet.Forum.Pages
                 var destinations = new List<string>();
                 if (LatestSelected != null)
                 {
-                    destinations.Add(await _utils.CompressAndEncode($"<a href=\"./ViewTopic?postId={LatestSelected}&handler=byPostId\">Mergi la noul subiect</a>"));
+                    destinations.Add(await Utils.CompressAndEncode($"<a href=\"./ViewTopic?postId={LatestSelected}&handler=byPostId\">Mergi la noul subiect</a>"));
                 };
 
                 if (NextRemaining != null)
                 {
-                    destinations.Add(await _utils.CompressAndEncode($"<a href=\"./ViewTopic?postId={NextRemaining}&handler=byPostId\">Mergi la ultimul subiect vizitat</a>"));
+                    destinations.Add(await Utils.CompressAndEncode($"<a href=\"./ViewTopic?postId={NextRemaining}&handler=byPostId\">Mergi la ultimul subiect vizitat</a>"));
                 }
                 else
                 {
-                    destinations.Add(await _utils.CompressAndEncode($"<a href=\"./ViewForum?forumId={ForumId}\">Mergi la ultimul forum vizitat</a>"));
+                    destinations.Add(await Utils.CompressAndEncode($"<a href=\"./ViewForum?forumId={ForumId}\">Mergi la ultimul forum vizitat</a>"));
                 }
 
                 return RedirectToPage("Confirm", "DestinationConfirmation", new { destinations });
@@ -504,7 +504,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task<(int? LatestSelected, int? NextRemaining)> GetSelectedAndNextRemainingPostIds(params int[] idsToInclude)
         {
-            var conn = _context.Database.GetDbConnection();
+            var conn = Context.Database.GetDbConnection();
             await conn.OpenIfNeededAsync();
 
             var latestSelectedPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(

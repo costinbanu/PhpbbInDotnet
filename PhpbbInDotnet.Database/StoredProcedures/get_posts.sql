@@ -11,13 +11,15 @@ BEGIN
 		select p.topic_id
         into topic_id
         from phpbb_posts p
-        where p.post_id = post_id;
+        where p.post_id = post_id
+        limit 1;
 	end if;
 
 	select utpn.post_no
     into @page_size
     from phpbb_user_topic_post_number utpn
-    where utpn.user_id = user_id and utpn.topic_id = topic_id;
+    where utpn.user_id = user_id and utpn.topic_id = topic_id
+    limit 1;
     
     if page_no is null and post_id is null
     then 
@@ -36,7 +38,8 @@ BEGIN
               JOIN (SELECT @rownum := 0) r
 			 WHERE p.topic_id = topic_id
              ORDER BY p.post_time) x
-          WHERE x.post_id = post_id;
+          WHERE x.post_id = post_id
+          limit 1;
           
           set page_no = @idx div @page_size;
           if @idx mod @page_size <> 0
