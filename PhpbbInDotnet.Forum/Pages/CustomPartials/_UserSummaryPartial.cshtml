@@ -5,7 +5,7 @@
 <p>&nbsp;</p>
 
 @{
-    await Html.PartialAsync("_PaginationControlsPartial", Model.UpperPagination);
+    @await Html.PartialAsync("_PaginationControlsPartial", Model.UpperPagination);
     var isFirst = true;
     foreach (var user in Model.UserList)
     {

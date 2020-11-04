@@ -186,7 +186,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             Posts = await multi.ReadAsync<ExtendedPostDisplay>();
             TotalResults = unchecked((int)await multi.ReadFirstOrDefaultAsync<long>());
-            Attachments = await connection.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id IN @postIds", new { postIds = Posts.Select(p => p.PostId).DefaultIfEmpty() });
+            Attachments = await connection.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id IN @postIds", new { postIds = Posts.Select(p => p.PostId ?? 0).DefaultIfEmpty() });
 
             Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum.Value, link: GetSearchLinkForPage(PageNum.Value + 1), topicId: null);
         }

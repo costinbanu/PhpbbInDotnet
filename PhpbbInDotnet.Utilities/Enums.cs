@@ -126,7 +126,8 @@ namespace PhpbbInDotnet.Utilities
         AllUsers,
         SearchUsers,
         Groups,
-        ActiveUsers
+        ActiveUsers,
+        ActiveBots
     }
 
     public enum MemberListOrder

@@ -24,7 +24,7 @@ namespace PhpbbInDotnet.Utilities
 
         public void UpsertIP(string ip, string userAgent, TimeSpan expiration)
         {
-            _ipCache.TryAdd(ip, new Item(userAgent, expiration, _sessionCache));
+            _ipCache.TryAdd(ip, new Item(userAgent, expiration, _ipCache));
         }
 
         public IEnumerable<(string IP, string UserAgent)> GetIPs()

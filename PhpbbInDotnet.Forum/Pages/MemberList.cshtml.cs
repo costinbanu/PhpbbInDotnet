@@ -16,7 +16,8 @@ namespace PhpbbInDotnet.Forum.Pages
 {
     public class MemberListModel : ModelWithLoggedUser
     {
-        const int PAGE_SIZE = 20;
+        public const int PAGE_SIZE = 20;
+
         private readonly WritingToolsService _writingService;
 
         [BindProperty(SupportsGet = true)]
@@ -100,6 +101,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     case MemberListPages.Groups:
                         GroupList = await connection.QueryAsync<PhpbbGroups>("SELECT * FROM phpbb_groups");
                         break;
+                    case MemberListPages.ActiveBots:
                     case MemberListPages.ActiveUsers:
                         using (var multi = await connection.QueryMultipleAsync(
                             $"SELECT * FROM phpbb_users WHERE user_lastvisit >= @lastVisit ORDER BY {GetOrder(Order ?? MemberListOrder.NameAsc)} LIMIT @skip, @take;" +
