@@ -223,7 +223,7 @@
             }
         }
 
-        await _renderingService.ProcessPost(post, Model.PageContext, Model.HttpContext, !Model.IsBot);
+        await _renderingService.ProcessPost(post, Model.PageContext, Model.HttpContext, true);
 
         var rowClass = post.ReportId.HasValue && (IsMod || post.ReporterId == CurrentUser.UserId) ? "ReportedPost" : string.Empty;
 

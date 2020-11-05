@@ -1,6 +1,5 @@
 ﻿@page
 
-@using Microsoft.EntityFrameworkCore
 @using Dapper
 @using PhpbbInDotnet.Database.Entities 
 @using PhpbbInDotnet.Utilities
@@ -156,7 +155,7 @@ else
             post.PostText = "[i]Autorul acestui mesaj este pe lista ta de persoane neagreate, drept urmare nu poți vedea conținutul mesajelor sale[/i]";
         }
 
-        await _renderingService.ProcessPost(post, Model.PageContext, Model.HttpContext, !Model.IsBot, Model.SearchText);
+        await _renderingService.ProcessPost(post, Model.PageContext, Model.HttpContext, true, Model.SearchText);
 
         <div class="RowMargin FlexRow">
             @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel

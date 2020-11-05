@@ -17,7 +17,7 @@ namespace PhpbbInDotnet.Utilities
 
         public void UpsertSession(string sessionId, TimeSpan expiration)
         {
-            _sessionCache.TryAdd(sessionId, new Item(sessionId, expiration, _sessionCache));
+            _sessionCache.TryAdd(sessionId, new Item(sessionId, null, expiration, _sessionCache));
         }
 
         public int GetActiveSessionCount()
@@ -28,6 +28,7 @@ namespace PhpbbInDotnet.Utilities
             _ipCache.TryAdd(
                 ip, 
                 new Item(
+                    ip, 
                     JsonConvert.SerializeObject(new BotData
                     {
                         IP = ip,
@@ -55,13 +56,13 @@ namespace PhpbbInDotnet.Utilities
 
             internal string Value { get; }
 
-            internal Item(string value, TimeSpan expiration, ConcurrentDictionary<string, Item> cache)
+            internal Item(string key, string value, TimeSpan expiration, ConcurrentDictionary<string, Item> cache)
             {
                 Value = value;
                 _timer = new Timer(expiration.TotalMilliseconds);
                 _timer.Elapsed += new ElapsedEventHandler((_, __) =>
                 {
-                    if (cache.TryRemove(Value, out var obj))
+                    if (cache.TryRemove(key, out var obj))
                     {
                         obj?.Dispose();
                     }
