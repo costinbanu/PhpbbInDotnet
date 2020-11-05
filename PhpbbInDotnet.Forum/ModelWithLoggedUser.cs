@@ -113,7 +113,7 @@ namespace PhpbbInDotnet.Forum
                     IsBot = dd.IsBot();
                     if (IsBot)
                     {
-                        _sessionCounter.UpsertIP(HttpContext.Connection.RemoteIpAddress.ToString(), userAgent, TimeSpan.FromMinutes(sessionTrackingTimeoutMinutes));
+                        _sessionCounter.UpsertBot(HttpContext.Connection.RemoteIpAddress.ToString(), userAgent, TimeSpan.FromMinutes(sessionTrackingTimeoutMinutes));
                     }
                     else
                     {

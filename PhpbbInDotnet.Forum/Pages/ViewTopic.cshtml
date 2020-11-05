@@ -18,7 +18,7 @@
     var CurrentUser = await Model.GetCurrentUserAsync();
     var IsAnonymous = CurrentUser.UserId == Constants.ANONYMOUS_USER_ID;
     var UserDateFormat = CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
-    if (!DateTime.TryParse(DateTime.Now.ToString(UserDateFormat), out var _))
+    if (!DateTime.TryParse(DateTime.Now.ToString(UserDateFormat), out _))
     {
         UserDateFormat = "dddd, dd.MM.yyyy, HH:mm";
     }

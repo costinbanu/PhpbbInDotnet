@@ -15,6 +15,10 @@
     ViewData["Title"] = "MemberList";
     Layout = "~/Pages/_Layout.cshtml";
     var dateFormat = (await Model.GetCurrentUserAsync()).UserDateFormat;
+    if (!DateTime.TryParse(DateTime.Now.ToString(dateFormat), out _))
+    {
+        dateFormat = "dddd, dd.MM.yyyy, HH:mm";
+    }
 }
 
 <environment include="Development">
@@ -190,7 +194,7 @@
     @{
         var registered = @Model.Paginator?.Pagination?.Pager?.TotalItems ?? 0;
         var anonymous = _sessionCounter.GetActiveSessionCount();
-        var bots = _sessionCounter.GetActiveIPCount();
+        var bots = _sessionCounter.GetActiveBotCount();
         var displayUsers = Model.Mode == MemberListPages.ActiveBots ? "display:none" : "display:initial";
         var displayBots = Model.Mode == MemberListPages.ActiveBots ? "display:initial" : "display:none";
         var botsText = $"{bots} bo{(bots == 1 ? "t" : "ți")}";
@@ -229,7 +233,7 @@
     <div id="bots" style="@displayBots">
         <p>&nbsp;</p>
         @{
-            var botList = _sessionCounter.GetIPs().Skip(MemberListModel.PAGE_SIZE * (Model.PageNum - 1)).Take(MemberListModel.PAGE_SIZE);
+            var botList = _sessionCounter.GetBots().OrderByDescending(x => x.EntryTime).Skip(MemberListModel.PAGE_SIZE * (Model.PageNum - 1)).Take(MemberListModel.PAGE_SIZE);
             var paginator = new Paginator(bots, Model.PageNum, $"/MemberList?handler=setMode&mode={Model.Mode}", MemberListModel.PAGE_SIZE, "pageNum");
             @await Html.PartialAsync(
                 "_PaginationControlsPartial",
@@ -256,7 +260,11 @@
                         {
                             <a href="https://whatismyipaddress.com/ip/@bot.IP" target="_blank">[IP Lookup]</a><br />
                         }
-                        @Html.Raw(bot.UserAgent)
+                        @Html.Raw(bot.UserAgent) <br />
+                        Activ ultima oară: 
+                        <script>
+                            writeDate('@bot.EntryTime.ToString("o")', '@dateFormat');
+                        </script>
                     </div>
                 </div>
                 isFirst = false;
