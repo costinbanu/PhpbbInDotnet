@@ -95,14 +95,26 @@ namespace PhpbbInDotnet.Services
         public string GetCacheKey(int currentUserId)
             => $"{currentUserId}_writingData";
 
-        public (string Message, bool? IsSuccess) DeleteOrphanedFiles(IEnumerable<string> files)
+        public async Task<(string Message, bool? IsSuccess)> DeleteOrphanedFiles()
         {
-            if(!files.Any())
+            var files = await GetOrphanedFiles();
+            if (!files.Any())
             {
                 return ($"Nici un fișier nu a fost șters de pe server.", true);
             }
-            var (Succeeded, Failed) = _storageService.BulkDeleteAttachments(files);
-            if (Failed.Any())
+            
+            var (Succeeded, Failed) = _storageService.BulkDeleteAttachments(files.Select(f => f.PhysicalFilename));
+
+            if (Succeeded?.Any() ?? false)
+            {
+                var connection = await _context.GetDbConnectionAndOpenAsync();
+                await connection.ExecuteAsync(
+                    "DELETE FROM phpbb_attachments WHERE attach_id IN @ids",
+                    new { ids = files.Where(f => Succeeded.Contains(f.PhysicalFilename)).Select(f => f.AttachId).DefaultIfEmpty() }
+                );
+            }
+
+            if (Failed?.Any() ?? false)
             {
                 return ($"Fișierele {string.Join(",", Succeeded)} au fost șterse cu succes, însă fișierele {string.Join(",", Failed)} nu au fost șterse.", false);
             }

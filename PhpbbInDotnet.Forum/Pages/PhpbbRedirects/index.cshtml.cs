@@ -7,7 +7,7 @@ namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
     {
         public IActionResult OnGet()
         {
-            return RedirectToPage("Index");
+            return RedirectToPage("../Index");
         }
     }
 }

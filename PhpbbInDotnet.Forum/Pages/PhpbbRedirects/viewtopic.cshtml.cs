@@ -25,7 +25,14 @@ namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
                     var posts = await (from post in _context.PhpbbPosts.AsNoTracking()
                                        where post.TopicId == t.Value
                                        select post.PostId).ToListAsync();
-                    return RedirectToPage("../ViewTopic", "ByPostId", new { PostId = posts[start.Value] });
+                    if (start.Value < posts.Count)
+                    {
+                        return RedirectToPage("../ViewTopic", "ByPostId", new { PostId = posts[start.Value] });
+                    }
+                    else
+                    {
+                        return RedirectToPage("../ViewTopic", new { TopicId = t.Value, PageNum = 1 });
+                    }
                 }
                 else
                 {

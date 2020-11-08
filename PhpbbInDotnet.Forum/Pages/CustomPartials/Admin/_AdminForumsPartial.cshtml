@@ -32,7 +32,7 @@
 </form>
 @if (Model.Show)
 {
-    <form id="forumFields" method="post" asp-page-handler="ForumManagement" class="MiddleBox" style="display: none;">
+    <form id="forumFields" method="post" asp-page-handler="ForumManagement" class="MiddleBox" style="display: none; padding: 10px; overflow-y: scroll">
         @if ((Model.Forum?.ForumId ?? 0) != 0)
         {
             <h4 style="float:left">Administrează forum - @Model.Forum?.ForumName</h4>

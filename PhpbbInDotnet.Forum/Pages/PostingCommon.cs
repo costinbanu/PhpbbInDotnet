@@ -250,7 +250,9 @@ namespace PhpbbInDotnet.Forum.Pages
             else
             {
                 await connection.ExecuteAsync(
-                    "UPDATE phpbb_posts SET post_subject = @subject, post_text = @text, bbcode_uid = @uid, bbcode_bitfield = @bitfield, post_attachment = @attachment WHERE post_id = @postId",
+                    "UPDATE phpbb_posts " +
+                    "SET post_subject = @subject, post_text = @text, bbcode_uid = @uid, bbcode_bitfield = @bitfield, post_attachment = @attachment, post_edit_time = @now, post_edit_reason = @reason, post_edit_user = @userId, post_edit_count = post_edit_count + 1 " +
+                    "WHERE post_id = @postId",
                     new 
                     { 
                         subject = HttpUtility.HtmlEncode(post.PostSubject), 
@@ -258,7 +260,10 @@ namespace PhpbbInDotnet.Forum.Pages
                         uid, 
                         bitfield, 
                         attachment = hasAttachments.ToByte(), 
-                        post.PostId 
+                        post.PostId,
+                        now = DateTime.UtcNow.ToUnixTimestamp(),
+                        reason = HttpUtility.HtmlEncode(EditReason ?? string.Empty),
+                        usr.UserId
                     }
                 );
 

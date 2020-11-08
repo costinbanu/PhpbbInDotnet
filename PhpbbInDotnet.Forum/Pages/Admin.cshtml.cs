@@ -170,7 +170,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostOrphanedFiles()
             => await WithAdmin(async () =>
             {
-                (Message, IsSuccess) = _adminWritingService.DeleteOrphanedFiles((await _adminWritingService.GetOrphanedFiles()).Select(f => f.PhysicalFilename));
+                (Message, IsSuccess) = await _adminWritingService.DeleteOrphanedFiles();
 
                 Category = AdminCategories.WritingTools;
 

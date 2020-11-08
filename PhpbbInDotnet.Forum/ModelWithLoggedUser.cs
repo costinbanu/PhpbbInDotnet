@@ -226,15 +226,22 @@ namespace PhpbbInDotnet.Forum
 
         protected async Task MarkForumRead(int forumId)
         {
-            var usrId = (await GetCurrentUserAsync()).UserId;
-            var connection = await Context.GetDbConnectionAndOpenAsync();
+            try
+            {
+                var usrId = (await GetCurrentUserAsync()).UserId;
+                var connection = await Context.GetDbConnectionAndOpenAsync();
 
-            await connection.ExecuteAsync(
-                "DELETE FROM phpbb_topics_track WHERE forum_id = @forumId AND user_id = @usrId; " +
-                "DELETE FROM phpbb_forums_track WHERE forum_id = @forumId AND user_id = @usrId; " +
-                "INSERT INTO phpbb_forums_track (forum_id, user_id, mark_time) VALUES (@forumId, @usrId, @markTime);", 
-                new { forumId, usrId, markTime = DateTime.UtcNow.ToUnixTimestamp() }
-            );
+                await connection.ExecuteAsync(
+                    "DELETE FROM phpbb_topics_track WHERE forum_id = @forumId AND user_id = @usrId; " +
+                    "DELETE FROM phpbb_forums_track WHERE forum_id = @forumId AND user_id = @usrId; " +
+                    "INSERT INTO phpbb_forums_track (forum_id, user_id, mark_time) VALUES (@forumId, @usrId, @markTime);",
+                    new { forumId, usrId, markTime = DateTime.UtcNow.ToUnixTimestamp() }
+                );
+            }
+            catch (Exception ex)
+            {
+                Utils.HandleError(ex, "Error marking forums as read.");
+            }
         }
 
         public async Task MarkTopicRead(int forumId, int topicId, bool isLastPage, long markTime)
@@ -263,21 +270,28 @@ namespace PhpbbInDotnet.Forum
             {
                 //there are other unread topics in this forum, or unread pages in this topic, so just mark the current page as read
                 var userId = (await GetCurrentUserAsync()).UserId;
-                using var connection = await Context.GetDbConnectionAndOpenAsync();
-                var existing = await connection.ExecuteScalarAsync<long?>("SELECT mark_time FROM phpbb_topics_track WHERE user_id = @userId AND topic_id = @topicId", new { userId, topicId = topicId });
-                if (existing == null)
+                try
                 {
-                    await connection.ExecuteAsync(
-                        "INSERT INTO phpbb_topics_track (forum_id, mark_time, topic_id, user_id) VALUES (@forumId, @markTime, @topicId, @userId)",
-                        new { forumId, markTime, topicId, userId }
-                    );
+                    using var connection = await Context.GetDbConnectionAndOpenAsync();
+                    var existing = await connection.ExecuteScalarAsync<long?>("SELECT mark_time FROM phpbb_topics_track WHERE user_id = @userId AND topic_id = @topicId", new { userId, topicId = topicId });
+                    if (existing == null)
+                    {
+                        await connection.ExecuteAsync(
+                            "INSERT INTO phpbb_topics_track (forum_id, mark_time, topic_id, user_id) VALUES (@forumId, @markTime, @topicId, @userId)",
+                            new { forumId, markTime, topicId, userId }
+                        );
+                    }
+                    else if (markTime > existing)
+                    {
+                        await connection.ExecuteAsync(
+                            "UPDATE phpbb_topics_track SET forum_id = @forumId, mark_time = @markTime WHERE user_id = @userId AND topic_id = @topicId",
+                            new { forumId, markTime, userId, topicId }
+                        );
+                    }
                 }
-                else if (markTime > existing)
+                catch (Exception ex)
                 {
-                    await connection.ExecuteAsync(
-                        "UPDATE phpbb_topics_track SET forum_id = @forumId, mark_time = @markTime WHERE user_id = @userId AND topic_id = @topicId",
-                        new { forumId, markTime, userId, topicId }
-                    );
+                    Utils.HandleError(ex, "Error marking topics as read.");
                 }
                 //tt.Remove(new Tracking { TopicId = topicId });
             }
@@ -286,8 +300,15 @@ namespace PhpbbInDotnet.Forum
         protected async Task SetLastMark()
         {
             var usrId = (await GetCurrentUserAsync()).UserId;
-            var connection = await Context.GetDbConnectionAndOpenAsync();
-            await connection.ExecuteAsync("UPDATE phpbb_users SET user_lastmark = @markTime WHERE user_id = @usrId", new { markTime = DateTime.UtcNow.ToUnixTimestamp(), usrId });
+            try
+            {
+                var connection = await Context.GetDbConnectionAndOpenAsync();
+                await connection.ExecuteAsync("UPDATE phpbb_users SET user_lastmark = @markTime WHERE user_id = @usrId", new { markTime = DateTime.UtcNow.ToUnixTimestamp(), usrId });
+            }
+            catch (Exception ex)
+            {
+                Utils.HandleError(ex, "Error setting user last mark.");
+            }
         }
 
         #endregion Forum for user

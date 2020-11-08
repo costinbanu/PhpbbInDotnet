@@ -215,7 +215,7 @@ else if (IsPM)
                             </script>
                             @if (!string.IsNullOrWhiteSpace(Model.PreviewablePost.LastEditReason))
                             {
-                                <span>. Motiv: @Model.PreviewablePost.LastEditReason</span>
+                                <span>. Motiv: @HttpUtility.HtmlDecode(Model.PreviewablePost.LastEditReason)</span>
                             }
                             . Modificări în total: @Model.PreviewablePost.EditCount.
                         </div>
@@ -308,10 +308,6 @@ else if (IsPM)
         <div style="clear:both">&nbsp;</div>
         <input asp-for="EditReason" type="text" style="width:100%" placeholder="Motivul modificării" />
     }
-    <p style="clear:both;width:100%; padding:10px 20px 10px 20px; margin:0px">
-        Includerea imaginilor mai mari de 2MB nu este permisă, indiferent dacă sunt găzduite local sau extern. De asemenea, numerele de înmatriculare ale vehiculelor particulare surprinse in imagini trebuie ascunse.
-        Utilizați <a href="https://procesorimagini.metrouusor.com/" target="_blank">procesorul de imagini „Metrou Ușor”</a> pentru a redimensiona imagini și a ascunde numere de înmatriculare.
-    </p>
     @if (!IsPM)
     {
         <button onclick="posting.toggleAttach()" type="button" class="PostingButton MyButton SpacedButton">&#128206; Fișiere atașate</button>
@@ -416,6 +412,10 @@ else if (IsPM)
         <div id="attachPanel" style="display:@(Model.ShowAttach ? "block" : "none")">
             <br />
             <h3>Fișiere atașate</h3>
+            <p style="clear:both;width:100%; padding:10px 20px 10px 20px; margin:0px">
+                Includerea imaginilor mai mari de 2MB nu este permisă, indiferent dacă sunt găzduite local sau extern. De asemenea, numerele de înmatriculare ale vehiculelor particulare surprinse in imagini trebuie ascunse.
+                Utilizați <a href="https://procesorimagini.metrouusor.com/" target="_blank">procesorul de imagini „Metrou Ușor”</a> pentru a redimensiona imagini și a ascunde numere de înmatriculare.
+            </p>
             <input asp-for="Files" onchange="posting.submitAttachments()" multiple class="HiddenFileInput" />
             <label for="Files" class="MyButton">Alege unul sau mai multe fișiere</label><br />
             @if (!await Model.IsCurrentUserAdminHere())

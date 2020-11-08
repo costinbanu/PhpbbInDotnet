@@ -512,7 +512,7 @@ else if (!IsAnonymous)
         @Html.Raw(Model.ModeratorActionResult)
     }
 
-    <div class="MiddleBox" id="postInfo" style="display:none; padding: 10px">
+    <div class="MiddleBox" id="postInfo" style="display:none; padding: 10px; overflow-y: scroll">
         <h4 style="float:left">Informații mesaj</h4>
         <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('postInfo')">Închide [X]</div>
         <p>&nbsp;</p>
@@ -524,7 +524,7 @@ else if (!IsAnonymous)
 @*message reporting*@
 @if (!IsAnonymous)
 {
-    <form asp-page-handler="ReportMessage" method="post" class="MiddleBox" id="report" style="display:none; padding: 10px">
+    <form asp-page-handler="ReportMessage" method="post" class="MiddleBox" id="report" style="display:none; padding: 10px; overflow-y: scroll">
         <h4 style="float:left">Raportează mesaj</h4>
         <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('report')">Închide [X]</div>
         <p>&nbsp;</p>
@@ -562,7 +562,7 @@ else if (!IsAnonymous)
         @Html.AntiForgeryToken()
     </form>
 
-    <div id="reportViewer" class="MiddleBox" style="display:none; padding: 10px">
+    <div id="reportViewer" class="MiddleBox" style="display:none; padding: 10px; overflow-y: scroll">
         <h4 style="float:left">Raport</h4>
         <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('reportViewer')">Închide [X]</div>
         <p>&nbsp;</p>
