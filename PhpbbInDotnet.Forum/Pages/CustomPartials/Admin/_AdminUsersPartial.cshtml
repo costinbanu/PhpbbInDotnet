@@ -12,18 +12,35 @@
     <input type="hidden" name="userId" id="userId" />
 </form>
 
-@await Html.PartialAsync(
-    "_AdminUsersSummaryPartial",
-    new _AdminUsersSummaryPartialModel(
-        Model.DateFormat,
-        await _adminUserService.GetInactiveUsers()
-    ),
-    ViewData
-)
-<p></p>
-<form method="post" id="batchAdminUsers" name="batchAdminUsers" asp-page-handler="BatchUserManagement">
-    <input type="submit" value="Șterge utilizatorii inactivi selectați" />
-</form>
+@{
+    var inactive = await _adminUserService.GetInactiveUsers();
+    
+    @await Html.PartialAsync(
+        "_AdminUsersSummaryPartial",
+        new _AdminUsersSummaryPartialModel(
+            Model.DateFormat,
+            inactive
+        ),
+        ViewData
+    );
+
+    if (inactive.Any(u => u.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed))
+    {
+        <p></p>
+        <script>
+            function selectAllUsers() {
+                var checkboxes = $('input[name=userIds]');
+                checkboxes.prop('checked', !checkboxes.prop('checked'));
+            }
+        </script>
+        <form method="post" id="batchAdminUsers" name="batchAdminUsers" asp-page-handler="BatchUserManagement">
+            <button type="button" onclick="selectAllUsers()">Selectează toți utilizatorii inactivi</button>
+            &nbsp;
+            <input type="submit" value="Șterge utilizatorii inactivi selectați" onclick="return confirm('Utilizatorii inactivi selectați vor fi șterși. Continui?');" />
+        </form>
+    }
+}
+
 <p>&nbsp;</p>
 <h4>Caută utilizatori</h4>
 <form method="post" id="userSearch" asp-page-handler="UserSearch">
@@ -140,7 +157,7 @@
             }
 
         </table>
-        <input type="button" onclick="addBannedItem()" value="Adaugă o interzicere nouă" class="MyButton" /> &nbsp; 
+        <input type="button" onclick="addBannedItem()" value="Adaugă o interzicere nouă" class="MyButton" /> &nbsp;
         <input type="submit" value="Salvează modificările" class="MyButton" />
     </form>
     <script type="text/javascript">

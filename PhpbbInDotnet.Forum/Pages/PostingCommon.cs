@@ -272,7 +272,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             await connection.ExecuteAsync(
                 "UPDATE phpbb_attachments SET post_msg_id = @postId, topic_id = @topicId, attach_comment = @comment, is_orphan = 0 WHERE attach_id = @attachId",
-                Attachments?.Select(a => new { post.PostId, topicId = TopicId.Value, comment = _writingService.PrepareTextForSaving(a.AttachComment).RunSync(), a.AttachId })
+                Attachments?.Select(a => new { post.PostId, topicId = TopicId.Value, comment = _writingService.PrepareTextForSaving(a.AttachComment).GetAwaiter().GetResult(), a.AttachId })
             );
 
             if (canCreatePoll && !string.IsNullOrWhiteSpace(PollOptions))

@@ -213,7 +213,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 dbUser.UserAvatarType = 0;
                 dbUser.UserAvatarWidth = 0;
                 dbUser.UserAvatarHeight = 0;
-                dbUser.UserAvatar = null;
+                dbUser.UserAvatar = string.Empty;
             }
 
             if (Avatar != null)
