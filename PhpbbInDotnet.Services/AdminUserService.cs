@@ -242,8 +242,8 @@ namespace PhpbbInDotnet.Services
         public async Task<List<PhpbbUsers>> UserSearchAsync(string username, string email, int? userid)
             => await (
                 from u in _context.PhpbbUsers.AsNoTracking()
-                where (string.IsNullOrWhiteSpace(username) || u.UsernameClean.Contains(_utils.CleanString(username), StringComparison.InvariantCultureIgnoreCase))
-                    && (string.IsNullOrWhiteSpace(email) || u.UserEmail == email)
+                where (string.IsNullOrWhiteSpace(username) || u.UsernameClean.Contains(_utils.CleanString(username)))
+                    && (string.IsNullOrWhiteSpace(email) || u.UserEmailHash == _utils.CalculateCrc32Hash(email))
                     && ((userid ?? 0) == 0 || u.UserId == userid)
                 select u
             ).ToListAsync();

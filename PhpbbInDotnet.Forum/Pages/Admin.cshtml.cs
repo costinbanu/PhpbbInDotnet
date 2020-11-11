@@ -53,11 +53,18 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostUserSearch(string username, string email, int? userid)
             => await WithAdmin(async () =>
             {
-                UserSearchResults = await _adminUserService.UserSearchAsync(username, email, userid);
                 Category = AdminCategories.Users;
+                if (string.IsNullOrWhiteSpace(username) && string.IsNullOrWhiteSpace(email) && (userid ?? 0) == 0)
+                {
+                    Message = "Prea puține criterii de căutare.";
+                    IsSuccess = false;
+                    return Page();
+                }
+
+                UserSearchResults = await _adminUserService.UserSearchAsync(username, email, userid);
                 if (!UserSearchResults.Any())
                 {
-                    Message = $"Nu a fost găsit nici un utilizator cu username-ul '{username}'.";
+                    Message = $"Nu a fost găsit nici un utilizator.";
                     IsSuccess = false;
                 }
                 return Page();
