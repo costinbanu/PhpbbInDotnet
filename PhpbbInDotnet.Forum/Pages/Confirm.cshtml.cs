@@ -64,7 +64,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var user = await Context.PhpbbUsers.FirstOrDefaultAsync(u =>
                 u.UsernameClean == username &&
                 u.UserActkey == code &&
-                u.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed
+                (u.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed || u.UserInactiveReason == UserInactiveReason.ChangedEmailNotConfirmed)
             );
 
             if (user == null)

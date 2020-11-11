@@ -83,7 +83,6 @@ namespace PhpbbInDotnet.Forum
                     if (await CacheService.GetFromCache<bool?>(key) ?? false)
                     {
                         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                        await ReloadCurrentUser();
                     }
                     else
                     {

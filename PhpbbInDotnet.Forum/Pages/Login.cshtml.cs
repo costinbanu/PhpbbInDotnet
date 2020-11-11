@@ -112,7 +112,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             var connection = await _context.GetDbConnectionAndOpenAsync();
 
-            var user = await connection.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE CONVERT(LOWER(username) USING utf8) = @username", new { username = _utils.CleanString(UserName) });
+            var user = await connection.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE username_clean = @username", new { username = _utils.CleanString(UserName) });
 
             Mode = LoginMode.Normal;
             if (user.Count() != 1)

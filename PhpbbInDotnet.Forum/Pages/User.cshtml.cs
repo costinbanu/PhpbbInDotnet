@@ -82,6 +82,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public double PostsPerDay { get; private set; }
         public List<PhpbbUsers> Foes { get; private set; }
         public UserPageMode Mode { get; private set; }
+        public bool EmailChanged { get; private set; }
 
         private readonly StorageService _storageService;
         private readonly WritingToolsService _writingService;
@@ -193,6 +194,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 };
                 emailMessage.To.Add(Email);
                 await Utils.SendEmail(emailMessage);
+                userMustLogIn = true;
+                EmailChanged = true;
             }
 
             if (!string.IsNullOrWhiteSpace(FirstPassword)
@@ -313,7 +316,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 ModelState.AddModelError(nameof(CurrentUser), "A intervenit o eroare, iar modificările nu au putut fi salvate.");
             }
 
-            if (affectedEntries > 0 && isSelf)
+            if (affectedEntries > 0 && isSelf && !EmailChanged)
             {
                 await ReloadCurrentUser();
                 Mode = UserPageMode.Edit;
@@ -323,6 +326,10 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 var key = $"UserMustLogIn_{dbUser.UsernameClean}";
                 await CacheService.SetInCache(key, true, TimeSpan.FromDays(Config.GetValue<int>("LoginSessionSlidingExpirationDays")));
+                if (EmailChanged)
+                {
+                    Mode = UserPageMode.Edit;
+                }
             }
 
             await Render(dbUser);
