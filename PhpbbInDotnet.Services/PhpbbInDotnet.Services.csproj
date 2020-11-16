@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CodeKicker.BBCode.Core" Version="1.4.0" />
+    <PackageReference Include="CodeKicker.BBCode.Core" Version="1.4.1" />
     <PackageReference Include="CryptSharp.Core" Version="1.1.0" />
     <PackageReference Include="Diacritics" Version="2.1.20036.1" />
   </ItemGroup>

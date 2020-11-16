@@ -2,7 +2,7 @@
 @model PhpbbInDotnet.Forum.Pages.ViewTopicModel
 
 @using System.Web
-@using Dapper 
+@using Dapper
 @using PhpbbInDotnet.Utilities
 @using PhpbbInDotnet.Database.Entities
 @using PhpbbInDotnet.Objects
@@ -144,6 +144,13 @@
             <input type="button" value="Arată rezultatele" onclick="vt.switchPollPanels('results', 'votes', this)" class="MyButton" style="margin-top: 5px" />
         }
     }
+    @if (Model.Poll.PollOptions?.Any(o => o.PollOptionVoters?.Any(v => v.UserId == CurrentUser.UserId) ?? false) ?? false)
+    {
+        <p></p>
+        <div style="background-color: darkgreen; color: white; padding: 5px; font-weight: bold">
+            Votul tău a fost înregistrat!
+        </div>
+    }
 }
 
 @await Html.PartialAsync(
@@ -168,7 +175,7 @@
     {
         var ju = Model.Users?.FirstOrDefault(u => u.UserId == p.PosterId);
         var joinedAttachments = Model.Attachments?.Where(a => a.PostMsgId == p.PostId);
-        var jr = Model.Ranks?.FirstOrDefault(r => ju.UserId == r.UserId);
+        var jr = Model.Ranks?.FirstOrDefault(r => ju?.UserId == r.UserId);
         var lastEditUser = Model.LastEditUsers?.FirstOrDefault(u => u.UserId == p.PostEditUser);
         var lastEditUsername = lastEditUser == null ? "Anonymous" : lastEditUser.Username;
         var report = Model.Reports?.FirstOrDefault(r => r.PostId == p.PostId);
