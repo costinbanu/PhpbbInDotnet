@@ -1,12 +1,4 @@
-﻿.PageNum {
-    display: inline-block;
-    background-color: gainsboro;
-    padding: 2px;
-    white-space: nowrap;
-    line-height: 1.2em !important;
-}
-
-.PaginationControls {
+﻿.PaginationControls {
     display: none;
 }
 
@@ -16,8 +8,6 @@
     line-height: 50px;
     display: flex;
     height: min-content;
-    /*padding-top:10px;
-    padding-bottom: 10px;*/
 }
 
 .LeftArrow {
@@ -38,8 +28,6 @@
 }
 
 .ControlsMiddleFull {
-    /*width:64%;
-    min-width:max-content;*/
     text-align: center;
     float: left;
     vertical-align: middle;
@@ -54,8 +42,6 @@
     vertical-align: middle;
     display: none;
     line-height: 1.1em;
-    /*padding-top: 10px;
-    padding-bottom: 10px;*/
 }
 
 .Filler {

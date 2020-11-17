@@ -7,7 +7,15 @@
             @if ((Model.Paginator?.Pagination?.HasPages ?? false) && !Model.Paginator.IsFirstPage && Model.IncludeEasyNavigation)
             {
                 <a href="@Model.Back" style="text-decoration:none">
-                    <img src="~/images/prev.png" />
+                    <div style="display:table">
+                        <div style="display:table-cell; vertical-align:middle; font-size:2.5em; line-height:1.1em; padding-right: 5px">
+                            ◄
+                        </div>
+                        <div style="display:table-cell; vertical-align:middle; text-align:left; line-height:1.1em">
+                            pagina<br />
+                            precedentă
+                        </div>
+                    </div>
                 </a>
             }
             else
@@ -41,7 +49,15 @@
             @if ((Model.Paginator?.Pagination?.HasPages ?? false) && !Model.Paginator.IsLastPage && Model.IncludeEasyNavigation)
             {
                 <a href="@Model.Forward" style="text-decoration:none">
-                    <img src="~/images/next.png" />
+                    <div style="display:table">
+                        <div style="display:table-cell; vertical-align:middle; text-align:right; line-height:1.1em; padding-right: 5px">
+                            pagina<br />
+                            următoare
+                        </div>
+                        <div style="display:table-cell; vertical-align:middle; font-size:2.5em; line-height:1.1em">
+                            ►
+                        </div>
+                    </div>
                 </a>
             }
             else

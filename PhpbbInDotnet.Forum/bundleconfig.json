@@ -1,10 +1,23 @@
 ﻿[
   {
-    "outputFileName": "wwwroot/css/site.min.css",
+    "outputFileName": "wwwroot/css/Light.min.css",
     "inputFiles": [
       "wwwroot/css/posting.css",
       "wwwroot/css/pagination.css",
-      "wwwroot/css/site.css",
+      "wwwroot/css/Light.css",
+      "wwwroot/css/tabbedPage.css"
+    ],
+    "minify": {
+      "enabled": true,
+      "renameLocals": true
+    }
+  },
+  {
+    "outputFileName": "wwwroot/css/Dark.min.css",
+    "inputFiles": [
+      "wwwroot/css/posting.css",
+      "wwwroot/css/pagination.css",
+      "wwwroot/css/Dark.css",
       "wwwroot/css/tabbedPage.css"
     ],
     "minify": {

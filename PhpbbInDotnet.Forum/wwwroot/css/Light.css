@@ -221,10 +221,6 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
         color: #cc550c !important;
     }
 
-/*.Highlight {
-    background-color: #e8f5fc;
-}*/
-
 .Category {
     padding-left: 20px;
     padding-top: 3px;
@@ -527,6 +523,36 @@ label {
 
 .Show768 {
     display: none;
+}
+
+.RuleBox {
+    background-color: #ffebee;
+    color: #BC2A4D;
+    padding: 10px;
+    margin: 10px
+}
+
+.PageNum {
+    display: inline-block;
+    background-color: gainsboro;
+    padding: 2px;
+    white-space: nowrap;
+    line-height: 1.2em !important;
+}
+
+.selectedTreeNode {
+    background-color: #b8e9ff;
+}
+
+.PollResultBar {
+    width: 100%;
+    border: solid 1px black;
+    display: inline-block;
+    padding: 2px;
+}
+
+.Stroke {
+    text-shadow: unset;
 }
 
 @media (max-width: 768px) {

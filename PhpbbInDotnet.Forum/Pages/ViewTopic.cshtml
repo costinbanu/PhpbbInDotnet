@@ -131,7 +131,7 @@
                         </td>
                         <td style="width:50%; padding-top: 5px; padding-bottom: 5px">
                             @{var percentage = (Model.Poll.TotalVotes == 0 ? 0 : option.PollOptionVotes * 100m / Model.Poll.TotalVotes).ToString("##0.##'%'", System.Globalization.CultureInfo.InvariantCulture);}
-                            <span style="width: 100%; background: linear-gradient(to right, #87ceeb @percentage, #ffffff 0%); border: solid 1px black; display: inline-block; padding:2px">
+                            <span class="PollResultBar" style="background: linear-gradient(to right, #87ceeb @percentage, #ffffff 0%)">
                                 @option.PollOptionVotes @(option.PollOptionVotes == 1 ? "vot" : "voturi") (@(percentage))
                             </span>
                         </td>

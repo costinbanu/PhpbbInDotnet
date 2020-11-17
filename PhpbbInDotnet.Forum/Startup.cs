@@ -96,7 +96,7 @@ namespace PhpbbInDotnet.Forum
             services.AddRecaptcha(new RecaptchaOptions
             {
                 SiteKey = Configuration["Recaptcha:SiteKey"],
-                SecretKey = Configuration["Recaptcha:SecretKey"],
+                SecretKey = Configuration["Recaptcha:SecretKey"]
             });
 
             services.Configure<IISServerOptions>(options =>
