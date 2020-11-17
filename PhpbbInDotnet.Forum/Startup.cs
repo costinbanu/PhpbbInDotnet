@@ -20,6 +20,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.StaticFiles;
 
 namespace PhpbbInDotnet.Forum
 {
@@ -133,6 +134,7 @@ namespace PhpbbInDotnet.Forum
             services.AddScoped<StorageService>();
             services.AddScoped<ModeratorService>();
             services.AddScoped<BBCodeRenderingService>();
+            services.AddSingleton<FileExtensionContentTypeProvider>();
             services.AddDbContext<ForumDbContext>(options => options.UseMySQL(Configuration["ForumDbConnectionString"], o => o.CommandTimeout(60)), ServiceLifetime.Scoped);
         }
 

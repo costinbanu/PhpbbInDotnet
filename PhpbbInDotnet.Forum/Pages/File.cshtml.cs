@@ -17,12 +17,14 @@ namespace PhpbbInDotnet.Forum.Pages
     public class FileModel : ModelWithLoggedUser
     {
         private readonly StorageService _storageService;
+        private readonly FileExtensionContentTypeProvider _contentTypeProvider;
 
         public FileModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, StorageService storageService, 
-            IConfiguration config, AnonymousSessionCounter sessionCounter, CommonUtils utils)
+            IConfiguration config, AnonymousSessionCounter sessionCounter, CommonUtils utils, FileExtensionContentTypeProvider contentTypeProvider)
             : base(context, forumService, userService, cacheService, config, sessionCounter, utils)
         {
             _storageService = storageService;
+            _contentTypeProvider = contentTypeProvider;
         }
 
         public async Task<IActionResult> OnGet(int Id)
@@ -63,7 +65,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private IActionResult SendToClient(string physicalFileName, string realFileName, string mimeType, bool isAvatar)
         {
-            mimeType ??= new FileExtensionContentTypeProvider().Mappings[Path.GetExtension(realFileName)];
+            mimeType ??= (_contentTypeProvider.Mappings.TryGetValue(Path.GetExtension(realFileName), out var val) ? val : null) ?? "application/octet-stream";
 
             var path = _storageService.GetFilePath(physicalFileName, isAvatar);
             if (IOFile.Exists(path))
