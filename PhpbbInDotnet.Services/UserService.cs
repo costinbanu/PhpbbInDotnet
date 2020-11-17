@@ -101,29 +101,41 @@ namespace PhpbbInDotnet.Services
 
         public async Task<ClaimsPrincipal> DbUserToClaimsPrincipalAsync(PhpbbUsers user)
         {
-
             var connection = await _context.GetDbConnectionAndOpenAsync();
-            var editTime = await connection.QuerySingleOrDefaultAsync<int>(
-                @"SELECT group_edit_time g
-                   FROM phpbb_groups g
-                   JOIN phpbb_user_group ug ON g.group_id = ug.group_id
-                  WHERE ug.user_id = @UserId
-                  LIMIT 1",
-                new { user.UserId }
+            using var multi = await connection.QueryMultipleAsync(
+                @"CALL `forum`.`get_user_details`(@UserId);
+
+                SELECT group_edit_time g
+                  FROM phpbb_groups g
+                  JOIN phpbb_user_group ug ON g.group_id = ug.group_id
+                 WHERE ug.user_id = @UserId
+                 LIMIT 1;
+
+                SELECT style_name 
+                  FROM phpbb_styles 
+                 WHERE style_id = @UserStyle", 
+                new { user.UserId, user.UserStyle }
             );
-            using var multi = await connection.QueryMultipleAsync("CALL `forum`.`get_user_details`(@UserId);", new { user.UserId });
+
+            var permissions = new HashSet<LoggedUser.Permissions>(await multi.ReadAsync<LoggedUser.Permissions>());
+            var tpp = (await multi.ReadAsync()).ToDictionary(x => checked((int)x.topic_id), y => checked((int)y.post_no));
+            var foes = new HashSet<int>((await multi.ReadAsync<uint>()).Select(x => unchecked((int)x)));
+            var editTime = unchecked((int)await multi.ReadSingleOrDefaultAsync<uint>());
+            var style = await multi.ReadFirstOrDefaultAsync<string>();
+
             var intermediary = new LoggedUser
             {
                 UserId = user.UserId,
                 Username = user.Username,
                 UsernameClean = user.UsernameClean,
-                AllPermissions = new HashSet<LoggedUser.Permissions>(await multi.ReadAsync<LoggedUser.Permissions>()),
-                TopicPostsPerPage = (await multi.ReadAsync()).ToDictionary(key => checked((int)key.topic_id), value => checked((int)value.post_no)),
-                Foes = new HashSet<int>((await multi.ReadAsync<uint>()).Select(x => unchecked((int)x))),
+                AllPermissions = permissions,
+                TopicPostsPerPage = tpp,
+                Foes = foes,
                 UserDateFormat = user.UserDateformat,
                 UserColor = user.UserColour,
                 PostEditTime = (editTime == 0 || user.UserEditTime == 0) ? 0 : Math.Min(Math.Abs(editTime), Math.Abs(user.UserEditTime)),
-                AllowPM = user.UserAllowPm.ToBool()
+                AllowPM = user.UserAllowPm.ToBool(),
+                Style = style
             };
 
             var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);

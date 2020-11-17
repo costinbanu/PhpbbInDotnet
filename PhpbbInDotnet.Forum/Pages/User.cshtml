@@ -3,6 +3,7 @@
 
 @model PhpbbInDotnet.Forum.Pages.UserModel
 @inject Services.UserService _userService
+@inject Database.ForumDbContext _context
 @{
     ViewData["Title"] = "User";
     Layout = "~/Pages/_Layout.cshtml";
@@ -333,6 +334,18 @@ else
                         <label for="Avatar" class="MyButton">Alege o imagine de profil nouă</label><br />
                         <span class="Caption">Sunt permise imagini cu dimensiunea maximă 200 px / 200 px.</span><br />
                         <span asp-validation-for="Avatar" class="validation"></span>
+                    </div>
+                </div>
+                <p></p>
+                <div class="FlexCenter">
+                    <div class="FlexCaption">
+                        Tema forumului
+                    </div>
+                    <div class="FlexRight PostInputWidth">
+                        @Html.DropDownListFor(
+                            m => m.CurrentUser.UserStyle, 
+                            await _context.PhpbbStyles.AsNoTracking().Select(x => new SelectListItem(x.StyleName, x.StyleId.ToString(), Model.CurrentUser.UserStyle == x.StyleId)).ToListAsync()
+                        )
                     </div>
                 </div>
             }

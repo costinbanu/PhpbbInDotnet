@@ -28,6 +28,7 @@ namespace PhpbbInDotnet.Objects
 
         public bool AllowPM { get; set; }
         public HashSet<int> Foes { get; set; }
+        public string Style { get; set; }
 
         public class Permissions
         {

@@ -148,6 +148,7 @@ namespace PhpbbInDotnet.Forum.Pages
             dbUser.UserEditTime = CurrentUser.UserEditTime;
             dbUser.UserWebsite = CurrentUser.UserWebsite ?? string.Empty;
             dbUser.UserRank = UserRank;
+            dbUser.UserStyle = CurrentUser.UserStyle;
 
             var newColour = CurrentUser.UserColour?.TrimStart('#');
             if (!string.IsNullOrWhiteSpace(newColour) && dbUser.UserColour != newColour)
