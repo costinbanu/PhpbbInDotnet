@@ -135,7 +135,8 @@ namespace PhpbbInDotnet.Services
                 UserColor = user.UserColour,
                 PostEditTime = (editTime == 0 || user.UserEditTime == 0) ? 0 : Math.Min(Math.Abs(editTime), Math.Abs(user.UserEditTime)),
                 AllowPM = user.UserAllowPm.ToBool(),
-                Style = style
+                Style = style,
+                JumpToUnread = user.JumpToUnread
             };
 
             var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);

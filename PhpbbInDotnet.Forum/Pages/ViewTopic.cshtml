@@ -196,7 +196,7 @@
             BbcodeUid = p.BbcodeUid,
             Unread = reachedAnUnreadPost || (reachedAnUnreadPost = await Model.IsPostUnread(p.ForumId, p.TopicId, p.PostId)),
             AuthorHasAvatar = !string.IsNullOrWhiteSpace(ju?.UserAvatar),
-            AuthorRank = jr?.RankTitle ?? "Membru înregistrat",
+            AuthorRank = ju == null ? null : (jr?.RankTitle ?? "Membru înregistrat"),
             LastEditTime = p.PostEditTime,
             LastEditUser = lastEditUsername,
             LastEditReason = p.PostEditReason,

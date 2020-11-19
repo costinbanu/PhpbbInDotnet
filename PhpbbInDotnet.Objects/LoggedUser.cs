@@ -12,8 +12,6 @@ namespace PhpbbInDotnet.Objects
 
         public string UsernameClean { get; set; } = null;
 
-        public IEnumerable<int> Groups { get; set; } = null;
-
         public HashSet<Permissions> AllPermissions { get; set; } = null;
 
         public Dictionary<int, int> TopicPostsPerPage { get; set; } = null;
@@ -29,6 +27,7 @@ namespace PhpbbInDotnet.Objects
         public bool AllowPM { get; set; }
         public HashSet<int> Foes { get; set; }
         public string Style { get; set; }
+        public byte JumpToUnread { get; set; } = 1;
 
         public class Permissions
         {

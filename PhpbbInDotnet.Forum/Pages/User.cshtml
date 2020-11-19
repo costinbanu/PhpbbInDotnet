@@ -343,9 +343,22 @@ else
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @Html.DropDownListFor(
-                            m => m.CurrentUser.UserStyle, 
+                            m => m.CurrentUser.UserStyle,
                             await _context.PhpbbStyles.AsNoTracking().Select(x => new SelectListItem(x.StyleName, x.StyleId.ToString(), Model.CurrentUser.UserStyle == x.StyleId)).ToListAsync()
                         )
+                    </div>
+                </div>
+                <p></p>
+                <div class="FlexCenter">
+                    <div class="FlexCaption">
+                        Salt la primul subforum sau subiect necitit
+                    </div>
+                    <div class="FlexRight PostInputWidth">
+                        <input asp-for="JumpToUnread" style="width:auto" /> 
+                        <span>
+                            Pagina curentă sare automat la primul subforum sau primul subiect necitit.<br />
+                                                                                                      <span class="Caption">În cazul mesajelor, pagina va sări la primul mesaj necitit indiferent de această setare.</span>
+                        </span>
                     </div>
                 </div>
             }

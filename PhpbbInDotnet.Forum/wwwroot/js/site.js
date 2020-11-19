@@ -8,13 +8,15 @@ function resizeImage(img, customMaxWidth, customMaxHeight) {
         actualParentHeight = maxHeight - quotes * quoteHeightBleed;
     var originalWidth = img.naturalWidth,
         originalHeight = img.naturalHeight,
-        ratio = Math.min(actualParentHeight / originalHeight, actualParentWidth/ originalWidth);
+        ratio = Math.min(actualParentHeight / originalHeight, actualParentWidth / originalWidth);
     if (ratio < 1) {
         $(img).css({ 'width': roundToNextEvenNumber(originalWidth * ratio) + 'px', 'height': roundToNextEvenNumber(originalHeight * ratio) + 'px' });
         if (!$(img).parent().is('a')) {
             $(img).attr({ 'onclick': 'window.open(this.src);', 'title': 'Click pentru imaginea mărită.' });
             $(img).css('cursor', 'pointer');
         }
+    } else {
+        $(img).css({ 'width': 'auto', 'height': 'auto' });
     }
 }
 
@@ -108,7 +110,7 @@ function showForumTree(caller) {
     showElement('forumTree', null, () => {
         $('html, body').scrollTop($(caller).offset().top - $('#topBanner').outerHeight() - 10);
         $('#treeContainer').scrollTop($('.selectedTreeNode').offset().top - $('#treeContainer').offset().top - 50);
-    }); 
+    });
 }
 
 function toggleHeaderLinks(curId, otherId) {

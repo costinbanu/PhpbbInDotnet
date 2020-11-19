@@ -240,8 +240,8 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
     display: table;
     margin-top: 10px;
     margin-bottom: 10px;
-    background-image: linear-gradient(#d5e9fb, #96c9f6);
-    color: #323234;
+    background-image: linear-gradient(#85a0b7, #4a779f);
+    color: white;
     font-size: 1.1em;
     min-height: unset;
 }
@@ -574,7 +574,7 @@ label {
 }
 
 .Stroke {
-    text-shadow: -1px -1px 0 white, 0 -1px 0 white, 1px -1px 0 white, 1px 0 0 white, 1px 1px 0 white, 0 1px 0 white, -1px 1px 0 white, -1px 0 0 white;
+    text-shadow: -2px -2px 0 white, 0 -2px 0 white, 2px -2px 0 white, 2px 0 0 white, 2px 2px 0 white, 0 2px 0 white, -2px 2px 0 white, -2px 0 0 white;
 }
 
 .tab { /* foregreound color override; rest is defined in tabbedPage.css */

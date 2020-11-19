@@ -435,7 +435,7 @@ else if (IsPM)
                         <b>Nume:</b> @Model.Attachments[i].RealFilename <br />
                         <b>Comentariu fișier:</b>
                         <br />
-                        <textarea type="text" asp-for="Attachments[i].AttachComment" rows="4" cols="100" style="display:inline-block"></textarea>
+                        <textarea type="text" asp-for="Attachments[i].AttachComment" rows="4" cols="100" style="display:inline-block; color:black"></textarea>
                         <br />
                         <input type="button" value="Așează în linie" onclick="posting.attach_inline(@i, '@Model.Attachments[i].RealFilename')" class="MyButton" /> &nbsp;
                         <input type="submit" value="Șterge fișier" asp-page-handler="DeleteAttachment" onclick="$('#idToDelete').val(@i); return true;" class="MyButton" />

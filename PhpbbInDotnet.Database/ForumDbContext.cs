@@ -3798,6 +3798,11 @@ namespace PhpbbInDotnet.Database
                     .HasColumnName("username_clean")
                     .HasMaxLength(255)
                     .IsUnicode(false);
+
+                entity.Property(e => e.JumpToUnread)
+                    .HasColumnName("jump_to_unread")
+                    .HasColumnType("tinyint(1)")
+                    .HasDefaultValueSql("1");
             });
 
             modelBuilder.Entity<PhpbbWarnings>(entity =>

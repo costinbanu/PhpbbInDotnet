@@ -77,6 +77,9 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public int[] SelectedFoes { get; set; }
 
+        [BindProperty]
+        public bool JumpToUnread { get; set; }
+
         public int TotalPosts { get; private set; }
         public (int? Id, string Title) PreferredTopic { get; private set; }
         public double PostsPerDay { get; private set; }
@@ -112,6 +115,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 ManageFoes = (ManageFoes ?? false) && await CanEdit();
                 ViewAsAnother = (ViewAsAnother ?? true) && !ManageFoes.Value;
+                JumpToUnread = cur.JumpToUnread.ToBool();
                 
                 return Page();
             });
@@ -149,6 +153,7 @@ namespace PhpbbInDotnet.Forum.Pages
             dbUser.UserWebsite = CurrentUser.UserWebsite ?? string.Empty;
             dbUser.UserRank = UserRank;
             dbUser.UserStyle = CurrentUser.UserStyle;
+            dbUser.JumpToUnread = JumpToUnread.ToByte();
 
             var newColour = CurrentUser.UserColour?.TrimStart('#');
             if (!string.IsNullOrWhiteSpace(newColour) && dbUser.UserColour != newColour)
