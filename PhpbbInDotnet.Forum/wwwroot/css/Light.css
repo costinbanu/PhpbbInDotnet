@@ -554,6 +554,7 @@ label {
 .ThemeColor {
     /*text-shadow: unset;*/
     filter: unset;
+    color: black;
 }
 
 @media (max-width: 768px) {

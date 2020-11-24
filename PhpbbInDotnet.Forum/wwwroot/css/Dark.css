@@ -316,7 +316,7 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
 .CollapsedMenu {
     display: none;
     border-radius: 3px;
-    border: solid 1px black;
+    border: solid 1px white;
     float: right;
     padding: 3px;
     margin: 3px;
@@ -400,6 +400,7 @@ label {
 .Caption {
     font-style: italic;
     font-size: 0.8em;
+    color: lightgray;
 }
 
 .Signature {
@@ -445,7 +446,14 @@ label {
 .ReportedPost {
     border: solid 3px #BC2A4D;
     background-color: #F3BFCC;
+    color: black;
 }
+
+    .ReportedPost a {
+        border: solid 3px #BC2A4D;
+        background-color: #F3BFCC;
+        color: #495d6c;
+    }
 
 .FlexCenter {
     display: flex;
@@ -602,9 +610,9 @@ label {
         min-width: unset;
         height: auto !important;
         border-radius: 3px;
-        border: solid 1px black;
-        background-color: white;
         padding: 5px !important;
+        background-color: #666667 !important;
+        border: solid 1px white;
     }
 
         .Summary img {
