@@ -83,7 +83,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     new { ForumId, topicType = TopicType.Global }
                 );
                 
-                (Forums, _) = await GetForumTree(_forceTreeRefresh);
+                (Forums, _) = await GetForumTree(_forceTreeRefresh, true);
 
                 Topics = (
                     from t in topics
@@ -108,7 +108,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetNewPosts()
             => await WithRegisteredUser(async (user) =>
             {
-                var tree = await GetForumTree(_forceTreeRefresh);
+                var tree = await GetForumTree(_forceTreeRefresh, true);
                 IEnumerable<TopicDto> topics = null;
                 var topicList = tree.Tracking.SelectMany(t => t.Value).Select(t => t.TopicId).Distinct();
                 var restrictedForums = await ForumService.GetRestrictedForumList(await GetCurrentUserAsync());
@@ -150,7 +150,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetOwnPosts()
             => await WithRegisteredUser(async (user) =>
             {
-                var tree = await GetForumTree();
+                var tree = await GetForumTree(false, true);
                 IEnumerable<TopicDto> topics = null;
                 var totalCount = 0;
                 var restrictedForums = await ForumService.GetRestrictedForumList(await GetCurrentUserAsync());

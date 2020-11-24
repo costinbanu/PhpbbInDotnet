@@ -328,10 +328,21 @@ namespace PhpbbInDotnet.Forum.Pages
             if ((TopicId ?? 0) > 0 && (LastPostTime ?? 0) > 0)
             {
                 var connection = await Context.GetDbConnectionAndOpenAsync();
-                var currentLastPostTime = await connection.ExecuteScalarAsync<long>("SELECT MAX(post_time) FROM phpbb_posts WHERE topic_id = @topicId", new { TopicId });
-                if (currentLastPostTime > LastPostTime)
+                var times = await connection.QueryFirstOrDefaultAsync(
+                    @"SELECT p.post_time, p.post_edit_time
+                        FROM phpbb_posts p
+                        JOIN phpbb_topics t ON p.post_id = t.topic_last_post_id
+                       WHERE t.topic_id = @topicId",
+                    new { TopicId }
+                );
+                if ((long)times.post_time > LastPostTime)
                 {
                     return PageWithError(curForum, nameof(LastPostTime), "De când a fost încărcată pagina, au mai fost scrie mesaje noi! Verifică mesajele precedente!");
+                }
+                else if((long)times.post_edit_time > LastPostTime)
+                {
+                    LastPostTime = (long)times.post_edit_time;
+                    return PageWithError(curForum, nameof(LastPostTime), "De când a fost încărcată pagina, ultimul mesaj a fost modificat! Verifică ultimul mesaj!");
                 }
                 else
                 {

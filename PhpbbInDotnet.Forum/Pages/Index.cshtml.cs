@@ -23,7 +23,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnGet()
         {
-            (Tree, _) = await GetForumTree(_forceTreeRefresh);
+            (Tree, _) = await GetForumTree(_forceTreeRefresh, true);
             return Page();
         }
 

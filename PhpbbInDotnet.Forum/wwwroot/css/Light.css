@@ -551,8 +551,9 @@ label {
     padding: 2px;
 }
 
-.Stroke {
-    text-shadow: unset;
+.ThemeColor {
+    /*text-shadow: unset;*/
+    filter: unset;
 }
 
 @media (max-width: 768px) {

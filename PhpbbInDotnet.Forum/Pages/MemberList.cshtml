@@ -123,8 +123,10 @@
                 <hr class="BoxSeparator" />
             }
 
+            var color = string.IsNullOrWhiteSpace(group.GroupColour) || group.GroupColour == "000000" ? "auto" : $"#{group.GroupColour}";
+
             <div class="FlexCenter">
-                <div class="PostTitle" style="overflow-wrap: break-word; color:#@group.GroupColour">
+                <div class="PostTitle ThemeColor" style="overflow-wrap: break-word; color:@color">
                     @Html.Raw(group.GroupName)
                 </div>
                 <div class="FlexRight PostInputWidth">
@@ -200,16 +202,22 @@
         var botsText = $"{bots} bo{(bots == 1 ? "t" : "ți")}";
     }
     <h4>
-        @registered membr@(registered == 1 ? "u" : "i") înregistra@(registered == 1 ? "t" : "ți"), @anonymous vizitator@(anonymous == 1 ? "" : "i") și
-        @if (bots > 0)
+        @registered membr@(registered == 1 ? "u" : "i") înregistra@(registered == 1 ? "t" : "ți"), @anonymous vizitator@(anonymous == 1 ? "" : "i") 
+        @if (await Model.IsCurrentUserAdminHere())
         {
-            <a href="@($"MemberList?handler=setMode&pageNum={Model.PageNum}&order={Model.Order}&mode={MemberListPages.ActiveBots}")">
-                @Html.Raw(botsText)
-            </a>
-        }
-        else
-        {
-            @Html.Raw(botsText)
+            <span>
+                și 
+                @if (bots > 0)
+                {
+                    <a href="@($"MemberList?handler=setMode&pageNum={Model.PageNum}&order={Model.Order}&mode={MemberListPages.ActiveBots}")">
+                        @Html.Raw(botsText)
+                    </a>
+                }
+                else
+                {
+                    @Html.Raw(botsText)
+                }
+            </span>
         }
 
     </h4>

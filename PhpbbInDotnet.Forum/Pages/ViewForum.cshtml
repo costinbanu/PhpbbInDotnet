@@ -17,7 +17,7 @@
         UserDateFormat = "dddd, dd.MM.yyyy, HH:mm";
     }
     var IsAnonymous = CurrentUser?.IsAnonymous ?? true;
-    var hasSubForums = Model.ForumId != 0 && _forumService.HasUnrestrictedChildren((await Model.GetForumTree()).Tree, Model.ForumId);
+    var hasSubForums = Model.ForumId != 0 && _forumService.HasUnrestrictedChildren((await Model.GetForumTree(false, false)).Tree, Model.ForumId);
     var hasTopics = Model.Topics?.SelectMany(x => x.Topics).Any() ?? false;
 }
 
@@ -215,7 +215,7 @@ else
                     @if (Model.Mode != ViewForumMode.Forum)
                     {
                         <span class="Caption">
-                            @Html.Raw(_forumService.GetPathText((await Model.GetForumTree()).Tree, topic.ForumId ?? 0))
+                            @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, topic.ForumId ?? 0))
                         </span>
                         <br />
                     }
@@ -374,7 +374,7 @@ else if (Model.Mode == ViewForumMode.Drafts)
     @await Html.PartialAsync(
         "_ForumTreePartial",
         new CustomPartials._ForumTreePartialModel(
-            tree: (await Model.GetForumTree()).Tree,
+            tree: (await Model.GetForumTree(false, false)).Tree,
             forumId: Model.ForumId,
             topicId: null,
             constrainSize: true

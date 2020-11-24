@@ -92,7 +92,7 @@
             @await Html.PartialAsync(
                  "_ForumTreePartial",
                   new CustomPartials._ForumTreePartialModel(
-                      tree: (await Model.GetForumTree()).Tree,
+                      tree: (await Model.GetForumTree(false, false)).Tree,
                       topicData: (await connection.QueryAsync<Objects.MiniTopicDto>("SELECT * FROM phpbb_topics")).AsList(),
                       forumId: Model.ForumId,
                       topicId: Model.TopicId,
@@ -174,7 +174,7 @@ else
             })
             <div class="ForumContent" id="@post.PostId">
                 <div class="Caption" style="clear:both">
-                    @Html.Raw(_forumService.GetPathText((await Model.GetForumTree()).Tree, post.ForumId))
+                    @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, post.ForumId))
                 </div>
                 <span style="display:flex">
                     <span class="PostTitle">

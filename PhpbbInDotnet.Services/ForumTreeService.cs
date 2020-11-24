@@ -34,7 +34,7 @@ namespace PhpbbInDotnet.Services
         {
             if (_restrictedForums == null)
             {
-                _restrictedForums = (await GetForumTree(user, false)).Where(t => IsNodeRestricted(t, includePasswordProtected)).Select(t => (t.ForumId, t.HasPassword));
+                _restrictedForums = (await GetForumTree(user, false, false)).Where(t => IsNodeRestricted(t, includePasswordProtected)).Select(t => (t.ForumId, t.HasPassword));
             }
             return _restrictedForums;
         }
@@ -42,15 +42,15 @@ namespace PhpbbInDotnet.Services
         public bool IsNodeRestricted(ForumTree tree, bool includePasswordProtected = false)
             => tree.IsRestricted || (includePasswordProtected && tree.HasPassword);
 
-        public async Task<HashSet<ForumTree>> GetForumTree(LoggedUser user, bool forceRefresh)
+        public async Task<HashSet<ForumTree>> GetForumTree(LoggedUser user, bool forceRefresh, bool fetchUnreadData)
         {
-            if (_tree != null && !forceRefresh)
+            if (_tree != null && !forceRefresh && !(_tracking == null && fetchUnreadData))
             {
                 return _tree;
             }
 
             var restrictedForums = (user?.AllPermissions?.Where(p => p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE)?.Select(p => p.ForumId) ?? Enumerable.Empty<int>()).ToHashSet();
-            var tracking = await GetForumTracking(user, forceRefresh);
+            var tracking = fetchUnreadData ? await GetForumTracking(user, forceRefresh) : null;
             var connection = await _context.GetDbConnectionAndOpenAsync();
 
             using var multi = await connection.QueryMultipleAsync("CALL `forum`.`get_forum_tree`(); SELECT forum_id, count(topic_id) as topic_count FROM phpbb_topics GROUP BY forum_id;");
@@ -65,7 +65,7 @@ namespace PhpbbInDotnet.Services
                     return;
                 }
 
-                node.IsUnread = tracking.ContainsKey(forumId);
+                node.IsUnread = fetchUnreadData && tracking.ContainsKey(forumId);
                 node.IsRestricted = restrictedForums.Contains(forumId);
                 node.TotalSubforumCount = node.ChildrenList?.Count ?? 0;
                 node.TotalTopicCount = GetTopicCount(forumId);
@@ -86,7 +86,7 @@ namespace PhpbbInDotnet.Services
 
                         node.TotalSubforumCount += childForum.TotalSubforumCount;
                         node.TotalTopicCount += childForum.TotalTopicCount;
-                        node.IsUnread |= childForum.IsUnread || tracking.ContainsKey(childForumId);
+                        node.IsUnread |= childForum.IsUnread || (fetchUnreadData && tracking.ContainsKey(childForumId));
                         if ((node.ForumLastPostTime ?? 0) < (childForum.ForumLastPostTime ?? 0))
                         {
                             node.ForumLastPosterColour = childForum.ForumLastPosterColour;
@@ -147,7 +147,7 @@ namespace PhpbbInDotnet.Services
         }
 
         public async Task<bool> IsForumUnread(int forumId, LoggedUser user, bool forceRefresh = false)
-            => GetTreeNode(await GetForumTree(user, forceRefresh), forumId)?.IsUnread ?? false;
+            => GetTreeNode(await GetForumTree(user, forceRefresh, true), forumId)?.IsUnread ?? false;
 
         public async Task<bool> IsTopicUnread(int forumId, int topicId, LoggedUser user, bool forceRefresh = false)
         {

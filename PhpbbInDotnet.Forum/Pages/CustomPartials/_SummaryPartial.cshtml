@@ -33,8 +33,8 @@
         }
         else
         {
-            var color = $"#{(string.IsNullOrWhiteSpace(Model.AuthorColor) ? "000000" : Model.AuthorColor)}";
-            <a asp-page="/User" asp-route-UserId="@Model.AuthorId" style="color:@color;font-weight:bold" class="Stroke">@Html.Raw(Model.AuthorName)</a>
+            var color = string.IsNullOrWhiteSpace(Model.AuthorColor) || Model.AuthorColor == "000000" ? "auto" : $"#{Model.AuthorColor}";
+            <a asp-page="/User" asp-route-UserId="@Model.AuthorId" style="color:@color;font-weight:bold" class="ThemeColor">@Html.Raw(Model.AuthorName)</a>
         }
     </li>
     <li>

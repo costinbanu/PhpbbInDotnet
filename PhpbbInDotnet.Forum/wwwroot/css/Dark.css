@@ -191,7 +191,7 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
     max-height: 100px;
     width: 97%;
     overflow-y: scroll;
-    background-color: white;
+    background-color: #69696b;
     border: solid 1px gray;
     border-radius: 3px;
     margin: 10px 20px 10px 10px;
@@ -356,7 +356,8 @@ label {
 
 .validation {
     margin-left: 30px;
-    color: red;
+    color: #fb3535;
+    filter: brightness(150%);
     display: block;
 }
 
@@ -573,8 +574,10 @@ label {
     color: #474749;
 }
 
-.Stroke {
-    text-shadow: -2px -2px 0 white, 0 -2px 0 white, 2px -2px 0 white, 2px 0 0 white, 2px 2px 0 white, 0 2px 0 white, -2px 2px 0 white, -2px 0 0 white;
+.ThemeColor {
+    /*text-shadow: -2px -2px 0 white, 0 -2px 0 white, 2px -2px 0 white, 2px 0 0 white, 2px 2px 0 white, 0 2px 0 white, -2px 2px 0 white, -2px 0 0 white;*/
+    filter: brightness(150%);
+    color: white;
 }
 
 .tab { /* foregreound color override; rest is defined in tabbedPage.css */

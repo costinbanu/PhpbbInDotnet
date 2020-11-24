@@ -47,7 +47,7 @@ namespace PhpbbInDotnet.Forum.Pages
         [EmailAddress(ErrorMessage = "Trebuie să introduceți o adresă e e-mail validă.")]
         public string Email { get; set; }
         
-        [BindProperty, ValidateDate(ErrorMessage = "Data introdusă nu este validă"), MaxLength(10, ErrorMessage = "Lungimea maximă este 10 caractere!")]
+        [BindProperty]
         public string Birthday { get; set; }
         
         [BindProperty]
@@ -141,6 +141,16 @@ namespace PhpbbInDotnet.Forum.Pages
                 dbUser.Username = CurrentUser.Username;
                 dbUser.UsernameClean = Utils.CleanString(CurrentUser.Username);
             }
+
+            if (!string.IsNullOrWhiteSpace(Birthday) && Birthday != dbUser.UserBirthday)
+            {
+                if (!DateTime.TryParse(Birthday, out _))
+                {
+                    ModelState.AddModelError(nameof(Birthday), "Data introdusă nu este validă");
+                    return Page();
+                }
+            }
+
             dbUser.UserBirthday = Birthday ?? string.Empty;
             dbUser.UserAllowViewemail = ShowEmail.ToByte();
             dbUser.UserAllowPm = AllowPM.ToByte();
@@ -217,6 +227,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 if (!_storageService.DeleteAvatar(dbUser.UserId, Path.GetExtension(dbUser.UserAvatar)))
                 {
                     ModelState.AddModelError(nameof(Avatar), "Imaginea nu a putut fi ștearsă");
+                    return Page();
                 }
 
                 dbUser.UserAvatarType = 0;
@@ -235,6 +246,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     if (bmp.Width >200 || bmp.Height > 200)
                     {
                         ModelState.AddModelError(nameof(Avatar), "Fișierul trebuie să fie o imagine de dimensiuni maxime 200px x 200px.");
+                        return Page();
                     }
                     else
                     {
@@ -245,6 +257,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         if (!await _storageService.UploadAvatar(dbUser.UserId, stream, Avatar.FileName))
                         {
                             ModelState.AddModelError(nameof(Avatar), "Imaginea nu a putut fi încărcată");
+                            return Page();
                         }
                         else
                         {
@@ -259,6 +272,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     Utils.HandleError(ex, $"Failed to upload avatar for {CurrentUser?.UserId ?? dbUser?.UserId ?? 1}");
                     ModelState.AddModelError(nameof(Avatar), "Imaginea nu a putut fi încărcată");
+                    return Page();
                 }
             }
 
@@ -320,6 +334,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 Utils.HandleError(ex, $"Error updating user profile for {CurrentUser?.UserId ?? dbUser?.UserId ?? 1}");
                 ModelState.AddModelError(nameof(CurrentUser), "A intervenit o eroare, iar modificările nu au putut fi salvate.");
+                return Page();
             }
 
             if (affectedEntries > 0 && isSelf && !EmailChanged)
@@ -409,7 +424,7 @@ namespace PhpbbInDotnet.Forum.Pages
             string preferredTopicTitle = null;
             if (preferredTopic != null)
             {
-                preferredTopicTitle = ForumService.GetPathText((await GetForumTree()).Tree, preferredTopic.ForumId);
+                preferredTopicTitle = ForumService.GetPathText((await GetForumTree(false, false)).Tree, preferredTopic.ForumId);
                 PreferredTopic = (preferredTopic.TopicId, preferredTopicTitle);
             }
             PostsPerDay = TotalPosts / DateTime.UtcNow.Subtract(cur.UserRegdate.ToUtcTime()).TotalDays;

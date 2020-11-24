@@ -438,7 +438,7 @@ else if (!IsAnonymous)
     @await Html.PartialAsync(
         "_ForumTreePartial",
         new CustomPartials._ForumTreePartialModel(
-            tree: (await Model.GetForumTree()).Tree,
+            tree: (await Model.GetForumTree(false, false)).Tree,
             forumId: Model.ForumId,
             topicId: Model.TopicId,
             constrainSize: true

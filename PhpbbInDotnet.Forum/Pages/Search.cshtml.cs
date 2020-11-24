@@ -142,7 +142,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return;
             }
 
-            var (tree, _) = await GetForumTree();
+            var (tree, _) = await GetForumTree(false, false);
             var forumIds = new List<int>(tree.Count);
 
             if ((ForumId ?? 0) > 0)

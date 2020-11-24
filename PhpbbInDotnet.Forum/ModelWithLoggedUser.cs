@@ -188,7 +188,7 @@ namespace PhpbbInDotnet.Forum
                 return 0;
             }
             Tracking item = null;
-            var found = (await GetForumTree()).Tracking.TryGetValue(forumId, out var tt) && tt.TryGetValue(new Tracking { TopicId = topicId }, out item);
+            var found = (await GetForumTree(false, true)).Tracking.TryGetValue(forumId, out var tt) && tt.TryGetValue(new Tracking { TopicId = topicId }, out item);
             if (!found)
             {
                 return 0;
@@ -201,12 +201,15 @@ namespace PhpbbInDotnet.Forum
             ))?.post_id ?? 0u));
         }
 
-        public async Task<(HashSet<ForumTree> Tree, Dictionary<int, HashSet<Tracking>> Tracking)> GetForumTree(bool forceRefresh = false)
-            => (await ForumService.GetForumTree(await GetCurrentUserAsync(), forceRefresh), await ForumService.GetForumTracking(await GetCurrentUserAsync(), forceRefresh));
+        public async Task<(HashSet<ForumTree> Tree, Dictionary<int, HashSet<Tracking>> Tracking)> GetForumTree(bool forceRefresh, bool fetchUnreadData)
+            => (
+                    Tree: await ForumService.GetForumTree(await GetCurrentUserAsync(), forceRefresh, fetchUnreadData), 
+                    Tracking: fetchUnreadData ? await ForumService.GetForumTracking(await GetCurrentUserAsync(), forceRefresh) : null
+            );
 
         protected async Task MarkForumAndSubforumsRead(int forumId)
         {
-            var node = ForumService.GetTreeNode((await GetForumTree()).Tree, forumId);
+            var node = ForumService.GetTreeNode((await GetForumTree(false, false)).Tree, forumId);
             if (node == null)
             {
                 if (forumId == 0)
@@ -245,7 +248,7 @@ namespace PhpbbInDotnet.Forum
 
         public async Task MarkTopicRead(int forumId, int topicId, bool isLastPage, long markTime)
         {
-            var (tree, tracking) = await GetForumTree();
+            var (tree, tracking) = await GetForumTree(false, true);
             if (tracking.TryGetValue(forumId, out var tt) && tt.Count == 1 && isLastPage)
             {
                 //current topic was the last unread in its forum, and it is the last page of unread messages, so mark the whole forum read
@@ -356,7 +359,7 @@ namespace PhpbbInDotnet.Forum
 
                 var usr = await GetCurrentUserAsync();
                 var restricted = await ForumService.GetRestrictedForumList(usr, true);
-                var tree = await ForumService.GetForumTree(usr, false);
+                var tree = await ForumService.GetForumTree(usr, false, false);
                 var path = new List<int>();
                 if (tree.TryGetValue(new ForumTree { ForumId = forumId }, out var cur))
                 {

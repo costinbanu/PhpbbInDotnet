@@ -483,7 +483,7 @@ else if (IsPM)
     {
         <script>
             var texts = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(posts.ToDictionary(k => k.PostId, v => _writingService.CleanBbTextForDisplay(v.PostText, v.BbcodeUid))));
-            $('#lastPostTime').val(@posts.First().PostTime);
+            $('#lastPostTime').val(@Math.Max(posts.First().PostTime, posts.First().PostEditTime));
         </script>
         <br />
         <h3>Mesaje precedente</h3>

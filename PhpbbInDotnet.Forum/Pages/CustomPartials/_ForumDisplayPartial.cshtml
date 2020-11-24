@@ -62,20 +62,20 @@
                     @Html.Raw(_renderingService.BbCodeToHtml(forum.ForumDesc, forum.ForumDescUid))
                 </span>
                 @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
-               {
-                   AuthorId = forum.ForumLastPosterId,
-                   AuthorName = forum.ForumLastPosterName,
-                   AuthorColor = forum.ForumLastPosterColour,
-                   CreationTime = forum.ForumLastPostTime?.ToUtcTime(),
-                   AssetId = forum.ForumId,
-                   DateFormat = Model.DateFormat,
-                   ShowAvatar = false,
-                   LinkHref = forum.ForumLastPostId == 0 ? null : $"./ViewTopic?postId={forum.ForumLastPostId}&handler=ByPostId",
-                   Left = false,
-                   ShowAsLast = true,
-                                        Forums = forum.TotalSubforumCount,
-                   Topics = forum.TotalTopicCount
-               })
+                {
+                    AuthorId = forum.ForumLastPosterId,
+                    AuthorName = forum.ForumLastPosterName,
+                    AuthorColor = forum.ForumLastPosterColour,
+                    CreationTime = forum.ForumLastPostTime?.ToUtcTime(),
+                    AssetId = forum.ForumId,
+                    DateFormat = Model.DateFormat,
+                    ShowAvatar = false,
+                    LinkHref = forum.ForumLastPostId == 0 ? null : $"./ViewTopic?postId={forum.ForumLastPostId}&handler=ByPostId",
+                    Left = false,
+                    ShowAsLast = true,
+                    Forums = forum.TotalSubforumCount,
+                    Topics = forum.TotalTopicCount
+                })
 
             </div>
             isFirst = false;

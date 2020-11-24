@@ -9,8 +9,7 @@
     var isFirst = true;
     foreach (var user in Model.UserList)
     {
-        var color = string.IsNullOrWhiteSpace(user.UserColour) ? "#000000" : $"#{user.UserColour}";
-
+        var color = string.IsNullOrWhiteSpace(user.UserColour) || user.UserColour == "000000" ? "auto" : $"#{user.UserColour}";
         if (!isFirst)
         {
             <hr class="BoxSeparator" />
@@ -24,7 +23,7 @@
                 }
                 else
                 {
-                    <a asp-page="User" asp-route-UserId="@user.UserId" style="color:@color">@Html.Raw(user.Username)</a>
+                    <a asp-page="User" asp-route-UserId="@user.UserId" style="color:@color" class="ThemeColor">@Html.Raw(user.Username)</a>
                 }
             </div>
             <div class="FlexRight PostInputWidth">
@@ -56,16 +55,10 @@
                     if (group != null)
                     {
                         <b>Grup:</b>
-                        @if ((group.GroupColour ?? "000000") != "000000")
-                        {
-                            <span style="font-weight: bold; color: #@group.GroupColour">
-                                @Html.Raw(group.GroupName)
-                            </span>
-                        }
-                        else
-                        {
+                        color = string.IsNullOrWhiteSpace(group.GroupColour) || group.GroupColour == "000000" ? "auto" : $"#{group.GroupColour}";
+                        <span style="font-weight: bold; color: @color" class="ThemeColor">
                             @Html.Raw(group.GroupName)
-                        }
+                        </span>
                         <br />
                     }
                     var rank = Model.RankList.FirstOrDefault(r => r.RankId == user.UserRank);

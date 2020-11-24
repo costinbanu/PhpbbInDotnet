@@ -114,7 +114,7 @@ namespace PhpbbInDotnet.Services
                 ),
 
                 ["img"] = (
-                    Tag: new BBTag("img", "<br/><img src=\"${content}\" onload=\"resizeImage(this)\" /><br/>", string.Empty, false, BBTagClosingStyle.RequiresClosingTag, content => UrlTransformer(content), false, 4, allowUrlProcessingAsText: false),
+                    Tag: new BBTag("img", "<br/><img src=\"${content}\" onload=\"resizeImage(this)\" style=\"width: 100px; height: 100px\" /><br/>", string.Empty, false, BBTagClosingStyle.RequiresClosingTag, content => UrlTransformer(content), false, 4, allowUrlProcessingAsText: false),
                     Summary: new BBTagSummary
                     {
                         ButtonText = "Imagine",

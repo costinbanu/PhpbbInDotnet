@@ -163,7 +163,8 @@ else
                             }
                             else
                             {
-                                <span style="font-weight:bold; color:#@(string.IsNullOrWhiteSpace(Model.CurrentUser.UserColour) ? "000000" : Model.CurrentUser.UserColour)">
+                                var color = string.IsNullOrWhiteSpace(Model.CurrentUser.UserColour) || Model.CurrentUser.UserColour == "000000" ? "auto" : $"#{Model.CurrentUser.UserColour}";
+                                <span style="font-weight:bold; color:@color", class="ThemeColor">
                                     @Html.Raw(Model.CurrentUser.Username)
                                 </span>
                                 @if (isSelf && canEdit)

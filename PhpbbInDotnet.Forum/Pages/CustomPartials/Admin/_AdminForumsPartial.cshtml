@@ -11,7 +11,7 @@
 </div>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
-@{ var tree = await _forumTreeService.GetForumTree(Model.CurrentUser, false); }
+@{ var tree = await _forumTreeService.GetForumTree(Model.CurrentUser, false, false); }
 @await Html.PartialAsync(
     "_ForumTreePartial",
     new CustomPartials._ForumTreePartialModel(
