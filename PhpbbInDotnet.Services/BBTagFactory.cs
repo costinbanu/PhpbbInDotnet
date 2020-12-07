@@ -4,6 +4,8 @@ using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Web;
 
 namespace PhpbbInDotnet.Services
@@ -11,6 +13,7 @@ namespace PhpbbInDotnet.Services
     public class BBTagFactory
     {
         private readonly Dictionary<string, (BBTag Tag, BBTagSummary Summary)> _bbTags;
+        private readonly Regex _attrRegex;
 
         public BBTagFactory(CommonUtils utils)
         {
@@ -55,18 +58,18 @@ namespace PhpbbInDotnet.Services
                     }
                 ),
 
-                ["strike"] = (
-                    Tag: new BBTag("strike", "<span style=\"text-decoration: line-through\">", "</span>", 17),
-                    Summary: new BBTagSummary
-                    {
-                        ButtonText = "<strike>Text tăiat</strike>",
-                        OpenTag = "[strike]",
-                        CloseTag = "[/strike]",
-                        ShowOnPage = true,
-                        ToolTip = "Text tăiat: [strike]text[/strike]",
-                        ShowWhenCollapsed = false
-                    }
-                ),
+                //["strike"] = (
+                //    Tag: new BBTag("strike", "<span style=\"text-decoration: line-through\">", "</span>", 17),
+                //    Summary: new BBTagSummary
+                //    {
+                //        ButtonText = "<strike>Text tăiat</strike>",
+                //        OpenTag = "[strike]",
+                //        CloseTag = "[/strike]",
+                //        ShowOnPage = true,
+                //        ToolTip = "Text tăiat: [strike]text[/strike]",
+                //        ShowWhenCollapsed = false
+                //    }
+                //),
 
                 ["color"] = (
                     Tag: new BBTag("color", "<span style=\"color:${code}\">", "</span>", 6, "", true,
@@ -190,28 +193,29 @@ namespace PhpbbInDotnet.Services
                 ),
 
                 //custom tags
-                ["link"] = (
-                    Tag: new BBTag("link", "<a href=\"${href}\">", "</a>", true, BBTagClosingStyle.RequiresClosingTag, x => utils.TransformSelfLinkToBetaLink(x), 18, "", false,
-                        new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : utils.TransformSelfLinkToBetaLink(a.AttributeValue))),
-                    Summary: new BBTagSummary
-                    {
-                        ShowOnPage = false
-                    }
-                ),
+                //["link"] = (
+                //    Tag: new BBTag("link", "<a href=\"${href}\">", "</a>", true, BBTagClosingStyle.RequiresClosingTag, x => utils.TransformSelfLinkToBetaLink(x), 18, "", false,
+                //        new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : utils.TransformSelfLinkToBetaLink(a.AttributeValue))),
+                //    Summary: new BBTagSummary
+                //    {
+                //        ShowOnPage = false
+                //    }
+                //),
 
-                ["youtube"] = (
-                    Tag: new BBTag("youtube", "<br /><iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/${content}?html5=1\" frameborder=\"0\" allowfullscreen onload=\"resizeIFrame(this)\"></iframe><br />", string.Empty, false, false, 13, ""),
-                    Summary: new BBTagSummary
-                    {
-                        ButtonText = "YouTube",
-                        OpenTag = "[youtube]",
-                        CloseTag = "[/youtube]",
-                        ShowOnPage = true,
-                        ToolTip = "Inserează în mesaj un film găzduit pe www.youtube.com: [youtube]COD_FILM[/youtube]",
-                        ShowWhenCollapsed = true
-                    }
-                ),
+                //["youtube"] = (
+                //    Tag: new BBTag("youtube", "<br /><iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/${content}?html5=1\" frameborder=\"0\" allowfullscreen onload=\"resizeIFrame(this)\"></iframe><br />", string.Empty, false, false, 13, ""),
+                //    Summary: new BBTagSummary
+                //    {
+                //        ButtonText = "YouTube",
+                //        OpenTag = "[youtube]",
+                //        CloseTag = "[/youtube]",
+                //        ShowOnPage = true,
+                //        ToolTip = "Inserează în mesaj un film găzduit pe www.youtube.com: [youtube]COD_FILM[/youtube]",
+                //        ShowWhenCollapsed = true
+                //    }
+                //),
             };
+            _attrRegex = new Regex(@"\$\{[a-z0-9]+\}", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant);
         }
 
         public (List<BBTag> BBTags, Dictionary<string, BBTagSummary> TagMap) GenerateCompleteTagListAndMap(IEnumerable<PhpbbBbcodes> dbCodes)
@@ -228,7 +232,9 @@ namespace PhpbbInDotnet.Services
             }
             foreach (var code in dbCodes)
             {
-                tags.Add(new BBTag(code.BbcodeTag, code.BbcodeTpl, string.Empty, false, false, code.BbcodeId, "", true, new BBAttribute[0] { }));
+                var attributes = _attrRegex.Matches(code.BbcodeTpl).Where(m => m.Success && !m.Value.Equals("${content}", StringComparison.InvariantCultureIgnoreCase)).Select(m => new BBAttribute(m.Value.Trim("${}".ToCharArray()), "", ctx => ctx.AttributeValue)).ToArray();
+                tags.Add(new BBTag(code.BbcodeTag, code.BbcodeTpl, string.Empty, false, false, code.BbcodeId, "", true, attributes));
+
                 if (code.DisplayOnPosting.ToBool())
                 {
                     tagMap.TryAdd(code.BbcodeTag, new BBTagSummary

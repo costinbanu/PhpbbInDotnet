@@ -435,8 +435,8 @@ else if (IsPM)
                         <b>Nume:</b> @Model.Attachments[i].RealFilename <br />
                         <b>Comentariu fișier:</b>
                         <br />
-                        <textarea type="text" asp-for="Attachments[i].AttachComment" rows="4" cols="100" style="display:inline-block; color:black"></textarea>
-                        <br />
+                        <textarea type="text" asp-for="Attachments[i].AttachComment" rows="4" cols="100" style="display:inline-block; color:black" class="InputBox"></textarea>
+                        <p style="clear:both"></p>
                         <input type="button" value="Așează în linie" onclick="posting.attach_inline(@i, '@Model.Attachments[i].RealFilename')" class="MyButton" /> &nbsp;
                         <input type="submit" value="Șterge fișier" asp-page-handler="DeleteAttachment" onclick="$('#idToDelete').val(@i); return true;" class="MyButton" />
                         <br />
@@ -554,7 +554,7 @@ else if (IsPM)
                                 @Html.Raw(post.AuthorName)
                             </span>
                         </span>
-                        @if (!isFirst && !(CurrentUser.Foes?.Contains(post.AuthorId ?? 1) ?? false))
+                        @if (!(CurrentUser.Foes?.Contains(post.AuthorId ?? 1) ?? false))
                         {
                             <span style="margin-left: auto; min-width: max-content; padding-top: 3px; padding-bottom: 30px; margin-top: 4px; margin-bottom: 4px">
                                 <a href="javascript:posting.addquote(texts['@post.PostId'], '@post.AuthorName')">&#x1F4AC; Citează</a>

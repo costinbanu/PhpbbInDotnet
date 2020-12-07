@@ -164,7 +164,7 @@ else
                             else
                             {
                                 var color = string.IsNullOrWhiteSpace(Model.CurrentUser.UserColour) || Model.CurrentUser.UserColour == "000000" ? "auto" : $"#{Model.CurrentUser.UserColour}";
-                                <span style="font-weight:bold; color:@color", class="ThemeColor">
+                                <span style="font-weight:bold; color:@color" , class="ThemeColor">
                                     @Html.Raw(Model.CurrentUser.Username)
                                 </span>
                                 @if (isSelf && canEdit)
@@ -355,10 +355,10 @@ else
                         Salt la primul subforum sau subiect necitit
                     </div>
                     <div class="FlexRight PostInputWidth">
-                        <input asp-for="JumpToUnread" style="width:auto" /> 
+                        <input asp-for="JumpToUnread" style="width:auto" />
                         <span>
                             Pagina curentă sare automat la primul subforum sau primul subiect necitit.<br />
-                                                                                                      <span class="Caption">În cazul mesajelor, pagina va sări la primul mesaj necitit indiferent de această setare.</span>
+                            <span class="Caption">În cazul mesajelor, pagina va sări la primul mesaj necitit indiferent de această setare.</span>
                         </span>
                     </div>
                 </div>
@@ -553,9 +553,16 @@ else
                         Ultima dată activ
                     </div>
                     <div class="FlexRight PostInputWidth">
-                        <script>
-                        writeDate("@Model.CurrentUser.UserLastvisit.ToUtcTime().ToString("o")", "@UserDateFormat");
-                        </script>
+                        @if (Model.CurrentUser.UserLastvisit > 0)
+                        {
+                            <script>
+                            writeDate("@Model.CurrentUser.UserLastvisit.ToUtcTime().ToString("o")", "@UserDateFormat");
+                            </script>
+                        }
+                        else
+                        {
+                            <span>-</span>
+                        }
                     </div>
                 </div>
                 <p></p>

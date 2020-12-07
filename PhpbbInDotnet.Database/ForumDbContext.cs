@@ -85,10 +85,10 @@ namespace PhpbbInDotnet.Database
         public async Task<DbConnection> GetDbConnectionAndOpenAsync()
         {
             var connection = Database.GetDbConnection();
-            if (connection.State != ConnectionState.Open)
-            {
-                await connection.OpenAsync();
-            }
+            //if (connection.State != ConnectionState.Open)
+            //{
+            //    await connection.OpenAsync();
+            //}
             DefaultTypeMap.MatchNamesWithUnderscores = true;
             return connection;
         }
@@ -96,10 +96,10 @@ namespace PhpbbInDotnet.Database
         public DbConnection GetDbConnectionAndOpen()
         {
             var connection = Database.GetDbConnection();
-            if (connection.State != ConnectionState.Open)
-            {
-                connection.Open();
-            }
+            //if (connection.State != ConnectionState.Open)
+            //{
+            //    connection.Open();
+            //}
             DefaultTypeMap.MatchNamesWithUnderscores = true;
             return connection;
         }

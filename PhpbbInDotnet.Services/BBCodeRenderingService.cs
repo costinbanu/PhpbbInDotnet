@@ -45,7 +45,7 @@ namespace PhpbbInDotnet.Services
 
             //we override these temporarily: 18 = link, 13 = youtube
             //we override this for good: 17 = strike (TODO: remove from DB after migration)
-            var tagList = connection.Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes WHERE bbcode_id NOT IN (18, 13, 17)").AsList();
+            var tagList = connection.Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes").AsList();
 
             var (bbTags, tagMap) = bbTagFactory.GenerateCompleteTagListAndMap(tagList);
             _parser = new BBCodeParser(bbTags);

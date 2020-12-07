@@ -34,9 +34,9 @@
             }
         </script>
         <form method="post" id="batchAdminUsers" name="batchAdminUsers" asp-page-handler="BatchUserManagement">
-            <button type="button" onclick="selectAllUsers()">Selectează toți utilizatorii inactivi</button>
+            <button type="button" onclick="selectAllUsers()" class="MyButton">Selectează toți utilizatorii inactivi</button>
             &nbsp;
-            <input type="submit" value="Șterge utilizatorii inactivi selectați" onclick="return confirm('Utilizatorii inactivi selectați vor fi șterși. Continui?');" />
+            <input type="submit" value="Șterge utilizatorii inactivi selectați" onclick="return confirm('Utilizatorii inactivi selectați vor fi șterși. Continui?');" class="MyButton" />
         </form>
     }
 }
@@ -71,7 +71,7 @@
         </tr>
         <tr>
             <td colspan="2" style="padding:5px; font-weight:bold; text-align: center">
-                <input type="submit" value="Caută" />
+                <input type="submit" value="Caută" class="MyButton" />
             </td>
         </tr>
     </table>
@@ -348,7 +348,7 @@
         </div>
     </div>
     <p></p>
-    <input type="submit" value="Salvează modificările" onclick="return validateGroup();" />
+    <input type="submit" value="Salvează modificările" onclick="return validateGroup();" class="MyButton" />
     <input type="hidden" name="dto.id" id="groupId" />
 </form>
 
@@ -373,5 +373,5 @@
         </div>
     </div>
     <input type="hidden" name="rankId" id="rankId" />
-    <input type="submit" value="Salvează modificările" onclick="return $('#rankName').val() ? true : false;" />
+    <input type="submit" value="Salvează modificările" onclick="return $('#rankName').val() ? true : false;" class="MyButton" />
 </form>

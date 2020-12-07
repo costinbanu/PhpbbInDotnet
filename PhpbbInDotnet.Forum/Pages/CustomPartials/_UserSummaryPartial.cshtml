@@ -49,25 +49,28 @@
                     <b>Localitate:</b>
                     @Html.Raw(user.UserFrom)
                 }
-                <br />
                 @{
                     var group = Model.GroupList.FirstOrDefault(g => g.GroupId == user.GroupId);
                     if (group != null)
                     {
+                        <br />
                         <b>Grup:</b>
                         color = string.IsNullOrWhiteSpace(group.GroupColour) || group.GroupColour == "000000" ? "auto" : $"#{group.GroupColour}";
                         <span style="font-weight: bold; color: @color" class="ThemeColor">
                             @Html.Raw(group.GroupName)
                         </span>
-                        <br />
                     }
                     var rank = Model.RankList.FirstOrDefault(r => r.RankId == user.UserRank);
                     if (rank != null)
                     {
+                        <br />
                         <b>Rang:</b>
                         @Html.Raw(rank.RankTitle)
                     }
                 }
+                <br />
+                <b>Mesaje postate:</b>
+                @Html.Raw(user.UserPosts)
             </div>
         </div>
         isFirst = false;

@@ -161,7 +161,10 @@ namespace PhpbbInDotnet.Forum.Pages
             dbUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : await _writingService.PrepareTextForSaving(CurrentUser.UserSig);
             dbUser.UserEditTime = CurrentUser.UserEditTime;
             dbUser.UserWebsite = CurrentUser.UserWebsite ?? string.Empty;
-            dbUser.UserRank = UserRank;
+            if (UserRank > 0)
+            {
+                dbUser.UserRank = UserRank;
+            }
             dbUser.UserStyle = CurrentUser.UserStyle;
             dbUser.JumpToUnread = JumpToUnread.ToByte();
 
@@ -406,7 +409,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             CurrentUser = cur;
             CurrentUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : _writingService.CleanBbTextForDisplay(CurrentUser.UserSig, CurrentUser.UserSigBbcodeUid);
-            TotalPosts = await Context.PhpbbPosts.AsNoTracking().CountAsync(p => p.PosterId == cur.UserId);
+            TotalPosts = cur.UserPosts;
             var restrictedForums = (await ForumService.GetRestrictedForumList(await GetCurrentUserAsync())).Select(f => f.forumId);
             var preferredTopic = await (
                 from p in Context.PhpbbPosts.AsNoTracking()

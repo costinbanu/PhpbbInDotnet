@@ -68,11 +68,11 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     case MemberListPages.AllUsers:
                         using (var multi = await connection.QueryMultipleAsync(
-                            $"SELECT * FROM phpbb_users ORDER BY {GetOrder(Order ?? MemberListOrder.NameAsc)} LIMIT @skip, @take;" +
-                            $"SELECT count(distinct user_id) FROM phpbb_users;" +
-                            $"SELECT * FROM phpbb_groups;" +
+                            $"SELECT * FROM phpbb_users WHERE group_id <> 6 AND user_id <> @ANONYMOUS_USER_ID ORDER BY {GetOrder(Order ?? MemberListOrder.NameAsc)} LIMIT @skip, @take; " +
+                            $"SELECT count(distinct user_id) FROM phpbb_users WHERE group_id <> 6 AND user_id <> @ANONYMOUS_USER_ID; " +
+                            $"SELECT * FROM phpbb_groups; " +
                             $"SELECT * FROM phpbb_ranks;",
-                            new { skip = PAGE_SIZE * (PageNum - 1), take = PAGE_SIZE }
+                            new { skip = PAGE_SIZE * (PageNum - 1), take = PAGE_SIZE, Constants.ANONYMOUS_USER_ID }
                         ))
                         {
                             UserList = await multi.ReadAsync<PhpbbUsers>();
@@ -85,11 +85,11 @@ namespace PhpbbInDotnet.Forum.Pages
                         if (!string.IsNullOrWhiteSpace(Username))
                         {
                             using var multi = await connection.QueryMultipleAsync(
-                                $"SELECT * FROM phpbb_users WHERE CONVERT(LOWER(username) USING utf8) LIKE @search ORDER BY {GetOrder(Order ?? MemberListOrder.NameAsc)} LIMIT @skip, @take;" +
-                                $"SELECT count(distinct user_id) FROM phpbb_users WHERE CONVERT(LOWER(username) USING utf8) LIKE @search;" +
+                                $"SELECT * FROM phpbb_users WHERE CONVERT(LOWER(username) USING utf8) LIKE @search AND user_id <> @ANONYMOUS_USER_ID ORDER BY {GetOrder(Order ?? MemberListOrder.NameAsc)} LIMIT @skip, @take;" +
+                                $"SELECT count(distinct user_id) FROM phpbb_users WHERE CONVERT(LOWER(username) USING utf8) LIKE @search AND user_id <> @ANONYMOUS_USER_ID;" +
                                 $"SELECT * FROM phpbb_groups;" +
                                 $"SELECT * FROM phpbb_ranks;",
-                                new { search = $"%{Utils.CleanString(Username)}%", skip = PAGE_SIZE * (PageNum - 1), take = PAGE_SIZE }
+                                new { search = $"%{Utils.CleanString(Username)}%", skip = PAGE_SIZE * (PageNum - 1), take = PAGE_SIZE, Constants.ANONYMOUS_USER_ID }
                             );
                             UserList = await multi.ReadAsync<PhpbbUsers>();
                             Paginator = new Paginator(unchecked((int)await multi.ReadSingleAsync<long>()), PageNum, $"/MemberList?username={HttpUtility.UrlEncode(Username)}&order={Order}&handler=search", PAGE_SIZE, "pageNum");
@@ -104,11 +104,11 @@ namespace PhpbbInDotnet.Forum.Pages
                     case MemberListPages.ActiveBots:
                     case MemberListPages.ActiveUsers:
                         using (var multi = await connection.QueryMultipleAsync(
-                            $"SELECT * FROM phpbb_users WHERE user_lastvisit >= @lastVisit ORDER BY {GetOrder(Order ?? MemberListOrder.NameAsc)} LIMIT @skip, @take;" +
-                            $"SELECT count(distinct user_id) FROM phpbb_users WHERE user_lastvisit >= @lastVisit;" +
+                            $"SELECT * FROM phpbb_users WHERE user_lastvisit >= @lastVisit AND user_id <> @ANONYMOUS_USER_ID ORDER BY {GetOrder(Order ?? MemberListOrder.NameAsc)} LIMIT @skip, @take;" +
+                            $"SELECT count(distinct user_id) FROM phpbb_users WHERE user_lastvisit >= @lastVisit AND user_id <> @ANONYMOUS_USER_ID;" +
                             $"SELECT * FROM phpbb_groups;" +
                             $"SELECT * FROM phpbb_ranks;",
-                            new { lastVisit = DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(Config.GetValue<int?>("UserActivityTrackingIntervalMinutes") ?? 60)).ToUnixTimestamp(), skip = PAGE_SIZE * (PageNum - 1), take = PAGE_SIZE }
+                            new { lastVisit = DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(Config.GetValue<int?>("UserActivityTrackingIntervalMinutes") ?? 60)).ToUnixTimestamp(), skip = PAGE_SIZE * (PageNum - 1), take = PAGE_SIZE, Constants.ANONYMOUS_USER_ID }
                         ))
                         {
                             UserList = await multi.ReadAsync<PhpbbUsers>();
@@ -154,18 +154,22 @@ namespace PhpbbInDotnet.Forum.Pages
                 MemberListOrder.LastActiveDateDesc => "Activ ultima oară (descrescător)",
                 MemberListOrder.RegistrationDateAsc => "Data înregistrării (crescător)",
                 MemberListOrder.RegistrationDateDesc => "Data înregistrării (descrescător)",
+                MemberListOrder.MessageCountAsc => "Număr mesaje postate (crescător)",
+                MemberListOrder.MessageCountDesc => "Număr mesaje postate (descrescător)",
                 _ => throw new ArgumentException($"Unknown value '{order}' in {nameof(GetOrderDisplayName)}.", nameof(order))
             };
 
         private string GetOrder(MemberListOrder order)
             => order switch
             {
-                MemberListOrder.NameAsc => "username asc",
-                MemberListOrder.NameDesc => "username desc",
+                MemberListOrder.NameAsc => "username_clean asc",
+                MemberListOrder.NameDesc => "username_clean desc",
                 MemberListOrder.LastActiveDateAsc => "user_lastvisit asc",
                 MemberListOrder.LastActiveDateDesc => "user_lastvisit desc",
                 MemberListOrder.RegistrationDateAsc => "user_regdate asc",
                 MemberListOrder.RegistrationDateDesc => "user_regdate desc",
+                MemberListOrder.MessageCountAsc => "user_posts asc",
+                MemberListOrder.MessageCountDesc => "user_posts desc",
                 _ => throw new ArgumentException($"Unknown value '{order}' in {nameof(GetOrder)}.", nameof(order))
             };
     }

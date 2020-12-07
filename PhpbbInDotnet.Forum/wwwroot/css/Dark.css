@@ -450,7 +450,6 @@ label {
 }
 
     .ReportedPost a {
-        border: solid 3px #BC2A4D;
         background-color: #F3BFCC;
         color: #495d6c;
     }
@@ -594,6 +593,11 @@ label {
 
 .content {
     background-color: #888888 !important; 
+}
+
+.InputBox {
+    background-color: #555555 !important;
+    color: white !important;
 }
 
 @media (max-width: 768px) {

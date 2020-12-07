@@ -137,7 +137,9 @@ namespace PhpbbInDotnet.Utilities
         RegistrationDateAsc,
         RegistrationDateDesc,
         LastActiveDateAsc,
-        LastActiveDateDesc
+        LastActiveDateDesc,
+        MessageCountAsc,
+        MessageCountDesc
     }
 
     [Flags]

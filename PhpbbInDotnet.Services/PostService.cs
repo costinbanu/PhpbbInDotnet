@@ -190,6 +190,11 @@ namespace PhpbbInDotnet.Services
 
                 await SetForumLastPost(curForum, lastForumPost, lastForumPostUser, true);
             }
+
+            await conn.ExecuteAsync(
+                "UPDATE phpbb_users SET user_posts = user_posts - 1 WHERE user_id = @posterId",
+                new { deleted.PosterId }
+            );
         }
 
         private async Task SetTopicLastPost(PhpbbTopics topic, PhpbbPosts post, LoggedUser author, bool goBack = false)
