@@ -4,24 +4,27 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PaulMiami.AspNetCore.Mvc.Recaptcha;
+using Newtonsoft.Json;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Forum.Pages.CustomPartials.Email;
 using PhpbbInDotnet.Utilities;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Net.Http;
 using System.Net.Mail;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [ValidateRecaptcha, BindProperties, ValidateAntiForgeryToken]
+    [BindProperties, ValidateAntiForgeryToken]
     public class RegisterModel : PageModel
     {
         private readonly ForumDbContext _context;
         private readonly CommonUtils _utils;
         private readonly IConfiguration _config;
+        private readonly HttpClient _gClient;
 
         [BindProperty]
         [EmailAddress]
@@ -48,15 +51,47 @@ namespace PhpbbInDotnet.Forum.Pages
         [Range(type: typeof(bool), minimum: "True", maximum: "True", ErrorMessage = "Trebuie să fii de acord cu termenele de utilizare.")]
         public bool Agree { get; set; }
 
-        public RegisterModel(ForumDbContext context, CommonUtils utils, IConfiguration config)
+        [BindProperty]
+        public string RecaptchaResponse { get; set; }
+
+        public RegisterModel(ForumDbContext context, CommonUtils utils, IConfiguration config, IHttpClientFactory httpClientFactory)
         {
             _context = context;
             _utils = utils;
             _config = config;
+            _gClient = httpClientFactory.CreateClient(config["Recaptcha:ClientName"]);
         }
 
         public async Task<IActionResult> OnPost()
         {
+            try
+            {
+                var response = await _gClient.PostAsync(
+                    requestUri: _config.GetValue<string>("Recaptcha:RelativeUri"), 
+                    content: new StringContent(
+                        content: $"secret={_config.GetValue<string>("Recaptcha:SecretKey")}&response={RecaptchaResponse}&remoteip={HttpContext.Connection.RemoteIpAddress}",
+                        encoding: Encoding.UTF8, 
+                        mediaType: "application/x-www-form-urlencoded"
+                    )
+                );
+                response.EnsureSuccessStatusCode();
+                var resultText = await response.Content.ReadAsStringAsync();
+                var result = JsonConvert.DeserializeObject<dynamic>(resultText);
+                if (!(bool)result.success)
+                {
+                    throw new InvalidOperationException($"Validating g-recaptcha failed. Response: {resultText}");
+                }
+                if ((decimal)result.score < _config.GetValue<decimal>("Recaptcha:Score"))
+                {
+                    return PageWithError(nameof(RecaptchaResponse), "Procesul de înregistrare nu poate continua - sistemul nostru a detectat că ești bot. Dacă este o eroare, scrie-ne la admin arond metrouusor punct com.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _utils.HandleError(ex, "Failed to check captcha");
+                return PageWithError(nameof(RecaptchaResponse), "A intervenit o eroare. Te rugăm să încerci mai târziu sau să ne contactezi la admin arond metrouusor punct com.");
+            }
+
             var conn = await _context.GetDbConnectionAndOpenAsync();
 
             var checkBanlist = await conn.QueryAsync(

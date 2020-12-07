@@ -6,13 +6,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using PaulMiami.AspNetCore.Mvc.Recaptcha;
-using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
 using System;
@@ -20,7 +20,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.StaticFiles;
 
 namespace PhpbbInDotnet.Forum
 {
@@ -93,12 +92,6 @@ namespace PhpbbInDotnet.Forum
             services.AddDataProtection();
             services.AddAntiforgery(o => o.HeaderName = "XSRF-TOKEN");
 
-            services.AddRecaptcha(new RecaptchaOptions
-            {
-                SiteKey = Configuration["Recaptcha:SiteKey"],
-                SecretKey = Configuration["Recaptcha:SecretKey"]
-            });
-
             services.Configure<IISServerOptions>(options =>
             {
                 options.MaxRequestBodySize = 1073741824;
@@ -119,7 +112,7 @@ namespace PhpbbInDotnet.Forum
                 x.MultipartHeadersLengthLimit = 1073741824;
                 });
             }
-            services.AddHttpClient();
+            services.AddHttpClient(Configuration["Recaptcha:ClientName"], client => client.BaseAddress = new Uri(Configuration["Recaptcha:BaseAddress"]));
 
             services.AddSingleton<CommonUtils>();
             services.AddSingleton<AnonymousSessionCounter>();

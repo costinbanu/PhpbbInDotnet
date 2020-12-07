@@ -9,11 +9,24 @@
 
 <h3>Înregistrare</h3>
 
-<form asp-controller="Home" method="post" onsubmit="return validateCaptcha();">
+<script src="https://www.google.com/recaptcha/api.js?render=@(_config["Recaptcha:SiteKey"])"></script>
+<script>
+    grecaptcha.ready(function () {
+        grecaptcha.execute('@(_config["Recaptcha:SiteKey"])', { action: 'validate_captcha' })
+            .then(function (token) {
+                $('#RecaptchaResponse').val(token);
+            });
+    });
+</script>
+
+
+
+
+<form asp-controller="Home" method="post">
 
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-    <input type="text" name="Email" asp-for="Email" placeholder="Email" class="form" autocomplete="new-password"/>
+    <input type="text" name="Email" asp-for="Email" placeholder="Email" class="form" autocomplete="new-password" />
     <br />
     <span asp-validation-for="Email" class="validation"></span>
     <p></p>
@@ -33,12 +46,10 @@
     <br />
     <span asp-validation-for="Agree" class="validation"></span>
     <p></p>
-    <div class="g-recaptcha" data-sitekey="@_config["Recaptcha:SiteKey"]" data-callback="recaptchaCallback"></div>
-    <br />
-    <span class="validation" style="visibility:hidden" id="reCaptchaErrorMessage">Te rugăm să bifezi aici.</span>
-    <p></p>
     <input type="submit" value="Trimite" style="width:auto" />
-
+    <input type="hidden" asp-for="RecaptchaResponse" id="RecaptchaResponse" />
+    <br />
+    <span asp-validation-for="RecaptchaResponse" class="validation"></span>
     @Html.AntiForgeryToken()
 </form>
 
