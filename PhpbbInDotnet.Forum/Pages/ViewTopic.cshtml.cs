@@ -146,7 +146,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 Paginator = new Paginator(_count.Value, PageNum.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId, await GetCurrentUserAsync());
                 Poll = await _postService.GetPoll(_currentTopic);
 
-                var connection = await Context.GetDbConnectionAndOpenAsync();
+                var connection = Context.Database.GetDbConnection();
                 using var multi = await connection.QueryMultipleAsync(
                     "SELECT * FROM phpbb_users WHERE user_id IN @authors; " +
                     "SELECT * FROM phpbb_users WHERE user_id IN @editors; " +
@@ -211,7 +211,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostPagination(int topicId, int userPostsPerPage, int? postId)
             => await WithRegisteredUser(async (user) =>
             {
-                var connection = await Context.GetDbConnectionAndOpenAsync();
+                var connection = Context.Database.GetDbConnection();
                 var cur = await connection.QueryFirstOrDefaultAsync<PhpbbUserTopicPostNumber>("SELECT * FROM phpbb_user_topic_post_number WHERE user_id = @userId AND topic_id = @topicId", new { user.UserId, topicId });
                 if (cur == null)
                 {

@@ -27,13 +27,13 @@ namespace PhpbbInDotnet.Services
 
         public async Task<IEnumerable<PhpbbWords>> GetBannedWordsAsync()
         {
-            var connection = await _context.GetDbConnectionAndOpenAsync();
+            var connection = _context.Database.GetDbConnection();
             return await connection.QueryAsync<PhpbbWords>("SELECT * FROM phpbb_words");
         }
 
         public IEnumerable<PhpbbWords> GetBannedWords()
         {
-            var connection = _context.GetDbConnectionAndOpen();
+            var connection = _context.Database.GetDbConnection();
             return connection.Query<PhpbbWords>("SELECT * FROM phpbb_words");
         }
 
@@ -88,7 +88,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<IEnumerable<AttachmentManagementDto>> GetOrphanedFiles()
         {
-            var connection = await _context.GetDbConnectionAndOpenAsync();
+            var connection = _context.Database.GetDbConnection();
             return await connection.QueryAsync<AttachmentManagementDto>("SELECT a.*, u.username FROM phpbb_attachments a JOIN phpbb_users u on a.poster_id = u.user_id WHERE a.is_orphan = 1");
         }
 
@@ -107,7 +107,7 @@ namespace PhpbbInDotnet.Services
 
             if (Succeeded?.Any() ?? false)
             {
-                var connection = await _context.GetDbConnectionAndOpenAsync();
+                var connection = _context.Database.GetDbConnection();
                 await connection.ExecuteAsync(
                     "DELETE FROM phpbb_attachments WHERE attach_id IN @ids",
                     new { ids = files.Where(f => Succeeded.Contains(f.PhysicalFilename)).Select(f => f.AttachId).DefaultIfEmpty() }
@@ -156,7 +156,7 @@ namespace PhpbbInDotnet.Services
             {
                 return string.Empty;
             }
-            var connection = await _context.GetDbConnectionAndOpenAsync();
+            var connection = _context.Database.GetDbConnection();
             foreach (var sr in await connection.QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies"))
             {
                 var regex = new Regex(@$"(?<=(^|\s)){Regex.Escape(sr.Code)}(?=($|\s))", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, Constants.REGEX_TIMEOUT);

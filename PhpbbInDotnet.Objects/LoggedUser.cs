@@ -28,6 +28,7 @@ namespace PhpbbInDotnet.Objects
         public HashSet<int> Foes { get; set; }
         public string Style { get; set; }
         public byte JumpToUnread { get; set; } = 1;
+        public int? UploadLimit { get; set; }
 
         public class Permissions
         {

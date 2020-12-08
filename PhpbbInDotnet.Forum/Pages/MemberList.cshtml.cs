@@ -35,6 +35,9 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public string ValidationDummy { get; set; }
 
+        [BindProperty(SupportsGet = true)]
+        public int? GroupId { get; set; }
+
         public Paginator Paginator { get; private set; }
         public IEnumerable<PhpbbUsers> UserList { get; private set; }
         public IEnumerable<PhpbbRanks> RankList { get; private set; }
@@ -63,7 +66,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetSetMode()
             => await WithRegisteredUser(async (_) =>
             {
-                var connection = await Context.GetDbConnectionAndOpenAsync();
+                var connection = Context.Database.GetDbConnection();
                 switch (Mode)
                 {
                     case MemberListPages.AllUsers:
@@ -82,21 +85,40 @@ namespace PhpbbInDotnet.Forum.Pages
                             break;
                         }
                     case MemberListPages.SearchUsers:
-                        if (!string.IsNullOrWhiteSpace(Username))
+                        if (!string.IsNullOrWhiteSpace(Username) || GroupId.HasValue)
                         {
+                            var whereClause =
+                                @"(@search IS NULL OR username_clean LIKE @search)
+                                AND (@groupId IS NULL OR group_id = @groupId)
+                                AND user_id <> @ANONYMOUS_USER_ID";
+
                             using var multi = await connection.QueryMultipleAsync(
-                                $"SELECT * FROM phpbb_users WHERE CONVERT(LOWER(username) USING utf8) LIKE @search AND user_id <> @ANONYMOUS_USER_ID ORDER BY {GetOrder(Order ?? MemberListOrder.NameAsc)} LIMIT @skip, @take;" +
-                                $"SELECT count(distinct user_id) FROM phpbb_users WHERE CONVERT(LOWER(username) USING utf8) LIKE @search AND user_id <> @ANONYMOUS_USER_ID;" +
-                                $"SELECT * FROM phpbb_groups;" +
-                                $"SELECT * FROM phpbb_ranks;",
-                                new { search = $"%{Utils.CleanString(Username)}%", skip = PAGE_SIZE * (PageNum - 1), take = PAGE_SIZE, Constants.ANONYMOUS_USER_ID }
+                                $@"SELECT * 
+                                     FROM phpbb_users 
+                                    WHERE {whereClause}
+                                    ORDER BY {GetOrder(Order ?? MemberListOrder.NameAsc)} 
+                                    LIMIT @skip, @take; 
+
+                                   SELECT count(distinct user_id) 
+                                     FROM phpbb_users 
+                                    WHERE {whereClause}; 
+
+                                   SELECT * 
+                                     FROM phpbb_ranks;",
+                                new 
+                                { 
+                                    search = Username == null ? null : $"%{Utils.CleanString(Username)}%", 
+                                    GroupId, 
+                                    skip = PAGE_SIZE * (PageNum - 1), 
+                                    take = PAGE_SIZE, Constants.ANONYMOUS_USER_ID 
+                                }
                             );
                             UserList = await multi.ReadAsync<PhpbbUsers>();
-                            Paginator = new Paginator(unchecked((int)await multi.ReadSingleAsync<long>()), PageNum, $"/MemberList?username={HttpUtility.UrlEncode(Username)}&order={Order}&handler=search", PAGE_SIZE, "pageNum");
-                            GroupList = await multi.ReadAsync<PhpbbGroups>();
+                            Paginator = new Paginator(unchecked((int)await multi.ReadSingleAsync<long>()), PageNum, $"/MemberList?username={HttpUtility.UrlEncode(Username)}&order={Order}&groupId={GroupId}&handler=search", PAGE_SIZE, "pageNum");
                             RankList = await multi.ReadAsync<PhpbbRanks>();
                             SearchWasPerformed = true;
                         }
+                        GroupList = await connection.QueryAsync<PhpbbGroups>("SELECT * FROM phpbb_groups");
                         break;
                     case MemberListPages.Groups:
                         GroupList = await connection.QueryAsync<PhpbbGroups>("SELECT * FROM phpbb_groups");
@@ -122,27 +144,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
 
                 return Page();
-            });
-
-        public async Task<IActionResult> OnPostEditGroup(int groupId, string groupName, string groupDesc, string groupColor, int groupEditTime)
-            => await WithAdmin(async () =>
-            {
-                Mode = MemberListPages.Groups;
-                var group = await Context.PhpbbGroups.FirstOrDefaultAsync(g => g.GroupId == groupId);
-                if (group == null)
-                {
-                    ModelState.AddModelError(nameof(ValidationDummy), $"Grupul {groupId} nu există.");
-                    return await OnGetSetMode();
-                }
-
-                group.GroupName = HttpUtility.HtmlEncode(groupName);
-                group.GroupDesc = await _writingService.PrepareTextForSaving(groupDesc);
-                group.GroupColour = (groupColor ?? string.Empty).Trim('#').ToUpperInvariant();
-                group.GroupEditTime = groupEditTime;
-
-                await Context.SaveChangesAsync();
-
-                return await OnGetSetMode();
             });
 
         public string GetOrderDisplayName(MemberListOrder order)

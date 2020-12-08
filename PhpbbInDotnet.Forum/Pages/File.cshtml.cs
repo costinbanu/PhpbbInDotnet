@@ -29,7 +29,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnGet(int Id)
         {
-            var connection = await Context.GetDbConnectionAndOpenAsync();
+            var connection = Context.Database.GetDbConnection();
    
             var file = await connection.QuerySingleOrDefaultAsync("SELECT a.physical_filename, a.real_filename, a.mimetype, p.forum_id FROM phpbb_attachments a JOIN phpbb_posts p on a.post_msg_id = p.post_id WHERE attach_id = @Id", new { Id });
             if (file == null)
@@ -51,7 +51,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetAvatar(int userId)
         {
             string file;
-            var connection = await Context.GetDbConnectionAndOpenAsync();
+            var connection = Context.Database.GetDbConnection();
 
             file = await connection.QueryFirstOrDefaultAsync<string>("SELECT user_avatar FROM phpbb_users WHERE user_id = @userId", new { userId });
             if (file == null)

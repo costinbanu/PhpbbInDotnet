@@ -81,7 +81,7 @@ namespace PhpbbInDotnet.Services
             {
                 return _anonymousDbUser;
             }
-            var connection = await _context.GetDbConnectionAndOpenAsync();
+            var connection = _context.Database.GetDbConnection();
 
             _anonymousDbUser = await connection.QuerySingleOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId = Constants.ANONYMOUS_USER_ID });
             
@@ -101,14 +101,14 @@ namespace PhpbbInDotnet.Services
 
         public async Task<ClaimsPrincipal> DbUserToClaimsPrincipalAsync(PhpbbUsers user)
         {
-            var connection = await _context.GetDbConnectionAndOpenAsync();
+            var connection = _context.Database.GetDbConnection();
             using var multi = await connection.QueryMultipleAsync(
                 @"CALL `forum`.`get_user_details`(@UserId);
 
-                SELECT group_edit_time g
+                SELECT g.group_edit_time, g.group_user_upload_size
                   FROM phpbb_groups g
-                  JOIN phpbb_user_group ug ON g.group_id = ug.group_id
-                 WHERE ug.user_id = @UserId
+                  JOIN phpbb_users u ON g.group_id = u.group_id
+                 WHERE u.user_id = @UserId
                  LIMIT 1;
 
                 SELECT style_name 
@@ -120,7 +120,8 @@ namespace PhpbbInDotnet.Services
             var permissions = new HashSet<LoggedUser.Permissions>(await multi.ReadAsync<LoggedUser.Permissions>());
             var tpp = (await multi.ReadAsync()).ToDictionary(x => checked((int)x.topic_id), y => checked((int)y.post_no));
             var foes = new HashSet<int>((await multi.ReadAsync<uint>()).Select(x => unchecked((int)x)));
-            var editTime = unchecked((int)await multi.ReadSingleOrDefaultAsync<uint>());
+            var groupProperties = await multi.ReadFirstOrDefaultAsync();
+            var editTime = unchecked((int)groupProperties.group_edit_time);
             var style = await multi.ReadFirstOrDefaultAsync<string>();
 
             var intermediary = new LoggedUser
@@ -136,7 +137,8 @@ namespace PhpbbInDotnet.Services
                 PostEditTime = (editTime == 0 || user.UserEditTime == 0) ? 0 : Math.Min(Math.Abs(editTime), Math.Abs(user.UserEditTime)),
                 AllowPM = user.UserAllowPm.ToBool(),
                 Style = style,
-                JumpToUnread = user.JumpToUnread
+                JumpToUnread = user.JumpToUnread,
+                UploadLimit = unchecked((int)groupProperties.group_user_upload_size)
             };
 
             var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -152,19 +154,19 @@ namespace PhpbbInDotnet.Services
 
         public async Task<IEnumerable<PhpbbRanks>> GetRankListAsync()
         {
-            var connection = await _context.GetDbConnectionAndOpenAsync();
+            var connection = _context.Database.GetDbConnection();
             return await connection.QueryAsync<PhpbbRanks>("SELECT * FROM phpbb_ranks ORDER BY rank_title");
         }
 
         public async Task<IEnumerable<PhpbbGroups>> GetGroupListAsync()
         {
-            var connection = await _context.GetDbConnectionAndOpenAsync();
+            var connection = _context.Database.GetDbConnection();
             return await connection.QueryAsync<PhpbbGroups>("SELECT * FROM phpbb_groups ORDER BY group_name");
         }
 
         public async Task<PhpbbGroups> GetUserGroupAsync(int userId)
         {
-            var connection = await _context.GetDbConnectionAndOpenAsync();
+            var connection = _context.Database.GetDbConnection();
             return await connection.QueryFirstOrDefaultAsync<PhpbbGroups> (
                 "SELECT g.* FROM phpbb_groups g " +
                 "JOIN phpbb_user_group ug on g.group_id = ug.group_id " +
@@ -175,7 +177,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<LoggedUser> GetLoggedUserById(int userId)
         {
-            var connection = await _context.GetDbConnectionAndOpenAsync();
+            var connection = _context.Database.GetDbConnection();
             var usr = await connection.QuerySingleOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
             return await DbUserToLoggedUserAsync(usr);
         }
@@ -199,7 +201,7 @@ namespace PhpbbInDotnet.Services
                     return ("Destinatarul te-a adăugat pe lista sa de persoane neagreate, drept urmare nu îi poți trimite mesaje private.", false);
                 }
 
-                var connection = await _context.GetDbConnectionAndOpenAsync();
+                var connection = _context.Database.GetDbConnection();
 
                 await connection.ExecuteAsync(
                     @"INSERT INTO phpbb_privmsgs (author_id, to_address, bcc_address, message_subject, message_text, message_time) VALUES (@senderId, @to, '', @subject, @text, @time); 
@@ -240,7 +242,7 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                var connection = await _context.GetDbConnectionAndOpenAsync();
+                var connection = _context.Database.GetDbConnection();
 
                 var rows = await connection.ExecuteAsync(
                     "UPDATE phpbb_privmsgs SET message_subject = @subject, message_text = @text " +
@@ -266,7 +268,7 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                var connection = await _context.GetDbConnectionAndOpenAsync();
+                var connection = _context.Database.GetDbConnection();
 
                 var rows = await connection.ExecuteAsync(
                     "DELETE m FROM phpbb_privmsgs m JOIN phpbb_privmsgs_to tt ON m.msg_id = tt.msg_id AND tt.pm_unread = 1 WHERE m.msg_id = @messageId; " +
@@ -292,7 +294,7 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                using var connection = await _context.GetDbConnectionAndOpenAsync();
+                using var connection = _context.Database.GetDbConnection();
                 var rows = await connection.ExecuteAsync(
                     @"UPDATE phpbb_privmsgs_to
                          SET folder_id = -10
@@ -314,7 +316,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<int> UnreadPMs(int userId)
         {
-            var connection = await _context.GetDbConnectionAndOpenAsync();
+            var connection = _context.Database.GetDbConnection();
             return await connection.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_privmsgs_to WHERE user_id = @userId AND folder_id >= 0 AND pm_unread = 1", new { userId });
         }
 
@@ -325,7 +327,7 @@ namespace PhpbbInDotnet.Services
                 return _userRoles;
             }
 
-            var connection = await _context.GetDbConnectionAndOpenAsync();
+            var connection = _context.Database.GetDbConnection();
             
             _userRoles = await connection.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'u_'");
 
@@ -339,7 +341,7 @@ namespace PhpbbInDotnet.Services
                 return _modRoles;
             }
 
-            var connection = await _context.GetDbConnectionAndOpenAsync();
+            var connection = _context.Database.GetDbConnection();
 
             _modRoles = await connection.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'm_'");           
 
@@ -353,7 +355,7 @@ namespace PhpbbInDotnet.Services
                 return _adminRoles;
             }
 
-            var connection = await _context.GetDbConnectionAndOpenAsync();
+            var connection = _context.Database.GetDbConnection();
 
             _adminRoles = await connection.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'a_'");            
 

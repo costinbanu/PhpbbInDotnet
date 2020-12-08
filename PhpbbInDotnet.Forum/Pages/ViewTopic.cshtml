@@ -6,6 +6,7 @@
 @using PhpbbInDotnet.Utilities
 @using PhpbbInDotnet.Database.Entities
 @using PhpbbInDotnet.Objects
+@using Microsoft.EntityFrameworkCore
 
 @inject Services.UserService _userService
 @inject CommonUtils _utils
@@ -25,7 +26,7 @@
     var IsAdmin = await Model.IsCurrentUserAdminHere();
     var IsMod = await Model.IsCurrentUserModeratorHere();
     var EditTime = CurrentUser.PostEditTime;
-    var connection = await _context.GetDbConnectionAndOpenAsync();
+    var connection = _context.Database.GetDbConnection();
 }
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />

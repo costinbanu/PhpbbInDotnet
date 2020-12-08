@@ -1,9 +1,5 @@
-﻿using Dapper;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database.Entities;
-using System.Data;
-using System.Data.Common;
-using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Database
 {
@@ -81,28 +77,6 @@ namespace PhpbbInDotnet.Database
         public virtual DbSet<PhpbbZebra> PhpbbZebra { get; set; }
 
         #endregion Entities
-
-        public async Task<DbConnection> GetDbConnectionAndOpenAsync()
-        {
-            var connection = Database.GetDbConnection();
-            //if (connection.State != ConnectionState.Open)
-            //{
-            //    await connection.OpenAsync();
-            //}
-            DefaultTypeMap.MatchNamesWithUnderscores = true;
-            return connection;
-        }
-
-        public DbConnection GetDbConnectionAndOpen()
-        {
-            var connection = Database.GetDbConnection();
-            //if (connection.State != ConnectionState.Open)
-            //{
-            //    connection.Open();
-            //}
-            DefaultTypeMap.MatchNamesWithUnderscores = true;
-            return connection;
-        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

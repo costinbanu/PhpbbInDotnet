@@ -2,8 +2,11 @@
 @using PhpbbInDotnet.Utilities
 
 @model PhpbbInDotnet.Forum.Pages.UserModel
+
 @inject Services.UserService _userService
 @inject Database.ForumDbContext _context
+@inject Utilities.CommonUtils _utils
+
 @{
     ViewData["Title"] = "User";
     Layout = "~/Pages/_Layout.cshtml";
@@ -601,6 +604,31 @@ else
                         else
                         {
                             <a asp-page="./ViewTopic" asp-route-topicId="@Model.PreferredTopic.Id" asp-route-pageNum="1">@Html.Raw(Model.PreferredTopic.Title)</a>
+                        }
+                    </div>
+                </div>
+                <p></p>
+                <div class="FlexCenter">
+                    <div class="FlexCaption">
+                        Fișiere atașate
+                    </div>
+                    <div class="FlexRight PostInputWidth">
+                        @Model.AttachCount fișiere atașate
+                        @if (isSelf || await Model.IsCurrentUserAdminHere())
+                        {
+                            <span>- în total @_utils.ReadableFileSize(Model.AttachTotalSize) utilizați</span>
+                            var limit = _context.PhpbbGroups.AsNoTracking().FirstOrDefault(g => g.GroupId == Model.CurrentUser.GroupId)?.GroupUserUploadSize ?? 0;
+                            if (limit > 0)
+                            {
+                                <span>
+                                    din @_utils.ReadableFileSize(limit) disponibili
+                                </span>
+                            }
+                        }
+                        @if (Model.AttachCount > 0)
+                        {
+                            <span>&nbsp;-&nbsp;</span>
+                            <a asp-page="Search" asp-page-handler="Attachments" asp-route-authorId="@Model.CurrentUser.UserId">Arată fișierele atașate ale utilizatorului</a>
                         }
                     </div>
                 </div>

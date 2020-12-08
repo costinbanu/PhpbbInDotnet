@@ -9,6 +9,7 @@
     overflow-x: hidden;
     display: block;
     z-index: 999999;
+    color: black !important;
 }
 
 .tribute-container ul {

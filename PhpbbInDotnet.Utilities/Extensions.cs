@@ -28,8 +28,8 @@ namespace PhpbbInDotnet.Utilities
             => (byte)(@bool ? 1 : 0);
 
         public static bool IsMimeTypeInline(this string mimeType)
-            => mimeType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase) ||
-                mimeType.StartsWith("video", StringComparison.InvariantCultureIgnoreCase)/* ||
+            => mimeType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase) /*||
+                mimeType.StartsWith("video", StringComparison.InvariantCultureIgnoreCase) ||
                 mimeType.EndsWith("pdf", StringComparison.InvariantCultureIgnoreCase)*/;
 
         public static async Task OpenIfNeededAsync(this DbConnection connection)

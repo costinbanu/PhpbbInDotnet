@@ -1,9 +1,10 @@
 ﻿@page
 
 @using Dapper
-@using PhpbbInDotnet.Database.Entities 
+@using PhpbbInDotnet.Database.Entities
 @using PhpbbInDotnet.Utilities
- 
+@using Microsoft.EntityFrameworkCore
+
 @inject Services.WritingToolsService _writingService
 @inject Database.ForumDbContext _context
 @inject Services.BBCodeRenderingService _renderingService
@@ -21,7 +22,7 @@
     {
         dateFormat = "dddd, dd.MM.yyyy, HH:mm";
     }
-    var connection = await _context.GetDbConnectionAndOpenAsync();
+    var connection = _context.Database.GetDbConnection();
 }
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />
@@ -76,7 +77,7 @@
         <input asp-for="TotalResults" type="hidden" />
         <input asp-for="AuthorId" type="hidden" id="authorId" />
 
-        <input asp-for="SearchText" type="text" placeholder="Caută după text..." style="width:100%" autofocus />
+        <input asp-for="SearchText" type="text" placeholder="Caută după text..." style="width:100%" autofocus class="InputBox" />
         <span class="Caption">
             Dacă doriți să căutați după o frază exactă, puneți-o între ghilimele.
             De exemplu căutarea <b><i>autobuz galben</i></b> va returna mesaje care conțin fie <b><i>autobuz</i></b>, fie <b><i>galben</i></b>, fie amândouă.
@@ -86,7 +87,7 @@
         <a href="javascript:showElement('advanced')">Căutare avansată</a>
         <div id="advanced" style="display:none">
             <p></p>
-            <input asp-for="Author" type="text" placeholder="Caută după autor..." id="AuthorInput" style="width:100%" autocomplete="off" />
+            <input asp-for="Author" type="text" placeholder="Caută după autor..." id="AuthorInput" style="width:100%" autocomplete="new-password" class="InputBox" />
             <p id="tributeHolder" style="position:relative"></p>
             Caută în forumul...
             @await Html.PartialAsync(

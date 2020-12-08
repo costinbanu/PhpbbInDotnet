@@ -57,12 +57,12 @@
     @if (Model.UserList?.Any() ?? false)
     {
         @await Html.PartialAsync(
-          "_UserSummaryPartial",
-          new _UserSummaryPartialModel(
-              userList: Model.UserList, groupList: Model.GroupList, rankList: Model.RankList, dateFormat: dateFormat,
-              paginator: Model.Paginator, backLink: $"MemberList?pageNum={Model.PageNum - 1}&order={Model.Order}&mode={MemberListPages.AllUsers}", forwardLink: $"MemberList?pageNum={Model.PageNum + 1}&order={Model.Order}&mode={MemberListPages.AllUsers}"
-          )
-      );
+           "_UserSummaryPartial",
+           new _UserSummaryPartialModel(
+               userList: Model.UserList, groupList: Model.GroupList, rankList: Model.RankList, dateFormat: dateFormat,
+               paginator: Model.Paginator, backLink: $"MemberList?pageNum={Model.PageNum - 1}&order={Model.Order}&mode={MemberListPages.AllUsers}", forwardLink: $"MemberList?pageNum={Model.PageNum + 1}&order={Model.Order}&mode={MemberListPages.AllUsers}"
+           )
+       );
     }
     else
     {
@@ -83,6 +83,11 @@
     <form method="get">
         <input type="hidden" name="handler" value="search" />
         <input asp-for="Username" placeholder="Caută după nume..." style="height:30px; margin-top: 5px" id="usernameUserInput" />
+        @{
+            var items = Model.GroupList.Select(g => new SelectListItem(g.GroupName, g.GroupId.ToString(), g.GroupId == Model.GroupId, false)).ToList();
+            items.Add(new SelectListItem("Caută în grupul...", "null", !Model.GroupId.HasValue, true));
+            @Html.DropDownListFor(m => m.GroupId, items, new { id = "searchGroup", style = "height:30px; margin-top: 5px" });
+        }
         @Html.DropDownListFor(m => m.Order, _utils.EnumToDropDownList<MemberListOrder>(Model.Order, Model.GetOrderDisplayName, "Ordonează după..."), new { id = "searchOrder", style = "height:30px; margin-top: 5px" })
         <input asp-for="Mode" type="hidden" />
         <input asp-for="PageNum" type="hidden" id="pageNumInput" />
@@ -96,7 +101,7 @@
           "_UserSummaryPartial",
           new _UserSummaryPartialModel(
               userList: Model.UserList, groupList: Model.GroupList, rankList: Model.RankList, dateFormat: dateFormat,
-              paginator: Model.Paginator, backLink: $"MemberList?pageNum={Model.PageNum - 1}&order={Model.Order}&handler=search&username={HttpUtility.UrlEncode(Model.Username)}", forwardLink: $"MemberList?pageNum={Model.PageNum + 1}&order={Model.Order}&handler=search&username={HttpUtility.UrlEncode(Model.Username)}"
+              paginator: Model.Paginator, backLink: $"MemberList?pageNum={Model.PageNum - 1}&order={Model.Order}&handler=search&username={HttpUtility.UrlEncode(Model.Username)}&groupId={Model.GroupId}", forwardLink: $"MemberList?pageNum={Model.PageNum + 1}&order={Model.Order}&handler=search&username={HttpUtility.UrlEncode(Model.Username)}&groupId={Model.GroupId}"
           )
       )
     }
@@ -130,50 +135,15 @@
                     @Html.Raw(group.GroupName)
                 </div>
                 <div class="FlexRight PostInputWidth">
-                    @if (!await Model.IsCurrentUserAdminHere())
+                    @if (!string.IsNullOrWhiteSpace(group.GroupDesc))
                     {
-                        @Html.Raw(_renderingService.BbCodeToHtml(group.GroupDesc, group.GroupDescUid));
+                        <p>
+                            @Html.Raw(_renderingService.BbCodeToHtml(group.GroupDesc, group.GroupDescUid))
+                        </p>
                     }
-                    else
-                    {
-                        <form method="post" asp-page-handler="editGroup">
-                            <input type="hidden" name="groupId" value="@group.GroupId" /> <br />
-                            <div class="FlexCenter">
-                                <div>Nume:</div>
-                                <div class="FlexRight PostInputWidth">
-                                    <input type="text" name="groupName" value="@group.GroupName" />
-                                </div>
-                            </div>
-                            <p></p>
-                            <div class="FlexCenter">
-                                <div>Descriere:</div>
-                                <div class="FlexRight PostInputWidth">
-                                    <input type="text" name="groupDesc" value="@group.GroupDesc" />
-                                </div>
-                            </div>
-                            <p></p>
-                            <div class="FlexCenter">
-                                <div>Culoare:</div>
-                                <div class="FlexRight PostInputWidth">
-                                    <input type="text" name="groupColor" value="@group.GroupColour" />
-                                </div>
-                            </div>
-                            <p></p>
-                            <div class="FlexCenter">
-                                <div>Timpul cât este permisă<br />editarea mesajelor proprii:</div>
-                                <div class="FlexRight PostInputWidth">
-                                    <input type="text" name="groupEditTime" value="@group.GroupEditTime" /><br />
-                                    <span class="Caption">
-                                        Minute de la publicarea mesajului.<br />
-                                        Aceeași setare există și la utilizatori și se aplică valoarea cea mai restrictivă diferită de zero.<br />
-                                        Zero semnifică „timp nelimitat” și se aplică chiar dacă cealaltă setare este diferită de zero.
-                                    </span>
-                                </div>
-                            </div>
-                            <p></p>
-                            <input type="submit" value="Trimite" />
-                        </form>
-                    }
+                    <a asp-page="/MemberList" asp-page-handler="search" asp-route-GroupId="@group.GroupId" asp-route-Mode="SearchUsers" asp-route-PageNum="1">
+                        Vezi toți membrii grupului
+                    </a>
                 </div>
             </div>
             isFirst = false;
@@ -202,11 +172,11 @@
         var botsText = $"{bots} bo{(bots == 1 ? "t" : "ți")}";
     }
     <h4>
-        @registered membr@(registered == 1 ? "u" : "i") înregistra@(registered == 1 ? "t" : "ți"), @anonymous vizitator@(anonymous == 1 ? "" : "i") 
+        @registered membr@(registered == 1 ? "u" : "i") înregistra@(registered == 1 ? "t" : "ți"), @anonymous vizitator@(anonymous == 1 ? "" : "i")
         @if (await Model.IsCurrentUserAdminHere())
         {
             <span>
-                și 
+                și
                 @if (bots > 0)
                 {
                     <a href="@($"MemberList?handler=setMode&pageNum={Model.PageNum}&order={Model.Order}&mode={MemberListPages.ActiveBots}")">
@@ -269,7 +239,7 @@
                             <a href="https://whatismyipaddress.com/ip/@bot.IP" target="_blank">[IP Lookup]</a><br />
                         }
                         @Html.Raw(bot.UserAgent) <br />
-                        Activ ultima oară: 
+                        Activ ultima oară:
                         <script>
                             writeDate('@bot.EntryTime.ToString("o")', '@dateFormat');
                         </script>
@@ -297,6 +267,15 @@
         $(document).ready(function () {
             $('#userOrder').val('dummyValue');
             $('#searchOrder').val('dummyValue');
+        });
+    </script>
+}
+
+@if (!Model.GroupId.HasValue)
+{
+    <script>
+        $(document).ready(function () {
+            $('#searchGroup').val('null');
         });
     </script>
 }

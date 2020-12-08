@@ -92,7 +92,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return PageWithError(nameof(RecaptchaResponse), "A intervenit o eroare. Te rugăm să încerci mai târziu sau să ne contactezi la admin arond metrouusor punct com.");
             }
 
-            var conn = await _context.GetDbConnectionAndOpenAsync();
+            var conn = _context.Database.GetDbConnection();
 
             var checkBanlist = await conn.QueryAsync(
                 @"SELECT @email LIKE LOWER(REPLACE(REPLACE(ban_email, '*', '%'), '?', '_')) AS Email,

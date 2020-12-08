@@ -224,6 +224,25 @@ namespace PhpbbInDotnet.Forum.Pages
                     return Page();
                 }
 
+                if (user.UploadLimit == null)
+                {
+                    await ReloadCurrentUser();
+                    if (user.UploadLimit == null)
+                    {
+                        user.UploadLimit = 0;
+                    }
+                }
+
+                if (user.UploadLimit > 0)
+                {
+                    var connection = Context.Database.GetDbConnection();
+                    var uploadSize = await connection.ExecuteScalarAsync<long>("SELECT sum(filesize) FROM phpbb_attachments WHERE poster_id = @userId", new { user.UserId });
+                    if (uploadSize + Files.Sum(f => f.Length) > user.UploadLimit)
+                    {
+                        return PageWithError(curForum, nameof(Files), "Ai depășit limita de upload alocată rangului tău.");
+                    }
+                }
+
                 var tooLargeFiles = Files.Where(f => f.Length > 1024 * 1024 * (f.ContentType.StartsWith("image/", StringComparison.InvariantCultureIgnoreCase) ? Config.GetValue<int>("UploadLimitsMB:Images") : Config.GetValue<int>("UploadLimitsMB:OtherFiles")));
                 if (tooLargeFiles.Any() && !await IsCurrentUserAdminHere())
                 {
@@ -279,7 +298,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     }
                 }
 
-                var connection = await Context.GetDbConnectionAndOpenAsync();
+                var connection = Context.Database.GetDbConnection();
                 await connection.ExecuteAsync("DELETE FROM phpbb_attachments WHERE attach_id = @attachId", new { attachment.AttachId });
                 var dummy = Attachments.Remove(attachment);
                 ShowAttach = Attachments.Any();
@@ -361,7 +380,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }))));
 
         public async Task<IActionResult> OnPostNewForumPost()
-            => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, async (curForum) => await WithNewestPostSincePageLoad(curForum, async () =>
+            => await WithBackup(async() => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, async (curForum) => await WithNewestPostSincePageLoad(curForum, async () =>
             {
                 var addedPostId = await UpsertPost(null, user);
                 if (addedPostId == null)
@@ -369,10 +388,10 @@ namespace PhpbbInDotnet.Forum.Pages
                     return PageWithError(curForum, nameof(PostText), "A intervenit o eroare iar mesajul nu a fost publicat. Te rugăm să încerci din nou.");
                 }
                 return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
-            })));
+            }))));
 
         public async Task<IActionResult> OnPostEditForumPost()
-            => await WithRegisteredUser(async (user) => await WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
+            => await WithBackup(async () => await WithRegisteredUser(async (user) => await WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
             {
                 if (!(await IsCurrentUserModeratorHere() || (curPost.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime))))
                 {
@@ -391,7 +410,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return Page();
                 }
                 return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
-            }));
+            })));
 
         public async Task<IActionResult> OnPostPrivateMessage()
             => await WithRegisteredUser(async (user) =>

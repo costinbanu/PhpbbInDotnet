@@ -84,6 +84,8 @@ namespace PhpbbInDotnet.Forum.Pages
         public (int? Id, string Title) PreferredTopic { get; private set; }
         public double PostsPerDay { get; private set; }
         public List<PhpbbUsers> Foes { get; private set; }
+        public int AttachCount { get; private set; }
+        public long AttachTotalSize { get; private set; }
         public UserPageMode Mode { get; private set; }
         public bool EmailChanged { get; private set; }
 
@@ -365,7 +367,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (user) =>
             {
                 var cur = await Context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
-                var connection = await Context.GetDbConnectionAndOpenAsync();
+                var connection = Context.Database.GetDbConnection();
                 await connection.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;" +
                     "INSERT INTO phpbb_zebra (user_id, zebra_id, friend, foe) VALUES (@userId, @otherId, 0, 1)",
@@ -379,7 +381,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (user) =>
             {
                 var cur = await Context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
-                var connection = await Context.GetDbConnectionAndOpenAsync();
+                var connection = Context.Database.GetDbConnection();
                 await connection.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;",
                     new { user.UserId, otherId = cur.UserId }
@@ -392,7 +394,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (user) =>
             {
                 var cur = await Context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
-                using var connection = await Context.GetDbConnectionAndOpenAsync();
+                using var connection = Context.Database.GetDbConnection();
                 await connection.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id IN @otherIds;",
                     new { user.UserId, otherIds = SelectedFoes.DefaultIfEmpty() }
@@ -450,6 +452,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 from j in joined
                 select j
             ).ToListAsync();
+            AttachCount = await Context.PhpbbAttachments.AsNoTracking().CountAsync(a => a.PosterId == cur.UserId);
+            AttachTotalSize = await Context.PhpbbAttachments.AsNoTracking().Where(a => a.PosterId == cur.UserId).SumAsync(a => a.Filesize);
         }
     }
 }

@@ -98,6 +98,7 @@
         {
             Id = g.GroupId,
             Name = g.GroupName,
+            Desc = g.GroupDesc,
             Rank = g.GroupRank,
             Color = $"#{g.GroupColour}",
             EditTime = g.GroupEditTime,
@@ -212,6 +213,7 @@
         $('#groupId').val(group.id);
         $('#groupName').val(group.name);
         $('#groupNameTitle').text('Administrează grup - ' + group.name);
+        $('#groupDesc').val(group.desc);
         $('#rank').val(group.rank);
         $('#role').val(group.role);
         $('#color').val(group.color);
@@ -228,6 +230,7 @@
         $('#groupName').val('');
         $('#groupName').css('background-color', 'white');
         $('#groupNameTitle').text('Adaugă un grup nou');
+        $('#groupDesc').val('');
         $('#rank').val('0');
         $('#role').val('0');
         $('#color').val('#000000');
@@ -290,6 +293,15 @@
         </div>
         <div class="FlexRight PostInputWidth">
             <input type="text" name="dto.name" autocomplete="new-password" id="groupName" />
+        </div>
+    </div>
+    <p></p>
+    <div class="FlexCenter">
+        <div style="font-weight:bold; text-align: right">
+            Descriere grup
+        </div>
+        <div class="FlexRight PostInputWidth">
+            <textarea rows="4" cols="100" name="dto.desc" autocomplete="new-password" id="groupDesc"></textarea>
         </div>
     </div>
     <p></p>

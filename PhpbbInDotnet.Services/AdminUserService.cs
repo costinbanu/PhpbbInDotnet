@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
+using Microsoft.EntityFrameworkCore;
 
 namespace PhpbbInDotnet.Services
 {
@@ -255,6 +256,7 @@ namespace PhpbbInDotnet.Services
                 void update(PhpbbGroups destination, UpsertGroupDto source)
                 {
                     destination.GroupName = source.Name;
+                    destination.GroupDesc = source.Desc;
                     destination.GroupRank = source.Rank;
                     destination.GroupColour = source.DbColor;
                     destination.GroupUserUploadSize = source.UploadLimit * 1024 * 1024;
@@ -340,14 +342,14 @@ namespace PhpbbInDotnet.Services
                     _context.PhpbbUsers.UpdateRange(affectedUsers);
                     var affectedTopics = await (
                         from t in _context.PhpbbTopics
-                        join u in affectedUsers on t.TopicLastPosterId equals u.UserId
+                        where affectedUsers.Select(u => u.UserId).Contains(t.TopicLastPosterId)
                         select t
                     ).ToListAsync();
                     affectedTopics.ForEach(t => t.TopicLastPosterColour = dto.DbColor);
                     _context.PhpbbTopics.UpdateRange(affectedTopics);
                     var affectedForums = await (
                         from t in _context.PhpbbForums
-                        join u in affectedUsers on t.ForumLastPosterId equals u.UserId
+                        where affectedUsers.Select(u => u.UserId).Contains(t.ForumLastPosterId)
                         select t
                     ).ToListAsync();
                     affectedForums.ForEach(t => t.ForumLastPosterColour = dto.DbColor);
@@ -368,7 +370,7 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                var conn = await _context.GetDbConnectionAndOpenAsync();
+                var conn = _context.Database.GetDbConnection();
 
                 await conn.ExecuteAsync (
                     "INSERT INTO phpbb_banlist (ban_ip, ban_email) VALUES (@ip, @email)",

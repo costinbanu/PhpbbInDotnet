@@ -61,7 +61,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGet()
             => await WithUserHavingPM(async (user) =>
             {
-                using var connection = await Context.GetDbConnectionAndOpenAsync();
+                using var connection = Context.Database.GetDbConnection();
 
                 if (Show != PrivateMessagesPages.Message)
                 {
@@ -212,7 +212,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostMarkAsRead()
             => await WithUserHavingPM(async (user) =>
             {
-                var connection = await Context.GetDbConnectionAndOpenAsync();
+                var connection = Context.Database.GetDbConnection();
                 await connection.ExecuteAsync("UPDATE phpbb_privmsgs_to SET pm_unread = 0 WHERE msg_id IN @ids AND author_id <> user_id", new { ids = SelectedMessages?.DefaultIfEmpty() ?? new[] { 0 } });
 
                 return await OnGet();

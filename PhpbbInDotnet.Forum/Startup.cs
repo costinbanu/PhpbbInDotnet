@@ -1,3 +1,4 @@
+using Dapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
@@ -48,7 +49,8 @@ namespace PhpbbInDotnet.Forum
 
             services.AddDistributedMemoryCache();
 
-            services.AddSession(options => {
+            services.AddSession(options =>
+            {
                 options.IdleTimeout = TimeSpan.FromMinutes(Configuration.GetValue<double>("UserActivityTrackingIntervalMinutes"));
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
@@ -62,7 +64,7 @@ namespace PhpbbInDotnet.Forum
             });
 
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie();
-            
+
             var builder = services.AddMvc(o => o.EnableEndpointRouting = false)
                 .SetCompatibilityVersion(CompatibilityVersion.Version_3_0)
                 .AddRazorOptions(o =>
@@ -109,7 +111,7 @@ namespace PhpbbInDotnet.Forum
                 {
                     x.ValueLengthLimit = 1073741824;
                     x.MultipartBodyLengthLimit = 1073741824; // if don't set default value is: 128 MB
-                x.MultipartHeadersLengthLimit = 1073741824;
+                    x.MultipartHeadersLengthLimit = 1073741824;
                 });
             }
             services.AddHttpClient(Configuration["Recaptcha:ClientName"], client => client.BaseAddress = new Uri(Configuration["Recaptcha:BaseAddress"]));
@@ -129,6 +131,8 @@ namespace PhpbbInDotnet.Forum
             services.AddScoped<BBCodeRenderingService>();
             services.AddSingleton<FileExtensionContentTypeProvider>();
             services.AddDbContext<ForumDbContext>(options => options.UseMySQL(Configuration["ForumDbConnectionString"], o => o.CommandTimeout(60)), ServiceLifetime.Scoped);
+
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -3,7 +3,6 @@
 
 @using Microsoft.EntityFrameworkCore
 @using Dapper
-@using Utilities
 
 @inject Utilities.CommonUtils _utils
 @inject Services.ForumTreeService _forumService
@@ -13,7 +12,7 @@
 @{
     ViewData["Title"] = "Confirm";
     Layout = "~/Pages/_Layout.cshtml";
-    var connection = await _dbContext.GetDbConnectionAndOpenAsync();
+    var connection = _dbContext.Database.GetDbConnection();
 }
 
 <h2>@Model.Title</h2>
