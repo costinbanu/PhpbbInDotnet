@@ -84,7 +84,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public (int? Id, string Title) PreferredTopic { get; private set; }
         public double PostsPerDay { get; private set; }
         public List<PhpbbUsers> Foes { get; private set; }
-        public int AttachCount { get; private set; }
+        public long AttachCount { get; private set; }
         public long AttachTotalSize { get; private set; }
         public UserPageMode Mode { get; private set; }
         public bool EmailChanged { get; private set; }
@@ -429,7 +429,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var preferredTopic = await (
                 from p in Context.PhpbbPosts.AsNoTracking()
                 where p.PosterId == cur.UserId
-                
+
                 join t in Context.PhpbbTopics.AsNoTracking()
                 on p.TopicId equals t.TopicId
 
@@ -465,8 +465,15 @@ namespace PhpbbInDotnet.Forum.Pages
                 from j in joined
                 select j
             ).ToListAsync();
-            AttachCount = await Context.PhpbbAttachments.AsNoTracking().CountAsync(a => a.PosterId == cur.UserId);
-            AttachTotalSize = await Context.PhpbbAttachments.AsNoTracking().Where(a => a.PosterId == cur.UserId).SumAsync(a => a.Filesize);
+            var result = await Context.Database.GetDbConnection().QueryFirstOrDefaultAsync(
+                "SELECT sum(a.filesize) as size, count(a.attach_id) as cnt " +
+                "FROM phpbb_attachments a " +
+                "JOIN phpbb_posts p ON a.post_msg_id = p.post_id " +
+                "WHERE p.poster_id = @userId",
+                new { cur.UserId }
+            );
+            AttachCount = (long?)result?.cnt ?? 0L;
+            AttachTotalSize = (long?)result?.size ?? 0L;
         }
     }
 }

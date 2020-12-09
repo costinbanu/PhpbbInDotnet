@@ -600,6 +600,10 @@ label {
     color: white !important;
 }
 
+.Popup {
+    color: black;
+}
+
 @media (max-width: 768px) {
     .headerImg {
         width: 128px;

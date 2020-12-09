@@ -287,7 +287,7 @@
                     {
                         <p>&nbsp;</p>
                         <div class="PostFooter" style="margin-top: auto">
-                            @if (index < Model.Posts.Count - 1 && post.LastEditTime > Model.Posts[index + 1].PostTime)
+                            @if ((index < Model.Posts.Count - 1 && post.LastEditTime > Model.Posts[index + 1].PostTime) || (post.EditCount > 0 && post.LastEditUser != post.AuthorName))
                             {
                                 <div class="Caption ThemeColor">
                                     Ultima dată modificat de @post.LastEditUser
