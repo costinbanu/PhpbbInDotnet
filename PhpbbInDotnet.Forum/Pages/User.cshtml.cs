@@ -301,7 +301,20 @@ namespace PhpbbInDotnet.Forum.Pages
             }
 
             var dbUserGroup = await Context.PhpbbUserGroup.FirstOrDefaultAsync(g => g.UserId == dbUser.UserId);
-            if (GroupId.HasValue && GroupId != dbUserGroup.GroupId)
+            if (dbUserGroup == null)
+            {
+                if (dbUser.GroupId == 0)
+                {
+                    throw new InvalidOperationException($"User {dbUser.UserId} has no group associated neither in phpbb_users, nor in phpbb_user_group.");
+                }
+                await Context.PhpbbUserGroup.AddAsync(new PhpbbUserGroup
+                {
+                    GroupId = dbUser.GroupId,
+                    UserId = dbUser.UserId
+                });
+                await Context.SaveChangesAsync();
+            }
+            else if (GroupId.HasValue && GroupId != dbUserGroup.GroupId)
             {
                 var newGroup = new PhpbbUserGroup
                 {

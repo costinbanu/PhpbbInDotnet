@@ -157,7 +157,6 @@ namespace PhpbbInDotnet.Forum.Pages
 
             var post = await connection.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { PostId });
 
-            post.PostSubject = HttpUtility.HtmlEncode(PostTitle);
             post.PostEditTime = DateTime.UtcNow.ToUnixTimestamp();
             post.PostEditUser = (await GetCurrentUserAsync()).UserId;
             post.PostEditReason = HttpUtility.HtmlEncode(EditReason ?? string.Empty);

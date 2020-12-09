@@ -32,15 +32,6 @@ namespace PhpbbInDotnet.Utilities
                 mimeType.StartsWith("video", StringComparison.InvariantCultureIgnoreCase) ||
                 mimeType.EndsWith("pdf", StringComparison.InvariantCultureIgnoreCase)*/;
 
-        public static async Task OpenIfNeededAsync(this DbConnection connection)
-        {
-            if (connection.State != ConnectionState.Open)
-            {
-                await connection.OpenAsync();
-            }
-            DefaultTypeMap.MatchNamesWithUnderscores = true;
-        }
-
         public static async Task<T> FirstOrDefaultAsync<T>(this IQueryable<T> source) where T : class
         {
             return await EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(source);

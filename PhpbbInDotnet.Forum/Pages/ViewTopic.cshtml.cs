@@ -238,8 +238,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (user) => await WithValidTopic(topicId, async (_, topic) =>
             {
                 var conn = Context.Database.GetDbConnection();
-                await conn.OpenIfNeededAsync();
-
+                
                 var existingVotes = (await conn.QueryAsync<PhpbbPollVotes>("SELECT * FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @UserId", new { topicId, user.UserId })).AsList();
                 if (existingVotes.Count > 0 && topic.PollVoteChange == 0)
                 {
@@ -342,7 +341,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
 
                 var conn = Context.Database.GetDbConnection();
-                await conn.OpenIfNeededAsync();
+                
 
                 var toDelete = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId = PostIdsForModerator[0] });
                 var lastPosts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC LIMIT 0, 2", new { toDelete.TopicId })).AsList();
@@ -366,7 +365,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (user) =>
             {
                 var conn = Context.Database.GetDbConnection();
-                await conn.OpenIfNeededAsync();
+                
 
                 await conn.ExecuteAsync(
                     "INSERT INTO phpbb_reports (post_id, user_id, reason_id, report_text, report_time, report_closed) VALUES (@PostId, @UserId, @ReasonId, @ReportText, @ReportTime, 0); " +
@@ -398,7 +397,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
 
                 var conn = Context.Database.GetDbConnection();
-                await conn.OpenIfNeededAsync();
+                
 
                 await conn.ExecuteAsync(
                     "UPDATE phpbb_reports SET report_closed = 1 WHERE report_id = @reportId; " +
@@ -505,7 +504,7 @@ namespace PhpbbInDotnet.Forum.Pages
         private async Task<(int? LatestSelected, int? NextRemaining)> GetSelectedAndNextRemainingPostIds(params int[] idsToInclude)
         {
             var conn = Context.Database.GetDbConnection();
-            await conn.OpenIfNeededAsync();
+            
 
             var latestSelectedPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(
                 "SELECT * FROM phpbb_posts WHERE post_id IN @ids ORDER BY post_time DESC", 

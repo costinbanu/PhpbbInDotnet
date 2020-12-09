@@ -26,7 +26,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 Action = PostingActions.NewForumPost;
                 await Init();
                 var conn = Context.Database.GetDbConnection();
-                await conn.OpenIfNeededAsync();
                 var draft = conn.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = TopicId.Value });
                 if (draft != null)
                 {
@@ -48,7 +47,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 if (string.IsNullOrWhiteSpace(curAuthor))
                 {
                     var conn = Context.Database.GetDbConnection();
-                    await conn.OpenIfNeededAsync();
                     curAuthor = (await conn.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @posterId", new { curPost.PosterId }))?.Username ?? "Anonymous";
                 }
 
@@ -73,7 +71,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 Action = PostingActions.NewTopic;
                 await Init();
                 var conn = Context.Database.GetDbConnection();
-                await conn.OpenIfNeededAsync();
                 var draft = conn.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = 0 }); 
                 if (draft != null)
                 {
@@ -101,8 +98,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 await Init();
 
                 var conn = Context.Database.GetDbConnection();
-                await conn.OpenIfNeededAsync();
-
+                
                 Attachments = (await conn.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id = @postId", new { PostId })).AsList();
                 ShowAttach = Attachments.Any();
 
@@ -131,8 +127,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (usr) =>
             {
                 var conn = Context.Database.GetDbConnection();
-                await conn.OpenIfNeededAsync();
-
+                
                 if ((PostId ?? 0) > 0)
                 {
                     var post = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { PostId });
@@ -195,7 +190,6 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (user) =>
             {
                 var conn = Context.Database.GetDbConnection();
-                await conn.OpenIfNeededAsync();
 
                 var pm = await conn.QueryFirstOrDefaultAsync<PhpbbPrivmsgs>("SELECT * FROM phpbb_privmsgs WHERE msg_id = @privateMessageId", new { PrivateMessageId });
                 PostText = _writingService.CleanBbTextForDisplay(pm.MessageText, pm.BbcodeUid);
@@ -324,7 +318,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
 
                 var conn = Context.Database.GetDbConnection();
-                await conn.OpenIfNeededAsync();
 
                 var currentPost = Action == PostingActions.EditForumPost ? await InitEditedPost() : null;
                 var userId = Action == PostingActions.EditForumPost ? currentPost.PosterId : user.UserId;
@@ -458,7 +451,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 
                 var conn = Context.Database.GetDbConnection();
-                await conn.OpenIfNeededAsync();
                 var topicId = Action == PostingActions.NewTopic ? 0 : TopicId ?? 0;
                 var draft = conn.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId });
 
@@ -502,7 +494,6 @@ namespace PhpbbInDotnet.Forum.Pages
                     return RedirectToPage("ViewTopic", "byPostId", new { PostId });
                 }
                 var connection = Context.Database.GetDbConnection();
-                await connection.OpenIfNeededAsync();
 
                 await connection.ExecuteAsync("UPDATE phpbb_topics SET poll_start = 0, poll_length = 0, poll_max_options = 1, poll_title = '', poll_vote_change = 0 WHERE topic_id = @topicId", new { curTopic.TopicId });
 

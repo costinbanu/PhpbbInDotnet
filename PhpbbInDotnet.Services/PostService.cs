@@ -83,8 +83,7 @@ namespace PhpbbInDotnet.Services
         public async Task CascadePostEdit(PhpbbPosts added)
         {
             var conn = _context.Database.GetDbConnection();
-            await conn.OpenIfNeededAsync();
-
+            
             var curTopic = await conn.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { added.TopicId });
             var curForum = await conn.QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { curTopic.ForumId });
             var usr = await _userService.GetLoggedUserById(added.PosterId);
@@ -108,8 +107,7 @@ namespace PhpbbInDotnet.Services
         public async Task CascadePostAdd(PhpbbPosts added, bool ignoreTopic)
         {
             var conn = _context.Database.GetDbConnection();
-            await conn.OpenIfNeededAsync();
-
+            
             var curTopic = await conn.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { added.TopicId });
             var curForum = await conn.QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { curTopic.ForumId });
             var usr = await _userService.GetLoggedUserById(added.PosterId);
@@ -132,8 +130,7 @@ namespace PhpbbInDotnet.Services
         {
             oldTopicId ??= deleted.TopicId;
             var conn = _context.Database.GetDbConnection();
-            await conn.OpenIfNeededAsync();
-
+            
             var curTopic = await conn.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { deleted.TopicId });
             var curForum = await conn.QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { curTopic.ForumId });
 
@@ -209,7 +206,6 @@ namespace PhpbbInDotnet.Services
                 topic.TopicLastPosterName = author.UserId == Constants.ANONYMOUS_USER_ID ? post.PostUsername : author.Username;
 
                 var conn = _context.Database.GetDbConnection();
-                await conn.OpenIfNeededAsync();
                 await conn.ExecuteAsync(
                     @"UPDATE phpbb_topics 
                          SET topic_last_post_id = @TopicLastPostId, 
@@ -236,7 +232,7 @@ namespace PhpbbInDotnet.Services
                 forum.ForumLastPosterName = author.UserId == Constants.ANONYMOUS_USER_ID ? post.PostUsername : author.Username;
 
                 var conn = _context.Database.GetDbConnection();
-                await conn.OpenIfNeededAsync();
+                
                 await conn.ExecuteAsync(
                     @"UPDATE phpbb_forums 
                          SET forum_last_post_id = @ForumLastPostId, 
@@ -254,7 +250,6 @@ namespace PhpbbInDotnet.Services
         private async Task SetTopicFirstPost(PhpbbTopics topic, PhpbbPosts post, LoggedUser author, bool setTopicTitle, bool goForward = false)
         {
             var conn = _context.Database.GetDbConnection();
-            await conn.OpenIfNeededAsync();
 
             var curFirstPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @TopicFirstPostId", new { topic.TopicFirstPostId });
             if (topic.TopicFirstPostId == 0 || goForward || (curFirstPost != null && curFirstPost.PostTime >= post.PostTime))

@@ -116,7 +116,6 @@ namespace PhpbbInDotnet.Services
             var connection = _context.Database.GetDbConnection();
             try
             {
-                await connection.OpenIfNeededAsync();
                 dbResults = await connection.QueryAsync<ExtendedTracking>("CALL `forum`.`get_post_tracking`(@userId);", new { userId = user?.UserId ?? Constants.ANONYMOUS_USER_ID });
             }
             catch (Exception ex)

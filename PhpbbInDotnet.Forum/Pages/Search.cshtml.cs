@@ -59,14 +59,14 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public bool IsAuthorSearch { get; private set; }
 
-        private readonly string _fieldList;
+        private readonly string _searchFieldList;
         private readonly ILogger _logger;
 
         public SearchModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, IConfiguration config,
             AnonymousSessionCounter sessionCounter, CommonUtils utils, ILogger logger)
             : base(context, forumService, userService, cacheService, config, sessionCounter, utils)
         {
-            _fieldList =
+            _searchFieldList =
                 @"p.post_id,
 				  p.post_subject,
 				  p.post_text,
@@ -156,16 +156,30 @@ namespace PhpbbInDotnet.Forum.Pages
                 return await OnGet();
             }
 
+            var fromJoinStmts =
+                @"FROM phpbb_posts p
+		          JOIN phpbb_users u ON p.poster_id = u.user_id
+                  JOIN phpbb_attachments a ON a.post_msg_id = p.post_id";
+            var whereStmt = 
+                "WHERE p.poster_id = @authorId AND p.forum_id NOT IN @restrictedForumList";
+            var orderLimitStmts =
+                @"ORDER BY p.post_time DESC
+                  LIMIT @skip, @take";
+
             var sql =
-                $@"SELECT DISTINCT {_fieldList}
-		             FROM phpbb_posts p
-		             JOIN phpbb_users u ON p.poster_id = u.user_id
-                     JOIN phpbb_attachments a ON a.post_msg_id = p.post_id
-                    WHERE a.poster_id = @authorId AND p.forum_id NOT IN @restrictedForumList
-                    ORDER BY p.post_time DESC
-                    LIMIT @skip, @take;
+                $@"SELECT DISTINCT {_searchFieldList}
+                    {fromJoinStmts}
+                    {whereStmt}
+                    {orderLimitStmts};
                     
-                   SELECT count(distinct post_msg_id) FROM phpbb_attachments WHERE poster_id = @userId;";
+                   SELECT count(distinct p.post_id) AS total_count 
+                    {fromJoinStmts}
+                    {whereStmt};
+
+                   SELECT a.*
+                    {fromJoinStmts}
+                    {whereStmt}
+                    {orderLimitStmts};";
 
             var connection = Context.Database.GetDbConnection();
             using var multi = await connection.QueryMultipleAsync(
@@ -183,8 +197,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 Posts = await multi.ReadAsync<ExtendedPostDisplay>();
                 TotalResults = unchecked((int)await multi.ReadFirstOrDefaultAsync<long>());
-                Attachments = await connection.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id IN @postIds", new { postIds = Posts.Select(p => p.PostId ?? 0).DefaultIfEmpty() });
-
+                Attachments = await multi.ReadAsync<PhpbbAttachments>();
                 Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum.Value, link: GetSearchLinkForPage(PageNum.Value + 1), topicId: null);
 
                 return await OnGet();
@@ -260,14 +273,14 @@ namespace PhpbbInDotnet.Forum.Pages
                   AND (@search IS NULL OR MATCH({match}) AGAINST(@search IN BOOLEAN MODE))";
 
             var sql =
-                $@"SELECT DISTINCT {_fieldList}
+                $@"SELECT DISTINCT {_searchFieldList}
                      FROM phpbb_posts p
  		             JOIN phpbb_users u ON p.poster_id = u.user_id
  		            WHERE {GetWhereClause("p.post_text")}
 
                     UNION
 
-                   SELECT DISTINCT {_fieldList}
+                   SELECT DISTINCT {_searchFieldList}
                      FROM phpbb_posts p
  		             JOIN phpbb_users u ON p.poster_id = u.user_id
  		            WHERE {GetWhereClause("p.post_subject")}

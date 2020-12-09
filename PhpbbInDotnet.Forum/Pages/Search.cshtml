@@ -26,15 +26,20 @@
 }
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />
+    <script type="text/javascript" src="~/js/viewTopic.js"></script>
 </environment>
 @if (!Model.IsAuthorSearch)
 {
     <h3>Caută</h3>
 }
 <script type="text/javascript">
-    window.onload = function () {
-        onPostLoad();
-    }
+    var vt = new ViewTopic(-1, false, '', '', '', -1);
+
+    $(document).ready(function () {
+        window.onload = function () {
+            vt.onLoad();
+        }
+    });
 
     //forum tree callback
     function forumSelectCallback(forumId) {
