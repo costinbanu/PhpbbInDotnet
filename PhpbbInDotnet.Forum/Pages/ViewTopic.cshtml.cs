@@ -17,7 +17,7 @@ using System.Web;
 namespace PhpbbInDotnet.Forum.Pages
 {
     [ValidateAntiForgeryToken]
-    public class ViewTopicModel : ModelWithLoggedUser
+    public class ViewTopicModel : AuthenticatedPageModel
     {
         [BindProperty]
         public int? ForumId { get; set; }

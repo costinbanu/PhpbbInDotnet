@@ -18,7 +18,7 @@ using System.Web;
 namespace PhpbbInDotnet.Forum.Pages
 {
     [ValidateAntiForgeryToken]
-    public partial class PostingModel : ModelWithLoggedUser
+    public partial class PostingModel : AuthenticatedPageModel
     {
         [BindProperty, MaxLength(255, ErrorMessage = "Titlul trebuie să aibă maxim 255 caractere.")]
         public string PostTitle { get; set; }
@@ -334,13 +334,13 @@ namespace PhpbbInDotnet.Forum.Pages
                        WHERE t.topic_id = @topicId",
                     new { TopicId }
                 );
-                if ((long)times.post_time > LastPostTime)
+                if (((long?)times?.post_time ?? 0L) > LastPostTime)
                 {
                     return PageWithError(curForum, nameof(LastPostTime), "De când a fost încărcată pagina, au mai fost scrie mesaje noi! Verifică mesajele precedente!");
                 }
-                else if((long)times.post_edit_time > LastPostTime)
+                else if(((long?)times?.post_edit_time ?? 0L) > LastPostTime)
                 {
-                    LastPostTime = (long)times.post_edit_time;
+                    LastPostTime = (long?)times?.post_edit_time;
                     return PageWithError(curForum, nameof(LastPostTime), "De când a fost încărcată pagina, ultimul mesaj a fost modificat! Verifică ultimul mesaj!");
                 }
                 else

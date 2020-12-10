@@ -14,7 +14,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    public class MemberListModel : ModelWithLoggedUser
+    public class MemberListModel : AuthenticatedPageModel
     {
         public const int PAGE_SIZE = 20;
 

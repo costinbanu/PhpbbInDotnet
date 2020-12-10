@@ -14,7 +14,7 @@ using IOFile = System.IO.File;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    public class FileModel : ModelWithLoggedUser
+    public class FileModel : AuthenticatedPageModel
     {
         private readonly StorageService _storageService;
         private readonly FileExtensionContentTypeProvider _contentTypeProvider;

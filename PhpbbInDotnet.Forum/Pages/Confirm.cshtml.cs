@@ -11,7 +11,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    public class ConfirmModel : ModelWithLoggedUser
+    public class ConfirmModel : AuthenticatedPageModel
     {
         public string Message { get; private set; }
         

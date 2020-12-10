@@ -22,7 +22,7 @@ using System.Threading.Tasks;
 namespace PhpbbInDotnet.Forum.Pages
 {
     [ValidateAntiForgeryToken]
-    public class UserModel : ModelWithLoggedUser
+    public class UserModel : AuthenticatedPageModel
     {
         [BindProperty]
         public PhpbbUsers CurrentUser { get; set; }

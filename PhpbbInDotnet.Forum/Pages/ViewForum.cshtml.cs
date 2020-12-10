@@ -15,7 +15,7 @@ using System;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    public class ViewForumModel : ModelWithLoggedUser
+    public class ViewForumModel : AuthenticatedPageModel
     {
         private bool _forceTreeRefresh;
 

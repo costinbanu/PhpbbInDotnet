@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 namespace PhpbbInDotnet.Forum.Pages
 {
     [RequestSizeLimit(10 * 1024 * 1024)]
-    public partial class AdminModel : ModelWithLoggedUser
+    public partial class AdminModel : AuthenticatedPageModel
     {
         public AdminCategories Category { get; private set; } = AdminCategories.Users;
         public bool? IsSuccess { get; private set; }

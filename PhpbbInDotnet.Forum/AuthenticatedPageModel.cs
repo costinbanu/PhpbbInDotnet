@@ -22,7 +22,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum
 {
-    public class ModelWithLoggedUser : PageModel
+    public class AuthenticatedPageModel : PageModel
     {
         protected readonly ForumTreeService ForumService;
         protected readonly CacheService CacheService;
@@ -36,7 +36,7 @@ namespace PhpbbInDotnet.Forum
         private readonly AnonymousSessionCounter _sessionCounter;
         private LoggedUser _currentUser;
 
-        public ModelWithLoggedUser(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
+        public AuthenticatedPageModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
             IConfiguration config, AnonymousSessionCounter sessionCounter, CommonUtils utils)
         {
             ForumService = forumService;

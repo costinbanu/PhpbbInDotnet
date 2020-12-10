@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    public class IndexModel : ModelWithLoggedUser
+    public class IndexModel : AuthenticatedPageModel
     {
         private bool _forceTreeRefresh = false;
 

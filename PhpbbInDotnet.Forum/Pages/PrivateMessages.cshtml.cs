@@ -15,7 +15,7 @@ using System;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    public class PrivateMessagesModel : ModelWithLoggedUser
+    public class PrivateMessagesModel : AuthenticatedPageModel
     {
         [BindProperty(SupportsGet = true)]
         public PrivateMessagesPages? Show { get; set; } = PrivateMessagesPages.Inbox;
