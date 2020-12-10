@@ -310,8 +310,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }
 
             await connection.ExecuteAsync(
-                "DELETE FROM forum.phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId; " +
-                "UPDATE phpbb_users SET user_posts = user_posts + 1 WHERE user_id = @userId;",
+                "DELETE FROM forum.phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId",
                 new { usr.UserId, forumId = ForumId, topicId = Action == PostingActions.NewTopic ? 0 : TopicId }
             );
 

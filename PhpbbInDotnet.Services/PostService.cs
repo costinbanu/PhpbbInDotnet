@@ -121,8 +121,9 @@ namespace PhpbbInDotnet.Services
             }
 
             await conn.ExecuteAsync(
-                "UPDATE phpbb_topics SET topic_replies = topic_replies + 1, topic_replies_real = topic_replies_real + 1 WHERE topic_id = @topicId",
-                new { curTopic.TopicId }
+                "UPDATE phpbb_topics SET topic_replies = topic_replies + 1, topic_replies_real = topic_replies_real + 1 WHERE topic_id = @topicId; " +
+                "UPDATE phpbb_users SET user_posts = user_posts + 1 WHERE user_id = @userId",
+                new { curTopic.TopicId, usr.UserId }
             );
         }
 
