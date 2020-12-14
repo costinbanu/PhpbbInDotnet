@@ -1,0 +1,517 @@
+﻿@font-face {
+    font-family: Ubuntu;
+    src: url('../fonts/Ubuntu-Regular.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: Ubuntu;
+    src: url('../fonts/Ubuntu-Bold.ttf') format('truetype');
+    font-weight: bold;
+}
+
+@font-face {
+    font-family: Ubuntu;
+    src: url('../fonts/Ubuntu-Italic.ttf') format('truetype');
+    font-style: italic;
+}
+
+@font-face {
+    font-family: Ubuntu;
+    src: url('../fonts/Ubuntu-BoldItalic.ttf') format('truetype');
+    font-weight: bold;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: UbuntuMono;
+    src: url('../fonts/UbuntuMono-Regular.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: UbuntuMono;
+    src: url('../fonts/UbuntuMono-Bold.ttf') format('truetype');
+    font-weight: bold;
+}
+
+@font-face {
+    font-family: UbuntuMono;
+    src: url('../fonts/UbuntuMono-Italic.ttf') format('truetype');
+    font-style: italic;
+}
+
+@font-face {
+    font-family: UbuntuMono;
+    src: url('../fonts/UbuntuMono-BoldItalic.ttf') format('truetype');
+    font-weight: bold;
+    font-style: italic;
+}
+
+html {
+    text-rendering: optimizeLegibility !important;
+    -webkit-font-smoothing: antialiased !important;
+}
+
+h3 {
+    margin-top: 0px !important;
+}
+
+.message {
+    display: none;
+    color: white;
+    font-weight: bold;
+    width: 100%;
+    padding: 10px;
+}
+
+.success {
+    display: block !important;
+    background-color: darkgreen;
+}
+
+.fail {
+    display: block !important;
+    background-color: darkred;
+}
+
+.warning {
+    display: block !important;
+    background-color: #ff6200;
+}
+
+.MyMiniButton {
+    font-size: 1em !important;
+    padding: 2px 2px !important;
+}
+
+.SpacedButton {
+    margin: 5px 5px 5px 5px !important;
+}
+
+.SpacedButtonNotTop {
+    margin: 0px 5px 5px 5px !important;
+}
+
+.SpacedButtonNotBottom {
+    margin: 5px 5px 0px 5px !important;
+}
+
+.size1300 {
+    width: 80% !important;
+}
+
+.navbar {
+    background: none !important;
+    border: none !important;
+    padding-bottom: 0px !important;
+    margin-bottom: 0px !important;
+    position: unset !important;
+}
+
+    .navbar li > a {
+        color: white !important;
+    }
+
+    .navbar li:after {
+        content: "\A" !important;
+        white-space: pre !important;
+    }
+
+.FlexRow {
+    width: 100%;
+    max-width: 100vw;
+    display: flex;
+    vertical-align: top;
+    padding: 5px;
+    height: auto;
+    min-height: 60px;
+}
+
+.RowMargin {
+    margin-top: 5px;
+}
+
+.Unread {
+    border: solid 1px #ff9000 !important;
+    background-color: #fdfaf4 !important;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    border-radius: 3px;
+}
+
+    .Unread blockquote {
+        border: solid 1px #e2c088;
+        background-color: #EBEADD;
+    }
+
+.ForumContent {
+    max-width: 100%;
+    width: 100%;
+    height: auto;
+    vertical-align: top;
+    flex: 1;
+    padding-left: 20px;
+}
+
+.Summary {
+    min-width: 300px;
+    max-width: 300px;
+    display: inline-block;
+    vertical-align: top;
+    display: inline-block;
+    list-style-type: none;
+    margin-bottom: 0px !important;
+}
+
+.FlexRight {
+    margin-left: auto;
+    margin-right: 0px;
+    padding-left: 15px;
+    padding-right: 0px;
+}
+
+.FlexLeft {
+    margin-right: auto;
+    margin-left: 0px;
+    padding-right: 15px;
+    padding-left: 0px;
+}
+
+.VerticalContent {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0px !important;
+}
+
+.Summary img {
+    max-height: 200px;
+    max-width: 200px;
+}
+
+.PostActions {
+    display: block;
+    margin-bottom: 0px;
+    margin-left: 0px;
+    font-size: 0.95em;
+}
+
+    .PostActions span {
+        white-space: nowrap;
+    }
+
+        .PostActions span:before {
+            content: '\2022';
+            padding-right: 10px;
+            padding-left: 10px;
+        }
+
+        .PostActions span:first-child:before {
+            content: '';
+            padding-left: 0px;
+            padding-right: 0px;
+        }
+
+.CollapsedActions {
+    display: none;
+}
+
+.PostTitle {
+    font-size: 1.2em;
+    font-weight: bold;
+    float: left;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+}
+
+.clear {
+    clear: both;
+}
+
+textarea {
+    width: 60%;
+    padding: 2px;
+    font-size: 1em;
+    line-height: 1.4em;
+}
+
+label {
+    text-decoration: none !important;
+    font-weight: normal !important;
+}
+
+
+#g-recaptcha-response {
+    display: block !important;
+    position: absolute;
+    margin: -78px 0 0 0 !important;
+    width: 302px !important;
+    height: 76px !important;
+    z-index: -999999;
+    opacity: 0;
+}
+
+.formtable {
+    table-layout: auto;
+}
+
+    .formtable tr td {
+        padding: 10px;
+        white-space: nowrap;
+    }
+
+        .formtable tr td:last-child {
+            width: 100%;
+        }
+
+.nav {
+    float: right;
+}
+
+.headerImg {
+    width: 682px;
+    height: 110px;
+    background-image: url("../images/forumlogo-full.png");
+    background-size: contain;
+    background-position: left;
+    background-repeat: no-repeat;
+}
+
+
+.Signature {
+    display: inline-block;
+    font-size: 0.9em;
+}
+
+.PostFooter {
+    font-size: 0.9em;
+    padding: 5px;
+}
+
+.Shortcuts {
+    padding-left: 0px !important;
+    list-style: none;
+    line-height: 1.75em;
+    word-break: break-word !important;
+}
+
+.Hide1300 {
+    display: inline-block;
+}
+
+.Show1300 {
+    display: none;
+}
+
+.InputTable {
+    vertical-align: middle;
+    display: table;
+    border: none;
+}
+
+    .InputTable thead tbody tr {
+        width: 100%;
+    }
+
+.posthilit {
+    background-color: #F3BFCC;
+    color: #BC2A4D;
+}
+
+.FlexCenter {
+    display: flex;
+    align-items: center;
+}
+
+.SubtypeSeparator {
+    margin: 10px 0px 10px 0px;
+    border-top: 1px solid #ccd4e0;
+}
+
+.BoxSeparator {
+    margin: 5px;
+    border-top: solid 2px #ccd4e0;
+}
+
+.MiddleBoxControls {
+    position: fixed;
+    background-color: #fef6e9;
+    width: 85%;
+    height: 42px;
+    border: solid 1px black;
+    display: block;
+    padding-left: 13px;
+    padding-right: 13px;
+    z-index: 1040;
+    backdrop-filter: blur(5px);
+    color: black;
+}
+
+.linksContainer {
+    float: right;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.bullet {
+    display: inline;
+}
+
+.newline {
+    display: none;
+    height: 1px;
+}
+
+.nowrap {
+    white-space: nowrap !important;
+}
+
+.HiddenFileInput {
+    width: 0.1px;
+    height: 0.1px;
+    position: absolute;
+    z-index: -1;
+}
+
+.Show768 {
+    display: none;
+}
+
+.linksContainer {
+    float: right;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.bullet {
+    display: inline;
+}
+
+.newline {
+    display: none;
+    height: 1px;
+}
+
+.nowrap {
+    white-space: nowrap !important;
+}
+
+.HiddenFileInput {
+    width: 0.1px;
+    height: 0.1px;
+    position: absolute;
+    z-index: -1;
+}
+
+.Show768 {
+    display: none;
+}
+
+
+@media (max-width: 768px) {
+    .headerImg {
+        width: 128px;
+        height: 69px;
+        background-image: url("../images/forumlogo-small.png");
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: left;
+    }
+
+    .ForumContent {
+        display: inline-block;
+        padding-left: 0px;
+    }
+
+    .Signature {
+        display: none;
+    }
+
+    .CollapsedMenu {
+        display: inline-block;
+    }
+
+    .PostTitle {
+        margin-right: 10px;
+    }
+
+    .FlexCenter {
+        display: flex !important;
+        align-items: center;
+        flex-direction: column;
+        flex-wrap: nowrap;
+    }
+
+    .Reordered :first-child {
+        order: 1;
+    }
+
+    .Reordered :nth-child(2) {
+        order: 3;
+    }
+
+    .Reordered :last-child {
+        order: 2;
+    }
+
+    .MiddleBox {
+        width: 90%;
+        height: 90%;
+    }
+
+    .MiddleBoxControls {
+        width: 90%;
+        height: 90%;
+    }
+
+    .PostInputWidth {
+        width: 100%;
+        min-width: 100%;
+        max-width: 100%
+    }
+
+    .Hide768 {
+        display: none;
+    }
+
+    .Show768 {
+        display: initial;
+    }
+}
+
+@media (max-width:1160px) and (min-width:769px) {
+    .headerImg {
+        width: 325px;
+        height: 110px;
+        background-image: url("../images/forumlogo-medium.png");
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: left;
+    }
+}
+
+@media (max-width: 1300px) {
+    .size1300 {
+        width: 100% !important;
+    }
+
+    .Hide1300 {
+        display: none;
+    }
+
+    .Show1300 {
+        display: unset;
+    }
+
+    .CollapsedActions {
+        display: inline-block;
+    }
+}
+
+@media (max-width: 400px) {
+    .bullet {
+        display: none;
+    }
+
+    .newline {
+        display: block;
+    }
+}

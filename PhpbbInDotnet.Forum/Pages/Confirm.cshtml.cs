@@ -70,7 +70,7 @@ namespace PhpbbInDotnet.Forum.Pages
             if (user == null)
             {
                 Message =
-                    "<span style=\"color=red\">" +
+                    "<span class=\"fail\">" +
                         "Înregistrarea nu poate fi confirmată (utilizatorul nu există, este deja activ sau nu este asociat codului de activare).<br/>" +
                         "Contactează administratorul pentru mai multe detalii." +
                     "</span>";
@@ -78,7 +78,7 @@ namespace PhpbbInDotnet.Forum.Pages
             else
             {
                 Message =
-                    "<span style=\"color=darkgreen\">" +
+                    "<span class=\"success\">" +
                         "Înregistrarea a fost confirmată cu succes!<br/>" +
                         "Contul va fi activat în următoarele 48 de ore. După activare vei putea face login pe forumul nostru.<br/>" +
                         "Contactează echipa administrativă la <a href=\"mailto:admin@metrouusor.com\">admin@metrouusor.com</a> " +
@@ -122,7 +122,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public void OnGetNewPassword()
         {
                 Message =
-                    "<span style=\"color=darkgreen\">" +
+                    "<span class=\"success\">" +
                         "Am trimis un e-mail, la adresa completată anterior, cu mai multe instrucțiuni pe care trebuie să le urmezi ca să îți poți recupera contul." + 
                     "</span>";
 
@@ -132,7 +132,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public void OnGetPasswordChanged()
         {
             Message =
-                "<span style=\"color=darkgreen\">" +
+                "<span class=\"success\">" +
                     "Parola a fost modificată cu succes." +
                 "</span>";
 
@@ -156,7 +156,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             IsDestinationConfirmation = true;
             Message =
-                "<span style=\"color=darkgreen\">" +
+                "<span class=\"success\">" +
                     "Operațiunea a fost efectuată cu succes." +
                 "</span>";
         }

@@ -21,29 +21,6 @@
     background-color: #f1f1f1;
 }
 
-.message {
-    display: none;
-    color: white;
-    font-weight: bold;
-    width: 100%;
-    padding: 10px;
-}
-
-.success {
-    display: block !important;
-    background-color: darkgreen;
-}
-
-.fail {
-    display: block !important;
-    background-color: darkred;
-}
-
-.warning {
-    display: block !important;
-    background-color: #ff6200;
-}
-
 input[type='text'], input[type='password'], select, textarea, option {
     /*width: 75%;*/
     width: 95%;

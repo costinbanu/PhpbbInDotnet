@@ -2,6 +2,7 @@
   {
     "outputFileName": "wwwroot/css/Light.min.css",
     "inputFiles": [
+      "wwwroot/css/Common.css",
       "wwwroot/css/posting.css",
       "wwwroot/css/pagination.css",
       "wwwroot/css/Light.css",
@@ -15,6 +16,7 @@
   {
     "outputFileName": "wwwroot/css/Dark.min.css",
     "inputFiles": [
+      "wwwroot/css/Common.css",
       "wwwroot/css/posting.css",
       "wwwroot/css/pagination.css",
       "wwwroot/css/Dark.css",

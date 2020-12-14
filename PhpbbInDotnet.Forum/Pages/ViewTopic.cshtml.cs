@@ -319,7 +319,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 else
                 {
-                    ModeratorActionResult = $"<span style=\"margin-left: 30px; color: {((IsSuccess ?? false) ? "darkgreen" : "red")}; display:block;\">{Message}</span>";
+                    ModeratorActionResult = $"<span style=\"margin-left: 30px\" class=\"{((IsSuccess ?? false) ? "success" : "fail")}\">{Message}</span>";
                     return await OnGet();
                 }
             });
@@ -393,7 +393,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     var (LatestSelected, NextRemaining) = await GetSelectedAndNextRemainingPostIds(reportPostId ?? 0);
                     var (Message, IsSuccess) = await _moderatorService.DeletePosts(new[] { reportPostId.Value });
-                    ModeratorActionResult = $"<span style=\"margin-left: 30px; color: {((IsSuccess ?? false) ? "darkgreen" : "red")}; display:block;\">{Message}</span>";
+                    ModeratorActionResult = $"<span style=\"margin-left: 30px\" class=\"{((IsSuccess ?? false) ? "success" : "fail")}\">{Message}</span>";
                 }
 
                 var conn = Context.Database.GetDbConnection();

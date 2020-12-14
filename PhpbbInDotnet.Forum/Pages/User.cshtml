@@ -136,7 +136,7 @@
         <p></p>
         @if (Model.Mode == UserPageMode.RemoveMultipleFoes)
         {
-            <span style="color:darkgreen; font-weight: bold">
+            <span class="success">
                 Utilizatorii selectați au fost eliminați din lista ta de persoane neagreate.
             </span>
         }
@@ -664,7 +664,7 @@ else
             @Html.AntiForgeryToken()
         </form>
         <p></p>
-        <span style="color:darkgreen; font-weight: bold">
+        <span class="success">
             @switch (Model.Mode)
             {
                 case UserPageMode.Edit:
