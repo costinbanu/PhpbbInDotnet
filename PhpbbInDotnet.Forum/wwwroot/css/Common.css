@@ -131,17 +131,11 @@ h3 {
 }
 
 .Unread {
-    border: solid 1px #ff9000 !important;
-    background-color: #fdfaf4 !important;
+    border: solid 3px #ff9000 !important;
     margin-top: 10px;
     margin-bottom: 10px;
     border-radius: 3px;
 }
-
-    .Unread blockquote {
-        border: solid 1px #e2c088;
-        background-color: #EBEADD;
-    }
 
 .ForumContent {
     max-width: 100%;
