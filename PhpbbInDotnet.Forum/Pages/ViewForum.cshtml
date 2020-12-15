@@ -293,17 +293,15 @@ else
     if (Model.Mode == ViewForumMode.Drafts && hasTopics)
     {
         <hr class="BoxSeparator" />
-        <button onclick="selectAllCheckboxes()" type="button" class="MyButton">&#x2714;&nbsp;Selectează toate mesajele</button>
-        <span>&nbsp;&bull;&nbsp;</span>
-        <input type="submit" value="&#x1F6AE;&nbsp;Șterge mesajele selectate" form="DeleteDrafts" onclick="return confirm('Sigur dorești ștergerea mesajelor în lucru selectate?');" class="MyButton" />
+        <button onclick="selectAllCheckboxes()" type="button" class="MyButton SpacedButton">&#x2714;&nbsp;Selectează toate mesajele</button>
+        <input type="submit" value="&#x1F6AE;&nbsp;Șterge mesajele selectate" form="DeleteDrafts" onclick="return confirm('Sigur dorești ștergerea mesajelor în lucru selectate?');" class="MyButton SpacedButton" />
         <p>&nbsp;</p>
     }
     else if (Model.Mode == ViewForumMode.NewPosts && hasTopics)
     {
         <hr class="BoxSeparator" />
-        <button onclick="selectAllCheckboxes()" type="button" class="MyButton">&#x2714;&nbsp;Selectează toate mesajele</button>
-        <span>&nbsp;&bull;&nbsp;</span>
-        <input type="submit" value="&#x2705;&nbsp;Marchează mesajele selectate ca citite" form="MarkNewPostsRead" class="MyButton" />
+        <button onclick="selectAllCheckboxes()" type="button" class="MyButton SpacedButton">&#x2714;&nbsp;Selectează toate mesajele</button>
+        <input type="submit" value="&#x2705;&nbsp;Marchează mesajele selectate ca citite" form="MarkNewPostsRead" class="MyButton SpacedButton" />
         <p>&nbsp;</p>
     }
 

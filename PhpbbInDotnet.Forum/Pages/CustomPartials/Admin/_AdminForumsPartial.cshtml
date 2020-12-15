@@ -22,9 +22,9 @@
     ViewData
 )
 <form method="post" asp-page-handler="ShowForum">
-    <input type="submit" value="Modifică forumul selectat" class="MyButton" /> &nbsp;
-    <input type="submit" value="Șterge forumul selectat" form="deleteForumForm" class="MyButton" /> &nbsp;
-    <input type="submit" value="Creează un forum nou" onclick="$('#forumIdUpsert').val('')" class="MyButton" />
+    <input type="submit" value="Modifică forumul selectat" class="MyButton SpacedButton" />
+    <input type="submit" value="Șterge forumul selectat" form="deleteForumForm" class="MyButton SpacedButton" />
+    <input type="submit" value="Creează un forum nou" onclick="$('#forumIdUpsert').val('')" class="MyButton SpacedButton" />
     <input id="forumIdUpsert" name="forumId" type="hidden" />
 </form>
 <form method="post" asp-page-handler="DeleteForum" id="deleteForumForm">

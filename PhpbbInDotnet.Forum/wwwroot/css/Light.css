@@ -156,12 +156,6 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
     backdrop-filter: blur(5px);
 }
 
-.PostInputWidth {
-    width: 79%;
-    min-width: 79%;
-    max-width: 79%
-}
-
 .SpanLikeLink {
     color: #337ab7;
     text-decoration: none;
@@ -200,7 +194,6 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
 }
 
 .ThemeColor {
-    /*text-shadow: unset;*/
     filter: unset;
     color: black;
 }
@@ -222,4 +215,8 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
         .Summary img {
             display: none;
         }
+
+    .CollapsedMenu {
+        display: inline-block;
+    }
 }

@@ -66,16 +66,19 @@ h3 {
 .success {
     display: block !important;
     background-color: darkgreen;
+    color: white;
 }
 
 .fail {
     display: block !important;
     background-color: darkred;
+    color: white;
 }
 
 .warning {
     display: block !important;
     background-color: #ff6200;
+    color: white;
 }
 
 .MyMiniButton {
@@ -399,6 +402,11 @@ label {
     display: none;
 }
 
+.PostInputWidth {
+    width: 79%;
+    min-width: 79%;
+    max-width: 79%
+}
 
 @media (max-width: 768px) {
     .headerImg {
@@ -417,10 +425,6 @@ label {
 
     .Signature {
         display: none;
-    }
-
-    .CollapsedMenu {
-        display: inline-block;
     }
 
     .PostTitle {
