@@ -1,9 +1,12 @@
 ﻿@using System.Web
 @using Microsoft.Extensions.Configuration
+@using Utilities
 
 @inject IConfiguration _config
 @inject Services.UserService  _userService
 @inject Services.ModeratorService _moderatorService
+@inject Languages.LanguageProvider _languageProvider
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor
 @inject Services.StatisticsService _statisticsService
 @{
     var currentUser = await _userService.ClaimsPrincipalToLoggedUserAsync(User);
@@ -17,6 +20,7 @@
     {
         dateFormat = "dddd, dd.MM.yyyy, HH:mm";
     }
+    var lang = _languageProvider.GetValidatedLanguage(currentUser, _httpContextAccessor.HttpContext?.Request);
 }
 
 <!DOCTYPE html>
@@ -85,32 +89,33 @@
                         var isTopic = ViewContext.RouteData.Values["page"].ToString() == "/ViewTopic";
                         if (string.IsNullOrWhiteSpace(currentUser?.Username) || (currentUser?.IsAnonymous ?? true))
                         {
-                            <li><a href="javascript:loginForm.submit()"><span style="width:25px; display:inline-block">&#x2705;</span>Conectare</a></li>
-                            <li><a asp-page="/Register"><span style="width:25px; display:inline-block">&#x1F4C3;</span>Înregistrare</a></li>
+                            <li><a href="javascript:loginForm.submit()"><span style="width:25px; display:inline-block">&#x2705;</span>@_languageProvider.BasicText[lang, "LOGIN", Casing.FirstUpper]</a></li>
+                            <li><a asp-page="/Register"><span style="width:25px; display:inline-block">&#x1F4C3;</span>@_languageProvider.BasicText[lang, "REGISTER", Casing.FirstUpper]</a></li>
                         }
                         else
                         {
                             <li>
                                 <a asp-page="/User" asp-route-UserId="@currentUser.UserId">
-                                    <span style="text-shadow: 0 0 4px white; width:25px; display:inline-block">&#x1F464;</span>Contul meu [@currentUser.Username]
+                                    <span style="text-shadow: 0 0 4px white; width:25px; display:inline-block">&#x1F464;</span>@_languageProvider.BasicText[lang, "MY_ACCOUNT", Casing.FirstUpper] [@currentUser.Username]
                                 </a>
                             </li>
                             if (_userService.HasPrivateMessagePermissions(currentUser))
                             {
-                                <li><a asp-page="/PrivateMessages"><span style="width:25px; display:inline-block">&#x1F5E8;</span>Mesagerie privată</a></li>
+                                <li><a asp-page="/PrivateMessages"><span style="width:25px; display:inline-block">&#x1F5E8;</span>@_languageProvider.BasicText[lang, "PRIVATE_MESSAGING", Casing.FirstUpper]</a></li>
                             }
 
                         }
 
                         <li>
                             <a asp-page="/Search" asp-route-QueryString="@HttpUtility.UrlEncode(Context.Request.QueryString.ToString())">
-                                <span style="width:25px; display:inline-block">&#x1F50E;</span>Caută în @(isTopic ? "subiect" : "forum")
+                                <span style="width:25px; display:inline-block">&#x1F50E;</span>@_languageProvider.BasicText[lang, "SEARCH_IN", Casing.FirstUpper] 
+                                @(isTopic ? _languageProvider.BasicText[lang, "TOPIC"] : _languageProvider.BasicText[lang, "FORUM"])
                             </a>
                         </li>
 
                         if (!(string.IsNullOrWhiteSpace(currentUser?.Username) || (currentUser?.IsAnonymous ?? true)))
                         {
-                            <li><a href="javascript:logoutForm.submit()"><span style="width:25px; display:inline-block">&#x274C;</span>Deconectare</a></li>
+                            <li><a href="javascript:logoutForm.submit()"><span style="width:25px; display:inline-block">&#x274C;</span>@_languageProvider.BasicText[lang, "LOGOUT", Casing.FirstUpper]</a></li>
                         }
                     }
                 </ul><br /> <br />
@@ -131,7 +136,7 @@
                 {
                     <p style="clear:both"></p>
                     <span class="Unread" style="padding:5px; font-size:1.2em">
-                        <a asp-page="/PrivateMessages" asp-route-Show="Inbox">@pmCount mesaj@(pmCount > 1 ? "e" : "") privat@(pmCount > 1 ? "e" : "") necitit@(pmCount > 1 ? "e" : "")</a>
+                        <a asp-page="/PrivateMessages" asp-route-Show="Inbox">@pmCount @(pmCount > 1 ? _languageProvider.BasicText[lang, "UNREAD_MESSAGES"] : _languageProvider.BasicText[lang, "UNREAD_MESSAGE"])</a>
                     </span>
                     <p style="clear:both"></p>
                     displayedBox = true;
@@ -147,7 +152,7 @@
                             <p style="clear:both"></p>
                         }
                         <div class="ReportedPost" style="margin:5px; padding:5px; width: max-content; max-width: 100%">
-                            <h4>Rapoarte deschise</h4>
+                            <h4>@(reports.Count() > 1 ? _languageProvider.BasicText[lang, "OPEN_REPORTS", Casing.FirstUpper] : _languageProvider.BasicText[lang, "OPEN_REPORT", Casing.FirstUpper])</h4>
                             @foreach (var r in reports)
                             {
                                 <a asp-page="ViewTopic" asp-page-handler="byPostId" asp-route-postId="@r.Item1">@r.Item2</a> <br />
@@ -173,12 +178,12 @@
     <center style="color:white;">
         <p>&nbsp;</p>
         <p>&copy; 2009 - @DateTime.UtcNow.Year <a href="https://metrouusor.com" style="color:white; text-decoration:underline">Asociația „Metrou Ușor”</a></p>
-        <p><a asp-page="/TermsAndConditions" style="color:white; text-decoration:underline">Termenele și condițiile de utilizare</a></p>
+        <p><a asp-page="/TermsAndConditions" style="color:white; text-decoration:underline">@_languageProvider.BasicText[lang, "TERMS", Casing.FirstUpper]</a></p>
         @if (await _userService.IsUserAdminInForum(currentUser, 0))
         {
-            <p><a asp-page="./Admin" style="color:white; text-decoration:underline">Panoul administratorului</a></p>
+            <p><a asp-page="./Admin" style="color:white; text-decoration:underline">@_languageProvider.BasicText[lang, "ADMIN_PANEL", Casing.FirstUpper]</a></p>
         }
-        <p><a asp-page="FAQ" style="color:white; text-decoration:underline">Întrebări frecvente - ghid de utilizare</a></p>
+        <p><a asp-page="FAQ" style="color:white; text-decoration:underline">@_languageProvider.BasicText[lang, "FAQ", Casing.FirstUpper]</a></p>
     </center>
 
     @RenderSection("Scripts", required: false)

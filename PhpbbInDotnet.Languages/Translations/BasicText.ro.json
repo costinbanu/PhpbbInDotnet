@@ -1,0 +1,17 @@
+﻿{
+  "LOGIN": "conectare",
+  "REGISTER": "înregistrare",
+  "LOGOUT": "deconectare",
+  "MY_ACCOUNT": "contul meu",
+  "FORUM": "forum",
+  "TOPIC": "subiect",
+  "PRIVATE_MESSAGING": "mesagerie privată",
+  "SEARCH_IN": "caută în",
+  "UNREAD_MESSAGE": "mesaj privat necitit",
+  "UNREAD_MESSAGES": "mesaje private necitite",
+  "OPEN_REPORT": "raport deschis",
+  "OPEN_REPORTS": "rapoarte deschise",
+  "TERMS": "Termenele și condițiile de utilizare",
+  "ADMIN_PANEL": "Panoul administratorului",
+  "FAQ": "Întrebări frecvente - ghid de utilizare"
+}

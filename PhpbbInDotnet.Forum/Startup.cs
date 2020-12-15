@@ -13,6 +13,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
@@ -119,6 +120,7 @@ namespace PhpbbInDotnet.Forum
             services.AddSingleton<CommonUtils>();
             services.AddSingleton<AnonymousSessionCounter>();
             services.AddSingleton<BBTagFactory>();
+            services.AddSingleton<LanguageProvider>();
             services.AddScoped<AdminForumService>();
             services.AddScoped<AdminUserService>();
             services.AddScoped<WritingToolsService>();
@@ -130,6 +132,7 @@ namespace PhpbbInDotnet.Forum
             services.AddScoped<ModeratorService>();
             services.AddScoped<BBCodeRenderingService>();
             services.AddScoped<StatisticsService>();
+            services.AddTransient<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton<FileExtensionContentTypeProvider>();
             services.AddDbContext<ForumDbContext>(options => options.UseMySQL(Configuration["ForumDbConnectionString"], o => o.CommandTimeout(60)), ServiceLifetime.Scoped);
 

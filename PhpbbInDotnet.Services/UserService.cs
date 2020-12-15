@@ -138,7 +138,8 @@ namespace PhpbbInDotnet.Services
                 AllowPM = user.UserAllowPm.ToBool(),
                 Style = style,
                 JumpToUnread = user.JumpToUnread,
-                UploadLimit = unchecked((int)groupProperties.group_user_upload_size)
+                UploadLimit = unchecked((int)groupProperties.group_user_upload_size),
+                Language = user.UserLang
             };
 
             var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);

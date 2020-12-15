@@ -159,4 +159,11 @@ namespace PhpbbInDotnet.Utilities
         RemoveFoe,
         RemoveMultipleFoes
     }
+
+    public enum Casing
+    {
+        AllLower,
+        AllUpper,
+        FirstUpper
+    }
 }
