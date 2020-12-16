@@ -162,8 +162,10 @@ namespace PhpbbInDotnet.Utilities
 
     public enum Casing
     {
+        None,
         AllLower,
         AllUpper,
-        FirstUpper
+        FirstUpper,
+        Title
     }
 }

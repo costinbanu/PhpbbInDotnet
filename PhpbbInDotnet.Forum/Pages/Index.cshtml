@@ -1,6 +1,9 @@
 ﻿@page
 @model IndexModel
 
+@using Utilities
+@inject Languages.LanguageProvider _languageProvider
+
 @{
     ViewData["Title"] = "Home page";
     var CurrentUser = await Model.GetCurrentUserAsync();
@@ -9,6 +12,7 @@
     {
         UserDateFormat = "dddd, dd.MM.yyyy, HH:mm";
     }
+    var lang = _languageProvider.GetValidatedLanguage(CurrentUser, Model.HttpContext?.Request);
 }
 
 @if (!CurrentUser.IsAnonymous)
@@ -18,16 +22,16 @@
     </form>
     @await Html.PartialAsync(
         "_HeaderLinksPartial",
-        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(true, "<a href=\"javascript:MarkForumsRead.submit()\">Marchează forumurile ca citite</a>"),
+        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(true, $"<a href=\"javascript:MarkForumsRead.submit()\">{_languageProvider.BasicText[lang, "MARK_FORUMS_READ", Casing.Title]}</a>"),
         ViewData
     )
     <span>&nbsp;&bull;&nbsp;</span>
 }
-<span onclick="toggleHeaderLinks('metrouusorLinks', 'headerLinks');" id="metrouusorLinksButton" class="MyButton MyMiniButton" style="line-height:1.1em">
+<span onclick="toggleHeaderLinks('customLinks', 'headerLinks');" id="customLinksButton" class="MyButton MyMiniButton" style="line-height:1.1em">
     &#x1F310;&nbsp;Site-urile „Metrou Ușor”
 </span>
 
-<ul class="Shortcuts" style="display:none" id="metrouusorLinks">
+<ul class="Shortcuts" style="display:none" id="customLinks">
     <li>
         <span> &nbsp;</span>
         <a href="https://metrouusor.com" target="_blank">Asociația „Metrou Ușor”</a>

@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Forum.Pages.CustomPartials.Email;
+using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
 using System;
@@ -30,6 +31,7 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly CacheService _cacheService;
         private readonly UserService _userService;
         private readonly IConfiguration _config;
+        private readonly LanguageProvider _languageProvider;
 
         [Required]
         public string UserName { get; set; }
@@ -71,13 +73,14 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public LoginMode Mode { get; set; }
 
-        public LoginModel(ForumDbContext context, CommonUtils utils, CacheService cacheService, UserService userService, IConfiguration config)
+        public LoginModel(ForumDbContext context, CommonUtils utils, CacheService cacheService, UserService userService, IConfiguration config, LanguageProvider languageProvider)
         {
             _context = context;
             _utils = utils;
             _cacheService = cacheService;
             _userService = userService;
             _config = config;
+            _languageProvider = languageProvider;
         }
 
         public async Task<IActionResult> OnGet()
@@ -101,7 +104,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (user == null || ResetPasswordCode != await _utils.DecryptAES(user.UserNewpasswd, Init))
             {
-                ModelState.AddModelError(nameof(PwdResetErrorMessage), "A intervenit o eroare - utilizatorul nu există sau codul de resetare a parolei este greșit.");
+                ModelState.AddModelError(nameof(PwdResetErrorMessage), _languageProvider.BasicText[_languageProvider.GetValidatedLanguage(null, Request), "CONFIRM_ERROR"]);
                 return Page();
             }
             Mode = LoginMode.PasswordReset;
@@ -113,24 +116,25 @@ namespace PhpbbInDotnet.Forum.Pages
             var connection = _context.Database.GetDbConnection();
 
             var user = await connection.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE username_clean = @username", new { username = _utils.CleanString(UserName) });
+            var lang = _languageProvider.GetValidatedLanguage(null, Request);
 
             Mode = LoginMode.Normal;
             if (user.Count() != 1)
             {
-                ModelState.AddModelError(nameof(LoginErrorMessage), "Numele de utilizator și/sau parola sunt greșite!");
+                ModelState.AddModelError(nameof(LoginErrorMessage), _languageProvider.BasicText[lang, "WRONG_USER_PASS"]);
                 return Page();
             }
 
             var currentUser = user.First();
             if (currentUser.UserInactiveReason != UserInactiveReason.NotInactive || currentUser.UserInactiveTime != 0)
             {
-                ModelState.AddModelError(nameof(LoginErrorMessage), "Utilizatorul nu este activat!");
+                ModelState.AddModelError(nameof(LoginErrorMessage), _languageProvider.BasicText[lang, "INACTIVE_USER"]);
                 return Page();
             }
 
             if (currentUser.UserPassword != Crypter.Phpass.Crypt(Password, currentUser.UserPassword))
             {
-                ModelState.AddModelError(nameof(LoginErrorMessage), "Numele de utilizator și/sau parola sunt greșite!");
+                ModelState.AddModelError(nameof(LoginErrorMessage), _languageProvider.BasicText[lang, "WRONG_USER_PASS"]);
                 return Page();
             }
 
@@ -159,10 +163,11 @@ namespace PhpbbInDotnet.Forum.Pages
                 x => x.UsernameClean == _utils.CleanString(UserNameForPwdReset) && 
                 x.UserEmailHash == _utils.CalculateCrc32Hash(EmailForPwdReset)
             );
+            var lang = _languageProvider.GetValidatedLanguage(null, Request);
 
-            if(user == null)
+            if (user == null)
             {
-                ModelState.AddModelError(nameof(PwdResetErrorMessage), "Adresa de email și/sau numele de utilizator introduse nu sunt corecte.");
+                ModelState.AddModelError(nameof(PwdResetErrorMessage), _languageProvider.BasicText[lang, "WRONG_EMAIL_USER"]);
                 ShowPwdResetOptions = true;
                 Mode = LoginMode.PasswordReset;
                 return Page();
@@ -175,7 +180,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             try
             {
-                var subject = $"Resetează-ți parola pe \"{_config.GetValue<string>("ForumName")}\"";
+                var subject = string.Format(_languageProvider.Email[lang, "RESETPASS_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
                 using var emailMessage = new MailMessage
                 {
                     From = new MailAddress($"admin@metrouusor.com", _config.GetValue<string>("ForumName")),
@@ -199,7 +204,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }
             catch
             {
-                ModelState.AddModelError(nameof(PwdResetErrorMessage), "A intervenit o eroare, te rugăm să încerci mai târziu.");
+                ModelState.AddModelError(nameof(PwdResetErrorMessage), _languageProvider.BasicText[lang, "GENERIC_ERROR_TRY_AGAIN"]);
                 ShowPwdResetOptions = true;
                 Mode = LoginMode.PasswordReset;
                 return Page();
@@ -213,7 +218,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var user = await _context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == UserId);
             if (user == null || ResetPasswordCode != await _utils.DecryptAES(user.UserNewpasswd, Init))
             {
-                ModelState.AddModelError(nameof(PwdResetErrorMessage), "A intervenit o eroare - utilizatorul nu există sau codul de resetare a parolei este greșit.");
+                ModelState.AddModelError(nameof(PwdResetErrorMessage), _languageProvider.BasicText[_languageProvider.GetValidatedLanguage(null, Request), "CONFIRM_ERROR"]);
                 Mode = LoginMode.PasswordReset;
                 return Page();
             }

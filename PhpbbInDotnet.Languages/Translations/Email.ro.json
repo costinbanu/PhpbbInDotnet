@@ -1,0 +1,8 @@
+﻿{
+  "GREETING_BEGIN": "Salut!",
+  "GREETING_END": "O zi bună!",
+
+  "RESETPASS_SUBJECT_FORMAT": "Resetează-ți parola pe \"{0}\"",
+  "RESETPASS_BODY_FORMAT": "Pentru a continua, trebuie să îți setezi o nouă parolă.<br /><a href=\"{0}\">Apasă aici</a> pentru a o seta.",
+  "RESETPASS_FOOTER_FORMAT": "Ai primit acest mesaj deoarece această adresă de e-mail a fost asociată contului '{0}' pe <a href=\"{1}\">{2}</a>.<br />Dacă această solicitare nu îți aparține, te rugăm să răspunzi imediat la acest mesaj (reply) și să semnalezi problema. Cineva din echipa administrativă va răspunde în cel mai scurt timp."
+}

@@ -1,36 +1,37 @@
 ﻿@page
-@model PhpbbInDotnet.Forum.Pages.AboutCookiesModel
+@model AuthenticatedPageModel
+
+@using Utilities
+@inject Languages.LanguageProvider _languageProvider
+
 @{
     ViewData["Title"] = "AboutCookies";
     Layout = "~/Pages/_Layout.cshtml";
+    var lang = _languageProvider.GetValidatedLanguage(await Model.GetCurrentUserAsync(), Model.HttpContext?.Request);
 }
 
-<h3>Despre Cookie-uri</h3>
+<h3>@_languageProvider.AboutCookies[lang, "H3", Casing.Title]</h3>
 
-<h4>Cookie-urile</h4>
-
-Pentru a asigura buna funcționare a acestui site, uneori plasăm în computerul dumneavoastră mici fișiere cu date, cunoscute sub numele de cookie-uri. 
-Majoritatea site-urilor mari fac acest lucru.<br /><br />
-
-<h4>Ce se înțelege prin cookie-uri?</h4>
-
-Cookie-ul este un fişier text de mici dimensiuni pe care un site îl salvează în calculatorul sau dispozitivul dumneavoastră mobil atunci când îl vizitaţi. 
-Datorită cookie-urilor, site-ul reţine, pe o perioadă de timp, acţiunile şi preferinţele dumneavoastră (login, limbă, dimensiunea caracterelor şi alte 
-preferinţe de afişare). Astfel nu mai trebuie să le reintroduceţi ori de câte ori reveniţi la site sau navigaţi de pe o pagină pe alta. <br /><br />
-
-<h4>Cum se folosesc cookie-urile?</h4>
-
-Cookie-urile noastre personalizează conținutul afișat, prin reținerea setărilor caracteristice fiecărui utilizator (abonare la subiecte, formatul date 
-afișate, evidențierea subiectelor active sau cu răspunsuri noi etc).<br /><br />
-
-Cookie-urile terțe sunt specifice site-ului de care aparțin, căruia îi revine întreaga responsabilitate privind utilizarea lor. Noi folosim cookie-uri 
-de la <a href="https://facebook.com" target="_blank">facebook.com</a>, <a href="https://youtube.com" target="_blank">youtube.com</a>, 
-<a href="https://flickr.com" target="_blank">flickr.com</a> și <a href="https://imgur.com" target="_blank">imgur.com</a>.<br /><br />
-
-<h4>Cum puteţi controla cookie-urile?</h4>
-
-Puteţi controla şi/sau şterge cookie-urile după cum doriţi – pentru detalii, consultaţi site-ul <a href="http://aboutcookies.org" target="_blank">aboutcookies.org</a>.  Puteți șterge toate cookie-urile din calculatorul dumneavoastră și 
-puteți seta majoritatea browserelor să blocheze plasarea acestora. Dacă faceţi acest lucru, este posibil să fiţi nevoit să setaţi manual unele 
-preferinţe, de fiecare dată când vizitaţi site-ul. De asemenea, s-ar putea ca unele servicii sau opţiuni să nu funcţioneze.<br /><br />
-
-<a href="./">Înapoi la prima pagină</a><br />
+<h4>@_languageProvider.AboutCookies[lang, "THE_COOKIES_H4", Casing.Title]</h4>
+<p>
+    @_languageProvider.AboutCookies[lang, "THE_COOKIES_BODY"]
+</p>
+<p>&nbsp;</p>
+<h4>@_languageProvider.AboutCookies[lang, "ABOUT_H4", Casing.Title]</h4>
+<p>
+    @_languageProvider.AboutCookies[lang, "ABOUT_BODY"]
+</p>
+<p>&nbsp;</p>
+<h4>@_languageProvider.AboutCookies[lang, "USAGE_H4", Casing.Title]</h4>
+<p>
+    @Html.Raw(_languageProvider.AboutCookies[lang, "USAGE_BODY"])
+</p>
+<p>&nbsp;</p>
+<h4>@_languageProvider.AboutCookies[lang, "CONTROL_H4", Casing.Title]</h4>
+<p>
+    @Html.Raw(_languageProvider.AboutCookies[lang, "CONTROL_BODY"])
+</p>
+<p>&nbsp;</p>
+<p>
+    <a href="./">@_languageProvider.BasicText[lang, "HOME", Casing.FirstUpper]</a>
+</p>

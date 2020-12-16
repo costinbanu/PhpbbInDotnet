@@ -1,8 +1,14 @@
 ﻿@page
 @model PhpbbInDotnet.Forum.Pages.LoginModel
+
+@using Utilities
+@inject Languages.LanguageProvider _languageProvider
+
 @{
     ViewData["Title"] = "Login";
     Layout = "~/Pages/_Layout.cshtml";
+    var lang = _languageProvider.GetValidatedLanguage(null, Model.HttpContext?.Request);
+
 }
 
 <h3>Conectare</h3>
@@ -10,29 +16,29 @@
 @if (Model.Mode == Utilities.LoginMode.Normal)
 {
     <form method="post">
-        <input type="text" asp-for="UserName" placeholder="Nume utilizator" class="form" />
+        <input type="text" asp-for="UserName" placeholder="@_languageProvider.BasicText[lang, "USERNAME", Casing.FirstUpper]" class="form" />
         <p></p>
-        <input type="password" asp-for="Password" placeholder="Parola" class="form" />
+        <input type="password" asp-for="Password" placeholder="@_languageProvider.BasicText[lang, "PASSWORD", Casing.FirstUpper]" class="form" />
         <p></p>
         <input type="hidden" asp-for="ReturnUrl" class="form" />
         <p></p>
         <span asp-validation-for="LoginErrorMessage" class="validation"></span>
-        <input type="submit" value="Conectare" class="MyButton" />
+        <input type="submit" value="@_languageProvider.BasicText[lang, "LOGIN", Casing.FirstUpper]" class="MyButton" />
         <p></p>
         @Html.AntiForgeryToken()
     </form>
-    <a href="javascript:showElement('forgotPassword')">Am uitat parola</a>
+    <a href="javascript:showElement('forgotPassword')">@_languageProvider.BasicText[lang, "FORGOT_PASSWORD", Casing.FirstUpper]</a>
     <div style="display:@(Model.ShowPwdResetOptions ? "block" : "none"); margin-left:15px" id="forgotPassword">
         <form asp-page-handler="ResetPassword">
             <p></p>
-            <input type="text" asp-for="UserNameForPwdReset" placeholder="Nume utilizator" class="form" />
+            <input type="text" asp-for="UserNameForPwdReset" placeholder="@_languageProvider.BasicText[lang, "USERNAME", Casing.FirstUpper]" class="form" />
             <p></p>
-            <input type="email" asp-for="EmailForPwdReset" placeholder="Adresa de e-mail" class="form" />
+            <input type="email" asp-for="EmailForPwdReset" placeholder="@_languageProvider.BasicText[lang, "EMAIL", Casing.FirstUpper]" class="form" />
             <p></p>
-            <span class="caption">Dacă nu îți amintești aceste informații, scrie-ne la <a href="mailto:admin@metrouusor.com">admin@metrouusor.com</a> și vom încerca să te ajutăm.</span>
+            <span class="caption">@Html.Raw(_languageProvider.BasicText[lang, "HELPER_TEXT"])</span>
             <p></p>
             <span asp-validation-for="PwdResetErrorMessage" class="validation"></span>
-            <input type="submit" value="Resetează parola" class="MyButton" />
+            <input type="submit" value="@_languageProvider.BasicText[lang, "RESET_PASSWORD", Casing.FirstUpper]" class="MyButton" />
             @Html.AntiForgeryToken()
         </form>
     </div>
@@ -40,22 +46,22 @@
 else if (Model.Mode == Utilities.LoginMode.PasswordReset && ViewData.ModelState.IsValid)
 {
     <form method="post" asp-page-handler="SaveNewPassword">
-        <input type="password" asp-for="PwdResetFirstPassword" placeholder="Noua parolă" class="form" autocomplete="new-password" /><br />
+        <input type="password" asp-for="PwdResetFirstPassword" placeholder="@_languageProvider.BasicText[lang, "NEW_PASSWORD", Casing.FirstUpper]" class="form" autocomplete="new-password" /><br />
         <span asp-validation-for="PwdResetFirstPassword" class="validation"></span>
         <br />
-        <input type="password" asp-for="PwdResetSecondPassword" placeholder="Repetă noua parolă" class="form" autocomplete="new-password" /><br />
+        <input type="password" asp-for="PwdResetSecondPassword" placeholder="@_languageProvider.BasicText[lang, "REPEAT_NEW_PASSWORD", Casing.FirstUpper]" class="form" autocomplete="new-password" /><br />
         <span asp-validation-for="PwdResetSecondPassword" class="validation"></span>
         <input type="hidden" asp-for="UserId" />
         <input type="hidden" asp-for="ResetPasswordCode" />
         <input type="hidden" asp-for="Init" />
         @Html.AntiForgeryToken()
         <p></p>
-        <input type="submit" value="Salvează noua parolă" />
+        <input type="submit" value="@_languageProvider.BasicText[lang, "SAVE_NEW_PASSWORD", Casing.FirstUpper]" />
     </form>
 }
 else if (Model.Mode == Utilities.LoginMode.PasswordReset && !ViewData.ModelState.IsValid)
 {
     <span asp-validation-for="PwdResetErrorMessage"></span>
     <p></p>
-    <a href="/">Prima pagină</a>
+    <a href="./">@_languageProvider.BasicText[lang, "HOME", Casing.FirstUpper]</a>
 }

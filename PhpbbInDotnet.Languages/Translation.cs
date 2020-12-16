@@ -2,6 +2,7 @@
 using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 
@@ -9,6 +10,8 @@ namespace PhpbbInDotnet.Languages
 {
     public class Translation
     {
+        static readonly CultureInfo EN = new CultureInfo("en");
+
         private readonly string _name;
         private readonly Dictionary<string, Dictionary<string, string>> _translation;
 
@@ -23,8 +26,9 @@ namespace PhpbbInDotnet.Languages
         /// </summary>
         /// <param name="language">Language to translate the key to</param>
         /// <param name="key">Key to translate</param>
+        /// <param name="casing">Text casing</param>
         /// <returns>Translation of the given key in the given language if both exist and are properly defined. Empty string otherwise.</returns>
-        public string this[string language, string key, Casing casing = Casing.AllLower]
+        public string this[string language, string key, Casing casing = Casing.None]
         {
             get
             {
@@ -33,7 +37,7 @@ namespace PhpbbInDotnet.Languages
                     var path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Translations", $"{_name}.{language}.json");
                     if (!File.Exists(path))
                     {
-                        return string.Empty;
+                        return key;
                     }
 
                     var value = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
@@ -46,16 +50,27 @@ namespace PhpbbInDotnet.Languages
                     _translation.Add(language, value);
                 }
 
-                var toReturn = _translation[language].TryGetValue(key, out var val) ? val : string.Empty;
+                if (!_translation[language].TryGetValue(key, out var toReturn))
+                {
+                    return key;
+                }
 
                 return casing switch
                 {
-                    Casing.AllLower => toReturn,
+                    Casing.AllLower => toReturn.ToLower(),
                     Casing.AllUpper => toReturn.ToUpper(),
-                    Casing.FirstUpper => char.ToUpper(toReturn[0]) + toReturn[1..].ToLower(),
+                    Casing.FirstUpper => FirstUpper(toReturn),
+                    Casing.Title => TitleCase(language, toReturn),
+                    Casing.None => toReturn,
                     _ => toReturn
                 };
             }
         }
+
+        private string FirstUpper(string text)
+            => char.ToUpper(text[0]) + text[1..].ToLower();
+
+        private string TitleCase(string language, string text)
+            => language.Equals("en", StringComparison.InvariantCultureIgnoreCase) ? EN.TextInfo.ToTitleCase(text) : FirstUpper(text);
     }
 }

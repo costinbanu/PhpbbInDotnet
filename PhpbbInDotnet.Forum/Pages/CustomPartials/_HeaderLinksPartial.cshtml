@@ -1,14 +1,24 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel
 
-@if (Model.IsIndex)
-{
-    <a asp-page="ViewForum" asp-page-handler="newPosts" class="nowrap">Mesaje noi</a>
-    <span>&nbsp;&bull;&nbsp;</span>
-    <a asp-page="ViewForum" asp-page-handler="ownPosts" class="nowrap">Subiectele proprii</a>
-    <span class="Hide768">&nbsp;&bull;&nbsp;</span><br class="Show768" /><span class="Show768" style="width:2.5px; display:inline-block; height: 20px"></span>
+@using Utilities
+
+@inject Services.UserService  _userService
+@inject Languages.LanguageProvider _languageProvider
+@{
+    var currentUser = await _userService.ClaimsPrincipalToLoggedUserAsync(User);
+    var lang = _languageProvider.GetValidatedLanguage(currentUser, Model.HttpContext?.Request);
 }
 
-<span onclick="toggleHeaderLinks('headerLinks', 'metrouusorLinks');" id="headerLinksButton" class="MyButton MyMiniButton" style="line-height:1.1em">
+@if (Model.IsIndex)
+{
+    <a asp-page="ViewForum" asp-page-handler="newPosts" class="nowrap">@_languageProvider.BasicText[lang, "NEW_POSTS", Casing.Title]</a>
+    <span>&nbsp;&bull;&nbsp;</span>
+    <a asp-page="ViewForum" asp-page-handler="ownPosts" class="nowrap">@_languageProvider.BasicText[lang, "OWN_TOPICS", Casing.Title]</a>
+    <span class="Hide768">&nbsp;&bull;&nbsp;</span>
+    <br class="Show768" /><span class="Show768" style="width:2.5px; display:inline-block; height: 20px"></span>
+}
+
+<span onclick="toggleHeaderLinks('headerLinks', 'customLinks');" id="headerLinksButton" class="MyButton MyMiniButton" style="line-height:1.1em">
     &#X1F6E0;&nbsp;Meniu
 </span>
 <ul class="Shortcuts" style="display:none" id="headerLinks">
@@ -16,20 +26,20 @@
     {
         <li>
             <span> &nbsp;</span>
-            <a asp-page="ViewForum" asp-page-handler="newPosts" class="nowrap">Mesaje noi</a>
+            <a asp-page="ViewForum" asp-page-handler="newPosts" class="nowrap">@_languageProvider.BasicText[lang, "NEW_POSTS", Casing.Title]</a>
         </li>
         <li>
             <span> &nbsp;</span>
-            <a asp-page="ViewForum" asp-page-handler="ownPosts" class="nowrap">Subiectele proprii</a>
+            <a asp-page="ViewForum" asp-page-handler="ownPosts" class="nowrap">@_languageProvider.BasicText[lang, "OWN_TOPICS", Casing.Title]</a>
         </li>
     }
     <li>
         <span> &nbsp;</span>
-        <a asp-page="ViewForum" asp-page-handler="drafts" class="nowrap">Mesaje în lucru</a>
+        <a asp-page="ViewForum" asp-page-handler="drafts" class="nowrap">@_languageProvider.BasicText[lang, "DRAFTS", Casing.Title]</a>
     </li>
     <li>
         <span> &nbsp;</span>
-        <a asp-page="/MemberList">Membrii forumului</a>
+        <a asp-page="/MemberList">@_languageProvider.BasicText[lang, "FORUM_MEMBERS", Casing.Title]</a>
     </li>
 
     @foreach (var elem in (Model.ExtraElements ?? Enumerable.Empty<string>()).Where(elem => !string.IsNullOrWhiteSpace(elem)))

@@ -1,17 +1,46 @@
 ﻿{
-  "LOGIN": "conectare",
-  "REGISTER": "înregistrare",
-  "LOGOUT": "deconectare",
-  "MY_ACCOUNT": "contul meu",
+  //universal
+  "HOME": "prima pagină",
   "FORUM": "forum",
   "TOPIC": "subiect",
-  "PRIVATE_MESSAGING": "mesagerie privată",
   "SEARCH_IN": "caută în",
+  "GENERIC_ERROR_TRY_AGAIN": "A intervenit o eroare, te rugăm să încerci mai târziu.",
+
+  //layout
+  "MY_ACCOUNT": "contul meu",
+  "PRIVATE_MESSAGING": "mesagerie privată",
   "UNREAD_MESSAGE": "mesaj privat necitit",
   "UNREAD_MESSAGES": "mesaje private necitite",
   "OPEN_REPORT": "raport deschis",
   "OPEN_REPORTS": "rapoarte deschise",
-  "TERMS": "Termenele și condițiile de utilizare",
-  "ADMIN_PANEL": "Panoul administratorului",
-  "FAQ": "Întrebări frecvente - ghid de utilizare"
+  "TERMS": "termenele și condițiile de utilizare",
+  "ADMIN_PANEL": "panoul administratorului",
+  "FAQ": "întrebări frecvente - ghid de utilizare",
+
+  //header links
+  "NEW_POSTS": "mesaje noi",
+  "OWN_TOPICS": "subiectele proprii",
+  "MENU": "meniu",
+  "DRAFTS": "mesaje în lucru",
+  "FORUM_MEMBERS": "membrii forumului",
+  "MARK_FORUMS_READ": "marchează forumurile ca citite",
+  "MARK_TOPICS_READ": "marchează subiectele ca citite",
+
+  //authentication
+  "LOGIN": "conectare",
+  "REGISTER": "înregistrare",
+  "LOGOUT": "deconectare",
+  "USERNAME": "nume utilizator",
+  "PASSWORD": "parola",
+  "EMAIL": "adresa de e-mail",
+  "HELPER_TEXT": "Dacă nu îți amintești aceste informații, scrie-ne la <a href=\"mailto:admin@metrouusor.com\">admin@metrouusor.com</a> și vom încerca să te ajutăm.",
+  "FORGOT_PASSWORD": "am uitat parola",
+  "RESET_PASSWORD": "resetează parola",
+  "NEW_PASSWORD": "noua parolă",
+  "REPEAT_NEW_PASSWORD": "repetă noua parolă",
+  "SAVE_NEW_PASSWORD": "salvează noua parolă",
+  "CONFIRM_ERROR": "A intervenit o eroare - utilizatorul nu există sau codul de resetare a parolei este greșit.",
+  "WRONG_USER_PASS": "Numele de utilizator și/sau parola sunt greșite!",
+  "WRONG_EMAIL_USER": "Adresa de email și/sau numele de utilizator introduse nu sunt corecte.",
+  "INACTIVE_USER": "Utilizatorul nu este activat!"
 }

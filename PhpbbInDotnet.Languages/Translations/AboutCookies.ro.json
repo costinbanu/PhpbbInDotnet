@@ -1,0 +1,17 @@
+﻿{
+  //warning box
+  "BOX_MESSAGE": "Acest site folosește cookie-uri pentru personalizarea conținutului afișat, autentificare și altele. Prin utilizarea site-ului nostru acceptați folosirea acestora.",
+  "BOX_DISMISS": "Am înțeles",
+  "BOX_LINK_TEXT": "Află mai multe",
+
+  //cookies page
+  "H3": "Despre Cookie-uri",
+  "THE_COOKIES_H4": "Cookie-urile",
+  "THE_COOKIES_BODY": "Pentru a asigura buna funcționare a acestui site, uneori plasăm în computerul dumneavoastră mici fișiere cu date, cunoscute sub numele de cookie-uri. Majoritatea site-urilor mari fac acest lucru.",
+  "ABOUT_H4": "Ce se înțelege prin cookie-uri?",
+  "ABOUT_BODY": "Cookie-ul este un fişier text de mici dimensiuni pe care un site îl salvează în calculatorul sau dispozitivul dumneavoastră mobil atunci când îl vizitaţi. Datorită cookie-urilor, site-ul reţine, pe o perioadă de timp, acţiunile şi preferinţele dumneavoastră (login, limbă, dimensiunea caracterelor şi alte preferinţe de afişare). Astfel nu mai trebuie să le reintroduceţi ori de câte ori reveniţi la site sau navigaţi de pe o pagină pe alta.",
+  "USAGE_H4": "Cum se folosesc cookie-urile?",
+  "USAGE_BODY": "Cookie-urile noastre personalizează conținutul afișat, prin reținerea setărilor caracteristice fiecărui utilizator (abonare la subiecte, formatul date afișate, evidențierea subiectelor active sau cu răspunsuri noi etc).<br /><br />Cookie-urile terțe sunt specifice site-ului de care aparțin, căruia îi revine întreaga responsabilitate privind utilizarea lor. Noi folosim cookie-uri de la <a href=\"https://facebook.com\" target=\"_blank\">facebook.com</a>, <a href=\"https://youtube.com\" target=\"_blank\">youtube.com</a>, <a href=\"https://flickr.com\" target=\"_blank\">flickr.com</a> și <a href=\"https://imgur.com\" target=\"_blank\">imgur.com</a>.",
+  "CONTROL_H4": "Cum puteţi controla cookie-urile?",
+  "CONTROL_BODY": "Puteţi controla şi/sau şterge cookie-urile după cum doriţi – pentru detalii, consultaţi site-ul <a href=\"https://gdpr.eu/cookies/\" target=\"_blank\">gdpr.eu/cookies</a>.  Puteți șterge toate cookie-urile din calculatorul dumneavoastră și puteți seta majoritatea browserelor să blocheze plasarea acestora. Dacă faceţi acest lucru, este posibil să fiţi nevoit să setaţi manual unele preferinţe, de fiecare dată când vizitaţi site-ul. De asemenea, s-ar putea ca unele servicii sau opţiuni să nu funcţioneze."
+}
