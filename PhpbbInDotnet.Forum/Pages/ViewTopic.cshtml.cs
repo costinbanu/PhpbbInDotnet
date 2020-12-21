@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
+using PhpbbInDotnet.Languages;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -106,8 +107,8 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly WritingToolsService _writingToolsService;
 
         public ViewTopicModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, CommonUtils utils, PostService postService, 
-            ModeratorService moderatorService, WritingToolsService writingToolsService, IConfiguration config, AnonymousSessionCounter sessionCounter)
-            : base(context, forumService, userService, cacheService, config, sessionCounter, utils)
+            ModeratorService moderatorService, WritingToolsService writingToolsService, IConfiguration config, AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider)
+            : base(context, forumService, userService, cacheService, config, sessionCounter, utils, languageProvider)
         {
             _postService = postService;
             _moderatorService = moderatorService;

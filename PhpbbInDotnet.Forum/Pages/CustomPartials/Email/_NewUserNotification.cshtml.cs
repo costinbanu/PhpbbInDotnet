@@ -2,7 +2,7 @@
 
 namespace PhpbbInDotnet.Forum.Pages.CustomPartials.Email
 {
-    public class _NewUserNotificationModel : PageModel
+    public class _NewUserNotificationModel
     {
         public string Username { get; }
        

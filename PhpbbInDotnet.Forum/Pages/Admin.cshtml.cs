@@ -10,6 +10,7 @@ using PhpbbInDotnet.Utilities;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using PhpbbInDotnet.Languages;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -32,8 +33,9 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly WritingToolsService _adminWritingService;
 
         public AdminModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, CommonUtils utils, 
-            AdminUserService adminUserService, AdminForumService adminForumService, WritingToolsService adminWritingService, IConfiguration config, AnonymousSessionCounter sessionCounter) 
-            : base(context, forumService, userService, cacheService, config, sessionCounter, utils)
+            AdminUserService adminUserService, AdminForumService adminForumService, WritingToolsService adminWritingService, IConfiguration config, 
+            AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider) 
+            : base(context, forumService, userService, cacheService, config, sessionCounter, utils, languageProvider)
         {
             _adminUserService = adminUserService;
             _adminForumService = adminForumService;

@@ -1,14 +1,21 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials.Email._NewUserNotificationModel
-@using Microsoft.Extensions.Configuration
-@inject IConfiguration _config
 
-Salut
+@using Microsoft.Extensions.Configuration
+@using PhpbbInDotnet.Utilities
+
+@inject CommonUtils _utils
+@inject IConfiguration _config
+@inject Languages.LanguageProvider _languageProvider
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor
+
+@{
+    var lang = _languageProvider.GetValidatedLanguage(null, _httpContextAccessor.HttpContext?.Request);
+}
+
+@_languageProvider.Email[lang, "GREETING_BEGIN"]
 <br />
 <br />
-Următorul cont a fost creat recent: @Model.Username
+@Html.Raw(string.Format(_languageProvider.Email[lang, "NEWUSER_BODY_FORMAT"], Model.Username, $"{_config.GetValue<string>("BaseUrl")}/Admin"))
 <br />
 <br />
-<a href="@(_config.GetValue<string>("BaseUrl"))/Admin">Vezi utilizatorii inactivi</a>
-<br />
-<br />
-O zi frumoasă!
+@_languageProvider.Email[lang, "GREETING_END"]

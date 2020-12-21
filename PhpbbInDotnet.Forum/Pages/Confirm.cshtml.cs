@@ -8,6 +8,7 @@ using System.Net.Mail;
 using System.Threading.Tasks;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
+using PhpbbInDotnet.Languages;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -45,8 +46,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public bool IsDestinationConfirmation { get; private set; } = false;
 
-        public ConfirmModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, CommonUtils utils, IConfiguration config, AnonymousSessionCounter sessionCounter)
-            : base(context, forumService, userService, cacheService, config, sessionCounter, utils) 
+        public ConfirmModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, CommonUtils utils, IConfiguration config, 
+            AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider)
+            : base(context, forumService, userService, cacheService, config, sessionCounter, utils, languageProvider) 
         { }
 
         public void OnGetRegistrationComplete()
@@ -89,7 +91,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 user.UserActkey = string.Empty;
                 await Context.SaveChangesAsync();
 
-                var subject = "Cont de utilizator nou";
+                var subject = LanguageProvider.Email[LanguageProvider.GetValidatedLanguage(null, HttpContext.Request), "NEWUSER_SUBJECT"];
                 using var emailMessage = new MailMessage
                 {
                     From = new MailAddress($"admin@metrouusor.com", Config.GetValue<string>("ForumName")),

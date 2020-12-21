@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PhpbbInDotnet.Database\PhpbbInDotnet.Database.csproj" />
+    <ProjectReference Include="..\PhpbbInDotnet.Languages\PhpbbInDotnet.Languages.csproj" />
     <ProjectReference Include="..\PhpbbInDotnet.Objects\PhpbbInDotnet.Objects.csproj" />
     <ProjectReference Include="..\PhpbbInDotnet.Utilities\PhpbbInDotnet.Utilities.csproj" />
   </ItemGroup>

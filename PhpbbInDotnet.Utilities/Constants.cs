@@ -25,5 +25,7 @@ namespace PhpbbInDotnet.Utilities
         public static readonly int BOTS_GROUP_ID = 6;
 
         public static readonly TimeSpan REGEX_TIMEOUT = TimeSpan.FromSeconds(20);
+
+        public static readonly string DEFAULT_LANGUAGE = "ro";
     }
 }

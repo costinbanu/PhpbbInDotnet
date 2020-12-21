@@ -8,9 +8,10 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Net.Http.Headers;
-using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
 using System;
@@ -30,14 +31,15 @@ namespace PhpbbInDotnet.Forum
         protected readonly ForumDbContext Context;
         protected readonly IConfiguration Config;
         protected readonly CommonUtils Utils;
-
+        
+        public LanguageProvider LanguageProvider { get; }
         public bool IsBot { get; private set; }
 
         private readonly AnonymousSessionCounter _sessionCounter;
         private LoggedUser _currentUser;
 
         public AuthenticatedPageModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
-            IConfiguration config, AnonymousSessionCounter sessionCounter, CommonUtils utils)
+            IConfiguration config, AnonymousSessionCounter sessionCounter, CommonUtils utils, LanguageProvider languageProvider)
         {
             ForumService = forumService;
             CacheService = cacheService;
@@ -46,6 +48,7 @@ namespace PhpbbInDotnet.Forum
             Config = config;
             _sessionCounter = sessionCounter;
             Utils = utils;
+            LanguageProvider = languageProvider;
         }
 
         #region User

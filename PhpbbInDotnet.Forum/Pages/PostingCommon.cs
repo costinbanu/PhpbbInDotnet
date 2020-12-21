@@ -14,6 +14,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
+using PhpbbInDotnet.Languages;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -99,8 +100,8 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly BBCodeRenderingService _renderingService;
 
         public PostingModel(CommonUtils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, PostService postService, 
-            StorageService storageService, WritingToolsService writingService, BBCodeRenderingService renderingService, IConfiguration config, AnonymousSessionCounter sessionCounter)
-            : base(context, forumService, userService, cacheService, config, sessionCounter, utils)
+            StorageService storageService, WritingToolsService writingService, BBCodeRenderingService renderingService, IConfiguration config, AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider)
+            : base(context, forumService, userService, cacheService, config, sessionCounter, utils, languageProvider)
         {
             PollExpirationDaysString = "1";
             PollMaxOptions = 1;

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
 using System;
@@ -45,8 +46,8 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool SearchWasPerformed { get; private set; }
 
         public MemberListModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, CommonUtils utils, 
-            IConfiguration config, WritingToolsService writingService, AnonymousSessionCounter sessionCounter) 
-            : base (context, forumService, userService, cacheService, config, sessionCounter, utils) 
+            IConfiguration config, WritingToolsService writingService, AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider) 
+            : base (context, forumService, userService, cacheService, config, sessionCounter, utils, languageProvider) 
         {
             _writingService = writingService;
         }

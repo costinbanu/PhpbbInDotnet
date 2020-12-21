@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Web;
 using PhpbbInDotnet.Database.Entities;
 using System;
+using PhpbbInDotnet.Languages;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -52,8 +53,8 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly BBCodeRenderingService _renderingService;
 
         public PrivateMessagesModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService,
-            BBCodeRenderingService renderingService, IConfiguration config, AnonymousSessionCounter sessionCounter, CommonUtils utils)
-            : base(context, forumService, userService, cacheService, config, sessionCounter, utils)
+            BBCodeRenderingService renderingService, IConfiguration config, AnonymousSessionCounter sessionCounter, CommonUtils utils, LanguageProvider languageProvider)
+            : base(context, forumService, userService, cacheService, config, sessionCounter, utils, languageProvider)
         {
             _renderingService = renderingService;
         }

@@ -12,6 +12,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
 using System;
+using PhpbbInDotnet.Languages;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -43,8 +44,9 @@ namespace PhpbbInDotnet.Forum.Pages
         public string[] SelectedNewPosts { get; set; }
 
         public ViewForumModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, IConfiguration config, 
-            AnonymousSessionCounter sessionCounter, CommonUtils utils)
-            : base(context, forumService, userService, cacheService, config, sessionCounter, utils) { }
+            AnonymousSessionCounter sessionCounter, CommonUtils utils, LanguageProvider languageProvider)
+            : base(context, forumService, userService, cacheService, config, sessionCounter, utils, languageProvider) 
+        { }
 
         public async Task<IActionResult> OnGet()
             => await WithValidForum(ForumId, ForumId == 0, async (thisForum) =>

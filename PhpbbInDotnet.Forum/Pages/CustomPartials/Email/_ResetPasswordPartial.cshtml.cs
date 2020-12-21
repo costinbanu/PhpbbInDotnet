@@ -1,9 +1,8 @@
 ﻿using System;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace PhpbbInDotnet.Forum.Pages.CustomPartials.Email
 {
-    public class _ResetPasswordPartialModel : PageModel
+    public class _ResetPasswordPartialModel
     {
         public string Code { get; set; }
         public int UserId { get; set; }

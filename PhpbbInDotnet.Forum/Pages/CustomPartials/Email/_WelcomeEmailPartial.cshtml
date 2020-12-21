@@ -1,16 +1,22 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials.Email._WelcomeEmailPartialModel
-@using Microsoft.Extensions.Configuration 
+
+@using Microsoft.Extensions.Configuration
 @using PhpbbInDotnet.Utilities
+
 @inject CommonUtils _utils
 @inject IConfiguration _config
+@inject Languages.LanguageProvider _languageProvider
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor
+
+@{
+    var lang = _languageProvider.GetValidatedLanguage(null, _httpContextAccessor.HttpContext?.Request);
+}
 
 <h3>@Model.Subject</h3>
 <p>
-    Pentru a continua, trebuie să îți confirmi adresa de email.<br />
-    <a href="@(_config.GetValue<string>("BaseUrl"))/Confirm?code=@Model.RegistrationCode&username=@_utils.CleanString(Model.UserName)&handler=ConfirmEmail">Apasă aici</a> pentru a o confirma.
+    @Html.Raw(string.Format(_languageProvider.Email[lang, "WELCOME_BODY_FORMAT"], $"{_config.GetValue<string>("BaseUrl")}/Confirm?code={Model.RegistrationCode}&username={_utils.CleanString(Model.UserName)}&handler=ConfirmEmail"))
 </p>
 <p style="font-size:0.85em">
-    Ai primit acest mesaj deoarece această adresă de e-mail a fost folosită pentru a înregistra contul '@Model.UserName' pe <a href="@(_config.GetValue<string>("BaseUrl"))">@(_config.GetValue<string>("ForumName"))</a>.<br />
-    Dacă această solicitare de înregistrare nu îți aparține, te rugăm să răspunzi imediat la acest mesaj (reply) și să semnalezi problema. Cineva din echipa administrativă va răspunde în cel mai scurt timp.
+    @Html.Raw(string.Format(_languageProvider.Email[lang, "WELCOME_FOOTER_FORMAT"], Model.UserName, _config.GetValue<string>("BaseUrl"), _config.GetValue<string>("ForumName")))
 </p>
-O zi bună!
+@_languageProvider.Email[lang, "GREETING_END"]

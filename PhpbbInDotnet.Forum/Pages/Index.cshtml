@@ -2,7 +2,6 @@
 @model IndexModel
 
 @using Utilities
-@inject Languages.LanguageProvider _languageProvider
 
 @{
     ViewData["Title"] = "Home page";
@@ -12,7 +11,7 @@
     {
         UserDateFormat = "dddd, dd.MM.yyyy, HH:mm";
     }
-    var lang = _languageProvider.GetValidatedLanguage(CurrentUser, Model.HttpContext?.Request);
+    var lang = Model.LanguageProvider.GetValidatedLanguage(CurrentUser, Model.HttpContext?.Request);
 }
 
 @if (!CurrentUser.IsAnonymous)
@@ -22,7 +21,7 @@
     </form>
     @await Html.PartialAsync(
         "_HeaderLinksPartial",
-        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(true, $"<a href=\"javascript:MarkForumsRead.submit()\">{_languageProvider.BasicText[lang, "MARK_FORUMS_READ", Casing.Title]}</a>"),
+        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(true, $"<a href=\"javascript:MarkForumsRead.submit()\">{Model.LanguageProvider.BasicText[lang, "MARK_FORUMS_READ", Casing.Title]}</a>"),
         ViewData
     )
     <span>&nbsp;&bull;&nbsp;</span>

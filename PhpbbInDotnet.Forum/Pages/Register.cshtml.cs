@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Forum.Pages.CustomPartials.Email;
+using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Utilities;
 using System;
 using System.ComponentModel.DataAnnotations;
@@ -18,7 +19,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [BindProperties, ValidateAntiForgeryToken]
+    [ValidateAntiForgeryToken]
     public class RegisterModel : PageModel
     {
         private readonly ForumDbContext _context;
@@ -54,12 +55,15 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public string RecaptchaResponse { get; set; }
 
-        public RegisterModel(ForumDbContext context, CommonUtils utils, IConfiguration config, IHttpClientFactory httpClientFactory)
+        public LanguageProvider LanguageProvider { get; }
+
+        public RegisterModel(ForumDbContext context, CommonUtils utils, IConfiguration config, IHttpClientFactory httpClientFactory, LanguageProvider languageProvider)
         {
             _context = context;
             _utils = utils;
             _config = config;
             _gClient = httpClientFactory.CreateClient(config["Recaptcha:ClientName"]);
+            LanguageProvider = languageProvider;
         }
 
         public async Task<IActionResult> OnPost()
@@ -161,7 +165,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             );
 
-            var subject = $"Bine ai venit la \"{_config.GetValue<string>("ForumName")}\"";
+            var subject = string.Format(LanguageProvider.Email[LanguageProvider.GetValidatedLanguage(null, Request), "WELCOME_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
             using var emailMessage = new MailMessage
             {
                 From = new MailAddress($"admin@metrouusor.com", _config.GetValue<string>("ForumName")),

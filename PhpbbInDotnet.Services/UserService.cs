@@ -15,6 +15,7 @@ using System.Linq;
 using System.Net.Mail;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using PhpbbInDotnet.Languages;
 
 namespace PhpbbInDotnet.Services
 {
@@ -23,6 +24,7 @@ namespace PhpbbInDotnet.Services
         private readonly CommonUtils _utils;
         private readonly ForumDbContext _context;
         private readonly IConfiguration _config;
+        private readonly LanguageProvider _languageProvider;
         private IEnumerable<PhpbbAclRoles> _adminRoles;
         private IEnumerable<PhpbbAclRoles> _modRoles;
         private IEnumerable<PhpbbAclRoles> _userRoles;
@@ -30,11 +32,12 @@ namespace PhpbbInDotnet.Services
         private static PhpbbUsers _anonymousDbUser;
         private static ClaimsPrincipal _anonymousClaimsPrincipal;
 
-        public UserService(CommonUtils utils, ForumDbContext context, IConfiguration config)
+        public UserService(CommonUtils utils, ForumDbContext context, IConfiguration config, LanguageProvider languageProvider)
         {
             _utils = utils;
             _context = context;
             _config = config;
+            _languageProvider = languageProvider;
         }
 
         public async Task<bool> IsUserAdminInForum(LoggedUser user, int forumId)
@@ -212,10 +215,11 @@ namespace PhpbbInDotnet.Services
                     new { senderId, receiverId, to = $"u_{receiverId}", subject, text, time = DateTime.UtcNow.ToUnixTimestamp() }
                 );
 
+                var emailSubject = string.Format(_languageProvider.Email[_languageProvider.GetValidatedLanguage(null, httpContext.Request), "NEWPM_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
                 using var emailMessage = new MailMessage
                 {
                     From = new MailAddress($"admin@metrouusor.com", _config.GetValue<string>("ForumName")),
-                    Subject = $"Ai primit un mesaj privat nou pe {_config.GetValue<string>("ForumName")}",
+                    Subject = emailSubject,
                     Body = await _utils.RenderRazorViewToString(
                         "_NewPMEmailPartial",
                         new NewPMEmailDto

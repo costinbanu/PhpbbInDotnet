@@ -1,12 +1,21 @@
 ﻿@model PhpbbInDotnet.Objects.NewPMEmailDto
-@using Microsoft.Extensions.Configuration;
+
+@using Microsoft.Extensions.Configuration
+@using PhpbbInDotnet.Utilities
+
+@inject CommonUtils _utils
 @inject IConfiguration _config
-Salut
+@inject Languages.LanguageProvider _languageProvider
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor
+
+@{
+    var lang = _languageProvider.GetValidatedLanguage(null, _httpContextAccessor.HttpContext?.Request);
+}
+
+@_languageProvider.Email[lang, "GREETING_BEGIN"]
 <br />
 <br />
-Ai primit un nou mesaj privat de la "@Model.SenderName".
-<br />
-Accesează-ți căsuța poștală <a href="@(_config.GetValue<string>("BaseUrl"))/PrivateMessages">aici</a>.
+@Html.Raw(string.Format(_languageProvider.Email[lang, "NEWPM_BODY_FORMAT"], Model.SenderName, $"{_config.GetValue<string>("BaseUrl")}/PrivateMessages"))
 <br />
 <br />
-O zi frumoasă!
+@_languageProvider.Email[lang, "GREETING_END"]

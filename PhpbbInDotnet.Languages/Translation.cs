@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using PhpbbInDotnet.Utilities;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -14,11 +15,13 @@ namespace PhpbbInDotnet.Languages
 
         private readonly string _name;
         private readonly Dictionary<string, Dictionary<string, string>> _translation;
+        private readonly ILogger _logger;
 
-        public Translation(string name)
+        public Translation(string name, ILogger logger)
         {
             _name = name;
             _translation = new Dictionary<string, Dictionary<string, string>>(StringComparer.InvariantCultureIgnoreCase);
+            _logger = logger;
         }
 
         /// <summary>
@@ -34,20 +37,20 @@ namespace PhpbbInDotnet.Languages
             {
                 if (!_translation.ContainsKey(language))
                 {
-                    var path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Translations", $"{_name}.{language}.json");
-                    if (!File.Exists(path))
+                    var value = GetDictionary(language);
+                    if (value == null)
                     {
-                        return key;
+                        _logger.Warning($"Switching to default language '{Constants.DEFAULT_LANGUAGE}'...");
+                        language = Constants.DEFAULT_LANGUAGE;
+                        if (!_translation.ContainsKey(language))
+                        {
+                            _translation.Add(language, GetDictionary(language));
+                        }
                     }
-
-                    var value = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
-                    try
+                    else
                     {
-                        JsonConvert.PopulateObject(File.ReadAllText(path), value);
+                        _translation.Add(language, value);
                     }
-                    catch { }
-
-                    _translation.Add(language, value);
                 }
 
                 if (!_translation[language].TryGetValue(key, out var toReturn))
@@ -72,5 +75,28 @@ namespace PhpbbInDotnet.Languages
 
         private string TitleCase(string language, string text)
             => language.Equals("en", StringComparison.InvariantCultureIgnoreCase) ? EN.TextInfo.ToTitleCase(text) : FirstUpper(text);
+
+        private Dictionary<string, string> GetDictionary(string language)
+        {
+            var path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Translations", $"{_name}.{language}.json");
+            if (!File.Exists(path))
+            {
+                _logger.Warning($"Potential missing language: '{language}' - file '{path}' does not exist.");
+                return null;
+            }
+
+            var value = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
+            try
+            {
+                JsonConvert.PopulateObject(File.ReadAllText(path), value);
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning(ex, $"Failed to read file '{path}' and parse its contents.");
+                return null;
+            }
+
+            return value;
+        }
     }
 }

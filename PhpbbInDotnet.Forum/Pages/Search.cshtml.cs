@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
@@ -63,8 +64,8 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly ILogger _logger;
 
         public SearchModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, IConfiguration config,
-            AnonymousSessionCounter sessionCounter, CommonUtils utils, ILogger logger)
-            : base(context, forumService, userService, cacheService, config, sessionCounter, utils)
+            AnonymousSessionCounter sessionCounter, CommonUtils utils, ILogger logger, LanguageProvider languageProvider)
+            : base(context, forumService, userService, cacheService, config, sessionCounter, utils, languageProvider)
         {
             _searchFieldList =
                 @"p.post_id,

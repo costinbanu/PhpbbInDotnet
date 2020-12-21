@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Forum.Pages.CustomPartials.Email;
+using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
 using System;
@@ -93,8 +94,8 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly WritingToolsService _writingService;
 
         public UserModel(CommonUtils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
-            StorageService storageService, WritingToolsService writingService, IConfiguration config, AnonymousSessionCounter sessionCounter)
-            : base(context, forumService, userService, cacheService, config, sessionCounter, utils)
+            StorageService storageService, WritingToolsService writingService, IConfiguration config, AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider)
+            : base(context, forumService, userService, cacheService, config, sessionCounter, utils, languageProvider)
         {
             _storageService = storageService;
             _writingService = writingService;

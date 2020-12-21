@@ -4,5 +4,15 @@
 
   "RESETPASS_SUBJECT_FORMAT": "Resetează-ți parola pe \"{0}\"",
   "RESETPASS_BODY_FORMAT": "Pentru a continua, trebuie să îți setezi o nouă parolă.<br /><a href=\"{0}\">Apasă aici</a> pentru a o seta.",
-  "RESETPASS_FOOTER_FORMAT": "Ai primit acest mesaj deoarece această adresă de e-mail a fost asociată contului '{0}' pe <a href=\"{1}\">{2}</a>.<br />Dacă această solicitare nu îți aparține, te rugăm să răspunzi imediat la acest mesaj (reply) și să semnalezi problema. Cineva din echipa administrativă va răspunde în cel mai scurt timp."
+  "RESETPASS_FOOTER_FORMAT": "Ai primit acest mesaj deoarece această adresă de e-mail a fost asociată contului '{0}' pe <a href=\"{1}\">{2}</a>.<br />Dacă această solicitare nu îți aparține, te rugăm să răspunzi imediat la acest mesaj (reply) și să semnalezi problema. Cineva din echipa administrativă va răspunde în cel mai scurt timp.",
+
+  "WELCOME_SUBJECT_FORMAT": "Bine ai venit la \"{0}\"",
+  "WELCOME_BODY_FORMAT": "Pentru a continua, trebuie să îți confirmi adresa de email.<br /><a href=\"{0}\">Apasă aici</a> pentru a o confirma.",
+  "WELCOME_FOOTER_FORMAT": "Ai primit acest mesaj deoarece această adresă de e-mail a fost folosită pentru a înregistra contul '{0}' pe <a href=\"{1}\">{2}</a>.<br />Dacă această solicitare de înregistrare nu îți aparține, te rugăm să răspunzi imediat la acest mesaj (reply) și să semnalezi problema. Cineva din echipa administrativă va răspunde în cel mai scurt timp.",
+
+  "NEWUSER_SUBJECT": "Cont de utilizator nou",
+  "NEWUSER_BODY_FORMAT": "Următorul cont a fost creat recent: '{0}'<br /><br /><a href=\"{1}\">Vezi utilizatorii inactivi</a>.",
+
+  "NEWPM_SUBJECT_FORMAT": "Ai primit un mesaj privat nou pe \"{0}\"",
+  "NEWPM_BODY_FORMAT": "Ai primit un nou mesaj privat de la '{0}'.<br />Accesează-ți căsuța poștală <a href=\"{1}\">aici</a>."
 }

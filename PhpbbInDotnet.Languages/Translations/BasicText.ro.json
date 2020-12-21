@@ -5,6 +5,8 @@
   "TOPIC": "subiect",
   "SEARCH_IN": "caută în",
   "GENERIC_ERROR_TRY_AGAIN": "A intervenit o eroare, te rugăm să încerci mai târziu.",
+  "AGREE_WITH": "sunt de acord cu",
+  "SUBMIT": "trimite",
 
   //layout
   "MY_ACCOUNT": "contul meu",
@@ -32,6 +34,7 @@
   "LOGOUT": "deconectare",
   "USERNAME": "nume utilizator",
   "PASSWORD": "parola",
+  "REPEAT_PASSWORD": "repetă parola",
   "EMAIL": "adresa de e-mail",
   "HELPER_TEXT": "Dacă nu îți amintești aceste informații, scrie-ne la <a href=\"mailto:admin@metrouusor.com\">admin@metrouusor.com</a> și vom încerca să te ajutăm.",
   "FORGOT_PASSWORD": "am uitat parola",

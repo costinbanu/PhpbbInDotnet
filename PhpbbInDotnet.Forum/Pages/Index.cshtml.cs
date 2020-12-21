@@ -6,6 +6,7 @@ using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using PhpbbInDotnet.Languages;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -16,8 +17,8 @@ namespace PhpbbInDotnet.Forum.Pages
         public HashSet<ForumTree> Tree { get; private set; }
 
         public IndexModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, IConfiguration config, 
-            AnonymousSessionCounter sessionCounter, CommonUtils utils)
-            : base(context, forumService, userService, cacheService, config, sessionCounter, utils)
+            AnonymousSessionCounter sessionCounter, CommonUtils utils, LanguageProvider languageProvider)
+            : base(context, forumService, userService, cacheService, config, sessionCounter, utils, languageProvider)
         {
         }
 
