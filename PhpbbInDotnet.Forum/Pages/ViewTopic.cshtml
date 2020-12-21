@@ -82,7 +82,19 @@
     {
         <div id="votes" style="display:block">
             <h3>Chestionar: @Html.Raw(HttpUtility.HtmlDecode(Model.Poll.PollTitle))</h3>
-            <div>Chestionarul @(Model.Poll.PollEnded ? "a fost" : "va fi") inchis: @(Model.Poll.PollEnd.HasValue ? Model.Poll.PollEnd.Value.ToString(UserDateFormat) : "niciodată").</div>
+            <div>
+                Chestionarul @(Model.Poll.PollEnded ? "a fost" : "va fi") închis:
+                @if (Model.Poll.PollEnd.HasValue)
+                {
+                    <script>
+                        writeDate('@Model.Poll.PollEnd.Value.ToString("o")', '@UserDateFormat');
+                    </script>
+                }
+                else
+                {
+                    @Html.Raw("niciodată");
+                }
+            </div>
             <form method="post" asp-page-handler="vote">
                 @foreach (var option in Model.Poll.PollOptions)
                 {
@@ -115,8 +127,19 @@
     {
         <div id="results" style="display:@(displayVoteMenu ? "none" : "block")">
             <h3>Chestionar: @Html.Raw(HttpUtility.HtmlDecode(Model.Poll.PollTitle))</h3>
-            <div>Chestionarul @(Model.Poll.PollEnded ? "a fost" : "va fi") inchis: @(Model.Poll.PollEnd.HasValue ? Model.Poll.PollEnd.Value.ToString(UserDateFormat) : "niciodată").</div>
-            <p></p>
+            <div>
+                Chestionarul @(Model.Poll.PollEnded ? "a fost" : "va fi") închis:
+                @if (Model.Poll.PollEnd.HasValue)
+                {
+                    <script>
+                        writeDate('@Model.Poll.PollEnd.Value.ToString("o")', '@UserDateFormat');
+                    </script>
+                }
+                else
+                {
+                    @Html.Raw("niciodată");
+                }
+            </div>            <p></p>
             <table style="border:none; padding:unset; margin:unset; width:100%">
                 @foreach (var option in Model.Poll.PollOptions)
                 {

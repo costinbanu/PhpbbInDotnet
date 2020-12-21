@@ -152,25 +152,12 @@ namespace PhpbbInDotnet.Forum.Pages
                     "SELECT * FROM phpbb_users WHERE user_id IN @editors; " +
                     "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @posts ORDER BY attach_id; " +
                     "SELECT * FROM phpbb_reports WHERE report_closed = 0 AND post_id IN @posts; " +
-                    @"WITH usr AS (
-	                    SELECT user_id, user_rank
-	                      FROM phpbb_users
-	                     WHERE user_id IN @authors
-                    ), grp AS (
-	                    SELECT u.user_id, g.group_rank
-	                      FROM phpbb_groups g
-	                      JOIN phpbb_users u ON g.group_id = u.group_id
-	                     WHERE u.user_id IN @authors
-                    ), all_ids AS (
-	                    SELECT user_id, user_rank as rank_id
-	                      FROM usr
-	                     UNION
-	                    SELECT user_id, group_rank as rank_id
-	                      FROM grp
-                    )
-                    SELECT ids.user_id, r.rank_id, r.rank_title
-                      FROM phpbb_ranks r 
-                      JOIN all_ids ids ON ids.rank_id = r.rank_id",
+                    @"SELECT u.user_id, COALESCE(r1.rank_id, r2.rank_id) AS rank_id, COALESCE(r1.rank_title, r2.rank_title) AS rank_title
+                        FROM phpbb_users u
+                        JOIN phpbb_groups g ON u.group_id = g.group_id
+                        LEFT JOIN phpbb_ranks r1 ON u.user_rank = r1.rank_id
+                        LEFT JOIN phpbb_ranks r2 ON g.group_rank = r2.rank_id
+                       WHERE u.user_id IN @authors",
                     new
                     {
                         authors = Posts.Select(p => p.PosterId).DefaultIfEmpty(),
