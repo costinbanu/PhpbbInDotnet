@@ -108,7 +108,7 @@ namespace PhpbbInDotnet.Services
                 _context.PhpbbForumsWatch.RemoveRange(await _context.PhpbbForumsWatch.Where(u => u.UserId == userId).ToListAsync());
                 _context.PhpbbLog.RemoveRange(await _context.PhpbbLog.Where(u => u.UserId == userId).ToListAsync());
                 _context.PhpbbModeratorCache.RemoveRange(await _context.PhpbbModeratorCache.Where(u => u.UserId == userId).ToListAsync());
-                _context.PhpbbPollVotes.RemoveRange(await _context.PhpbbPollVotes.Where(u => u.VoteUserId == userId).ToListAsync());
+                await _context.Database.GetDbConnection().ExecuteAsync("DELETE FROM phpbb_poll_votes WHERE vote_user_id = @userId", new { userId });
                 _context.PhpbbPrivmsgsFolder.RemoveRange(await _context.PhpbbPrivmsgsFolder.Where(u => u.UserId == userId).ToListAsync());
                 _context.PhpbbPrivmsgsRules.RemoveRange(await _context.PhpbbPrivmsgsRules.Where(u => u.UserId == userId).ToListAsync());
                 _context.PhpbbPrivmsgsTo.RemoveRange(await _context.PhpbbPrivmsgsTo.Where(u => u.UserId == userId).ToListAsync());

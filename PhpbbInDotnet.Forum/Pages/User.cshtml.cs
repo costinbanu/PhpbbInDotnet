@@ -142,6 +142,14 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 dbUser.Username = CurrentUser.Username;
                 dbUser.UsernameClean = Utils.CleanString(CurrentUser.Username);
+                foreach (var f in Context.PhpbbForums.Where(f => f.ForumLastPosterId == dbUser.UserId))
+                {
+                    f.ForumLastPosterName = CurrentUser.Username;
+                }
+                foreach (var t in Context.PhpbbTopics.Where(t => t.TopicLastPosterId == dbUser.UserId))
+                {
+                    t.TopicLastPosterName = CurrentUser.Username;
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(Birthday) && Birthday != dbUser.UserBirthday)
