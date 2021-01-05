@@ -26,13 +26,20 @@ namespace PhpbbInDotnet.Services
             await RemoveFromCache(key);
             return toReturn;
         }
-        
-        public async Task SetInCache<T>(string key, T value, TimeSpan? expiration = null)
-            => await _cache.SetAsync(
-                key,
-                await _utils.CompressObject(value),
-                new DistributedCacheEntryOptions { SlidingExpiration = expiration ?? TimeSpan.FromHours(4) }
-            );
+
+        public async Task SetInCache<T>(string key, T value, TimeSpan? expiration = null, bool absoluteExpiration = false)
+        {
+            DistributedCacheEntryOptions options;
+            if (absoluteExpiration)
+            {
+                options = new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = expiration ?? TimeSpan.FromHours(4) };
+            }
+            else
+            {
+                options = new DistributedCacheEntryOptions { SlidingExpiration = expiration ?? TimeSpan.FromHours(4) };
+            }
+            await _cache.SetAsync(key, await _utils.CompressObject(value), options);
+        }
 
         public async Task<bool> ExistsInCache(string key)
             => (await _cache.GetAsync(key))?.Any() ?? false;

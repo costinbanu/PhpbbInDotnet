@@ -150,6 +150,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     t.TopicLastPosterName = CurrentUser.Username;
                 }
+                userMustLogIn = true;
             }
 
             if (!string.IsNullOrWhiteSpace(Birthday) && Birthday != dbUser.UserBirthday)

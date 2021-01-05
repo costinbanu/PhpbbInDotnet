@@ -129,6 +129,7 @@ namespace PhpbbInDotnet.Forum
             services.AddScoped<StorageService>();
             services.AddScoped<ModeratorService>();
             services.AddScoped<BBCodeRenderingService>();
+            services.AddScoped<StatisticsService>();
             services.AddSingleton<FileExtensionContentTypeProvider>();
             services.AddDbContext<ForumDbContext>(options => options.UseMySQL(Configuration["ForumDbConnectionString"], o => o.CommandTimeout(60)), ServiceLifetime.Scoped);
 

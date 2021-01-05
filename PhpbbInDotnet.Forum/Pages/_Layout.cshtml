@@ -4,12 +4,18 @@
 @inject IConfiguration _config
 @inject Services.UserService  _userService
 @inject Services.ModeratorService _moderatorService
+@inject Services.StatisticsService _statisticsService
 @{
     var currentUser = await _userService.ClaimsPrincipalToLoggedUserAsync(User);
     var css = currentUser?.Style;
     if (string.IsNullOrWhiteSpace(css))
     {
         css = "Light";
+    }
+    var dateFormat = currentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+    if (!DateTime.TryParse(DateTime.Now.ToString(dateFormat), out _))
+    {
+        dateFormat = "dddd, dd.MM.yyyy, HH:mm";
     }
 }
 
@@ -153,6 +159,16 @@
             }
         </center>
         @RenderBody()
+    </div>
+    <p></p>
+    <div class="container body-content size1300">
+        @{
+            var statistics = await _statisticsService.GetStatistics();
+        }
+        Începând cu
+        <script>writeDate('@((statistics.FirstMessageDate ?? DateTime.UtcNow).ToString("o"))', '@dateFormat')</script>,
+        cei @statistics.UserCount utilizatori ai forumului au scris @statistics.MessageCount mesaje în @statistics.TopicCount subiecte și @statistics.ForumCount sub-forumuri.<br />
+        <span class="Caption">Interval de actualizare: @_statisticsService.RefreshIntervalMinutes minute.</span>
     </div>
     <center style="color:white;">
         <p>&nbsp;</p>
