@@ -192,7 +192,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return null;
             }
 
-            var pollOptionsArray = PollOptions?.Split(Environment.NewLine)?.Select(x => x.Trim()) ?? Enumerable.Empty<string>();
+            var pollOptionsArray = GetPollOptionsEnumerable();
             if (canCreatePoll && (PollMaxOptions == null || (pollOptionsArray.Any() && (PollMaxOptions < 1 || PollMaxOptions > pollOptionsArray.Count()))))
             {
                 ModelState.AddModelError(nameof(PollMaxOptions), "Valori valide: între 1 și numărul de opțiuni ale chestionarului.");
@@ -381,6 +381,9 @@ namespace PhpbbInDotnet.Forum.Pages
             TopicId ??= await CacheService.GetAndRemoveFromCache<int?>(await GetActualCacheKey("TopicId", true));
             PostId ??= await CacheService.GetAndRemoveFromCache<int?>(await GetActualCacheKey("PostId", true));
         }
+
+        private IEnumerable<string> GetPollOptionsEnumerable()
+            => PollOptions?.Split('\n', StringSplitOptions.RemoveEmptyEntries)?.Select(x => x.Trim())?.Where(x => !string.IsNullOrWhiteSpace(x)) ?? Enumerable.Empty<string>();
 
         public class CachedText
         {

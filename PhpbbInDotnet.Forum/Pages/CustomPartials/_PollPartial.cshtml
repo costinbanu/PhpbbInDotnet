@@ -1,0 +1,114 @@
+﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._PollPartialModel
+
+@using System.Web
+@using Utilities
+
+@if (Model.Poll != null)
+{
+    var IsAnonymous = Model.CurrentUser.UserId == Constants.ANONYMOUS_USER_ID;
+    var UserDateFormat = Model.CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+    if (!DateTime.TryParse(DateTime.Now.ToString(UserDateFormat), out _))
+    {
+        UserDateFormat = "dddd, dd.MM.yyyy, HH:mm";
+    }
+    var displayResultsMenu = !Model.IsPreview && (Model.Poll.PollEnded || !Model.Poll.PollEnd.HasValue || Model.IsCurrentUserMod);
+    var displayVoteMenu = Model.CanVoteNow || !displayResultsMenu;
+
+    @if (displayVoteMenu)
+    {
+        <div id="votes" style="display:block">
+            <h3>Chestionar: @Html.Raw(HttpUtility.HtmlDecode(Model.Poll.PollTitle))</h3>
+            <div>
+                Chestionarul @(Model.Poll.PollEnded ? "a fost" : "va fi") închis:
+                @if (Model.Poll.PollEnd.HasValue)
+                {
+                    <script>
+                        writeDate('@Model.Poll.PollEnd.Value.ToString("o")', '@UserDateFormat');
+                    </script>
+                }
+                else
+                {
+                    @Html.Raw("niciodată");
+                }
+            </div>
+            <form method="post" asp-page-handler="vote">
+                @foreach (var option in Model.Poll.PollOptions)
+                {
+                    var isChecked = option.PollOptionVoters?.Any(v => v.UserId == Model.CurrentUser.UserId) ?? false;
+                    <table class="PollTable">
+                        <tr>
+                            <td>
+                                @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText ?? string.Empty))
+                            </td>
+                            <td>
+                                <input type="@(Model.Poll.PollMaxOptions > 1 ? "checkbox" : "radio")" name="Votes" value="@option.PollOptionId" @(isChecked ? "checked" : "") @(!Model.CanVoteNow ? "disabled" : "") />
+                            </td>
+                        </tr>
+                    </table>
+                }
+                <br />
+                <input asp-for="TopicId" type="hidden" />
+                <input asp-for="PageNum" type="hidden" />
+                <input name="queryString" type="hidden" value="@HttpUtility.UrlEncode(Model.QueryString)" />
+                @if (Model.CanVoteNow)
+                {
+                    <input type="submit" value="Trimite vot" class="MyButton" style="margin-top: 5px" @(Model.IsPreview ? "disabled" : "") />
+                    <span asp-validation-for="Poll" class="validation"></span>
+                }
+                @Html.AntiForgeryToken()
+            </form>
+        </div>
+    }
+    @if (displayResultsMenu)
+    {
+        <div id="results" style="display:@(displayVoteMenu ? "none" : "block")">
+            <h3>Chestionar: @Html.Raw(HttpUtility.HtmlDecode(Model.Poll.PollTitle))</h3>
+            <div>
+                Chestionarul @(Model.Poll.PollEnded ? "a fost" : "va fi") închis:
+                @if (Model.Poll.PollEnd.HasValue)
+                {
+                    <script>
+                        writeDate('@Model.Poll.PollEnd.Value.ToString("o")', '@UserDateFormat');
+                    </script>
+                }
+                else
+                {
+                    @Html.Raw("niciodată");
+                }
+            </div>            <p></p>
+            <table class="PollTable">
+                @foreach (var option in Model.Poll.PollOptions)
+                {
+                    <tr>
+                        <td>
+                            @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText))
+                            @if (Model.IsCurrentUserAdmin)
+                            {
+                                <div class="Caption">
+                                    Votanti: @Html.Raw(HttpUtility.HtmlDecode(string.Join(", ", option.PollOptionVoters?.Select(v => v.Username) ?? Enumerable.Empty<string>())))
+                                </div>
+                            }
+                        </td>
+                        <td style="padding-right: unset">
+                            @{var percentage = (Model.Poll.TotalVotes == 0 ? 0 : option.PollOptionVotes * 100m / Model.Poll.TotalVotes).ToString("##0.##'%'", System.Globalization.CultureInfo.InvariantCulture);}
+                            <span class="PollResultBar" style="background: linear-gradient(to right, #87ceeb @percentage, #ffffff 0%)">
+                                @option.PollOptionVotes @(option.PollOptionVotes == 1 ? "vot" : "voturi") (@(percentage))
+                            </span>
+                        </td>
+                    </tr>
+                }
+            </table>
+        </div>
+        @if (Model.CanVoteNow && Model.IsCurrentUserAdmin)
+        {
+            <input type="button" value="Arată rezultatele" onclick="vt.switchPollPanels('results', 'votes', this)" class="MyButton" style="margin-top: 5px" />
+        }
+    }
+    @if (Model.Poll.PollOptions?.Any(o => o.PollOptionVoters?.Any(v => v.UserId == Model.CurrentUser.UserId) ?? false) ?? false)
+    {
+        <p></p>
+        <div style="background-color: darkgreen; color: white; padding: 5px; font-weight: bold">
+            Votul tău a fost înregistrat!
+        </div>
+    }
+}

@@ -408,6 +408,20 @@ label {
     max-width: 79%
 }
 
+.PollTable {
+    border: none;
+    padding: unset;
+    margin: unset;
+    width: 100%;
+}
+
+    .PollTable td {
+        width: 50%;
+        padding-right: 10px;
+        padding-top: 5px;
+        padding-bottom: 5px;
+    }
+
 @media (max-width: 768px) {
     .headerImg {
         width: 128px;

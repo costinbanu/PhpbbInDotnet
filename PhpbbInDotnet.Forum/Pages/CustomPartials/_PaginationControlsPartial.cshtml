@@ -25,7 +25,7 @@
         </div>
         <div class="ControlsMiddleFull">
             <span style="white-space:nowrap; display: inline">
-                @await Html.PartialAsync("_PaginationPartial", Model.Paginator.Pagination, ViewData)
+                @await Html.PartialAsync("_PaginationPageListPartial", Model.Paginator.Pagination, ViewData)
             </span>
             @if (!Model.Paginator.IsAnonymous && Model.AllowPaginationChange)
             {
@@ -73,7 +73,7 @@
         </span>
         <div id="paginationControls_@(Model.Self)" style="display: none; width: 100%; line-height: 1.5em">
             <p></p>
-            @await Html.PartialAsync("_PaginationPartial", Model.Paginator.Pagination, ViewData)
+            @await Html.PartialAsync("_PaginationPageListPartial", Model.Paginator.Pagination, ViewData)
             <p></p>
             @if (!Model.Paginator.IsAnonymous && Model.AllowPaginationChange)
             {

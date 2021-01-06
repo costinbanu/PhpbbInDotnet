@@ -1,0 +1,185 @@
+﻿@model _PostPartialModel
+
+@using System.Web
+@using Dapper
+@using Utilities
+@using Database.Entities
+@using Microsoft.EntityFrameworkCore
+
+@inject Services.UserService _userService
+@inject CommonUtils _utils
+@inject Database.ForumDbContext _context
+@inject Services.BBCodeRenderingService _renderingService
+@inject Services.UserService _userService
+
+@{ 
+    var IsAnonymous = Model.CurrentUser.UserId == Constants.ANONYMOUS_USER_ID;
+    var UserDateFormat = Model.CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+    if (!DateTime.TryParse(DateTime.Now.ToString(UserDateFormat), out _))
+    {
+        UserDateFormat = "dddd, dd.MM.yyyy, HH:mm";
+    }
+
+    var EditTime = Model.CurrentUser.PostEditTime;
+    var Connection = _context.Database.GetDbConnection();
+}
+
+@if (Model.CurrentUser.Foes?.Contains(Model.Post.AuthorId ?? 0) ?? false)
+{
+    Model.HasCurrentUserPM = false;
+    Model.Post.AuthorId = 1;
+    Model.Post.AuthorName = "[Ascuns]";
+    Model.Post.AuthorColor = null;
+    Model.Post.AuthorHasAvatar = false;
+    Model.Post.Attachments?.Clear();
+    Model.Post.BbcodeUid = string.Empty;
+    Model.Post.PostSubject = "Re:";
+    Model.Post.PostText = "[i]Autorul acestui mesaj este pe lista ta de persoane neagreate, drept urmare nu poți vedea conținutul mesajelor sale[/i]";
+}
+
+@if ((Model.Report?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
+{
+    var user = await Connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { Model.Report.UserId });
+    if ((user?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
+    {
+        Model.Post.ReporterUsername = HttpUtility.HtmlDecode(user.Username);
+    }
+}
+
+@{
+    await _renderingService.ProcessPost(Model.Post, Model.PageContext, Model.HttpContext, true);
+    
+    var rowClass = Model.Post.ReportId.HasValue && (Model.IsCurrentUserMod || Model.Post.ReporterId == Model.CurrentUser.UserId) ? "ReportedPost" : string.Empty;
+
+    @if (!Model.IsPostFirstInPage)
+    {
+        <hr class="BoxSeparator" style="margin-top: 0px" />
+    }
+
+    var titleClass = Model.Post.Unread ? "UnreadTitle" : "";
+    var color = string.IsNullOrWhiteSpace(Model.Post.AuthorColor) || Model.Post.AuthorColor == "000000" ? "auto" : $"#{Model.Post.AuthorColor}";
+}
+<div class="RowMargin @rowClass" style="max-width:100%; overflow-wrap: break-word">
+    <div class="FlexRow" style="max-width:100%; overflow-wrap: break-word; padding-bottom: 0px">
+        @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
+        {
+            AuthorId = Model.Post.AuthorId,
+            AuthorName = Model.Post.AuthorName,
+            AuthorColor = Model.Post.AuthorColor,
+            CreationTime = Model.Post.PostCreationTime,
+            AssetId = Model.Post.PostId.Value,
+            DateFormat = UserDateFormat,
+            ShowAvatar = Model.Post.AuthorHasAvatar,
+            AuthorRank = Model.Post.AuthorRank,
+            Left = true,
+            ShowAsLast = false,
+            PMLink = Model.HasCurrentUserPM ? $"<a href=\"./Posting?handler=PrivateMessage&postId={Model.Post.PostId}\">&#x1F5E8; Mesaj privat</a>" : null
+        })
+        <div class="ForumContent VerticalContent FlexRight" id="@Model.Post.PostId" style="max-width:100%; overflow-wrap: break-word; display:flex">
+            <span style="display:flex">
+                <span class="PostTitle">
+                    <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@Model.Post.PostId" class="@titleClass">@Html.Raw(Model.Post.PostSubject)</a>
+                </span>
+                <span style="margin-left:auto">
+                    <span class="CollapsedMenu ThemeColor" onclick="expandCollapsedMenu('summary@(Model.Post.PostId.Value)', 'button@(Model.Post.PostId.Value)')" id="button@(Model.Post.PostId.Value)" style="color:@color;margin-left: auto; height:auto; width: min-content">
+                        @Html.Raw(Model.Post.AuthorName)
+                    </span>
+                </span>
+                @if (Model.ShowQuoteButton)
+                {
+                    <span style="margin-left: auto; min-width: max-content; padding-top: 3px; padding-bottom: 30px; margin-top: 4px; margin-bottom: 4px">
+                        <a href="javascript:posting.addquote(texts['@Model.Post.PostId'], '@Model.Post.AuthorName')">&#x1F4AC; Citează</a>
+                    </span>
+                }
+            </span>
+            <div style="max-width:100%; overflow-wrap: break-word">
+                @if (Model.Post.ReportId.HasValue && (Model.IsCurrentUserMod || Model.Post.ReporterId == Model.CurrentUser.UserId))
+                {
+                    var reason = await Connection.QueryFirstOrDefaultAsync<PhpbbReportsReasons>("SELECT * FROM phpbb_reports_reasons WHERE reason_id = @reportReasonId", new { Model.Post.ReportReasonId });
+                    <a href="javascript:vt.showReportViewer(@Model.Post.PostId, @Model.Post.ReportId, '@reason.ReasonTitle', '@reason.ReasonDescription', '@_renderingService.BbCodeToHtml(Model.Post.ReportDetails, string.Empty)', '@Model.Post.ReporterUsername')" style="font-weight:bold; font-size:1.2em">Arată raportul</a><br />
+                }
+                <br />
+                @Html.Raw(Model.Post.PostText)
+                @foreach (var attachment in Model.Post.Attachments)
+                {
+                    @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
+                }
+            </div>
+
+            @if (Model.ShowFooter)
+            {
+                <p>&nbsp;</p>
+                <div class="PostFooter" style="margin-top: auto">
+                    @if (Model.ShowEditHistory)
+                    {
+                        <div class="Caption ThemeColor">
+                            Ultima dată modificat de @Model.Post.LastEditUser
+                            <script>
+                                    writeDate("@Model.Post.LastEditTime.ToUtcTime().ToString("o")", "@UserDateFormat");
+                            </script>
+                            @if (!string.IsNullOrWhiteSpace(Model.Post.LastEditReason))
+                            {
+                                <span>. Motiv: @HttpUtility.HtmlDecode(Model.Post.LastEditReason)</span>
+                            }
+                            . Modificări în total: @Model.Post.EditCount.
+                        </div>
+                        <p></p>
+                    }
+                    <div class="PostActions">
+                        @if ((!Model.IsTopicLocked || Model.IsCurrentUserMod) && !IsAnonymous && (!Model.IsPostLastInPage || !Model.IsLastPage))
+                        {
+                            <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@Model.Post.PostId">
+                                @if (Model.IsTopicLocked)
+                                {
+                                    <span>&#x1F4AC; Subiect închis</span>
+                                }
+                                else
+                                {
+                                    <span>&#x1F4AC; Răspunde cu citat</span>
+                                }
+                            </a>
+                        }
+                        else if (!IsAnonymous && (!Model.IsPostLastInPage || !Model.IsLastPage))
+                        {
+                            <a href="javascript:;" title="Subiectul este închis, nu se mai pot trimite răspunsuri.">
+                                <s>&#x1F5E8; Subiect închis</s>
+                            </a>
+                        }
+
+                        @if (!Model.Post.ReportId.HasValue && !IsAnonymous)
+                        {
+                            <span>
+                                <a href="javascript:vt.showReportForm(@Model.Post.PostId);">&#x2757; Raportează</a>
+                            </span>
+                        }
+                        @if (Model.IsCurrentUserMod)
+                        {
+                            <span>
+                                <a href="javascript:vt.showMessageDetails('@Model.Post.IP', '@Model.Post.LastEditTime.ToUtcTime().ToString("o")', '@UserDateFormat', @Model.Post.EditCount, '@Model.Post.LastEditUser');">&#x2753; Informații</a>
+                            </span>
+                            <span>
+                                Selectează pentru moderare <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @(Model.Post.PostId ?? -1))" @(Model.PostIdsForModerator.Contains(Model.Post.PostId ?? -1) ? "checked" : "") />
+                            </span>
+                        }
+                        @if (Model.IsCurrentUserMod || (Model.Post.AuthorId == Model.CurrentUser.UserId && (EditTime == 0 || DateTime.UtcNow.Subtract(Model.Post.PostCreationTime ?? default).TotalMinutes <= EditTime)))
+                        {
+                            <span>
+                                <a asp-page="/Posting" asp-page-handler="EditPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@Model.Post.PostId">&#x1F4DD; Modifică</a>
+                            </span>
+                            if (Model.IsCurrentUserMod || Model.IsPostLastInPage)
+                            {
+                                if (!Model.IsCurrentUserMod)
+                                {
+                                    <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @(Model.Post.PostId ?? -1))" @(Model.PostIdsForModerator.Contains(Model.Post.PostId ?? -1) ? "checked" : "") style="display:none" />
+                                }
+                                <span>
+                                    <a href="javascript:vt.deletePost(@(Model.Post.PostId ?? -1), @Model.ClosestPostId)">&#x1F6AE; Șterge</a>
+                                </span>
+                            }
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

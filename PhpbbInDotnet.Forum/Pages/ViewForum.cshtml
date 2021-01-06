@@ -259,7 +259,7 @@ else
                     <br />
                     @if (Model.Mode != ViewForumMode.Drafts)
                     {
-                        @await Html.PartialAsync("_PaginationPartial", topic.Pagination, ViewData)
+                        @await Html.PartialAsync("_PaginationPageListPartial", topic.Pagination, ViewData)
                     }
                 </span>
                 @if (Model.Mode != ViewForumMode.Drafts)

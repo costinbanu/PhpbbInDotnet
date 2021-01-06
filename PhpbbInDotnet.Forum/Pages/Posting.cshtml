@@ -1,8 +1,9 @@
 ﻿@page
 
 @using System.Web
-@using PhpbbInDotnet.Utilities
-@using PhpbbInDotnet.Database.Entities
+@using Utilities
+@using Database.Entities
+@using CustomPartials
 @using Microsoft.Extensions.Configuration
 
 @model PhpbbInDotnet.Forum.Pages.PostingModel
@@ -122,112 +123,36 @@ else if (IsPM)
     <h3>Scrie un mesaj privat nou:</h3>
 }
 
-@await Html.PartialAsync("_RulesPartial", new CustomPartials._RulesPartialModel(_renderingService, _utils, Model.CurrentForum?.ForumRules, Model.CurrentForum?.ForumRulesUid, Model.CurrentForum?.ForumRulesLink), ViewData)
+@await Html.PartialAsync("_RulesPartial", new _RulesPartialModel(_renderingService, _utils, Model.CurrentForum?.ForumRules, Model.CurrentForum?.ForumRulesUid, Model.CurrentForum?.ForumRulesLink), ViewData)
 
 @if (Model.PreviewablePost != null)
 {
-    <hr />
-    @if (Model.PreviewablePoll != null)
+    <p></p>
+    if (Model.PreviewablePoll != null)
     {
-        <div id="votes" style="display:block; clear: both;">
-            <h3>Chestionar: @Html.Raw(HttpUtility.HtmlDecode(Model.PreviewablePoll.PollTitle))</h3>
-            <div>Chestionarul @(Model.PreviewablePoll.PollEnded ? "a fost" : "va fi") inchis: @(Model.PreviewablePoll.PollEnd.HasValue ? Model.PreviewablePoll.PollEnd.Value.ToString(UserDateFormat) : "niciodată").</div>
+        <hr class="BoxSeparator" />
 
-            @if (Model.PreviewablePoll.PollMaxOptions > 1)
-            {
-                foreach (var option in Model.PreviewablePoll.PollOptions)
-                {
-                    <table style="border:none; padding:unset; margin:unset; width:100%">
-                        <tr style="border-bottom:solid 1px black">
-                            <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
-                                @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText))
-                            </td>
-                            <td>
-                                <input type="checkbox" name="Votes" value="@option.PollOptionId" />
-                            </td>
-                        </tr>
-                    </table>
-                }
-            }
-            else
-            {
-                foreach (var option in Model.PreviewablePoll.PollOptions)
-                {
-                    <table style="border:none; padding:unset; margin:unset; width:100%">
-                        <tr style="border-bottom:solid 1px black">
-                            <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
-                                @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText))
-                            </td>
-                            <td>
-                                <input type="radio" name="Votes" value="@option.PollOptionId" />
-                            </td>
-                        </tr>
-                    </table>
-                }
-            }
-            <br />
-            <input type="button" value="Trimite vot" class="MyButton" />
-        </div>
+        @await Html.PartialAsync("_PollPartial", new _PollPartialModel
+        {
+            CurrentUser = CurrentUser,
+            Poll = Model.PreviewablePoll,
+            IsPreview = true
+        }, ViewData)
+
+        <p></p>
     }
-    <div class="RowMargin">
-        <div class="FlexRow">
-            @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
-            {
-                AuthorId = Model.PreviewablePost.AuthorId,
-                AuthorName = Model.PreviewablePost.AuthorName,
-                AuthorColor = Model.PreviewablePost.AuthorColor,
-                CreationTime = Model.PreviewablePost.PostCreationTime,
-                AssetId = Model.PreviewablePost.PostId.Value,
-                DateFormat = UserDateFormat,
-                ShowAvatar = Model.PreviewablePost.AuthorHasAvatar,
-                AuthorRank = Model.PreviewablePost.AuthorRank,
-                Left = true
-            })
-            <div class="ForumContent VerticalContent FlexRight" id="@Model.PreviewablePost.PostId">
-                <span style="display:flex">
-                    <span class="PostTitle">
-                        <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@Model.PreviewablePost.PostId">@Html.Raw(Model.PreviewablePost.PostSubject)</a>
-                    </span>
-                    <span style="margin-left:auto">
-                        <span class="CollapsedMenu ThemeColor" onclick="expandCollapsedMenu('summary@(Model.PreviewablePost.PostId.Value)', 'button@(Model.PreviewablePost.PostId.Value)', false)" id="button@(Model.PreviewablePost.PostId.Value)" style="color:#@Model.PreviewablePost.AuthorColor;margin-left: auto; height:auto">
-                            @Html.Raw(Model.PreviewablePost.AuthorName)
-                        </span>
-                    </span>
-                </span>
-                <div style="max-width:100%; overflow-wrap: break-word">
-                    <br />
-                    @Html.Raw(Model.PreviewablePost.PostText)
-                    @foreach (var attachment in Model.PreviewablePost.Attachments)
-                    {
-                        <br />
-                        @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
-                    }
-                    <br />
-                </div>
-                <div class="PostFooter">
-                    @if (Model.PreviewablePost.LastEditTime > 0)
-                    {
-                        <br />
-                        <div class="Caption ThemeColor">
-                            Ultima dată modificat de @Model.PreviewablePost.LastEditUser
-                            <script>
-                                    writeDate("@Model.PreviewablePost.LastEditTime.ToUtcTime().ToString("o")", "@UserDateFormat");
-                            </script>
-                            @if (!string.IsNullOrWhiteSpace(Model.PreviewablePost.LastEditReason))
-                            {
-                                <span>. Motiv: @HttpUtility.HtmlDecode(Model.PreviewablePost.LastEditReason)</span>
-                            }
-                            . Modificări în total: @Model.PreviewablePost.EditCount.
-                        </div>
-                    }
-                    <br />
-                </div>
-            </div>
-        </div>
-    </div>
-    <hr />
-}
 
+    @await Html.PartialAsync("_PostPartial", new _PostPartialModel
+    {
+        CurrentUser = CurrentUser,
+        Post = Model.PreviewablePost,
+        ForumId = Model.ForumId,
+        TopicId = Model.TopicId ?? 0
+    }, ViewData)
+
+    <hr class="BoxSeparator" />
+    <p></p>
+}
 
 <form name="postform" method="post" enctype="multipart/form-data">
     @if (Model.Action == PostingActions.NewPrivateMessage)
@@ -488,7 +413,6 @@ else if (IsPM)
         <br />
         <h3>Mesaje precedente</h3>
 
-        var isFirst = true;
         foreach (var p in posts)
         {
             var ju = users.FirstOrDefault(u => u.UserId == p.PosterId);
@@ -503,77 +427,17 @@ else if (IsPM)
                 Attachments = ja.Select(a => new Objects.AttachmentDto(a)).ToList(),
                 PostCreationTime = p.PostTime.ToUtcTime(),
                 PostModifiedTime = p.PostEditTime.ToUtcTime(),
-                PostId = p.PostId,
-                BbcodeUid = p.BbcodeUid,
-                AuthorHasAvatar = false,
-                LastEditTime = p.PostEditTime,
-                LastEditReason = p.PostEditReason,
-                EditCount = p.PostEditCount,
-                IP = p.PosterIp
+                PostId = p.PostId
             };
 
-            if (CurrentUser.Foes?.Contains(p.PosterId) ?? false)
+            @await Html.PartialAsync("_PostPartial", new _PostPartialModel
             {
-                post.AuthorHasAvatar = false;
-                post.Attachments?.Clear();
-                post.BbcodeUid = string.Empty;
-                post.PostSubject = "Re:";
-                post.PostText = "[i]Autorul acestui mesaj este pe lista ta de persoane neagreate, drept urmare nu poți vedea conținutul mesajelor sale[/i]";
-            }
-
-            post.AuthorHasAvatar = false;
-            await _renderingService.ProcessPost(post, Model.PageContext, Model.HttpContext, true);
-
-            if (!isFirst)
-            {
-                <hr class="BoxSeparator" />
-            }
-
-            <div class="RowMargin FlexRow">
-                @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
-                {
-                    AuthorId = post.AuthorId,
-                    AuthorName = post.AuthorName,
-                    AuthorColor = post.AuthorColor,
-                    CreationTime = post.PostCreationTime,
-                    AssetId = post.PostId.Value,
-                    DateFormat = UserDateFormat,
-                    ShowAvatar = post.AuthorHasAvatar,
-                    AuthorRank = post.AuthorRank,
-                    Left = true,
-                    ShowAsLast = false
-                })
-
-                <div class="ForumContent">
-                    <span style="display:flex">
-                        <span class="PostTitle">
-                            <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@post.PostId">@Html.Raw(post.PostSubject)</a>
-                        </span>
-                        <span style="margin-left:auto">
-                            <span class="CollapsedMenu ThemeColor" onclick="expandCollapsedMenu('summary@(post.PostId.Value)', 'button@(post.PostId.Value)')" id="button@(post.PostId.Value)" style="color:#@post.AuthorColor;margin-left: auto; height:auto; width: min-content">
-                                @Html.Raw(post.AuthorName)
-                            </span>
-                        </span>
-                        @if (!(CurrentUser.Foes?.Contains(post.AuthorId ?? 1) ?? false))
-                        {
-                            <span style="margin-left: auto; min-width: max-content; padding-top: 3px; padding-bottom: 30px; margin-top: 4px; margin-bottom: 4px">
-                                <a href="javascript:posting.addquote(texts['@post.PostId'], '@post.AuthorName')">&#x1F4AC; Citează</a>
-                            </span>
-                        }
-                    </span>
-                    <p>&nbsp;</p>
-                    <div style="max-width:100%; overflow-wrap: break-word" id="@post.PostId">
-                        <p style="clear:both">
-                            @Html.Raw(post.PostText)
-                            @foreach (var attachment in post.Attachments)
-                            {
-                                @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
-                            }
-                        </p>
-                    </div>
-                </div>
-            </div>
-            isFirst = false;
+                CurrentUser = CurrentUser,
+                Post = post,
+                ForumId = Model.ForumId,
+                TopicId = Model.TopicId ?? 0,
+                ShowQuoteButton = !(CurrentUser.Foes?.Contains(post.AuthorId ?? 1) ?? false)
+            }, ViewData)
         }
     }
 }

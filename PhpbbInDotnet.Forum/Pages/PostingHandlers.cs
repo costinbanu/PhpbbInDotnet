@@ -359,7 +359,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     PreviewablePoll = new PollDto
                     {
                         PollTitle = HttpUtility.HtmlEncode(PollQuestion),
-                        PollOptions = new List<PollOption>(PollOptions.Split(Environment.NewLine).Select(x => new PollOption { PollOptionText = HttpUtility.HtmlEncode(x) })),
+                        PollOptions = new List<PollOption>(GetPollOptionsEnumerable().Select(x => new PollOption { PollOptionText = HttpUtility.HtmlEncode(x) })),
                         VoteCanBeChanged = PollCanChangeVote,
                         PollDurationSecons = (int)TimeSpan.FromDays(double.Parse(PollExpirationDaysString)).TotalSeconds,
                         PollMaxOptions = PollMaxOptions ?? 1,

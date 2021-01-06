@@ -22,12 +22,6 @@ namespace PhpbbInDotnet.Objects
 
         public bool VoteCanBeChanged { get; set; } = false;
 
-        public bool CanVoteNow(int? currentUserId) => !(
-            (currentUserId ?? 1) <= 1 || 
-            PollEnded || 
-            (PollOptions.Any(o => o.PollOptionVoters.Any(v => v.UserId == currentUserId.Value)) && !VoteCanBeChanged)
-        );
-
         public int TotalVotes => PollOptions.Sum(o => o.PollOptionVotes);
 
         public bool PollEnded => PollEnd < DateTime.UtcNow;

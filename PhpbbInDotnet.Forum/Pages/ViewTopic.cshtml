@@ -3,9 +3,9 @@
 
 @using System.Web
 @using Dapper
-@using PhpbbInDotnet.Utilities
-@using PhpbbInDotnet.Database.Entities
-@using PhpbbInDotnet.Objects
+@using Utilities
+@using Objects
+@using CustomPartials
 @using Microsoft.EntityFrameworkCore
 
 @inject Services.UserService _userService
@@ -25,8 +25,9 @@
     }
     var IsAdmin = await Model.IsCurrentUserAdminHere();
     var IsMod = await Model.IsCurrentUserModeratorHere();
+    var HasPM = _userService.HasPrivateMessagePermissions(CurrentUser);
     var EditTime = CurrentUser.PostEditTime;
-    var connection = _context.Database.GetDbConnection();
+    var Connection = _context.Database.GetDbConnection();
 }
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />
@@ -64,7 +65,7 @@
     <span>&nbsp;&bull;&nbsp;</span>
     @await Html.PartialAsync(
         "_HeaderLinksPartial",
-        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(),
+        new _HeaderLinksPartialModel(),
         ViewData
     )
 }
@@ -72,128 +73,32 @@
 <h3>Subiect: @Model.TopicTitle</h3>
 <span class="Caption">@Model.PostCount mesaj@(Model.PostCount == 1 ? "" : "e"), @Model.ViewCount vizualiz@(Model.ViewCount == 1 ? "are" : "ări").</span>
 
-@await Html.PartialAsync("_RulesPartial", new CustomPartials._RulesPartialModel(_renderingService, _utils, Model.ForumRules, Model.ForumRulesUid, Model.ForumRulesLink), ViewData)
+@await Html.PartialAsync("_RulesPartial", new _RulesPartialModel(_renderingService, _utils, Model.ForumRules, Model.ForumRulesUid, Model.ForumRulesLink), ViewData)
 
-@if (Model.Poll != null)
+@await Html.PartialAsync("_PollPartial", new _PollPartialModel
 {
-    var displayResultsMenu = Model.Poll.PollEnded || !Model.Poll.PollEnd.HasValue || IsMod;
-    var displayVoteMenu = Model.Poll.CanVoteNow(CurrentUser.UserId) || !displayResultsMenu;
-    if (displayVoteMenu)
-    {
-        <div id="votes" style="display:block">
-            <h3>Chestionar: @Html.Raw(HttpUtility.HtmlDecode(Model.Poll.PollTitle))</h3>
-            <div>
-                Chestionarul @(Model.Poll.PollEnded ? "a fost" : "va fi") închis:
-                @if (Model.Poll.PollEnd.HasValue)
-                {
-                    <script>
-                        writeDate('@Model.Poll.PollEnd.Value.ToString("o")', '@UserDateFormat');
-                    </script>
-                }
-                else
-                {
-                    @Html.Raw("niciodată");
-                }
-            </div>
-            <form method="post" asp-page-handler="vote">
-                @foreach (var option in Model.Poll.PollOptions)
-                {
-                    var isChecked = option.PollOptionVoters.Any(v => v.UserId == CurrentUser.UserId);
-                    <table style="border:none; padding:unset; margin:unset; width:100%">
-                        <tr style="border-bottom:solid 1px black">
-                            <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
-                                @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText))
-                            </td>
-                            <td>
-                                <input type="@(Model.Poll.PollMaxOptions > 1 ? "checkbox" : "radio")" name="Votes" value="@option.PollOptionId" @(isChecked ? "checked" : "") @(!Model.Poll.CanVoteNow(CurrentUser.UserId) ? "disabled" : "") />
-                            </td>
-                        </tr>
-                    </table>
-                }
-                <br />
-                <input asp-for="TopicId" type="hidden" />
-                <input asp-for="PageNum" type="hidden" />
-                <input name="queryString" type="hidden" value="@HttpUtility.UrlEncode(Request.QueryString.ToString())" />
-                @if (Model.Poll.CanVoteNow(CurrentUser.UserId))
-                {
-                    <input type="submit" value="Trimite vot" class="MyButton" style="margin-top: 5px" />
-                    <span asp-validation-for="Poll" class="validation"></span>
-                }
-                @Html.AntiForgeryToken()
-            </form>
-        </div>
-    }
-    if (displayResultsMenu)
-    {
-        <div id="results" style="display:@(displayVoteMenu ? "none" : "block")">
-            <h3>Chestionar: @Html.Raw(HttpUtility.HtmlDecode(Model.Poll.PollTitle))</h3>
-            <div>
-                Chestionarul @(Model.Poll.PollEnded ? "a fost" : "va fi") închis:
-                @if (Model.Poll.PollEnd.HasValue)
-                {
-                    <script>
-                        writeDate('@Model.Poll.PollEnd.Value.ToString("o")', '@UserDateFormat');
-                    </script>
-                }
-                else
-                {
-                    @Html.Raw("niciodată");
-                }
-            </div>            <p></p>
-            <table style="border:none; padding:unset; margin:unset; width:100%">
-                @foreach (var option in Model.Poll.PollOptions)
-                {
-                    <tr style="border-bottom:solid 1px black">
-                        <td style="width:50%; padding-right:10px; padding-top: 5px; padding-bottom: 5px">
-                            @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText))
-                            @if (IsAdmin)
-                            {
-                                <div class="Caption">
-                                    Votanti: @Html.Raw(HttpUtility.HtmlDecode(string.Join(", ", option.PollOptionVoters.Select(v => v.Username))))
-                                </div>
-                            }
-                        </td>
-                        <td style="width:50%; padding-top: 5px; padding-bottom: 5px">
-                            @{var percentage = (Model.Poll.TotalVotes == 0 ? 0 : option.PollOptionVotes * 100m / Model.Poll.TotalVotes).ToString("##0.##'%'", System.Globalization.CultureInfo.InvariantCulture);}
-                            <span class="PollResultBar" style="background: linear-gradient(to right, #87ceeb @percentage, #ffffff 0%)">
-                                @option.PollOptionVotes @(option.PollOptionVotes == 1 ? "vot" : "voturi") (@(percentage))
-                            </span>
-                        </td>
-                    </tr>
-                }
-            </table>
-        </div>
-        @if (Model.Poll.CanVoteNow(CurrentUser.UserId) && IsAdmin)
-        {
-            <input type="button" value="Arată rezultatele" onclick="vt.switchPollPanels('results', 'votes', this)" class="MyButton" style="margin-top: 5px" />
-        }
-    }
-    @if (Model.Poll.PollOptions?.Any(o => o.PollOptionVoters?.Any(v => v.UserId == CurrentUser.UserId) ?? false) ?? false)
-    {
-        <p></p>
-        <div style="background-color: darkgreen; color: white; padding: 5px; font-weight: bold">
-            Votul tău a fost înregistrat!
-        </div>
-    }
-}
+    CurrentUser = CurrentUser,
+    Poll = Model.Poll,
+    TopicId = Model.TopicId ?? 0,
+    PageNum = Model.PageNum ?? 1,
+    QueryString = Request.QueryString.ToString(),
+    IsCurrentUserMod = IsMod,
+    IsCurrentUserAdmin = IsAdmin
+}, ViewData)
 
-@await Html.PartialAsync(
-    "_PaginationControlsPartial",
-    new CustomPartials._PaginationControlsPartialModel(
-        paginator: Model.Paginator,
-        allowPaginationChange: true,
-        back: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum - 1}",
-        forward: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum + 1}",
-        includeEasyNavigation: false,
-        topicId: Model.TopicId,
-        firstPostId: Model.Posts?.FirstOrDefault()?.PostId
-    ),
-    ViewData
-)
+@await Html.PartialAsync("_PaginationControlsPartial", new _PaginationControlsPartialModel(
+    paginator: Model.Paginator,
+    allowPaginationChange: true,
+    back: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum - 1}",
+    forward: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum + 1}",
+    includeEasyNavigation: false,
+    topicId: Model.TopicId,
+    firstPostId: Model.Posts?.FirstOrDefault()?.PostId
+), ViewData)
+
 @{
     var index = 0;
     var reachedAnUnreadPost = false;
-    var isFirst = true;
     var useModActions = false;
     @foreach (var p in Model.Posts)
     {
@@ -203,8 +108,6 @@
         var lastEditUser = Model.LastEditUsers?.FirstOrDefault(u => u.UserId == p.PostEditUser);
         var lastEditUsername = lastEditUser == null ? "Anonymous" : lastEditUser.Username;
         var report = Model.Reports?.FirstOrDefault(r => r.PostId == p.PostId);
-        var mpText = _userService.HasPrivateMessagePermissions(CurrentUser) ? $"<a href=\"./Posting?handler=PrivateMessage&postId={p.PostId}\">&#x1F5E8; Mesaj privat</a>" : null;
-        var originalPosterId = p.PosterId;
 
         var post = new Objects.PostDto
         {
@@ -232,172 +135,41 @@
             ReporterId = report?.UserId
         };
 
-        if (CurrentUser.Foes?.Contains(p.PosterId) ?? false)
+        int? closestPostIdIndex = null;
+        if (Model.Posts.Count > 1)
         {
-            mpText = null;
-            post.AuthorId = 1;
-            post.AuthorName = "[Ascuns]";
-            post.AuthorColor = null;
-            post.AuthorHasAvatar = false;
-            post.Attachments?.Clear();
-            post.BbcodeUid = string.Empty;
-            post.PostSubject = "Re:";
-            post.PostText = "[i]Autorul acestui mesaj este pe lista ta de persoane neagreate, drept urmare nu poți vedea conținutul mesajelor sale[/i]";
+            if (index == 0) closestPostIdIndex = 1;
+            else if (index == Model.Posts.Count - 1) closestPostIdIndex = Model.Posts.Count - 2;
+            else closestPostIdIndex = index + 1;
         }
+        var closestPostId = closestPostIdIndex.HasValue ? Model.Posts[closestPostIdIndex.Value].PostId : 0;
 
-        if ((report?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
+        @await Html.PartialAsync("_PostPartial", new _PostPartialModel
         {
-            var user = await connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { report.UserId });
-            if ((user?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
-            {
-                post.ReporterUsername = HttpUtility.HtmlDecode(user.Username);
-            }
-        }
+            CurrentUser = CurrentUser,
+            Post = post,
+            ForumId = Model.ForumId ?? 0,
+            TopicId = Model.TopicId ?? 0,
+            ClosestPostId = closestPostIdIndex.HasValue ? Model.Posts[closestPostIdIndex.Value].PostId : 0,
+            PostIdsForModerator = Model.PostIdsForModerator,
+            HasCurrentUserPM = HasPM,
+            IsCurrentUserMod = IsMod,
+            IsPostFirstInPage = p == Model.Posts.First(),
+            IsPostLastInPage = p == Model.Posts.Last(),
+            IsLastPage = Model.Paginator.IsLastPage,
+            IsTopicLocked = Model.IsLocked,
+            ShowFooter = !(CurrentUser.Foes?.Contains(p.PosterId) ?? false),
+            ShowEditHistory = (index < Model.Posts.Count - 1 && post.LastEditTime > Model.Posts[index + 1].PostTime) || (post.EditCount > 0 && post.LastEditUser != post.AuthorName)
+        }, ViewData)
 
-        await _renderingService.ProcessPost(post, Model.PageContext, Model.HttpContext, true);
-
-        var rowClass = post.ReportId.HasValue && (IsMod || post.ReporterId == CurrentUser.UserId) ? "ReportedPost" : string.Empty;
-
-        if (!isFirst)
-        {
-            <hr class="BoxSeparator" style="margin-top: 0px" />
-        }
-
-        var titleClass = post.Unread ? "UnreadTitle" : "";
-        var color = string.IsNullOrWhiteSpace(post.AuthorColor) || post.AuthorColor == "000000" ? "auto" : $"#{post.AuthorColor}";
-        <div class="RowMargin @rowClass" style="max-width:100%; overflow-wrap: break-word">
-            <div class="FlexRow" style="max-width:100%; overflow-wrap: break-word; padding-bottom: 0px">
-                @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
-                {
-                    AuthorId = post.AuthorId,
-                    AuthorName = post.AuthorName,
-                    AuthorColor = post.AuthorColor,
-                    CreationTime = post.PostCreationTime,
-                    AssetId = post.PostId.Value,
-                    DateFormat = UserDateFormat,
-                    ShowAvatar = post.AuthorHasAvatar,
-                    AuthorRank = post.AuthorRank,
-                    Left = true,
-                    ShowAsLast = false,
-                    PMLink = mpText
-                })
-                <div class="ForumContent VerticalContent FlexRight" id="@post.PostId" style="max-width:100%; overflow-wrap: break-word; display:flex">
-                    <span style="display:flex">
-                        <span class="PostTitle">
-                            <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@post.PostId" class="@titleClass">@Html.Raw(post.PostSubject)</a>
-                        </span>
-                        <span style="margin-left:auto">
-                            <span class="CollapsedMenu ThemeColor" onclick="expandCollapsedMenu('summary@(post.PostId.Value)', 'button@(post.PostId.Value)')" id="button@(post.PostId.Value)" style="color:@color;margin-left: auto; height:auto; width: min-content">
-                                @Html.Raw(post.AuthorName)
-                            </span>
-                        </span>
-                    </span>
-                    <div style="max-width:100%; overflow-wrap: break-word">
-                        @if (post.ReportId.HasValue && (IsMod || post.ReporterId == CurrentUser.UserId))
-                        {
-                            var reason = await connection.QueryFirstOrDefaultAsync<PhpbbReportsReasons>("SELECT * FROM phpbb_reports_reasons WHERE reason_id = @reportReasonId", new { post.ReportReasonId });
-                            <a href="javascript:vt.showReportViewer(@post.PostId, @post.ReportId, '@reason.ReasonTitle', '@reason.ReasonDescription', '@_renderingService.BbCodeToHtml(post.ReportDetails, string.Empty)', '@post.ReporterUsername')" style="font-weight:bold; font-size:1.2em">Arată raportul</a><br />
-                        }
-                        <br />
-                        @Html.Raw(post.PostText)
-                        @foreach (var attachment in post.Attachments)
-                        {
-                            @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
-                        }
-                    </div>
-
-                    @if (!(CurrentUser.Foes?.Contains(originalPosterId) ?? false))
-                    {
-                        <p>&nbsp;</p>
-                        <div class="PostFooter" style="margin-top: auto">
-                            @if ((index < Model.Posts.Count - 1 && post.LastEditTime > Model.Posts[index + 1].PostTime) || (post.EditCount > 0 && post.LastEditUser != post.AuthorName))
-                            {
-                                <div class="Caption ThemeColor">
-                                    Ultima dată modificat de @post.LastEditUser
-                                    <script>
-                                    writeDate("@post.LastEditTime.ToUtcTime().ToString("o")", "@UserDateFormat");
-                                    </script>
-                                    @if (!string.IsNullOrWhiteSpace(post.LastEditReason))
-                                    {
-                                        <span>. Motiv: @HttpUtility.HtmlDecode(post.LastEditReason)</span>
-                                    }
-                                    . Modificări în total: @post.EditCount.
-                                </div>
-                                <p></p>
-                            }
-                            <div class="PostActions">
-                                @if ((!Model.IsLocked || IsMod) && !IsAnonymous && (p != Model.Posts.Last() || !Model.Paginator.IsLastPage))
-                                {
-                                    <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">
-                                        @if (Model.IsLocked)
-                                        {
-                                            <span>&#x1F4AC; Subiect închis</span>
-                                        }
-                                        else
-                                        {
-                                            <span>&#x1F4AC; Răspunde cu citat</span>
-                                        }
-                                    </a>
-                                }
-                                else if (!IsAnonymous && (p != Model.Posts.Last() || !Model.Paginator.IsLastPage))
-                                {
-                                    <a href="javascript:;" title="Subiectul este închis, nu se mai pot trimite răspunsuri.">
-                                        <s>&#x1F5E8; Subiect închis</s>
-                                    </a>
-                                }
-
-                                @if (!post.ReportId.HasValue && !IsAnonymous)
-                                {
-                                    <span>
-                                        <a href="javascript:vt.showReportForm(@post.PostId);">&#x2757; Raportează</a>
-                                    </span>
-                                }
-                                @if (IsMod)
-                                {
-                                    <span>
-                                        <a href="javascript:vt.showMessageDetails('@post.IP', '@post.LastEditTime.ToUtcTime().ToString("o")', '@UserDateFormat', @post.EditCount, '@post.LastEditUser');">&#x2753; Informații</a>
-                                    </span>
-                                    <span>
-                                        Selectează pentru moderare <input name="PostIdsForModerator" type="checkBox" value="@post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @(post.PostId ?? -1))" @(Model.PostIdsForModerator.Contains(post.PostId ?? -1) ? "checked" : "") />
-                                    </span>
-                                }
-                                @if (IsMod || (post.AuthorId == CurrentUser.UserId && (EditTime == 0 || DateTime.UtcNow.Subtract(post.PostCreationTime ?? default).TotalMinutes <= EditTime)))
-                                {
-                                    <span>
-                                        <a asp-page="/Posting" asp-page-handler="EditPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@post.PostId">&#x1F4DD; Modifică</a>
-                                    </span>
-                                    if (IsMod || index == Model.Posts.Count - 1)
-                                    {
-                                        if (!IsMod)
-                                        {
-                                            useModActions = true;
-                                            <input name="PostIdsForModerator" type="checkBox" value="@post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @(post.PostId ?? -1))" @(Model.PostIdsForModerator.Contains(post.PostId ?? -1) ? "checked" : "") style="display:none" />
-                                        }
-                                        int? closestPostIdIndex = null;
-                                        if (Model.Posts.Count > 1)
-                                        {
-                                            if (index == 0) closestPostIdIndex = 1;
-                                            else if (index == Model.Posts.Count - 1) closestPostIdIndex = Model.Posts.Count - 2;
-                                            else closestPostIdIndex = index + 1;
-                                        }
-                                        var closestPostId = closestPostIdIndex.HasValue ? Model.Posts[closestPostIdIndex.Value].PostId : 0;
-                                        <span>
-                                            <a href="javascript:vt.deletePost(@(post.PostId ?? -1), @closestPostId)">&#x1F6AE; Șterge</a>
-                                        </span>
-                                    }
-                                }
-                            </div>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
         index++;
-        isFirst = false;
+
+        useModActions = p == Model.Posts.Last() && (post.AuthorId == CurrentUser.UserId && (EditTime == 0 || DateTime.UtcNow.Subtract(post.PostCreationTime ?? default).TotalMinutes <= EditTime));
     }
+
     <hr class="BoxSeparator" style="margin-top: 0px" />
 
-    if (useModActions)
+    if (!IsMod && useModActions)
     {
         <form id="moderatorForm" method="post" asp-page-handler="DeleteMyMessage" style="display:none">
             @Html.DropDownList("PostAction", _utils.EnumToDropDownList<ModeratorPostActions>(Model.PostAction, Model.MapModeratorPostActions), new { onchange = "vt.showPostExtraInput(this)", id = "PostAction", style = "display:none" })
@@ -432,7 +204,7 @@ else if (!IsAnonymous)
 <p></p>
 @await Html.PartialAsync(
     "_PaginationControlsPartial",
-    new CustomPartials._PaginationControlsPartialModel(
+    new _PaginationControlsPartialModel(
         paginator: Model.Paginator,
         allowPaginationChange: true,
         back: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum - 1}",
@@ -462,7 +234,7 @@ else if (!IsAnonymous)
     <p>&nbsp;</p>
     @await Html.PartialAsync(
         "_ForumTreePartial",
-        new CustomPartials._ForumTreePartialModel(
+        new _ForumTreePartialModel(
             tree: (await Model.GetForumTree(false, false)).Tree,
             forumId: Model.ForumId,
             topicId: Model.TopicId,
@@ -569,7 +341,7 @@ else if (!IsAnonymous)
                 <div class="FlexRight PostInputWidth">
                     @{
                         var reasons = new List<SelectListItem> { new SelectListItem("Alege un motiv", "-1", true, true) };
-                        reasons.AddRange((await connection.QueryAsync("SELECT reason_description, reason_id FROM phpbb_reports_reasons ORDER BY reason_order")).Select(x => new SelectListItem(x.reason_description.ToString(), x.reason_id.ToString())));
+                        reasons.AddRange((await Connection.QueryAsync("SELECT reason_description, reason_id FROM phpbb_reports_reasons ORDER BY reason_order")).Select(x => new SelectListItem(x.reason_description.ToString(), x.reason_id.ToString())));
                     }
                     @Html.DropDownList("reportReasonId", reasons, new { id = "reportReason", style = "width: 100%" })
                 </div>

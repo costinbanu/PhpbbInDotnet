@@ -239,6 +239,10 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
     color: black;
 }
 
+.PollTable tr {
+    border-bottom: solid 1px lightgray;
+}
+
 @media (max-width: 768px) {
     .Summary {
         display: none;
