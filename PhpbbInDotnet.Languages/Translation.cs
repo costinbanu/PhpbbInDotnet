@@ -14,13 +14,15 @@ namespace PhpbbInDotnet.Languages
         static readonly CultureInfo EN = new CultureInfo("en");
 
         private readonly string _name;
-        private readonly Dictionary<string, Dictionary<string, string>> _translation;
+        private readonly Dictionary<string, Dictionary<string, string>> _dictionary;
+        private readonly Dictionary<string, string> _html;
         private readonly ILogger _logger;
 
         public Translation(string name, ILogger logger)
         {
             _name = name;
-            _translation = new Dictionary<string, Dictionary<string, string>>(StringComparer.InvariantCultureIgnoreCase);
+            _dictionary = new Dictionary<string, Dictionary<string, string>>(StringComparer.InvariantCultureIgnoreCase);
+            _html = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
             _logger = logger;
         }
 
@@ -35,25 +37,25 @@ namespace PhpbbInDotnet.Languages
         {
             get
             {
-                if (!_translation.ContainsKey(language))
+                if (!_dictionary.ContainsKey(language))
                 {
                     var value = GetDictionary(language);
                     if (value == null)
                     {
                         _logger.Warning($"Switching to default language '{Constants.DEFAULT_LANGUAGE}'...");
                         language = Constants.DEFAULT_LANGUAGE;
-                        if (!_translation.ContainsKey(language))
+                        if (!_dictionary.ContainsKey(language))
                         {
-                            _translation.Add(language, GetDictionary(language));
+                            _dictionary.Add(language, GetDictionary(language));
                         }
                     }
                     else
                     {
-                        _translation.Add(language, value);
+                        _dictionary.Add(language, value);
                     }
                 }
 
-                if (!_translation[language].TryGetValue(key, out var toReturn))
+                if (!_dictionary[language].TryGetValue(key, out var toReturn))
                 {
                     return key;
                 }
@@ -68,6 +70,28 @@ namespace PhpbbInDotnet.Languages
                     _ => toReturn
                 };
             }
+        }
+
+        public string Html(string language)
+        {
+            if (!_html.ContainsKey(language))
+            {
+                var value = GetHtml(language);
+                if (value == null)
+                {
+                    _logger.Warning($"Switching to default language '{Constants.DEFAULT_LANGUAGE}'...");
+                    language = Constants.DEFAULT_LANGUAGE;
+                    if (!_html.ContainsKey(language))
+                    {
+                        _html.Add(language, GetHtml(language));
+                    }
+                }
+                else
+                {
+                    _html.Add(language, value);
+                }
+            }
+            return _html[language];
         }
 
         private string FirstUpper(string text)
@@ -97,6 +121,17 @@ namespace PhpbbInDotnet.Languages
             }
 
             return value;
+        }
+
+        private string GetHtml(string language)
+        {
+            var path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Translations", $"{_name}.{language}.html");
+            if (!File.Exists(path))
+            {
+                _logger.Warning($"Potential missing language: '{language}' - file '{path}' does not exist.");
+                return null;
+            }
+            return File.ReadAllText(path);
         }
     }
 }

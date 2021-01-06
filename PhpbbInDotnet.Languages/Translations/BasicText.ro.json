@@ -7,6 +7,12 @@
   "GENERIC_ERROR_TRY_AGAIN": "A intervenit o eroare, te rugăm să încerci mai târziu.",
   "AGREE_WITH": "sunt de acord cu",
   "SUBMIT": "trimite",
+  "STARTING_ON": "Începând cu",
+  "FORUM_STATS_FORMAT": "cei {0} utilizatori ai forumului au scris {1} mesaje în {2} subiecte și {3} sub-forumuri.",
+  "FORUM_STATS_CAPTION_FORMAT": "Interval de actualizare: {0} minute.",
+  "SEARCH_RESULTS": "Rezultatele căutării",
+  "ORDER_BY": "Ordonează după...",
+  "AND": "și",
 
   //layout
   "MY_ACCOUNT": "contul meu",
@@ -45,5 +51,23 @@
   "CONFIRM_ERROR": "A intervenit o eroare - utilizatorul nu există sau codul de resetare a parolei este greșit.",
   "WRONG_USER_PASS": "Numele de utilizator și/sau parola sunt greșite!",
   "WRONG_EMAIL_USER": "Adresa de email și/sau numele de utilizator introduse nu sunt corecte.",
-  "INACTIVE_USER": "Utilizatorul nu este activat!"
+  "INACTIVE_USER": "Utilizatorul nu este activat!",
+
+  //memberlist
+  "ALL_USERS": "Toți utilizatorii",
+  "ACTIVE_USERS": "Utilizatori activi",
+  "SEARCH_FOR_USER": "Caută un utilizator",
+  "FORUM_GROUPS": "Grupurile forumului",
+  "NO_USERS": "Nici un utilizator",
+  "SEARCH_IN_GROUP": "Caută în grupul...",
+  "SEARCH_BY_NAME": "Caută după nume...",
+  "SEE_ALL_GROUP_MEMBERS": "Vezi toți membrii grupului",
+  "MEMBERLIST_STATS_HEADER_FORMAT": "Membri activi în ultimele {0} de minute",
+  "REGISTERED_COUNT_SINGLE_FORMAT": "{0} membru înregistrat",
+  "REGISTERED_COUNT_MULTIPLE_FORMAT": "{0} membri înregistrați",
+  "GUEST_COUNT_SINGLE_FORMAT": "{0} vizitator",
+  "GUEST_COUNT_MULTIPLE_FORMAT": "{0} vizitatori",
+  "BOT_COUNT_SINGLE_FORMAT": "{0} bot",
+  "BOT_COUNT_MULTIPLE_FORMAT": "{0} boți",
+  "LAST_ACTIVE": "activ ultima oară"
 }

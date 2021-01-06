@@ -14,11 +14,13 @@
 @{
     ViewData["Title"] = "MemberList";
     Layout = "~/Pages/_Layout.cshtml";
-    var dateFormat = (await Model.GetCurrentUserAsync()).UserDateFormat;
+    var user = await Model.GetCurrentUserAsync();
+    var dateFormat = user.UserDateFormat;
     if (!DateTime.TryParse(DateTime.Now.ToString(dateFormat), out _))
     {
         dateFormat = "dddd, dd.MM.yyyy, HH:mm";
     }
+    var lang = Model.LanguageProvider.GetValidatedLanguage(user, Model.HttpContext?.Request);
 }
 
 <environment include="Development">
@@ -40,16 +42,24 @@
 </form>
 
 <div class="tab">
-    <button class="@(Model.Mode == MemberListPages.AllUsers ? "tablinks active" : "tablinks")" onclick="setMode('AllUsers')">Toți utilizatorii</button>
-    <button class="@(Model.Mode == MemberListPages.ActiveUsers || Model.Mode == MemberListPages.ActiveBots ? "tablinks active" : "tablinks")" onclick="setMode('ActiveUsers')">Utilizatori activi</button>
-    <button class="@(Model.Mode == MemberListPages.SearchUsers ? "tablinks active" : "tablinks")" onclick="setMode('SearchUsers')">Caută un utilizator</button>
-    <button class="@(Model.Mode == MemberListPages.Groups ? "tablinks active" : "tablinks")" onclick="setMode('Groups')">Toate grupurile</button>
+    <button class="@(Model.Mode == MemberListPages.AllUsers ? "tablinks active" : "tablinks")" onclick="setMode('AllUsers')">
+        @Model.LanguageProvider.BasicText[lang, "ALL_USERS", Casing.Title]
+    </button>
+    <button class="@(Model.Mode == MemberListPages.ActiveUsers || Model.Mode == MemberListPages.ActiveBots ? "tablinks active" : "tablinks")" onclick="setMode('ActiveUsers')">
+        @Model.LanguageProvider.BasicText[lang, "ACTIVE_USERS", Casing.Title]
+    </button>
+    <button class="@(Model.Mode == MemberListPages.SearchUsers ? "tablinks active" : "tablinks")" onclick="setMode('SearchUsers')">
+        @Model.LanguageProvider.BasicText[lang, "SEARCH_FOR_USER", Casing.Title]
+    </button>
+    <button class="@(Model.Mode == MemberListPages.Groups ? "tablinks active" : "tablinks")" onclick="setMode('Groups')">
+        @Model.LanguageProvider.BasicText[lang, "FORUM_GROUPS", Casing.Title]
+    </button>
 </div>
 
 <div id="AllUsers" class="tabcontent" style="@(Model.Mode == MemberListPages.AllUsers ? "display:inherit" : "display:none")">
-    <h3>Membrii forumului</h3>
+    <h3>@Model.LanguageProvider.BasicText[lang, "FORUM_MEMBERS", Casing.Title]</h3>
     <form method="get">
-        @Html.DropDownListFor(m => m.Order, _utils.EnumToDropDownList<MemberListOrder>(Model.Order, Model.GetOrderDisplayName, "Ordonează după..."), new { id = "userOrder", style = "height:30px; margin-top: 5px" })
+        @Html.DropDownListFor(m => m.Order, _utils.EnumToDropDownList<MemberListOrder>(Model.Order, order => Model.LanguageProvider.Enums[lang, order], Model.LanguageProvider.BasicText[lang, "ORDER_BY"]), new { id = "userOrder", style = "height:30px; margin-top: 5px" })
         <input asp-for="Mode" type="hidden" />
         <input asp-for="PageNum" type="hidden" />
         <input type="submit" value="Trimite" style="height:32px; margin-top: 5px" />
@@ -66,7 +76,7 @@
     }
     else
     {
-        <h4>Nu există nici un utilizator</h4>
+        <h4>@Model.LanguageProvider.BasicText[lang, "NO_USERS", Casing.Title]</h4>
     }
 
 </div>
@@ -74,25 +84,25 @@
 <div id="SearchUsers" class="tabcontent" style="@(Model.Mode == MemberListPages.SearchUsers ? "display:inherit" : "display:none")">
     @if (!(Model.UserList?.Any() ?? false))
     {
-        <h3>Caută un utilizator</h3>
+        <h3>@Model.LanguageProvider.BasicText[lang, "SEARCH_FOR_USER", Casing.Title]</h3>
     }
     else
     {
-        <h3>Rezultatele căutării</h3>
+        <h3>@Model.LanguageProvider.BasicText[lang, "SEARCH_RESULTS", Casing.Title]</h3>
     }
     <form method="get">
         <input type="hidden" name="handler" value="search" />
-        <input asp-for="Username" placeholder="Caută după nume..." style="height:30px; margin-top: 5px" id="usernameUserInput" />
+        <input asp-for="Username" placeholder="@Model.LanguageProvider.BasicText[lang, "SEARCH_BY_NAME"]" style="height:30px; margin-top: 5px" id="usernameUserInput" />
         @{
             var items = Model.GroupList.Select(g => new SelectListItem(g.GroupName, g.GroupId.ToString(), g.GroupId == Model.GroupId, false)).ToList();
-            items.Add(new SelectListItem("Caută în grupul...", "null", !Model.GroupId.HasValue, true));
+            items.Add(new SelectListItem(Model.LanguageProvider.BasicText[lang, "SEARCH_IN_GROUP"], "null", !Model.GroupId.HasValue, true));
             @Html.DropDownListFor(m => m.GroupId, items, new { id = "searchGroup", style = "height:30px; margin-top: 5px" });
         }
-        @Html.DropDownListFor(m => m.Order, _utils.EnumToDropDownList<MemberListOrder>(Model.Order, Model.GetOrderDisplayName, "Ordonează după..."), new { id = "searchOrder", style = "height:30px; margin-top: 5px" })
+        @Html.DropDownListFor(m => m.Order, _utils.EnumToDropDownList<MemberListOrder>(Model.Order, order => Model.LanguageProvider.Enums[lang, order], "Ordonează după..."), new { id = "searchOrder", style = "height:30px; margin-top: 5px" })
         <input asp-for="Mode" type="hidden" />
         <input asp-for="PageNum" type="hidden" id="pageNumInput" />
         <input type="hidden" value="@Model.Username" id="usernameOriginalValue" />
-        <input type="submit" value="Trimite" style="height:32px; margin-top: 5px" onclick="return shouldChangePageNum()" />
+        <input type="submit" value="@Model.LanguageProvider.BasicText[lang, "SUBMIT", Casing.FirstUpper]" style="height:32px; margin-top: 5px" onclick="return shouldChangePageNum()" />
     </form>
 
     @if (Model.UserList?.Any() ?? false)
@@ -107,13 +117,13 @@
     }
     else if (Model.SearchWasPerformed)
     {
-        <h4>Nu a fost găsit nici un utilizator.</h4>
+        <h4>@Model.LanguageProvider.BasicText[lang, "NO_USERS"]</h4>
     }
 
 </div>
 
 <div id="Groups" class="tabcontent" style="@(Model.Mode == MemberListPages.Groups ? "display:inherit" : "display:none")">
-    <h3>Grupurile forumului</h3>
+    <h3>@Model.LanguageProvider.BasicText[lang, "FORUM_GROUPS", Casing.Title]</h3>
     @{
         if (await Model.IsCurrentUserAdminHere())
         {
@@ -142,7 +152,7 @@
                         </p>
                     }
                     <a asp-page="/MemberList" asp-page-handler="search" asp-route-GroupId="@group.GroupId" asp-route-Mode="SearchUsers" asp-route-PageNum="1">
-                        Vezi toți membrii grupului
+                        @Model.LanguageProvider.BasicText[lang, "SEE_ALL_GROUP_MEMBERS", Casing.Title]
                     </a>
                 </div>
             </div>
@@ -152,11 +162,13 @@
 </div>
 
 <div id="ActiveUsers" class="tabcontent" style="@(Model.Mode == MemberListPages.ActiveUsers || Model.Mode == MemberListPages.ActiveBots ? "display:inherit" : "display:none")">
-    <h3>Membri activi în ultimele @(_config.GetValue<int?>("UserActivityTrackingIntervalMinutes") ?? 60) de minute</h3>
+    <h3>
+        @string.Format(Model.LanguageProvider.BasicText[lang, "MEMBERLIST_STATS_HEADER_FORMAT", Casing.Title], _config.GetValue<int?>("UserActivityTrackingIntervalMinutes") ?? 60)
+    </h3>
     @if (Model.Mode == MemberListPages.ActiveUsers)
     {
         <form method="get">
-            @Html.DropDownListFor(m => m.Order, _utils.EnumToDropDownList<MemberListOrder>(Model.Order, Model.GetOrderDisplayName, "Ordonează după..."), new { id = "userOrder", style = "height:30px; margin-top: 5px" })
+            @Html.DropDownListFor(m => m.Order, _utils.EnumToDropDownList<MemberListOrder>(Model.Order, order => Model.LanguageProvider.Enums[lang, order], @Model.LanguageProvider.BasicText[lang, "ORDER_BY"]), new { id = "userOrder", style = "height:30px; margin-top: 5px" })
             <input asp-for="Mode" type="hidden" />
             <input asp-for="PageNum" type="hidden" />
             <input name="handler" value="setMode" type="hidden" />
@@ -169,28 +181,28 @@
         var bots = _sessionCounter.GetActiveBotCount();
         var displayUsers = Model.Mode == MemberListPages.ActiveBots ? "display:none" : "display:initial";
         var displayBots = Model.Mode == MemberListPages.ActiveBots ? "display:initial" : "display:none";
-        var botsText = $"{bots} bo{(bots == 1 ? "t" : "ți")}";
     }
-    <h4>
-        @registered membr@(registered == 1 ? "u" : "i") înregistra@(registered == 1 ? "t" : "ți"), @anonymous vizitator@(anonymous == 1 ? "" : "i")
-        @if (await Model.IsCurrentUserAdminHere())
-        {
-            <span>
-                și
-                @if (bots > 0)
-                {
-                    <a href="@($"MemberList?handler=setMode&pageNum={Model.PageNum}&order={Model.Order}&mode={MemberListPages.ActiveBots}")">
-                        @Html.Raw(botsText)
-                    </a>
-                }
-                else
-                {
-                    @Html.Raw(botsText)
-                }
-            </span>
-        }
+<h4>
+    @string.Format(Model.LanguageProvider.BasicText[lang, registered == 1 ? "REGISTERED_COUNT_SINGLE_FORMAT" : "REGISTERED_COUNT_MULTIPLE_FORMAT", Casing.Title], registered),
+    @string.Format(Model.LanguageProvider.BasicText[lang, anonymous == 1 ? "GUEST_COUNT_SINGLE_FORMAT" : "GUEST_COUNT_MULTIPLE_FORMAT", Casing.Title], anonymous)
+    @if (await Model.IsCurrentUserAdminHere())
+    {
+        <span>
+            @Model.LanguageProvider.BasicText[lang, "AND"]
+            @if (bots > 0)
+            {
+                <a href="@($"MemberList?handler=setMode&pageNum={Model.PageNum}&order={Model.Order}&mode={MemberListPages.ActiveBots}")">
+                    @string.Format(Model.LanguageProvider.BasicText[lang, bots == 1 ? "BOT_COUNT_SINGLE_FORMAT" : "BOT_COUNT_MULTIPLE_FORMAT", Casing.Title], bots)
+                </a>
+            }
+            else
+            {
+                @string.Format(Model.LanguageProvider.BasicText[lang, "BOT_COUNT_MULTIPLE_FORMAT", Casing.Title], bots)
+            }
+        </span>
+    }
 
-    </h4>
+</h4>
     <div id="users" style="@displayUsers">
         @if (Model.UserList?.Any() ?? false)
         {
@@ -205,7 +217,7 @@
         }
         else
         {
-            <h4>Nu există nici un utilizator</h4>
+            <h4>@Model.LanguageProvider.BasicText[lang, "NO_USERS"]</h4>
         }
     </div>
     <div id="bots" style="@displayBots">
@@ -239,7 +251,7 @@
                             <a href="https://whatismyipaddress.com/ip/@bot.IP" target="_blank">[IP Lookup]</a><br />
                         }
                         @Html.Raw(bot.UserAgent) <br />
-                        Activ ultima oară:
+                        @Model.LanguageProvider.BasicText[lang, "LAST_ACTIVE"]:
                         <script>
                             writeDate('@bot.EntryTime.ToString("o")', '@dateFormat');
                         </script>

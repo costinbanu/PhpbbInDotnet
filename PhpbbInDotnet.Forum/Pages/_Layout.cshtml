@@ -21,6 +21,7 @@
         dateFormat = "dddd, dd.MM.yyyy, HH:mm";
     }
     var lang = _languageProvider.GetValidatedLanguage(currentUser, _httpContextAccessor.HttpContext?.Request);
+    var statistics = await _statisticsService.GetStatistics();
 }
 
 <!DOCTYPE html>
@@ -32,7 +33,6 @@
         window.dataLayer = window.dataLayer || [];
         function gtag() { dataLayer.push(arguments); }
         gtag('js', new Date());
-
         gtag('config', 'UA-93150453-1');
     </script>
 
@@ -167,13 +167,10 @@
     </div>
     <p></p>
     <div class="container body-content size1300">
-        @{
-            var statistics = await _statisticsService.GetStatistics();
-        }
-        Începând cu
+        @Html.Raw(_languageProvider.BasicText[lang, "STARTING_ON"])
         <script>writeDate('@((statistics.FirstMessageDate ?? DateTime.UtcNow).ToString("o"))', '@dateFormat')</script>,
-        cei @statistics.UserCount utilizatori ai forumului au scris @statistics.MessageCount mesaje în @statistics.TopicCount subiecte și @statistics.ForumCount sub-forumuri.<br />
-        <span class="Caption">Interval de actualizare: @_statisticsService.RefreshIntervalMinutes minute.</span>
+        @Html.Raw(string.Format(_languageProvider.BasicText[lang, "FORUM_STATS_FORMAT"], statistics.UserCount, statistics.MessageCount, statistics.TopicCount, statistics.ForumCount))<br />
+        <span class="Caption">@Html.Raw(string.Format(_languageProvider.BasicText[lang, "FORUM_STATS_CAPTION_FORMAT"], _statisticsService.RefreshIntervalMinutes))</span>
     </div>
     <center style="color:white;">
         <p>&nbsp;</p>

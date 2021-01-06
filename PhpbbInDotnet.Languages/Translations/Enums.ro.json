@@ -1,0 +1,10 @@
+﻿{
+  "MemberListOrder.NameAsc": "Nume utilizator A → Z",
+  "MemberListOrder.NameDesc": "Nume utilizator Z → A",
+  "MemberListOrder.LastActiveDateAsc": "Activ ultima oară (crescător)",
+  "MemberListOrder.LastActiveDateDesc": "Activ ultima oară (descrescător)",
+  "MemberListOrder.RegistrationDateAsc": "Data înregistrării (crescător)",
+  "MemberListOrder.RegistrationDateDesc": "Data înregistrării (descrescător)",
+  "MemberListOrder.MessageCountAsc": "Număr mesaje postate (crescător)",
+  "MemberListOrder.MessageCountDesc": "Număr mesaje postate (descrescător)"
+}

@@ -9,7 +9,6 @@ using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -146,20 +145,6 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 return Page();
             });
-
-        public string GetOrderDisplayName(MemberListOrder order)
-            => order switch
-            {
-                MemberListOrder.NameAsc => "Nume utilizator A → Z",
-                MemberListOrder.NameDesc => "Nume utilizator Z → A",
-                MemberListOrder.LastActiveDateAsc => "Activ ultima oară (crescător)",
-                MemberListOrder.LastActiveDateDesc => "Activ ultima oară (descrescător)",
-                MemberListOrder.RegistrationDateAsc => "Data înregistrării (crescător)",
-                MemberListOrder.RegistrationDateDesc => "Data înregistrării (descrescător)",
-                MemberListOrder.MessageCountAsc => "Număr mesaje postate (crescător)",
-                MemberListOrder.MessageCountDesc => "Număr mesaje postate (descrescător)",
-                _ => throw new ArgumentException($"Unknown value '{order}' in {nameof(GetOrderDisplayName)}.", nameof(order))
-            };
 
         private string GetOrder(MemberListOrder order)
             => order switch

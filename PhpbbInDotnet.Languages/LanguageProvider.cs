@@ -13,11 +13,14 @@ namespace PhpbbInDotnet.Languages
         private readonly Lazy<Translation> _basicText;
         private readonly Lazy<Translation> _aboutCookies;
         private readonly Lazy<Translation> _email;
+        private readonly Lazy<EnumTranslation> _enums;
         private readonly ILogger _logger;
 
         public Translation BasicText => _basicText.Value;
         public Translation AboutCookies => _aboutCookies.Value;
         public Translation Email => _email.Value;
+
+        public EnumTranslation Enums => _enums.Value;
 
         public LanguageProvider(ILogger logger)
         {
@@ -25,6 +28,7 @@ namespace PhpbbInDotnet.Languages
             _basicText = new Lazy<Translation>(() => new Translation(nameof(BasicText), _logger));
             _aboutCookies = new Lazy<Translation>(() => new Translation(nameof(AboutCookies), _logger));
             _email = new Lazy<Translation>(() => new Translation(nameof(Email), _logger));
+            _enums = new Lazy<EnumTranslation>(() => new EnumTranslation(_logger));
         }
 
         public string GetValidatedLanguage(LoggedUser user, HttpRequest request = null)

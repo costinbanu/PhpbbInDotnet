@@ -9,7 +9,7 @@
     var lang = Model.LanguageProvider.GetValidatedLanguage(null, Model.HttpContext?.Request);
 }
 
-<h3>Conectare</h3>
+<h3>@Model.LanguageProvider.BasicText[lang, "LOGIN", Casing.FirstUpper]</h3>
 
 @if (Model.Mode == Utilities.LoginMode.Normal)
 {

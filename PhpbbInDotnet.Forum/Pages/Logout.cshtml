@@ -1,9 +1,12 @@
 ﻿@page
 @model PhpbbInDotnet.Forum.Pages.LogoutModel
+@using Utilities
+@inject Languages.LanguageProvider _languageProvider
 @{
     ViewData["Title"] = "Logout";
     Layout = "~/Pages/_Layout.cshtml";
+    var lang = _languageProvider.GetValidatedLanguage(null, Model.HttpContext?.Request);
 }
 
-<h3>Deconectare</h3>
+<h3>@_languageProvider.BasicText[lang, "LOGOUT", Casing.FirstUpper]</h3>
 
