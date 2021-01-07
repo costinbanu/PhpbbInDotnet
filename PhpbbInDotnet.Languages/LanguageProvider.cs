@@ -10,25 +10,31 @@ namespace PhpbbInDotnet.Languages
 {
     public class LanguageProvider
     {
-        private readonly Lazy<Translation> _basicText;
-        private readonly Lazy<Translation> _aboutCookies;
-        private readonly Lazy<Translation> _email;
+        private readonly Lazy<TextTranslation> _basicText;
+        private readonly Lazy<HtmlTranslation> _aboutCookies;
+        private readonly Lazy<TextTranslation> _email;
         private readonly Lazy<EnumTranslation> _enums;
+        private readonly Lazy<JavaScriptTranslation> _jsText;
         private readonly ILogger _logger;
 
-        public Translation BasicText => _basicText.Value;
-        public Translation AboutCookies => _aboutCookies.Value;
-        public Translation Email => _email.Value;
+        public TextTranslation BasicText => _basicText.Value;
+
+        public HtmlTranslation AboutCookies => _aboutCookies.Value;
+
+        public TextTranslation Email => _email.Value;
 
         public EnumTranslation Enums => _enums.Value;
+
+        public JavaScriptTranslation JSText => _jsText.Value;
 
         public LanguageProvider(ILogger logger)
         {
             _logger = logger;
-            _basicText = new Lazy<Translation>(() => new Translation(nameof(BasicText), _logger));
-            _aboutCookies = new Lazy<Translation>(() => new Translation(nameof(AboutCookies), _logger));
-            _email = new Lazy<Translation>(() => new Translation(nameof(Email), _logger));
+            _basicText = new Lazy<TextTranslation>(() => new TextTranslation(nameof(BasicText), _logger));
+            _aboutCookies = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(AboutCookies), _logger));
+            _email = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Email), _logger));
             _enums = new Lazy<EnumTranslation>(() => new EnumTranslation(_logger));
+            _jsText = new Lazy<JavaScriptTranslation>(() => new JavaScriptTranslation(_logger));
         }
 
         public string GetValidatedLanguage(LoggedUser user, HttpRequest request = null)

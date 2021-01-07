@@ -103,7 +103,7 @@ namespace PhpbbInDotnet.Forum
             {
                 services.Configure<KestrelServerOptions>(options =>
                 {
-                    options.Limits.MaxRequestBodySize = 1073741824; // if don't set default value is: 30 MB
+                    options.Limits.MaxRequestBodySize = 1073741824; // if not set default value is: 30 MB
                 });
             }
             else
@@ -111,7 +111,7 @@ namespace PhpbbInDotnet.Forum
                 services.Configure<FormOptions>(x =>
                 {
                     x.ValueLengthLimit = 1073741824;
-                    x.MultipartBodyLengthLimit = 1073741824; // if don't set default value is: 128 MB
+                    x.MultipartBodyLengthLimit = 1073741824; // if not set default value is: 128 MB
                     x.MultipartHeadersLengthLimit = 1073741824;
                 });
             }

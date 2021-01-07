@@ -1,0 +1,20 @@
+﻿{
+  "ViewTopic": {
+    "SHOW_RESULTS": "Arată rezultatele",
+    "DO_VOTE": "Votează",
+    "RECEIVED_COMMAND": "Am primit comanda",
+    "CONTINUE": "Continuați?",
+    "LAST_CHANGED": "Modificat ultima dată:",
+    "CHANGED_BY": "de către",
+    "TOTAL_CHANGES": "Total modificări:",
+    "FILL_REPORT_DETAILS": "Completează detaliile raportului (min. 3 caractere).",
+    "CHOOSE_REPORT_REASON": "Alege un motiv pentru raport.",
+    "CONFIRM_DELETE_REPORTED_MESSAGE": "Ai ales să ștergi mesajul raportat. Ești sigur?"
+  },
+  "Posting": {
+
+  },
+  "Global": {
+
+  }
+}

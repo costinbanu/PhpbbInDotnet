@@ -25,6 +25,11 @@
   "ADMIN_PANEL": "panoul administratorului",
   "FAQ": "întrebări frecvente - ghid de utilizare",
 
+  //cookies warning box
+  "COOKIES_BOX_MESSAGE": "Acest site folosește cookie-uri pentru personalizarea conținutului afișat, autentificare și altele. Prin utilizarea site-ului nostru acceptați folosirea acestora.",
+  "COOKIES_BOX_DISMISS": "Am înțeles",
+  "COOKIES_BOX_LINK_TEXT": "Află mai multe",
+
   //header links
   "NEW_POSTS": "mesaje noi",
   "OWN_TOPICS": "subiectele proprii",
@@ -69,5 +74,18 @@
   "GUEST_COUNT_MULTIPLE_FORMAT": "{0} vizitatori",
   "BOT_COUNT_SINGLE_FORMAT": "{0} bot",
   "BOT_COUNT_MULTIPLE_FORMAT": "{0} boți",
-  "LAST_ACTIVE": "activ ultima oară"
+  "LAST_ACTIVE": "activ ultima oară",
+
+  //post and poll
+  "POLL_TITLE_FORMAT": "Chestionar: {0}",
+  "POLL_WAS_CLOSED": "Chestionarul a fost închis:",
+  "POLL_WILL_BE_CLOSED": "Chestionarul va fi închis:",
+  "NEVER": "Niciodată",
+  "SEND_VOTE": "Trimite vot",
+  "VOTERS_FORMAT": "Votanți: {0}",
+  "VOTE_FORMAT": "{0} vot ({1})",
+  "VOTES_FORMAT": "{0} voturi ({1})",
+  "SHOW_RESULTS": "Arată rezultatele",
+  "VOTE_REGISTERED": "Votul tău a fost înregistrat!"
+
 }

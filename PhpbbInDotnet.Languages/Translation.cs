@@ -9,89 +9,82 @@ using System.Reflection;
 
 namespace PhpbbInDotnet.Languages
 {
-    public class Translation
+    public abstract class Translation
     {
         static readonly CultureInfo EN = new CultureInfo("en");
 
         private readonly string _name;
         private readonly Dictionary<string, Dictionary<string, string>> _dictionary;
-        private readonly Dictionary<string, string> _html;
+        private readonly Dictionary<string, string> _rawCache;
         private readonly ILogger _logger;
 
-        public Translation(string name, ILogger logger)
+        protected abstract string FileExtension { get; }
+
+        protected abstract bool ShouldCacheRawTranslation { get; }
+
+        protected Translation(string name, ILogger logger)
         {
             _name = name;
             _dictionary = new Dictionary<string, Dictionary<string, string>>(StringComparer.InvariantCultureIgnoreCase);
-            _html = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
+            _rawCache = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
             _logger = logger;
         }
 
-        /// <summary>
-        /// Get the translation in the given language for the given key
-        /// </summary>
-        /// <param name="language">Language to translate the key to</param>
-        /// <param name="key">Key to translate</param>
-        /// <param name="casing">Text casing</param>
-        /// <returns>Translation of the given key in the given language if both exist and are properly defined. Empty string otherwise.</returns>
-        public string this[string language, string key, Casing casing = Casing.None]
+        protected string GetRawTranslation(string language)
         {
-            get
+            if (ShouldCacheRawTranslation && _rawCache.ContainsKey(language))
             {
-                if (!_dictionary.ContainsKey(language))
-                {
-                    var value = GetDictionary(language);
-                    if (value == null)
-                    {
-                        _logger.Warning($"Switching to default language '{Constants.DEFAULT_LANGUAGE}'...");
-                        language = Constants.DEFAULT_LANGUAGE;
-                        if (!_dictionary.ContainsKey(language))
-                        {
-                            _dictionary.Add(language, GetDictionary(language));
-                        }
-                    }
-                    else
-                    {
-                        _dictionary.Add(language, value);
-                    }
-                }
-
-                if (!_dictionary[language].TryGetValue(key, out var toReturn))
-                {
-                    return key;
-                }
-
-                return casing switch
-                {
-                    Casing.AllLower => toReturn.ToLower(),
-                    Casing.AllUpper => toReturn.ToUpper(),
-                    Casing.FirstUpper => FirstUpper(toReturn),
-                    Casing.Title => TitleCase(language, toReturn),
-                    Casing.None => toReturn,
-                    _ => toReturn
-                };
+                return _rawCache[language];
             }
+
+            var path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Translations", $"{_name}.{language}.{FileExtension}");
+            if (!File.Exists(path))
+            {
+                _logger.Warning($"Potentially missing language: '{language}' - file '{path}' does not exist.");
+                return null;
+            }
+            var value = File.ReadAllText(path);
+            if (ShouldCacheRawTranslation)
+            {
+                _rawCache.Add(language, value);
+            }
+            return value;
         }
 
-        public string Html(string language)
+        protected string GetFromDictionary(string language, string key, Casing casing)
         {
-            if (!_html.ContainsKey(language))
+            if (!_dictionary.ContainsKey(language))
             {
-                var value = GetHtml(language);
+                var value = GetDictionary(language);
                 if (value == null)
                 {
                     _logger.Warning($"Switching to default language '{Constants.DEFAULT_LANGUAGE}'...");
                     language = Constants.DEFAULT_LANGUAGE;
-                    if (!_html.ContainsKey(language))
+                    if (!_dictionary.ContainsKey(language))
                     {
-                        _html.Add(language, GetHtml(language));
+                        _dictionary.Add(language, GetDictionary(language));
                     }
                 }
                 else
                 {
-                    _html.Add(language, value);
+                    _dictionary.Add(language, value);
                 }
             }
-            return _html[language];
+
+            if (!_dictionary[language].TryGetValue(key, out var toReturn))
+            {
+                return key;
+            }
+
+            return casing switch
+            {
+                Casing.AllLower => toReturn.ToLower(),
+                Casing.AllUpper => toReturn.ToUpper(),
+                Casing.FirstUpper => FirstUpper(toReturn),
+                Casing.Title => TitleCase(language, toReturn),
+                Casing.None => toReturn,
+                _ => toReturn
+            };
         }
 
         private string FirstUpper(string text)
@@ -102,36 +95,23 @@ namespace PhpbbInDotnet.Languages
 
         private Dictionary<string, string> GetDictionary(string language)
         {
-            var path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Translations", $"{_name}.{language}.json");
-            if (!File.Exists(path))
+            var rawValue = GetRawTranslation(language);
+            if (string.IsNullOrWhiteSpace(rawValue))
             {
-                _logger.Warning($"Potential missing language: '{language}' - file '{path}' does not exist.");
                 return null;
             }
-
             var value = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
             try
             {
-                JsonConvert.PopulateObject(File.ReadAllText(path), value);
+                JsonConvert.PopulateObject(rawValue, value);
             }
             catch (Exception ex)
             {
-                _logger.Warning(ex, $"Failed to read file '{path}' and parse its contents.");
+                _logger.Warning(ex, $"Failed to read translation '{_name}' for language '{language}' and parse its contents.");
                 return null;
             }
 
             return value;
-        }
-
-        private string GetHtml(string language)
-        {
-            var path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Translations", $"{_name}.{language}.html");
-            if (!File.Exists(path))
-            {
-                _logger.Warning($"Potential missing language: '{language}' - file '{path}' does not exist.");
-                return null;
-            }
-            return File.ReadAllText(path);
         }
     }
 }

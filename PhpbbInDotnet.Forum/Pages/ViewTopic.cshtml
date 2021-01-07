@@ -28,6 +28,7 @@
     var HasPM = _userService.HasPrivateMessagePermissions(CurrentUser);
     var EditTime = CurrentUser.PostEditTime;
     var Connection = _context.Database.GetDbConnection();
+    var Lang = Model.LanguageProvider.GetValidatedLanguage(CurrentUser, Model.Request);
 }
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />
@@ -42,7 +43,8 @@
         '@ModeratorTopicActions.MoveTopic',
         '@ModeratorPostActions.MoveSelectedPosts',
         '@ModeratorPostActions.SplitSelectedPosts',
-        @Constants.OTHER_REPORT_REASON_ID
+        @Constants.OTHER_REPORT_REASON_ID,
+        @(Html.Raw(Model.LanguageProvider.JSText[Lang])).ViewTopic
     );
 
     $(document).ready(function () {

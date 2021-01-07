@@ -461,15 +461,15 @@ else if (IsPM)
 {
     <script>
         var secondTribute = new Tribute({
-        values: @Html.Raw(_writingService.ToCamelCaseJson(await _cacheService.GetFromCache<List<KeyValuePair<string, int>>>(await Model.GetActualCacheKey("UserMap", false)))),
-        selectTemplate: function(item) {
+            values: @Html.Raw(_writingService.ToCamelCaseJson(await _cacheService.GetFromCache<List<KeyValuePair<string, int>>>(await Model.GetActualCacheKey("UserMap", false)))),
+            selectTemplate: function(item) {
                 return item.original.key;
             },
-        allowSpaces: true,
-        menuContainer: document.getElementById("tributeHolder"),
-        positionMenu: false,
-        trigger: ' '
-          });
+            allowSpaces: true,
+            menuContainer: document.getElementById("tributeHolder"),
+            positionMenu: false,
+            trigger: ' '
+        });
         var authorInput = document.getElementById("pmToInput");
 
         secondTribute.attach(authorInput);

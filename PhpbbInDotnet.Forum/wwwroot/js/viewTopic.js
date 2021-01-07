@@ -1,11 +1,12 @@
 ﻿class ViewTopic {
-    constructor(postId, scrollToModPanel, moveTopic, moveSelectedPosts, splitSelectedPosts, otherReportReasonId) {
+    constructor(postId, scrollToModPanel, moveTopic, moveSelectedPosts, splitSelectedPosts, otherReportReasonId, dictionary) {
         this.postId = postId;
         this.scrollToModPanel = scrollToModPanel;
         this.moveTopic = moveTopic;
         this.moveSelectedPosts = moveSelectedPosts;
         this.splitSelectedPosts = splitSelectedPosts;
         this.otherReportReasonId = otherReportReasonId;
+        this.dictionary = dictionary;
     }
 
     onLoad() {
@@ -20,13 +21,15 @@
     }
 
     switchPollPanels(id1, id2, button) {
+        var show = this.dictionary['SHOW_RESULTS'];
+        var vote = this.dictionary['DO_VOTE'];
         showElement(
             id1,
             function () {
-                button.value = "Arată rezultatele";
+                button.value = show;
             },
             function () {
-                button.value = "Votează";
+                button.value = vote;
             }
         );
         showElement(id2);
@@ -73,7 +76,7 @@
     confirmAction(actionSelect) {
         var action = $(actionSelect).val();
         if (action.startsWith('Delete')) {
-            return confirm("Am primit comanda '" + $(actionSelect).find(':selected').text() + "'. Continuați?");
+            return confirm(this.dictionary['RECEIVED_COMMAND'] + ' "' + $(actionSelect).find(':selected').text() + '". ' + this.dictionary['CONTINUE']);
         }
         return true;
     }
@@ -81,8 +84,8 @@
     showMessageDetails(ip, editTime, timeFormat, editCount, editUser) {
         var content = '<b>IP:</b> ' + ip + '<br/>';
         if (editCount > 0) {
-            content = content + '<b>Modificat ultima dată:</b> ' + new Date(editTime).format(timeFormat) + ', <b>de către</b> ' + editUser + '<br /> ' +
-                '<b>Total modificări:</b> ' + editCount + '<br/>';
+            content = content + '<b>' + this.dictionary['LAST_CHANGED'] + '</b> ' + new Date(editTime).format(timeFormat) + ', <b>' + this.dictionary['CHANGED_BY'] + '</b> ' + editUser + '<br /> ' +
+                '<b>' + this.dictionary['TOTAL_CHANGES'] + '</b> ' + editCount + '<br/>';
         }
         $('#postInfoContent').html(content);
         showElement('postInfo', null, null, true);
@@ -103,14 +106,14 @@
         var validation = $('#reportValidation');
         if (reason) {
             if (reason == this.otherReportReasonId && (!details || details.length < 3)) {
-                validation.text('Completează detaliile raportului (min. 3 caractere).');
+                validation.text(this.dictionary['FILL_REPORT_DETAILS']);
                 validation.show();
                 return false;
             }
             return true;
         }
         else {
-            validation.text('Alege un motiv pentru raport.');
+            validation.text(this.dictionary['CHOOSE_REPORT_REASON']);
             validation.show();
             return false;
         }
@@ -130,7 +133,7 @@
 
     confirmDeleteReportedPost() {
         if ($('#reportViewerDeleteMessage').is(':checked')) {
-            return confirm('Ai ales să ștergi mesajul raportat. Ești sigur?');
+            return confirm(this.dictionary['CONFIRM_DELETE_REPORTED_MESSAGE']);
         }
         return true;
     }

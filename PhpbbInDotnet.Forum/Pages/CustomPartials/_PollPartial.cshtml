@@ -3,8 +3,13 @@
 @using System.Web
 @using Utilities
 
+@inject Services.UserService  _userService
+@inject Languages.LanguageProvider _languageProvider
+
 @if (Model.Poll != null)
 {
+    var currentUser = await _userService.ClaimsPrincipalToLoggedUserAsync(User);
+    var lang = _languageProvider.GetValidatedLanguage(currentUser, Model.HttpContext?.Request);
     var IsAnonymous = Model.CurrentUser.UserId == Constants.ANONYMOUS_USER_ID;
     var UserDateFormat = Model.CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
     if (!DateTime.TryParse(DateTime.Now.ToString(UserDateFormat), out _))
@@ -14,23 +19,24 @@
     var displayResultsMenu = !Model.IsPreview && (Model.Poll.PollEnded || !Model.Poll.PollEnd.HasValue || Model.IsCurrentUserMod);
     var displayVoteMenu = Model.CanVoteNow || !displayResultsMenu;
 
+    <h3>@Html.Raw(string.Format(_languageProvider.BasicText[lang, "POLL_TITLE_FORMAT"], HttpUtility.HtmlDecode(Model.Poll.PollTitle)))</h3>
+    <div>
+        @Html.Raw(Model.Poll.PollEnded ? _languageProvider.BasicText[lang, "POLL_WAS_CLOSED"] : _languageProvider.BasicText[lang, "POLL_WILL_BE_CLOSED"])
+        @if (Model.Poll.PollEnd.HasValue)
+        {
+            <script>
+                writeDate('@Model.Poll.PollEnd.Value.ToString("o")', '@UserDateFormat');
+            </script>
+        }
+        else
+        {
+            @Html.Raw(_languageProvider.BasicText[lang, "NEVER"]);
+        }
+    </div>
+
     @if (displayVoteMenu)
     {
         <div id="votes" style="display:block">
-            <h3>Chestionar: @Html.Raw(HttpUtility.HtmlDecode(Model.Poll.PollTitle))</h3>
-            <div>
-                Chestionarul @(Model.Poll.PollEnded ? "a fost" : "va fi") închis:
-                @if (Model.Poll.PollEnd.HasValue)
-                {
-                    <script>
-                        writeDate('@Model.Poll.PollEnd.Value.ToString("o")', '@UserDateFormat');
-                    </script>
-                }
-                else
-                {
-                    @Html.Raw("niciodată");
-                }
-            </div>
             <form method="post" asp-page-handler="vote">
                 @foreach (var option in Model.Poll.PollOptions)
                 {
@@ -52,7 +58,7 @@
                 <input name="queryString" type="hidden" value="@HttpUtility.UrlEncode(Model.QueryString)" />
                 @if (Model.CanVoteNow)
                 {
-                    <input type="submit" value="Trimite vot" class="MyButton" style="margin-top: 5px" @(Model.IsPreview ? "disabled" : "") />
+                    <input type="submit" value="@_languageProvider.BasicText[lang, "SEND_VOTE"]" class="MyButton" style="margin-top: 5px" @(Model.IsPreview ? "disabled" : "") />
                     <span asp-validation-for="Poll" class="validation"></span>
                 }
                 @Html.AntiForgeryToken()
@@ -62,37 +68,23 @@
     @if (displayResultsMenu)
     {
         <div id="results" style="display:@(displayVoteMenu ? "none" : "block")">
-            <h3>Chestionar: @Html.Raw(HttpUtility.HtmlDecode(Model.Poll.PollTitle))</h3>
-            <div>
-                Chestionarul @(Model.Poll.PollEnded ? "a fost" : "va fi") închis:
-                @if (Model.Poll.PollEnd.HasValue)
-                {
-                    <script>
-                        writeDate('@Model.Poll.PollEnd.Value.ToString("o")', '@UserDateFormat');
-                    </script>
-                }
-                else
-                {
-                    @Html.Raw("niciodată");
-                }
-            </div>            <p></p>
             <table class="PollTable">
                 @foreach (var option in Model.Poll.PollOptions)
                 {
+                    var percentage = (Model.Poll.TotalVotes == 0 ? 0 : option.PollOptionVotes * 100m / Model.Poll.TotalVotes).ToString("##0.##'%'", System.Globalization.CultureInfo.InvariantCulture);
                     <tr>
                         <td>
                             @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText))
                             @if (Model.IsCurrentUserAdmin)
                             {
                                 <div class="Caption">
-                                    Votanti: @Html.Raw(HttpUtility.HtmlDecode(string.Join(", ", option.PollOptionVoters?.Select(v => v.Username) ?? Enumerable.Empty<string>())))
+                                    @Html.Raw(string.Format(_languageProvider.BasicText[lang, "VOTERS_FORMAT"], HttpUtility.HtmlDecode(string.Join(", ", option.PollOptionVoters?.Select(v => v.Username) ?? Enumerable.Empty<string>()))))
                                 </div>
                             }
                         </td>
                         <td style="padding-right: unset">
-                            @{var percentage = (Model.Poll.TotalVotes == 0 ? 0 : option.PollOptionVotes * 100m / Model.Poll.TotalVotes).ToString("##0.##'%'", System.Globalization.CultureInfo.InvariantCulture);}
                             <span class="PollResultBar" style="background: linear-gradient(to right, #87ceeb @percentage, #ffffff 0%)">
-                                @option.PollOptionVotes @(option.PollOptionVotes == 1 ? "vot" : "voturi") (@(percentage))
+                                @Html.Raw(option.PollOptionVotes == 1 ? string.Format(_languageProvider.BasicText[lang, "VOTES_FORMAT"], option.PollOptionVotes, percentage) : string.Format(_languageProvider.BasicText[lang, "VOTE_FORMAT"], option.PollOptionVotes, percentage))
                             </span>
                         </td>
                     </tr>
@@ -101,14 +93,14 @@
         </div>
         @if (Model.CanVoteNow && Model.IsCurrentUserAdmin)
         {
-            <input type="button" value="Arată rezultatele" onclick="vt.switchPollPanels('results', 'votes', this)" class="MyButton" style="margin-top: 5px" />
+            <input type="button" value="@_languageProvider.BasicText[lang, "SHOW_RESULTS"]" onclick="vt.switchPollPanels('results', 'votes', this)" class="MyButton" style="margin-top: 5px" />
         }
     }
     @if (Model.Poll.PollOptions?.Any(o => o.PollOptionVoters?.Any(v => v.UserId == Model.CurrentUser.UserId) ?? false) ?? false)
     {
         <p></p>
         <div style="background-color: darkgreen; color: white; padding: 5px; font-weight: bold">
-            Votul tău a fost înregistrat!
+            @Html.Raw(_languageProvider.BasicText[lang, "VOTE_REGISTERED"])
         </div>
     }
 }

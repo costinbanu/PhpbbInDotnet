@@ -9,4 +9,4 @@
     var lang = _languageProvider.GetValidatedLanguage(await Model.GetCurrentUserAsync(), Model.HttpContext?.Request);
 }
 
-@Html.Raw(_languageProvider.AboutCookies.Html(lang))
+@Html.Raw(_languageProvider.AboutCookies[lang])
