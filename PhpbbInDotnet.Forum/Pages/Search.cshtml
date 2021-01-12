@@ -23,7 +23,7 @@
         dateFormat = "dddd, dd.MM.yyyy, HH:mm";
     }
     var connection = _context.Database.GetDbConnection();
-    var Lang = Model.LanguageProvider.GetValidatedLanguage(CurrentUser, Model.Request);
+    var Lang = await Model.GetLanguage();
 }
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />

@@ -2,10 +2,10 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
+using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Utilities;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -15,6 +15,7 @@ namespace PhpbbInDotnet.Forum.Pages
     public class ForumLoginModel : PageModel
     {
         private readonly ForumDbContext _context;
+        private readonly UserService _userService;
 
         [BindProperty(SupportsGet = true)]
         public string ReturnUrl { get; set; }
@@ -22,23 +23,42 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public int ForumId { get; set; }
 
-        [BindProperty, Required(ErrorMessage = "Trebuie să introduci o parolă")]
+        [BindProperty]
         public string Password { get; set; }
 
         public string ForumName { get; private set; }
 
+        public string Language { get; private set; }
 
-        public ForumLoginModel(ForumDbContext context)
+        public LanguageProvider LanguageProvider { get; }
+
+        public ForumLoginModel(ForumDbContext context, UserService userService, LanguageProvider languageProvider)
         {
             _context = context;
+            _userService = userService;
+            LanguageProvider = languageProvider;
         }
 
         public async Task<IActionResult> OnGet()
         {
-            var forum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId);
+            Language = LanguageProvider.GetValidatedLanguage(await _userService.ClaimsPrincipalToLoggedUserAsync(User), Request);
+            var forum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(filter => filter.ForumId == ForumId);
+
             if (forum == null)
             {
-                return RedirectToPage("Error", new { isNotFound = true });
+                return RedirectToPage("Error", new { IsNotFound = true });
+            }
+
+            if (string.IsNullOrWhiteSpace(forum.ForumPassword))
+            {
+                if (string.IsNullOrWhiteSpace(ReturnUrl))
+                {
+                    return RedirectToPage("ViewForum", new { ForumId });
+                }
+                else
+                {
+                    return Redirect(HttpUtility.UrlDecode(ReturnUrl));
+                }
             }
             ForumName = HttpUtility.HtmlDecode(forum.ForumName ?? string.Empty);
             return Page();
@@ -46,8 +66,20 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
-            var forum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId);
-                        
+            Language = LanguageProvider.GetValidatedLanguage(await _userService.ClaimsPrincipalToLoggedUserAsync(User), Request);
+            var forum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(filter => filter.ForumId == ForumId);
+
+            if (forum == null)
+            {
+                return RedirectToPage("Error", new { IsNotFound = true });
+            }
+
+            if (string.IsNullOrWhiteSpace(Password))
+            {
+                ModelState.AddModelError(nameof(Password), LanguageProvider.Errors[Language, "MISSING_REQUIRED_FIELD"]);
+                return Page();
+            }
+                       
             if (forum == null)
             {
                 return RedirectToPage("Error", new { isNotFound = true });
@@ -55,12 +87,19 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (string.IsNullOrWhiteSpace(forum.ForumPassword))
             {
-                return Redirect(HttpUtility.UrlDecode(ReturnUrl));
+                if (string.IsNullOrWhiteSpace(ReturnUrl))
+                {
+                    return RedirectToPage("ViewForum", new { ForumId });
+                }
+                else
+                {
+                    return Redirect(HttpUtility.UrlDecode(ReturnUrl));
+                }
             }
 
             if (forum.ForumPassword != Crypter.Phpass.Crypt(Password, forum.ForumPassword))
             {
-                ModelState.AddModelError(nameof(Password), "Parola este greșită!");
+                ModelState.AddModelError(nameof(Password), LanguageProvider.Errors[Language, "WRONG_PASS"]);
                 return await OnGet();
             }
             else

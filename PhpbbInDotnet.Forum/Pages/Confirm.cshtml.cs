@@ -51,14 +51,11 @@ namespace PhpbbInDotnet.Forum.Pages
             : base(context, forumService, userService, cacheService, config, sessionCounter, utils, languageProvider) 
         { }
 
-        public void OnGetRegistrationComplete()
+        public async Task OnGetRegistrationComplete()
         {
-            Message =
-                "Mulțumim pentru înregistrare! Ți-am trimis un e-mail pe adresa furnizată ce conține instrucțiuni pentru pașii următori. " +
-                "Verifică-ți căsuța de email, inclusiv folderele pentru \"spam\", și urmează instrucțiunile din mesajul primit. " +
-                "Dacă nu ai primit nici un mesaj, te rugăm să contactezi echipa administrativă la <a href=\"mailto:admin@metrouusor.com\">admin@metrouusor.com</a>.";
-
-            Title = "Confirmarea înregistrării";
+            var lang = await GetLanguage();
+            Message = LanguageProvider.BasicText[lang, "REGISTRATION_CONFIRM_MESSAGE"];
+            Title = LanguageProvider.BasicText[lang, "REGISTRATION_CONFIRM_TITLE"];
         }
 
         public async Task OnGetConfirmEmail(string code, string username)
@@ -69,23 +66,15 @@ namespace PhpbbInDotnet.Forum.Pages
                 (u.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed || u.UserInactiveReason == UserInactiveReason.ChangedEmailNotConfirmed)
             );
 
+            var lang = await GetLanguage();
+
             if (user == null)
             {
-                Message =
-                    "<span class=\"fail\">" +
-                        "Înregistrarea nu poate fi confirmată (utilizatorul nu există, este deja activ sau nu este asociat codului de activare).<br/>" +
-                        "Contactează administratorul pentru mai multe detalii." +
-                    "</span>";
+                Message = $"<span class=\"fail\">{LanguageProvider.Errors[lang, "REGISTRATION_ERROR"]}</span>";
             }
             else
             {
-                Message =
-                    "<span class=\"success\">" +
-                        "Înregistrarea a fost confirmată cu succes!<br/>" +
-                        "Contul va fi activat în următoarele 48 de ore. După activare vei putea face login pe forumul nostru.<br/>" +
-                        "Contactează echipa administrativă la <a href=\"mailto:admin@metrouusor.com\">admin@metrouusor.com</a> " +
-                        "dacă au trecut mai mult de 48 de ore de la înregistrare iar contul încă nu a fost activat." +
-                    "</span>";
+                Message = $"<span class=\"success\">{LanguageProvider.BasicText[lang, "EMAIL_CONFIRM_MESSAGE"]}</span>";
 
                 user.UserInactiveReason = UserInactiveReason.NewlyRegisteredConfirmed;
                 user.UserActkey = string.Empty;
@@ -118,49 +107,41 @@ namespace PhpbbInDotnet.Forum.Pages
                 emailMessage.To.Add(string.Join(',', adminEmails));
                 await Utils.SendEmail(emailMessage);
             }
-            Title = "Confirmarea adresei de e-mail";
+            Title = LanguageProvider.BasicText[lang, "EMAIL_CONFIRM_TITLE"];
         }
 
-        public void OnGetNewPassword()
+        public async Task OnGetNewPassword()
         {
-                Message =
-                    "<span class=\"success\">" +
-                        "Am trimis un e-mail, la adresa completată anterior, cu mai multe instrucțiuni pe care trebuie să le urmezi ca să îți poți recupera contul." + 
-                    "</span>";
-
-            Title = "Modificarea parolei";
+            var lang = await GetLanguage();
+            Message = $"<span class=\"success\">{LanguageProvider.BasicText[lang, "NEW_PASSWORD_MESSAGE"]}</span>";
+            Title = LanguageProvider.BasicText[lang, "NEW_PASSWORD_Title"];
         }
 
-        public void OnGetPasswordChanged()
+        public async Task OnGetPasswordChanged()
         {
-            Message =
-                "<span class=\"success\">" +
-                    "Parola a fost modificată cu succes." +
-                "</span>";
-
-            Title = "Modificarea parolei";
+            var lang = await GetLanguage();
+            Message = $"<span class=\"success\">{LanguageProvider.BasicText[lang, "NEW_PASSWORD_COMPLETE"]}</span>";
+            Title = LanguageProvider.BasicText[lang, "NEW_PASSWORD_Title"];
         }
 
-        public void OnGetModeratorConfirmation()
+        public async Task OnGetModeratorConfirmation()
         {
+            var lang = await GetLanguage();
             IsModeratorConfirmation = true;
             if (ShowTopicSelector)
             {
-                Title = "Alege forumul și subiectul de destinație";
+                Title = LanguageProvider.BasicText[lang, "CHOOSE_DESTINATION_FORUM_TOPIC"];
             }
             else
             {
-                Title = "Alege forumul de destinație";
+                Title = LanguageProvider.BasicText[lang, "CHOOSE_DESTINATION_FORUM"];
             }
         }
 
-        public void OnGetDestinationConfirmation()
+        public async Task OnGetDestinationConfirmation()
         {
             IsDestinationConfirmation = true;
-            Message =
-                "<span class=\"success\">" +
-                    "Operațiunea a fost efectuată cu succes." +
-                "</span>";
+            Message = $"<span class=\"success\">{LanguageProvider.BasicText[await GetLanguage(), "GENERIC_SUCCESS"]}</span>";
         }
     }
 }

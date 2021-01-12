@@ -23,7 +23,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [BindProperties, ValidateAntiForgeryToken]
+    [ValidateAntiForgeryToken]
     public class LoginModel : PageModel
     {
         private readonly ForumDbContext _context;
@@ -32,10 +32,10 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly UserService _userService;
         private readonly IConfiguration _config;
 
-        [Required]
+        [BindProperty, Required]
         public string UserName { get; set; }
         
-        [Required, PasswordPropertyText]
+        [BindProperty, Required, PasswordPropertyText]
         public string Password { get; set; }
         
         [BindProperty(SupportsGet = true)]
@@ -43,10 +43,10 @@ namespace PhpbbInDotnet.Forum.Pages
         
         public string LoginErrorMessage { get; set; }
         
-        [Required]
+        [BindProperty, Required]
         public string UserNameForPwdReset { get; set; }
         
-        [Required, EmailAddress]
+        [BindProperty, Required, EmailAddress]
         public string EmailForPwdReset { get; set; }
         
         public string PwdResetSuccessMessage { get; set; }
@@ -55,10 +55,10 @@ namespace PhpbbInDotnet.Forum.Pages
         
         public bool ShowPwdResetOptions { get; set; } = false;
         
-        [Required, PasswordPropertyText, StringLength(maximumLength: 256, MinimumLength = 8, ErrorMessage = "Parola trebuie să fie de minim 8 caractere lungime")]
+        [BindProperty, Required, PasswordPropertyText]
         public string PwdResetFirstPassword { get; set; }
         
-        [Required, PasswordPropertyText, Compare(otherProperty: nameof(PwdResetFirstPassword), ErrorMessage = "Cele două parole trebuie să fie identice")]
+        [BindProperty, Required, PasswordPropertyText]
         public string PwdResetSecondPassword { get; set; }
         
         [BindProperty(SupportsGet = true)]
@@ -104,7 +104,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (user == null || ResetPasswordCode != await _utils.DecryptAES(user.UserNewpasswd, Init))
             {
-                ModelState.AddModelError(nameof(PwdResetErrorMessage), LanguageProvider.BasicText[LanguageProvider.GetValidatedLanguage(null, Request), "CONFIRM_ERROR"]);
+                ModelState.AddModelError(nameof(PwdResetErrorMessage), LanguageProvider.Errors[LanguageProvider.GetValidatedLanguage(null, Request), "CONFIRM_ERROR"]);
                 return Page();
             }
             Mode = LoginMode.PasswordReset;
@@ -121,20 +121,20 @@ namespace PhpbbInDotnet.Forum.Pages
             Mode = LoginMode.Normal;
             if (user.Count() != 1)
             {
-                ModelState.AddModelError(nameof(LoginErrorMessage), LanguageProvider.BasicText[lang, "WRONG_USER_PASS"]);
+                ModelState.AddModelError(nameof(LoginErrorMessage), LanguageProvider.Errors[lang, "WRONG_USER_PASS"]);
                 return Page();
             }
 
             var currentUser = user.First();
             if (currentUser.UserInactiveReason != UserInactiveReason.NotInactive || currentUser.UserInactiveTime != 0)
             {
-                ModelState.AddModelError(nameof(LoginErrorMessage), LanguageProvider.BasicText[lang, "INACTIVE_USER"]);
+                ModelState.AddModelError(nameof(LoginErrorMessage), LanguageProvider.Errors[lang, "INACTIVE_USER"]);
                 return Page();
             }
 
             if (currentUser.UserPassword != Crypter.Phpass.Crypt(Password, currentUser.UserPassword))
             {
-                ModelState.AddModelError(nameof(LoginErrorMessage), LanguageProvider.BasicText[lang, "WRONG_USER_PASS"]);
+                ModelState.AddModelError(nameof(LoginErrorMessage), LanguageProvider.Errors[lang, "WRONG_USER_PASS"]);
                 return Page();
             }
 
@@ -167,7 +167,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (user == null)
             {
-                ModelState.AddModelError(nameof(PwdResetErrorMessage), LanguageProvider.BasicText[lang, "WRONG_EMAIL_USER"]);
+                ModelState.AddModelError(nameof(PwdResetErrorMessage), LanguageProvider.Errors[lang, "WRONG_EMAIL_USER"]);
                 ShowPwdResetOptions = true;
                 Mode = LoginMode.PasswordReset;
                 return Page();
@@ -204,7 +204,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }
             catch
             {
-                ModelState.AddModelError(nameof(PwdResetErrorMessage), LanguageProvider.BasicText[lang, "GENERIC_ERROR_TRY_AGAIN"]);
+                ModelState.AddModelError(nameof(PwdResetErrorMessage), LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
                 ShowPwdResetOptions = true;
                 Mode = LoginMode.PasswordReset;
                 return Page();
@@ -215,10 +215,24 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPostSaveNewPassword()
         {
+            if ((PwdResetFirstPassword?.Length ?? 7) < 8 || (PwdResetFirstPassword?.Length ?? 257) > 256)
+            {
+                ModelState.AddModelError(nameof(PwdResetErrorMessage), LanguageProvider.Errors[LanguageProvider.GetValidatedLanguage(null, Request), "BAD_PASSWORD"]);
+                Mode = LoginMode.PasswordReset;
+                return Page();
+            }
+
+            if (PwdResetFirstPassword != PwdResetSecondPassword)
+            {
+                ModelState.AddModelError(nameof(PwdResetErrorMessage), LanguageProvider.Errors[LanguageProvider.GetValidatedLanguage(null, Request), "PASSWORD_MISMATCH"]);
+                Mode = LoginMode.PasswordReset;
+                return Page();
+            }
+
             var user = await _context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == UserId);
             if (user == null || ResetPasswordCode != await _utils.DecryptAES(user.UserNewpasswd, Init))
             {
-                ModelState.AddModelError(nameof(PwdResetErrorMessage), LanguageProvider.BasicText[LanguageProvider.GetValidatedLanguage(null, Request), "CONFIRM_ERROR"]);
+                ModelState.AddModelError(nameof(PwdResetErrorMessage), LanguageProvider.Errors[LanguageProvider.GetValidatedLanguage(null, Request), "CONFIRM_ERROR"]);
                 Mode = LoginMode.PasswordReset;
                 return Page();
             }

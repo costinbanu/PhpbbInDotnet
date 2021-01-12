@@ -37,6 +37,7 @@ namespace PhpbbInDotnet.Forum
 
         private readonly AnonymousSessionCounter _sessionCounter;
         private LoggedUser _currentUser;
+        private string _language;
 
         public AuthenticatedPageModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
             IConfiguration config, AnonymousSessionCounter sessionCounter, CommonUtils utils, LanguageProvider languageProvider)
@@ -161,6 +162,9 @@ namespace PhpbbInDotnet.Forum
 
         public async Task<bool> IsCurrentUserModeratorHere(int forumId = 0)
             => await UserService.IsUserModeratorInForum(await GetCurrentUserAsync(), forumId);
+
+        public async Task<string> GetLanguage()
+            => _language ??= LanguageProvider.GetValidatedLanguage(await GetCurrentUserAsync(), Request);
 
         #endregion User
 

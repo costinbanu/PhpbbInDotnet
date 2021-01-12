@@ -20,7 +20,7 @@
     {
         dateFormat = "dddd, dd.MM.yyyy, HH:mm";
     }
-    var lang = Model.LanguageProvider.GetValidatedLanguage(user, Model.HttpContext?.Request);
+    var Lang = await Model.GetLanguage();
 }
 
 <environment include="Development">
@@ -43,23 +43,23 @@
 
 <div class="tab">
     <button class="@(Model.Mode == MemberListPages.AllUsers ? "tablinks active" : "tablinks")" onclick="setMode('AllUsers')">
-        @Model.LanguageProvider.BasicText[lang, "ALL_USERS", Casing.Title]
+        @Model.LanguageProvider.BasicText[Lang, "ALL_USERS", Casing.Title]
     </button>
     <button class="@(Model.Mode == MemberListPages.ActiveUsers || Model.Mode == MemberListPages.ActiveBots ? "tablinks active" : "tablinks")" onclick="setMode('ActiveUsers')">
-        @Model.LanguageProvider.BasicText[lang, "ACTIVE_USERS", Casing.Title]
+        @Model.LanguageProvider.BasicText[Lang, "ACTIVE_USERS", Casing.Title]
     </button>
     <button class="@(Model.Mode == MemberListPages.SearchUsers ? "tablinks active" : "tablinks")" onclick="setMode('SearchUsers')">
-        @Model.LanguageProvider.BasicText[lang, "SEARCH_FOR_USER", Casing.Title]
+        @Model.LanguageProvider.BasicText[Lang, "SEARCH_FOR_USER", Casing.Title]
     </button>
     <button class="@(Model.Mode == MemberListPages.Groups ? "tablinks active" : "tablinks")" onclick="setMode('Groups')">
-        @Model.LanguageProvider.BasicText[lang, "FORUM_GROUPS", Casing.Title]
+        @Model.LanguageProvider.BasicText[Lang, "FORUM_GROUPS", Casing.Title]
     </button>
 </div>
 
 <div id="AllUsers" class="tabcontent" style="@(Model.Mode == MemberListPages.AllUsers ? "display:inherit" : "display:none")">
-    <h3>@Model.LanguageProvider.BasicText[lang, "FORUM_MEMBERS", Casing.Title]</h3>
+    <h3>@Model.LanguageProvider.BasicText[Lang, "FORUM_MEMBERS", Casing.Title]</h3>
     <form method="get">
-        @Html.DropDownListFor(m => m.Order, _utils.EnumToDropDownList<MemberListOrder>(Model.Order, order => Model.LanguageProvider.Enums[lang, order], Model.LanguageProvider.BasicText[lang, "ORDER_BY"]), new { id = "userOrder", style = "height:30px; margin-top: 5px" })
+        @Html.DropDownListFor(m => m.Order, _utils.EnumToDropDownList<MemberListOrder>(Model.Order, order => Model.LanguageProvider.Enums[Lang, order], Model.LanguageProvider.BasicText[Lang, "ORDER_BY"]), new { id = "userOrder", style = "height:30px; margin-top: 5px" })
         <input asp-for="Mode" type="hidden" />
         <input asp-for="PageNum" type="hidden" />
         <input type="submit" value="Trimite" style="height:32px; margin-top: 5px" />
@@ -69,14 +69,14 @@
         @await Html.PartialAsync(
            "_UserSummaryPartial",
            new _UserSummaryPartialModel(
-               userList: Model.UserList, groupList: Model.GroupList, rankList: Model.RankList, dateFormat: dateFormat, language: lang,
+               userList: Model.UserList, groupList: Model.GroupList, rankList: Model.RankList, dateFormat: dateFormat, language: Lang,
                paginator: Model.Paginator, backLink: $"MemberList?pageNum={Model.PageNum - 1}&order={Model.Order}&mode={MemberListPages.AllUsers}", forwardLink: $"MemberList?pageNum={Model.PageNum + 1}&order={Model.Order}&mode={MemberListPages.AllUsers}"
            )
        );
     }
     else
     {
-        <h4>@Model.LanguageProvider.BasicText[lang, "NO_USERS", Casing.Title]</h4>
+        <h4>@Model.LanguageProvider.BasicText[Lang, "NO_USERS", Casing.Title]</h4>
     }
 
 </div>
@@ -84,25 +84,25 @@
 <div id="SearchUsers" class="tabcontent" style="@(Model.Mode == MemberListPages.SearchUsers ? "display:inherit" : "display:none")">
     @if (!(Model.UserList?.Any() ?? false))
     {
-        <h3>@Model.LanguageProvider.BasicText[lang, "SEARCH_FOR_USER", Casing.Title]</h3>
+        <h3>@Model.LanguageProvider.BasicText[Lang, "SEARCH_FOR_USER", Casing.Title]</h3>
     }
     else
     {
-        <h3>@Model.LanguageProvider.BasicText[lang, "SEARCH_RESULTS", Casing.Title]</h3>
+        <h3>@Model.LanguageProvider.BasicText[Lang, "SEARCH_RESULTS", Casing.Title]</h3>
     }
     <form method="get">
         <input type="hidden" name="handler" value="search" />
-        <input asp-for="Username" placeholder="@Model.LanguageProvider.BasicText[lang, "SEARCH_BY_NAME"]" style="height:30px; margin-top: 5px" id="usernameUserInput" />
+        <input asp-for="Username" placeholder="@Model.LanguageProvider.BasicText[Lang, "SEARCH_BY_NAME"]" style="height:30px; margin-top: 5px" id="usernameUserInput" />
         @{
             var items = Model.GroupList.Select(g => new SelectListItem(g.GroupName, g.GroupId.ToString(), g.GroupId == Model.GroupId, false)).ToList();
-            items.Add(new SelectListItem(Model.LanguageProvider.BasicText[lang, "SEARCH_IN_GROUP"], "null", !Model.GroupId.HasValue, true));
+            items.Add(new SelectListItem(Model.LanguageProvider.BasicText[Lang, "SEARCH_IN_GROUP"], "null", !Model.GroupId.HasValue, true));
             @Html.DropDownListFor(m => m.GroupId, items, new { id = "searchGroup", style = "height:30px; margin-top: 5px" });
         }
-        @Html.DropDownListFor(m => m.Order, _utils.EnumToDropDownList<MemberListOrder>(Model.Order, order => Model.LanguageProvider.Enums[lang, order], "Ordonează după..."), new { id = "searchOrder", style = "height:30px; margin-top: 5px" })
+        @Html.DropDownListFor(m => m.Order, _utils.EnumToDropDownList<MemberListOrder>(Model.Order, order => Model.LanguageProvider.Enums[Lang, order], "Ordonează după..."), new { id = "searchOrder", style = "height:30px; margin-top: 5px" })
         <input asp-for="Mode" type="hidden" />
         <input asp-for="PageNum" type="hidden" id="pageNumInput" />
         <input type="hidden" value="@Model.Username" id="usernameOriginalValue" />
-        <input type="submit" value="@Model.LanguageProvider.BasicText[lang, "SUBMIT", Casing.FirstUpper]" style="height:32px; margin-top: 5px" onclick="return shouldChangePageNum()" />
+        <input type="submit" value="@Model.LanguageProvider.BasicText[Lang, "SUBMIT", Casing.FirstUpper]" style="height:32px; margin-top: 5px" onclick="return shouldChangePageNum()" />
     </form>
 
     @if (Model.UserList?.Any() ?? false)
@@ -110,20 +110,20 @@
         @await Html.PartialAsync(
           "_UserSummaryPartial",
           new _UserSummaryPartialModel(
-              userList: Model.UserList, groupList: Model.GroupList, rankList: Model.RankList, dateFormat: dateFormat, language: lang,
+              userList: Model.UserList, groupList: Model.GroupList, rankList: Model.RankList, dateFormat: dateFormat, language: Lang,
               paginator: Model.Paginator, backLink: $"MemberList?pageNum={Model.PageNum - 1}&order={Model.Order}&handler=search&username={HttpUtility.UrlEncode(Model.Username)}&groupId={Model.GroupId}", forwardLink: $"MemberList?pageNum={Model.PageNum + 1}&order={Model.Order}&handler=search&username={HttpUtility.UrlEncode(Model.Username)}&groupId={Model.GroupId}"
           )
       )
     }
     else if (Model.SearchWasPerformed)
     {
-        <h4>@Model.LanguageProvider.BasicText[lang, "NO_USERS"]</h4>
+        <h4>@Model.LanguageProvider.BasicText[Lang, "NO_USERS"]</h4>
     }
 
 </div>
 
 <div id="Groups" class="tabcontent" style="@(Model.Mode == MemberListPages.Groups ? "display:inherit" : "display:none")">
-    <h3>@Model.LanguageProvider.BasicText[lang, "FORUM_GROUPS", Casing.Title]</h3>
+    <h3>@Model.LanguageProvider.BasicText[Lang, "FORUM_GROUPS", Casing.Title]</h3>
     @{
         if (await Model.IsCurrentUserAdminHere())
         {
@@ -152,7 +152,7 @@
                         </p>
                     }
                     <a asp-page="/MemberList" asp-page-handler="search" asp-route-GroupId="@group.GroupId" asp-route-Mode="SearchUsers" asp-route-PageNum="1">
-                        @Model.LanguageProvider.BasicText[lang, "SEE_ALL_GROUP_MEMBERS", Casing.Title]
+                        @Model.LanguageProvider.BasicText[Lang, "SEE_ALL_GROUP_MEMBERS", Casing.Title]
                     </a>
                 </div>
             </div>
@@ -163,12 +163,12 @@
 
 <div id="ActiveUsers" class="tabcontent" style="@(Model.Mode == MemberListPages.ActiveUsers || Model.Mode == MemberListPages.ActiveBots ? "display:inherit" : "display:none")">
     <h3>
-        @string.Format(Model.LanguageProvider.BasicText[lang, "MEMBERLIST_STATS_HEADER_FORMAT", Casing.Title], _config.GetValue<int?>("UserActivityTrackingIntervalMinutes") ?? 60)
+        @string.Format(Model.LanguageProvider.BasicText[Lang, "MEMBERLIST_STATS_HEADER_FORMAT", Casing.Title], _config.GetValue<int?>("UserActivityTrackingIntervalMinutes") ?? 60)
     </h3>
     @if (Model.Mode == MemberListPages.ActiveUsers)
     {
         <form method="get">
-            @Html.DropDownListFor(m => m.Order, _utils.EnumToDropDownList<MemberListOrder>(Model.Order, order => Model.LanguageProvider.Enums[lang, order], @Model.LanguageProvider.BasicText[lang, "ORDER_BY"]), new { id = "userOrder", style = "height:30px; margin-top: 5px" })
+            @Html.DropDownListFor(m => m.Order, _utils.EnumToDropDownList<MemberListOrder>(Model.Order, order => Model.LanguageProvider.Enums[Lang, order], @Model.LanguageProvider.BasicText[Lang, "ORDER_BY"]), new { id = "userOrder", style = "height:30px; margin-top: 5px" })
             <input asp-for="Mode" type="hidden" />
             <input asp-for="PageNum" type="hidden" />
             <input name="handler" value="setMode" type="hidden" />
@@ -183,21 +183,21 @@
         var displayBots = Model.Mode == MemberListPages.ActiveBots ? "display:initial" : "display:none";
     }
 <h4>
-    @string.Format(Model.LanguageProvider.BasicText[lang, registered == 1 ? "REGISTERED_COUNT_SINGLE_FORMAT" : "REGISTERED_COUNT_MULTIPLE_FORMAT", Casing.Title], registered),
-    @string.Format(Model.LanguageProvider.BasicText[lang, anonymous == 1 ? "GUEST_COUNT_SINGLE_FORMAT" : "GUEST_COUNT_MULTIPLE_FORMAT", Casing.Title], anonymous)
+    @string.Format(Model.LanguageProvider.BasicText[Lang, registered == 1 ? "REGISTERED_COUNT_SINGLE_FORMAT" : "REGISTERED_COUNT_MULTIPLE_FORMAT", Casing.Title], registered),
+    @string.Format(Model.LanguageProvider.BasicText[Lang, anonymous == 1 ? "GUEST_COUNT_SINGLE_FORMAT" : "GUEST_COUNT_MULTIPLE_FORMAT", Casing.Title], anonymous)
     @if (await Model.IsCurrentUserAdminHere())
     {
         <span>
-            @Model.LanguageProvider.BasicText[lang, "AND"]
+            @Model.LanguageProvider.BasicText[Lang, "AND"]
             @if (bots > 0)
             {
                 <a href="@($"MemberList?handler=setMode&pageNum={Model.PageNum}&order={Model.Order}&mode={MemberListPages.ActiveBots}")">
-                    @string.Format(Model.LanguageProvider.BasicText[lang, bots == 1 ? "BOT_COUNT_SINGLE_FORMAT" : "BOT_COUNT_MULTIPLE_FORMAT", Casing.Title], bots)
+                    @string.Format(Model.LanguageProvider.BasicText[Lang, bots == 1 ? "BOT_COUNT_SINGLE_FORMAT" : "BOT_COUNT_MULTIPLE_FORMAT", Casing.Title], bots)
                 </a>
             }
             else
             {
-                @string.Format(Model.LanguageProvider.BasicText[lang, "BOT_COUNT_MULTIPLE_FORMAT", Casing.Title], bots)
+                @string.Format(Model.LanguageProvider.BasicText[Lang, "BOT_COUNT_MULTIPLE_FORMAT", Casing.Title], bots)
             }
         </span>
     }
@@ -209,7 +209,7 @@
             @await Html.PartialAsync(
                     "_UserSummaryPartial",
                     new _UserSummaryPartialModel(
-                        userList: Model.UserList, groupList: Model.GroupList, rankList: Model.RankList, dateFormat: dateFormat, language: lang, paginator: Model.Paginator,
+                        userList: Model.UserList, groupList: Model.GroupList, rankList: Model.RankList, dateFormat: dateFormat, language: Lang, paginator: Model.Paginator,
                         backLink: $"MemberList?handler=setMode&pageNum={Model.PageNum - 1}&order={Model.Order}&mode={MemberListPages.ActiveUsers}",
                         forwardLink: $"MemberList?handler=setMode&pageNum={Model.PageNum + 1}&order={Model.Order}&mode={MemberListPages.ActiveUsers}"
                     )
@@ -217,7 +217,7 @@
         }
         else
         {
-            <h4>@Model.LanguageProvider.BasicText[lang, "NO_USERS"]</h4>
+            <h4>@Model.LanguageProvider.BasicText[Lang, "NO_USERS"]</h4>
         }
     </div>
     <div id="bots" style="@displayBots">
@@ -228,7 +228,7 @@
             @await Html.PartialAsync(
                 "_PaginationControlsPartial",
                 new _PaginationControlsPartialModel(
-                    paginator: paginator, allowPaginationChange: false, includeEasyNavigation: false, language: lang,
+                    paginator: paginator, allowPaginationChange: false, includeEasyNavigation: false, language: Lang,
                     back: $"MemberList?handler=setMode&pageNum={Model.PageNum - 1}&order={Model.Order}&mode={MemberListPages.ActiveBots}",
                     forward: $"MemberList?handler=setMode&pageNum={Model.PageNum + 1}&order={Model.Order}&mode={MemberListPages.ActiveBots}"
 
@@ -251,7 +251,7 @@
                             <a href="https://whatismyipaddress.com/ip/@bot.IP" target="_blank">[IP Lookup]</a><br />
                         }
                         @Html.Raw(bot.UserAgent) <br />
-                        @Model.LanguageProvider.BasicText[lang, "LAST_ACTIVE"]:
+                        @Model.LanguageProvider.BasicText[Lang, "LAST_ACTIVE"]:
                         <script>
                             writeDate('@bot.EntryTime.ToString("o")', '@dateFormat');
                         </script>
@@ -263,7 +263,7 @@
             @await Html.PartialAsync(
                 "_PaginationControlsPartial",
                 new _PaginationControlsPartialModel(
-                    paginator: paginator, allowPaginationChange: false, includeEasyNavigation: true, language: lang,
+                    paginator: paginator, allowPaginationChange: false, includeEasyNavigation: true, language: Lang,
                     back: $"MemberList?handler=setMode&pageNum={Model.PageNum - 1}&order={Model.Order}&mode={MemberListPages.ActiveBots}",
                     forward: $"MemberList?handler=setMode&pageNum={Model.PageNum + 1}&order={Model.Order}&mode={MemberListPages.ActiveBots}"
 

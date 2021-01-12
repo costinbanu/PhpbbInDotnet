@@ -28,7 +28,7 @@
     var HasPM = _userService.HasPrivateMessagePermissions(CurrentUser);
     var EditTime = CurrentUser.PostEditTime;
     var Connection = _context.Database.GetDbConnection();
-    var Lang = Model.LanguageProvider.GetValidatedLanguage(CurrentUser, Model.Request);
+    var Lang = await Model.GetLanguage();
 }
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />

@@ -1,12 +1,9 @@
 ﻿@page
 @model AuthenticatedPageModel
 
-@inject Languages.LanguageProvider _languageProvider
-
 @{
     ViewData["Title"] = "AboutCookies";
     Layout = "~/Pages/_Layout.cshtml";
-    var lang = _languageProvider.GetValidatedLanguage(await Model.GetCurrentUserAsync(), Model.HttpContext?.Request);
 }
 
-@Html.Raw(_languageProvider.AboutCookies[lang])
+@Html.Raw(Model.LanguageProvider.AboutCookies[await Model.GetLanguage()])

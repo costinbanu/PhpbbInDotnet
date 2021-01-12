@@ -5,7 +5,7 @@
     Layout = "~/Pages/_Layout.cshtml";
     var CurrentUser = await Model.GetCurrentUserAsync();
     var UserDateFormat = CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
-    var Lang = Model.LanguageProvider.GetValidatedLanguage(CurrentUser, Model.HttpContext?.Request);
+    var Lang = await Model.GetLanguage();
 }
 
 @using Utilities

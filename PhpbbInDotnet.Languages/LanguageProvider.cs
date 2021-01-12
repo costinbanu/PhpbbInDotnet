@@ -10,12 +10,15 @@ namespace PhpbbInDotnet.Languages
 {
     public class LanguageProvider
     {
+        private readonly ILogger _logger;
+
         private readonly Lazy<TextTranslation> _basicText;
         private readonly Lazy<HtmlTranslation> _aboutCookies;
         private readonly Lazy<TextTranslation> _email;
         private readonly Lazy<EnumTranslation> _enums;
         private readonly Lazy<JavaScriptTranslation> _jsText;
-        private readonly ILogger _logger;
+        private readonly Lazy<HtmlTranslation> _faq;
+        private readonly Lazy<TextTranslation> _errors;
 
         public TextTranslation BasicText => _basicText.Value;
 
@@ -27,6 +30,10 @@ namespace PhpbbInDotnet.Languages
 
         public JavaScriptTranslation JSText => _jsText.Value;
 
+        public HtmlTranslation FAQ => _faq.Value;
+
+        public TextTranslation Errors => _errors.Value;
+
         public LanguageProvider(ILogger logger)
         {
             _logger = logger;
@@ -35,6 +42,8 @@ namespace PhpbbInDotnet.Languages
             _email = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Email), _logger));
             _enums = new Lazy<EnumTranslation>(() => new EnumTranslation(_logger));
             _jsText = new Lazy<JavaScriptTranslation>(() => new JavaScriptTranslation(_logger));
+            _faq = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(FAQ), _logger));
+            _errors = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Errors), _logger));
         }
 
         public string GetValidatedLanguage(LoggedUser user, HttpRequest request = null)

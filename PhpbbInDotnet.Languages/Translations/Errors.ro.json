@@ -1,0 +1,20 @@
+﻿{
+  //generic errors
+  "AN_ERROR_OCCURRED": "A intervenit o eroare.",
+  "AN_ERROR_OCCURRED_TRY_AGAIN": "A intervenit o eroare, te rugăm să încerci mai târziu.",
+  "ERROR_UNAUTHORIZED": "Nu ești autorizat să vizitezi pagina solicitată.",
+  "ERROR_NOT_FOUND": "Pagina solicitată nu există.",
+  "REPORT_ERROR_WITH_ID": "Dacă eroarea persistă, scrieți la <a href=\"mailto:admin@metrouusor.com\">admin@metrouusor.com</a> și includeți IDul de mai sus.",
+  "REPORT_ERROR": "Dacă eroarea persistă, scrieți la <a href=\"mailto:admin@metrouusor.com\">admin@metrouusor.com</a>.",
+  "MISSING_REQUIRED_FIELD": "Acest câmp este obligatoriu.",
+
+  //authentication
+  "CONFIRM_ERROR": "A intervenit o eroare - utilizatorul nu există sau codul de resetare a parolei este greșit.",
+  "REGISTRATION_ERROR": "Înregistrarea nu poate fi confirmată (utilizatorul nu există, este deja activ sau nu este asociat codului de activare).<br/>Contactează administratorul pentru mai multe detalii.",
+  "WRONG_USER_PASS": "Numele de utilizator și/sau parola sunt greșite!",
+  "WRONG_PASS": "Parola este greșită!",
+  "WRONG_EMAIL_USER": "Adresa de email și/sau numele de utilizator introduse nu sunt corecte.",
+  "INACTIVE_USER": "Utilizatorul nu este activat!",
+  "BAD_PASSWORD": "Parola trebuie să fie de minim 8 caractere lungime",
+  "PASSWORD_MISMATCH": "Cele două parole trebuie să fie identice"
+}

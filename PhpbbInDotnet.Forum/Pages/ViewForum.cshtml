@@ -19,7 +19,7 @@
     var IsAnonymous = CurrentUser?.IsAnonymous ?? true;
     var hasSubForums = Model.ForumId != 0 && _forumService.HasUnrestrictedChildren((await Model.GetForumTree(false, false)).Tree, Model.ForumId);
     var hasTopics = Model.Topics?.SelectMany(x => x.Topics).Any() ?? false;
-    var Lang = Model.LanguageProvider.GetValidatedLanguage(CurrentUser, Model.Request);
+    var Lang = await Model.GetLanguage();
 }
 
 <environment include="Development">

@@ -307,7 +307,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostPreview()
             => await WithBackup(async () => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, Action == PostingActions.NewPrivateMessage, async (curForum) => await WithNewestPostSincePageLoad(curForum, async () =>
             {
-                var lang = LanguageProvider.GetValidatedLanguage(user, Request);
+                var lang = await GetLanguage();
                 if ((PostTitle?.Trim()?.Length ?? 0) < 3)
                 {
                     return PageWithError(curForum, nameof(PostTitle), "Titlul este prea scurt (minim 3 caractere, exclusiv spații).");

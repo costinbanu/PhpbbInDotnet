@@ -1,36 +1,34 @@
 ﻿@page
 @model ErrorModel
+
+@using Utilities
+
+@inject Languages.LanguageProvider _languageProvider
+@inject Services.UserService _userService
+
 @{
     ViewData["Title"] = "Error";
+    var lang = _languageProvider.GetValidatedLanguage(await _userService.ClaimsPrincipalToLoggedUserAsync(User), Model.Request);
 }
 
-<h3 class="text-danger">A intervenit o eroare.</h3>
+<h3 class="text-danger">@Html.Raw(_languageProvider.Errors[lang, "AN_ERROR_OCCURRED", Casing.Title])</h3>
 
 @if (Model.IsUnauthorized)
 {
-    <p>Nu ești autorizat să vizitezi pagina solicitată.</p>
+    <p>@Html.Raw(_languageProvider.Errors[lang, "ERROR_UNAUTHORIZED"])</p>
 }
 else if (Model.IsNotFound)
 {
-    <p>Pagina solicitată nu există.</p>
+    <p>@Html.Raw(_languageProvider.Errors[lang, "ERROR_NOT_FOUND"])</p>
 }
 else
 {
     if (!string.IsNullOrWhiteSpace(Model.ErrorId))
     {
         <p>
-            <strong>ID: </strong> <code>@Model.ErrorId</code>
+            <strong>ID:</strong>
+            <code>@Model.ErrorId</code>
         </p>
     }
-    <p>
-        Dacă eroarea persistă, scrieți la <a href="mailto:admin@metrouusor.com">admin@@metrouusor.com</a>
-        @if (!string.IsNullOrWhiteSpace(Model.ErrorId))
-        {
-            <span> și includeți IDul de mai sus.</span>
-        }
-        else
-        {
-            <span>.</span>
-        }
-    </p>
+    <p>@Html.Raw(string.IsNullOrWhiteSpace(Model.ErrorId) ? _languageProvider.Errors[lang, "REPORT_ERROR"] : _languageProvider.Errors[lang, "REPORT_ERROR_WITH_ID"])</p>
 }

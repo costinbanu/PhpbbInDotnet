@@ -1,5 +1,5 @@
 ﻿{
-  //universal
+  //generics
   "HOME": "prima pagină",
   "FORUM": "forum",
   "FORUMS": "forumuri",
@@ -19,7 +19,6 @@
   "REGISTERED": "înscris",
   "CLOSED_TOPIC": "subiect închis",
   "SEARCH_IN": "caută în",
-  "GENERIC_ERROR_TRY_AGAIN": "A intervenit o eroare, te rugăm să încerci mai târziu.",
   "AGREE_WITH": "sunt de acord cu",
   "SUBMIT": "trimite",
   "STARTING_ON": "Începând cu",
@@ -34,6 +33,7 @@
   "REASON": "motiv",
   "INFORMATION": "informații",
   "FORUM_RULES": "reguli forum",
+  "GENERIC_SUCCESS": "Operațiunea a fost efectuată cu succes.",
 
   //post/topic/forum summary
   "LAST_POST_TEXT": "Ultimul mesaj de",
@@ -76,7 +76,7 @@
   "MARK_FORUMS_READ": "marchează forumurile ca citite",
   "MARK_TOPICS_READ": "marchează subiectele ca citite",
 
-  //authentication
+  //authentication / registration
   "LOGIN": "conectare",
   "REGISTER": "înregistrare",
   "LOGOUT": "deconectare",
@@ -90,10 +90,16 @@
   "NEW_PASSWORD": "noua parolă",
   "REPEAT_NEW_PASSWORD": "repetă noua parolă",
   "SAVE_NEW_PASSWORD": "salvează noua parolă",
-  "CONFIRM_ERROR": "A intervenit o eroare - utilizatorul nu există sau codul de resetare a parolei este greșit.",
-  "WRONG_USER_PASS": "Numele de utilizator și/sau parola sunt greșite!",
-  "WRONG_EMAIL_USER": "Adresa de email și/sau numele de utilizator introduse nu sunt corecte.",
-  "INACTIVE_USER": "Utilizatorul nu este activat!",
+  "FORUM_PASSWORD": "parola forum",
+  "FORUM_LOGIN": "Conectare forum",
+  "REGISTRATION_CONFIRM_TITLE": "Confirmarea înregistrării",
+  "REGISTRATION_CONFIRM_MESSAGE": "Mulțumim pentru înregistrare! Ți-am trimis un e-mail pe adresa furnizată ce conține instrucțiuni pentru pașii următori. Verifică-ți căsuța de email, inclusiv folderele pentru \"spam\", și urmează instrucțiunile din mesajul primit. Dacă nu ai primit nici un mesaj, te rugăm să contactezi echipa administrativă la <a href=\"mailto:admin@metrouusor.com\">admin@metrouusor.com</a>.",
+  "EMAIL_CONFIRM_TITLE": "Confirmarea adresei de e-mail",
+  "EMAIL_CONFIRM_MESSAGE": "Înregistrarea a fost confirmată cu succes!<br/>Contul va fi activat în următoarele 48 de ore. După activare vei putea face login pe forumul nostru.<br/>Contactează echipa administrativă la <a href=\"mailto:admin@metrouusor.com\">admin@metrouusor.com</a> dacă au trecut mai mult de 48 de ore de la înregistrare iar contul încă nu a fost activat.",
+  "NEW_PASSWORD_TITLE": "Modificarea parolei",
+  "NEW_PASSWORD_MESSAGE": "Am trimis un e-mail, la adresa completată anterior, cu mai multe instrucțiuni pe care trebuie să le urmezi ca să îți poți recupera contul.",
+  "NEW_PASSWORD_COMPLETE": "Parola a fost modificată cu succes.",
+
 
   //memberlist
   "ALL_USERS": "Toți utilizatorii",
@@ -135,6 +141,11 @@
   "VOTE_FORMAT": "{0} vot ({1})",
   "VOTES_FORMAT": "{0} voturi ({1})",
   "SHOW_RESULTS": "Arată rezultatele",
-  "VOTE_REGISTERED": "Votul tău a fost înregistrat!"
+  "VOTE_REGISTERED": "Votul tău a fost înregistrat!",
+
+  //navigation
+  "CHOOSE_DESTINATION_FORUM_TOPIC": "Alege forumul și subiectul de destinație",
+  "CHOOSE_DESTINATION_FORUM": "Alege forumul de destinație",
+  "CHOOSE_DESTINATION_TOPIC": "Alege subiectul de destinație"
 
 }
