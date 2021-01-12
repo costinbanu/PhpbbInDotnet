@@ -19,6 +19,7 @@
     var IsAnonymous = CurrentUser?.IsAnonymous ?? true;
     var hasSubForums = Model.ForumId != 0 && _forumService.HasUnrestrictedChildren((await Model.GetForumTree(false, false)).Tree, Model.ForumId);
     var hasTopics = Model.Topics?.SelectMany(x => x.Topics).Any() ?? false;
+    var Lang = Model.LanguageProvider.GetValidatedLanguage(CurrentUser, Model.Request);
 }
 
 <environment include="Development">
@@ -89,7 +90,7 @@ else
     <span>&nbsp;&bull;&nbsp;</span>
     @await Html.PartialAsync(
         "_HeaderLinksPartial",
-        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(false, additionalLinks.ToArray()),
+        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(Lang, false, additionalLinks.ToArray()),
         ViewData
     )
 }
@@ -112,7 +113,12 @@ else
 
     case ViewForumMode.Forum:
         <h3>Forum: @Model.ForumTitle</h3>
-        @await Html.PartialAsync("_RulesPartial", new CustomPartials._RulesPartialModel(_renderingService, _utils, Model.ForumRules, Model.ForumRulesUid, Model.ForumRulesLink), ViewData)
+        @await Html.PartialAsync("_RulesPartial", new CustomPartials._RulesPartialModel
+        {
+            ForumRules = Model.ForumRules,
+            ForumRulesLink = Model.ForumRulesLink,
+            Language = Lang
+        }, ViewData)
         break;
 }
 
@@ -121,7 +127,7 @@ else
     <p>&nbsp;</p>
     @await Html.PartialAsync(
         "_ForumDisplayPartial",
-        new PhpbbInDotnet.Forum.Pages.CustomPartials._ForumDisplayPartialModel(Model.ForumId, Model.Forums, UserDateFormat, true, CurrentUser, true),
+        new PhpbbInDotnet.Forum.Pages.CustomPartials._ForumDisplayPartialModel(Model.ForumId, Model.Forums, UserDateFormat, true, CurrentUser, true, Lang),
         ViewData
     )
 }
@@ -149,7 +155,8 @@ else
                 allowPaginationChange: false,
                 back: $"/ViewForum?handler={handler}&pageNum={(Model.PageNum ?? 1) - 1}",
                 forward: $"/ViewForum?handler={handler}&pageNum={(Model.PageNum ?? 1) + 1}",
-                includeEasyNavigation: false
+                includeEasyNavigation: false,
+                language: Lang
             ),
             ViewData
         );
@@ -271,18 +278,19 @@ else
                         topic.TopicLastPosterId = 1;
                     }
                     @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
-                    {
-                        AuthorId = topic.TopicLastPosterId,
-                        AuthorName = topic.TopicLastPosterName,
-                        AuthorColor = topic.TopicLastPosterColour,
-                        CreationTime = topic.LastPostTime,
-                        AssetId = topic.TopicId.Value,
-                        DateFormat = UserDateFormat,
-                        LinkHref = topic.TopicLastPostId == null ? null : $"./ViewTopic?postId={topic.TopicLastPostId}&handler=ByPostId",
-                        ShowAsLast = true,
-                        Posts = topic.PostCount,
-                        Views = topic.ViewCount
-                    });
+               {
+                   AuthorId = topic.TopicLastPosterId,
+                   AuthorName = topic.TopicLastPosterName,
+                   AuthorColor = topic.TopicLastPosterColour,
+                   CreationTime = topic.LastPostTime,
+                   AssetId = topic.TopicId.Value,
+                   DateFormat = UserDateFormat,
+                   LinkHref = topic.TopicLastPostId == null ? null : $"./ViewTopic?postId={topic.TopicLastPostId}&handler=ByPostId",
+                   ShowAsLast = true,
+                   Posts = topic.PostCount,
+                   Views = topic.ViewCount,
+                   Language = Lang
+               });
                 }
             </div>
             isFirstInGroup = false;
@@ -314,7 +322,8 @@ else
                 allowPaginationChange: false,
                 back: $"/ViewForum?handler={handler}&pageNum={(Model.PageNum ?? 1) - 1}",
                 forward: $"/ViewForum?handler={handler}&pageNum={(Model.PageNum ?? 1) + 1}",
-                includeEasyNavigation: true
+                includeEasyNavigation: true,
+                language: Lang
             ),
             ViewData
         );

@@ -67,7 +67,7 @@
     <span>&nbsp;&bull;&nbsp;</span>
     @await Html.PartialAsync(
         "_HeaderLinksPartial",
-        new _HeaderLinksPartialModel(),
+        new _HeaderLinksPartialModel(Lang),
         ViewData
     )
 }
@@ -75,7 +75,12 @@
 <h3>Subiect: @Model.TopicTitle</h3>
 <span class="Caption">@Model.PostCount mesaj@(Model.PostCount == 1 ? "" : "e"), @Model.ViewCount vizualiz@(Model.ViewCount == 1 ? "are" : "ări").</span>
 
-@await Html.PartialAsync("_RulesPartial", new _RulesPartialModel(_renderingService, _utils, Model.ForumRules, Model.ForumRulesUid, Model.ForumRulesLink), ViewData)
+@await Html.PartialAsync("_RulesPartial", new _RulesPartialModel
+{
+    ForumRules = Model.ForumRules,
+    ForumRulesLink = Model.ForumRulesLink,
+    Language = Lang
+}, ViewData)
 
 @await Html.PartialAsync("_PollPartial", new _PollPartialModel
 {
@@ -85,7 +90,8 @@
     PageNum = Model.PageNum ?? 1,
     QueryString = Request.QueryString.ToString(),
     IsCurrentUserMod = IsMod,
-    IsCurrentUserAdmin = IsAdmin
+    IsCurrentUserAdmin = IsAdmin,
+    Language = Lang
 }, ViewData)
 
 @await Html.PartialAsync("_PaginationControlsPartial", new _PaginationControlsPartialModel(
@@ -94,6 +100,7 @@
     back: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum - 1}",
     forward: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum + 1}",
     includeEasyNavigation: false,
+    language: Lang,
     topicId: Model.TopicId,
     firstPostId: Model.Posts?.FirstOrDefault()?.PostId
 ), ViewData)
@@ -121,7 +128,7 @@
             PostCreationTime = p.PostTime.ToUtcTime(),
             PostModifiedTime = p.PostEditTime.ToUtcTime(),
             PostId = p.PostId,
-            Attachments = joinedAttachments.Select(x => new AttachmentDto(x)).ToList(),
+            Attachments = joinedAttachments.Select(a => new AttachmentDto(a, false, Lang)).ToList(),
             BbcodeUid = p.BbcodeUid,
             Unread = reachedAnUnreadPost || (reachedAnUnreadPost = await Model.IsPostUnread(p.ForumId, p.TopicId, p.PostId)),
             AuthorHasAvatar = !string.IsNullOrWhiteSpace(ju?.UserAvatar),
@@ -161,7 +168,8 @@
             IsLastPage = Model.Paginator.IsLastPage,
             IsTopicLocked = Model.IsLocked,
             ShowFooter = !(CurrentUser.Foes?.Contains(p.PosterId) ?? false),
-            ShowEditHistory = (index < Model.Posts.Count - 1 && post.LastEditTime > Model.Posts[index + 1].PostTime) || (post.EditCount > 0 && post.LastEditUser != post.AuthorName)
+            ShowEditHistory = (index < Model.Posts.Count - 1 && post.LastEditTime > Model.Posts[index + 1].PostTime) || (post.EditCount > 0 && post.LastEditUser != post.AuthorName),
+            Language = Lang            
         }, ViewData)
 
         index++;
@@ -212,6 +220,7 @@ else if (!IsAnonymous)
         back: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum - 1}",
         forward: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum + 1}",
         includeEasyNavigation: true,
+        language: Lang,
         topicId: Model.TopicId,
         firstPostId: Model.Posts?.FirstOrDefault()?.PostId
     ),

@@ -1,4 +1,5 @@
-﻿using PhpbbInDotnet.Database.Entities;
+﻿using Microsoft.AspNetCore.Http;
+using PhpbbInDotnet.Database.Entities;
 using System.Web;
 
 namespace PhpbbInDotnet.Objects
@@ -13,16 +14,18 @@ namespace PhpbbInDotnet.Objects
         public string Comment { get; private set; }
         public long FileSize { get; private set; }
         public string FileUrl { get; private set; }
+        public string Language { get; private set; }
 
-        public AttachmentDto(string realFilename, string attachComment, int attachId, string mimetype, int downloadCount, long filesize, string physicalFilename, bool isPreview = false)
+        public AttachmentDto(PhpbbAttachments dbRecord, bool isPreview, string language)
         {
-            DisplayName = realFilename;
-            Comment = attachComment;
-            Id = attachId;
-            MimeType = mimetype;
-            DownloadCount = downloadCount;
-            FileSize = filesize;
-            PhysicalFileName = physicalFilename;
+            DisplayName = dbRecord.RealFilename;
+            Comment = dbRecord.AttachComment;
+            Id = dbRecord.AttachId;
+            MimeType = dbRecord.Mimetype;
+            DownloadCount = dbRecord.DownloadCount;
+            FileSize = dbRecord.Filesize;
+            PhysicalFileName = dbRecord.PhysicalFilename;
+            Language = language;
             if (isPreview)
             {
                 FileUrl = $"/File?physicalFileName={HttpUtility.UrlEncode(PhysicalFileName)}&realFileName={HttpUtility.UrlEncode(DisplayName)}&mimeType={HttpUtility.UrlEncode(MimeType)}&handler=preview";
@@ -32,9 +35,5 @@ namespace PhpbbInDotnet.Objects
                 FileUrl = $"/File?id={Id}";
             }
         }
-
-        public AttachmentDto(PhpbbAttachments dbRecord, bool isPreview = false)
-            : this(dbRecord.RealFilename, dbRecord.AttachComment, dbRecord.AttachId, dbRecord.Mimetype, dbRecord.DownloadCount, dbRecord.Filesize, dbRecord.PhysicalFilename, isPreview)
-        { }
     }
 }

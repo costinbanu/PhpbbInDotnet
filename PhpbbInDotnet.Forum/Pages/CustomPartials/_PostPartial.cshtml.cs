@@ -37,5 +37,7 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
         public bool ShowEditHistory { get; set; }
 
         public bool ShowQuoteButton { get; set; }
+
+        public string Language { get; set; }
     }
 }

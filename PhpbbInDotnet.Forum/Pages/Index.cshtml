@@ -11,7 +11,7 @@
     {
         UserDateFormat = "dddd, dd.MM.yyyy, HH:mm";
     }
-    var lang = Model.LanguageProvider.GetValidatedLanguage(CurrentUser, Model.HttpContext?.Request);
+    var Lang = Model.LanguageProvider.GetValidatedLanguage(CurrentUser, Model.HttpContext?.Request);
 }
 
 @if (!CurrentUser.IsAnonymous)
@@ -21,7 +21,7 @@
     </form>
     @await Html.PartialAsync(
         "_HeaderLinksPartial",
-        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(true, $"<a href=\"javascript:MarkForumsRead.submit()\">{Model.LanguageProvider.BasicText[lang, "MARK_FORUMS_READ", Casing.Title]}</a>"),
+        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(Lang, true, $"<a href=\"javascript:MarkForumsRead.submit()\">{Model.LanguageProvider.BasicText[Lang, "MARK_FORUMS_READ", Casing.Title]}</a>"),
         ViewData
     )
     <span>&nbsp;&bull;&nbsp;</span>
@@ -69,6 +69,6 @@
 
 @await Html.PartialAsync(
     "_ForumDisplayPartial",
-    new PhpbbInDotnet.Forum.Pages.CustomPartials._ForumDisplayPartialModel(0, Model.Tree, UserDateFormat, false, CurrentUser, false),
+    new PhpbbInDotnet.Forum.Pages.CustomPartials._ForumDisplayPartialModel(0, Model.Tree, UserDateFormat, false, CurrentUser, false, Lang),
     ViewData
 )

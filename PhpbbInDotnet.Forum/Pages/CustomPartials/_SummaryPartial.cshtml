@@ -1,5 +1,7 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._SummaryPartialModel
 
+@inject Languages.LanguageProvider _languageProvider
+
 <ul class="Summary @(Model.Left ? "FlexLeft" : "FlexRight")" id="summary@(Model.AssetId)">
     @if (Model.ShowAvatar)
     {
@@ -12,11 +14,11 @@
         {
             if (!string.IsNullOrWhiteSpace(Model.LinkHref))
             {
-                <span><a href="@Model.LinkHref">Ultimul mesaj</a> de:</span>
+                @Html.Raw(string.Format(_languageProvider.BasicText[Model.Language, "LAST_POST_URL"], Model.LinkHref))
             }
             else
             {
-                <span>Ultimul mesaj de: </span>
+                @Html.Raw(_languageProvider.BasicText[Model.Language, "LAST_POST_TEXT"])
             }
         }
         else
@@ -44,7 +46,7 @@
         }
     </li>
     <li>
-        Scris:
+        @Html.Raw(_languageProvider.BasicText[Model.Language, "POSTED"]):
         <script>
             writeDate("@Model.CreationTime?.ToString("o")", "@Model.DateFormat");
         </script>
@@ -52,7 +54,7 @@
     @if (Model.Posts.HasValue && Model.Views.HasValue)
     {
         <li class="Caption">
-            @Model.Posts mesaj@(Model.Posts != 1 ? "e" : ""), @Model.Views vizualiz@(Model.Views != 1 ? "ări" : "are").
+            @Html.Raw($"{Model.Posts} {(Model.Posts != 1 ? _languageProvider.BasicText[Model.Language, "POSTS"] : _languageProvider.BasicText[Model.Language, "POST"])}, {Model.Views} {(Model.Views != 1 ? _languageProvider.BasicText[Model.Language, "VIEWS"] : _languageProvider.BasicText[Model.Language, "VIEW"])}")
         </li>
     }
     else if (Model.Forums.HasValue && Model.Topics.HasValue)
@@ -60,15 +62,11 @@
         <li class="Caption">
             @if (Model.Forums > 0)
             {
-                <span>
-                    @Model.Forums forum@(Model.Forums != 1 ? "uri" : "")@(Model.Topics > 0 ? "," : "")
-                </span>
+                @Html.Raw($"{Model.Forums} {(Model.Forums != 1 ? _languageProvider.BasicText[Model.Language, "FORUMS"] : _languageProvider.BasicText[Model.Language, "FORUM"])}{(Model.Topics > 0 ? ", " : "")}")
             }
             @if (Model.Topics > 0)
             {
-                <span>
-                    @Model.Topics subiect@(Model.Topics != 1 ? "e" : "")
-                </span>
+                @Html.Raw($"{Model.Topics} {(Model.Topics != 1 ? _languageProvider.BasicText[Model.Language, "TOPICS"] : _languageProvider.BasicText[Model.Language, "TOPIC"])}")
             }
         </li>
     }

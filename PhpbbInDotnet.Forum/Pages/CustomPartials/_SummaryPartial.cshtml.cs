@@ -42,5 +42,7 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
         public string AuthorTag { get; set; } = "Autor: ";
 
         public string PMLink { get; set; }
+
+        public string Language { get; set; }
     }
 }

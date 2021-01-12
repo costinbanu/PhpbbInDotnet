@@ -5,6 +5,7 @@
     Layout = "~/Pages/_Layout.cshtml";
     var CurrentUser = await Model.GetCurrentUserAsync();
     var UserDateFormat = CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+    var Lang = Model.LanguageProvider.GetValidatedLanguage(CurrentUser, Model.HttpContext?.Request);
 }
 
 @using Utilities
@@ -68,6 +69,7 @@
                 back: $"PrivateMessages?show=Inbox&InboxPage={Model.InboxPage - 1}",
                 forward: $"PrivateMessages?show=Inbox&InboxPage={Model.InboxPage + 1}",
                 includeEasyNavigation: true,
+                language: Lang,
                 topicId: null,
                 firstPostId: null
             ),
@@ -101,7 +103,8 @@
                     CreationTime = msg.Time,
                     AssetId = msg.MessageId,
                     DateFormat = UserDateFormat,
-                    AuthorTag = "De la: "
+                    AuthorTag = "De la: ",
+                    Language = Lang
                 })
             </div>
             isFirst = false;
@@ -133,6 +136,7 @@
                 back: $"PrivateMessages?show=Sent&SentPage={Model.SentPage - 1}",
                 forward: $"PrivateMessages?show=Sent&SentPage={Model.SentPage + 1}",
                 includeEasyNavigation: true,
+                language: Lang,
                 topicId: null,
                 firstPostId: null
             ),
@@ -158,15 +162,16 @@
                     <br />
                 </span>
                 @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
-                {
-                    AuthorId = msg.OthersId,
-                    AuthorName = msg.OthersName,
-                    AuthorColor = msg.OthersColor,
-                    CreationTime = msg.Time,
-                    AssetId = msg.MessageId,
-                    DateFormat = UserDateFormat,
-                    AuthorTag = "Pentru: "
-                })
+           {
+               AuthorId = msg.OthersId,
+               AuthorName = msg.OthersName,
+               AuthorColor = msg.OthersColor,
+               CreationTime = msg.Time,
+               AssetId = msg.MessageId,
+               DateFormat = UserDateFormat,
+               AuthorTag = "Pentru: ",
+               Language = Lang
+           })
             </div>
             isFirst = false;
         }
@@ -192,17 +197,18 @@
         <div class="RowMargin">
             <div class="FlexRow">
                 @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
-                {
-                    AuthorId = Model.SelectedMessage.OthersId,
-                    AuthorName = Model.SelectedMessage.OthersName,
-                    AuthorColor = Model.SelectedMessage.OthersColor,
-                    CreationTime = Model.SelectedMessage.Time,
-                    AssetId = fakeId,
-                    DateFormat = UserDateFormat,
-                    ShowAvatar = Model.SelectedMessage.OtherHasAvatar,
-                    Left = true,
-                    AuthorTag = Model.SelectedMessageIsMine ? "Pentru: " : "De la: "
-                })
+           {
+               AuthorId = Model.SelectedMessage.OthersId,
+               AuthorName = Model.SelectedMessage.OthersName,
+               AuthorColor = Model.SelectedMessage.OthersColor,
+               CreationTime = Model.SelectedMessage.Time,
+               AssetId = fakeId,
+               DateFormat = UserDateFormat,
+               ShowAvatar = Model.SelectedMessage.OtherHasAvatar,
+               Left = true,
+               AuthorTag = Model.SelectedMessageIsMine ? "Pentru: " : "De la: ",
+               Language = Lang
+           })
                 <div class="ForumContent VerticalContent FlexRight" id="@fakeId">
                     <span style="display:flex">
                         <span class="PostTitle">

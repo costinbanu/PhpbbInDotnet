@@ -1,8 +1,9 @@
 ﻿@model PhpbbInDotnet.Objects.AttachmentDto
 
-@using PhpbbInDotnet.Utilities
+@using Utilities
 @inject CommonUtils _utils
 @inject Services.BBCodeRenderingService _renderingService
+@inject Languages.LanguageProvider _languageProvider
 
 @if (Model != null)
 {
@@ -11,7 +12,7 @@
         {
             //if (Model.MimeType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase))
             //{
-                <img src="@(Model.FileUrl)" onload="resizeImage(this)" style="width: 100px; height: 100px"/>
+            <img src="@(Model.FileUrl)" onload="resizeImage(this)" style="width: 100px; height: 100px" />
             //}
             /*else
             {
@@ -29,11 +30,10 @@
         <div class="Caption" style="clear:both">
             @if (!string.IsNullOrWhiteSpace(Model.Comment))
             {
-                @*<br />*@
                 @Html.Raw(_renderingService.BbCodeToHtml(Model.Comment, string.Empty))
             }
             <div>
-                @Html.Raw(Model.DisplayName) (@_utils.ReadableFileSize(Model.FileSize); descărcat @(Model.DownloadCount == 1 ? "o dată" : $"de {Model.DownloadCount} ori"))
+                @Html.Raw($"{Model.DisplayName} ({_utils.ReadableFileSize(Model.FileSize)}; {(Model.DownloadCount == 1 ? _languageProvider.BasicText[Model.Language, "DOWNLOADED_ONCE"] : string.Format(_languageProvider.BasicText[Model.Language, "DOWNLOADED_COUNT_FORMAT"], Model.DownloadCount))})")
             </div>
         </div>
     </div>

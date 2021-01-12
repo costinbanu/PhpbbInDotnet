@@ -4,16 +4,12 @@
 
 @inject Services.UserService  _userService
 @inject Languages.LanguageProvider _languageProvider
-@{
-    var currentUser = await _userService.ClaimsPrincipalToLoggedUserAsync(User);
-    var lang = _languageProvider.GetValidatedLanguage(currentUser, Model.HttpContext?.Request);
-}
 
 @if (Model.IsIndex)
 {
-    <a asp-page="ViewForum" asp-page-handler="newPosts" class="nowrap">@_languageProvider.BasicText[lang, "NEW_POSTS", Casing.Title]</a>
+    <a asp-page="ViewForum" asp-page-handler="newPosts" class="nowrap">@_languageProvider.BasicText[Model.Language, "NEW_POSTS", Casing.Title]</a>
     <span>&nbsp;&bull;&nbsp;</span>
-    <a asp-page="ViewForum" asp-page-handler="ownPosts" class="nowrap">@_languageProvider.BasicText[lang, "OWN_TOPICS", Casing.Title]</a>
+    <a asp-page="ViewForum" asp-page-handler="ownPosts" class="nowrap">@_languageProvider.BasicText[Model.Language, "OWN_TOPICS", Casing.Title]</a>
     <span class="Hide768">&nbsp;&bull;&nbsp;</span>
     <br class="Show768" /><span class="Show768" style="width:2.5px; display:inline-block; height: 20px"></span>
 }
@@ -26,20 +22,20 @@
     {
         <li>
             <span> &nbsp;</span>
-            <a asp-page="ViewForum" asp-page-handler="newPosts" class="nowrap">@_languageProvider.BasicText[lang, "NEW_POSTS", Casing.Title]</a>
+            <a asp-page="ViewForum" asp-page-handler="newPosts" class="nowrap">@_languageProvider.BasicText[Model.Language, "NEW_POSTS", Casing.Title]</a>
         </li>
         <li>
             <span> &nbsp;</span>
-            <a asp-page="ViewForum" asp-page-handler="ownPosts" class="nowrap">@_languageProvider.BasicText[lang, "OWN_TOPICS", Casing.Title]</a>
+            <a asp-page="ViewForum" asp-page-handler="ownPosts" class="nowrap">@_languageProvider.BasicText[Model.Language, "OWN_TOPICS", Casing.Title]</a>
         </li>
     }
     <li>
         <span> &nbsp;</span>
-        <a asp-page="ViewForum" asp-page-handler="drafts" class="nowrap">@_languageProvider.BasicText[lang, "DRAFTS", Casing.Title]</a>
+        <a asp-page="ViewForum" asp-page-handler="drafts" class="nowrap">@_languageProvider.BasicText[Model.Language, "DRAFTS", Casing.Title]</a>
     </li>
     <li>
         <span> &nbsp;</span>
-        <a asp-page="/MemberList">@_languageProvider.BasicText[lang, "FORUM_MEMBERS", Casing.Title]</a>
+        <a asp-page="/MemberList">@_languageProvider.BasicText[Model.Language, "FORUM_MEMBERS", Casing.Title]</a>
     </li>
 
     @foreach (var elem in (Model.ExtraElements ?? Enumerable.Empty<string>()).Where(elem => !string.IsNullOrWhiteSpace(elem)))

@@ -33,5 +33,7 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
                 !(Poll?.VoteCanBeChanged ?? false)
             )
         );
+
+        public string Language { get; set; }
     }
 }

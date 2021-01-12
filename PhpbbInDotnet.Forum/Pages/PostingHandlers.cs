@@ -307,6 +307,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostPreview()
             => await WithBackup(async () => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, Action == PostingActions.NewPrivateMessage, async (curForum) => await WithNewestPostSincePageLoad(curForum, async () =>
             {
+                var lang = LanguageProvider.GetValidatedLanguage(user, Request);
                 if ((PostTitle?.Trim()?.Length ?? 0) < 3)
                 {
                     return PageWithError(curForum, nameof(PostTitle), "Titlul este prea scurt (minim 3 caractere, exclusiv spații).");
@@ -337,7 +338,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 PreviewablePost = new PostDto
                 {
-                    Attachments = Attachments?.Select(a => new AttachmentDto(a.RealFilename, a.AttachComment, 0, a.Mimetype, 0, a.Filesize, a.PhysicalFilename, true))?.ToList() ?? new List<AttachmentDto>(),
+                    Attachments = Attachments?.Select(a => new AttachmentDto(a, true, lang))?.ToList() ?? new List<AttachmentDto>(),
                     AuthorColor = postAuthor.UserColour,
                     AuthorHasAvatar = !string.IsNullOrWhiteSpace(postAuthor?.UserAvatar),
                     AuthorId = postAuthor.UserId,

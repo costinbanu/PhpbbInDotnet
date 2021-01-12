@@ -1,4 +1,5 @@
 ﻿@page
+@model PhpbbInDotnet.Forum.Pages.SearchModel
 
 @using Dapper
 @using PhpbbInDotnet.Database.Entities
@@ -12,7 +13,6 @@
 @inject Services.ForumTreeService _forumService
 
 
-@model PhpbbInDotnet.Forum.Pages.SearchModel
 @{
     ViewData["Title"] = "Search";
     Layout = "~/Pages/_Layout.cshtml";
@@ -23,6 +23,7 @@
         dateFormat = "dddd, dd.MM.yyyy, HH:mm";
     }
     var connection = _context.Database.GetDbConnection();
+    var Lang = Model.LanguageProvider.GetValidatedLanguage(CurrentUser, Model.Request);
 }
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />
@@ -141,6 +142,7 @@ else
             back: Model.GetSearchLinkForPage(Model.PageNum.Value - 1),
             forward: Model.GetSearchLinkForPage(Model.PageNum.Value + 1),
             includeEasyNavigation: false,
+            language: Lang,
             topicId: null,
             firstPostId: Model.Posts?.FirstOrDefault()?.PostId
         ),
@@ -150,7 +152,7 @@ else
     foreach (var post in Model.Posts)
     {
         post.AuthorHasAvatar = !string.IsNullOrWhiteSpace(post.UserAvatar);
-        post.Attachments = Model.Attachments?.Where(a => a.PostMsgId == post.PostId).Select(a => new Objects.AttachmentDto(a)).ToList();
+        post.Attachments = Model.Attachments?.Where(a => a.PostMsgId == post.PostId).Select(a => new Objects.AttachmentDto(a, false, Lang)).ToList();
 
         if (CurrentUser.Foes?.Contains(post.AuthorId ?? 1) ?? false)
         {
@@ -165,19 +167,20 @@ else
 
         <div class="RowMargin FlexRow">
             @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
-            {
-                AuthorId = post.AuthorId,
-                AuthorName = post.AuthorName,
-                AuthorColor = post.AuthorColor,
-                CreationTime = post.PostCreationTime,
-                AssetId = post.PostId.Value,
-                DateFormat = dateFormat,
-                ShowAvatar = post.AuthorHasAvatar,
-                AuthorRank = post.AuthorRank,
-                Left = true,
-                ShowAsLast = false,
-                PMLink = _userService.HasPrivateMessagePermissions(CurrentUser) ? $"<a href=\"./Posting?handler=PrivateMessage&postId={post.PostId}\">&#x1F5E8; Mesaj privat</a>" : null
-            })
+       {
+           AuthorId = post.AuthorId,
+           AuthorName = post.AuthorName,
+           AuthorColor = post.AuthorColor,
+           CreationTime = post.PostCreationTime,
+           AssetId = post.PostId.Value,
+           DateFormat = dateFormat,
+           ShowAvatar = post.AuthorHasAvatar,
+           AuthorRank = post.AuthorRank,
+           Left = true,
+           ShowAsLast = false,
+           PMLink = _userService.HasPrivateMessagePermissions(CurrentUser) ? $"<a href=\"./Posting?handler=PrivateMessage&postId={post.PostId}\">&#x1F5E8; Mesaj privat</a>" : null,
+           Language = Lang
+       })
             <div class="ForumContent" id="@post.PostId">
                 <div class="Caption" style="clear:both">
                     @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, post.ForumId))
@@ -216,6 +219,7 @@ else
             back: Model.GetSearchLinkForPage(Model.PageNum.Value - 1),
             forward: Model.GetSearchLinkForPage(Model.PageNum.Value + 1),
             includeEasyNavigation: true,
+            language: Lang,
             topicId: null,
             firstPostId: Model.Posts?.FirstOrDefault()?.PostId
         ),

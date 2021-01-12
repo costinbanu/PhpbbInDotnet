@@ -11,8 +11,9 @@
 @inject Database.ForumDbContext _context
 @inject Services.BBCodeRenderingService _renderingService
 @inject Services.UserService _userService
+@inject Languages.LanguageProvider _languageProvider
 
-@{ 
+@{
     var IsAnonymous = Model.CurrentUser.UserId == Constants.ANONYMOUS_USER_ID;
     var UserDateFormat = Model.CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
     if (!DateTime.TryParse(DateTime.Now.ToString(UserDateFormat), out _))
@@ -28,13 +29,13 @@
 {
     Model.HasCurrentUserPM = false;
     Model.Post.AuthorId = 1;
-    Model.Post.AuthorName = "[Ascuns]";
+    Model.Post.AuthorName = $"[{_languageProvider.BasicText[Model.Language, "HIDDEN", Casing.FirstUpper]}]";
     Model.Post.AuthorColor = null;
     Model.Post.AuthorHasAvatar = false;
     Model.Post.Attachments?.Clear();
     Model.Post.BbcodeUid = string.Empty;
-    Model.Post.PostSubject = "[Ascuns]";
-    Model.Post.PostText = "[i]Autorul acestui mesaj este pe lista ta de persoane neagreate, drept urmare nu poți vedea conținutul mesajelor sale[/i]";
+    Model.Post.PostSubject = $"[{_languageProvider.BasicText[Model.Language, "HIDDEN", Casing.FirstUpper]}]";
+    Model.Post.PostText = _languageProvider.BasicText[Model.Language, "CONTENT_HIDDEN_WARNING_BBCODE", Casing.FirstUpper];
 }
 
 @if ((Model.Report?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
@@ -48,7 +49,7 @@
 
 @{
     await _renderingService.ProcessPost(Model.Post, Model.PageContext, Model.HttpContext, true);
-    
+
     var rowClass = Model.Post.ReportId.HasValue && (Model.IsCurrentUserMod || Model.Post.ReporterId == Model.CurrentUser.UserId) ? "ReportedPost" : string.Empty;
 
     @if (!Model.IsPostFirstInPage)
@@ -73,7 +74,8 @@
             AuthorRank = Model.Post.AuthorRank,
             Left = true,
             ShowAsLast = false,
-            PMLink = Model.HasCurrentUserPM ? $"<a href=\"./Posting?handler=PrivateMessage&postId={Model.Post.PostId}\">&#x1F5E8; Mesaj privat</a>" : null
+            PMLink = Model.HasCurrentUserPM ? $"<a href=\"./Posting?handler=PrivateMessage&postId={Model.Post.PostId}\">&#x1F5E8; {_languageProvider.BasicText[Model.Language, "PRIVATE_MESSAGE", Casing.FirstUpper]}</a>" : null,
+            Language = Model.Language
         })
         <div class="ForumContent VerticalContent FlexRight" id="@Model.Post.PostId" style="max-width:100%; overflow-wrap: break-word; display:flex">
             <span style="display:flex">
@@ -88,7 +90,7 @@
                 @if (Model.ShowQuoteButton)
                 {
                     <span style="margin-left: auto; min-width: max-content; padding-top: 3px; padding-bottom: 30px; margin-top: 4px; margin-bottom: 4px">
-                        <a href="javascript:posting.addquote(texts['@Model.Post.PostId'], '@Model.Post.AuthorName')">&#x1F4AC; Citează</a>
+                        <a href="javascript:posting.addquote(texts['@Model.Post.PostId'], '@Model.Post.AuthorName')">&#x1F4AC; @Html.Raw(_languageProvider.BasicText[Model.Language, "DO_QUOTE", Casing.FirstUpper])</a>
                     </span>
                 }
             </span>
@@ -96,7 +98,10 @@
                 @if (Model.Post.ReportId.HasValue && (Model.IsCurrentUserMod || Model.Post.ReporterId == Model.CurrentUser.UserId))
                 {
                     var reason = await Connection.QueryFirstOrDefaultAsync<PhpbbReportsReasons>("SELECT * FROM phpbb_reports_reasons WHERE reason_id = @reportReasonId", new { Model.Post.ReportReasonId });
-                    <a href="javascript:vt.showReportViewer(@Model.Post.PostId, @Model.Post.ReportId, '@reason.ReasonTitle', '@reason.ReasonDescription', '@_renderingService.BbCodeToHtml(Model.Post.ReportDetails, string.Empty)', '@Model.Post.ReporterUsername')" style="font-weight:bold; font-size:1.2em">Arată raportul</a><br />
+                    <a href="javascript:vt.showReportViewer(@Model.Post.PostId, @Model.Post.ReportId, '@reason.ReasonTitle', '@reason.ReasonDescription', '@_renderingService.BbCodeToHtml(Model.Post.ReportDetails, string.Empty)', '@Model.Post.ReporterUsername')" style="font-weight:bold; font-size:1.2em">
+                        @Html.Raw(_languageProvider.BasicText[Model.Language, "SHOW_REPORT", Casing.FirstUpper])
+                    </a>
+                    <br />
                 }
                 <br />
                 @Html.Raw(Model.Post.PostText)
@@ -113,58 +118,67 @@
                     @if (Model.ShowEditHistory)
                     {
                         <div class="Caption ThemeColor">
-                            Ultima dată modificat de @Model.Post.LastEditUser
-                            <script>
-                                    writeDate("@Model.Post.LastEditTime.ToUtcTime().ToString("o")", "@UserDateFormat");
-                            </script>
+                            @Html.Raw(_languageProvider.BasicText[Model.Language, "LAST_EDITED_BY"]) @Model.Post.LastEditUser
+                            <script>writeDate("@Model.Post.LastEditTime.ToUtcTime().ToString("o")", "@UserDateFormat");</script>.
                             @if (!string.IsNullOrWhiteSpace(Model.Post.LastEditReason))
                             {
-                                <span>. Motiv: @HttpUtility.HtmlDecode(Model.Post.LastEditReason)</span>
+                                <span>@Html.Raw(_languageProvider.BasicText[Model.Language, "REASON", Casing.FirstUpper]): @HttpUtility.HtmlDecode(Model.Post.LastEditReason).</span>
                             }
-                            . Modificări în total: @Model.Post.EditCount.
+                            @Html.Raw(_languageProvider.BasicText[Model.Language, "TOTAL_EDITS"]): @Model.Post.EditCount.
                         </div>
                         <p></p>
                     }
                     <div class="PostActions">
                         @if ((!Model.IsTopicLocked || Model.IsCurrentUserMod) && !IsAnonymous && (!Model.IsPostLastInPage || !Model.IsLastPage))
                         {
-                            <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@Model.Post.PostId">
-                                @if (Model.IsTopicLocked)
-                                {
-                                    <span>&#x1F4AC; Subiect închis</span>
-                                }
-                                else
-                                {
-                                    <span>&#x1F4AC; Răspunde cu citat</span>
-                                }
-                            </a>
+                            <span>
+                                <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@Model.Post.PostId">
+                                    @if (Model.IsTopicLocked)
+                                    {
+                                        <span>&#x1F4AC; @Html.Raw(_languageProvider.BasicText[Model.Language, "CLOSED_TOPIC", Casing.FirstUpper])</span>
+                                    }
+                                    else
+                                    {
+                                        <span>&#x1F4AC; @Html.Raw(_languageProvider.BasicText[Model.Language, "REPLY_AS_QUOTE"])</span>
+                                    }
+                                </a>
+                            </span>
                         }
                         else if (!IsAnonymous && (!Model.IsPostLastInPage || !Model.IsLastPage))
                         {
-                            <a href="javascript:;" title="Subiectul este închis, nu se mai pot trimite răspunsuri.">
-                                <s>&#x1F5E8; Subiect închis</s>
-                            </a>
+                            <span>
+                                <a href="javascript:;" title="Subiectul este închis, nu se mai pot trimite răspunsuri.">
+                                    <s>&#x1F5E8; @Html.Raw(_languageProvider.BasicText[Model.Language, "CLOSED_TOPIC", Casing.FirstUpper])</s>
+                                </a>
+                            </span>
                         }
 
                         @if (!Model.Post.ReportId.HasValue && !IsAnonymous)
                         {
                             <span>
-                                <a href="javascript:vt.showReportForm(@Model.Post.PostId);">&#x2757; Raportează</a>
+                                <a href="javascript:vt.showReportForm(@Model.Post.PostId);">
+                                    &#x2757; @Html.Raw(_languageProvider.BasicText[Model.Language, "DO_REPORT", Casing.FirstUpper])
+                                </a>
                             </span>
                         }
                         @if (Model.IsCurrentUserMod)
                         {
                             <span>
-                                <a href="javascript:vt.showMessageDetails('@Model.Post.IP', '@Model.Post.LastEditTime.ToUtcTime().ToString("o")', '@UserDateFormat', @Model.Post.EditCount, '@Model.Post.LastEditUser');">&#x2753; Informații</a>
+                                <a href="javascript:vt.showMessageDetails('@Model.Post.IP', '@Model.Post.LastEditTime.ToUtcTime().ToString("o")', '@UserDateFormat', @Model.Post.EditCount, '@Model.Post.LastEditUser');">
+                                    &#x2753; @Html.Raw(_languageProvider.BasicText[Model.Language, "INFORMATION", Casing.FirstUpper])
+                                </a>
                             </span>
                             <span>
-                                Selectează pentru moderare <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @(Model.Post.PostId ?? -1))" @(Model.PostIdsForModerator.Contains(Model.Post.PostId ?? -1) ? "checked" : "") />
+                                @Html.Raw(_languageProvider.BasicText[Model.Language, "SELECT_FOR_MODERATION", Casing.FirstUpper])
+                                <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @(Model.Post.PostId ?? -1))" @(Model.PostIdsForModerator.Contains(Model.Post.PostId ?? -1) ? "checked" : "") />
                             </span>
                         }
                         @if (Model.IsCurrentUserMod || (Model.Post.AuthorId == Model.CurrentUser.UserId && (EditTime == 0 || DateTime.UtcNow.Subtract(Model.Post.PostCreationTime ?? default).TotalMinutes <= EditTime)))
                         {
                             <span>
-                                <a asp-page="/Posting" asp-page-handler="EditPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@Model.Post.PostId">&#x1F4DD; Modifică</a>
+                                <a asp-page="/Posting" asp-page-handler="EditPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@Model.Post.PostId">
+                                    &#x1F4DD; @Html.Raw(_languageProvider.BasicText[Model.Language, "DO_EDIT", Casing.FirstUpper])
+                                </a>
                             </span>
                             if (Model.IsCurrentUserMod || Model.IsPostLastInPage)
                             {
@@ -173,7 +187,9 @@
                                     <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @(Model.Post.PostId ?? -1))" @(Model.PostIdsForModerator.Contains(Model.Post.PostId ?? -1) ? "checked" : "") style="display:none" />
                                 }
                                 <span>
-                                    <a href="javascript:vt.deletePost(@(Model.Post.PostId ?? -1), @Model.ClosestPostId)">&#x1F6AE; Șterge</a>
+                                    <a href="javascript:vt.deletePost(@(Model.Post.PostId ?? -1), @Model.ClosestPostId)">
+                                        &#x1F6AE; @Html.Raw(_languageProvider.BasicText[Model.Language, "DO_DELETE", Casing.FirstUpper])
+                                    </a>
                                 </span>
                             }
                         }

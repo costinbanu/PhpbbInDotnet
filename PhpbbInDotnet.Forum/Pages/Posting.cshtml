@@ -27,6 +27,7 @@
         UserDateFormat = "dddd, dd.MM.yyyy, HH:mm";
     }
     var CanCreatePoll = Model.Action == PostingActions.NewTopic || (Model.Action == PostingActions.EditForumPost && (Model.CurrentTopic?.TopicFirstPostId ?? 0) == Model.PostId);
+    var Lang = Model.LanguageProvider.GetValidatedLanguage(CurrentUser, Model.Request);
 }
 
 <environment include="Development">
@@ -123,7 +124,12 @@ else if (IsPM)
     <h3>Scrie un mesaj privat nou:</h3>
 }
 
-@await Html.PartialAsync("_RulesPartial", new _RulesPartialModel(_renderingService, _utils, Model.CurrentForum?.ForumRules, Model.CurrentForum?.ForumRulesUid, Model.CurrentForum?.ForumRulesLink), ViewData)
+@await Html.PartialAsync("_RulesPartial", new _RulesPartialModel
+{
+    ForumRules = Model.CurrentForum?.ForumRules,
+    ForumRulesLink = Model.CurrentForum?.ForumRulesLink,
+    Language = Lang
+}, ViewData)
 
 @if (Model.PreviewablePost != null)
 {
@@ -136,7 +142,8 @@ else if (IsPM)
         {
             CurrentUser = CurrentUser,
             Poll = Model.PreviewablePoll,
-            IsPreview = true
+            IsPreview = true,
+            Language = Lang
         }, ViewData)
 
         <p></p>
@@ -147,7 +154,8 @@ else if (IsPM)
         CurrentUser = CurrentUser,
         Post = Model.PreviewablePost,
         ForumId = Model.ForumId,
-        TopicId = Model.TopicId ?? 0
+        TopicId = Model.TopicId ?? 0,
+        Language = Lang
     }, ViewData)
 
     <hr class="BoxSeparator" />
@@ -424,7 +432,7 @@ else if (IsPM)
                 AuthorName = ((ju?.UserId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID ? p.PostUsername : ju.Username),
                 AuthorId = ju?.UserId ?? Constants.ANONYMOUS_USER_ID,
                 AuthorColor = ju?.UserColour,
-                Attachments = ja.Select(a => new Objects.AttachmentDto(a)).ToList(),
+                Attachments = ja.Select(a => new Objects.AttachmentDto(a, false, Lang)).ToList(),
                 PostCreationTime = p.PostTime.ToUtcTime(),
                 PostModifiedTime = p.PostEditTime.ToUtcTime(),
                 PostId = p.PostId
@@ -436,7 +444,8 @@ else if (IsPM)
                 Post = post,
                 ForumId = Model.ForumId,
                 TopicId = Model.TopicId ?? 0,
-                ShowQuoteButton = !(CurrentUser.Foes?.Contains(post.AuthorId ?? 1) ?? false)
+                ShowQuoteButton = !(CurrentUser.Foes?.Contains(post.AuthorId ?? 1) ?? false),
+                Language = Lang
             }, ViewData)
         }
     }

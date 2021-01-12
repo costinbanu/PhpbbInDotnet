@@ -2,7 +2,22 @@
   //universal
   "HOME": "prima pagină",
   "FORUM": "forum",
+  "FORUMS": "forumuri",
+  "CATEGORY": "categorie",
+  "CATEGORIES": "categorii",
   "TOPIC": "subiect",
+  "TOPICS": "subiecte",
+  "POST": "mesaj",
+  "POSTS": "mesaje",
+  "VIEW": "vizualizare",
+  "VIEWS": "vizualizări",
+  "USER": "utilizator",
+  "GROUP": "grup",
+  "RANK": "rang",
+  "ACTIVE": "activ",
+  "INACTIVE": "inactiv",
+  "REGISTERED": "înscris",
+  "CLOSED_TOPIC": "subiect închis",
   "SEARCH_IN": "caută în",
   "GENERIC_ERROR_TRY_AGAIN": "A intervenit o eroare, te rugăm să încerci mai târziu.",
   "AGREE_WITH": "sunt de acord cu",
@@ -13,6 +28,28 @@
   "SEARCH_RESULTS": "Rezultatele căutării",
   "ORDER_BY": "Ordonează după...",
   "AND": "și",
+  "HIDDEN": "ascuns",
+  "CONTENT_HIDDEN_WARNING_BBCODE": "[i]Autorul acestui mesaj este pe lista ta de persoane neagreate, drept urmare nu poți vedea conținutul mesajelor sale[/i]",
+  "PRIVATE_MESSAGE": "mesaj privat",
+  "REASON": "motiv",
+  "INFORMATION": "informații",
+  "FORUM_RULES": "reguli forum",
+
+  //post/topic/forum summary
+  "LAST_POST_TEXT": "Ultimul mesaj de",
+  "LAST_POST_URL": "<a href=\"{0}\">Ultimul mesaj</a> de",
+  "POSTED": "Scris",
+
+  //display post
+  "DO_QUOTE": "citează",
+  "SHOW_REPORT": "arată raportul",
+  "DO_REPORT": "Raportează",
+  "LAST_EDITED_BY": "Ultima dată modificat de",
+  "TOTAL_EDITS": "Modificări în total",
+  "REPLY_AS_QUOTE": "Răspunde cu citat",
+  "SELECT_FOR_MODERATION": "Selectează pentru moderare",
+  "DO_EDIT": "Modifică",
+  "DO_DELETE": "Șterge",
 
   //layout
   "MY_ACCOUNT": "contul meu",
@@ -75,6 +112,18 @@
   "BOT_COUNT_SINGLE_FORMAT": "{0} bot",
   "BOT_COUNT_MULTIPLE_FORMAT": "{0} boți",
   "LAST_ACTIVE": "activ ultima oară",
+  "CITY": "Localitate",
+  "POST_COUNT": "Mesaje postate",
+
+  //attachment
+  "DOWNLOADED_ONCE": "descărcat o dată",
+  "DOWNLOADED_COUNT_FORMAT": "descărcat de {0} ori",
+
+  //pagination
+  "NEXT_PAGE": "pagina<br />următoate",
+  "PREVIOUS_PAGE": "pagina<br />precedentă",
+  "MESSAGES_PER_PAGE": "Mesaje afișate pe pagină",
+  "PAGINATION_OPTIONS": "Opțiuni paginare",
 
   //post and poll
   "POLL_TITLE_FORMAT": "Chestionar: {0}",

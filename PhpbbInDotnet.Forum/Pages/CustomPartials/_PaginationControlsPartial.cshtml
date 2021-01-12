@@ -1,5 +1,7 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._PaginationControlsPartialModel
 
+@inject Languages.LanguageProvider _languageProvider
+
 @if (Model.Paginator?.Pagination?.HasPages ?? false)
 {
     <div class="PaginationHolder">
@@ -12,8 +14,7 @@
                             ◄
                         </div>
                         <div style="display:table-cell; vertical-align:middle; text-align:left; line-height:1.1em">
-                            pagina<br />
-                            precedentă
+                            @Html.Raw(_languageProvider.BasicText[Model.Language, "PREVIOUS_PAGE"])
                         </div>
                     </div>
                 </a>
@@ -31,8 +32,7 @@
             {
                 <form method="post" asp-page-handler="Pagination" style="line-height:1.5em; display: inline; white-space:nowrap">
                     <span style="white-space:nowrap; display: inline">
-                        &nbsp;
-                        Mesaje afișate pe pagină:&nbsp;
+                        &nbsp;@Html.Raw(_languageProvider.BasicText[Model.Language, "MESSAGES_PER_PAGE"]):&nbsp;
                     </span>
                     <span style="white-space:nowrap; display: inline">
                         <input type="hidden" name="topicId" value="@Model.TopicId" />
@@ -51,8 +51,7 @@
                 <a href="@Model.Forward" style="text-decoration:none">
                     <div style="display:table">
                         <div style="display:table-cell; vertical-align:middle; text-align:right; line-height:1.1em; padding-right: 5px">
-                            pagina<br />
-                            următoare
+                            @Html.Raw(_languageProvider.BasicText[Model.Language, "NEXT_PAGE"])
                         </div>
                         <div style="display:table-cell; vertical-align:middle; font-size:2.5em; line-height:1.1em">
                             ►
@@ -69,7 +68,7 @@
     <div class="ControlsMiddleCollapsed">
         <p></p>
         <span class="MyButton MyMiniButton" onclick="showElement('paginationControls_@(Model.Self)')" style="white-space:nowrap">
-            &#x1F4D6;&nbsp;Opțiuni paginare
+            &#x1F4D6;&nbsp;@Html.Raw(_languageProvider.BasicText[Model.Language, "PAGINATION_OPTIONS"])
         </span>
         <div id="paginationControls_@(Model.Self)" style="display: none; width: 100%; line-height: 1.5em">
             <p></p>

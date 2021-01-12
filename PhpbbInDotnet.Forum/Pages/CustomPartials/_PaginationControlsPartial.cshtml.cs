@@ -22,7 +22,9 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
        
         public bool AllowPaginationChange { get; }
 
-        public _PaginationControlsPartialModel(Paginator paginator, bool allowPaginationChange, string back, string forward, bool includeEasyNavigation, int? topicId = null, int? firstPostId = null) 
+        public string Language { get; }
+
+        public _PaginationControlsPartialModel(Paginator paginator, bool allowPaginationChange, string back, string forward, bool includeEasyNavigation, string language, int? topicId = null, int? firstPostId = null) 
         {
             Paginator = paginator;
             Back = back;
@@ -32,6 +34,7 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
             IncludeEasyNavigation = includeEasyNavigation;
             AllowPaginationChange = allowPaginationChange;
             Self = Guid.NewGuid().ToString("n");
+            Language = language;
         }
     }
 }

@@ -1,12 +1,15 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._RulesPartialModel
 
+@inject Services.BBCodeRenderingService _renderingService
+@inject Languages.LanguageProvider _languageProvider
+
 @if (!string.IsNullOrWhiteSpace(Model.ForumRules))
 {
     <div class="RuleBox">
         <span>&#x26A0;&nbsp;</span>
-        <b>Reguli forum</b>
+        <b>@Html.Raw(_languageProvider.BasicText[Model.Language, "FORUM_RULES", Utilities.Casing.Title])</b>
         <br />
-        @Html.Raw(Model.ForumRules)
+        @Html.Raw(_renderingService.BbCodeToHtml(Model.ForumRules, string.Empty))
     </div>
 }
 else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
@@ -14,7 +17,7 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
     <div class="RuleBox">
         <a href="@Model.ForumRulesLink">
             &#x26A0;&nbsp;
-            <b>Reguli forum</b>
+            <b>@Html.Raw(_languageProvider.BasicText[Model.Language, "FORUM_RULES", Utilities.Casing.Title])</b>
         </a>
     </div>
 }
