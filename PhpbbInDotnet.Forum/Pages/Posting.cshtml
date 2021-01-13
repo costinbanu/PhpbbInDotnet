@@ -28,6 +28,7 @@
     }
     var CanCreatePoll = Model.Action == PostingActions.NewTopic || (Model.Action == PostingActions.EditForumPost && (Model.CurrentTopic?.TopicFirstPostId ?? 0) == Model.PostId);
     var Lang = await Model.GetLanguage();
+    var IsAdmin = await Model.IsCurrentUserAdminHere();
 }
 
 <environment include="Development">
@@ -40,9 +41,13 @@
 <script type="text/javascript">
     var posting = new Posting(
         @Json.Serialize(_renderingService.TagMap),
-        @((await Model.IsCurrentUserAdminHere()).ToString().ToLower()),
+        @(_config.GetValue<int>("UploadLimitsMB:Images")),
+        @(_config.GetValue<int>("UploadLimitsCount:Images")),
+        @(IsAdmin.ToString().ToLower()),
         @((Model.Action == PostingActions.EditForumPost).ToString().ToLower()),
-        "@UserDateFormat"
+        '@UserDateFormat',
+        '@(_config.GetValue<string>("BaseUrl"))',
+        @(Html.Raw(Model.LanguageProvider.JSText[Lang])).Posting
     );
 
     window.onload = function () {
@@ -90,38 +95,34 @@
 </script>
 
 
-@if (Model.Action == PostingActions.EditForumPost || (Model.Action == PostingActions.NewForumPost && Model.PostId.HasValue))
+@if (Model.Action == PostingActions.EditForumPost || Model.Action == PostingActions.NewForumPost)
 {
     <span>
-        Forum părinte:
+        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "PARENT_FORUM", Casing.Title]):
         <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(Model.CurrentForum?.ForumName ?? string.Empty)</a>
     </span>
     <h3>
-        Răspunde:
-        <a asp-page="/ViewTopic" asp-route-postId="@Model.PostId.Value" asp-page-handler="ByPostId">@HttpUtility.HtmlDecode(Model.CurrentTopic.TopicTitle)</a>
-    </h3>
-}
-else if (Model.Action == PostingActions.NewForumPost)
-{
-    <span>
-        Forum părinte:
-        <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(Model.CurrentForum?.ForumName ?? string.Empty)</a>
-    </span>
-    <h3>
-        Răspunde:
-        <a asp-page="/ViewTopic" asp-route-topicId="@Model.TopicId.Value" asp-route-pageNum="1">@HttpUtility.HtmlDecode(Model.CurrentTopic.TopicTitle)</a>
+        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "DO_REPLY", Casing.Title]):
+        @if (Model.PostId.HasValue)
+        {
+            <a asp-page="/ViewTopic" asp-route-postId="@Model.PostId.Value" asp-page-handler="ByPostId">@HttpUtility.HtmlDecode(Model.CurrentTopic.TopicTitle)</a>
+        }
+        else
+        {
+            <a asp-page="/ViewTopic" asp-route-topicId="@Model.TopicId.Value" asp-route-pageNum="1">@HttpUtility.HtmlDecode(Model.CurrentTopic.TopicTitle)</a>
+        }
     </h3>
 }
 else if (Model.Action == PostingActions.NewTopic)
 {
     <h3>
-        Scrie un subiect nou:
+        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "OPEN_NEW_TOPIC"]):
         <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(Model.CurrentForum?.ForumName ?? string.Empty)</a>
     </h3>
 }
 else if (IsPM)
 {
-    <h3>Scrie un mesaj privat nou:</h3>
+    <h3>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "WRITE_NEW_PM"]):</h3>
 }
 
 @await Html.PartialAsync("_RulesPartial", new _RulesPartialModel
@@ -137,7 +138,6 @@ else if (IsPM)
     if (Model.PreviewablePoll != null)
     {
         <hr class="BoxSeparator" />
-
         @await Html.PartialAsync("_PollPartial", new _PollPartialModel
         {
             CurrentUser = CurrentUser,
@@ -145,7 +145,6 @@ else if (IsPM)
             IsPreview = true,
             Language = Lang
         }, ViewData)
-
         <p></p>
     }
 
@@ -165,7 +164,7 @@ else if (IsPM)
 <form name="postform" method="post" enctype="multipart/form-data">
     @if (Model.Action == PostingActions.NewPrivateMessage)
     {
-        <input type="text" asp-for="ReceiverName" placeholder="Alege destinatar..." id="pmToInput" style="width:100%" autocomplete="off" />
+        <input type="text" asp-for="ReceiverName" placeholder="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "PM_CHOOSE_TO"])" id="pmToInput" style="width:100%" autocomplete="off" />
         <p id="tributeHolder" style="position:relative"></p>
         <span asp-validation-for="ReceiverName" class="validation"></span>
     }
@@ -175,7 +174,7 @@ else if (IsPM)
         <p></p>
         <span asp-validation-for="ReceiverName" class="validation"></span>
     }
-    <input asp-for="PostTitle" type="text" id="subject" size="45" maxlength="256" tabindex="2" class="InputBox" placeholder="Subiect" style="width:100%" />
+    <input asp-for="PostTitle" type="text" id="subject" size="45" maxlength="256" tabindex="2" class="InputBox" placeholder="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "POST_TITLE"])" style="width:100%" />
     <br />
 
     <div class="PostingControls" id="controls" style="width:100%">
@@ -183,14 +182,13 @@ else if (IsPM)
         {
             if (code.Key == "size")
             {
-                <select name="addbbcode20" class="BbCodeButton PostingButton" style="border-radius: 2px; border: 1px solid #dcdcdc;" onchange="posting.bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;" title="@code.Value.ToolTip">
-                    <option value="" disabled selected>@Html.Raw(code.Value.ButtonText)</option>
-                    <option value="50">Micuţ (50%)</option>
-                    <option value="85">Mic (85%)</option>
-                    <option value="100">Normal (100%)</option>
-                    <option value="150">Mare (150%)</option>
-                    <option value="200">Imens (200%)</option>
-                </select>
+                @Html.DropDownList("addbbcode20", _utils.EnumToDropDownList<PostingFontSize>(null, size => Model.LanguageProvider.Enums[Lang, size], size => ((int)size).ToString(), code.Value.ButtonText), new
+                {
+                    @class = "BbCodeButton PostingButton",
+                    style = "border-radius: 2px; border: 1px solid #dcdcdc;",
+                    onchange = "posting.bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;",
+                    title = code.Value.ToolTip
+                })
             }
             else if (code.Key == "color")
             {
@@ -206,7 +204,7 @@ else if (IsPM)
             }
         }
 
-        <button type="button" class="BbCodeButton PostingButton MyButton" onclick="toggleFormattingHelp()" title="Arată un ajutor pentru formatare">&#x2754;</button>
+        <button type="button" class="BbCodeButton PostingButton MyButton" onclick="toggleFormattingHelp()" title="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SHOW_POSTING_GUIDE"])">&#x2754;</button>
         <div class="ColorPalette" id="colour_palette">
             <table>
                 @{
@@ -232,42 +230,50 @@ else if (IsPM)
             </table>
         </div>
     </div>
-    <a href="javascript:posting.show_hidden_formatters();" class="PostingControlsButton" style="margin-top:5px">Opțiuni formatare</a>
+    <a href="javascript:posting.show_hidden_formatters();" class="PostingControlsButton" style="margin-top:5px">
+        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "FORMATTING_OPTIONS"])
+    </a>
     <div style="margin-top:5px">
         <textarea asp-for="PostText" id="message" tabindex="3" onselect="posting.storeCaret(this);" onclick="posting.storeCaret(this);" onkeyup="posting.storeCaret(this);" onfocus="posting.initInsertions();" class="InputBox" style="width:100%; min-height:17em"></textarea>
     </div>
     @if (Model.Action == PostingActions.EditForumPost)
     {
         <div style="clear:both">&nbsp;</div>
-        <input asp-for="EditReason" type="text" style="width:100%" placeholder="Motivul modificării" />
+        <input asp-for="EditReason" type="text" style="width:100%" placeholder="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "EDIT_REASON"])" />
     }
     @if (!IsPM)
     {
-        <button onclick="posting.toggleAttach()" type="button" class="PostingButton MyButton SpacedButton">&#128206; Fișiere atașate</button>
+        <button onclick="posting.toggleAttach()" type="button" class="PostingButton MyButton SpacedButton">
+            &#128206; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "ATTACHED_FILES"])
+        </button>
     }
-    <button onclick="posting.toggleEmoji()" type="button" class="Hide960 PostingButton MyButton SpacedButton">&#x1F642; Emoji</button>
+    <button onclick="posting.toggleEmoji()" type="button" class="Hide960 PostingButton MyButton SpacedButton">
+        &#x1F642; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "EMOJI"])
+    </button>
     @if (CanCreatePoll)
     {
-        <button onclick="posting.togglePoll()" type="button" class="PostingButton MyButton SpacedButton">&#x2714; Chestionar</button>
+        <button onclick="posting.togglePoll()" type="button" class="PostingButton MyButton SpacedButton">
+            &#x2714; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "POLL", Casing.Title])
+        </button>
     }
-    <input type="submit" value="&#x1F440; Previzualizează" onclick="return posting.censor()" asp-page-handler="Preview" class="PostingButton MyButton SpacedButton" />
+    <input type="submit" value="&#x1F440; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "DO_PREVIEW", Casing.Title])" onclick="return posting.censor()" asp-page-handler="Preview" class="PostingButton MyButton SpacedButton" />
 
     @switch (Model.Action)
     {
         case PostingActions.NewTopic:
         case PostingActions.NewForumPost:
-            <input type="submit" value="&#x1F4BE; Salvează mesajul în lucru" onclick="return posting.censor()" asp-page-handler="SaveDraft" class="PostingButton MyButton SpacedButton" />
-            <input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="NewForumPost" class="PostingButton MyButton SpacedButton MyMainButton" />
+            <input type="submit" value="&#x1F4BE; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SAVE_DRAFT"])" onclick="return posting.censor()" asp-page-handler="SaveDraft" class="PostingButton MyButton SpacedButton" />
+            <input type="submit" value="&#x27A1; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="NewForumPost" class="PostingButton MyButton SpacedButton MyMainButton" />
             break;
         case PostingActions.EditForumPost:
-            <input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="EditForumPost" class="PostingButton MyButton SpacedButton MyMainButton" />
+            <input type="submit" value="&#x27A1; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="EditForumPost" class="PostingButton MyButton SpacedButton MyMainButton" />
             break;
         case PostingActions.NewPrivateMessage:
         case PostingActions.EditPrivateMessage:
-            <input type="submit" value="&#x27A1; Trimite mesajul" onclick="return posting.censor()" asp-page-handler="PrivateMessage" class="PostingButton MyButton SpacedButton MyMainButton" />
+            <input type="submit" value="&#x27A1; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="PrivateMessage" class="PostingButton MyButton SpacedButton MyMainButton" />
             break;
         default:
-            <span class="validation">A intervenit o eroare, pagina nu a fost afișată corect.</span>
+            <span class="validation">@Html.Raw(Model.LanguageProvider.Errors[Lang, "AN_ERROR_OCCURRED"])</span>
             break;
     }
     <b>
@@ -276,25 +282,25 @@ else if (IsPM)
         <span asp-validation-for="LastPostTime" class="validation"></span>
         @if (Model.DraftSavedSuccessfully)
         {
-            <span class="success">Mesajul în lucru a fost salvat cu succes și vei putea lucra în continuare la el mai târziu.</span>
+            <span class="success">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DRAFT_SAVED_SUCCESSFULLY"])</span>
         }
     </b>
     @if (CanCreatePoll)
     {
         <div id="pollPanel" style="display:@(Model.ShowPoll ? "block" : "none")" class="PostInputWidth">
             <br />
-            <h3 style="float:left">Chestionar</h3>
+            <h3 style="float:left">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "POLL", Casing.Title])</h3>
             @if (Model.Action == PostingActions.EditForumPost)
             {
                 <span style="margin-bottom:10px">
                     &nbsp;&bull;&nbsp;
-                    <input type="submit" value="Șterge chestionarul" asp-page-handler="DeletePoll" onclick="return confirm('Sigur dorești ștergerea chestionarului?')" class="MyButton" />
+                    <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_POLL"])" asp-page-handler="DeletePoll" onclick="return confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_POLL"])')" class="MyButton" />
                 </span>
             }
             <p style="clear:both"></p>
             <hr class="BoxSeparator" />
             <div class="FlexCenter">
-                <div>Întrebarea chestionarului</div>
+                <div>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "POLL_QUESTION"])</div>
                 <div class="FlexRight PollInput">
                     <input asp-for="PollQuestion" class="InputBox" style="width:100%" /> <br />
                     <span asp-validation-for="PollQuestion" class="validation"></span>
@@ -302,7 +308,7 @@ else if (IsPM)
             </div>
             <hr class="BoxSeparator" />
             <div class="FlexCenter">
-                <div>Opțiuni (una pe rând)</div>
+                <div>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "POLL_OPTIONS"])</div>
                 <div class="FlexRight PollInput">
                     <textarea asp-for="PollOptions" rows="4" class="InputBox" style="width:100%" onkeydown="return posting.confirmPollChange(this)"></textarea>
                     <span asp-validation-for="PollOptions" class="validation"></span>
@@ -310,20 +316,17 @@ else if (IsPM)
             </div>
             <hr class="BoxSeparator" />
             <div class="FlexCenter">
-                <div>Timp pentru votare (zile)</div>
+                <div>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "VOTING_TIME"])</div>
                 <div class="FlexRight PollInput">
                     <input asp-for="PollExpirationDaysString" onchange="posting.showExpirationDate(this.value)" id="pollExpiration" class="InputBox" style="width:100%" /><br />
-                    <div class="Caption">
-                        <span>Introdu '0' pentru timp nelimitat.</span>
-                        <span>Sunt permise și fracții precum 0.5, 1.75 etc</span>
-                    </div>
+                    <div class="Caption">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "POLL_TIME_CAPTION"])</div>
                     <span id="pollExpirationHelper"></span>
                     <span asp-validation-for="PollExpirationDaysString" class="validation"></span>
                 </div>
             </div>
             <hr class="BoxSeparator" />
             <div class="FlexCenter">
-                <div>Opțiuni per votant</div>
+                <div>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "OPTIONS_PER_USER"])</div>
                 <div class="FlexRight PollInput">
                     <input asp-for="PollMaxOptions" class="InputBox" style="width:100%" />
                     <span asp-validation-for="PollMaxOptions" class="validation"></span>
@@ -331,10 +334,10 @@ else if (IsPM)
             </div>
             <hr class="BoxSeparator" />
             <div class="FlexCenter">
-                <div>Votanții își pot schimba votul</div>
+                <div>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CAN_CHANGE_VOTE"])</div>
                 <div class="FlexRight PollInput">
                     <input asp-for="PollCanChangeVote" class="InputBox" />
-                    <span>&nbsp;Da, votanții se pot răzgândi.</span>
+                    <span>&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CHANGE_VOTE_CAPTION"])</span>
                     <span asp-validation-for="PollCanChangeVote" class="validation"></span>
                 </div>
             </div>
@@ -345,33 +348,34 @@ else if (IsPM)
         <div id="attachPanel" style="display:@(Model.ShowAttach ? "block" : "none")">
             <br />
             <h3>Fișiere atașate</h3>
+            @*specific metrouusor*@
             <p style="clear:both;width:100%; padding:10px 20px 10px 20px; margin:0px">
                 Includerea imaginilor mai mari de 2MB nu este permisă, indiferent dacă sunt găzduite local sau extern. De asemenea, numerele de înmatriculare ale vehiculelor particulare surprinse in imagini trebuie ascunse.
                 Utilizați <a href="https://procesorimagini.metrouusor.com/" target="_blank">procesorul de imagini „Metrou Ușor”</a> pentru a redimensiona imagini și a ascunde numere de înmatriculare.
             </p>
             <input asp-for="Files" onchange="posting.submitAttachments()" multiple class="HiddenFileInput" />
-            <label for="Files" class="MyButton">Alege unul sau mai multe fișiere</label><br />
-            @if (!await Model.IsCurrentUserAdminHere())
+            <label for="Files" class="MyButton">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CHOOSE_FILES"])</label><br />
+            @if (!IsAdmin)
             {
-                <span class="Caption">Minim 1, maxim 10 fișiere. Dimensiune limită: @(_config.GetValue<int>("UploadLimitsMB:Images"))MB pentru imagini, @(_config.GetValue<int>("UploadLimitsMB:OtherFiles"))MB în rest.</span>
+                <span class="Caption">@Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, "CHOOSE_FILES_CAPTION_FORMAT"], _config.GetValue<int>("UploadLimitsMB:Images"), _config.GetValue<int>("UploadLimitsMB:OtherFiles")))</span>
             }
             <span asp-validation-for="Files" class="validation"></span>
             <div id="fileUploadStatus"></div>
-            <input type="submit" value="Încarcă fișierele alese" asp-page-handler="AddAttachment" style="display:none" id="submitAttachmentsButton" />
+            <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "LOAD_FILES"])" asp-page-handler="AddAttachment" style="display:none" id="submitAttachmentsButton" />
             @if (Model.Attachments?.Any() ?? false)
             {
                 <hr class="SubtypeSeparator" />
-                <h4>Fișiere deja atașate:</h4>
+                <h4>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "ALREADY_ATTACHED"]):</h4>
                 @for (var i = 0; i < Model.Attachments.Count; i++)
                 {
                     <div style="margin-bottom:20px; padding-bottom:20px">
-                        <b>Nume:</b> @Model.Attachments[i].RealFilename <br />
-                        <b>Comentariu fișier:</b>
+                        <b>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "FILE_NAME"]):</b> @Model.Attachments[i].RealFilename <br />
+                        <b>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "FILE_COMMENT"]):</b>
                         <br />
                         <textarea type="text" asp-for="Attachments[i].AttachComment" rows="4" cols="100" style="display:inline-block; color:black" class="InputBox"></textarea>
                         <p style="clear:both"></p>
-                        <input type="button" value="Așează în linie" onclick="posting.attach_inline(@i, '@Model.Attachments[i].RealFilename')" class="MyButton" /> &nbsp;
-                        <input type="submit" value="Șterge fișier" asp-page-handler="DeleteAttachment" onclick="$('#idToDelete').val(@i); return true;" class="MyButton" />
+                        <input type="button" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "MAKE_INLINE"])" onclick="posting.attach_inline(@i, '@Model.Attachments[i].RealFilename')" class="MyButton" /> &nbsp;
+                        <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_FILE"])" asp-page-handler="DeleteAttachment" onclick="$('#idToDelete').val(@i); return true;" class="MyButton" />
                         <br />
                         <span asp-validation-for="DeleteFileDummyForValidation[i]" class="validation"></span>
                     </div>
@@ -429,6 +433,7 @@ else if (IsPM)
             {
                 PostSubject = p.PostSubject,
                 PostText = p.PostText,
+                BbcodeUid = p.BbcodeUid,
                 AuthorName = ((ju?.UserId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID ? p.PostUsername : ju.Username),
                 AuthorId = ju?.UserId ?? Constants.ANONYMOUS_USER_ID,
                 AuthorColor = ju?.UserColour,
@@ -496,133 +501,4 @@ else if (IsPM)
 
 <div id="imgcheckstatus" class="Popup"></div>
 
-<div id="formattingHelp" class="MiddleBox" style="display:none">
-    <div style="padding: 0px 15px 0px 10px">
-        <h4 style="float:left; padding-left:10px; font-weight: bold">Ajutor formatare</h4>
-        <div style="float:right; cursor:pointer; font-weight:bold; margin: 10px 0px 10px 0px; padding-right:10px" onclick="showElement('formattingHelp')">Închide [X]</div>
-        <p style="clear:both"></p>
-    </div>
-    <div style="overflow-y:scroll; height: calc(100% - 51px); padding: 0px 10px 0px 10px">
-        <div class="FlexCenter" style="padding: 15px 0px 15px 15px; align-items:start">
-            <div style="margin-right:15px">[b]text bold[/b]</div>
-            <div class="FlexRight PostInputWidth">
-                <b>text bold</b>
-            </div>
-        </div>
-        <hr class="BoxSeparator" /><div class="FlexCenter" style="padding: 15px 0px 15px 15px; align-items:start">
-            <div style="margin-right:15px">[i]text italic[/i]</div>
-            <div class="FlexRight PostInputWidth">
-                <i>text italic</i>
-            </div>
-        </div>
-        <hr class="BoxSeparator" /><div class="FlexCenter" style="padding: 15px 0px 15px 15px; align-items:start">
-            <div style="margin-right:15px">[u]text subliniat[/u]</div>
-            <div class="FlexRight PostInputWidth">
-                <u>text subliniat</u>
-            </div>
-        </div>
-        <hr class="BoxSeparator" /><div class="FlexCenter" style="padding: 15px 0px 15px 15px; align-items:start">
-            <div style="margin-right:15px">[strike]text tăiat[/strike]</div>
-            <div class="FlexRight PostInputWidth">
-                <s>text tăiat</s>
-            </div>
-        </div>
-        <hr class="BoxSeparator" /><div class="FlexCenter" style="padding: 15px 0px 15px 15px; align-items:start">
-            <div style="margin-right:15px">[size=150]text cu dimensiunea de 150% din cea normală[/size]</div>
-            <div class="FlexRight PostInputWidth">
-                <span style="font-size:1.5em">text cu dimensiunea de 150% din cea normală</span>
-            </div>
-        </div>
-        <hr class="BoxSeparator" /><div class="FlexCenter" style="padding: 15px 0px 15px 15px; align-items:start">
-            <div style="margin-right:15px">[color=red]text roșu[/color]</div>
-            <div class="FlexRight PostInputWidth">
-                <span style="color:red">text roșu</span>
-            </div>
-        </div>
-        <hr class="BoxSeparator" /><div class="FlexCenter" style="padding: 15px 0px 15px 15px; align-items:start">
-            <div style="margin-right:15px">[quote]citat[/quote]</div>
-            <div class="FlexRight PostInputWidth">
-                <blockquote class="PostQuote">citat</blockquote>
-            </div>
-        </div>
-        <hr class="BoxSeparator" /><div class="FlexCenter" style="padding: 15px 0px 15px 15px; align-items:start">
-            <div style="margin-right:15px">[quote=autor]citat[/quote]</div>
-            <div class="FlexRight PostInputWidth">
-                <blockquote class="PostQuote">
-                    <b>autor</b> a scris<br />citat
-                </blockquote>
-            </div>
-        </div>
-        <hr class="BoxSeparator" /><div class="FlexCenter" style="padding: 15px 0px 15px 15px; align-items:start">
-            <div style="margin-right:15px">[url] www.metrouusor.com [/url]</div>
-            <div class="FlexRight PostInputWidth">
-                <a href="https://metrouusor.com">www.metrouusor.com</a>
-            </div>
-        </div>
-        <hr class="BoxSeparator" /><div class="FlexCenter" style="padding: 15px 0px 15px 15px; align-items:start">
-            <div style="margin-right:15px">[url=www.metrouusor.com] Asociația Metrou Ușor [/url]</div>
-            <div class="FlexRight PostInputWidth">
-                <a href="https://metrouusor.com">Asociația Metrou Ușor</a>
-            </div>
-        </div>
-        <hr class="BoxSeparator" /><div class="FlexCenter" style="padding: 15px 0px 15px 15px; align-items:start">
-            <div style="margin-right:15px">[img]url_imagine[/img]</div>
-            <div class="FlexRight PostInputWidth">
-                Afişează imaginea din url-ul respectiv.<br />
-                Nu sunt permise imaginile găzduite pe imageshack sau photobucket.
-                Pentru găzduire externă recomandăm <a href="https://imgur.com">imgur.com</a>.
-            </div>
-        </div>
-        <hr class="BoxSeparator" /><div class="FlexCenter Hide960Flex" style="padding: 15px 0px 15px 15px; align-items:start">
-            <div style="margin-right:15px">
-                [list]<br />
-                [*] elementul unu<br />
-                [*] elementul doi<br />
-                [/list]
-            </div>
-            <div class="FlexRight PostInputWidth">
-                Efect: o listă simplă<br />
-                <ul>
-                    <li>elementul unu</li>
-                    <li>elementul doi</li>
-                </ul>
-            </div>
-        </div>
-        <hr class="BoxSeparator" /><div class="FlexCenter Hide960Flex" style="padding: 15px 0px 15px 15px; align-items:start">
-            <div style="margin-right:15px">
-                [list=a]<br />
-                [*] elementul unu<br />
-                [*] elementul doi<br />
-                [/list]
-            </div>
-            <div class="FlexRight PostInputWidth">
-                Efect: o listă ordonată (list=1 schimbă numerotarea în 1, 2, 3...)<br />
-                <ol type="a">
-                    <li>elementul unu</li>
-                    <li>elementul doi</li>
-                </ol>
-            </div>
-        </div>
-        <hr class="BoxSeparator" /><div class="FlexCenter Hide960Flex" style="padding: 15px 0px 15px 15px; align-items:start">
-            <div style="margin-right:15px">[*]</div>
-            <div class="FlexRight PostInputWidth">element într-o listă - vezi mai sus</div>
-        </div>
-        <hr class="BoxSeparator" /><div class="FlexCenter Hide960Flex" style="padding: 15px 0px 15px 15px; align-items:start">
-            <div style="margin-right:15px">[code]bloc preformatat de cod în chenar de dimensiune fixă[/code]</div>
-            <div class="FlexRight PostInputWidth">
-                <span class="CodeBlock">bloc preformatat de cod în chenar de dimensiune fixă</span>
-            </div>
-        </div>
-        <hr class="BoxSeparator" /><div class="FlexCenter" style="padding: 15px 0px 15px 15px; align-items:start">
-            <div style="margin-right:15px">[youtube]id_video[/youtube]</div>
-            <div class="FlexRight PostInputWidth" id="dummy">
-                id_video este codul cuprins între „v=” și „&” (dacă există) în adresa video-ului:<br />
-                <img src="https://forum.metrouusor.com/download/file.php?id=112751" />
-                <br />
-                Efect:
-                <br />
-                <iframe width="560" height="315" src="https://www.youtube.com/embed/Gf7_a2DVl7E?html5=1" frameborder="0" allowfullscreen></iframe>
-            </div>
-        </div>
-    </div>
-</div>
+@Html.Raw(Model.LanguageProvider.PostingGuide[Lang])

@@ -18,6 +18,8 @@ namespace PhpbbInDotnet.Languages
         private readonly Dictionary<string, string> _rawCache;
         private readonly ILogger _logger;
 
+        private string _path;
+
         protected abstract string FileExtension { get; }
 
         protected abstract bool ShouldCacheRawTranslation { get; }
@@ -30,6 +32,9 @@ namespace PhpbbInDotnet.Languages
             _logger = logger;
         }
 
+        public bool Exists(string language)
+            => File.Exists(GetFile(language));
+
         protected string GetRawTranslation(string language)
         {
             if (ShouldCacheRawTranslation && _rawCache.ContainsKey(language))
@@ -37,7 +42,7 @@ namespace PhpbbInDotnet.Languages
                 return _rawCache[language];
             }
 
-            var path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Translations", $"{_name}.{language}.{FileExtension}");
+            var path = GetFile(language);
             if (!File.Exists(path))
             {
                 _logger.Warning($"Potentially missing language: '{language}' - file '{path}' does not exist.");
@@ -113,5 +118,8 @@ namespace PhpbbInDotnet.Languages
 
             return value;
         }
+
+        private string GetFile(string language)
+            => Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Translations", $"{_name}.{language}.{FileExtension}");
     }
 }

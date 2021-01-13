@@ -3,12 +3,15 @@
   "HOME": "prima pagină",
   "FORUM": "forum",
   "FORUMS": "forumuri",
+  "PARENT_FORUM": "forum părinte",
   "CATEGORY": "categorie",
   "CATEGORIES": "categorii",
   "TOPIC": "subiect",
   "TOPICS": "subiecte",
   "POST": "mesaj",
   "POSTS": "mesaje",
+  "POLL": "chestionar",
+  "DO_PREVIEW": "previzualizează",
   "VIEW": "vizualizare",
   "VIEWS": "vizualizări",
   "USER": "utilizator",
@@ -39,17 +42,6 @@
   "LAST_POST_TEXT": "Ultimul mesaj de",
   "LAST_POST_URL": "<a href=\"{0}\">Ultimul mesaj</a> de",
   "POSTED": "Scris",
-
-  //display post
-  "DO_QUOTE": "citează",
-  "SHOW_REPORT": "arată raportul",
-  "DO_REPORT": "Raportează",
-  "LAST_EDITED_BY": "Ultima dată modificat de",
-  "TOTAL_EDITS": "Modificări în total",
-  "REPLY_AS_QUOTE": "Răspunde cu citat",
-  "SELECT_FOR_MODERATION": "Selectează pentru moderare",
-  "DO_EDIT": "Modifică",
-  "DO_DELETE": "Șterge",
 
   //layout
   "MY_ACCOUNT": "contul meu",
@@ -100,7 +92,6 @@
   "NEW_PASSWORD_MESSAGE": "Am trimis un e-mail, la adresa completată anterior, cu mai multe instrucțiuni pe care trebuie să le urmezi ca să îți poți recupera contul.",
   "NEW_PASSWORD_COMPLETE": "Parola a fost modificată cu succes.",
 
-
   //memberlist
   "ALL_USERS": "Toți utilizatorii",
   "ACTIVE_USERS": "Utilizatori activi",
@@ -131,7 +122,7 @@
   "MESSAGES_PER_PAGE": "Mesaje afișate pe pagină",
   "PAGINATION_OPTIONS": "Opțiuni paginare",
 
-  //post and poll
+  //poll
   "POLL_TITLE_FORMAT": "Chestionar: {0}",
   "POLL_WAS_CLOSED": "Chestionarul a fost închis:",
   "POLL_WILL_BE_CLOSED": "Chestionarul va fi închis:",
@@ -142,6 +133,51 @@
   "VOTES_FORMAT": "{0} voturi ({1})",
   "SHOW_RESULTS": "Arată rezultatele",
   "VOTE_REGISTERED": "Votul tău a fost înregistrat!",
+  "DELETE_POLL": "Șterge chestionarul",
+  "CONFIRM_DELETE_POLL": "Sigur dorești ștergerea chestionarului?",
+  "POLL_QUESTION": "Întrebarea chestionarului",
+  "POLL_OPTIONS": "Opțiuni (una pe rând)",
+  "VOTING_TIME": "Timp pentru votare (zile)",
+  "POLL_TIME_CAPTION": "Introdu '0' pentru timp nelimitat. Sunt permise și fracții precum 0.5, 1.75 etc",
+  "OPTIONS_PER_USER": "Opțiuni per votant",
+  "CAN_CHANGE_VOTE": "Votanții își pot schimba votul",
+  "CHANGE_VOTE_CAPTION": "Da, votanții se pot răzgândi.",
+
+  //post & mp
+  "DO_QUOTE": "citează",
+  "SHOW_REPORT": "arată raportul",
+  "DO_REPORT": "Raportează",
+  "LAST_EDITED_BY": "Ultima dată modificat de",
+  "TOTAL_EDITS": "Modificări în total",
+  "REPLY_AS_QUOTE": "Răspunde cu citat",
+  "SELECT_FOR_MODERATION": "Selectează pentru moderare",
+  "DO_EDIT": "Modifică",
+  "DO_DELETE": "Șterge",
+  "DO_REPLY": "răspunde",
+  "OPEN_NEW_TOPIC": "Scrie un subiect nou",
+  "POST_TITLE": "Subiect",
+  "SHOW_POSTING_GUIDE": "Arată un ajutor pentru formatare",
+  "FORMATTING_OPTIONS": "Opțiuni formatare",
+  "EDIT_REASON": "Motivul modificării",
+  "ATTACHED_FILES": "Fișiere atașate",
+  "EMOJI": "Emoji",
+  "SAVE_DRAFT": "Salvează mesajul în lucru",
+  "SUBMIT_POST": "Trimite mesajul",
+  "DRAFT_SAVED_SUCCESSFULLY": "Mesajul în lucru a fost salvat cu succes și vei putea lucra în continuare la el mai târziu.",
+
+  //attachments
+  "CHOOSE_FILES": "Alege unul sau mai multe fișiere",
+  "CHOOSE_FILES_CAPTION_FORMAT": "Minim 1, maxim 10 fișiere. Dimensiune limită: {0}MB pentru imagini, {1}MB în rest.",
+  "LOAD_FILES": "Încarcă fișierele alese",
+  "ALREADY_ATTACHED": "Fișiere deja atașate",
+  "FILE_NAME": "Nume",
+  "FILE_COMMENT": "Comentariu fișier",
+  "MAKE_INLINE": "Așează în linie",
+  "DELETE_FILE": "Șterge fișier",
+  "CLICK_TO_ENLARGE": "Click pentru imaginea mărită.",
+
+  "WRITE_NEW_PM": "Scrie un mesaj privat nou",
+  "PM_CHOOSE_TO": "Alege destinatar...",
 
   //navigation
   "CHOOSE_DESTINATION_FORUM_TOPIC": "Alege forumul și subiectul de destinație",

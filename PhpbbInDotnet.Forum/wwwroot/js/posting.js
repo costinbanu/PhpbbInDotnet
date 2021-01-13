@@ -1,5 +1,5 @@
 ﻿class Posting {
-    constructor(bbtags, isAdmin, isEditAction, userDateFormat) {
+    constructor(bbtags, imgSizeLimit, imgCountLimit, isAdmin, isEditAction, userDateFormat, baseUrl, dictionary) {
         this.form_name = 'postform';
         this.text_name = 'message';
 
@@ -17,6 +17,13 @@
         this.isEditAction = isEditAction;
 
         this.userDateFormat = userDateFormat;
+
+        this.imgSizeLimit = imgSizeLimit;
+        this.imgCountLimit = imgCountLimit;
+
+        this.baseUrl = baseUrl;
+
+        this.dictionary = dictionary;
     }
 
     /**
@@ -51,19 +58,7 @@
 
         textarea.focus();
 
-        /*if ((this.clientVer >= 4) && this.is_ie && this.is_win) {
-            // Get text selection
-            this.theSelection = document.selection.createRange().text;
-
-            if (this.theSelection) {
-                // Add tags around selection
-                document.selection.createRange().text = bbopen + this.theSelection + bbclose;
-                document.forms[this.form_name].elements[this.text_name].focus();
-                this.theSelection = '';
-                return;
-            }
-        }
-        else*/ if (document.forms[this.form_name].elements[this.text_name].selectionEnd && (document.forms[this.form_name].elements[this.text_name].selectionEnd - document.forms[this.form_name].elements[this.text_name].selectionStart > 0)) {
+        if (document.forms[this.form_name].elements[this.text_name].selectionEnd && (document.forms[this.form_name].elements[this.text_name].selectionEnd - document.forms[this.form_name].elements[this.text_name].selectionStart > 0)) {
             this.mozWrap(document.forms[this.form_name].elements[this.text_name], bbopen, bbclose);
             document.forms[this.form_name].elements[this.text_name].focus();
             this.theSelection = '';
@@ -248,10 +243,10 @@
         showElement(
             'colour_palette',
             function () {
-                $('#bbpalette').val('Culoare font');
+                $('#bbpalette').val(this.dictionary['FONT_COLOR']);
             },
             function () {
-                $('#bbpalette').val('Ascunde culoarea fontului');
+                $('#bbpalette').val(this.dictionary['HIDE_FONT_COLOR']);
             }
         );
     }
@@ -260,10 +255,10 @@
         showElement(
             'controls',
             function () {
-                $('.PostingControlsButton').text('Opțiuni formatare');
+                $('.PostingControlsButton').text(this.dictionary['FORMATTING_OPTIONS']);
             },
             function () {
-                $('.PostingControlsButton').text('Ascunde opțiunile de formatare');
+                $('.PostingControlsButton').text(this.dictionary['HIDE_FORMATTING_OPTIONS']);
             }
         );
     }
@@ -272,13 +267,13 @@
         showElement(
             "hiddenSmilies",
             function () {
-                $("#showHiddenSmiliesButton").text("Arată mai multe");
+                $("#showHiddenSmiliesButton").text(this.dictionary['SHOW_MORE']);
             },
             function () {
                 $('#hiddenSmilies').find('img').each((index, element) => {
                     resizeImage(element, $('#hiddenSmilies').parent()[0].offsetWidth, $('#hiddenSmilies').parent()[0].offsetHeight);
                 });
-                $("#showHiddenSmiliesButton").text("Arată mai puține");
+                $("#showHiddenSmiliesButton").text(this.dictionary['SHOW_LESS']);
             },
             false
         )
@@ -292,8 +287,8 @@
             textinput.value = textinput.value.replace(/photobucket/gi, "*****");
             textinput.value = textinput.value.replace(/imageshack/gi, "*****");
             var imgNo = textinput.value.split("[img]").length - 1;
-            if (imgNo > 10 && !this.isAdmin) {
-                alert("Ati inclus " + imgNo + " imagini in mesaj. Numarul maxim permis: 10.")
+            if (imgNo > this.imgCountLimit && !this.isAdmin) {
+                alert(formatString(this.dictionary['TOO_MANY_IMAGES_ERROR_FORMAT'], imgNo, this.imgCountLimit));
                 return false;
             }
             else {
@@ -308,8 +303,8 @@
                 var isok = true;
                 var badimgs = [];
                 for (var i = 0; i < imgs.length; i++) {
-                    $('#imgcheckstatus').html('Sunt verificate imaginile incluse în mesaj.<br/>Vă rugăm așteptați...<br/>' + Math.round((i * 100) / imgs.length) + '%');
-                    if (imgs[i].indexOf("metrouusor") != -1) {
+                    $('#imgcheckstatus').html(formatString(this.dictionary['CHECKING_IMAGES_FORMAT'], Math.round((i * 100) / imgs.length)));
+                    if (imgs[i].indexOf(this.baseUrl) != -1) {
                         continue;
                     }
                     var response = $.ajax({
@@ -317,7 +312,7 @@
                         async: false,
                         url: imgs[i],
                         success: (msg) => {
-                            if (msg.length / 1024 / 1024 > 2 && !this.isAdmin) {
+                            if (msg.length / 1024 / 1024 > this.imgSizeLimit && !this.isAdmin) {
                                 isok = false;
                                 badimgs.push(imgs[i]);
                             }
@@ -329,7 +324,7 @@
                 }
                 if (!isok && !this.isAdmin) {
                     $('#imgcheckstatus').toggle();
-                    alert('Nu este permisă includerea unor imagini de peste 2MB dimensiune. Următoarele imagini sunt mai mari:\n' + badimgs.join('\n'));
+                    alert(formatString(this.dictionary['IMAGES_TOO_BIG_ERROR_FORMAT'], badimgs.join('\n')));
                     return false;
                 }
                 else {
@@ -346,13 +341,13 @@
     showExpirationDate(value) {
         var target = document.getElementById("pollExpirationHelper");
         if (value == 0) {
-            target.innerText = "Chestionarul nu va expira niciodată";
+            target.innerText = this.dictionary['POLL_NEVER_EXPIRES'];
             return;
         }
 
         var t = new Date();
         t.setSeconds(t.getSeconds() + value * 86400);
-        target.innerText = "Chestionarul expiră " + t.format(this.userDateFormat);
+        target.innerText = formatString(this.dictionary['POLL_EXPIRES_FORMAT'], t.format(this.userDateFormat));
     }
 
     confirmPollChange(opts) {
@@ -361,7 +356,7 @@
             return true;
         }
         if (this.isEditAction && !this.hasConfirmation && opts.value
-            && confirm("Dacă modificați opțiunile, toate voturile înregistrate până acum vor fi șterse. Continuați?")) {
+            && confirm(this.dictionary['CONFIRM_POLL_OPTIONS_CHANGE'])) {
             this.hasConfirmation = true;
             return true;
         }
@@ -400,7 +395,7 @@
 
     submitAttachments() {
         $('#submitAttachmentsButton').trigger('click');
-        $('#fileUploadStatus').text('Se încarcă fișierele...');
+        $('#fileUploadStatus').text(this.dictionary['LOADING_FILES']);
     }
 }
 

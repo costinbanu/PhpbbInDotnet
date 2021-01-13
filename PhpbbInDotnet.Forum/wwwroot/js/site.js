@@ -12,7 +12,7 @@ function resizeImage(img, customMaxWidth, customMaxHeight) {
     if (ratio < 1) {
         $(img).css({ 'width': roundToNextEvenNumber(originalWidth * ratio) + 'px', 'height': roundToNextEvenNumber(originalHeight * ratio) + 'px' });
         if (!$(img).parent().is('a')) {
-            $(img).attr({ 'onclick': 'window.open(this.src);', 'title': 'Click pentru imaginea mărită.' });
+            $(img).attr({ 'onclick': 'window.open(this.src);', 'title': clickToEnlarge });
             $(img).css('cursor', 'pointer');
         }
     } else {
@@ -145,4 +145,17 @@ function toggleHeaderLinks(curId, otherId) {
 function selectAllCheckboxes() {
     var checkboxes = $('input[type=checkbox]');
     checkboxes.prop('checked', !checkboxes.prop('checked'));
+}
+
+function formatString(format, ...args) {
+    if (!format) {
+        return '';
+    }
+    if (args === undefined || args.length == 0) {
+        return format;
+    }
+    for (var i = 0; i < args.length; i++) {
+        format = format.replace('{' + i + '}', args[i]);
+    }
+    return format;
 }

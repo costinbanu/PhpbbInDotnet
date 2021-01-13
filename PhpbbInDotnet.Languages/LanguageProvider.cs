@@ -4,7 +4,9 @@ using PhpbbInDotnet.Utilities;
 using Serilog;
 using System;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 
 namespace PhpbbInDotnet.Languages
 {
@@ -19,6 +21,7 @@ namespace PhpbbInDotnet.Languages
         private readonly Lazy<JavaScriptTranslation> _jsText;
         private readonly Lazy<HtmlTranslation> _faq;
         private readonly Lazy<TextTranslation> _errors;
+        private readonly Lazy<HtmlTranslation> _postingGuide;
 
         public TextTranslation BasicText => _basicText.Value;
 
@@ -34,6 +37,8 @@ namespace PhpbbInDotnet.Languages
 
         public TextTranslation Errors => _errors.Value;
 
+        public HtmlTranslation PostingGuide => _postingGuide.Value;
+
         public LanguageProvider(ILogger logger)
         {
             _logger = logger;
@@ -44,6 +49,7 @@ namespace PhpbbInDotnet.Languages
             _jsText = new Lazy<JavaScriptTranslation>(() => new JavaScriptTranslation(_logger));
             _faq = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(FAQ), _logger));
             _errors = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Errors), _logger));
+            _postingGuide = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(PostingGuide), _logger));
         }
 
         public string GetValidatedLanguage(LoggedUser user, HttpRequest request = null)
@@ -76,7 +82,13 @@ namespace PhpbbInDotnet.Languages
 
             try
             {
-                return new CultureInfo(language).TwoLetterISOLanguageName;
+                var toReturn = new CultureInfo(language).TwoLetterISOLanguageName;
+                if (!(BasicText.Exists(toReturn) && AboutCookies.Exists(toReturn) && Email.Exists(toReturn) && Enums.Exists(toReturn) && 
+                    JSText.Exists(toReturn) && FAQ.Exists(toReturn) && Errors.Exists(toReturn) && PostingGuide.Exists(toReturn)))
+                {
+                    return @default;
+                }
+                return toReturn;
             }
             catch (Exception ex)
             {

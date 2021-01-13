@@ -12,9 +12,18 @@
     "CONFIRM_DELETE_REPORTED_MESSAGE": "Ai ales să ștergi mesajul raportat. Ești sigur?"
   },
   "Posting": {
-
-  },
-  "Global": {
-
+    "FONT_COLOR": "Culoare font",
+    "HIDE_FONT_COLOR": "Ascunde culoarea fontului",
+    "FORMATTING_OPTIONS": "Opțiuni formatare",
+    "HIDE_FORMATTING_OPTIONS": "Ascunde opțiunile de formatare",
+    "SHOW_MORE": "Arată mai multe",
+    "SHOW_LESS": "Arată mai puține",
+    "TOO_MANY_IMAGES_ERROR_FORMAT": "Ați inclus {0} imagini în mesaj. Numărul maxim permis: {1}",
+    "CHECKING_IMAGES_FORMAT": "Sunt verificate imaginile incluse în mesaj.<br/>Vă rugăm așteptați...<br/>{0}%",
+    "IMAGES_TOO_BIG_ERROR_FORMAT": "Nu este permisă includerea unor imagini de peste 2MB dimensiune. Următoarele imagini sunt mai mari:\n{0}",
+    "POLL_NEVER_EXPIRES": "Chestionarul nu va expira niciodată",
+    "POLL_EXPIRES_FORMAT": "Chestionarul expiră {0}",
+    "CONFIRM_POLL_OPTIONS_CHANGE": "Dacă modificați opțiunile, toate voturile înregistrate până acum vor fi șterse. Continuați?",
+    "LOADING_FILES": "Se încarcă fișierele..."
   }
 }

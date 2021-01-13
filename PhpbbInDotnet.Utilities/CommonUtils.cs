@@ -251,13 +251,18 @@ namespace PhpbbInDotnet.Utilities
             return key1.ToArray();
         }
 
-        public List<SelectListItem> EnumToDropDownList<T>(T? selectedItem, Func<T, string> transform = null, string defaultText = null) where T : struct, Enum
+        public List<SelectListItem> EnumToDropDownList<T>(T? selectedItem, Func<T, string> textTransform = null, Func<T, string> valueTransform = null, string defaultText = null) where T : struct, Enum
         {
-            transform ??= x => Enum.GetName(typeof(T), x);
-            var toReturn = Enum.GetNames(typeof(T)).Select(x => new SelectListItem(transform((T)Enum.Parse(typeof(T), x)), x, selectedItem.HasValue && Enum.GetName(selectedItem.Value.GetType(), selectedItem.Value) == x)).ToList();
+            textTransform ??= x => Enum.GetName(typeof(T), x);
+            valueTransform ??= x => Enum.GetName(typeof(T), x);
+            var toReturn = Enum.GetNames(typeof(T)).Select(x =>
+            {
+                var val = Enum.Parse(typeof(T), x);
+                return new SelectListItem(textTransform((T)val), valueTransform((T)val), selectedItem.HasValue && Enum.GetName(selectedItem.Value.GetType(), selectedItem.Value) == x);
+            }).ToList();
             if (!selectedItem.HasValue)
             {
-                toReturn.Insert(0, new SelectListItem(defaultText ?? "Alege o opțiune", "dummyValue", true, true));
+                toReturn.Insert(0, new SelectListItem(defaultText, "dummyValue", true, true));
             }
             return toReturn;
         }

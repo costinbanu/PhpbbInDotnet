@@ -108,6 +108,15 @@ namespace PhpbbInDotnet.Utilities
         EditPrivateMessage
     }
 
+    public enum PostingFontSize
+    {
+        Tiny = 50,
+        Small = 85,
+        Normal = 100,
+        Large = 150,
+        Huge = 200
+    }
+
     public enum LoginMode
     {
         Normal,
