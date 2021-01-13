@@ -38,6 +38,7 @@
 
     <!-- global JS translation magic -->
     <script>
+        var dictionary = @(Html.Raw(Model.LanguageProvider.JSText[lang]));
         var clickToEnlarge = '@Html.Raw(_languageProvider.BasicText[lang, "CLICK_TO_ENLARGE"])';
         var monthNames = [];
         var dayNames = [];

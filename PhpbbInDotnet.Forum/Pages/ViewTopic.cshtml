@@ -43,8 +43,7 @@
         '@ModeratorTopicActions.MoveTopic',
         '@ModeratorPostActions.MoveSelectedPosts',
         '@ModeratorPostActions.SplitSelectedPosts',
-        @Constants.OTHER_REPORT_REASON_ID,
-        @(Html.Raw(Model.LanguageProvider.JSText[Lang])).ViewTopic
+        @Constants.OTHER_REPORT_REASON_ID
     );
 
     $(document).ready(function () {

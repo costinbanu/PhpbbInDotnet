@@ -1,12 +1,11 @@
 ﻿class ViewTopic {
-    constructor(postId, scrollToModPanel, moveTopic, moveSelectedPosts, splitSelectedPosts, otherReportReasonId, dictionary) {
+    constructor(postId, scrollToModPanel, moveTopic, moveSelectedPosts, splitSelectedPosts, otherReportReasonId) {
         this.postId = postId;
         this.scrollToModPanel = scrollToModPanel;
         this.moveTopic = moveTopic;
         this.moveSelectedPosts = moveSelectedPosts;
         this.splitSelectedPosts = splitSelectedPosts;
         this.otherReportReasonId = otherReportReasonId;
-        this.dictionary = dictionary;
     }
 
     onLoad() {
@@ -21,8 +20,8 @@
     }
 
     switchPollPanels(id1, id2, button) {
-        var show = this.dictionary['SHOW_RESULTS'];
-        var vote = this.dictionary['DO_VOTE'];
+        var show = dictionary.ViewTopic['SHOW_RESULTS'];
+        var vote = dictionary.ViewTopic['DO_VOTE'];
         showElement(
             id1,
             function () {
@@ -76,7 +75,7 @@
     confirmAction(actionSelect) {
         var action = $(actionSelect).val();
         if (action.startsWith('Delete')) {
-            return confirm(this.dictionary['RECEIVED_COMMAND'] + ' "' + $(actionSelect).find(':selected').text() + '". ' + this.dictionary['CONTINUE']);
+            return confirm(dictionary.ViewTopic['RECEIVED_COMMAND'] + ' "' + $(actionSelect).find(':selected').text() + '". ' + dictionary.ViewTopic['CONTINUE']);
         }
         return true;
     }
@@ -84,8 +83,8 @@
     showMessageDetails(ip, editTime, timeFormat, editCount, editUser) {
         var content = '<b>IP:</b> ' + ip + '<br/>';
         if (editCount > 0) {
-            content = content + '<b>' + this.dictionary['LAST_CHANGED'] + '</b> ' + new Date(editTime).format(timeFormat) + ', <b>' + this.dictionary['CHANGED_BY'] + '</b> ' + editUser + '<br /> ' +
-                '<b>' + this.dictionary['TOTAL_CHANGES'] + '</b> ' + editCount + '<br/>';
+            content = content + '<b>' + dictionary.ViewTopic['LAST_CHANGED'] + '</b> ' + new Date(editTime).format(timeFormat) + ', <b>' + dictionary.ViewTopic['CHANGED_BY'] + '</b> ' + editUser + '<br /> ' +
+                '<b>' + dictionary.ViewTopic['TOTAL_CHANGES'] + '</b> ' + editCount + '<br/>';
         }
         $('#postInfoContent').html(content);
         showElement('postInfo', null, null, true);
@@ -106,14 +105,14 @@
         var validation = $('#reportValidation');
         if (reason) {
             if (reason == this.otherReportReasonId && (!details || details.length < 3)) {
-                validation.text(this.dictionary['FILL_REPORT_DETAILS']);
+                validation.text(dictionary.ViewTopic['FILL_REPORT_DETAILS']);
                 validation.show();
                 return false;
             }
             return true;
         }
         else {
-            validation.text(this.dictionary['CHOOSE_REPORT_REASON']);
+            validation.text(dictionary.ViewTopic['CHOOSE_REPORT_REASON']);
             validation.show();
             return false;
         }
@@ -133,7 +132,7 @@
 
     confirmDeleteReportedPost() {
         if ($('#reportViewerDeleteMessage').is(':checked')) {
-            return confirm(this.dictionary['CONFIRM_DELETE_REPORTED_MESSAGE']);
+            return confirm(dictionary.ViewTopic['CONFIRM_DELETE_REPORTED_MESSAGE']);
         }
         return true;
     }

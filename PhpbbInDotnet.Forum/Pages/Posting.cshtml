@@ -46,8 +46,7 @@
         @(IsAdmin.ToString().ToLower()),
         @((Model.Action == PostingActions.EditForumPost).ToString().ToLower()),
         '@UserDateFormat',
-        '@(_config.GetValue<string>("BaseUrl"))',
-        @(Html.Raw(Model.LanguageProvider.JSText[Lang])).Posting
+        '@(_config.GetValue<string>("BaseUrl"))'
     );
 
     window.onload = function () {

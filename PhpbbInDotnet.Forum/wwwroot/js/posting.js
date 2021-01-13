@@ -1,5 +1,5 @@
 ﻿class Posting {
-    constructor(bbtags, imgSizeLimit, imgCountLimit, isAdmin, isEditAction, userDateFormat, baseUrl, dictionary) {
+    constructor(bbtags, imgSizeLimit, imgCountLimit, isAdmin, isEditAction, userDateFormat, baseUrl) {
         this.form_name = 'postform';
         this.text_name = 'message';
 
@@ -22,8 +22,6 @@
         this.imgCountLimit = imgCountLimit;
 
         this.baseUrl = baseUrl;
-
-        this.dictionary = dictionary;
     }
 
     /**
@@ -243,10 +241,10 @@
         showElement(
             'colour_palette',
             function () {
-                $('#bbpalette').val(this.dictionary['FONT_COLOR']);
+                $('#bbpalette').val(dictionary.Posting['FONT_COLOR']);
             },
             function () {
-                $('#bbpalette').val(this.dictionary['HIDE_FONT_COLOR']);
+                $('#bbpalette').val(dictionary.Posting['HIDE_FONT_COLOR']);
             }
         );
     }
@@ -255,10 +253,10 @@
         showElement(
             'controls',
             function () {
-                $('.PostingControlsButton').text(this.dictionary['FORMATTING_OPTIONS']);
+                $('.PostingControlsButton').text(dictionary.Posting['FORMATTING_OPTIONS']);
             },
             function () {
-                $('.PostingControlsButton').text(this.dictionary['HIDE_FORMATTING_OPTIONS']);
+                $('.PostingControlsButton').text(dictionary.Posting['HIDE_FORMATTING_OPTIONS']);
             }
         );
     }
@@ -267,13 +265,13 @@
         showElement(
             "hiddenSmilies",
             function () {
-                $("#showHiddenSmiliesButton").text(this.dictionary['SHOW_MORE']);
+                $("#showHiddenSmiliesButton").text(dictionary.Posting['SHOW_MORE']);
             },
             function () {
                 $('#hiddenSmilies').find('img').each((index, element) => {
                     resizeImage(element, $('#hiddenSmilies').parent()[0].offsetWidth, $('#hiddenSmilies').parent()[0].offsetHeight);
                 });
-                $("#showHiddenSmiliesButton").text(this.dictionary['SHOW_LESS']);
+                $("#showHiddenSmiliesButton").text(dictionary.Posting['SHOW_LESS']);
             },
             false
         )
@@ -288,7 +286,7 @@
             textinput.value = textinput.value.replace(/imageshack/gi, "*****");
             var imgNo = textinput.value.split("[img]").length - 1;
             if (imgNo > this.imgCountLimit && !this.isAdmin) {
-                alert(formatString(this.dictionary['TOO_MANY_IMAGES_ERROR_FORMAT'], imgNo, this.imgCountLimit));
+                alert(formatString(dictionary.Posting['TOO_MANY_IMAGES_ERROR_FORMAT'], imgNo, this.imgCountLimit));
                 return false;
             }
             else {
@@ -303,7 +301,7 @@
                 var isok = true;
                 var badimgs = [];
                 for (var i = 0; i < imgs.length; i++) {
-                    $('#imgcheckstatus').html(formatString(this.dictionary['CHECKING_IMAGES_FORMAT'], Math.round((i * 100) / imgs.length)));
+                    $('#imgcheckstatus').html(formatString(dictionary.Posting['CHECKING_IMAGES_FORMAT'], Math.round((i * 100) / imgs.length)));
                     if (imgs[i].indexOf(this.baseUrl) != -1) {
                         continue;
                     }
@@ -324,7 +322,7 @@
                 }
                 if (!isok && !this.isAdmin) {
                     $('#imgcheckstatus').toggle();
-                    alert(formatString(this.dictionary['IMAGES_TOO_BIG_ERROR_FORMAT'], badimgs.join('\n')));
+                    alert(formatString(dictionary.Posting['IMAGES_TOO_BIG_ERROR_FORMAT'], badimgs.join('\n')));
                     return false;
                 }
                 else {
@@ -341,13 +339,13 @@
     showExpirationDate(value) {
         var target = document.getElementById("pollExpirationHelper");
         if (value == 0) {
-            target.innerText = this.dictionary['POLL_NEVER_EXPIRES'];
+            target.innerText = dictionary.Posting['POLL_NEVER_EXPIRES'];
             return;
         }
 
         var t = new Date();
         t.setSeconds(t.getSeconds() + value * 86400);
-        target.innerText = formatString(this.dictionary['POLL_EXPIRES_FORMAT'], t.format(this.userDateFormat));
+        target.innerText = formatString(dictionary.Posting['POLL_EXPIRES_FORMAT'], t.format(this.userDateFormat));
     }
 
     confirmPollChange(opts) {
@@ -356,7 +354,7 @@
             return true;
         }
         if (this.isEditAction && !this.hasConfirmation && opts.value
-            && confirm(this.dictionary['CONFIRM_POLL_OPTIONS_CHANGE'])) {
+            && confirm(dictionary.Posting['CONFIRM_POLL_OPTIONS_CHANGE'])) {
             this.hasConfirmation = true;
             return true;
         }
@@ -395,7 +393,7 @@
 
     submitAttachments() {
         $('#submitAttachmentsButton').trigger('click');
-        $('#fileUploadStatus').text(this.dictionary['LOADING_FILES']);
+        $('#fileUploadStatus').text(dictionary.Posting['LOADING_FILES']);
     }
 }
 
