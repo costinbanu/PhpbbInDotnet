@@ -139,7 +139,7 @@ namespace PhpbbInDotnet.Forum.Pages
             DoSearch = true;
             if (AuthorId == 0)
             {
-                ModelState.AddModelError(nameof(SearchText), "A intervenit o eroare, te rugăm să încerci din nou.");
+                ModelState.AddModelError(nameof(SearchText), LanguageProvider.BasicText[await GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN"]);
                 return await OnGet();
             }
             return await OnGet();
@@ -153,7 +153,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (AuthorId == 0)
             {
-                ModelState.AddModelError(nameof(SearchText), "A intervenit o eroare, te rugăm să încerci din nou.");
+                ModelState.AddModelError(nameof(SearchText), LanguageProvider.BasicText[await GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN"]);
                 return await OnGet();
             }
 
@@ -233,7 +233,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             if (string.IsNullOrWhiteSpace(SearchText) && !IsAuthorSearch)
             {
-                ModelState.AddModelError(nameof(SearchText), "Introduceți unul sau mai multe cuvinte!");
+                ModelState.AddModelError(nameof(SearchText), LanguageProvider.BasicText[await GetLanguage(), "MISSING_REQUIRED_FIELD"]);
                 return;
             }
 

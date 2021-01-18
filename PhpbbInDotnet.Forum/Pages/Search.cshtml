@@ -1,6 +1,7 @@
 ﻿@page
 @model PhpbbInDotnet.Forum.Pages.SearchModel
 
+@using CustomPartials
 @using Dapper
 @using PhpbbInDotnet.Database.Entities
 @using PhpbbInDotnet.Utilities
@@ -31,7 +32,7 @@
 </environment>
 @if (!Model.IsAuthorSearch)
 {
-    <h3>Caută</h3>
+    <h3>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEARCH"])</h3>
 }
 <script type="text/javascript">
     var vt = new ViewTopic(-1, false, '', '', '', -1);
@@ -85,20 +86,18 @@
 
         <input asp-for="SearchText" type="text" placeholder="Caută după text..." style="width:100%" autofocus class="InputBox" />
         <span class="Caption">
-            Dacă doriți să căutați după o frază exactă, puneți-o între ghilimele.
-            De exemplu căutarea <b><i>autobuz galben</i></b> va returna mesaje care conțin fie <b><i>autobuz</i></b>, fie <b><i>galben</i></b>, fie amândouă.
-            Căutarea <b><i>"autobuz galben"</i></b> va returna mesajele care conțin fraza exactă "autobuz galben".
+            @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEARCH_CAPTION"])
         </span>
         <span asp-validation-for="SearchText" class="validation"></span>
-        <a href="javascript:showElement('advanced')">Căutare avansată</a>
+        <a href="javascript:showElement('advanced')">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "ADVANCED_SEARCH"])</a>
         <div id="advanced" style="display:none">
             <p></p>
-            <input asp-for="Author" type="text" placeholder="Caută după autor..." id="AuthorInput" style="width:100%" autocomplete="new-password" class="InputBox" />
+            <input asp-for="Author" type="text" placeholder="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEARCH_BY_AUTHOR"])" id="AuthorInput" style="width:100%" autocomplete="new-password" class="InputBox" />
             <p id="tributeHolder" style="position:relative"></p>
-            Caută în forumul...
+            @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEARCH_IN_FORUM"])
             @await Html.PartialAsync(
                  "_ForumTreePartial",
-                  new CustomPartials._ForumTreePartialModel(
+                  new _ForumTreePartialModel(
                       tree: (await Model.GetForumTree(false, false)).Tree,
                       topicData: (await connection.QueryAsync<Objects.MiniTopicDto>("SELECT * FROM phpbb_topics")).AsList(),
                       forumId: Model.ForumId,
@@ -110,13 +109,13 @@
             <input asp-for="ForumId" type="hidden" id="ForumIdInput" />
             <p></p>
             <select name="TopicId" id="TopicIdDisplay" style="width:100%">
-                <option selected disabled value="-1">Caută în subiectul...</option>
-                <option value="0">Caută în toate subiectele</option>
+                <option selected disabled value="-1">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEARCH_IN_TOPIC"])</option>
+                <option value="0">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEARCH_IN_ALL_TOPICS"])</option>
             </select>
             <p></p>
         </div>
         <p></p>
-        <input type="submit" value="Trimite" class="MyButton" />
+        <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT", Casing.FirstUpper])" class="MyButton" />
     </form>
     <p>&nbsp;</p>
 }
@@ -125,18 +124,18 @@ else
     var user = await connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @authorId", new { Model.AuthorId });
     if (!string.IsNullOrWhiteSpace(user?.Username))
     {
-        <h4>Mesaje scrise de @System.Web.HttpUtility.HtmlDecode(user.Username)</h4>
+        <h4>@Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, "MESSAGES_BY_FORMAT"], user.Username))</h4>
     }
 }
 @if (Model.Posts != null && Model.Posts.Any())
 {
     if (!Model.IsAuthorSearch)
     {
-        <h3>Rezultate</h3>
+        <h3>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEARCH_RESULTS"])</h3>
     }
     @await Html.PartialAsync(
         "_PaginationControlsPartial",
-        new CustomPartials._PaginationControlsPartialModel(
+        new _PaginationControlsPartialModel(
             paginator: Model.Paginator,
             allowPaginationChange: false,
             back: Model.GetSearchLinkForPage(Model.PageNum.Value - 1),
@@ -154,66 +153,23 @@ else
         post.AuthorHasAvatar = !string.IsNullOrWhiteSpace(post.UserAvatar);
         post.Attachments = Model.Attachments?.Where(a => a.PostMsgId == post.PostId).Select(a => new Objects.AttachmentDto(a, false, Lang)).ToList();
 
-        if (CurrentUser.Foes?.Contains(post.AuthorId ?? 1) ?? false)
+        @await Html.PartialAsync("_PostPartial", new _PostPartialModel
         {
-            post.AuthorHasAvatar = false;
-            post.Attachments?.Clear();
-            post.BbcodeUid = string.Empty;
-            post.PostSubject = "Re:";
-            post.PostText = "[i]Autorul acestui mesaj este pe lista ta de persoane neagreate, drept urmare nu poți vedea conținutul mesajelor sale[/i]";
-        }
+            CurrentUser = CurrentUser,
+            Post = post,
+            ForumId = Model.ForumId ?? 0,
+            TopicId = Model.TopicId ?? 0,
+            IsPostFirstInPage = post == Model.Posts.First(),
+            IsPostLastInPage = post == Model.Posts.Last(),
+            Language = Lang
+        }, ViewData)
 
-        await _renderingService.ProcessPost(post, Model.PageContext, Model.HttpContext, true, Model.SearchText);
-
-        <div class="RowMargin FlexRow">
-            @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
-       {
-           AuthorId = post.AuthorId,
-           AuthorName = post.AuthorName,
-           AuthorColor = post.AuthorColor,
-           CreationTime = post.PostCreationTime,
-           AssetId = post.PostId.Value,
-           DateFormat = dateFormat,
-           ShowAvatar = post.AuthorHasAvatar,
-           AuthorRank = post.AuthorRank,
-           Left = true,
-           ShowAsLast = false,
-           PMLink = _userService.HasPrivateMessagePermissions(CurrentUser) ? $"<a href=\"./Posting?handler=PrivateMessage&postId={post.PostId}\">&#x1F5E8; Mesaj privat</a>" : null,
-           Language = Lang
-       })
-            <div class="ForumContent" id="@post.PostId">
-                <div class="Caption" style="clear:both">
-                    @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, post.ForumId))
-                </div>
-                <span style="display:flex">
-                    <span class="PostTitle">
-                        <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@post.PostId" target="_blank">@Html.Raw(post.PostSubject)</a>
-                    </span>
-                    <span style="margin-left:auto">
-                        <span class="CollapsedMenu" onclick="expandCollapsedMenu('summary@(post.PostId.Value)', 'button@(post.PostId.Value)')" id="button@(post.PostId.Value)" style="color:#@post.AuthorColor;margin-left: auto; height:auto; width: min-content">
-                            @Html.Raw(post.AuthorName)
-                        </span>
-                    </span>
-                </span>
-                <p>&nbsp;</p>
-                <div style="max-width:100%; overflow-wrap: break-word">
-                    <p style="clear:both">
-                        @Html.Raw(post.PostText)
-                        @foreach (var attachment in post.Attachments)
-                        {
-                            @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
-                        }
-                    </p>
-                </div>
-            </div>
-        </div>
-        <hr class="BoxSeparator" />
     }
 
     <p>&nbsp;</p>
     @await Html.PartialAsync(
         "_PaginationControlsPartial",
-        new CustomPartials._PaginationControlsPartialModel(
+        new _PaginationControlsPartialModel(
             paginator: Model.Paginator,
             allowPaginationChange: false,
             back: Model.GetSearchLinkForPage(Model.PageNum.Value - 1),
@@ -229,7 +185,7 @@ else
 else if (Model.Posts != null)
 {
     <p></p>
-    <p>Nu a fost găsit nici un rezultat.</p>
+    <p>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "NO_RESULTS_FOUND"])</p>
 }
 <link rel="stylesheet" href="~/lib/tribute/dist/tribute.css" />
 <script src="~/lib/tribute/dist/tribute.js"></script>

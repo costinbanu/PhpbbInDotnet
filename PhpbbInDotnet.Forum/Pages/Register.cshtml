@@ -6,7 +6,7 @@
 @{
     ViewData["Title"] = "Register";
     Layout = "~/Pages/_Layout.cshtml";
-    var lang = Model.LanguageProvider.GetValidatedLanguage(null, Model.HttpContext?.Request);
+    var lang = Model.GetLanguage();
 }
 
 @inject Microsoft.Extensions.Configuration.IConfiguration _config;

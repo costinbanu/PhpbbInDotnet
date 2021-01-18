@@ -27,6 +27,10 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1" />
+    <title>@(_config.GetValue<string>("ForumName")) - @ViewData["Title"]</title>
+
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=UA-93150453-1"></script>
     <script>
@@ -37,25 +41,26 @@
     </script>
 
     <!-- global JS translation magic -->
+    @if (ViewContext.RouteData.Values["page"].ToString() == "/ViewTopic" || ViewContext.RouteData.Values["page"].ToString() == "/Posting")
+    {
+        <script>
+            var dictionary = @(Html.Raw(Model.LanguageProvider.JSText[lang]));
+            var clickToEnlarge = '@Html.Raw(_languageProvider.BasicText[lang, "CLICK_TO_ENLARGE"])';
+        </script>
+    }
     <script>
-        var dictionary = @(Html.Raw(Model.LanguageProvider.JSText[lang]));
-        var clickToEnlarge = '@Html.Raw(_languageProvider.BasicText[lang, "CLICK_TO_ENLARGE"])';
         var monthNames = [];
         var dayNames = [];
 
         let baseDate = new Date(Date.UTC(2021, 0, 1, 0, 0, 0));
-        for (var i = 0; i < 12; i++, baseDate.setMonth(baseDate.getMonth() + 1)) {
+        for (i = 0; i < 12; i++, baseDate.setMonth(baseDate.getMonth() + 1)) {
             monthNames.push(baseDate.toLocaleString('@lang', { month: "long" }));
         }
         baseDate = new Date(Date.UTC(2021, 0, 10)); //must be a sunday
-        for (var i = 0; i < 7; i++, baseDate.setDate(baseDate.getDate() + 1)) {
+        for (i = 0; i < 7; i++, baseDate.setDate(baseDate.getDate() + 1)) {
             dayNames.push(baseDate.toLocaleString('@lang', { weekday: "long" }));
         }
     </script>
-
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1" />
-    <title>@(_config.GetValue<string>("ForumName")) - @ViewData["Title"]</title>
 
     <environment include="Development">
         <script src="~/lib/jquery/dist/jquery.js"></script>
@@ -106,33 +111,54 @@
                         var isTopic = ViewContext.RouteData.Values["page"].ToString() == "/ViewTopic";
                         if (string.IsNullOrWhiteSpace(currentUser?.Username) || (currentUser?.IsAnonymous ?? true))
                         {
-                            <li><a href="javascript:loginForm.submit()"><span style="width:25px; display:inline-block">&#x2705;</span>@_languageProvider.BasicText[lang, "LOGIN", Casing.FirstUpper]</a></li>
-                            <li><a asp-page="/Register"><span style="width:25px; display:inline-block">&#x1F4C3;</span>@_languageProvider.BasicText[lang, "REGISTER", Casing.FirstUpper]</a></li>
+                            <li>
+                                <a href="javascript:loginForm.submit()">
+                                    <span style="width:25px; display:inline-block">&#x2705;</span>
+                                    @Html.Raw(_languageProvider.BasicText[lang, "LOGIN", Casing.FirstUpper])
+                                </a>
+                            </li>
+                            <li>
+                                <a asp-page="/Register">
+                                    <span style="width:25px; display:inline-block">&#x1F4C3;</span>
+                                    @Html.Raw(_languageProvider.BasicText[lang, "REGISTER", Casing.FirstUpper])
+                                </a>
+                            </li>
                         }
                         else
                         {
                             <li>
                                 <a asp-page="/User" asp-route-UserId="@currentUser.UserId">
-                                    <span style="text-shadow: 0 0 4px white; width:25px; display:inline-block">&#x1F464;</span>@_languageProvider.BasicText[lang, "MY_ACCOUNT", Casing.FirstUpper] [@currentUser.Username]
+                                    <span style="text-shadow: 0 0 4px white; width:25px; display:inline-block">&#x1F464;</span>
+                                    @Html.Raw($"{_languageProvider.BasicText[lang, "MY_ACCOUNT", Casing.FirstUpper]} [{currentUser.Username}]")
                                 </a>
                             </li>
                             if (_userService.HasPrivateMessagePermissions(currentUser))
                             {
-                                <li><a asp-page="/PrivateMessages"><span style="width:25px; display:inline-block">&#x1F5E8;</span>@_languageProvider.BasicText[lang, "PRIVATE_MESSAGING", Casing.FirstUpper]</a></li>
+                                <li>
+                                    <a asp-page="/PrivateMessages">
+                                        <span style="width:25px; display:inline-block">&#x1F5E8;</span>
+                                        @Html.Raw(_languageProvider.BasicText[lang, "PRIVATE_MESSAGING", Casing.FirstUpper])
+                                    </a>
+                                </li>
                             }
 
                         }
 
                         <li>
                             <a asp-page="/Search" asp-route-QueryString="@HttpUtility.UrlEncode(Context.Request.QueryString.ToString())">
-                                <span style="width:25px; display:inline-block">&#x1F50E;</span>@_languageProvider.BasicText[lang, "SEARCH_IN", Casing.FirstUpper] 
-                                @(isTopic ? _languageProvider.BasicText[lang, "TOPIC", Casing.AllLower] : _languageProvider.BasicText[lang, "FORUM", Casing.AllLower])
+                                <span style="width:25px; display:inline-block">&#x1F50E;</span>
+                                @Html.Raw(string.Format(_languageProvider.BasicText[lang, "SEARCH_IN_FORMAT"], isTopic ? _languageProvider.BasicText[lang, "TOPIC", Casing.AllLower] : _languageProvider.BasicText[lang, "FORUM", Casing.AllLower]))
                             </a>
                         </li>
 
                         if (!(string.IsNullOrWhiteSpace(currentUser?.Username) || (currentUser?.IsAnonymous ?? true)))
                         {
-                            <li><a href="javascript:logoutForm.submit()"><span style="width:25px; display:inline-block">&#x274C;</span>@_languageProvider.BasicText[lang, "LOGOUT", Casing.FirstUpper]</a></li>
+                            <li>
+                                <a href="javascript:logoutForm.submit()">
+                                    <span style="width:25px; display:inline-block">&#x274C;</span>
+                                    @Html.Raw(_languageProvider.BasicText[lang, "LOGOUT", Casing.FirstUpper])
+                                </a>
+                            </li>
                         }
                     }
                 </ul><br /> <br />
@@ -153,7 +179,7 @@
                 {
                     <p style="clear:both"></p>
                     <span class="Unread" style="padding:5px; font-size:1.2em">
-                        <a asp-page="/PrivateMessages" asp-route-Show="Inbox">@pmCount @(pmCount > 1 ? _languageProvider.BasicText[lang, "UNREAD_MESSAGES", Casing.AllLower] : _languageProvider.BasicText[lang, "UNREAD_MESSAGE", Casing.AllLower])</a>
+                        <a asp-page="/PrivateMessages" asp-route-Show="Inbox">@pmCount @Html.Raw(pmCount > 1 ? _languageProvider.BasicText[lang, "UNREAD_MESSAGES", Casing.AllLower] : _languageProvider.BasicText[lang, "UNREAD_MESSAGE", Casing.AllLower])</a>
                     </span>
                     <p style="clear:both"></p>
                     displayedBox = true;
@@ -169,10 +195,10 @@
                             <p style="clear:both"></p>
                         }
                         <div class="ReportedPost" style="margin:5px; padding:5px; width: max-content; max-width: 100%">
-                            <h4>@(reports.Count() > 1 ? _languageProvider.BasicText[lang, "OPEN_REPORTS", Casing.Title] : _languageProvider.BasicText[lang, "OPEN_REPORT", Casing.Title])</h4>
+                            <h4>@Html.Raw(reports.Count() > 1 ? _languageProvider.BasicText[lang, "OPEN_REPORTS", Casing.Title] : _languageProvider.BasicText[lang, "OPEN_REPORT", Casing.Title])</h4>
                             @foreach (var r in reports)
                             {
-                                <a asp-page="ViewTopic" asp-page-handler="byPostId" asp-route-postId="@r.Item1">@r.Item2</a> <br />
+                                <a asp-page="ViewTopic" asp-page-handler="byPostId" asp-route-postId="@r.Item1">@Html.Raw(r.Item2)</a> <br />
                             }
                         </div>
                         displayedBox = true;
@@ -195,9 +221,17 @@
         <p><a asp-page="/TermsAndConditions" style="color:white; text-decoration:underline">@_languageProvider.BasicText[lang, "TERMS", Casing.Title]</a></p>
         @if (await _userService.IsUserAdminInForum(currentUser, 0))
         {
-            <p><a asp-page="./Admin" style="color:white; text-decoration:underline">@_languageProvider.BasicText[lang, "ADMIN_PANEL", Casing.Title]</a></p>
+            <p>
+                <a asp-page="./Admin" style="color:white; text-decoration:underline">
+                    @Html.Raw(_languageProvider.BasicText[lang, "ADMIN_PANEL", Casing.Title])
+                </a>
+            </p>
         }
-        <p><a asp-page="FAQ" style="color:white; text-decoration:underline">@_languageProvider.BasicText[lang, "FAQ", Casing.Title]</a></p>
+        <p>
+            <a asp-page="FAQ" style="color:white; text-decoration:underline">
+                @Html.Raw(_languageProvider.BasicText[lang, "FAQ", Casing.Title])
+            </a>
+        </p>
     </center>
 
     @RenderSection("Scripts", required: false)
@@ -217,9 +251,9 @@
             "showLink": true,
             "theme": "edgeless",
             "content": {
-                "message": "@_languageProvider.BasicText[lang, "BOX_MESSAGE"]",
-                "dismiss": "@_languageProvider.BasicText[lang, "BOX_DISMISS"]",
-                "link": "@_languageProvider.BasicText[lang, "BOX_LINK_TEXT"]",
+                "message": "@Html.Raw(_languageProvider.BasicText[lang, "BOX_MESSAGE"])",
+                "dismiss": "@Html.Raw(_languageProvider.BasicText[lang, "BOX_DISMISS"])",
+                "link": "@Html.Raw(_languageProvider.BasicText[lang, "BOX_LINK_TEXT"])",
                 "href": "./AboutCookies"
             }
         });

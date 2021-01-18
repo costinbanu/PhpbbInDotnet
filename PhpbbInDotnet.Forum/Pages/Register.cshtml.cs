@@ -15,6 +15,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Mail;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
@@ -22,34 +23,29 @@ namespace PhpbbInDotnet.Forum.Pages
     [ValidateAntiForgeryToken]
     public class RegisterModel : PageModel
     {
+        private readonly Regex USERNAME_REGEX = new Regex(@"[a-zA-Z0-9 \._-]+", RegexOptions.Compiled);
+        private readonly Regex PASSWORD_REGEX = new Regex(@"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$", RegexOptions.Compiled);
+
         private readonly ForumDbContext _context;
         private readonly CommonUtils _utils;
         private readonly IConfiguration _config;
         private readonly HttpClient _gClient;
+        
+        private string _language;
 
         [BindProperty]
-        [EmailAddress]
-        [Required(ErrorMessage = "Acest câmp este obligatoriu.")]
         public string Email { get; set; }
 
         [BindProperty]
-        [Required(ErrorMessage = "Acest câmp este obligatoriu.")]
-        [StringLength(maximumLength: 32, MinimumLength = 2, ErrorMessage = "Numele de utilizator trebuie să aibă o lungime cuprinsă între 2 și 32 de caractere.")]
-        [RegularExpression(@"[a-zA-Z0-9 \._-]+", ErrorMessage = "Caractere permise în numele de utilizator: a-z, A-Z, 0-9, [space], [dot], [underscore], [dash].")]
         public string UserName { get; set; }
 
         [BindProperty]
-        [Required(ErrorMessage = "Acest câmp este obligatoriu.")]
-        [RegularExpression(@"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$", ErrorMessage = "Parola trebuie să conțină cel puțin o literă și o cifră")]
-        [StringLength(maximumLength: 256, MinimumLength = 8, ErrorMessage = "Parola trebuie să fie de minim 8 caractere lungime")]
         public string Password { get; set; }
 
         [BindProperty]
         public string SecondPassword { get; set; }
 
         [BindProperty]
-        [Required]
-        [Range(type: typeof(bool), minimum: "True", maximum: "True", ErrorMessage = "Trebuie să fii de acord cu termenele de utilizare.")]
         public bool Agree { get; set; }
 
         [BindProperty]
@@ -68,13 +64,20 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
+            if (!Validate())
+            {
+                return Page();
+            }
+
+            var lang = GetLanguage();
+
             try
             {
                 var response = await _gClient.PostAsync(
-                    requestUri: _config.GetValue<string>("Recaptcha:RelativeUri"), 
+                    requestUri: _config.GetValue<string>("Recaptcha:RelativeUri"),
                     content: new StringContent(
                         content: $"secret={_config.GetValue<string>("Recaptcha:SecretKey")}&response={RecaptchaResponse}&remoteip={HttpContext.Connection.RemoteIpAddress}",
-                        encoding: Encoding.UTF8, 
+                        encoding: Encoding.UTF8,
                         mediaType: "application/x-www-form-urlencoded"
                     )
                 );
@@ -87,13 +90,13 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 if ((decimal)result.score < _config.GetValue<decimal>("Recaptcha:Score"))
                 {
-                    return PageWithError(nameof(RecaptchaResponse), "Procesul de înregistrare nu poate continua - sistemul nostru a detectat că ești bot. Dacă este o eroare, scrie-ne la admin arond metrouusor punct com.");
+                    return PageWithError(nameof(RecaptchaResponse), string.Format(LanguageProvider.Errors[lang, "YOURE_A_BOT_FORMAT"], _config.GetValue<string>("AdminEmail").Replace("@", " at ").Replace(".", " dot ")));
                 }
             }
             catch (Exception ex)
             {
                 _utils.HandleError(ex, "Failed to check captcha");
-                return PageWithError(nameof(RecaptchaResponse), "A intervenit o eroare. Te rugăm să încerci mai târziu sau să ne contactezi la admin arond metrouusor punct com.");
+                return PageWithError(nameof(RecaptchaResponse), LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
             }
 
             var conn = _context.Database.GetDbConnection();
@@ -109,12 +112,12 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (checkBanlist.Any(x => x.Email == 1L))
             {
-                return PageWithError(nameof(Email), "Adresa de e-mail nu este acceptată. Te rugăm să încerci cu alta.");
+                return PageWithError(nameof(Email), LanguageProvider.Errors[lang, "BANNED_EMAIL"]);
             }
 
             if (checkBanlist.Any(x => x.IP == 1L))
             {
-                return PageWithError(nameof(UserName), "Adresa IP nu este permisă la înregistrare");
+                return PageWithError(nameof(UserName), LanguageProvider.Errors[lang, "BANNED_IP"]);
             }
 
             var checkUsers = await conn.QueryAsync(
@@ -127,18 +130,12 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (checkUsers.Any(u => u.Username == 1L))
             {
-                return PageWithError(nameof(UserName), "Există deja un utilizator înregistrat cu acest nume de utilizator!");
+                return PageWithError(nameof(UserName), LanguageProvider.Errors[lang, "EXISTING_USERNAME"]);
             }
 
             if (checkUsers.Any(u => u.Email == 1L))
             {
-                return PageWithError(nameof(Email), "Există deja un utilizator înregistrat cu această adresă de email!");
-            }
-
-            //TODO: Revert to CompareAttribute in .net 5. Ref: https://github.com/dotnet/aspnetcore/issues/4895
-            if (SecondPassword != Password)
-            {
-                return PageWithError(nameof(SecondPassword), "Cele două parole trebuie să fie identice!");
+                return PageWithError(nameof(Email), LanguageProvider.Errors[lang, "EXISTING_EMAIL"]);
             }
 
             var registrationCode = Guid.NewGuid().ToString("n");
@@ -194,5 +191,76 @@ namespace PhpbbInDotnet.Forum.Pages
             ModelState.AddModelError(errorKey, errorMessage);
             return Page();
         }
+
+        private bool Validate()
+        {
+            var toReturn = true;
+            var lang = GetLanguage();
+
+            var emailValidator = new EmailAddressAttribute();
+            if (string.IsNullOrWhiteSpace(Email))
+            {
+                ModelState.AddModelError(nameof(Email), LanguageProvider.Errors[lang, "MISSING_REQUIRED_FIELD"]);
+                toReturn = false;
+            }
+            else if (!emailValidator.IsValid(Email))
+            {
+                ModelState.AddModelError(nameof(Email), LanguageProvider.Errors[lang, "INVALID_EMAIL_ADDRESS"]);
+                toReturn = false;
+            }
+
+            if (string.IsNullOrWhiteSpace(UserName))
+            {
+                ModelState.AddModelError(nameof(UserName), LanguageProvider.Errors[lang, "MISSING_REQUIRED_FIELD"]);
+                toReturn = false;
+            }
+            else if (UserName.Length < 2 || UserName.Length > 32)
+            {
+                ModelState.AddModelError(nameof(UserName), LanguageProvider.Errors[lang, "BAD_USERNAME_LENGTH"]);
+                toReturn = false;
+            }
+            else if (!USERNAME_REGEX.IsMatch(UserName))
+            {
+                ModelState.AddModelError(nameof(UserName), LanguageProvider.Errors[lang, "BAD_USERNAME_CHARS"]);
+                toReturn = false;
+            }
+
+            if (string.IsNullOrWhiteSpace(Password))
+            {
+                ModelState.AddModelError(nameof(Password), LanguageProvider.Errors[lang, "MISSING_REQUIRED_FIELD"]);
+                toReturn = false;
+            }
+            else if (Password.Length < 8 || Password.Length > 256)
+            {
+                ModelState.AddModelError(nameof(Password), LanguageProvider.Errors[lang, "BAD_PASSWORD_LENGTH"]);
+                toReturn = false;
+            }
+            else if (!PASSWORD_REGEX.IsMatch(Password))
+            {
+                ModelState.AddModelError(nameof(Password), LanguageProvider.Errors[lang, "BAD_PASSWORD_CHARS"]);
+                toReturn = false;
+            }
+
+            if (string.IsNullOrWhiteSpace(SecondPassword))
+            {
+                ModelState.AddModelError(nameof(SecondPassword), LanguageProvider.Errors[lang, "MISSING_REQUIRED_FIELD"]);
+                toReturn = false;
+            }
+            else if (Password != SecondPassword)
+            {
+                ModelState.AddModelError(nameof(SecondPassword), LanguageProvider.Errors[lang, "PASSWORD_MISMATCH"]);
+                toReturn = false;
+            }
+
+            if (!Agree)
+            {
+                ModelState.AddModelError(nameof(Agree), LanguageProvider.Errors[lang, "MUST_AGREE_WITH_TERMS"]);
+                toReturn = false;
+            }
+
+            return toReturn;
+        }
+
+        public string GetLanguage() => _language ??= LanguageProvider.GetValidatedLanguage(null, HttpContext?.Request);
     }
 }

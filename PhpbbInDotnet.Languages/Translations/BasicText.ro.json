@@ -21,13 +21,15 @@
   "INACTIVE": "inactiv",
   "REGISTERED": "înscris",
   "CLOSED_TOPIC": "subiect închis",
-  "SEARCH_IN": "caută în",
   "AGREE_WITH": "sunt de acord cu",
   "SUBMIT": "trimite",
   "STARTING_ON": "Începând cu",
   "FORUM_STATS_FORMAT": "cei {0} utilizatori ai forumului au scris {1} mesaje în {2} subiecte și {3} sub-forumuri.",
   "FORUM_STATS_CAPTION_FORMAT": "Interval de actualizare: {0} minute.",
+  "SEARCH": "Căutare",
+  "DO_SEARCH": "Caută",
   "SEARCH_RESULTS": "Rezultatele căutării",
+  "NO_RESULTS_FOUND": "Nu a fost găsit nici un rezultat.",
   "ORDER_BY": "Ordonează după...",
   "AND": "și",
   "HIDDEN": "ascuns",
@@ -48,6 +50,7 @@
   "PRIVATE_MESSAGING": "mesagerie privată",
   "UNREAD_MESSAGE": "mesaj privat necitit",
   "UNREAD_MESSAGES": "mesaje private necitite",
+  "SEARCH_IN_FORMAT": "Caută în {0}",
   "OPEN_REPORT": "raport deschis",
   "OPEN_REPORTS": "rapoarte deschise",
   "TERMS": "termenele și condițiile de utilizare",
@@ -165,6 +168,25 @@
   "SUBMIT_POST": "Trimite mesajul",
   "DRAFT_SAVED_SUCCESSFULLY": "Mesajul în lucru a fost salvat cu succes și vei putea lucra în continuare la el mai târziu.",
 
+  "WRITE_NEW_PM": "Scrie un mesaj privat nou",
+  "PM_CHOOSE_TO": "Alege destinatar...",
+  "RECEIVED": "Primite",
+  "NO_RECEIVED_MESSAGES": "Nici un mesaj primit.",
+  "SENT": "Trimise",
+  "NO_SENT_MESSAGES": "Nici un mesaj trimis",
+  "SELECTED_MESSAGE": "Mesajul selectat",
+  "SELECT_ALL_MESSAGES": "Selectează toate mesajele",
+  "MARK_SELECTED_AS_READ": "Marchează mesajele selectate ca citite",
+  "CONFIRM_MARK_AS_READ": "Sigur dorești să marchezi ca citite mesajele selectate?",
+  "DELETE_SELECTED_FOR_MYSELF": "Șterge mesajele selectate pentru mine",
+  "CONFIRM_DELETE_RECEIVED_FOR_MYSELF": "Mesajele selectate vor fi șterse pentru tine, însă vor rămâne disponibile expeditorului. Continui?",
+  "CONFIRM_DELETE_SENT_FOR_MYSELF": "Mesajele selectate vor fi șterse pentru tine, însă vor rămâne disponibile destinatarului. Continui?",
+  "DELETE_FOR_EVERYONE": "Șterge mesajul pentru mine și destinatar",
+  "CONFIRM_DELETE_FOR_EVERYONE": "Mesajul va fi șters și pentru tine, și pentru destinatar. Continui?",
+  "DELETE_FOR_MYSELF": "Șterge mesajul doar pentru mine",
+  "CONFIRM_DELETE_MINE_FOR_MYSELF": "Mesajul va fi șters pentru tine, însă va rămâne disponibil destinatarului. Continui?",
+  "CONFIRM_DELETE_OTHERS_FOR_MYSELF": "Mesajul va fi șters pentru tine, însă va rămâne disponibil expeditorului. Continui?",
+
   //attachments
   "CHOOSE_FILES": "Alege unul sau mai multe fișiere",
   "CHOOSE_FILES_CAPTION_FORMAT": "Minim 1, maxim 10 fișiere. Dimensiune limită: {0}MB pentru imagini, {1}MB în rest.",
@@ -176,12 +198,18 @@
   "DELETE_FILE": "Șterge fișier",
   "CLICK_TO_ENLARGE": "Click pentru imaginea mărită.",
 
-  "WRITE_NEW_PM": "Scrie un mesaj privat nou",
-  "PM_CHOOSE_TO": "Alege destinatar...",
-
   //navigation
   "CHOOSE_DESTINATION_FORUM_TOPIC": "Alege forumul și subiectul de destinație",
   "CHOOSE_DESTINATION_FORUM": "Alege forumul de destinație",
-  "CHOOSE_DESTINATION_TOPIC": "Alege subiectul de destinație"
+  "CHOOSE_DESTINATION_TOPIC": "Alege subiectul de destinație",
+
+  //search
+  "SEARCH_CAPTION": "Dacă doriți să căutați după o frază exactă, puneți-o între ghilimele. De exemplu căutarea <b><i>autobuz galben</i></b> va returna mesaje care conțin fie <b><i>autobuz</i></b>, fie <b><i>galben</i></b>, fie amândouă.Căutarea <b><i>\"autobuz galben\"</i></b> va returna mesajele care conțin fraza exactă \"autobuz galben\".",
+  "ADVANCED_SEARCH": "Căutare avansată",
+  "SEARCH_BY_AUTHOR": "Caută după autor...",
+  "SEARCH_IN_FORUM": "Caută în forumul...",
+  "SEARCH_IN_TOPIC": "Caută în subiectul...",
+  "SEARCH_IN_ALL_TOPICS": "Caută în toate subiectele",
+  "MESSAGES_BY_FORMAT": "Mesaje scrise de {0}",
 
 }

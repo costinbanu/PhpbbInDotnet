@@ -4,9 +4,7 @@ using PhpbbInDotnet.Utilities;
 using Serilog;
 using System;
 using System.Globalization;
-using System.IO;
 using System.Linq;
-using System.Reflection;
 
 namespace PhpbbInDotnet.Languages
 {
@@ -22,6 +20,7 @@ namespace PhpbbInDotnet.Languages
         private readonly Lazy<HtmlTranslation> _faq;
         private readonly Lazy<TextTranslation> _errors;
         private readonly Lazy<HtmlTranslation> _postingGuide;
+        private readonly Lazy<HtmlTranslation> _termsAndConditions;
 
         public TextTranslation BasicText => _basicText.Value;
 
@@ -39,6 +38,8 @@ namespace PhpbbInDotnet.Languages
 
         public HtmlTranslation PostingGuide => _postingGuide.Value;
 
+        public HtmlTranslation TermsAndConditions => _termsAndConditions.Value;
+
         public LanguageProvider(ILogger logger)
         {
             _logger = logger;
@@ -50,6 +51,7 @@ namespace PhpbbInDotnet.Languages
             _faq = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(FAQ), _logger));
             _errors = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Errors), _logger));
             _postingGuide = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(PostingGuide), _logger));
+            _termsAndConditions = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(TermsAndConditions), _logger));
         }
 
         public string GetValidatedLanguage(LoggedUser user, HttpRequest request = null)

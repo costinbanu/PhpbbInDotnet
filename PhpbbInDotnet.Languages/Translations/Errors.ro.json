@@ -15,6 +15,16 @@
   "WRONG_PASS": "Parola este greșită!",
   "WRONG_EMAIL_USER": "Adresa de email și/sau numele de utilizator introduse nu sunt corecte.",
   "INACTIVE_USER": "Utilizatorul nu este activat!",
-  "BAD_PASSWORD": "Parola trebuie să fie de minim 8 caractere lungime",
-  "PASSWORD_MISMATCH": "Cele două parole trebuie să fie identice"
+  "BAD_USERNAME_LENGTH": "Numele de utilizator trebuie să aibă o lungime cuprinsă între 2 și 32 de caractere.",
+  "BAD_USERNAME_CHARS": "Caractere permise în numele de utilizator: a-z, A-Z, 0-9, [space], [dot], [underscore], [dash].",
+  "BAD_PASSWORD_LENGTH": "Parola trebuie să aibă o lungime cuprinsă între 28 și 256 de caractere.",
+  "BAD_PASSWORD_CHARS": "Parola trebuie să conțină cel puțin o literă și o cifră",
+  "PASSWORD_MISMATCH": "Cele două parole trebuie să fie identice",
+  "INVALID_EMAIL_ADDRESS": "Adresa de email nu este validă",
+  "MUST_AGREE_WITH_TERMS": "Trebuie să fii de acord cu termenele de utilizare.",
+  "BANNED_EMAIL": "Adresa de e-mail nu este acceptată. Te rugăm să încerci cu alta.",
+  "BANNED_IP": "Adresa IP nu este permisă la înregistrare",
+  "EXISTING_EMAIL": "Există deja un utilizator înregistrat cu această adresă de email!",
+  "EXISTING_USERNAME": "Există deja un utilizator înregistrat cu acest nume de utilizator!",
+  "YOURE_A_BOT_FORMAT": "Procesul de înregistrare nu poate continua - sistemul nostru a detectat că ești bot. Dacă este o eroare, scrie-ne la {0}."
 }

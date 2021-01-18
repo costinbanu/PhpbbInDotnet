@@ -56,11 +56,11 @@
         $("#datepicker").datepicker({
             dateFormat: 'dd.mm.yy',
             firstDay: 1,
-            dayNamesMin: ['Du', 'Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ'],
-            dayNamesShort: ['Dum', 'Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm'],
-            dayNames: ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'],
-            monthNames: ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'],
-            monthNamesShort: ['Ian', 'Feb', 'Mar', 'Apr', 'Mai', 'Iun', 'Iul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+            dayNamesMin: $.map(dayNames, day => day.substring(0, 2)),
+            dayNamesShort: $.map(dayNames, day => day.substring(0, 3)),
+            dayNames: dayNames,
+            monthNames: monthNames,
+            monthNamesShort: $.map(monthNames, month => month.substring(0, 3))
         });
     });
 
