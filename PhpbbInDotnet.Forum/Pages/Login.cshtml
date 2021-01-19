@@ -44,10 +44,10 @@
 else if (Model.Mode == Utilities.LoginMode.PasswordReset && ViewData.ModelState.IsValid)
 {
     <form method="post" asp-page-handler="SaveNewPassword">
-        <input type="password" asp-for="PwdResetFirstPassword" placeholder="@Model.LanguageProvider.BasicText[lang, "NEW_PASSWORD", Casing.FirstUpper]" class="form" autocomplete="new-password" /><br />
+        <input type="password" asp-for="PwdResetFirstPassword" placeholder="@Model.LanguageProvider.BasicText[lang, "NEW_PASSWORD"]" class="form" autocomplete="new-password" /><br />
         <span asp-validation-for="PwdResetFirstPassword" class="validation"></span>
         <br />
-        <input type="password" asp-for="PwdResetSecondPassword" placeholder="@Model.LanguageProvider.BasicText[lang, "REPEAT_NEW_PASSWORD", Casing.FirstUpper]" class="form" autocomplete="new-password" /><br />
+        <input type="password" asp-for="PwdResetSecondPassword" placeholder="@Model.LanguageProvider.BasicText[lang, "REPEAT_NEW_PASSWORD"]" class="form" autocomplete="new-password" /><br />
         <span asp-validation-for="PwdResetSecondPassword" class="validation"></span>
         <input type="hidden" asp-for="UserId" />
         <input type="hidden" asp-for="ResetPasswordCode" />

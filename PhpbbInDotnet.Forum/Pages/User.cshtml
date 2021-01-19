@@ -1,5 +1,6 @@
 ﻿@page
 @using PhpbbInDotnet.Utilities
+@using Microsoft.Extensions.Configuration
 
 @model PhpbbInDotnet.Forum.Pages.UserModel
 
@@ -17,6 +18,7 @@
     var hasTabs = isSelf || await Model.IsCurrentUserAdminHere();
     var showFlexAvatar = !string.IsNullOrWhiteSpace(Model.CurrentUser.UserAvatar) && !canEdit;
     var rankList = await _userService.GetRankListAsync();
+    var Lang = await Model.GetLanguage();
 }
 
 <environment include="Development">
@@ -87,18 +89,49 @@
     <input type="hidden" asp-for="ViewAsAnother" />
 </form>
 <h3>
-    Panoul utilizatorului
+    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "USER_PROFILE"])
     @if (!isSelf && !canEdit)
     {
         <span> -&nbsp;@Model.CurrentUser.Username</span>
     }
 </h3>
+@if (canEdit)
+{
+    <span asp-validation-for="CurrentUser" class="validation"></span>
+    <span class="success">
+        @switch (Model.Mode)
+        {
+            case UserPageMode.Edit:
+                if (Model.EmailChanged && isSelf)
+                {
+                    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "CHANGES_SAVED_MUST_LOGIN"])
+                }
+                else
+                {
+                    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "CHANGES_SAVED"])
+                }
+                break;
+            case UserPageMode.AddFoe:
+                @Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, "ADDED_TO_FOES_CONFIRMATION_FORMAT"], Model.CurrentUser.Username))
+                break;
+            case UserPageMode.RemoveFoe:
+                @Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, "REMOVED_FROM_FOES_CONFIRMATION_FORMAT"], Model.CurrentUser.Username))
+                break;
+        }
+    </span>
+}
 @if (hasTabs)
 {
     <div class="tab">
-        <button class="@(canEdit ? "tablinks" : "tablinks active")" onclick="changeTab(false, false)">Pofil - privire generală</button>
-        <button class="@(canEdit && !(Model.ManageFoes ?? false) ? "tablinks active" : "tablinks")" onclick="changeTab(true, false)">Modifică profil</button>
-        <button class="@(canEdit && (Model.ManageFoes ?? false) ? "tablinks active" : "tablinks")" onclick="changeTab(true, true)">Vezi persoanele neagreate</button>
+        <button class="@(canEdit ? "tablinks" : "tablinks active")" onclick="changeTab(false, false)">
+            @Html.Raw(Model.LanguageProvider.BasicText[Lang, "PROFILE_OVERVIEW"])
+        </button>
+        <button class="@(canEdit && !(Model.ManageFoes ?? false) ? "tablinks active" : "tablinks")" onclick="changeTab(true, false)">
+            @Html.Raw(Model.LanguageProvider.BasicText[Lang, "EDIT_PROFILE"])
+        </button>
+        <button class="@(canEdit && (Model.ManageFoes ?? false) ? "tablinks active" : "tablinks")" onclick="changeTab(true, true)">
+            @Html.Raw(Model.LanguageProvider.BasicText[Lang, "MANAGE_FOES"])
+        </button>
     </div>
 }
 
@@ -107,27 +140,27 @@
     <div class="tabcontent" style="display:block !important">
         @if (!Model.Foes.Any())
         {
-            <i>Nici un utilizator pe lista de persoane neagreate.</i>
+            <i>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "NO_FOES"])</i>
         }
         else
         {
-            <i>Utilizatorilor din lista de mai jos nu le vezi postările și nici nu puteți comunica prin mesageria privată. Utilizatorii nu știu că i-ai trecut în lista persoanelor neagreate.</i>
+            <i>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "FOES_CAPTION"])</i>
             <form method="post" name="RemoveFoes" id="RemoveFoes" asp-page-handler="RemoveMultipleFoes">
                 @foreach (var foe in Model.Foes)
                 {
                     <div style="margin: 15px 15px">
                         <input name="SelectedFoes" type="checkbox" value="@foe.UserId" style="margin-right:10px" />
                         <a asp-page="User" asp-route-userId="@foe.UserId">
-                            @Html.Raw(System.Web.HttpUtility.HtmlDecode(foe.Username))
+                            @Html.Raw(foe.Username)
                         </a>
                     </div>
                 }
                 <hr class="BoxSeparator" />
-                <button onclick="selectAllCheckboxes()" type="button" class="MyButton">&#x2714;&nbsp;Selectează toți utilizatorii</button>
+                <button onclick="selectAllCheckboxes()" type="button" class="MyButton">
+                    &#x2714;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SELECT_ALL_USERS"])
+                </button>
                 <span>&nbsp;&bull;&nbsp;</span>
-                <input type="submit" value="&#x1F91D;&nbsp;Elimină utilizatorii selectați din listă"
-                       onclick="return confirm('Dacă elimini utilizatorii selectați din lista persoanelor neagreate, vei putea vedea mesajele lor și veți putea comunica prin mesageria privată.\n\nUtilizatorii nu vor fi notificați.\n\nContinui?');"
-                       class="MyButton" />
+                <input type="submit" value="&#x1F91D;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "REMOVE_SELECTED_USERS_FROM_LIST"])" onclick="return confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_REMOVE_FOES"])');" class="MyButton" />
                 <input type="hidden" asp-for="UserId" />
                 <input type="hidden" asp-for="ViewAsAnother" />
                 <input type="hidden" asp-for="ManageFoes" />
@@ -137,7 +170,7 @@
         @if (Model.Mode == UserPageMode.RemoveMultipleFoes)
         {
             <span class="success">
-                Utilizatorii selectați au fost eliminați din lista ta de persoane neagreate.
+                @Html.Raw(Model.LanguageProvider.BasicText[Lang, "REMOVE_FOES_SUCCESS"])
             </span>
         }
     </div>
@@ -157,7 +190,7 @@ else
                 <div class="@(showFlexAvatar ? "FlexRight" : "")" style="@(showFlexAvatar ? "width: 100%" : "")">
                     <div class="FlexCenter">
                         <div class="FlexCaption">
-                            Nume utilizator
+                            @Html.Raw(Model.LanguageProvider.BasicText[Lang, "USERNAME", Casing.Title])
                         </div>
                         <div class="FlexRight PostInputWidth">
                             @if (!(Model.ViewAsAnother ?? false) && await Model.IsCurrentUserAdminHere())
@@ -173,7 +206,9 @@ else
                                 @if (isSelf && canEdit)
                                 {
                                     <br />
-                                    <span class="Caption">Trimite un e-mail la <a href="mailto:admin@metrouusor.com">admin@metrouusor.com</a> dacă dorești schimbarea numelui de utilizator.</span>
+                                    <span class="Caption">
+                                        @Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, "CHANGE_USERNAME_CAPTION_FORMAT"], Model.Config.GetValue<string>("AdminEmail")))
+                                    </span>
                                 }
                             }
                         </div>
@@ -183,17 +218,17 @@ else
                         <p></p>
                         <div class="FlexCenter">
                             <div class="FlexCaption">
-                                Parola nouă
+                                @Html.Raw(Model.LanguageProvider.BasicText[Lang, "NEW_PASSWORD"])
                             </div>
                             <div class="FlexRight PostInputWidth">
                                 <input asp-for="FirstPassword" type="password" autocomplete="new-password" /><br />
-                                <span class="Caption">Lasă necompletat dacă nu dorești să o modifici.</span>
+                                <span class="Caption">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CHANGE_PASSWORD_CAPTION"])</span>
                             </div>
                         </div>
                         <p></p>
                         <div class="FlexCenter">
                             <div class="FlexCaption">
-                                Repetă parola nouă
+                                @Html.Raw(Model.LanguageProvider.BasicText[Lang, "REPEAT_NEW_PASSWORD"])
                             </div>
                             <div class="FlexRight PostInputWidth">
                                 <input asp-for="SecondPassword" type="password" autocomplete="new-password" />
@@ -205,14 +240,14 @@ else
                         var rank = rankList.FirstOrDefault(x => x.RankId == Model.UserRank)?.RankTitle;
                         if (string.IsNullOrWhiteSpace(rank))
                         {
-                            rank = "Membru înregistrat";
+                            rank = Model.LanguageProvider.BasicText[Lang, "REGISTERED_MEMBER"];
                         }
                         if (!canEdit && rank != null)
                         {
                             <p></p>
                             <div class="FlexCenter">
                                 <div class="FlexCaption">
-                                    Rang
+                                    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "RANK", Casing.FirstUpper])
                                 </div>
                                 <div class="FlexRight PostInputWidth">
                                     @Html.Raw(rank)
@@ -230,21 +265,21 @@ else
                                 @if (canEdit)
                                 {
                                     <div class="FlexCaption">
-                                        Data nașterii
+                                        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "BIRTH_DATE"])
                                     </div>
                                     <div class="FlexRight PostInputWidth">
                                         <input asp-for="Birthday" autocomplete="new-password" id="datepicker" /><br />
-                                        <span class="Caption">Dacă este completată, se va afișa doar vârsta.</span><br />
+                                        <span class="Caption">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "BIRTH_DATE_CAPTION"])</span><br />
                                         <span asp-validation-for="Birthday" class="validation"></span>
                                     </div>
                                 }
                                 else if (birthday != DateTime.MinValue)
                                 {
                                     <div class="FlexCaption">
-                                        Vârsta
+                                        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "AGE"])
                                     </div>
                                     <div class="FlexRight PostInputWidth">
-                                        @((int)(DateTime.UtcNow.Subtract(birthday).TotalDays / 365.25)) ani
+                                        @Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, "AGE_NUMBER_FORMAT"], (int)(DateTime.UtcNow.Subtract(birthday).TotalDays / 365.25)))
                                     </div>
                                 }
                             </div>
@@ -253,7 +288,7 @@ else
                     <p></p>
                     <div class="FlexCenter">
                         <div class="FlexCaption">
-                            Prezentare
+                            @Html.Raw(Model.LanguageProvider.BasicText[Lang, "PRESENTATION"])
                         </div>
                         <div class="FlexRight PostInputWidth">
                             @if (canEdit)
@@ -269,7 +304,7 @@ else
                     <p></p>
                     <div class="FlexCenter">
                         <div class="FlexCaption">
-                            Interese
+                            @Html.Raw(Model.LanguageProvider.BasicText[Lang, "INTERESTS"])
                         </div>
                         <div class="FlexRight PostInputWidth">
                             @if (canEdit)
@@ -285,7 +320,7 @@ else
                     <p></p>
                     <div class="FlexCenter">
                         <div class="FlexCaption">
-                            Localitate
+                            @Html.Raw(Model.LanguageProvider.BasicText[Lang, "CITY"])
                         </div>
                         <div class="FlexRight PostInputWidth">
                             @if (canEdit)
@@ -305,7 +340,7 @@ else
                 <p></p>
                 <div class="FlexCenter">
                     <div class="FlexCaption">
-                        Formatul datelor afișate
+                        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "DATE_FORMAT"])
                     </div>
                     <div class="FlexRight PostInputWidth">
                         <select id="CurrentUser_UserDateformat" name="CurrentUser.UserDateformat">
@@ -325,25 +360,27 @@ else
                 <p></p>
                 <div class="FlexCenter">
                     <div class="FlexCaption">
-                        Imaginea de profil
+                        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "AVATAR"])
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @if (!string.IsNullOrWhiteSpace(Model.CurrentUser.UserAvatar))
                         {
                             <img src="./File?userId=@Model.CurrentUser.UserId&handler=avatar" /><br />
                             @Html.Raw(Model.CurrentUser.UserAvatar)<br />
-                            <input asp-for="DeleteAvatar" style="width:auto" /> <span>Șterge acestă imagine de profil</span><br /><br />
+                            <input asp-for="DeleteAvatar" style="width:auto" />
+                            <span>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "REMOVE_THIS_AVATAR"])</span>
+                            <br /><br />
                         }
                         <input asp-for="Avatar" class="HiddenFileInput" />
-                        <label for="Avatar" class="MyButton">Alege o imagine de profil nouă</label><br />
-                        <span class="Caption">Sunt permise imagini cu dimensiunea maximă 200 px / 200 px.</span><br />
+                        <label for="Avatar" class="MyButton">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SELECT_NEW_AVATAR"])</label><br />
+                        <span class="Caption">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "AVATAR_CAPTION"])</span><br />
                         <span asp-validation-for="Avatar" class="validation"></span>
                     </div>
                 </div>
                 <p></p>
                 <div class="FlexCenter">
                     <div class="FlexCaption">
-                        Tema forumului
+                        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "FORUM_THEME"])
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @Html.DropDownListFor(
@@ -355,13 +392,13 @@ else
                 <p></p>
                 <div class="FlexCenter">
                     <div class="FlexCaption">
-                        Salt la primul subforum sau subiect necitit
+                        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "JUMP_TO_FIRST_UNREAD_ITEM"])
                     </div>
                     <div class="FlexRight PostInputWidth">
                         <input asp-for="JumpToUnread" style="width:auto" />
                         <span>
-                            Pagina curentă sare automat la primul subforum sau primul subiect necitit.<br />
-                            <span class="Caption">În cazul mesajelor, pagina va sări la primul mesaj necitit indiferent de această setare.</span>
+                            @Html.Raw(Model.LanguageProvider.BasicText[Lang, "JUMP_UNREAD_CAPTION_1"])<br />
+                            <span class="Caption">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "JUMP_UNREAD_CAPTION_2"])</span>
                         </span>
                     </div>
                 </div>
@@ -373,14 +410,14 @@ else
                         p => new SelectListItem(p.RoleDescription, p.RoleId.ToString(), p.RoleId == Model.AclRole)
                     )
                 );
-                permissions.Add(new SelectListItem("Nici un rol atribuit", "-1", !permissions.Any(p => p.Selected)));
+                permissions.Add(new SelectListItem(Model.LanguageProvider.BasicText[Lang, "NO_ASSIGNED_ROLE"], "-1", !permissions.Any(p => p.Selected)));
 
                 var ranks = new List<SelectListItem>(
                     rankList.Select(
                         r => new SelectListItem(r.RankTitle, r.RankId.ToString(), r.RankId == Model.CurrentUser.UserRank)
                     )
                 );
-                ranks.Add(new SelectListItem("Nici un rang atribuit", "0", !ranks.Any(p => p.Selected)));
+                ranks.Add(new SelectListItem(Model.LanguageProvider.BasicText[Lang, "NO_ASSIGNED_RANK"], "0", !ranks.Any(p => p.Selected)));
 
                 var groups = new List<SelectListItem>(
                     (await _userService.GetGroupListAsync()).Select(
@@ -389,26 +426,22 @@ else
                 );
                 <hr class="BoxSeparator" />
                 <div class="FlexCenter">
-                    <h4>Administrează cont</h4>
+                    <h4>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "MANAGE_ACCOUNT"])</h4>
                 </div>
                 <p></p>
                 <div class="FlexCenter">
                     <div class="FlexCaption">
-                        Timpul cât este permisă<br />editarea mesajelor proprii:
+                        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "EDIT_OWN_MESSAGES_TIME"])
                     </div>
                     <div class="FlexRight PostInputWidth">
                         <input asp-for="CurrentUser.UserEditTime" /><br />
-                        <span class="Caption">
-                            Minute de la publicarea mesajului.<br />
-                            Aceeași setare există și la grupuri și se aplică valoarea cea mai restrictivă diferită de zero.<br />
-                            Zero semnifică „timp nelimitat” și se aplică chiar dacă cealaltă setare este diferită de zero.
-                        </span><br />
+                        <span class="Caption">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "EDIT_OWN_MESSAGES_CAPTION"])</span><br />
                     </div>
                 </div>
                 <p></p>
                 <div class="FlexCenter">
                     <div class="FlexCaption">
-                        Permisiunile utilizatorului
+
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @Html.DropDownListFor(m => m.AclRole, permissions, new { autocomplete = "new-password" })
@@ -417,7 +450,7 @@ else
                 <p></p>
                 <div class="FlexCenter">
                     <div class="FlexCaption">
-                        Rangul utilizatorului
+                        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "RANK", Casing.FirstUpper])
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @if (canEdit)
@@ -429,7 +462,7 @@ else
                 <p></p>
                 <div class="FlexCenter">
                     <div class="FlexCaption">
-                        Grupul utilizatorului
+                        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "GROUP", Casing.FirstUpper])
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @if (canEdit)
@@ -441,34 +474,31 @@ else
                 <p></p>
                 <div class="FlexCenter">
                     <div class="FlexCaption">
-                        Culoarea utilizatorului
+                        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "COLOR", Casing.FirstUpper])
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @if (canEdit)
                         {
                             <input asp-for="CurrentUser.UserColour" /><br />
-                            <span class="Caption">
-                                La schimbarea grupului, această valoare este înlocuită cu culoarea grupului.<br />
-                                Pentru a aloca o culoare personalizată, schimbă întâi grupul, apoi valoarea de aici.
-                            </span>
+                            <span class="Caption">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "COLOR_CAPTION"])</span>
                         }
                     </div>
                 </div>
             }
             <hr class="BoxSeparator" />
             <div class="FlexCenter">
-                <h4>Contact</h4>
+                <h4>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONTACT", Casing.Title])</h4>
             </div>
             <div class="FlexCenter">
                 @if (canEdit)
                 {
                     <div class="FlexCaption">
-                        E-mail
+                        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "EMAIL", Casing.FirstUpper])
                     </div>
                     <div class="FlexRight PostInputWidth">
                         <input asp-for="Email" /><br />
-                        <span class="Caption">Dacă modifici acest câmp, contul va deveni inactiv. Vei primi pe noua adresă de e-mail un mesaj cu instrucțiuni pentru reactivare.</span><br />
-                        <input asp-for="ShowEmail" style="width:auto" />  Utilizatorii mă pot contacta prin intermediul email-ului.<br />
+                        <span class="Caption">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "EMAIL_CAPTION"])</span><br />
+                        <input asp-for="ShowEmail" style="width:auto" /> @Html.Raw(Model.LanguageProvider.BasicText[Lang, "ALLOW_EMAIL_CONTACT"])<br />
                         <span asp-validation-for="Email" class="validation"></span>
                     </div>
                 }
@@ -477,7 +507,9 @@ else
                     var showMail = (Model.CurrentUser.UserAllowViewemail.ToBool() && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false) && !(pageUser.Foes?.Contains(viewingUser.UserId) ?? false)) || await Model.IsCurrentUserAdminHere();
                     if (showMail)
                     {
-                        <button class="MyButton" onclick="location.href='mailto:@Html.Raw(Model.CurrentUser.UserEmail)'" type="button" @(isSelf ? "disabled" : "")>&#x2709;&nbsp;Trimite e-mail</button>
+                        <button class="MyButton" onclick="location.href='mailto:@Html.Raw(Model.CurrentUser.UserEmail)'" type="button" @(isSelf ? "disabled" : "")>
+                            &#x2709;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEND_EMAIL"])
+                        </button>
                     }
                     var showPMs = (_userService.HasPrivateMessagePermissions(viewingUser) && _userService.HasPrivateMessages(pageUser) && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false) && !(pageUser.Foes?.Contains(viewingUser.UserId) ?? false)) || (await Model.IsCurrentUserAdminHere() && _userService.HasPrivateMessagePermissions(pageUser));
                     if (showPMs)
@@ -486,7 +518,9 @@ else
                         {
                             <span style="height:5px; width: 5px;">&nbsp;</span>
                         }
-                        <button class="MyButton" onclick="location.href='/Posting?handler=PrivateMessage&receiverId=@Model.CurrentUser.UserId'" type="button" @(isSelf ? "disabled" : "")>&#x1F5E8;&nbsp;Trimite mesaj privat</button>
+                        <button class="MyButton" onclick="location.href='/Posting?handler=PrivateMessage&receiverId=@Model.CurrentUser.UserId'" type="button" @(isSelf ? "disabled" : "")>
+                            &#x1F5E8;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEND_PM"])
+                        </button>
                     }
                     if (!canEdit && !string.IsNullOrEmpty(Model.CurrentUser.UserWebsite))
                     {
@@ -499,7 +533,9 @@ else
                         {
                             <span style="height:5px; width: 5px;">&nbsp;</span>
                         }
-                        <button class="MyButton" onclick="window.open('@website', '_blank')" type="button">&#x1F310;&nbsp;Vizitează website</button>
+                        <button class="MyButton" onclick="window.open('@website', '_blank')" type="button">
+                            &#x1F310;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "VISIT_WEBSITE"])
+                        </button>
                     }
                 }
             </div>
@@ -508,7 +544,7 @@ else
                 <p></p>
                 <div class="FlexCenter">
                     <div class="FlexCaption">
-                        Website
+                        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "WEBSITE"])
                     </div>
                     <div class="FlexRight PostInputWidth">
                         <input asp-for="CurrentUser.UserWebsite" />
@@ -520,10 +556,11 @@ else
                 <p></p>
                 <div class="FlexCenter">
                     <div class="FlexCaption">
-                        Permite mesageria privată
+                        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "ALLOW_PM_TITLE"])
                     </div>
                     <div class="FlexRight PostInputWidth">
-                        <input asp-for="AllowPM" style="width:auto" /> Utilizatorii mă pot contacta prin mesageria privată
+                        <input asp-for="AllowPM" style="width:auto" />
+                        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "ALLOW_PM_CAPTION"])
                     </div>
                 </div>
             }
@@ -531,11 +568,11 @@ else
             {
                 <hr class="BoxSeparator" />
                 <div class="FlexCenter">
-                    <h4>Statistici</h4>
+                    <h4>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "STATS"])</h4>
                 </div>
                 <div class="FlexCenter">
                     <div class="FlexCaption">
-                        Membru din
+                        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "REGISTERED", Casing.FirstUpper])
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @{
@@ -546,20 +583,20 @@ else
                             }
                         }
                         <script>
-                        writeDate("@Model.CurrentUser.UserRegdate.ToUtcTime().ToString("o")", "@UserDateFormat");
+                            writeDate("@Model.CurrentUser.UserRegdate.ToUtcTime().ToString("o")", "@UserDateFormat");
                         </script>
                     </div>
                 </div>
                 <p></p>
                 <div class="FlexCenter">
                     <div class="FlexCaption">
-                        Ultima dată activ
+                        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "LAST_ACTIVE"])
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @if (Model.CurrentUser.UserLastvisit > 0)
                         {
                             <script>
-                            writeDate("@Model.CurrentUser.UserLastvisit.ToUtcTime().ToString("o")", "@UserDateFormat");
+                                writeDate("@Model.CurrentUser.UserLastvisit.ToUtcTime().ToString("o")", "@UserDateFormat");
                             </script>
                         }
                         else
@@ -571,21 +608,23 @@ else
                 <p></p>
                 <div class="FlexCenter">
                     <div class="FlexCaption">
-                        Total mesaje
+                        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "TOTAL_POSTS"])
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @Model.TotalPosts
                         @if (Model.TotalPosts > 0)
                         {
                             <span>&nbsp;-&nbsp;</span>
-                            <a asp-page="Search" asp-page-handler="byAuthor" asp-route-authorId="@Model.CurrentUser.UserId">Arată mesajele utilizatorului</a>
+                            <a asp-page="Search" asp-page-handler="byAuthor" asp-route-authorId="@Model.CurrentUser.UserId">
+                                @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SHOW_USER_POSTS"])
+                            </a>
                         }
                     </div>
                 </div>
                 <p></p>
                 <div class="FlexCenter">
                     <div class="FlexCaption">
-                        Mesaje pe zi (în medie)
+                        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "AVG_POSTS_PER_DAY"])
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @Model.PostsPerDay.ToString("#########0.##")
@@ -594,7 +633,7 @@ else
                 <p></p>
                 <div class="FlexCenter">
                     <div class="FlexCaption">
-                        Cel mai activ în subiectul
+                        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "PREFERRED_TOPIC"])
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @if (Model.PreferredTopic.Id == null || Model.PreferredTopic.Title == null)
@@ -610,25 +649,23 @@ else
                 <p></p>
                 <div class="FlexCenter">
                     <div class="FlexCaption">
-                        Fișiere atașate
+                        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "ATTACHED_FILES"])
                     </div>
                     <div class="FlexRight PostInputWidth">
-                        @Model.AttachCount fișiere atașate
+                        @Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, "ATTACHED_FILES_COUNT_FORMAT"], Model.AttachCount))
                         @if (isSelf || await Model.IsCurrentUserAdminHere())
                         {
-                            <span>- în total @_utils.ReadableFileSize(Model.AttachTotalSize) utilizați</span>
+                            <span>- @Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, "USED_SPACE_FORMAT"], _utils.ReadableFileSize(Model.AttachTotalSize)))</span>
                             var limit = _context.PhpbbGroups.AsNoTracking().FirstOrDefault(g => g.GroupId == Model.CurrentUser.GroupId)?.GroupUserUploadSize ?? 0;
                             if (limit > 0)
                             {
-                                <span>
-                                    din @_utils.ReadableFileSize(limit) disponibili
-                                </span>
+                                <span>@Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, "TOTAL_SPACE_FORMAT"], _utils.ReadableFileSize(limit)))</span>
                             }
                         }
                         @if (Model.AttachCount > 0)
                         {
                             <span>&nbsp;-&nbsp;</span>
-                            <a asp-page="Search" asp-page-handler="Attachments" asp-route-authorId="@Model.CurrentUser.UserId">Arată fișierele atașate ale utilizatorului</a>
+                            <a asp-page="Search" asp-page-handler="Attachments" asp-route-authorId="@Model.CurrentUser.UserId">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SHOW_USER_ATTACHED_FILES"])</a>
                         }
                     </div>
                 </div>
@@ -637,7 +674,6 @@ else
             {
                 <p>&nbsp;</p>
                 <input class="MyButton" type="submit" value="Salvează modificările" style="width:auto" />
-                <span asp-validation-for="CurrentUser" class="validation"></span>
             }
             @if (!isSelf && !canEdit)
             {
@@ -649,13 +685,13 @@ else
                     <div class="FlexCenter">
                         @if (showAddFoe)
                         {
-                            <input class="MyButton" type="submit" form="AddFoe" value="&#x1F6AB;&nbsp;Adaugă la persoane neagreate" style="font-size: 15px; margin-top:5px; vertical-align: top"
-                                   onclick="return confirm('Dacă adaugi utilizatorul \'@Model.CurrentUser.Username\' în lista persoanelor neagreate, nu vei mai vedea mesajele lui și nu veți mai putea comunica prin mesageria privată.\n\nUtilizatorul nu va fi notificat.\n\nContinui?')" />
+                            <input class="MyButton" type="submit" form="AddFoe" value="&#x1F6AB;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "ADD_TO_FOES"])" style="font-size: 15px; margin-top:5px; vertical-align: top"
+                                   onclick="return confirm('@Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, "ADD_TO_FOES_CONFIRM_FORMAT"], Model.CurrentUser.Username))')" />
                         }
                         else if (showRemoveFoe)
                         {
-                            <input class="MyButton" type="submit" form="RemoveFoe" value="&#x1F91D;&nbsp;Elimină din lista de persoane neagreate" style="font-size: 15px; margin-top:5px; vertical-align: top"
-                                   onclick="return confirm('Dacă elimini utilizatorul \'@Model.CurrentUser.Username\' din lista persoanelor neagreate, vei putea vedea mesajele lui și veți putea comunica prin mesageria privată.\n\nUtilizatorul nu va fi notificat.\n\nContinui?')" />
+                            <input class="MyButton" type="submit" form="RemoveFoe" value="&#x1F91D;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "REMOVE_FROM_FOES"])" style="font-size: 15px; margin-top:5px; vertical-align: top"
+                                   onclick="return confirm('@Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, "REMOVE_FROM_FOES_CONFIRM_FORMAT"], Model.CurrentUser.Username))')" />
                         }
                     </div>
                 }
@@ -664,26 +700,5 @@ else
             @Html.AntiForgeryToken()
         </form>
         <p></p>
-        <span class="success">
-            @switch (Model.Mode)
-            {
-                case UserPageMode.Edit:
-                    if (Model.EmailChanged)
-                    {
-                        @Html.Raw("Modificările au fost salvate. Vei fi deconectat și vei primi instrucțiuni pe noua adresă de email pentru a te putea reconecta la forum.");
-                    }
-                    else
-                    {
-                        @Html.Raw("Modificările au fost salvate.");
-                    }
-                    break;
-                case UserPageMode.AddFoe:
-                    @Html.Raw($"{Model.CurrentUser.Username} a fost adăugat la lista ta de persoane neagreate.");
-                    break;
-                case UserPageMode.RemoveFoe:
-                    @Html.Raw($"{Model.CurrentUser.Username} a fost eliminat din lista ta de persoane neagreate.");
-                    break;
-            }
-        </span>
     </div>
 }

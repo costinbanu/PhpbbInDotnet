@@ -114,14 +114,14 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             var lang = await GetLanguage();
             Message = $"<span class=\"success\">{LanguageProvider.BasicText[lang, "NEW_PASSWORD_MESSAGE"]}</span>";
-            Title = LanguageProvider.BasicText[lang, "NEW_PASSWORD_Title"];
+            Title = LanguageProvider.BasicText[lang, "NEW_PASSWORD_TITLE"];
         }
 
         public async Task OnGetPasswordChanged()
         {
             var lang = await GetLanguage();
             Message = $"<span class=\"success\">{LanguageProvider.BasicText[lang, "NEW_PASSWORD_COMPLETE"]}</span>";
-            Title = LanguageProvider.BasicText[lang, "NEW_PASSWORD_Title"];
+            Title = LanguageProvider.BasicText[lang, "NEW_PASSWORD_TITLE"];
         }
 
         public async Task OnGetModeratorConfirmation()

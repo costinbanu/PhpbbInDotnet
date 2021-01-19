@@ -8,14 +8,13 @@ using Newtonsoft.Json;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Forum.Pages.CustomPartials.Email;
 using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
 using System;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Mail;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
@@ -23,9 +22,6 @@ namespace PhpbbInDotnet.Forum.Pages
     [ValidateAntiForgeryToken]
     public class RegisterModel : PageModel
     {
-        private readonly Regex USERNAME_REGEX = new Regex(@"[a-zA-Z0-9 \._-]+", RegexOptions.Compiled);
-        private readonly Regex PASSWORD_REGEX = new Regex(@"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$", RegexOptions.Compiled);
-
         private readonly ForumDbContext _context;
         private readonly CommonUtils _utils;
         private readonly IConfiguration _config;
@@ -64,12 +60,21 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
-            if (!Validate())
+            var lang = GetLanguage();
+            var validator = new UserProfileDataValidationService(ModelState, LanguageProvider, lang);
+            var validations = new[]
+            {
+                validator.ValidateUsername(nameof(UserName), UserName),
+                validator.ValidateEmail(nameof(Email), Email),
+                validator.ValidatePassword(nameof(Password), Password),
+                validator.ValidateSecondPassword(nameof(SecondPassword), SecondPassword, Password),
+                validator.ValidateTermsAgreement(nameof(Agree), Agree)
+            };
+
+            if (!validations.All(x => x))
             {
                 return Page();
             }
-
-            var lang = GetLanguage();
 
             try
             {
@@ -190,75 +195,6 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             ModelState.AddModelError(errorKey, errorMessage);
             return Page();
-        }
-
-        private bool Validate()
-        {
-            var toReturn = true;
-            var lang = GetLanguage();
-
-            var emailValidator = new EmailAddressAttribute();
-            if (string.IsNullOrWhiteSpace(Email))
-            {
-                ModelState.AddModelError(nameof(Email), LanguageProvider.Errors[lang, "MISSING_REQUIRED_FIELD"]);
-                toReturn = false;
-            }
-            else if (!emailValidator.IsValid(Email))
-            {
-                ModelState.AddModelError(nameof(Email), LanguageProvider.Errors[lang, "INVALID_EMAIL_ADDRESS"]);
-                toReturn = false;
-            }
-
-            if (string.IsNullOrWhiteSpace(UserName))
-            {
-                ModelState.AddModelError(nameof(UserName), LanguageProvider.Errors[lang, "MISSING_REQUIRED_FIELD"]);
-                toReturn = false;
-            }
-            else if (UserName.Length < 2 || UserName.Length > 32)
-            {
-                ModelState.AddModelError(nameof(UserName), LanguageProvider.Errors[lang, "BAD_USERNAME_LENGTH"]);
-                toReturn = false;
-            }
-            else if (!USERNAME_REGEX.IsMatch(UserName))
-            {
-                ModelState.AddModelError(nameof(UserName), LanguageProvider.Errors[lang, "BAD_USERNAME_CHARS"]);
-                toReturn = false;
-            }
-
-            if (string.IsNullOrWhiteSpace(Password))
-            {
-                ModelState.AddModelError(nameof(Password), LanguageProvider.Errors[lang, "MISSING_REQUIRED_FIELD"]);
-                toReturn = false;
-            }
-            else if (Password.Length < 8 || Password.Length > 256)
-            {
-                ModelState.AddModelError(nameof(Password), LanguageProvider.Errors[lang, "BAD_PASSWORD_LENGTH"]);
-                toReturn = false;
-            }
-            else if (!PASSWORD_REGEX.IsMatch(Password))
-            {
-                ModelState.AddModelError(nameof(Password), LanguageProvider.Errors[lang, "BAD_PASSWORD_CHARS"]);
-                toReturn = false;
-            }
-
-            if (string.IsNullOrWhiteSpace(SecondPassword))
-            {
-                ModelState.AddModelError(nameof(SecondPassword), LanguageProvider.Errors[lang, "MISSING_REQUIRED_FIELD"]);
-                toReturn = false;
-            }
-            else if (Password != SecondPassword)
-            {
-                ModelState.AddModelError(nameof(SecondPassword), LanguageProvider.Errors[lang, "PASSWORD_MISMATCH"]);
-                toReturn = false;
-            }
-
-            if (!Agree)
-            {
-                ModelState.AddModelError(nameof(Agree), LanguageProvider.Errors[lang, "MUST_AGREE_WITH_TERMS"]);
-                toReturn = false;
-            }
-
-            return toReturn;
         }
 
         public string GetLanguage() => _language ??= LanguageProvider.GetValidatedLanguage(null, HttpContext?.Request);

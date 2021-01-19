@@ -13,7 +13,6 @@ using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -31,7 +30,7 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public string FirstPassword { get; set; }
         
-        [BindProperty, Compare(otherProperty: nameof(FirstPassword), ErrorMessage = "Cele două parole trebuie să fie identice")]
+        [BindProperty]
         public string SecondPassword { get; set; }
         
         [BindProperty]
@@ -44,8 +43,6 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool ShowEmail { get; set; } = false;
         
         [BindProperty]
-        [Required(ErrorMessage = "Trebuie să introduceți o adresă e e-mail validă.")]
-        [EmailAddress(ErrorMessage = "Trebuie să introduceți o adresă e e-mail validă.")]
         public string Email { get; set; }
         
         [BindProperty]
@@ -89,6 +86,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public long AttachTotalSize { get; private set; }
         public UserPageMode Mode { get; private set; }
         public bool EmailChanged { get; private set; }
+        public new IConfiguration Config => base.Config;
 
         private readonly StorageService _storageService;
         private readonly WritingToolsService _writingService;
@@ -138,11 +136,25 @@ namespace PhpbbInDotnet.Forum.Pages
 
             var isSelf = CurrentUser.UserId == (await GetCurrentUserAsync()).UserId;
             var userMustLogIn = dbUser.UserAllowPm.ToBool() != AllowPM || dbUser.UserDateformat != CurrentUser.UserDateformat;
+            var lang = await GetLanguage();
+            var validator = new UserProfileDataValidationService(ModelState, LanguageProvider, lang);
 
-            if (await IsCurrentUserAdminHere() && dbUser.UsernameClean != Utils.CleanString(CurrentUser.Username) && !string.IsNullOrWhiteSpace(CurrentUser.Username))
+            var newCleanUsername = Utils.CleanString(CurrentUser.Username);
+            if (await IsCurrentUserAdminHere() && dbUser.UsernameClean != newCleanUsername && !string.IsNullOrWhiteSpace(CurrentUser.Username))
             {
+                if (!validator.ValidateUsername(nameof(CurrentUser), CurrentUser.Username))
+                {
+                    return Page();
+                }
+
+                if (await Context.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UsernameClean == newCleanUsername))
+                {
+                    ModelState.AddModelError(nameof(CurrentUser), LanguageProvider.Errors[lang, "EXISTING_USERNAME"]);
+                    return Page();
+                }
+
                 dbUser.Username = CurrentUser.Username;
-                dbUser.UsernameClean = Utils.CleanString(CurrentUser.Username);
+                dbUser.UsernameClean = newCleanUsername;
                 foreach (var f in Context.PhpbbForums.Where(f => f.ForumLastPosterId == dbUser.UserId))
                 {
                     f.ForumLastPosterName = CurrentUser.Username;
@@ -158,7 +170,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 if (!DateTime.TryParse(Birthday, out _))
                 {
-                    ModelState.AddModelError(nameof(Birthday), "Data introdusă nu este validă");
+                    ModelState.AddModelError(nameof(Birthday), LanguageProvider.Errors[lang, "INVALID_DATE"]);
                     return Page();
                 }
             }
@@ -194,44 +206,71 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             }
 
-            if (Utils.CalculateCrc32Hash(Email) != dbUser.UserEmailHash && isSelf)
+            var newEmailHash = Utils.CalculateCrc32Hash(Email);
+            if (newEmailHash != dbUser.UserEmailHash)
             {
-                var registrationCode = Guid.NewGuid().ToString("n");
+                if (!validator.ValidateEmail(nameof(Email), Email))
+                {
+                    return Page();
+                }
+
+                if (await Context.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UserEmailHash == newEmailHash))
+                {
+                    ModelState.AddModelError(nameof(Email), LanguageProvider.Errors[lang, "EXISTING_EMAIL"]);
+                    return Page();
+                }
+
 
                 dbUser.UserEmail = Email;
-                dbUser.UserEmailHash = Utils.CalculateCrc32Hash(Email);
-                dbUser.UserInactiveTime = DateTime.UtcNow.ToUnixTimestamp();
-                dbUser.UserInactiveReason = UserInactiveReason.ChangedEmailNotConfirmed;
-                dbUser.UserActkey = registrationCode;
+                dbUser.UserEmailHash = newEmailHash;
                 dbUser.UserEmailtime = DateTime.UtcNow.ToUnixTimestamp();
 
-                var subject = $"Schimbarea adresei de e-mail de pe \"{Config.GetValue<string>("ForumName")}\"";
-                using var emailMessage = new MailMessage
+                if (isSelf)
                 {
-                    From = new MailAddress($"admin@metrouusor.com", Config.GetValue<string>("ForumName")),
-                    Subject = subject,
-                    Body = await Utils.RenderRazorViewToString(
-                        "_WelcomeEmailPartial",
-                        new _WelcomeEmailPartialModel
-                        {
-                            RegistrationCode = registrationCode,
-                            Subject = subject,
-                            UserName = dbUser.Username
-                        },
-                        PageContext,
-                        HttpContext
-                    ),
-                    IsBodyHtml = true
-                };
-                emailMessage.To.Add(Email);
-                await Utils.SendEmail(emailMessage);
+                    var registrationCode = Guid.NewGuid().ToString("n");
+                    dbUser.UserInactiveTime = DateTime.UtcNow.ToUnixTimestamp();
+                    dbUser.UserInactiveReason = UserInactiveReason.ChangedEmailNotConfirmed;
+                    dbUser.UserActkey = registrationCode;
+
+                    var subject = string.Format(LanguageProvider.Email[lang, "EMAIL_CHANGED_SUBJECT_FORMAT"], Config.GetValue<string>("ForumName"));
+                    using var emailMessage = new MailMessage
+                    {
+                        From = new MailAddress($"admin@metrouusor.com", Config.GetValue<string>("ForumName")),
+                        Subject = subject,
+                        Body = await Utils.RenderRazorViewToString(
+                            "_WelcomeEmailPartial",
+                            new _WelcomeEmailPartialModel
+                            {
+                                RegistrationCode = registrationCode,
+                                Subject = subject,
+                                UserName = dbUser.Username
+                            },
+                            PageContext,
+                            HttpContext
+                        ),
+                        IsBodyHtml = true
+                    };
+                    emailMessage.To.Add(Email);
+                    await Utils.SendEmail(emailMessage);
+                }
+
                 userMustLogIn = true;
                 EmailChanged = true;
             }
 
-            if (!string.IsNullOrWhiteSpace(FirstPassword)
-                && Crypter.Phpass.Crypt(FirstPassword, dbUser.UserPassword) != dbUser.UserPassword)
+            if (!string.IsNullOrWhiteSpace(FirstPassword) && Crypter.Phpass.Crypt(FirstPassword, dbUser.UserPassword) != dbUser.UserPassword)
             {
+                var validations = new[]
+                {
+                    validator.ValidatePassword(nameof(FirstPassword), FirstPassword),
+                    validator.ValidateSecondPassword(nameof(SecondPassword), SecondPassword, FirstPassword)
+                };
+
+                if (!validations.All(x => x))
+                {
+                    return Page();
+                }
+
                 dbUser.UserPassword = Crypter.Phpass.Crypt(FirstPassword, Crypter.Phpass.GenerateSalt());
                 dbUser.UserPasschg = DateTime.UtcNow.ToUnixTimestamp();
                 userMustLogIn = true;
@@ -241,7 +280,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 if (!_storageService.DeleteAvatar(dbUser.UserId, Path.GetExtension(dbUser.UserAvatar)))
                 {
-                    ModelState.AddModelError(nameof(Avatar), "Imaginea nu a putut fi ștearsă");
+                    ModelState.AddModelError(nameof(Avatar), LanguageProvider.Errors[lang, "DELETE_AVATAR_ERROR"]);
                     return Page();
                 }
 
@@ -260,7 +299,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     stream.Seek(0, SeekOrigin.Begin);
                     if (bmp.Width >200 || bmp.Height > 200)
                     {
-                        ModelState.AddModelError(nameof(Avatar), "Fișierul trebuie să fie o imagine de dimensiuni maxime 200px x 200px.");
+                        ModelState.AddModelError(nameof(Avatar), LanguageProvider.Errors[lang, "AVATAR_FORMAT_ERROR"]);
                         return Page();
                     }
                     else
@@ -271,7 +310,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         }
                         if (!await _storageService.UploadAvatar(dbUser.UserId, stream, Avatar.FileName))
                         {
-                            ModelState.AddModelError(nameof(Avatar), "Imaginea nu a putut fi încărcată");
+                            ModelState.AddModelError(nameof(Avatar), LanguageProvider.Errors[lang, "AVATAR_UPLOAD_ERROR"]);
                             return Page();
                         }
                         else
@@ -286,7 +325,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 catch (Exception ex)
                 {
                     Utils.HandleError(ex, $"Failed to upload avatar for {CurrentUser?.UserId ?? dbUser?.UserId ?? 1}");
-                    ModelState.AddModelError(nameof(Avatar), "Imaginea nu a putut fi încărcată");
+                    ModelState.AddModelError(nameof(Avatar), LanguageProvider.Errors[lang, "AVATAR_UPLOAD_ERROR"]);
                     return Page();
                 }
             }
@@ -361,7 +400,7 @@ namespace PhpbbInDotnet.Forum.Pages
             catch (Exception ex)
             {
                 Utils.HandleError(ex, $"Error updating user profile for {CurrentUser?.UserId ?? dbUser?.UserId ?? 1}");
-                ModelState.AddModelError(nameof(CurrentUser), "A intervenit o eroare, iar modificările nu au putut fi salvate.");
+                ModelState.AddModelError(nameof(CurrentUser), LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
                 return Page();
             }
 
@@ -396,6 +435,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     "INSERT INTO phpbb_zebra (user_id, zebra_id, friend, foe) VALUES (@userId, @otherId, 0, 1)",
                     new { user.UserId, otherId = cur.UserId }
                 );
+                await ReloadCurrentUser();
                 Mode = UserPageMode.AddFoe;
                 return await OnGet();
             });
@@ -409,6 +449,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;",
                     new { user.UserId, otherId = cur.UserId }
                 );
+                await ReloadCurrentUser();
                 Mode = UserPageMode.RemoveFoe;
                 return await OnGet();
             });
@@ -422,6 +463,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id IN @otherIds;",
                     new { user.UserId, otherIds = SelectedFoes.DefaultIfEmpty() }
                 );
+                await ReloadCurrentUser();
                 Mode = UserPageMode.RemoveMultipleFoes;
                 return await OnGet();
             });

@@ -14,5 +14,7 @@
   "NEWUSER_BODY_FORMAT": "Următorul cont a fost creat recent: '{0}'<br /><br /><a href=\"{1}\">Vezi utilizatorii inactivi</a>.",
 
   "NEWPM_SUBJECT_FORMAT": "Ai primit un mesaj privat nou pe \"{0}\"",
-  "NEWPM_BODY_FORMAT": "Ai primit un nou mesaj privat de la '{0}'.<br />Accesează-ți căsuța poștală <a href=\"{1}\">aici</a>."
+  "NEWPM_BODY_FORMAT": "Ai primit un nou mesaj privat de la \"{0}\".<br />Accesează-ți căsuța poștală <a href=\"{1}\">aici</a>.",
+
+  "EMAIL_CHANGED_SUBJECT_FORMAT": "Schimbarea adresei de email pe \"{0}\""
 }
