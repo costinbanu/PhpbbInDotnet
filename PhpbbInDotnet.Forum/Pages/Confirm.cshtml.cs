@@ -76,7 +76,14 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 Message = $"<span class=\"success\">{LanguageProvider.BasicText[lang, "EMAIL_CONFIRM_MESSAGE"]}</span>";
 
-                user.UserInactiveReason = UserInactiveReason.NewlyRegisteredConfirmed;
+                if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed)
+                {
+                    user.UserInactiveReason = UserInactiveReason.NewlyRegisteredConfirmed;
+                }
+                else if (user.UserInactiveReason == UserInactiveReason.ChangedEmailNotConfirmed)
+                {
+                    user.UserInactiveReason = UserInactiveReason.ChangedEmailConfirmed;
+                }
                 user.UserActkey = string.Empty;
                 await Context.SaveChangesAsync();
 

@@ -16,11 +16,6 @@
 @{
     var IsAnonymous = Model.CurrentUser.UserId == Constants.ANONYMOUS_USER_ID;
     var UserDateFormat = Model.CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
-    if (!DateTime.TryParse(DateTime.Now.ToString(UserDateFormat), out _))
-    {
-        UserDateFormat = "dddd, dd.MM.yyyy, HH:mm";
-    }
-
     var EditTime = Model.CurrentUser.PostEditTime;
     var Connection = _context.Database.GetDbConnection();
 }
@@ -169,7 +164,7 @@
                                 </a>
                             </span>
                             <span>
-                                @Html.Raw(_languageProvider.BasicText[Model.Language, "SELECT_FOR_MODERATION", Casing.FirstUpper])
+                                @Html.Raw(_languageProvider.Moderator[Model.Language, "SELECT_FOR_MODERATION", Casing.FirstUpper])
                                 <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @(Model.Post.PostId ?? -1))" @(Model.PostIdsForModerator.Contains(Model.Post.PostId ?? -1) ? "checked" : "") />
                             </span>
                         }

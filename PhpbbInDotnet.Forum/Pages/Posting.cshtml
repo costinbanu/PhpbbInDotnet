@@ -22,10 +22,6 @@
     var CurrentUser = await Model.GetCurrentUserAsync();
     var UserDateFormat = CurrentUser.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
     var IsPM = Model.Action == PostingActions.NewPrivateMessage || Model.Action == PostingActions.EditPrivateMessage;
-    if (!DateTime.TryParse(DateTime.Now.ToString(UserDateFormat), out var _))
-    {
-        UserDateFormat = "dddd, dd.MM.yyyy, HH:mm";
-    }
     var CanCreatePoll = Model.Action == PostingActions.NewTopic || (Model.Action == PostingActions.EditForumPost && (Model.CurrentTopic?.TopicFirstPostId ?? 0) == Model.PostId);
     var Lang = await Model.GetLanguage();
     var IsAdmin = await Model.IsCurrentUserAdminHere();

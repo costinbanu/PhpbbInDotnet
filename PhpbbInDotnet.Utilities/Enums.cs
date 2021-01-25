@@ -42,7 +42,12 @@ namespace PhpbbInDotnet.Utilities
         /// <summary>
         /// User changed their email and have not confirmed it yet
         /// </summary>
-        ChangedEmailNotConfirmed = 7
+        ChangedEmailNotConfirmed = 7,
+
+        /// <summary>
+        /// User changed their email and have confirmed it
+        /// </summary>
+        ChangedEmailConfirmed = 8
     }
 
     public enum ForumType

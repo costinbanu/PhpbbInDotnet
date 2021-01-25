@@ -8,6 +8,9 @@
   "CATEGORIES": "categorii",
   "TOPIC": "subiect",
   "TOPICS": "subiecte",
+  "NEW_TOPIC": "subiect nou",
+  "ANNOUNCEMENT": "anunț",
+  "ANNOUNCEMENTS": "anunțuri",
   "POST": "mesaj",
   "POSTS": "mesaje",
   "POLL": "chestionar",
@@ -38,15 +41,26 @@
   "HIDDEN": "ascuns",
   "CONTENT_HIDDEN_WARNING_BBCODE": "[i]Autorul acestui mesaj este pe lista ta de persoane neagreate, drept urmare nu poți vedea conținutul mesajelor sale[/i]",
   "PRIVATE_MESSAGE": "mesaj privat",
-  "REASON": "motiv",
   "INFORMATION": "informații",
   "FORUM_RULES": "reguli forum",
   "GENERIC_SUCCESS": "Operațiunea a fost efectuată cu succes.",
+  "CLOSE_BUTTON": "Închide [X]",
+  "SELECT_AN_OPTION": "Alege o opțiune",
+  "GO": "du-te",
 
   //post/topic/forum summary
   "LAST_POST_TEXT": "Ultimul mesaj de",
   "LAST_POST_URL": "<a href=\"{0}\">Ultimul mesaj</a> de",
   "POSTED": "Scris",
+  "SELECT_ALL_POSTS": "Selectează toate mesajele",
+  "DELETE_SELECTED_POSTS": "Șterge mesajele selectate",
+  "CONFIRM_DELETE_POSTS": "Șterge mesajele selectate",
+  "MARK_SELECTED_POSTS_AS_READ": "Marchează mesajele selectate ca citite",
+  "CONFIRM_DELETE_DRAFTS": "Sigur dorești ștergerea mesajelor în lucru selectate?",
+  "NO_NEW_POSTS": "Nu există mesaje noi.",
+  "NO_OWN_POSTS": "Nu ai scris nici un mesaj în nici un topic până acum.",
+  "NO_DRAFTS": "Nu ai nici un mesaj în lucru.",
+  "CHOOSE_DESTINATION": "Alege destinația",
 
   //layout
   "MY_ACCOUNT": "contul meu",
@@ -68,8 +82,10 @@
   //header links
   "NEW_POSTS": "mesaje noi",
   "OWN_TOPICS": "subiectele proprii",
+  "OWN_TOPICS_CAPTION": "Subiecte în care ai scris cel puțin un mesaj",
   "MENU": "meniu",
   "DRAFTS": "mesaje în lucru",
+  "DRAFTS_CAPTION": "Mesaje salvate ca „în lucru” și încă nepublicate",
   "FORUM_MEMBERS": "membrii forumului",
   "MARK_FORUMS_READ": "marchează forumurile ca citite",
   "MARK_TOPICS_READ": "marchează subiectele ca citite",
@@ -118,15 +134,12 @@
   "CITY": "Localitate",
   "POST_COUNT": "Mesaje postate",
 
-  //attachment
-  "DOWNLOADED_ONCE": "descărcat o dată",
-  "DOWNLOADED_COUNT_FORMAT": "descărcat de {0} ori",
-
   //pagination
   "NEXT_PAGE": "pagina<br />următoate",
   "PREVIOUS_PAGE": "pagina<br />precedentă",
-  "MESSAGES_PER_PAGE": "Mesaje afișate pe pagină",
+  "POSTS_PER_PAGE": "Mesaje afișate pe pagină",
   "PAGINATION_OPTIONS": "Opțiuni paginare",
+  "GO_TO_PAGE": "Mergi la pagina",
 
   //poll
   "POLL_TITLE_FORMAT": "Chestionar: {0}",
@@ -149,18 +162,16 @@
   "CAN_CHANGE_VOTE": "Votanții își pot schimba votul",
   "CHANGE_VOTE_CAPTION": "Da, votanții se pot răzgândi.",
 
-  //post & mp
+  //forum post
   "DO_QUOTE": "citează",
-  "SHOW_REPORT": "arată raportul",
-  "DO_REPORT": "Raportează",
   "LAST_EDITED_BY": "Ultima dată modificat de",
   "TOTAL_EDITS": "Modificări în total",
   "REPLY_AS_QUOTE": "Răspunde cu citat",
-  "SELECT_FOR_MODERATION": "Selectează pentru moderare",
   "DO_EDIT": "Modifică",
   "DO_DELETE": "Șterge",
   "DO_REPLY": "răspunde",
   "OPEN_NEW_TOPIC": "Scrie un subiect nou",
+  "WRITE_NEW_POST": "Scrie un mesaj nou",
   "POST_TITLE": "Subiect",
   "SHOW_POSTING_GUIDE": "Arată un ajutor pentru formatare",
   "FORMATTING_OPTIONS": "Opțiuni formatare",
@@ -171,6 +182,19 @@
   "SUBMIT_POST": "Trimite mesajul",
   "DRAFT_SAVED_SUCCESSFULLY": "Mesajul în lucru a fost salvat cu succes și vei putea lucra în continuare la el mai târziu.",
 
+  //post reporting
+  "REPORT": "raport",
+  "SHOW_REPORT": "arată raportul",
+  "DO_REPORT": "Raportează",
+  "CHOOSE_REASON": "Alege un motiv",
+  "ADDITIONAL_DETAILS": "Detalii suplimentare",
+  "REASON": "motiv",
+  "REPORTING_USER": "Raportor",
+  "EDIT_POST": "Modifică mesajul",
+  "DELETE_POST": "Șterge mesajul",
+  "CLOSE_REPORT": "Închide raport",
+
+  //pm
   "WRITE_NEW_PM": "Scrie un mesaj privat nou",
   "PM_CHOOSE_TO": "Alege destinatar...",
   "RECEIVED": "Primite",
@@ -179,16 +203,16 @@
   "NO_SENT_MESSAGES": "Nici un mesaj trimis",
   "SELECTED_MESSAGE": "Mesajul selectat",
   "SELECT_ALL_MESSAGES": "Selectează toate mesajele",
-  "MARK_SELECTED_AS_READ": "Marchează mesajele selectate ca citite",
-  "CONFIRM_MARK_AS_READ": "Sigur dorești să marchezi ca citite mesajele selectate?",
-  "DELETE_SELECTED_FOR_MYSELF": "Șterge mesajele selectate pentru mine",
-  "CONFIRM_DELETE_RECEIVED_FOR_MYSELF": "Mesajele selectate vor fi șterse pentru tine, însă vor rămâne disponibile expeditorului. Continui?",
-  "CONFIRM_DELETE_SENT_FOR_MYSELF": "Mesajele selectate vor fi șterse pentru tine, însă vor rămâne disponibile destinatarului. Continui?",
-  "DELETE_FOR_EVERYONE": "Șterge mesajul pentru mine și destinatar",
-  "CONFIRM_DELETE_FOR_EVERYONE": "Mesajul va fi șters și pentru tine, și pentru destinatar. Continui?",
-  "DELETE_FOR_MYSELF": "Șterge mesajul doar pentru mine",
-  "CONFIRM_DELETE_MINE_FOR_MYSELF": "Mesajul va fi șters pentru tine, însă va rămâne disponibil destinatarului. Continui?",
-  "CONFIRM_DELETE_OTHERS_FOR_MYSELF": "Mesajul va fi șters pentru tine, însă va rămâne disponibil expeditorului. Continui?",
+  "MARK_SELECTED_MESSAGES_AS_READ": "Marchează mesajele selectate ca citite",
+  "CONFIRM_MARK_MESSAGES_AS_READ": "Sigur dorești să marchezi ca citite mesajele selectate?",
+  "DELETE_SELECTED_MESSAGES_FOR_MYSELF": "Șterge mesajele selectate pentru mine",
+  "CONFIRM_DELETE_RECEIVED_MESSAGES_FOR_MYSELF": "Mesajele selectate vor fi șterse pentru tine, însă vor rămâne disponibile expeditorului. Continui?",
+  "CONFIRM_DELETE_SENT_MESSAGES_FOR_MYSELF": "Mesajele selectate vor fi șterse pentru tine, însă vor rămâne disponibile destinatarului. Continui?",
+  "DELETE_MESSAGE_FOR_EVERYONE": "Șterge mesajul pentru mine și destinatar",
+  "CONFIRM_DELETE_MESSAGE_FOR_EVERYONE": "Mesajul va fi șters și pentru tine, și pentru destinatar. Continui?",
+  "DELETE_MESSAGE_FOR_MYSELF": "Șterge mesajul doar pentru mine",
+  "CONFIRM_DELETE_MY_MESSAGE_FOR_MYSELF": "Mesajul va fi șters pentru tine, însă va rămâne disponibil destinatarului. Continui?",
+  "CONFIRM_DELETE_OTHERS_MESSAGE_FOR_MYSELF": "Mesajul va fi șters pentru tine, însă va rămâne disponibil expeditorului. Continui?",
 
   //attachments
   "CHOOSE_FILES": "Alege unul sau mai multe fișiere",
@@ -200,11 +224,17 @@
   "MAKE_INLINE": "Așează în linie",
   "DELETE_FILE": "Șterge fișier",
   "CLICK_TO_ENLARGE": "Click pentru imaginea mărită.",
+  "DOWNLOADED_ONCE": "descărcat o dată",
+  "DOWNLOADED_COUNT_FORMAT": "descărcat de {0} ori",
 
   //navigation
   "CHOOSE_DESTINATION_FORUM_TOPIC": "Alege forumul și subiectul de destinație",
   "CHOOSE_DESTINATION_FORUM": "Alege forumul de destinație",
   "CHOOSE_DESTINATION_TOPIC": "Alege subiectul de destinație",
+  "GO_TO_NEW_TOPIC": "Mergi la noul subiect",
+  "GO_TO_LAST_TOPIC": "Mergi la ultimul subiect vizitat",
+  "GO_TO_NEW_FORUM": "Mergi la noul forum",
+  "GO_TO_LAST_FORUM": "Mergi la ultimul forum vizitat",
 
   //search
   "SEARCH_CAPTION": "Dacă doriți să căutați după o frază exactă, puneți-o între ghilimele. De exemplu căutarea <b><i>autobuz galben</i></b> va returna mesaje care conțin fie <b><i>autobuz</i></b>, fie <b><i>galben</i></b>, fie amândouă.Căutarea <b><i>\"autobuz galben\"</i></b> va returna mesajele care conțin fraza exactă \"autobuz galben\".",
@@ -213,7 +243,7 @@
   "SEARCH_IN_FORUM": "Caută în forumul...",
   "SEARCH_IN_TOPIC": "Caută în subiectul...",
   "SEARCH_IN_ALL_TOPICS": "Caută în toate subiectele",
-  "MESSAGES_BY_FORMAT": "Mesaje scrise de {0}",
+  "POSTS_BY_FORMAT": "Mesaje scrise de {0}",
 
   //user profile
   "USER_PROFILE": "Panoul utilizatorului",
@@ -247,8 +277,8 @@
   "NO_ASSIGNED_ROLE": "Nici un rol atribuit",
   "NO_ASSIGNED_RANK": "Nici un rang atribuit",
   "MANAGE_ACCOUNT": "Administrează cont",
-  "EDIT_OWN_MESSAGES_TIME": "Timpul cât este permisă<br />editarea mesajelor proprii",
-  "EDIT_OWN_MESSAGES_CAPTION": "Minute de la publicarea mesajului.<br />Aceeași setare există și la grupuri și se aplică valoarea cea mai restrictivă diferită de zero.<br />Zero semnifică „timp nelimitat” și se aplică chiar dacă cealaltă setare este diferită de zero.",
+  "EDIT_OWN_POSTS_TIME": "Timpul cât este permisă<br />editarea mesajelor proprii",
+  "EDIT_OWN_POSTS_CAPTION": "Minute de la publicarea mesajului.<br />Aceeași setare există și la grupuri și se aplică valoarea cea mai restrictivă diferită de zero.<br />Zero semnifică „timp nelimitat” și se aplică chiar dacă cealaltă setare este diferită de zero.",
   "USER_PERMISSIONS": "Permisiunile utilizatorului",
   "COLOR_CAPTION": "La schimbarea grupului, această valoare este înlocuită cu culoarea grupului.<br />Pentru a aloca o culoare personalizată, schimbă întâi grupul, apoi valoarea de aici.",
   "EMAIL_CAPTION": "Dacă modifici acest câmp, contul va deveni inactiv. Vei primi pe noua adresă de e-mail un mesaj cu instrucțiuni pentru reactivare.",

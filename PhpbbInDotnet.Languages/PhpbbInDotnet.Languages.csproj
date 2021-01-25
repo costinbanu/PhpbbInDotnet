@@ -35,6 +35,9 @@
     <None Update="Translations\JavaScriptText.ro.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Translations\Moderator.ro.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Translations\PostingGuide.ro.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

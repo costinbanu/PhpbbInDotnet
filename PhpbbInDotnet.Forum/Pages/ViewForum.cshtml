@@ -12,10 +12,6 @@
     Layout = "~/Pages/_Layout.cshtml";
     var CurrentUser = await Model.GetCurrentUserAsync();
     var UserDateFormat = CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
-    if (!DateTime.TryParse(DateTime.UtcNow.ToString(UserDateFormat), out _))
-    {
-        UserDateFormat = "dddd, dd.MM.yyyy, HH:mm";
-    }
     var IsAnonymous = CurrentUser?.IsAnonymous ?? true;
     var hasSubForums = Model.ForumId != 0 && _forumService.HasUnrestrictedChildren((await Model.GetForumTree(false, false)).Tree, Model.ForumId);
     var hasTopics = Model.Topics?.SelectMany(x => x.Topics).Any() ?? false;
@@ -66,11 +62,14 @@
 
 @if ((Model.ParentForumId ?? 0) != 0)
 {
-    <span style="padding-bottom: 10px">Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@HttpUtility.HtmlDecode(Model.ParentForumTitle)</a></span>
+    <span style="padding-bottom: 10px">
+        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "PARENT_FORUM", Casing.FirstUpper]):
+        <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@Html.Raw(Model.ParentForumTitle)</a>
+    </span>
 }
 else
 {
-    <a href="/" style="padding-bottom: 10px">Prima pagină</a>
+    <a href="/" style="padding-bottom: 10px">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "HOME", Casing.FirstUpper])</a>
 }
 
 @if (!IsAnonymous)
@@ -80,11 +79,11 @@ else
     {
         @if (hasSubForums)
         {
-            additionalLinks.Add("<a href=\"javascript:MarkForumsRead.submit()\">Marchează forumurile ca citite</a>");
+            additionalLinks.Add($"<a href=\"javascript:MarkForumsRead.submit()\">{Model.LanguageProvider.BasicText[Lang, "MARK_FORUMS_READ", Casing.FirstUpper]}</a>");
         }
         @if (hasTopics)
         {
-            additionalLinks.Add("<a href=\"javascript:MarkTopicsRead.submit()\">Marchează subiectele ca citite</a>");
+            additionalLinks.Add($"<a href=\"javascript:MarkTopicsRead.submit()\">{Model.LanguageProvider.BasicText[Lang, "MARK_TOPICS_READ", Casing.FirstUpper]}</a>");
         }
     }
     <span>&nbsp;&bull;&nbsp;</span>
@@ -98,21 +97,21 @@ else
 @switch (Model.Mode)
 {
     case ViewForumMode.NewPosts:
-        <h3>Mesaje noi</h3>
+        <h3>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "NEW_POSTS", Casing.FirstUpper])</h3>
         break;
 
     case ViewForumMode.OwnPosts:
-        <h3>Subiectele proprii</h3>
-        <span>Subiecte în care ai scris cel puțin un mesaj</span>
+        <h3>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "OWN_TOPICS", Casing.FirstUpper])</h3>
+        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "OWN_TOPICS_CAPTION", Casing.FirstUpper])
         break;
 
     case ViewForumMode.Drafts:
-        <h3>Mesaje proprii în lucru</h3>
-        <span>Mesaje salvate ca „în lucru” și încă nepublicate</span>
+        <h3>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DRAFTS", Casing.FirstUpper])</h3>
+        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "DRAFTS_CAPTION", Casing.FirstUpper])
         break;
 
     case ViewForumMode.Forum:
-        <h3>Forum: @Model.ForumTitle</h3>
+        <h3>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "FORUM", Casing.FirstUpper]): @Model.ForumTitle</h3>
         @await Html.PartialAsync("_RulesPartial", new CustomPartials._RulesPartialModel
         {
             ForumRules = Model.ForumRules,
@@ -134,8 +133,6 @@ else
 
 @if (hasTopics)
 {
-    /*https://stackoverflow.com/questions/5144265/an-equally-quick-alternative-to-securityelement-escapestring-to-escape-xml-spe#comment88712318_5144356
-     * use SecurityElement.Escape when using Html.Raw*/
     var topicsDisplayed = false;
     var announcementsDisplayed = false;
     var handler = Model.Mode switch
@@ -172,7 +169,7 @@ else
                 case TopicType.Announcement when !announcementsDisplayed:
                 case TopicType.Global when !announcementsDisplayed:
                     <p>&nbsp;</p>
-                    <h3 style="float:left">Anunțuri</h3>
+                    <h3 style="float:left">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "ANNOUNCEMENTS", Casing.FirstUpper])</h3>
                     announcementsDisplayed = isFirstInGroup = true;
                     break;
                 case TopicType.Important when !topicsDisplayed:
@@ -182,11 +179,11 @@ else
                         <hr class="BoxSeparator" />
                     }
                     <p>&nbsp;</p>
-                    <h3 style="float:left">Subiecte</h3>
+                    <h3 style="float:left">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "TOPICS", Casing.FirstUpper])</h3>
                     <span>
                         &nbsp;
                         <button onclick="location.href='/Posting?forumId=@Model.ForumId&handler=newTopic'" type="button" class="MyButton SpacedButtonNotTop" style="height:26px; padding-top:1px; padding-bottom: 1px">
-                            &#x1F4DD;&nbsp;Deschide un subiect nou
+                            &#x1F4DD;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "OPEN_NEW_TOPIC", Casing.FirstUpper])
                         </button>
                     </span>
                     topicsDisplayed = isFirstInGroup = true;
@@ -250,23 +247,32 @@ else
                     {
                         if ((topic.TopicId ?? 0) == 0)
                         {
-                            <a asp-page="/Posting" asp-page-handler="newTopic" asp-route-forumId="@topic.ForumId" style="white-space:nowrap">Subiect nou: @HttpUtility.HtmlDecode(topic.TopicTitle)</a>
+                            <a asp-page="/Posting" asp-page-handler="newTopic" asp-route-forumId="@topic.ForumId" style="white-space:nowrap">
+                                @Html.Raw(Model.LanguageProvider.BasicText[Lang, "NEW_TOPIC", Casing.FirstUpper]):
+                                @Html.Raw(topic.TopicTitle)
+                            </a>
                         }
                         else
                         {
-                            <a asp-page="/Posting" asp-page-handler="forumPost" asp-route-forumId="@topic.ForumId" asp-route-topicId="@topic.TopicId" asp-route-postId="@topic.TopicLastPostId">@HttpUtility.HtmlDecode(topic.TopicTitle)</a>
+                            <a asp-page="/Posting" asp-page-handler="forumPost" asp-route-forumId="@topic.ForumId" asp-route-topicId="@topic.TopicId" asp-route-postId="@topic.TopicLastPostId">@Html.Raw(topic.TopicTitle)</a>
                         }
                         <span>
-                            &nbsp;Scris:
-                            <script>
-                                writeDate("@topic.LastPostTime?.ToString("o")", "@UserDateFormat");
-                            </script>
+                            &nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "POSTED", Casing.FirstUpper]):
+                            <script>writeDate("@topic.LastPostTime?.ToString("o")", "@UserDateFormat");</script>
                         </span>
                     }
                     <br />
                     @if (Model.Mode != ViewForumMode.Drafts)
                     {
-                        @await Html.PartialAsync("_PaginationPageListPartial", topic.Pagination, ViewData)
+                        @await Html.PartialAsync(
+                            "_PaginationPageListPartial",
+                            new Forum.Pages.CustomPartials._PaginationPageListPartialModel
+                            {
+                                Pagination = topic.Pagination,
+                                Language = Lang
+                            },
+                            ViewData
+                        )
                     }
                 </span>
                 @if (Model.Mode != ViewForumMode.Drafts)
@@ -278,19 +284,19 @@ else
                         topic.TopicLastPosterId = 1;
                     }
                     @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
-               {
-                   AuthorId = topic.TopicLastPosterId,
-                   AuthorName = topic.TopicLastPosterName,
-                   AuthorColor = topic.TopicLastPosterColour,
-                   CreationTime = topic.LastPostTime,
-                   AssetId = topic.TopicId.Value,
-                   DateFormat = UserDateFormat,
-                   LinkHref = topic.TopicLastPostId == null ? null : $"./ViewTopic?postId={topic.TopicLastPostId}&handler=ByPostId",
-                   ShowAsLast = true,
-                   Posts = topic.PostCount,
-                   Views = topic.ViewCount,
-                   Language = Lang
-               });
+                    {
+                        AuthorId = topic.TopicLastPosterId,
+                        AuthorName = topic.TopicLastPosterName,
+                        AuthorColor = topic.TopicLastPosterColour,
+                        CreationTime = topic.LastPostTime,
+                        AssetId = topic.TopicId.Value,
+                        DateFormat = UserDateFormat,
+                        LinkHref = topic.TopicLastPostId == null ? null : $"./ViewTopic?postId={topic.TopicLastPostId}&handler=ByPostId",
+                        ShowAsLast = true,
+                        Posts = topic.PostCount,
+                        Views = topic.ViewCount,
+                        Language = Lang
+                    });
                 }
             </div>
             isFirstInGroup = false;
@@ -301,15 +307,15 @@ else
     if (Model.Mode == ViewForumMode.Drafts && hasTopics)
     {
         <hr class="BoxSeparator" />
-        <button onclick="selectAllCheckboxes()" type="button" class="MyButton SpacedButton">&#x2714;&nbsp;Selectează toate mesajele</button>
-        <input type="submit" value="&#x1F6AE;&nbsp;Șterge mesajele selectate" form="DeleteDrafts" onclick="return confirm('Sigur dorești ștergerea mesajelor în lucru selectate?');" class="MyButton SpacedButton" />
+        <button onclick="selectAllCheckboxes()" type="button" class="MyButton SpacedButton">&#x2714;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SELECT_ALL_POSTS"])</button>
+        <input type="submit" value="&#x1F6AE;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_SELECTED_POSTS"])" form="DeleteDrafts" onclick="return confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_POSTS"])');" class="MyButton SpacedButton" />
         <p>&nbsp;</p>
     }
     else if (Model.Mode == ViewForumMode.NewPosts && hasTopics)
     {
         <hr class="BoxSeparator" />
-        <button onclick="selectAllCheckboxes()" type="button" class="MyButton SpacedButton">&#x2714;&nbsp;Selectează toate mesajele</button>
-        <input type="submit" value="&#x2705;&nbsp;Marchează mesajele selectate ca citite" form="MarkNewPostsRead" class="MyButton SpacedButton" />
+        <button onclick="selectAllCheckboxes()" type="button" class="MyButton SpacedButton">&#x2714;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SELECT_ALL_POSTS"])</button>
+        <input type="submit" value="&#x2705;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "MARK_SELECTED_POSTS_AS_READ"])" form="MarkNewPostsRead" class="MyButton SpacedButton" />
         <p>&nbsp;</p>
     }
 
@@ -332,19 +338,19 @@ else
 else if (Model.Mode == ViewForumMode.NewPosts)
 {
     <p>&nbsp;</p>
-    <h4>Nu există mesaje noi.</h4>
+    <h4>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "NO_NEW_POSTS"])</h4>
     <p>&nbsp;</p>
 }
 else if (Model.Mode == ViewForumMode.OwnPosts)
 {
     <p>&nbsp;</p>
-    <h4>Nu ai scris nici un mesaj în nici un topic până acum.</h4>
+    <h4>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "NO_OWN_POSTS"])</h4>
     <p>&nbsp;</p>
 }
 else if (Model.Mode == ViewForumMode.Drafts)
 {
     <p>&nbsp;</p>
-    <h4>Nu ai nici un mesaj în lucru.</h4>
+    <h4>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "NO_DRAFTS"])</h4>
     <p>&nbsp;</p>
 }
 
@@ -357,24 +363,27 @@ else if (Model.Mode == ViewForumMode.Drafts)
 {
     <p></p>
     <button onclick="location.href='/Posting?forumId=@Model.ForumId&handler=newTopic'" type="button" class="MyButton">
-        &#x1F4DD;&nbsp;Deschide un subiect nou
+        &#x1F4DD;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "OPEN_NEW_TOPIC"])
     </button>
 }
 
 <div style="clear:both; margin: 10px 0px 10px 0px">
     @if (hasSubForums || hasTopics)
     {
-        <a href="/" class="nowrap">Prima pagină</a>
+        <a href="/" class="nowrap">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "HOME", Casing.FirstUpper])</a>
         <span class="bullet">&nbsp;&bull;&nbsp;</span>
         <div class="newline"></div>
     }
     @if ((Model.ParentForumId ?? 0) != 0)
     {
-        <span>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@HttpUtility.HtmlDecode(Model.ParentForumTitle)</a></span>
+        <span>
+            @Html.Raw(Model.LanguageProvider.BasicText[Lang, "PARENT_FORUM", Casing.FirstUpper]):
+            <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@Html.Raw(Model.ParentForumTitle)</a>
+        </span>
         <span class="bullet">&nbsp;&bull;&nbsp;</span>
         <div class="newline"></div>
     }
-    <span onclick="showForumTree(this)" class="SpanLikeLink nowrap">Alege destinația</span>
+    <span onclick="showForumTree(this)" class="SpanLikeLink nowrap">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CHOOSE_DESTINATION"])</span>
 </div>
 <p></p>
 <div id="forumTree" style=" display:none">

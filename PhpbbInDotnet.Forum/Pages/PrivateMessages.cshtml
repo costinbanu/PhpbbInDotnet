@@ -123,8 +123,8 @@
             </button>
             <input type="hidden" asp-for="Show" />
             <input type="hidden" asp-for="InboxPage" />
-            <input type="submit" asp-page-handler="MarkAsRead" value="&#x2705;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "MARK_SELECTED_AS_READ"])" onclick="return confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_MARK_AS_READ"])');" class="MyButton SpacedButton" />
-            <input type="submit" asp-page-handler="HideSelectedMessages" value="&#x1F6AE;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_SELECTED_FOR_MYSELF"])" onclick="return confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_RECEIVED_FOR_MYSELF"])');" class="MyButton SpacedButton" />
+            <input type="submit" asp-page-handler="MarkAsRead" value="&#x2705;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "MARK_SELECTED_MESSAGES_AS_READ"])" onclick="return confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_MARK_MESSAGES_AS_READ"])');" class="MyButton SpacedButton" />
+            <input type="submit" asp-page-handler="HideSelectedMessages" value="&#x1F6AE;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_SELECTED_MESSAGES_FOR_MYSELF"])" onclick="return confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_RECEIVED_MESSAGES_FOR_MYSELF"])');" class="MyButton SpacedButton" />
         </form>
     }
     else
@@ -191,7 +191,7 @@
             </button>
             <input type="hidden" asp-for="Show" />
             <input type="hidden" asp-for="SentPage" />
-            <input type="submit" asp-page-handler="HideSelectedMessages" value="&#x1F6AE;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_SELECTED_FOR_MYSELF"])" onclick="return confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_SENT_FOR_MYSELF"])');" class="MyButton SpacedButton" />
+            <input type="submit" asp-page-handler="HideSelectedMessages" value="&#x1F6AE;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_SELECTED_MESSAGES_FOR_MYSELF"])" onclick="return confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_SENT_MESSAGES_FOR_MYSELF"])');" class="MyButton SpacedButton" />
         </form>
     }
     else
@@ -252,7 +252,7 @@
                 <input type="hidden" asp-for="InboxPage" />
                 <input type="hidden" asp-for="SentPage" />
                 <input type="hidden" name="Show" value="@(Model.SelectedMessageIsMine ? PrivateMessagesPages.Sent : PrivateMessagesPages.Inbox)" />
-                <input type="submit" value="&#x1F6AE;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_FOR_EVERYONE", Casing.FirstUpper])" onclick="return confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_FOR_EVERYONE", Casing.FirstUpper])');" class="MyButton SpacedButtonNotBottom" />
+                <input type="submit" value="&#x1F6AE;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_MESSAGE_FOR_EVERYONE", Casing.FirstUpper])" onclick="return confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_MESSAGE_FOR_EVERYONE", Casing.FirstUpper])');" class="MyButton SpacedButtonNotBottom" />
             </form>
         }
         <form method="post" id="hideForm" asp-page-handler="HideMessage" style="display:inline">
@@ -260,7 +260,7 @@
             <input type="hidden" asp-for="InboxPage" />
             <input type="hidden" asp-for="SentPage" />
             <input type="hidden" name="Show" value="@(Model.SelectedMessageIsMine ? PrivateMessagesPages.Sent : PrivateMessagesPages.Inbox)" />
-            <input type="submit" value="&#x1F6AE;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_FOR_MYSELF"])" onclick="return confirm('@Html.Raw(Model.SelectedMessageIsMine ? Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_MINE_FOR_MYSELF"] : Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_OTHERS_FOR_MYSELF"])');" class="MyButton SpacedButtonNotBottom" />
+            <input type="submit" value="&#x1F6AE;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_MESSAGE_FOR_MYSELF"])" onclick="return confirm('@Html.Raw(Model.SelectedMessageIsMine ? Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_MY_MESSAGE_FOR_MYSELF"] : Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_OTHERS_MESSAGE_FOR_MYSELF"])');" class="MyButton SpacedButtonNotBottom" />
         </form>
         <p></p>
         <span asp-validation-for="MessageId" class="validation"></span>

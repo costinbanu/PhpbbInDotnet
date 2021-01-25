@@ -124,7 +124,7 @@ else
     var user = await connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @authorId", new { Model.AuthorId });
     if (!string.IsNullOrWhiteSpace(user?.Username))
     {
-        <h4>@Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, "MESSAGES_BY_FORMAT"], user.Username))</h4>
+        <h4>@Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, "POSTS_BY_FORMAT"], user.Username))</h4>
     }
 }
 @if (Model.Posts != null && Model.Posts.Any())

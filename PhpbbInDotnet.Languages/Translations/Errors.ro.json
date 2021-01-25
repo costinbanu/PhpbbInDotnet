@@ -2,6 +2,7 @@
   //generic errors
   "AN_ERROR_OCCURRED": "A intervenit o eroare.",
   "AN_ERROR_OCCURRED_TRY_AGAIN": "A intervenit o eroare, te rugăm să încerci mai târziu.",
+  "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT": "A intervenit o eroare, încearcă din nou. ID: {0}",
   "ERROR_UNAUTHORIZED": "Nu ești autorizat să vizitezi pagina solicitată.",
   "ERROR_NOT_FOUND": "Pagina solicitată nu există.",
   "REPORT_ERROR_WITH_ID": "Dacă eroarea persistă, scrieți la <a href=\"mailto:admin@metrouusor.com\">admin@metrouusor.com</a> și includeți IDul de mai sus.",
@@ -32,5 +33,13 @@
   "DELETE_AVATAR_ERROR": "Imaginea de profil nu a putut fi ștearsă",
   "AVATAR_FORMAT_ERROR": "Fișierul trebuie să fie o imagine de dimensiuni maxime 200px x 200px",
   "AVATAR_UPLOAD_ERROR": "Imaginea nu a putut fi încărcată",
-  "INVALID_DATE": "Data introdusă nu este validă"
+  "INVALID_DATE": "Data introdusă nu este validă",
+
+  //posting
+  "CANT_CHANGE_VOTE": "Votul nu poate fi schimbat!",
+  "POST_NO_LONGER_LAST": "Mesajul nu poate fi șters deoarece nu mai este ultimul din subiect!",
+  "EDIT_TIME_EXPIRED": "Mesajul nu poate fi șters deoarece a expirat timpul limită de modificare a mesajelor!"
+
+
+
 }

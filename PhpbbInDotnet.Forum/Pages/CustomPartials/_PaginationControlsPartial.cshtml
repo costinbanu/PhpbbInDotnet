@@ -26,13 +26,21 @@
         </div>
         <div class="ControlsMiddleFull">
             <span style="white-space:nowrap; display: inline">
-                @await Html.PartialAsync("_PaginationPageListPartial", Model.Paginator.Pagination, ViewData)
+                @await Html.PartialAsync(
+                    "_PaginationPageListPartial",
+                    new _PaginationPageListPartialModel
+                    {
+                        Pagination = Model.Paginator.Pagination,
+                        Language = Model.Language
+                    },
+                    ViewData
+                )
             </span>
             @if (!Model.Paginator.IsAnonymous && Model.AllowPaginationChange)
             {
                 <form method="post" asp-page-handler="Pagination" style="line-height:1.5em; display: inline; white-space:nowrap">
                     <span style="white-space:nowrap; display: inline">
-                        &nbsp;@Html.Raw(_languageProvider.BasicText[Model.Language, "MESSAGES_PER_PAGE"]):&nbsp;
+                        &nbsp;@Html.Raw(_languageProvider.BasicText[Model.Language, "POSTS_PER_PAGE"]):&nbsp;
                     </span>
                     <span style="white-space:nowrap; display: inline">
                         <input type="hidden" name="topicId" value="@Model.TopicId" />
@@ -72,7 +80,15 @@
         </span>
         <div id="paginationControls_@(Model.Self)" style="display: none; width: 100%; line-height: 1.5em">
             <p></p>
-            @await Html.PartialAsync("_PaginationPageListPartial", Model.Paginator.Pagination, ViewData)
+            @await Html.PartialAsync(
+                "_PaginationPageListPartial",
+                new _PaginationPageListPartialModel
+                {
+                    Pagination = Model.Paginator.Pagination,
+                    Language = Model.Language
+                },
+                ViewData
+            )
             <p></p>
             @if (!Model.Paginator.IsAnonymous && Model.AllowPaginationChange)
             {

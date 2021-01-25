@@ -21,6 +21,7 @@ namespace PhpbbInDotnet.Languages
         private readonly Lazy<TextTranslation> _errors;
         private readonly Lazy<HtmlTranslation> _postingGuide;
         private readonly Lazy<HtmlTranslation> _termsAndConditions;
+        private readonly Lazy<TextTranslation> _moderator;
 
         public TextTranslation BasicText => _basicText.Value;
 
@@ -40,6 +41,8 @@ namespace PhpbbInDotnet.Languages
 
         public HtmlTranslation TermsAndConditions => _termsAndConditions.Value;
 
+        public TextTranslation Moderator => _moderator.Value;
+
         public LanguageProvider(ILogger logger)
         {
             _logger = logger;
@@ -52,6 +55,7 @@ namespace PhpbbInDotnet.Languages
             _errors = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Errors), _logger));
             _postingGuide = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(PostingGuide), _logger));
             _termsAndConditions = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(TermsAndConditions), _logger));
+            _moderator = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Moderator), _logger));
         }
 
         public string GetValidatedLanguage(LoggedUser user, HttpRequest request = null)

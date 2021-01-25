@@ -136,7 +136,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if ((PageNum ?? 0) <= 0)
                 {
-                    return BadRequest($"'{PageNum}' nu este o valoare corectă pentru numărul paginii.");
+                    PageNum = 1;
                 }
 
                 ForumId = curForum?.ForumId;
@@ -230,7 +230,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var existingVotes = (await conn.QueryAsync<PhpbbPollVotes>("SELECT * FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @UserId", new { topicId, user.UserId })).AsList();
                 if (existingVotes.Count > 0 && topic.PollVoteChange == 0)
                 {
-                    ModelState.AddModelError(nameof(Poll), "Votul nu poate fi schimbat!");
+                    ModelState.AddModelError(nameof(Poll), LanguageProvider.Errors[await GetLanguage(), "CANT_CHANGE_VOTE"]);
                     return Page();
                 }
 
@@ -279,6 +279,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostTopicModerator()
             => await WithModerator(async () =>
             {
+                var lang = await GetLanguage();
                 var (Message, IsSuccess) = TopicAction switch
                 {
                     ModeratorTopicActions.MakeTopicNormal => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Normal),
@@ -300,8 +301,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     var destinations = new List<string>
                     {
-                        await Utils.CompressAndEncode($"<a href=\"./ViewForum?forumId={DestinationForumId ?? 0}\">Mergi la noul forum</a>"),
-                        await Utils.CompressAndEncode($"<a href=\"./ViewTopic?topicId={TopicId}&pageNum={PageNum}\">Mergi la ultimul subiect vizitat</a>")
+                        await Utils.CompressAndEncode($"<a href=\"./ViewForum?forumId={DestinationForumId ?? 0}\">{LanguageProvider.BasicText[lang, "GO_TO_NEW_FORUM"]}</a>"),
+                        await Utils.CompressAndEncode($"<a href=\"./ViewTopic?topicId={TopicId}&pageNum={PageNum}\">{LanguageProvider.BasicText[lang, "GO_TO_LAST_TOPIC"]}</a>")
                     };
                     return RedirectToPage("Confirm", "DestinationConfirmation", new { destinations });
                 }
@@ -318,6 +319,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostDeleteMyMessage()
             => await WithRegisteredUser(async (user) =>
             {
+                var lang = await GetLanguage();
                 if (await IsCurrentUserModeratorHere())
                 {
                     return await ModeratePosts();
@@ -332,21 +334,21 @@ namespace PhpbbInDotnet.Forum.Pages
                 
 
                 var toDelete = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId = PostIdsForModerator[0] });
-                var lastPosts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC LIMIT 0, 2", new { toDelete.TopicId })).AsList();
+                var lastPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC", new { toDelete.TopicId });
 
-                if (toDelete.PostTime < lastPosts[0].PostTime)
+                if (toDelete.PostTime < lastPost.PostTime)
                 {
-                    ModelState.AddModelError(nameof(PostIdsForModerator), "Mesajul nu poate fi șters deoarece nu (mai) este ultimul din subiect!");
+                    ModelState.AddModelError(nameof(PostIdsForModerator), LanguageProvider.Errors[lang, "POST_NO_LONGER_LAST"]);
                     return await OnGet();
                 }
 
                 if (!(toDelete.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(toDelete.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime)))
                 {
-                    ModelState.AddModelError(nameof(PostIdsForModerator), "Mesajul nu poate fi șters deoarece a expirat timul limită de modificare a mesajelor!");
+                    ModelState.AddModelError(nameof(PostIdsForModerator), LanguageProvider.Errors[lang, "EDIT_TIME_EXPIRED"]);
                     return await OnGet();
                 }
 
-                return await ModeratePosts(lastPosts[1].PostId);
+                return await ModeratePosts();
             });
 
         public async Task<IActionResult> OnPostReportMessage(int? reportPostId, short? reportReasonId, string reportDetails)
@@ -409,31 +411,10 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             });
 
-        public string MapModeratorTopicActions(ModeratorTopicActions action)
-            => action switch
-            {
-                ModeratorTopicActions.DeleteTopic => "Șterge subiect",
-                ModeratorTopicActions.LockTopic => "Închide subiect",
-                ModeratorTopicActions.MakeTopicAnnouncement => "Transformă subiectul în anunț",
-                ModeratorTopicActions.MakeTopicGlobal => "Transformă subiectul în subiect global",
-                ModeratorTopicActions.MakeTopicImportant => "Transformă subiectul în subiect important",
-                ModeratorTopicActions.MakeTopicNormal => "Transformă subiectul în subiect normal",
-                ModeratorTopicActions.MoveTopic => "Mută subiect",
-                ModeratorTopicActions.UnlockTopic => "Deschide subiect",
-                _ => throw new ArgumentException($"Unknown moderator topic action '{action}'", nameof(action))
-            };
-
-        public string MapModeratorPostActions(ModeratorPostActions action)
-            => action switch
-            {
-                ModeratorPostActions.DeleteSelectedPosts => "Șterge mesajele selectate",
-                ModeratorPostActions.MoveSelectedPosts => "Mută mesajele selectate",
-                ModeratorPostActions.SplitSelectedPosts => "Desparte mesajele selectate într-un nou subiect",
-                _ => throw new ArgumentException($"Unknown moderator post action '{action}'", nameof(action))
-            };
-
-        private async Task<IActionResult> ModeratePosts(int backToPost = 0)
+        private async Task<IActionResult> ModeratePosts()
         {
+            var lang = await GetLanguage();
+
             var (Message, IsSuccess) = PostAction switch
             {
                 ModeratorPostActions.DeleteSelectedPosts => await _moderatorService.DeletePosts(PostIdsForModerator),
@@ -442,16 +423,16 @@ namespace PhpbbInDotnet.Forum.Pages
                 _ => throw new NotImplementedException($"Unknown action '{PostAction}'")
             };
 
-            if (backToPost > 0)
+            if ((IsSuccess ?? false) && PostAction == ModeratorPostActions.DeleteSelectedPosts && PostIdsForModerator.Length == 1 && ClosestPostId.HasValue)
             {
-                PostId = backToPost;
+                PostId = ClosestPostId;
                 return await OnGetByPostId();
             }
 
             if (IsSuccess ?? false)
             {
                 int? LatestSelected, NextRemaining;
-                if (PostAction == ModeratorPostActions.DeleteSelectedPosts)
+                if (ClosestPostId.HasValue && PostAction == ModeratorPostActions.DeleteSelectedPosts)
                 {
                     (LatestSelected, NextRemaining) = (null, ClosestPostId);
                 }
@@ -462,16 +443,16 @@ namespace PhpbbInDotnet.Forum.Pages
                 var destinations = new List<string>();
                 if (LatestSelected != null)
                 {
-                    destinations.Add(await Utils.CompressAndEncode($"<a href=\"./ViewTopic?postId={LatestSelected}&handler=byPostId\">Mergi la noul subiect</a>"));
+                    destinations.Add(await Utils.CompressAndEncode($"<a href=\"./ViewTopic?postId={LatestSelected}&handler=byPostId\">{LanguageProvider.BasicText[lang, "GO_TO_NEW_TOPIC"]}</a>"));
                 };
 
                 if (NextRemaining != null)
                 {
-                    destinations.Add(await Utils.CompressAndEncode($"<a href=\"./ViewTopic?postId={NextRemaining}&handler=byPostId\">Mergi la ultimul subiect vizitat</a>"));
+                    destinations.Add(await Utils.CompressAndEncode($"<a href=\"./ViewTopic?postId={NextRemaining}&handler=byPostId\">{LanguageProvider.BasicText[lang, "GO_TO_LAST_TOPIC"]}</a>"));
                 }
                 else
                 {
-                    destinations.Add(await Utils.CompressAndEncode($"<a href=\"./ViewForum?forumId={ForumId}\">Mergi la ultimul forum vizitat</a>"));
+                    destinations.Add(await Utils.CompressAndEncode($"<a href=\"./ViewForum?forumId={ForumId}\">{LanguageProvider.BasicText[lang, "GO_TO_LAST_FORUM"]}</a>"));
                 }
 
                 return RedirectToPage("Confirm", "DestinationConfirmation", new { destinations });

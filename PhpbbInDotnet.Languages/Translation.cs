@@ -18,8 +18,6 @@ namespace PhpbbInDotnet.Languages
         private readonly Dictionary<string, string> _rawCache;
         private readonly ILogger _logger;
 
-        private string _path;
-
         protected abstract string FileExtension { get; }
 
         protected abstract bool ShouldCacheRawTranslation { get; }

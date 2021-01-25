@@ -1,7 +1,9 @@
 ﻿using Dapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
@@ -10,13 +12,15 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
 {
-    public class ModeratorService
+    public class ModeratorService : ServicesBase
     {
         private readonly ForumDbContext _context;
         private readonly PostService _postService;
         private readonly CommonUtils _utils;
 
-        public ModeratorService(ForumDbContext context, PostService postService, CommonUtils utils)
+
+        public ModeratorService(ForumDbContext context, PostService postService, CommonUtils utils, UserService userService, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
+            : base(userService, languageProvider, httpContextAccessor)
         {
             _context = context;
             _postService = postService;
@@ -30,23 +34,22 @@ namespace PhpbbInDotnet.Services
             try
             {
                 var conn = _context.Database.GetDbConnection();
-                
                 var rows = await conn.ExecuteAsync("UPDATE phpbb_topics SET topic_type = @topicType WHERE topic_id = @topicId", new { topicType, topicId });
 
                 if (rows == 1)
                 {
-                    return ("Subiectul a fost modificat cu succes!", true);
+                    return (LanguageProvider.Moderator[await GetLanguage(), "TOPIC_CHANGED_SUCCESSFULLY"], true);
                 }
                 else
                 {
-                    return ($"Subiectul {topicId} nu există.", false);
+                    return (string.Format(LanguageProvider.Moderator[await GetLanguage(), "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
                 }
 
             }
             catch (Exception ex)
             {
                 var id = _utils.HandleError(ex);
-                return ($"A intervenit o eroare, încearcă din nou. ID: {id}", false);
+                return (string.Format(LanguageProvider.Errors[await GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
@@ -63,7 +66,7 @@ namespace PhpbbInDotnet.Services
 
                 if (topicRows == 0)
                 {
-                    return ("Subiectul sau forumul de destinație nu există", false);
+                    return (LanguageProvider.Moderator[await GetLanguage(), "DESTINATION_DOESNT_EXIST"], false);
                 }
 
                 var oldPosts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC", new { topicId })).AsList();
@@ -79,12 +82,12 @@ namespace PhpbbInDotnet.Services
                     await _postService.CascadePostAdd(post, true);
                 }
 
-                return ("Subiectul a fost modificat cu succes!", true);
+                return (LanguageProvider.Moderator[await GetLanguage(), "TOPIC_CHANGED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
                 var id = _utils.HandleError(ex);
-                return ($"A intervenit o eroare, încearcă din nou. ID: {id}", false);
+                return (string.Format(LanguageProvider.Errors[await GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
@@ -98,15 +101,15 @@ namespace PhpbbInDotnet.Services
 
                 if (rows == 0)
                 {
-                    return ($"Subiectul {topicId} nu există", false);
+                    return (string.Format(LanguageProvider.Moderator[await GetLanguage(), "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
                 }
                 
-                return ("Subiectul a fost modificat cu succes!", true);
+                return (LanguageProvider.Moderator[await GetLanguage(), "TOPIC_CHANGED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex);
-                return ("A intervenit o eroare, încearcă din nou.", false);
+                var id = _utils.HandleError(ex);
+                return (string.Format(LanguageProvider.Errors[await GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
         
@@ -120,18 +123,18 @@ namespace PhpbbInDotnet.Services
                 
                 if (!posts.Any())
                 {
-                    return ($"Subiectul {topicId} nu există", false);
+                    return (string.Format(LanguageProvider.Moderator[await GetLanguage(), "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
                 }
 
                 await conn.ExecuteAsync("DELETE FROM phpbb_posts WHERE topic_id = @topicId", new { topicId });
                 posts.ForEach(async (p) => await _postService.CascadePostDelete(p, false));
 
-                return ("Subiectul a fost șters cu succes!", true);
+                return (LanguageProvider.Moderator[await GetLanguage(), "TOPIC_DELETED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
                 var id = _utils.HandleError(ex);
-                return ($"A intervenit o eroare, încearcă din nou. ID: {id}", false);
+                return (string.Format(LanguageProvider.Errors[await GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
@@ -145,12 +148,12 @@ namespace PhpbbInDotnet.Services
             {
                 if ((destinationForumId ?? 0) == 0)
                 {
-                    return ("Forumul destinație nu este valid.", false); 
+                    return (LanguageProvider.Moderator[await GetLanguage(), "INVALID_DESTINATION_FORUM"], false); 
                 }
 
                 if (!(postIds?.Any() ?? false))
                 {
-                    return ("Această acțiune necesită măcar un mesaj selectat.", false);
+                    return (LanguageProvider.Moderator[await GetLanguage(), "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
 
                 var conn = _context.Database.GetDbConnection();
@@ -159,7 +162,7 @@ namespace PhpbbInDotnet.Services
 
                 if (posts.Count != postIds.Length)
                 {
-                    return ("Cel puțin un mesaj dintre cele selectate a fost mutat sau șters între timp.", false);
+                    return (LanguageProvider.Moderator[await GetLanguage(), "ATLEAST_ONE_POST_MOVED_OR_DELETED"], false);
                 }
 
                 var curTopic = await conn.QueryFirstOrDefaultAsync<PhpbbTopics>(
@@ -179,12 +182,12 @@ namespace PhpbbInDotnet.Services
                     await _postService.CascadePostAdd(post, false);
                 }
                 
-                return ("Mesajele au fost separate cu succes!", true);
+                return (LanguageProvider.Moderator[await GetLanguage(), "POSTS_SPLIT_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
                 var id = _utils.HandleError(ex);
-                return ($"A intervenit o eroare, încearcă din nou. ID: {id}", false);
+                return (string.Format(LanguageProvider.Errors[await GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
@@ -194,12 +197,12 @@ namespace PhpbbInDotnet.Services
             {
                 if ((destinationTopicId ?? 0) == 0)
                 {
-                    return ("Subiectul destinație nu este valid.", false);
+                    return (LanguageProvider.Moderator[await GetLanguage(), "INVALID_DESTINATION_TOPIC"], false);
                 }
 
                 if (!(postIds?.Any() ?? false))
                 {
-                    return ("Această acțiune necesită măcar un mesaj selectat.", false);
+                    return (LanguageProvider.Moderator[await GetLanguage(), "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
 
                 var conn = _context.Database.GetDbConnection();
@@ -207,13 +210,13 @@ namespace PhpbbInDotnet.Services
                 var posts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
                 if (posts.Count != postIds.Length || posts.Select(p => p.TopicId).Distinct().Count() != 1)
                 {
-                    return ("Cel puțin un mesaj dintre cele selectate a fost mutat sau șters între timp.", false);
+                    return (LanguageProvider.Moderator[await GetLanguage(), "AT_LEAST_ONE_POST_MOVED_OR_DELETED"], false);
                 }
 
                 var newTopic = await conn.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @destinationTopicId", new { destinationTopicId });
                 if (newTopic == null)
                 {
-                    return ("Subiectul de destinație nu există", false);
+                    return (string.Format(LanguageProvider.Moderator[await GetLanguage(), "TOPIC_DOESNT_EXIST_FORMAT"], destinationTopicId), false);
                 }
 
                 await conn.ExecuteAsync("UPDATE phpbb_posts SET topic_id = @topicId, forum_id = @forumId WHERE post_id IN @postIds", new { newTopic.TopicId, newTopic.ForumId, postIds });
@@ -227,12 +230,12 @@ namespace PhpbbInDotnet.Services
                     await _postService.CascadePostAdd(post, false);
                 }
 
-                return ("Mesajele au fost mutate cu succes!", true);
+                return (LanguageProvider.Moderator[await GetLanguage(), "POSTS_MOVED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
                 var id = _utils.HandleError(ex);
-                return ($"A intervenit o eroare, încearcă din nou. ID: {id}", false);
+                return (string.Format(LanguageProvider.Errors[await GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
@@ -243,7 +246,7 @@ namespace PhpbbInDotnet.Services
             {
                 if (!(postIds?.Any() ?? false))
                 {
-                    return ("Această acțiune necesită măcar un mesaj selectat.", false);
+                    return (LanguageProvider.Moderator[await GetLanguage(), "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
 
                 var conn = _context.Database.GetDbConnection();
@@ -251,18 +254,18 @@ namespace PhpbbInDotnet.Services
                 var posts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
                 if (posts.Count != postIds.Length || posts.Select(p => p.TopicId).Distinct().Count() != 1)
                 {
-                    return ("Cel puțin un mesaj dintre cele selectate a fost mutat sau șters între timp.", false);
+                    return (LanguageProvider.Moderator[await GetLanguage(), "ATLEAST_ONE_POST_MOVED_OR_DELETED"], false);
                 }
 
                 await conn.ExecuteAsync("DELETE FROM phpbb_posts WHERE post_id IN @postIds", new { postIds });
                 posts.ForEach(async (p) => await _postService.CascadePostDelete(p, false));
 
-                return ("Subiectul a fost modificat cu succes!", true);
+                return (LanguageProvider.Moderator[await GetLanguage(), "POSTS_DELETED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex);
-                return ("A intervenit o eroare, încearcă din nou.", false);
+                var id = _utils.HandleError(ex);
+                return (string.Format(LanguageProvider.Errors[await GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 

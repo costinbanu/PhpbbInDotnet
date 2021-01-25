@@ -431,11 +431,11 @@ else
                 <p></p>
                 <div class="FlexCenter">
                     <div class="FlexCaption">
-                        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "EDIT_OWN_MESSAGES_TIME"])
+                        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "EDIT_OWN_POSTS_TIME"])
                     </div>
                     <div class="FlexRight PostInputWidth">
                         <input asp-for="CurrentUser.UserEditTime" /><br />
-                        <span class="Caption">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "EDIT_OWN_MESSAGES_CAPTION"])</span><br />
+                        <span class="Caption">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "EDIT_OWN_POSTS_CAPTION"])</span><br />
                     </div>
                 </div>
                 <p></p>
@@ -577,10 +577,6 @@ else
                     <div class="FlexRight PostInputWidth">
                         @{
                             var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
-                            if (!DateTime.TryParse(DateTime.Now.ToString(UserDateFormat), out var _))
-                            {
-                                UserDateFormat = "dddd, dd.MM.yyyy, HH:mm";
-                            }
                         }
                         <script>
                             writeDate("@Model.CurrentUser.UserRegdate.ToUtcTime().ToString("o")", "@UserDateFormat");

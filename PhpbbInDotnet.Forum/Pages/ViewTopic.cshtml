@@ -19,10 +19,6 @@
     var CurrentUser = await Model.GetCurrentUserAsync();
     var IsAnonymous = CurrentUser.UserId == Constants.ANONYMOUS_USER_ID;
     var UserDateFormat = CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
-    if (!DateTime.TryParse(DateTime.Now.ToString(UserDateFormat), out _))
-    {
-        UserDateFormat = "dddd, dd.MM.yyyy, HH:mm";
-    }
     var IsAdmin = await Model.IsCurrentUserAdminHere();
     var IsMod = await Model.IsCurrentUserModeratorHere();
     var HasPM = _userService.HasPrivateMessagePermissions(CurrentUser);
@@ -60,7 +56,10 @@
         }
     }
 </script>
-<span style="padding-top: 10px; padding-bottom: 10px">Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(Model.ForumTitle)</a></span>
+<span style="padding-top: 10px; padding-bottom: 10px">
+    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "PARENT_FORUM", Casing.FirstUpper]):
+    <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@Html.Raw(Model.ForumTitle)</a>
+</span>
 @if (!CurrentUser.IsAnonymous)
 {
     <span>&nbsp;&bull;&nbsp;</span>
@@ -71,8 +70,10 @@
     )
 }
 <p>&nbsp;</p>
-<h3>Subiect: @Model.TopicTitle</h3>
-<span class="Caption">@Model.PostCount mesaj@(Model.PostCount == 1 ? "" : "e"), @Model.ViewCount vizualiz@(Model.ViewCount == 1 ? "are" : "ări").</span>
+<h3>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "TOPIC", Casing.FirstUpper]): @Html.Raw(Model.TopicTitle)</h3>
+<span class="Caption">
+    @Html.Raw($"{Model.PostCount} {(Model.PostCount != 1 ? Model.LanguageProvider.BasicText[Lang, "POSTS"] : Model.LanguageProvider.BasicText[Lang, "POST"])}, {Model.ViewCount} {(Model.ViewCount != 1 ? Model.LanguageProvider.BasicText[Lang, "VIEWS"] : Model.LanguageProvider.BasicText[Lang, "VIEW"])}")
+</span>
 
 @await Html.PartialAsync("_RulesPartial", new _RulesPartialModel
 {
@@ -131,7 +132,7 @@
             BbcodeUid = p.BbcodeUid,
             Unread = reachedAnUnreadPost || (reachedAnUnreadPost = await Model.IsPostUnread(p.ForumId, p.TopicId, p.PostId)),
             AuthorHasAvatar = !string.IsNullOrWhiteSpace(ju?.UserAvatar),
-            AuthorRank = ju == null ? null : (jr?.RankTitle ?? "Membru înregistrat"),
+            AuthorRank = ju == null ? null : (jr?.RankTitle ?? Model.LanguageProvider.BasicText[Lang, "REGISTERED_MEMBER", Casing.FirstUpper]),
             LastEditTime = p.PostEditTime,
             LastEditUser = lastEditUsername,
             LastEditReason = p.PostEditReason,
@@ -168,7 +169,7 @@
             IsTopicLocked = Model.IsLocked,
             ShowFooter = !(CurrentUser.Foes?.Contains(p.PosterId) ?? false),
             ShowEditHistory = (index < Model.Posts.Count - 1 && post.LastEditTime > Model.Posts[index + 1].PostTime) || (post.EditCount > 0 && post.LastEditUser != post.AuthorName),
-            Language = Lang            
+            Language = Lang
         }, ViewData)
 
         index++;
@@ -181,7 +182,11 @@
     if (!IsMod && useModActions)
     {
         <form id="moderatorForm" method="post" asp-page-handler="DeleteMyMessage" style="display:none">
-            @Html.DropDownList("PostAction", _utils.EnumToDropDownList<ModeratorPostActions>(Model.PostAction, Model.MapModeratorPostActions), new { onchange = "vt.showPostExtraInput(this)", id = "PostAction", style = "display:none" })
+            @Html.DropDownList(
+                "PostAction",
+                _utils.EnumToDropDownList<ModeratorPostActions>(selectedItem: Model.PostAction, textTransform: item => Model.LanguageProvider.Enums[Lang, item], defaultText: Model.LanguageProvider.BasicText[Lang, "SELECT_AN_OPTION"]),
+                new { onchange = "vt.showPostExtraInput(this)", id = "PostAction", style = "display:none" }
+            )
             <input asp-for="ForumId" type="hidden" />
             <input asp-for="TopicId" type="hidden" />
             <input asp-for="PageNum" type="hidden" />
@@ -197,18 +202,18 @@
 
         @if (Model.IsLocked)
         {
-            <span>&#x1F512;Subiect închis</span>
+            <span>&#x1F512;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CLOSED_TOPIC", Casing.FirstUpper])</span>
         }
         else
         {
-            <span>&#x1F4DD;&nbsp;Scrie un mesaj nou</span>
+            <span>&#x1F4DD;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "WRITE_NEW_POST", Casing.FirstUpper])</span>
         }
     </button>
 }
 else if (!IsAnonymous)
 {
     <p></p>
-    <button type="button" disabled class="MyButton">&#x1F512; Subiect închis</button>
+    <button type="button" disabled class="MyButton">&#x1F512;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CLOSED_TOPIC", Casing.FirstUpper])</button>
 }
 <p></p>
 @await Html.PartialAsync(
@@ -228,16 +233,19 @@ else if (!IsAnonymous)
 
 @*shortcuts*@
 <div style="clear:both; margin: 10px 0px 10px 0px">
-    <a href="/" class="nowrap">Prima pagină</a>
+    <a href="/" class="nowrap">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "HOME", Casing.FirstUpper])</a>
     <span class="bullet">&nbsp;&bull;&nbsp;</span>
     <div class="newline"></div>
     @if (Model.ForumId != null)
     {
-        <span>Forum părinte: <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(@Model.ForumTitle)</a></span>
+        <span>
+            @Html.Raw(Model.LanguageProvider.BasicText[Lang, "PARENT_FORUM", Casing.FirstUpper]):
+            <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@Html.Raw(@Model.ForumTitle)</a>
+        </span>
         <span class="bullet">&nbsp;&bull;&nbsp;</span>
         <div class="newline"></div>
     }
-    <span onclick="showForumTree(this)" class="SpanLikeLink nowrap">Alege destinația</span>
+    <span onclick="showForumTree(this)" class="SpanLikeLink nowrap">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CHOOSE_DESTINATION", Casing.FirstUpper])</span>
 </div>
 
 <div id="forumTree" style="display:none">
@@ -255,7 +263,7 @@ else if (!IsAnonymous)
     <p></p>
     <form action="/ViewForum">
         <input type="hidden" name="ForumId" id="ForumIdInput" />
-        <input type="submit" value="Du-te" class="MyButton" />
+        <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "GO", Casing.FirstUpper])" class="MyButton" />
     </form>
 </div>
 
@@ -263,17 +271,19 @@ else if (!IsAnonymous)
 @if (IsMod)
 {
     <form method="post" asp-page-handler="TopicModerator" style="padding-top:5px">
-        <span>Moderează subiectul: </span>
-        @Html.DropDownList("TopicAction", _utils.EnumToDropDownList<ModeratorTopicActions>(Model.TopicAction, Model.MapModeratorTopicActions), new { onchange = "vt.showTopicExtraInput(this)", id = "TopicAction", style = "max-width:70%; height: 30px; padding-top: 0px" })
+        @Html.Raw(Model.LanguageProvider.Moderator[Lang, "MODERATE_TOPIC"]):
+        @Html.DropDownList(
+            "TopicAction",
+            _utils.EnumToDropDownList<ModeratorTopicActions>(selectedItem: Model.TopicAction, textTransform: item => Model.LanguageProvider.Enums[Lang, item], defaultText: Model.LanguageProvider.BasicText[Lang, "SELECT_AN_OPTION"]),
+            new { onchange = "vt.showTopicExtraInput(this)", id = "TopicAction", style = "max-width:70%; height: 30px; padding-top: 0px" }
+        )
         <div id="extraInputTopic" style="display:@(Model.ShowTopic ? "block" : "none")">
             <br />
-            <input type="text" asp-for="DestinationForumId" placeholder="ID forum destinație" /><br />
-            <a href="javascript:$('#modConfirmation').submit();">
-                Alege id-ul forumului de destinație
-            </a>
+            <input type="text" asp-for="DestinationForumId" placeholder="@Html.Raw(Model.LanguageProvider.Moderator[Lang, "DESTINATION_FORUM_ID"])" /><br />
+            <a href="javascript:$('#modConfirmation').submit();">@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CHOOSE_DESTINATION_FORUM_ID"])</a>
             <span asp-validation-for="DestinationForumId" class="validation"></span>
         </div>
-        <input type="submit" value="Trimite" onclick="return vt.confirmAction('#TopicAction');" class="MyButton" style="height:30px" />
+        <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT", Casing.FirstUpper])" onclick="return vt.confirmAction('#TopicAction');" class="MyButton" style="height:30px" />
         <input asp-for="ForumId" type="hidden" />
         <input asp-for="TopicId" type="hidden" />
         <input asp-for="PageNum" type="hidden" />
@@ -281,27 +291,27 @@ else if (!IsAnonymous)
     </form>
 
     <form id="moderatorForm" method="post" asp-page-handler="PostModerator" style="padding-top:5px">
-        <span>Moderează mesajele selectate: </span>
-        @Html.DropDownList("PostAction", _utils.EnumToDropDownList<ModeratorPostActions>(Model.PostAction, Model.MapModeratorPostActions), new { onchange = "vt.showPostExtraInput(this)", id = "PostAction", style = "max-width:70%; height: 30px; padding-top: 0px" })
+        @Html.Raw(Model.LanguageProvider.Moderator[Lang, "MODERATE_SELECTED_POSTS", Casing.FirstUpper])
+        @Html.DropDownList(
+            "PostAction",
+            _utils.EnumToDropDownList<ModeratorPostActions>(selectedItem: Model.PostAction, textTransform: item => Model.LanguageProvider.Enums[Lang, item], defaultText: Model.LanguageProvider.BasicText[Lang, "SELECT_AN_OPTION"]),
+            new { onchange = "vt.showPostExtraInput(this)", id = "PostAction", style = "max-width:70%; height: 30px; padding-top: 0px" }
+        )
         <div id="extraInputPostForum" style="display:@(Model.ShowPostForum ? "block" : "none")">
             <br />
-            <input type="text" asp-for="DestinationForumId" placeholder="ID forum destinație" /><br />
-            <a href="javascript:$('#modConfirmation').submit();">
-                Alege id-ul forumului de destinație
-            </a>
+            <input type="text" asp-for="DestinationForumId" placeholder="@Html.Raw(Model.LanguageProvider.Moderator[Lang, "DESTINATION_FORUM_ID"])" /><br />
+            <a href="javascript:$('#modConfirmation').submit();">@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CHOOSE_DESTINATION_FORUM_ID"])</a>
             <span asp-validation-for="PostIdsForModerator" class="validation"></span>
             <span asp-validation-for="DestinationForumId" class="validation"></span>
         </div>
         <div id="extraInputPostTopic" style="display:@(Model.ShowPostTopic ? "block" : "none")">
             <br />
-            <input type="text" asp-for="DestinationTopicId" placeholder="ID subiect destinație" /><br />
-            <a href="javascript:$('#modConfirmation').submit();">
-                Alege id-ul subiectului de destinație
-            </a>
+            <input type="text" asp-for="DestinationTopicId" placeholder="@Html.Raw(Model.LanguageProvider.Moderator[Lang, "DESTINATION_TOPIC_ID"])" /><br />
+            <a href="javascript:$('#modConfirmation').submit();">@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CHOOSE_DESTINATION_TOPIC_ID"])</a>
             <span asp-validation-for="PostIdsForModerator" class="validation"></span>
             <span asp-validation-for="DestinationTopicId" class="validation"></span>
         </div>
-        <input type="submit" value="Trimite" onclick="return vt.confirmAction('#PostAction');" class="MyButton" style="height:30px" />
+        <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT", Casing.FirstUpper])" onclick="return vt.confirmAction('#PostAction');" class="MyButton" style="height:30px" />
         <br />
         <input asp-for="ForumId" type="hidden" />
         <input asp-for="TopicId" type="hidden" />
@@ -320,37 +330,36 @@ else if (!IsAnonymous)
         <input type="hidden" name="handler" value="ModeratorConfirmation" />
         @Html.AntiForgeryToken()
     </form>
-    @if (!string.IsNullOrWhiteSpace(Model.ModeratorActionResult))
-    {
-        <br />
-        @Html.Raw(Model.ModeratorActionResult)
-    }
 
     <div class="MiddleBox" id="postInfo" style="display:none; padding: 10px; overflow-y: scroll">
-        <h4 style="float:left">Informații mesaj</h4>
-        <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('postInfo')">Închide [X]</div>
+        <h4 style="float:left">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "INFORMATION"])</h4>
+        <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('postInfo')">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CLOSE_BUTTON"])</div>
         <p>&nbsp;</p>
         <p>&nbsp;</p>
         <div id="postInfoContent"></div>
     </div>
 }
 
+@if (!string.IsNullOrWhiteSpace(Model.ModeratorActionResult))
+{
+    <br />
+    @Html.Raw(Model.ModeratorActionResult)
+}
+
 @*message reporting*@
 @if (!IsAnonymous)
 {
     <form asp-page-handler="ReportMessage" method="post" class="MiddleBox" id="report" style="display:none; padding: 10px; overflow-y: scroll">
-        <h4 style="float:left">Raportează mesaj</h4>
-        <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('report')">Închide [X]</div>
+        <h4 style="float:left">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DO_REPORT"])</h4>
+        <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('report')">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CLOSE_BUTTON"])</div>
         <p>&nbsp;</p>
         <p>&nbsp;</p>
         <div>
             <div class="FlexCenter">
-                <div style="font-weight:bold; text-align: right">
-                    Motiv
-                </div>
+                <div style="font-weight:bold; text-align: right">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "REASON", Casing.FirstUpper])</div>
                 <div class="FlexRight PostInputWidth">
                     @{
-                        var reasons = new List<SelectListItem> { new SelectListItem("Alege un motiv", "-1", true, true) };
+                        var reasons = new List<SelectListItem> { new SelectListItem(Model.LanguageProvider.BasicText[Lang, "CHOOSE_REASON"], "-1", true, true) };
                         reasons.AddRange((await Connection.QueryAsync("SELECT reason_description, reason_id FROM phpbb_reports_reasons ORDER BY reason_order")).Select(x => new SelectListItem(x.reason_description.ToString(), x.reason_id.ToString())));
                     }
                     @Html.DropDownList("reportReasonId", reasons, new { id = "reportReason", style = "width: 100%" })
@@ -358,9 +367,7 @@ else if (!IsAnonymous)
             </div>
             <p></p>
             <div class="FlexCenter">
-                <div style="font-weight:bold; text-align: right">
-                    Detalii suplimentare
-                </div>
+                <div style="font-weight:bold; text-align: right">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "ADDITIONAL_DETAILS"])</div>
                 <div class="FlexRight PostInputWidth">
                     <textarea name="ReportDetails" rows="4" cols="100" id="reportDetails" style="width:100%"></textarea>
                 </div>
@@ -372,36 +379,31 @@ else if (!IsAnonymous)
         <input type="hidden" asp-for="PageNum" />
         <input type="hidden" asp-for="PostId" />
         <input type="hidden" name="ReportId" id="reportId" />
-        <input type="submit" onclick="return vt.validateReportForm();" value="Trimite" class="MyButton" />&nbsp;<span class="validation" id="reportValidation" style="display:none"></span>
+        <input type="submit" onclick="return vt.validateReportForm();" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT", Casing.FirstUpper])" class="MyButton" />
+        <span class="validation" id="reportValidation" style="display:none"></span>
         @Html.AntiForgeryToken()
     </form>
 
     <div id="reportViewer" class="MiddleBox" style="display:none; padding: 10px; overflow-y: scroll">
-        <h4 style="float:left">Raport</h4>
-        <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('reportViewer')">Închide [X]</div>
+        <h4 style="float:left">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "REPORT", Casing.FirstUpper])</h4>
+        <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('reportViewer')">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CLOSE_BUTTON"])</div>
         <p>&nbsp;</p>
         <p>&nbsp;</p>
         <div class="FlexCenter">
-            <div style="font-weight:bold; text-align: right">
-                Motiv
-            </div>
+            <div style="font-weight:bold; text-align: right">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "REPORT", Casing.FirstUpper])</div>
             <div class="FlexRight PostInputWidth">
                 <span id="reportViewerReportReasonTitle"></span> &nbsp;(<span id="reportViewerReportReasonDescription"></span>)
             </div>
         </div>
         <p></p>
         <div class="FlexCenter">
-            <div style="font-weight:bold; text-align: right">
-                Raportor
-            </div>
+            <div style="font-weight:bold; text-align: right">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "REPORTING_USER"])</div>
             <div class="FlexRight PostInputWidth" id="reportViewerReporter">
             </div>
         </div>
         <p></p>
         <div class="FlexCenter">
-            <div style="font-weight:bold; text-align: right">
-                Detalii suplimentare
-            </div>
+            <div style="font-weight:bold; text-align: right">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "ADDITIONAL_DETAILS"])</div>
             <div class="FlexRight PostInputWidth" id="reportViewerReportDetails">
             </div>
         </div>
@@ -414,9 +416,9 @@ else if (!IsAnonymous)
                 <input type="hidden" asp-for="PostId" />
                 <input type="hidden" name="reportId" id="reportViewerReportId" />
                 <br />
-                @Html.CheckBox("redirectToEdit", new { id = "reportViewerEditMessage" }) &nbsp; Modifică mesajul<br />
-                @Html.CheckBox("deletePost", new { id = "reportViewerDeleteMessage" }) &nbsp; Șterge mesajul<br /><br />
-                <input type="submit" value="Închide raport" onclick="vt.confirmDeleteReportedPost()" class="MyButton" />
+                @Html.CheckBox("redirectToEdit", new { id = "reportViewerEditMessage" }) &nbsp; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "EDIT_POST"])<br />
+                @Html.CheckBox("deletePost", new { id = "reportViewerDeleteMessage" }) &nbsp; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_POST"])<br /><br />
+                <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "REPORT"])" onclick="vt.confirmDeleteReportedPost()" class="MyButton" />
                 @Html.AntiForgeryToken()
             </form>
         }
