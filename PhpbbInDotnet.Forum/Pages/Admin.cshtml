@@ -8,9 +8,10 @@
     Layout = "~/Pages/_Layout.cshtml";
     var user = await Model.GetCurrentUserAsync();
     var dateFormat = user?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+    var lang = await Model.GetLanguage();
 }
 
-<h3>Panoul administratorului</h3>
+<h3>@Html.Raw(Model.LanguageProvider.Admin[lang, "ADMIN_PANEL"])</h3>
 <environment include="Development">
     <script src="~/lib/Sortable.js"></script>
     <script src="~/js/tabbedPage.js"></script>
@@ -20,10 +21,31 @@
 <environment exclude="Development">
     <link rel="stylesheet" href="~/css/admin.min.css" />
 </environment>
+
+<script>
+    function expandSection(sectionId, charHolderId) {
+        showElement(
+            sectionId,
+            () => {
+                $('#' + charHolderId).html('&#x1F53D;');
+            },
+            () => {
+                $('#' + charHolderId).html('&#x1F53C;');
+            }
+        )
+    }
+</script>
+
 <div class="tab">
-    <button class="@(Model.Category == AdminCategories.Users ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Users')">Administrare utilizatori</button>
-    <button class="@(Model.Category == AdminCategories.Forums ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Forums')">Administrare forumuri</button>
-    <button class="@(Model.Category == AdminCategories.WritingTools ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Writing')">Unelte scriere</button>
+    <button class="@(Model.Category == AdminCategories.Users ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Users')">
+        @Html.Raw(Model.LanguageProvider.Admin[lang, "ADMIN_USERS"])
+    </button>
+    <button class="@(Model.Category == AdminCategories.Forums ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Forums')">
+        @Html.Raw(Model.LanguageProvider.Admin[lang, "ADMIN_FORUMS"])
+    </button>
+    <button class="@(Model.Category == AdminCategories.WritingTools ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Writing')">
+        @Html.Raw(Model.LanguageProvider.Admin[lang, "WRITING_TOOLS"])
+    </button>
 </div>
 
 <span class="@Model.MessageClass">@Html.Raw(Model.Message)</span>
@@ -45,22 +67,12 @@
 </div>
 
 <div id="Writing" class="tabcontent" style="@(Model.Category == AdminCategories.WritingTools ? "display:inherit" : "display:none")">
-    <center>
-        <img src="~/images/loading.gif" width="50" height="50" alt="loading..." />
-    </center>
+    @await Html.PartialAsync(
+        "_AdminWritingPartial",
+        new _AdminWritingPartialModel { DateFormat = dateFormat },
+        ViewData
+    )
 </div>
-
-<script type="text/javascript" async>
-    $.ajax({
-        type: "GET",
-        url: "/Admin?handler=Writing",
-        success: function (data) {
-            $("#Writing").html(data);
-        }, error: function (data) {
-            $("#Writing").html(data);
-        }
-    });
-</script>
 
 <script type="text/javascript">
     var coll = document.getElementsByClassName("collapsible");

@@ -1,4 +1,12 @@
 ﻿{
+  //page
+  "ADMIN_PANEL": "Panoul administratorului",
+  "ADMIN_USERS": "Administrare utilizatori",
+  "ADMIN_FORUMS": "Administrare forumuri",
+  "WRITING_TOOLS": "Unelte scriere",
+
+
+  //writing
   "BANNED_WORDS_UPDATED_SUCCESSFULLY": "Cuvintele au fost actualizate cu succes!",
   "SOME_ORPHANED_FILES_DELETED_FORMAT": "Fișierele {0} au fost șterse cu succes, însă fișierele {1} nu au fost șterse.",
   "NO_ORPHANED_FILES_DELETED": "Nici un fișier nu a fost șters de pe server.",

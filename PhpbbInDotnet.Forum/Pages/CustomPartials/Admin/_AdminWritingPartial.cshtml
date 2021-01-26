@@ -1,0 +1,244 @@
+﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials.Admin._AdminWritingPartialModel
+
+
+@using PhpbbInDotnet.Utilities
+@using PhpbbInDotnet.Services
+
+@inject WritingToolsService _writingService
+@inject CommonUtils _utils
+
+<style>
+    .writingTable {
+        border: none;
+        padding: 5px;
+        width: 80%
+    }
+
+        .writingTable td {
+            padding-bottom: 10px;
+        }
+
+        .writingTable tr {
+            margin-bottom: 10px
+        }
+
+
+    .FlexCaption {
+        font-weight: bold;
+        text-align: left !important;
+        margin-bottom: unset;
+    }
+
+</style>
+
+<h4 onclick="expandSection('bannedWordsSection', 'bannedWordsChar')" style="cursor:pointer" id="bannedWordsTitle">
+    Cuvinte cenzurate
+    <span id="bannedWordsChar">&#x1F53D;</span>
+</h4>
+@{
+    var words = await _writingService.GetBannedWordsAsync();
+}
+<div id="bannedWordsSection" style="display:none">
+    <form method="post" asp-page-handler="BanWords">
+        <table id="bannedWords" class="writingTable">
+            <tr>
+                <th style="width:45%">Cuvânt</th>
+                <th style="width:45%">Înlocuitor</th>
+                <th style="width:10%">Șterge?</th>
+            </tr>
+
+            @for (var i = 0; i < words.Count; i++)
+            {
+                <tr>
+                    <td>
+                        @Html.Raw(words[i].Word)
+                        <input type="hidden" name="words[@i].Word" value="@words[i].Word" />
+                        <input type="hidden" name="words[@i].WordId" value="@words[i].WordId" />
+                    </td>
+                    <td>
+                        <input type="text" name="words[@i].Replacement" value="@words[i].Replacement" />
+                    </td>
+                    <td>
+                        <input type="checkbox" name="toRemove" value="@i" />
+                    </td>
+                </tr>
+            }
+
+        </table>
+        <input type="button" onclick="addBannedWord()" value="Adaugă un cuvânt nou" class="MyButton" /> &nbsp; <input type="submit" value="Salvează modificările" class="MyButton" />
+    </form>
+    <div style="width:100%; text-align:right; font-size:1.5em">
+        <a href="#bannedWordsTitle">&#x23EB;</a>
+    </div>
+</div>
+<hr class="BoxSeparator" />
+<h4 onclick="expandSection('orphanFilesSection', 'orphanFilesChar')" style="cursor:pointer" id="orphanFilesTitle">
+    Fișiere orfane
+    <span id="orphanFilesChar">&#x1F53D;</span>
+</h4>
+@{
+    var files = await _writingService.GetOrphanedFiles();
+}
+<div id="orphanFilesSection" style="display:none">
+    <form method="post" asp-page-handler="OrphanedFiles" id="orphanedFilesForm">
+        <input name="action" id="action" type="hidden" />
+    </form>
+    <h5>
+        <b>Fișiere pe server fără corespondență într-un mesaj (@files.Count fișiere, în total @_utils.ReadableFileSize(files.Sum(f => f.Filesize)))</b>
+        <br /><i>Click pe titlul coloanei pentru sortare.</i>
+        <br /><a href="javascript:$('#orphanedFilesForm').submit()">Șterge aceste fișiere</a>
+    </h5>
+
+
+    <table class="writingTable">
+        <tr>
+            <th onclick="sort(this)" style="cursor:pointer">Nume fișier</th>
+            <th onclick="sort(this)" style="cursor:pointer">Autor</th>
+            <th onclick="sort(this)" style="cursor:pointer">Ultima dată modificat</th>
+            <th onclick="sort(this)" style="cursor:pointer">Dimensiune</th>
+        </tr>
+
+        @foreach (var f in files)
+        {
+            <tr>
+                <td>@Html.Raw(f.RealFilename)</td>
+                <td>@Html.Raw(f.Username)</td>
+                <td>
+                    <script>writeDate('@f.Filetime.ToUtcTime().ToString("o")', '@Model.DateFormat')</script>
+                </td>
+                <td>@_utils.ReadableFileSize(f.Filesize)</td>
+            </tr>
+        }
+    </table>
+    <div style="width:100%; text-align:right; font-size:1.5em">
+        <a href="#orphanFilesTitle">&#x23EB;</a>
+    </div>
+</div>
+<hr class="BoxSeparator" />
+<h4 onclick="expandSection('customBBCodesSection', 'customBBCodesChar')" style="cursor:pointer" id="customBBCodesTitle">
+    Coduri BB personalizate
+    <span id="customBBCodesChar">&#x1F53D;</span>
+</h4>
+@{
+    var codes = await _writingService.GetCustomBBCodes();
+}
+<div id="customBBCodesSection" style="display:none">
+    <span class="Caption">
+        <b>Ghid pentru codul HTML</b><br />
+        Folosiți <b>${content}</b> pentru a accesa conținutul din interiorul tag-ului ([b]...conținut...[/b])<br />
+        Folosiți <b>${NUME}</b> pentru a accesa un atribut numit 'NUME' ([size=...atribut...]...conținut...[/size])<br />
+        Exemplu: <span style="font-family:'Ubuntu Mono'">&lt;a href="${LINK}"&gt;${content}&lt;/a&gt;</span> pentru tag-ul "url" ([url=LINK]content[/url]).
+    </span>
+    <hr class="SubtypeSeparator" />
+    <form method="post" asp-page-handler="BBCodes" id="bbCodes">
+
+        @for (var i = 0; i < codes.Count; i++)
+        {
+            <div class="FlexCenter">
+                <div class="FlexCaption">
+                    @Html.Raw(codes[i].BbcodeTag)
+                    <input type="hidden" name="codes[@i].BbcodeTag" value="@codes[i].BbcodeTag" />
+                    <input type="hidden" name="codes[@i].BbcodeId" value="@codes[i].BbcodeId" />
+                    <div style="font-weight:normal">
+                        Șterge?
+                        <input type="checkbox" name="toRemove" value="@i" />
+                    </div>
+                </div>
+
+                <div class="FlexRight PostInputWidth">
+                    <div class="FlexCaption">Cod HTML</div>
+                    <textarea name="codes[@i].BbcodeTpl" rows="3" class="InputBox" style="font-family:'Ubuntu Mono'">@codes[i].BbcodeTpl</textarea><br />
+                    <div class="FlexCaption" style="padding-top:70px">Explicație</div>
+                    <textarea name="codes[@i].BbcodeHelpline" rows="3" class="InputBox">@codes[i].BbcodeHelpline</textarea>
+                </div>
+            </div>
+            @if (i < codes.Count - 1)
+            {
+                <hr class="SubtypeSeparator" />
+            }
+        }
+        <p></p>
+        <div id="newBBCodes"></div>
+        <input type="button" onclick="addBBCode()" value="Adaugă un cod nou" class="MyButton" /> &nbsp; 
+        <input type="submit" value="Salvează modificările" class="MyButton" />
+    </form>
+
+    <div style="width:100%; text-align:right; font-size:1.5em">
+        <a href="#customBBCodesTitle">&#x23EB;</a>
+    </div>
+</div>
+
+
+<script type="text/javascript">
+    function sort(elem) {
+        var table = $(elem).parents('table').eq(0);
+        var rows = table.find('tr:gt(0)').toArray().sort(comparer($(elem).index()));
+        elem.asc = !elem.asc;
+        if (!elem.asc) {
+            rows = rows.reverse();
+        }
+        for (var i = 0; i < rows.length; i++) {
+            table.append(rows[i]);
+        }
+    }
+
+    function comparer(index) {
+        return function (a, b) {
+            var valA = getCellValue(a, index), valB = getCellValue(b, index);
+            var asDates = Date.parse(valA) - Date.parse(valB);
+            console.log(Date.parse(valA));
+            var asNumbers = parseInt(valA) - parseInt(valB);
+            return asDates ? asDates : (asNumbers ? asNumbers : valA.toString().localeCompare(valB));
+        }
+    }
+
+    function getCellValue(row, index) {
+        return $(row).children('td').eq(index).text();
+    }
+
+    var wordIndex = @words.Count;
+    var codeIndex = @codes.Count;
+
+    function addBannedWord() {
+        $("#bannedWords > tbody:last-child").append(
+            "<tr style='margin-bottom: 10px'>" +
+                "<td>" +
+                    "<input type='text' name='words[" + wordIndex + "].Word' />" +
+                "</td>" +
+                "<td>" +
+                    "<input type='text' name='words[" + wordIndex + "].Replacement' />" +
+                "</td>" +
+                "<td>" +
+                    "<a href=\"#!\" onclick=\"cancelAddBannedWord(this)\">Anulează</a>" +
+                "</td>" +
+            "</tr>"
+        );
+        index++;
+    }
+
+    function cancelAddBannedWord(elem) {
+        $(elem).parent().parent().remove();
+        wordIndex--;
+    }
+
+    function addBBCode() {
+        $("#newBBCodes").append(
+            "<div>" +
+                "<hr class='SubtypeSeparator' />" + 
+                "<b>Nume tag:</b><br /><input type='text' name='codes[" + codeIndex + "].BbcodeTag' />" +
+                "<p style='clear:both'></p>" + 
+                "<b>Cod HTML:</b><br /><textarea name='codes[" + codeIndex + "].BbcodeTpl' class='InputBox' ></textarea>" +
+                "<p style='clear:both'></p>" + 
+                "<b>Explicație:</b><br /><textarea name='codes[" + codeIndex + "].BbcodeHelpline' class='InputBox' ></textarea>" +
+                "<p style='clear:both'></p>" + 
+                "<a href=\"#!\" onclick=\"cancelAddBBCode(this)\">Anulează</a>" +
+            "</div>"
+        );
+        codeIndex++;
+    }
+
+    function cancelAddBBCode(elem) {
+        $(elem).parent().remove();
+        codeIndex--;
+    }
+</script>

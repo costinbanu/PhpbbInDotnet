@@ -1,4 +1,8 @@
-﻿.collapsible {
+﻿html {
+    scroll-behavior: smooth;
+}
+
+.collapsible {
     background-color: #777;
     color: white;
     cursor: pointer;

@@ -161,13 +161,6 @@ namespace PhpbbInDotnet.Forum.Pages
 
         #region Admin writing
 
-        public async Task<IActionResult> OnGetWriting()
-            => await WithAdmin(async () =>
-            {
-                var result = await Utils.RenderRazorViewToString("_AdminWriting", new _AdminWritingModel((await GetCurrentUserAsync()).UserId), PageContext, HttpContext);
-                return Content(result);
-            });
-
         public async Task<IActionResult> OnPostBanWords(List<PhpbbWords> words, List<int> toRemove)
             => await WithAdmin(async () =>
             {
@@ -183,6 +176,16 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 Category = AdminCategories.WritingTools;
 
+                return Page();
+            });
+
+        public async Task<IActionResult> OnPostBBCodes(List<PhpbbBbcodes> codes, List<int> toRemove)
+            => await WithAdmin(async () =>
+            {
+                codes.Clear();
+                toRemove.Clear();
+                //(Message, IsSuccess) = await _adminWritingService.ManageBannedWords(words, toRemove);
+                Category = AdminCategories.WritingTools;
                 return Page();
             });
 

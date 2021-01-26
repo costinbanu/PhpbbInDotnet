@@ -5,162 +5,196 @@
 @inject Services.AdminUserService _adminUserService
 @inject Database.ForumDbContext _context
 
-<h4>Utilizatori inactivi</h4>
+<h4 onclick="expandSection('inactiveUsersSection', 'inactiveUsersChar')" style="cursor:pointer" id="inactiveUsersTitle">
+    Utilizatori inactivi
+    <span id="inactiveUsersChar">&#x1F53D;</span>
+</h4>
+<div id="inactiveUsersSection" style="display:none">
+    <form method="post" id="userManagement" name="userManagement" asp-page-handler="UserManagement">
+        <input type="hidden" name="userAction" id="userAction" />
+        <input type="hidden" name="userId" id="userId" />
+    </form>
 
-<form method="post" id="userManagement" name="userManagement" asp-page-handler="UserManagement">
-    <input type="hidden" name="userAction" id="userAction" />
-    <input type="hidden" name="userId" id="userId" />
-</form>
+    @{
+        var inactive = await _adminUserService.GetInactiveUsers();
 
-@{
-    var inactive = await _adminUserService.GetInactiveUsers();
-    
-    @await Html.PartialAsync(
-        "_AdminUsersSummaryPartial",
-        new _AdminUsersSummaryPartialModel(
-            Model.DateFormat,
-            inactive
-        ),
-        ViewData
-    );
+        @await Html.PartialAsync(
+            "_AdminUsersSummaryPartial",
+            new _AdminUsersSummaryPartialModel(
+                Model.DateFormat,
+                inactive
+            ),
+            ViewData
+        );
 
-    if (inactive.Any(u => u.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed))
-    {
-        <p></p>
-        <script>
-            function selectAllUsers() {
-                var checkboxes = $('input[name=userIds]');
-                checkboxes.prop('checked', !checkboxes.prop('checked'));
-            }
-        </script>
-        <form method="post" id="batchAdminUsers" name="batchAdminUsers" asp-page-handler="BatchUserManagement">
-            <button type="button" onclick="selectAllUsers()" class="MyButton SpacedButton">Selectează toți utilizatorii inactivi</button>
-            <input type="submit" value="Șterge utilizatorii inactivi selectați" onclick="return confirm('Utilizatorii inactivi selectați vor fi șterși. Continui?');" class="MyButton SpacedButton" />
-        </form>
-    }
-}
-
-<p>&nbsp;</p>
-<h4>Caută utilizatori</h4>
-<form method="post" id="userSearch" asp-page-handler="UserSearch">
-    <table class="mainTable">
-        <tr>
-            <td style="padding:5px; font-weight:bold; text-align: right">
-                Nume utilizator
-            </td>
-            <td>
-                <input type="text" name="username" id="username" />
-            </td>
-        </tr>
-        <tr>
-            <td style="padding:5px; font-weight:bold; text-align: right">
-                E-mail
-            </td>
-            <td>
-                <input type="text" name="email" id="email" />
-            </td>
-        </tr>
-        <tr>
-            <td style="padding:5px; font-weight:bold; text-align: right">
-                Id
-            </td>
-            <td>
-                <input type="text" name="userid" id="userid" />
-            </td>
-        </tr>
-        <tr>
-            <td colspan="2" style="padding:5px; font-weight:bold; text-align: center">
-                <input type="submit" value="Caută" class="MyButton" />
-            </td>
-        </tr>
-    </table>
-</form>
-
-@if (Model.SearchResults.Any())
-{
-    @await Html.PartialAsync(
-        "_AdminUsersSummaryPartial",
-        new _AdminUsersSummaryPartialModel(
-            Model.DateFormat,
-            Model.SearchResults
-        ),
-        ViewData
-    );
-}
-
-<h4>Grupuri</h4>
-@{
-    var groups = await (
-        from g in _context.PhpbbGroups.AsNoTracking()
-        let role = _context.PhpbbAclGroups.AsNoTracking().FirstOrDefault(rg => rg.GroupId == g.GroupId && rg.ForumId == 0)
-        select new PhpbbInDotnet.Objects.UpsertGroupDto
+        if (inactive.Any(u => u.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed))
         {
-            Id = g.GroupId,
-            Name = g.GroupName,
-            Desc = g.GroupDesc,
-            Rank = g.GroupRank,
-            Color = $"#{g.GroupColour}",
-            EditTime = g.GroupEditTime,
-            UploadLimit = g.GroupUserUploadSize,
-            Role = role == null ? 0 : role.AuthRoleId
+            <p></p>
+            <script>
+                function selectAllUsers() {
+                    var checkboxes = $('input[name=userIds]');
+                    checkboxes.prop('checked', !checkboxes.prop('checked'));
+                }
+            </script>
+            <form method="post" id="batchAdminUsers" name="batchAdminUsers" asp-page-handler="BatchUserManagement">
+                <button type="button" onclick="selectAllUsers()" class="MyButton SpacedButton">Selectează toți utilizatorii inactivi</button>
+                <input type="submit" value="Șterge utilizatorii inactivi selectați" onclick="return confirm('Utilizatorii inactivi selectați vor fi șterși. Continui?');" class="MyButton SpacedButton" />
+            </form>
         }
-    ).ToListAsync();
-    var groupRanks = new List<SelectListItem> { new SelectListItem("Nici unul", "0", true) };
-    groupRanks.AddRange(_context.PhpbbRanks.AsNoTracking().Select(x => new SelectListItem(x.RankTitle, x.RankId.ToString())));
-    var roles = new List<SelectListItem> { new SelectListItem("Nici una", "0", true) };
-    roles.AddRange(_context.PhpbbAclRoles.AsNoTracking().Where(x => x.RoleType == "u_").Select(x => new SelectListItem(x.RoleName, x.RoleId.ToString())));
+    }
+    <div style="width:100%; text-align:right; font-size:1.5em">
+        <a href="#inactiveUsersTitle">&#x23EB;</a>
+    </div>
+</div>
+<hr class="BoxSeparator" />
+<h4 onclick="expandSection('searchUsersSection', 'searchUsersChar')" style="cursor:pointer" id="searchUsersTitle">
+    Caută utilizatori
+    <span id="searchUsersChar">&#x1F53D;</span>
+</h4>
+<div id="searchUsersSection" style="display:none">
+    <form method="post" id="userSearch" asp-page-handler="UserSearch">
+        <table class="mainTable">
+            <tr>
+                <td style="padding:5px; font-weight:bold; text-align: right">
+                    Nume utilizator
+                </td>
+                <td>
+                    <input type="text" name="username" id="username" />
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:5px; font-weight:bold; text-align: right">
+                    E-mail
+                </td>
+                <td>
+                    <input type="text" name="email" id="email" />
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:5px; font-weight:bold; text-align: right">
+                    Id
+                </td>
+                <td>
+                    <input type="text" name="userid" id="userid" />
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2" style="padding:5px; font-weight:bold; text-align: center">
+                    <input type="submit" value="Caută" class="MyButton" />
+                </td>
+            </tr>
+        </table>
+    </form>
 
-    foreach (var group in groups)
+    @if (Model.SearchResults.Any())
     {
-        <a href='javascript:populateGroup(@Json.Serialize(group))'>@Html.Raw(group.Name)</a>
+        @await Html.PartialAsync(
+            "_AdminUsersSummaryPartial",
+            new _AdminUsersSummaryPartialModel(
+                Model.DateFormat,
+                Model.SearchResults
+            ),
+            ViewData
+        );
+    }
+    <div style="width:100%; text-align:right; font-size:1.5em">
+        <a href="#searchUsersTitle">&#x23EB;</a>
+    </div>
+</div>
+<hr class="BoxSeparator" />
+<h4 onclick="expandSection('groupsSection', 'groupsChar')" style="cursor:pointer" id="groupsTitle">
+    Grupuri
+    <span id="groupsChar">&#x1F53D;</span>
+</h4>
+<div id="groupsSection" style="display:none">
+    @{
+        var groups = await (
+            from g in _context.PhpbbGroups.AsNoTracking()
+            let role = _context.PhpbbAclGroups.AsNoTracking().FirstOrDefault(rg => rg.GroupId == g.GroupId && rg.ForumId == 0)
+            select new PhpbbInDotnet.Objects.UpsertGroupDto
+            {
+                Id = g.GroupId,
+                Name = g.GroupName,
+                Desc = g.GroupDesc,
+                Rank = g.GroupRank,
+                Color = $"#{g.GroupColour}",
+                EditTime = g.GroupEditTime,
+                UploadLimit = g.GroupUserUploadSize,
+                Role = role == null ? 0 : role.AuthRoleId
+            }
+        ).ToListAsync();
+        var groupRanks = new List<SelectListItem> { new SelectListItem("Nici unul", "0", true) };
+        groupRanks.AddRange(_context.PhpbbRanks.AsNoTracking().Select(x => new SelectListItem(x.RankTitle, x.RankId.ToString())));
+        var roles = new List<SelectListItem> { new SelectListItem("Nici una", "0", true) };
+        roles.AddRange(_context.PhpbbAclRoles.AsNoTracking().Where(x => x.RoleType == "u_").Select(x => new SelectListItem(x.RoleName, x.RoleId.ToString())));
+
+        foreach (var group in groups)
+        {
+            <a href='javascript:populateGroup(@Json.Serialize(group))'>@Html.Raw(group.Name)</a>
+            <br />
+        }
+    }
+    <p>&nbsp;</p>
+    <a href="javascript:newGroup()">Adaugă un grup nou</a>
+    <div style="width:100%; text-align:right; font-size:1.5em">
+        <a href="#groupsTitle">&#x23EB;</a>
+    </div>
+</div>
+<hr class="BoxSeparator" />
+<h4 onclick="expandSection('ranksSection', 'ranksChar')" style="cursor:pointer" id="ranksTitle">
+    Ranguri
+    <span id="ranksChar">&#x1F53D;</span>
+</h4>
+<div id="ranksSection" style="display:none">
+    @foreach (var rank in await _context.PhpbbRanks.AsNoTracking().ToListAsync())
+    {
+        <a href="javascript:populateRank(@rank.RankId, '@rank.RankTitle')">@rank.RankTitle</a>
         <br />
     }
-}
-<p>&nbsp;</p>
-<a href="javascript:newGroup()">Adaugă un grup nou</a>
+    <p>&nbsp;</p>
+    <a href="javascript:newRank()">Adaugă un rang nou</a>
+    <div style="width:100%; text-align:right; font-size:1.5em">
+        <a href="#ranksTitle">&#x23EB;</a>
+    </div>
+</div>
+<hr class="BoxSeparator" />
+<h4 onclick="expandSection('bansSection', 'bansChar')" style="cursor:pointer" id="bansTitle">
+    Interziceri
+    <span id="bansChar">&#x1F53D;</span>
+</h4>
+<div id="bansSection" style="display:none">
+    @{
+        var banlist = await _context.PhpbbBanlist.AsNoTracking().ToListAsync();
 
-<h4>Ranguri</h4>
-@foreach (var rank in await _context.PhpbbRanks.AsNoTracking().ToListAsync())
-{
-    <a href="javascript:populateRank(@rank.RankId, '@rank.RankTitle')">@rank.RankTitle</a>
-    <br />
-}
-<p>&nbsp;</p>
-<a href="javascript:newRank()">Adaugă un rang nou</a>
-
-<h4>Interziceri</h4>
-@{
-    var banlist = await _context.PhpbbBanlist.AsNoTracking().ToListAsync();
-
-    <form method="post" asp-page-handler="BanUser">
-        <table id="bannedItems" class="writingTable">
-            <tr>
-                <th style="width:45%">IP</th>
-                <th style="width:45%">E-mail</th>
-                <th style="width:10%">Șterge?</th>
-            </tr>
-
-            @for (var i = 0; i < banlist.Count; i++)
-            {
+        <form method="post" asp-page-handler="BanUser">
+            <table id="bannedItems" class="writingTable">
                 <tr>
-                    <td>
-                        <input type="hidden" name="banlist[@i].BanId" value="@banlist[i].BanId" />
-                        <input type="text" name="banlist[@i].BanIp" value="@banlist[i].BanIp" />
-                    </td>
-                    <td>
-                        <input type="text" name="banlist[@i].BanEmail" value="@banlist[i].BanEmail" />
-                    </td>
-                    <td>
-                        <input type="checkbox" name="toRemove" value="@banlist[i].BanId" />
-                    </td>
+                    <th style="width:45%">IP</th>
+                    <th style="width:45%">E-mail</th>
+                    <th style="width:10%">Șterge?</th>
                 </tr>
-            }
 
-        </table>
-        <input type="button" onclick="addBannedItem()" value="Adaugă o interzicere nouă" class="MyButton" /> &nbsp;
-        <input type="submit" value="Salvează modificările" class="MyButton" />
-    </form>
-    <script type="text/javascript">
+                @for (var i = 0; i < banlist.Count; i++)
+                {
+                    <tr>
+                        <td>
+                            <input type="hidden" name="banlist[@i].BanId" value="@banlist[i].BanId" />
+                            <input type="text" name="banlist[@i].BanIp" value="@banlist[i].BanIp" />
+                        </td>
+                        <td>
+                            <input type="text" name="banlist[@i].BanEmail" value="@banlist[i].BanEmail" />
+                        </td>
+                        <td>
+                            <input type="checkbox" name="toRemove" value="@banlist[i].BanId" />
+                        </td>
+                    </tr>
+                }
+
+            </table>
+            <input type="button" onclick="addBannedItem()" value="Adaugă o interzicere nouă" class="MyButton" /> &nbsp;
+            <input type="submit" value="Salvează modificările" class="MyButton" />
+        </form>
+        <script type="text/javascript">
         var cur = @banlist.Count;
 
         function addBannedItem(email = '', ip = '') {
@@ -193,10 +227,12 @@
             $(elem).parent().parent().remove();
             cur--;
         }
-    </script>
-}
-
-
+        </script>
+    }
+    <div style="width:100%; text-align:right; font-size:1.5em">
+        <a href="#bansTitle">&#x23EB;</a>
+    </div>
+</div>
 <script type="text/javascript">
     function submitUserForm(userId, userName, action) {
         msg = "Am primit comanda '" + action + "' pentru utilizatorul '" + userName + "'. Sunteți sigur că doriți să continuați cu execuția acestei comenzi?";

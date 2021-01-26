@@ -28,17 +28,11 @@ namespace PhpbbInDotnet.Services
             _storageService = storageService;
         }
 
-        public async Task<IEnumerable<PhpbbWords>> GetBannedWordsAsync()
-        {
-            var connection = _context.Database.GetDbConnection();
-            return await connection.QueryAsync<PhpbbWords>("SELECT * FROM phpbb_words");
-        }
+        public async Task<List<PhpbbWords>> GetBannedWordsAsync()
+            => (await _context.Database.GetDbConnection().QueryAsync<PhpbbWords>("SELECT * FROM phpbb_words")).AsList();
 
-        public IEnumerable<PhpbbWords> GetBannedWords()
-        {
-            var connection = _context.Database.GetDbConnection();
-            return connection.Query<PhpbbWords>("SELECT * FROM phpbb_words");
-        }
+        public List<PhpbbWords> GetBannedWords()
+            => _context.Database.GetDbConnection().Query<PhpbbWords>("SELECT * FROM phpbb_words").AsList();
 
         public async Task<(string Message, bool? IsSuccess)> ManageBannedWords(List<PhpbbWords> words, List<int> indexesToRemove)
         {
@@ -90,10 +84,10 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<IEnumerable<AttachmentManagementDto>> GetOrphanedFiles()
+        public async Task<List<AttachmentManagementDto>> GetOrphanedFiles()
         {
             var connection = _context.Database.GetDbConnection();
-            return await connection.QueryAsync<AttachmentManagementDto>("SELECT a.*, u.username FROM phpbb_attachments a JOIN phpbb_users u on a.poster_id = u.user_id WHERE a.is_orphan = 1");
+            return (await connection.QueryAsync<AttachmentManagementDto>("SELECT a.*, u.username FROM phpbb_attachments a JOIN phpbb_users u on a.poster_id = u.user_id WHERE a.is_orphan = 1")).AsList();
         }
 
         public string GetCacheKey(int currentUserId)
@@ -128,6 +122,9 @@ namespace PhpbbInDotnet.Services
                 return (string.Format(LanguageProvider.Admin[lang, "ORPHANED_FILES_DELETED_FORMAT"], string.Join(",", Succeeded)), true);
             }
         }
+
+        public async Task<List<PhpbbBbcodes>> GetCustomBBCodes()
+            => (await _context.Database.GetDbConnection().QueryAsync<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes")).AsList();
 
         public async Task<string> PrepareTextForSaving(string text)
         {
