@@ -27,7 +27,7 @@ namespace PhpbbInDotnet.Forum.Pages
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme, 
-                await _userService.GetAnonymousClaimsPrincipalAsync(), 
+                await _userService.GetAnonymousClaimsPrincipal(), 
                 new AuthenticationProperties
                 {
                     AllowRefresh = true,

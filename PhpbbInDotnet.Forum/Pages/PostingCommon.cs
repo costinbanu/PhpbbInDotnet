@@ -167,7 +167,7 @@ namespace PhpbbInDotnet.Forum.Pages
             return post;
         }
 
-        private async Task<int?> UpsertPost(PhpbbPosts post, LoggedUser usr)
+        private async Task<int?> UpsertPost(PhpbbPosts post, AuthenticatedUser usr)
         {
             if ((PostTitle?.Trim()?.Length ?? 0) < 3)
             {

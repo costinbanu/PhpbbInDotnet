@@ -7,7 +7,7 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
 {
     public class _PollPartialModel : PageModel
     {
-        public LoggedUser CurrentUser { get; set; }
+        public AuthenticatedUser CurrentUser { get; set; }
 
         public PollDto Poll { get; set; }
 

@@ -12,12 +12,12 @@
     ViewData["Title"] = "User";
     Layout = "~/Pages/_Layout.cshtml";
     var viewingUser = await Model.GetCurrentUserAsync();
-    var pageUser = await _userService.DbUserToLoggedUserAsync(Model.CurrentUser);
+    var pageUser = await _userService.DbUserToAuthenticatedUser(Model.CurrentUser);
     var isSelf = viewingUser.UserId == Model.CurrentUser.UserId;
     var canEdit = await Model.CanEdit();
     var hasTabs = isSelf || await Model.IsCurrentUserAdminHere();
     var showFlexAvatar = !string.IsNullOrWhiteSpace(Model.CurrentUser.UserAvatar) && !canEdit;
-    var rankList = await _userService.GetRankListAsync();
+    var rankList = await _userService.GetRankList();
     var Lang = await Model.GetLanguage();
 }
 
@@ -420,7 +420,7 @@ else
                 ranks.Add(new SelectListItem(Model.LanguageProvider.BasicText[Lang, "NO_ASSIGNED_RANK"], "0", !ranks.Any(p => p.Selected)));
 
                 var groups = new List<SelectListItem>(
-                    (await _userService.GetGroupListAsync()).Select(
+                    (await _userService.GetGroupList()).Select(
                         g => new SelectListItem(g.GroupName, g.GroupId.ToString(), g.GroupId == Model.GroupId)
                     )
                 );

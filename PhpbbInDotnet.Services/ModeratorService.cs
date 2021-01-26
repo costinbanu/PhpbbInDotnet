@@ -12,19 +12,16 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
 {
-    public class ModeratorService : ServicesBase
+    public class ModeratorService : MultilingualServiceBase
     {
         private readonly ForumDbContext _context;
         private readonly PostService _postService;
-        private readonly CommonUtils _utils;
 
-
-        public ModeratorService(ForumDbContext context, PostService postService, CommonUtils utils, UserService userService, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
-            : base(userService, languageProvider, httpContextAccessor)
+        public ModeratorService(ForumDbContext context, PostService postService, CommonUtils utils, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
+            : base(utils, languageProvider, httpContextAccessor)
         {
             _context = context;
             _postService = postService;
-            _utils = utils;
         }
 
         #region Topic
@@ -48,7 +45,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = Utils.HandleError(ex);
                 return (string.Format(LanguageProvider.Errors[await GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
@@ -86,7 +83,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = Utils.HandleError(ex);
                 return (string.Format(LanguageProvider.Errors[await GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
@@ -108,7 +105,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = Utils.HandleError(ex);
                 return (string.Format(LanguageProvider.Errors[await GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
@@ -133,7 +130,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = Utils.HandleError(ex);
                 return (string.Format(LanguageProvider.Errors[await GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
@@ -186,7 +183,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = Utils.HandleError(ex);
                 return (string.Format(LanguageProvider.Errors[await GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
@@ -234,7 +231,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = Utils.HandleError(ex);
                 return (string.Format(LanguageProvider.Errors[await GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
@@ -264,7 +261,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = Utils.HandleError(ex);
                 return (string.Format(LanguageProvider.Errors[await GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }

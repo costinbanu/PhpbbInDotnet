@@ -36,7 +36,7 @@ namespace PhpbbInDotnet.Forum
         public bool IsBot { get; private set; }
 
         private readonly AnonymousSessionCounter _sessionCounter;
-        private LoggedUser _currentUser;
+        private AuthenticatedUser _currentUser;
         private string _language;
 
         public AuthenticatedPageModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
@@ -54,7 +54,7 @@ namespace PhpbbInDotnet.Forum
 
         #region User
 
-        public async Task<LoggedUser> GetCurrentUserAsync()
+        public async Task<AuthenticatedUser> GetCurrentUserAsync()
         {
             if (_currentUser != null)
             {
@@ -65,8 +65,8 @@ namespace PhpbbInDotnet.Forum
             var sessionTrackingTimeoutMinutes = Config.GetValue<int?>("UserActivityTrackingIntervalMinutes") ?? 60;
             if (!(user?.Identity?.IsAuthenticated ?? false))
             {
-                user = await UserService.GetAnonymousClaimsPrincipalAsync();
-                _currentUser = await UserService.ClaimsPrincipalToLoggedUserAsync(user);
+                user = await UserService.GetAnonymousClaimsPrincipal();
+                _currentUser = await UserService.ClaimsPrincipalToAuthenticatedUser(user);
                 await HttpContext.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme,
                     user,
@@ -80,7 +80,7 @@ namespace PhpbbInDotnet.Forum
             }
             else
             {
-                _currentUser = await UserService.ClaimsPrincipalToLoggedUserAsync(user);
+                _currentUser = await UserService.ClaimsPrincipalToAuthenticatedUser(user);
                 if (!_currentUser.IsAnonymous)
                 {
                     var key = $"UserMustLogIn_{_currentUser.UsernameClean}";
@@ -145,7 +145,7 @@ namespace PhpbbInDotnet.Forum
 
                 await HttpContext.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme,
-                    await UserService.DbUserToClaimsPrincipalAsync(dbUser),
+                    await UserService.DbUserToClaimsPrincipal(dbUser),
                     new AuthenticationProperties
                     {
                         AllowRefresh = true,
@@ -324,7 +324,7 @@ namespace PhpbbInDotnet.Forum
 
         #region Permission validation wrappers
 
-        protected async Task<IActionResult> WithRegisteredUser(Func<LoggedUser, Task<IActionResult>> toDo)
+        protected async Task<IActionResult> WithRegisteredUser(Func<AuthenticatedUser, Task<IActionResult>> toDo)
         {
             var user = await GetCurrentUserAsync();
             if (user.IsAnonymous)
@@ -384,7 +384,7 @@ namespace PhpbbInDotnet.Forum
 
                 if (restrictedAncestor != default)
                 {
-                    if (usr?.AllPermissions?.Contains(new LoggedUser.Permissions { ForumId = restrictedAncestor, AuthRoleId = Constants.ACCESS_TO_FORUM_DENIED_ROLE }) ?? false)
+                    if (usr?.AllPermissions?.Contains(new AuthenticatedUser.Permissions { ForumId = restrictedAncestor, AuthRoleId = Constants.ACCESS_TO_FORUM_DENIED_ROLE }) ?? false)
                     {
                         return RedirectToPage("Index");
                     }

@@ -500,8 +500,8 @@ namespace PhpbbInDotnet.Forum.Pages
             PostsPerDay = TotalPosts / DateTime.UtcNow.Subtract(cur.UserRegdate.ToUtcTime()).TotalDays;
             Email = cur.UserEmail;
             Birthday = cur.UserBirthday;
-            AclRole = await UserService.GetUserRole(await UserService.DbUserToLoggedUserAsync(cur));
-            var group = await UserService.GetUserGroupAsync(cur.UserId);
+            AclRole = await UserService.GetUserRole(await UserService.DbUserToAuthenticatedUser(cur));
+            var group = await UserService.GetUserGroup(cur.UserId);
             GroupId = group?.GroupId;
             UserRank = cur.UserRank == 0 ? group.GroupRank : cur.UserRank;
             AllowPM = cur.UserAllowPm.ToBool();

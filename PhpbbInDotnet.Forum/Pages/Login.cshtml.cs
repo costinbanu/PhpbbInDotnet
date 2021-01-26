@@ -85,7 +85,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnGet()
         {
-            if ((User?.Identity?.IsAuthenticated ?? false) && !((await _userService.ClaimsPrincipalToLoggedUserAsync(User))?.IsAnonymous ?? true))
+            if ((User?.Identity?.IsAuthenticated ?? false) && !((await _userService.ClaimsPrincipalToAuthenticatedUser(User))?.IsAnonymous ?? true))
             {
                 return RedirectToPage("Logout", new { returnUrl = ReturnUrl ?? "/" });
             }
@@ -95,7 +95,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnGetNewPassword()
         {
-            if ((User?.Identity?.IsAuthenticated ?? false) && !((await _userService.ClaimsPrincipalToLoggedUserAsync(User))?.IsAnonymous ?? true))
+            if ((User?.Identity?.IsAuthenticated ?? false) && !((await _userService.ClaimsPrincipalToAuthenticatedUser(User))?.IsAnonymous ?? true))
             {
                 return RedirectToPage("Logout", new { returnUrl = ReturnUrl ?? "/" });
             }
@@ -140,7 +140,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
-                await _userService.DbUserToClaimsPrincipalAsync(currentUser),
+                await _userService.DbUserToClaimsPrincipal(currentUser),
                 new AuthenticationProperties
                 {
                     AllowRefresh = true,

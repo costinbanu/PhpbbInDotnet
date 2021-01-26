@@ -8,7 +8,7 @@
 
 @{
     ViewData["Title"] = "Error";
-    var lang = _languageProvider.GetValidatedLanguage(await _userService.ClaimsPrincipalToLoggedUserAsync(User), Model.Request);
+    var lang = _languageProvider.GetValidatedLanguage(await _userService.ClaimsPrincipalToAuthenticatedUser(User), Model.Request);
 }
 
 <h3 class="text-danger">@Html.Raw(_languageProvider.Errors[lang, "AN_ERROR_OCCURRED", Casing.Title])</h3>

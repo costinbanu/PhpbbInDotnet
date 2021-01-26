@@ -9,7 +9,7 @@
 @inject Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor
 @inject Services.StatisticsService _statisticsService
 @{
-    var currentUser = await _userService.ClaimsPrincipalToLoggedUserAsync(User);
+    var currentUser = await _userService.ClaimsPrincipalToAuthenticatedUser(User);
     var css = currentUser?.Style;
     if (string.IsNullOrWhiteSpace(css))
     {

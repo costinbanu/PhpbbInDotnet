@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace PhpbbInDotnet.Objects
 {
-    public class LoggedUser
+    public class AuthenticatedUser
     {
         public int UserId { get; set; }
 

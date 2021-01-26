@@ -11,15 +11,18 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
+using PhpbbInDotnet.Languages;
+using Microsoft.AspNetCore.Http;
 
 namespace PhpbbInDotnet.Services
 {
-    public class WritingToolsService
+    public class WritingToolsService : MultilingualServiceBase
     {
         private readonly ForumDbContext _context;
         private readonly StorageService _storageService;
 
-        public WritingToolsService(ForumDbContext context, StorageService storageService)
+        public WritingToolsService(ForumDbContext context, StorageService storageService, CommonUtils utils, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
+            : base(utils, languageProvider, httpContextAccessor)
         {
             _context = context;
             _storageService = storageService;
@@ -39,6 +42,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> ManageBannedWords(List<PhpbbWords> words, List<int> indexesToRemove)
         {
+            var lang = await GetLanguage();
             try
             {
                 var newWords = from w2 in words
@@ -78,11 +82,11 @@ namespace PhpbbInDotnet.Services
 
                 await _context.SaveChangesAsync();
 
-                return ("Cuvintele au fost actualizate cu succes!", true);
+                return (LanguageProvider.Admin[lang, "BANNED_WORDS_UPDATED_SUCCESSFULLY"], true);
             }
             catch
             {
-                return ("A intervenit o eroare! Mai incearca!", false);
+                return (LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }
 
@@ -97,10 +101,11 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> DeleteOrphanedFiles()
         {
+            var lang = await GetLanguage();
             var files = await GetOrphanedFiles();
             if (!files.Any())
             {
-                return ($"Nici un fișier nu a fost șters de pe server.", true);
+                return (LanguageProvider.Admin[lang, "NO_ORPHANED_FILES_DELETED"], true);
             }
             
             var (Succeeded, Failed) = _storageService.BulkDeleteAttachments(files.Select(f => f.PhysicalFilename));
@@ -116,37 +121,11 @@ namespace PhpbbInDotnet.Services
 
             if (Failed?.Any() ?? false)
             {
-                return ($"Fișierele {string.Join(",", Succeeded)} au fost șterse cu succes, însă fișierele {string.Join(",", Failed)} nu au fost șterse.", false);
+                return (string.Format(LanguageProvider.Admin[lang, "SOME_ORPHANED_FILES_DELETED_FORMAT"], string.Join(",", Succeeded), string.Join(",", Failed)), false);
             }
             else
             {
-                return ($"Fișierele {string.Join(",", Succeeded)} au fost șterse cu succes.", true);
-            }
-        }
-
-        public async Task<(string Message, bool? IsSuccess)> DeleteDbOrphanedFiles(IEnumerable<int> dbFiles)
-        {
-            var success = ($"{dbFiles.Count()} fișiere au fost șterse din baza de date cu succes!", true); ;
-
-            if (!dbFiles.Any())
-            {
-                return success;
-            }
-
-            try
-            {
-                _context.PhpbbAttachments.RemoveRange(
-                    from a in _context.PhpbbAttachments
-                    join d in dbFiles
-                    on a.AttachId equals d
-                    select a
-                );
-                await _context.SaveChangesAsync();
-                return success;
-            }
-            catch
-            {
-                return ("A intervenit o eroare, mai încearcă o dată.", false);
+                return (string.Format(LanguageProvider.Admin[lang, "ORPHANED_FILES_DELETED_FORMAT"], string.Join(",", Succeeded)), true);
             }
         }
 

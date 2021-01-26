@@ -8,7 +8,7 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
     {
         public PostDto Post { get; set; }
 
-        public LoggedUser CurrentUser { get; set; }
+        public AuthenticatedUser CurrentUser { get; set; }
 
         public PhpbbReports Report { get; set; }
 

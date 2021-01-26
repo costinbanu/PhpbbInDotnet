@@ -132,7 +132,7 @@ namespace PhpbbInDotnet.Forum
             services.AddScoped<ModeratorService>();
             services.AddScoped<BBCodeRenderingService>();
             services.AddScoped<StatisticsService>();
-            services.AddTransient<IHttpContextAccessor, HttpContextAccessor>();
+            services.AddScoped<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton<FileExtensionContentTypeProvider>();
             services.AddDbContext<ForumDbContext>(options => options.UseMySQL(Configuration["ForumDbConnectionString"], o => o.CommandTimeout(60)), ServiceLifetime.Scoped);
 
@@ -169,7 +169,7 @@ namespace PhpbbInDotnet.Forum
                         }
                         else
                         {
-                            var user = await utils.DecompressObject<LoggedUser>(Convert.FromBase64String(context.User?.Claims?.FirstOrDefault()?.Value ?? string.Empty));
+                            var user = await utils.DecompressObject<AuthenticatedUser>(Convert.FromBase64String(context.User?.Claims?.FirstOrDefault()?.Value ?? string.Empty));
                             var id = utils.HandleError(handler.Error, $"Path: {handler.Path} ({context.Request.Path}{context.Request.QueryString}). User: {user}.");
                             await context.Response.WriteAsync($"A intervenit o eroare. ID: {id}");
                         }

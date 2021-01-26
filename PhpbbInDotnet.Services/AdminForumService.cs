@@ -165,7 +165,7 @@ namespace PhpbbInDotnet.Services
                 ).ToListAsync()
             );
 
-        public async Task<List<SelectListItem>> FlatForumTreeAsListItem(int parentId, LoggedUser user)
+        public async Task<List<SelectListItem>> FlatForumTreeAsListItem(int parentId, AuthenticatedUser user)
         {
             var tree = await _forumService.GetForumTree(user, false, false);
             var list = new List<SelectListItem>();

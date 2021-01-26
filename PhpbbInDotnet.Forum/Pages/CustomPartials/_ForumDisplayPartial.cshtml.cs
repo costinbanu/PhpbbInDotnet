@@ -10,18 +10,18 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
     {
         public string DateFormat { get; }
         public bool ShowTitle { get; }
-        public LoggedUser LoggedUser { get; }
+        public AuthenticatedUser AuthenticatedUser { get; }
         public HashSet<ForumTree> Tree { get; }
         public IEnumerable<ForumTree> Categories { get; }
         public IEnumerable<ForumTree> SubForums { get; }
         public bool ShowLastSeparator { get; }
         public string Language { get; set; }
 
-        public _ForumDisplayPartialModel(int forumId, HashSet<ForumTree> tree, string dateFormat, bool showTitle, LoggedUser loggedUser, bool showLastSeparator, string language)
+        public _ForumDisplayPartialModel(int forumId, HashSet<ForumTree> tree, string dateFormat, bool showTitle, AuthenticatedUser authenticatedUser, bool showLastSeparator, string language)
         {
             DateFormat = dateFormat;
             ShowTitle = showTitle;
-            LoggedUser = loggedUser;
+            AuthenticatedUser = authenticatedUser;
             Tree = tree;
             Categories = GetChildrenForums(forumId).Where(f => f.ForumType == ForumType.Category);
             SubForums = GetChildrenForums(forumId).Where(f => f.ForumType == ForumType.SubForum);

@@ -30,7 +30,7 @@ namespace PhpbbInDotnet.Services
             _utils = utils;
         }
 
-        public async Task<IEnumerable<(int forumId, bool hasPassword)>> GetRestrictedForumList(LoggedUser user, bool includePasswordProtected = false)
+        public async Task<IEnumerable<(int forumId, bool hasPassword)>> GetRestrictedForumList(AuthenticatedUser user, bool includePasswordProtected = false)
         {
             if (_restrictedForums == null)
             {
@@ -42,7 +42,7 @@ namespace PhpbbInDotnet.Services
         public bool IsNodeRestricted(ForumTree tree, bool includePasswordProtected = false)
             => tree.IsRestricted || (includePasswordProtected && tree.HasPassword);
 
-        public async Task<HashSet<ForumTree>> GetForumTree(LoggedUser user, bool forceRefresh, bool fetchUnreadData)
+        public async Task<HashSet<ForumTree>> GetForumTree(AuthenticatedUser user, bool forceRefresh, bool fetchUnreadData)
         {
             if (_tree != null && !forceRefresh && !(_tracking == null && fetchUnreadData))
             {
@@ -105,7 +105,7 @@ namespace PhpbbInDotnet.Services
             return _tree;
         }
 
-        public async Task<Dictionary<int, HashSet<Tracking>>> GetForumTracking(LoggedUser user, bool forceRefresh)
+        public async Task<Dictionary<int, HashSet<Tracking>>> GetForumTracking(AuthenticatedUser user, bool forceRefresh)
         {
             if (_tracking != null && !forceRefresh)
             {
@@ -145,16 +145,16 @@ namespace PhpbbInDotnet.Services
             return _tracking;
         }
 
-        public async Task<bool> IsForumUnread(int forumId, LoggedUser user, bool forceRefresh = false)
+        public async Task<bool> IsForumUnread(int forumId, AuthenticatedUser user, bool forceRefresh = false)
             => GetTreeNode(await GetForumTree(user, forceRefresh, true), forumId)?.IsUnread ?? false;
 
-        public async Task<bool> IsTopicUnread(int forumId, int topicId, LoggedUser user, bool forceRefresh = false)
+        public async Task<bool> IsTopicUnread(int forumId, int topicId, AuthenticatedUser user, bool forceRefresh = false)
         {
             var ft = await GetForumTracking(user, forceRefresh);
             return ft.TryGetValue(forumId, out var tt) && tt.Contains(new Tracking { TopicId = topicId });
         }
 
-        public async Task<bool> IsPostUnread(int forumId, int topicId, int postId, LoggedUser user)
+        public async Task<bool> IsPostUnread(int forumId, int topicId, int postId, AuthenticatedUser user)
         {
             var ft = await GetForumTracking(user, false);
             Tracking item = null;

@@ -38,8 +38,13 @@
   //posting
   "CANT_CHANGE_VOTE": "Votul nu poate fi schimbat!",
   "POST_NO_LONGER_LAST": "Mesajul nu poate fi șters deoarece nu mai este ultimul din subiect!",
-  "EDIT_TIME_EXPIRED": "Mesajul nu poate fi șters deoarece a expirat timpul limită de modificare a mesajelor!"
+  "EDIT_TIME_EXPIRED": "Mesajul nu poate fi șters deoarece a expirat timpul limită de modificare a mesajelor!",
 
-
-
+  //pm
+  "SENDER_CANT_SEND_PMS": "Expeditorul nu are dreptul să trimită mesaje private.",
+  "RECEIVER_CANT_RECEIVE_PMS": "Destinatarul nu poate primi mesaje private.",
+  "ON_RECEIVERS_FOE_LIST": "Destinatarul te-a adăugat pe lista sa de persoane neagreate, drept urmare nu îi poți trimite mesaje private.",
+  "CANT_EDIT_ALREADY_READ": "Mesajul a fost deja citit și nu mai poate fi actualizat.",
+  "CANT_DELETE_ALREADY_READ_OR_NONEXISTING": "Mesajul nu există sau a fost deja citit. Drept urmare nu mai poate fi șters.",
+  "SOME_MESSAGES_MISSING_FORMAT": "{0} mesaje au fost șterse cu succes, însă {1} nu au fost găsite."
 }

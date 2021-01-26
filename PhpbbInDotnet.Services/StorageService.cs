@@ -1,16 +1,13 @@
 ﻿using Dapper;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
@@ -30,14 +27,7 @@ namespace PhpbbInDotnet.Services
             _config = config;
             _utils = utils;
             _context = context;
-            if (environment.IsProduction() && _config.GetValue<bool>("Storage:IsBetaVersion"))
-            {
-                _root = @"C:\Inetpub\vhosts\metrouusor.com\forum.metrouusor.com\wwwroot";
-            }
-            else
-            {
-                _root = environment.WebRootPath;
-            }
+            _root = environment.WebRootPath;
         }
 
         public string GetFileUrl(string name, bool isAvatar)
@@ -153,28 +143,6 @@ namespace PhpbbInDotnet.Services
                 }
             }
             return (succeeded, failed);
-        }
-
-        public IEnumerable<FileInfo> ListAttachments()
-        {
-            try
-            {
-                return Directory.GetFiles(AttachmentsPath).Select(f =>
-                {
-                    FileInfo inf = null;
-                    try
-                    {
-                        inf = new FileInfo(f);
-                    }
-                    catch { }
-                    return inf;
-                }).Where(inf => inf != null);
-            }
-            catch (Exception ex)
-            {
-                _utils.HandleError(ex, "Error listing attachments");
-                return Enumerable.Empty<FileInfo>();
-            }
         }
     }
 }

@@ -29,7 +29,7 @@ namespace PhpbbInDotnet.Utilities
             Init(count, pageNum, link, pageNumKey);
         }
 
-        public Paginator(int count, int pageNum, string link, int? topicId = null, LoggedUser usr = null, string pageNumKey = "PageNum")
+        public Paginator(int count, int pageNum, string link, int? topicId = null, AuthenticatedUser usr = null, string pageNumKey = "PageNum")
         {
             PostsPerPage = new List<SelectListItem>();
             for (var i = 0; i < 5; i++)

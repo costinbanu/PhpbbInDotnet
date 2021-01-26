@@ -19,12 +19,10 @@ using PhpbbInDotnet.Languages;
 
 namespace PhpbbInDotnet.Services
 {
-    public class UserService
+    public class UserService : MultilingualServiceBase
     {
-        private readonly CommonUtils _utils;
         private readonly ForumDbContext _context;
         private readonly IConfiguration _config;
-        private readonly LanguageProvider _languageProvider;
         private IEnumerable<PhpbbAclRoles> _adminRoles;
         private IEnumerable<PhpbbAclRoles> _modRoles;
         private IEnumerable<PhpbbAclRoles> _userRoles;
@@ -32,27 +30,26 @@ namespace PhpbbInDotnet.Services
         private static PhpbbUsers _anonymousDbUser;
         private static ClaimsPrincipal _anonymousClaimsPrincipal;
 
-        public UserService(CommonUtils utils, ForumDbContext context, IConfiguration config, LanguageProvider languageProvider)
+        public UserService(CommonUtils utils, ForumDbContext context, IConfiguration config, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
+            : base(utils, languageProvider, httpContextAccessor)
         {
-            _utils = utils;
             _context = context;
             _config = config;
-            _languageProvider = languageProvider;
         }
 
-        public async Task<bool> IsUserAdminInForum(LoggedUser user, int forumId)
+        public async Task<bool> IsUserAdminInForum(AuthenticatedUser user, int forumId)
             => user != null && (
-                from up in user.AllPermissions ?? new HashSet<LoggedUser.Permissions>()
+                from up in user.AllPermissions ?? new HashSet<AuthenticatedUser.Permissions>()
                 where up.ForumId == forumId || up.ForumId == 0
                 join a in await GetAdminRolesLazy()
                 on up.AuthRoleId equals a.RoleId
                 select up
             ).Any();
 
-        public async Task<bool> IsUserModeratorInForum(LoggedUser user, int forumId)
+        public async Task<bool> IsUserModeratorInForum(AuthenticatedUser user, int forumId)
             => (await IsUserAdminInForum(user, forumId)) || (
                 user != null && (
-                    from up in user.AllPermissions ?? new HashSet<LoggedUser.Permissions>()
+                    from up in user.AllPermissions ?? new HashSet<AuthenticatedUser.Permissions>()
                     where up.ForumId == forumId || up.ForumId == 0
                     join a in await GetModRolesLazy()
                     on up.AuthRoleId equals a.RoleId
@@ -60,25 +57,25 @@ namespace PhpbbInDotnet.Services
                 ).Any()
             );
 
-        public async Task<int?> GetUserRole(LoggedUser user)
-            => (from up in user.AllPermissions ?? new HashSet<LoggedUser.Permissions>()
+        public async Task<int?> GetUserRole(AuthenticatedUser user)
+            => (from up in user.AllPermissions ?? new HashSet<AuthenticatedUser.Permissions>()
                 join a in await GetUserRolesLazy()
                 on up.AuthRoleId equals a.RoleId
                 select up.AuthRoleId as int?).FirstOrDefault();
 
         public async Task<bool> HasPrivateMessagePermissions(int userId)
-            => HasPrivateMessagePermissions(await GetLoggedUserById(userId));
+            => HasPrivateMessagePermissions(await GetAuthenticatedUserById(userId));
 
-        public bool HasPrivateMessagePermissions(LoggedUser user)
-            => !(user?.IsAnonymous ?? true) && !(user?.AllPermissions?.Contains(new LoggedUser.Permissions { ForumId = 0, AuthRoleId = Constants.NO_PM_ROLE }) ?? false);
+        public bool HasPrivateMessagePermissions(AuthenticatedUser user)
+            => !(user?.IsAnonymous ?? true) && !(user?.AllPermissions?.Contains(new AuthenticatedUser.Permissions { ForumId = 0, AuthRoleId = Constants.NO_PM_ROLE }) ?? false);
 
-        public bool HasPrivateMessages(LoggedUser user)
+        public bool HasPrivateMessages(AuthenticatedUser user)
             => user.AllowPM && HasPrivateMessagePermissions(user);
 
         public async Task<bool> HasPrivateMessages(int userId)
-            => HasPrivateMessages(await GetLoggedUserById(userId));
+            => HasPrivateMessages(await GetAuthenticatedUserById(userId));
 
-        async Task<PhpbbUsers> GetAnonymousDbUserAsync()
+        private async Task<PhpbbUsers> GetAnonymousDbUser()
         {
             if (_anonymousDbUser != null)
             {
@@ -87,22 +84,22 @@ namespace PhpbbInDotnet.Services
             var connection = _context.Database.GetDbConnection();
 
             _anonymousDbUser = await connection.QuerySingleOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId = Constants.ANONYMOUS_USER_ID });
-            
+
             return _anonymousDbUser;
         }
 
-        public async Task<ClaimsPrincipal> GetAnonymousClaimsPrincipalAsync()
+        public async Task<ClaimsPrincipal> GetAnonymousClaimsPrincipal()
         {
             if (_anonymousClaimsPrincipal != null)
             {
                 return _anonymousClaimsPrincipal;
             }
 
-            _anonymousClaimsPrincipal = await DbUserToClaimsPrincipalAsync(await GetAnonymousDbUserAsync());
+            _anonymousClaimsPrincipal = await DbUserToClaimsPrincipal(await GetAnonymousDbUser());
             return _anonymousClaimsPrincipal;
         }
 
-        public async Task<ClaimsPrincipal> DbUserToClaimsPrincipalAsync(PhpbbUsers user)
+        public async Task<ClaimsPrincipal> DbUserToClaimsPrincipal(PhpbbUsers user)
         {
             var connection = _context.Database.GetDbConnection();
             using var multi = await connection.QueryMultipleAsync(
@@ -120,14 +117,14 @@ namespace PhpbbInDotnet.Services
                 new { user.UserId, user.UserStyle }
             );
 
-            var permissions = new HashSet<LoggedUser.Permissions>(await multi.ReadAsync<LoggedUser.Permissions>());
+            var permissions = new HashSet<AuthenticatedUser.Permissions>(await multi.ReadAsync<AuthenticatedUser.Permissions>());
             var tpp = (await multi.ReadAsync()).ToDictionary(x => checked((int)x.topic_id), y => checked((int)y.post_no));
             var foes = new HashSet<int>((await multi.ReadAsync<uint>()).Select(x => unchecked((int)x)));
             var groupProperties = await multi.ReadFirstOrDefaultAsync();
             var editTime = unchecked((int)groupProperties.group_edit_time);
             var style = await multi.ReadFirstOrDefaultAsync<string>();
 
-            var intermediary = new LoggedUser
+            var intermediary = new AuthenticatedUser
             {
                 UserId = user.UserId,
                 Username = user.Username,
@@ -146,29 +143,29 @@ namespace PhpbbInDotnet.Services
             };
 
             var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
-            identity.AddClaim(new Claim(ClaimTypes.UserData, Convert.ToBase64String(await _utils.CompressObject(intermediary))));
+            identity.AddClaim(new Claim(ClaimTypes.UserData, Convert.ToBase64String(await Utils.CompressObject(intermediary))));
             return new ClaimsPrincipal(identity);
         }
 
-        public async Task<LoggedUser> ClaimsPrincipalToLoggedUserAsync(ClaimsPrincipal principal)
-            => await _utils.DecompressObject<LoggedUser>(Convert.FromBase64String(principal?.Claims?.FirstOrDefault()?.Value ?? string.Empty));
+        public async new Task<AuthenticatedUser> ClaimsPrincipalToAuthenticatedUser(ClaimsPrincipal principal)
+            => await base.ClaimsPrincipalToAuthenticatedUser(principal);
 
-        public async Task<LoggedUser> DbUserToLoggedUserAsync(PhpbbUsers dbUser)
-            => await ClaimsPrincipalToLoggedUserAsync(await DbUserToClaimsPrincipalAsync(dbUser));
+        public async Task<AuthenticatedUser> DbUserToAuthenticatedUser(PhpbbUsers dbUser)
+            => await ClaimsPrincipalToAuthenticatedUser(await DbUserToClaimsPrincipal(dbUser));
 
-        public async Task<IEnumerable<PhpbbRanks>> GetRankListAsync()
+        public async Task<IEnumerable<PhpbbRanks>> GetRankList()
         {
             var connection = _context.Database.GetDbConnection();
             return await connection.QueryAsync<PhpbbRanks>("SELECT * FROM phpbb_ranks ORDER BY rank_title");
         }
 
-        public async Task<IEnumerable<PhpbbGroups>> GetGroupListAsync()
+        public async Task<IEnumerable<PhpbbGroups>> GetGroupList()
         {
             var connection = _context.Database.GetDbConnection();
             return await connection.QueryAsync<PhpbbGroups>("SELECT * FROM phpbb_groups ORDER BY group_name");
         }
 
-        public async Task<PhpbbGroups> GetUserGroupAsync(int userId)
+        public async Task<PhpbbGroups> GetUserGroup(int userId)
         {
             var connection = _context.Database.GetDbConnection();
             return await connection.QueryFirstOrDefaultAsync<PhpbbGroups> (
@@ -179,30 +176,31 @@ namespace PhpbbInDotnet.Services
             );
         }
 
-        public async Task<LoggedUser> GetLoggedUserById(int userId)
+        public async Task<AuthenticatedUser> GetAuthenticatedUserById(int userId)
         {
             var connection = _context.Database.GetDbConnection();
             var usr = await connection.QuerySingleOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
-            return await DbUserToLoggedUserAsync(usr);
+            return await DbUserToAuthenticatedUser(usr);
         }
 
         public async Task<(string Message, bool? IsSuccess)> SendPrivateMessage(int senderId, string senderName, int receiverId, string subject, string text, PageContext pageContext, HttpContext httpContext)
         {
+            var lang = await GetLanguage();
             try
             {
                 if (!await HasPrivateMessagePermissions(senderId))
                 {
-                    return ("Expeditorul nu are dreptul să trimită mesaje private.", false);
+                    return (LanguageProvider.Errors[lang, "SENDER_CANT_SEND_PMS"], false);
                 }
                 
-                var receiver = await GetLoggedUserById(receiverId);
+                var receiver = await GetAuthenticatedUserById(receiverId);
                 if (!HasPrivateMessages(receiver))
                 {
-                    return ("Destinatarul nu poate primi mesaje private.", false);
+                    return (LanguageProvider.Errors[lang, "RECEIVER_CANT_RECEIVE_PMS"], false);
                 }
                 if (receiver.Foes?.Contains(senderId) ?? false)
                 {
-                    return ("Destinatarul te-a adăugat pe lista sa de persoane neagreate, drept urmare nu îi poți trimite mesaje private.", false);
+                    return (LanguageProvider.Errors[lang, "ON_RECEIVERS_FOE_LIST"], false);
                 }
 
                 var connection = _context.Database.GetDbConnection();
@@ -215,12 +213,12 @@ namespace PhpbbInDotnet.Services
                     new { senderId, receiverId, to = $"u_{receiverId}", subject, text, time = DateTime.UtcNow.ToUnixTimestamp() }
                 );
 
-                var emailSubject = string.Format(_languageProvider.Email[_languageProvider.GetValidatedLanguage(null, httpContext.Request), "NEWPM_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
+                var emailSubject = string.Format(LanguageProvider.Email[lang, "NEWPM_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
                 using var emailMessage = new MailMessage
                 {
                     From = new MailAddress($"admin@metrouusor.com", _config.GetValue<string>("ForumName")),
                     Subject = emailSubject,
-                    Body = await _utils.RenderRazorViewToString(
+                    Body = await Utils.RenderRazorViewToString(
                         "_NewPMEmailPartial",
                         new NewPMEmailDto
                         {
@@ -232,19 +230,20 @@ namespace PhpbbInDotnet.Services
                     IsBodyHtml = true
                 };
                 emailMessage.To.Add((await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == receiverId)).UserEmail);
-                await _utils.SendEmail(emailMessage);
+                await Utils.SendEmail(emailMessage);
 
                 return ("OK", true);
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex);
-                return ("A intervenit o eroare, încearcă mai târziu.", false);
+                Utils.HandleError(ex);
+                return (LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }
 
         public async Task<(string Message, bool? IsSuccess)> EditPrivateMessage(int messageId, string subject, string text)
         {
+            var lang = await GetLanguage();
             try
             {
                 var connection = _context.Database.GetDbConnection();
@@ -257,20 +256,21 @@ namespace PhpbbInDotnet.Services
 
                 if (rows == 0)
                 {
-                    return ("Mesajul a fost deja citit și nu mai poate fi actualizat.", false);
+                    return (LanguageProvider.Errors[lang, "CANT_EDIT_ALREADY_READ"], false);
                 }
 
                 return ("OK", true);
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex);
-                return ("A intervenit o eroare, încearcă mai târziu.", false);
+                Utils.HandleError(ex);
+                return (LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }
 
         public async Task<(string Message, bool? IsSuccess)> DeletePrivateMessage(int messageId)
         {
+            var lang = await GetLanguage();
             try
             {
                 var connection = _context.Database.GetDbConnection();
@@ -283,20 +283,21 @@ namespace PhpbbInDotnet.Services
 
                 if (rows == 0)
                 {
-                    return ("Mesajul nu există sau a fost deja citit. Drept urmare nu mai poate fi șters.", false);
+                    return (LanguageProvider.Errors[lang, "CANT_DELETE_ALREADY_READ_OR_NONEXISTING"], false);
                 }
 
                 return ("OK", true);
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex);
-                return ("A intervenit o eroare, încearcă mai târziu.", false);
+                Utils.HandleError(ex);
+                return (LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }
 
         public async Task<(string Message, bool? IsSuccess)> HidePrivateMessages(int userId, params int[] messageIds)
         {
+            var lang = await GetLanguage();
             try
             {
                 using var connection = _context.Database.GetDbConnection();
@@ -308,14 +309,14 @@ namespace PhpbbInDotnet.Services
                 );
                 if (rows < messageIds.Length)
                 {
-                    return ($"{rows} mesaje au fost șterse cu succes, însă {messageIds.Length - rows} nu au fost găsite.", false);
+                    return (string.Format(LanguageProvider.Errors[lang, "SOME_MESSAGES_MISSING_FORMAT"], rows, messageIds.Length - rows), false);
                 }
                 return ("OK", true);
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex);
-                return ("A intervenit o eroare, încearcă mai târziu.", false);
+                Utils.HandleError(ex);
+                return (LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }
 

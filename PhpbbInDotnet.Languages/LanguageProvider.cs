@@ -22,6 +22,7 @@ namespace PhpbbInDotnet.Languages
         private readonly Lazy<HtmlTranslation> _postingGuide;
         private readonly Lazy<HtmlTranslation> _termsAndConditions;
         private readonly Lazy<TextTranslation> _moderator;
+        private readonly Lazy<TextTranslation> _admin;
 
         public TextTranslation BasicText => _basicText.Value;
 
@@ -43,6 +44,8 @@ namespace PhpbbInDotnet.Languages
 
         public TextTranslation Moderator => _moderator.Value;
 
+        public TextTranslation Admin => _admin.Value;
+
         public LanguageProvider(ILogger logger)
         {
             _logger = logger;
@@ -56,9 +59,10 @@ namespace PhpbbInDotnet.Languages
             _postingGuide = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(PostingGuide), _logger));
             _termsAndConditions = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(TermsAndConditions), _logger));
             _moderator = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Moderator), _logger));
+            _admin = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Admin), _logger));
         }
 
-        public string GetValidatedLanguage(LoggedUser user, HttpRequest request = null)
+        public string GetValidatedLanguage(AuthenticatedUser user, HttpRequest request = null)
         {
             var fromHeadersOrDefault = ValidatedOrDefault(
                 (request?.Headers?.TryGetValue("Accept-Language", out var val) ?? false) ? val.ToString() : Constants.DEFAULT_LANGUAGE, 

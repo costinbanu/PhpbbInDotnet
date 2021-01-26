@@ -40,9 +40,9 @@
             }
 
             var isUnread = false;
-            if (!(Model.LoggedUser?.IsAnonymous ?? true))
+            if (!(Model.AuthenticatedUser?.IsAnonymous ?? true))
             {
-                isUnread = await _forumService.IsForumUnread(forum.ForumId, Model.LoggedUser);
+                isUnread = await _forumService.IsForumUnread(forum.ForumId, Model.AuthenticatedUser);
             }
 
             if (!isFirst)
@@ -50,7 +50,7 @@
                 <hr class="BoxSeparator" />
             }
 
-            if (Model.LoggedUser?.Foes?.Contains(forum.ForumLastPosterId ?? 0) ?? false)
+            if (Model.AuthenticatedUser?.Foes?.Contains(forum.ForumLastPosterId ?? 0) ?? false)
             {
                 forum.ForumLastPosterColour = null;
                 forum.ForumLastPosterName = $"[{_languageProvider.BasicText[Model.Language, "HIDDEN", Casing.FirstUpper]}]";
@@ -108,9 +108,9 @@
         }
 
         var isUnread = false;
-        if (!(Model.LoggedUser?.IsAnonymous ?? true))
+        if (!(Model.AuthenticatedUser?.IsAnonymous ?? true))
         {
-            isUnread = await _forumService.IsForumUnread(forum.ForumId, Model.LoggedUser);
+            isUnread = await _forumService.IsForumUnread(forum.ForumId, Model.AuthenticatedUser);
         }
 
         if (!isFirst)
@@ -118,7 +118,7 @@
             <hr class="BoxSeparator" />
         }
 
-        if (Model.LoggedUser?.Foes?.Contains(forum.ForumLastPosterId ?? 0) ?? false)
+        if (Model.AuthenticatedUser?.Foes?.Contains(forum.ForumLastPosterId ?? 0) ?? false)
         {
             forum.ForumLastPosterColour = null;
             forum.ForumLastPosterName = $"[{_languageProvider.BasicText[Model.Language, "HIDDEN", Casing.FirstUpper]}]";

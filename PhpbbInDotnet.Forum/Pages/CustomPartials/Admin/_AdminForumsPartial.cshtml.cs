@@ -11,9 +11,9 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials.Admin
         public IEnumerable<PhpbbForums> ForumChildren { get; private set; }
         public IEnumerable<ForumPermissions> Permissions { get; private set; }
         public bool Show { get; set; }
-        public LoggedUser CurrentUser { get; }
+        public AuthenticatedUser CurrentUser { get; }
 
-        public _AdminForumsPartialModel(PhpbbForums forum, IEnumerable<PhpbbForums> forumChildren, IEnumerable<ForumPermissions> forumPermissions, LoggedUser user, bool show)
+        public _AdminForumsPartialModel(PhpbbForums forum, IEnumerable<PhpbbForums> forumChildren, IEnumerable<ForumPermissions> forumPermissions, AuthenticatedUser user, bool show)
         {
             Forum = forum;
             ForumChildren = forumChildren;
