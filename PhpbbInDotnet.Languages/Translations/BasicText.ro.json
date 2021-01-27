@@ -24,7 +24,7 @@
   "INACTIVE": "inactiv",
   "REGISTERED": "înscris",
   "CLOSED_TOPIC": "subiect închis",
-  "AGREE_WITH": "sunt de acord cu",
+  "AGREE_WITH_TERMS_FORMAT": "Sunt de acord cu <a href=\"./TermsAndConditions\" target=\"_blank\">{0}</a>",
   "SUBMIT": "trimite",
   "COLOR": "culoare",
   "CONTACT": "contact",

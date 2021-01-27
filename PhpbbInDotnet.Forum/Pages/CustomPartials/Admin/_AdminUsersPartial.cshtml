@@ -20,10 +20,11 @@
 
         @await Html.PartialAsync(
             "_AdminUsersSummaryPartial",
-            new _AdminUsersSummaryPartialModel(
-                Model.DateFormat,
-                inactive
-            ),
+            new _AdminUsersSummaryPartialModel
+            {
+                DateFormat = Model.DateFormat,
+                Users = inactive
+            },
             ViewData
         );
 
@@ -47,53 +48,118 @@
     </div>
 </div>
 <hr class="BoxSeparator" />
+<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<style>
+    .DummyDatePicker {
+    }
+</style>
+<script>
+    var $ = jQuery.noConflict();
+    $(function () {
+        $(".DummyDatePicker").each((_, elem) => {
+            $(elem).datepicker({
+                dateFormat: 'dd.mm.yy',
+                firstDay: 1,
+                dayNamesMin: $.map(dayNames, day => day.substring(0, 2)),
+                dayNamesShort: $.map(dayNames, day => day.substring(0, 3)),
+                dayNames: dayNames,
+                monthNames: monthNames,
+                monthNamesShort: $.map(monthNames, month => month.substring(0, 3)),
+                changeMonth: true,
+                changeYear: true
+            });
+        });
+        clearActiveDates(document.getElementById('neverActiveCheckbox'));
+    });
+
+    function clearActiveDates(inactive) {
+        if (inactive.checked) {
+            $('#lastActiveFrom').val('');
+            $('#lastActiveTo').val('')
+            $('#lastActiveFrom').prop('disabled', true);
+            $('#lastActiveTo').prop('disabled', true);
+        } else {
+            $('#lastActiveFrom').prop('disabled', false);
+            $('#lastActiveTo').prop('disabled', false);
+        }
+    }
+</script>
 <h4 onclick="expandSection('searchUsersSection', 'searchUsersChar')" style="cursor:pointer" id="searchUsersTitle">
     Caută utilizatori
-    <span id="searchUsersChar">&#x1F53D;</span>
+    @if (Model.SearchParameters != null || Model.SearchResults.Any())
+    {
+        <span id="searchUsersChar">&#x1F53C;</span>
+    }
+    else
+    {
+        <span id="searchUsersChar">&#x1F53D;</span>
+    }
 </h4>
-<div id="searchUsersSection" style="display:none">
+<div id="searchUsersSection" style="@(Model.SearchParameters != null || Model.SearchResults.Any() ? "display:block" : "display:none")">
     <form method="post" id="userSearch" asp-page-handler="UserSearch">
-        <table class="mainTable">
-            <tr>
-                <td style="padding:5px; font-weight:bold; text-align: right">
-                    Nume utilizator
-                </td>
-                <td>
-                    <input type="text" name="username" id="username" />
-                </td>
-            </tr>
-            <tr>
-                <td style="padding:5px; font-weight:bold; text-align: right">
-                    E-mail
-                </td>
-                <td>
-                    <input type="text" name="email" id="email" />
-                </td>
-            </tr>
-            <tr>
-                <td style="padding:5px; font-weight:bold; text-align: right">
-                    Id
-                </td>
-                <td>
-                    <input type="text" name="userid" id="userid" />
-                </td>
-            </tr>
-            <tr>
-                <td colspan="2" style="padding:5px; font-weight:bold; text-align: center">
-                    <input type="submit" value="Caută" class="MyButton" />
-                </td>
-            </tr>
-        </table>
+        <div class="FlexCenter">
+            <div class="FlexCaption">
+                Nume utilizator
+            </div>
+            <div class="FlexRight PostInputWidth">
+                <input type="text" asp-for="SearchParameters.Username" />
+            </div>
+        </div>
+        <div class="FlexCenter FlexSpaced">
+            <div class="FlexCaption">
+                E-mail
+            </div>
+            <div class="FlexRight PostInputWidth">
+                <input type="text" asp-for="SearchParameters.Email" />
+            </div>
+        </div>
+        <div class="FlexCenter FlexSpaced">
+            <div class="FlexCaption">
+                Id
+            </div>
+            <div class="FlexRight PostInputWidth">
+                <input type="text" asp-for="SearchParameters.UserId" />
+            </div>
+        </div>
+        <div class="FlexCenter FlexSpaced">
+            <div class="FlexCaption">
+                Înregistrat între
+            </div>
+            <div class="FlexRight PostInputWidth">
+                De la<br />
+                <input type="text" asp-for="SearchParameters.RegisteredFrom" class="DummyDatePicker" /><br />
+                Până la<br />
+                <input type="text" asp-for="SearchParameters.RegisteredTo" class="DummyDatePicker" /><br />
+            </div>
+        </div>
+        <div class="FlexCenter FlexSpaced">
+            <div class="FlexCaption">
+                Ultima dată activ între
+            </div>
+            <div class="FlexRight PostInputWidth">
+                De la<br />
+                <input type="text" asp-for="SearchParameters.LastActiveFrom" class="DummyDatePicker" id="lastActiveFrom" /><br />
+                Până la<br />
+                <input type="text" asp-for="SearchParameters.LastActiveTo" class="DummyDatePicker" id="lastActiveTo" /><br />
+                <label>
+                    @Html.CheckBoxFor(m => m.SearchParameters.NeverActive, new { onchange = "clearActiveDates(this)", id = "neverActiveCheckbox" })
+                    Niciodată (nici o autentificare realizată)
+                </label>
+            </div>
+        </div>
+        <input type="submit" value="Caută" class="MyButton SpacedButton" />
     </form>
 
     @if (Model.SearchResults.Any())
     {
         @await Html.PartialAsync(
             "_AdminUsersSummaryPartial",
-            new _AdminUsersSummaryPartialModel(
-                Model.DateFormat,
-                Model.SearchResults
-            ),
+            new _AdminUsersSummaryPartialModel
+            {
+                DateFormat = Model.DateFormat,
+                Users = Model.SearchResults
+            },
             ViewData
         );
     }
@@ -165,55 +231,60 @@
 <div id="bansSection" style="display:none">
     @{
         var banlist = await _context.PhpbbBanlist.AsNoTracking().ToListAsync();
-
         <form method="post" asp-page-handler="BanUser">
-            <table id="bannedItems" class="writingTable">
-                <tr>
-                    <th style="width:45%">IP</th>
-                    <th style="width:45%">E-mail</th>
-                    <th style="width:10%">Șterge?</th>
-                </tr>
-
-                @for (var i = 0; i < banlist.Count; i++)
+            @for (var i = 0; i < banlist.Count; i++)
+            {
+                <div class="FlexCenter">
+                    <div class="FlexCaption">
+                        IP
+                    </div>
+                    <div class="FlexRight PostInputWidth">
+                        <input type="hidden" name="banlist[@i].BanId" value="@banlist[i].BanId" />
+                        <input type="text" name="banlist[@i].BanIp" value="@banlist[i].BanIp" />
+                    </div>
+                </div>
+                <div class="FlexCenter FlexSpaced">
+                    <div class="FlexCaption">
+                        E-mail
+                    </div>
+                    <div class="FlexRight PostInputWidth">
+                        <input type="text" name="banlist[@i].BanEmail" value="@banlist[i].BanEmail" />
+                    </div>
+                </div>
+                <div class="FlexCenter FlexSpaced">
+                    <div class="FlexCaption">
+                        Șterge?
+                    </div>
+                    <div class="FlexRight PostInputWidth">
+                        <label><input type="checkbox" name="toRemove" value="@banlist[i].BanId" /> Da, șterge</label>
+                    </div>
+                </div>
+                @if (i < banlist.Count - 1)
                 {
-                    <tr>
-                        <td>
-                            <input type="hidden" name="banlist[@i].BanId" value="@banlist[i].BanId" />
-                            <input type="text" name="banlist[@i].BanIp" value="@banlist[i].BanIp" />
-                        </td>
-                        <td>
-                            <input type="text" name="banlist[@i].BanEmail" value="@banlist[i].BanEmail" />
-                        </td>
-                        <td>
-                            <input type="checkbox" name="toRemove" value="@banlist[i].BanId" />
-                        </td>
-                    </tr>
+                    <hr class="SubtypeSeparator" />
                 }
-
-            </table>
-            <input type="button" onclick="addBannedItem()" value="Adaugă o interzicere nouă" class="MyButton" /> &nbsp;
-            <input type="submit" value="Salvează modificările" class="MyButton" />
+            }
+            <div id="newBans"></div>
+            <input type="button" onclick="addBannedItem()" value="Adaugă o interzicere nouă" class="MyButton SpacedButton" />
+            <input type="submit" value="Salvează modificările" class="MyButton SpacedButton" />
         </form>
         <script type="text/javascript">
         var cur = @banlist.Count;
 
         function addBannedItem(email = '', ip = '') {
             var elem = $(
-                "<tr>" +
-                    "<td>" +
-                        "<input type='hidden' name='banlist[" + cur + "].BanId' value='0'/>" +
-                        "<input type='text' name='banlist[" + cur + "].BanIp' value='" + ip + "' />" +
-                    "</td>" +
-                    "<td>" +
-                        "<input type='text' name='banlist[" + cur + "].BanEmail' value='" + email + "' />" +
-                    "</td>" +
-                    "<td>" +
-                        "<a href=\"#!\" onclick=\"cancelAddBannedItem(this)\">Anulează</a>" +
-                    "</td>" +
-                "</tr>"
+                "<div>" +
+                "<hr class='SubtypeSeparator' />" +
+                "<input type='hidden' name='banlist[" + cur + "].BanId' value='0'/>" +
+                "<b>IP:</b><br /><input type='text' name='banlist[" + cur + "].BanIp' value='" + ip + "' />" +
+                "<p style='clear:both'></p>" +
+                "<b>E-mail:</b><br /><input type='text' name='banlist[" + cur + "].BanEmail' value='" + email + "' />" +
+                "<p style='clear:both'></p>" +
+                "<a href=\"#!\" onclick=\"cancelAddBannedWord(this)\">Anulează</a>" +
+                "</div>"
             );
 
-            elem.appendTo($("#bannedItems > tbody:last-child"));
+            elem.appendTo($("#newBans"));
             cur++;
 
             if ((email || ip) && elem.offset()) {
@@ -390,8 +461,10 @@
     <p></p>
     <div class="FlexCenter">
         <div style="font-weight:bold; text-align: right">
-            @Html.CheckBox("dto.delete", false, new { id = "deleteGroup" })
-            &nbsp;Șterge acest grup
+            <label>
+                @Html.CheckBox("dto.delete", false, new { id = "deleteGroup" })
+                Șterge acest grup
+            </label>
         </div>
     </div>
     <p></p>
@@ -415,8 +488,10 @@
     <p></p>
     <div class="FlexCenter">
         <div style="font-weight:bold; text-align: right">
-            @Html.CheckBox("deleteRank", false, new { id = "deleteRank" })
-            &nbsp;Șterge acest rang
+            <label>
+                @Html.CheckBox("deleteRank", false, new { id = "deleteRank" })
+                Șterge acest rang
+            </label>
         </div>
     </div>
     <input type="hidden" name="rankId" id="rankId" />

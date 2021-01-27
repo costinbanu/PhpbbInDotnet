@@ -416,8 +416,16 @@ else if (!IsAnonymous)
                 <input type="hidden" asp-for="PostId" />
                 <input type="hidden" name="reportId" id="reportViewerReportId" />
                 <br />
-                @Html.CheckBox("redirectToEdit", new { id = "reportViewerEditMessage" }) &nbsp; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "EDIT_POST"])<br />
-                @Html.CheckBox("deletePost", new { id = "reportViewerDeleteMessage" }) &nbsp; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_POST"])<br /><br />
+                <label>
+                    @Html.CheckBox("redirectToEdit", new { id = "reportViewerEditMessage" }) &nbsp;
+                    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "EDIT_POST"])
+                </label>
+                <br />
+                <label>
+                    @Html.CheckBox("deletePost", new { id = "reportViewerDeleteMessage" }) &nbsp;
+                    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_POST"])
+                </label>
+                <br /><br />
                 <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "REPORT"])" onclick="vt.confirmDeleteReportedPost()" class="MyButton" />
                 @Html.AntiForgeryToken()
             </form>

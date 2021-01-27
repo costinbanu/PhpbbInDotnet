@@ -1,16 +1,20 @@
-﻿namespace PhpbbInDotnet.Database.Entities
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace PhpbbInDotnet.Database.Entities
 {
     public partial class PhpbbBbcodes
     {
-        public byte BbcodeId { get; set; }
-        public string BbcodeTag { get; set; }
-        public string BbcodeHelpline { get; set; }
-        public byte DisplayOnPosting { get; set; }
-        public string BbcodeMatch { get; set; }
-        public string BbcodeTpl { get; set; }
-        public string FirstPassMatch { get; set; }
-        public string FirstPassReplace { get; set; }
-        public string SecondPassMatch { get; set; }
-        public string SecondPassReplace { get; set; }
+        [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)] TODO: ba nu e autoincrement si face probleme
+        public byte BbcodeId { get; set; } = 0;
+        public string BbcodeTag { get; set; } = string.Empty;
+        public string BbcodeHelpline { get; set; } = string.Empty;
+        public byte DisplayOnPosting { get; set; } = 0;
+        public string BbcodeMatch { get; set; } = string.Empty;
+        public string BbcodeTpl { get; set; } = string.Empty;
+        public string FirstPassMatch { get; set; } = string.Empty;
+        public string FirstPassReplace { get; set; } = string.Empty;
+        public string SecondPassMatch { get; set; } = string.Empty;
+        public string SecondPassReplace { get; set; } = string.Empty;
     }
 }

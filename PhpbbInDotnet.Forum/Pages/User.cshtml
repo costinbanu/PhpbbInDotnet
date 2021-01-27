@@ -33,17 +33,6 @@
         margin-bottom: auto;
     }
 
-    @@media (max-width: 768px) {
-        .FlexRight {
-            text-align: center;
-            padding-left: 0px;
-        }
-
-            .FlexRight input[type=file] {
-                margin: 0 auto;
-            }
-    }
-
     .FlexRight input, select {
         width: 230px;
     }
@@ -62,7 +51,9 @@
             dayNamesShort: $.map(dayNames, day => day.substring(0, 3)),
             dayNames: dayNames,
             monthNames: monthNames,
-            monthNamesShort: $.map(monthNames, month => month.substring(0, 3))
+            monthNamesShort: $.map(monthNames, month => month.substring(0, 3)),
+            changeMonth: true,
+            changeYear: true
         });
     });
 

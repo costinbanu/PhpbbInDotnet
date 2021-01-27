@@ -1,6 +1,7 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._ForumTreePartialModel
 @using Objects;
 @using Microsoft.Extensions.Configuration 
+@using System.Web
 @inject Services.ForumTreeService _forumService
 @inject IConfiguration _config
 <style>
@@ -69,7 +70,7 @@
             var nodeClass = /*thisForum.IsUnread ? "searchCaret UnreadTitle" :*/ "searchCaret";
             await Output.WriteAsync(
                 $"<li class='{treeNodeClass}'>" +
-                    $"<span id='treeNode{cur}' class='{nodeClass}' onclick='select(this, {cur}, {Json.Serialize(topics)});'>{thisForum?.ForumName ?? _config.GetValue<string>("ForumName")}</span>" +
+                    $"<span id='treeNode{cur}' class='{nodeClass}' onclick='select(this, {cur}, {Json.Serialize(topics)});'>{HttpUtility.HtmlDecode(thisForum?.ForumName ?? _config.GetValue<string>("ForumName"))}</span>" +
                     $"<ul class='nestedTreeNode' id='child{cur}'>"
             );
             foreach (var child in children)
@@ -85,7 +86,7 @@
         {
             //treeNodeClass += thisForum.IsUnread ? " UnreadTitle" : "";
             await Output.WriteAsync(
-                $"<li id='treeNode{cur}' class='{treeNodeClass}' onclick='select(this, {cur}, {Json.Serialize(topics)});' style='max-width:max-content'>{thisForum?.ForumName ?? _config.GetValue<string>("ForumName")}</li>"
+                $"<li id='treeNode{cur}' class='{treeNodeClass}' onclick='select(this, {cur}, {Json.Serialize(topics)});' style='max-width:max-content'>{HttpUtility.HtmlDecode(thisForum?.ForumName ?? _config.GetValue<string>("ForumName"))}</li>"
             );
         }
     }

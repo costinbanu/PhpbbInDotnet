@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace PhpbbInDotnet.Services
 {
@@ -240,15 +241,68 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<List<PhpbbUsers>> UserSearchAsync(string username, string email, int? userid)
-            => await (
-                from u in _context.PhpbbUsers.AsNoTracking()
-                where (string.IsNullOrWhiteSpace(username) || u.UsernameClean.Contains(_utils.CleanString(username)))
-                    && (string.IsNullOrWhiteSpace(email) || u.UserEmailHash == _utils.CalculateCrc32Hash(email))
-                    && ((userid ?? 0) == 0 || u.UserId == userid)
-                select u
-            ).ToListAsync();
+        public async Task<(bool IsSuccess, string ErrorMessage, List<PhpbbUsers> Result)> UserSearchAsync(AdminUserSearch searchParameters)
+        {
+            long ParseDate(string value, bool isUpperLimit)
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    return isUpperLimit ? DateTime.UtcNow.ToUnixTimestamp() : 0L;
+                }
 
+                try
+                {
+                    var toReturn = DateTime.ParseExact(value, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
+                    return (isUpperLimit ? toReturn.AddDays(1).AddMilliseconds(-1) : toReturn).ToUnixTimestamp();
+                }
+                catch (Exception ex)
+                {
+                    throw new DateInputException(ex);
+                }
+            }
+
+            try
+            {
+                var rf = ParseDate(searchParameters?.RegisteredFrom, false);
+                var rt = ParseDate(searchParameters?.RegisteredTo, true);
+                var username = searchParameters?.Username;
+                var email = searchParameters?.Email;
+                var userId = searchParameters?.UserId ?? 0;
+                var query = from u in _context.PhpbbUsers.AsNoTracking()
+                            where (string.IsNullOrWhiteSpace(username) || u.UsernameClean.Contains(_utils.CleanString(username)))
+                                && (string.IsNullOrWhiteSpace(email) || u.UserEmailHash == _utils.CalculateCrc32Hash(email))
+                                && (userId == 0 || u.UserId == userId)
+                                && u.UserRegdate >= rf && u.UserRegdate <= rt
+                            select u;
+
+                if (!(searchParameters?.NeverActive ?? false))
+                {
+                    var laf = ParseDate(searchParameters?.LastActiveFrom, false);
+                    var lat = ParseDate(searchParameters?.LastActiveTo, true);
+                    query = from q in query
+                            where q.UserLastvisit >= laf && q.UserLastvisit <= lat
+                            select q;
+                }
+                else
+                {
+                    query = from q in query
+                            where q.UserLastvisit == 0L
+                            select q;
+                }
+
+                return (true, null, await query.ToListAsync());
+            }
+            catch (DateInputException die)
+            {
+                _utils.HandleError(die.InnerException, die.Message);
+                return (false, "Una sau mai multe date este invalidă.", new List<PhpbbUsers>());
+            }
+            catch (Exception ex)
+            {
+                _utils.HandleError(ex, "Error searchig for user in admin panel.");
+                return (false, "A intervenit o eroare", new List<PhpbbUsers>());
+            }
+        }
         public async Task<(string Message, bool? IsSuccess)> ManageGroup(UpsertGroupDto dto)
         {
             try
@@ -390,6 +444,14 @@ namespace PhpbbInDotnet.Services
             {
                 var id = _utils.HandleError(ex, "Error while banning user");
                 return ($"A intervenit o eroare - ID: {id}", false);
+            }
+        }
+
+        class DateInputException : Exception
+        {
+            internal DateInputException(Exception inner) : base("Failed to parse exact input dates", inner) 
+            {
+            
             }
         }
     }

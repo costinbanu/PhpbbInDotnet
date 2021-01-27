@@ -52,10 +52,15 @@
 
 <div id="Users" class="tabcontent" style="@(Model.Category == AdminCategories.Users ? "display:inherit" : "display:none")">
     @await Html.PartialAsync(
-    "_AdminUsersPartial",
-    new _AdminUsersPartialModel(dateFormat, Model.UserSearchResults),
-    ViewData
-)
+        "_AdminUsersPartial",
+        new _AdminUsersPartialModel
+        {
+            DateFormat = dateFormat,
+            SearchResults = Model.UserSearchResults,
+            SearchParameters = Model.SearchParameters
+        },
+        ViewData
+    )
 </div>
 
 <div id="Forums" class="tabcontent" style="@(Model.Category == AdminCategories.Forums ? "display:inherit" : "display:none")">

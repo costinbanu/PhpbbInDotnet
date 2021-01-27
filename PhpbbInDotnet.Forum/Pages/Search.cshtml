@@ -62,7 +62,7 @@
             topicDisplay.add(option);
             topics.forEach(t => {
                 var option = document.createElement('option');
-                option.text = t.topicTitle;
+                option.text = unescape(t.topicTitle);
                 option.value = t.topicId;
                 topicDisplay.add(option);
             });

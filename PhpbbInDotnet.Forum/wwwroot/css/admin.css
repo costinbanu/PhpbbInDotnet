@@ -14,9 +14,9 @@
     font-size: 15px;
 }
 
-.active, .collapsible:hover {
-    background-color: #555;
-}
+    .active, .collapsible:hover {
+        background-color: #555;
+    }
 
 .content {
     padding: 0 18px;
@@ -30,28 +30,16 @@ input[type='text'], input[type='password'], select, textarea, option {
     width: 95%;
 }
 
-.mainTable {
-    width: 100%;
-    border: none;
-    padding: 0px;
-    margin: 0px
-}
-
-.mainTable td {
-    padding: 5px;
-    margin-bottom: 10px;
-}
-
-.mainTable tr:not(:last-child) {
-    border-bottom: solid 1px #919191;
-    padding-top: 10px;
-    padding-bottom: 10px;
-}
-
-.mainTable thead {
+.FlexCaption {
     font-weight: bold;
+    text-align: left !important;
+    margin-bottom: unset;
 }
 
-.mainTable td:first-child {
-    width: 20%;
+.FlexSpaced {
+    padding-top: 20px;
+}
+
+.FlexSpacedMini {
+    padding-top: 10px;
 }

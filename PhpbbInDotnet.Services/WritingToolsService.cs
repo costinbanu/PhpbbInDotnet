@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using System.Web;
 using PhpbbInDotnet.Languages;
 using Microsoft.AspNetCore.Http;
+using System;
 
 namespace PhpbbInDotnet.Services
 {
@@ -78,8 +79,40 @@ namespace PhpbbInDotnet.Services
 
                 return (LanguageProvider.Admin[lang, "BANNED_WORDS_UPDATED_SUCCESSFULLY"], true);
             }
-            catch
+            catch (Exception ex)
             {
+                Utils.HandleError(ex, "ManageBannedWords failed");
+                return (LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
+            }
+        }
+
+        public async Task<(string Message, bool? IsSuccess)> ManageBBCodes(List<PhpbbBbcodes> codes, List<int> toRemove, List<int> toDisplay)
+        {
+            var lang = await GetLanguage();
+            try
+            { asta nu stiu daca e bine
+                codes.ForEach(code =>
+                {
+                    code.BbcodeTpl ??= string.Empty;
+                    code.BbcodeHelpline ??= string.Empty;
+                });
+                toDisplay.ForEach(i => codes[i].DisplayOnPosting = 1);
+                await _context.PhpbbBbcodes.AddRangeAsync(codes.Where(c => c.BbcodeId == 0));
+                _context.PhpbbBbcodes.UpdateRange(codes.Where(c => c.BbcodeId != 0));
+                await _context.SaveChangesAsync();
+
+                var conn = _context.Database.GetDbConnection();
+                //await conn.ExecuteAsync(
+                //    "INSERT INTO phpbb_codes (bbcode_tag, bbcode_tpl, bbcode_helpline, display_on_posting) VALUES (@BbcodeTag, @BbcodeTpl, @Display)",
+                //    codes.Where(c => c.BbcodeId == 0).Select(c => new { c.BbcodeTag, c.BbcodeTpl, Display = toDisplay.Contains(codes.IndexOf()) }
+                //);
+                await conn.ExecuteAsync("DELETE FROM phpbb_bbcodes WHERE bbcode_id IN @ids", new { ids = toRemove.Select(i => codes[i].BbcodeId) });
+                //await conn.ExecuteAsync("UPDATE phpbb_bbcodes SET display_on_posting = 1 WHERE bbcode_id IN @ids", new { ids = toDisplay.Select(i => codes[i].BbcodeId) });
+                return (LanguageProvider.Admin[lang, "BBCODES_UPDATED_SUCCESSFULLY"], true);
+            }
+            catch (Exception ex)
+            {
+                Utils.HandleError(ex, "ManageBBCodes failed");
                 return (LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }

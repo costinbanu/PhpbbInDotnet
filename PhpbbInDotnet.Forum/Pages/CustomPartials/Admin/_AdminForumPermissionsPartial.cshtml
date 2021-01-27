@@ -49,7 +49,7 @@
             permissions.Select(p => new SelectListItem(p.RoleDescription, $"{permissions.Key.Id}_{p.RoleId}", p.HasRole)),
             new { style = "width:75%; margin-top:10px;" }
         )
-        &nbsp;Șterge? <input type="checkbox" name="dto.@(Model.EntityType)PermissionToRemove" value="@(index++)" />
+        &nbsp;<label>Șterge? <input type="checkbox" name="dto.@(Model.EntityType)PermissionToRemove" value="@(index++)" /></label>
     </div>
 </div>
 }

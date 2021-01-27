@@ -7,30 +7,6 @@
 @inject WritingToolsService _writingService
 @inject CommonUtils _utils
 
-<style>
-    .writingTable {
-        border: none;
-        padding: 5px;
-        width: 80%
-    }
-
-        .writingTable td {
-            padding-bottom: 10px;
-        }
-
-        .writingTable tr {
-            margin-bottom: 10px
-        }
-
-
-    .FlexCaption {
-        font-weight: bold;
-        text-align: left !important;
-        margin-bottom: unset;
-    }
-
-</style>
-
 <h4 onclick="expandSection('bannedWordsSection', 'bannedWordsChar')" style="cursor:pointer" id="bannedWordsTitle">
     Cuvinte cenzurate
     <span id="bannedWordsChar">&#x1F53D;</span>
@@ -40,32 +16,42 @@
 }
 <div id="bannedWordsSection" style="display:none">
     <form method="post" asp-page-handler="BanWords">
-        <table id="bannedWords" class="writingTable">
-            <tr>
-                <th style="width:45%">Cuvânt</th>
-                <th style="width:45%">Înlocuitor</th>
-                <th style="width:10%">Șterge?</th>
-            </tr>
-
-            @for (var i = 0; i < words.Count; i++)
+        @for (var i = 0; i < words.Count; i++)
+        {
+            <div class="FlexCenter">
+                <div class="FlexCaption">
+                    Cuvânt
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    @Html.Raw(words[i].Word)
+                    <input type="hidden" name="words[@i].Word" value="@words[i].Word" />
+                    <input type="hidden" name="words[@i].WordId" value="@words[i].WordId" />
+                </div>
+            </div>
+            <div class="FlexCenter">
+                <div class="FlexCaption">
+                    Înlocuitor
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    <input type="text" name="words[@i].Replacement" value="@words[i].Replacement" />
+                </div>
+            </div>
+            <div class="FlexCenter">
+                <div class="FlexCaption">
+                    Șterge?
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    <label><input type="checkbox" name="toRemove" value="@i" /> Da, șterge</label>
+                </div>
+            </div>
+            @if (i < words.Count - 1)
             {
-                <tr>
-                    <td>
-                        @Html.Raw(words[i].Word)
-                        <input type="hidden" name="words[@i].Word" value="@words[i].Word" />
-                        <input type="hidden" name="words[@i].WordId" value="@words[i].WordId" />
-                    </td>
-                    <td>
-                        <input type="text" name="words[@i].Replacement" value="@words[i].Replacement" />
-                    </td>
-                    <td>
-                        <input type="checkbox" name="toRemove" value="@i" />
-                    </td>
-                </tr>
+                <hr class="SubtypeSeparator" />
             }
-
-        </table>
-        <input type="button" onclick="addBannedWord()" value="Adaugă un cuvânt nou" class="MyButton" /> &nbsp; <input type="submit" value="Salvează modificările" class="MyButton" />
+        }
+        <div id="newBannedWords"></div>
+        <input type="button" onclick="addBannedWord()" value="Adaugă un cuvânt nou" class="MyButton SpacedButton" />
+        <input type="submit" value="Salvează modificările" class="MyButton SpacedButton" />
     </form>
     <div style="width:100%; text-align:right; font-size:1.5em">
         <a href="#bannedWordsTitle">&#x23EB;</a>
@@ -85,31 +71,67 @@
     </form>
     <h5>
         <b>Fișiere pe server fără corespondență într-un mesaj (@files.Count fișiere, în total @_utils.ReadableFileSize(files.Sum(f => f.Filesize)))</b>
-        <br /><i>Click pe titlul coloanei pentru sortare.</i>
-        <br /><a href="javascript:$('#orphanedFilesForm').submit()">Șterge aceste fișiere</a>
     </h5>
-
-
-    <table class="writingTable">
-        <tr>
-            <th onclick="sort(this)" style="cursor:pointer">Nume fișier</th>
-            <th onclick="sort(this)" style="cursor:pointer">Autor</th>
-            <th onclick="sort(this)" style="cursor:pointer">Ultima dată modificat</th>
-            <th onclick="sort(this)" style="cursor:pointer">Dimensiune</th>
-        </tr>
-
+    <p>
+        <select id="sortOptions" onchange="sort()" style="width:auto">
+            <option value="-1" selected disabled>Sortează după...</option>
+            <option value="0">Nume fișier (A → Z)</option>
+            <option value="1">Nume fișier (Z → A)</option>
+            <option value="2">Autor (A → Z)</option>
+            <option value="3">Autor (Z → A)</option>
+            <option value="4">Ultima dată modificat (crescător)</option>
+            <option value="5">Ultima dată modificat (descrescător)</option>
+            <option value="6">Dimensiune (crescător)</option>
+            <option value="7">Dimensiune (descrescător)</option>
+        </select>
+    </p>
+    <p>
+        <button type="button" onclick="$('#orphanedFilesForm').submit()" class="MyButton SpacedButton">Șterge aceste fișiere</button>
+    </p>
+    <div id="fileHolder">
         @foreach (var f in files)
         {
-            <tr>
-                <td>@Html.Raw(f.RealFilename)</td>
-                <td>@Html.Raw(f.Username)</td>
-                <td>
-                    <script>writeDate('@f.Filetime.ToUtcTime().ToString("o")', '@Model.DateFormat')</script>
-                </td>
-                <td>@_utils.ReadableFileSize(f.Filesize)</td>
-            </tr>
+            <div>
+                <div class="FlexCenter">
+                    <div class="FlexCaption">
+                        Nume fișier
+                    </div>
+                    <div class="FlexRight PostInputWidth">
+                        @Html.Raw(f.RealFilename)
+                    </div>
+                    <meta content="@Html.Raw(f.RealFilename)" />
+                </div>
+                <div class="FlexCenter">
+                    <div class="FlexCaption">
+                        Autor
+                    </div>
+                    <div class="FlexRight PostInputWidth">
+                        @Html.Raw(f.Username)
+                    </div>
+                    <meta content="@Html.Raw(f.Username)" />
+                </div>
+                <div class="FlexCenter">
+                    <div class="FlexCaption">
+                        Ultima dată modificat
+                    </div>
+                    <div class="FlexRight PostInputWidth">
+                        <script>writeDate('@f.Filetime.ToUtcTime().ToString("o")', '@Model.DateFormat')</script>
+                    </div>
+                    <meta content="@Html.Raw(f.Filetime)" />
+                </div>
+                <div class="FlexCenter">
+                    <div class="FlexCaption">
+                        Dimensiune
+                    </div>
+                    <div class="FlexRight PostInputWidth">
+                        @_utils.ReadableFileSize(f.Filesize)
+                    </div>
+                    <meta content="@Html.Raw(f.Filesize)" />
+                </div>
+                <hr class="SubtypeSeparator" />
+            </div>
         }
-    </table>
+    </div>
     <div style="width:100%; text-align:right; font-size:1.5em">
         <a href="#orphanFilesTitle">&#x23EB;</a>
     </div>
@@ -136,20 +158,44 @@
         {
             <div class="FlexCenter">
                 <div class="FlexCaption">
+                    Nume tag
+                </div>
+                <div class="FlexRight PostInputWidth">
                     @Html.Raw(codes[i].BbcodeTag)
                     <input type="hidden" name="codes[@i].BbcodeTag" value="@codes[i].BbcodeTag" />
                     <input type="hidden" name="codes[@i].BbcodeId" value="@codes[i].BbcodeId" />
-                    <div style="font-weight:normal">
-                        Șterge?
-                        <input type="checkbox" name="toRemove" value="@i" />
-                    </div>
                 </div>
-
+            </div>
+            <div class="FlexCenter FlexSpaced">
+                <div class="FlexCaption">
+                    Cod HTML
+                </div>
                 <div class="FlexRight PostInputWidth">
-                    <div class="FlexCaption">Cod HTML</div>
                     <textarea name="codes[@i].BbcodeTpl" rows="3" class="InputBox" style="font-family:'Ubuntu Mono'">@codes[i].BbcodeTpl</textarea><br />
-                    <div class="FlexCaption" style="padding-top:70px">Explicație</div>
+                </div>
+            </div>
+            <div class="FlexCenter FlexSpaced">
+                <div class="FlexCaption">
+                    Explicație
+                </div>
+                <div class="FlexRight PostInputWidth">
                     <textarea name="codes[@i].BbcodeHelpline" rows="3" class="InputBox">@codes[i].BbcodeHelpline</textarea>
+                </div>
+            </div>
+            <div class="FlexCenter FlexSpaced">
+                <div class="FlexLeft PostInputWidth">
+                    <label>
+                        <input type="checkbox" name="toDisplay" value="@i" @(codes[i].DisplayOnPosting == 1 ? "checked" : "") />
+                        Arată în pagina de postare
+                    </label>
+                </div>
+            </div>
+            <div class="FlexCenter FlexSpaced">
+                <div class="FlexLeft PostInputWidth">
+                    <label>
+                    <input type="checkbox" name="toRemove" value="@i" />
+                    Șterge
+                    </label>
                 </div>
             </div>
             @if (i < codes.Count - 1)
@@ -159,8 +205,8 @@
         }
         <p></p>
         <div id="newBBCodes"></div>
-        <input type="button" onclick="addBBCode()" value="Adaugă un cod nou" class="MyButton" /> &nbsp; 
-        <input type="submit" value="Salvează modificările" class="MyButton" />
+        <input type="button" onclick="addBBCode()" value="Adaugă un cod nou" class="MyButton SpacedButton" />
+        <input type="submit" value="Salvează modificările" class="MyButton SpacedButton" />
     </form>
 
     <div style="width:100%; text-align:right; font-size:1.5em">
@@ -170,26 +216,19 @@
 
 
 <script type="text/javascript">
-    function sort(elem) {
-        var table = $(elem).parents('table').eq(0);
-        var rows = table.find('tr:gt(0)').toArray().sort(comparer($(elem).index()));
-        elem.asc = !elem.asc;
-        if (!elem.asc) {
-            rows = rows.reverse();
-        }
-        for (var i = 0; i < rows.length; i++) {
-            table.append(rows[i]);
-        }
-    }
-
-    function comparer(index) {
-        return function (a, b) {
-            var valA = getCellValue(a, index), valB = getCellValue(b, index);
-            var asDates = Date.parse(valA) - Date.parse(valB);
-            console.log(Date.parse(valA));
+    function sort() {
+        let val = $('#sortOptions').val();
+        let mod = val % 2;
+        let index = (val - mod) / 2;
+        let parent = $('#fileHolder');
+        let direction = mod == 1 ? -1 : 1;
+        let rows = parent.children('div').sort((a, b) => {
+            let valA = $(a).children().eq(index).children('meta').first().attr('content');
+            let valB = $(b).children().eq(index).children('meta').first().attr('content')
             var asNumbers = parseInt(valA) - parseInt(valB);
-            return asDates ? asDates : (asNumbers ? asNumbers : valA.toString().localeCompare(valB));
-        }
+            return direction * (asNumbers ? asNumbers : valA.toString().localeCompare(valB));
+        });
+        parent.append(rows);
     }
 
     function getCellValue(row, index) {
@@ -200,37 +239,36 @@
     var codeIndex = @codes.Count;
 
     function addBannedWord() {
-        $("#bannedWords > tbody:last-child").append(
-            "<tr style='margin-bottom: 10px'>" +
-                "<td>" +
-                    "<input type='text' name='words[" + wordIndex + "].Word' />" +
-                "</td>" +
-                "<td>" +
-                    "<input type='text' name='words[" + wordIndex + "].Replacement' />" +
-                "</td>" +
-                "<td>" +
-                    "<a href=\"#!\" onclick=\"cancelAddBannedWord(this)\">Anulează</a>" +
-                "</td>" +
-            "</tr>"
+        $("#newBannedWords").append(
+            "<div>" +
+            "<hr class='SubtypeSeparator' />" +
+            "<b>Cuvânt:</b><br /><input type='text' name='words[" + wordIndex + "].Word' />" +
+            "<p style='clear:both'></p>" +
+            "<b>Înlocuitor:</b><br /><input type='text' name='words[" + wordIndex + "].Replacement' />" +
+            "<p style='clear:both'></p>" +
+            "<a href=\"#!\" onclick=\"cancelAddBannedWord(this)\">Anulează</a>" +
+            "</div>"
         );
-        index++;
+        wordIndex++;
     }
 
     function cancelAddBannedWord(elem) {
-        $(elem).parent().parent().remove();
+        $(elem).parent().remove();
         wordIndex--;
     }
 
     function addBBCode() {
         $("#newBBCodes").append(
             "<div>" +
-                "<hr class='SubtypeSeparator' />" + 
+                "<hr class='SubtypeSeparator' />" +
                 "<b>Nume tag:</b><br /><input type='text' name='codes[" + codeIndex + "].BbcodeTag' />" +
-                "<p style='clear:both'></p>" + 
+                "<p style='clear:both'></p>" +
                 "<b>Cod HTML:</b><br /><textarea name='codes[" + codeIndex + "].BbcodeTpl' class='InputBox' ></textarea>" +
-                "<p style='clear:both'></p>" + 
+                "<p style='clear:both'></p>" +
                 "<b>Explicație:</b><br /><textarea name='codes[" + codeIndex + "].BbcodeHelpline' class='InputBox' ></textarea>" +
-                "<p style='clear:both'></p>" + 
+                "<p style='clear:both'></p>" +
+                "<label><input type='checkbox' name='toDisplay' value='" + codeIndex + "' />Arată în pagina de postare</label>" +
+                "<p style='clear:both'></p>" +
                 "<a href=\"#!\" onclick=\"cancelAddBBCode(this)\">Anulează</a>" +
             "</div>"
         );

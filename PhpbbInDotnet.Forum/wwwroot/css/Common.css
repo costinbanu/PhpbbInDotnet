@@ -477,8 +477,14 @@ label {
     .PostInputWidth {
         width: 100%;
         min-width: 100%;
-        max-width: 100%
+        max-width: 100%;
+        text-align: center;
+        padding-left: 0px;
     }
+
+        .PostInputWidth input[type=file] {
+            margin: 0 auto;
+        }
 
     .Hide768 {
         display: none;

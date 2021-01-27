@@ -24,6 +24,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => IsSuccess switch
             {
                 null => "message",
+                true when string.IsNullOrWhiteSpace(Message) => "message",
                 true => "message success",
                 _ => "message fail",
             };
@@ -50,23 +51,27 @@ namespace PhpbbInDotnet.Forum.Pages
 
         #region Admin user
 
+        [BindProperty]
+        public AdminUserSearch SearchParameters { get; set; }
         public List<PhpbbUsers> UserSearchResults { get; private set; }
 
-        public async Task<IActionResult> OnPostUserSearch(string username, string email, int? userid)
+        public async Task<IActionResult> OnPostUserSearch()
             => await WithAdmin(async () =>
             {
                 Category = AdminCategories.Users;
-                if (string.IsNullOrWhiteSpace(username) && string.IsNullOrWhiteSpace(email) && (userid ?? 0) == 0)
+                if (new[] { SearchParameters?.Username, SearchParameters?.Email, SearchParameters?.RegisteredFrom, SearchParameters?.RegisteredTo, SearchParameters?.LastActiveFrom, SearchParameters?.LastActiveTo }.All(string.IsNullOrWhiteSpace) 
+                    && ((SearchParameters?.UserId ?? 0) == 0) 
+                    && !(SearchParameters?.NeverActive ?? false))
                 {
                     Message = "Prea puține criterii de căutare.";
                     IsSuccess = false;
                     return Page();
                 }
 
-                UserSearchResults = await _adminUserService.UserSearchAsync(username, email, userid);
+                (IsSuccess, Message, UserSearchResults) = await _adminUserService.UserSearchAsync(SearchParameters);
                 if (!UserSearchResults.Any())
                 {
-                    Message = $"Nu a fost găsit nici un utilizator.";
+                    Message = "Nu a fost găsit nici un utilizator.";
                     IsSuccess = false;
                 }
                 return Page();
@@ -179,12 +184,10 @@ namespace PhpbbInDotnet.Forum.Pages
                 return Page();
             });
 
-        public async Task<IActionResult> OnPostBBCodes(List<PhpbbBbcodes> codes, List<int> toRemove)
+        public async Task<IActionResult> OnPostBBCodes(List<PhpbbBbcodes> codes, List<int> toRemove, List<int> toDisplay)
             => await WithAdmin(async () =>
             {
-                codes.Clear();
-                toRemove.Clear();
-                //(Message, IsSuccess) = await _adminWritingService.ManageBannedWords(words, toRemove);
+                (Message, IsSuccess) = await _adminWritingService.ManageBBCodes(codes, toRemove, toDisplay);
                 Category = AdminCategories.WritingTools;
                 return Page();
             });

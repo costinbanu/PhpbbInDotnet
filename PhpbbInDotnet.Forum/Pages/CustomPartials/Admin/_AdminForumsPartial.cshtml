@@ -67,13 +67,19 @@
                 Parolă forum
             </div>
             <div class="FlexRight PostInputWidth">
-                Forumul are parolă&nbsp;
-                @Html.CheckBox("dto.hasPassword", !string.IsNullOrWhiteSpace(Model.Forum?.ForumPassword))
+                <label>
+                    Forumul are parolă
+                    @Html.CheckBox("dto.hasPassword", !string.IsNullOrWhiteSpace(Model.Forum?.ForumPassword))
+                </label>
                 <br />
                 <span class="Caption">Debifați pentru a elimina parola existentă.</span>
                 <br /> <br />
                 <input asp-for="Forum.ForumPassword" name="dto.forumPassword" type="password" id="forumPassword" autocomplete="new-password" style="width:75% !important" />&nbsp;
-                <input type="checkbox" onclick="Toggle()" />&nbsp;Arată parola<br />
+                <label>
+                    <input type="checkbox" onclick="Toggle()" />
+                    Arată parola
+                </label>
+                <br />
                 <span class="Caption">Introduceți noua parolă. Va fi schimbată dacă forumul are deja una.</span>
             </div>
         </div>

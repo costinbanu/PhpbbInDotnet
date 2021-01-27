@@ -4,87 +4,109 @@
 @foreach (var user in Model.Users)
 {
     <button type="button" class="collapsible">@user.Username</button>
-    <table class="content" style="border:none; padding:5px">
+    <div class="content">
         @if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed)
         {
-            <tr>
-                <td colspan="2">
+            <div class="FlexCenter FlexSpacedMini">
+                <div class="FlexLeft PostInputWidth">
                     <label>
                         <input type="checkbox" name="userIds" value="@user.UserId" form="batchAdminUsers" />
                         Selectează pentru ștergere
                     </label>
-                </td>
-            </tr>
+                </div>
+            </div>
         }
-        <tr>
-            <td style="font-weight:bold; padding:5px">E-mail</td>
-            <td>
-                @user.UserEmail 
+        <div class="FlexCenter FlexSpacedMini">
+            <div class="FlexCaption">
+                E-mail
+            </div>
+            <div class="FlexRight PostInputWidth">
+                @user.UserEmail
                 <a href="#" onclick="addBannedItem('@user.UserEmail', '')">INTERZICE e-mail</a>
-            </td>
-        </tr>
-        <tr>
-            <td style="font-weight:bold; padding:5px">IP</td>
-            <td>
-                @user.UserIp 
-                <a href="https://whatismyipaddress.com/ip/@user.UserIp" target="_blank">[IP Lookup]</a> 
+            </div>
+        </div>
+        <div class="FlexCenter FlexSpacedMini">
+            <div class="FlexCaption">
+                IP
+            </div>
+            <div class="FlexRight PostInputWidth">
+                @user.UserIp
+                <a href="https://whatismyipaddress.com/ip/@user.UserIp" target="_blank">[IP Lookup]</a>
                 <a href="#" onclick="addBannedItem('', '@user.UserIp')">INTERZICE IP</a>
-            </td>
-        </tr>
-        <tr>
-            <td style="font-weight:bold; padding:5px">Data inactivării</td>
-            <td>
-                @if(user.UserInactiveTime != 0)
+            </div>
+        </div>
+        <div class="FlexCenter FlexSpacedMini">
+            <div class="FlexCaption">
+                Data înregistrării
+            </div>
+            <div class="FlexRight PostInputWidth">
+                <script>writeDate('@user.UserRegdate.ToUtcTime().ToString("o")', '@Model.DateFormat')</script>
+            </div>
+        </div>
+        <div class="FlexCenter FlexSpacedMini">
+            <div class="FlexCaption">
+                Data inactivării
+            </div>
+            <div class="FlexRight PostInputWidth">
+                @if (user.UserInactiveTime != 0)
                 {
-                    <script>
-                        writeDate('@user.UserInactiveTime.ToUtcTime().ToString("o")', '@Model.DateFormat')
-                    </script>
+                    <script>writeDate('@user.UserInactiveTime.ToUtcTime().ToString("o")', '@Model.DateFormat')</script>
                 }
                 else
                 {
                     <span>N/A</span>
                 }
-            </td>
-        </tr>
-        <tr>
-            <td style="font-weight:bold; padding:5px">Motivul inactivării</td>
-            <td>@user.UserInactiveReason.ToString()</td>
-        </tr>
-        <tr>
-            <td style="font-weight:bold; padding:5px">Acțiuni rapide</td>
-            <td>
-                @if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed || 
-                     user.UserInactiveReason == UserInactiveReason.ChangedEmailNotConfirmed)
-                {
-                    <s><a href="#" title="Nu poate fi activat deoarece nu și-a confirmat adresa de e-mail.">Activează</a></s>
-                }
-                else if (user.UserInactiveReason == UserInactiveReason.NotInactive)
-                {
-                    <s><a href="#" title="Nu poate fi activat deoarece este deja activ.">Activează</a></s>
-                }
-                else
-                {
-                    <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Activate')">Activează</a>
-                }
-                <span>&nbsp;|&nbsp;</span>
-                @if (user.UserInactiveTime > 0)
-                {
-                    <s><a href="#" title="Nu poate fi dezactivat deoarece este deja inactiv.">Dezactivează</a></s>
-                }
-                else
-                {
-                    <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Deactivate')">Dezactivează</a>
-                }
-                <span>&nbsp;|&nbsp;</span>
-                <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Delete_KeepMessages')">Șterge (păstrează mesajele)</a>
-                <span>&nbsp;|&nbsp;</span>
-                <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Delete_DeleteMessages')">Șterge (șterge mesajele)</a>
-            </td>
-        </tr>
-        <tr>
-            <td colspan="2" style="font-weight:bold; padding:5px">
-                <a asp-page="/User" asp-route-UserId="@user.UserId">Vezi / modifică profilul complet</a>
-            </td>
-        </tr>
-    </table>
+            </div>
+        </div>
+        <div class="FlexCenter FlexSpacedMini">
+            <div class="FlexCaption">
+                Motivul inactivării
+            </div>
+            <div class="FlexRight PostInputWidth">
+                @user.UserInactiveReason.ToString()
+            </div>
+        </div>
+        <div class="FlexCenter FlexSpacedMini">
+            <div class="FlexCaption">
+                Acțiuni rapide
+            </div>
+            <ul class="FlexRight PostInputWidth">
+                <li>
+                    @if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed || user.UserInactiveReason == UserInactiveReason.ChangedEmailNotConfirmed)
+                    {
+                        <s><a href="#" title="Nu poate fi activat deoarece nu și-a confirmat adresa de e-mail.">Activează</a></s>
+                    }
+                    else if (user.UserInactiveReason == UserInactiveReason.NotInactive)
+                    {
+                        <s><a href="#" title="Nu poate fi activat deoarece este deja activ.">Activează</a></s>
+                    }
+                    else
+                    {
+                        <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Activate')">Activează</a>
+                    }
+                </li>
+                <li>
+                    @if (user.UserInactiveTime > 0)
+                    {
+                        <s><a href="#" title="Nu poate fi dezactivat deoarece este deja inactiv.">Dezactivează</a></s>
+                    }
+                    else
+                    {
+                        <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Deactivate')">Dezactivează</a>
+                    }
+                </li>
+                <li>
+                    <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Delete_KeepMessages')">Șterge (păstrează mesajele)</a>
+                </li>
+                <li>
+                    <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Delete_DeleteMessages')">Șterge (șterge mesajele)</a>
+                </li>
+            </ul>
+        </div>
+        <div class="FlexCenter FlexSpacedMini" style="padding-bottom:20px; font-weight:bold">
+            <div class="FlexLeft PostInputWidth">
+                <a asp-page="/User" asp-route-UserId="@user.UserId" target="_blank">Vezi / modifică profilul complet</a>
+            </div>
+        </div>
+    </div>
 }
