@@ -44,7 +44,8 @@
       "wwwroot/js/posting.js",
       "wwwroot/js/site.js",
       "wwwroot/js/tabbedPage.js",
-      "wwwroot/js/viewTopic.js"
+      "wwwroot/js/viewTopic.js",
+      "wwwroot/lib/Sortable.js"
     ],
     "minify": {
       "enabled": true,

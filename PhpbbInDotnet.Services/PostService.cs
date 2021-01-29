@@ -163,18 +163,21 @@ namespace PhpbbInDotnet.Services
                     await SetTopicFirstPost(curTopic, firstPost, firstPostUser, false, true);
                 }
 
-                await conn.ExecuteAsync(
-                    "UPDATE phpbb_topics SET topic_replies = GREATEST(topic_replies - 1, 0), topic_replies_real = GREATEST(topic_replies_real - 1, 0) WHERE topic_id = @topicId",
-                    new { curTopic.TopicId }
-                );
-
-                var report = await conn.QueryFirstOrDefaultAsync<PhpbbReports>("SELECT * FROM phpbb_reports WHERE post_id = @postId", new { deleted.PostId });
-                if (report != null)
+                if (!ignoreTopic)
                 {
                     await conn.ExecuteAsync(
-                        "DELETE FROM phpbb_reports WHERE report_id = @reportId; UPDATE phpbb_topics SET topic_reported = 0 WHERE topic_id = @topicId", 
-                        new { report.ReportId, curTopic.TopicId }
+                        "UPDATE phpbb_topics SET topic_replies = GREATEST(topic_replies - 1, 0), topic_replies_real = GREATEST(topic_replies_real - 1, 0) WHERE topic_id = @topicId",
+                        new { curTopic.TopicId }
                     );
+
+                    var report = await conn.QueryFirstOrDefaultAsync<PhpbbReports>("SELECT * FROM phpbb_reports WHERE post_id = @postId", new { deleted.PostId });
+                    if (report != null)
+                    {
+                        await conn.ExecuteAsync(
+                            "DELETE FROM phpbb_reports WHERE report_id = @reportId; UPDATE phpbb_topics SET topic_reported = 0 WHERE topic_id = @topicId",
+                            new { report.ReportId, curTopic.TopicId }
+                        );
+                    }
                 }
             }
 
