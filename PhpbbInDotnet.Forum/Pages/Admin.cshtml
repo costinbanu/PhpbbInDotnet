@@ -57,7 +57,8 @@
         {
             DateFormat = dateFormat,
             SearchResults = Model.UserSearchResults,
-            SearchParameters = Model.SearchParameters
+            SearchParameters = Model.SearchParameters,
+            Language = lang
         },
         ViewData
     )
@@ -66,7 +67,16 @@
 <div id="Forums" class="tabcontent" style="@(Model.Category == AdminCategories.Forums ? "display:inherit" : "display:none")">
     @await Html.PartialAsync(
         "_AdminForumsPartial",
-        new _AdminForumsPartialModel(Model.Forum, Model.ForumChildren, Model.Permissions, user, Model.ShowForum),
+        new _AdminForumsPartialModel
+        {
+            Forum = Model.Forum,
+            ParentId = Model.ParentForumId,
+            ForumChildren = Model.ForumChildren,
+            Permissions = Model.Permissions,
+            CurrentUser = user,
+            Show = Model.ShowForum,
+            Language = lang
+        },
         ViewData
     )
 </div>
@@ -74,7 +84,11 @@
 <div id="Writing" class="tabcontent" style="@(Model.Category == AdminCategories.WritingTools ? "display:inherit" : "display:none")">
     @await Html.PartialAsync(
         "_AdminWritingPartial",
-        new _AdminWritingPartialModel { DateFormat = dateFormat },
+        new _AdminWritingPartialModel 
+        { 
+            DateFormat = dateFormat,
+            Language = lang
+        },
         ViewData
     )
 </div>

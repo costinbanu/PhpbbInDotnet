@@ -29,7 +29,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1" />
-    <title>@(_config.GetValue<string>("ForumName")) - @ViewData["Title"]</title>
+    <title>@Html.Raw(_config.GetValue<string>("ForumName")) - @ViewData["Title"]</title>
 
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=UA-93150453-1"></script>
@@ -41,7 +41,9 @@
     </script>
 
     <!-- global JS translation magic -->
-    @if (ViewContext.RouteData.Values["page"].ToString() == "/ViewTopic" || ViewContext.RouteData.Values["page"].ToString() == "/Posting")
+    @if (ViewContext.RouteData.Values["page"].ToString() == "/ViewTopic" 
+        || ViewContext.RouteData.Values["page"].ToString() == "/Posting"
+        || ViewContext.RouteData.Values["page"].ToString() == "/Admin")
     {
         <script>
             var dictionary = @(Html.Raw(Model.LanguageProvider.JSText[lang]));
@@ -251,9 +253,9 @@
             "showLink": true,
             "theme": "edgeless",
             "content": {
-                "message": "@Html.Raw(_languageProvider.BasicText[lang, "BOX_MESSAGE"])",
-                "dismiss": "@Html.Raw(_languageProvider.BasicText[lang, "BOX_DISMISS"])",
-                "link": "@Html.Raw(_languageProvider.BasicText[lang, "BOX_LINK_TEXT"])",
+                "message": "@Html.Raw(_languageProvider.BasicText[lang, "COOKIES_BOX_MESSAGE"])",
+                "dismiss": "@Html.Raw(_languageProvider.BasicText[lang, "COOKIES_BOX_DISMISS"])",
+                "link": "@Html.Raw(_languageProvider.BasicText[lang, "COOKIES_BOX_LINK_TEXT"])",
                 "href": "./AboutCookies"
             }
         });

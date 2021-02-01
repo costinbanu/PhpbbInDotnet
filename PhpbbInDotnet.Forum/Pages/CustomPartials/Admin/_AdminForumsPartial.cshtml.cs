@@ -7,19 +7,12 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials.Admin
 {
     public class _AdminForumsPartialModel : PageModel
     {
-        public PhpbbForums Forum { get; private set; }
-        public IEnumerable<PhpbbForums> ForumChildren { get; private set; }
-        public IEnumerable<ForumPermissions> Permissions { get; private set; }
+        public PhpbbForums Forum { get; set; }
+        public int? ParentId { get; set; }
+        public IEnumerable<PhpbbForums> ForumChildren { get; set; }
+        public IEnumerable<ForumPermissions> Permissions { get; set; }
         public bool Show { get; set; }
-        public AuthenticatedUser CurrentUser { get; }
-
-        public _AdminForumsPartialModel(PhpbbForums forum, IEnumerable<PhpbbForums> forumChildren, IEnumerable<ForumPermissions> forumPermissions, AuthenticatedUser user, bool show)
-        {
-            Forum = forum;
-            ForumChildren = forumChildren;
-            Permissions = forumPermissions;
-            Show = show;
-            CurrentUser = user;
-        }
+        public AuthenticatedUser CurrentUser { get; set; }
+        public string Language { get; set; }
     }
 }

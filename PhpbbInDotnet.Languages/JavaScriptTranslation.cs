@@ -4,7 +4,7 @@ namespace PhpbbInDotnet.Languages
 {
     public class JavaScriptTranslation : Translation
     {
-        public JavaScriptTranslation(ILogger logger) : base("JavaScriptText", logger) { }
+        internal JavaScriptTranslation(ILogger logger) : base("JavaScriptText", logger) { }
 
         protected override string FileExtension => "json";
 

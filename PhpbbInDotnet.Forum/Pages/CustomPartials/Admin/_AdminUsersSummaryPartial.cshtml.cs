@@ -10,5 +10,7 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials.Admin
 
         public List<PhpbbUsers> Users { get; set; }
 
+        public string Language { get; set; }
+
     }
 }

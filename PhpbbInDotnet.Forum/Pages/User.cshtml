@@ -470,8 +470,11 @@ else
                     <div class="FlexRight PostInputWidth">
                         @if (canEdit)
                         {
-                            <input asp-for="CurrentUser.UserColour" /><br />
+                            <input type="color" class="jscolor" autocomplete="new-password" id="color" onchange="$('#colorTitle').text($(this).val()); $('#backendColor').val($(this).val().substring(1))" value="#@Model.CurrentUser.UserColour" />
+                            <span id="colorTitle" style="font-weight:bold; font-family:'Ubuntu Mono'; font-size: 1.5em">#@Model.CurrentUser.UserColour</span>
+                            <br />
                             <span class="Caption">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "COLOR_CAPTION"])</span>
+                            <input asp-for="CurrentUser.UserColour" type="hidden" id="backendColor" />
                         }
                     </div>
                 </div>

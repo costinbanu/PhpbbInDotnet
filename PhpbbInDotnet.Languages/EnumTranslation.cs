@@ -6,7 +6,7 @@ namespace PhpbbInDotnet.Languages
 {
     public class EnumTranslation : Translation
     {
-        public EnumTranslation(ILogger logger) : base("Enums", logger) { }
+        internal EnumTranslation(ILogger logger) : base("Enums", logger) { }
 
         protected override string FileExtension => "json";
 

@@ -6,9 +6,10 @@
 
 @inject WritingToolsService _writingService
 @inject CommonUtils _utils
+@inject Languages.LanguageProvider _languageProvider
 
 <h4 onclick="expandSection('bannedWordsSection', 'bannedWordsChar')" style="cursor:pointer" id="bannedWordsTitle">
-    Cuvinte cenzurate
+    @Html.Raw(_languageProvider.Admin[Model.Language, "BANNED_WORDS"])
     <span id="bannedWordsChar">&#x1F53D;</span>
 </h4>
 @{
@@ -20,7 +21,7 @@
         {
             <div class="FlexCenter">
                 <div class="FlexCaption">
-                    Cuvânt
+                    @Html.Raw(_languageProvider.Admin[Model.Language, "WORD"])
                 </div>
                 <div class="FlexRight PostInputWidth">
                     @Html.Raw(words[i].Word)
@@ -30,7 +31,7 @@
             </div>
             <div class="FlexCenter">
                 <div class="FlexCaption">
-                    Înlocuitor
+                    @Html.Raw(_languageProvider.Admin[Model.Language, "REPLACEMENT"])
                 </div>
                 <div class="FlexRight PostInputWidth">
                     <input type="text" name="words[@i].Replacement" value="@words[i].Replacement" />
@@ -38,10 +39,13 @@
             </div>
             <div class="FlexCenter">
                 <div class="FlexCaption">
-                    Șterge?
+                    @Html.Raw(_languageProvider.Admin[Model.Language, "ASK_DELETE"])
                 </div>
                 <div class="FlexRight PostInputWidth">
-                    <label><input type="checkbox" name="toRemove" value="@i" /> Da, șterge</label>
+                    <label>
+                        <input type="checkbox" name="toRemove" value="@i" />
+                        @Html.Raw(_languageProvider.Admin[Model.Language, "YES_DELETE"])
+                    </label>
                 </div>
             </div>
             @if (i < words.Count - 1)
@@ -50,8 +54,8 @@
             }
         }
         <div id="newBannedWords"></div>
-        <input type="button" onclick="addBannedWord()" value="Adaugă un cuvânt nou" class="MyButton SpacedButton" />
-        <input type="submit" value="Salvează modificările" class="MyButton SpacedButton" />
+        <input type="button" onclick="addBannedWord()" value="@Html.Raw(_languageProvider.Admin[Model.Language, "ADD_NEW_WORD"])" class="MyButton SpacedButton" />
+        <input type="submit" value="@Html.Raw(_languageProvider.Admin[Model.Language, "SAVE_CHANGES"])" class="MyButton SpacedButton" />
     </form>
     <div style="width:100%; text-align:right; font-size:1.5em">
         <a href="#bannedWordsTitle">&#x23EB;</a>
@@ -59,7 +63,7 @@
 </div>
 <hr class="BoxSeparator" />
 <h4 onclick="expandSection('orphanFilesSection', 'orphanFilesChar')" style="cursor:pointer" id="orphanFilesTitle">
-    Fișiere orfane
+    @Html.Raw(_languageProvider.Admin[Model.Language, "ORPHAN_FILES"])
     <span id="orphanFilesChar">&#x1F53D;</span>
 </h4>
 @{
@@ -70,23 +74,27 @@
         <input name="action" id="action" type="hidden" />
     </form>
     <h5>
-        <b>Fișiere pe server fără corespondență într-un mesaj (@files.Count fișiere, în total @_utils.ReadableFileSize(files.Sum(f => f.Filesize)))</b>
+        <b>
+            @Html.Raw(string.Format(_languageProvider.Admin[Model.Language, "ORPHAN_FILES_CAPTION_FORMAT"], files.Count, _utils.ReadableFileSize(files.Sum(f => f.Filesize))))
+        </b>
     </h5>
     <p>
         <select id="sortOptions" onchange="sort()" style="width:auto">
-            <option value="-1" selected disabled>Sortează după...</option>
-            <option value="0">Nume fișier (A → Z)</option>
-            <option value="1">Nume fișier (Z → A)</option>
-            <option value="2">Autor (A → Z)</option>
-            <option value="3">Autor (Z → A)</option>
-            <option value="4">Ultima dată modificat (crescător)</option>
-            <option value="5">Ultima dată modificat (descrescător)</option>
-            <option value="6">Dimensiune (crescător)</option>
-            <option value="7">Dimensiune (descrescător)</option>
+            <option value="-1" selected disabled>@Html.Raw(_languageProvider.BasicText[Model.Language, "ORDER_BY"])</option>
+            <option value="0">@Html.Raw(_languageProvider.Admin[Model.Language, "FILENAME_ASC"])</option>
+            <option value="1">@Html.Raw(_languageProvider.Admin[Model.Language, "FILENAME_DESC"])</option>
+            <option value="2">@Html.Raw(_languageProvider.Admin[Model.Language, "AUTHOR_ASC"])</option>
+            <option value="3">@Html.Raw(_languageProvider.Admin[Model.Language, "AUTHOR_DESC"])</option>
+            <option value="4">@Html.Raw(_languageProvider.Admin[Model.Language, "LAST_MODIFIED_ASC"])</option>
+            <option value="5">@Html.Raw(_languageProvider.Admin[Model.Language, "LAST_MODIFIED_DESC"])</option>
+            <option value="6">@Html.Raw(_languageProvider.Admin[Model.Language, "SIZE_ASC"])</option>
+            <option value="7">@Html.Raw(_languageProvider.Admin[Model.Language, "SIZE_DESC"])</option>
         </select>
     </p>
     <p>
-        <button type="button" onclick="$('#orphanedFilesForm').submit()" class="MyButton SpacedButton">Șterge aceste fișiere</button>
+        <button type="button" onclick="$('#orphanedFilesForm').submit()" class="MyButton SpacedButton">
+            @Html.Raw(_languageProvider.Admin[Model.Language, "DELETE_THESE_FILES"])
+        </button>
     </p>
     <div id="fileHolder">
         @foreach (var f in files)
@@ -94,7 +102,7 @@
             <div>
                 <div class="FlexCenter">
                     <div class="FlexCaption">
-                        Nume fișier
+                        @Html.Raw(_languageProvider.BasicText[Model.Language, "FILE_NAME"])
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @Html.Raw(f.RealFilename)
@@ -103,7 +111,7 @@
                 </div>
                 <div class="FlexCenter">
                     <div class="FlexCaption">
-                        Autor
+                        @Html.Raw(_languageProvider.Admin[Model.Language, "AUTHOR"])
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @Html.Raw(f.Username)
@@ -112,7 +120,7 @@
                 </div>
                 <div class="FlexCenter">
                     <div class="FlexCaption">
-                        Ultima dată modificat
+                        @Html.Raw(_languageProvider.Admin[Model.Language, "LAST_MODIFIED"])
                     </div>
                     <div class="FlexRight PostInputWidth">
                         <script>writeDate('@f.Filetime.ToUtcTime().ToString("o")', '@Model.DateFormat')</script>
@@ -121,7 +129,7 @@
                 </div>
                 <div class="FlexCenter">
                     <div class="FlexCaption">
-                        Dimensiune
+                        @Html.Raw(_languageProvider.Admin[Model.Language, "SIZE"])
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @_utils.ReadableFileSize(f.Filesize)
@@ -138,7 +146,7 @@
 </div>
 <hr class="BoxSeparator" />
 <h4 onclick="expandSection('customBBCodesSection', 'customBBCodesChar')" style="cursor:pointer" id="customBBCodesTitle">
-    Coduri BB personalizate
+    @Html.Raw(_languageProvider.Admin[Model.Language, "CUSTOM_BB_CODES"])
     <span id="customBBCodesChar">&#x1F53D;</span>
 </h4>
 @{
@@ -146,10 +154,7 @@
 }
 <div id="customBBCodesSection" style="display:none">
     <span class="Caption">
-        <b>Ghid pentru codul HTML</b><br />
-        Folosiți <b>${content}</b> pentru a accesa conținutul din interiorul tag-ului ([b]...conținut...[/b])<br />
-        Folosiți <b>${NUME}</b> pentru a accesa un atribut numit 'NUME' ([size=...atribut...]...conținut...[/size])<br />
-        Exemplu: <span style="font-family:'Ubuntu Mono'">&lt;a href="${LINK}"&gt;${content}&lt;/a&gt;</span> pentru tag-ul "url" ([url=LINK]content[/url]).
+        @Html.Raw(_languageProvider.CustomBBCodeGuide[Model.Language])
     </span>
     <hr class="SubtypeSeparator" />
     <form method="post" asp-page-handler="BBCodes" id="bbCodes">
@@ -158,7 +163,7 @@
         {
             <div class="FlexCenter">
                 <div class="FlexCaption">
-                    Nume tag
+                    @Html.Raw(_languageProvider.Admin[Model.Language, "TAG_NAME"])
                 </div>
                 <div class="FlexRight PostInputWidth">
                     @Html.Raw(codes[i].BbcodeTag)
@@ -168,7 +173,7 @@
             </div>
             <div class="FlexCenter FlexSpaced">
                 <div class="FlexCaption">
-                    Cod HTML
+                    @Html.Raw(_languageProvider.Admin[Model.Language, "HTML_CODE"])
                 </div>
                 <div class="FlexRight PostInputWidth">
                     <textarea name="codes[@i].BbcodeTpl" rows="3" class="InputBox" style="font-family:'Ubuntu Mono'">@codes[i].BbcodeTpl</textarea><br />
@@ -176,7 +181,7 @@
             </div>
             <div class="FlexCenter FlexSpaced">
                 <div class="FlexCaption">
-                    Explicație
+                    @Html.Raw(_languageProvider.Admin[Model.Language, "EXPLANATION"])
                 </div>
                 <div class="FlexRight PostInputWidth">
                     <textarea name="codes[@i].BbcodeHelpline" rows="3" class="InputBox">@codes[i].BbcodeHelpline</textarea>
@@ -186,15 +191,15 @@
                 <div class="FlexLeft PostInputWidth">
                     <label>
                         <input type="checkbox" name="toDisplay" value="@i" @(codes[i].DisplayOnPosting == 1 ? "checked" : "") />
-                        Arată în pagina de postare
+                        @Html.Raw(_languageProvider.Admin[Model.Language, "SHOW_IN_POSTING"])
                     </label>
                 </div>
             </div>
             <div class="FlexCenter FlexSpaced">
                 <div class="FlexLeft PostInputWidth">
                     <label>
-                    <input type="checkbox" name="toRemove" value="@i" />
-                    Șterge
+                        <input type="checkbox" name="toRemove" value="@i" />
+                        @Html.Raw(_languageProvider.BasicText[Model.Language, "DO_DELETE"])
                     </label>
                 </div>
             </div>
@@ -205,8 +210,8 @@
         }
         <p></p>
         <div id="newBBCodes"></div>
-        <input type="button" onclick="addBBCode()" value="Adaugă un cod nou" class="MyButton SpacedButton" />
-        <input type="submit" value="Salvează modificările" class="MyButton SpacedButton" />
+        <input type="button" onclick="addBBCode()" value="@Html.Raw(_languageProvider.Admin[Model.Language, "ADD_NEW_CODE"])" class="MyButton SpacedButton" />
+        <input type="submit" value="@Html.Raw(_languageProvider.Admin[Model.Language, "SAVE_CHANGES"])" class="MyButton SpacedButton" />
     </form>
 
     <div style="width:100%; text-align:right; font-size:1.5em">
@@ -242,11 +247,11 @@
         $("#newBannedWords").append(
             "<div>" +
             "<hr class='SubtypeSeparator' />" +
-            "<b>Cuvânt:</b><br /><input type='text' name='words[" + wordIndex + "].Word' />" +
+            "<b>@Html.Raw(_languageProvider.Admin[Model.Language, "WORD"])</b><br /><input type='text' name='words[" + wordIndex + "].Word' />" +
             "<p style='clear:both'></p>" +
-            "<b>Înlocuitor:</b><br /><input type='text' name='words[" + wordIndex + "].Replacement' />" +
+            "<b>@Html.Raw(_languageProvider.Admin[Model.Language, "REPLACEMENT"])</b><br /><input type='text' name='words[" + wordIndex + "].Replacement' />" +
             "<p style='clear:both'></p>" +
-            "<a href=\"#!\" onclick=\"cancelAddBannedWord(this)\">Anulează</a>" +
+            "<a href=\"#!\" onclick=\"cancelAddBannedWord(this)\">@Html.Raw(_languageProvider.Admin[Model.Language, "CANCEL"])</a>" +
             "</div>"
         );
         wordIndex++;
@@ -261,15 +266,15 @@
         $("#newBBCodes").append(
             "<div>" +
                 "<hr class='SubtypeSeparator' />" +
-                "<b>Nume tag:</b><br /><input type='text' name='codes[" + codeIndex + "].BbcodeTag' />" +
+                "<b>@Html.Raw(_languageProvider.Admin[Model.Language, "TAG_NAME"])</b><br /><input type='text' name='codes[" + codeIndex + "].BbcodeTag' />" +
                 "<p style='clear:both'></p>" +
-                "<b>Cod HTML:</b><br /><textarea name='codes[" + codeIndex + "].BbcodeTpl' class='InputBox' ></textarea>" +
+                "<b>@Html.Raw(_languageProvider.Admin[Model.Language, "HTML_CODE"])</b><br /><textarea name='codes[" + codeIndex + "].BbcodeTpl' class='InputBox' ></textarea>" +
                 "<p style='clear:both'></p>" +
-                "<b>Explicație:</b><br /><textarea name='codes[" + codeIndex + "].BbcodeHelpline' class='InputBox' ></textarea>" +
+                "<b>@Html.Raw(_languageProvider.Admin[Model.Language, "EXPLANATION"])</b><br /><textarea name='codes[" + codeIndex + "].BbcodeHelpline' class='InputBox' ></textarea>" +
                 "<p style='clear:both'></p>" +
-                "<label><input type='checkbox' name='toDisplay' value='" + codeIndex + "' />Arată în pagina de postare</label>" +
+                "<label><input type='checkbox' name='toDisplay' value='" + codeIndex + "' />@Html.Raw(_languageProvider.Admin[Model.Language, "SHOW_IN_POSTING"])</label>" +
                 "<p style='clear:both'></p>" +
-                "<a href=\"#!\" onclick=\"cancelAddBBCode(this)\">Anulează</a>" +
+                "<a href=\"#!\" onclick=\"cancelAddBBCode(this)\">@Html.Raw(_languageProvider.Admin[Model.Language, "CANCEL"])</a>" +
             "</div>"
         );
         codeIndex++;

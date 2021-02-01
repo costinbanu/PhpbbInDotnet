@@ -4,9 +4,10 @@
 
 @inject Services.AdminUserService _adminUserService
 @inject Database.ForumDbContext _context
+@inject Languages.LanguageProvider _languageProvider
 
 <h4 onclick="expandSection('inactiveUsersSection', 'inactiveUsersChar')" style="cursor:pointer" id="inactiveUsersTitle">
-    Utilizatori inactivi
+    @Html.Raw(_languageProvider.Admin[Model.Language, "INACTIVE_USERS"])
     <span id="inactiveUsersChar">&#x1F53D;</span>
 </h4>
 <div id="inactiveUsersSection" style="display:none">
@@ -23,7 +24,8 @@
             new _AdminUsersSummaryPartialModel
             {
                 DateFormat = Model.DateFormat,
-                Users = inactive
+                Users = inactive,
+                Language = Model.Language
             },
             ViewData
         );
@@ -38,8 +40,8 @@
                 }
             </script>
             <form method="post" id="batchAdminUsers" name="batchAdminUsers" asp-page-handler="BatchUserManagement">
-                <button type="button" onclick="selectAllUsers()" class="MyButton SpacedButton">Selectează toți utilizatorii inactivi</button>
-                <input type="submit" value="Șterge utilizatorii inactivi selectați" onclick="return confirm('Utilizatorii inactivi selectați vor fi șterși. Continui?');" class="MyButton SpacedButton" />
+                <button type="button" onclick="selectAllUsers()" class="MyButton SpacedButton">@Html.Raw(_languageProvider.Admin[Model.Language, "SELECT_ALL_INACTIVE_USERS"])</button>
+                <input type="submit" value="@Html.Raw(_languageProvider.Admin[Model.Language, "DELETE_SELECTED_INACTIVE_USERS"])" onclick="return confirm('@Html.Raw(_languageProvider.Admin[Model.Language, "DELETE_INACTIVE_USERS_CONFIRMATION"])');" class="MyButton SpacedButton" />
             </form>
         }
     }
@@ -86,7 +88,7 @@
     }
 </script>
 <h4 onclick="expandSection('searchUsersSection', 'searchUsersChar')" style="cursor:pointer" id="searchUsersTitle">
-    Caută utilizatori
+    @Html.Raw(_languageProvider.BasicText[Model.Language, "SEARCH_FOR_USER"])
     @if (Model.SearchParameters != null || Model.SearchResults.Any())
     {
         <span id="searchUsersChar">&#x1F53C;</span>
@@ -100,7 +102,7 @@
     <form method="post" id="userSearch" asp-page-handler="UserSearch">
         <div class="FlexCenter">
             <div class="FlexCaption">
-                Nume utilizator
+                @Html.Raw(_languageProvider.BasicText[Model.Language, "USERNAME", Casing.FirstUpper])
             </div>
             <div class="FlexRight PostInputWidth">
                 <input type="text" asp-for="SearchParameters.Username" />
@@ -108,7 +110,7 @@
         </div>
         <div class="FlexCenter FlexSpaced">
             <div class="FlexCaption">
-                E-mail
+                @Html.Raw(_languageProvider.BasicText[Model.Language, "EMAIL", Casing.FirstUpper])
             </div>
             <div class="FlexRight PostInputWidth">
                 <input type="text" asp-for="SearchParameters.Email" />
@@ -116,7 +118,7 @@
         </div>
         <div class="FlexCenter FlexSpaced">
             <div class="FlexCaption">
-                Id
+                ID
             </div>
             <div class="FlexRight PostInputWidth">
                 <input type="text" asp-for="SearchParameters.UserId" />
@@ -124,31 +126,31 @@
         </div>
         <div class="FlexCenter FlexSpaced">
             <div class="FlexCaption">
-                Înregistrat între
+                @Html.Raw(_languageProvider.BasicText[Model.Language, "REGISTERED", Casing.FirstUpper])
             </div>
             <div class="FlexRight PostInputWidth">
-                De la<br />
+                @Html.Raw(_languageProvider.BasicText[Model.Language, "FROM", Casing.FirstUpper])<br />
                 <input type="text" asp-for="SearchParameters.RegisteredFrom" class="DummyDatePicker" /><br />
-                Până la<br />
+                @Html.Raw(_languageProvider.BasicText[Model.Language, "TO", Casing.FirstUpper])<br />
                 <input type="text" asp-for="SearchParameters.RegisteredTo" class="DummyDatePicker" /><br />
             </div>
         </div>
         <div class="FlexCenter FlexSpaced">
             <div class="FlexCaption">
-                Ultima dată activ între
+                @Html.Raw(_languageProvider.Admin[Model.Language, "LAST_ACTIVE"])
             </div>
             <div class="FlexRight PostInputWidth">
-                De la<br />
+                @Html.Raw(_languageProvider.BasicText[Model.Language, "FROM", Casing.FirstUpper])<br />
                 <input type="text" asp-for="SearchParameters.LastActiveFrom" class="DummyDatePicker" id="lastActiveFrom" /><br />
-                Până la<br />
+                @Html.Raw(_languageProvider.BasicText[Model.Language, "TO", Casing.FirstUpper])<br />
                 <input type="text" asp-for="SearchParameters.LastActiveTo" class="DummyDatePicker" id="lastActiveTo" /><br />
                 <label>
                     @Html.CheckBoxFor(m => m.SearchParameters.NeverActive, new { onchange = "clearActiveDates(this)", id = "neverActiveCheckbox" })
-                    Niciodată (nici o autentificare realizată)
+                    @Html.Raw(_languageProvider.Admin[Model.Language, "NEVER_ACTIVE"])
                 </label>
             </div>
         </div>
-        <input type="submit" value="Caută" class="MyButton SpacedButton" />
+        <input type="submit" value="@Html.Raw(_languageProvider.BasicText[Model.Language, "DO_SEARCH"])" class="MyButton SpacedButton" />
     </form>
 
     @if (Model.SearchResults.Any())
@@ -158,7 +160,8 @@
             new _AdminUsersSummaryPartialModel
             {
                 DateFormat = Model.DateFormat,
-                Users = Model.SearchResults
+                Users = Model.SearchResults,
+                Language = Model.Language
             },
             ViewData
         );
@@ -169,7 +172,7 @@
 </div>
 <hr class="BoxSeparator" />
 <h4 onclick="expandSection('groupsSection', 'groupsChar')" style="cursor:pointer" id="groupsTitle">
-    Grupuri
+    @Html.Raw(_languageProvider.BasicText[Model.Language, "GROUPS", Casing.FirstUpper])
     <span id="groupsChar">&#x1F53D;</span>
 </h4>
 <div id="groupsSection" style="display:none">
@@ -189,10 +192,10 @@
                 Role = role == null ? 0 : role.AuthRoleId
             }
         ).ToListAsync();
-        var groupRanks = new List<SelectListItem> { new SelectListItem("Nici unul", "0", true) };
+        var groupRanks = new List<SelectListItem> { new SelectListItem(_languageProvider.Admin[Model.Language, "NO_RANK"], "0", true) };
         groupRanks.AddRange(_context.PhpbbRanks.AsNoTracking().Select(x => new SelectListItem(x.RankTitle, x.RankId.ToString())));
-        var roles = new List<SelectListItem> { new SelectListItem("Nici una", "0", true) };
-        roles.AddRange(_context.PhpbbAclRoles.AsNoTracking().Where(x => x.RoleType == "u_").Select(x => new SelectListItem(x.RoleName, x.RoleId.ToString())));
+        var roles = new List<SelectListItem> { new SelectListItem(_languageProvider.Admin[Model.Language, "NO_ROLE"], "0", true) };
+        roles.AddRange(_context.PhpbbAclRoles.AsNoTracking().Where(x => x.RoleType == "u_").Select(x => new SelectListItem(_languageProvider.Admin[Model.Language, x.RoleName, Casing.None], x.RoleId.ToString())));
 
         foreach (var group in groups)
         {
@@ -201,14 +204,14 @@
         }
     }
     <p>&nbsp;</p>
-    <a href="javascript:newGroup()">Adaugă un grup nou</a>
+    <a href="javascript:newGroup()">@Html.Raw(_languageProvider.Admin[Model.Language, "ADD_NEW_GROUP"])</a>
     <div style="width:100%; text-align:right; font-size:1.5em">
         <a href="#groupsTitle">&#x23EB;</a>
     </div>
 </div>
 <hr class="BoxSeparator" />
 <h4 onclick="expandSection('ranksSection', 'ranksChar')" style="cursor:pointer" id="ranksTitle">
-    Ranguri
+    @Html.Raw(_languageProvider.BasicText[Model.Language, "RANKS", Casing.FirstUpper])
     <span id="ranksChar">&#x1F53D;</span>
 </h4>
 <div id="ranksSection" style="display:none">
@@ -218,14 +221,14 @@
         <br />
     }
     <p>&nbsp;</p>
-    <a href="javascript:newRank()">Adaugă un rang nou</a>
+    <a href="javascript:newRank()">@Html.Raw(_languageProvider.Admin[Model.Language, "ADD_NEW_RANK"])</a>
     <div style="width:100%; text-align:right; font-size:1.5em">
         <a href="#ranksTitle">&#x23EB;</a>
     </div>
 </div>
 <hr class="BoxSeparator" />
 <h4 onclick="expandSection('bansSection', 'bansChar')" style="cursor:pointer" id="bansTitle">
-    Interziceri
+    @Html.Raw(_languageProvider.Admin[Model.Language, "BANS"])
     <span id="bansChar">&#x1F53D;</span>
 </h4>
 <div id="bansSection" style="display:none">
@@ -245,7 +248,7 @@
                 </div>
                 <div class="FlexCenter FlexSpaced">
                     <div class="FlexCaption">
-                        E-mail
+                        @Html.Raw(_languageProvider.BasicText[Model.Language, "EMAIL", Casing.FirstUpper])
                     </div>
                     <div class="FlexRight PostInputWidth">
                         <input type="text" name="banlist[@i].BanEmail" value="@banlist[i].BanEmail" />
@@ -253,10 +256,13 @@
                 </div>
                 <div class="FlexCenter FlexSpaced">
                     <div class="FlexCaption">
-                        Șterge?
+                        @Html.Raw(_languageProvider.Admin[Model.Language, "ASK_DELETE"])
                     </div>
                     <div class="FlexRight PostInputWidth">
-                        <label><input type="checkbox" name="toRemove" value="@banlist[i].BanId" /> Da, șterge</label>
+                        <label>
+                            <input type="checkbox" name="toRemove" value="@banlist[i].BanId" />
+                            @Html.Raw(_languageProvider.Admin[Model.Language, "YES_DELETE"])
+                        </label>
                     </div>
                 </div>
                 @if (i < banlist.Count - 1)
@@ -265,8 +271,8 @@
                 }
             }
             <div id="newBans"></div>
-            <input type="button" onclick="addBannedItem()" value="Adaugă o interzicere nouă" class="MyButton SpacedButton" />
-            <input type="submit" value="Salvează modificările" class="MyButton SpacedButton" />
+            <input type="button" onclick="addBannedItem()" value="@Html.Raw(_languageProvider.Admin[Model.Language, "ADD_NEW_BAN"])" class="MyButton SpacedButton" />
+            <input type="submit" value="@Html.Raw(_languageProvider.Admin[Model.Language, "SAVE_CHANGES"])" class="MyButton SpacedButton" />
         </form>
         <script type="text/javascript">
         var cur = @banlist.Count;
@@ -276,11 +282,11 @@
                 "<div>" +
                 "<hr class='SubtypeSeparator' />" +
                 "<input type='hidden' name='banlist[" + cur + "].BanId' value='0'/>" +
-                "<b>IP:</b><br /><input type='text' name='banlist[" + cur + "].BanIp' value='" + ip + "' />" +
+                "<b>IP</b><br /><input type='text' name='banlist[" + cur + "].BanIp' value='" + ip + "' />" +
                 "<p style='clear:both'></p>" +
-                "<b>E-mail:</b><br /><input type='text' name='banlist[" + cur + "].BanEmail' value='" + email + "' />" +
+                "<b>@Html.Raw(_languageProvider.BasicText[Model.Language, "EMAIL", Casing.FirstUpper])</b><br /><input type='text' name='banlist[" + cur + "].BanEmail' value='" + email + "' />" +
                 "<p style='clear:both'></p>" +
-                "<a href=\"#!\" onclick=\"cancelAddBannedWord(this)\">Anulează</a>" +
+                "<a href=\"#!\" onclick=\"cancelAddBannedWord(this)\">@Html.Raw(_languageProvider.Admin[Model.Language, "CANCEL"])</a>" +
                 "</div>"
             );
 
@@ -305,20 +311,20 @@
     </div>
 </div>
 <script type="text/javascript">
-    function submitUserForm(userId, userName, action) {
-        msg = "Am primit comanda '" + action + "' pentru utilizatorul '" + userName + "'. Sunteți sigur că doriți să continuați cu execuția acestei comenzi?";
+    function submitUserForm(userId, userName, actionValue, actionText) {
+        msg = formatString(dictionary.Admin['CONFIRM_USER_COMMAND_FORMAT'], actionText, userName);
 
         if (confirm(msg)) {
-            document.getElementById("userAction").value = action;
-            document.getElementById("userId").value = userId;
-            document.getElementById("userManagement").submit();
+            $("#userAction").val(actionValue);
+            $("#userId").val(userId);
+            $("#userManagement").submit();
         }
     }
 
     function populateGroup(group) {
         $('#groupId').val(group.id);
         $('#groupName').val(group.name);
-        $('#groupNameTitle').text('Administrează grup - ' + group.name);
+        $('#groupNameTitle').text(formatString(dictionary.Admin['ADMIN_GROUP_TITLE_FORMAT'], group.name));
         $('#groupDesc').val(group.desc);
         $('#rank').val(group.rank);
         $('#role').val(group.role);
@@ -335,7 +341,7 @@
         $('#groupId').val(0);
         $('#groupName').val('');
         $('#groupName').css('background-color', 'white');
-        $('#groupNameTitle').text('Adaugă un grup nou');
+        $('#groupNameTitle').text(dictionary.Admin['ADD_NEW_GROUP']);
         $('#groupDesc').val('');
         $('#rank').val('0');
         $('#role').val('0');
@@ -395,7 +401,7 @@
     <p>&nbsp;</p>
     <div class="FlexCenter">
         <div style="font-weight:bold; text-align: right">
-            Nume grup
+            @Html.Raw(_languageProvider.Admin[Model.Language, "GROUP_NAME"])
         </div>
         <div class="FlexRight PostInputWidth">
             <input type="text" name="dto.name" autocomplete="new-password" id="groupName" />
@@ -404,7 +410,7 @@
     <p></p>
     <div class="FlexCenter">
         <div style="font-weight:bold; text-align: right">
-            Descriere grup
+            @Html.Raw(_languageProvider.Admin[Model.Language, "GROUP_DESCRIPTION"])
         </div>
         <div class="FlexRight PostInputWidth">
             <textarea rows="4" cols="100" name="dto.desc" autocomplete="new-password" id="groupDesc"></textarea>
@@ -413,7 +419,7 @@
     <p></p>
     <div class="FlexCenter">
         <div style="font-weight:bold; text-align: right">
-            Rang
+            @Html.Raw(_languageProvider.BasicText[Model.Language, "RANK", Casing.FirstUpper])
         </div>
         <div class="FlexRight PostInputWidth">
             @Html.DropDownList("dto.rank", groupRanks, new { id = "rank" })
@@ -422,7 +428,7 @@
     <p></p>
     <div class="FlexCenter">
         <div style="font-weight:bold; text-align: right">
-            Culoare
+            @Html.Raw(_languageProvider.BasicText[Model.Language, "COLOR", Casing.FirstUpper])
         </div>
         <div class="FlexRight PostInputWidth">
             <input type="color" name="dto.color" class="jscolor" autocomplete="new-password" id="color" onchange="$('#colorTitle').text($(this).val())" />
@@ -432,27 +438,27 @@
     <p></p>
     <div class="FlexCenter">
         <div style="font-weight:bold; text-align: right">
-            Limită upload (MB)
+            @Html.Raw(_languageProvider.Admin[Model.Language, "UPLOAD_LIMIT"])
         </div>
         <div class="FlexRight PostInputWidth">
             <input type="text" name="dto.uploadLimit" autocomplete="new-password" id="uploadLimit" /><br />
-            <span class="Caption">"0" = nelimitat</span>
+            <span class="Caption DarkCaption">@Html.Raw(_languageProvider.Admin[Model.Language, "UPLOAD_LIMIT_CAPTION"])</span>
         </div>
     </div>
     <p></p>
     <div class="FlexCenter">
         <div style="font-weight:bold; text-align: right">
-            Timp editare mesaje (min.)
+            @Html.Raw(_languageProvider.Admin[Model.Language, "POST_EDIT_TIME"])
         </div>
         <div class="FlexRight PostInputWidth">
             <input type="text" name="dto.editTime" autocomplete="new-password" id="editTime" /><br />
-            <span class="Caption">"0" = nelimitat</span>
+            <span class="Caption DarkCaption">@Html.Raw(_languageProvider.Admin[Model.Language, "POST_EDIT_TIME_CAPTION"])</span>
         </div>
     </div>
     <p></p>
     <div class="FlexCenter">
         <div style="font-weight:bold; text-align: right">
-            Permisiuni
+            @Html.Raw(_languageProvider.Admin[Model.Language, "PERMISSIONS"])
         </div>
         <div class="FlexRight PostInputWidth">
             @Html.DropDownList("dto.role", roles, new { id = "role" })
@@ -463,23 +469,23 @@
         <div style="font-weight:bold; text-align: right">
             <label>
                 @Html.CheckBox("dto.delete", false, new { id = "deleteGroup" })
-                Șterge acest grup
+                @Html.Raw(_languageProvider.Admin[Model.Language, "DELETE_THIS_GROUP"])
             </label>
         </div>
     </div>
     <p></p>
-    <input type="submit" value="Salvează modificările" onclick="return validateGroup();" class="MyButton" />
+    <input type="submit" value="@Html.Raw(_languageProvider.Admin[Model.Language, "SAVE_CHANGES"])" onclick="return validateGroup();" class="MyButton" />
     <input type="hidden" name="dto.id" id="groupId" />
 </form>
 
 <form method="post" asp-page-handler="RankManagement" id="rankAdministration" class="MiddleBox" style="display:none; padding: 10px; overflow-y: scroll">
     <h4 style="float:left" id="groupNameTitle"></h4>
-    <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('rankAdministration')">Închide [X]</div>
+    <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('rankAdministration')">@Html.Raw(_languageProvider.BasicText[Model.Language, "CLOSE_BUTTON"])</div>
     <p>&nbsp;</p>
     <p>&nbsp;</p>
     <div class="FlexCenter">
         <div style="font-weight:bold; text-align: right">
-            Nume rang
+            @Html.Raw(_languageProvider.Admin[Model.Language, "RANK_NAME"])
         </div>
         <div class="FlexRight PostInputWidth">
             <input type="text" name="rankName" autocomplete="new-password" id="rankName" />
@@ -490,10 +496,10 @@
         <div style="font-weight:bold; text-align: right">
             <label>
                 @Html.CheckBox("deleteRank", false, new { id = "deleteRank" })
-                Șterge acest rang
+                @Html.Raw(_languageProvider.Admin[Model.Language, "DELETE_THIS_RANK"])
             </label>
         </div>
     </div>
     <input type="hidden" name="rankId" id="rankId" />
-    <input type="submit" value="Salvează modificările" onclick="return $('#rankName').val() ? true : false;" class="MyButton" />
+    <input type="submit" value="@Html.Raw(_languageProvider.Admin[Model.Language, "SAVE_CHANGES"])" onclick="return $('#rankName').val() ? true : false;" class="MyButton" />
 </form>

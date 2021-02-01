@@ -25,5 +25,10 @@
     "POLL_EXPIRES_FORMAT": "Chestionarul expiră {0}",
     "CONFIRM_POLL_OPTIONS_CHANGE": "Dacă modificați opțiunile, toate voturile înregistrate până acum vor fi șterse. Continuați?",
     "LOADING_FILES": "Se încarcă fișierele..."
+  },
+  "Admin": {
+    "CONFIRM_USER_COMMAND_FORMAT": "Am primit comanda '{0}' pentru utilizatorul '{1}'. Sunteți sigur că doriți să continuați cu execuția acestei comenzi?",
+    "ADMIN_GROUP_TITLE_FORMAT": "Administrează grup - {0}",
+    "ADD_NEW_GROUP": "Adaugă un grup nou"
   }
 }

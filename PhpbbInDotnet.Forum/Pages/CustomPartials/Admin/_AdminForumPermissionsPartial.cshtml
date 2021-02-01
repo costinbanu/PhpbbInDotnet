@@ -1,13 +1,14 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials.Admin._AdminForumPermissionsPartialModel
 
 @using Microsoft.EntityFrameworkCore;
-@using PhpbbInDotnet.Objects;
-@using PhpbbInDotnet.Database;
-@using PhpbbInDotnet.Database.Entities;
-@using PhpbbInDotnet.Utilities;
+@using Objects;
+@using Database;
+@using Database.Entities;
+@using Utilities;
 
 @inject ForumDbContext _context
 @inject Services.WritingToolsService _writingSerivce
+@inject Languages.LanguageProvider _languageProvider
 
 @{
     var groupedPermissions = from p in Model.Permissions ?? new List<ForumPermissions>()
@@ -15,14 +16,13 @@
                              select groups;
 
     var entityIds = groupedPermissions.Select(x => x.Key.Id).Distinct();
-    var entityName = Model.EntityType == AclEntityType.Group ? "grup" : "utilizator";
     var remainingEntities = new List<KeyValuePair<string, int>>();
     var roles = new List<PhpbbAclRoles>();
-    var index = Model.StartIndex;
+    var index = 0;
     if (Model.EntityType == AclEntityType.Group)
     {
         remainingEntities = await (
-            from g in _context.PhpbbGroups
+            from g in _context.PhpbbGroups.AsNoTracking()
             where !entityIds.Contains(g.GroupId)
             select KeyValuePair.Create(g.GroupName, g.GroupId)
         ).ToListAsync();
@@ -30,7 +30,7 @@
     else
     {
         remainingEntities = await (
-            from u in _context.PhpbbUsers
+            from u in _context.PhpbbUsers.AsNoTracking()
             where u.UserId != 1 && !entityIds.Contains(u.UserId) && u.UserType != 2
             orderby u.Username
             select KeyValuePair.Create(u.Username, u.UserId)
@@ -41,17 +41,20 @@
 
 @foreach (var permissions in groupedPermissions)
 {
-<div class="FlexCenter">
-    <div>@permissions.Key.Name</div>
-    <div class="FlexRight PostInputWidth">
-        @Html.DropDownList(
-            $"dto.{Model.EntityType}ForumPermissions[{index}]",
-            permissions.Select(p => new SelectListItem(p.RoleDescription, $"{permissions.Key.Id}_{p.RoleId}", p.HasRole)),
-            new { style = "width:75%; margin-top:10px;" }
-        )
-        &nbsp;<label>Șterge? <input type="checkbox" name="dto.@(Model.EntityType)PermissionToRemove" value="@(index++)" /></label>
+    <div class="FlexCenter">
+        <div>@permissions.Key.Name</div>
+        <div class="FlexRight PostInputWidth">
+            @Html.DropDownList(
+                $"dto.{Model.EntityType}ForumPermissions[{index}]",
+                permissions.Select(p => new SelectListItem(_languageProvider.Admin[Model.Language, p.RoleName, Casing.None], $"{permissions.Key.Id}_{p.RoleId}", p.HasRole)),
+                new { style = "width:75%; margin-top:10px;" }
+            )
+            <label>
+                @Html.Raw(_languageProvider.Admin[Model.Language, "ASK_DELETE"])
+                <input type="checkbox" name="dto.@(Model.EntityType)PermissionToRemove" value="@(index++)" />
+            </label>
+        </div>
     </div>
-</div>
 }
 
 <script type="text/javascript">
@@ -66,28 +69,32 @@
 {
     <p>&nbsp;</p>
     <div style="border:solid 1px black; padding:5px; border-radius:5px; width:95%">
-        <strong>Adaugă permisiuni pentru un @entityName nou</strong>
+        <strong>
+            @Html.Raw(_languageProvider.Admin[Model.Language, Model.EntityType == AclEntityType.Group ? "ADD_PERMISSIONS_FOR_NEW_GROUP" : "ADD_PERMISSIONS_FOR_NEW_USER"])
+        </strong>
         <p>&nbsp;</p>
         @if (Model.EntityType == AclEntityType.User)
         {
-            <input type="text" id="permissionsUser" placeholder="Caută un utilizator..." autocomplete="new-password" />
+            <input type="text" id="permissionsUser" placeholder="@Html.Raw(_languageProvider.Admin[Model.Language, "SEARCH_FOR_USER"])" autocomplete="new-password" />
         }
         else
         {
             var dropDownItems = new List<SelectListItem>
             {
-                new SelectListItem("Alege un grup", "0", true, true)
+                new SelectListItem(_languageProvider.Admin[Model.Language, "CHOOSE_GROUP"], "0", true, true)
             };
             dropDownItems.AddRange(remainingEntities.Select(e => new SelectListItem(e.Key, e.Value.ToString())));
             @Html.DropDownList($"permissionsGroup", dropDownItems, new { onchange = "changeGroupId(this.options[this.selectedIndex].value, this.options[this.selectedIndex].text)" });
         }
         <p id="tributeHolder" style="position:relative">&nbsp;</p>
         <div class="FlexCenter">
-            <div id="entityName_@(Model.Self)">@entityName nou</div>
+            <div id="entityName_@(Model.Self)">
+                @Html.Raw(_languageProvider.Admin[Model.Language, Model.EntityType == AclEntityType.Group ? "NEW_GROUP" : "NEW_USER"])
+            </div>
             <div class="FlexRight PostInputWidth">
                 @Html.DropDownList(
                     $"dto.{Model.EntityType}ForumPermissions[{index++}]",
-                    roles.Select(p => new SelectListItem(p.RoleDescription, $"0_{p.RoleId}")),
+                    roles.Select(p => new SelectListItem(_languageProvider.Admin[Model.Language, p.RoleName, Casing.None], $"0_{p.RoleId}")),
                     new { id = $"newPermissions_{Model.Self}", style = "width:95%" }
                 )
             </div>

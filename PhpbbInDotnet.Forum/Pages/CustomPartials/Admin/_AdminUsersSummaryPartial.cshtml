@@ -1,5 +1,8 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials.Admin._AdminUsersSummaryPartialModel
+
 @using PhpbbInDotnet.Utilities
+
+@inject Languages.LanguageProvider _languageProvider
 
 @foreach (var user in Model.Users)
 {
@@ -11,18 +14,21 @@
                 <div class="FlexLeft PostInputWidth">
                     <label>
                         <input type="checkbox" name="userIds" value="@user.UserId" form="batchAdminUsers" />
-                        Selectează pentru ștergere
+                        @Html.Raw(_languageProvider.Admin[Model.Language, "SELECT_USER_FOR_DELETION"])
                     </label>
                 </div>
             </div>
         }
         <div class="FlexCenter FlexSpacedMini">
             <div class="FlexCaption">
-                E-mail
+                @Html.Raw(_languageProvider.BasicText[Model.Language, "EMAIL", Casing.FirstUpper])
             </div>
             <div class="FlexRight PostInputWidth">
-                @user.UserEmail
-                <a href="#" onclick="addBannedItem('@user.UserEmail', '')">INTERZICE e-mail</a>
+                @Html.Raw(user.UserEmail)
+                &bull;
+                <a href="#" onclick="addBannedItem('@user.UserEmail', '')">
+                    @Html.Raw(_languageProvider.Admin[Model.Language, "BAN_EMAIL"])
+                </a>
             </div>
         </div>
         <div class="FlexCenter FlexSpacedMini">
@@ -31,13 +37,19 @@
             </div>
             <div class="FlexRight PostInputWidth">
                 @user.UserIp
-                <a href="https://whatismyipaddress.com/ip/@user.UserIp" target="_blank">[IP Lookup]</a>
-                <a href="#" onclick="addBannedItem('', '@user.UserIp')">INTERZICE IP</a>
+                &bull;
+                <a href="https://whatismyipaddress.com/ip/@user.UserIp" target="_blank">
+                    @Html.Raw(_languageProvider.Admin[Model.Language, "IP_LOOKUP"])
+                </a>
+                &bull;
+                <a href="#" onclick="addBannedItem('', '@user.UserIp')">
+                    @Html.Raw(_languageProvider.Admin[Model.Language, "BAN_IP"])
+                </a>
             </div>
         </div>
         <div class="FlexCenter FlexSpacedMini">
             <div class="FlexCaption">
-                Data înregistrării
+                @Html.Raw(_languageProvider.Admin[Model.Language, "REGISTRATION_DATE"])
             </div>
             <div class="FlexRight PostInputWidth">
                 <script>writeDate('@user.UserRegdate.ToUtcTime().ToString("o")', '@Model.DateFormat')</script>
@@ -45,7 +57,7 @@
         </div>
         <div class="FlexCenter FlexSpacedMini">
             <div class="FlexCaption">
-                Data inactivării
+                @Html.Raw(_languageProvider.Admin[Model.Language, "DEACTIVATION_DATE"])
             </div>
             <div class="FlexRight PostInputWidth">
                 @if (user.UserInactiveTime != 0)
@@ -60,7 +72,7 @@
         </div>
         <div class="FlexCenter FlexSpacedMini">
             <div class="FlexCaption">
-                Motivul inactivării
+                @Html.Raw(_languageProvider.Admin[Model.Language, "DEACTIVATION_REASON"])
             </div>
             <div class="FlexRight PostInputWidth">
                 @user.UserInactiveReason.ToString()
@@ -68,44 +80,66 @@
         </div>
         <div class="FlexCenter FlexSpacedMini">
             <div class="FlexCaption">
-                Acțiuni rapide
+                @Html.Raw(_languageProvider.Admin[Model.Language, "QUICK_ACTIONS"])
             </div>
             <ul class="FlexRight PostInputWidth">
                 <li>
                     @if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed || user.UserInactiveReason == UserInactiveReason.ChangedEmailNotConfirmed)
                     {
-                        <s><a href="#" title="Nu poate fi activat deoarece nu și-a confirmat adresa de e-mail.">Activează</a></s>
+                        <s>
+                            <a href="#" title="@Html.Raw(_languageProvider.Admin[Model.Language, "CANT_ACTIVATE_EMAIL_NOT_CONFIRMED_TOOLTIP"])">
+                                @Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Activate])
+                            </a>
+                        </s>
                     }
                     else if (user.UserInactiveReason == UserInactiveReason.NotInactive)
                     {
-                        <s><a href="#" title="Nu poate fi activat deoarece este deja activ.">Activează</a></s>
+                        <s>
+                            <a href="#" title="@Html.Raw(_languageProvider.Admin[Model.Language, "CANT_ACTIVATE_ALREADY_ACTIVE_TOOLTIP"])">
+                                @Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Activate])
+                            </a>
+                        </s>
                     }
                     else
                     {
-                        <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Activate')">Activează</a>
+                        <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Activate', '@Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Activate])')">
+                            @Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Activate])
+                        </a>
                     }
                 </li>
                 <li>
                     @if (user.UserInactiveTime > 0)
                     {
-                        <s><a href="#" title="Nu poate fi dezactivat deoarece este deja inactiv.">Dezactivează</a></s>
+                        <s>
+                            <a href="#" title="@Html.Raw(_languageProvider.Admin[Model.Language, "CANT_DEACTIVATE_ALREADY_INACTIVE_TOOLTIP"])">
+                                @Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Deactivate])
+                            </a>
+                        </s>
                     }
                     else
                     {
-                        <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Deactivate')">Dezactivează</a>
+                        <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Deactivate', '@Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Deactivate])')">
+                            @Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Deactivate])
+                        </a>
                     }
                 </li>
                 <li>
-                    <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Delete_KeepMessages')">Șterge (păstrează mesajele)</a>
+                    <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Delete_KeepMessages', '@Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Delete_KeepMessages])')">
+                        @Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Delete_KeepMessages])
+                    </a>
                 </li>
                 <li>
-                    <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Delete_DeleteMessages')">Șterge (șterge mesajele)</a>
+                    <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Delete_DeleteMessages', '@Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Delete_DeleteMessages])')">
+                        @Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Delete_DeleteMessages])
+                    </a>
                 </li>
             </ul>
         </div>
         <div class="FlexCenter FlexSpacedMini" style="padding-bottom:20px; font-weight:bold">
             <div class="FlexLeft PostInputWidth">
-                <a asp-page="/User" asp-route-UserId="@user.UserId" target="_blank">Vezi / modifică profilul complet</a>
+                <a asp-page="/User" asp-route-UserId="@user.UserId" target="_blank">
+                    @Html.Raw(_languageProvider.Admin[Model.Language, "VIEW_EDIT_FULL_PROFILE"])
+                </a>
             </div>
         </div>
     </div>

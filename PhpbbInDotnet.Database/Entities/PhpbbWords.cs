@@ -7,7 +7,11 @@ namespace PhpbbInDotnet.Database.Entities
     {
         [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int WordId { get; set; }
+
+        [DisplayFormat(ConvertEmptyStringToNull = false)]
         public string Word { get; set; } = string.Empty;
+
+        [DisplayFormat(ConvertEmptyStringToNull = false)]
         public string Replacement { get; set; } = string.Empty;
     }
 }

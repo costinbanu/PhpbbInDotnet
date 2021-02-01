@@ -19,7 +19,9 @@
   "VIEWS": "vizualizări",
   "USER": "utilizator",
   "GROUP": "grup",
+  "GROUPS": "grupuri",
   "RANK": "rang",
+  "RANKS": "ranguri",
   "ACTIVE": "activ",
   "INACTIVE": "inactiv",
   "REGISTERED": "înscris",
@@ -47,6 +49,8 @@
   "CLOSE_BUTTON": "Închide [X]",
   "SELECT_AN_OPTION": "Alege o opțiune",
   "GO": "du-te",
+  "FROM": "de la",
+  "TO": "până la",
 
   //post/topic/forum summary
   "LAST_POST_TEXT": "Ultimul mesaj de",

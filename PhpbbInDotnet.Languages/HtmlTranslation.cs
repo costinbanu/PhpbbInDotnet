@@ -4,7 +4,7 @@ namespace PhpbbInDotnet.Languages
 {
     public class HtmlTranslation : Translation
     {
-        public HtmlTranslation(string name, ILogger logger) : base(name, logger) { }
+        internal HtmlTranslation(string name, ILogger logger) : base(name, logger) { }
 
         protected override string FileExtension => "html";
 

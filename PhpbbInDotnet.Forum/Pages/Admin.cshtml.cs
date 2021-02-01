@@ -123,6 +123,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
         [BindProperty]
         public PhpbbForums Forum { get; set; } = null;
+        [BindProperty]
+        public int? ParentForumId { get; set; } = null;
         public List<PhpbbForums> ForumChildren { get; private set; }
         public List<SelectListItem> ForumSelectedParent { get; private set; }
         public IEnumerable<ForumPermissions> Permissions { get; private set; }

@@ -13,5 +13,7 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials.Admin
 
         public AdminUserSearch SearchParameters { get; set; }
 
+        public string Language { get; set; }
+
     }
 }

@@ -40,42 +40,12 @@ namespace PhpbbInDotnet.Services
             var lang = await GetLanguage();
             try
             {
-                var newWords = from w2 in words
-                               join w in _context.PhpbbWords.AsNoTracking()
-                               on w2.WordId equals w.WordId
-                               into joined
-                               from j in joined.DefaultIfEmpty()
-                               where j == null && !string.IsNullOrWhiteSpace(w2.Word) && !string.IsNullOrWhiteSpace(w2.Replacement)
-                               select w2;
-                
-                if (newWords.Any())
-                {
-                    await _context.PhpbbWords.AddRangeAsync(newWords);
-                }
-
-                var toRemove = new List<PhpbbWords>();
-                foreach (var idx in indexesToRemove)
-                {
-                        toRemove.Add(await _context.PhpbbWords.FirstOrDefaultAsync(x => x.WordId == words[idx].WordId));
-                }
-                _context.PhpbbWords.RemoveRange(toRemove);
-                
-                var editedWords = from w in await _context.PhpbbWords.ToListAsync()
-                                  join w2 in words 
-                                  on w.WordId equals w2.WordId
-                                  join r in toRemove
-                                  on w.WordId equals r.WordId
-                                  into joined
-                                  from j in joined.DefaultIfEmpty()
-                                  where j == default && w.Replacement != w2.Replacement
-                                  select (Word: w, w2.Replacement);
-
-                foreach (var (Word, Replacement) in editedWords)
-                {
-                    Word.Replacement = Replacement;
-                }
-
+                await _context.PhpbbWords.AddRangeAsync(words.Where(w => w.WordId == 0));
+                _context.PhpbbWords.UpdateRange(words.Where(w => w.WordId != 0));
                 await _context.SaveChangesAsync();
+
+                var conn = _context.Database.GetDbConnection();
+                await conn.ExecuteAsync("DELETE FROM phpbb_words WHERE word_id IN @ids", new { ids = indexesToRemove.Select(i => words[i].WordId) });
 
                 return (LanguageProvider.Admin[lang, "BANNED_WORDS_UPDATED_SUCCESSFULLY"], true);
             }
@@ -86,28 +56,18 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<(string Message, bool? IsSuccess)> ManageBBCodes(List<PhpbbBbcodes> codes, List<int> toRemove, List<int> toDisplay)
+        public async Task<(string Message, bool? IsSuccess)> ManageBBCodes(List<PhpbbBbcodes> codes, List<int> indexesToRemove, List<int> indexesToDisplay)
         {
             var lang = await GetLanguage();
             try
-            { asta nu stiu daca e bine
-                codes.ForEach(code =>
-                {
-                    code.BbcodeTpl ??= string.Empty;
-                    code.BbcodeHelpline ??= string.Empty;
-                });
-                toDisplay.ForEach(i => codes[i].DisplayOnPosting = 1);
+            { 
+                indexesToDisplay.ForEach(i => codes[i].DisplayOnPosting = 1);
                 await _context.PhpbbBbcodes.AddRangeAsync(codes.Where(c => c.BbcodeId == 0));
                 _context.PhpbbBbcodes.UpdateRange(codes.Where(c => c.BbcodeId != 0));
                 await _context.SaveChangesAsync();
 
                 var conn = _context.Database.GetDbConnection();
-                //await conn.ExecuteAsync(
-                //    "INSERT INTO phpbb_codes (bbcode_tag, bbcode_tpl, bbcode_helpline, display_on_posting) VALUES (@BbcodeTag, @BbcodeTpl, @Display)",
-                //    codes.Where(c => c.BbcodeId == 0).Select(c => new { c.BbcodeTag, c.BbcodeTpl, Display = toDisplay.Contains(codes.IndexOf()) }
-                //);
-                await conn.ExecuteAsync("DELETE FROM phpbb_bbcodes WHERE bbcode_id IN @ids", new { ids = toRemove.Select(i => codes[i].BbcodeId) });
-                //await conn.ExecuteAsync("UPDATE phpbb_bbcodes SET display_on_posting = 1 WHERE bbcode_id IN @ids", new { ids = toDisplay.Select(i => codes[i].BbcodeId) });
+                await conn.ExecuteAsync("DELETE FROM phpbb_bbcodes WHERE bbcode_id IN @ids", new { ids = indexesToRemove.Select(i => codes[i].BbcodeId) });
                 return (LanguageProvider.Admin[lang, "BBCODES_UPDATED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)

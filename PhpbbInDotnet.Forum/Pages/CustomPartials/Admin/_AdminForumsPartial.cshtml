@@ -3,29 +3,32 @@
 
 @inject Services.ForumTreeService _forumTreeService
 @inject Services.AdminForumService _adminForumService
+@inject CommonUtils _utils
+@inject Languages.LanguageProvider _languageProvider 
+
 <environment include="Development">
     <link rel="stylesheet" href="~/css/posting.css" />
 </environment>
 <div style="float:left">
-    <h4>Administrare forumuri</h4>
+    <h4>@Html.Raw(_languageProvider.Admin[Model.Language, "ADMIN_FORUMS"])</h4>
 </div>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
-@{ var tree = await _forumTreeService.GetForumTree(Model.CurrentUser, false, false); }
 @await Html.PartialAsync(
     "_ForumTreePartial",
     new CustomPartials._ForumTreePartialModel(
-        tree: tree,
+        tree: await _forumTreeService.GetForumTree(Model.CurrentUser, false, false),
         forumId: Model.Forum?.ForumId ?? 0,
         topicId: null
     ),
     ViewData
 )
 <form method="post" asp-page-handler="ShowForum">
-    <input type="submit" value="Modifică forumul selectat" class="MyButton SpacedButton" />
-    <input type="submit" value="Șterge forumul selectat" form="deleteForumForm" class="MyButton SpacedButton" />
-    <input type="submit" value="Creează un forum nou" onclick="$('#forumIdUpsert').val('')" class="MyButton SpacedButton" />
+    <input type="submit" value="@Html.Raw(_languageProvider.Admin[Model.Language, "EDIT_SELECTED_FORUM"])" class="MyButton SpacedButton" />
+    <input type="submit" value="@Html.Raw(_languageProvider.Admin[Model.Language, "DELETE_SELECTED_FORUM"])" form="deleteForumForm" class="MyButton SpacedButton" />
+    <input type="submit" value="@Html.Raw(_languageProvider.Admin[Model.Language, "CREATE_NEW_FORUM"])" onclick="selectNewForum()" class="MyButton SpacedButton" />
     <input id="forumIdUpsert" name="forumId" type="hidden" />
+    <input id="parentIdCreate" name="parentForumId" type="hidden" />
 </form>
 <form method="post" asp-page-handler="DeleteForum" id="deleteForumForm">
     <input type="hidden" name="forumId" id="forumIdDelete" />
@@ -35,18 +38,18 @@
     <form id="forumFields" method="post" asp-page-handler="ForumManagement" class="MiddleBox" style="display: none; padding: 10px; overflow-y: scroll">
         @if ((Model.Forum?.ForumId ?? 0) != 0)
         {
-            <h4 style="float:left">Administrează forum - @Model.Forum?.ForumName</h4>
+            <h4 style="float:left">@Html.Raw(string.Format(_languageProvider.Admin[Model.Language, "ADMIN_FORUM_TITLE_FORMAT"], Model.Forum?.ForumName))</h4>
         }
         else
         {
-            <h4 style="float:left">Creează un forum nou</h4>
+            <h4 style="float:left">@Html.Raw(_languageProvider.Admin[Model.Language, "CREATE_NEW_FORUM"])</h4>
         }
-        <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('forumFields')">Închide [X]</div>
+        <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('forumFields')">@Html.Raw(_languageProvider.BasicText[Model.Language, "CLOSE_BUTTON"])</div>
         <p>&nbsp;</p>
         <p>&nbsp;</p>
         <div class="FlexCenter">
             <div style="font-weight:bold; text-align: right">
-                Nume forum
+                @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_NAME"])
             </div>
             <div class="FlexRight PostInputWidth">
                 <input asp-for="Forum.ForumName" name="dto.forumName" autocomplete="new-password" />
@@ -55,7 +58,7 @@
         <hr class="SubtypeSeparator" />
         <div class="FlexCenter">
             <div style="font-weight:bold; text-align: right">
-                Descriere forum
+                @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_DESCRIPTION"])
             </div>
             <div class="FlexRight PostInputWidth">
                 <textarea asp-for="Forum.ForumDesc" name="dto.forumDesc"></textarea>
@@ -64,48 +67,54 @@
         <hr class="SubtypeSeparator" />
         <div class="FlexCenter">
             <div style="font-weight:bold; text-align: right">
-                Parolă forum
+                @Html.Raw(_languageProvider.BasicText[Model.Language, "FORUM_PASSWORD", Casing.FirstUpper])
             </div>
             <div class="FlexRight PostInputWidth">
                 <label>
-                    Forumul are parolă
+                    @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_HAS_PASSWORD"])
                     @Html.CheckBox("dto.hasPassword", !string.IsNullOrWhiteSpace(Model.Forum?.ForumPassword))
                 </label>
                 <br />
-                <span class="Caption">Debifați pentru a elimina parola existentă.</span>
+                <span class="Caption DarkCaption">@Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_HAS_PASSWORD_CAPTION"])</span>
                 <br /> <br />
                 <input asp-for="Forum.ForumPassword" name="dto.forumPassword" type="password" id="forumPassword" autocomplete="new-password" style="width:75% !important" />&nbsp;
                 <label>
                     <input type="checkbox" onclick="Toggle()" />
-                    Arată parola
+                    @Html.Raw(_languageProvider.Admin[Model.Language, "SHOW_PASSWORD"])
                 </label>
                 <br />
-                <span class="Caption">Introduceți noua parolă. Va fi schimbată dacă forumul are deja una.</span>
+                <span class="Caption DarkCaption">@Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_PASSWORD_CAPTION"])</span>
             </div>
         </div>
         <hr class="SubtypeSeparator" />
         <div class="FlexCenter">
             <div style="font-weight:bold; text-align: right">
-                Tip forum
+                @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_TYPE"])
             </div>
             <div class="FlexRight PostInputWidth">
-                @Html.DropDownList("dto.forumType", Enum.GetValues(typeof(ForumType)).Cast<ForumType>().Select(
-                    ft => new SelectListItem(ft.ToString("g"), ft.ToString("g"), Model.Forum?.ForumType == ft)))
+                @Html.DropDownList("dto.forumType", _utils.EnumToDropDownList<ForumType>(ForumType.SubForum, ft => _languageProvider.Enums[Model.Language, ft]))
             </div>
         </div>
         <hr class="SubtypeSeparator" />
         <div class="FlexCenter">
             <div style="font-weight:bold; text-align: right">
-                Părinte forum
+                @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_PARENT"])
             </div>
             <div class="FlexRight PostInputWidth">
-                @Html.DropDownList("dto.parentId", await _adminForumService.FlatForumTreeAsListItem(Model.Forum?.ParentId ?? 0, Model.CurrentUser))
+                @{ 
+                    var parentId = Model.Forum?.ParentId ?? 0;
+                    if (parentId == 0)
+                    {
+                        parentId = Model.ParentId ?? 0;
+                    }
+                }
+                @Html.DropDownList("dto.parentId", await _adminForumService.FlatForumTreeAsListItem(parentId, Model.CurrentUser))
             </div>
         </div>
         <hr class="SubtypeSeparator" />
         <div class="FlexCenter">
             <div style="font-weight:bold; text-align: right">
-                Ordonează sub-forumuri
+                @Html.Raw(_languageProvider.Admin[Model.Language, "REORDER_SUBFORUMS"])
             </div>
             <div class="FlexRight PostInputWidth">
                 <div id="children" style="width:100%">
@@ -122,7 +131,7 @@
         <hr class="SubtypeSeparator" />
         <div class="FlexCenter">
             <div style="font-weight:bold; text-align: right">
-                Link reguli forum
+                @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_RULES_LINK"])
             </div>
             <div class="FlexRight PostInputWidth">
                 <input asp-for="Forum.ForumRulesLink" name="dto.forumRulesLink" autocomplete="new-password" />
@@ -131,7 +140,7 @@
         <hr class="SubtypeSeparator" />
         <div class="FlexCenter">
             <div style="font-weight:bold; text-align: right">
-                Reguli forum
+                @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_RULES"])
             </div>
             <div class="FlexRight PostInputWidth">
                 <textarea asp-for="Forum.ForumRules" name="dto.forumRules"></textarea>
@@ -139,43 +148,47 @@
         </div>
         <hr />
         <div style="font-weight:bold; vertical-align:top; font-size:1.2em">
-            Permisiuni pentru forum
+            @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_PERMISSIONS"])
         </div>
         <br />
-        <span style="font-weight:bold">Permisiuni utilizatori</span>
+        <span style="font-weight:bold">@Html.Raw(_languageProvider.Admin[Model.Language, "USER_PERMISSIONS"])</span>
         <br />
         @await Html.PartialAsync(
             "_AdminForumPermissionsPartial",
-            new _AdminForumPermissionsPartialModel(
-                Model.Forum,
-                Model.ForumChildren,
-                Model.Permissions?.Where(p => p.Type == AclEntityType.User),
-                AclEntityType.User
-            ),
+            new _AdminForumPermissionsPartialModel
+            {
+                Forum = Model.Forum,
+                ForumChildren = Model.ForumChildren,
+                Permissions = Model.Permissions?.Where(p => p.Type == AclEntityType.User),
+                EntityType = AclEntityType.User,
+                Language = Model.Language
+            },
             ViewData
         )
         <hr class="SubtypeSeparator" />
-        <span style="font-weight:bold">Permisiuni grupuri</span>
+        <span style="font-weight:bold">@Html.Raw(_languageProvider.Admin[Model.Language, "GROUP_PERMISSIONS"])</span>
         <br />
         @await Html.PartialAsync(
             "_AdminForumPermissionsPartial",
-            new _AdminForumPermissionsPartialModel(
-                Model.Forum,
-                Model.ForumChildren,
-                Model.Permissions?.Where(p => p.Type == AclEntityType.Group),
-                AclEntityType.Group
-            ),
+            new _AdminForumPermissionsPartialModel
+            {
+                Forum = Model.Forum,
+                ForumChildren = Model.ForumChildren,
+                Permissions = Model.Permissions?.Where(p => p.Type == AclEntityType.Group),
+                EntityType = AclEntityType.Group,
+                Language = Model.Language
+            },
             ViewData
         )
         <hr />
-        <input type="submit" value="Salvează modificările" style="margin-bottom:10px; float: left;" class="MyButton" /> &nbsp;
+        <input type="submit" value="@Html.Raw(_languageProvider.Admin[Model.Language, "SAVE_CHANGES"])" style="margin-bottom:10px; float: left;" class="MyButton" /> &nbsp;
         <input asp-for="Forum.ForumId" type="hidden" name="dto.forumId" />
-        <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('forumFields')">Închide [X]</div>
+        <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('forumFields')">@Html.Raw(_languageProvider.BasicText[Model.Language, "CLOSE_BUTTON"])</div>
 
     </form>
 }
 
-<script type="text/javascript">
+<script>
     var children = document.getElementById('children');
     if (children) {
         Sortable.create(children, { animation: 150 });
@@ -188,13 +201,16 @@
     }
 
     function Toggle() {
-        var temp = document.getElementById("forumPassword");
-        if (temp.type === "password") {
-            temp.type = "text";
+        if ($('#forumPassword').attr('type') == 'password') {
+            $('#forumPassword').attr('type', 'text');
+        } else {
+            $('#forumPassword').attr('type', 'password');
         }
-        else {
-            temp.type = "password";
-        }
+    }
+
+    function selectNewForum() {
+        $('#parentIdCreate').val($('#forumIdUpsert').val());
+        $('#forumIdUpsert').val('');
     }
 </script>
 

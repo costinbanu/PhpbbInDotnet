@@ -25,5 +25,13 @@
 
   "ModeratorPostActions.DeleteSelectedPosts": "Șterge mesajele selectate",
   "ModeratorPostActions.MoveSelectedPosts": "Mută mesajele selectate",
-  "ModeratorPostActions.SplitSelectedPosts": "Desparte mesajele selectate într-un nou subiect"
+  "ModeratorPostActions.SplitSelectedPosts": "Desparte mesajele selectate într-un nou subiect",
+
+  "ForumType.Category": "Categorie",
+  "ForumType.SubForum": "Subforum",
+
+  "AdminUserActions.Activate": "Activează",
+  "AdminUserActions.Deactivate": "Dezactivează",
+  "AdminUserActions.Delete_KeepMessages": "Șterge (păstrează mesajele)",
+  "AdminUserActions.Delete_DeleteMessages": "Șterge (șterge mesajele)"
 }

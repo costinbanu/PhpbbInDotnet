@@ -43,3 +43,7 @@ input[type='text'], input[type='password'], select, textarea, option {
 .FlexSpacedMini {
     padding-top: 10px;
 }
+
+.DarkCaption {
+    color: dimgray;
+}
