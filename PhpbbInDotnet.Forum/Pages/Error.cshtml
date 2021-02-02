@@ -2,16 +2,21 @@
 @model ErrorModel
 
 @using Utilities
+@using Microsoft.Extensions.Configuration
 
 @inject Languages.LanguageProvider _languageProvider
 @inject Services.UserService _userService
+@inject IConfiguration _config
+@inject CommonUtils _utils
 
 @{
     ViewData["Title"] = "Error";
     var lang = _languageProvider.GetValidatedLanguage(await _userService.ClaimsPrincipalToAuthenticatedUser(User), Model.Request);
+    var adminEmail = _config.GetValue<string>("AdminEmail");
+    var displayContact = !Model.IsUnauthorized && !Model.IsNotFound;
 }
 
-<h3 class="text-danger">@Html.Raw(_languageProvider.Errors[lang, "AN_ERROR_OCCURRED", Casing.Title])</h3>
+<h3 class="Error">@Html.Raw(_languageProvider.Errors[lang, "AN_ERROR_OCCURRED", Casing.Title])</h3>
 
 @if (Model.IsUnauthorized)
 {
@@ -21,7 +26,12 @@ else if (Model.IsNotFound)
 {
     <p>@Html.Raw(_languageProvider.Errors[lang, "ERROR_NOT_FOUND"])</p>
 }
-else
+else if (!string.IsNullOrWhiteSpace(Model.CustomErrorMessage))
+{
+    <p>@Html.Raw(await _utils.DecodeAndDecompress(Model.CustomErrorMessage))</p>
+}
+
+@if(displayContact)
 {
     if (!string.IsNullOrWhiteSpace(Model.ErrorId))
     {
@@ -30,5 +40,11 @@ else
             <code>@Model.ErrorId</code>
         </p>
     }
-    <p>@Html.Raw(string.IsNullOrWhiteSpace(Model.ErrorId) ? _languageProvider.Errors[lang, "REPORT_ERROR"] : _languageProvider.Errors[lang, "REPORT_ERROR_WITH_ID"])</p>
+    <p>
+        @Html.Raw(
+            string.IsNullOrWhiteSpace(Model.ErrorId) 
+                ? string.Format(_languageProvider.Errors[lang, "REPORT_ERROR_FORMAT"], adminEmail) 
+                : string.Format(_languageProvider.Errors[lang, "REPORT_ERROR_WITH_ID_FORMAT"], adminEmail)
+        )
+    </p>
 }

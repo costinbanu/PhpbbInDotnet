@@ -11,13 +11,6 @@
   "ADMIN_FORUMS": "Administrare forumuri",
   "WRITING_TOOLS": "Unelte scriere",
 
-  //writing
-  "BANNED_WORDS_UPDATED_SUCCESSFULLY": "Cuvintele au fost actualizate cu succes!",
-  "SOME_ORPHANED_FILES_DELETED_FORMAT": "Fișierele {0} au fost șterse cu succes, însă fișierele {1} nu au fost șterse.",
-  "NO_ORPHANED_FILES_DELETED": "Nici un fișier nu a fost șters de pe server.",
-  "ORPHANED_FILES_DELETED_FORMAT": "Fișierele {0} au fost șterse cu succes.",
-  "BBCODES_UPDATED_SUCCESSFULLY": "Codurile BB au fost actualizate cu succes!",
-
   //permissions
   "ADD_PERMISSIONS_FOR_NEW_GROUP": "Adaugă permisiuni pentru un grup nou",
   "ADD_PERMISSIONS_FOR_NEW_USER": "Adaugă permisiuni pentru un utilizator nou",
@@ -81,8 +74,9 @@
   "CANT_ACTIVATE_ALREADY_ACTIVE_TOOLTIP": "Nu poate fi activat deoarece este deja activ.",
   "CANT_DEACTIVATE_ALREADY_INACTIVE_TOOLTIP": "Nu poate fi dezactivat deoarece este deja inactiv.",
   "VIEW_EDIT_FULL_PROFILE": "Vezi / modifică profilul complet",
+  "TOO_FEW_SEARCH_CRITERIA": "Prea puține criterii de căutare.",
 
-  // role names
+  //role names
   "ROLE_ADMIN_STANDARD": "Administrator standard",
   "ROLE_ADMIN_FORUM": "Administrator forum",
   "ROLE_ADMIN_USERGROUP": "Administrator utilizatori și grupuri",
@@ -113,6 +107,10 @@
   "WORD": "Cuvânt",
   "REPLACEMENT": "Înlocuitor",
   "ADD_NEW_WORD": "Adaugă un cuvânt nou",
+  "BANNED_WORDS_UPDATED_SUCCESSFULLY": "Cuvintele au fost actualizate cu succes!",
+  "SOME_ORPHANED_FILES_DELETED_FORMAT": "Fișierele {0} au fost șterse cu succes, însă fișierele {1} nu au fost șterse.",
+  "NO_ORPHANED_FILES_DELETED": "Nici un fișier nu a fost șters de pe server.",
+  "ORPHANED_FILES_DELETED_FORMAT": "Fișierele {0} au fost șterse cu succes.",
   "ORPHAN_FILES": "Fișiere orfane",
   "ORPHAN_FILES_CAPTION_FORMAT": "Fișiere pe server fără corespondență într-un mesaj ({0} fișiere, în total {1}).",
   "FILENAME_ASC": "Nume fișier (A → Z)",
@@ -128,6 +126,7 @@
   "LAST_MODIFIED": "Ultima dată modificat",
   "SIZE": "Dimensiune",
   "CUSTOM_BB_CODES": "Coduri BB personalizate",
+  "BBCODES_UPDATED_SUCCESSFULLY": "Codurile BB au fost actualizate cu succes!",
   "TAG_NAME": "Nume tag",
   "HTML_CODE": "Cod HTML",
   "EXPLANATION": "Explicație",

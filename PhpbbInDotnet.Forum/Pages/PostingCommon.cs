@@ -21,7 +21,7 @@ namespace PhpbbInDotnet.Forum.Pages
     [ValidateAntiForgeryToken]
     public partial class PostingModel : AuthenticatedPageModel
     {
-        [BindProperty, MaxLength(255, ErrorMessage = "Titlul trebuie să aibă maxim 255 caractere.")]
+        [BindProperty]
         public string PostTitle { get; set; }
         
         [BindProperty]
@@ -136,20 +136,35 @@ namespace PhpbbInDotnet.Forum.Pages
         private async Task Init()
         {
             var connection = Context.Database.GetDbConnection();
-            var smileys = await connection.QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies GROUP BY smiley_url ORDER BY smiley_order");
-            await CacheService.SetInCache(await GetActualCacheKey("Smilies", false), smileys.ToList());
+            List<KeyValuePair<string, int>> userMap = null;
 
-            var userMap = (await connection.QueryAsync<PhpbbUsers>(
-                "SELECT * FROM phpbb_users WHERE user_id <> @anon AND user_type <> 2 ORDER BY username", 
-                new { anon = Constants.ANONYMOUS_USER_ID })
-            ).Select(u => KeyValuePair.Create(u.Username, u.UserId)).ToList();
+            async Task<List<KeyValuePair<string, int>>> GetUserMap()
+                => userMap ??= (await connection.QueryAsync<PhpbbUsers>(
+                        "SELECT * FROM phpbb_users WHERE user_id <> @anon AND user_type <> 2 ORDER BY username",
+                        new { anon = Constants.ANONYMOUS_USER_ID })
+                    ).Select(u => KeyValuePair.Create(u.Username, u.UserId)).ToList();
+            
+            var smileyKey = await GetActualCacheKey("Smilies", false);
+            if (!await CacheService.ExistsInCache(smileyKey))
+            {
+                var smileys = await connection.QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies GROUP BY smiley_url ORDER BY smiley_order");
+                await CacheService.SetInCache(smileyKey, smileys.ToList());
+            }
 
-            await CacheService.SetInCache(
-                await GetActualCacheKey("Users", false),
-                userMap.Select(map => KeyValuePair.Create(map.Key, $"[url={Config.GetValue<string>("BaseUrl")}/User?UserId={map.Value}]{map.Key}[/url]"))
-            );
+            var userKey = await GetActualCacheKey("Users", false);
+            if (!await CacheService.ExistsInCache(userKey))
+            {
+                await CacheService.SetInCache(
+                    userKey,
+                    (await GetUserMap()).Select(map => KeyValuePair.Create(map.Key, $"[url={Config.GetValue<string>("BaseUrl")}/User?UserId={map.Value}]{map.Key}[/url]"))
+                );
+            }
 
-            await CacheService.SetInCache(await GetActualCacheKey("UserMap", false), userMap);
+            var userMapKey = await GetActualCacheKey("UserMap", false);
+            if (!await CacheService.ExistsInCache(userMapKey))
+            {
+                await CacheService.SetInCache(userMapKey, await GetUserMap());
+            }
         }
 
         private async Task<PhpbbPosts> InitEditedPost()
@@ -169,15 +184,23 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task<int?> UpsertPost(PhpbbPosts post, AuthenticatedUser usr)
         {
+            var lang = await GetLanguage();
+
+            if ((PostTitle?.Length ?? 0) > 255)
+            {
+                ModelState.AddModelError(nameof(PostTitle), LanguageProvider.Errors[lang, "TITLE_TOO_LONG"]);
+                return null;
+            }
+
             if ((PostTitle?.Trim()?.Length ?? 0) < 3)
             {
-                ModelState.AddModelError(nameof(PostTitle), "Titlul este prea scurt (minim 3 caractere, exclusiv spații).");
+                ModelState.AddModelError(nameof(PostTitle), LanguageProvider.Errors[lang, "TITLE_TOO_SHORT"]);
                 return null;
             }
 
             if ((PostText?.Trim()?.Length ?? 0) < 3)
             {
-                ModelState.AddModelError(nameof(PostText), "Mesajul este prea scurt (minim 3 caractere, exclusiv spații).");
+                ModelState.AddModelError(nameof(PostText), LanguageProvider.Errors[lang, "POST_TOO_SHORT"]);
                 return null;
             }
 
@@ -187,7 +210,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var canCreatePoll = Action == PostingActions.NewTopic || (Action == PostingActions.EditForumPost && (curTopic?.TopicFirstPostId ?? 0) == PostId);
             if (canCreatePoll && (string.IsNullOrWhiteSpace(PollExpirationDaysString) || !double.TryParse(PollExpirationDaysString, out var val) || val < 0 || val > 365))
             {
-                ModelState.AddModelError(nameof(PollExpirationDaysString), "Valoarea introdusă nu este validă. Valori acceptate: între 0 și 365");
+                ModelState.AddModelError(nameof(PollExpirationDaysString), LanguageProvider.Errors[lang, "INVALID_POLL_EXPIRATION"]);
                 ShowPoll = true;
                 return null;
             }
@@ -195,7 +218,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var pollOptionsArray = GetPollOptionsEnumerable();
             if (canCreatePoll && (PollMaxOptions == null || (pollOptionsArray.Any() && (PollMaxOptions < 1 || PollMaxOptions > pollOptionsArray.Count()))))
             {
-                ModelState.AddModelError(nameof(PollMaxOptions), "Valori valide: între 1 și numărul de opțiuni ale chestionarului.");
+                ModelState.AddModelError(nameof(PollMaxOptions), LanguageProvider.Errors[lang, "INVALID_POLL_OPTION_COUNT"]);
                 ShowPoll = true;
                 return null;
             }
@@ -326,6 +349,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task<IActionResult> WithNewestPostSincePageLoad(PhpbbForums curForum, Func<Task<IActionResult>> toDo)
         {
+            var lang = await GetLanguage();
+
             if ((TopicId ?? 0) > 0 && (LastPostTime ?? 0) > 0)
             {
                 var connection = Context.Database.GetDbConnection();
@@ -338,12 +363,12 @@ namespace PhpbbInDotnet.Forum.Pages
                 );
                 if (((long?)times?.post_time ?? 0L) > LastPostTime)
                 {
-                    return PageWithError(curForum, nameof(LastPostTime), "De când a fost încărcată pagina, au mai fost scrie mesaje noi! Verifică mesajele precedente!");
+                    return PageWithError(curForum, nameof(LastPostTime), LanguageProvider.Errors[lang, "NEW_MESSAGES_SINCE_LOAD"]);
                 }
                 else if(((long?)times?.post_edit_time ?? 0L) > LastPostTime)
                 {
                     LastPostTime = (long?)times?.post_edit_time;
-                    return PageWithError(curForum, nameof(LastPostTime), "De când a fost încărcată pagina, ultimul mesaj a fost modificat! Verifică ultimul mesaj!");
+                    return PageWithError(curForum, nameof(LastPostTime), LanguageProvider.Errors[lang, "LAST_MESSAGE_WAS_EDITED_SINCE_LOAD"]);
                 }
                 else
                 {

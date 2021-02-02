@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -28,9 +29,12 @@ namespace PhpbbInDotnet.Utilities
             => (byte)(@bool ? 1 : 0);
 
         public static bool IsMimeTypeInline(this string mimeType)
-            => mimeType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase) /*||
+            => mimeType.IsImageMimeType() /*||
                 mimeType.StartsWith("video", StringComparison.InvariantCultureIgnoreCase) ||
                 mimeType.EndsWith("pdf", StringComparison.InvariantCultureIgnoreCase)*/;
+
+        public static bool IsImageMimeType(this string mimeType)
+            => mimeType.StartsWith("image/", StringComparison.InvariantCultureIgnoreCase);
 
         public static async Task<T> FirstOrDefaultAsync<T>(this IQueryable<T> source) where T : class
         {
@@ -97,6 +101,9 @@ namespace PhpbbInDotnet.Utilities
 
             return input;
         }
+
+        public static T GetObject<T>(this IConfiguration config, string sectionName = null)
+            => config.GetSection(sectionName ?? typeof(T).Name).Get<T>();
 
         private static readonly Regex CHAR_CODES_REGEX = new Regex("&#[0-9]{3};", RegexOptions.Compiled | RegexOptions.CultureInvariant, Constants.REGEX_TIMEOUT);
 

@@ -233,7 +233,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             if (string.IsNullOrWhiteSpace(SearchText) && !IsAuthorSearch)
             {
-                ModelState.AddModelError(nameof(SearchText), LanguageProvider.BasicText[await GetLanguage(), "MISSING_REQUIRED_FIELD"]);
+                ModelState.AddModelError(nameof(SearchText), LanguageProvider.Errors[await GetLanguage(), "MISSING_REQUIRED_FIELD"]);
                 return;
             }
 

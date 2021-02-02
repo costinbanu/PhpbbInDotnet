@@ -4,6 +4,7 @@
 @using Utilities
 @using Database.Entities
 @using CustomPartials
+@using Objects.Configuration
 @using Microsoft.Extensions.Configuration
 
 @model PhpbbInDotnet.Forum.Pages.PostingModel
@@ -340,19 +341,23 @@ else if (IsPM)
     }
     @if (!IsPM)
     {
+        var sizeLimit = _config.GetObject<AttachmentLimits>("UploadLimitsMB");
+        var countLimit = _config.GetObject<AttachmentLimits>("UploadLimitsCount");
+        var resizeTool = _config.GetObject<ExternalImageResizeTool>();
+
         <div id="attachPanel" style="display:@(Model.ShowAttach ? "block" : "none")">
             <br />
             <h3>Fișiere atașate</h3>
-            @*specific metrouusor*@
-            <p style="clear:both;width:100%; padding:10px 20px 10px 20px; margin:0px">
-                Includerea imaginilor mai mari de 2MB nu este permisă, indiferent dacă sunt găzduite local sau extern. De asemenea, numerele de înmatriculare ale vehiculelor particulare surprinse in imagini trebuie ascunse.
-                Utilizați <a href="https://procesorimagini.metrouusor.com/" target="_blank">procesorul de imagini „Metrou Ușor”</a> pentru a redimensiona imagini și a ascunde numere de înmatriculare.
-            </p>
+
+            @Html.Raw(string.Format(Model.LanguageProvider.AttachmentGuide[Lang], sizeLimit.Images, resizeTool.Url, resizeTool.Name))
+
             <input asp-for="Files" onchange="posting.submitAttachments()" multiple class="HiddenFileInput" />
             <label for="Files" class="MyButton">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CHOOSE_FILES"])</label><br />
             @if (!IsAdmin)
             {
-                <span class="Caption">@Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, "CHOOSE_FILES_CAPTION_FORMAT"], _config.GetValue<int>("UploadLimitsMB:Images"), _config.GetValue<int>("UploadLimitsMB:OtherFiles")))</span>
+                <span class="Caption">
+                    @Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, "CHOOSE_FILES_CAPTION_FORMAT"], countLimit.Images, sizeLimit.Images, countLimit.OtherFiles, sizeLimit.OtherFiles))
+                </span>
             }
             <span asp-validation-for="Files" class="validation"></span>
             <div id="fileUploadStatus"></div>

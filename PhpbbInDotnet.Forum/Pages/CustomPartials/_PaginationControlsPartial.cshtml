@@ -95,7 +95,9 @@
             @if (!Model.Paginator.IsAnonymous && Model.AllowPaginationChange)
             {
                 <form method="post" asp-page-handler="Pagination" style="line-height:1.5em">
-                    <span style="white-space:nowrap; display: inline">Mesaje afișate pe pagină:&nbsp;</span>
+                    <span style="white-space:nowrap; display: inline">
+                        @Html.Raw(_languageProvider.BasicText[Model.Language, "POSTS_PER_PAGE"]):&nbsp;
+                    </span>
                     <span style="white-space:nowrap; display: inline">
                         <input type="hidden" name="topicId" value="@Model.TopicId" />
                         <input type="hidden" name="postId" value="@Model.FirstPostId" />

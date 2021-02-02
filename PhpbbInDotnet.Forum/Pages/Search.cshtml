@@ -28,6 +28,7 @@
 }
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />
+    <link rel="stylesheet" href="~/css/posting.css" />
     <script type="text/javascript" src="~/js/viewTopic.js"></script>
 </environment>
 @if (!Model.IsAuthorSearch)
@@ -57,7 +58,7 @@
         if (topicDisplay != null) {
             topicDisplay.options.length = 0;
             var option = document.createElement('option');
-            option.text = "Caută în toate subiectele";
+            option.text = "@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEARCH_IN_ALL_TOPICS"])";
             option.value = 0;
             topicDisplay.add(option);
             topics.forEach(t => {
@@ -84,7 +85,7 @@
         <input asp-for="TotalResults" type="hidden" />
         <input asp-for="AuthorId" type="hidden" id="authorId" />
 
-        <input asp-for="SearchText" type="text" placeholder="Caută după text..." style="width:100%" autofocus class="InputBox" />
+        <input asp-for="SearchText" type="text" placeholder="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEARCH_BY_TEXT"])" style="width:100%" autofocus class="InputBox" />
         <span class="Caption">
             @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEARCH_CAPTION"])
         </span>

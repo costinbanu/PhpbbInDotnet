@@ -59,11 +59,12 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithAdmin(async () =>
             {
                 Category = AdminCategories.Users;
+                var lang = await GetLanguage();
                 if (new[] { SearchParameters?.Username, SearchParameters?.Email, SearchParameters?.RegisteredFrom, SearchParameters?.RegisteredTo, SearchParameters?.LastActiveFrom, SearchParameters?.LastActiveTo }.All(string.IsNullOrWhiteSpace) 
                     && ((SearchParameters?.UserId ?? 0) == 0) 
                     && !(SearchParameters?.NeverActive ?? false))
                 {
-                    Message = "Prea puține criterii de căutare.";
+                    Message = LanguageProvider.Admin[lang, "TOO_FEW_SEARCH_CRITERIA"];
                     IsSuccess = false;
                     return Page();
                 }
@@ -71,7 +72,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 (IsSuccess, Message, UserSearchResults) = await _adminUserService.UserSearchAsync(SearchParameters);
                 if (!UserSearchResults.Any())
                 {
-                    Message = "Nu a fost găsit nici un utilizator.";
+                    Message = LanguageProvider.BasicText[lang, "NO_RESULTS_FOUND"];
                     IsSuccess = false;
                 }
                 return Page();

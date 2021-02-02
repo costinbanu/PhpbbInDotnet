@@ -243,6 +243,10 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
     border-bottom: solid 1px lightgray;
 }
 
+.Error {
+    color: #f57371;
+}
+
 @media (max-width: 768px) {
     .Summary {
         display: none;

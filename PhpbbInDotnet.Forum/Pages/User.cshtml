@@ -663,7 +663,7 @@ else
             @if (canEdit)
             {
                 <p>&nbsp;</p>
-                <input class="MyButton" type="submit" value="Salvează modificările" style="width:auto" />
+                <input class="MyButton" type="submit" value="@Html.Raw(Model.LanguageProvider.Admin[Lang, "SAVE_CHANGES"])" style="width:auto" />
             }
             @if (!isSelf && !canEdit)
             {

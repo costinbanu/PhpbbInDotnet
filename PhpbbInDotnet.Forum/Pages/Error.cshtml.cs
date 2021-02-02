@@ -14,6 +14,9 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public bool IsNotFound { get; set; }
 
+        [BindProperty(SupportsGet = true)]
+        public string CustomErrorMessage { get; set; }
+
         public void OnGet()
         {
 

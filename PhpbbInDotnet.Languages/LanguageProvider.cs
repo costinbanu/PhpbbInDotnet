@@ -24,6 +24,7 @@ namespace PhpbbInDotnet.Languages
         private readonly Lazy<TextTranslation> _moderator;
         private readonly Lazy<TextTranslation> _admin;
         private readonly Lazy<HtmlTranslation> _customBBCodeGuide;
+        private readonly Lazy<HtmlTranslation> _attachmentGuide;
 
         public TextTranslation BasicText => _basicText.Value;
 
@@ -49,6 +50,8 @@ namespace PhpbbInDotnet.Languages
 
         public HtmlTranslation CustomBBCodeGuide => _customBBCodeGuide.Value;
 
+        public HtmlTranslation AttachmentGuide => _attachmentGuide.Value;
+
         public LanguageProvider(ILogger logger)
         {
             _logger = logger;
@@ -64,6 +67,7 @@ namespace PhpbbInDotnet.Languages
             _moderator = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Moderator), _logger));
             _admin = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Admin), _logger));
             _customBBCodeGuide = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(CustomBBCodeGuide), _logger));
+            _attachmentGuide = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(AttachmentGuide), _logger));
         }
 
         public string GetValidatedLanguage(AuthenticatedUser user, HttpRequest request = null)

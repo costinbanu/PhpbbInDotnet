@@ -5,8 +5,8 @@
   "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT": "A intervenit o eroare, încearcă din nou. ID: {0}",
   "ERROR_UNAUTHORIZED": "Nu ești autorizat să vizitezi pagina solicitată.",
   "ERROR_NOT_FOUND": "Pagina solicitată nu există.",
-  "REPORT_ERROR_WITH_ID": "Dacă eroarea persistă, scrieți la <a href=\"mailto:admin@metrouusor.com\">admin@metrouusor.com</a> și includeți IDul de mai sus.",
-  "REPORT_ERROR": "Dacă eroarea persistă, scrieți la <a href=\"mailto:admin@metrouusor.com\">admin@metrouusor.com</a>.",
+  "REPORT_ERROR_WITH_ID_FORMAT": "Dacă eroarea persistă, scrieți la <a href=\"mailto:{0}\">{0}</a> și includeți IDul de mai sus.",
+  "REPORT_ERROR_FORMAT": "Dacă eroarea persistă, scrieți la <a href=\"mailto:{0}\">{0}</a>.",
   "MISSING_REQUIRED_FIELD": "Acest câmp este obligatoriu.",
 
   //authentication
@@ -39,6 +39,23 @@
   "CANT_CHANGE_VOTE": "Votul nu poate fi schimbat!",
   "POST_NO_LONGER_LAST": "Mesajul nu poate fi șters deoarece nu mai este ultimul din subiect!",
   "EDIT_TIME_EXPIRED": "Mesajul nu poate fi șters deoarece a expirat timpul limită de modificare a mesajelor!",
+  "TITLE_TOO_SHORT": "Titlul este prea scurt (minim 3 caractere, exclusiv spații).",
+  "TITLE_TOO_LONG": "Titlul este prea lung (maxim 255 caractere, inclusiv spații).",
+  "POST_TOO_SHORT": "Mesajul este prea scurt (minim 3 caractere, exclusiv spații).",
+  "INVALID_POLL_EXPIRATION": "Valoarea introdusă nu este validă. Valori acceptate: între 0 și 365.",
+  "INVALID_POLL_OPTION_COUNT": "Valori valide: între 1 și numărul de opțiuni ale chestionarului.",
+  "NEW_MESSAGES_SINCE_LOAD": "De când a fost încărcată pagina, au mai fost scrie mesaje noi! Verifică mesajele precedente!",
+  "LAST_MESSAGE_WAS_EDITED_SINCE_LOAD": "De când a fost încărcată pagina, ultimul mesaj a fost modificat! Verifică ultimul mesaj!",
+  "RECEIVER_DOESNT_EXIST": "Destinatarul ales nu există",
+  "POST_DOESNT_EXIST": "Mesajul ales nu există",
+  "ATTACH_QUOTA_EXCEEDED": "Ai depășit limita de upload alocată rangului tău.",
+  "FILES_TOO_BIG_FORMAT": "Următoarele fișiere sunt prea mari: {0}",
+  "TOO_MANY_FILES": "Prea multe fișiere!",
+  "GENERIC_ATTACH_ERROR_FORMAT": "Următoarele fișiere nu au putut fi adăugate, te rugăm să încerci din nou: {0}.",
+  "CANT_DELETE_ATTACHMENT_TRY_AGAIN": "Fișierul nu a putut fi șters, te rugăm să încerci din nou.",
+  "GENERIC_POSTING_ERROR": "A intervenit o eroare iar mesajul nu a fost publicat. Te rugăm să încerci din nou.",
+  "ENTER_VALID_RECEIVER": "Introduceți un destinatar valid.",
+
 
   //pm
   "SENDER_CANT_SEND_PMS": "Expeditorul nu are dreptul să trimită mesaje private.",
@@ -46,5 +63,7 @@
   "ON_RECEIVERS_FOE_LIST": "Destinatarul te-a adăugat pe lista sa de persoane neagreate, drept urmare nu îi poți trimite mesaje private.",
   "CANT_EDIT_ALREADY_READ": "Mesajul a fost deja citit și nu mai poate fi actualizat.",
   "CANT_DELETE_ALREADY_READ_OR_NONEXISTING": "Mesajul nu există sau a fost deja citit. Drept urmare nu mai poate fi șters.",
-  "SOME_MESSAGES_MISSING_FORMAT": "{0} mesaje au fost șterse cu succes, însă {1} nu au fost găsite."
+  "SOME_MESSAGES_MISSING_FORMAT": "{0} mesaje au fost șterse cu succes, însă {1} nu au fost găsite.",
+  "PM_DOESNT_EXIST": "Mesajul ales nu există"
+
 }

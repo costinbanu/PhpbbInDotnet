@@ -185,6 +185,7 @@
   "SAVE_DRAFT": "Salvează mesajul în lucru",
   "SUBMIT_POST": "Trimite mesajul",
   "DRAFT_SAVED_SUCCESSFULLY": "Mesajul în lucru a fost salvat cu succes și vei putea lucra în continuare la el mai târziu.",
+  "CLOSED_TOPIC_CAPTION": "Subiectul este închis, nu se mai pot trimite răspunsuri.",
 
   //post reporting
   "REPORT": "raport",
@@ -220,7 +221,7 @@
 
   //attachments
   "CHOOSE_FILES": "Alege unul sau mai multe fișiere",
-  "CHOOSE_FILES_CAPTION_FORMAT": "Minim 1, maxim 10 fișiere. Dimensiune limită: {0}MB pentru imagini, {1}MB în rest.",
+  "CHOOSE_FILES_CAPTION_FORMAT": "Imagini: maxim {0} fișiere, dimensiune maximă: {1}MB. Alte tipuri: maxim {2} fișiere, dimensiune maximă: {3}MB.",
   "LOAD_FILES": "Încarcă fișierele alese",
   "ALREADY_ATTACHED": "Fișiere deja atașate",
   "FILE_NAME": "Nume",
@@ -244,6 +245,7 @@
   "SEARCH_CAPTION": "Dacă doriți să căutați după o frază exactă, puneți-o între ghilimele. De exemplu căutarea <b><i>autobuz galben</i></b> va returna mesaje care conțin fie <b><i>autobuz</i></b>, fie <b><i>galben</i></b>, fie amândouă.Căutarea <b><i>\"autobuz galben\"</i></b> va returna mesajele care conțin fraza exactă \"autobuz galben\".",
   "ADVANCED_SEARCH": "Căutare avansată",
   "SEARCH_BY_AUTHOR": "Caută după autor...",
+  "SEARCH_BY_TEXT": "Caută după text...",
   "SEARCH_IN_FORUM": "Caută în forumul...",
   "SEARCH_IN_TOPIC": "Caută în subiectul...",
   "SEARCH_IN_ALL_TOPICS": "Caută în toate subiectele",

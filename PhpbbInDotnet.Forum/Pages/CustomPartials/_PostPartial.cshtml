@@ -142,7 +142,7 @@
                         else if (!IsAnonymous && (!Model.IsPostLastInPage || !Model.IsLastPage))
                         {
                             <span>
-                                <a href="javascript:;" title="Subiectul este închis, nu se mai pot trimite răspunsuri.">
+                                <a href="javascript:;" title="@Html.Raw(_languageProvider.BasicText[Model.Language, "CLOSED_TOPIC_CAPTION"])">
                                     <s>&#x1F5E8; @Html.Raw(_languageProvider.BasicText[Model.Language, "CLOSED_TOPIC", Casing.FirstUpper])</s>
                                 </a>
                             </span>

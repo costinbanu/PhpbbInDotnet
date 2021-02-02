@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
+using PhpbbInDotnet.Objects.Configuration;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -126,6 +127,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetPrivateMessage()
             => await WithRegisteredUser(async (usr) =>
             {
+                var lang = await GetLanguage();
                 var conn = Context.Database.GetDbConnection();
                 
                 if ((PostId ?? 0) > 0)
@@ -143,12 +145,12 @@ namespace PhpbbInDotnet.Forum.Pages
                         }
                         else
                         {
-                            return BadRequest("Destinatarul nu există");
+                            return RedirectToPage("Error", new { CustomErrorMessage = await Utils.CompressAndEncode(LanguageProvider.Errors[lang, "RECEIVER_DOESNT_EXIST"]) });
                         }
                     }
                     else
                     {
-                        return BadRequest("Mesajul nu există");
+                        return RedirectToPage("Error", new { CustomErrorMessage = await Utils.CompressAndEncode(LanguageProvider.Errors[lang, "POST_DOESNT_EXIST"]) });
                     }
                 }
                 else if ((PrivateMessageId ?? 0) > 0 && (ReceiverId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
@@ -166,12 +168,12 @@ namespace PhpbbInDotnet.Forum.Pages
                         }
                         else
                         {
-                            return BadRequest("Destinatarul nu există");
+                            return RedirectToPage("Error", new { CustomErrorMessage = await Utils.CompressAndEncode(LanguageProvider.Errors[lang, "RECEIVER_DOESNT_EXIST"]) });
                         }
                     }
                     else
                     {
-                        return BadRequest("Mesajul nu există");
+                        return RedirectToPage("Error", new { CustomErrorMessage = await Utils.CompressAndEncode(LanguageProvider.Errors[lang, "PM_DOESNT_EXIST"]) });
                     }
                 }
                 else if ((ReceiverId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
@@ -210,6 +212,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostAddAttachment()
             => await WithBackup(async () => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, async (curForum) =>
             {
+                var lang = await GetLanguage();
                 CurrentForum = curForum;
                 ShowAttach = true;
 
@@ -233,26 +236,34 @@ namespace PhpbbInDotnet.Forum.Pages
                     var uploadSize = await connection.ExecuteScalarAsync<long>("SELECT sum(filesize) FROM phpbb_attachments WHERE poster_id = @userId", new { user.UserId });
                     if (uploadSize + Files.Sum(f => f.Length) > user.UploadLimit)
                     {
-                        return PageWithError(curForum, nameof(Files), "Ai depășit limita de upload alocată rangului tău.");
+                        return PageWithError(curForum, nameof(Files), LanguageProvider.Errors[lang, "ATTACH_QUOTA_EXCEEDED"]);
                     }
                 }
 
-                var tooLargeFiles = Files.Where(f => f.Length > 1024 * 1024 * (f.ContentType.StartsWith("image/", StringComparison.InvariantCultureIgnoreCase) ? Config.GetValue<int>("UploadLimitsMB:Images") : Config.GetValue<int>("UploadLimitsMB:OtherFiles")));
-                if (tooLargeFiles.Any() && !await IsCurrentUserAdminHere())
+                var isAdmin = await IsCurrentUserAdminHere();
+                var sizeLimit = Config.GetObject<AttachmentLimits>("UploadLimitsMB");
+                var countLimit = Config.GetObject<AttachmentLimits>("UploadLimitsCount");
+
+                var tooLargeFiles = Files.Where(f => f.Length > 1024 * 1024 * (f.ContentType.IsImageMimeType() ? sizeLimit.Images : sizeLimit.OtherFiles));
+                if (tooLargeFiles.Any() && !isAdmin)
                 {
-                    return PageWithError(curForum, nameof(Files), $"Următoarele fișiere sunt prea mari: {string.Join(",", tooLargeFiles.Select(f => f.FileName))}");
+                    return PageWithError(curForum, nameof(Files), string.Format(LanguageProvider.Errors[lang, "FILES_TOO_BIG_FORMAT"], string.Join(",", tooLargeFiles.Select(f => f.FileName))));
                 }
 
-                if ((Attachments?.Count ?? 0) + Files.Count() > 10 && !await IsCurrentUserAdminHere())
+                var images = Files.Where(f => f.ContentType.IsImageMimeType());
+                var nonImages = Files.Where(f => !f.ContentType.IsImageMimeType());
+                var existingImages = Attachments?.Count(a => a.Mimetype.IsImageMimeType()) ?? 0;
+                var existingNonImages = Attachments?.Count(a => !a.Mimetype.IsImageMimeType()) ?? 0;
+                if (!isAdmin && (existingImages + images.Count() > countLimit.Images || existingNonImages + nonImages.Count() > countLimit.OtherFiles))
                 {
-                    return PageWithError(curForum, nameof(Files), "Sunt permise maxim 10 fișiere per mesaj.");
+                    return PageWithError(curForum, nameof(Files), LanguageProvider.Errors[lang, "TOO_MANY_FILES"]);
                 }
 
                 var (succeeded, failed) = await _storageService.BulkAddAttachments(Files, user.UserId);
 
                 if (failed.Any())
                 {
-                    return PageWithError(curForum, nameof(Files), $"Următoarele fișiere nu au putut fi adăugate, vă rugăm să încercați din nou: {string.Join(",", failed)}");
+                    return PageWithError(curForum, nameof(Files), string.Format(LanguageProvider.Errors[lang, "GENERIC_ATTACH_ERROR_FORMAT"], string.Join(",", failed)));
                 }
 
                 if (Attachments == null)
@@ -270,17 +281,18 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostDeleteAttachment(int index)
             => await WithBackup(async () => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, async (curForum) =>
             {
+                var lang = await GetLanguage();
                 var attachment = Attachments?.ElementAtOrDefault(index);
                 CurrentForum = curForum;
 
                 if (attachment == null)
                 {
-                    return PageWithError(curForum, $"{nameof(DeleteFileDummyForValidation)}[{index}]", "Fișierul nu a putut fi șters, vă rugăm încercați din nou.");
+                    return PageWithError(curForum, $"{nameof(DeleteFileDummyForValidation)}[{index}]", LanguageProvider.Errors[lang, "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
                 }
 
                 if (!_storageService.DeleteFile(attachment.PhysicalFilename, false))
                 {
-                    ModelState.AddModelError($"{nameof(DeleteFileDummyForValidation)}[{index}]", "Fișierul nu a putut fi șters, vă rugăm încercați din nou.");
+                    ModelState.AddModelError($"{nameof(DeleteFileDummyForValidation)}[{index}]", LanguageProvider.Errors[lang, "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
                 }
 
                 if (!string.IsNullOrWhiteSpace(PostText))
@@ -310,12 +322,12 @@ namespace PhpbbInDotnet.Forum.Pages
                 var lang = await GetLanguage();
                 if ((PostTitle?.Trim()?.Length ?? 0) < 3)
                 {
-                    return PageWithError(curForum, nameof(PostTitle), "Titlul este prea scurt (minim 3 caractere, exclusiv spații).");
+                    return PageWithError(curForum, nameof(PostTitle), LanguageProvider.Errors[lang, "TITLE_TOO_SHORT"]);
                 }
 
                 if ((PostText?.Trim()?.Length ?? 0) < 3)
                 {
-                    return PageWithError(curForum, nameof(PostText), "Mesajul este prea scurt (minim 3 caractere, exclusiv spații).");
+                    return PageWithError(curForum, nameof(PostText), LanguageProvider.Errors[lang, "POST_TOO_SHORT"]);
                 }
 
                 var conn = Context.Database.GetDbConnection();
@@ -379,7 +391,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var addedPostId = await UpsertPost(null, user);
                 if (addedPostId == null)
                 {
-                    return PageWithError(curForum, nameof(PostText), "A intervenit o eroare iar mesajul nu a fost publicat. Te rugăm să încerci din nou.");
+                    return PageWithError(curForum, nameof(PostText), LanguageProvider.Errors[await GetLanguage(), "GENERIC_POSTING_ERROR"]);
                 }
                 return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
             }))));
@@ -409,19 +421,26 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostPrivateMessage()
             => await WithRegisteredUser(async (user) =>
             {
+                var lang = await GetLanguage();
+
                 if ((ReceiverId ?? 1) == 1)
                 {
-                    return PageWithError(null, nameof(ReceiverName), "Introduceți un destinatar valid.");
+                    return PageWithError(null, nameof(ReceiverName), LanguageProvider.Errors[lang, "ENTER_VALID_RECEIVER"]);
                 }
 
                 if ((PostTitle?.Trim()?.Length ?? 0) < 3)
                 {
-                    return PageWithError(null, nameof(PostTitle), "Subiectul este prea scurt (minim 3 caractere, exclusiv spații).");
+                    return PageWithError(null, nameof(PostTitle), LanguageProvider.Errors[lang, "TITLE_TOO_SHORT"]);
+                }
+
+                if ((PostTitle?.Length ?? 0) > 255)
+                {
+                    return PageWithError(null, nameof(PostTitle), LanguageProvider.Errors[lang, "TITLE_TOO_LONG"]);
                 }
 
                 if ((PostText?.Trim()?.Length ?? 0) < 3)
                 {
-                    return PageWithError(null, nameof(PostText), "Mesajul este prea scurt (minim 3 caractere, exclusiv spații).");
+                    return PageWithError(null, nameof(PostText), LanguageProvider.Errors[lang, "POST_TOO_SHORT"]);
                 }
 
                 var (Message, IsSuccess) = Action switch
@@ -441,16 +460,23 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostSaveDraft()
             => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, async (curForum) => await WithNewestPostSincePageLoad(curForum, async () =>
             {
+                var lang = await GetLanguage();
+
                 if ((PostTitle?.Trim()?.Length ?? 0) < 3)
                 {
-                    return PageWithError(curForum, nameof(PostTitle), "Titlul este prea scurt (minim 3 caractere, exclusiv spații).");
+                    return PageWithError(curForum, nameof(PostTitle), LanguageProvider.Errors[lang, "TITLE_TOO_SHORT"]);
+                }
+
+                if ((PostTitle?.Length ?? 0) > 255)
+                {
+                    return PageWithError(curForum, nameof(PostTitle), LanguageProvider.Errors[lang, "TITLE_TOO_LONG"]);
                 }
 
                 if ((PostText?.Trim()?.Length ?? 0) < 3)
                 {
-                    return PageWithError(curForum, nameof(PostText), "Mesajul este prea scurt (minim 3 caractere, exclusiv spații).");
+                    return PageWithError(curForum, nameof(PostText), LanguageProvider.Errors[lang, "POST_TOO_SHORT"]);
                 }
-                
+
                 var conn = Context.Database.GetDbConnection();
                 var topicId = Action == PostingActions.NewTopic ? 0 : TopicId ?? 0;
                 var draft = conn.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId });
