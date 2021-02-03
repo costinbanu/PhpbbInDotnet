@@ -183,18 +183,18 @@ else if (IsPM)
                     @class = "BbCodeButton PostingButton",
                     style = "border-radius: 2px; border: 1px solid #dcdcdc;",
                     onchange = "posting.bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;",
-                    title = code.Value.ToolTip
+                    title = Model.LanguageProvider.BBCodeCaptions[Lang, code.Value.OpenTag]
                 })
             }
             else if (code.Key == "color")
             {
-                <button type="button" class="BbCodeButton Hide960 PostingButton MyButton" onclick="posting.change_palette();" title="@code.Value.ToolTip" id="colour_palette_button">
+                <button type="button" class="BbCodeButton Hide960 PostingButton MyButton" onclick="posting.change_palette();" title="@Html.Raw(Model.LanguageProvider.BBCodeCaptions[Lang, code.Value.OpenTag])" id="colour_palette_button">
                     @Html.Raw(code.Value.ButtonText)
                 </button>
             }
             else
             {
-                <button type="button" class="BbCodeButton PostingButton @(code.Value.ShowWhenCollapsed ? "" : "Hide960") MyButton" onclick="posting.bbstyle('@code.Key')" title="@code.Value.ToolTip">
+                <button type="button" class="BbCodeButton PostingButton @(code.Value.ShowWhenCollapsed ? "" : "Hide960") MyButton" onclick="posting.bbstyle('@code.Key')" title="@Html.Raw(Model.LanguageProvider.BBCodeCaptions[Lang, code.Value.OpenTag])">
                     @Html.Raw(code.Value.ButtonText)
                 </button>
             }

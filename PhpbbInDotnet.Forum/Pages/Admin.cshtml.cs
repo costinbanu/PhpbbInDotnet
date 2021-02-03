@@ -54,11 +54,13 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public AdminUserSearch SearchParameters { get; set; }
         public List<PhpbbUsers> UserSearchResults { get; private set; }
+        public bool WasSearchPerformed { get; set; } = false;
 
         public async Task<IActionResult> OnPostUserSearch()
             => await WithAdmin(async () =>
             {
                 Category = AdminCategories.Users;
+                WasSearchPerformed = true;
                 var lang = await GetLanguage();
                 if (new[] { SearchParameters?.Username, SearchParameters?.Email, SearchParameters?.RegisteredFrom, SearchParameters?.RegisteredTo, SearchParameters?.LastActiveFrom, SearchParameters?.LastActiveTo }.All(string.IsNullOrWhiteSpace) 
                     && ((SearchParameters?.UserId ?? 0) == 0) 
@@ -69,7 +71,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return Page();
                 }
 
-                (IsSuccess, Message, UserSearchResults) = await _adminUserService.UserSearchAsync(SearchParameters);
+                (Message, IsSuccess, UserSearchResults) = await _adminUserService.UserSearchAsync(SearchParameters);
                 if (!UserSearchResults.Any())
                 {
                     Message = LanguageProvider.BasicText[lang, "NO_RESULTS_FOUND"];

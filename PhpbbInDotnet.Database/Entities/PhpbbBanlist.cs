@@ -8,7 +8,9 @@ namespace PhpbbInDotnet.Database.Entities
         [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int BanId { get; set; } = 0;
         public int BanUserid { get; set; } = 0;
+        [DisplayFormat(ConvertEmptyStringToNull = false)]
         public string BanIp { get; set; } = string.Empty;
+        [DisplayFormat(ConvertEmptyStringToNull = false)]
         public string BanEmail { get; set; } = string.Empty;
         public int BanStart { get; set; } = 0;
         public int BanEnd { get; set; } = 0;

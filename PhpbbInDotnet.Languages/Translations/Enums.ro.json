@@ -33,5 +33,15 @@
   "AdminUserActions.Activate": "Activează",
   "AdminUserActions.Deactivate": "Dezactivează",
   "AdminUserActions.Delete_KeepMessages": "Șterge (păstrează mesajele)",
-  "AdminUserActions.Delete_DeleteMessages": "Șterge (șterge mesajele)"
+  "AdminUserActions.Delete_DeleteMessages": "Șterge (șterge mesajele)",
+
+  "UserInactiveReason.NotInactive": "Activ",
+  "UserInactiveReason.NewlyRegisteredNotConfirmed": "Recent înregistrat, email neverificat",
+  "UserInactiveReason.ProfileChange": "Actualizare profil",
+  "UserInactiveReason.InactivatedByAdmin": "Dezactivat de administrator",
+  "UserInactiveReason.PermanentlyBanned": "Interzis definitiv",
+  "UserInactiveReason.TemporarilyBanned": "Interzis temporar",
+  "UserInactiveReason.NewlyRegisteredConfirmed": "Recent înregistrat, email verificat",
+  "UserInactiveReason.ChangedEmailNotConfirmed": "Email schimbat și neverificat",
+  "UserInactiveReason.ChangedEmailConfirmed": "Email schimbat și verificat"
 }

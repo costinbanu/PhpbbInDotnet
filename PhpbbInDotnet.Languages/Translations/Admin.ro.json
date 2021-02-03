@@ -38,6 +38,12 @@
   "FORUM_RULES_LINK": "Link reguli forum",
   "FORUM_RULES": "Reguli forum",
   "FORUM_PERMISSIONS": "Permisiuni pentru forum",
+  "INVALID_FORUM_NAME": "Numele forumului nu este valid!",
+  "FORUM_DOESNT_EXIST_FORMAT": "Forumul '{0}' nu există.",
+  "FORUM_UPDATED_SUCCESSFULLY_FORMAT": "Forumul '{0}' a fost actualizat cu succes!",
+  "CANT_DELETE_HAS_CHILDREN_FORMAT": "Forumul '{0}' nu poate fi șters deoarece conține sub-forumuri.",
+  "CANT_DELETE_HAS_TOPICS_FORMAT": "Forumul '{0}' nu poate fi șters deoarece conține subiecte.",
+  "FORUM_DELETED_SUCCESSFULLY_FORMAT": "Forumul '{0}' a fost șters cu succes.",
 
   //users
   "INACTIVE_USERS": "Utilizatori inactivi",
@@ -48,6 +54,7 @@
   "NEVER_ACTIVE": "Niciodată (nici o autentificare realizată)",
   "NO_RANK": "Nici un rang",
   "NO_ROLE": "Nici un rol",
+  "NO_USER_SELECTED": "<span class=\"warning\">Nici un utilizator selectat.</span>",
   "ADD_NEW_GROUP": "Adaugă un grup nou",
   "ADD_NEW_RANK": "Adaugă un rang nou",
   "BANS": "Interziceri",
@@ -75,6 +82,28 @@
   "CANT_DEACTIVATE_ALREADY_INACTIVE_TOOLTIP": "Nu poate fi dezactivat deoarece este deja inactiv.",
   "VIEW_EDIT_FULL_PROFILE": "Vezi / modifică profilul complet",
   "TOO_FEW_SEARCH_CRITERIA": "Prea puține criterii de căutare.",
+  "USERS_DELETED_SUCCESSFULLY": "Utilizatorii au fost șterși cu succes!",
+  "USERS_DELETED_PARTIALLY_FORMAT": "<span class=\"warning\">Următorii utilizatori au fost șterși cu succes: {0}.<br />Următorii utilizatori NU au fost șterși deoarece nu mai aveau acelasi status ({1}): {2}</span>",
+  "CANT_DELETE_ANONYMOUS_USER": "Utilizatorul anonim nu poate fi șters",
+  "USER_DOESNT_EXIST_FORMAT": "Utilizatorul '{0}' nu există.",
+  "USER_ACTIVATED_FORMAT": "Utilizatorul '{0}' a fost activat.",
+  "USER_DEACTIVATED_FORMAT": "Utilizatorul '{0}' a fost dezactivat.",
+  "USER_DELETED_POSTS_KEPT_FORMAT": "Utilizatorul '{0}' a fost șters iar mesajele păstrate.",
+  "USER_DELETED_POSTS_DELETED_FORMAT": "Utilizatorul '{0}' a fost șters cu tot cu mesajele scrise.",
+  "ONE_OR_MORE_INVALID_INPUT_DATES": "Una sau mai multe date este invalidă.",
+
+  "INVALID_RANK_NAME": "Numele rangului este invalid",
+  "RANK_DOESNT_EXIST_FORMAT": "Rangul {0} nu există.",
+  "RANK_UPDATED_SUCCESSFULLY": "Rangul a fost actualizat cu succes!",
+
+  "GROUP_DOESNT_EXIST_FORMAT": "Grupul '{0}' nu există.",
+  "CANT_DELETE_NOT_EMPTY_FORMAT": "Grupul '{0}' nu poate fi șters deoarece nu este gol.",
+  "GROUP_ADDED_SUCCESSFULLY": "Grupul a fost adăugat cu succes!",
+  "GROUP_DELETED_SUCCESSFULLY": "Grupul a fost șters cu succes!",
+  "GROUP_UPDATED_SUCCESSFULLY": "Grupul a fost modificat cu succes!",
+
+  "BANLIST_UPDATED_SUCCESSFULLY": "Interzicerile au fost actualizate cu succes!",
+
 
   //role names
   "ROLE_ADMIN_STANDARD": "Administrator standard",

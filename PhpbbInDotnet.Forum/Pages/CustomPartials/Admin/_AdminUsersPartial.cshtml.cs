@@ -15,5 +15,7 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials.Admin
 
         public string Language { get; set; }
 
+        public bool WasSearchPerformed { get; set; } = false;
+
     }
 }

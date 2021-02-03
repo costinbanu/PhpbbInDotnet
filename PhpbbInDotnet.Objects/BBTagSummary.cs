@@ -10,8 +10,6 @@
 
         public string ButtonText { get; set; }
 
-        public string ToolTip { get; set; }
-
         public bool ShowWhenCollapsed { get; set; }
     }
 }

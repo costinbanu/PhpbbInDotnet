@@ -339,10 +339,10 @@ namespace PhpbbInDotnet.Forum.Pages
                 new { usr.UserId, forumId = ForumId, topicId = Action == PostingActions.NewTopic ? 0 : TopicId }
             );
 
-            await CacheService.RemoveFromCache(await GetActualCacheKey("Text", true));
-            await CacheService.RemoveFromCache(await GetActualCacheKey("ForumId", true));
-            await CacheService.RemoveFromCache(await GetActualCacheKey("TopicId", true));
-            await CacheService.RemoveFromCache(await GetActualCacheKey("PostId", true));
+            CacheService.RemoveFromCache(await GetActualCacheKey("Text", true));
+            CacheService.RemoveFromCache(await GetActualCacheKey("ForumId", true));
+            CacheService.RemoveFromCache(await GetActualCacheKey("TopicId", true));
+            CacheService.RemoveFromCache(await GetActualCacheKey("PostId", true));
 
             return post.PostId;
         }

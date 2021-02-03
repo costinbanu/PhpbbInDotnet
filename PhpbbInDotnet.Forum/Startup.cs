@@ -15,6 +15,7 @@ using Microsoft.Extensions.Hosting;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
+using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
 using System;
@@ -115,12 +116,12 @@ namespace PhpbbInDotnet.Forum
                     x.MultipartHeadersLengthLimit = 1073741824;
                 });
             }
-            services.AddHttpClient(Configuration["Recaptcha:ClientName"], client => client.BaseAddress = new Uri(Configuration["Recaptcha:BaseAddress"]));
 
             services.AddSingleton<CommonUtils>();
             services.AddSingleton<AnonymousSessionCounter>();
             services.AddSingleton<BBTagFactory>();
-            services.AddSingleton<LanguageProvider>();
+            services.AddSingleton<FileExtensionContentTypeProvider>();
+
             services.AddScoped<AdminForumService>();
             services.AddScoped<AdminUserService>();
             services.AddScoped<WritingToolsService>();
@@ -132,9 +133,15 @@ namespace PhpbbInDotnet.Forum
             services.AddScoped<ModeratorService>();
             services.AddScoped<BBCodeRenderingService>();
             services.AddScoped<StatisticsService>();
+
             services.AddTransient<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddSingleton<FileExtensionContentTypeProvider>();
+            services.AddTransient<LanguageProvider>();
+
+            var recaptchaOptions = Configuration.GetObject<Recaptcha>();
+            services.AddHttpClient(recaptchaOptions.ClientName, client => client.BaseAddress = new Uri(recaptchaOptions.BaseAddress));
+            
             services.AddDbContext<ForumDbContext>(options => options.UseMySQL(Configuration["ForumDbConnectionString"], o => o.CommandTimeout(60)), ServiceLifetime.Scoped);
+            services.AddLazyCache();
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
         }

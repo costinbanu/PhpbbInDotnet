@@ -19,6 +19,7 @@
   <ItemGroup>
     <PackageReference Include="BuildBundlerMinifier" Version="3.2.449" />
     <PackageReference Include="DeviceDetector.NET.NetCore" Version="3.9.2.2" />
+    <PackageReference Include="LazyCache.AspNetCore" Version="2.1.2" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Formatters.Json" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="3.1.6" Condition="'$(Configuration)' == 'Debug'" />
     <PackageReference Include="Microsoft.AspNetCore.Session" Version="2.2.0" />

@@ -56,7 +56,6 @@
   "GENERIC_POSTING_ERROR": "A intervenit o eroare iar mesajul nu a fost publicat. Te rugăm să încerci din nou.",
   "ENTER_VALID_RECEIVER": "Introduceți un destinatar valid.",
 
-
   //pm
   "SENDER_CANT_SEND_PMS": "Expeditorul nu are dreptul să trimită mesaje private.",
   "RECEIVER_CANT_RECEIVE_PMS": "Destinatarul nu poate primi mesaje private.",

@@ -151,7 +151,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var key = $"UserMustLogIn_{currentUser.UsernameClean}";
             if (await _cacheService.GetFromCache<bool?>(key) ?? false)
             {
-                await _cacheService.RemoveFromCache(key);
+                _cacheService.RemoveFromCache(key);
             }
 
             return Redirect(HttpUtility.UrlDecode(ReturnUrl ?? "/"));

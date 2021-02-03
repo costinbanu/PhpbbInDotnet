@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using LazyCache;
+using Microsoft.AspNetCore.Http;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
 using Serilog;
@@ -25,6 +26,7 @@ namespace PhpbbInDotnet.Languages
         private readonly Lazy<TextTranslation> _admin;
         private readonly Lazy<HtmlTranslation> _customBBCodeGuide;
         private readonly Lazy<HtmlTranslation> _attachmentGuide;
+        private readonly Lazy<TextTranslation> _bbcodeCaptions;
 
         public TextTranslation BasicText => _basicText.Value;
 
@@ -52,22 +54,25 @@ namespace PhpbbInDotnet.Languages
 
         public HtmlTranslation AttachmentGuide => _attachmentGuide.Value;
 
-        public LanguageProvider(ILogger logger)
+        public TextTranslation BBCodeCaptions => _bbcodeCaptions.Value;
+
+        public LanguageProvider(ILogger logger, IAppCache cache)
         {
             _logger = logger;
-            _basicText = new Lazy<TextTranslation>(() => new TextTranslation(nameof(BasicText), _logger));
-            _aboutCookies = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(AboutCookies), _logger));
-            _email = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Email), _logger));
-            _enums = new Lazy<EnumTranslation>(() => new EnumTranslation(_logger));
-            _jsText = new Lazy<JavaScriptTranslation>(() => new JavaScriptTranslation(_logger));
-            _faq = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(FAQ), _logger));
-            _errors = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Errors), _logger));
-            _postingGuide = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(PostingGuide), _logger));
-            _termsAndConditions = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(TermsAndConditions), _logger));
-            _moderator = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Moderator), _logger));
-            _admin = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Admin), _logger));
-            _customBBCodeGuide = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(CustomBBCodeGuide), _logger));
-            _attachmentGuide = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(AttachmentGuide), _logger));
+            _basicText = new Lazy<TextTranslation>(() => new TextTranslation(nameof(BasicText), _logger, cache));
+            _aboutCookies = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(AboutCookies), _logger, cache));
+            _email = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Email), _logger, cache));
+            _enums = new Lazy<EnumTranslation>(() => new EnumTranslation(_logger, cache));
+            _jsText = new Lazy<JavaScriptTranslation>(() => new JavaScriptTranslation(_logger, cache));
+            _faq = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(FAQ), _logger, cache));
+            _errors = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Errors), _logger, cache));
+            _postingGuide = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(PostingGuide), _logger, cache));
+            _termsAndConditions = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(TermsAndConditions), _logger, cache));
+            _moderator = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Moderator), _logger, cache));
+            _admin = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Admin), _logger, cache));
+            _customBBCodeGuide = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(CustomBBCodeGuide), _logger, cache));
+            _attachmentGuide = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(AttachmentGuide), _logger, cache));
+            _bbcodeCaptions = new Lazy<TextTranslation>(() => new TextTranslation(nameof(BBCodeCaptions), _logger, cache));
         }
 
         public string GetValidatedLanguage(AuthenticatedUser user, HttpRequest request = null)

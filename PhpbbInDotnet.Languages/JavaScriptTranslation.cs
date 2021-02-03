@@ -1,10 +1,11 @@
-﻿using Serilog;
+﻿using LazyCache;
+using Serilog;
 
 namespace PhpbbInDotnet.Languages
 {
     public class JavaScriptTranslation : Translation
     {
-        internal JavaScriptTranslation(ILogger logger) : base("JavaScriptText", logger) { }
+        internal JavaScriptTranslation(ILogger logger, IAppCache cache) : base("JavaScriptText", logger, cache) { }
 
         protected override string FileExtension => "json";
 

@@ -42,11 +42,7 @@ namespace PhpbbInDotnet.Services
             _context = context;
             _writingService = writingService;
             _bannedWords = new Lazy<Dictionary<string, string>>(() => _writingService.GetBannedWords().GroupBy(p => p.Word).Select(grp => grp.FirstOrDefault()).ToDictionary(x => x.Word, y => y.Replacement));
-            var connection = _context.Database.GetDbConnection();
-
-            //we override these temporarily: 18 = link, 13 = youtube
-            //we override this for good: 17 = strike (TODO: remove from DB after migration)
-            var tagList = connection.Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes").AsList();
+            var tagList = _context.Database.GetDbConnection().Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes").AsList();
 
             var (bbTags, tagMap) = bbTagFactory.GenerateCompleteTagListAndMap(tagList);
             _parser = new BBCodeParser(bbTags);

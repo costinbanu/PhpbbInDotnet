@@ -362,8 +362,11 @@ else
                             <span>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "REMOVE_THIS_AVATAR"])</span>
                             <br /><br />
                         }
-                        <input asp-for="Avatar" class="HiddenFileInput" />
+                        <input asp-for="Avatar" class="HiddenFileInput" onchange="showElement('loadingConfirmation')" />
                         <label for="Avatar" class="MyButton">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SELECT_NEW_AVATAR"])</label><br />
+                        <div style="display:none" id="loadingConfirmation">
+                            @Html.Raw(Model.LanguageProvider.BasicText[Lang, "AVATAR_LOADED_CONFIRMATION"])
+                        </div>
                         <span class="Caption">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "AVATAR_CAPTION"])</span><br />
                         <span asp-validation-for="Avatar" class="validation"></span>
                     </div>

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
@@ -15,26 +16,28 @@ namespace PhpbbInDotnet.Services
     public class StorageService
     {
         private readonly IConfiguration _config;
+        private readonly Storage _storageOptions;
         private readonly CommonUtils _utils;
         private readonly ForumDbContext _context;
-        private readonly string _root;
-
-        public string AttachmentsPath => Path.Combine(_root,  _config["Storage:Files"]);
-        public string AvatarsPath => Path.Combine(_root, _config["Storage:Avatars"]);
+        private readonly string _attachmentsPath;
+        private readonly string _avatarsPath;
 
         public StorageService(IConfiguration config, CommonUtils utils, Microsoft.AspNetCore.Hosting.IHostingEnvironment environment, ForumDbContext context)
         {
             _config = config;
             _utils = utils;
             _context = context;
-            _root = environment.WebRootPath;
+
+            _storageOptions = _config.GetObject<Storage>();
+            _attachmentsPath = Path.Combine(environment.WebRootPath, _storageOptions.Files);
+            _avatarsPath = Path.Combine(environment.WebRootPath, _storageOptions.Avatars);
         }
 
         public string GetFileUrl(string name, bool isAvatar)
-            => isAvatar ? $"{_config["Storage:Avatars"]}/{name}" : $"{_config["Storage:Files"]}/{name}";
+            => isAvatar ? $"{_storageOptions.Avatars}/{name}" : $"{_storageOptions.Files}/{name}";
 
         public string GetFilePath(string name, bool isAvatar)
-            => isAvatar ? Path.Combine(AvatarsPath, name) : Path.Combine(AttachmentsPath, name);
+            => isAvatar ? Path.Combine(_avatarsPath, name) : Path.Combine(_attachmentsPath, name);
 
         public async Task<(List<PhpbbAttachments> SucceededUploads, List<string> FailedUploads)> BulkAddAttachments(IEnumerable<IFormFile> attachedFiles, int userId)
         {
@@ -49,7 +52,7 @@ namespace PhpbbInDotnet.Services
                 {
                     var name = $"{userId}_{Guid.NewGuid():n}";
                     using (var input = file.OpenReadStream())
-                    using (var fs = File.Open(Path.Combine(AttachmentsPath, name), FileMode.Create))
+                    using (var fs = File.Open(Path.Combine(_attachmentsPath, name), FileMode.Create))
                     {
                         await input.CopyToAsync(fs);
                     }
@@ -88,7 +91,7 @@ namespace PhpbbInDotnet.Services
             try
             {
                 var name = $"{_config.GetValue<string>("AvatarSalt")}_{userId}{Path.GetExtension(fileName)}";
-                using var fs = File.Open(Path.Combine(AvatarsPath, name), FileMode.Create);
+                using var fs = File.Open(Path.Combine(_avatarsPath, name), FileMode.Create);
                 await contents.CopyToAsync(fs);
                 await fs.FlushAsync();
                 return true;
@@ -103,7 +106,7 @@ namespace PhpbbInDotnet.Services
         public bool DeleteAvatar(int userId, string extension)
         {
             var name = $"{_config.GetValue<string>("AvatarSalt")}_{userId}.{extension.TrimStart('.')}";
-            if (File.Exists(name))
+            if (File.Exists(Path.Combine(_avatarsPath, name)))
             {
                 return DeleteFile(name, true);
             }
@@ -114,7 +117,7 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                var path = isAvatar ? Path.Combine(AvatarsPath, name) : Path.Combine(AttachmentsPath, name);
+                var path = isAvatar ? Path.Combine(_avatarsPath, name) : Path.Combine(_attachmentsPath, name);
                 File.Delete(path);
                 return true;
             }
@@ -133,7 +136,7 @@ namespace PhpbbInDotnet.Services
             {
                 try
                 {
-                    File.Delete(Path.Combine(AttachmentsPath, file));
+                    File.Delete(Path.Combine(_attachmentsPath, file));
                     succeeded.Add(file);
                 }
                 catch (Exception ex)

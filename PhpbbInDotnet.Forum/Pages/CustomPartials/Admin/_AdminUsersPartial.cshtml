@@ -89,7 +89,7 @@
 </script>
 <h4 onclick="expandSection('searchUsersSection', 'searchUsersChar')" style="cursor:pointer" id="searchUsersTitle">
     @Html.Raw(_languageProvider.BasicText[Model.Language, "SEARCH_FOR_USER"])
-    @if (Model.SearchParameters != null || Model.SearchResults.Any())
+    @if (Model.WasSearchPerformed|| (Model.SearchResults?.Any() ?? false))
     {
         <span id="searchUsersChar">&#x1F53C;</span>
     }
@@ -98,7 +98,7 @@
         <span id="searchUsersChar">&#x1F53D;</span>
     }
 </h4>
-<div id="searchUsersSection" style="@(Model.SearchParameters != null || Model.SearchResults.Any() ? "display:block" : "display:none")">
+<div id="searchUsersSection" style="@(Model.WasSearchPerformed|| (Model.SearchResults?.Any() ?? false) ? "display:block" : "display:none")">
     <form method="post" id="userSearch" asp-page-handler="UserSearch">
         <div class="FlexCenter">
             <div class="FlexCaption">
@@ -260,7 +260,7 @@
                     </div>
                     <div class="FlexRight PostInputWidth">
                         <label>
-                            <input type="checkbox" name="toRemove" value="@banlist[i].BanId" />
+                            <input type="checkbox" name="toRemove" value="@i" />
                             @Html.Raw(_languageProvider.Admin[Model.Language, "YES_DELETE"])
                         </label>
                     </div>

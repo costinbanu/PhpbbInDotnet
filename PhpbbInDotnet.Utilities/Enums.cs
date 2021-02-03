@@ -71,6 +71,13 @@ namespace PhpbbInDotnet.Utilities
         Delete_DeleteMessages
     }
 
+    public enum AdminGroupActions
+    {
+        Add,
+        Delete,
+        Update
+    }
+
     public enum AclEntityType
     {
         User,

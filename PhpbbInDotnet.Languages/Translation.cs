@@ -1,8 +1,9 @@
-﻿using Newtonsoft.Json;
+﻿using LazyCache;
+using Newtonsoft.Json;
 using PhpbbInDotnet.Utilities;
 using Serilog;
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -14,19 +15,17 @@ namespace PhpbbInDotnet.Languages
         static readonly CultureInfo EN = new CultureInfo("en");
 
         private readonly string _name;
-        private readonly Dictionary<string, Dictionary<string, string>> _dictionary;
-        private readonly Dictionary<string, string> _rawCache;
+        private readonly IAppCache _cache;
         private readonly ILogger _logger;
 
         protected abstract string FileExtension { get; }
 
         protected abstract bool ShouldCacheRawTranslation { get; }
 
-        protected Translation(string name, ILogger logger)
+        protected Translation(string name, ILogger logger, IAppCache cache)
         {
             _name = name;
-            _dictionary = new Dictionary<string, Dictionary<string, string>>(StringComparer.InvariantCultureIgnoreCase);
-            _rawCache = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
+            _cache = cache;
             _logger = logger;
         }
 
@@ -35,46 +34,41 @@ namespace PhpbbInDotnet.Languages
 
         protected string GetRawTranslation(string language)
         {
-            if (ShouldCacheRawTranslation && _rawCache.ContainsKey(language))
+            string getValue()
             {
-                return _rawCache[language];
+                var path = GetFile(language);
+                if (!File.Exists(path))
+                {
+                    _logger.Warning("Potentially missing language: '{language}' - file '{path}' does not exist.", language, path);
+                    return null;
+                }
+                return File.ReadAllText(path);
             }
 
-            var path = GetFile(language);
-            if (!File.Exists(path))
-            {
-                _logger.Warning($"Potentially missing language: '{language}' - file '{path}' does not exist.");
-                return null;
-            }
-            var value = File.ReadAllText(path);
             if (ShouldCacheRawTranslation)
             {
-                _rawCache.Add(language, value);
+                var dummy = _cache.GetOrAdd(GetLanguageKey(language), getValue);
+                return dummy;
             }
-            return value;
+
+            var dummy2 = getValue();
+            return dummy2;
         }
 
         protected string GetFromDictionary(string language, string key, Casing casing)
         {
-            if (!_dictionary.ContainsKey(language))
+            var dict = _cache.GetOrAdd(GetDictionaryKey(language), () =>
             {
-                var value = GetDictionary(language);
+                var value = GetDictionary(language); 
                 if (value == null)
                 {
-                    _logger.Warning($"Switching to default language '{Constants.DEFAULT_LANGUAGE}'...");
-                    language = Constants.DEFAULT_LANGUAGE;
-                    if (!_dictionary.ContainsKey(language))
-                    {
-                        _dictionary.Add(language, GetDictionary(language));
-                    }
+                    value = GetDictionary(Constants.DEFAULT_LANGUAGE);
+                    _logger.Warning("Dictionary for '{language}' is missing or corrupted.", language);
                 }
-                else
-                {
-                    _dictionary.Add(language, value);
-                }
-            }
+                return value;
+            });
 
-            if (!_dictionary[language].TryGetValue(key, out var toReturn))
+            if (!dict.TryGetValue(key, out var toReturn))
             {
                 return key;
             }
@@ -96,21 +90,21 @@ namespace PhpbbInDotnet.Languages
         private string TitleCase(string language, string text)
             => language.Equals("en", StringComparison.InvariantCultureIgnoreCase) ? EN.TextInfo.ToTitleCase(text) : FirstUpper(text);
 
-        private Dictionary<string, string> GetDictionary(string language)
+        private ConcurrentDictionary<string, string> GetDictionary(string language)
         {
             var rawValue = GetRawTranslation(language);
             if (string.IsNullOrWhiteSpace(rawValue))
             {
                 return null;
             }
-            var value = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
+            var value = new ConcurrentDictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
             try
             {
                 JsonConvert.PopulateObject(rawValue, value);
             }
             catch (Exception ex)
             {
-                _logger.Warning(ex, $"Failed to read translation '{_name}' for language '{language}' and parse its contents.");
+                _logger.Warning(ex, "Failed to read translation '{_name}' for language '{language}' and parse its contents.", _name, language);
                 return null;
             }
 
@@ -119,5 +113,11 @@ namespace PhpbbInDotnet.Languages
 
         private string GetFile(string language)
             => Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Translations", $"{_name}.{language}.{FileExtension}");
+
+        private string GetLanguageKey(string language)
+            => $"LANG_{_name}_{language}";
+
+        private string GetDictionaryKey(string language)
+            => $"DICT_{_name}_{language}";
     }
 }

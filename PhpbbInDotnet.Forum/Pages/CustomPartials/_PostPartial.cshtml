@@ -163,10 +163,12 @@
                                     &#x2753; @Html.Raw(_languageProvider.BasicText[Model.Language, "INFORMATION", Casing.FirstUpper])
                                 </a>
                             </span>
-                            <label>
-                                @Html.Raw(_languageProvider.Moderator[Model.Language, "SELECT_FOR_MODERATION", Casing.FirstUpper])
-                                <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @(Model.Post.PostId ?? -1))" @(Model.PostIdsForModerator.Contains(Model.Post.PostId ?? -1) ? "checked" : "") />
-                            </label>
+                            <span>
+                                <label>
+                                    @Html.Raw(_languageProvider.Moderator[Model.Language, "SELECT_FOR_MODERATION", Casing.FirstUpper])
+                                    <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @(Model.Post.PostId ?? -1))" @(Model.PostIdsForModerator.Contains(Model.Post.PostId ?? -1) ? "checked" : "") />
+                                </label>
+                            </span>
                         }
                         @if (Model.IsCurrentUserMod || (Model.Post.AuthorId == Model.CurrentUser.UserId && (EditTime == 0 || DateTime.UtcNow.Subtract(Model.Post.PostCreationTime ?? default).TotalMinutes <= EditTime)))
                         {

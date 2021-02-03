@@ -495,7 +495,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         new { message = HttpUtility.HtmlEncode(PostText), subject = HttpUtility.HtmlEncode(PostTitle), now = DateTime.UtcNow.ToUnixTimestamp(), draft.DraftId }
                     );
                 }
-                await CacheService.RemoveFromCache(await GetActualCacheKey("Text", true));
+                CacheService.RemoveFromCache(await GetActualCacheKey("Text", true));
                 DraftSavedSuccessfully = true;
 
                 if (Action == PostingActions.NewForumPost)

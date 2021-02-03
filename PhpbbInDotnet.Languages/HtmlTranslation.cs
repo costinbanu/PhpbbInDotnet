@@ -1,10 +1,11 @@
-﻿using Serilog;
+﻿using LazyCache;
+using Serilog;
 
 namespace PhpbbInDotnet.Languages
 {
     public class HtmlTranslation : Translation
     {
-        internal HtmlTranslation(string name, ILogger logger) : base(name, logger) { }
+        internal HtmlTranslation(string name, ILogger logger, IAppCache cache) : base(name, logger, cache) { }
 
         protected override string FileExtension => "html";
 

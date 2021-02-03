@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Forum.Pages.CustomPartials.Email;
 using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
 using System;
@@ -26,6 +27,7 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly CommonUtils _utils;
         private readonly IConfiguration _config;
         private readonly HttpClient _gClient;
+        private readonly Recaptcha _recaptchaOptions;
         
         private string _language;
 
@@ -54,7 +56,8 @@ namespace PhpbbInDotnet.Forum.Pages
             _context = context;
             _utils = utils;
             _config = config;
-            _gClient = httpClientFactory.CreateClient(config["Recaptcha:ClientName"]);
+            _recaptchaOptions = _config.GetObject<Recaptcha>();
+            _gClient = httpClientFactory.CreateClient(_recaptchaOptions.ClientName);
             LanguageProvider = languageProvider;
         }
 
@@ -79,9 +82,9 @@ namespace PhpbbInDotnet.Forum.Pages
             try
             {
                 var response = await _gClient.PostAsync(
-                    requestUri: _config.GetValue<string>("Recaptcha:RelativeUri"),
+                    requestUri: _recaptchaOptions.RelativeUri,
                     content: new StringContent(
-                        content: $"secret={_config.GetValue<string>("Recaptcha:SecretKey")}&response={RecaptchaResponse}&remoteip={HttpContext.Connection.RemoteIpAddress}",
+                        content: $"secret={_recaptchaOptions.SecretKey}&response={RecaptchaResponse}&remoteip={HttpContext.Connection.RemoteIpAddress}",
                         encoding: Encoding.UTF8,
                         mediaType: "application/x-www-form-urlencoded"
                     )
@@ -93,7 +96,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     throw new InvalidOperationException($"Validating g-recaptcha failed. Response: {resultText}");
                 }
-                if ((decimal)result.score < _config.GetValue<decimal>("Recaptcha:Score"))
+                if ((decimal)result.score < _recaptchaOptions.MinScore)
                 {
                     return PageWithError(nameof(RecaptchaResponse), string.Format(LanguageProvider.Errors[lang, "YOURE_A_BOT_FORMAT"], _config.GetValue<string>("AdminEmail").Replace("@", " at ").Replace(".", " dot ")));
                 }

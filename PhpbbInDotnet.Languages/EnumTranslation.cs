@@ -1,4 +1,5 @@
-﻿using PhpbbInDotnet.Utilities;
+﻿using LazyCache;
+using PhpbbInDotnet.Utilities;
 using Serilog;
 using System;
 
@@ -6,7 +7,7 @@ namespace PhpbbInDotnet.Languages
 {
     public class EnumTranslation : Translation
     {
-        internal EnumTranslation(ILogger logger) : base("Enums", logger) { }
+        internal EnumTranslation(ILogger logger, IAppCache cache) : base("Enums", logger, cache) { }
 
         protected override string FileExtension => "json";
 

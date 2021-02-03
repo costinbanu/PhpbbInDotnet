@@ -27,7 +27,6 @@ namespace PhpbbInDotnet.Services
                         OpenTag = "[b]",
                         CloseTag = "[/b]",
                         ShowOnPage = true,
-                        ToolTip = "Text bold: [b]text[/b]",
                         ShowWhenCollapsed = true
                     }
                 ),
@@ -40,7 +39,6 @@ namespace PhpbbInDotnet.Services
                         OpenTag = "[i]",
                         CloseTag = "[/i]",
                         ShowOnPage = true,
-                        ToolTip = "Text italic: [i]text[/i]",
                         ShowWhenCollapsed = true
                     }
                 ),
@@ -53,23 +51,9 @@ namespace PhpbbInDotnet.Services
                         OpenTag = "[u]",
                         CloseTag = "[/u]",
                         ShowOnPage = true,
-                        ToolTip = "Text subliniat: [u]text[/u]",
                         ShowWhenCollapsed = true
                     }
                 ),
-
-                //["strike"] = (
-                //    Tag: new BBTag("strike", "<span style=\"text-decoration: line-through\">", "</span>", 17),
-                //    Summary: new BBTagSummary
-                //    {
-                //        ButtonText = "<strike>Text tăiat</strike>",
-                //        OpenTag = "[strike]",
-                //        CloseTag = "[/strike]",
-                //        ShowOnPage = true,
-                //        ToolTip = "Text tăiat: [strike]text[/strike]",
-                //        ShowWhenCollapsed = false
-                //    }
-                //),
 
                 ["color"] = (
                     Tag: new BBTag("color", "<span style=\"color:${code}\">", "</span>", 6, "", true,
@@ -80,7 +64,6 @@ namespace PhpbbInDotnet.Services
                         OpenTag = "[color]",
                         CloseTag = "[/color]",
                         ShowOnPage = true,
-                        ToolTip = "Culoare font: [color=red]text[/color]  Sfat: de asemenea puteţi folosi culorile hexazecimale culoare=#FF0000",
                         ShowWhenCollapsed = false
                     }
                 ),
@@ -94,7 +77,6 @@ namespace PhpbbInDotnet.Services
                         OpenTag = "[size]",
                         CloseTag = "[/size]",
                         ShowOnPage = true,
-                        ToolTip = "Mărime font: [size=85]text mic[/size]",
                         ShowWhenCollapsed = true
                     }
                 ),
@@ -111,7 +93,6 @@ namespace PhpbbInDotnet.Services
                         OpenTag = "[quote]",
                         CloseTag = "[/quote]",
                         ShowOnPage = true,
-                        ToolTip = "Citează text: [quote]text[/quote]",
                         ShowWhenCollapsed = true
                     }
                 ),
@@ -124,7 +105,6 @@ namespace PhpbbInDotnet.Services
                         OpenTag = "[img]",
                         CloseTag = "[/img]",
                         ShowOnPage = true,
-                        ToolTip = "Adaugă imagine: [img]http://cale_imagine[/img]",
                         ShowWhenCollapsed = true
                     }
                 ),
@@ -138,7 +118,6 @@ namespace PhpbbInDotnet.Services
                         OpenTag = "[url]",
                         CloseTag = "[/url]",
                         ShowOnPage = true,
-                        ToolTip = "Adaugă URL: [url]http://url[/url] sau [url=http://url]text URL[/url]",
                         ShowWhenCollapsed = true
                     }
                 ),
@@ -151,7 +130,6 @@ namespace PhpbbInDotnet.Services
                         OpenTag = "[code]",
                         CloseTag = "[/code]",
                         ShowOnPage = true,
-                        ToolTip = "Afişează cod: [code]cod[/code]",
                         ShowWhenCollapsed = false
                     }
                 ),
@@ -165,7 +143,6 @@ namespace PhpbbInDotnet.Services
                         OpenTag = "[list]",
                         CloseTag = "[/list]",
                         ShowOnPage = true,
-                        ToolTip = "Listă: [list][*]text[/list] sau listă ordonată: [list=1][*]text[/list]",
                         ShowWhenCollapsed = false
                     }
                 ),
@@ -178,7 +155,6 @@ namespace PhpbbInDotnet.Services
                         OpenTag = "[*]",
                         CloseTag = "",
                         ShowOnPage = true,
-                        ToolTip = "Element listă: [*]text",
                         ShowWhenCollapsed = false
                     }
                 ),
@@ -191,29 +167,6 @@ namespace PhpbbInDotnet.Services
                         ShowOnPage = false
                     }
                 ),
-
-                //custom tags
-                //["link"] = (
-                //    Tag: new BBTag("link", "<a href=\"${href}\">", "</a>", true, BBTagClosingStyle.RequiresClosingTag, x => utils.TransformSelfLinkToBetaLink(x), 18, "", false,
-                //        new BBAttribute("href", "", a => string.IsNullOrWhiteSpace(a?.AttributeValue) ? "${content}" : utils.TransformSelfLinkToBetaLink(a.AttributeValue))),
-                //    Summary: new BBTagSummary
-                //    {
-                //        ShowOnPage = false
-                //    }
-                //),
-
-                //["youtube"] = (
-                //    Tag: new BBTag("youtube", "<br /><iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/${content}?html5=1\" frameborder=\"0\" allowfullscreen onload=\"resizeIFrame(this)\"></iframe><br />", string.Empty, false, false, 13, ""),
-                //    Summary: new BBTagSummary
-                //    {
-                //        ButtonText = "YouTube",
-                //        OpenTag = "[youtube]",
-                //        CloseTag = "[/youtube]",
-                //        ShowOnPage = true,
-                //        ToolTip = "Inserează în mesaj un film găzduit pe www.youtube.com: [youtube]COD_FILM[/youtube]",
-                //        ShowWhenCollapsed = true
-                //    }
-                //),
             };
             _attrRegex = new Regex(@"\$\{[a-z0-9]+\}", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant);
         }
@@ -243,7 +196,6 @@ namespace PhpbbInDotnet.Services
                         OpenTag = $"[{code.BbcodeTag}]",
                         CloseTag = $"[/{code.BbcodeTag}]",
                         ShowOnPage = code.DisplayOnPosting.ToBool(),
-                        ToolTip = code.BbcodeHelpline,
                         ShowWhenCollapsed = false
                     });
                 }

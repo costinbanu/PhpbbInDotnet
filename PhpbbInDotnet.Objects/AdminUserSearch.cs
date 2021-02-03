@@ -1,4 +1,6 @@
-﻿namespace PhpbbInDotnet.Objects
+﻿using System.Linq;
+
+namespace PhpbbInDotnet.Objects
 {
     public class AdminUserSearch
     {
@@ -17,5 +19,6 @@
         public string LastActiveTo { get; set; }
         
         public bool NeverActive { get; set; }
+
     }
 }

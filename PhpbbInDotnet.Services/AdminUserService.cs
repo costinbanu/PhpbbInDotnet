@@ -10,21 +10,23 @@ using System.Threading.Tasks;
 using Dapper;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
+using PhpbbInDotnet.Languages;
+using Microsoft.AspNetCore.Http;
 
 namespace PhpbbInDotnet.Services
 {
-    public class AdminUserService
+    public class AdminUserService : MultilingualServiceBase
     {
         private readonly ForumDbContext _context;
-        private readonly CommonUtils _utils;
         private readonly PostService _postService;
         private readonly CacheService _cacheService;
         private readonly IConfiguration _config;
 
-        public AdminUserService(ForumDbContext context, CommonUtils utils, PostService postService, CacheService cacheService, IConfiguration config)
+        public AdminUserService(ForumDbContext context, PostService postService, CacheService cacheService, IConfiguration config, 
+            CommonUtils utils, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
+            : base(utils, languageProvider, httpContextAccessor)
         {
             _context = context;
-            _utils = utils;
             _postService = postService;
             _cacheService = cacheService;
             _config = config;
@@ -41,9 +43,10 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> DeleteUsersWithEmailNotConfirmed(int[] userIds)
         {
+            var lang = await GetLanguage();
             if (!(userIds?.Any() ?? false))
             {
-                return ("<span class=\"warning\">Nici un utilizator selectat.</span>", null);
+                return (LanguageProvider.Admin[lang, "NO_USER_SELECTED"], null);
             }
 
             try
@@ -59,36 +62,41 @@ namespace PhpbbInDotnet.Services
 
                 if (users.Count == userIds.Length)
                 {
-                    return ("Utilizatorii au fost șterși cu succes!", true);
+                    return (LanguageProvider.Admin[lang, "USERS_DELETED_SUCCESSFULLY"], true);
                 }
 
                 var dbUserIds = users.Select(u => u.UserId).ToList();
                 var changedStatus = userIds.Where(u => !dbUserIds.Contains(u));
 
                 return (
-                    $"<span class=\"warning\">Următorii utilizatori au fost șterși cu succes: {string.Join(", ", dbUserIds)}.<br />" +
-                        $"Următorii utilizatori NU au fost șterși deoarece nu mai aveau acelasi status ({UserInactiveReason.NewlyRegisteredNotConfirmed}): {string.Join(", ", changedStatus)}</span>"
-                    , null
+                    string.Format(
+                        LanguageProvider.Admin[lang, "USERS_DELETED_PARTIALLY_FORMAT"], 
+                        string.Join(", ", dbUserIds), 
+                        LanguageProvider.Enums[lang, UserInactiveReason.NewlyRegisteredNotConfirmed], 
+                        string.Join(", ", changedStatus)
+                    ), 
+                    null
                 );
             }
             catch (Exception ex)
             {
-                return ($"Nici un utilizator nu au fost șters. ID eroare: {_utils.HandleError(ex)}.", false);
+                var id = Utils.HandleError(ex);
+                return (string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
         public async Task<(string Message, bool? IsSuccess)> ManageUser(AdminUserActions? action, int? userId)
         {
-
+            var lang = await GetLanguage();
             if (userId == Constants.ANONYMOUS_USER_ID)
             {
-                return ($"Utilizatorul cu id '{userId}' este utilizatorul anonim și nu poate fi șters.", false);
+                return (LanguageProvider.Admin[lang, "CANT_DELETE_ANONYMOUS_USER"], false);
             }
 
             var user = await _context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == userId);
             if (user == null)
             {
-                return ($"Utilizatorul cu id '{userId}' nu a fost găsit.", false);
+                return (string.Format(LanguageProvider.Admin[lang, "USER_DOESNT_EXIST_FORMAT"], userId ?? 0), false);
             }
 
             async Task flagUserAsChanged()
@@ -99,39 +107,39 @@ namespace PhpbbInDotnet.Services
 
             async Task deleteUser()
             {
-                _context.PhpbbAclUsers.RemoveRange(await _context.PhpbbAclUsers.Where(u => u.UserId == userId).ToListAsync());
-                _context.PhpbbBanlist.RemoveRange(await _context.PhpbbBanlist.Where(u => u.BanUserid == userId).ToListAsync());
-                _context.PhpbbBookmarks.RemoveRange(await _context.PhpbbBookmarks.Where(u => u.UserId == userId).ToListAsync());
-                _context.PhpbbBots.RemoveRange(await _context.PhpbbBots.Where(u => u.UserId == userId).ToListAsync());
-                _context.PhpbbDrafts.RemoveRange(await _context.PhpbbDrafts.Where(u => u.UserId == userId).ToListAsync());
-                _context.PhpbbForumsAccess.RemoveRange(await _context.PhpbbForumsAccess.Where(u => u.UserId == userId).ToListAsync());
-                _context.PhpbbForumsTrack.RemoveRange(await _context.PhpbbForumsTrack.Where(u => u.UserId == userId).ToListAsync());
-                _context.PhpbbForumsWatch.RemoveRange(await _context.PhpbbForumsWatch.Where(u => u.UserId == userId).ToListAsync());
-                _context.PhpbbLog.RemoveRange(await _context.PhpbbLog.Where(u => u.UserId == userId).ToListAsync());
-                _context.PhpbbModeratorCache.RemoveRange(await _context.PhpbbModeratorCache.Where(u => u.UserId == userId).ToListAsync());
+                _context.PhpbbAclUsers.RemoveRange(_context.PhpbbAclUsers.Where(u => u.UserId == userId));
+                _context.PhpbbBanlist.RemoveRange(_context.PhpbbBanlist.Where(u => u.BanUserid == userId));
+                _context.PhpbbBookmarks.RemoveRange(_context.PhpbbBookmarks.Where(u => u.UserId == userId));
+                _context.PhpbbBots.RemoveRange(_context.PhpbbBots.Where(u => u.UserId == userId));
+                _context.PhpbbDrafts.RemoveRange(_context.PhpbbDrafts.Where(u => u.UserId == userId));
+                _context.PhpbbForumsAccess.RemoveRange(_context.PhpbbForumsAccess.Where(u => u.UserId == userId));
+                _context.PhpbbForumsTrack.RemoveRange(_context.PhpbbForumsTrack.Where(u => u.UserId == userId));
+                _context.PhpbbForumsWatch.RemoveRange(_context.PhpbbForumsWatch.Where(u => u.UserId == userId));
+                _context.PhpbbLog.RemoveRange(_context.PhpbbLog.Where(u => u.UserId == userId));
+                _context.PhpbbModeratorCache.RemoveRange(_context.PhpbbModeratorCache.Where(u => u.UserId == userId));
                 await _context.Database.GetDbConnection().ExecuteAsync("DELETE FROM phpbb_poll_votes WHERE vote_user_id = @userId", new { userId });
-                _context.PhpbbPrivmsgsFolder.RemoveRange(await _context.PhpbbPrivmsgsFolder.Where(u => u.UserId == userId).ToListAsync());
-                _context.PhpbbPrivmsgsRules.RemoveRange(await _context.PhpbbPrivmsgsRules.Where(u => u.UserId == userId).ToListAsync());
-                _context.PhpbbPrivmsgsTo.RemoveRange(await _context.PhpbbPrivmsgsTo.Where(u => u.UserId == userId).ToListAsync());
-                _context.PhpbbProfileFieldsData.RemoveRange(await _context.PhpbbProfileFieldsData.Where(u => u.UserId == userId).ToListAsync());
-                _context.PhpbbReports.RemoveRange(await _context.PhpbbReports.Where(u => u.UserId == userId).ToListAsync());
-                _context.PhpbbSessions.RemoveRange(await _context.PhpbbSessions.Where(u => u.SessionUserId == userId).ToListAsync());
-                _context.PhpbbSessionsKeys.RemoveRange(await _context.PhpbbSessionsKeys.Where(u => u.UserId == userId).ToListAsync());
-                _context.PhpbbTopicsPosted.RemoveRange(await _context.PhpbbTopicsPosted.Where(u => u.UserId == userId).ToListAsync());
-                _context.PhpbbTopicsTrack.RemoveRange(await _context.PhpbbTopicsTrack.Where(u => u.UserId == userId).ToListAsync());
-                _context.PhpbbTopicsWatch.RemoveRange(await _context.PhpbbTopicsWatch.Where(u => u.UserId == userId).ToListAsync());
-                _context.PhpbbUserGroup.RemoveRange(await _context.PhpbbUserGroup.Where(u => u.UserId == userId).ToListAsync());
-                _context.PhpbbUsers.RemoveRange(await _context.PhpbbUsers.Where(u => u.UserId == userId).ToListAsync());
-                _context.PhpbbUserTopicPostNumber.RemoveRange(await _context.PhpbbUserTopicPostNumber.Where(u => u.UserId == userId).ToListAsync());
-                _context.PhpbbWarnings.RemoveRange(await _context.PhpbbWarnings.Where(u => u.UserId == userId).ToListAsync());
-                _context.PhpbbZebra.RemoveRange(await _context.PhpbbZebra.Where(u => u.UserId == userId).ToListAsync());
+                _context.PhpbbPrivmsgsFolder.RemoveRange(_context.PhpbbPrivmsgsFolder.Where(u => u.UserId == userId));
+                _context.PhpbbPrivmsgsRules.RemoveRange(_context.PhpbbPrivmsgsRules.Where(u => u.UserId == userId));
+                _context.PhpbbPrivmsgsTo.RemoveRange(_context.PhpbbPrivmsgsTo.Where(u => u.UserId == userId));
+                _context.PhpbbProfileFieldsData.RemoveRange(_context.PhpbbProfileFieldsData.Where(u => u.UserId == userId));
+                _context.PhpbbReports.RemoveRange(_context.PhpbbReports.Where(u => u.UserId == userId));
+                _context.PhpbbSessions.RemoveRange(_context.PhpbbSessions.Where(u => u.SessionUserId == userId));
+                _context.PhpbbSessionsKeys.RemoveRange(_context.PhpbbSessionsKeys.Where(u => u.UserId == userId));
+                _context.PhpbbTopicsPosted.RemoveRange(_context.PhpbbTopicsPosted.Where(u => u.UserId == userId));
+                _context.PhpbbTopicsTrack.RemoveRange(_context.PhpbbTopicsTrack.Where(u => u.UserId == userId));
+                _context.PhpbbTopicsWatch.RemoveRange(_context.PhpbbTopicsWatch.Where(u => u.UserId == userId));
+                _context.PhpbbUserGroup.RemoveRange(_context.PhpbbUserGroup.Where(u => u.UserId == userId));
+                _context.PhpbbUsers.RemoveRange(_context.PhpbbUsers.Where(u => u.UserId == userId));
+                _context.PhpbbUserTopicPostNumber.RemoveRange(_context.PhpbbUserTopicPostNumber.Where(u => u.UserId == userId));
+                _context.PhpbbWarnings.RemoveRange(_context.PhpbbWarnings.Where(u => u.UserId == userId));
+                _context.PhpbbZebra.RemoveRange(_context.PhpbbZebra.Where(u => u.UserId == userId));
                 _context.PhpbbUsers.Remove(user);
             }
 
             try
             {
-                var message = null as string;
-                var isSuccess = null as bool?;
+                string message = null;
+                bool? isSuccess = null;
 
                 switch (action)
                 {
@@ -139,7 +147,7 @@ namespace PhpbbInDotnet.Services
                         {
                             user.UserInactiveReason = UserInactiveReason.NotInactive;
                             user.UserInactiveTime = 0L;
-                            message = $"Utilizatorul '{user.Username}' a fost activat.";
+                            message = string.Format(LanguageProvider.Admin[lang, "USER_ACTIVATED_FORMAT"], user.Username);
                             isSuccess = true;
                             break;
                         }
@@ -148,7 +156,7 @@ namespace PhpbbInDotnet.Services
                             user.UserInactiveReason = UserInactiveReason.InactivatedByAdmin;
                             user.UserInactiveTime = DateTime.UtcNow.ToUnixTimestamp();
                             await flagUserAsChanged();
-                            message = $"Utilizatorul '{user.Username}' a fost dezactivat.";
+                            message = string.Format(LanguageProvider.Admin[lang, "USER_DEACTIVATED_FORMAT"], user.Username);
                             isSuccess = true;
                             break;
                         }
@@ -168,7 +176,7 @@ namespace PhpbbInDotnet.Services
 
                             await flagUserAsChanged();
                             await deleteUser();
-                            message = $"Utilizatorul '{user.Username}' a fost șters iar mesajele păstrate.";
+                            message = string.Format(LanguageProvider.Admin[lang, "USER_DELETED_POSTS_KEPT_FORMAT"], user.Username);
                             isSuccess = true;
                             break;
                         }
@@ -181,7 +189,7 @@ namespace PhpbbInDotnet.Services
 
                             await flagUserAsChanged();
                             await deleteUser();
-                            message = $"Utilizatorul '{user.Username}' a fost șters cu tot cu mesajele scrise.";
+                            message = string.Format(LanguageProvider.Admin[lang, "USER_DELETED_POSTS_DELETED_FORMAT"], user.Username);
                             isSuccess = true;
                             break;
                         }
@@ -194,17 +202,19 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                return ($"Acțiunea {action} nu a putut fi aplicată utilizatorului '{user.Username}'. ID eroare: {_utils.HandleError(ex)}.", false);
+                var id = Utils.HandleError(ex);
+                return (string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
         public async Task<(string Message, bool? IsSuccess)> ManageRank(int? rankId, string rankName, bool? deleteRank)
         {
+            var lang = await GetLanguage();
             try
             {
                 if (string.IsNullOrWhiteSpace(rankName))
                 {
-                    return ("Numele rangului este invalid", false);
+                    return (LanguageProvider.Admin[lang, "INVALID_RANK_NAME"], false);
                 }
                 if ((rankId ?? 0) == 0)
                 {
@@ -219,7 +229,7 @@ namespace PhpbbInDotnet.Services
                     var actual = await _context.PhpbbRanks.FirstOrDefaultAsync(x => x.RankId == rankId);
                     if (actual == null)
                     {
-                        return ($"Rangul {rankId} nu există.", false);
+                        return (string.Format(LanguageProvider.Admin[lang, "RANK_DOESNT_EXIST_FORMAT"], rankId), false);
                     }
                     _context.PhpbbRanks.Remove(actual);
                 }
@@ -228,20 +238,21 @@ namespace PhpbbInDotnet.Services
                     var actual = await _context.PhpbbRanks.FirstOrDefaultAsync(x => x.RankId == rankId);
                     if (actual == null)
                     {
-                        return ($"Rangul {rankId} nu există.", false);
+                        return (string.Format(LanguageProvider.Admin[lang, "RANK_DOESNT_EXIST_FORMAT"], rankId), false);
                     }
                     actual.RankTitle = rankName;
                 }
                 await _context.SaveChangesAsync();
-                return ("Rangul a fost actualizat cu succes!", true);
+                return (LanguageProvider.Admin[lang, "RANK_UPDATED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
-                return ($"A intervenit o eroare, încearcă mai târziu. ID: {_utils.HandleError(ex)}", false);
+                var id = Utils.HandleError(ex);
+                return (string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
-        public async Task<(bool IsSuccess, string ErrorMessage, List<PhpbbUsers> Result)> UserSearchAsync(AdminUserSearch searchParameters)
+        public async Task<(string Message, bool IsSuccess, List<PhpbbUsers> Result)> UserSearchAsync(AdminUserSearch searchParameters)
         {
             long ParseDate(string value, bool isUpperLimit)
             {
@@ -261,6 +272,7 @@ namespace PhpbbInDotnet.Services
                 }
             }
 
+            var lang = await GetLanguage();
             try
             {
                 var rf = ParseDate(searchParameters?.RegisteredFrom, false);
@@ -269,8 +281,8 @@ namespace PhpbbInDotnet.Services
                 var email = searchParameters?.Email;
                 var userId = searchParameters?.UserId ?? 0;
                 var query = from u in _context.PhpbbUsers.AsNoTracking()
-                            where (string.IsNullOrWhiteSpace(username) || u.UsernameClean.Contains(_utils.CleanString(username)))
-                                && (string.IsNullOrWhiteSpace(email) || u.UserEmailHash == _utils.CalculateCrc32Hash(email))
+                            where (string.IsNullOrWhiteSpace(username) || u.UsernameClean.Contains(Utils.CleanString(username)))
+                                && (string.IsNullOrWhiteSpace(email) || u.UserEmailHash == Utils.CalculateCrc32Hash(email))
                                 && (userId == 0 || u.UserId == userId)
                                 && u.UserRegdate >= rf && u.UserRegdate <= rt
                             select u;
@@ -290,21 +302,22 @@ namespace PhpbbInDotnet.Services
                             select q;
                 }
 
-                return (true, null, await query.ToListAsync());
+                return ("OK", true, await query.ToListAsync());
             }
             catch (DateInputException die)
             {
-                _utils.HandleError(die.InnerException, die.Message);
-                return (false, "Una sau mai multe date este invalidă.", new List<PhpbbUsers>());
+                Utils.HandleError(die.InnerException, die.Message);
+                return (LanguageProvider.Admin[lang, "ONE_OR_MORE_INVALID_INPUT_DATES"], false, new List<PhpbbUsers>());
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex, "Error searchig for user in admin panel.");
-                return (false, "A intervenit o eroare", new List<PhpbbUsers>());
+                var id = Utils.HandleError(ex);
+                return (string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false, new List<PhpbbUsers>());
             }
         }
         public async Task<(string Message, bool? IsSuccess)> ManageGroup(UpsertGroupDto dto)
         {
+            var lang = await GetLanguage();
             try
             {
                 void update(PhpbbGroups destination, UpsertGroupDto source)
@@ -319,7 +332,7 @@ namespace PhpbbInDotnet.Services
 
                 async Task<bool> roleIsValid(int roleId) => await _context.PhpbbAclRoles.FirstOrDefaultAsync(x => x.RoleId == roleId) != null;
 
-                var action = "";
+                AdminGroupActions? action = null;
                 var changedColor = false;
                 PhpbbGroups actual;
                 if (dto.Id == 0)
@@ -330,31 +343,31 @@ namespace PhpbbInDotnet.Services
                     result.Entity.GroupId = 0;
                     await _context.SaveChangesAsync();
                     actual = result.Entity;
-                    action = "adăugat";
+                    action = AdminGroupActions.Add;
                 }
                 else
                 {
                     actual = await _context.PhpbbGroups.FirstOrDefaultAsync(x => x.GroupId == dto.Id);
                     if (actual == null)
                     {
-                        return ($"Grupul '{dto.Id}' nu există.", false);
+                        return (string.Format(LanguageProvider.Admin[lang, "GROUP_DOESNT_EXIST"], dto.Id), false);
                     }
 
                     if (dto.Delete ?? false)
                     {
                         if (await _context.PhpbbUsers.AsNoTracking().CountAsync(x => x.GroupId == dto.Id) > 0)
                         {
-                            return ($"Grupul '{actual.GroupName}' nu poate fi șters deoarece nu este gol.", false);
+                            return (string.Format(LanguageProvider.Admin[lang, "CANT_DELETE_NOT_EMPTY_FORMAT"], actual.GroupName), false);
                         }
                         _context.PhpbbGroups.Remove(actual);
                         actual = null;
-                        action = "șters";
+                        action = AdminGroupActions.Delete;
                     }
                     else
                     {
                         changedColor = !actual.GroupColour.Equals(dto.DbColor, StringComparison.InvariantCultureIgnoreCase);
                         update(actual, dto);
-                        action = "actualizat";
+                        action = AdminGroupActions.Update;
                     }
                     await _context.SaveChangesAsync();
                 }
@@ -412,38 +425,52 @@ namespace PhpbbInDotnet.Services
                     await _context.SaveChangesAsync();
                 }
 
-                return ($"Grupul a fost {action ?? "actualizat"} cu succes!", true);
+                var message = action switch
+                {
+                    AdminGroupActions.Add => LanguageProvider.Admin[lang, "GROUP_ADDED_SUCCESSFULLY"],
+                    AdminGroupActions.Delete => LanguageProvider.Admin[lang, "GROUP_DELETED_SUCCESSFULLY"],
+                    AdminGroupActions.Update => LanguageProvider.Admin[lang, "GROUP_UPDATED_SUCCESSFULLY"],
+                    _ => LanguageProvider.Admin[lang, "GROUP_UPDATED_SUCCESSFULLY"],
+                };
+                return (message, true);
             }
             catch (Exception ex)
             {
-                return ($"A intervenit o eroare. ID eroare: {_utils.HandleError(ex)}.", false);
+                var id = Utils.HandleError(ex);
+                return (string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
-        public async Task<(string Message, bool? IsSuccess)> BanUser(List<PhpbbBanlist> banlist, List<int> toRemove)
+        public async Task<(string Message, bool? IsSuccess)> BanUser(List<PhpbbBanlist> banlist, List<int> indexesToRemove)
         {
+            var lang = await GetLanguage();
             try
             {
-                var conn = _context.Database.GetDbConnection();
+                await _context.PhpbbBanlist.AddRangeAsync(banlist.Where(x => x.BanId == 0));
+                _context.PhpbbBanlist.UpdateRange(banlist.Where(x => x.BanId != 0));
+                await _context.SaveChangesAsync();
+                await _context.Database.GetDbConnection().ExecuteAsync("DELETE FROM phpbb_banlist WHERE ban_id IN @ids", new { ids = indexesToRemove.Select(idx => banlist[idx].BanId) });
 
-                await conn.ExecuteAsync (
-                    "INSERT INTO phpbb_banlist (ban_ip, ban_email) VALUES (@ip, @email)",
-                    banlist.Where(b => b.BanId == 0).Select(b => new { ip = b.BanIp ?? string.Empty, email = b.BanEmail ?? string.Empty } )
-                );
+                //var conn = _context.Database.GetDbConnection();
 
-                await conn.ExecuteAsync(
-                    "UPDATE phpbb_banlist SET ban_ip = @ip, ban_email = @email WHERE ban_id = @banId",
-                    banlist.Where(b => b.BanId != 0 && !toRemove.Contains(b.BanId)).Select(b => new { b.BanId, ip = b.BanIp ?? string.Empty, email = b.BanEmail ?? string.Empty })
-                );
+                //await conn.ExecuteAsync (
+                //    "INSERT INTO phpbb_banlist (ban_ip, ban_email) VALUES (@ip, @email)",
+                //    banlist.Where(b => b.BanId == 0).Select(b => new { ip = b.BanIp ?? string.Empty, email = b.BanEmail ?? string.Empty } )
+                //);
 
-                await conn.ExecuteAsync("DELETE FROM phpbb_banlist WHERE ban_id IN @ids", new { ids = toRemove?.DefaultIfEmpty() ?? new[] { 0 } });
+                //await conn.ExecuteAsync(
+                //    "UPDATE phpbb_banlist SET ban_ip = @ip, ban_email = @email WHERE ban_id = @banId",
+                //    banlist.Where(b => b.BanId != 0 && !toRemove.Contains(b.BanId)).Select(b => new { b.BanId, ip = b.BanIp ?? string.Empty, email = b.BanEmail ?? string.Empty })
+                //);
 
-                return ("Interzicerile au fost actualizate cu succes!", true);
+                //await conn.ExecuteAsync("DELETE FROM phpbb_banlist WHERE ban_id IN @ids", new { ids = toRemove?.DefaultIfEmpty() ?? new[] { 0 } });
+
+                return (LanguageProvider.Admin[lang, "BANLIST_UPDATED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex, "Error while banning user");
-                return ($"A intervenit o eroare - ID: {id}", false);
+                var id = Utils.HandleError(ex);
+                return (string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 

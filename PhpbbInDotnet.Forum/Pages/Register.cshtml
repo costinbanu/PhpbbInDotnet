@@ -2,21 +2,24 @@
 @model PhpbbInDotnet.Forum.Pages.RegisterModel
 
 @using Utilities
+@using Objects.Configuration 
+
+@inject Microsoft.Extensions.Configuration.IConfiguration _config;
 
 @{
     ViewData["Title"] = "Register";
     Layout = "~/Pages/_Layout.cshtml";
     var lang = Model.GetLanguage();
+    var opts = _config.GetObject<Recaptcha>();
 }
 
-@inject Microsoft.Extensions.Configuration.IConfiguration _config;
 
 <h3>Înregistrare</h3>
 
-<script src="https://www.google.com/recaptcha/api.js?render=@(_config["Recaptcha:SiteKey"])"></script>
+<script src="https://www.google.com/recaptcha/api.js?render=@(opts.SiteKey)"></script>
 <script>
     grecaptcha.ready(function () {
-        grecaptcha.execute('@(_config["Recaptcha:SiteKey"])', { action: 'validate_captcha' })
+        grecaptcha.execute('@(opts.SiteKey)', { action: 'validate_captcha' })
             .then(function (token) {
                 $('#RecaptchaResponse').val(token);
             });
@@ -73,20 +76,4 @@
             $recaptcha.setAttribute("required", "required");
         };
     };
-
-    function recaptchaCallback() {
-        var error = document.getElementById("reCaptchaErrorMessage");
-        if (error.style.visibility == "visible") {
-            error.style.visibility = "hidden";
-        }
-    }
-
-    function validateCaptcha() {
-        var response = grecaptcha.getResponse();
-        if (response.length === 0) {
-            document.getElementById("reCaptchaErrorMessage").style.visibility = "visible";
-            return false;
-        }
-        return true;
-    }
 </script>
