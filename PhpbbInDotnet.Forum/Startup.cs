@@ -125,7 +125,6 @@ namespace PhpbbInDotnet.Forum
             services.AddScoped<AdminForumService>();
             services.AddScoped<AdminUserService>();
             services.AddScoped<WritingToolsService>();
-            services.AddScoped<CacheService>();
             services.AddScoped<ForumTreeService>();
             services.AddScoped<PostService>();
             services.AddScoped<UserService>();

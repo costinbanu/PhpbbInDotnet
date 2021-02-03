@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using LazyCache;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System;
@@ -104,6 +105,13 @@ namespace PhpbbInDotnet.Utilities
 
         public static T GetObject<T>(this IConfiguration config, string sectionName = null)
             => config.GetSection(sectionName ?? typeof(T).Name).Get<T>();
+
+        public static async Task<T> GetAndRemoveAsync<T>(this IAppCache cache, string key)
+        {
+            var toReturn = await cache.GetAsync<T>(key);
+            cache.Remove(key);
+            return toReturn;
+        }
 
         private static readonly Regex CHAR_CODES_REGEX = new Regex("&#[0-9]{3};", RegexOptions.Compiled | RegexOptions.CultureInvariant, Constants.REGEX_TIMEOUT);
 

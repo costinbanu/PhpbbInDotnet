@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using PhpbbInDotnet.Languages;
+using LazyCache;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -33,10 +34,10 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly AdminForumService _adminForumService;
         private readonly WritingToolsService _adminWritingService;
 
-        public AdminModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, CommonUtils utils, 
+        public AdminModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, 
             AdminUserService adminUserService, AdminForumService adminForumService, WritingToolsService adminWritingService, IConfiguration config, 
             AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider) 
-            : base(context, forumService, userService, cacheService, config, sessionCounter, utils, languageProvider)
+            : base(context, forumService, userService, cache, config, sessionCounter, utils, languageProvider)
         {
             _adminUserService = adminUserService;
             _adminForumService = adminForumService;

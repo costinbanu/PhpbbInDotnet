@@ -1,5 +1,6 @@
 ﻿using CryptSharp.Core;
 using Dapper;
+using LazyCache;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.CodeAnalysis.CSharp;
@@ -91,9 +92,9 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly StorageService _storageService;
         private readonly WritingToolsService _writingService;
 
-        public UserModel(CommonUtils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
+        public UserModel(CommonUtils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, 
             StorageService storageService, WritingToolsService writingService, IConfiguration config, AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider)
-            : base(context, forumService, userService, cacheService, config, sessionCounter, utils, languageProvider)
+            : base(context, forumService, userService, cache, config, sessionCounter, utils, languageProvider)
         {
             _storageService = storageService;
             _writingService = writingService;
@@ -413,7 +414,7 @@ namespace PhpbbInDotnet.Forum.Pages
             else if (affectedEntries > 0 && userMustLogIn)
             {
                 var key = $"UserMustLogIn_{dbUser.UsernameClean}";
-                await CacheService.SetInCache(key, true, TimeSpan.FromDays(Config.GetValue<int>("LoginSessionSlidingExpirationDays")));
+                Cache.Add(key, true, TimeSpan.FromDays(Config.GetValue<int>("LoginSessionSlidingExpirationDays")));
                 if (EmailChanged)
                 {
                     Mode = UserPageMode.Edit;

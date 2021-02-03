@@ -9,7 +9,7 @@
 
 @model PhpbbInDotnet.Forum.Pages.PostingModel
 
-@inject Services.CacheService _cacheService
+@inject LazyCache.IAppCache _cache
 @inject Services.WritingToolsService _writingService
 @inject Services.BBCodeRenderingService _renderingService
 @inject Services.PostService _postService
@@ -390,7 +390,7 @@ else if (IsPM)
         </div>
     }
     <div id="emojiPanel" style="display:none; clear:both;">
-        @foreach (var smiley in ((await _cacheService.GetFromCache<List<PhpbbSmilies>>(await Model.GetActualCacheKey("Smilies", false))) ?? new List<PhpbbSmilies>()))
+        @foreach (var smiley in await _cache.GetAsync<IEnumerable<PhpbbSmilies>>(await Model.GetActualCacheKey("Smilies", false)))
         {
             <a href="javascript:posting.insert_text('@smiley.Code', true);">
                 <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
@@ -458,7 +458,7 @@ else if (IsPM)
 
 <script>
     var tribute = new Tribute({
-        values: @Html.Raw(_writingService.ToCamelCaseJson(await _cacheService.GetFromCache<List<KeyValuePair<string, string>>>(await Model.GetActualCacheKey("Users", false)))),
+        values: @Html.Raw(_writingService.ToCamelCaseJson(await _cache.GetAsync<IEnumerable<KeyValuePair<string, string>>>(await Model.GetActualCacheKey("Users", false)))),
         trigger: "@@",
         allowSpaces: true
     });
@@ -475,7 +475,7 @@ else if (IsPM)
 {
     <script>
         var secondTribute = new Tribute({
-            values: @Html.Raw(_writingService.ToCamelCaseJson(await _cacheService.GetFromCache<List<KeyValuePair<string, int>>>(await Model.GetActualCacheKey("UserMap", false)))),
+            values: @Html.Raw(_writingService.ToCamelCaseJson(await _cache.GetAsync<IEnumerable<KeyValuePair<string, int>>>(await Model.GetActualCacheKey("UserMap", false)))),
             selectTemplate: function(item) {
                 return item.original.key;
             },

@@ -73,7 +73,7 @@ namespace PhpbbInDotnet.Services
                         new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
                     Summary: new BBTagSummary
                     {
-                        ButtonText = "Mărime text",
+                        ButtonText = "Mărime text", aici
                         OpenTag = "[size]",
                         CloseTag = "[/size]",
                         ShowOnPage = true,

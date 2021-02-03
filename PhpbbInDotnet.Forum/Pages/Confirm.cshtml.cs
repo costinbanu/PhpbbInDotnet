@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Languages;
+using LazyCache;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -46,9 +47,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public bool IsDestinationConfirmation { get; private set; } = false;
 
-        public ConfirmModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, CommonUtils utils, IConfiguration config, 
+        public ConfirmModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, IConfiguration config, 
             AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider)
-            : base(context, forumService, userService, cacheService, config, sessionCounter, utils, languageProvider) 
+            : base(context, forumService, userService, cache, config, sessionCounter, utils, languageProvider) 
         { }
 
         public async Task OnGetRegistrationComplete()

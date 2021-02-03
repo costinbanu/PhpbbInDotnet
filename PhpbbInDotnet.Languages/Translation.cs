@@ -47,12 +47,10 @@ namespace PhpbbInDotnet.Languages
 
             if (ShouldCacheRawTranslation)
             {
-                var dummy = _cache.GetOrAdd(GetLanguageKey(language), getValue);
-                return dummy;
+                return _cache.GetOrAdd(GetLanguageKey(language), getValue);
             }
 
-            var dummy2 = getValue();
-            return dummy2;
+            return getValue();
         }
 
         protected string GetFromDictionary(string language, string key, Casing casing)

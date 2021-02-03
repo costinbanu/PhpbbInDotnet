@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using LazyCache;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -44,9 +45,9 @@ namespace PhpbbInDotnet.Forum.Pages
         public IEnumerable<PhpbbGroups> GroupList { get; private set; }
         public bool SearchWasPerformed { get; private set; }
 
-        public MemberListModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, CommonUtils utils, 
+        public MemberListModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, 
             IConfiguration config, WritingToolsService writingService, AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider) 
-            : base (context, forumService, userService, cacheService, config, sessionCounter, utils, languageProvider) 
+            : base (context, forumService, userService, cache, config, sessionCounter, utils, languageProvider) 
         {
             _writingService = writingService;
         }

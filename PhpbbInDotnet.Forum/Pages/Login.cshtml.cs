@@ -1,5 +1,6 @@
 ﻿using CryptSharp.Core;
 using Dapper;
+using LazyCache;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
@@ -28,7 +29,7 @@ namespace PhpbbInDotnet.Forum.Pages
     {
         private readonly ForumDbContext _context;
         private readonly CommonUtils _utils;
-        private readonly CacheService _cacheService;
+        private readonly IAppCache _cache;
         private readonly UserService _userService;
         private readonly IConfiguration _config;
 
@@ -73,11 +74,11 @@ namespace PhpbbInDotnet.Forum.Pages
         public LoginMode Mode { get; private set; }
         public LanguageProvider LanguageProvider { get; }
 
-        public LoginModel(ForumDbContext context, CommonUtils utils, CacheService cacheService, UserService userService, IConfiguration config, LanguageProvider languageProvider)
+        public LoginModel(ForumDbContext context, CommonUtils utils, IAppCache cache, UserService userService, IConfiguration config, LanguageProvider languageProvider)
         {
             _context = context;
             _utils = utils;
-            _cacheService = cacheService;
+            _cache = cache;
             _userService = userService;
             _config = config;
             LanguageProvider = languageProvider;
@@ -149,9 +150,9 @@ namespace PhpbbInDotnet.Forum.Pages
                 });
 
             var key = $"UserMustLogIn_{currentUser.UsernameClean}";
-            if (await _cacheService.GetFromCache<bool?>(key) ?? false)
+            if (await _cache.GetAsync<bool?>(key) ?? false)
             {
-                _cacheService.RemoveFromCache(key);
+                _cache.Remove(key);
             }
 
             return Redirect(HttpUtility.UrlDecode(ReturnUrl ?? "/"));

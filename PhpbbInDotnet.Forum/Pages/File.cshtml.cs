@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using LazyCache;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
@@ -20,9 +21,9 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly StorageService _storageService;
         private readonly FileExtensionContentTypeProvider _contentTypeProvider;
 
-        public FileModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, StorageService storageService, 
+        public FileModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, StorageService storageService, 
             IConfiguration config, AnonymousSessionCounter sessionCounter, CommonUtils utils, FileExtensionContentTypeProvider contentTypeProvider, LanguageProvider languageProvider)
-            : base(context, forumService, userService, cacheService, config, sessionCounter, utils, languageProvider)
+            : base(context, forumService, userService, cache, config, sessionCounter, utils, languageProvider)
         {
             _storageService = storageService;
             _contentTypeProvider = contentTypeProvider;

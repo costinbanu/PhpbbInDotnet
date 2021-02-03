@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using PhpbbInDotnet.Languages;
 using Microsoft.AspNetCore.Http;
+using LazyCache;
 
 namespace PhpbbInDotnet.Services
 {
@@ -19,16 +20,16 @@ namespace PhpbbInDotnet.Services
     {
         private readonly ForumDbContext _context;
         private readonly PostService _postService;
-        private readonly CacheService _cacheService;
+        private readonly IAppCache _cache;
         private readonly IConfiguration _config;
 
-        public AdminUserService(ForumDbContext context, PostService postService, CacheService cacheService, IConfiguration config, 
+        public AdminUserService(ForumDbContext context, PostService postService, IAppCache cache, IConfiguration config, 
             CommonUtils utils, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
             : base(utils, languageProvider, httpContextAccessor)
         {
             _context = context;
             _postService = postService;
-            _cacheService = cacheService;
+            _cache = cache;
             _config = config;
         }
 
@@ -99,10 +100,10 @@ namespace PhpbbInDotnet.Services
                 return (string.Format(LanguageProvider.Admin[lang, "USER_DOESNT_EXIST_FORMAT"], userId ?? 0), false);
             }
 
-            async Task flagUserAsChanged()
+            void flagUserAsChanged()
             {
                 var key = $"UserMustLogIn_{user.UsernameClean}";
-                await _cacheService.SetInCache(key, true, TimeSpan.FromDays(_config.GetValue<int>("LoginSessionSlidingExpirationDays")));
+                _cache.Add(key, true, TimeSpan.FromDays(_config.GetValue<int>("LoginSessionSlidingExpirationDays")));
             }
 
             async Task deleteUser()
@@ -155,7 +156,7 @@ namespace PhpbbInDotnet.Services
                         {
                             user.UserInactiveReason = UserInactiveReason.InactivatedByAdmin;
                             user.UserInactiveTime = DateTime.UtcNow.ToUnixTimestamp();
-                            await flagUserAsChanged();
+                            flagUserAsChanged();
                             message = string.Format(LanguageProvider.Admin[lang, "USER_DEACTIVATED_FORMAT"], user.Username);
                             isSuccess = true;
                             break;
@@ -174,7 +175,7 @@ namespace PhpbbInDotnet.Services
                                 p.PosterId = Constants.ANONYMOUS_USER_ID;
                             });
 
-                            await flagUserAsChanged();
+                            flagUserAsChanged();
                             await deleteUser();
                             message = string.Format(LanguageProvider.Admin[lang, "USER_DELETED_POSTS_KEPT_FORMAT"], user.Username);
                             isSuccess = true;
@@ -187,7 +188,7 @@ namespace PhpbbInDotnet.Services
                             await _context.SaveChangesAsync();
                             toDelete.ForEach(async p => await _postService.CascadePostDelete(p, false));
 
-                            await flagUserAsChanged();
+                            flagUserAsChanged();
                             await deleteUser();
                             message = string.Format(LanguageProvider.Admin[lang, "USER_DELETED_POSTS_DELETED_FORMAT"], user.Username);
                             isSuccess = true;

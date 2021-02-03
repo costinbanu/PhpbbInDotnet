@@ -1,11 +1,13 @@
 ﻿using Dapper;
 using DeviceDetectorNET;
+using LazyCache;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Net.Http.Headers;
 using PhpbbInDotnet.Database;
@@ -26,7 +28,7 @@ namespace PhpbbInDotnet.Forum
     public class AuthenticatedPageModel : PageModel
     {
         protected readonly ForumTreeService ForumService;
-        protected readonly CacheService CacheService;
+        protected readonly IAppCache Cache;
         protected readonly UserService UserService;
         protected readonly ForumDbContext Context;
         protected readonly IConfiguration Config;
@@ -39,11 +41,11 @@ namespace PhpbbInDotnet.Forum
         private AuthenticatedUser _currentUser;
         private string _language;
 
-        public AuthenticatedPageModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, 
+        public AuthenticatedPageModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cacheService, 
             IConfiguration config, AnonymousSessionCounter sessionCounter, CommonUtils utils, LanguageProvider languageProvider)
         {
             ForumService = forumService;
-            CacheService = cacheService;
+            Cache = cacheService;
             UserService = userService;
             Context = context;
             Config = config;
@@ -84,7 +86,7 @@ namespace PhpbbInDotnet.Forum
                 if (!_currentUser.IsAnonymous)
                 {
                     var key = $"UserMustLogIn_{_currentUser.UsernameClean}";
-                    if (await CacheService.GetFromCache<bool?>(key) ?? false)
+                    if (await Cache.GetAsync<bool?>(key) ?? false)
                     {
                         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                     }
@@ -96,7 +98,7 @@ namespace PhpbbInDotnet.Forum
                         if (dbUser == null || dbUser.UserInactiveTime > 0)
                         {
                             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                            await CacheService.SetInCache(key, true, TimeSpan.FromDays(authenticationExpiryDays));
+                            Cache.Add(key, true, new MemoryCacheEntryOptions { SlidingExpiration = TimeSpan.FromDays(authenticationExpiryDays) });
                         }
                         else if (DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > TimeSpan.FromMinutes(sessionTrackingTimeoutMinutes))
                         {

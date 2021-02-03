@@ -1,20 +1,20 @@
 ﻿using Dapper;
+using LazyCache;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
-using PhpbbInDotnet.Languages;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -99,7 +99,9 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly WritingToolsService _writingService;
         private readonly BBCodeRenderingService _renderingService;
 
-        public PostingModel(CommonUtils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, PostService postService, 
+        static readonly TimeSpan CACHE_EXPIRATION = TimeSpan.FromHours(4);
+
+        public PostingModel(CommonUtils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cacheService, PostService postService, 
             StorageService storageService, WritingToolsService writingService, BBCodeRenderingService renderingService, IConfiguration config, AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider)
             : base(context, forumService, userService, cacheService, config, sessionCounter, utils, languageProvider)
         {
@@ -143,28 +145,22 @@ namespace PhpbbInDotnet.Forum.Pages
                         "SELECT * FROM phpbb_users WHERE user_id <> @anon AND user_type <> 2 ORDER BY username",
                         new { anon = Constants.ANONYMOUS_USER_ID })
                     ).Select(u => KeyValuePair.Create(u.Username, u.UserId)).ToList();
-            
-            var smileyKey = await GetActualCacheKey("Smilies", false);
-            if (!await CacheService.ExistsInCache(smileyKey))
-            {
-                var smileys = await connection.QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies GROUP BY smiley_url ORDER BY smiley_order");
-                await CacheService.SetInCache(smileyKey, smileys.ToList());
-            }
 
-            var userKey = await GetActualCacheKey("Users", false);
-            if (!await CacheService.ExistsInCache(userKey))
-            {
-                await CacheService.SetInCache(
-                    userKey,
-                    (await GetUserMap()).Select(map => KeyValuePair.Create(map.Key, $"[url={Config.GetValue<string>("BaseUrl")}/User?UserId={map.Value}]{map.Key}[/url]"))
-                );
-            }
-
-            var userMapKey = await GetActualCacheKey("UserMap", false);
-            if (!await CacheService.ExistsInCache(userMapKey))
-            {
-                await CacheService.SetInCache(userMapKey, await GetUserMap());
-            }
+            await Cache.GetOrAddAsync(
+                await GetActualCacheKey("Smilies", false), 
+                async () => await connection.QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies GROUP BY smiley_url ORDER BY smiley_order"),
+                CACHE_EXPIRATION
+            );
+            await Cache.GetOrAddAsync(
+                await GetActualCacheKey("Users", false), 
+                async () => (await GetUserMap()).Select(map => KeyValuePair.Create(map.Key, $"[url={Config.GetValue<string>("BaseUrl")}/User?UserId={map.Value}]{map.Key}[/url]")),
+                CACHE_EXPIRATION
+            );
+            await Cache.GetOrAddAsync(
+                await GetActualCacheKey("UserMap", false),
+                GetUserMap,
+                CACHE_EXPIRATION
+            );
         }
 
         private async Task<PhpbbPosts> InitEditedPost()
@@ -339,10 +335,10 @@ namespace PhpbbInDotnet.Forum.Pages
                 new { usr.UserId, forumId = ForumId, topicId = Action == PostingActions.NewTopic ? 0 : TopicId }
             );
 
-            CacheService.RemoveFromCache(await GetActualCacheKey("Text", true));
-            CacheService.RemoveFromCache(await GetActualCacheKey("ForumId", true));
-            CacheService.RemoveFromCache(await GetActualCacheKey("TopicId", true));
-            CacheService.RemoveFromCache(await GetActualCacheKey("PostId", true));
+            Cache.Remove(await GetActualCacheKey("Text", true));
+            Cache.Remove(await GetActualCacheKey("ForumId", true));
+            Cache.Remove(await GetActualCacheKey("TopicId", true));
+            Cache.Remove(await GetActualCacheKey("PostId", true));
 
             return post.PostId;
         }
@@ -387,24 +383,24 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task<IActionResult> WithBackup(Func<Task<IActionResult>> toDo)
         {
-            await CacheService.SetInCache(await GetActualCacheKey("Text", true), new CachedText { Text = PostText, CacheTime = DateTime.UtcNow });
-            await CacheService.SetInCache(await GetActualCacheKey("ForumId", true), ForumId);
-            await CacheService.SetInCache(await GetActualCacheKey("TopicId", true), TopicId);
-            await CacheService.SetInCache(await GetActualCacheKey("PostId", true), PostId);
+            Cache.Add(await GetActualCacheKey("Text", true), new CachedText { Text = PostText, CacheTime = DateTime.UtcNow }, CACHE_EXPIRATION);
+            Cache.Add(await GetActualCacheKey("ForumId", true), ForumId, CACHE_EXPIRATION);
+            Cache.Add(await GetActualCacheKey("TopicId", true), TopicId ?? 0, CACHE_EXPIRATION);
+            Cache.Add(await GetActualCacheKey("PostId", true), PostId ?? 0, CACHE_EXPIRATION);
             return await toDo();
         }
 
         private async Task RestoreBackupIfAny(DateTime? minCacheAge = null)
         {
-            var cachedText = await CacheService.GetAndRemoveFromCache<CachedText>(await GetActualCacheKey("Text", true));
+            var cachedText = await Cache.GetAndRemoveAsync<CachedText>(await GetActualCacheKey("Text", true));
             if (!string.IsNullOrWhiteSpace(cachedText?.Text) && (cachedText?.CacheTime ?? DateTime.MinValue) > (minCacheAge ?? DateTime.UtcNow))
             {
                 PostText = cachedText.Text;
             }
-            var cachedForumId = await CacheService.GetAndRemoveFromCache<int>(await GetActualCacheKey("ForumId", true));
+            var cachedForumId = await Cache.GetAndRemoveAsync<int>(await GetActualCacheKey("ForumId", true));
             ForumId = cachedForumId != 0 ? cachedForumId : ForumId;
-            TopicId ??= await CacheService.GetAndRemoveFromCache<int?>(await GetActualCacheKey("TopicId", true));
-            PostId ??= await CacheService.GetAndRemoveFromCache<int?>(await GetActualCacheKey("PostId", true));
+            TopicId ??= await Cache.GetAndRemoveAsync<int?>(await GetActualCacheKey("TopicId", true));
+            PostId ??= await Cache.GetAndRemoveAsync<int?>(await GetActualCacheKey("PostId", true));
         }
 
         private IEnumerable<string> GetPollOptionsEnumerable()

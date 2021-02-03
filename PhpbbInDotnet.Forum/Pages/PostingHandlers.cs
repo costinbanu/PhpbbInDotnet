@@ -1,16 +1,17 @@
 ﻿using Dapper;
+using LazyCache;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Objects;
+using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
-using PhpbbInDotnet.Objects.Configuration;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -103,7 +104,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 Attachments = (await conn.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id = @postId", new { PostId })).AsList();
                 ShowAttach = Attachments.Any();
 
-                await CacheService.SetInCache(await GetActualCacheKey("PostTime", true), curPost.PostTime);
+                Cache.Add(await GetActualCacheKey("PostTime", true), curPost.PostTime, CACHE_EXPIRATION);
 
                 if (canCreatePoll && curTopic.PollStart > 0)
                 {
@@ -495,7 +496,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         new { message = HttpUtility.HtmlEncode(PostText), subject = HttpUtility.HtmlEncode(PostTitle), now = DateTime.UtcNow.ToUnixTimestamp(), draft.DraftId }
                     );
                 }
-                CacheService.RemoveFromCache(await GetActualCacheKey("Text", true));
+                Cache.Remove(await GetActualCacheKey("Text", true));
                 DraftSavedSuccessfully = true;
 
                 if (Action == PostingActions.NewForumPost)

@@ -13,6 +13,7 @@ using System.Web;
 using PhpbbInDotnet.Database.Entities;
 using System;
 using PhpbbInDotnet.Languages;
+using LazyCache;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -52,9 +53,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private readonly BBCodeRenderingService _renderingService;
 
-        public PrivateMessagesModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService,
+        public PrivateMessagesModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache,
             BBCodeRenderingService renderingService, IConfiguration config, AnonymousSessionCounter sessionCounter, CommonUtils utils, LanguageProvider languageProvider)
-            : base(context, forumService, userService, cacheService, config, sessionCounter, utils, languageProvider)
+            : base(context, forumService, userService, cache, config, sessionCounter, utils, languageProvider)
         {
             _renderingService = renderingService;
         }

@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using LazyCache;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -63,9 +64,9 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly string _searchFieldList;
         private readonly ILogger _logger;
 
-        public SearchModel(ForumDbContext context, ForumTreeService forumService, UserService userService, CacheService cacheService, IConfiguration config,
+        public SearchModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, IConfiguration config,
             AnonymousSessionCounter sessionCounter, CommonUtils utils, ILogger logger, LanguageProvider languageProvider)
-            : base(context, forumService, userService, cacheService, config, sessionCounter, utils, languageProvider)
+            : base(context, forumService, userService, cache, config, sessionCounter, utils, languageProvider)
         {
             _searchFieldList =
                 @"p.post_id,
