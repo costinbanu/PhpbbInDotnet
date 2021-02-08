@@ -119,7 +119,6 @@ namespace PhpbbInDotnet.Forum
 
             services.AddSingleton<CommonUtils>();
             services.AddSingleton<AnonymousSessionCounter>();
-            services.AddSingleton<BBTagFactory>();
             services.AddSingleton<FileExtensionContentTypeProvider>();
 
             services.AddScoped<AdminForumService>();

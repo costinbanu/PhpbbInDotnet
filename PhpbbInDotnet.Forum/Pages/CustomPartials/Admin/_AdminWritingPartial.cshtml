@@ -184,7 +184,7 @@
                     @Html.Raw(_languageProvider.Admin[Model.Language, "EXPLANATION"])
                 </div>
                 <div class="FlexRight PostInputWidth">
-                    <textarea name="codes[@i].BbcodeHelpline" rows="3" class="InputBox">@codes[i].BbcodeHelpline</textarea>
+                    @Html.Raw(_languageProvider.Admin[Model.Language, "UPDATE_LANGUAGE_FILE_HINT"])
                 </div>
             </div>
             <div class="FlexCenter FlexSpaced">
@@ -270,9 +270,9 @@
                 "<p style='clear:both'></p>" +
                 "<b>@Html.Raw(_languageProvider.Admin[Model.Language, "HTML_CODE"])</b><br /><textarea name='codes[" + codeIndex + "].BbcodeTpl' class='InputBox' ></textarea>" +
                 "<p style='clear:both'></p>" +
-                "<b>@Html.Raw(_languageProvider.Admin[Model.Language, "EXPLANATION"])</b><br /><textarea name='codes[" + codeIndex + "].BbcodeHelpline' class='InputBox' ></textarea>" +
+                "<b>@Html.Raw(_languageProvider.Admin[Model.Language, "EXPLANATION"])</b><br />@Html.Raw(_languageProvider.Admin[Model.Language, "UPDATE_LANGUAGE_FILE_HINT"])" +
                 "<p style='clear:both'></p>" +
-                "<label><input type='checkbox' name='toDisplay' value='" + codeIndex + "' />@Html.Raw(_languageProvider.Admin[Model.Language, "SHOW_IN_POSTING"])</label>" +
+                "<label><input type='checkbox' name='toDisplay' value='" + codeIndex + "' /> @Html.Raw(_languageProvider.Admin[Model.Language, "SHOW_IN_POSTING"])</label>" +
                 "<p style='clear:both'></p>" +
                 "<a href=\"#!\" onclick=\"cancelAddBBCode(this)\">@Html.Raw(_languageProvider.Admin[Model.Language, "CANCEL"])</a>" +
             "</div>"

@@ -27,7 +27,7 @@
     <None Update="Translations\BasicText.ro.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Translations\BBCodeCaptions.ro.json">
+    <None Update="Translations\BBCodes.ro.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Translations\CustomBBCodeGuide.ro.html">

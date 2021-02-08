@@ -13,6 +13,7 @@ namespace PhpbbInDotnet.Languages
     public abstract class Translation
     {
         static readonly CultureInfo EN = new CultureInfo("en");
+        static readonly TimeSpan CACHE_EXPIRATION = TimeSpan.FromHours(4);
 
         private readonly string _name;
         private readonly IAppCache _cache;
@@ -47,13 +48,13 @@ namespace PhpbbInDotnet.Languages
 
             if (ShouldCacheRawTranslation)
             {
-                return _cache.GetOrAdd(GetLanguageKey(language), getValue);
+                return _cache.GetOrAdd(GetLanguageKey(language), getValue, CACHE_EXPIRATION);
             }
 
             return getValue();
         }
 
-        protected string GetFromDictionary(string language, string key, Casing casing)
+        protected string GetFromDictionary(string language, string key, Casing casing, string @default)
         {
             var dict = _cache.GetOrAdd(GetDictionaryKey(language), () =>
             {
@@ -64,11 +65,11 @@ namespace PhpbbInDotnet.Languages
                     _logger.Warning("Dictionary for '{language}' is missing or corrupted.", language);
                 }
                 return value;
-            });
+            }, CACHE_EXPIRATION);
 
             if (!dict.TryGetValue(key, out var toReturn))
             {
-                return key;
+                return @default;
             }
 
             return casing switch
@@ -86,7 +87,7 @@ namespace PhpbbInDotnet.Languages
             => char.ToUpper(text[0]) + text[1..].ToLower();
 
         private string TitleCase(string language, string text)
-            => language.Equals("en", StringComparison.InvariantCultureIgnoreCase) ? EN.TextInfo.ToTitleCase(text) : FirstUpper(text);
+            => language.Equals(EN.TwoLetterISOLanguageName, StringComparison.InvariantCultureIgnoreCase) ? EN.TextInfo.ToTitleCase(text) : FirstUpper(text);
 
         private ConcurrentDictionary<string, string> GetDictionary(string language)
         {

@@ -233,14 +233,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var uid = string.Empty;
             var bitfield = string.Empty;
             var hasAttachments = Attachments?.Any() ?? false;
-            if (Config.GetValue<bool>("CompatibilityMode"))
-            {
-                (newPostText, uid, bitfield) = _renderingService.TransformForBackwardsCompatibility(newPostText);
-            }
-            else
-            {
-                newPostText = HttpUtility.HtmlEncode(newPostText);
-            }
+            newPostText = HttpUtility.HtmlEncode(newPostText);
 
             if (post == null)
             {

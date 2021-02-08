@@ -176,26 +176,28 @@ else if (IsPM)
     <div class="PostingControls" id="controls" style="width:100%">
         @foreach (var code in _renderingService.TagMap)
         {
+            var caption = Model.LanguageProvider.BBCodes[Lang, $"CAPTION_{code.Value.OpenTag}", Casing.None, code.Key];
+            var buttonText = Model.LanguageProvider.BBCodes[Lang, $"BUTTON_TEXT_{code.Value.OpenTag}", Casing.None, code.Key];
             if (code.Key == "size")
             {
-                @Html.DropDownList("addbbcode20", _utils.EnumToDropDownList<PostingFontSize>(null, size => Model.LanguageProvider.Enums[Lang, size], size => ((int)size).ToString(), code.Value.ButtonText), new
+                @Html.DropDownList("addbbcode20", _utils.EnumToDropDownList<PostingFontSize>(null, size => Model.LanguageProvider.Enums[Lang, size], size => ((int)size).ToString(), buttonText), new
                 {
                     @class = "BbCodeButton PostingButton",
                     style = "border-radius: 2px; border: 1px solid #dcdcdc;",
                     onchange = "posting.bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;",
-                    title = Model.LanguageProvider.BBCodeCaptions[Lang, code.Value.OpenTag]
+                    title = caption
                 })
             }
             else if (code.Key == "color")
             {
-                <button type="button" class="BbCodeButton Hide960 PostingButton MyButton" onclick="posting.change_palette();" title="@Html.Raw(Model.LanguageProvider.BBCodeCaptions[Lang, code.Value.OpenTag])" id="colour_palette_button">
-                    @Html.Raw(code.Value.ButtonText)
+                <button type="button" class="BbCodeButton Hide960 PostingButton MyButton" onclick="posting.change_palette();" title="@Html.Raw(caption)" id="colour_palette_button">
+                    @Html.Raw(buttonText)
                 </button>
             }
             else
             {
-                <button type="button" class="BbCodeButton PostingButton @(code.Value.ShowWhenCollapsed ? "" : "Hide960") MyButton" onclick="posting.bbstyle('@code.Key')" title="@Html.Raw(Model.LanguageProvider.BBCodeCaptions[Lang, code.Value.OpenTag])">
-                    @Html.Raw(code.Value.ButtonText)
+                <button type="button" class="BbCodeButton PostingButton @(code.Value.ShowWhenCollapsed ? "" : "Hide960") MyButton" onclick="posting.bbstyle('@code.Key')" title="@Html.Raw(caption)">
+                    @Html.Raw(buttonText)
                 </button>
             }
         }

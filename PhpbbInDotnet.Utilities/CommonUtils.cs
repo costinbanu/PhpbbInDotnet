@@ -274,9 +274,6 @@ namespace PhpbbInDotnet.Utilities
             return id;
         }
 
-        public string TransformSelfLinkToBetaLink(string link)
-            => string.IsNullOrWhiteSpace(link) ? string.Empty : (_config.GetValue<bool>("CompatibilityMode") ? HttpUtility.HtmlDecode(link).Replace("://forum.metrouusor.com", "://beta.forum.metrouusor.com") : link);
-
         public void Dispose()
         {
             _md5?.Dispose();

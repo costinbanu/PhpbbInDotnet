@@ -195,7 +195,7 @@
         var groupRanks = new List<SelectListItem> { new SelectListItem(_languageProvider.Admin[Model.Language, "NO_RANK"], "0", true) };
         groupRanks.AddRange(_context.PhpbbRanks.AsNoTracking().Select(x => new SelectListItem(x.RankTitle, x.RankId.ToString())));
         var roles = new List<SelectListItem> { new SelectListItem(_languageProvider.Admin[Model.Language, "NO_ROLE"], "0", true) };
-        roles.AddRange(_context.PhpbbAclRoles.AsNoTracking().Where(x => x.RoleType == "u_").Select(x => new SelectListItem(_languageProvider.Admin[Model.Language, x.RoleName, Casing.None], x.RoleId.ToString())));
+        roles.AddRange(_context.PhpbbAclRoles.AsNoTracking().Where(x => x.RoleType == "u_").Select(x => new SelectListItem(_languageProvider.Admin[Model.Language, x.RoleName, Casing.None, x.RoleName], x.RoleId.ToString())));
 
         foreach (var group in groups)
         {

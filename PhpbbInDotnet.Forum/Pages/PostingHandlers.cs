@@ -339,15 +339,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var rankId = postAuthor?.UserRank ?? 0;
                 var newPostText = PostText;
                 var uid = string.Empty;
-
-                if (Config.GetValue<bool>("CompatibilityMode"))
-                {
-                    (newPostText, uid, _) = _renderingService.TransformForBackwardsCompatibility(newPostText);
-                }
-                else
-                {
-                    newPostText = HttpUtility.HtmlEncode(newPostText);
-                }
+                newPostText = HttpUtility.HtmlEncode(newPostText);
 
                 PreviewablePost = new PostDto
                 {

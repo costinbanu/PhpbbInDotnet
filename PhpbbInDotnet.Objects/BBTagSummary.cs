@@ -8,8 +8,6 @@
 
         public bool ShowOnPage { get; set; }
 
-        public string ButtonText { get; set; }
-
         public bool ShowWhenCollapsed { get; set; }
     }
 }

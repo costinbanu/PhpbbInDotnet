@@ -26,7 +26,7 @@ namespace PhpbbInDotnet.Languages
         private readonly Lazy<TextTranslation> _admin;
         private readonly Lazy<HtmlTranslation> _customBBCodeGuide;
         private readonly Lazy<HtmlTranslation> _attachmentGuide;
-        private readonly Lazy<TextTranslation> _bbcodeCaptions;
+        private readonly Lazy<TextTranslation> _bbCodes;
 
         public TextTranslation BasicText => _basicText.Value;
 
@@ -54,7 +54,7 @@ namespace PhpbbInDotnet.Languages
 
         public HtmlTranslation AttachmentGuide => _attachmentGuide.Value;
 
-        public TextTranslation BBCodeCaptions => _bbcodeCaptions.Value;
+        public TextTranslation BBCodes => _bbCodes.Value;
 
         public LanguageProvider(ILogger logger, IAppCache cache)
         {
@@ -72,7 +72,7 @@ namespace PhpbbInDotnet.Languages
             _admin = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Admin), _logger, cache));
             _customBBCodeGuide = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(CustomBBCodeGuide), _logger, cache));
             _attachmentGuide = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(AttachmentGuide), _logger, cache));
-            _bbcodeCaptions = new Lazy<TextTranslation>(() => new TextTranslation(nameof(BBCodeCaptions), _logger, cache));
+            _bbCodes = new Lazy<TextTranslation>(() => new TextTranslation(nameof(BBCodes), _logger, cache));
         }
 
         public string GetValidatedLanguage(AuthenticatedUser user, HttpRequest request = null)
@@ -106,16 +106,19 @@ namespace PhpbbInDotnet.Languages
             try
             {
                 var toReturn = new CultureInfo(language).TwoLetterISOLanguageName;
-                if (!(BasicText.Exists(toReturn) && AboutCookies.Exists(toReturn) && Email.Exists(toReturn) && Enums.Exists(toReturn) && 
-                    JSText.Exists(toReturn) && FAQ.Exists(toReturn) && Errors.Exists(toReturn) && PostingGuide.Exists(toReturn)))
+
+                if (new Translation[] { BasicText, AboutCookies, Email, Enums, JSText, FAQ, Errors, PostingGuide, TermsAndConditions, Moderator, Admin, CustomBBCodeGuide, AttachmentGuide, BBCodes }
+                    .Any(x => !x.Exists(toReturn)))
                 {
+                    _logger.Warning("Language '{language}' was requested, but it does not exist.", language);
                     return @default;
                 }
+
                 return toReturn;
             }
             catch (Exception ex)
             {
-                _logger.Warning(ex, $"Unable to parse language code '{language}'.");
+                _logger.Warning(ex, "Unable to parse language code '{language}'.", language);
                 return @default;
             }
         }

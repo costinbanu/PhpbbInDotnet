@@ -14,6 +14,12 @@ namespace PhpbbInDotnet.Languages
         protected override bool ShouldCacheRawTranslation => false;
 
         public string this[string language, Enum key, Casing casing = Casing.None]
-            => GetFromDictionary(language, $"{key.GetType().Name}.{Enum.GetName(key.GetType(), key)}", casing);
+        {
+            get
+            {
+                var stringKey = $"{key.GetType().Name}.{key}";
+                return GetFromDictionary(language, stringKey, casing, stringKey);
+            }
+        }
     }
 }
