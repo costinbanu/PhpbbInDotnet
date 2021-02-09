@@ -1,0 +1,28 @@
+﻿@model Objects.AccountActivatedNotificationDto
+
+@using Microsoft.Extensions.Configuration
+@using PhpbbInDotnet.Utilities
+
+@inject CommonUtils _utils
+@inject IConfiguration _config
+@inject Languages.LanguageProvider _languageProvider
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor
+
+@{
+    var lang = _languageProvider.GetValidatedLanguage(null, _httpContextAccessor.HttpContext?.Request);
+    var baseUrl = _config.GetValue<string>("BaseUrl");
+    var forumName = _config.GetValue<string>("ForumName");
+}
+
+<p>
+    @Html.Raw(_languageProvider.Email[lang, "GREETING_BEGIN"])
+</p>
+<p>
+    @Html.Raw(string.Format(_languageProvider.Email[lang, "ACCOUNT_ACTIVATED_NOTIFICATION_BODY_FORMAT"], baseUrl, forumName, Model.Username))
+</p>
+<p style="font-size:0.85em">
+    @Html.Raw(string.Format(_languageProvider.Email[lang, "WELCOME_FOOTER_FORMAT"], Model.Username, baseUrl, forumName))
+</p>
+<p>
+    @Html.Raw(_languageProvider.Email[lang, "GREETING_END"])
+</p>

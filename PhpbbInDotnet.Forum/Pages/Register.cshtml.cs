@@ -6,8 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using PhpbbInDotnet.Database;
-using PhpbbInDotnet.Forum.Pages.CustomPartials.Email;
 using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
@@ -177,7 +177,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 Subject = subject,
                 Body = await _utils.RenderRazorViewToString(
                     "_WelcomeEmailPartial",
-                    new _WelcomeEmailPartialModel
+                    new WelcomeEmailDto
                     {
                         RegistrationCode = registrationCode,
                         Subject = subject,

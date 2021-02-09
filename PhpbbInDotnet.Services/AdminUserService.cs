@@ -13,6 +13,8 @@ using System.Globalization;
 using PhpbbInDotnet.Languages;
 using Microsoft.AspNetCore.Http;
 using LazyCache;
+using System.Net.Mail;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace PhpbbInDotnet.Services
 {
@@ -86,7 +88,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<(string Message, bool? IsSuccess)> ManageUser(AdminUserActions? action, int? userId)
+        public async Task<(string Message, bool? IsSuccess)> ManageUser(AdminUserActions? action, int? userId, PageContext pageContext, HttpContext httpContext)
         {
             var lang = await GetLanguage();
             if (userId == Constants.ANONYMOUS_USER_ID)
@@ -141,13 +143,33 @@ namespace PhpbbInDotnet.Services
             {
                 string message = null;
                 bool? isSuccess = null;
-
+                var forumName = _config.GetValue<string>("ForumName");
                 switch (action)
                 {
                     case AdminUserActions.Activate:
                         {
+                            using var emailMessage = new MailMessage
+                            {
+                                From = new MailAddress($"admin@metrouusor.com", forumName),
+                                Subject = string.Format(LanguageProvider.Email[lang, "ACCOUNT_ACTIVATED_NOTIFICATION_SUBJECT_FORMAT"], forumName),
+                                Body = await Utils.RenderRazorViewToString(
+                                    "_AccountActivatedNotification", 
+                                    new AccountActivatedNotificationDto 
+                                    { 
+                                        Username = user.Username 
+                                    }, 
+                                    pageContext, 
+                                    httpContext
+                                ),
+                                IsBodyHtml = true
+                            };
+                            emailMessage.To.Add(user.UserEmail);
+                            await Utils.SendEmail(emailMessage);
+
                             user.UserInactiveReason = UserInactiveReason.NotInactive;
                             user.UserInactiveTime = 0L;
+                            user.UserReminded = 0;
+                            user.UserRemindedTime = 0L;
                             message = string.Format(LanguageProvider.Admin[lang, "USER_ACTIVATED_FORMAT"], user.Username);
                             isSuccess = true;
                             break;
@@ -191,6 +213,56 @@ namespace PhpbbInDotnet.Services
                             flagUserAsChanged();
                             await deleteUser();
                             message = string.Format(LanguageProvider.Admin[lang, "USER_DELETED_POSTS_DELETED_FORMAT"], user.Username);
+                            isSuccess = true;
+                            break;
+                        }
+                    case AdminUserActions.Remind:
+                        {
+                            string subject;
+                            WelcomeEmailDto model;
+                            if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed)
+                            {
+                                subject = string.Format(LanguageProvider.Email[lang, "WELCOME_REMINDER_SUBJECT_FORMAT"], forumName);
+                                model = new WelcomeEmailDto
+                                {
+                                    RegistrationCode = user.UserActkey,
+                                    Subject = subject,
+                                    UserName = user.Username,
+                                    IsRegistrationReminder = true,
+                                    RegistrationDate = user.UserRegdate.ToUtcTime()
+                                };
+                            }
+                            else if (user.UserInactiveReason == UserInactiveReason.ChangedEmailNotConfirmed)
+                            {
+                                subject = string.Format(LanguageProvider.Email[lang, "EMAIL_CHANGED_REMINDER_SUBJECT_FORMAT"], forumName);
+                                model = new WelcomeEmailDto
+                                {
+                                    RegistrationCode = user.UserActkey,
+                                    Subject = subject,
+                                    UserName = user.Username,
+                                    IsEmailChangeReminder = true,
+                                    EmailChangeDate = user.UserInactiveTime.ToUtcTime()
+                                };
+                            }
+                            else
+                            {
+                                message = string.Format(LanguageProvider.Admin[lang, "CANT_REMIND_INVALID_USER_STATE_FORMAT"], user.Username, LanguageProvider.Enums[lang, user.UserInactiveReason]);
+                                isSuccess = false;
+                                break;
+                            }
+
+                            using var emailMessage = new MailMessage
+                            {
+                                From = new MailAddress($"admin@metrouusor.com", forumName),
+                                Subject = subject,
+                                Body = await Utils.RenderRazorViewToString("_WelcomeEmailPartial", model, pageContext, httpContext),
+                                IsBodyHtml = true
+                            };
+                            emailMessage.To.Add(user.UserEmail);
+                            await Utils.SendEmail(emailMessage);
+                            user.UserReminded = 1;
+                            user.UserRemindedTime = DateTime.UtcNow.ToUnixTimestamp();
+                            message = string.Format(LanguageProvider.Admin[lang, "USER_REMINDED_FORMAT"], user.Username);
                             isSuccess = true;
                             break;
                         }

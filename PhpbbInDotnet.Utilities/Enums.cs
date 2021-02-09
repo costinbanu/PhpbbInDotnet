@@ -68,7 +68,8 @@ namespace PhpbbInDotnet.Utilities
         Activate,
         Deactivate,
         Delete_KeepMessages,
-        Delete_DeleteMessages
+        Delete_DeleteMessages,
+        Remind
     }
 
     public enum AdminGroupActions

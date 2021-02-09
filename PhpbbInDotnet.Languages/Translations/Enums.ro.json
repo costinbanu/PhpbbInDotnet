@@ -34,6 +34,7 @@
   "AdminUserActions.Deactivate": "Dezactivează",
   "AdminUserActions.Delete_KeepMessages": "Șterge (păstrează mesajele)",
   "AdminUserActions.Delete_DeleteMessages": "Șterge (șterge mesajele)",
+  "AdminUserActions.Remind": "Reamintește",
 
   "UserInactiveReason.NotInactive": "Activ",
   "UserInactiveReason.NewlyRegisteredNotConfirmed": "Recent înregistrat, email neverificat",

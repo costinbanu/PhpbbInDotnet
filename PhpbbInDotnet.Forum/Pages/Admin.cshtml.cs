@@ -84,7 +84,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostUserManagement(AdminUserActions? userAction, int? userId)
             => await WithAdmin(async () =>
             {
-                (Message, IsSuccess) = await _adminUserService.ManageUser(userAction, userId);
+                (Message, IsSuccess) = await _adminUserService.ManageUser(userAction, userId, PageContext, HttpContext);
                 Category = AdminCategories.Users;
                 return Page();
             });

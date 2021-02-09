@@ -76,6 +76,7 @@
   "REGISTRATION_DATE": "Data înregistrării",
   "DEACTIVATION_DATE": "Data inactivării",
   "DEACTIVATION_REASON": "Motivul inactivării",
+  "REMINDERS": "Reamintiri",
   "QUICK_ACTIONS": "Acțiuni rapide",
   "CANT_ACTIVATE_EMAIL_NOT_CONFIRMED_TOOLTIP": "Nu poate fi activat deoarece nu și-a confirmat adresa de e-mail.",
   "CANT_ACTIVATE_ALREADY_ACTIVE_TOOLTIP": "Nu poate fi activat deoarece este deja activ.",
@@ -90,6 +91,8 @@
   "USER_DEACTIVATED_FORMAT": "Utilizatorul '{0}' a fost dezactivat.",
   "USER_DELETED_POSTS_KEPT_FORMAT": "Utilizatorul '{0}' a fost șters iar mesajele păstrate.",
   "USER_DELETED_POSTS_DELETED_FORMAT": "Utilizatorul '{0}' a fost șters cu tot cu mesajele scrise.",
+  "USER_REMINDED_FORMAT": "I-am trimis o reamintire pe e-mail utilizatorului '{0}'.",
+  "CANT_REMIND_INVALID_USER_STATE_FORMAT": "Utilizatorului '{0}' nu i se poate trimite o reamintire deoarece statusul său curent ('{1}') nu necesită reamintiri.",
   "ONE_OR_MORE_INVALID_INPUT_DATES": "Una sau mai multe date este invalidă.",
 
   "INVALID_RANK_NAME": "Numele rangului este invalid",

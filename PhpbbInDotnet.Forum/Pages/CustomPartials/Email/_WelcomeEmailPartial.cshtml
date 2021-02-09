@@ -1,4 +1,4 @@
-﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials.Email._WelcomeEmailPartialModel
+﻿@model Objects.WelcomeEmailDto
 
 @using Microsoft.Extensions.Configuration
 @using PhpbbInDotnet.Utilities
@@ -10,13 +10,30 @@
 
 @{
     var lang = _languageProvider.GetValidatedLanguage(null, _httpContextAccessor.HttpContext?.Request);
+    var culture = new System.Globalization.CultureInfo(lang);
+    var baseUrl = _config.GetValue<string>("BaseUrl");
+    var forumName = _config.GetValue<string>("ForumName");
 }
 
-<h3>@Model.Subject</h3>
+<h3>@Html.Raw(Model.Subject)</h3>
+@if (Model.IsRegistrationReminder && Model.RegistrationDate != null)
+{
+    <p>
+        @Html.Raw(string.Format(culture, _languageProvider.Email[lang, "WELCOME_REMINDER_FORMAT"], Model.RegistrationDate, forumName))
+    </p>
+}
+else if (Model.IsEmailChangeReminder && Model.EmailChangeDate != null)
+{
+    <p>
+        @Html.Raw(string.Format(culture, _languageProvider.Email[lang, "EMAIL_CHANGED_REMINDER_FORMAT"], Model.EmailChangeDate, forumName))
+    </p>
+}
 <p>
-    @Html.Raw(string.Format(_languageProvider.Email[lang, "WELCOME_BODY_FORMAT"], $"{_config.GetValue<string>("BaseUrl")}/Confirm?code={Model.RegistrationCode}&username={_utils.CleanString(Model.UserName)}&handler=ConfirmEmail"))
+    @Html.Raw(string.Format(_languageProvider.Email[lang, "WELCOME_BODY_FORMAT"], $"{baseUrl}/Confirm?code={Model.RegistrationCode}&username={_utils.CleanString(Model.UserName)}&handler=ConfirmEmail"))
 </p>
 <p style="font-size:0.85em">
-    @Html.Raw(string.Format(_languageProvider.Email[lang, "WELCOME_FOOTER_FORMAT"], Model.UserName, _config.GetValue<string>("BaseUrl"), _config.GetValue<string>("ForumName")))
+    @Html.Raw(string.Format(_languageProvider.Email[lang, "WELCOME_FOOTER_FORMAT"], Model.UserName, baseUrl, forumName))
 </p>
-@_languageProvider.Email[lang, "GREETING_END"]
+<p>
+    @Html.Raw(_languageProvider.Email[lang, "GREETING_END"])
+</p>

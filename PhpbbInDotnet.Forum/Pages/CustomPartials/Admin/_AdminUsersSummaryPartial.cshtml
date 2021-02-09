@@ -80,6 +80,21 @@
         </div>
         <div class="FlexCenter FlexSpacedMini">
             <div class="FlexCaption">
+                @Html.Raw(_languageProvider.Admin[Model.Language, "REMINDERS"])
+            </div>
+            <div class="FlexRight PostInputWidth">
+                @if (user.UserReminded.ToBool())
+                {
+                    <script>writeDate('@user.UserRemindedTime.ToUtcTime().ToString("o")', '@Model.DateFormat')</script>
+                }
+                else
+                {
+                    <span>N/A</span>
+                }
+            </div>
+        </div>
+        <div class="FlexCenter FlexSpacedMini">
+            <div class="FlexCaption">
                 @Html.Raw(_languageProvider.Admin[Model.Language, "QUICK_ACTIONS"])
             </div>
             <ul class="FlexRight PostInputWidth">
@@ -133,6 +148,14 @@
                         @Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Delete_DeleteMessages])
                     </a>
                 </li>
+                @if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed || user.UserInactiveReason == UserInactiveReason.ChangedEmailNotConfirmed)
+                {
+                    <li>
+                        <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Remind', '@Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Remind])')">
+                            @Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Remind])
+                        </a>
+                    </li>
+                }
             </ul>
         </div>
         <div class="FlexCenter FlexSpacedMini" style="padding-bottom:20px; font-weight:bold">
