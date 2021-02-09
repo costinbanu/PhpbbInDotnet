@@ -110,7 +110,7 @@ namespace PhpbbInDotnet.Languages
                 if (new Translation[] { BasicText, AboutCookies, Email, Enums, JSText, FAQ, Errors, PostingGuide, TermsAndConditions, Moderator, Admin, CustomBBCodeGuide, AttachmentGuide, BBCodes }
                     .Any(x => !x.Exists(toReturn)))
                 {
-                    _logger.Warning("Language '{language}' was requested, but it does not exist.", language);
+                    _logger.Warning("Language '{language}' was requested, but it does not exist.", toReturn);
                     return @default;
                 }
 
