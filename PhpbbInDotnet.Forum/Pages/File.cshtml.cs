@@ -8,6 +8,7 @@ using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
+using System;
 using System.IO;
 using System.Net.Mime;
 using System.Threading.Tasks;
@@ -38,13 +39,22 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 return RedirectToPage("Error", new { isNotFound = true });
             }
-            uint? forumId = file?.forum_id;
+            var forumId = unchecked((int)(file?.forum_id ?? 0));
             string physicalFilename = file?.physical_filename;
             string realFilename = file?.real_filename;
             string mimeType = file?.mimetype;
             await connection.ExecuteAsync("UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE attach_id = @Id", new { Id });
-            
-            return await WithValidForum(unchecked((int)(forumId ?? 0)), async (_) => await Task.FromResult(SendToClient(physicalFilename, realFilename, mimeType, false)));
+            var key = $"{GetType().FullName}_OVERRIDE_FORUM_CHECK_{forumId}";
+
+            return await WithValidForum(
+                forumId, 
+                await Cache.GetAsync<bool>(key), 
+                _ =>
+                {
+                    Cache.Add(key, true, TimeSpan.FromSeconds(30));
+                    return Task.FromResult(SendToClient(physicalFilename, realFilename, mimeType, false));
+                }
+            );
         }
 
         public IActionResult OnGetPreview(string physicalFileName, string realFileName, string mimeType)

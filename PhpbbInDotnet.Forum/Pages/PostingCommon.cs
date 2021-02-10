@@ -99,7 +99,7 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly WritingToolsService _writingService;
         private readonly BBCodeRenderingService _renderingService;
 
-        static readonly TimeSpan CACHE_EXPIRATION = TimeSpan.FromHours(4);
+        static readonly DateTimeOffset CACHE_EXPIRATION = DateTimeOffset.UtcNow.AddHours(4);
 
         public PostingModel(CommonUtils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cacheService, PostService postService, 
             StorageService storageService, WritingToolsService writingService, BBCodeRenderingService renderingService, IConfiguration config, AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider)

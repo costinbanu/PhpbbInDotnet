@@ -1,5 +1,7 @@
 ﻿using LazyCache;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
 using Serilog;
@@ -12,6 +14,10 @@ namespace PhpbbInDotnet.Languages
     public class LanguageProvider
     {
         private readonly ILogger _logger;
+        private readonly ForumDbContext _context;
+        private readonly IAppCache _cache;
+
+        #region Translation declarations
 
         private readonly Lazy<TextTranslation> _basicText;
         private readonly Lazy<HtmlTranslation> _aboutCookies;
@@ -56,9 +62,16 @@ namespace PhpbbInDotnet.Languages
 
         public TextTranslation BBCodes => _bbCodes.Value;
 
-        public LanguageProvider(ILogger logger, IAppCache cache)
+        #endregion Translation declarations
+
+        public LanguageProvider(ILogger logger, IAppCache cache, ForumDbContext context)
         {
             _logger = logger;
+            _context = context;
+            _cache = cache;
+
+            #region Translation init
+
             _basicText = new Lazy<TextTranslation>(() => new TextTranslation(nameof(BasicText), _logger, cache));
             _aboutCookies = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(AboutCookies), _logger, cache));
             _email = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Email), _logger, cache));
@@ -73,6 +86,8 @@ namespace PhpbbInDotnet.Languages
             _customBBCodeGuide = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(CustomBBCodeGuide), _logger, cache));
             _attachmentGuide = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(AttachmentGuide), _logger, cache));
             _bbCodes = new Lazy<TextTranslation>(() => new TextTranslation(nameof(BBCodes), _logger, cache));
+
+            #endregion Translation init
         }
 
         public string GetValidatedLanguage(AuthenticatedUser user, HttpRequest request = null)
@@ -90,6 +105,33 @@ namespace PhpbbInDotnet.Languages
             return ValidatedOrDefault(user.Language, fromHeadersOrDefault);
         }
 
+        public bool IsLanguageValid(string language)
+            => _cache.GetOrAdd(
+                $"{nameof(IsLanguageValid)}_{language}",
+                () =>
+                {
+                    try
+                    {
+                        var parsed = new CultureInfo(language).TwoLetterISOLanguageName;
+
+                        if (_context.PhpbbLang.AsNoTracking().Any(lang => lang.LangIso == parsed) &&
+                            new Translation[] { BasicText, AboutCookies, Email, Enums, JSText, FAQ, Errors, PostingGuide, TermsAndConditions, Moderator, Admin, CustomBBCodeGuide, AttachmentGuide, BBCodes }
+                            .All(x => x.Exists(parsed)))
+                        {
+                            return true;
+                        }
+                        _logger.Warning("Language '{language}' was requested, but it does not exist.", parsed);
+                        return false;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Warning(ex, "Unable to parse language code '{language}'.", language);
+                        return false;
+                    }
+                },
+                Translation.CACHE_EXPIRATION
+            );
+
         private string ValidatedOrDefault(string language, string @default)
         {
             if (string.IsNullOrWhiteSpace(language))
@@ -103,24 +145,7 @@ namespace PhpbbInDotnet.Languages
                 language = language.Split(",").First().Trim();
             }
 
-            try
-            {
-                var toReturn = new CultureInfo(language).TwoLetterISOLanguageName;
-
-                if (new Translation[] { BasicText, AboutCookies, Email, Enums, JSText, FAQ, Errors, PostingGuide, TermsAndConditions, Moderator, Admin, CustomBBCodeGuide, AttachmentGuide, BBCodes }
-                    .Any(x => !x.Exists(toReturn)))
-                {
-                    _logger.Warning("Language '{language}' was requested, but it does not exist.", toReturn);
-                    return @default;
-                }
-
-                return toReturn;
-            }
-            catch (Exception ex)
-            {
-                _logger.Warning(ex, "Unable to parse language code '{language}'.", language);
-                return @default;
-            }
+            return IsLanguageValid(language) ? language : @default;
         }
     }
 }

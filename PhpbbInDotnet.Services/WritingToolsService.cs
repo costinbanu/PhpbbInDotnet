@@ -119,6 +119,9 @@ namespace PhpbbInDotnet.Services
         public async Task<List<PhpbbBbcodes>> GetCustomBBCodes()
             => (await _context.Database.GetDbConnection().QueryAsync<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes")).AsList();
 
+        public async Task<List<PhpbbLang>> GetLanguages()
+            => (await _context.Database.GetDbConnection().QueryAsync<PhpbbLang>("SELECT * FROM phpbb_lang")).AsList();
+
         public async Task<string> PrepareTextForSaving(string text)
         {
             if (string.IsNullOrWhiteSpace(text))

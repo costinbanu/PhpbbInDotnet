@@ -192,6 +192,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }
             dbUser.UserStyle = CurrentUser.UserStyle;
             dbUser.JumpToUnread = JumpToUnread.ToByte();
+            dbUser.UserLang = CurrentUser.UserLang;
 
             var newColour = CurrentUser.UserColour?.TrimStart('#');
             if (!string.IsNullOrWhiteSpace(newColour) && dbUser.UserColour != newColour)
