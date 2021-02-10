@@ -58,7 +58,6 @@
   "POSTED": "Scris",
   "SELECT_ALL_POSTS": "Selectează toate mesajele",
   "DELETE_SELECTED_POSTS": "Șterge mesajele selectate",
-  "CONFIRM_DELETE_POSTS": "Șterge mesajele selectate",
   "MARK_SELECTED_POSTS_AS_READ": "Marchează mesajele selectate ca citite",
   "CONFIRM_DELETE_DRAFTS": "Sigur dorești ștergerea mesajelor în lucru selectate?",
   "NO_NEW_POSTS": "Nu există mesaje noi.",
@@ -102,7 +101,7 @@
   "PASSWORD": "parola",
   "REPEAT_PASSWORD": "repetă parola",
   "EMAIL": "adresa de e-mail",
-  "HELPER_TEXT": "Dacă nu îți amintești aceste informații, scrie-ne la <a href=\"mailto:admin@metrouusor.com\">admin@metrouusor.com</a> și vom încerca să te ajutăm.",
+  "HELPER_TEXT_FORMAT": "Dacă nu îți amintești aceste informații, scrie-ne la <a href=\"mailto:{0}\">{0}</a> și vom încerca să te ajutăm.",
   "FORGOT_PASSWORD": "am uitat parola",
   "RESET_PASSWORD": "resetează parola",
   "NEW_PASSWORD": "Noua parolă",
@@ -111,9 +110,9 @@
   "FORUM_PASSWORD": "parola forum",
   "FORUM_LOGIN": "Conectare forum",
   "REGISTRATION_CONFIRM_TITLE": "Confirmarea înregistrării",
-  "REGISTRATION_CONFIRM_MESSAGE": "Mulțumim pentru înregistrare! Ți-am trimis un e-mail pe adresa furnizată ce conține instrucțiuni pentru pașii următori. Verifică-ți căsuța de email, inclusiv folderele pentru \"spam\", și urmează instrucțiunile din mesajul primit. Dacă nu ai primit nici un mesaj, te rugăm să contactezi echipa administrativă la <a href=\"mailto:admin@metrouusor.com\">admin@metrouusor.com</a>.",
+  "REGISTRATION_CONFIRM_MESSAGE_FORMAT": "Mulțumim pentru înregistrare! Ți-am trimis un e-mail pe adresa furnizată ce conține instrucțiuni pentru pașii următori. Verifică-ți căsuța de email, inclusiv folderele pentru \"spam\", și urmează instrucțiunile din mesajul primit. Dacă nu ai primit nici un mesaj, te rugăm să contactezi echipa administrativă la <a href=\"mailto:{0}\">{0}</a>.",
   "EMAIL_CONFIRM_TITLE": "Confirmarea adresei de e-mail",
-  "EMAIL_CONFIRM_MESSAGE": "Înregistrarea a fost confirmată cu succes!<br/>Contul va fi activat în următoarele 48 de ore. După activare vei putea face login pe forumul nostru.<br/>Contactează echipa administrativă la <a href=\"mailto:admin@metrouusor.com\">admin@metrouusor.com</a> dacă au trecut mai mult de 48 de ore de la înregistrare iar contul încă nu a fost activat.",
+  "EMAIL_CONFIRM_MESSAGE_FORMAT": "Înregistrarea a fost confirmată cu succes!<br/>Contul va fi activat în următoarele 48 de ore. După activare vei putea face login pe forumul nostru.<br/>Contactează echipa administrativă la <a href=\"mailto:{0}\">{0}</a> dacă au trecut mai mult de 48 de ore de la înregistrare iar contul încă nu a fost activat.",
   "NEW_PASSWORD_TITLE": "Modificarea parolei",
   "NEW_PASSWORD_MESSAGE": "Am trimis un e-mail, la adresa completată anterior, cu mai multe instrucțiuni pe care trebuie să le urmezi ca să îți poți recupera contul.",
   "NEW_PASSWORD_COMPLETE": "Parola a fost modificată cu succes.",
@@ -134,7 +133,7 @@
   "GUEST_COUNT_MULTIPLE_FORMAT": "{0} vizitatori",
   "BOT_COUNT_SINGLE_FORMAT": "{0} bot",
   "BOT_COUNT_MULTIPLE_FORMAT": "{0} boți",
-  "LAST_ACTIVE": "activ ultima oară",
+  "LAST_ACTIVE": "Activ ultima oară",
   "CITY": "Localitate",
   "POST_COUNT": "Mesaje postate",
 
@@ -312,5 +311,6 @@
   "ADDED_TO_FOES_CONFIRMATION_FORMAT": "'{0}' a fost adăugat la lista ta de persoane neagreate.",
   "REMOVED_FROM_FOES_CONFIRMATION_FORMAT": "'{0}' a fost eliminat din lista ta de persoane neagreate.",
   "CHANGES_SAVED": "Modificările au fost salvate.",
-  "CHANGES_SAVED_MUST_LOGIN": "Modificările au fost salvate. Vei fi deconectat și vei primi instrucțiuni pe noua adresă de email pentru a te putea reconecta la forum."
+  "CHANGES_SAVED_MUST_LOGIN": "Modificările au fost salvate. Vei fi deconectat și vei primi instrucțiuni pe noua adresă de email pentru a te putea reconecta la forum.",
+  "LANGUAGE": "Limbă"
 }

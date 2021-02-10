@@ -55,7 +55,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task OnGetRegistrationComplete()
         {
             var lang = await GetLanguage();
-            Message = LanguageProvider.BasicText[lang, "REGISTRATION_CONFIRM_MESSAGE"];
+            Message = string.Format(LanguageProvider.BasicText[lang, "REGISTRATION_CONFIRM_MESSAGE_FORMAT"], Config.GetValue<string>("AdminEmail"));
             Title = LanguageProvider.BasicText[lang, "REGISTRATION_CONFIRM_TITLE"];
         }
 
@@ -75,7 +75,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }
             else
             {
-                Message = $"<span class=\"success\">{LanguageProvider.BasicText[lang, "EMAIL_CONFIRM_MESSAGE"]}</span>";
+                Message = $"<span class=\"success\">{string.Format(LanguageProvider.BasicText[lang, "EMAIL_CONFIRM_MESSAGE_FORMAT"], Config.GetValue<string>("AdminEmail"))}</span>";
 
                 if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed)
                 {

@@ -2,6 +2,9 @@
 @model PhpbbInDotnet.Forum.Pages.LoginModel
 
 @using Utilities
+@using Microsoft.Extensions.Configuration
+
+@inject IConfiguration _config
 
 @{
     ViewData["Title"] = "Login";
@@ -33,7 +36,9 @@
             <p></p>
             <input type="email" asp-for="EmailForPwdReset" placeholder="@Model.LanguageProvider.BasicText[lang, "EMAIL", Casing.FirstUpper]" class="form" autocomplete="email" />
             <p></p>
-            <span class="caption">@Html.Raw(Model.LanguageProvider.BasicText[lang, "HELPER_TEXT"])</span>
+            <span class="caption">
+                @Html.Raw(string.Format(Model.LanguageProvider.BasicText[lang, "HELPER_TEXT_FORMAT"], _config.GetValue<string>("AdminEmail")))
+            </span>
             <p></p>
             <span asp-validation-for="PwdResetErrorMessage" class="validation"></span>
             <input type="submit" value="@Model.LanguageProvider.BasicText[lang, "RESET_PASSWORD", Casing.FirstUpper]" class="MyButton" />

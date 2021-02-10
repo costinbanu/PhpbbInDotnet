@@ -308,7 +308,7 @@ else
     {
         <hr class="BoxSeparator" />
         <button onclick="selectAllCheckboxes()" type="button" class="MyButton SpacedButton">&#x2714;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SELECT_ALL_POSTS"])</button>
-        <input type="submit" value="&#x1F6AE;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_SELECTED_POSTS"])" form="DeleteDrafts" onclick="return confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_POSTS"])');" class="MyButton SpacedButton" />
+        <input type="submit" value="&#x1F6AE;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_SELECTED_POSTS"])" form="DeleteDrafts" onclick="return confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_DRAFTS"])');" class="MyButton SpacedButton" />
         <p>&nbsp;</p>
     }
     else if (Model.Mode == ViewForumMode.NewPosts && hasTopics)
