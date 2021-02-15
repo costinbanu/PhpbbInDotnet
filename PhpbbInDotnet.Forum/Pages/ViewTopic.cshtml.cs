@@ -184,6 +184,9 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
 
                 await connection.ExecuteAsync("UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId", new { topicId = TopicId.Value });
+
+                Cache.Add(string.Format(Constants.FORUM_CHECK_OVERRIDE_CACHE_KEY_FORMAT, ForumId), true, TimeSpan.FromSeconds(30));
+
                 return Page();
             }
 

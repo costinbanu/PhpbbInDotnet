@@ -6,8 +6,10 @@ using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
 using Serilog;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Languages
 {
@@ -146,6 +148,20 @@ namespace PhpbbInDotnet.Languages
             }
 
             return IsLanguageValid(language) ? language : @default;
+        }
+
+        private static readonly char[] DATE_FORMATS = new[] { 'f', 'g' };
+
+        public async Task<Dictionary<string, List<string>>> GetDateFormatsInAllLanguages()
+            => (await _context.PhpbbLang.AsNoTracking().ToListAsync()).ToDictionary(lang => lang.LangIso, lang => GetDateFormats(lang.LangIso));
+
+        public string GetDefaultDateFormat(string lang)
+            => GetDateFormats(lang).FirstOrDefault() ?? "dddd, dd MMM yyyy, HH:mm";
+
+        public List<string> GetDateFormats(string lang)
+        {
+            var culture = new CultureInfo(lang);
+            return DATE_FORMATS.Select(x => culture.DateTimeFormat.GetAllDateTimePatterns(x)).SelectMany(x => x).Distinct().ToList();
         }
     }
 }

@@ -4,8 +4,8 @@
     ViewData["Title"] = "PrivateMessages";
     Layout = "~/Pages/_Layout.cshtml";
     var CurrentUser = await Model.GetCurrentUserAsync();
-    var UserDateFormat = CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
-    var Lang = await Model.GetLanguage();
+    var Lang = await Model.GetLanguage(); 
+    var UserDateFormat = CurrentUser?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
 }
 
 @using Utilities

@@ -7,8 +7,8 @@
     ViewData["Title"] = "Admin";
     Layout = "~/Pages/_Layout.cshtml";
     var user = await Model.GetCurrentUserAsync();
-    var dateFormat = user?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
     var lang = await Model.GetLanguage();
+    var dateFormat = user?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(lang);
 }
 
 <h3>@Html.Raw(Model.LanguageProvider.Admin[lang, "ADMIN_PANEL"])</h3>

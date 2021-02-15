@@ -15,12 +15,8 @@
     ViewData["Title"] = "MemberList";
     Layout = "~/Pages/_Layout.cshtml";
     var user = await Model.GetCurrentUserAsync();
-    var dateFormat = user.UserDateFormat;
-    if (!DateTime.TryParse(DateTime.Now.ToString(dateFormat), out _))
-    {
-        dateFormat = "dddd, dd.MM.yyyy, HH:mm";
-    }
-    var Lang = await Model.GetLanguage();
+    var Lang = await Model.GetLanguage(); 
+    var dateFormat = user.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
 }
 
 <environment include="Development">

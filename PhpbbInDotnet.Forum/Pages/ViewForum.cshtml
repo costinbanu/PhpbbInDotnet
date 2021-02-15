@@ -11,11 +11,11 @@
     ViewData["Title"] = Model.ForumTitle;
     Layout = "~/Pages/_Layout.cshtml";
     var CurrentUser = await Model.GetCurrentUserAsync();
-    var UserDateFormat = CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
     var IsAnonymous = CurrentUser?.IsAnonymous ?? true;
     var hasSubForums = Model.ForumId != 0 && _forumService.HasUnrestrictedChildren((await Model.GetForumTree(false, false)).Tree, Model.ForumId);
     var hasTopics = Model.Topics?.SelectMany(x => x.Topics).Any() ?? false;
-    var Lang = await Model.GetLanguage();
+    var Lang = await Model.GetLanguage(); 
+    var UserDateFormat = CurrentUser?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
 }
 
 <environment include="Development">

@@ -2,7 +2,7 @@
     return this.substr(0, index) + replacement + this.substr(index + replacement.length);
 }
 
-Date.prototype.format = function (format) {
+Date.prototype.format = function (format, customDayNames = dayNames, customMonthNames = monthNames) {
     var wordSplitter = /\W+/, _date = this;
     this.Date = function (format) {
         var words = format.split(wordSplitter);
@@ -24,11 +24,11 @@ Date.prototype.format = function (format) {
         },
         //The abbreviated name of the day of the week. (eg. 5/15/2014 1:45:30 PM, Output: Mon)
         ddd: function () {
-            return dayNames[_date.getDay()].slice(0, 3);
+            return customDayNames[_date.getDay()].slice(0, 3);
         },
         //The full name of the day of the week. (eg. 5/15/2014 1:45:30 PM, Output: Monday)
         dddd: function () {
-            return dayNames[_date.getDay()];
+            return customDayNames[_date.getDay()];
         },
         //The tenths of a second in a date and time value. (eg. 5/15/2014 13:45:30.617, Output: 6)
         f: function () {
@@ -92,11 +92,11 @@ Date.prototype.format = function (format) {
         },
         //The abbreviated name of the month. (eg. 5/15/2014 1:45:30 PM, Output: Jun
         MMM: function () {
-            return monthNames[_date.getMonth()].slice(0, 3);
+            return customMonthNames[_date.getMonth()].slice(0, 3);
         },
         //The full name of the month. (eg. 5/15/2014 1:45:30 PM, Output: June)
         MMMM: function () {
-            return monthNames[_date.getMonth()];
+            return customMonthNames[_date.getMonth()];
         },
         //The second, from 0 through 59. (eg. 5/15/2014 1:45:09 PM, Output: 9)
         s: function () {

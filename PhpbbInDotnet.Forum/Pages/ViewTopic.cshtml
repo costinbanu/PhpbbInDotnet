@@ -18,13 +18,13 @@
     Layout = "~/Pages/_Layout.cshtml";
     var CurrentUser = await Model.GetCurrentUserAsync();
     var IsAnonymous = CurrentUser.UserId == Constants.ANONYMOUS_USER_ID;
-    var UserDateFormat = CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
     var IsAdmin = await Model.IsCurrentUserAdminHere();
     var IsMod = await Model.IsCurrentUserModeratorHere();
     var HasPM = _userService.HasPrivateMessagePermissions(CurrentUser);
     var EditTime = CurrentUser.PostEditTime;
     var Connection = _context.Database.GetDbConnection();
-    var Lang = await Model.GetLanguage();
+    var Lang = await Model.GetLanguage(); 
+    var UserDateFormat = CurrentUser?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
 }
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />

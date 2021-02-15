@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
@@ -28,7 +29,8 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IConfiguration _config;
         private readonly HttpClient _gClient;
         private readonly Recaptcha _recaptchaOptions;
-        
+        private readonly UserService _userService;
+
         private string _language;
 
         [BindProperty]
@@ -51,7 +53,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public LanguageProvider LanguageProvider { get; }
 
-        public RegisterModel(ForumDbContext context, CommonUtils utils, IConfiguration config, IHttpClientFactory httpClientFactory, LanguageProvider languageProvider)
+
+        public RegisterModel(ForumDbContext context, CommonUtils utils, IConfiguration config, IHttpClientFactory httpClientFactory, LanguageProvider languageProvider, UserService userService)
         {
             _context = context;
             _utils = utils;
@@ -59,6 +62,7 @@ namespace PhpbbInDotnet.Forum.Pages
             _recaptchaOptions = _config.GetObject<Recaptcha>();
             _gClient = httpClientFactory.CreateClient(_recaptchaOptions.ClientName);
             LanguageProvider = languageProvider;
+            _userService = userService;
         }
 
         public async Task<IActionResult> OnPost()
@@ -118,30 +122,22 @@ namespace PhpbbInDotnet.Forum.Pages
                 new { email = Email.ToLower(), ip = HttpContext.Connection.RemoteIpAddress.ToString() }
             );
 
-            if (checkBanlist.Any(x => x.Email == 1L))
+            if (checkBanlist.Any(x => (long)x.Email == 1L))
             {
                 return PageWithError(nameof(Email), LanguageProvider.Errors[lang, "BANNED_EMAIL"]);
             }
 
-            if (checkBanlist.Any(x => x.IP == 1L))
+            if (checkBanlist.Any(x => (long)x.IP == 1L))
             {
                 return PageWithError(nameof(UserName), LanguageProvider.Errors[lang, "BANNED_IP"]);
             }
 
-            var checkUsers = await conn.QueryAsync(
-                @"SELECT username_clean = @usernameClean as Username, user_email_hash = @emailHash AS Email
-                    FROM phpbb_users 
-                   WHERE username_clean = @usernameClean 
-                      OR user_email_hash = @emailHash",
-                new { usernameClean = _utils.CleanString(UserName), emailHash = _utils.CalculateCrc32Hash(Email) }
-            );
-
-            if (checkUsers.Any(u => u.Username == 1L))
+            if (await _context.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UsernameClean == _utils.CleanString(UserName)))
             {
                 return PageWithError(nameof(UserName), LanguageProvider.Errors[lang, "EXISTING_USERNAME"]);
             }
 
-            if (checkUsers.Any(u => u.Email == 1L))
+            if (await _context.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UserEmailHash == _utils.CalculateCrc32Hash(Email)))
             {
                 return PageWithError(nameof(Email), LanguageProvider.Errors[lang, "EXISTING_EMAIL"]);
             }
@@ -149,26 +145,32 @@ namespace PhpbbInDotnet.Forum.Pages
             var registrationCode = Guid.NewGuid().ToString("n");
             var now = DateTime.UtcNow.ToUnixTimestamp();
 
-            await conn.ExecuteAsync(
-                @"INSERT INTO phpbb_users (group_id, user_permissions, username, username_clean, user_email, user_email_hash, user_password, user_inactive_time, user_inactive_reason, user_actkey, user_ip, user_regdate, user_lastmark, user_sig, user_occ, user_interests)
-                    VALUES (2, '', @UserName, @UsernameClean, @UserEmail, @UserEmailHash, @UserPassword, @UserInactiveTime, @UserInactiveReason, @UserActkey, @UserIp, @UserRegdate, @UserLastmark, '', '', ''); 
-                  INSERT INTO phpbb_user_group (group_id, user_id)
-                    VALUES (2, LAST_INSERT_ID());",
-                new
-                {
-                    UserName,
-                    UsernameClean = _utils.CleanString(UserName),
-                    UserEmail = Email,
-                    UserEmailHash = _utils.CalculateCrc32Hash(Email),
-                    UserPassword = Crypter.Phpass.Crypt(Password, Crypter.Phpass.GenerateSalt()),
-                    UserInactiveTime = now,
-                    UserInactiveReason = UserInactiveReason.NewlyRegisteredNotConfirmed,
-                    UserActkey = registrationCode,
-                    UserIp = HttpContext.Connection.RemoteIpAddress.ToString(),
-                    UserRegdate = now,
-                    UserLastmark = now
-                }
-            );
+            var newUser = _context.PhpbbUsers.Add(new PhpbbUsers
+            {
+                Username = UserName,
+                UsernameClean = _utils.CleanString(UserName),
+                GroupId = 2,
+                UserEmail = Email,
+                UserEmailHash = _utils.CalculateCrc32Hash(Email),
+                UserPassword = Crypter.Phpass.Crypt(Password, Crypter.Phpass.GenerateSalt()),
+                UserInactiveTime = now,
+                UserInactiveReason = UserInactiveReason.NewlyRegisteredNotConfirmed,
+                UserActkey = registrationCode,
+                UserIp = HttpContext.Connection.RemoteIpAddress.ToString(),
+                UserRegdate = now,
+                UserLastmark = now,
+                UserDateformat = LanguageProvider.GetDefaultDateFormat(GetLanguage())
+            });
+            newUser.Entity.UserId = 0;
+            await _context.SaveChangesAsync();
+
+            _context.PhpbbUserGroup.Add(new PhpbbUserGroup
+            {
+                GroupId = 2,
+                UserId = newUser.Entity.UserId
+            });
+
+            await _context.SaveChangesAsync();
 
             var subject = string.Format(LanguageProvider.Email[LanguageProvider.GetValidatedLanguage(null, Request), "WELCOME_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
             using var emailMessage = new MailMessage

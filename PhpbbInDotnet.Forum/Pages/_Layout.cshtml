@@ -15,12 +15,8 @@
     {
         css = "Light";
     }
-    var dateFormat = currentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
-    if (!DateTime.TryParse(DateTime.Now.ToString(dateFormat), out _))
-    {
-        dateFormat = "dddd, dd.MM.yyyy, HH:mm";
-    }
-    var lang = _languageProvider.GetValidatedLanguage(currentUser, _httpContextAccessor.HttpContext?.Request);
+    var lang = _languageProvider.GetValidatedLanguage(currentUser, _httpContextAccessor.HttpContext?.Request); 
+    var dateFormat = currentUser?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(lang);
     var statistics = await _statisticsService.GetStatistics();
 }
 
@@ -30,39 +26,6 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1" />
     <title>@Html.Raw(_config.GetValue<string>("ForumName")) - @ViewData["Title"]</title>
-
-    <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-93150453-1"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag() { dataLayer.push(arguments); }
-        gtag('js', new Date());
-        gtag('config', 'UA-93150453-1');
-    </script>
-
-    <!-- global JS translation magic -->
-    @if (ViewContext.RouteData.Values["page"].ToString() == "/ViewTopic" 
-        || ViewContext.RouteData.Values["page"].ToString() == "/Posting"
-        || ViewContext.RouteData.Values["page"].ToString() == "/Admin")
-    {
-        <script>
-            var dictionary = @(Html.Raw(Model.LanguageProvider.JSText[lang]));
-            var clickToEnlarge = '@Html.Raw(_languageProvider.BasicText[lang, "CLICK_TO_ENLARGE"])';
-        </script>
-    }
-    <script>
-        var monthNames = [];
-        var dayNames = [];
-
-        let baseDate = new Date(Date.UTC(2021, 0, 1, 0, 0, 0));
-        for (i = 0; i < 12; i++, baseDate.setMonth(baseDate.getMonth() + 1)) {
-            monthNames.push(baseDate.toLocaleString('@lang', { month: "long" }));
-        }
-        baseDate = new Date(Date.UTC(2021, 0, 10)); //must be a sunday
-        for (i = 0; i < 7; i++, baseDate.setDate(baseDate.getDate() + 1)) {
-            dayNames.push(baseDate.toLocaleString('@lang', { weekday: "long" }));
-        }
-    </script>
 
     <environment include="Development">
         <script src="~/lib/jquery/dist/jquery.js"></script>
@@ -84,6 +47,31 @@
         <link rel="stylesheet" href="~/css/@(css).min.css" />
         <script src="~/js/site.min.js"></script>
     </environment>
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-93150453-1"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'UA-93150453-1');
+    </script>
+
+    <!-- global JS translation magic -->
+    @if (ViewContext.RouteData.Values["page"].ToString() == "/ViewTopic"
+         || ViewContext.RouteData.Values["page"].ToString() == "/Posting"
+         || ViewContext.RouteData.Values["page"].ToString() == "/Admin")
+    {
+        <script>
+            var dictionary = @(Html.Raw(Model.LanguageProvider.JSText[lang]));
+            var clickToEnlarge = '@Html.Raw(_languageProvider.BasicText[lang, "CLICK_TO_ENLARGE"])';
+        </script>
+    }
+    <script>
+        var monthNames = getMonthNames('@lang');
+        var dayNames = getDayNames('@lang');
+        var defaultDateFormat = '@dateFormat';
+    </script>
 
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.css" />
     <script src='https://www.google.com/recaptcha/api.js'></script>

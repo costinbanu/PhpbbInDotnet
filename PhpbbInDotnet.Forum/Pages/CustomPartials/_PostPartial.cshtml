@@ -15,7 +15,7 @@
 
 @{
     var IsAnonymous = Model.CurrentUser.UserId == Constants.ANONYMOUS_USER_ID;
-    var UserDateFormat = Model.CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+    var UserDateFormat = Model.CurrentUser?.UserDateFormat ?? _languageProvider.GetDefaultDateFormat(Model.Language);
     var EditTime = Model.CurrentUser.PostEditTime;
     var Connection = _context.Database.GetDbConnection();
 }

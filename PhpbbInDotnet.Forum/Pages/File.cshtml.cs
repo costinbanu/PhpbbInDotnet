@@ -44,16 +44,11 @@ namespace PhpbbInDotnet.Forum.Pages
             string realFilename = file?.real_filename;
             string mimeType = file?.mimetype;
             await connection.ExecuteAsync("UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE attach_id = @Id", new { Id });
-            var key = $"{GetType().FullName}_OVERRIDE_FORUM_CHECK_{forumId}";
 
             return await WithValidForum(
                 forumId, 
-                await Cache.GetAsync<bool>(key), 
-                _ =>
-                {
-                    Cache.Add(key, true, TimeSpan.FromSeconds(30));
-                    return Task.FromResult(SendToClient(physicalFilename, realFilename, mimeType, false));
-                }
+                await Cache.GetAsync<bool>(string.Format(Constants.FORUM_CHECK_OVERRIDE_CACHE_KEY_FORMAT, forumId)), 
+                _ => Task.FromResult(SendToClient(physicalFilename, realFilename, mimeType, false))
             );
         }
 

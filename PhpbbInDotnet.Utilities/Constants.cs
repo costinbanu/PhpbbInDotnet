@@ -27,5 +27,7 @@ namespace PhpbbInDotnet.Utilities
         public static readonly TimeSpan REGEX_TIMEOUT = TimeSpan.FromSeconds(20);
 
         public static readonly string DEFAULT_LANGUAGE = "ro";
+
+        public static readonly string FORUM_CHECK_OVERRIDE_CACHE_KEY_FORMAT = "ForumCheckOverride_{0}";
     }
 }

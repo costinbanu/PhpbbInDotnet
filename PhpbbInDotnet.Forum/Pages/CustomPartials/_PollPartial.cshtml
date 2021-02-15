@@ -6,7 +6,7 @@
 
 @if (Model.Poll != null)
 {
-    var UserDateFormat = Model.CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
+    var UserDateFormat = Model.CurrentUser?.UserDateFormat ?? _languageProvider.GetDefaultDateFormat(Model.Language);
     var displayResultsMenu = !Model.IsPreview && (Model.Poll.PollEnded || !Model.Poll.PollEnd.HasValue || Model.IsCurrentUserMod);
     var displayVoteMenu = Model.CanVoteNow || !displayResultsMenu;
 

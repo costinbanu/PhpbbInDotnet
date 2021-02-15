@@ -18,13 +18,9 @@
     ViewData["Title"] = "Search";
     Layout = "~/Pages/_Layout.cshtml";
     var CurrentUser = await Model.GetCurrentUserAsync();
-    var dateFormat = CurrentUser?.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
-    if (!DateTime.TryParse(DateTime.Now.ToString(dateFormat), out var _))
-    {
-        dateFormat = "dddd, dd.MM.yyyy, HH:mm";
-    }
     var connection = _context.Database.GetDbConnection();
-    var Lang = await Model.GetLanguage();
+    var Lang = await Model.GetLanguage(); 
+    var dateFormat = CurrentUser?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
 }
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />

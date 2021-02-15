@@ -93,7 +93,7 @@ function showElement(id, whenHiding, whenShowing, roundSize = false) {
 function writeDate(dateString, format) {
     var date = new Date(dateString);
     if (!format) {
-        format = 'dddd, dd.MM.yyyy HH: mm';
+        format = defaultDateFormat;
     }
     document.write(date.format(format));
 }
@@ -154,8 +154,26 @@ function formatString(format, ...args) {
     if (args === undefined || args.length == 0) {
         return format;
     }
-    for (var i = 0; i < args.length; i++) {
+    for (i = 0; i < args.length; i++) {
         format = format.replace('{' + i + '}', args[i]);
     }
     return format;
+}
+
+function getDayNames(lang) {
+    let toReturn = [];
+    let baseDate = new Date(Date.UTC(2021, 0, 1, 0, 0, 0));
+    for (i = 0; i < 7; i++, baseDate.setDate(baseDate.getDate() + 1)) {
+        toReturn.push(baseDate.toLocaleString(lang, { weekday: "long" }));
+    }
+    return toReturn;
+}
+
+function getMonthNames(lang) {
+    let toReturn = [];
+    let baseDate = new Date(Date.UTC(2021, 0, 10)); //must be a sunday
+    for (i = 0; i < 12; i++, baseDate.setMonth(baseDate.getMonth() + 1)) {
+        toReturn.push(baseDate.toLocaleString(lang, { month: "long" }));
+    }
+    return toReturn;
 }

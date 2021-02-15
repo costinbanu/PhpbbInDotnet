@@ -21,10 +21,10 @@
     Layout = "~/Pages/_Layout.cshtml";
 
     var CurrentUser = await Model.GetCurrentUserAsync();
-    var UserDateFormat = CurrentUser.UserDateFormat ?? "dddd, dd.MM.yyyy, HH:mm";
     var IsPM = Model.Action == PostingActions.NewPrivateMessage || Model.Action == PostingActions.EditPrivateMessage;
     var CanCreatePoll = Model.Action == PostingActions.NewTopic || (Model.Action == PostingActions.EditForumPost && (Model.CurrentTopic?.TopicFirstPostId ?? 0) == Model.PostId);
-    var Lang = await Model.GetLanguage();
+    var Lang = await Model.GetLanguage(); 
+    var UserDateFormat = CurrentUser.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
     var IsAdmin = await Model.IsCurrentUserAdminHere();
 }
 
@@ -416,7 +416,7 @@ else if (IsPM)
 
 </form>
 
-@{
+@if (!IsPM){
     var (posts, attachments, users) = await Model.GetPreviousPosts();
     if (posts.Any())
     {

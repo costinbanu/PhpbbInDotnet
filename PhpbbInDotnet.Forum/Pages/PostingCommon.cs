@@ -130,6 +130,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 );
                 var attachments = await multi.ReadAsync<PhpbbAttachments>();
                 var users = await multi.ReadAsync<PhpbbUsers>();
+                Cache.Add(string.Format(Constants.FORUM_CHECK_OVERRIDE_CACHE_KEY_FORMAT, ForumId), true, TimeSpan.FromSeconds(30));
                 return (posts, attachments, users);
             }
             return (new List<PhpbbPosts>(), new List<PhpbbAttachments>(), new List<PhpbbUsers>());

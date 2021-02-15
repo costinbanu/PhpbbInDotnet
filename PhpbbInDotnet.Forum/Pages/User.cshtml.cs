@@ -15,6 +15,7 @@ using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Mail;
@@ -182,7 +183,7 @@ namespace PhpbbInDotnet.Forum.Pages
             dbUser.UserOcc = CurrentUser.UserOcc ?? string.Empty;
             dbUser.UserFrom = CurrentUser.UserFrom ?? string.Empty;
             dbUser.UserInterests = CurrentUser.UserInterests ?? string.Empty;
-            dbUser.UserDateformat = CurrentUser.UserDateformat ?? "dddd, dd.MM.yyyy, HH:mm";
+            dbUser.UserDateformat = CurrentUser.UserDateformat ?? LanguageProvider.GetDefaultDateFormat(lang);
             dbUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : await _writingService.PrepareTextForSaving(CurrentUser.UserSig);
             dbUser.UserEditTime = CurrentUser.UserEditTime;
             dbUser.UserWebsite = CurrentUser.UserWebsite ?? string.Empty;
@@ -472,7 +473,6 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<bool> CanEdit() 
             => !(ViewAsAnother ?? false) && ((await GetCurrentUserAsync()).UserId == CurrentUser.UserId || await IsCurrentUserAdminHere());
-
 
         private async Task Render(PhpbbUsers cur)
         {
