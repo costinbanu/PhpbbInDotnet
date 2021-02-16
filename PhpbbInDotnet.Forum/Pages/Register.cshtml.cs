@@ -65,6 +65,16 @@ namespace PhpbbInDotnet.Forum.Pages
             _userService = userService;
         }
 
+        public async Task<IActionResult> OnGet()
+        {
+            var currentUser = await _userService.ClaimsPrincipalToAuthenticatedUser(User);
+            if (!(currentUser?.IsAnonymous ?? true))
+            {
+                return RedirectToPage("Index");
+            }
+            return Page();
+        }
+
         public async Task<IActionResult> OnPost()
         {
             var lang = GetLanguage();

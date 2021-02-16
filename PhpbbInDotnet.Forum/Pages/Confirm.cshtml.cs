@@ -71,7 +71,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (user == null)
             {
-                Message = $"<span class=\"fail\">{LanguageProvider.Errors[lang, "REGISTRATION_ERROR"]}</span>";
+                Message = $"<span class=\"fail\">{string.Format(LanguageProvider.Errors[lang, "REGISTRATION_ERROR_FORMAT"], Config.GetValue<string>("AdminEmail"))}</span>";
             }
             else
             {

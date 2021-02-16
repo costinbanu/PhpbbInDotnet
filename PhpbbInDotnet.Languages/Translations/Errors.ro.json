@@ -11,14 +11,14 @@
 
   //authentication
   "CONFIRM_ERROR": "A intervenit o eroare - utilizatorul nu există sau codul de resetare a parolei este greșit.",
-  "REGISTRATION_ERROR": "Înregistrarea nu poate fi confirmată (utilizatorul nu există, este deja activ sau nu este asociat codului de activare).<br/>Contactează administratorul pentru mai multe detalii.",
+  "REGISTRATION_ERROR_FORMAT": "Înregistrarea nu poate fi confirmată (utilizatorul nu există, este deja activ sau nu este asociat codului de activare).<br/>Scrieți la <a href=\"mailto:{0}\">{0}</a> pentru mai multe detalii.",
   "WRONG_USER_PASS": "Numele de utilizator și/sau parola sunt greșite!",
   "WRONG_PASS": "Parola este greșită!",
   "WRONG_EMAIL_USER": "Adresa de email și/sau numele de utilizator introduse nu sunt corecte.",
   "INACTIVE_USER": "Utilizatorul nu este activat!",
   "BAD_USERNAME_LENGTH": "Numele de utilizator trebuie să aibă o lungime cuprinsă între 2 și 32 de caractere.",
   "BAD_USERNAME_CHARS": "Caractere permise în numele de utilizator: a-z, A-Z, 0-9, [space], [dot], [underscore], [dash].",
-  "BAD_PASSWORD_LENGTH": "Parola trebuie să aibă o lungime cuprinsă între 28 și 256 de caractere.",
+  "BAD_PASSWORD_LENGTH": "Parola trebuie să aibă o lungime cuprinsă între 8 și 256 de caractere.",
   "BAD_PASSWORD_CHARS": "Parola trebuie să conțină cel puțin o literă și o cifră",
   "PASSWORD_MISMATCH": "Cele două parole trebuie să fie identice",
   "INVALID_EMAIL_ADDRESS": "Adresa de email nu este validă",

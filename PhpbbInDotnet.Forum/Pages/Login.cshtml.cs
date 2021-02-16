@@ -86,9 +86,10 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnGet()
         {
-            if ((User?.Identity?.IsAuthenticated ?? false) && !((await _userService.ClaimsPrincipalToAuthenticatedUser(User))?.IsAnonymous ?? true))
+            var currentUser = await _userService.ClaimsPrincipalToAuthenticatedUser(User);
+            if (!(currentUser?.IsAnonymous ?? true))
             {
-                return RedirectToPage("Logout", new { returnUrl = ReturnUrl ?? "/" });
+                return RedirectToPage("Index");
             }
             Mode = LoginMode.Normal;
             return Page();

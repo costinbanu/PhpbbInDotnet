@@ -75,7 +75,7 @@
                 @Html.Raw(_languageProvider.Admin[Model.Language, "DEACTIVATION_REASON"])
             </div>
             <div class="FlexRight PostInputWidth">
-                @user.UserInactiveReason.ToString()
+                @Html.Raw(_languageProvider.Enums[Model.Language, user.UserInactiveReason])
             </div>
         </div>
         <div class="FlexCenter FlexSpacedMini">

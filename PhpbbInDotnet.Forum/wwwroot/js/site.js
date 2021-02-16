@@ -162,7 +162,7 @@ function formatString(format, ...args) {
 
 function getDayNames(lang) {
     let toReturn = [];
-    let baseDate = new Date(Date.UTC(2021, 0, 1, 0, 0, 0));
+    let baseDate = new Date(Date.UTC(2021, 0, 10, 0, 0, 0)); //must be a sunday
     for (i = 0; i < 7; i++, baseDate.setDate(baseDate.getDate() + 1)) {
         toReturn.push(baseDate.toLocaleString(lang, { weekday: "long" }));
     }
@@ -171,7 +171,7 @@ function getDayNames(lang) {
 
 function getMonthNames(lang) {
     let toReturn = [];
-    let baseDate = new Date(Date.UTC(2021, 0, 10)); //must be a sunday
+    let baseDate = new Date(Date.UTC(2021, 0, 1, 0, 0, 0));
     for (i = 0; i < 12; i++, baseDate.setMonth(baseDate.getMonth() + 1)) {
         toReturn.push(baseDate.toLocaleString(lang, { month: "long" }));
     }
