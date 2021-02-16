@@ -158,9 +158,10 @@ else
             TopicId = Model.TopicId ?? 0,
             IsPostFirstInPage = post == Model.Posts.First(),
             IsPostLastInPage = post == Model.Posts.Last(),
+            OpenPostLinkInNewTab = true,
+            ToHighlight = Model.SearchText,
             Language = Lang
         }, ViewData)
-
     }
 
     <p>&nbsp;</p>

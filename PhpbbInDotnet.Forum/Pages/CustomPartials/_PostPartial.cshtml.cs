@@ -38,6 +38,10 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
 
         public bool ShowQuoteButton { get; set; }
 
+        public bool OpenPostLinkInNewTab { get; set; }
+
+        public string ToHighlight { get; set; }
+
         public string Language { get; set; }
     }
 }

@@ -43,7 +43,7 @@
 }
 
 @{
-    await _renderingService.ProcessPost(Model.Post, Model.PageContext, Model.HttpContext, true);
+    await _renderingService.ProcessPost(Model.Post, Model.PageContext, Model.HttpContext, true, Model.ToHighlight);
 
     var rowClass = Model.Post.ReportId.HasValue && (Model.IsCurrentUserMod || Model.Post.ReporterId == Model.CurrentUser.UserId) ? "ReportedPost" : string.Empty;
 
@@ -75,7 +75,9 @@
         <div class="ForumContent VerticalContent FlexRight" id="@Model.Post.PostId" style="max-width:100%; overflow-wrap: break-word; display:flex">
             <span style="display:flex">
                 <span class="PostTitle">
-                    <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@Model.Post.PostId" class="@titleClass">@Html.Raw(Model.Post.PostSubject)</a>
+                    <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@Model.Post.PostId" class="@titleClass" target="@(Model.OpenPostLinkInNewTab ? "_blank" : "_self")">
+                        @Html.Raw(Model.Post.PostSubject)
+                    </a>
                 </span>
                 <span style="margin-left:auto">
                     <span class="CollapsedMenu ThemeColor" onclick="expandCollapsedMenu('summary@(Model.Post.PostId.Value)', 'button@(Model.Post.PostId.Value)')" id="button@(Model.Post.PostId.Value)" style="color:@color;margin-left: auto; height:auto; width: min-content">
@@ -85,7 +87,9 @@
                 @if (Model.ShowQuoteButton)
                 {
                     <span style="margin-left: auto; min-width: max-content; padding-top: 3px; padding-bottom: 30px; margin-top: 4px; margin-bottom: 4px">
-                        <a href="javascript:posting.addquote(texts['@Model.Post.PostId'], '@Model.Post.AuthorName')">&#x1F4AC; @Html.Raw(_languageProvider.BasicText[Model.Language, "DO_QUOTE", Casing.FirstUpper])</a>
+                        <a href="javascript:posting.addquote(texts['@Model.Post.PostId'], '@Model.Post.AuthorName')">
+                            &#x1F4AC; @Html.Raw(_languageProvider.BasicText[Model.Language, "DO_QUOTE", Casing.FirstUpper])
+                        </a>
                     </span>
                 }
             </span>
