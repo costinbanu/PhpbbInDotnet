@@ -156,7 +156,8 @@ namespace PhpbbInDotnet.Services
                                     "_AccountActivatedNotification", 
                                     new AccountActivatedNotificationDto 
                                     { 
-                                        Username = user.Username 
+                                        Username = user.Username,
+                                        Language = user.UserLang
                                     }, 
                                     pageContext, 
                                     httpContext
@@ -523,20 +524,6 @@ namespace PhpbbInDotnet.Services
                 _context.PhpbbBanlist.UpdateRange(banlist.Where(x => x.BanId != 0));
                 await _context.SaveChangesAsync();
                 await _context.Database.GetDbConnection().ExecuteAsync("DELETE FROM phpbb_banlist WHERE ban_id IN @ids", new { ids = indexesToRemove.Select(idx => banlist[idx].BanId) });
-
-                //var conn = _context.Database.GetDbConnection();
-
-                //await conn.ExecuteAsync (
-                //    "INSERT INTO phpbb_banlist (ban_ip, ban_email) VALUES (@ip, @email)",
-                //    banlist.Where(b => b.BanId == 0).Select(b => new { ip = b.BanIp ?? string.Empty, email = b.BanEmail ?? string.Empty } )
-                //);
-
-                //await conn.ExecuteAsync(
-                //    "UPDATE phpbb_banlist SET ban_ip = @ip, ban_email = @email WHERE ban_id = @banId",
-                //    banlist.Where(b => b.BanId != 0 && !toRemove.Contains(b.BanId)).Select(b => new { b.BanId, ip = b.BanIp ?? string.Empty, email = b.BanEmail ?? string.Empty })
-                //);
-
-                //await conn.ExecuteAsync("DELETE FROM phpbb_banlist WHERE ban_id IN @ids", new { ids = toRemove?.DefaultIfEmpty() ?? new[] { 0 } });
 
                 return (LanguageProvider.Admin[lang, "BANLIST_UPDATED_SUCCESSFULLY"], true);
             }

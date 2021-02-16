@@ -257,7 +257,7 @@ else
                             <a asp-page="/Posting" asp-page-handler="forumPost" asp-route-forumId="@topic.ForumId" asp-route-topicId="@topic.TopicId" asp-route-postId="@topic.TopicLastPostId">@Html.Raw(topic.TopicTitle)</a>
                         }
                         <span>
-                            &nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "POSTED", Casing.FirstUpper]):
+                            &nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "POSTED"])
                             <script>writeDate("@topic.LastPostTime?.ToString("o")", "@UserDateFormat");</script>
                         </span>
                     }

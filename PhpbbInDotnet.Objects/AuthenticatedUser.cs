@@ -35,6 +35,7 @@ namespace PhpbbInDotnet.Objects
         public int? UploadLimit { get; set; }
 
         public string Language { get; set; }
+        public string EmailAddress { get; set; }
 
         public class Permissions
         {

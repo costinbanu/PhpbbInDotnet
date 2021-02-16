@@ -71,11 +71,11 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (user == null)
             {
-                Message = $"<span class=\"fail\">{string.Format(LanguageProvider.Errors[lang, "REGISTRATION_ERROR_FORMAT"], Config.GetValue<string>("AdminEmail"))}</span>";
+                Message = $"<span class=\"message fail\">{string.Format(LanguageProvider.Errors[lang, "REGISTRATION_ERROR_FORMAT"], Config.GetValue<string>("AdminEmail"))}</span>";
             }
             else
             {
-                Message = $"<span class=\"success\">{string.Format(LanguageProvider.BasicText[lang, "EMAIL_CONFIRM_MESSAGE_FORMAT"], Config.GetValue<string>("AdminEmail"))}</span>";
+                Message = $"<span class=\"message success\">{string.Format(LanguageProvider.BasicText[lang, "EMAIL_CONFIRM_MESSAGE_FORMAT"], Config.GetValue<string>("AdminEmail"))}</span>";
 
                 if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed)
                 {
@@ -88,32 +88,38 @@ namespace PhpbbInDotnet.Forum.Pages
                 user.UserActkey = string.Empty;
                 await Context.SaveChangesAsync();
 
-                var subject = LanguageProvider.Email[LanguageProvider.GetValidatedLanguage(null, HttpContext.Request), "NEWUSER_SUBJECT"];
-                using var emailMessage = new MailMessage
-                {
-                    From = new MailAddress($"admin@metrouusor.com", Config.GetValue<string>("ForumName")),
-                    Subject = subject,
-                    Body = await Utils.RenderRazorViewToString(
-                        "_NewUserNotification",
-                        new _NewUserNotificationModel(user.Username),
-                        PageContext,
-                        HttpContext
-                    ),
-                    IsBodyHtml = true
-                };
-
-                var adminEmails = await (
+                var admins = await (
                     from u in Context.PhpbbUsers.AsNoTracking()
                     join ug in Context.PhpbbUserGroup.AsNoTracking()
                     on u.UserId equals ug.UserId
                     into joined
                     from j in joined
                     where j.GroupId == Constants.ADMIN_GROUP_ID && !string.IsNullOrWhiteSpace(u.UserEmail)
-                    select u.UserEmail.Trim()
+                    select u
                 ).ToListAsync();
 
-                emailMessage.To.Add(string.Join(',', adminEmails));
-                await Utils.SendEmail(emailMessage);
+                foreach (var admin in admins)
+                {
+                    var subject = LanguageProvider.Email[admin.UserLang, "NEWUSER_SUBJECT"];
+                    using var emailMessage = new MailMessage
+                    {
+                        From = new MailAddress($"admin@metrouusor.com", Config.GetValue<string>("ForumName")),
+                        Subject = subject,
+                        Body = await Utils.RenderRazorViewToString(
+                            "_NewUserNotification",
+                            new _NewUserNotificationModel
+                            {
+                                Username = user.Username,
+                                Language = admin.UserLang
+                            },
+                            PageContext,
+                            HttpContext
+                        ),
+                        IsBodyHtml = true
+                    };
+                    emailMessage.To.Add(admin.UserEmail.Trim());
+                    await Utils.SendEmail(emailMessage);
+                }
             }
             Title = LanguageProvider.BasicText[lang, "EMAIL_CONFIRM_TITLE"];
         }

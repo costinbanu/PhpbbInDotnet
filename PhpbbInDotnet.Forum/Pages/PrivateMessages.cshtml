@@ -109,8 +109,9 @@
                     CreationTime = msg.Time,
                     AssetId = msg.MessageId,
                     DateFormat = UserDateFormat,
-                    AuthorTag = "De la: ",
-                    Language = Lang
+                    AuthorTag = Model.LanguageProvider.BasicText[Lang, "MP_FROM"],
+                    Language = Lang,
+                    DateLabel = Model.LanguageProvider.BasicText[Lang, "MP_SENT"]
                 })
             </div>
             isFirst = false;
@@ -177,8 +178,9 @@
                     CreationTime = msg.Time,
                     AssetId = msg.MessageId,
                     DateFormat = UserDateFormat,
-                    AuthorTag = "Pentru: ",
-                    Language = Lang
+                    AuthorTag = Model.LanguageProvider.BasicText[Lang, "MP_FOR"],
+                    Language = Lang,
+                    DateLabel = Model.LanguageProvider.BasicText[Lang, "MP_SENT"]
                 })
             </div>
             isFirst = false;
@@ -216,8 +218,9 @@
                     DateFormat = UserDateFormat,
                     ShowAvatar = Model.SelectedMessage.OtherHasAvatar,
                     Left = true,
-                    AuthorTag = Model.SelectedMessageIsMine ? "Pentru: " : "De la: ",
-                    Language = Lang
+                    AuthorTag = Model.SelectedMessageIsMine ? Model.LanguageProvider.BasicText[Lang, "MP_FOR"] : Model.LanguageProvider.BasicText[Lang, "MP_FROM"],
+                    Language = Lang,
+                    DateLabel = Model.LanguageProvider.BasicText[Lang, "MP_SENT"]
                 })
                 <div class="ForumContent VerticalContent FlexRight" id="@fakeId">
                     <span style="display:flex">

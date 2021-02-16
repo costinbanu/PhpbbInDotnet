@@ -55,7 +55,7 @@
   //post/topic/forum summary
   "LAST_POST_TEXT": "Last post by",
   "LAST_POST_URL": "<a href=\"{0}\">Last post</a> by",
-  "POSTED": "Posted",
+  "POSTED": "Posted: ",
   "SELECT_ALL_POSTS": "Select all posts",
   "DELETE_SELECTED_POSTS": "Delete selected posts",
   "MARK_SELECTED_POSTS_AS_READ": "Mark selected posts as read",
@@ -64,6 +64,7 @@
   "NO_OWN_POSTS": "You haven't written any posts yet.",
   "NO_DRAFTS": "There are no post drafts.",
   "CHOOSE_DESTINATION": "Choose destination",
+  "AUTHOR": "Author: ",
 
   //layout
   "MY_ACCOUNT": "my account",
@@ -217,6 +218,9 @@
   "DELETE_MESSAGE_FOR_MYSELF": "Delete message for myself",
   "CONFIRM_DELETE_MY_MESSAGE_FOR_MYSELF": "The message will be deleted for yourself, but will remain available for its recipient. Are you sure you want to continue?",
   "CONFIRM_DELETE_OTHERS_MESSAGE_FOR_MYSELF": "The message will be deleted for yourself, but will remain available for its sender. Are you sure you want to continue?",
+  "MP_FOR": "For: ",
+  "MP_FROM": "From: ",
+  "MP_SENT": "Sent: ",
 
   //attachments
   "CHOOSE_FILES": "Choose one or more files",

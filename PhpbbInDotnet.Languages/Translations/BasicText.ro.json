@@ -55,7 +55,7 @@
   //post/topic/forum summary
   "LAST_POST_TEXT": "Ultimul mesaj de",
   "LAST_POST_URL": "<a href=\"{0}\">Ultimul mesaj</a> de",
-  "POSTED": "Scris",
+  "POSTED": "Scris: ",
   "SELECT_ALL_POSTS": "Selectează toate mesajele",
   "DELETE_SELECTED_POSTS": "Șterge mesajele selectate",
   "MARK_SELECTED_POSTS_AS_READ": "Marchează mesajele selectate ca citite",
@@ -64,6 +64,7 @@
   "NO_OWN_POSTS": "Nu ai scris nici un mesaj în nici un topic până acum.",
   "NO_DRAFTS": "Nu ai nici un mesaj în lucru.",
   "CHOOSE_DESTINATION": "Alege destinația",
+  "AUTHOR": "Autor: ",
 
   //layout
   "MY_ACCOUNT": "contul meu",
@@ -217,6 +218,9 @@
   "DELETE_MESSAGE_FOR_MYSELF": "Șterge mesajul doar pentru mine",
   "CONFIRM_DELETE_MY_MESSAGE_FOR_MYSELF": "Mesajul va fi șters pentru tine, însă va rămâne disponibil destinatarului. Continui?",
   "CONFIRM_DELETE_OTHERS_MESSAGE_FOR_MYSELF": "Mesajul va fi șters pentru tine, însă va rămâne disponibil expeditorului. Continui?",
+  "MP_FOR": "Pentru: ",
+  "MP_FROM": "De la: ",
+  "MP_SENT": "Trimis: ",
 
   //attachments
   "CHOOSE_FILES": "Alege unul sau mai multe fișiere",

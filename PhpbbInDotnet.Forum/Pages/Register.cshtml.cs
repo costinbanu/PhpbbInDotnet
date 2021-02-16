@@ -169,7 +169,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 UserIp = HttpContext.Connection.RemoteIpAddress.ToString(),
                 UserRegdate = now,
                 UserLastmark = now,
-                UserDateformat = LanguageProvider.GetDefaultDateFormat(GetLanguage())
+                UserDateformat = LanguageProvider.GetDefaultDateFormat(lang),
+                UserLang = lang
             });
             newUser.Entity.UserId = 0;
             await _context.SaveChangesAsync();

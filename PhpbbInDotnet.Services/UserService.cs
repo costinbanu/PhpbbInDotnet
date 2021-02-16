@@ -139,7 +139,8 @@ namespace PhpbbInDotnet.Services
                 Style = style,
                 JumpToUnread = user.JumpToUnread,
                 UploadLimit = unchecked((int)groupProperties.group_user_upload_size),
-                Language = user.UserLang
+                Language = user.UserLang,
+                EmailAddress = user.UserEmail
             };
 
             var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -213,7 +214,7 @@ namespace PhpbbInDotnet.Services
                     new { senderId, receiverId, to = $"u_{receiverId}", subject, text, time = DateTime.UtcNow.ToUnixTimestamp() }
                 );
 
-                var emailSubject = string.Format(LanguageProvider.Email[lang, "NEWPM_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
+                var emailSubject = string.Format(LanguageProvider.Email[receiver.Language, "NEWPM_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
                 using var emailMessage = new MailMessage
                 {
                     From = new MailAddress($"admin@metrouusor.com", _config.GetValue<string>("ForumName")),
@@ -222,14 +223,15 @@ namespace PhpbbInDotnet.Services
                         "_NewPMEmailPartial",
                         new NewPMEmailDto
                         {
-                            SenderName = senderName
+                            SenderName = senderName,
+                            Language = receiver.Language
                         },
                         pageContext,
                         httpContext
                     ),
                     IsBodyHtml = true
                 };
-                emailMessage.To.Add((await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == receiverId)).UserEmail);
+                emailMessage.To.Add(receiver.EmailAddress);
                 await Utils.SendEmail(emailMessage);
 
                 return ("OK", true);

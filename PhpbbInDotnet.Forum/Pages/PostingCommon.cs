@@ -149,12 +149,12 @@ namespace PhpbbInDotnet.Forum.Pages
 
             await Cache.GetOrAddAsync(
                 await GetActualCacheKey("Smilies", false), 
-                async () => await connection.QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies GROUP BY smiley_url ORDER BY smiley_order"),
+                async () => (await connection.QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies GROUP BY smiley_url ORDER BY smiley_order")).AsList(),
                 CACHE_EXPIRATION
             );
             await Cache.GetOrAddAsync(
                 await GetActualCacheKey("Users", false), 
-                async () => (await GetUserMap()).Select(map => KeyValuePair.Create(map.Key, $"[url={Config.GetValue<string>("BaseUrl")}/User?UserId={map.Value}]{map.Key}[/url]")),
+                async () => (await GetUserMap()).Select(map => KeyValuePair.Create(map.Key, $"[url={Config.GetValue<string>("BaseUrl")}/User?UserId={map.Value}]{map.Key}[/url]")).ToList(),
                 CACHE_EXPIRATION
             );
             await Cache.GetOrAddAsync(

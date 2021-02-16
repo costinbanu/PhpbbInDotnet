@@ -23,7 +23,12 @@
         }
         else
         {
-            <span>@Model.AuthorTag</span>
+            var tag = Model.AuthorTag;
+            if (string.IsNullOrWhiteSpace(tag))
+            {
+                tag = _languageProvider.BasicText[Model.Language, "AUTHOR"];
+            }
+            @Html.Raw(tag)
         }
         @if (Model.AuthorId == null)
         {
@@ -42,14 +47,21 @@
     <li>
         @if (!string.IsNullOrWhiteSpace(Model.AuthorRank))
         {
-            <span class="Caption">@Model.AuthorRank</span>
+            <span class="Caption">
+                @Html.Raw(Model.AuthorRank)
+            </span>
         }
     </li>
     <li>
-        @Html.Raw(_languageProvider.BasicText[Model.Language, "POSTED"]):
-        <script>
-            writeDate("@Model.CreationTime?.ToString("o")", "@Model.DateFormat");
-        </script>
+        @{ 
+            var label = Model.DateLabel;
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                label = _languageProvider.BasicText[Model.Language, "POSTED"];
+            }
+        }
+        @Html.Raw(label)
+        <script>writeDate("@Model.CreationTime?.ToString("o")", "@Model.DateFormat");</script>
     </li>
     @if (Model.Posts.HasValue && Model.Views.HasValue)
     {

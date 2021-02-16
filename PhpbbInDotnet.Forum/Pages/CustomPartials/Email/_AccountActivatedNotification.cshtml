@@ -6,23 +6,21 @@
 @inject CommonUtils _utils
 @inject IConfiguration _config
 @inject Languages.LanguageProvider _languageProvider
-@inject Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor
 
 @{
-    var lang = _languageProvider.GetValidatedLanguage(null, _httpContextAccessor.HttpContext?.Request);
     var baseUrl = _config.GetValue<string>("BaseUrl");
     var forumName = _config.GetValue<string>("ForumName");
 }
 
 <p>
-    @Html.Raw(_languageProvider.Email[lang, "GREETING_BEGIN"])
+    @Html.Raw(_languageProvider.Email[Model.Language, "GREETING_BEGIN"])
 </p>
 <p>
-    @Html.Raw(string.Format(_languageProvider.Email[lang, "ACCOUNT_ACTIVATED_NOTIFICATION_BODY_FORMAT"], baseUrl, forumName, Model.Username))
+    @Html.Raw(string.Format(_languageProvider.Email[Model.Language, "ACCOUNT_ACTIVATED_NOTIFICATION_BODY_FORMAT"], baseUrl, forumName, Model.Username))
 </p>
 <p style="font-size:0.85em">
-    @Html.Raw(string.Format(_languageProvider.Email[lang, "WELCOME_FOOTER_FORMAT"], Model.Username, baseUrl, forumName))
+    @Html.Raw(string.Format(_languageProvider.Email[Model.Language, "WELCOME_FOOTER_FORMAT"], Model.Username, baseUrl, forumName))
 </p>
 <p>
-    @Html.Raw(_languageProvider.Email[lang, "GREETING_END"])
+    @Html.Raw(_languageProvider.Email[Model.Language, "GREETING_END"])
 </p>

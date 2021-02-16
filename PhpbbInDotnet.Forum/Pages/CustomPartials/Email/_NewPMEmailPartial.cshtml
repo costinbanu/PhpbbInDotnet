@@ -6,16 +6,11 @@
 @inject CommonUtils _utils
 @inject IConfiguration _config
 @inject Languages.LanguageProvider _languageProvider
-@inject Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor
 
-@{
-    var lang = _languageProvider.GetValidatedLanguage(null, _httpContextAccessor.HttpContext?.Request);
-}
-
-@Html.Raw(_languageProvider.Email[lang, "GREETING_BEGIN"])
+@Html.Raw(_languageProvider.Email[Model.Language, "GREETING_BEGIN"])
 <br />
 <br />
-@Html.Raw(string.Format(_languageProvider.Email[lang, "NEWPM_BODY_FORMAT"], Model.SenderName, $"{_config.GetValue<string>("BaseUrl")}/PrivateMessages"))
+@Html.Raw(string.Format(_languageProvider.Email[Model.Language, "NEWPM_BODY_FORMAT"], Model.SenderName, $"{_config.GetValue<string>("BaseUrl")}/PrivateMessages"))
 <br />
 <br />
-@Html.Raw(_languageProvider.Email[lang, "GREETING_END"])
+@Html.Raw(_languageProvider.Email[Model.Language, "GREETING_END"])

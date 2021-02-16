@@ -21,10 +21,6 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
 
         public string LinkHref { get; set; }
 
-        //public string LinkText { get; set; }
-
-        //public string LinkTooltip { get; set; }
-
         public bool Left { get; set; }
 
         public string AuthorRank { get; set; }
@@ -39,10 +35,12 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
 
         public int? Topics { get; set; }
 
-        public string AuthorTag { get; set; } = "Autor: ";
+        public string AuthorTag { get; set; }
 
         public string PMLink { get; set; }
 
         public string Language { get; set; }
+
+        public string DateLabel { get; set; }
     }
 }

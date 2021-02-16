@@ -222,16 +222,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return Page();
                 }
 
-                if (user.UploadLimit == null)
-                {
-                    await ReloadCurrentUser();
-                    if (user.UploadLimit == null)
-                    {
-                        user.UploadLimit = 0;
-                    }
-                }
-
-                if (user.UploadLimit > 0)
+                if ((user.UploadLimit ?? 0) > 0)
                 {
                     var connection = Context.Database.GetDbConnection();
                     var uploadSize = await connection.ExecuteScalarAsync<long>("SELECT sum(filesize) FROM phpbb_attachments WHERE poster_id = @userId", new { user.UserId });

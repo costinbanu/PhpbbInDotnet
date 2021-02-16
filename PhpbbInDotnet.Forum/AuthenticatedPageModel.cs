@@ -100,9 +100,19 @@ namespace PhpbbInDotnet.Forum
                             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                             Cache.Add(key, true, new MemoryCacheEntryOptions { SlidingExpiration = TimeSpan.FromDays(authenticationExpiryDays) });
                         }
-                        else if (DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > TimeSpan.FromMinutes(sessionTrackingTimeoutMinutes))
+                        else
                         {
-                            await connection.ExecuteAsync("UPDATE phpbb_users SET user_lastvisit = @now WHERE user_id = @userId", new { now = DateTime.UtcNow.ToUnixTimestamp(), _currentUser.UserId });
+                            if (DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > TimeSpan.FromMinutes(sessionTrackingTimeoutMinutes))
+                            {
+                                await connection.ExecuteAsync("UPDATE phpbb_users SET user_lastvisit = @now WHERE user_id = @userId", new { now = DateTime.UtcNow.ToUnixTimestamp(), _currentUser.UserId });
+                            }
+
+                            var refreshUserKey = $"RefreshUser_{_currentUser.UserId}";
+                            if (Cache.GetOrAdd(refreshUserKey, () => true))
+                            {
+                                await ReloadCurrentUser();
+                                Cache.Add(refreshUserKey, false, DateTimeOffset.UtcNow.AddHours(12));
+                            }
                         }
                     }
                 }
@@ -145,17 +155,19 @@ namespace PhpbbInDotnet.Forum
 
                 var dbUser = await connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId = current });
 
-                await HttpContext.SignInAsync(
-                    CookieAuthenticationDefaults.AuthenticationScheme,
-                    await UserService.DbUserToClaimsPrincipal(dbUser),
-                    new AuthenticationProperties
-                    {
-                        AllowRefresh = true,
-                        ExpiresUtc = result.Properties.ExpiresUtc,
-                        IsPersistent = true,
-                    }
-                );
-
+                if (dbUser != null)
+                {
+                    await HttpContext.SignInAsync(
+                        CookieAuthenticationDefaults.AuthenticationScheme,
+                        await UserService.DbUserToClaimsPrincipal(dbUser),
+                        new AuthenticationProperties
+                        {
+                            AllowRefresh = true,
+                            ExpiresUtc = result.Properties.ExpiresUtc,
+                            IsPersistent = true,
+                        }
+                    );
+                }
             }
         }
 
