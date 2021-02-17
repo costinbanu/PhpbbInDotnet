@@ -26,7 +26,6 @@ namespace PhpbbInDotnet.Languages
         private readonly Lazy<TextTranslation> _email;
         private readonly Lazy<EnumTranslation> _enums;
         private readonly Lazy<JavaScriptTranslation> _jsText;
-        private readonly Lazy<HtmlTranslation> _faq;
         private readonly Lazy<TextTranslation> _errors;
         private readonly Lazy<HtmlTranslation> _postingGuide;
         private readonly Lazy<HtmlTranslation> _termsAndConditions;
@@ -45,8 +44,6 @@ namespace PhpbbInDotnet.Languages
         public EnumTranslation Enums => _enums.Value;
 
         public JavaScriptTranslation JSText => _jsText.Value;
-
-        public HtmlTranslation FAQ => _faq.Value;
 
         public TextTranslation Errors => _errors.Value;
 
@@ -79,7 +76,6 @@ namespace PhpbbInDotnet.Languages
             _email = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Email), _logger, cache));
             _enums = new Lazy<EnumTranslation>(() => new EnumTranslation(_logger, cache));
             _jsText = new Lazy<JavaScriptTranslation>(() => new JavaScriptTranslation(_logger, cache));
-            _faq = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(FAQ), _logger, cache));
             _errors = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Errors), _logger, cache));
             _postingGuide = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(PostingGuide), _logger, cache));
             _termsAndConditions = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(TermsAndConditions), _logger, cache));
@@ -117,7 +113,7 @@ namespace PhpbbInDotnet.Languages
                         var parsed = new CultureInfo(language).TwoLetterISOLanguageName;
 
                         if (_context.PhpbbLang.AsNoTracking().Any(lang => lang.LangIso == parsed) &&
-                            new Translation[] { BasicText, AboutCookies, Email, Enums, JSText, FAQ, Errors, PostingGuide, TermsAndConditions, Moderator, Admin, CustomBBCodeGuide, AttachmentGuide, BBCodes }
+                            new Translation[] { BasicText, AboutCookies, Email, Enums, JSText, Errors, PostingGuide, TermsAndConditions, Moderator, Admin, CustomBBCodeGuide, AttachmentGuide, BBCodes }
                             .All(x => x.Exists(parsed)))
                         {
                             return true;
