@@ -322,7 +322,7 @@
                 }
                 if (!isok && !this.isAdmin) {
                     $('#imgcheckstatus').toggle();
-                    alert(formatString(dictionary.Posting['IMAGES_TOO_BIG_ERROR_FORMAT'], badimgs.join('\n')));
+                    alert(formatString(dictionary.Posting['IMAGES_TOO_BIG_ERROR_FORMAT'], this.imgSizeLimit, badimgs.join('\n')));
                     return false;
                 }
                 else {

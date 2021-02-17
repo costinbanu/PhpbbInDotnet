@@ -1,25 +1,25 @@
 ﻿{
   //generics
-  "SELECT_FOR_MODERATION": "Selectează pentru moderare",
-  "MODERATE_TOPIC": "Moderează subiectul",
-  "MODERATE_SELECTED_POSTS": "Moderează mesajele selectate",
-  "DESTINATION_FORUM_ID": "ID forum destinație",
-  "CHOOSE_DESTINATION_FORUM_ID": "Alege id-ul forumului de destinație",
-  "DESTINATION_TOPIC_ID": "ID subiect destinație",
-  "CHOOSE_DESTINATION_TOPIC_ID": "Alege id-ul subiectului de destinație",
+  "SELECT_FOR_MODERATION": "Select for moderation",
+  "MODERATE_TOPIC": "Moderate topic",
+  "MODERATE_SELECTED_POSTS": "Moderate selected posts",
+  "DESTINATION_FORUM_ID": "Destination forum ID",
+  "CHOOSE_DESTINATION_FORUM_ID": "Choose destination forum ID",
+  "DESTINATION_TOPIC_ID": "Destination topic ID",
+  "CHOOSE_DESTINATION_TOPIC_ID": "Choose destination topic ID",
 
   //success messages
-  "TOPIC_CHANGED_SUCCESSFULLY": "Subiectul a fost modificat cu succes!",
-  "TOPIC_DELETED_SUCCESSFULLY": "Subiectul a fost șters cu succes!",
-  "POSTS_SPLIT_SUCCESSFULLY": "Mesajele au fost separate cu succes!",
-  "POSTS_MOVED_SUCCESSFULLY": "Mesajele au fost mutate cu succes!",
-  "POSTS_DELETED_SUCCESSFULLY": "Mesajele au fost șterse cu succes!",
+  "TOPIC_CHANGED_SUCCESSFULLY": "The topic has been modified successfully!",
+  "TOPIC_DELETED_SUCCESSFULLY": "The topic has been deleted successfully!",
+  "POSTS_SPLIT_SUCCESSFULLY": "The posts were split successfully!",
+  "POSTS_MOVED_SUCCESSFULLY": "The posts were moved successfully!",
+  "POSTS_DELETED_SUCCESSFULLY": "The posts were deleted successfully!",
 
   //error messages
-  "TOPIC_DOESNT_EXIST_FORMAT": "Subiectul {0} nu există.",
-  "DESTINATION_DOESNT_EXIST": "Subiectul sau forumul de destinație nu există",
-  "INVALID_DESTINATION_FORUM": "Forumul destinație nu este valid.",
-  "INVALID_DESTINATION_TOPIC": "Subiectul destinație nu este valid.",
-  "ATLEAST_ONE_POST_REQUIRED": "Această acțiune necesită măcar un mesaj selectat.",
-  "ATLEAST_ONE_POST_MOVED_OR_DELETED": "Cel puțin un mesaj dintre cele selectate a fost mutat sau șters între timp."
+  "TOPIC_DOESNT_EXIST_FORMAT": "The topic {0} does not exist.",
+  "DESTINATION_DOESNT_EXIST": "Destination forum or topic does not exist.",
+  "INVALID_DESTINATION_FORUM": "Invalid destination forum.",
+  "INVALID_DESTINATION_TOPIC": "Invalid destination topic.",
+  "ATLEAST_ONE_POST_REQUIRED": "At least one selected post is required.",
+  "ATLEAST_ONE_POST_MOVED_OR_DELETED": "At least one selected post has been moved or deleted in the meantime."
 }
