@@ -169,7 +169,9 @@
             IsTopicLocked = Model.IsLocked,
             ShowFooter = !(CurrentUser.Foes?.Contains(p.PosterId) ?? false),
             ShowEditHistory = (index < Model.Posts.Count - 1 && post.LastEditTime > Model.Posts[index + 1].PostTime) || (post.EditCount > 0 && post.LastEditUser != post.AuthorName),
-            Language = Lang
+            Language = Lang,
+            ParentHttpContext = HttpContext,
+            ParentPageContext = PageContext
         }, ViewData)
 
         index++;

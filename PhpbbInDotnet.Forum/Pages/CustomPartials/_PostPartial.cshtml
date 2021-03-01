@@ -43,7 +43,7 @@
 }
 
 @{
-    await _renderingService.ProcessPost(Model.Post, Model.PageContext, Model.HttpContext, true, Model.ToHighlight);
+    await _renderingService.ProcessPost(Model.Post, Model.ParentPageContext, Model.ParentHttpContext, true, Model.ToHighlight);
 
     var rowClass = Model.Post.ReportId.HasValue && (Model.IsCurrentUserMod || Model.Post.ReporterId == Model.CurrentUser.UserId) ? "ReportedPost" : string.Empty;
 
@@ -181,7 +181,7 @@
                                     &#x1F4DD; @Html.Raw(_languageProvider.BasicText[Model.Language, "DO_EDIT", Casing.FirstUpper])
                                 </a>
                             </span>
-                            if (Model.IsCurrentUserMod || Model.IsPostLastInPage)
+                            if (Model.IsCurrentUserMod || (Model.IsPostLastInPage && Model.IsLastPage))
                             {
                                 if (!Model.IsCurrentUserMod)
                                 {

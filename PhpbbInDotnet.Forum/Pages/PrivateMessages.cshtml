@@ -74,7 +74,7 @@
                 allowPaginationChange: false,
                 back: $"PrivateMessages?show=Inbox&InboxPage={Model.InboxPage - 1}",
                 forward: $"PrivateMessages?show=Inbox&InboxPage={Model.InboxPage + 1}",
-                includeEasyNavigation: true,
+                includeEasyNavigation: false,
                 language: Lang,
                 topicId: null,
                 firstPostId: null
@@ -127,6 +127,20 @@
             <input type="submit" asp-page-handler="MarkAsRead" value="&#x2705;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "MARK_SELECTED_MESSAGES_AS_READ"])" onclick="return confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_MARK_MESSAGES_AS_READ"])');" class="MyButton SpacedButton" />
             <input type="submit" asp-page-handler="HideSelectedMessages" value="&#x1F6AE;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_SELECTED_MESSAGES_FOR_MYSELF"])" onclick="return confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_RECEIVED_MESSAGES_FOR_MYSELF"])');" class="MyButton SpacedButton" />
         </form>
+        @await Html.PartialAsync(
+            "_PaginationControlsPartial",
+            new CustomPartials._PaginationControlsPartialModel(
+                paginator: Model.InboxPaginator,
+                allowPaginationChange: false,
+                back: $"PrivateMessages?show=Inbox&InboxPage={Model.InboxPage - 1}",
+                forward: $"PrivateMessages?show=Inbox&InboxPage={Model.InboxPage + 1}",
+                includeEasyNavigation: true,
+                language: Lang,
+                topicId: null,
+                firstPostId: null
+            ),
+            ViewData
+        )
     }
     else
     {
@@ -144,7 +158,7 @@
                 allowPaginationChange: false,
                 back: $"PrivateMessages?show=Sent&SentPage={Model.SentPage - 1}",
                 forward: $"PrivateMessages?show=Sent&SentPage={Model.SentPage + 1}",
-                includeEasyNavigation: true,
+                includeEasyNavigation: false,
                 language: Lang,
                 topicId: null,
                 firstPostId: null
@@ -195,6 +209,20 @@
             <input type="hidden" asp-for="SentPage" />
             <input type="submit" asp-page-handler="HideSelectedMessages" value="&#x1F6AE;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_SELECTED_MESSAGES_FOR_MYSELF"])" onclick="return confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_SENT_MESSAGES_FOR_MYSELF"])');" class="MyButton SpacedButton" />
         </form>
+        @await Html.PartialAsync(
+            "_PaginationControlsPartial",
+            new CustomPartials._PaginationControlsPartialModel(
+                paginator: Model.SentPaginator,
+                allowPaginationChange: false,
+                back: $"PrivateMessages?show=Sent&SentPage={Model.SentPage - 1}",
+                forward: $"PrivateMessages?show=Sent&SentPage={Model.SentPage + 1}",
+                includeEasyNavigation: true,
+                language: Lang,
+                topicId: null,
+                firstPostId: null
+            ),
+            ViewData
+        )
     }
     else
     {

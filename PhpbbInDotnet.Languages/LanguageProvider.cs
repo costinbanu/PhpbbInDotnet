@@ -103,7 +103,7 @@ namespace PhpbbInDotnet.Languages
             return ValidatedOrDefault(user.Language, fromHeadersOrDefault);
         }
 
-        public bool IsLanguageValid(string language)
+        public (bool isValid, string twoLetterLanguageName) IsLanguageValid(string language)
             => _cache.GetOrAdd(
                 $"{nameof(IsLanguageValid)}_{language}",
                 () =>
@@ -116,15 +116,15 @@ namespace PhpbbInDotnet.Languages
                             new Translation[] { BasicText, AboutCookies, Email, Enums, JSText, Errors, PostingGuide, TermsAndConditions, Moderator, Admin, CustomBBCodeGuide, AttachmentGuide, BBCodes }
                             .All(x => x.Exists(parsed)))
                         {
-                            return true;
+                            return (true, parsed);
                         }
                         _logger.Warning("Language '{language}' was requested, but it does not exist.", parsed);
-                        return false;
+                        return (false, null);
                     }
                     catch (Exception ex)
                     {
                         _logger.Warning(ex, "Unable to parse language code '{language}'.", language);
-                        return false;
+                        return (false, null);
                     }
                 },
                 Translation.CACHE_EXPIRATION
@@ -143,7 +143,8 @@ namespace PhpbbInDotnet.Languages
                 language = language.Split(",").First().Trim();
             }
 
-            return IsLanguageValid(language) ? language : @default;
+            var (isValid, twoLetterLanguageName) = IsLanguageValid(language);
+            return isValid ? twoLetterLanguageName : @default;
         }
 
         private static readonly char[] DATE_FORMATS = new[] { 'f', 'g' };

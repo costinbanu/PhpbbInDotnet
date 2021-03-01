@@ -151,7 +151,7 @@ namespace PhpbbInDotnet.Services
                             using var emailMessage = new MailMessage
                             {
                                 From = new MailAddress($"admin@metrouusor.com", forumName),
-                                Subject = string.Format(LanguageProvider.Email[lang, "ACCOUNT_ACTIVATED_NOTIFICATION_SUBJECT_FORMAT"], forumName),
+                                Subject = string.Format(LanguageProvider.Email[user.UserLang, "ACCOUNT_ACTIVATED_NOTIFICATION_SUBJECT_FORMAT"], forumName),
                                 Body = await Utils.RenderRazorViewToString(
                                     "_AccountActivatedNotification", 
                                     new AccountActivatedNotificationDto 

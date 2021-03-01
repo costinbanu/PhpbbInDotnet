@@ -16,7 +16,7 @@
         css = "Light";
     }
     var lang = _languageProvider.GetValidatedLanguage(currentUser, _httpContextAccessor.HttpContext?.Request); 
-    var dateFormat = currentUser?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(lang);
+    var dateFormat = currentUser?.UserDateFormat ?? _languageProvider.GetDefaultDateFormat(lang);
     var statistics = await _statisticsService.GetStatistics();
 }
 
@@ -63,7 +63,7 @@
          || ViewContext.RouteData.Values["page"].ToString() == "/Admin")
     {
         <script>
-            var dictionary = @(Html.Raw(Model.LanguageProvider.JSText[lang]));
+            var dictionary = @(Html.Raw(_languageProvider.JSText[lang]));
             var clickToEnlarge = '@Html.Raw(_languageProvider.BasicText[lang, "CLICK_TO_ENLARGE"])';
         </script>
     }

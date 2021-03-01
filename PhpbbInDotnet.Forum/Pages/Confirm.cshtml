@@ -3,6 +3,7 @@
 
 @using Microsoft.EntityFrameworkCore
 @using Dapper
+@using Utilities
 
 @inject Utilities.CommonUtils _utils
 @inject Services.ForumTreeService _forumService
@@ -92,7 +93,7 @@
             }
         }
         <p></p>
-        <input type="submit" value="Trimite" />
+        <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[lang, "SUBMIT", Casing.FirstUpper])" />
     </form>
 }
 else if (Model.IsDestinationConfirmation)

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Objects;
@@ -43,5 +44,9 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
         public string ToHighlight { get; set; }
 
         public string Language { get; set; }
+
+        public HttpContext ParentHttpContext { get; set; }
+
+        public PageContext ParentPageContext { get; set; }
     }
 }

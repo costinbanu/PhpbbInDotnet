@@ -7,9 +7,9 @@
 @inject IConfiguration _config
 
 @{
-    ViewData["Title"] = "Login";
-    Layout = "~/Pages/_Layout.cshtml";
     var lang = Model.LanguageProvider.GetValidatedLanguage(null, Model.HttpContext?.Request);
+    ViewData["Title"] = Model.LanguageProvider.BasicText[lang, "LOGIN", Casing.Title];
+    Layout = "~/Pages/_Layout.cshtml";
 }
 
 <h3>@Model.LanguageProvider.BasicText[lang, "LOGIN", Casing.FirstUpper]</h3>

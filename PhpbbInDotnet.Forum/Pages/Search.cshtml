@@ -160,7 +160,9 @@ else
             IsPostLastInPage = post == Model.Posts.Last(),
             OpenPostLinkInNewTab = true,
             ToHighlight = Model.SearchText,
-            Language = Lang
+            Language = Lang,
+            ParentHttpContext = HttpContext,
+            ParentPageContext = PageContext
         }, ViewData)
     }
 

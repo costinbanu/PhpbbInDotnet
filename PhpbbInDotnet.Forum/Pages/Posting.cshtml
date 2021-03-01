@@ -150,7 +150,9 @@ else if (IsPM)
         Post = Model.PreviewablePost,
         ForumId = Model.ForumId,
         TopicId = Model.TopicId ?? 0,
-        Language = Lang
+        Language = Lang,
+        ParentHttpContext = HttpContext,
+        ParentPageContext = PageContext
     }, ViewData)
 
     <hr class="BoxSeparator" />
@@ -452,7 +454,9 @@ else if (IsPM)
                 ForumId = Model.ForumId,
                 TopicId = Model.TopicId ?? 0,
                 ShowQuoteButton = !(CurrentUser.Foes?.Contains(post.AuthorId ?? 1) ?? false),
-                Language = Lang
+                Language = Lang,
+                ParentHttpContext = HttpContext,
+                ParentPageContext = PageContext
             }, ViewData)
         }
     }
