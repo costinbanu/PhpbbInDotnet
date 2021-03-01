@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
 using System;
@@ -20,13 +21,12 @@ using System.Web;
 
 namespace PhpbbInDotnet.Services
 {
-    public class BBCodeRenderingService
+    public class BBCodeRenderingService : MultilingualServiceBase
     {
         private static readonly Regex _htmlRegex = new Regex("<.+?>", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
         private static readonly Regex _spaceRegex = new Regex(" +", RegexOptions.Compiled | RegexOptions.Singleline, Constants.REGEX_TIMEOUT);
         private static readonly Regex _attachRegex = new Regex("#{AttachmentFileName=[^/]+/AttachmentIndex=[0-9]+}#", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
 
-        private readonly CommonUtils _utils;
         private readonly ForumDbContext _context;
         private readonly WritingToolsService _writingService;
         private readonly BBCodeParser _parser;
@@ -39,9 +39,9 @@ namespace PhpbbInDotnet.Services
 
         public Dictionary<string, BBTagSummary> TagMap { get; }
 
-        public BBCodeRenderingService(CommonUtils utils, ForumDbContext context, WritingToolsService writingService, IAppCache cache)
+        public BBCodeRenderingService(CommonUtils utils, ForumDbContext context, WritingToolsService writingService, IAppCache cache, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
+            : base(utils, languageProvider, httpContextAccessor)
         {
-            _utils = utils;
             _context = context;
             _writingService = writingService;
             _bannedWords = new Lazy<Dictionary<string, string>>(() => _writingService.GetBannedWords().GroupBy(p => p.Word).Select(grp => grp.FirstOrDefault()).ToDictionary(x => x.Word, y => y.Replacement));
@@ -94,7 +94,7 @@ namespace PhpbbInDotnet.Services
                     {
                         post.PostText = post.PostText.Replace(
                             $"#{{AttachmentFileName={model.DisplayName}/AttachmentIndex={index}}}#",
-                            await _utils.RenderRazorViewToString("_AttachmentPartial", model, pageContext, httpContext)
+                            await Utils.RenderRazorViewToString("_AttachmentPartial", model, pageContext, httpContext)
                         );
                         post.Attachments.Remove(model);
                     }
@@ -122,17 +122,17 @@ namespace PhpbbInDotnet.Services
                 {
                     html = html.Replace($":{bbCodeUid}", string.Empty);
                 }
-                _utils.HandleError(ex, $"Error parsing bbcode text '{bbCodeText}'");
+                Utils.HandleError(ex, $"Error parsing bbcode text '{bbCodeText}'");
             }
             bbCodeText = HttpUtility.HtmlDecode(html);
-            bbCodeText = _utils.HtmlCommentRegex.Replace(bbCodeText, string.Empty);
+            bbCodeText = Utils.HtmlCommentRegex.Replace(bbCodeText, string.Empty);
             bbCodeText = bbCodeText.Replace("{SMILIES_PATH}", Constants.SMILEY_PATH);
-            bbCodeText = bbCodeText.Replace("\t", _utils.HtmlSafeWhitespace(4));
+            bbCodeText = bbCodeText.Replace("\t", Utils.HtmlSafeWhitespace(4));
 
             var offset = 0;
             foreach (Match m in _spaceRegex.Matches(bbCodeText))
             {
-                var (result, curOffset) = TextHelper.ReplaceAtIndex(bbCodeText, m.Value, _utils.HtmlSafeWhitespace(m.Length), m.Index + offset);
+                var (result, curOffset) = TextHelper.ReplaceAtIndex(bbCodeText, m.Value, Utils.HtmlSafeWhitespace(m.Length), m.Index + offset);
                 bbCodeText = result;
                 offset += curOffset;
             }
@@ -298,6 +298,7 @@ namespace PhpbbInDotnet.Services
 
         private (List<BBTag> BBTags, Dictionary<string, BBTagSummary> TagMap) GenerateCompleteTagListAndMap(IEnumerable<PhpbbBbcodes> dbCodes)
         {
+            var lang = GetLanguage().GetAwaiter().GetResult();
             var tagsCache = _cache.GetOrAdd(
                 "BBCODE_TAGS", 
                 () => new Dictionary<string, (BBTag Tag, BBTagSummary Summary)>
@@ -361,7 +362,7 @@ namespace PhpbbInDotnet.Services
 
                     ["quote"] = (
                         Tag: new BBTag("quote", "<blockquote class=\"PostQuote\">${name}", "</blockquote>", 0, "", true,
-                            new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : $"<b>{HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')}</b> a scris:<br/>", HtmlEncodingMode.UnsafeDontEncode))
+                            new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : string.Format(LanguageProvider.BasicText[lang, "WROTE_FORMAT"], HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')), HtmlEncodingMode.UnsafeDontEncode))
                         {
                             GreedyAttributeProcessing = true
                         },
@@ -432,7 +433,7 @@ namespace PhpbbInDotnet.Services
                     ),
 
                     ["attachment"] = (
-                        Tag: new BBTag("attachment", "#{AttachmentFileName=${content}/AttachmentIndex=${num}}#", "", false, BBTagClosingStyle.AutoCloseElement, x => _utils.HtmlCommentRegex.Replace(HttpUtility.HtmlDecode(x), string.Empty), 12, "", true,
+                        Tag: new BBTag("attachment", "#{AttachmentFileName=${content}/AttachmentIndex=${num}}#", "", false, BBTagClosingStyle.AutoCloseElement, x => Utils.HtmlCommentRegex.Replace(HttpUtility.HtmlDecode(x), string.Empty), 12, "", true,
                             new BBAttribute("num", "")),
                         Summary: new BBTagSummary
                         {

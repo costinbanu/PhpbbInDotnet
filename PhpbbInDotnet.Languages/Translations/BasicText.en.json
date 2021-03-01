@@ -51,6 +51,7 @@
   "GO": "go",
   "FROM": "from",
   "TO": "to",
+  "WROTE_FORMAT": "<b>{0}</b> wrote:<br />",
 
   //post/topic/forum summary
   "LAST_POST_TEXT": "Last post by",
