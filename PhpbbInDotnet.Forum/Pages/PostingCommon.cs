@@ -136,7 +136,7 @@ namespace PhpbbInDotnet.Forum.Pages
             return (new List<PhpbbPosts>(), new List<PhpbbAttachments>(), new List<PhpbbUsers>());
         }
 
-        private async Task Init()
+        public async Task Init()
         {
             var connection = Context.Database.GetDbConnection();
             List<KeyValuePair<string, int>> userMap = null;

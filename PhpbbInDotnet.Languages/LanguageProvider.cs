@@ -134,7 +134,6 @@ namespace PhpbbInDotnet.Languages
         {
             if (string.IsNullOrWhiteSpace(language))
             {
-                _logger.Warning("Received empty language code");
                 return @default;
             }
 

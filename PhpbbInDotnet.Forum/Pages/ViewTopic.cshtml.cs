@@ -49,24 +49,24 @@ namespace PhpbbInDotnet.Forum.Pages
         public ModeratorPostActions? PostAction { get; set; }
 
         [BindProperty(SupportsGet = true)]
+        public string SelectedPostIds { get; set; }
+
+        [BindProperty]
         public int[] PostIdsForModerator { get; set; }
 
         [BindProperty]
         public int? ClosestPostId { get; set; }
 
         public PollDto Poll { get; private set; }
-
         public List<PhpbbPosts> Posts { get; private set; }
-
         public string TopicTitle { get; private set; }
         public string ForumRulesLink { get; private set; }
         public string ForumRules { get; private set; }
         public string ForumRulesUid { get; private set; }
         public string ForumTitle { get; private set; }
-
         public string ModeratorActionResult { get; private set; }
-
         public Paginator Paginator { get; private set; }
+
 
         public bool ShowTopic => TopicAction == ModeratorTopicActions.MoveTopic && (
             (ModelState[nameof(DestinationForumId)]?.Errors?.Any() ?? false) ||
@@ -329,7 +329,8 @@ namespace PhpbbInDotnet.Forum.Pages
                     return await ModeratePosts();
                 }
 
-                if (PostIdsForModerator.Length != 1 || PostAction != ModeratorPostActions.DeleteSelectedPosts)
+                var postIds = GetModeratorPostIds();
+                if (postIds.Length != 1 || PostAction != ModeratorPostActions.DeleteSelectedPosts)
                 {
                     return RedirectToPage("Error", new { isUnauthorised = true });
                 }
@@ -337,7 +338,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var conn = Context.Database.GetDbConnection();
                 
 
-                var toDelete = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId = PostIdsForModerator[0] });
+                var toDelete = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId = postIds[0] });
                 var lastPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC", new { toDelete.TopicId });
 
                 if (toDelete.PostTime < lastPost.PostTime)
@@ -419,15 +420,16 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             var lang = await GetLanguage();
 
+            var postIds = GetModeratorPostIds();
             var (Message, IsSuccess) = PostAction switch
             {
-                ModeratorPostActions.DeleteSelectedPosts => await _moderatorService.DeletePosts(PostIdsForModerator),
-                ModeratorPostActions.MoveSelectedPosts => await _moderatorService.MovePosts(PostIdsForModerator, DestinationTopicId),
-                ModeratorPostActions.SplitSelectedPosts => await _moderatorService.SplitPosts(PostIdsForModerator, DestinationForumId),
+                ModeratorPostActions.DeleteSelectedPosts => await _moderatorService.DeletePosts(postIds),
+                ModeratorPostActions.MoveSelectedPosts => await _moderatorService.MovePosts(postIds, DestinationTopicId),
+                ModeratorPostActions.SplitSelectedPosts => await _moderatorService.SplitPosts(postIds, DestinationForumId),
                 _ => throw new NotImplementedException($"Unknown action '{PostAction}'")
             };
 
-            if ((IsSuccess ?? false) && PostAction == ModeratorPostActions.DeleteSelectedPosts && PostIdsForModerator.Length == 1 && ClosestPostId.HasValue)
+            if ((IsSuccess ?? false) && PostAction == ModeratorPostActions.DeleteSelectedPosts && postIds.Length == 1 && ClosestPostId.HasValue)
             {
                 PostId = ClosestPostId;
                 return await OnGetByPostId();
@@ -442,7 +444,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 else
                 {
-                    (LatestSelected, NextRemaining) = await GetSelectedAndNextRemainingPostIds(PostIdsForModerator);
+                    (LatestSelected, NextRemaining) = await GetSelectedAndNextRemainingPostIds(postIds);
                 }
                 var destinations = new List<string>();
                 if (LatestSelected != null)
@@ -466,6 +468,15 @@ namespace PhpbbInDotnet.Forum.Pages
             return await OnGet();
         }
 
+        public int[] GetModeratorPostIds()
+        {
+            if (PostIdsForModerator?.Any() ?? false)
+            {
+                return PostIdsForModerator;
+            }
+            return SelectedPostIds?.Split(',')?.Select(x => int.TryParse(x, out var val) ? val : 0)?.Where(x => x != 0)?.ToArray() ?? new int[0];
+        }
+
         private async Task GetPostsLazy(int? topicId, int? page, int? postId)
         {
             if (Posts == null || _page == null || _count == null)
@@ -484,12 +495,13 @@ namespace PhpbbInDotnet.Forum.Pages
                 new { ids = idsToInclude.DefaultIfEmpty() }
             );
 
+            var postIds = GetModeratorPostIds();
             var nextRemainingPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(
                 "SELECT * FROM phpbb_posts WHERE topic_id = @topicId AND post_id NOT IN @ids AND post_time >= @time ORDER BY post_time ASC",
-                new { topicId = TopicId.Value, ids = PostIdsForModerator.DefaultIfEmpty(), time = latestSelectedPost?.PostTime }
+                new { topicId = TopicId.Value, ids = postIds.DefaultIfEmpty(), time = latestSelectedPost?.PostTime }
             ) ?? await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(
                 "SELECT * FROM phpbb_posts WHERE topic_id = @topicId AND post_id NOT IN @ids ORDER BY post_time DESC",
-                new { topicId = TopicId.Value, ids = PostIdsForModerator.DefaultIfEmpty() }
+                new { topicId = TopicId.Value, ids = postIds.DefaultIfEmpty() }
             );
                 
             return (latestSelectedPost?.PostId, nextRemainingPost?.PostId);

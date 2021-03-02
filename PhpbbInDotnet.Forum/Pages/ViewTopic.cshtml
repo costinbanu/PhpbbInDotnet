@@ -160,7 +160,7 @@
             ForumId = Model.ForumId ?? 0,
             TopicId = Model.TopicId ?? 0,
             ClosestPostId = closestPostIdIndex.HasValue ? Model.Posts[closestPostIdIndex.Value].PostId : 0,
-            PostIdsForModerator = Model.PostIdsForModerator,
+            PostIdsForModerator = Model.GetModeratorPostIds(),
             HasCurrentUserPM = HasPM,
             IsCurrentUserMod = IsMod,
             IsPostFirstInPage = p == Model.Posts.First(),
@@ -319,6 +319,7 @@ else if (!IsAnonymous)
         <input asp-for="TopicId" type="hidden" />
         <input asp-for="PageNum" type="hidden" />
         <input asp-for="ClosestPostId" type="hidden" id="closestPostId" />
+        <input asp-for="SelectedPostIds" type="hidden" />
         @Html.AntiForgeryToken()
     </form>
     <form id="modConfirmation" asp-page="Confirm" method="get">

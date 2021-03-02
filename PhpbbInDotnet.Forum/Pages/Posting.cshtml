@@ -23,7 +23,7 @@
     var CurrentUser = await Model.GetCurrentUserAsync();
     var IsPM = Model.Action == PostingActions.NewPrivateMessage || Model.Action == PostingActions.EditPrivateMessage;
     var CanCreatePoll = Model.Action == PostingActions.NewTopic || (Model.Action == PostingActions.EditForumPost && (Model.CurrentTopic?.TopicFirstPostId ?? 0) == Model.PostId);
-    var Lang = await Model.GetLanguage(); 
+    var Lang = await Model.GetLanguage();
     var UserDateFormat = CurrentUser.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
     var IsAdmin = await Model.IsCurrentUserAdminHere();
 }
@@ -135,25 +135,25 @@ else if (IsPM)
     {
         <hr class="BoxSeparator" />
         @await Html.PartialAsync("_PollPartial", new _PollPartialModel
-        {
-            CurrentUser = CurrentUser,
-            Poll = Model.PreviewablePoll,
-            IsPreview = true,
-            Language = Lang
-        }, ViewData)
+   {
+       CurrentUser = CurrentUser,
+       Poll = Model.PreviewablePoll,
+       IsPreview = true,
+       Language = Lang
+   }, ViewData)
         <p></p>
     }
 
     @await Html.PartialAsync("_PostPartial", new _PostPartialModel
-    {
-        CurrentUser = CurrentUser,
-        Post = Model.PreviewablePost,
-        ForumId = Model.ForumId,
-        TopicId = Model.TopicId ?? 0,
-        Language = Lang,
-        ParentHttpContext = HttpContext,
-        ParentPageContext = PageContext
-    }, ViewData)
+{
+    CurrentUser = CurrentUser,
+    Post = Model.PreviewablePost,
+    ForumId = Model.ForumId,
+    TopicId = Model.TopicId ?? 0,
+    Language = Lang,
+    ParentHttpContext = HttpContext,
+    ParentPageContext = PageContext
+}, ViewData)
 
     <hr class="BoxSeparator" />
     <p></p>
@@ -183,12 +183,12 @@ else if (IsPM)
             if (code.Key == "size")
             {
                 @Html.DropDownList("addbbcode20", _utils.EnumToDropDownList<PostingFontSize>(null, size => Model.LanguageProvider.Enums[Lang, size], size => ((int)size).ToString(), buttonText), new
-                {
-                    @class = "BbCodeButton PostingButton",
-                    style = "border-radius: 2px; border: 1px solid #dcdcdc;",
-                    onchange = "posting.bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;",
-                    title = caption
-                })
+           {
+               @class = "BbCodeButton PostingButton",
+               style = "border-radius: 2px; border: 1px solid #dcdcdc;",
+               onchange = "posting.bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;",
+               title = caption
+           })
             }
             else if (code.Key == "color")
             {
@@ -394,11 +394,20 @@ else if (IsPM)
         </div>
     }
     <div id="emojiPanel" style="display:none; clear:both;">
-        @foreach (var smiley in await _cache.GetAsync<List<PhpbbSmilies>>(await Model.GetActualCacheKey("Smilies", false)))
-        {
-            <a href="javascript:posting.insert_text('@smiley.Code', true);">
-                <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
-            </a>
+        @{ 
+            var smilies = await _cache.GetAsync<List<PhpbbSmilies>>(await Model.GetActualCacheKey("Smilies", false));
+            if (!(smilies?.Any() ?? false))
+            {
+                await Model.Init();
+            }
+            smilies = await _cache.GetAsync<List<PhpbbSmilies>>(await Model.GetActualCacheKey("Smilies", false));
+
+            foreach (var smiley in smilies ?? new List<PhpbbSmilies>())
+            {
+                <a href="javascript:posting.insert_text('@smiley.Code', true);">
+                    <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
+                </a>
+            }
         }
     </div>
 

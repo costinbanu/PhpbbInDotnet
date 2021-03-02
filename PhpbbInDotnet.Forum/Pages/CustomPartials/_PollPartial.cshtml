@@ -75,7 +75,7 @@
                         </td>
                         <td style="padding-right: unset">
                             <span class="PollResultBar" style="background: linear-gradient(to right, #87ceeb @percentage, #ffffff 0%)">
-                                @Html.Raw(option.PollOptionVotes == 1 ? string.Format(_languageProvider.BasicText[Model.Language, "VOTES_FORMAT"], option.PollOptionVotes, percentage) : string.Format(_languageProvider.BasicText[Model.Language, "VOTE_FORMAT"], option.PollOptionVotes, percentage))
+                                @Html.Raw(option.PollOptionVotes == 1 ? string.Format(_languageProvider.BasicText[Model.Language, "VOTE_FORMAT"], option.PollOptionVotes, percentage) : string.Format(_languageProvider.BasicText[Model.Language, "VOTES_FORMAT"], option.PollOptionVotes, percentage))
                             </span>
                         </td>
                     </tr>

@@ -60,7 +60,7 @@
         </script>
     }
 
-<h3>@Html.Raw(Model.LanguageProvider.BasicText[lang, "CHOOSE_DESTINATION_FORUM"])</h3>
+    <h3>@Html.Raw(Model.LanguageProvider.BasicText[lang, "CHOOSE_DESTINATION_FORUM"])</h3>
     <div>
         @await Html.PartialAsync(
             "_ForumTreePartial",
@@ -77,21 +77,14 @@
         <input type="hidden" name="DestinationForumId" id="DestinationForumId" />
         @if (Model.ShowTopicSelector)
         {
-    <h3>@Html.Raw(Model.LanguageProvider.BasicText[lang, "CHOOSE_DESTINATION_TOPIC"])</h3>
+            <h3>@Html.Raw(Model.LanguageProvider.BasicText[lang, "CHOOSE_DESTINATION_TOPIC"])</h3>
             <select name="DestinationTopicId" id="DestinationTopicId" />
         }
         <input type="hidden" asp-for="TopicId" />
         <input type="hidden" asp-for="PageNum" />
         <input type="hidden" asp-for="TopicAction" />
         <input type="hidden" asp-for="PostAction" />
-        @if (!string.IsNullOrWhiteSpace(Model.SelectedPostIds))
-        {
-            var ids = Model.SelectedPostIds.Split(',', StringSplitOptions.RemoveEmptyEntries);
-            for (var i = 0; i < ids.Length; i++)
-            {
-                <input type="hidden" name="PostIdsForModerator[@i]" value="@ids[i]" />
-            }
-        }
+        <input type="hidden" asp-for="SelectedPostIds" />
         <p></p>
         <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[lang, "SUBMIT", Casing.FirstUpper])" />
     </form>

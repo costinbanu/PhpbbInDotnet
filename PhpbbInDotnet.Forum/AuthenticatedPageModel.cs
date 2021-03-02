@@ -104,14 +104,8 @@ namespace PhpbbInDotnet.Forum
                         {
                             if (DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > TimeSpan.FromMinutes(sessionTrackingTimeoutMinutes))
                             {
-                                await connection.ExecuteAsync("UPDATE phpbb_users SET user_lastvisit = @now WHERE user_id = @userId", new { now = DateTime.UtcNow.ToUnixTimestamp(), _currentUser.UserId });
-                            }
-
-                            var refreshUserKey = $"RefreshUser_{_currentUser.UserId}";
-                            if (Cache.GetOrAdd(refreshUserKey, () => true))
-                            {
                                 await ReloadCurrentUser();
-                                Cache.Add(refreshUserKey, false, DateTimeOffset.UtcNow.AddHours(12));
+                                await connection.ExecuteAsync("UPDATE phpbb_users SET user_lastvisit = @now WHERE user_id = @userId", new { now = DateTime.UtcNow.ToUnixTimestamp(), _currentUser.UserId });
                             }
                         }
                     }
