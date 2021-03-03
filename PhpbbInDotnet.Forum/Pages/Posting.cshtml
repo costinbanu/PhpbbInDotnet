@@ -394,20 +394,11 @@ else if (IsPM)
         </div>
     }
     <div id="emojiPanel" style="display:none; clear:both;">
-        @{ 
-            var smilies = await _cache.GetAsync<List<PhpbbSmilies>>(await Model.GetActualCacheKey("Smilies", false));
-            if (!(smilies?.Any() ?? false))
-            {
-                await Model.Init();
-            }
-            smilies = await _cache.GetAsync<List<PhpbbSmilies>>(await Model.GetActualCacheKey("Smilies", false));
-
-            foreach (var smiley in smilies ?? new List<PhpbbSmilies>())
-            {
-                <a href="javascript:posting.insert_text('@smiley.Code', true);">
-                    <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
-                </a>
-            }
+        @foreach (var smiley in await _cache.GetAsync<List<PhpbbSmilies>>(await Model.GetActualCacheKey("Smilies", false)) ?? new List<PhpbbSmilies>())
+        {
+            <a href="javascript:posting.insert_text('@smiley.Code', true);">
+                <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
+            </a>
         }
     </div>
 

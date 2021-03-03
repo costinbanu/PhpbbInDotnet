@@ -136,7 +136,7 @@ namespace PhpbbInDotnet.Forum.Pages
             return (new List<PhpbbPosts>(), new List<PhpbbAttachments>(), new List<PhpbbUsers>());
         }
 
-        public async Task Init()
+        private async Task Init()
         {
             var connection = Context.Database.GetDbConnection();
             List<KeyValuePair<string, int>> userMap = null;
@@ -147,21 +147,29 @@ namespace PhpbbInDotnet.Forum.Pages
                         new { anon = Constants.ANONYMOUS_USER_ID })
                     ).Select(u => KeyValuePair.Create(u.Username, u.UserId)).ToList();
 
-            await Cache.GetOrAddAsync(
-                await GetActualCacheKey("Smilies", false), 
-                async () => (await connection.QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies GROUP BY smiley_url ORDER BY smiley_order")).AsList(),
-                CACHE_EXPIRATION
-            );
-            await Cache.GetOrAddAsync(
-                await GetActualCacheKey("Users", false), 
-                async () => (await GetUserMap()).Select(map => KeyValuePair.Create(map.Key, $"[url={Config.GetValue<string>("BaseUrl")}/User?UserId={map.Value}]{map.Key}[/url]")).ToList(),
-                CACHE_EXPIRATION
-            );
-            await Cache.GetOrAddAsync(
-                await GetActualCacheKey("UserMap", false),
-                GetUserMap,
-                CACHE_EXPIRATION
-            );
+            async Task<List<PhpbbSmilies>> GetSmilies()
+                => (await connection.QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies GROUP BY smiley_url ORDER BY smiley_order")).AsList();
+
+            async Task<List<KeyValuePair<string, string>>> GetUsers()
+                => (await GetUserMap()).Select(map => KeyValuePair.Create(map.Key, $"[url={Config.GetValue<string>("BaseUrl")}/User?UserId={map.Value}]{map.Key}[/url]")).ToList();
+
+            var smilies = await Cache.GetOrAddAsync(await GetActualCacheKey("Smilies", false), GetSmilies, CACHE_EXPIRATION);
+            if (!(smilies?.Any() ?? false))
+            {
+                Cache.Add(await GetActualCacheKey("Smilies", false), await GetSmilies(), CACHE_EXPIRATION);
+            }
+
+            var users = await Cache.GetOrAddAsync(await GetActualCacheKey("Users", false), GetUsers, CACHE_EXPIRATION);
+            if (!(users?.Any() ?? false))
+            {
+                Cache.Add(await GetActualCacheKey("Users", false), await GetUsers(), CACHE_EXPIRATION);
+            }
+
+            var cachedUserMap = await Cache.GetOrAddAsync(await GetActualCacheKey("UserMap", false), GetUserMap, CACHE_EXPIRATION);
+            if (!(cachedUserMap?.Any() ?? false))
+            {
+                Cache.Add(await GetActualCacheKey("UserMap", false), await GetUserMap(), CACHE_EXPIRATION);
+            }
         }
 
         private async Task<PhpbbPosts> InitEditedPost()
