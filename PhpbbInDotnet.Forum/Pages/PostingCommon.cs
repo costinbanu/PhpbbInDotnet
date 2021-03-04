@@ -136,41 +136,20 @@ namespace PhpbbInDotnet.Forum.Pages
             return (new List<PhpbbPosts>(), new List<PhpbbAttachments>(), new List<PhpbbUsers>());
         }
 
-        private async Task Init()
-        {
-            var connection = Context.Database.GetDbConnection();
-            List<KeyValuePair<string, int>> userMap = null;
+        public async Task<List<PhpbbSmilies>> GetSmilies()
+            => (await Context.Database.GetDbConnection().QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies GROUP BY smiley_url ORDER BY smiley_order")).AsList();
 
-            async Task<List<KeyValuePair<string, int>>> GetUserMap()
-                => userMap ??= (await connection.QueryAsync<PhpbbUsers>(
-                        "SELECT * FROM phpbb_users WHERE user_id <> @anon AND user_type <> 2 ORDER BY username",
-                        new { anon = Constants.ANONYMOUS_USER_ID })
-                    ).Select(u => KeyValuePair.Create(u.Username, u.UserId)).ToList();
+        private List<KeyValuePair<string, int>> _userMap = null;
+        public async Task<List<KeyValuePair<string, int>>> GetUserMap()
+            => _userMap ??= await (
+                from u in Context.PhpbbUsers.AsNoTracking()
+                where u.UserId != Constants.ANONYMOUS_USER_ID && u.UserType != 2
+                orderby u.Username
+                select KeyValuePair.Create(u.Username, u.UserId)
+            ).ToListAsync();
 
-            async Task<List<PhpbbSmilies>> GetSmilies()
-                => (await connection.QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies GROUP BY smiley_url ORDER BY smiley_order")).AsList();
-
-            async Task<List<KeyValuePair<string, string>>> GetUsers()
-                => (await GetUserMap()).Select(map => KeyValuePair.Create(map.Key, $"[url={Config.GetValue<string>("BaseUrl")}/User?UserId={map.Value}]{map.Key}[/url]")).ToList();
-
-            var smilies = await Cache.GetOrAddAsync(await GetActualCacheKey("Smilies", false), GetSmilies, CACHE_EXPIRATION);
-            if (!(smilies?.Any() ?? false))
-            {
-                Cache.Add(await GetActualCacheKey("Smilies", false), await GetSmilies(), CACHE_EXPIRATION);
-            }
-
-            var users = await Cache.GetOrAddAsync(await GetActualCacheKey("Users", false), GetUsers, CACHE_EXPIRATION);
-            if (!(users?.Any() ?? false))
-            {
-                Cache.Add(await GetActualCacheKey("Users", false), await GetUsers(), CACHE_EXPIRATION);
-            }
-
-            var cachedUserMap = await Cache.GetOrAddAsync(await GetActualCacheKey("UserMap", false), GetUserMap, CACHE_EXPIRATION);
-            if (!(cachedUserMap?.Any() ?? false))
-            {
-                Cache.Add(await GetActualCacheKey("UserMap", false), await GetUserMap(), CACHE_EXPIRATION);
-            }
-        }
+        public async Task<IEnumerable<KeyValuePair<string, string>>> GetUsers()
+            => (await GetUserMap()).Select(map => KeyValuePair.Create(map.Key, $"[url={Config.GetValue<string>("BaseUrl")}/User?UserId={map.Value}]{map.Key}[/url]")).ToList();
 
         private async Task<PhpbbPosts> InitEditedPost()
         {

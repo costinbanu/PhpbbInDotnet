@@ -394,7 +394,7 @@ else if (IsPM)
         </div>
     }
     <div id="emojiPanel" style="display:none; clear:both;">
-        @foreach (var smiley in await _cache.GetAsync<List<PhpbbSmilies>>(await Model.GetActualCacheKey("Smilies", false)) ?? new List<PhpbbSmilies>())
+        @foreach (var smiley in await Model.GetSmilies())
         {
             <a href="javascript:posting.insert_text('@smiley.Code', true);">
                 <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
@@ -464,7 +464,7 @@ else if (IsPM)
 
 <script>
     var tribute = new Tribute({
-        values: @Html.Raw(_writingService.ToCamelCaseJson(await _cache.GetAsync<List<KeyValuePair<string, string>>>(await Model.GetActualCacheKey("Users", false)))),
+        values: @Html.Raw(_writingService.ToCamelCaseJson(await Model.GetUsers())),
         trigger: "@@",
         allowSpaces: true
     });
@@ -481,7 +481,7 @@ else if (IsPM)
 {
     <script>
         var secondTribute = new Tribute({
-            values: @Html.Raw(_writingService.ToCamelCaseJson(await _cache.GetAsync<List<KeyValuePair<string, int>>>(await Model.GetActualCacheKey("UserMap", false)))),
+            values: @Html.Raw(_writingService.ToCamelCaseJson(await Model.GetUserMap())),
             selectTemplate: function(item) {
                 return item.original.key;
             },

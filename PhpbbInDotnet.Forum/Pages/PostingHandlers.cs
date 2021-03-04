@@ -26,7 +26,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 CurrentTopic = curTopic;
                 ForumId = curForum.ForumId;
                 Action = PostingActions.NewForumPost;
-                await Init();
                 var conn = Context.Database.GetDbConnection();
                 var draft = conn.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = TopicId.Value });
                 if (draft != null)
@@ -56,7 +55,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 CurrentTopic = curTopic;
                 ForumId = curForum.ForumId;
                 Action = PostingActions.NewForumPost;
-                await Init();
 
                 var title = HttpUtility.HtmlDecode(curPost.PostSubject);
                 PostText = $"[quote=\"{curAuthor}\"]\n{_writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid)}\n[/quote]\n";
@@ -71,7 +69,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 CurrentForum = curForum;
                 CurrentTopic = null;
                 Action = PostingActions.NewTopic;
-                await Init();
+                //await Init();
                 var conn = Context.Database.GetDbConnection();
                 var draft = conn.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = 0 }); 
                 if (draft != null)
@@ -97,7 +95,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 CurrentTopic = curTopic;
                 ForumId = curForum.ForumId;
                 Action = PostingActions.EditForumPost;
-                await Init();
 
                 var conn = Context.Database.GetDbConnection();
                 
@@ -185,7 +182,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 CurrentForum = null;
                 CurrentTopic = null;
                 Action = PostingActions.NewPrivateMessage;
-                await Init();
                 return Page();
             });
 
@@ -202,7 +198,6 @@ namespace PhpbbInDotnet.Forum.Pages
                     ReceiverName = (await conn.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @receiverId", new { ReceiverId }))?.Username;
                 }
                 Action = PostingActions.EditPrivateMessage;
-                await Init();
                 return Page();
             });
 
@@ -396,7 +391,6 @@ namespace PhpbbInDotnet.Forum.Pages
                     CurrentTopic = curTopic;
                     ForumId = curForum.ForumId;
                     Action = PostingActions.EditForumPost;
-                    await Init();
                     return Page();
                 }
                 return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
@@ -528,7 +522,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 CurrentTopic = curTopic;
                 ForumId = curForum.ForumId;
                 Action = PostingActions.EditForumPost;
-                await Init();
 
                 return Page();
             })));
