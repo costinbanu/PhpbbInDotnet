@@ -299,178 +299,182 @@ namespace PhpbbInDotnet.Services
         private (List<BBTag> BBTags, Dictionary<string, BBTagSummary> TagMap) GenerateCompleteTagListAndMap(IEnumerable<PhpbbBbcodes> dbCodes)
         {
             var lang = GetLanguage().GetAwaiter().GetResult();
-            var tagsCache = _cache.GetOrAdd(
-                "BBCODE_TAGS", 
-                () => new Dictionary<string, (BBTag Tag, BBTagSummary Summary)>
+            return _cache.GetOrAdd(
+                $"TAGS_MAP_{lang}",
+                () =>
                 {
-                    ["b"] = (
-                        Tag: new BBTag("b", "<b>", "</b>", 1),
-                        Summary: new BBTagSummary
-                        {
-                            OpenTag = "[b]",
-                            CloseTag = "[/b]",
-                            ShowOnPage = true,
-                            ShowWhenCollapsed = true
-                        }
-                    ),
 
-                    ["i"] = (
-                        Tag: new BBTag("i", "<span style=\"font-style:italic;\">", "</span>", 2),
-                        Summary: new BBTagSummary
-                        {
-                            OpenTag = "[i]",
-                            CloseTag = "[/i]",
-                            ShowOnPage = true,
-                            ShowWhenCollapsed = true
-                        }
-                    ),
-
-                    ["u"] = (
-                        Tag: new BBTag("u", "<span style=\"text-decoration:underline;\">", "</span>", 7),
-                        Summary: new BBTagSummary
-                        {
-                            OpenTag = "[u]",
-                            CloseTag = "[/u]",
-                            ShowOnPage = true,
-                            ShowWhenCollapsed = true
-                        }
-                    ),
-
-                    ["color"] = (
-                        Tag: new BBTag("color", "<span style=\"color:${code}\">", "</span>", 6, "", true,
-                            new BBAttribute("code", "")),
-                        Summary: new BBTagSummary
-                        {
-                            OpenTag = "[color]",
-                            CloseTag = "[/color]",
-                            ShowOnPage = true,
-                            ShowWhenCollapsed = false
-                        }
-                    ),
-
-                    ["size"] = (
-                        Tag: new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>", 5, "", true,
-                            new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
-                        Summary: new BBTagSummary
-                        {
-                            OpenTag = "[size]",
-                            CloseTag = "[/size]",
-                            ShowOnPage = true,
-                            ShowWhenCollapsed = true
-                        }
-                    ),
-
-                    ["quote"] = (
-                        Tag: new BBTag("quote", "<blockquote class=\"PostQuote\">${name}", "</blockquote>", 0, "", true,
-                            new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : string.Format(LanguageProvider.BasicText[lang, "WROTE_FORMAT"], HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')), HtmlEncodingMode.UnsafeDontEncode))
-                        {
-                            GreedyAttributeProcessing = true
-                        },
-                        Summary: new BBTagSummary
-                        {
-                            OpenTag = "[quote]",
-                            CloseTag = "[/quote]",
-                            ShowOnPage = true,
-                            ShowWhenCollapsed = true
-                        }
-                    ),
-
-                    ["img"] = (
-                        Tag: new BBTag("img", "<br/><img src=\"${content}\" onload=\"resizeImage(this)\" style=\"width: 100px; height: 100px\" /><br/>", string.Empty, false, BBTagClosingStyle.RequiresClosingTag, content => UrlTransformer(content), false, 4, allowUrlProcessingAsText: false),
-                        Summary: new BBTagSummary
-                        {
-                            OpenTag = "[img]",
-                            CloseTag = "[/img]",
-                            ShowOnPage = true,
-                            ShowWhenCollapsed = true
-                        }
-                    ),
-
-                    ["url"] = (
-                        Tag: new BBTag("url", "<a href=\"${href}\" target=\"_blank\">", "</a>", 3, "", false,
-                            new BBAttribute("href", "", context => UrlTransformer(string.IsNullOrWhiteSpace(context?.AttributeValue) ? context.TagContent : context.AttributeValue), HtmlEncodingMode.UnsafeDontEncode)),
-                        Summary: new BBTagSummary
-                        {
-                            OpenTag = "[url]",
-                            CloseTag = "[/url]",
-                            ShowOnPage = true,
-                            ShowWhenCollapsed = true
-                        }
-                    ),
-
-                    ["code"] = (
-                        Tag: new BBTag("code", "<span class=\"CodeBlock\">", "</span>", 8, allowUrlProcessingAsText: false),
-                        Summary: new BBTagSummary
-                        {
-                            OpenTag = "[code]",
-                            CloseTag = "[/code]",
-                            ShowOnPage = true,
-                            ShowWhenCollapsed = false
-                        }
-                    ),
-
-                    ["list"] = (
-                        Tag: new BBTag("list", "<${attr}>", "</${attr}>", true, true, 9, "", true,
-                            new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul style='list-style-type: circle'" : $"ol type=\"{a.AttributeValue}\"")),
-                        Summary: new BBTagSummary
-                        {
-                            OpenTag = "[list]",
-                            CloseTag = "[/list]",
-                            ShowOnPage = true,
-                            ShowWhenCollapsed = false
-                        }
-                    ),
-
-                    ["*"] = (
-                        Tag: new BBTag("*", "<li>", "</li>", true, BBTagClosingStyle.AutoCloseElement, x => x, true, 20),
-                        Summary: new BBTagSummary
-                        {
-                            OpenTag = "[*]",
-                            CloseTag = "",
-                            ShowOnPage = true,
-                            ShowWhenCollapsed = false
-                        }
-                    ),
-
-                    ["attachment"] = (
-                        Tag: new BBTag("attachment", "#{AttachmentFileName=${content}/AttachmentIndex=${num}}#", "", false, BBTagClosingStyle.AutoCloseElement, x => Utils.HtmlCommentRegex.Replace(HttpUtility.HtmlDecode(x), string.Empty), 12, "", true,
-                            new BBAttribute("num", "")),
-                        Summary: new BBTagSummary
-                        {
-                            ShowOnPage = false
-                        }
-                    ),
-                }, 
-                TimeSpan.FromHours(4)
-            );
-
-            var tags = new List<BBTag>(tagsCache.Count);
-            var tagMap = new Dictionary<string, BBTagSummary>(tagsCache.Count);
-            foreach (var tag in tagsCache)
-            {
-                tags.Add(tag.Value.Tag);
-                if (tag.Value.Summary.ShowOnPage)
-                {
-                    tagMap.TryAdd(tag.Key, tag.Value.Summary);
-                }
-            }
-            foreach (var code in dbCodes)
-            {
-                var attributes = _attrRegex.Matches(code.BbcodeTpl).Where(m => m.Success && !m.Value.Equals("${content}", StringComparison.InvariantCultureIgnoreCase)).Select(m => new BBAttribute(m.Value.Trim("${}".ToCharArray()), "", ctx => ctx.AttributeValue)).ToArray();
-                tags.Add(new BBTag(code.BbcodeTag, code.BbcodeTpl, string.Empty, false, false, code.BbcodeId, "", true, attributes));
-
-                if (code.DisplayOnPosting.ToBool())
-                {
-                    tagMap.TryAdd(code.BbcodeTag, new BBTagSummary
+                    var tagsCache = new Dictionary<string, (BBTag Tag, BBTagSummary Summary)>
                     {
-                        OpenTag = $"[{code.BbcodeTag}]",
-                        CloseTag = $"[/{code.BbcodeTag}]",
-                        ShowOnPage = code.DisplayOnPosting.ToBool(),
-                        ShowWhenCollapsed = false
-                    });
-                }
-            }
-            return (tags, tagMap);
+                        ["b"] = (
+                            Tag: new BBTag("b", "<b>", "</b>", 1),
+                            Summary: new BBTagSummary
+                            {
+                                OpenTag = "[b]",
+                                CloseTag = "[/b]",
+                                ShowOnPage = true,
+                                ShowWhenCollapsed = true
+                            }
+                        ),
+
+                        ["i"] = (
+                            Tag: new BBTag("i", "<span style=\"font-style:italic;\">", "</span>", 2),
+                            Summary: new BBTagSummary
+                            {
+                                OpenTag = "[i]",
+                                CloseTag = "[/i]",
+                                ShowOnPage = true,
+                                ShowWhenCollapsed = true
+                            }
+                        ),
+
+                        ["u"] = (
+                            Tag: new BBTag("u", "<span style=\"text-decoration:underline;\">", "</span>", 7),
+                            Summary: new BBTagSummary
+                            {
+                                OpenTag = "[u]",
+                                CloseTag = "[/u]",
+                                ShowOnPage = true,
+                                ShowWhenCollapsed = true
+                            }
+                        ),
+
+                        ["color"] = (
+                            Tag: new BBTag("color", "<span style=\"color:${code}\">", "</span>", 6, "", true,
+                                new BBAttribute("code", "")),
+                            Summary: new BBTagSummary
+                            {
+                                OpenTag = "[color]",
+                                CloseTag = "[/color]",
+                                ShowOnPage = true,
+                                ShowWhenCollapsed = false
+                            }
+                        ),
+
+                        ["size"] = (
+                            Tag: new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>", 5, "", true,
+                                new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
+                            Summary: new BBTagSummary
+                            {
+                                OpenTag = "[size]",
+                                CloseTag = "[/size]",
+                                ShowOnPage = true,
+                                ShowWhenCollapsed = true
+                            }
+                        ),
+
+                        ["quote"] = (
+                            Tag: new BBTag("quote", "<blockquote class=\"PostQuote\">${name}", "</blockquote>", 0, "", true,
+                                new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : string.Format(LanguageProvider.BasicText[lang, "WROTE_FORMAT"], HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')), HtmlEncodingMode.UnsafeDontEncode))
+                            {
+                                GreedyAttributeProcessing = true
+                            },
+                            Summary: new BBTagSummary
+                            {
+                                OpenTag = "[quote]",
+                                CloseTag = "[/quote]",
+                                ShowOnPage = true,
+                                ShowWhenCollapsed = true
+                            }
+                        ),
+
+                        ["img"] = (
+                            Tag: new BBTag("img", "<br/><img src=\"${content}\" onload=\"resizeImage(this)\" style=\"width: 100px; height: 100px\" /><br/>", string.Empty, false, BBTagClosingStyle.RequiresClosingTag, content => UrlTransformer(content), false, 4, allowUrlProcessingAsText: false),
+                            Summary: new BBTagSummary
+                            {
+                                OpenTag = "[img]",
+                                CloseTag = "[/img]",
+                                ShowOnPage = true,
+                                ShowWhenCollapsed = true
+                            }
+                        ),
+
+                        ["url"] = (
+                            Tag: new BBTag("url", "<a href=\"${href}\" target=\"_blank\">", "</a>", 3, "", false,
+                                new BBAttribute("href", "", context => UrlTransformer(string.IsNullOrWhiteSpace(context?.AttributeValue) ? context.TagContent : context.AttributeValue), HtmlEncodingMode.UnsafeDontEncode)),
+                            Summary: new BBTagSummary
+                            {
+                                OpenTag = "[url]",
+                                CloseTag = "[/url]",
+                                ShowOnPage = true,
+                                ShowWhenCollapsed = true
+                            }
+                        ),
+
+                        ["code"] = (
+                            Tag: new BBTag("code", "<span class=\"CodeBlock\">", "</span>", 8, allowUrlProcessingAsText: false),
+                            Summary: new BBTagSummary
+                            {
+                                OpenTag = "[code]",
+                                CloseTag = "[/code]",
+                                ShowOnPage = true,
+                                ShowWhenCollapsed = false
+                            }
+                        ),
+
+                        ["list"] = (
+                            Tag: new BBTag("list", "<${attr}>", "</${attr}>", true, true, 9, "", true,
+                                new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul style='list-style-type: circle'" : $"ol type=\"{a.AttributeValue}\"")),
+                            Summary: new BBTagSummary
+                            {
+                                OpenTag = "[list]",
+                                CloseTag = "[/list]",
+                                ShowOnPage = true,
+                                ShowWhenCollapsed = false
+                            }
+                        ),
+
+                        ["*"] = (
+                            Tag: new BBTag("*", "<li>", "</li>", true, BBTagClosingStyle.AutoCloseElement, x => x, true, 20),
+                            Summary: new BBTagSummary
+                            {
+                                OpenTag = "[*]",
+                                CloseTag = "",
+                                ShowOnPage = true,
+                                ShowWhenCollapsed = false
+                            }
+                        ),
+
+                        ["attachment"] = (
+                            Tag: new BBTag("attachment", "#{AttachmentFileName=${content}/AttachmentIndex=${num}}#", "", false, BBTagClosingStyle.AutoCloseElement, x => Utils.HtmlCommentRegex.Replace(HttpUtility.HtmlDecode(x), string.Empty), 12, "", true,
+                                new BBAttribute("num", "")),
+                            Summary: new BBTagSummary
+                            {
+                                ShowOnPage = false
+                            }
+                        ),
+                    };
+
+                    var tags = new List<BBTag>(tagsCache.Count);
+                    var tagMap = new Dictionary<string, BBTagSummary>(tagsCache.Count);
+                    foreach (var tag in tagsCache)
+                    {
+                        tags.Add(tag.Value.Tag);
+                        if (tag.Value.Summary.ShowOnPage)
+                        {
+                            tagMap.TryAdd(tag.Key, tag.Value.Summary);
+                        }
+                    }
+                    foreach (var code in dbCodes)
+                    {
+                        var attributes = _attrRegex.Matches(code.BbcodeTpl).Where(m => m.Success && !m.Value.Equals("${content}", StringComparison.InvariantCultureIgnoreCase)).Select(m => new BBAttribute(m.Value.Trim("${}".ToCharArray()), "", ctx => ctx.AttributeValue)).ToArray();
+                        tags.Add(new BBTag(code.BbcodeTag, code.BbcodeTpl, string.Empty, false, false, code.BbcodeId, "", true, attributes));
+
+                        if (code.DisplayOnPosting.ToBool())
+                        {
+                            tagMap.TryAdd(code.BbcodeTag, new BBTagSummary
+                            {
+                                OpenTag = $"[{code.BbcodeTag}]",
+                                CloseTag = $"[/{code.BbcodeTag}]",
+                                ShowOnPage = code.DisplayOnPosting.ToBool(),
+                                ShowWhenCollapsed = false
+                            });
+                        }
+                    }
+                    return (tags, tagMap);
+                },
+                DateTimeOffset.UtcNow.AddHours(4)
+            );
         }
 
         private string UrlTransformer(string url)

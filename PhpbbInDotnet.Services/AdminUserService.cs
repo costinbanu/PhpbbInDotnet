@@ -359,6 +359,11 @@ namespace PhpbbInDotnet.Services
                                 && (string.IsNullOrWhiteSpace(email) || u.UserEmailHash == Utils.CalculateCrc32Hash(email))
                                 && (userId == 0 || u.UserId == userId)
                                 && u.UserRegdate >= rf && u.UserRegdate <= rt
+                                && u.UserId != Constants.ANONYMOUS_USER_ID
+                            join ug in _context.PhpbbUserGroup.AsNoTracking()
+                            on u.UserId equals ug.UserId into joined
+                            from j in joined
+                            where j.GroupId != Constants.BOTS_GROUP_ID && j.GroupId != Constants.GUESTS_GROUP_ID
                             select u;
 
                 if (!(searchParameters?.NeverActive ?? false))
@@ -376,7 +381,11 @@ namespace PhpbbInDotnet.Services
                             select q;
                 }
 
-                return ("OK", true, await query.ToListAsync());
+                query = from q in query
+                        orderby q.UserRegdate ascending
+                        select q;
+
+                return (null, true, await query.ToListAsync());
             }
             catch (DateInputException die)
             {

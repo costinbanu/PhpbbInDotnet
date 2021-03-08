@@ -139,7 +139,7 @@
   "POST_COUNT": "Mesaje postate",
 
   //pagination
-  "NEXT_PAGE": "pagina<br />următoate",
+  "NEXT_PAGE": "pagina<br />următoare",
   "PREVIOUS_PAGE": "pagina<br />precedentă",
   "POSTS_PER_PAGE": "Mesaje afișate pe pagină",
   "PAGINATION_OPTIONS": "Opțiuni paginare",

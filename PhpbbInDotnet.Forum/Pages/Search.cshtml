@@ -26,6 +26,7 @@
     <link rel="stylesheet" href="~/css/pagination.css" />
     <link rel="stylesheet" href="~/css/posting.css" />
     <script type="text/javascript" src="~/js/viewTopic.js"></script>
+    <script type="text/javascript" src="~/lib/he.js"></script>
 </environment>
 @if (!Model.IsAuthorSearch)
 {
@@ -59,7 +60,7 @@
             topicDisplay.add(option);
             topics.forEach(t => {
                 var option = document.createElement('option');
-                option.text = unescape(t.topicTitle);
+                option.text = he.decode(t.topicTitle);
                 option.value = t.topicId;
                 topicDisplay.add(option);
             });

@@ -15,7 +15,7 @@
 else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
 {
     <div class="RuleBox">
-        <a href="@Model.ForumRulesLink">
+        <a href="@Html.Raw(Model.ForumRulesLink)" target="_blank">
             &#x26A0;&nbsp;
             <b>@Html.Raw(_languageProvider.BasicText[Model.Language, "FORUM_RULES", Utilities.Casing.Title])</b>
         </a>

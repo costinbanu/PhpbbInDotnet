@@ -80,6 +80,21 @@
         </div>
         <div class="FlexCenter FlexSpacedMini">
             <div class="FlexCaption">
+                @Html.Raw(_languageProvider.Admin[Model.Language, "LAST_ACTIVE"])
+            </div>
+            <div class="FlexRight PostInputWidth">
+                @if (user.UserLastvisit != 0)
+                {
+                    <script>writeDate('@user.UserLastvisit.ToUtcTime().ToString("o")', '@Model.DateFormat')</script>
+                }
+                else
+                {
+                    <span>N/A</span>
+                }
+            </div>
+        </div>
+        <div class="FlexCenter FlexSpacedMini">
+            <div class="FlexCaption">
                 @Html.Raw(_languageProvider.Admin[Model.Language, "REMINDERS"])
             </div>
             <div class="FlexRight PostInputWidth">
