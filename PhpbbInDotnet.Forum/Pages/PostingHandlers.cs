@@ -358,7 +358,6 @@ namespace PhpbbInDotnet.Forum.Pages
                         PollStart = PreviewablePost.PostCreationTime ?? DateTime.UtcNow
                     };
                 }
-                await _renderingService.ProcessPost(PreviewablePost, PageContext, HttpContext, true);
                 ShowAttach = Attachments?.Any() ?? false;
                 CurrentForum = curForum;
                 return Page();

@@ -135,25 +135,25 @@ else if (IsPM)
     {
         <hr class="BoxSeparator" />
         @await Html.PartialAsync("_PollPartial", new _PollPartialModel
-   {
-       CurrentUser = CurrentUser,
-       Poll = Model.PreviewablePoll,
-       IsPreview = true,
-       Language = Lang
-   }, ViewData)
+        {
+            CurrentUser = CurrentUser,
+            Poll = Model.PreviewablePoll,
+            IsPreview = true,
+            Language = Lang
+        }, ViewData)
         <p></p>
     }
 
     @await Html.PartialAsync("_PostPartial", new _PostPartialModel
-{
-    CurrentUser = CurrentUser,
-    Post = Model.PreviewablePost,
-    ForumId = Model.ForumId,
-    TopicId = Model.TopicId ?? 0,
-    Language = Lang,
-    ParentHttpContext = HttpContext,
-    ParentPageContext = PageContext
-}, ViewData)
+    {
+        CurrentUser = CurrentUser,
+        Post = Model.PreviewablePost,
+        ForumId = Model.ForumId,
+        TopicId = Model.TopicId ?? 0,
+        Language = Lang,
+        ParentHttpContext = HttpContext,
+        ParentPageContext = PageContext
+    }, ViewData)
 
     <hr class="BoxSeparator" />
     <p></p>

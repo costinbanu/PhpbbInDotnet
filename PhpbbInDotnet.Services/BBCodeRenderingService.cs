@@ -69,31 +69,25 @@ namespace PhpbbInDotnet.Services
                               let parts = m.Value.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries)
                               let fn = parts[0].Trim("#{".ToCharArray()).Replace("AttachmentFileName=", string.Empty)
                               let i = int.Parse(parts[1].Trim("}#".ToCharArray()).Replace("AttachmentIndex=", string.Empty))
-                              select (FileName: fn, AttachIndex: i, Original: m);
+                              select (FileName: fn, AttachIndex: i);
 
-                foreach (var (FileName, AttachIndex, Original) in matches)
+                foreach (var (FileName, AttachIndex) in matches)
                 {
                     AttachmentDto model = null;
-                    int index = AttachIndex;
-                    var candidates = post.Attachments.Where(a => a.DisplayName == FileName).ToList();
+                    var candidates = post.Attachments.Where(a => BbCodeToHtml(a.DisplayName, string.Empty) == FileName).ToList();
                     if (candidates.Count == 1)
                     {
                         model = candidates.First();
                     }
                     else if (candidates.Count > 1)
                     {
-                        model = candidates.FirstOrDefault(a => a.DisplayName == FileName && candidates.IndexOf(a) == index);
-                        if (model == null)
-                        {
-                            index = candidates.Count - AttachIndex - 1;
-                            model = candidates.FirstOrDefault(a => candidates.IndexOf(a) == index);
-                        }
+                        model = candidates.FirstOrDefault(a => post.Attachments[AttachIndex].Id == a.Id);
                     }
 
                     if (model != null)
                     {
                         post.PostText = post.PostText.Replace(
-                            $"#{{AttachmentFileName={model.DisplayName}/AttachmentIndex={index}}}#",
+                            $"#{{AttachmentFileName={FileName}/AttachmentIndex={AttachIndex}}}#",
                             await Utils.RenderRazorViewToString("_AttachmentPartial", model, pageContext, httpContext)
                         );
                         post.Attachments.Remove(model);
