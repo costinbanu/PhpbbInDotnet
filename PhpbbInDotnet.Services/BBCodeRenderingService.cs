@@ -81,7 +81,7 @@ namespace PhpbbInDotnet.Services
                     }
                     else if (candidates.Count > 1)
                     {
-                        model = candidates.FirstOrDefault(a => post.Attachments[AttachIndex].Id == a.Id);
+                        model = candidates.FirstOrDefault(a => post.Attachments.ElementAtOrDefault(AttachIndex)?.Id == a.Id);
                     }
 
                     if (model != null)
