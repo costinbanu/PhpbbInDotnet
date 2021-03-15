@@ -195,9 +195,12 @@ else
         {
             if (Model.Mode != ViewForumMode.Drafts)
             {
-                var pageSize = CurrentUser.TopicPostsPerPage.ContainsKey(topic.TopicId ?? 0) ? CurrentUser.TopicPostsPerPage[topic.TopicId ?? 0] : Constants.DEFAULT_PAGE_SIZE;
                 topic.Unread = await Model.IsTopicUnread(topic.ForumId ?? 0, topic.TopicId ?? 0);
-                topic.Pagination = new Objects.PaginationDto($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", topic.PostCount ?? 0, pageSize, 0, "PageNum");
+                if (Model.Mode != ViewForumMode.NewPosts)
+                {
+                    var pageSize = CurrentUser.TopicPostsPerPage.ContainsKey(topic.TopicId ?? 0) ? CurrentUser.TopicPostsPerPage[topic.TopicId ?? 0] : Constants.DEFAULT_PAGE_SIZE;
+                    topic.Pagination = new Objects.PaginationDto($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", topic.PostCount ?? 0, pageSize, 0, "PageNum");
+                }
             }
 
             if (!isFirstInGroup)

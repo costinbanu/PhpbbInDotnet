@@ -11,8 +11,6 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
 
         public AuthenticatedUser CurrentUser { get; set; }
 
-        public PhpbbReports Report { get; set; }
-
         public int ForumId { get; set; }
 
         public int TopicId { get; set; }

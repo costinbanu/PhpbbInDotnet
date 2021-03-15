@@ -1,10 +1,7 @@
 ﻿@model _PostPartialModel
 
 @using System.Web
-@using Dapper
 @using Utilities
-@using Database.Entities
-@using Microsoft.EntityFrameworkCore
 
 @inject Services.UserService _userService
 @inject CommonUtils _utils
@@ -14,46 +11,30 @@
 @inject Languages.LanguageProvider _languageProvider
 
 @{
-    var IsAnonymous = Model.CurrentUser.UserId == Constants.ANONYMOUS_USER_ID;
-    var UserDateFormat = Model.CurrentUser?.UserDateFormat ?? _languageProvider.GetDefaultDateFormat(Model.Language);
-    var EditTime = Model.CurrentUser.PostEditTime;
-    var Connection = _context.Database.GetDbConnection();
-}
+    var userDateFormat = Model.CurrentUser?.UserDateFormat ?? _languageProvider.GetDefaultDateFormat(Model.Language);
+    var rowClass = Model.Post.Report != null && (Model.IsCurrentUserMod || Model.Post.Report.ReporterId == Model.CurrentUser.UserId) ? "ReportedPost" : string.Empty;
+    var titleClass = Model.Post.Unread ? "UnreadTitle" : "";
+    var color = string.IsNullOrWhiteSpace(Model.Post.AuthorColor) || Model.Post.AuthorColor == "000000" ? "auto" : $"#{Model.Post.AuthorColor}";
 
-@if (Model.CurrentUser.Foes?.Contains(Model.Post.AuthorId ?? 0) ?? false)
-{
-    Model.HasCurrentUserPM = false;
-    Model.Post.AuthorId = 1;
-    Model.Post.AuthorName = $"[{_languageProvider.BasicText[Model.Language, "HIDDEN", Casing.FirstUpper]}]";
-    Model.Post.AuthorColor = null;
-    Model.Post.AuthorHasAvatar = false;
-    Model.Post.Attachments?.Clear();
-    Model.Post.BbcodeUid = string.Empty;
-    Model.Post.PostSubject = $"[{_languageProvider.BasicText[Model.Language, "HIDDEN", Casing.FirstUpper]}]";
-    Model.Post.PostText = _languageProvider.BasicText[Model.Language, "CONTENT_HIDDEN_WARNING_BBCODE", Casing.FirstUpper];
-}
-
-@if ((Model.Report?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
-{
-    var user = await Connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { Model.Report.UserId });
-    if ((user?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
+    @if (Model.CurrentUser.Foes?.Contains(Model.Post.AuthorId ?? 0) ?? false)
     {
-        Model.Post.ReporterUsername = HttpUtility.HtmlDecode(user.Username);
+        Model.HasCurrentUserPM = false;
+        Model.Post.AuthorId = 1;
+        Model.Post.AuthorName = $"[{_languageProvider.BasicText[Model.Language, "HIDDEN", Casing.FirstUpper]}]";
+        Model.Post.AuthorColor = null;
+        Model.Post.AuthorHasAvatar = false;
+        Model.Post.Attachments?.Clear();
+        Model.Post.BbcodeUid = string.Empty;
+        Model.Post.PostSubject = $"[{_languageProvider.BasicText[Model.Language, "HIDDEN", Casing.FirstUpper]}]";
+        Model.Post.PostText = _languageProvider.BasicText[Model.Language, "CONTENT_HIDDEN_WARNING_BBCODE", Casing.FirstUpper];
     }
-}
 
-@{
     await _renderingService.ProcessPost(Model.Post, Model.ParentPageContext, Model.ParentHttpContext, true, Model.ToHighlight);
-
-    var rowClass = Model.Post.ReportId.HasValue && (Model.IsCurrentUserMod || Model.Post.ReporterId == Model.CurrentUser.UserId) ? "ReportedPost" : string.Empty;
 
     @if (!Model.IsPostFirstInPage)
     {
         <hr class="BoxSeparator" style="margin-top: 0px" />
     }
-
-    var titleClass = Model.Post.Unread ? "UnreadTitle" : "";
-    var color = string.IsNullOrWhiteSpace(Model.Post.AuthorColor) || Model.Post.AuthorColor == "000000" ? "auto" : $"#{Model.Post.AuthorColor}";
 }
 <div class="RowMargin @rowClass" style="max-width:100%; overflow-wrap: break-word">
     <div class="FlexRow" style="max-width:100%; overflow-wrap: break-word; padding-bottom: 0px">
@@ -64,7 +45,7 @@
             AuthorColor = Model.Post.AuthorColor,
             CreationTime = Model.Post.PostCreationTime,
             AssetId = Model.Post.PostId.Value,
-            DateFormat = UserDateFormat,
+            DateFormat = userDateFormat,
             ShowAvatar = Model.Post.AuthorHasAvatar,
             AuthorRank = Model.Post.AuthorRank,
             Left = true,
@@ -94,10 +75,9 @@
                 }
             </span>
             <div style="max-width:100%; overflow-wrap: break-word">
-                @if (Model.Post.ReportId.HasValue && (Model.IsCurrentUserMod || Model.Post.ReporterId == Model.CurrentUser.UserId))
+                @if (Model.Post.Report != null && (Model.IsCurrentUserMod || Model.Post.Report.ReporterId == Model.CurrentUser.UserId))
                 {
-                    var reason = await Connection.QueryFirstOrDefaultAsync<PhpbbReportsReasons>("SELECT * FROM phpbb_reports_reasons WHERE reason_id = @reportReasonId", new { Model.Post.ReportReasonId });
-                    <a href="javascript:vt.showReportViewer(@Model.Post.PostId, @Model.Post.ReportId, '@reason.ReasonTitle', '@reason.ReasonDescription', '@_renderingService.BbCodeToHtml(Model.Post.ReportDetails, string.Empty)', '@Model.Post.ReporterUsername')" style="font-weight:bold; font-size:1.2em">
+                    <a href="javascript:vt.showReportViewer(@Model.Post.PostId, @Model.Post.Report.Id, '@Html.Raw(Model.Post.Report.ReasonTitle)', '@Model.Post.Report.ReasonDescription', '@Html.Raw(_renderingService.BbCodeToHtml(Model.Post.Report.Details, string.Empty))', '@Html.Raw(Model.Post.Report.ReporterUsername)')" style="font-weight:bold; font-size:1.2em">
                         @Html.Raw(_languageProvider.BasicText[Model.Language, "SHOW_REPORT", Casing.FirstUpper])
                     </a>
                     <br />
@@ -118,7 +98,7 @@
                     {
                         <div class="Caption ThemeColor">
                             @Html.Raw(_languageProvider.BasicText[Model.Language, "LAST_EDITED_BY"]) @Model.Post.LastEditUser
-                            <script>writeDate("@Model.Post.LastEditTime.ToUtcTime().ToString("o")", "@UserDateFormat");</script>.
+                            <script>writeDate("@Model.Post.LastEditTime.ToUtcTime().ToString("o")", "@userDateFormat");</script>.
                             @if (!string.IsNullOrWhiteSpace(Model.Post.LastEditReason))
                             {
                                 <span>@Html.Raw(_languageProvider.BasicText[Model.Language, "REASON", Casing.FirstUpper]): @HttpUtility.HtmlDecode(Model.Post.LastEditReason).</span>
@@ -128,7 +108,7 @@
                         <p></p>
                     }
                     <div class="PostActions">
-                        @if ((!Model.IsTopicLocked || Model.IsCurrentUserMod) && !IsAnonymous && (!Model.IsPostLastInPage || !Model.IsLastPage))
+                        @if ((!Model.IsTopicLocked || Model.IsCurrentUserMod) && !Model.CurrentUser.IsAnonymous && (!Model.IsPostLastInPage || !Model.IsLastPage))
                         {
                             <span>
                                 <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@Model.Post.PostId">
@@ -143,7 +123,7 @@
                                 </a>
                             </span>
                         }
-                        else if (!IsAnonymous && (!Model.IsPostLastInPage || !Model.IsLastPage))
+                        else if (!Model.CurrentUser.IsAnonymous && (!Model.IsPostLastInPage || !Model.IsLastPage))
                         {
                             <span>
                                 <a href="javascript:;" title="@Html.Raw(_languageProvider.BasicText[Model.Language, "CLOSED_TOPIC_CAPTION"])">
@@ -152,7 +132,7 @@
                             </span>
                         }
 
-                        @if (!Model.Post.ReportId.HasValue && !IsAnonymous)
+                        @if (Model.Post.Report == null && !Model.CurrentUser.IsAnonymous)
                         {
                             <span>
                                 <a href="javascript:vt.showReportForm(@Model.Post.PostId);">
@@ -163,7 +143,7 @@
                         @if (Model.IsCurrentUserMod)
                         {
                             <span>
-                                <a href="javascript:vt.showMessageDetails('@Model.Post.IP', '@Model.Post.LastEditTime.ToUtcTime().ToString("o")', '@UserDateFormat', @Model.Post.EditCount, '@Model.Post.LastEditUser');">
+                                <a href="javascript:vt.showMessageDetails('@Model.Post.IP', '@Model.Post.LastEditTime.ToUtcTime().ToString("o")', '@userDateFormat', @Model.Post.EditCount, '@Model.Post.LastEditUser');">
                                     &#x2753; @Html.Raw(_languageProvider.BasicText[Model.Language, "INFORMATION", Casing.FirstUpper])
                                 </a>
                             </span>
@@ -174,7 +154,7 @@
                                 </label>
                             </span>
                         }
-                        @if (Model.IsCurrentUserMod || (Model.Post.AuthorId == Model.CurrentUser.UserId && (EditTime == 0 || DateTime.UtcNow.Subtract(Model.Post.PostCreationTime ?? default).TotalMinutes <= EditTime)))
+                        @if (Model.IsCurrentUserMod || (Model.Post.AuthorId == Model.CurrentUser.UserId && (Model.CurrentUser.PostEditTime == 0 || DateTime.UtcNow.Subtract(Model.Post.PostCreationTime ?? default).TotalMinutes <= Model.CurrentUser.PostEditTime)))
                         {
                             <span>
                                 <a asp-page="/Posting" asp-page-handler="EditPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@Model.Post.PostId">

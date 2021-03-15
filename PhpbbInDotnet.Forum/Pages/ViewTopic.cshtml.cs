@@ -96,7 +96,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public IEnumerable<PhpbbUsers> Users { get; private set; }
         public IEnumerable<PhpbbUsers> LastEditUsers { get; private set; }
         public IEnumerable<PhpbbAttachments> Attachments { get; private set; }
-        public IEnumerable<PhpbbReports> Reports { get; private set; }
+        public IEnumerable<ReportDto> Reports { get; private set; }
         public IEnumerable<UserRankDto> Ranks { get; private set; }
 
         private PhpbbTopics _currentTopic;
@@ -153,8 +153,12 @@ namespace PhpbbInDotnet.Forum.Pages
                     "SELECT * FROM phpbb_users WHERE user_id IN @authors; " +
                     "SELECT * FROM phpbb_users WHERE user_id IN @editors; " +
                     "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @posts ORDER BY attach_id; " +
-                    "SELECT * FROM phpbb_reports WHERE report_closed = 0 AND post_id IN @posts; " +
-                    @"SELECT u.user_id, COALESCE(r1.rank_id, r2.rank_id) AS rank_id, COALESCE(r1.rank_title, r2.rank_title) AS rank_title
+                   @"SELECT r.report_id AS id, rr.reason_title, rr.reason_description, r.report_text AS details, r.user_id AS reporter_id, u.username AS reporter_username, r.post_id 
+                       FROM phpbb_reports r
+                       JOIN phpbb_reports_reasons rr ON r.reason_id = rr.reason_id
+                       JOIN phpbb_users u on r.user_id = u.user_id
+                      WHERE report_closed = 0 AND post_id IN @posts; 
+                     SELECT u.user_id, COALESCE(r1.rank_id, r2.rank_id) AS rank_id, COALESCE(r1.rank_title, r2.rank_title) AS rank_title
                         FROM phpbb_users u
                         JOIN phpbb_groups g ON u.group_id = g.group_id
                         LEFT JOIN phpbb_ranks r1 ON u.user_rank = r1.rank_id
@@ -171,7 +175,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 Users = await multi.ReadAsync<PhpbbUsers>();
                 LastEditUsers = await multi.ReadAsync<PhpbbUsers>();
                 Attachments = await multi.ReadAsync<PhpbbAttachments>(); //query should sort according to config['display_order']
-                Reports = await multi.ReadAsync<PhpbbReports>();
+                Reports = await multi.ReadAsync<ReportDto>();
                 Ranks = await multi.ReadAsync<UserRankDto>();
                 TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
                 ForumRulesLink = curForum.ForumRulesLink;
@@ -360,8 +364,6 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (user) =>
             {
                 var conn = Context.Database.GetDbConnection();
-                
-
                 await conn.ExecuteAsync(
                     "INSERT INTO phpbb_reports (post_id, user_id, reason_id, report_text, report_time, report_closed) VALUES (@PostId, @UserId, @ReasonId, @ReportText, @ReportTime, 0); " +
                     "UPDATE phpbb_topics SET topic_reported = 1 WHERE topic_id = @TopicId; " +
@@ -378,22 +380,26 @@ namespace PhpbbInDotnet.Forum.Pages
                     }
                 );
 
+                PostId = reportPostId;
                 return await OnGet();
             });
 
         public async Task<IActionResult> OnPostManageReport(int? reportPostId, int? reportId, bool? redirectToEdit, bool? deletePost)
             => await WithModerator(async () =>
             {
+                var (_, nextRemaining) = await GetSelectedAndNextRemainingPostIds(reportPostId ?? 0);
                 if (deletePost ?? false)
                 {
-                    var (LatestSelected, NextRemaining) = await GetSelectedAndNextRemainingPostIds(reportPostId ?? 0);
                     var (Message, IsSuccess) = await _moderatorService.DeletePosts(new[] { reportPostId.Value });
                     ModeratorActionResult = $"<span style=\"margin-left: 30px\" class=\"{((IsSuccess ?? false) ? "success" : "fail")}\">{Message}</span>";
+                    PostId = nextRemaining;
+                }
+                else
+                {
+                    PostId = reportPostId;
                 }
 
                 var conn = Context.Database.GetDbConnection();
-                
-
                 await conn.ExecuteAsync(
                     "UPDATE phpbb_reports SET report_closed = 1 WHERE report_id = @reportId; " +
                     "UPDATE phpbb_topics SET topic_reported = 0 WHERE topic_id = @TopicId; " +
@@ -406,6 +412,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     var reportedPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @reportPostId", new { reportPostId });
                     if (reportedPost == null)
                     {
+                        PostId = nextRemaining;
                         return await OnGet();
                     }
                     return RedirectToPage("Posting", "editPost", new { reportedPost.ForumId, reportedPost.TopicId, reportedPost.PostId });

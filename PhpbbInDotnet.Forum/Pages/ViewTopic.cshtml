@@ -138,10 +138,7 @@
             LastEditReason = p.PostEditReason,
             EditCount = p.PostEditCount,
             IP = p.PosterIp,
-            ReportId = report?.ReportId,
-            ReportReasonId = report?.ReasonId,
-            ReportDetails = report?.ReportText,
-            ReporterId = report?.UserId
+            Report = report
         };
 
         int? closestPostIdIndex = null;
@@ -429,7 +426,7 @@ else if (!IsAnonymous)
                     @Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_POST"])
                 </label>
                 <br /><br />
-                <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "REPORT"])" onclick="vt.confirmDeleteReportedPost()" class="MyButton" />
+                <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT", Casing.FirstUpper])" onclick="vt.confirmDeleteReportedPost()" class="MyButton" />
                 @Html.AntiForgeryToken()
             </form>
         }

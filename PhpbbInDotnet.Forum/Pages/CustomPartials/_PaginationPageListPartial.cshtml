@@ -2,7 +2,7 @@
 
 @inject Languages.LanguageProvider _languageProvider
 
-@if (Model.Pagination.HasPages)
+@if (Model.Pagination?.HasPages ?? false)
 {
     <span style="display:inline">
         <span style="white-space:nowrap; line-height: 1.5em">@Html.Raw(_languageProvider.BasicText[Model.Language, "GO_TO_PAGE"]):&nbsp;</span>

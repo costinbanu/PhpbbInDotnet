@@ -41,14 +41,6 @@ namespace PhpbbInDotnet.Objects
 
         public string IP { get; set; }
 
-        public int? ReportId { get; set; }
-
-        public int? ReportReasonId { get; set; }
-
-        public string ReportDetails { get; set; }
-
-        public int? ReporterId { get; set; }
-
-        public string ReporterUsername { get; set; }
+        public ReportDto Report { get; set; }
     }
 }
