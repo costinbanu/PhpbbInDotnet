@@ -16,12 +16,14 @@ namespace PhpbbInDotnet.Services
     {
         private readonly ForumDbContext _context;
         private readonly PostService _postService;
+        private readonly StorageService _storageService;
 
-        public ModeratorService(ForumDbContext context, PostService postService, CommonUtils utils, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
+        public ModeratorService(ForumDbContext context, PostService postService, StorageService storageService, CommonUtils utils, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
             : base(utils, languageProvider, httpContextAccessor)
         {
             _context = context;
             _postService = postService;
+            _storageService = storageService;
         }
 
         #region Topic
@@ -236,7 +238,6 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-
         public async Task<(string Message, bool? IsSuccess)> DeletePosts(int[] postIds)
         {
             try
@@ -258,6 +259,59 @@ namespace PhpbbInDotnet.Services
                 posts.ForEach(async (p) => await _postService.CascadePostDelete(p, false));
 
                 return (LanguageProvider.Moderator[await GetLanguage(), "POSTS_DELETED_SUCCESSFULLY"], true);
+            }
+            catch (Exception ex)
+            {
+                var id = Utils.HandleError(ex);
+                return (string.Format(LanguageProvider.Errors[await GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+            }
+        }
+
+        public async Task<(string Message, bool? IsSuccess)> DuplicatePost(int postId)
+        {
+            try
+            {
+                var post = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == postId);
+                if (post == null)
+                {
+                    return (LanguageProvider.Moderator[await GetLanguage(), "ATLEAST_ONE_POST_REQUIRED"], false);
+                }
+                var attachments = await _context.PhpbbAttachments.AsNoTracking().Where(a => a.PostMsgId == postId).OrderBy(a => a.AttachId).ToListAsync();
+
+                post.PostId = 0;
+                post.PostTime++;
+                post.PostAttachment = attachments.Any().ToByte();
+                post.PostEditCount = 0;
+                post.PostEditReason = string.Empty;
+                post.PostEditUser = 0;
+                post.PostEditTime = 0;
+                var entity = await _context.PhpbbPosts.AddAsync(post);
+
+                entity.Entity.PostId = 0;
+                await _context.SaveChangesAsync();
+
+                if (attachments.Any())
+                {
+                    await _context.PhpbbAttachments.AddRangeAsync(
+                        attachments.Select(a =>
+                        {
+                            var name = _storageService.DuplicateFile(a, post.PosterId);
+                            if (string.IsNullOrWhiteSpace(name))
+                            {
+                                return null;
+                            }
+                            a.AttachId = 0;
+                            a.PostMsgId = entity.Entity.PostId;
+                            a.PhysicalFilename = name;
+                            return a;
+                        }).Where(a => a != null));
+
+                    await _context.SaveChangesAsync();
+                }
+
+                await _postService.CascadePostAdd(entity.Entity, false);
+
+                return (string.Empty, true);
             }
             catch (Exception ex)
             {

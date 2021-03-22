@@ -137,11 +137,7 @@ namespace PhpbbInDotnet.Languages
                 return @default;
             }
 
-            if (language.Contains(','))
-            {
-                language = language.Split(",").First().Trim();
-            }
-
+            language = language.Split(',', ';').First().Trim();
             var (isValid, twoLetterLanguageName) = IsLanguageValid(language);
             return isValid ? twoLetterLanguageName : @default;
         }

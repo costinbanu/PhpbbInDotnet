@@ -7,6 +7,8 @@
   "CHOOSE_DESTINATION_FORUM_ID": "Alege id-ul forumului de destinație",
   "DESTINATION_TOPIC_ID": "ID subiect destinație",
   "CHOOSE_DESTINATION_TOPIC_ID": "Alege id-ul subiectului de destinație",
+  "CLOSE_REPORT": "Închide raport",
+  "DUPLICATE_POST": "Dublează mesaj",
 
   //success messages
   "TOPIC_CHANGED_SUCCESSFULLY": "Subiectul a fost modificat cu succes!",

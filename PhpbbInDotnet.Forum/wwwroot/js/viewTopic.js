@@ -154,4 +154,11 @@
             $('#moderatorForm').submit();
         }
     }
+
+    duplicatePost(postId) {
+        if (confirm(dictionary.ViewTopic['RECEIVED_COMMAND'] + ' "' + dictionary.Moderator['DUPLICATE_POST'] + '". ' + dictionary.ViewTopic['CONTINUE'])) {
+            $('#PostIdForDuplication').val(postId);
+            $('#moderatorDuplicateMessageForm').submit();
+        }
+    }
 }

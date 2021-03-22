@@ -423,6 +423,20 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             });
 
+        public async Task<IActionResult> OnPostDuplicatePost(int postIdForDuplication)
+            => await WithModerator(async () =>
+            {
+                var (Message, IsSuccess) = await _moderatorService.DuplicatePost(postIdForDuplication);
+
+                PostId = postIdForDuplication;
+                if (!(IsSuccess ?? false))
+                {
+                    ModeratorActionResult = $"<span style=\"margin-left: 30px; color: red; display:block;\">{Message}</span>";
+                }
+                return await OnGetByPostId();
+            });
+
+
         private async Task<IActionResult> ModeratePosts()
         {
             var lang = await GetLanguage();

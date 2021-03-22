@@ -86,6 +86,21 @@ namespace PhpbbInDotnet.Services
             return (succeeded, failed);
         }
 
+        public string DuplicateFile(PhpbbAttachments attachment, int userId)
+        {
+            try
+            {
+                var name = $"{userId}_{Guid.NewGuid():n}";
+                File.Copy(Path.Combine(_attachmentsPath, attachment.PhysicalFilename), Path.Combine(_attachmentsPath, name));
+                return name;
+            }
+            catch (Exception ex)
+            {
+                _utils.HandleError(ex);
+                return null;
+            }
+        }
+
         public async Task<bool> UploadAvatar(int userId, Stream contents, string fileName)
         {
             try

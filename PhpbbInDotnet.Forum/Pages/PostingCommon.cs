@@ -151,21 +151,6 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IEnumerable<KeyValuePair<string, string>>> GetUsers()
             => (await GetUserMap()).Select(map => KeyValuePair.Create(map.Key, $"[url={Config.GetValue<string>("BaseUrl")}/User?UserId={map.Value}]{map.Key}[/url]")).ToList();
 
-        private async Task<PhpbbPosts> InitEditedPost()
-        {
-            var connection = Context.Database.GetDbConnection();
-
-            var post = await connection.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { PostId });
-
-            post.PostSubject = HttpUtility.HtmlEncode(PostTitle);
-            post.PostEditTime = DateTime.UtcNow.ToUnixTimestamp();
-            post.PostEditUser = (await GetCurrentUserAsync()).UserId;
-            post.PostEditReason = HttpUtility.HtmlEncode(EditReason ?? string.Empty);
-            post.PostEditCount++;
-
-            return post;
-        }
-
         private async Task<int?> UpsertPost(PhpbbPosts post, AuthenticatedUser usr)
         {
             var lang = await GetLanguage();
@@ -217,17 +202,13 @@ namespace PhpbbInDotnet.Forum.Pages
                 TopicId = curTopic.TopicId;
             }
 
-            var newPostText = PostText;
-            var uid = string.Empty;
-            var bitfield = string.Empty;
             var hasAttachments = Attachments?.Any() ?? false;
-            newPostText = HttpUtility.HtmlEncode(newPostText);
-
+            var textForSaving = await _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText));
             if (post == null)
             {
                 post = await connection.QueryFirstOrDefaultAsync<PhpbbPosts>(
-                    "INSERT INTO phpbb_posts (forum_id, topic_id, poster_id, post_subject, post_text, post_time, bbcode_uid, bbcode_bitfield, post_attachment, post_checksum, poster_ip, post_username) " +
-                        "VALUES (@forumId, @topicId, @userId, @subject, @text, @now, @uid, @bitfield, @attachment, @checksum, @ip, @username); " +
+                    "INSERT INTO phpbb_posts (forum_id, topic_id, poster_id, post_subject, post_text, post_time, post_attachment, post_checksum, poster_ip, post_username) " +
+                        "VALUES (@forumId, @topicId, @userId, @subject, @textForSaving, @now, @attachment, @checksum, @ip, @username); " +
                     "SELECT * FROM phpbb_posts WHERE post_id = LAST_INSERT_ID();",
                     new
                     {
@@ -235,12 +216,10 @@ namespace PhpbbInDotnet.Forum.Pages
                         topicId = TopicId.Value,
                         usr.UserId,
                         subject = HttpUtility.HtmlEncode(PostTitle),
-                        text = await _writingService.PrepareTextForSaving(newPostText),
+                        textForSaving,
                         now = DateTime.UtcNow.ToUnixTimestamp(),
-                        uid,
-                        bitfield,
                         attachment = hasAttachments.ToByte(),
-                        checksum = Utils.CalculateMD5Hash(newPostText),
+                        checksum = Utils.CalculateMD5Hash(textForSaving),
                         ip = HttpContext.Connection.RemoteIpAddress.ToString(),
                         username = HttpUtility.HtmlEncode(usr.Username)
                     }
@@ -252,15 +231,14 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 await connection.ExecuteAsync(
                     "UPDATE phpbb_posts " +
-                    "SET post_subject = @subject, post_text = @text, bbcode_uid = @uid, bbcode_bitfield = @bitfield, post_attachment = @attachment, post_edit_time = @now, post_edit_reason = @reason, post_edit_user = @userId, post_edit_count = post_edit_count + 1 " +
+                    "SET post_subject = @subject, post_text = @textForSaving, post_attachment = @attachment, post_checksum = @checksum, post_edit_time = @now, post_edit_reason = @reason, post_edit_user = @userId, post_edit_count = post_edit_count + 1 " +
                     "WHERE post_id = @postId",
-                    new 
-                    { 
-                        subject = post.PostSubject,
-                        text = await _writingService.PrepareTextForSaving(newPostText), 
-                        uid, 
-                        bitfield, 
-                        attachment = hasAttachments.ToByte(), 
+                    new
+                    {
+                        subject = HttpUtility.HtmlEncode(PostTitle),
+                        textForSaving,
+                        checksum = Utils.CalculateMD5Hash(textForSaving),
+                        attachment = hasAttachments.ToByte(),
                         post.PostId,
                         now = DateTime.UtcNow.ToUnixTimestamp(),
                         reason = HttpUtility.HtmlEncode(EditReason ?? string.Empty),
@@ -271,10 +249,18 @@ namespace PhpbbInDotnet.Forum.Pages
                 await _postService.CascadePostEdit(post);
             }
 
-            await connection.ExecuteAsync(
-                "UPDATE phpbb_attachments SET post_msg_id = @postId, topic_id = @topicId, attach_comment = @comment, is_orphan = 0 WHERE attach_id = @attachId",
-                Attachments?.Select(a => new { post.PostId, topicId = TopicId.Value, comment = _writingService.PrepareTextForSaving(a.AttachComment).GetAwaiter().GetResult(), a.AttachId })
-            );
+            foreach (var attach in Attachments)
+            {
+                await connection.ExecuteAsync(
+                    "UPDATE phpbb_attachments SET post_msg_id = @postId, topic_id = @topicId, attach_comment = @comment, is_orphan = 0 WHERE attach_id = @attachId",
+                    new
+                    {
+                        post.PostId,
+                        post.TopicId,
+                        comment = await _writingService.PrepareTextForSaving(attach.AttachComment),
+                        attach.AttachId
+                    });
+            }
 
             if (canCreatePoll && !string.IsNullOrWhiteSpace(PollOptions))
             {

@@ -153,6 +153,11 @@
                                     <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @(Model.Post.PostId ?? -1))" @(Model.PostIdsForModerator.Contains(Model.Post.PostId ?? -1) ? "checked" : "") />
                                 </label>
                             </span>
+                            <span>
+                                <a href="javascript:vt.duplicatePost(@(Model.Post.PostId ?? -1))">
+                                    2️⃣ @Html.Raw(_languageProvider.Moderator[Model.Language, "DUPLICATE_POST"])
+                                </a>
+                            </span>
                         }
                         @if (Model.IsCurrentUserMod || (Model.Post.AuthorId == Model.CurrentUser.UserId && (Model.CurrentUser.PostEditTime == 0 || DateTime.UtcNow.Subtract(Model.Post.PostCreationTime ?? default).TotalMinutes <= Model.CurrentUser.PostEditTime)))
                         {

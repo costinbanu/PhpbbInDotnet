@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Web;
+using System;
 
 namespace PhpbbInDotnet.Services
 {
@@ -15,11 +17,15 @@ namespace PhpbbInDotnet.Services
     {
         private readonly ForumDbContext _context;
         private readonly UserService _userService;
+        private readonly WritingToolsService _writingService;
+        private readonly CommonUtils _utils;
 
-        public PostService(ForumDbContext context, UserService userService)
+        public PostService(ForumDbContext context, UserService userService, WritingToolsService writingService, CommonUtils utils)
         {
             _context = context;
             _userService = userService;
+            _writingService = writingService;
+            _utils = utils;
         }
 
         public async Task<(List<PhpbbPosts> Posts, int Page, int Count)> GetPostPageAsync(int userId, int? topicId, int? page, int? postId)

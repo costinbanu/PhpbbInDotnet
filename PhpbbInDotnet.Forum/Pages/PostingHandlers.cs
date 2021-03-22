@@ -98,7 +98,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 var conn = Context.Database.GetDbConnection();
                 
-                Attachments = (await conn.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id = @postId", new { PostId })).AsList();
+                Attachments = (await conn.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id = @postId ORDER BY attach_id", new { PostId })).AsList();
                 ShowAttach = Attachments.Any();
 
                 Cache.Add(await GetActualCacheKey("PostTime", true), curPost.PostTime, CACHE_EXPIRATION);
@@ -319,7 +319,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 var conn = Context.Database.GetDbConnection();
 
-                var currentPost = Action == PostingActions.EditForumPost ? await InitEditedPost() : null;
+                var currentPost = Action == PostingActions.EditForumPost ? await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @PostId", new { PostId }) : null;
                 var userId = Action == PostingActions.EditForumPost ? currentPost.PosterId : user.UserId;
                 var postAuthor = await conn.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
                 var rankId = postAuthor?.UserRank ?? 0;
@@ -382,7 +382,8 @@ namespace PhpbbInDotnet.Forum.Pages
                     return RedirectToPage("ViewTopic", "byPostId", new { PostId });
                 }
 
-                var addedPostId = await UpsertPost(await InitEditedPost(), user);
+                var post = await Context.Database.GetDbConnection().QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @PostId", new { PostId });
+                var addedPostId = await UpsertPost(post, user);
 
                 if (addedPostId == null)
                 {

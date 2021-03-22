@@ -26,6 +26,9 @@
     "CONFIRM_POLL_OPTIONS_CHANGE": "Dacă modifici opțiunile, toate voturile înregistrate până acum vor fi șterse. Ești sigur că dorești să continui?",
     "LOADING_FILES": "Se încarcă fișierele..."
   },
+  "Moderator": {
+    "DUPLICATE_POST": "Dublează mesaj"
+  },
   "Admin": {
     "CONFIRM_USER_COMMAND_FORMAT": "Am primit comanda '{0}' pentru utilizatorul '{1}'. Ești sigur că dorești să continui?",
     "ADMIN_GROUP_TITLE_FORMAT": "Administrează grup - {0}",

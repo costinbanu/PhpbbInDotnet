@@ -7,6 +7,8 @@
   "CHOOSE_DESTINATION_FORUM_ID": "Choose destination forum ID",
   "DESTINATION_TOPIC_ID": "Destination topic ID",
   "CHOOSE_DESTINATION_TOPIC_ID": "Choose destination topic ID",
+  "CLOSE_REPORT": "Close report",
+  "DUPLICATE_POST": "Duplicate post",
 
   //success messages
   "TOPIC_CHANGED_SUCCESSFULLY": "The topic has been modified successfully!",
