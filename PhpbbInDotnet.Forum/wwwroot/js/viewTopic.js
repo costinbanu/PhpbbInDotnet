@@ -120,11 +120,11 @@
 
     showReportViewer(postId, reportId, reportReasonTitle, reportReasonDescription, reportDetails, reportUsername) {
         $('#reportViewerReportPostId').val(postId);
-        $('#reportViewerReportReasonTitle').text(reportReasonTitle);
+        $('#reportViewerReportReasonTitle').text(he.decode(reportReasonTitle));
         $('#reportViewerReportReasonDescription').text(reportReasonDescription);
         $('#reportViewerReportId').val(reportId);
-        $('#reportViewerReportDetails').html(reportDetails);
-        $('#reportViewerReporter').text(reportUsername);
+        $('#reportViewerReportDetails').html(he.decode(reportDetails));
+        $('#reportViewerReporter').text(he.decode(reportUsername));
         $('#reportViewerEditMessage').prop("checked", false);
         $('#reportViewerDeleteMessage').prop("checked", false);
         showElement('reportViewer', null, null, true);

@@ -77,7 +77,7 @@
             <div style="max-width:100%; overflow-wrap: break-word">
                 @if (Model.Post.Report != null && (Model.IsCurrentUserMod || Model.Post.Report.ReporterId == Model.CurrentUser.UserId))
                 {
-                    <a href="javascript:vt.showReportViewer(@Model.Post.PostId, @Model.Post.Report.Id, '@Html.Raw(Model.Post.Report.ReasonTitle)', '@Model.Post.Report.ReasonDescription', '@Html.Raw(_renderingService.BbCodeToHtml(Model.Post.Report.Details, string.Empty))', '@Html.Raw(Model.Post.Report.ReporterUsername)')" style="font-weight:bold; font-size:1.2em">
+                    <a href="javascript:vt.showReportViewer(@Model.Post.PostId, @Model.Post.Report.Id, '@Model.Post.Report.ReasonTitle', '@Model.Post.Report.ReasonDescription', '@_renderingService.BbCodeToHtml(Model.Post.Report.Details, string.Empty)', '@Model.Post.Report.ReporterUsername')" style="font-weight:bold; font-size:1.2em">
                         @Html.Raw(_languageProvider.BasicText[Model.Language, "SHOW_REPORT", Casing.FirstUpper])
                     </a>
                     <br />
