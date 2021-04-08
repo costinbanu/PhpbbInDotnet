@@ -229,10 +229,11 @@ namespace PhpbbInDotnet.Forum.Pages
             }
             else
             {
-                await connection.ExecuteAsync(
+                post = await connection.QueryFirstOrDefaultAsync<PhpbbPosts>(
                     "UPDATE phpbb_posts " +
                     "SET post_subject = @subject, post_text = @textForSaving, post_attachment = @attachment, post_checksum = @checksum, post_edit_time = @now, post_edit_reason = @reason, post_edit_user = @userId, post_edit_count = post_edit_count + 1 " +
-                    "WHERE post_id = @postId",
+                    "WHERE post_id = @postId; " +
+                    "SELECT * FROM phpbb_posts WHERE post_id = @postId; ",
                     new
                     {
                         subject = HttpUtility.HtmlEncode(PostTitle),
