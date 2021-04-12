@@ -133,55 +133,57 @@ namespace PhpbbInDotnet.Services
             var conn = _context.Database.GetDbConnection();
             
             var curTopic = await conn.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { deleted.TopicId });
-            var curForum = await conn.QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { curTopic.ForumId });
-
-            if (await conn.ExecuteScalarAsync<long>("SELECT COUNT(1) FROM phpbb_posts WHERE topic_id = @oldTopicId", new { oldTopicId }) == 0L && !ignoreTopic)
+            if (curTopic != null)
             {
-                await conn.ExecuteAsync("DELETE FROM phpbb_topics WHERE topic_id = @topicId", new { curTopic.TopicId });
-            }
-            else
-            {
-                if (curTopic.TopicLastPostId == deleted.PostId && !ignoreTopic)
+                if (await conn.ExecuteScalarAsync<long>("SELECT COUNT(1) FROM phpbb_posts WHERE topic_id = @oldTopicId", new { oldTopicId }) == 0L && !ignoreTopic)
                 {
-                    var lastTopicPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(
-                        "SELECT * FROM phpbb_posts WHERE topic_id = @topicId AND post_id <> @postId ORDER BY post_time DESC",
-                        new { curTopic.TopicId, deleted.PostId }
-                    );
-                    var lastTopicPostUser = await _userService.GetAuthenticatedUserById(lastTopicPost.PosterId);
-
-                    await SetTopicLastPost(curTopic, lastTopicPost, lastTopicPostUser, true);
+                    await conn.ExecuteAsync("DELETE FROM phpbb_topics WHERE topic_id = @topicId", new { curTopic.TopicId });
                 }
-
-                if (curTopic.TopicFirstPostId == deleted.PostId && !ignoreTopic)
+                else
                 {
-                    var firstPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(
-                        "SELECT * FROM phpbb_posts WHERE topic_id = @oldTopicId AND post_id <> @postId ORDER BY post_time ASC",
-                        new { oldTopicId, deleted.PostId }
-                    );
-                    var firstPostUser = await _userService.GetAuthenticatedUserById(firstPost.PosterId);
+                    if (curTopic.TopicLastPostId == deleted.PostId && !ignoreTopic)
+                    {
+                        var lastTopicPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(
+                            "SELECT * FROM phpbb_posts WHERE topic_id = @topicId AND post_id <> @postId ORDER BY post_time DESC",
+                            new { curTopic.TopicId, deleted.PostId }
+                        );
+                        var lastTopicPostUser = await _userService.GetAuthenticatedUserById(lastTopicPost.PosterId);
 
-                    await SetTopicFirstPost(curTopic, firstPost, firstPostUser, false, true);
-                }
+                        await SetTopicLastPost(curTopic, lastTopicPost, lastTopicPostUser, true);
+                    }
 
-                if (!ignoreTopic)
-                {
-                    await conn.ExecuteAsync(
-                        "UPDATE phpbb_topics SET topic_replies = GREATEST(topic_replies - 1, 0), topic_replies_real = GREATEST(topic_replies_real - 1, 0) WHERE topic_id = @topicId",
-                        new { curTopic.TopicId }
-                    );
+                    if (curTopic.TopicFirstPostId == deleted.PostId && !ignoreTopic)
+                    {
+                        var firstPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(
+                            "SELECT * FROM phpbb_posts WHERE topic_id = @oldTopicId AND post_id <> @postId ORDER BY post_time ASC",
+                            new { oldTopicId, deleted.PostId }
+                        );
+                        var firstPostUser = await _userService.GetAuthenticatedUserById(firstPost.PosterId);
 
-                    var report = await conn.QueryFirstOrDefaultAsync<PhpbbReports>("SELECT * FROM phpbb_reports WHERE post_id = @postId", new { deleted.PostId });
-                    if (report != null)
+                        await SetTopicFirstPost(curTopic, firstPost, firstPostUser, false, true);
+                    }
+
+                    if (!ignoreTopic)
                     {
                         await conn.ExecuteAsync(
-                            "DELETE FROM phpbb_reports WHERE report_id = @reportId; UPDATE phpbb_topics SET topic_reported = 0 WHERE topic_id = @topicId",
-                            new { report.ReportId, curTopic.TopicId }
+                            "UPDATE phpbb_topics SET topic_replies = GREATEST(topic_replies - 1, 0), topic_replies_real = GREATEST(topic_replies_real - 1, 0) WHERE topic_id = @topicId",
+                            new { curTopic.TopicId }
                         );
+
+                        var report = await conn.QueryFirstOrDefaultAsync<PhpbbReports>("SELECT * FROM phpbb_reports WHERE post_id = @postId", new { deleted.PostId });
+                        if (report != null)
+                        {
+                            await conn.ExecuteAsync(
+                                "DELETE FROM phpbb_reports WHERE report_id = @reportId; UPDATE phpbb_topics SET topic_reported = 0 WHERE topic_id = @topicId",
+                                new { report.ReportId, curTopic.TopicId }
+                            );
+                        }
                     }
                 }
             }
 
-            if (curForum.ForumLastPostId == deleted.PostId)
+            var curForum = await conn.QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { forumId = curTopic?.ForumId ?? deleted.ForumId });
+            if (curForum != null && curForum.ForumLastPostId == deleted.PostId)
             {
                 var lastForumPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(
                     "SELECT * FROM phpbb_posts WHERE forum_id = @forumId AND post_id <> @postId ORDER BY post_time DESC",

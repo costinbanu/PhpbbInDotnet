@@ -260,7 +260,7 @@ namespace PhpbbInDotnet.Utilities
                 var val = Enum.Parse(typeof(T), x);
                 return new SelectListItem(textTransform((T)val), valueTransform((T)val), selectedItem.HasValue && Enum.GetName(selectedItem.Value.GetType(), selectedItem.Value) == x);
             }).ToList();
-            if (!selectedItem.HasValue)
+            if (!selectedItem.HasValue && !string.IsNullOrWhiteSpace(defaultText))
             {
                 toReturn.Insert(0, new SelectListItem(defaultText, "dummyValue", true, true));
             }
@@ -271,6 +271,13 @@ namespace PhpbbInDotnet.Utilities
         {
             var id = Guid.NewGuid().ToString("n");
             _logger.Error(ex, "Exception id: {id}. Message: {message}", id, message);
+            return id;
+        }
+
+        public string HandleErrorAsWarning(Exception ex, string message = null)
+        {
+            var id = Guid.NewGuid().ToString("n");
+            _logger.Warning(ex, "Exception id: {id}. Message: {message}", id, message);
             return id;
         }
 

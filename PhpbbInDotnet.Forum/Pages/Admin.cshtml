@@ -17,6 +17,7 @@
     <script src="~/js/tabbedPage.js"></script>
     <link rel="stylesheet" href="~/css/admin.css" />
     <link rel="stylesheet" href="~/css/tabbedPage.css" />
+    <link rel="stylesheet" href="~/css/pagination.css" />
 </environment>
 <environment exclude="Development">
     <link rel="stylesheet" href="~/css/admin.min.css" />
@@ -45,6 +46,9 @@
     </button>
     <button class="@(Model.Category == AdminCategories.WritingTools ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Writing')">
         @Html.Raw(Model.LanguageProvider.Admin[lang, "WRITING_TOOLS"])
+    </button>
+    <button class="@(Model.Category == AdminCategories.Logs ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Logs')">
+        @Html.Raw(Model.LanguageProvider.Admin[lang, "VIEW_LOGS"])
     </button>
 </div>
 
@@ -89,6 +93,21 @@
         { 
             DateFormat = dateFormat,
             Language = lang
+        },
+        ViewData
+    )
+</div>
+
+<div id="Logs" class="tabcontent" style="@(Model.Category == AdminCategories.Logs ? "display:inherit" : "display:none")">
+    @await Html.PartialAsync(
+        "_AdminViewLogs",
+        new _AdminViewLogsModel
+        {
+            LogPage = Model.LogPage,
+            LogType = Model.LogType,
+            AuthorName = Model.AuthorName,
+            Language = lang,
+            DateFormat = dateFormat
         },
         ViewData
     )

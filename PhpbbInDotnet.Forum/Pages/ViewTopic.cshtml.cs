@@ -287,17 +287,23 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostTopicModerator()
             => await WithModerator(async () =>
             {
+                var logDto = new OperationLogDto
+                {
+                    Action = TopicAction.Value,
+                    UserId = (await GetCurrentUserAsync()).UserId
+                };
+
                 var lang = await GetLanguage();
                 var (Message, IsSuccess) = TopicAction switch
                 {
-                    ModeratorTopicActions.MakeTopicNormal => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Normal),
-                    ModeratorTopicActions.MakeTopicImportant => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Important),
-                    ModeratorTopicActions.MakeTopicAnnouncement => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Announcement),
-                    ModeratorTopicActions.MakeTopicGlobal => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Global),
-                    ModeratorTopicActions.MoveTopic => await _moderatorService.MoveTopic(TopicId.Value, DestinationForumId.Value),
-                    ModeratorTopicActions.LockTopic => await _moderatorService.LockUnlockTopic(TopicId.Value, true),
-                    ModeratorTopicActions.UnlockTopic => await _moderatorService.LockUnlockTopic(TopicId.Value, false),
-                    ModeratorTopicActions.DeleteTopic => await _moderatorService.DeleteTopic(TopicId.Value),
+                    ModeratorTopicActions.MakeTopicNormal => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Normal, logDto),
+                    ModeratorTopicActions.MakeTopicImportant => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Important, logDto),
+                    ModeratorTopicActions.MakeTopicAnnouncement => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Announcement, logDto),
+                    ModeratorTopicActions.MakeTopicGlobal => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Global, logDto),
+                    ModeratorTopicActions.MoveTopic => await _moderatorService.MoveTopic(TopicId.Value, DestinationForumId.Value, logDto),
+                    ModeratorTopicActions.LockTopic => await _moderatorService.LockUnlockTopic(TopicId.Value, true, logDto),
+                    ModeratorTopicActions.UnlockTopic => await _moderatorService.LockUnlockTopic(TopicId.Value, false, logDto),
+                    ModeratorTopicActions.DeleteTopic => await _moderatorService.DeleteTopic(TopicId.Value, logDto),
                     _ => throw new NotImplementedException($"Unknown action '{TopicAction}'")
                 };
 
@@ -387,10 +393,15 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostManageReport(int? reportPostId, int? reportId, bool? redirectToEdit, bool? deletePost)
             => await WithModerator(async () =>
             {
+                var logDto = new OperationLogDto
+                {
+                    Action = ModeratorPostActions.DeleteSelectedPosts,
+                    UserId = (await GetCurrentUserAsync()).UserId
+                };
                 var (_, nextRemaining) = await GetSelectedAndNextRemainingPostIds(reportPostId ?? 0);
                 if (deletePost ?? false)
                 {
-                    var (Message, IsSuccess) = await _moderatorService.DeletePosts(new[] { reportPostId.Value });
+                    var (Message, IsSuccess) = await _moderatorService.DeletePosts(new[] { reportPostId.Value }, logDto);
                     ModeratorActionResult = $"<span style=\"margin-left: 30px\" class=\"{((IsSuccess ?? false) ? "success" : "fail")}\">{Message}</span>";
                     PostId = nextRemaining;
                 }
@@ -426,7 +437,12 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostDuplicatePost(int postIdForDuplication)
             => await WithModerator(async () =>
             {
-                var (Message, IsSuccess) = await _moderatorService.DuplicatePost(postIdForDuplication);
+                var logDto = new OperationLogDto
+                {
+                    Action = ModeratorPostActions.DuplicateSelectedPost,
+                    UserId = (await GetCurrentUserAsync()).UserId
+                };
+                var (Message, IsSuccess) = await _moderatorService.DuplicatePost(postIdForDuplication, logDto);
 
                 PostId = postIdForDuplication;
                 if (!(IsSuccess ?? false))
@@ -440,13 +456,17 @@ namespace PhpbbInDotnet.Forum.Pages
         private async Task<IActionResult> ModeratePosts()
         {
             var lang = await GetLanguage();
-
+            var logDto = new OperationLogDto
+            {
+                Action = PostAction.Value,
+                UserId = (await GetCurrentUserAsync()).UserId
+            };
             var postIds = GetModeratorPostIds();
             var (Message, IsSuccess) = PostAction switch
             {
-                ModeratorPostActions.DeleteSelectedPosts => await _moderatorService.DeletePosts(postIds),
-                ModeratorPostActions.MoveSelectedPosts => await _moderatorService.MovePosts(postIds, DestinationTopicId),
-                ModeratorPostActions.SplitSelectedPosts => await _moderatorService.SplitPosts(postIds, DestinationForumId),
+                ModeratorPostActions.DeleteSelectedPosts => await _moderatorService.DeletePosts(postIds, logDto),
+                ModeratorPostActions.MoveSelectedPosts => await _moderatorService.MovePosts(postIds, DestinationTopicId, logDto),
+                ModeratorPostActions.SplitSelectedPosts => await _moderatorService.SplitPosts(postIds, DestinationForumId, logDto),
                 _ => throw new NotImplementedException($"Unknown action '{PostAction}'")
             };
 

@@ -60,7 +60,8 @@ namespace PhpbbInDotnet.Utilities
     {
         Users,
         Forums,
-        WritingTools
+        WritingTools,
+        Logs
     }
 
     public enum AdminUserActions
@@ -73,6 +74,13 @@ namespace PhpbbInDotnet.Utilities
     }
 
     public enum AdminGroupActions
+    {
+        Add,
+        Delete,
+        Update
+    }
+
+    public enum AdminForumActions
     {
         Add,
         Delete,
@@ -109,7 +117,8 @@ namespace PhpbbInDotnet.Utilities
     {
         MoveSelectedPosts,
         SplitSelectedPosts,
-        DeleteSelectedPosts
+        DeleteSelectedPosts,
+        DuplicateSelectedPost
     }
 
     public enum PostingActions
@@ -189,5 +198,13 @@ namespace PhpbbInDotnet.Utilities
         AllUpper,
         FirstUpper,
         Title
+    }
+
+    public enum OperationLogType
+    {
+        Administrator = 0,
+        Moderator = 1,
+        Error = 2,
+        User = 3
     }
 }

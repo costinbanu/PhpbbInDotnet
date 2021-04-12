@@ -109,9 +109,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             var connection = Context.Database.GetDbConnection();
 
-            Users = (
-                await connection.QueryAsync("SELECT username, user_id FROM phpbb_users WHERE user_id <> @id AND user_type <> 2 ORDER BY username", new { id = Constants.ANONYMOUS_USER_ID })
-            ).Select(u => KeyValuePair.Create((string)u.username, (int)u.user_id)).ToList();
+            Users = await UserService.GetUserMap();
 
             if (ForumId == null && TopicId != null)
             {

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
@@ -17,18 +18,21 @@ namespace PhpbbInDotnet.Services
         private readonly ForumDbContext _context;
         private readonly PostService _postService;
         private readonly StorageService _storageService;
+        private readonly OperationLogService _operationLogService;
 
-        public ModeratorService(ForumDbContext context, PostService postService, StorageService storageService, CommonUtils utils, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
+        public ModeratorService(ForumDbContext context, PostService postService, StorageService storageService, CommonUtils utils, LanguageProvider languageProvider, 
+            IHttpContextAccessor httpContextAccessor, OperationLogService operationLogService)
             : base(utils, languageProvider, httpContextAccessor)
         {
             _context = context;
             _postService = postService;
             _storageService = storageService;
+            _operationLogService = operationLogService;
         }
 
         #region Topic
 
-        public async Task<(string Message, bool? IsSuccess)> ChangeTopicType(int topicId, TopicType topicType)
+        public async Task<(string Message, bool? IsSuccess)> ChangeTopicType(int topicId, TopicType topicType, OperationLogDto logDto)
         {
             try
             {
@@ -37,6 +41,7 @@ namespace PhpbbInDotnet.Services
 
                 if (rows == 1)
                 {
+                    await _operationLogService.LogModeratorTopicAction((ModeratorTopicActions)logDto.Action, logDto.UserId, topicId);
                     return (LanguageProvider.Moderator[await GetLanguage(), "TOPIC_CHANGED_SUCCESSFULLY"], true);
                 }
                 else
@@ -52,7 +57,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<(string Message, bool? IsSuccess)> MoveTopic(int topicId, int destinationForumId)
+        public async Task<(string Message, bool? IsSuccess)> MoveTopic(int topicId, int destinationForumId, OperationLogDto logDto)
         {
             try
             {
@@ -69,6 +74,7 @@ namespace PhpbbInDotnet.Services
                 }
 
                 var oldPosts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC", new { topicId })).AsList();
+                var oldForumId = oldPosts.FirstOrDefault()?.ForumId ?? 0;
                 await conn.ExecuteAsync(
                     "UPDATE phpbb_posts SET forum_id = @destinationForumId WHERE topic_id = @topicId; " +
                     "UPDATE phpbb_topics_track SET forum_id = @destinationForumId WHERE topic_id = @topicId", 
@@ -80,6 +86,7 @@ namespace PhpbbInDotnet.Services
                     post.ForumId = destinationForumId;
                     await _postService.CascadePostAdd(post, true);
                 }
+                await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.MoveTopic, logDto.UserId, topicId, $"Moved from {oldForumId} to {destinationForumId}.");
 
                 return (LanguageProvider.Moderator[await GetLanguage(), "TOPIC_CHANGED_SUCCESSFULLY"], true);
             }
@@ -90,7 +97,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<(string Message, bool? IsSuccess)> LockUnlockTopic(int topicId, bool @lock)
+        public async Task<(string Message, bool? IsSuccess)> LockUnlockTopic(int topicId, bool @lock, OperationLogDto logDto)
         {
             try
             {
@@ -102,7 +109,8 @@ namespace PhpbbInDotnet.Services
                 {
                     return (string.Format(LanguageProvider.Moderator[await GetLanguage(), "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
                 }
-                
+                await _operationLogService.LogModeratorTopicAction((ModeratorTopicActions)logDto.Action, logDto.UserId, topicId);
+
                 return (LanguageProvider.Moderator[await GetLanguage(), "TOPIC_CHANGED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
@@ -112,7 +120,7 @@ namespace PhpbbInDotnet.Services
             }
         }
         
-        public async Task<(string Message, bool? IsSuccess)> DeleteTopic(int topicId)
+        public async Task<(string Message, bool? IsSuccess)> DeleteTopic(int topicId, OperationLogDto logDto)
         {
             try
             {
@@ -128,6 +136,8 @@ namespace PhpbbInDotnet.Services
                 await conn.ExecuteAsync("DELETE FROM phpbb_posts WHERE topic_id = @topicId", new { topicId });
                 posts.ForEach(async (p) => await _postService.CascadePostDelete(p, false));
 
+                await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.DeleteTopic, logDto.UserId, topicId);
+
                 return (LanguageProvider.Moderator[await GetLanguage(), "TOPIC_DELETED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
@@ -141,7 +151,7 @@ namespace PhpbbInDotnet.Services
 
         #region Post
 
-        public async Task<(string Message, bool? IsSuccess)> SplitPosts(int[] postIds, int? destinationForumId)
+        public async Task<(string Message, bool? IsSuccess)> SplitPosts(int[] postIds, int? destinationForumId, OperationLogDto logDto)
         {
             try
             {
@@ -179,8 +189,9 @@ namespace PhpbbInDotnet.Services
                     post.TopicId = curTopic.TopicId;
                     post.ForumId = curTopic.ForumId;
                     await _postService.CascadePostAdd(post, false);
+                    await _operationLogService.LogModeratorPostAction(ModeratorPostActions.SplitSelectedPosts, logDto.UserId, post.PostId, $"Split from topic {oldTopicId} as new topic in forum {destinationForumId}");
                 }
-                
+
                 return (LanguageProvider.Moderator[await GetLanguage(), "POSTS_SPLIT_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
@@ -190,7 +201,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<(string Message, bool? IsSuccess)> MovePosts(int[] postIds, int? destinationTopicId)
+        public async Task<(string Message, bool? IsSuccess)> MovePosts(int[] postIds, int? destinationTopicId, OperationLogDto logDto)
         {
             try
             {
@@ -227,6 +238,7 @@ namespace PhpbbInDotnet.Services
                     post.TopicId = newTopic.TopicId;
                     post.ForumId = newTopic.ForumId;
                     await _postService.CascadePostAdd(post, false);
+                    await _operationLogService.LogModeratorPostAction(ModeratorPostActions.MoveSelectedPosts, logDto.UserId, post.PostId, $"Moved from {oldTopicId} to {destinationTopicId}");
                 }
 
                 return (LanguageProvider.Moderator[await GetLanguage(), "POSTS_MOVED_SUCCESSFULLY"], true);
@@ -238,7 +250,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<(string Message, bool? IsSuccess)> DeletePosts(int[] postIds)
+        public async Task<(string Message, bool? IsSuccess)> DeletePosts(int[] postIds, OperationLogDto logDto)
         {
             try
             {
@@ -256,7 +268,11 @@ namespace PhpbbInDotnet.Services
                 }
 
                 await conn.ExecuteAsync("DELETE FROM phpbb_posts WHERE post_id IN @postIds", new { postIds });
-                posts.ForEach(async (p) => await _postService.CascadePostDelete(p, false));
+                foreach (var post in posts)
+                {
+                    await _postService.CascadePostDelete(post, false);
+                    await _operationLogService.LogModeratorPostAction(ModeratorPostActions.DeleteSelectedPosts, logDto.UserId, post);
+                }
 
                 return (LanguageProvider.Moderator[await GetLanguage(), "POSTS_DELETED_SUCCESSFULLY"], true);
             }
@@ -267,7 +283,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<(string Message, bool? IsSuccess)> DuplicatePost(int postId)
+        public async Task<(string Message, bool? IsSuccess)> DuplicatePost(int postId, OperationLogDto logDto)
         {
             try
             {
@@ -310,6 +326,8 @@ namespace PhpbbInDotnet.Services
                 }
 
                 await _postService.CascadePostAdd(entity.Entity, false);
+
+                await _operationLogService.LogModeratorPostAction(ModeratorPostActions.DuplicateSelectedPost, logDto.UserId, postId);
 
                 return (string.Empty, true);
             }

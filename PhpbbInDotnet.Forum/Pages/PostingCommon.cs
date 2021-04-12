@@ -141,12 +141,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private List<KeyValuePair<string, int>> _userMap = null;
         public async Task<List<KeyValuePair<string, int>>> GetUserMap()
-            => _userMap ??= await (
-                from u in Context.PhpbbUsers.AsNoTracking()
-                where u.UserId != Constants.ANONYMOUS_USER_ID && u.UserType != 2
-                orderby u.Username
-                select KeyValuePair.Create(u.Username, u.UserId)
-            ).ToListAsync();
+            => _userMap ??= await UserService.GetUserMap();
 
         public async Task<IEnumerable<KeyValuePair<string, string>>> GetUsers()
             => (await GetUserMap()).Select(map => KeyValuePair.Create(map.Key, $"[url={Config.GetValue<string>("BaseUrl")}/User?UserId={map.Value}]{map.Key}[/url]")).ToList();

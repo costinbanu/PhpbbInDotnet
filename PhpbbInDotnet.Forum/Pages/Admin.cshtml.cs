@@ -200,5 +200,22 @@ namespace PhpbbInDotnet.Forum.Pages
 
         #endregion Admin writing
 
+        #region Logs
+
+        [BindProperty(SupportsGet = true)]
+        public OperationLogType? LogType { get; set; }
+        [BindProperty(SupportsGet = true)]
+        public int LogPage { get; set; } = 1;
+        [BindProperty(SupportsGet = true)]
+        public string AuthorName { get; set; }
+
+        public async Task<IActionResult> OnGetForumLogs()
+        {
+            Category = AdminCategories.Logs;
+            return await OnGet();
+        }
+
+        #endregion Logs
+
     }
 }

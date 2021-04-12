@@ -117,7 +117,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex, "Failed to check captcha");
+                _utils.HandleErrorAsWarning(ex, "Failed to check captcha");
                 return PageWithError(nameof(RecaptchaResponse), LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
             }
 

@@ -1,0 +1,123 @@
+﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials.Admin._AdminViewLogsModel
+
+@using Utilities
+@using System.Web
+
+@inject Services.OperationLogService _logService
+@inject Services.WritingToolsService _writingService
+@inject Services.UserService _userService
+@inject Languages.LanguageProvider _languageProvider
+@inject CommonUtils _utils
+
+@{
+    var (items, count) = await _logService.GetLogs(Model.LogType, Model.AuthorName, Model.LogPage);
+    var paginator = new Paginator(count, Model.LogPage, link: $"/Admin?LogType={Model.LogType}&LogPage=1&AuthorName={HttpUtility.UrlEncode(Model.AuthorName)}&handler=forumLogs", pageSize: _logService.LOG_PAGE_SIZE, pageNumKey: "LogPage");
+}
+
+<form method="get">
+    @Html.DropDownListFor(
+        m => m.LogType,
+        _utils.EnumToDropDownList(selectedItem: Model.LogType, textTransform: x => x.ToString()),
+        _languageProvider.Admin[Model.Language, "SORT_BY_LOG_TYPE"],
+        new { style = "height: 30px; padding-top: 0px" }
+    )
+    <p style="clear:both"></p>
+    <input asp asp-for="AuthorName" placeholder="@Html.Raw(_languageProvider.BasicText[Model.Language, "SEARCH_BY_AUTHOR"])" style="width:100%; height: 30px" autocomplete="new-password" class="InputBox" />
+    <p style="clear:both"></p>
+    <p id="tributeHolder" style="position:relative"></p>
+    <input type="hidden" name="authorId" id="authorId" />
+    <input type="hidden" name="handler" value="forumLogs" />
+    <input type="submit" value="@Html.Raw(_languageProvider.BasicText[Model.Language, "SUBMIT", Casing.FirstUpper])" class="MyButton" />
+</form>
+
+@await Html.PartialAsync("_PaginationControlsPartial", new _PaginationControlsPartialModel(
+    paginator: paginator,
+    allowPaginationChange: false,
+    back: $"/Admin?LogType={Model.LogType}&LogPage={Model.LogPage - 1}&AuthorName={HttpUtility.UrlEncode(Model.AuthorName)}&handler=forumLogs",
+    forward: $"/Admin?LogType={Model.LogType}&LogPage={Model.LogPage + 1}&AuthorName={HttpUtility.UrlEncode(Model.AuthorName)}&handler=forumLogs",
+    includeEasyNavigation: false,
+    language: Model.Language
+), ViewData)
+
+<p></p>
+<div>
+    @foreach (var item in items)
+    {
+        <div class="FlexCenter">
+            <div class="FlexCaption">
+                @Html.Raw(_languageProvider.Admin[Model.Language, "LOG_TYPE"])
+            </div>
+            <div class="FlexRight PostInputWidth">
+                @Html.Raw(item.LogType.ToString())
+            </div>
+        </div>
+        <div class="FlexCenter">
+            <div class="FlexCaption">
+                @Html.Raw(_languageProvider.Admin[Model.Language, "OPERATION"])
+            </div>
+            <div class="FlexRight PostInputWidth">
+                @Html.Raw(item.LogOperation)
+            </div>
+        </div>
+        <div class="FlexCenter">
+            <div class="FlexCaption">
+                @Html.Raw(_languageProvider.Admin[Model.Language, "LOG_DATE"])
+            </div>
+            <div class="FlexRight PostInputWidth">
+                <script>writeDate('@item.LogTime.ToUtcTime().ToString("o")', '@Model.DateFormat');</script>
+            </div>
+        </div>
+        <div class="FlexCenter">
+            <div class="FlexCaption">
+                @Html.Raw(_languageProvider.BasicText[Model.Language, "USER", Casing.FirstUpper])
+            </div>
+            <div class="FlexRight PostInputWidth">
+                @Html.Raw(item.Username)
+            </div>
+        </div>
+        <div class="FlexCenter">
+            <div class="FlexCaption">
+                @Html.Raw(_languageProvider.BasicText[Model.Language, "FORUM", Casing.FirstUpper])
+            </div>
+            <div class="FlexRight PostInputWidth">
+                @if (item.ForumId > 0)
+                {
+                    <a href="/ViewForum?forumId=@item.ForumId" target="_blank">@Html.Raw(item.ForumName)</a>
+                }
+            </div>
+        </div>
+        <div class="FlexCenter">
+            <div class="FlexCaption">
+                @Html.Raw(_languageProvider.BasicText[Model.Language, "TOPIC", Casing.FirstUpper])
+            </div>
+            <div class="FlexRight PostInputWidth">
+                @if (item.TopicId > 0)
+                {
+                    <a href="/ViewTopic?topicId=@item.TopicId" target="_blank">@Html.Raw(item.TopicTitle)</a>
+                }
+            </div>
+        </div>
+        <div class="FlexCenter">
+            <div class="FlexCaption">
+                @Html.Raw(_languageProvider.Admin[Model.Language, "ADDITIONAL_INFO"])
+            </div>
+            <div class="FlexRight PostInputWidth">
+                @Html.Raw(item.LogData)
+            </div>
+        </div>
+        @if (item != items.Last())
+        {
+            <hr class="SubtypeSeparator" />
+        }
+    }
+</div>
+
+@await Html.PartialAsync("_PaginationControlsPartial", new _PaginationControlsPartialModel(
+    paginator: paginator,
+    allowPaginationChange: false,
+    back: $"/Admin?LogType={Model.LogType}&LogPage={Model.LogPage - 1}&handler=forumLogs",
+    forward: $"/Admin?LogType={Model.LogType}&LogPage={Model.LogPage + 1}&handler=forumLogs",
+    includeEasyNavigation: true,
+    language: Model.Language
+), ViewData)
+

@@ -132,7 +132,7 @@ namespace PhpbbInDotnet.Forum
                 }
                 catch (Exception ex)
                 {
-                    Utils.HandleError(ex, "Failed to detect anonymous session type.");
+                    Utils.HandleErrorAsWarning(ex, "Failed to detect anonymous session type.");
                 }
             }
             return _currentUser;

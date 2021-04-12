@@ -131,6 +131,7 @@ namespace PhpbbInDotnet.Forum
             services.AddScoped<ModeratorService>();
             services.AddScoped<BBCodeRenderingService>();
             services.AddScoped<StatisticsService>();
+            services.AddScoped<OperationLogService>();
 
             services.AddTransient<IHttpContextAccessor, HttpContextAccessor>();
             services.AddTransient<LanguageProvider>();
