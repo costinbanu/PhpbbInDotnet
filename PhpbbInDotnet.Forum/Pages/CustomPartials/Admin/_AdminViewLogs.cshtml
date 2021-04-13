@@ -10,10 +10,26 @@
 @inject CommonUtils _utils
 
 @{
-    var (items, count) = await _logService.GetLogs(Model.LogType, Model.AuthorName, Model.LogPage);
+    var (logItems, count) = await _logService.GetOperationLogs(Model.LogType, Model.AuthorName, Model.LogPage);
+    var systemLogs = _logService.GetSystemLogs() ?? new List<(DateTime LogDate, string LogPath)>();
     var paginator = new Paginator(count, Model.LogPage, link: $"/Admin?LogType={Model.LogType}&LogPage=1&AuthorName={HttpUtility.UrlEncode(Model.AuthorName)}&handler=forumLogs", pageSize: _logService.LOG_PAGE_SIZE, pageNumKey: "LogPage");
 }
-
+<h4>@Html.Raw(_languageProvider.Admin[Model.Language, "SYSTEM_LOGS"])</h4>
+<form method="post" asp-page-handler="systemLogs">
+    @Html.DropDownList(
+        nameof(AdminModel.SystemLogPath),
+        systemLogs.Select(l => new SelectListItem(l.LogDate.ToString("D", new System.Globalization.CultureInfo(Model.Language)), l.LogPath)),
+        _languageProvider.Admin[Model.Language, "GET_SYSTEM_LOG_FOR_DATE"],
+        new { style = "height: 30px; padding-top: 0px" }
+    )
+    @*<input type="hidden" name="handler" value="systemLogs" />*@
+    <p style="clear:both"></p>
+    <input type="submit" value="@Html.Raw(_languageProvider.BasicText[Model.Language, "SUBMIT", Casing.FirstUpper])" class="MyButton" />
+</form>
+<p></p>
+<hr class="BoxSeparator" />
+<p></p>
+<h4>@Html.Raw(_languageProvider.Admin[Model.Language, "OPERATION_LOGS"])</h4>
 <form method="get">
     @Html.DropDownListFor(
         m => m.LogType,
@@ -41,7 +57,7 @@
 
 <p></p>
 <div>
-    @foreach (var item in items)
+    @foreach (var item in logItems)
     {
         <div class="FlexCenter">
             <div class="FlexCaption">
@@ -105,7 +121,7 @@
                 @Html.Raw(item.LogData)
             </div>
         </div>
-        @if (item != items.Last())
+        @if (item != logItems.Last())
         {
             <hr class="SubtypeSeparator" />
         }

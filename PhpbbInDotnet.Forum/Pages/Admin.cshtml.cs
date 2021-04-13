@@ -1,17 +1,18 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using LazyCache;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
-using PhpbbInDotnet.Forum.Pages.CustomPartials.Admin;
+using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Mime;
 using System.Threading.Tasks;
-using PhpbbInDotnet.Languages;
-using LazyCache;
+using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -213,6 +214,29 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             Category = AdminCategories.Logs;
             return await OnGet();
+        }
+
+        [BindProperty]
+        public string SystemLogPath { get; set; }
+
+        public async Task<IActionResult> OnPostSystemLogs()
+        {
+            if (string.IsNullOrWhiteSpace(SystemLogPath))
+            {
+                return await OnGet();
+            }
+
+            return await WithAdmin(() =>
+            {
+                var cd = new ContentDisposition
+                {
+                    FileName = HttpUtility.UrlEncode(System.IO.Path.GetFileName(SystemLogPath)),
+                    Inline = false
+                };
+                Response.Headers.Add("Content-Disposition", cd.ToString());
+                Response.Headers.Add("X-Content-Type-Options", "nosniff");
+                return Task.FromResult<IActionResult>(File(System.IO.File.OpenRead(SystemLogPath), "text/plain"));
+            });
         }
 
         #endregion Logs

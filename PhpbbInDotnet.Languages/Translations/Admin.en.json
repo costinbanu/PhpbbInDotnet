@@ -166,10 +166,13 @@
   "UPDATE_LANGUAGE_FILE_HINT": "Update the 'BBCodes.[language].json' file and add new entries (or edit the existing ones) for 'CAPTION_[tag_bb]' and 'BUTTON_TEXT_[tag_bb]' to show a personalized explanation and text in the posting page.",
 
   //LOGS
+  "SYSTEM_LOGS": "System logs",
+  "OPERATION_LOGS": "Operation logs",
   "VIEW_LOGS": "View logs",
   "SORT_BY_LOG_TYPE": "Filter by log type...",
   "LOG_TYPE": "Log type",
   "OPERATION": "Operation",
   "LOG_DATE": "Log date",
-  "ADDITIONAL_INFO": "Additional info"
+  "ADDITIONAL_INFO": "Additional info",
+  "GET_SYSTEM_LOG_FOR_DATE": "Download system log for date..."
 }

@@ -166,10 +166,13 @@
   "UPDATE_LANGUAGE_FILE_HINT": "Actualizează fișierul 'BBCodes.[limbă].json' și adaugă intrări noi (sau modifică-le pe cele existente) pentru 'CAPTION_[tag_bb]' și 'BUTTON_TEXT_[tag_bb]' pentru a arăta o explicație și un text personalizate în pagina de postat mesaje.",
 
   //LOGS
+  "SYSTEM_LOGS": "Loguri sistem",
+  "OPERATION_LOGS": "Loguri operațiuni",
   "VIEW_LOGS": "Vezi loguri",
   "SORT_BY_LOG_TYPE": "Filtrează după tipul logului...",
   "LOG_TYPE": "Tip log",
   "OPERATION": "Operațiune",
   "LOG_DATE": "Data log-ului",
-  "ADDITIONAL_INFO": "Date suplimentare"
+  "ADDITIONAL_INFO": "Date suplimentare",
+  "GET_SYSTEM_LOG_FOR_DATE": "Descarcă logul de sistem pentru data..."
 }
