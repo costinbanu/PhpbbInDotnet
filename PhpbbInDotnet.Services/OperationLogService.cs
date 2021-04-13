@@ -113,6 +113,11 @@ namespace PhpbbInDotnet.Services
         public async Task LogModeratorPostAction(ModeratorPostActions action, int modUserId, PhpbbPosts post, string additionalData = null)
             => await WithErrorHandling(async () => await Log(EnumString(action), $"Post Id: {post.PostId}, Post subject: {post.PostSubject}, Additional data: {additionalData}", modUserId, OperationLogType.Moderator, post.ForumId, post.TopicId));
 
+        public async Task LogUserProfileAction(UserProfileActions action, int editingUser, PhpbbUsers targetUser)
+            => await WithErrorHandling(async () =>
+                await Log(EnumString(action), $"User {editingUser} has changed the profile of user {targetUser.UserId} ({targetUser.UsernameClean})", editingUser, OperationLogType.User)
+            );
+
         private async Task Log(string action, string logData, int userId, OperationLogType operationType, int forumId = 0, int topicId = 0)
         {
             await _context.Database.GetDbConnection().ExecuteAsync(

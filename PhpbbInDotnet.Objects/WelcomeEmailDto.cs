@@ -11,5 +11,6 @@ namespace PhpbbInDotnet.Objects
         public DateTime? RegistrationDate { get; set; } = null;
         public bool IsEmailChangeReminder { get; set; } = false;
         public DateTime? EmailChangeDate { get; set; } = null;
+        public string Language { get; set; } = null;
     }
 }

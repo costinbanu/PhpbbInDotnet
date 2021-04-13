@@ -92,13 +92,15 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private readonly StorageService _storageService;
         private readonly WritingToolsService _writingService;
+        private readonly OperationLogService _operationLogService;
 
-        public UserModel(CommonUtils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, 
-            StorageService storageService, WritingToolsService writingService, IConfiguration config, AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider)
+        public UserModel(CommonUtils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, StorageService storageService, 
+            WritingToolsService writingService, IConfiguration config, AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider, OperationLogService operationLogService)
             : base(context, forumService, userService, cache, config, sessionCounter, utils, languageProvider)
         {
             _storageService = storageService;
             _writingService = writingService;
+            _operationLogService = operationLogService;
         }
 
         public async Task<IActionResult> OnGet()
@@ -136,7 +138,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 return RedirectToPage("Error", new { isNotFound = true });
             }
 
-            var isSelf = CurrentUser.UserId == (await GetCurrentUserAsync()).UserId;
+            var currentUserId = (await GetCurrentUserAsync()).UserId;
+            var isSelf = CurrentUser.UserId == currentUserId;
             var userMustLogIn = dbUser.UserAllowPm.ToBool() != AllowPM || dbUser.UserDateformat != CurrentUser.UserDateformat;
             var lang = await GetLanguage();
             var validator = new UserProfileDataValidationService(ModelState, LanguageProvider, lang);
@@ -246,7 +249,8 @@ namespace PhpbbInDotnet.Forum.Pages
                             {
                                 RegistrationCode = registrationCode,
                                 Subject = subject,
-                                UserName = dbUser.Username
+                                UserName = dbUser.Username,
+                                Language = dbUser.UserLang
                             },
                             PageContext,
                             HttpContext
@@ -261,6 +265,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 EmailChanged = true;
             }
 
+            var passwordChanged = false;
             if (!string.IsNullOrWhiteSpace(FirstPassword) && Crypter.Phpass.Crypt(FirstPassword, dbUser.UserPassword) != dbUser.UserPassword)
             {
                 var validations = new[]
@@ -277,6 +282,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 dbUser.UserPassword = Crypter.Phpass.Crypt(FirstPassword, Crypter.Phpass.GenerateSalt());
                 dbUser.UserPasschg = DateTime.UtcNow.ToUnixTimestamp();
                 userMustLogIn = true;
+                passwordChanged = true;
             }
 
             if (DeleteAvatar && !string.IsNullOrWhiteSpace(dbUser.UserAvatar))
@@ -421,6 +427,15 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     Mode = UserPageMode.Edit;
                 }
+            }
+
+            if (EmailChanged)
+            {
+                await _operationLogService.LogUserProfileAction(UserProfileActions.ChangeEmail, currentUserId, dbUser);
+            }
+            if (passwordChanged)
+            {
+                await _operationLogService.LogUserProfileAction(UserProfileActions.ChangePassword, currentUserId, dbUser);
             }
 
             await Render(dbUser);

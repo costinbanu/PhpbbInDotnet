@@ -236,26 +236,28 @@ namespace PhpbbInDotnet.Services
                             WelcomeEmailDto model;
                             if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed)
                             {
-                                subject = string.Format(LanguageProvider.Email[lang, "WELCOME_REMINDER_SUBJECT_FORMAT"], forumName);
+                                subject = string.Format(LanguageProvider.Email[user.UserLang, "WELCOME_REMINDER_SUBJECT_FORMAT"], forumName);
                                 model = new WelcomeEmailDto
                                 {
                                     RegistrationCode = user.UserActkey,
                                     Subject = subject,
                                     UserName = user.Username,
                                     IsRegistrationReminder = true,
-                                    RegistrationDate = user.UserRegdate.ToUtcTime()
+                                    RegistrationDate = user.UserRegdate.ToUtcTime(),
+                                    Language = user.UserLang
                                 };
                             }
                             else if (user.UserInactiveReason == UserInactiveReason.ChangedEmailNotConfirmed)
                             {
-                                subject = string.Format(LanguageProvider.Email[lang, "EMAIL_CHANGED_REMINDER_SUBJECT_FORMAT"], forumName);
+                                subject = string.Format(LanguageProvider.Email[user.UserLang, "EMAIL_CHANGED_REMINDER_SUBJECT_FORMAT"], forumName);
                                 model = new WelcomeEmailDto
                                 {
                                     RegistrationCode = user.UserActkey,
                                     Subject = subject,
                                     UserName = user.Username,
                                     IsEmailChangeReminder = true,
-                                    EmailChangeDate = user.UserInactiveTime.ToUtcTime()
+                                    EmailChangeDate = user.UserInactiveTime.ToUtcTime(),
+                                    Language = user.UserLang
                                 };
                             }
                             else

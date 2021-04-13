@@ -9,7 +9,7 @@
 @inject Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor
 
 @{
-    var lang = _languageProvider.GetValidatedLanguage(null, _httpContextAccessor.HttpContext?.Request);
+    var lang = Model.Language ?? _languageProvider.GetValidatedLanguage(null, _httpContextAccessor.HttpContext?.Request);
     var culture = new System.Globalization.CultureInfo(lang);
     var baseUrl = _config.GetValue<string>("BaseUrl");
     var forumName = _config.GetValue<string>("ForumName");
