@@ -10,7 +10,7 @@ namespace PhpbbInDotnet.Utilities
 
         public const int ANONYMOUS_USER_ID = 1;
 
-        public const int GUESTS_GROUP_ID = 2;
+        public const int GUESTS_GROUP_ID = 1;
 
         public const int BOTS_GROUP_ID = 6;
 

@@ -1,20 +1,20 @@
-﻿using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Objects;
+﻿using Dapper;
+using LazyCache;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Dapper;
-using Microsoft.EntityFrameworkCore;
 using System.Globalization;
-using PhpbbInDotnet.Languages;
-using Microsoft.AspNetCore.Http;
-using LazyCache;
+using System.Linq;
 using System.Net.Mail;
-using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
 {
@@ -391,7 +391,8 @@ namespace PhpbbInDotnet.Services
                             join ug in _context.PhpbbUserGroup.AsNoTracking()
                             on u.UserId equals ug.UserId into joined
                             from j in joined.DefaultIfEmpty()
-                            where j == null || (j.GroupId != Constants.BOTS_GROUP_ID && j.GroupId != Constants.GUESTS_GROUP_ID)
+                            let groupId = j == null ? u.GroupId : j.GroupId
+                            where groupId != Constants.BOTS_GROUP_ID && groupId != Constants.GUESTS_GROUP_ID
                             select u;
 
                 if (!(searchParameters?.NeverActive ?? false))
@@ -409,9 +410,11 @@ namespace PhpbbInDotnet.Services
                             select q;
                 }
 
-                query = from q in query
-                        orderby q.UserRegdate ascending
-                        select q;
+                query = (
+                    from q in query
+                    orderby q.UsernameClean ascending
+                    select q
+                ).Distinct();
 
                 return (null, true, await query.ToListAsync());
             }
