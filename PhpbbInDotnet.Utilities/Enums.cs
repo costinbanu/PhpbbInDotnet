@@ -135,6 +135,12 @@ namespace PhpbbInDotnet.Utilities
         DuplicateSelectedPost
     }
 
+    public enum UserProfileActions
+    {
+        ChangeEmail,
+        ChangePassword
+    }
+
     public enum PostingActions
     {
         NewTopic,

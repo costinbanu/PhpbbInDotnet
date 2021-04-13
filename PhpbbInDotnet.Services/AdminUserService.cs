@@ -568,23 +568,23 @@ namespace PhpbbInDotnet.Services
                 await _context.SaveChangesAsync();
                 await _context.Database.GetDbConnection().ExecuteAsync("DELETE FROM phpbb_banlist WHERE ban_id IN @ids", new { ids = indexesToRemove.Select(idx => banlist[idx].BanId) });
 
-                foreach (var ban in banlist)
-                {
-                    AdminBanListActions action;
-                    if (indexesToRemove.Contains(ban.BanId))
-                    {
-                        action = AdminBanListActions.Delete;
-                    }
-                    else if (ban.BanId == 0)
-                    {
-                        action = AdminBanListActions.Add;
-                    }
-                    else
-                    {
-                        action = AdminBanListActions.Update;
-                    }
-                    await _operationLogService.LogAdminBanListAction(action, adminUserId, ban);
-                }
+                //foreach (var ban in banlist)
+                //{
+                //    AdminBanListActions action;
+                //    if (indexesToRemove.Contains(ban.BanId))
+                //    {
+                //        action = AdminBanListActions.Delete;
+                //    }
+                //    else if (ban.BanId == 0)
+                //    {
+                //        action = AdminBanListActions.Add;
+                //    }
+                //    else
+                //    {
+                //        action = AdminBanListActions.Update;
+                //    }
+                //    await _operationLogService.LogAdminBanListAction(action, adminUserId, ban);
+                //}
 
                 return (LanguageProvider.Admin[lang, "BANLIST_UPDATED_SUCCESSFULLY"], true);
             }
