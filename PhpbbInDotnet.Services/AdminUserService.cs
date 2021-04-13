@@ -24,15 +24,17 @@ namespace PhpbbInDotnet.Services
         private readonly PostService _postService;
         private readonly IAppCache _cache;
         private readonly IConfiguration _config;
+        private readonly OperationLogService _operationLogService;
 
-        public AdminUserService(ForumDbContext context, PostService postService, IAppCache cache, IConfiguration config, 
-            CommonUtils utils, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
+        public AdminUserService(ForumDbContext context, PostService postService, IAppCache cache, IConfiguration config, CommonUtils utils, 
+            LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor, OperationLogService operationLogService)
             : base(utils, languageProvider, httpContextAccessor)
         {
             _context = context;
             _postService = postService;
             _cache = cache;
             _config = config;
+            _operationLogService = operationLogService;
         }
 
         public async Task<List<PhpbbUsers>> GetInactiveUsers()
@@ -44,12 +46,20 @@ namespace PhpbbInDotnet.Services
                 select u
             ).ToListAsync();
 
-        public async Task<(string Message, bool? IsSuccess)> DeleteUsersWithEmailNotConfirmed(int[] userIds)
+        public async Task<(string Message, bool? IsSuccess)> DeleteUsersWithEmailNotConfirmed(int[] userIds, int adminUserId)
         {
             var lang = await GetLanguage();
             if (!(userIds?.Any() ?? false))
             {
                 return (LanguageProvider.Admin[lang, "NO_USER_SELECTED"], null);
+            }
+
+            async Task Log(IEnumerable<PhpbbUsers> users)
+            {
+                foreach (var user in users)
+                {
+                    await _operationLogService.LogAdminUserAction(AdminUserActions.Delete_KeepMessages, adminUserId, user, "Batch removing inactive users with unconfirmed email.");
+                }
             }
 
             try
@@ -65,11 +75,14 @@ namespace PhpbbInDotnet.Services
 
                 if (users.Count == userIds.Length)
                 {
+                    await Log(users);
                     return (LanguageProvider.Admin[lang, "USERS_DELETED_SUCCESSFULLY"], true);
                 }
 
                 var dbUserIds = users.Select(u => u.UserId).ToList();
                 var changedStatus = userIds.Where(u => !dbUserIds.Contains(u));
+
+                await Log(users.Where(u => dbUserIds.Contains(u.UserId)));
 
                 return (
                     string.Format(
@@ -88,7 +101,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<(string Message, bool? IsSuccess)> ManageUser(AdminUserActions? action, int? userId, PageContext pageContext, HttpContext httpContext)
+        public async Task<(string Message, bool? IsSuccess)> ManageUser(AdminUserActions? action, int? userId, PageContext pageContext, HttpContext httpContext, int adminUserId)
         {
             var lang = await GetLanguage();
             if (userId == Constants.ANONYMOUS_USER_ID)
@@ -272,6 +285,11 @@ namespace PhpbbInDotnet.Services
 
                 await _context.SaveChangesAsync();
 
+                if (isSuccess ?? false)
+                {
+                    await _operationLogService.LogAdminUserAction(action.Value, adminUserId, user);
+                }
+
                 return (message, isSuccess);
             }
             catch (Exception ex)
@@ -281,7 +299,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<(string Message, bool? IsSuccess)> ManageRank(int? rankId, string rankName, bool? deleteRank)
+        public async Task<(string Message, bool? IsSuccess)> ManageRank(int? rankId, string rankName, bool? deleteRank, int adminUserId)
         {
             var lang = await GetLanguage();
             try
@@ -290,33 +308,43 @@ namespace PhpbbInDotnet.Services
                 {
                     return (LanguageProvider.Admin[lang, "INVALID_RANK_NAME"], false);
                 }
+
+                AdminRankActions action;
+                PhpbbRanks actual;
                 if ((rankId ?? 0) == 0)
                 {
-                    var result = await _context.PhpbbRanks.AddAsync(new PhpbbRanks
+                    actual = new PhpbbRanks
                     {
                         RankTitle = rankName
-                    });
+                    };
+                    var result = await _context.PhpbbRanks.AddAsync(actual);
                     result.Entity.RankId = 0;
+                    action = AdminRankActions.Add;
                 }
                 else if (deleteRank ?? false)
                 {
-                    var actual = await _context.PhpbbRanks.FirstOrDefaultAsync(x => x.RankId == rankId);
+                    actual = await _context.PhpbbRanks.FirstOrDefaultAsync(x => x.RankId == rankId);
                     if (actual == null)
                     {
                         return (string.Format(LanguageProvider.Admin[lang, "RANK_DOESNT_EXIST_FORMAT"], rankId), false);
                     }
                     _context.PhpbbRanks.Remove(actual);
+                    action = AdminRankActions.Delete;
                 }
                 else
                 {
-                    var actual = await _context.PhpbbRanks.FirstOrDefaultAsync(x => x.RankId == rankId);
+                    actual = await _context.PhpbbRanks.FirstOrDefaultAsync(x => x.RankId == rankId);
                     if (actual == null)
                     {
                         return (string.Format(LanguageProvider.Admin[lang, "RANK_DOESNT_EXIST_FORMAT"], rankId), false);
                     }
                     actual.RankTitle = rankName;
+                    action = AdminRankActions.Update;
                 }
                 await _context.SaveChangesAsync();
+
+                await _operationLogService.LogAdminRankAction(action, adminUserId, actual);
+
                 return (LanguageProvider.Admin[lang, "RANK_UPDATED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
@@ -362,8 +390,8 @@ namespace PhpbbInDotnet.Services
                                 && u.UserId != Constants.ANONYMOUS_USER_ID
                             join ug in _context.PhpbbUserGroup.AsNoTracking()
                             on u.UserId equals ug.UserId into joined
-                            from j in joined
-                            where j.GroupId != Constants.BOTS_GROUP_ID && j.GroupId != Constants.GUESTS_GROUP_ID
+                            from j in joined.DefaultIfEmpty()
+                            where j == null || (j.GroupId != Constants.BOTS_GROUP_ID && j.GroupId != Constants.GUESTS_GROUP_ID)
                             select u;
 
                 if (!(searchParameters?.NeverActive ?? false))
@@ -398,7 +426,8 @@ namespace PhpbbInDotnet.Services
                 return (string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false, new List<PhpbbUsers>());
             }
         }
-        public async Task<(string Message, bool? IsSuccess)> ManageGroup(UpsertGroupDto dto)
+
+        public async Task<(string Message, bool? IsSuccess)> ManageGroup(UpsertGroupDto dto, int adminUserId)
         {
             var lang = await GetLanguage();
             try
@@ -415,7 +444,7 @@ namespace PhpbbInDotnet.Services
 
                 async Task<bool> roleIsValid(int roleId) => await _context.PhpbbAclRoles.FirstOrDefaultAsync(x => x.RoleId == roleId) != null;
 
-                AdminGroupActions? action = null;
+                AdminGroupActions action;
                 var changedColor = false;
                 PhpbbGroups actual;
                 if (dto.Id == 0)
@@ -508,6 +537,8 @@ namespace PhpbbInDotnet.Services
                     await _context.SaveChangesAsync();
                 }
 
+                await _operationLogService.LogAdminGroupAction(action, adminUserId, actual);
+
                 var message = action switch
                 {
                     AdminGroupActions.Add => LanguageProvider.Admin[lang, "GROUP_ADDED_SUCCESSFULLY"],
@@ -524,7 +555,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<(string Message, bool? IsSuccess)> BanUser(List<PhpbbBanlist> banlist, List<int> indexesToRemove)
+        public async Task<(string Message, bool? IsSuccess)> BanUser(List<PhpbbBanlist> banlist, List<int> indexesToRemove, int adminUserId)
         {
             var lang = await GetLanguage();
             try
@@ -533,6 +564,24 @@ namespace PhpbbInDotnet.Services
                 _context.PhpbbBanlist.UpdateRange(banlist.Where(x => x.BanId != 0));
                 await _context.SaveChangesAsync();
                 await _context.Database.GetDbConnection().ExecuteAsync("DELETE FROM phpbb_banlist WHERE ban_id IN @ids", new { ids = indexesToRemove.Select(idx => banlist[idx].BanId) });
+
+                foreach (var ban in banlist)
+                {
+                    AdminBanListActions action;
+                    if (indexesToRemove.Contains(ban.BanId))
+                    {
+                        action = AdminBanListActions.Delete;
+                    }
+                    else if (ban.BanId == 0)
+                    {
+                        action = AdminBanListActions.Add;
+                    }
+                    else
+                    {
+                        action = AdminBanListActions.Update;
+                    }
+                    await _operationLogService.LogAdminBanListAction(action, adminUserId, ban);
+                }
 
                 return (LanguageProvider.Admin[lang, "BANLIST_UPDATED_SUCCESSFULLY"], true);
             }

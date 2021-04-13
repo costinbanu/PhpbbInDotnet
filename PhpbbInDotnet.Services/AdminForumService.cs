@@ -23,17 +23,19 @@ namespace PhpbbInDotnet.Services
         private readonly ForumDbContext _context;
         private readonly ForumTreeService _forumService;
         private readonly IConfiguration _config;
+        private readonly OperationLogService _operationLogService;
 
         public AdminForumService(ForumDbContext context, ForumTreeService forumService, IConfiguration config, CommonUtils utils, 
-            LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
+            LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor, OperationLogService operationLogService)
             : base(utils, languageProvider, httpContextAccessor)
         {
             _context = context;
             _forumService = forumService;
             _config = config;
+            _operationLogService = operationLogService;
         }
 
-        public async Task<(string Message, bool? IsSuccess)> ManageForumsAsync(UpsertForumDto dto)
+        public async Task<(string Message, bool? IsSuccess)> ManageForumsAsync(UpsertForumDto dto, int adminUserId)
         {
             var lang = await GetLanguage();
             try
@@ -121,10 +123,10 @@ namespace PhpbbInDotnet.Services
                 }
 
                 var rolesForAclEntity = new Dictionary<AclEntityType, Dictionary<int, int>>
-            {
-                { AclEntityType.User, translatePermissions(dto.UserForumPermissions) },
-                { AclEntityType.Group, translatePermissions(dto.GroupForumPermissions) }
-            };
+                {
+                    { AclEntityType.User, translatePermissions(dto.UserForumPermissions) },
+                    { AclEntityType.Group, translatePermissions(dto.GroupForumPermissions) }
+                };
 
                 await _context.SaveChangesAsync();
 
@@ -157,6 +159,8 @@ namespace PhpbbInDotnet.Services
                         }
                     }
                 }
+
+                await _operationLogService.LogAdminForumAction(isNewForum ? AdminForumActions.Add : AdminForumActions.Update, adminUserId, actual);
 
                 return (string.Format(LanguageProvider.Admin[lang, "FORUM_UPDATED_SUCCESSFULLY_FORMAT"], actual.ForumName), true);
             }
@@ -225,7 +229,7 @@ namespace PhpbbInDotnet.Services
             return await connection.QueryAsync<ForumPermissions>("CALL `forum`.`get_forum_permissions`(@forumId);", new { forumId });
         }
 
-        public async Task<(string Message, bool? IsSuccess)> DeleteForum( int forumId)
+        public async Task<(string Message, bool? IsSuccess)> DeleteForum(int forumId, int adminUserId)
         {
             var lang = await GetLanguage();
             try
@@ -243,8 +247,12 @@ namespace PhpbbInDotnet.Services
                 {
                     return (string.Format(LanguageProvider.Admin[lang, "CANT_DELETE_HAS_TOPICS_FORMAT"], forum.ForumName), false);
                 }
+
                 _context.PhpbbForums.Remove(forum);
                 await _context.SaveChangesAsync();
+
+                await _operationLogService.LogAdminForumAction(AdminForumActions.Delete, adminUserId, forum);
+
                 return (string.Format(LanguageProvider.Admin[lang, "FORUM_DELETED_SUCCESSFULLY_FORMAT"], forum.ForumName), true);
             }
             catch (Exception ex)

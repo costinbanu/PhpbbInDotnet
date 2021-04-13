@@ -80,6 +80,20 @@ namespace PhpbbInDotnet.Utilities
         Update
     }
 
+    public enum AdminRankActions
+    {
+        Add,
+        Delete,
+        Update
+    }
+
+    public enum AdminBanListActions
+    {
+        Add,
+        Delete,
+        Update
+    }
+
     public enum AdminForumActions
     {
         Add,

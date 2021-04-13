@@ -29,25 +29,30 @@ namespace PhpbbInDotnet.Services
             _utils = utils;
         }
 
-        public async Task LogAdminUserAction(AdminUserActions action, int adminUserId, int userId)
+        public async Task LogAdminUserAction(AdminUserActions action, int adminUserId, PhpbbUsers user, string additionalData = null)
             => await WithErrorHandling(async () =>
-            {
-                var user = await _context.Database.GetDbConnection().QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
-                if (user != null)
-                {
-                    await Log(action, $"User Id: {userId}, Username: {user.Username}", adminUserId);
-                }
-            });
+                await Log(EnumString(action), $"User Id: {user.UserId}, Username: {user.Username}, Additional data: {additionalData}", adminUserId)
+            );
 
-        public async Task LogAdminForumAction(AdminForumActions action, int adminUserId, int forumId)
+        public async Task LogAdminRankAction(AdminRankActions action, int adminUserId, PhpbbRanks rank)
             => await WithErrorHandling(async () =>
-            {
-                var forum = await _context.Database.GetDbConnection().QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { forumId });
-                if (forum != null)
-                {
-                    await Log(action, $"Forum Id: {forumId}, Forum name: {forum.ForumName}", adminUserId, forumId);
-                }
-            });
+                await Log(EnumString(action), $"Rank id: {rank.RankId}, Rank name: {rank.RankTitle}", adminUserId)
+            );
+
+        public async Task LogAdminGroupAction(AdminGroupActions action, int adminUserId, PhpbbGroups group)
+            => await WithErrorHandling(async () =>
+                await Log(EnumString(action), $"Group id: {group.GroupId}, Group name: {group.GroupName}", adminUserId)
+            );
+
+        public async Task LogAdminBanListAction(AdminBanListActions action, int adminUserId, PhpbbBanlist banList)
+            => await WithErrorHandling(async () =>
+                await Log(EnumString(action), $"Ban list id: {banList.BanId}, Ban list email: {banList.BanEmail}, Ban list IP: {banList.BanIp}", adminUserId)
+            );
+
+        public async Task LogAdminForumAction(AdminForumActions action, int adminUserId, PhpbbForums forum)
+            => await WithErrorHandling(async () =>
+                await Log(EnumString(action), $"Forum Id: {forum.ForumId}, Forum name: {forum.ForumName}", adminUserId, forum.ForumId)
+            );
 
         public async Task LogModeratorTopicAction(ModeratorTopicActions action, int modUserId, int topicId, string additionalData = null)
             => await WithErrorHandling(async () =>
@@ -55,7 +60,7 @@ namespace PhpbbInDotnet.Services
                 var topic = await _context.Database.GetDbConnection().QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
                 if (topic != null)
                 {
-                    await Log(action, $"Topic Id: {topicId}, Topic title: {topic.TopicTitle}, Additional data: {additionalData}", modUserId, topic.ForumId, topicId);
+                    await Log(EnumString(action), $"Topic Id: {topicId}, Topic title: {topic.TopicTitle}, Additional data: {additionalData}", modUserId, topic.ForumId, topicId);
                 }
             });
 
@@ -70,7 +75,7 @@ namespace PhpbbInDotnet.Services
             });
 
         public async Task LogModeratorPostAction(ModeratorPostActions action, int modUserId, PhpbbPosts post, string additionalData = null)
-            => await WithErrorHandling(async () => await Log(action, $"Post Id: {post.PostId}, Post subject: {post.PostSubject}, Additional data: {additionalData}", modUserId, post.ForumId, post.TopicId));
+            => await WithErrorHandling(async () => await Log(EnumString(action), $"Post Id: {post.PostId}, Post subject: {post.PostSubject}, Additional data: {additionalData}", modUserId, post.ForumId, post.TopicId));
 
         public async Task<(List<OperationLogSummary> PageItems, int Count)> GetOperationLogs(OperationLogType? logType, string authorName = null, int page = 1)
             => await WithErrorHandling(async () =>
@@ -108,7 +113,7 @@ namespace PhpbbInDotnet.Services
                 return Directory.EnumerateFiles("logs", "log*.txt").Select(Parse).Where(x => x.LogDate != default && x.LogPath != default).ToList();
             });
 
-        private async Task Log(Enum modAction, string logData, int userId, int forumId = 0, int topicId = 0)
+        private async Task Log(string action, string logData, int userId, int forumId = 0, int topicId = 0)
         {
             await _context.Database.GetDbConnection().ExecuteAsync(
                 "INSERT INTO phpbb_log (user_id, forum_id, topic_id, log_data, log_ip, log_operation, log_time, log_type) " +
@@ -119,13 +124,16 @@ namespace PhpbbInDotnet.Services
                     forumId,
                     topicId,
                     logData,
-                    logIp = _httpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString(),
-                    logOperation = modAction.ToString(),
+                    logIp = _httpContextAccessor.HttpContext.Connection.RemoteIpAddress,
+                    logOperation = action,
                     logTime = DateTime.UtcNow.ToUnixTimestamp(),
                     logType = OperationLogType.Moderator
                 }
             );
         }
+
+        private string EnumString(Enum @enum)
+            => $"{@enum.GetType().Name}.{@enum}";
 
         private async Task WithErrorHandling(Func<Task> toDo)
         {
