@@ -2,6 +2,7 @@
 using LazyCache;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
@@ -26,7 +27,7 @@ namespace PhpbbInDotnet.Services
         private readonly IConfiguration _config;
         private readonly OperationLogService _operationLogService;
 
-        public AdminUserService(ForumDbContext context, PostService postService, IAppCache cache, IConfiguration config, CommonUtils utils, 
+        public AdminUserService(ForumDbContext context, PostService postService, IAppCache cache, IConfiguration config, CommonUtils utils,
             LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor, OperationLogService operationLogService)
             : base(utils, languageProvider, httpContextAccessor)
         {
@@ -36,6 +37,8 @@ namespace PhpbbInDotnet.Services
             _config = config;
             _operationLogService = operationLogService;
         }
+
+        #region User
 
         public async Task<List<PhpbbUsers>> GetInactiveUsers()
             => await (
@@ -86,11 +89,11 @@ namespace PhpbbInDotnet.Services
 
                 return (
                     string.Format(
-                        LanguageProvider.Admin[lang, "USERS_DELETED_PARTIALLY_FORMAT"], 
-                        string.Join(", ", dbUserIds), 
-                        LanguageProvider.Enums[lang, UserInactiveReason.NewlyRegisteredNotConfirmed], 
+                        LanguageProvider.Admin[lang, "USERS_DELETED_PARTIALLY_FORMAT"],
+                        string.Join(", ", dbUserIds),
+                        LanguageProvider.Enums[lang, UserInactiveReason.NewlyRegisteredNotConfirmed],
                         string.Join(", ", changedStatus)
-                    ), 
+                    ),
                     null
                 );
             }
@@ -166,13 +169,13 @@ namespace PhpbbInDotnet.Services
                                 From = new MailAddress($"admin@metrouusor.com", forumName),
                                 Subject = string.Format(LanguageProvider.Email[user.UserLang, "ACCOUNT_ACTIVATED_NOTIFICATION_SUBJECT_FORMAT"], forumName),
                                 Body = await Utils.RenderRazorViewToString(
-                                    "_AccountActivatedNotification", 
-                                    new AccountActivatedNotificationDto 
-                                    { 
+                                    "_AccountActivatedNotification",
+                                    new AccountActivatedNotificationDto
+                                    {
                                         Username = user.Username,
                                         Language = user.UserLang
-                                    }, 
-                                    pageContext, 
+                                    },
+                                    pageContext,
                                     httpContext
                                 ),
                                 IsBodyHtml = true
@@ -301,61 +304,6 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<(string Message, bool? IsSuccess)> ManageRank(int? rankId, string rankName, bool? deleteRank, int adminUserId)
-        {
-            var lang = await GetLanguage();
-            try
-            {
-                if (string.IsNullOrWhiteSpace(rankName))
-                {
-                    return (LanguageProvider.Admin[lang, "INVALID_RANK_NAME"], false);
-                }
-
-                AdminRankActions action;
-                PhpbbRanks actual;
-                if ((rankId ?? 0) == 0)
-                {
-                    actual = new PhpbbRanks
-                    {
-                        RankTitle = rankName
-                    };
-                    var result = await _context.PhpbbRanks.AddAsync(actual);
-                    result.Entity.RankId = 0;
-                    action = AdminRankActions.Add;
-                }
-                else if (deleteRank ?? false)
-                {
-                    actual = await _context.PhpbbRanks.FirstOrDefaultAsync(x => x.RankId == rankId);
-                    if (actual == null)
-                    {
-                        return (string.Format(LanguageProvider.Admin[lang, "RANK_DOESNT_EXIST_FORMAT"], rankId), false);
-                    }
-                    _context.PhpbbRanks.Remove(actual);
-                    action = AdminRankActions.Delete;
-                }
-                else
-                {
-                    actual = await _context.PhpbbRanks.FirstOrDefaultAsync(x => x.RankId == rankId);
-                    if (actual == null)
-                    {
-                        return (string.Format(LanguageProvider.Admin[lang, "RANK_DOESNT_EXIST_FORMAT"], rankId), false);
-                    }
-                    actual.RankTitle = rankName;
-                    action = AdminRankActions.Update;
-                }
-                await _context.SaveChangesAsync();
-
-                await _operationLogService.LogAdminRankAction(action, adminUserId, actual);
-
-                return (LanguageProvider.Admin[lang, "RANK_UPDATED_SUCCESSFULLY"], true);
-            }
-            catch (Exception ex)
-            {
-                var id = Utils.HandleError(ex);
-                return (string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
-            }
-        }
-
         public async Task<(string Message, bool IsSuccess, List<PhpbbUsers> Result)> UserSearchAsync(AdminUserSearch searchParameters)
         {
             long ParseDate(string value, bool isUpperLimit)
@@ -431,6 +379,97 @@ namespace PhpbbInDotnet.Services
                 return (string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false, new List<PhpbbUsers>());
             }
         }
+
+        class DateInputException : Exception
+        {
+            internal DateInputException(Exception inner) : base("Failed to parse exact input dates", inner)
+            {
+
+            }
+        }
+
+        #endregion User
+
+        #region Rank
+
+        public async Task<(string Message, bool? IsSuccess)> ManageRank(int? rankId, string rankName, bool? deleteRank, int adminUserId)
+        {
+            var lang = await GetLanguage();
+            try
+            {
+                if (string.IsNullOrWhiteSpace(rankName))
+                {
+                    return (LanguageProvider.Admin[lang, "INVALID_RANK_NAME"], false);
+                }
+
+                AdminRankActions action;
+                PhpbbRanks actual;
+                if ((rankId ?? 0) == 0)
+                {
+                    actual = new PhpbbRanks
+                    {
+                        RankTitle = rankName
+                    };
+                    var result = await _context.PhpbbRanks.AddAsync(actual);
+                    result.Entity.RankId = 0;
+                    action = AdminRankActions.Add;
+                }
+                else if (deleteRank ?? false)
+                {
+                    actual = await _context.PhpbbRanks.FirstOrDefaultAsync(x => x.RankId == rankId);
+                    if (actual == null)
+                    {
+                        return (string.Format(LanguageProvider.Admin[lang, "RANK_DOESNT_EXIST_FORMAT"], rankId), false);
+                    }
+                    _context.PhpbbRanks.Remove(actual);
+                    action = AdminRankActions.Delete;
+                }
+                else
+                {
+                    actual = await _context.PhpbbRanks.FirstOrDefaultAsync(x => x.RankId == rankId);
+                    if (actual == null)
+                    {
+                        return (string.Format(LanguageProvider.Admin[lang, "RANK_DOESNT_EXIST_FORMAT"], rankId), false);
+                    }
+                    actual.RankTitle = rankName;
+                    action = AdminRankActions.Update;
+                }
+                await _context.SaveChangesAsync();
+
+                await _operationLogService.LogAdminRankAction(action, adminUserId, actual);
+
+                return (LanguageProvider.Admin[lang, "RANK_UPDATED_SUCCESSFULLY"], true);
+            }
+            catch (Exception ex)
+            {
+                var id = Utils.HandleError(ex);
+                return (string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+            }
+        }
+
+        public async Task<List<PhpbbRanks>> GetRawRanks()
+            => await _context.PhpbbRanks.AsNoTracking().ToListAsync();
+
+        #endregion Rank
+
+        #region Group
+
+        public async Task<List<UpsertGroupDto>> GetGroups()
+            => await (
+                from g in _context.PhpbbGroups.AsNoTracking()
+                let role = _context.PhpbbAclGroups.AsNoTracking().FirstOrDefault(rg => rg.GroupId == g.GroupId && rg.ForumId == 0)
+                select new UpsertGroupDto
+                {
+                    Id = g.GroupId,
+                    Name = g.GroupName,
+                    Desc = g.GroupDesc,
+                    Rank = g.GroupRank,
+                    Color = $"#{g.GroupColour}",
+                    EditTime = g.GroupEditTime,
+                    UploadLimit = g.GroupUserUploadSize,
+                    Role = role == null ? 0 : role.AuthRoleId
+                }
+            ).ToListAsync();
 
         public async Task<(string Message, bool? IsSuccess)> ManageGroup(UpsertGroupDto dto, int adminUserId)
         {
@@ -560,34 +599,62 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<(string Message, bool? IsSuccess)> BanUser(List<PhpbbBanlist> banlist, List<int> indexesToRemove, int adminUserId)
+        public async Task<(List<SelectListItem> Ranks, List<SelectListItem> Roles)> GetGroupRanksAndRolesSelectListItems()
+        {
+            var lang = await GetLanguage();
+            var groupRanks = new List<SelectListItem> { new SelectListItem(LanguageProvider.Admin[lang, "NO_RANK"], "0", true) };
+            groupRanks.AddRange(_context.PhpbbRanks.AsNoTracking().Select(x => new SelectListItem(x.RankTitle, x.RankId.ToString())));
+            var roles = new List<SelectListItem> { new SelectListItem(LanguageProvider.Admin[lang, "NO_ROLE"], "0", true) };
+            roles.AddRange(_context.PhpbbAclRoles.AsNoTracking().Where(x => x.RoleType == "u_").Select(x => new SelectListItem(LanguageProvider.Admin[lang, x.RoleName, Casing.None, x.RoleName], x.RoleId.ToString())));
+            return (groupRanks, roles);
+        }
+
+        #endregion Group
+
+        #region Banlist
+
+        public async Task<(string Message, bool? IsSuccess)> BanUser(List<UpsertBanListDto> banlist, List<int> indexesToRemove, int adminUserId)
         {
             var lang = await GetLanguage();
             try
             {
-                await _context.PhpbbBanlist.AddRangeAsync(banlist.Where(x => x.BanId == 0));
-                _context.PhpbbBanlist.UpdateRange(banlist.Where(x => x.BanId != 0));
-                await _context.SaveChangesAsync();
-                await _context.Database.GetDbConnection().ExecuteAsync("DELETE FROM phpbb_banlist WHERE ban_id IN @ids", new { ids = indexesToRemove.Select(idx => banlist[idx].BanId) });
-
-                //foreach (var ban in banlist)
-                //{
-                //    AdminBanListActions action;
-                //    if (indexesToRemove.Contains(ban.BanId))
-                //    {
-                //        action = AdminBanListActions.Delete;
-                //    }
-                //    else if (ban.BanId == 0)
-                //    {
-                //        action = AdminBanListActions.Add;
-                //    }
-                //    else
-                //    {
-                //        action = AdminBanListActions.Update;
-                //    }
-                //    await _operationLogService.LogAdminBanListAction(action, adminUserId, ban);
-                //}
-
+                var conn = _context.Database.GetDbConnection();
+                var indexHash = new HashSet<int>(indexesToRemove);
+                var exceptions = new List<Exception>();
+                for (var i = 0; i < banlist.Count; i++)
+                {
+                    try
+                    {
+                        AdminBanListActions? action = null;
+                        if (indexHash.Contains(i))
+                        {
+                            await conn.ExecuteAsync("DELETE FROM phpbb_banlist WHERE ban_id = @BanId", banlist[i]);
+                            action = AdminBanListActions.Delete;
+                        }
+                        else if (banlist[i].BanId == 0)
+                        {
+                            await conn.ExecuteAsync("INSERT INTO phpbb_banlist (ban_ip, ban_email) VALUES (@BanIp, @BanEmail)", banlist[i]);
+                            action = AdminBanListActions.Add;
+                        }
+                        else if (banlist[i].BanEmail != banlist[i].BanEmailOldValue || banlist[i].BanIp != banlist[i].BanIpOldValue)
+                        {
+                            await conn.ExecuteAsync("UPDATE phpbb_banlist SET ban_email = @BanEmail, ban_ip = @BanIp WHERE ban_id = @BanId", banlist[i]);
+                            action = AdminBanListActions.Update;
+                        }
+                        if (action != null)
+                        {
+                            await _operationLogService.LogAdminBanListAction(action.Value, adminUserId, banlist[i]);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        exceptions.Add(ex);
+                    }
+                }
+                if (exceptions.Any())
+                {
+                    throw new AggregateException(exceptions);
+                }
                 return (LanguageProvider.Admin[lang, "BANLIST_UPDATED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
@@ -597,12 +664,19 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        class DateInputException : Exception
-        {
-            internal DateInputException(Exception inner) : base("Failed to parse exact input dates", inner) 
-            {
-            
-            }
-        }
+        public async Task<List<UpsertBanListDto>> GetBanList()
+            => await (
+                from b in _context.PhpbbBanlist.AsNoTracking()
+                select new UpsertBanListDto
+                {
+                    BanId = b.BanId,
+                    BanEmail = b.BanEmail,
+                    BanEmailOldValue = b.BanEmail,
+                    BanIp = b.BanIp,
+                    BanIpOldValue = b.BanIp
+                }
+            ).ToListAsync();
+
+        #endregion Banlist
     }
 }

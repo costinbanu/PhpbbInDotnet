@@ -63,7 +63,7 @@ namespace PhpbbInDotnet.Languages
 
         #endregion Translation declarations
 
-        public LanguageProvider(ILogger logger, IAppCache cache, ForumDbContext context)
+        public LanguageProvider(ILogger logger, IAppCache cache, ForumDbContext context, CommonUtils utils)
         {
             _logger = logger;
             _context = context;
@@ -74,7 +74,7 @@ namespace PhpbbInDotnet.Languages
             _basicText = new Lazy<TextTranslation>(() => new TextTranslation(nameof(BasicText), _logger, cache));
             _aboutCookies = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(AboutCookies), _logger, cache));
             _email = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Email), _logger, cache));
-            _enums = new Lazy<EnumTranslation>(() => new EnumTranslation(_logger, cache));
+            _enums = new Lazy<EnumTranslation>(() => new EnumTranslation(_logger, cache, utils));
             _jsText = new Lazy<JavaScriptTranslation>(() => new JavaScriptTranslation(_logger, cache));
             _errors = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Errors), _logger, cache));
             _postingGuide = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(PostingGuide), _logger, cache));
@@ -139,6 +139,10 @@ namespace PhpbbInDotnet.Languages
 
             language = language.Split(',', ';').First().Trim();
             var (isValid, twoLetterLanguageName) = IsLanguageValid(language);
+            if (!isValid && language.Length >= 2)
+            {
+                (isValid, twoLetterLanguageName) = IsLanguageValid(language.Substring(0, 2));
+            }
             return isValid ? twoLetterLanguageName : @default;
         }
 

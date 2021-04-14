@@ -34,18 +34,18 @@ namespace PhpbbInDotnet.Services
             {
                 using var multi = await _context.Database.GetDbConnection().QueryMultipleAsync(
                     @"SELECT l.user_id, u.username, l.forum_id, f.forum_name, l.topic_id, t.topic_title, l.log_type, l.log_operation, l.log_data, l.log_time
-                                FROM phpbb_log l
-                                LEFT JOIN phpbb_users u ON l.user_id = u.user_id
-                                LEFT JOIN phpbb_forums f ON l.forum_id = f.forum_id
-                                LEFT JOIN phpbb_topics t ON l.topic_id = t.topic_id
-                                WHERE (@logType IS NULL OR l.log_type = @logType) AND (@authorName = '' OR u.username_clean = @authorName)
-                                ORDER BY l.log_time DESC
-                                LIMIT @skip, @take;
+                        FROM phpbb_log l
+                        LEFT JOIN phpbb_users u ON l.user_id = u.user_id
+                        LEFT JOIN phpbb_forums f ON l.forum_id = f.forum_id
+                        LEFT JOIN phpbb_topics t ON l.topic_id = t.topic_id
+                       WHERE (@logType IS NULL OR l.log_type = @logType) AND (@authorName = '' OR u.username_clean = @authorName)
+                       ORDER BY l.log_time DESC
+                       LIMIT @skip, @take;
 
-                              SELECT count(*)
-                                FROM phpbb_log l
-                                LEFT JOIN phpbb_users u ON l.user_id = u.user_id
-                                WHERE (@logType IS NULL OR l.log_type = @logType) AND (@authorName = '' OR u.username_clean = @authorName)",
+                      SELECT count(*)
+                        FROM phpbb_log l
+                        LEFT JOIN phpbb_users u ON l.user_id = u.user_id
+                       WHERE (@logType IS NULL OR l.log_type = @logType) AND (@authorName = '' OR u.username_clean = @authorName)",
                     new { logType, skip = LOG_PAGE_SIZE * (page - 1), take = LOG_PAGE_SIZE, authorName = _utils.CleanString(authorName) }
                 );
                 return ((await multi.ReadAsync<OperationLogSummary>()).AsList(), unchecked((int)await multi.ReadSingleAsync<long>()));
@@ -62,8 +62,15 @@ namespace PhpbbInDotnet.Services
                     }
                     return (default, default);
                 }
-                return Directory.EnumerateFiles("logs", "log*.txt").Select(Parse).Where(x => x.LogDate != default && x.LogPath != default).ToList();
+                return (
+                    from f in Directory.EnumerateFiles("logs", "log*.txt")
+                    let parsed = Parse(f)
+                    where parsed.LogDate != default && parsed.LogPath != default && parsed.LogDate < DateTime.Today
+                    orderby parsed.LogDate descending
+                    select parsed
+                ).ToList();
             });
+
 
         public async Task LogAdminUserAction(AdminUserActions action, int adminUserId, PhpbbUsers user, string additionalData = null)
             => await WithErrorHandling(async () =>
@@ -80,7 +87,7 @@ namespace PhpbbInDotnet.Services
                 await Log(EnumString(action), $"Group id: {group.GroupId}, Group name: {group.GroupName}", adminUserId, OperationLogType.Administrator)
             );
 
-        public async Task LogAdminBanListAction(AdminBanListActions action, int adminUserId, PhpbbBanlist banList)
+        public async Task LogAdminBanListAction(AdminBanListActions action, int adminUserId, UpsertBanListDto banList)
             => await WithErrorHandling(async () =>
                 await Log(EnumString(action), $"Ban list id: {banList.BanId}, Ban list email: {banList.BanEmail}, Ban list IP: {banList.BanIp}", adminUserId, OperationLogType.Administrator)
             );

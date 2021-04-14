@@ -114,7 +114,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return Page();
             });
 
-        public async Task<IActionResult> OnPostBanUser(List<PhpbbBanlist> banlist, List<int> toRemove)
+        public async Task<IActionResult> OnPostBanUser(List<UpsertBanListDto> banlist, List<int> toRemove)
             => await WithAdmin(async () =>
             {
                 (Message, IsSuccess) = await _adminUserService.BanUser(banlist, toRemove, (await GetCurrentUserAsync()).UserId);

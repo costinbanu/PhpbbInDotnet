@@ -3,7 +3,6 @@
 @using Utilities
 
 @inject Services.AdminUserService _adminUserService
-@inject Database.ForumDbContext _context
 @inject Languages.LanguageProvider _languageProvider
 
 <h4 onclick="expandSection('inactiveUsersSection', 'inactiveUsersChar')" style="cursor:pointer" id="inactiveUsersTitle">
@@ -176,32 +175,10 @@
     <span id="groupsChar">&#x1F53D;</span>
 </h4>
 <div id="groupsSection" style="display:none">
-    @{
-        var groups = await (
-            from g in _context.PhpbbGroups.AsNoTracking()
-            let role = _context.PhpbbAclGroups.AsNoTracking().FirstOrDefault(rg => rg.GroupId == g.GroupId && rg.ForumId == 0)
-            select new PhpbbInDotnet.Objects.UpsertGroupDto
-            {
-                Id = g.GroupId,
-                Name = g.GroupName,
-                Desc = g.GroupDesc,
-                Rank = g.GroupRank,
-                Color = $"#{g.GroupColour}",
-                EditTime = g.GroupEditTime,
-                UploadLimit = g.GroupUserUploadSize,
-                Role = role == null ? 0 : role.AuthRoleId
-            }
-        ).ToListAsync();
-        var groupRanks = new List<SelectListItem> { new SelectListItem(_languageProvider.Admin[Model.Language, "NO_RANK"], "0", true) };
-        groupRanks.AddRange(_context.PhpbbRanks.AsNoTracking().Select(x => new SelectListItem(x.RankTitle, x.RankId.ToString())));
-        var roles = new List<SelectListItem> { new SelectListItem(_languageProvider.Admin[Model.Language, "NO_ROLE"], "0", true) };
-        roles.AddRange(_context.PhpbbAclRoles.AsNoTracking().Where(x => x.RoleType == "u_").Select(x => new SelectListItem(_languageProvider.Admin[Model.Language, x.RoleName, Casing.None, x.RoleName], x.RoleId.ToString())));
-
-        foreach (var group in groups)
-        {
-            <a href='javascript:populateGroup(@Json.Serialize(group))'>@Html.Raw(group.Name)</a>
-            <br />
-        }
+    @foreach (var group in await _adminUserService.GetGroups())
+    {
+        <a href='javascript:populateGroup(@Json.Serialize(group))'>@Html.Raw(group.Name)</a>
+        <br />
     }
     <p>&nbsp;</p>
     <a href="javascript:newGroup()">@Html.Raw(_languageProvider.Admin[Model.Language, "ADD_NEW_GROUP"])</a>
@@ -215,7 +192,7 @@
     <span id="ranksChar">&#x1F53D;</span>
 </h4>
 <div id="ranksSection" style="display:none">
-    @foreach (var rank in await _context.PhpbbRanks.AsNoTracking().ToListAsync())
+    @foreach (var rank in await _adminUserService.GetRawRanks())
     {
         <a href="javascript:populateRank(@rank.RankId, '@rank.RankTitle')">@rank.RankTitle</a>
         <br />
@@ -233,7 +210,7 @@
 </h4>
 <div id="bansSection" style="display:none">
     @{
-        var banlist = await _context.PhpbbBanlist.AsNoTracking().ToListAsync();
+        var banlist = await _adminUserService.GetBanList();
         <form method="post" asp-page-handler="BanUser">
             @for (var i = 0; i < banlist.Count; i++)
             {
@@ -242,7 +219,6 @@
                         IP
                     </div>
                     <div class="FlexRight PostInputWidth">
-                        <input type="hidden" name="banlist[@i].BanId" value="@banlist[i].BanId" />
                         <input type="text" name="banlist[@i].BanIp" value="@banlist[i].BanIp" />
                     </div>
                 </div>
@@ -265,6 +241,9 @@
                         </label>
                     </div>
                 </div>
+                <input type="hidden" name="banlist[@i].BanId" value="@banlist[i].BanId" />
+                <input type="hidden" name="banlist[@i].BanEmailOldValue" value="@banlist[i].BanEmailOldValue" />
+                <input type="hidden" name="banlist[@i].BanIpOldValue" value="@banlist[i].BanIpOldValue" />
                 @if (i < banlist.Count - 1)
                 {
                     <hr class="SubtypeSeparator" />
@@ -394,6 +373,10 @@
 
 </script>
 
+@{ 
+    var (groupRanks, groupRoles) = await _adminUserService.GetGroupRanksAndRolesSelectListItems();
+}
+
 <form method="post" asp-page-handler="GroupManagement" id="groupAdministration" class="MiddleBox" style="display:none; padding: 10px; overflow-y: scroll">
     <h4 style="float:left" id="groupNameTitle"></h4>
     <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('groupAdministration')">Închide [X]</div>
@@ -461,7 +444,7 @@
             @Html.Raw(_languageProvider.Admin[Model.Language, "PERMISSIONS"])
         </div>
         <div class="FlexRight PostInputWidth">
-            @Html.DropDownList("dto.role", roles, new { id = "role" })
+            @Html.DropDownList("dto.role", groupRoles, new { id = "role" })
         </div>
     </div>
     <p></p>
