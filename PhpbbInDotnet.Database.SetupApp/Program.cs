@@ -13,7 +13,7 @@ namespace PhpbbInDotnet.Database.SetupApp
 {
     class Program
     {
-        static Regex NAME_REGEX = new Regex("^[^\\/?%*:|\"<>. ;]{1,64}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        static Regex NAME_REGEX = new("^[^\\/?%*:|\"<>. ;]{1,64}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         static async Task Main(string[] args)
         {

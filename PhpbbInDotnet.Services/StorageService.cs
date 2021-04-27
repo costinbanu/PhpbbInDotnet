@@ -1,7 +1,9 @@
 ﻿using Dapper;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Objects.Configuration;
@@ -22,7 +24,7 @@ namespace PhpbbInDotnet.Services
         private readonly string _attachmentsPath;
         private readonly string _avatarsPath;
 
-        public StorageService(IConfiguration config, CommonUtils utils, Microsoft.AspNetCore.Hosting.IHostingEnvironment environment, ForumDbContext context)
+        public StorageService(IConfiguration config, CommonUtils utils, IWebHostEnvironment environment, ForumDbContext context)
         {
             _config = config;
             _utils = utils;

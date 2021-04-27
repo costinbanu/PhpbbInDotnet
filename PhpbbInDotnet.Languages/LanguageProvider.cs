@@ -1,6 +1,7 @@
 ﻿using LazyCache;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Primitives;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
@@ -90,8 +91,9 @@ namespace PhpbbInDotnet.Languages
 
         public string GetValidatedLanguage(AuthenticatedUser user, HttpRequest request = null)
         {
+            StringValues val = default;
             var fromHeadersOrDefault = ValidatedOrDefault(
-                (request?.Headers?.TryGetValue("Accept-Language", out var val) ?? false) ? val.ToString() : Constants.DEFAULT_LANGUAGE, 
+                (request?.Headers?.TryGetValue("Accept-Language", out val) ?? false) ? val.ToString() : Constants.DEFAULT_LANGUAGE, 
                 Constants.DEFAULT_LANGUAGE
             );
 

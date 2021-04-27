@@ -131,7 +131,7 @@ namespace PhpbbInDotnet.Utilities
             byte[] cipher = Convert.FromBase64String(encryptedText);
             key ??= GetEncryptionKey();
 
-            using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
+            using (AesCryptoServiceProvider aes = new())
             {
                 aes.Key = key;
                 aes.IV = iv.ToByteArray();

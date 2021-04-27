@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CodeKicker.BBCode.Core" Version="1.4.2.1" />
-    <PackageReference Include="CryptSharp.Core" Version="1.1.0" />
+    <PackageReference Include="CodeKicker.BBCode.Core" Version="2.0.0-net5-beta" />
+    <PackageReference Include="CryptSharp.Core" Version="2.0.0-net5-beta" />
     <PackageReference Include="Diacritics" Version="2.1.20036.1" />
   </ItemGroup>
 

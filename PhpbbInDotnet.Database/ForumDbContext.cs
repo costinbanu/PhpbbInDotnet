@@ -89,13 +89,13 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_acl_groups", "forum");
 
                 entity.HasIndex(e => e.AuthOptionId)
-                    .HasName("auth_opt_id");
+                    .HasDatabaseName("auth_opt_id");
 
                 entity.HasIndex(e => e.AuthRoleId)
-                    .HasName("auth_role_id");
+                    .HasDatabaseName("auth_role_id");
 
                 entity.HasIndex(e => e.GroupId)
-                    .HasName("group_id");
+                    .HasDatabaseName("group_id");
 
                 entity.Property(e => e.GroupId)
                     .HasColumnName("group_id")
@@ -130,7 +130,7 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_acl_options", "forum");
 
                 entity.HasIndex(e => e.AuthOption)
-                    .HasName("auth_option")
+                    .HasDatabaseName("auth_option")
                     .IsUnique();
 
                 entity.Property(e => e.AuthOptionId)
@@ -166,10 +166,10 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_acl_roles", "forum");
 
                 entity.HasIndex(e => e.RoleOrder)
-                    .HasName("role_order");
+                    .HasDatabaseName("role_order");
 
                 entity.HasIndex(e => e.RoleType)
-                    .HasName("role_type");
+                    .HasDatabaseName("role_type");
 
                 entity.Property(e => e.RoleId)
                     .HasColumnName("role_id")
@@ -205,7 +205,7 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_acl_roles_data", "forum");
 
                 entity.HasIndex(e => e.AuthOptionId)
-                    .HasName("ath_op_id");
+                    .HasDatabaseName("ath_op_id");
 
                 entity.Property(e => e.RoleId)
                     .HasColumnName("role_id")
@@ -230,13 +230,13 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_acl_users", "forum");
 
                 entity.HasIndex(e => e.AuthOptionId)
-                    .HasName("auth_option_id");
+                    .HasDatabaseName("auth_option_id");
 
                 entity.HasIndex(e => e.AuthRoleId)
-                    .HasName("auth_role_id");
+                    .HasDatabaseName("auth_role_id");
 
                 entity.HasIndex(e => e.UserId)
-                    .HasName("user_id");
+                    .HasDatabaseName("user_id");
 
                 entity.Property(e => e.UserId)
                     .HasColumnName("user_id")
@@ -271,19 +271,19 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_attachments", "forum");
 
                 entity.HasIndex(e => e.Filetime)
-                    .HasName("filetime");
+                    .HasDatabaseName("filetime");
 
                 entity.HasIndex(e => e.IsOrphan)
-                    .HasName("is_orphan");
+                    .HasDatabaseName("is_orphan");
 
                 entity.HasIndex(e => e.PostMsgId)
-                    .HasName("post_msg_id");
+                    .HasDatabaseName("post_msg_id");
 
                 entity.HasIndex(e => e.PosterId)
-                    .HasName("poster_id");
+                    .HasDatabaseName("poster_id");
 
                 entity.HasIndex(e => e.TopicId)
-                    .HasName("topic_id");
+                    .HasDatabaseName("topic_id");
 
                 entity.Property(e => e.AttachId)
                     .HasColumnName("attach_id")
@@ -371,16 +371,16 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_banlist", "forum");
 
                 entity.HasIndex(e => e.BanEnd)
-                    .HasName("ban_end");
+                    .HasDatabaseName("ban_end");
 
                 entity.HasIndex(e => new { e.BanEmail, e.BanExclude })
-                    .HasName("ban_email");
+                    .HasDatabaseName("ban_email");
 
                 entity.HasIndex(e => new { e.BanIp, e.BanExclude })
-                    .HasName("ban_ip");
+                    .HasDatabaseName("ban_ip");
 
                 entity.HasIndex(e => new { e.BanUserid, e.BanExclude })
-                    .HasName("ban_user");
+                    .HasDatabaseName("ban_user");
 
                 entity.Property(e => e.BanId)
                     .HasColumnName("ban_id")
@@ -438,7 +438,7 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_bbcodes", "forum");
 
                 entity.HasIndex(e => e.DisplayOnPosting)
-                    .HasName("display_on_post");
+                    .HasDatabaseName("display_on_post");
 
                 entity.Property(e => e.BbcodeId)
                     .HasColumnName("bbcode_id")
@@ -517,7 +517,7 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_bots", "forum");
 
                 entity.HasIndex(e => e.BotActive)
-                    .HasName("bot_active");
+                    .HasDatabaseName("bot_active");
 
                 entity.Property(e => e.BotId)
                     .HasColumnName("bot_id")
@@ -557,7 +557,7 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_captcha_answers", "forum");
 
                 entity.HasIndex(e => e.QuestionId)
-                    .HasName("question_id");
+                    .HasDatabaseName("question_id");
 
                 entity.Property(e => e.Id)
                     .HasColumnName("id")
@@ -582,7 +582,7 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_captcha_questions", "forum");
 
                 entity.HasIndex(e => e.LangIso)
-                    .HasName("lang_iso");
+                    .HasDatabaseName("lang_iso");
 
                 entity.Property(e => e.QuestionId)
                     .HasColumnName("question_id")
@@ -617,7 +617,7 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_config", "forum");
 
                 entity.HasIndex(e => e.IsDynamic)
-                    .HasName("is_dynamic");
+                    .HasDatabaseName("is_dynamic");
 
                 entity.Property(e => e.ConfigName)
                     .HasColumnName("config_name")
@@ -644,7 +644,7 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_confirm", "forum");
 
                 entity.HasIndex(e => e.ConfirmType)
-                    .HasName("confirm_type");
+                    .HasDatabaseName("confirm_type");
 
                 entity.Property(e => e.ConfirmId)
                     .HasColumnName("confirm_id")
@@ -702,7 +702,7 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_drafts", "forum");
 
                 entity.HasIndex(e => e.SaveTime)
-                    .HasName("save_time");
+                    .HasDatabaseName("save_time");
 
                 entity.Property(e => e.DraftId)
                     .HasColumnName("draft_id")
@@ -822,10 +822,10 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_forums", "forum");
 
                 entity.HasIndex(e => e.ForumLastPostId)
-                    .HasName("forum_lastpost_id");
+                    .HasDatabaseName("forum_lastpost_id");
 
                 entity.HasIndex(e => new { e.LeftId, e.RightId })
-                    .HasName("left_right_id");
+                    .HasDatabaseName("left_right_id");
 
                 entity.Property(e => e.ForumId)
                     .HasColumnName("forum_id")
@@ -1104,13 +1104,13 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_forums_watch", "forum");
 
                 entity.HasIndex(e => e.ForumId)
-                    .HasName("forum_id");
+                    .HasDatabaseName("forum_id");
 
                 entity.HasIndex(e => e.NotifyStatus)
-                    .HasName("notify_stat");
+                    .HasDatabaseName("notify_stat");
 
                 entity.HasIndex(e => e.UserId)
-                    .HasName("user_id");
+                    .HasDatabaseName("user_id");
 
                 entity.Property(e => e.ForumId)
                     .HasColumnName("forum_id")
@@ -1135,7 +1135,7 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_groups", "forum");
 
                 entity.HasIndex(e => new { e.GroupLegend, e.GroupName })
-                    .HasName("group_legend_name");
+                    .HasDatabaseName("group_legend_name");
 
                 entity.Property(e => e.GroupId)
                     .HasColumnName("group_id")
@@ -1264,7 +1264,7 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_icons", "forum");
 
                 entity.HasIndex(e => e.DisplayOnPosting)
-                    .HasName("display_on_posting");
+                    .HasDatabaseName("display_on_posting");
 
                 entity.Property(e => e.IconsId)
                     .HasColumnName("icons_id")
@@ -1304,7 +1304,7 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_lang", "forum");
 
                 entity.HasIndex(e => e.LangIso)
-                    .HasName("lang_iso");
+                    .HasDatabaseName("lang_iso");
 
                 entity.Property(e => e.LangId)
                     .HasColumnName("lang_id")
@@ -1349,19 +1349,19 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_log", "forum");
 
                 entity.HasIndex(e => e.ForumId)
-                    .HasName("forum_id");
+                    .HasDatabaseName("forum_id");
 
                 entity.HasIndex(e => e.LogType)
-                    .HasName("log_type");
+                    .HasDatabaseName("log_type");
 
                 entity.HasIndex(e => e.ReporteeId)
-                    .HasName("reportee_id");
+                    .HasDatabaseName("reportee_id");
 
                 entity.HasIndex(e => e.TopicId)
-                    .HasName("topic_id");
+                    .HasDatabaseName("topic_id");
 
                 entity.HasIndex(e => e.UserId)
-                    .HasName("user_id");
+                    .HasDatabaseName("user_id");
 
                 entity.Property(e => e.LogId)
                     .HasColumnName("log_id")
@@ -1421,10 +1421,10 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_moderator_cache", "forum");
 
                 entity.HasIndex(e => e.DisplayOnIndex)
-                    .HasName("disp_idx");
+                    .HasDatabaseName("disp_idx");
 
                 entity.HasIndex(e => e.ForumId)
-                    .HasName("forum_id");
+                    .HasDatabaseName("forum_id");
 
                 entity.Property(e => e.ForumId)
                     .HasColumnName("forum_id")
@@ -1466,13 +1466,13 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_modules", "forum");
 
                 entity.HasIndex(e => e.ModuleEnabled)
-                    .HasName("module_enabled");
+                    .HasDatabaseName("module_enabled");
 
                 entity.HasIndex(e => new { e.LeftId, e.RightId })
-                    .HasName("left_right_id");
+                    .HasDatabaseName("left_right_id");
 
                 entity.HasIndex(e => new { e.ModuleClass, e.LeftId })
-                    .HasName("class_left_id");
+                    .HasDatabaseName("class_left_id");
 
                 entity.Property(e => e.ModuleId)
                     .HasColumnName("module_id")
@@ -1539,10 +1539,10 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_poll_options", "forum");
 
                 entity.HasIndex(e => e.PollOptionId)
-                    .HasName("poll_opt_id");
+                    .HasDatabaseName("poll_opt_id");
 
                 entity.HasIndex(e => e.TopicId)
-                    .HasName("topic_id");
+                    .HasDatabaseName("topic_id");
 
                 entity.Property(e => e.PollOptionId)
                     .HasColumnName("poll_option_id")
@@ -1572,13 +1572,13 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_poll_votes", "forum");
 
                 entity.HasIndex(e => e.TopicId)
-                    .HasName("topic_id");
+                    .HasDatabaseName("topic_id");
 
                 entity.HasIndex(e => e.VoteUserId)
-                    .HasName("vote_user_id");
+                    .HasDatabaseName("vote_user_id");
 
                 entity.HasIndex(e => e.VoteUserIp)
-                    .HasName("vote_user_ip");
+                    .HasDatabaseName("vote_user_ip");
 
                 entity.Property(e => e.PollOptionId)
                     .HasColumnName("poll_option_id")
@@ -1611,34 +1611,34 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_posts", "forum");
 
                 entity.HasIndex(e => e.ForumId)
-                    .HasName("forum_id");
+                    .HasDatabaseName("forum_id");
 
                 entity.HasIndex(e => e.PostApproved)
-                    .HasName("post_approved");
+                    .HasDatabaseName("post_approved");
 
                 entity.HasIndex(e => e.PostSubject)
-                    .HasName("post_subject");
+                    .HasDatabaseName("post_subject");
 
                 entity.HasIndex(e => e.PostText)
-                    .HasName("post_text");
+                    .HasDatabaseName("post_text");
 
                 entity.HasIndex(e => e.PostUsername)
-                    .HasName("post_username");
+                    .HasDatabaseName("post_username");
 
                 entity.HasIndex(e => e.PosterId)
-                    .HasName("poster_id");
+                    .HasDatabaseName("poster_id");
 
                 entity.HasIndex(e => e.PosterIp)
-                    .HasName("poster_ip");
+                    .HasDatabaseName("poster_ip");
 
                 entity.HasIndex(e => e.TopicId)
-                    .HasName("topic_id");
+                    .HasDatabaseName("topic_id");
 
                 entity.HasIndex(e => new { e.PostSubject, e.PostText })
-                    .HasName("post_content");
+                    .HasDatabaseName("post_content");
 
                 entity.HasIndex(e => new { e.TopicId, e.PostTime })
-                    .HasName("tid_post_time");
+                    .HasDatabaseName("tid_post_time");
 
                 entity.Property(e => e.PostId)
                     .HasColumnName("post_id")
@@ -1784,16 +1784,16 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_privmsgs", "forum");
 
                 entity.HasIndex(e => e.AuthorId)
-                    .HasName("author_id");
+                    .HasDatabaseName("author_id");
 
                 entity.HasIndex(e => e.AuthorIp)
-                    .HasName("author_ip");
+                    .HasDatabaseName("author_ip");
 
                 entity.HasIndex(e => e.MessageTime)
-                    .HasName("message_time");
+                    .HasDatabaseName("message_time");
 
                 entity.HasIndex(e => e.RootLevel)
-                    .HasName("root_level");
+                    .HasDatabaseName("root_level");
 
                 entity.Property(e => e.MsgId)
                     .HasColumnName("msg_id")
@@ -1917,7 +1917,7 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_privmsgs_folder", "forum");
 
                 entity.HasIndex(e => e.UserId)
-                    .HasName("user_id");
+                    .HasDatabaseName("user_id");
 
                 entity.Property(e => e.FolderId)
                     .HasColumnName("folder_id")
@@ -1947,7 +1947,7 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_privmsgs_rules", "forum");
 
                 entity.HasIndex(e => e.UserId)
-                    .HasName("user_id");
+                    .HasDatabaseName("user_id");
 
                 entity.Property(e => e.RuleId)
                     .HasColumnName("rule_id")
@@ -2000,13 +2000,13 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_privmsgs_to", "forum");
 
                 entity.HasIndex(e => e.AuthorId)
-                    .HasName("author_id");
+                    .HasDatabaseName("author_id");
 
                 entity.HasIndex(e => e.MsgId)
-                    .HasName("msg_id");
+                    .HasDatabaseName("msg_id");
 
                 entity.HasIndex(e => new { e.UserId, e.FolderId })
-                    .HasName("usr_flder_id");
+                    .HasDatabaseName("usr_flder_id");
 
                 entity.Property(e => e.Id)
                     .HasColumnName("id")
@@ -2070,10 +2070,10 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_profile_fields", "forum");
 
                 entity.HasIndex(e => e.FieldOrder)
-                    .HasName("fld_ordr");
+                    .HasDatabaseName("fld_ordr");
 
                 entity.HasIndex(e => e.FieldType)
-                    .HasName("fld_type");
+                    .HasDatabaseName("fld_type");
 
                 entity.Property(e => e.FieldId)
                     .HasColumnName("field_id")
@@ -2259,10 +2259,10 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_qa_confirm", "forum");
 
                 entity.HasIndex(e => e.SessionId)
-                    .HasName("session_id");
+                    .HasDatabaseName("session_id");
 
                 entity.HasIndex(e => new { e.ConfirmId, e.SessionId, e.LangIso })
-                    .HasName("lookup");
+                    .HasDatabaseName("lookup");
 
                 entity.Property(e => e.ConfirmId)
                     .HasColumnName("confirm_id")
@@ -2336,10 +2336,10 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_reports", "forum");
 
                 entity.HasIndex(e => e.PmId)
-                    .HasName("pm_id");
+                    .HasDatabaseName("pm_id");
 
                 entity.HasIndex(e => e.PostId)
-                    .HasName("post_id");
+                    .HasDatabaseName("post_id");
 
                 entity.Property(e => e.ReportId)
                     .HasColumnName("report_id")
@@ -2448,10 +2448,10 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_search_wordlist", "forum");
 
                 entity.HasIndex(e => e.WordCount)
-                    .HasName("wrd_cnt");
+                    .HasDatabaseName("wrd_cnt");
 
                 entity.HasIndex(e => e.WordText)
-                    .HasName("wrd_txt")
+                    .HasDatabaseName("wrd_txt")
                     .IsUnique();
 
                 entity.Property(e => e.WordId)
@@ -2480,13 +2480,13 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_search_wordmatch", "forum");
 
                 entity.HasIndex(e => e.PostId)
-                    .HasName("post_id");
+                    .HasDatabaseName("post_id");
 
                 entity.HasIndex(e => e.WordId)
-                    .HasName("word_id");
+                    .HasDatabaseName("word_id");
 
                 entity.HasIndex(e => new { e.WordId, e.PostId, e.TitleMatch })
-                    .HasName("unq_mtch")
+                    .HasDatabaseName("unq_mtch")
                     .IsUnique();
 
                 entity.Property(e => e.Id)
@@ -2516,13 +2516,13 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_sessions", "forum");
 
                 entity.HasIndex(e => e.SessionForumId)
-                    .HasName("session_fid");
+                    .HasDatabaseName("session_fid");
 
                 entity.HasIndex(e => e.SessionTime)
-                    .HasName("session_time");
+                    .HasDatabaseName("session_time");
 
                 entity.HasIndex(e => e.SessionUserId)
-                    .HasName("session_user_id");
+                    .HasDatabaseName("session_user_id");
 
                 entity.Property(e => e.SessionId)
                     .HasColumnName("session_id")
@@ -2602,7 +2602,7 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_sessions_keys", "forum");
 
                 entity.HasIndex(e => e.LastLogin)
-                    .HasName("last_login");
+                    .HasDatabaseName("last_login");
 
                 entity.Property(e => e.KeyId)
                     .HasColumnName("key_id")
@@ -2661,7 +2661,7 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_smilies", "forum");
 
                 entity.HasIndex(e => e.DisplayOnPosting)
-                    .HasName("display_on_post");
+                    .HasDatabaseName("display_on_post");
 
                 entity.Property(e => e.SmileyId)
                     .HasColumnName("smiley_id")
@@ -2713,17 +2713,17 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_styles", "forum");
 
                 entity.HasIndex(e => e.ImagesetId)
-                    .HasName("imageset_id");
+                    .HasDatabaseName("imageset_id");
 
                 entity.HasIndex(e => e.StyleName)
-                    .HasName("style_name")
+                    .HasDatabaseName("style_name")
                     .IsUnique();
 
                 entity.HasIndex(e => e.TemplateId)
-                    .HasName("template_id");
+                    .HasDatabaseName("template_id");
 
                 entity.HasIndex(e => e.ThemeId)
-                    .HasName("theme_id");
+                    .HasDatabaseName("theme_id");
 
                 entity.Property(e => e.StyleId)
                     .HasColumnName("style_id")
@@ -2769,7 +2769,7 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_styles_imageset", "forum");
 
                 entity.HasIndex(e => e.ImagesetName)
-                    .HasName("imgset_nm")
+                    .HasDatabaseName("imgset_nm")
                     .IsUnique();
 
                 entity.Property(e => e.ImagesetId)
@@ -2802,7 +2802,7 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_styles_imageset_data", "forum");
 
                 entity.HasIndex(e => e.ImagesetId)
-                    .HasName("i_d");
+                    .HasDatabaseName("i_d");
 
                 entity.Property(e => e.ImageId)
                     .HasColumnName("image_id")
@@ -2849,7 +2849,7 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_styles_template", "forum");
 
                 entity.HasIndex(e => e.TemplateName)
-                    .HasName("tmplte_nm")
+                    .HasDatabaseName("tmplte_nm")
                     .IsUnique();
 
                 entity.Property(e => e.TemplateId)
@@ -2903,10 +2903,10 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_styles_template_data", "forum");
 
                 entity.HasIndex(e => e.TemplateFilename)
-                    .HasName("tfn");
+                    .HasDatabaseName("tfn");
 
                 entity.HasIndex(e => e.TemplateId)
-                    .HasName("tid");
+                    .HasDatabaseName("tid");
 
                 entity.Property(e => e.Id)
                     .HasColumnName("id")
@@ -2946,7 +2946,7 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_styles_theme", "forum");
 
                 entity.HasIndex(e => e.ThemeName)
-                    .HasName("theme_name")
+                    .HasDatabaseName("theme_name")
                     .IsUnique();
 
                 entity.Property(e => e.ThemeId)
@@ -2994,22 +2994,22 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_topics", "forum");
 
                 entity.HasIndex(e => e.ForumId)
-                    .HasName("forum_id");
+                    .HasDatabaseName("forum_id");
 
                 entity.HasIndex(e => e.TopicApproved)
-                    .HasName("topic_approved");
+                    .HasDatabaseName("topic_approved");
 
                 entity.HasIndex(e => e.TopicLastPostTime)
-                    .HasName("last_post_time");
+                    .HasDatabaseName("last_post_time");
 
                 entity.HasIndex(e => new { e.ForumId, e.TopicType })
-                    .HasName("forum_id_type");
+                    .HasDatabaseName("forum_id_type");
 
                 entity.HasIndex(e => new { e.ForumId, e.TopicApproved, e.TopicLastPostId })
-                    .HasName("forum_appr_last");
+                    .HasDatabaseName("forum_appr_last");
 
                 entity.HasIndex(e => new { e.ForumId, e.TopicLastPostTime, e.TopicMovedId })
-                    .HasName("fid_time_moved");
+                    .HasDatabaseName("fid_time_moved");
 
                 entity.Property(e => e.TopicId)
                     .HasColumnName("topic_id")
@@ -3217,10 +3217,10 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_topics_track", "forum");
 
                 entity.HasIndex(e => e.ForumId)
-                    .HasName("forum_id");
+                    .HasDatabaseName("forum_id");
 
                 entity.HasIndex(e => e.TopicId)
-                    .HasName("topic_id");
+                    .HasDatabaseName("topic_id");
 
                 entity.Property(e => e.UserId)
                     .HasColumnName("user_id")
@@ -3250,13 +3250,13 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_topics_watch", "forum");
 
                 entity.HasIndex(e => e.NotifyStatus)
-                    .HasName("notify_stat");
+                    .HasDatabaseName("notify_stat");
 
                 entity.HasIndex(e => e.TopicId)
-                    .HasName("topic_id");
+                    .HasDatabaseName("topic_id");
 
                 entity.HasIndex(e => e.UserId)
-                    .HasName("user_id");
+                    .HasDatabaseName("user_id");
 
                 entity.Property(e => e.TopicId)
                     .HasColumnName("topic_id")
@@ -3281,13 +3281,13 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_user_group", "forum");
 
                 entity.HasIndex(e => e.GroupId)
-                    .HasName("group_id");
+                    .HasDatabaseName("group_id");
 
                 entity.HasIndex(e => e.GroupLeader)
-                    .HasName("group_leader");
+                    .HasDatabaseName("group_leader");
 
                 entity.HasIndex(e => e.UserId)
-                    .HasName("user_id");
+                    .HasDatabaseName("user_id");
 
                 entity.Property(e => e.GroupId)
                     .HasColumnName("group_id")
@@ -3315,10 +3315,10 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_user_topic_post_number", "forum");
 
                 entity.HasIndex(e => e.Id)
-                    .HasName("id_3");
+                    .HasDatabaseName("id_3");
 
                 entity.HasIndex(e => new { e.UserId, e.TopicId })
-                    .HasName("user_id");
+                    .HasDatabaseName("user_id");
 
                 entity.Property(e => e.Id)
                     .HasColumnName("id")
@@ -3344,16 +3344,16 @@ namespace PhpbbInDotnet.Database
                 entity.ToTable("phpbb_users", "forum");
 
                 entity.HasIndex(e => e.UserBirthday)
-                    .HasName("user_birthday");
+                    .HasDatabaseName("user_birthday");
 
                 entity.HasIndex(e => e.UserEmailHash)
-                    .HasName("user_email_hash");
+                    .HasDatabaseName("user_email_hash");
 
                 entity.HasIndex(e => e.UserType)
-                    .HasName("user_type");
+                    .HasDatabaseName("user_type");
 
                 entity.HasIndex(e => e.UsernameClean)
-                    .HasName("username_clean")
+                    .HasDatabaseName("username_clean")
                     .IsUnique();
 
                 entity.Property(e => e.UserId)

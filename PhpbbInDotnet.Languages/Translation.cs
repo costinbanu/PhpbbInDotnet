@@ -12,7 +12,7 @@ namespace PhpbbInDotnet.Languages
 {
     public abstract class Translation
     {
-        static readonly CultureInfo EN = new CultureInfo("en");
+        static readonly CultureInfo EN = new("en");
         public static readonly TimeSpan CACHE_EXPIRATION = TimeSpan.FromHours(4);
 
         private readonly string _name;

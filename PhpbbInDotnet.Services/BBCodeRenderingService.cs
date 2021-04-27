@@ -23,9 +23,9 @@ namespace PhpbbInDotnet.Services
 {
     public class BBCodeRenderingService : MultilingualServiceBase
     {
-        private static readonly Regex _htmlRegex = new Regex("<.+?>", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
-        private static readonly Regex _spaceRegex = new Regex(" +", RegexOptions.Compiled | RegexOptions.Singleline, Constants.REGEX_TIMEOUT);
-        private static readonly Regex _attachRegex = new Regex("#{AttachmentFileName=[^/]+/AttachmentIndex=[0-9]+}#", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
+        private static readonly Regex _htmlRegex = new("<.+?>", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
+        private static readonly Regex _spaceRegex = new(" +", RegexOptions.Compiled | RegexOptions.Singleline, Constants.REGEX_TIMEOUT);
+        private static readonly Regex _attachRegex = new("#{AttachmentFileName=[^/]+/AttachmentIndex=[0-9]+}#", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
 
         private readonly ForumDbContext _context;
         private readonly WritingToolsService _writingService;
@@ -186,7 +186,7 @@ namespace PhpbbInDotnet.Services
         private string CensorWords(string text, Dictionary<string, string> wordMap)
         {
             Regex getRegex(string wildcard)
-                => new Regex(@"\b" + Regex.Escape(wildcard).Replace(@"\*", @"\w*").Replace(@"\?", @"\w") + @"\b", RegexOptions.None, Constants.REGEX_TIMEOUT);
+                => new(@"\b" + Regex.Escape(wildcard).Replace(@"\*", @"\w*").Replace(@"\?", @"\w") + @"\b", RegexOptions.None, Constants.REGEX_TIMEOUT);
 
             return ProcessAllWords(
                 input: text,

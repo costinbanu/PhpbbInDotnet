@@ -15,7 +15,7 @@ namespace PhpbbInDotnet.Utilities
 {
     public static class Extensions
     {
-        static readonly DateTime DATE_SEED = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        static readonly DateTime DATE_SEED = new(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
         public static DateTime ToUtcTime(this long timestamp)
             => DATE_SEED.AddSeconds(timestamp);
@@ -113,9 +113,9 @@ namespace PhpbbInDotnet.Utilities
             return toReturn;
         }
 
-        private static readonly Regex CHAR_CODES_REGEX = new Regex("&#[0-9]{3};", RegexOptions.Compiled | RegexOptions.CultureInvariant, Constants.REGEX_TIMEOUT);
+        private static readonly Regex CHAR_CODES_REGEX = new("&#[0-9]{3};", RegexOptions.Compiled | RegexOptions.CultureInvariant, Constants.REGEX_TIMEOUT);
 
-        private static readonly Dictionary<string, string> CHAR_CODES = new Dictionary<string, string>
+        private static readonly Dictionary<string, string> CHAR_CODES = new()
         {
             ["&#192;"] = "À",
             ["&#193;"] = "Á",
@@ -181,7 +181,7 @@ namespace PhpbbInDotnet.Utilities
             ["&#255;"] = "ÿ"
         };
 
-        private static readonly Dictionary<string, string> CHAR_NAMES = new Dictionary<string, string>
+        private static readonly Dictionary<string, string> CHAR_NAMES = new()
         {
             ["&Agrave;"] = "À",
             ["&Aacute;"] = "Á",
