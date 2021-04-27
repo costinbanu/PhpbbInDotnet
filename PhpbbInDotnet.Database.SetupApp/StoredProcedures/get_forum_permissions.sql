@@ -1,4 +1,4 @@
-﻿CREATE DEFINER=`dbadmin`@`84.208.184.104` PROCEDURE `get_forum_permissions`(forum_id_param int)
+﻿CREATE DEFINER=`root`@`localhost` PROCEDURE `get_forum_permissions`(forum_id_param int)
 BEGIN
 	WITH extended_acl_user AS (
 		SELECT

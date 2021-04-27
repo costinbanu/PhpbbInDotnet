@@ -262,7 +262,7 @@ namespace PhpbbInDotnet.Utilities
 
         public async Task SendEmail(MailMessage emailMessage)
         {
-            using var smtp = new SmtpClient(_config.GetValue<string>("Smtp:Host"), _config.GetValue<int>("Smtp:Post"))
+            using var smtp = new SmtpClient(_config.GetValue<string>("Smtp:Host"))
             {
                 EnableSsl = true,
                 UseDefaultCredentials = false,

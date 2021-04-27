@@ -61,31 +61,11 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public bool IsAuthorSearch { get; private set; }
 
-        private readonly string _searchFieldList;
-        private readonly ILogger _logger;
-
         public SearchModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, IConfiguration config,
             AnonymousSessionCounter sessionCounter, CommonUtils utils, ILogger logger, LanguageProvider languageProvider)
             : base(context, forumService, userService, cache, config, sessionCounter, utils, languageProvider)
         {
-            _searchFieldList =
-                @"p.post_id,
-				  p.post_subject,
-				  p.post_text,
-				  CASE WHEN p.poster_id = 1
-					   THEN p.post_username 
-				  	   ELSE u.username
-			  	       END AS author_name,
-				  p.poster_id AS author_id,
-				  p.bbcode_uid,
-				  from_unixtime(p.post_time) AS post_creation_time,
-				  u.user_colour AS author_color,
-				  u.user_avatar,
-				  u.user_sig,
-				  u.user_sig_bbcode_uid,
-				  p.post_time,
-                  p.forum_id";
-            _logger = logger;
+
         }
 
         public async Task<IActionResult> OnGet()
@@ -156,57 +136,23 @@ namespace PhpbbInDotnet.Forum.Pages
                 return await OnGet();
             }
 
-            var fromJoinStmts =
-                @"FROM phpbb_posts p
-		          JOIN phpbb_users u ON p.poster_id = u.user_id
-                  JOIN phpbb_attachments a ON a.post_msg_id = p.post_id";
-            var whereStmt = 
-                "WHERE p.poster_id = @authorId AND p.forum_id NOT IN @restrictedForumList";
-            var orderLimitStmts =
-                @"ORDER BY p.post_time DESC
-                  LIMIT @skip, @take";
-
-            var sql =
-                $@"SELECT DISTINCT {_searchFieldList}
-                    {fromJoinStmts}
-                    {whereStmt}
-                    {orderLimitStmts};
-                    
-                   SELECT count(distinct p.post_id) AS total_count 
-                    {fromJoinStmts}
-                    {whereStmt};
-
-                   SELECT a.*
-                    {fromJoinStmts}
-                    {whereStmt}
-                    {orderLimitStmts};";
-
             var connection = Context.Database.GetDbConnection();
             using var multi = await connection.QueryMultipleAsync(
-               sql,
+                "CALL `search_user_attachments`(@forums, @AuthorId, @page)",
                 new 
                 { 
                     AuthorId,
-                    skip = (PageNum.Value - 1) * Constants.DEFAULT_PAGE_SIZE,
-                    take = Constants.DEFAULT_PAGE_SIZE,
-                    restrictedForumList = (await ForumService.GetRestrictedForumList(await GetCurrentUserAsync(), true)).Select(f => f.forumId).DefaultIfEmpty()
+                    page = PageNum ?? 1,
+                    forums = string.Join(',', (await ForumService.GetRestrictedForumList(await GetCurrentUserAsync(), true)).Select(f => f.forumId).DefaultIfEmpty())
                 }
             );
 
-            try
-            {
-                Posts = await multi.ReadAsync<ExtendedPostDisplay>();
-                TotalResults = unchecked((int)await multi.ReadFirstOrDefaultAsync<long>());
-                Attachments = await multi.ReadAsync<PhpbbAttachments>();
-                Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum.Value, link: GetSearchLinkForPage(PageNum.Value + 1), topicId: null);
+            Posts = await multi.ReadAsync<ExtendedPostDisplay>();
+            TotalResults = unchecked((int)await multi.ReadFirstOrDefaultAsync<long>());
+            Attachments = await multi.ReadAsync<PhpbbAttachments>();
+            Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum.Value, link: GetSearchLinkForPage(PageNum.Value + 1), topicId: null);
 
-                return await OnGet();
-            }
-            catch
-            {
-                _logger.Error("Failed to perform post search. Query: {sql}", sql);
-                throw;
-            }
+            return await OnGet();
         }
 
         public async Task<IActionResult> OnPost()
@@ -266,68 +212,22 @@ namespace PhpbbInDotnet.Forum.Pages
                 forumIds.AddRange(tree.Where(t => !ForumService.IsNodeRestricted(t)).Select(t => t.ForumId));
             }
 
-            static string GetWhereClause(string match)
-                => $@"p.forum_id IN @forums
-                  AND (@topic IS NULL OR @topic = p.topic_id)
-                  AND (@author IS NULL OR @author = p.poster_id)
-                  AND (@search IS NULL OR MATCH({match}) AGAINST(@search IN BOOLEAN MODE))";
-
-            var sql =
-                $@"SELECT DISTINCT {_searchFieldList}
-                     FROM phpbb_posts p
- 		             JOIN phpbb_users u ON p.poster_id = u.user_id
- 		            WHERE {GetWhereClause("p.post_text")}
-
-                    UNION
-
-                   SELECT DISTINCT {_searchFieldList}
-                     FROM phpbb_posts p
- 		             JOIN phpbb_users u ON p.poster_id = u.user_id
- 		            WHERE {GetWhereClause("p.post_subject")}
-
-                	ORDER BY post_time DESC
-	                LIMIT @skip, @take;
-
-                   	WITH search_stmt AS (
-		                SELECT DISTINCT p.post_id
-		                  FROM phpbb_posts p
-	                     WHERE {GetWhereClause("p.post_text")}
-		 
-                         UNION            
-		
-		                SELECT DISTINCT p.post_id
-		                  FROM phpbb_posts p
-		                 WHERE {GetWhereClause("p.post_subject")}
-                    )
-	                SELECT count(1) as total_count
-                      FROM search_stmt;";
-
             using var multi = await connection.QueryMultipleAsync(
-                sql,
+                "CALL `search_post_text`(@forums, @topic, @author, @page, @search)",
                 new
                 {
                     topic = TopicId > 0 ? TopicId : null,
                     author = AuthorId > 0 ? AuthorId : null as int?,
                     search = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText),
-                    skip = (PageNum.Value - 1) * Constants.DEFAULT_PAGE_SIZE,
-                    take = Constants.DEFAULT_PAGE_SIZE,
-                    forums = forumIds.DefaultIfEmpty()
+                    page = PageNum ?? 1,
+                    forums = string.Join(',', forumIds.DefaultIfEmpty())
                 }
             );
 
-            try
-            {
-                Posts = await multi.ReadAsync<ExtendedPostDisplay>();
-                TotalResults = unchecked((int)await multi.ReadFirstOrDefaultAsync<long>());
-                Attachments = await connection.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id IN @postIds", new { postIds = Posts.Select(p => p.PostId ?? 0).DefaultIfEmpty() });
-
-                Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum.Value, link: GetSearchLinkForPage(PageNum.Value + 1), topicId: null);
-            }
-            catch
-            {
-                _logger.Error("Failed to perform post search. Query: {sql}", sql);
-                throw;
-            }
+            Posts = await multi.ReadAsync<ExtendedPostDisplay>();
+            TotalResults = unchecked((int)await multi.ReadFirstOrDefaultAsync<long>());
+            Attachments = await multi.ReadAsync<PhpbbAttachments>();
+            Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum.Value, link: GetSearchLinkForPage(PageNum.Value + 1), topicId: null);
         }
 
         public class ExtendedPostDisplay : PostDto

@@ -30,8 +30,7 @@ BEGIN
 	  JOIN phpbb_posts p
 		ON m.topic_id = p.topic_id
 	   AND p.post_time > coalesce(topic_mark_time, forum_mark_time, user_lastmark, 0)
-	 WHERE
-       p.poster_id <> @user_id
+	 WHERE p.poster_id <> @user_id
        AND @user_id <> 1
        GROUP BY m.topic_id;
 END
