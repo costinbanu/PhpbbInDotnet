@@ -14,6 +14,7 @@ using System.Web;
 using PhpbbInDotnet.Languages;
 using Microsoft.AspNetCore.Http;
 using System;
+using LazyCache;
 
 namespace PhpbbInDotnet.Services
 {
@@ -21,12 +22,17 @@ namespace PhpbbInDotnet.Services
     {
         private readonly ForumDbContext _context;
         private readonly StorageService _storageService;
+        private readonly IAppCache _cache;
 
-        public WritingToolsService(ForumDbContext context, StorageService storageService, CommonUtils utils, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
+        private const int DB_CACHE_EXPIRATION_MINUTES = 20;
+
+        public WritingToolsService(ForumDbContext context, StorageService storageService, CommonUtils utils, LanguageProvider languageProvider, 
+            IHttpContextAccessor httpContextAccessor, IAppCache cache)
             : base(utils, languageProvider, httpContextAccessor)
         {
             _context = context;
             _storageService = storageService;
+            _cache = cache;
         }
 
         public async Task<List<PhpbbWords>> GetBannedWordsAsync()
@@ -83,9 +89,6 @@ namespace PhpbbInDotnet.Services
             return (await connection.QueryAsync<AttachmentManagementDto>("SELECT a.*, u.username FROM phpbb_attachments a JOIN phpbb_users u on a.poster_id = u.user_id WHERE a.is_orphan = 1")).AsList();
         }
 
-        public string GetCacheKey(int currentUserId)
-            => $"{currentUserId}_writingData";
-
         public async Task<(string Message, bool? IsSuccess)> DeleteOrphanedFiles()
         {
             var lang = await GetLanguage();
@@ -120,7 +123,18 @@ namespace PhpbbInDotnet.Services
             => (await _context.Database.GetDbConnection().QueryAsync<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes")).AsList();
 
         public async Task<List<PhpbbLang>> GetLanguages()
-            => (await _context.Database.GetDbConnection().QueryAsync<PhpbbLang>("SELECT * FROM phpbb_lang")).AsList();
+            => await _cache.GetOrAddAsync(
+                key: nameof(PhpbbLang),
+                addItemFactory: async () => (await _context.Database.GetDbConnection().QueryAsync<PhpbbLang>("SELECT * FROM phpbb_lang")).AsList(),
+                expires: DateTimeOffset.UtcNow.AddMinutes(DB_CACHE_EXPIRATION_MINUTES)
+            );
+
+        public async Task<List<PhpbbSmilies>> GetSmilies()
+            => await _cache.GetOrAddAsync(
+                key: nameof(PhpbbSmilies),
+                addItemFactory: async () => (await _context.Database.GetDbConnection().QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies ORDER BY smiley_order")).AsList(),
+                expires: DateTimeOffset.UtcNow.AddMinutes(DB_CACHE_EXPIRATION_MINUTES)
+            );
 
         public async Task<string> PrepareTextForSaving(string text)
         {
@@ -128,8 +142,8 @@ namespace PhpbbInDotnet.Services
             {
                 return string.Empty;
             }
-            var connection = _context.Database.GetDbConnection();
-            foreach (var sr in await connection.QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies"))
+
+            foreach (var sr in await GetSmilies())
             {
                 var regex = new Regex(@$"(?<=(^|\s)){Regex.Escape(sr.Code)}(?=($|\s))", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, Constants.REGEX_TIMEOUT);
                 var replacement = $"<!-- s{sr.Code} --><img src=\"./images/smilies/{sr.SmileyUrl.Trim('/')}\" alt=\"{sr.Code}\" title=\"{sr.Emotion}\" /><!-- s{sr.Code} -->";

@@ -151,9 +151,10 @@ namespace PhpbbInDotnet.Forum
 
                 if (dbUser != null)
                 {
+                    var principal = await UserService.DbUserToClaimsPrincipal(dbUser);
                     await HttpContext.SignInAsync(
                         CookieAuthenticationDefaults.AuthenticationScheme,
-                        await UserService.DbUserToClaimsPrincipal(dbUser),
+                        principal,
                         new AuthenticationProperties
                         {
                             AllowRefresh = true,
@@ -161,6 +162,10 @@ namespace PhpbbInDotnet.Forum
                             IsPersistent = true,
                         }
                     );
+                    if (_currentUser != null)
+                    {
+                        _currentUser = await UserService.ClaimsPrincipalToAuthenticatedUser(principal);
+                    }
                 }
             }
         }

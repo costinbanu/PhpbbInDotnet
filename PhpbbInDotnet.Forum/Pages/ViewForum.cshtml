@@ -48,7 +48,7 @@
     }
 </script>
 
-@if (Model.Mode == ViewForumMode.Forum && CurrentUser.JumpToUnread.ToBool())
+@if (Model.Mode == ViewForumMode.Forum && (CurrentUser.JumpToUnread ?? false))
 {
     <script>
         $(document).ready(function () {

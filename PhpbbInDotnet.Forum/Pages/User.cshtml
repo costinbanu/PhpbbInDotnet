@@ -72,11 +72,11 @@
     <input type="hidden" asp-for="ManageFoes" id="changeModeManageFoes" />
 </form>
 
-<form method="post" asp-page-handler="RemoveFoe" id="RemoveFoe" name="RemoveFoe">
+<form method="post" asp-page-handler="RemoveFoe" id="RemoveFoe" name="RemoveFoe" asp-antiforgery="false">
     <input type="hidden" asp-for="UserId" />
     <input type="hidden" asp-for="ViewAsAnother" />
 </form>
-<form method="post" asp-page-handler="AddFoe" id="AddFoe" name="AddFoe">
+<form method="post" asp-page-handler="AddFoe" id="AddFoe" name="AddFoe" asp-antiforgery="false">
     <input type="hidden" asp-for="UserId" />
     <input type="hidden" asp-for="ViewAsAnother" />
 </form>
@@ -87,7 +87,7 @@
         <span> -&nbsp;@Model.CurrentUser.Username</span>
     }
 </h3>
-@if (canEdit)
+@if (canEdit || Model.Mode == UserPageMode.AddFoe || Model.Mode == UserPageMode.RemoveFoe || Model.Mode == UserPageMode.RemoveMultipleFoes)
 {
     <span asp-validation-for="CurrentUser" class="validation"></span>
     <span class="success @(Model.Mode == UserPageMode.View ? "" : "message")">
@@ -96,18 +96,21 @@
             case UserPageMode.Edit:
                 if (Model.EmailChanged && isSelf)
                 {
-                    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "CHANGES_SAVED_MUST_LOGIN"])
+                    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "CHANGES_SAVED_MUST_LOGIN"]);
                 }
                 else
                 {
-                    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "CHANGES_SAVED"])
+                    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "CHANGES_SAVED"]);
                 }
                 break;
             case UserPageMode.AddFoe:
-                @Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, "ADDED_TO_FOES_CONFIRMATION_FORMAT"], Model.CurrentUser.Username))
+                @Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, "ADDED_TO_FOES_CONFIRMATION_FORMAT"], Model.CurrentUser.Username));
                 break;
             case UserPageMode.RemoveFoe:
-                @Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, "REMOVED_FROM_FOES_CONFIRMATION_FORMAT"], Model.CurrentUser.Username))
+                @Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, "REMOVED_FROM_FOES_CONFIRMATION_FORMAT"], Model.CurrentUser.Username));
+                break;
+            case UserPageMode.RemoveMultipleFoes:
+                @Html.Raw(Model.LanguageProvider.BasicText[Lang, "REMOVE_FOES_SUCCESS"]);
                 break;
         }
     </span>
@@ -159,12 +162,6 @@
             </form>
         }
         <p></p>
-        @if (Model.Mode == UserPageMode.RemoveMultipleFoes)
-        {
-            <span class="message success" style="padding:10px">
-                @Html.Raw(Model.LanguageProvider.BasicText[Lang, "REMOVE_FOES_SUCCESS"])
-            </span>
-        }
     </div>
 }
 else
@@ -690,18 +687,18 @@ else
             }
             @if (!isSelf && !canEdit)
             {
-                var showAddFoe = !await _userService.IsUserModeratorInForum(pageUser, 0) && !await _userService.IsUserModeratorInForum(viewingUser, 0) && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false);
-                var showRemoveFoe = viewingUser.Foes?.Contains(pageUser.UserId) ?? false;
-                if (showAddFoe || showRemoveFoe)
+                var canAddFoe = await Model.CanAddFoe();
+                var canRemoveFoe = await Model.CanRemoveFoe();
+                if (canAddFoe || canRemoveFoe)
                 {
                     <hr class="BoxSeparator" />
                     <div class="FlexCenter">
-                        @if (showAddFoe)
+                        @if (canAddFoe)
                         {
                             <input class="MyButton" type="submit" form="AddFoe" value="&#x1F6AB;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "ADD_TO_FOES"])" style="font-size: 15px; margin-top:5px; vertical-align: top"
                                    onclick="return confirm('@Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, "ADD_TO_FOES_CONFIRM_FORMAT"], Model.CurrentUser.Username))')" />
                         }
-                        else if (showRemoveFoe)
+                        else if (canRemoveFoe)
                         {
                             <input class="MyButton" type="submit" form="RemoveFoe" value="&#x1F91D;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "REMOVE_FROM_FOES"])" style="font-size: 15px; margin-top:5px; vertical-align: top"
                                    onclick="return confirm('@Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, "REMOVE_FROM_FOES_CONFIRM_FORMAT"], Model.CurrentUser.Username))')" />

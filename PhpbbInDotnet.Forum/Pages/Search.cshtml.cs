@@ -9,7 +9,6 @@ using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
-using Serilog;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Data;
@@ -62,7 +61,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool IsAuthorSearch { get; private set; }
 
         public SearchModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, IConfiguration config,
-            AnonymousSessionCounter sessionCounter, CommonUtils utils, ILogger logger, LanguageProvider languageProvider)
+            AnonymousSessionCounter sessionCounter, CommonUtils utils, LanguageProvider languageProvider)
             : base(context, forumService, userService, cache, config, sessionCounter, utils, languageProvider)
         {
 

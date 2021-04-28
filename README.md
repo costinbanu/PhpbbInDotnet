@@ -63,16 +63,16 @@ Field name | Value | Notes
 ForumDbConnectionString | ... |  your DB connection string (root access, no implicit database selected)
 Recaptcha.SiteKey | ... | site key 
 Recaptcha.SecretKey | ... | secret key 
-Recaptcha.BaseAddress | https.//www.google.com |  
-Recaptcha.RelativeUri | recaptcha/api/siteverify |  
-Recaptcha.ClientName | g-recaptcha |  
+Recaptcha.BaseAddress | https://www.google.com | Base URL for captcha verification 
+Recaptcha.RelativeUri | recaptcha/api/siteverify | Relative URL for captcha verification 
+Recaptcha.ClientName | g-recaptcha | HttpClientName used in dependency injection 
 Recaptcha.MinScore | 0.6 | this value can be changed as per reCAPTCHA documentation; 0.6 is the value working best for our setup
 Smtp.Host | ... | your SSL-enabled SMTP host 
 Smtp.Username | ... | SMTP username 
 Smtp.Password | ... | SMTP password
 Encryption.Key1 | ... | first guid for AES symmetric key generation 
 Encryption.Key2 | ... | second guid for AES symmetric key generation 
-AvatarSalt | ... | it is a unique way of naming avatar files and is expected to be a lowercase guid without dashes. If this is a new installation, then use the guid generator mentioned above to generate a lowercase guid without dashes. However, if this is an update from phpBB, then get your avatar salt by running this in your forum's DB: `SELECT config_value FROM forum.phpbb_config WHERE config_name = 'avatar_salt'` 
+AvatarSalt | ... | it is a unique way of naming avatar files and is expected to be a lowercase guid without dashes. If this is a new installation, then use the guid generator mentioned above to generate a lowercase guid without dashes. However, if this is an update from phpBB, then get your avatar salt by running this in your forum's DB: `SELECT config_value FROM phpbb_config WHERE config_name = 'avatar_salt'` 
 BaseUrl | ... | forum base url
 ForumName | ... | forum name 
 LoginSessionSlidingExpirationDays | 30 | days of inactivity before user is logged out
@@ -107,7 +107,7 @@ The platform also **supports some new features**:
 
 ## Further reading
 ### Technical considerations
-This application targets .Net Core 3.1 and is platform agnostic.
+This application targets .Net 5.0 and is platform agnostic.
 
 However, it has not yet been researched if the database support can be extended further than the MySQL-compatible languages. Given that the code leverages both stored procedures and inline SQL (through [Dapper](https://github.com/DapperLib/Dapper)), as well as LINQ-to-SQL statements (through [Entity Framework Core](https://docs.microsoft.com/en-us/ef/core/)), it is expected that multiple database support might not be trivial and might take more time to set up.
 

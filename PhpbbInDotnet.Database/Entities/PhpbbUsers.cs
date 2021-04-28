@@ -86,6 +86,6 @@ namespace PhpbbInDotnet.Database.Entities
         public long UserRemindedTime { get; set; } = 0;
         public byte? AcceptedNewTerms { get; set; } = null;
         public int UserEditTime { get; set; } = 60;
-        public byte JumpToUnread { get; set; } = 1;
+        public bool? JumpToUnread { get; set; } = true;
     }
 }

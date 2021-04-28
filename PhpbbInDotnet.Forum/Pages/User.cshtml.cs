@@ -15,7 +15,6 @@ using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Mail;
@@ -23,7 +22,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [ValidateAntiForgeryToken]
+    [IgnoreAntiforgeryToken(Order = 1001), ResponseCache(NoStore = true, Duration = 0)]
     public class UserModel : AuthenticatedPageModel
     {
         [BindProperty]
@@ -120,7 +119,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 ManageFoes = (ManageFoes ?? false) && await CanEdit();
                 ViewAsAnother = (ViewAsAnother ?? true) && !ManageFoes.Value;
-                JumpToUnread = cur.JumpToUnread.ToBool();
+                JumpToUnread = cur.JumpToUnread ?? true;
                 
                 return Page();
             });
@@ -195,7 +194,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 dbUser.UserRank = UserRank;
             }
             dbUser.UserStyle = CurrentUser.UserStyle;
-            dbUser.JumpToUnread = JumpToUnread.ToByte();
+            dbUser.JumpToUnread = JumpToUnread;
             dbUser.UserLang = CurrentUser.UserLang;
 
             var newColour = CurrentUser.UserColour?.TrimStart('#');
@@ -446,6 +445,13 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostAddFoe()
             => await WithRegisteredUser(async (user) =>
             {
+                if (! await CanAddFoe())
+                {
+                    ModelState.AddModelError(nameof(CurrentUser), LanguageProvider.Errors[await GetLanguage(), "AN_ERROR_OCCURRED"]);
+                    Utils.HandleErrorAsWarning(new Exception($"Potential cross site forgery attempt in {nameof(OnPostAddFoe)}"));
+                    Mode = UserPageMode.AddFoe;
+                    return await OnGet();
+                }
                 var cur = await Context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
                 var connection = Context.Database.GetDbConnection();
                 await connection.ExecuteAsync(
@@ -461,6 +467,13 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostRemoveFoe()
             => await WithRegisteredUser(async (user) =>
             {
+                if (!await CanRemoveFoe())
+                {
+                    ModelState.AddModelError(nameof(CurrentUser), LanguageProvider.Errors[await GetLanguage(), "AN_ERROR_OCCURRED"]);
+                    Utils.HandleErrorAsWarning(new Exception($"Potential cross site forgery attempt in {nameof(OnPostRemoveFoe)}"));
+                    Mode = UserPageMode.AddFoe;
+                    return await OnGet();
+                }
                 var cur = await Context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
                 var connection = Context.Database.GetDbConnection();
                 await connection.ExecuteAsync(
@@ -475,7 +488,10 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostRemoveMultipleFoes()
             => await WithRegisteredUser(async (user) =>
             {
-                var cur = await Context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
+                if (!await CanEdit())
+                {
+                    return RedirectToPage("Error", new { isUnauthorised = true });
+                }
                 using var connection = Context.Database.GetDbConnection();
                 await connection.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id IN @otherIds;",
@@ -488,6 +504,20 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<bool> CanEdit() 
             => !(ViewAsAnother ?? false) && ((await GetCurrentUserAsync()).UserId == CurrentUser.UserId || await IsCurrentUserAdminHere());
+
+        public async Task<bool> CanAddFoe()
+        {
+            var viewingUser = await GetCurrentUserAsync();
+            var pageUser = await UserService.DbUserToAuthenticatedUser(CurrentUser);
+            return !await UserService.IsUserModeratorInForum(pageUser, 0) && !await UserService.IsUserModeratorInForum(viewingUser, 0) && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false);
+        }
+
+        public async Task<bool> CanRemoveFoe()
+        {
+            var viewingUser = await GetCurrentUserAsync();
+            var pageUser = await UserService.DbUserToAuthenticatedUser(CurrentUser);
+            return viewingUser.Foes?.Contains(pageUser.UserId) ?? false;
+        }
 
         private async Task Render(PhpbbUsers cur)
         {

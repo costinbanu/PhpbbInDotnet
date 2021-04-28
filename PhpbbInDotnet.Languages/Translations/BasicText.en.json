@@ -263,7 +263,7 @@
   "FOES_CAPTION": "You will not see posts, nor be able to communicate via private messaging with the users in this list. Users will not know if they are on your foe list.",
   "SELECT_ALL_USERS": "Select all users",
   "REMOVE_SELECTED_USERS_FROM_LIST": "Remove selected users from the list",
-  "CONFIRM_REMOVE_FOES": "If you remove the selected users from your foe list, you will start seeing their posts and will be able to communicate via private messaging.\\n\\n.The users will not be notified.\\n\\nAre you sure you want to continue?",
+  "CONFIRM_REMOVE_FOES": "If you remove the selected users from your foe list, you will start seeing their posts and will be able to communicate via private messaging.\\n\\nThe users will not be notified.\\n\\nAre you sure you want to continue?",
   "REMOVE_FOES_SUCCESS": "The selected users have been removed from your foe list.",
   "CHANGE_USERNAME_CAPTION_FORMAT": "Send an e-mail to <a href=\"mailto:{0}\">{0}</a> if you want to change your username.",
   "CHANGE_PASSWORD_CAPTION": "Leave empty if you do not wish to change it.",

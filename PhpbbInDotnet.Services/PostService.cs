@@ -16,24 +16,10 @@ namespace PhpbbInDotnet.Services
         private readonly ForumDbContext _context;
         private readonly UserService _userService;
 
-        public PostService(ForumDbContext context, UserService userService, WritingToolsService writingService, CommonUtils utils)
+        public PostService(ForumDbContext context, UserService userService)
         {
             _context = context;
             _userService = userService;
-        }
-
-        public async Task<(List<PhpbbPosts> Posts, int Page, int Count)> GetPostPageAsync(int userId, int? topicId, int? page, int? postId)
-        {
-            var connection = _context.Database.GetDbConnection();
-
-            using var multi = await connection.QueryMultipleAsync("CALL `forum`.`get_posts`(@userId, @topicId, @page, @postId);", new { userId, topicId, page, postId });
-            var toReturn = (
-                Posts: (await multi.ReadAsync<PhpbbPosts>()).AsList(),
-                Page: await multi.ReadSingleAsync<int>(),
-                Count: unchecked((int)await  multi.ReadSingleAsync<long>())
-            );
-
-            return toReturn;
         }
 
         public async Task<PollDto> GetPoll(PhpbbTopics _currentTopic)
@@ -59,7 +45,6 @@ namespace PhpbbInDotnet.Services
             {
                 return null;
             }
-            
 
             return new PollDto
             {

@@ -114,7 +114,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     ShowPoll = true;
                 }
 
-                var subject = curPost.PostSubject.StartsWith(Constants.REPLY) ? curPost.PostSubject.Substring(Constants.REPLY.Length) : curPost.PostSubject;
+                var subject = curPost.PostSubject.StartsWith(Constants.REPLY) ? curPost.PostSubject[Constants.REPLY.Length..] : curPost.PostSubject;
                 PostText = _writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid);
                 PostTitle = HttpUtility.HtmlDecode(curPost.PostSubject);
                 PostTime = curPost.PostTime;

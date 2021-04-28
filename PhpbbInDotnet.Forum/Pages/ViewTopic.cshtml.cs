@@ -93,15 +93,14 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public int ViewCount => _currentTopic?.TopicViews ?? 0;
 
-        public IEnumerable<PhpbbUsers> Users { get; private set; }
-        public IEnumerable<PhpbbUsers> LastEditUsers { get; private set; }
-        public IEnumerable<PhpbbAttachments> Attachments { get; private set; }
-        public IEnumerable<ReportDto> Reports { get; private set; }
-        public IEnumerable<UserRankDto> Ranks { get; private set; }
+        public List<PhpbbUsers> Users { get; private set; }
+        public List<PhpbbUsers> LastEditUsers { get; private set; }
+        public List<PhpbbAttachments> Attachments { get; private set; }
+        public List<ReportDto> Reports { get; private set; }
+        public List<UserRankDto> Ranks { get; private set; }
 
         private PhpbbTopics _currentTopic;
         private PhpbbForums _currentForum;
-        private int? _page;
         private int? _count;
         private readonly PostService _postService;
         private readonly ModeratorService _moderatorService;
@@ -124,9 +123,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 await GetPostsLazy(null, null, PostId).ConfigureAwait(false);
 
                 TopicId = _currentTopic.TopicId;
-                PageNum = _page.Value;
 
-                return await OnGet().ConfigureAwait(false);
+                return await OnGet();
             });
 
         public async Task<IActionResult> OnGet()
@@ -148,35 +146,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 Paginator = new Paginator(_count.Value, PageNum.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId, await GetCurrentUserAsync());
                 Poll = await _postService.GetPoll(_currentTopic);
 
-                var connection = Context.Database.GetDbConnection();
-                using var multi = await connection.QueryMultipleAsync(
-                    "SELECT * FROM phpbb_users WHERE user_id IN @authors; " +
-                    "SELECT * FROM phpbb_users WHERE user_id IN @editors; " +
-                    "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @posts ORDER BY attach_id; " +
-                   @"SELECT r.report_id AS id, rr.reason_title, rr.reason_description, r.report_text AS details, r.user_id AS reporter_id, u.username AS reporter_username, r.post_id 
-                       FROM phpbb_reports r
-                       JOIN phpbb_reports_reasons rr ON r.reason_id = rr.reason_id
-                       JOIN phpbb_users u on r.user_id = u.user_id
-                      WHERE report_closed = 0 AND post_id IN @posts; 
-                     SELECT u.user_id, COALESCE(r1.rank_id, r2.rank_id) AS rank_id, COALESCE(r1.rank_title, r2.rank_title) AS rank_title
-                        FROM phpbb_users u
-                        JOIN phpbb_groups g ON u.group_id = g.group_id
-                        LEFT JOIN phpbb_ranks r1 ON u.user_rank = r1.rank_id
-                        LEFT JOIN phpbb_ranks r2 ON g.group_rank = r2.rank_id
-                       WHERE u.user_id IN @authors",
-                    new
-                    {
-                        authors = Posts.Select(p => p.PosterId).DefaultIfEmpty(),
-                        editors = Posts.Select(p => p.PostEditUser).DefaultIfEmpty(),
-                        posts = Posts.Select(p => p.PostId).DefaultIfEmpty()
-                    }
-                );
-
-                Users = await multi.ReadAsync<PhpbbUsers>();
-                LastEditUsers = await multi.ReadAsync<PhpbbUsers>();
-                Attachments = await multi.ReadAsync<PhpbbAttachments>(); //query should sort according to config['display_order']
-                Reports = await multi.ReadAsync<ReportDto>();
-                Ranks = await multi.ReadAsync<UserRankDto>();
                 TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
                 ForumRulesLink = curForum.ForumRulesLink;
                 ForumRules = curForum.ForumRules;
@@ -187,7 +156,10 @@ namespace PhpbbInDotnet.Forum.Pages
                     await MarkTopicRead(ForumId ?? 0, TopicId ?? 0, Paginator.IsLastPage, Posts.Max(p => p.PostTime));
                 }
 
-                await connection.ExecuteAsync("UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId", new { topicId = TopicId.Value });
+                await Context.Database.GetDbConnection().ExecuteAsync(
+                    "UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId", 
+                    new { topicId = TopicId.Value }
+                );
 
                 Cache.Add(string.Format(Constants.FORUM_CHECK_OVERRIDE_CACHE_KEY_FORMAT, ForumId), true, TimeSpan.FromSeconds(30));
 
@@ -207,16 +179,12 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostPagination(int topicId, int userPostsPerPage, int? postId)
             => await WithRegisteredUser(async (user) =>
             {
-                var connection = Context.Database.GetDbConnection();
-                var cur = await connection.QueryFirstOrDefaultAsync<PhpbbUserTopicPostNumber>("SELECT * FROM phpbb_user_topic_post_number WHERE user_id = @userId AND topic_id = @topicId", new { user.UserId, topicId });
-                if (cur == null)
-                {
-                    await connection.ExecuteAsync("INSERT INTO phpbb_user_topic_post_number (user_id, topic_id, post_no) VALUES (@userId, @topicId, @userPostsPerPage)", new { user.UserId, topicId, userPostsPerPage });
-                }
-                else
-                {
-                    await connection.ExecuteAsync("UPDATE phpbb_user_topic_post_number SET post_no = @userPostsPerPage WHERE user_id = @userId AND topic_id = @topicId", new { user.UserId, topicId, userPostsPerPage });
-                }
+                await Context.Database.GetDbConnection().ExecuteAsync(
+                    @"INSERT INTO phpbb_user_topic_post_number (user_id, topic_id, post_no) 
+                           VALUES (@userId, @topicId, @userPostsPerPage)
+                      ON DUPLICATE KEY UPDATE post_no = @userPostsPerPage",
+                     new { user.UserId, topicId, userPostsPerPage }
+                );
 
                 await ReloadCurrentUser();
 
@@ -515,14 +483,34 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 return PostIdsForModerator;
             }
-            return SelectedPostIds?.Split(',')?.Select(x => int.TryParse(x, out var val) ? val : 0)?.Where(x => x != 0)?.ToArray() ?? new int[0];
+            return SelectedPostIds?.Split(',')?.Select(x => int.TryParse(x, out var val) ? val : 0)?.Where(x => x != 0)?.ToArray() ?? Array.Empty<int>();
         }
 
         private async Task GetPostsLazy(int? topicId, int? page, int? postId)
         {
-            if (Posts == null || _page == null || _count == null)
+            if (Posts == null)
             {
-                (Posts, _page, _count) = await _postService.GetPostPageAsync((await GetCurrentUserAsync()).UserId, topicId, page, postId);
+                var user = await GetCurrentUserAsync();
+                using var multi = await Context.Database.GetDbConnection().QueryMultipleAsync(
+                    "CALL get_posts_extended(@userId, @topicId, @page, @pageSize, @postId);", 
+                    new 
+                    { 
+                        user.UserId, 
+                        topicId, 
+                        page,
+                        pageSize = user.TopicPostsPerPage.TryGetValue(topicId ?? 0, out var val) ? val : null as int?,
+                        postId 
+                    }
+                );
+
+                Posts = (await multi.ReadAsync<PhpbbPosts>()).AsList();
+                Users = (await multi.ReadAsync<PhpbbUsers>()).AsList();
+                Attachments = (await multi.ReadAsync<PhpbbAttachments>()).AsList();
+                PageNum = unchecked((int)await multi.ReadSingleAsync<long>());
+                _count = unchecked((int)await multi.ReadSingleAsync<long>());
+                LastEditUsers = (await multi.ReadAsync<PhpbbUsers>()).AsList();
+                Reports = (await multi.ReadAsync<ReportDto>()).AsList();
+                Ranks = (await multi.ReadAsync<UserRankDto>()).AsList();
             }
         }
 

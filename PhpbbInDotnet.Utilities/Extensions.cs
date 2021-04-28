@@ -74,7 +74,7 @@ namespace PhpbbInDotnet.Utilities
                 return new HashSet<int>();
             }
             var items = list.Split(',');
-            var toReturn = new HashSet<int>(items.Count());
+            var toReturn = new HashSet<int>(items.Length);
             foreach (var item in items)
             {
                 try

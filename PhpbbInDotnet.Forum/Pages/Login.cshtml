@@ -46,7 +46,7 @@
         </form>
     </div>
 }
-else if (Model.Mode == Utilities.LoginMode.PasswordReset && ViewData.ModelState.IsValid)
+else if (Model.Mode == Utilities.LoginMode.PasswordReset)
 {
     <form method="post" asp-page-handler="SaveNewPassword">
         <input type="password" asp-for="PwdResetFirstPassword" placeholder="@Model.LanguageProvider.BasicText[lang, "NEW_PASSWORD"]" class="form" autocomplete="new-password" /><br />
@@ -59,12 +59,8 @@ else if (Model.Mode == Utilities.LoginMode.PasswordReset && ViewData.ModelState.
         <input type="hidden" asp-for="Init" />
         @Html.AntiForgeryToken()
         <p></p>
+        <span asp-validation-for="PwdResetErrorMessage" class="validation"></span>
         <input type="submit" value="@Model.LanguageProvider.BasicText[lang, "SAVE_NEW_PASSWORD", Casing.FirstUpper]" />
     </form>
 }
-else if (Model.Mode == Utilities.LoginMode.PasswordReset && !ViewData.ModelState.IsValid)
-{
-    <span asp-validation-for="PwdResetErrorMessage"></span>
-    <p></p>
-    <a href="./">@Model.LanguageProvider.BasicText[lang, "HOME", Casing.FirstUpper]</a>
-}
+

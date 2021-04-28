@@ -394,7 +394,7 @@ else if (IsPM)
         </div>
     }
     <div id="emojiPanel" style="display:none; clear:both;">
-        @foreach (var smiley in await Model.GetSmilies())
+        @foreach (var smiley in (await _writingService.GetSmilies()).GroupBy(s => s.SmileyUrl).Select(g => g.FirstOrDefault()))
         {
             <a href="javascript:posting.insert_text('@smiley.Code', true);">
                 <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />

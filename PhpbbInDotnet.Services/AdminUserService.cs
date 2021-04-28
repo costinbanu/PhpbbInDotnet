@@ -455,21 +455,25 @@ namespace PhpbbInDotnet.Services
         #region Group
 
         public async Task<List<UpsertGroupDto>> GetGroups()
-            => await (
-                from g in _context.PhpbbGroups.AsNoTracking()
-                let role = _context.PhpbbAclGroups.AsNoTracking().FirstOrDefault(rg => rg.GroupId == g.GroupId && rg.ForumId == 0)
-                select new UpsertGroupDto
-                {
-                    Id = g.GroupId,
-                    Name = g.GroupName,
-                    Desc = g.GroupDesc,
-                    Rank = g.GroupRank,
-                    Color = $"#{g.GroupColour}",
-                    EditTime = g.GroupEditTime,
-                    UploadLimit = g.GroupUserUploadSize,
-                    Role = role == null ? 0 : role.AuthRoleId
-                }
-            ).ToListAsync();
+            => (
+                await _context.Database.GetDbConnection().QueryAsync<UpsertGroupDto>(
+                    @"SELECT g.group_id AS id, 
+                             g.group_name AS `name`,
+                             g.group_desc AS `desc`,
+                             g.group_rank AS `rank`,
+                             concat('#', g.group_colour) AS color,
+                             g.group_edit_time AS edit_time,
+                             g.group_user_upload_size AS upload_limit,
+                             coalesce(
+		                         (SELECT r.auth_role_id 
+		                            FROM phpbb_acl_groups r  
+		                           WHERE g.group_id = r.group_id AND r.forum_id = 0
+		                           LIMIT 1)
+                                 , 0
+                             ) as role
+                        FROM phpbb_groups g"
+                )
+            ).AsList();
 
         public async Task<(string Message, bool? IsSuccess)> ManageGroup(UpsertGroupDto dto, int adminUserId)
         {

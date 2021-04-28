@@ -121,23 +121,24 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             if (((TopicId.HasValue && PageNum.HasValue) || PostId.HasValue) && (Action == PostingActions.EditForumPost || Action == PostingActions.NewForumPost))
             {
-                var connection = Context.Database.GetDbConnection();
-                var posts = await connection.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC LIMIT 10", new { TopicId });
-                using var multi = await connection.QueryMultipleAsync(
-                    "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @postIds ORDER BY attach_id;" +
-                    "SELECT * FROM phpbb_users WHERE user_id IN @userIds;", 
-                    new { postIds = posts.Select(pp => pp.PostId).DefaultIfEmpty(), userIds = posts.Select(pp => pp.PosterId).DefaultIfEmpty() }
+                var user = await GetCurrentUserAsync();
+                using var multi = await Context.Database.GetDbConnection().QueryMultipleAsync(
+                    "CALL get_posts(@userId, @topicId, null, @pageSize, null, 1);",
+                    new
+                    {
+                        user.UserId,
+                        TopicId,
+                        pageSize = user.TopicPostsPerPage.TryGetValue(TopicId ?? 0, out var val) ? val : null as int?
+                    }
                 );
-                var attachments = await multi.ReadAsync<PhpbbAttachments>();
+
+                var posts = await multi.ReadAsync<PhpbbPosts>();
                 var users = await multi.ReadAsync<PhpbbUsers>();
-                Cache.Add(string.Format(Constants.FORUM_CHECK_OVERRIDE_CACHE_KEY_FORMAT, ForumId), true, TimeSpan.FromSeconds(30));
+                var attachments = await multi.ReadAsync<PhpbbAttachments>();
                 return (posts, attachments, users);
             }
             return (new List<PhpbbPosts>(), new List<PhpbbAttachments>(), new List<PhpbbUsers>());
         }
-
-        public async Task<List<PhpbbSmilies>> GetSmilies()
-            => (await Context.Database.GetDbConnection().QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies GROUP BY smiley_url ORDER BY smiley_order")).AsList();
 
         private List<KeyValuePair<string, int>> _userMap = null;
         public async Task<List<KeyValuePair<string, int>>> GetUserMap()

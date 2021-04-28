@@ -30,7 +30,7 @@ namespace PhpbbInDotnet.Objects
 
         public string Style { get; set; }
 
-        public byte JumpToUnread { get; set; } = 1;
+        public bool? JumpToUnread { get; set; } = true;
 
         public int? UploadLimit { get; set; }
 

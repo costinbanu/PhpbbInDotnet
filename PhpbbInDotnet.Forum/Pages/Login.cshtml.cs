@@ -217,16 +217,16 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPostSaveNewPassword()
         {
-            if ((PwdResetFirstPassword?.Length ?? 7) < 8 || (PwdResetFirstPassword?.Length ?? 257) > 256)
+            var lang = LanguageProvider.GetValidatedLanguage(null, Request);
+            var validator = new UserProfileDataValidationService(ModelState, LanguageProvider, lang);
+            var validations = new[]
             {
-                ModelState.AddModelError(nameof(PwdResetErrorMessage), LanguageProvider.Errors[LanguageProvider.GetValidatedLanguage(null, Request), "BAD_PASSWORD"]);
-                Mode = LoginMode.PasswordReset;
-                return Page();
-            }
+                validator.ValidatePassword(nameof(PwdResetErrorMessage), PwdResetFirstPassword),
+                validator.ValidateSecondPassword(nameof(PwdResetErrorMessage), PwdResetSecondPassword, PwdResetFirstPassword),
+            };
 
-            if (PwdResetFirstPassword != PwdResetSecondPassword)
+            if (!validations.All(x => x))
             {
-                ModelState.AddModelError(nameof(PwdResetErrorMessage), LanguageProvider.Errors[LanguageProvider.GetValidatedLanguage(null, Request), "PASSWORD_MISMATCH"]);
                 Mode = LoginMode.PasswordReset;
                 return Page();
             }
@@ -234,7 +234,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var user = await _context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == UserId);
             if (user == null || ResetPasswordCode != await _utils.DecryptAES(user.UserNewpasswd, Init))
             {
-                ModelState.AddModelError(nameof(PwdResetErrorMessage), LanguageProvider.Errors[LanguageProvider.GetValidatedLanguage(null, Request), "CONFIRM_ERROR"]);
+                ModelState.AddModelError(nameof(PwdResetErrorMessage), LanguageProvider.Errors[lang, "CONFIRM_ERROR"]);
                 Mode = LoginMode.PasswordReset;
                 return Page();
             }
