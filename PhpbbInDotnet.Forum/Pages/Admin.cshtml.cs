@@ -199,6 +199,18 @@ namespace PhpbbInDotnet.Forum.Pages
                 return Page();
             });
 
+        public async Task<IActionResult> OnPostSmilies(List<UpsertSmiliesDto> dto, List<string> newOrder, List<int> codesToDelete, List<string> smileyGroupsToDelete)
+            => await WithAdmin(async () =>
+            {
+                (Message, IsSuccess) = await _adminWritingService.ManageSmilies(dto, newOrder, codesToDelete, smileyGroupsToDelete);
+                var x = dto;
+                var y = codesToDelete;
+                var z = smileyGroupsToDelete;
+                var t = newOrder;
+                Category = AdminCategories.WritingTools;
+                return Page();
+            });
+
         #endregion Admin writing
 
         #region Logs

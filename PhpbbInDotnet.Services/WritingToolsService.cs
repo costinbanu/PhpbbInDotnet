@@ -26,6 +26,8 @@ namespace PhpbbInDotnet.Services
 
         private const int DB_CACHE_EXPIRATION_MINUTES = 20;
 
+        private List<PhpbbSmilies> _smilies;
+
         public WritingToolsService(ForumDbContext context, StorageService storageService, CommonUtils utils, LanguageProvider languageProvider, 
             IHttpContextAccessor httpContextAccessor, IAppCache cache)
             : base(utils, languageProvider, httpContextAccessor)
@@ -129,12 +131,11 @@ namespace PhpbbInDotnet.Services
                 expires: DateTimeOffset.UtcNow.AddMinutes(DB_CACHE_EXPIRATION_MINUTES)
             );
 
+        public async Task<List<PhpbbSmilies>> GetLazySmilies()
+            => _smilies ??= await GetSmilies();
+
         public async Task<List<PhpbbSmilies>> GetSmilies()
-            => await _cache.GetOrAddAsync(
-                key: nameof(PhpbbSmilies),
-                addItemFactory: async () => (await _context.Database.GetDbConnection().QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies ORDER BY smiley_order")).AsList(),
-                expires: DateTimeOffset.UtcNow.AddMinutes(DB_CACHE_EXPIRATION_MINUTES)
-            );
+            => (await _context.Database.GetDbConnection().QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies ORDER BY smiley_order")).AsList();
 
         public async Task<string> PrepareTextForSaving(string text)
         {
@@ -143,7 +144,7 @@ namespace PhpbbInDotnet.Services
                 return string.Empty;
             }
 
-            foreach (var sr in await GetSmilies())
+            foreach (var sr in await GetLazySmilies())
             {
                 var regex = new Regex(@$"(?<=(^|\s)){Regex.Escape(sr.Code)}(?=($|\s))", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, Constants.REGEX_TIMEOUT);
                 var replacement = $"<!-- s{sr.Code} --><img src=\"./images/smilies/{sr.SmileyUrl.Trim('/')}\" alt=\"{sr.Code}\" title=\"{sr.Emotion}\" /><!-- s{sr.Code} -->";
@@ -193,5 +194,42 @@ namespace PhpbbInDotnet.Services
                 Formatting.None,
                 new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() }
             );
+
+        public async Task<(string Message, bool? IsSuccess)> ManageSmilies(List<UpsertSmiliesDto> dto, List<string> newOrder, List<int> codesToDelete, List<string> smileyGroupsToDelete)
+        {
+            var lang = await GetLanguage();
+            try
+            {
+                var conn = _context.Database.GetDbConnection();
+                
+                if (codesToDelete.Any())
+                {
+                    await conn.ExecuteAsync("DELETE FROM phpbb_smilies WHERE smiley_id IN @codesToDelete", new { codesToDelete });
+                }
+                if (smileyGroupsToDelete.Any())
+                {
+                    await conn.ExecuteAsync("DELETE FROM phpbb_smilies WHERE smiley_url IN @smileyGroupsToDelete", new { smileyGroupsToDelete });
+                }
+
+                var order = new Dictionary<string, int>(newOrder.Count);
+                for (var i = 0; i < newOrder.Count; i++)
+                {
+                    order.Add(newOrder[i], i);
+                }
+                var offset = 0;
+                foreach (var smiley in dto)
+                {
+                    var 
+                }
+
+
+                return (LanguageProvider.Admin[lang, "EMOJI_UPDATED_SUCCESSFULLY"], true);
+            }
+            catch (Exception ex)
+            {
+                Utils.HandleError(ex, "ManageSmilies failed");
+                return (LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
+            }
+        }
     }
 }

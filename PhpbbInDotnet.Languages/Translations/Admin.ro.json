@@ -164,6 +164,17 @@
   "SHOW_IN_POSTING": "Arată în pagina de postare",
   "ADD_NEW_CODE": "Adaugă un cod nou",
   "UPDATE_LANGUAGE_FILE_HINT": "Actualizează fișierul 'BBCodes.[limbă].json' și adaugă intrări noi (sau modifică-le pe cele existente) pentru 'CAPTION_[tag_bb]' și 'BUTTON_TEXT_[tag_bb]' pentru a arăta o explicație și un text personalizate în pagina de postat mesaje.",
+  "EMOTION": "Emoție",
+  "EMOJI_FILE": "Fișier emoji",
+  "CHOOSE_NEW_EMOJI": "Alege un fișier emoji nou",
+  "EMOJI_LOADED_CONFIRMATION": "Fișierul emoji a fost încărcat",
+  "EMOJI_CAPTION": "Sunt permise numai imagini cu cea mai lungă latură mai mică decât 100px",
+  "EMOJI_CODES": "Coduri emoji",
+  "REMOVE_EMOJI_CODE": "Șterge codul emoji",
+  "REMOVE_EMOJI": "Șterge emoji",
+  "ADD_NEW_EMOJI_CODE": "Adaugă un cod nou emoji",
+  "ADD_NEW_EMOJI": "Adaugă un emoji nou",
+  "EMOJI_UPDATED_SUCCESSFULLY": "Emoji-urile au fost actualizate cu succes",
 
   //LOGS
   "SYSTEM_LOGS": "Loguri sistem",

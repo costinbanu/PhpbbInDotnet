@@ -164,6 +164,17 @@
   "SHOW_IN_POSTING": "Show in posting page",
   "ADD_NEW_CODE": "Add new code",
   "UPDATE_LANGUAGE_FILE_HINT": "Update the 'BBCodes.[language].json' file and add new entries (or edit the existing ones) for 'CAPTION_[tag_bb]' and 'BUTTON_TEXT_[tag_bb]' to show a personalized explanation and text in the posting page.",
+  "EMOTION": "Emotion",
+  "EMOJI_FILE": "Emoji file",
+  "CHOOSE_NEW_EMOJI": "Choose new emoji file",
+  "EMOJI_LOADED_CONFIRMATION": "The emoji file has been loaded",
+  "EMOJI_CAPTION": "Only images with the longest side less than 100px are allowed",
+  "EMOJI_CODES": "Emoji codes",
+  "REMOVE_EMOJI_CODE": "Remove emoji code",
+  "REMOVE_EMOJI": "Remove emoji",
+  "ADD_NEW_EMOJI_CODE": "Add new code",
+  "ADD_NEW_EMOJI": "Add new emoji",
+  "EMOJI_UPDATED_SUCCESSFULLY": "Emojies have been successfully updated",
 
   //LOGS
   "SYSTEM_LOGS": "System logs",

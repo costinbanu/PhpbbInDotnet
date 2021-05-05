@@ -219,8 +219,106 @@
     </div>
 </div>
 
+<hr class="BoxSeparator" />
+<h4 onclick="expandSection('smiliesSection', 'smiliesChar')" style="cursor:pointer" id="smiliesTitle">
+    @Html.Raw(_languageProvider.BasicText[Model.Language, "EMOJI"])
+    <span id="smiliesChar">&#x1F53D;</span>
+</h4>
+@{
+    var smilies = (await _writingService.GetSmilies()).GroupBy(s => new { s.SmileyUrl, s.Emotion }).ToList();
+    var smileyCodeCounts = new int[smilies.Count];
+}
+<div id="smiliesSection" style="display:none">
+    <hr class="SubtypeSeparator" />
+    <form method="post" asp-page-handler="Smilies" id="smilies" enctype="multipart/form-data">
+        @for (var smileyIndex = 0; smileyIndex < smilies.Count; smileyIndex++)
+        {
+            <div>
+                <button type="button" class="collapsible">
+                    <img src="./images/smilies/@smilies[smileyIndex].Key.SmileyUrl.Trim('/')" />
+                    @Html.Raw(smilies[smileyIndex].Key.SmileyUrl)
+                </button>
+                <div class="content">
+                    <input type="hidden" name="dto[@smileyIndex].Url" value="@Html.Raw(smilies[smileyIndex].Key.SmileyUrl)" />
+                    <input type="hidden" name="newOrder" value="@Html.Raw(smilies[smileyIndex].Key.SmileyUrl)" />
+                    <div class="FlexCenter FlexSpaced">
+                        <div class="FlexCaption">
+                            @Html.Raw(_languageProvider.Admin[Model.Language, "EMOTION"])
+                        </div>
+                        <div class="FlexRight PostInputWidth">
+                            <input type="text" name="dto[@smileyIndex].Emotion" value="@smilies[smileyIndex].Key.Emotion" />
+                        </div>
+                    </div>
+                    <div class="FlexCenter FlexSpaced">
+                        <div class="FlexCaption">
+                            @Html.Raw(_languageProvider.Admin[Model.Language, "EMOJI_FILE"])
+                        </div>
+                        <div class="FlexRight PostInputWidth">
+                            <input type="file" name="dto[@smileyIndex].File" id="dto[@smileyIndex].File" class="HiddenFileInput" onchange="showElement('loadingConfirmation_@smileyIndex')" />
+                            <label for="dto[@smileyIndex].File" class="MyButton">@Html.Raw(_languageProvider.Admin[Model.Language, "CHOOSE_NEW_EMOJI"])</label><br />
+                            <div style="display:none" id="loadingConfirmation_@smileyIndex">
+                                @Html.Raw(_languageProvider.Admin[Model.Language, "EMOJI_LOADED_CONFIRMATION"])
+                            </div>
+                            <span class="Caption">@Html.Raw(_languageProvider.Admin[Model.Language, "EMOJI_CAPTION"])</span><br />
+                        </div>
+                    </div>
+                    <div class="FlexCenter FlexSpaced">
+                        <div class="FlexCaption">
+                            @Html.Raw(_languageProvider.Admin[Model.Language, "EMOJI_CODES"])
+                        </div>
+                        <div class="FlexRight PostInputWidth">
+                            @{
+                                var codeIndex = 0;
+                                @foreach (var smiley in smilies[smileyIndex])
+                                {
+                                    <div class="FlexCenter" style="padding-bottom:10px">
+                                        <div>
+                                            <input type="text" name="dto[@smileyIndex].Codes[@codeIndex]" value="@Html.Raw(smiley.Code)" />
+                                        </div>
+                                        <div>
+                                            <label>
+                                                <input type="checkbox" name="codesToDelete" value="@smiley.SmileyId" />
+                                                @Html.Raw(_languageProvider.Admin[Model.Language, "REMOVE_EMOJI_CODE"])
+                                            </label>
+                                        </div>
+                                    </div>
+                                    codeIndex++;
+                                }
+                                smileyCodeCounts[smileyIndex] = codeIndex;
+                                <div id="newCodes_@smileyIndex"></div>
+                                <input type="button" onclick="addSmileyCode(@smileyIndex)" value="@Html.Raw(_languageProvider.Admin[Model.Language, "ADD_NEW_EMOJI_CODE"])" class="MyButton SpacedButton" />
+                            }
+                        </div>
+                    </div>
+                    <div class="FlexCenter FlexSpaced">
+                        <div class="FlexLeft PostInputWidth">
+                            <label>
+                                <input type="checkbox" name="smileyGroupsToDelete" value="@smilies[smileyIndex].Key.SmileyUrl" />
+                                @Html.Raw(_languageProvider.Admin[Model.Language, "REMOVE_EMOJI"])
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <p></p>
+        <div id="newSmilies"></div>
+        <input type="button" onclick="addSmiley()" value="@Html.Raw(_languageProvider.Admin[Model.Language, "ADD_NEW_EMOJI"])" class="MyButton SpacedButton" />
+        <input type="submit" value="@Html.Raw(_languageProvider.Admin[Model.Language, "SAVE_CHANGES"])" class="MyButton SpacedButton" />
+    </form>
+
+    <div style="width:100%; text-align:right; font-size:1.5em">
+        <a href="#smiliesTitle">&#x23EB;</a>
+    </div>
+</div>
 
 <script type="text/javascript">
+    var smilies = document.getElementById('smilies');
+    if (smilies) {
+        Sortable.create(smilies, { animation: 150 });
+    }
+
     function sort() {
         let val = $('#sortOptions').val();
         let mod = val % 2;
@@ -242,17 +340,19 @@
 
     var wordIndex = @words.Count;
     var codeIndex = @codes.Count;
+    var smileyIndex = @smilies.Count;
+    var smileyCodeIndexes = @Json.Serialize(smileyCodeCounts);
 
     function addBannedWord() {
         $("#newBannedWords").append(
-            "<div>" +
-            "<hr class='SubtypeSeparator' />" +
-            "<b>@Html.Raw(_languageProvider.Admin[Model.Language, "WORD"])</b><br /><input type='text' name='words[" + wordIndex + "].Word' />" +
-            "<p style='clear:both'></p>" +
-            "<b>@Html.Raw(_languageProvider.Admin[Model.Language, "REPLACEMENT"])</b><br /><input type='text' name='words[" + wordIndex + "].Replacement' />" +
-            "<p style='clear:both'></p>" +
-            "<a href=\"#!\" onclick=\"cancelAddBannedWord(this)\">@Html.Raw(_languageProvider.Admin[Model.Language, "CANCEL"])</a>" +
-            "</div>"
+            `<div>
+                <hr class='SubtypeSeparator' />
+                <b>@Html.Raw(_languageProvider.Admin[Model.Language, "WORD"])</b><br /><input type='text' name='words[${wordIndex}].Word' />
+                <p style='clear:both'></p>
+                <b>@Html.Raw(_languageProvider.Admin[Model.Language, "REPLACEMENT"])</b><br /><input type='text' name='words[${wordIndex}].Replacement' />
+                <p style='clear:both'></p>
+                <a href="#!" onclick="cancelAddBannedWord(this)">@Html.Raw(_languageProvider.Admin[Model.Language, "CANCEL"])</a>
+            </div>`
         );
         wordIndex++;
     }
@@ -264,18 +364,18 @@
 
     function addBBCode() {
         $("#newBBCodes").append(
-            "<div>" +
-                "<hr class='SubtypeSeparator' />" +
-                "<b>@Html.Raw(_languageProvider.Admin[Model.Language, "TAG_NAME"])</b><br /><input type='text' name='codes[" + codeIndex + "].BbcodeTag' />" +
-                "<p style='clear:both'></p>" +
-                "<b>@Html.Raw(_languageProvider.Admin[Model.Language, "HTML_CODE"])</b><br /><textarea name='codes[" + codeIndex + "].BbcodeTpl' class='InputBox' ></textarea>" +
-                "<p style='clear:both'></p>" +
-                "<b>@Html.Raw(_languageProvider.Admin[Model.Language, "EXPLANATION"])</b><br />@Html.Raw(_languageProvider.Admin[Model.Language, "UPDATE_LANGUAGE_FILE_HINT"])" +
-                "<p style='clear:both'></p>" +
-                "<label><input type='checkbox' name='toDisplay' value='" + codeIndex + "' /> @Html.Raw(_languageProvider.Admin[Model.Language, "SHOW_IN_POSTING"])</label>" +
-                "<p style='clear:both'></p>" +
-                "<a href=\"#!\" onclick=\"cancelAddBBCode(this)\">@Html.Raw(_languageProvider.Admin[Model.Language, "CANCEL"])</a>" +
-            "</div>"
+            `<div>
+                <hr class='SubtypeSeparator' />
+                <b>@Html.Raw(_languageProvider.Admin[Model.Language, "TAG_NAME"])</b><br /><input type='text' name='codes[${codeIndex}].BbcodeTag' />
+                <p style='clear:both'></p>
+                <b>@Html.Raw(_languageProvider.Admin[Model.Language, "HTML_CODE"])</b><br /><textarea name='codes[${codeIndex}].BbcodeTpl' class='InputBox' ></textarea>
+                <p style='clear:both'></p>
+                <b>@Html.Raw(_languageProvider.Admin[Model.Language, "EXPLANATION"])</b><br />@Html.Raw(_languageProvider.Admin[Model.Language, "UPDATE_LANGUAGE_FILE_HINT"])
+                <p style='clear:both'></p>
+                <label><input type='checkbox' name='toDisplay' value='${codeIndex}' /> @Html.Raw(_languageProvider.Admin[Model.Language, "SHOW_IN_POSTING"])</label>
+                <p style='clear:both'></p>
+                <a href="#!" onclick="cancelAddBBCode(this)">@Html.Raw(_languageProvider.Admin[Model.Language, "CANCEL"])</a>
+            </div>`
         );
         codeIndex++;
     }
@@ -284,4 +384,76 @@
         $(elem).parent().remove();
         codeIndex--;
     }
+
+    function addSmileyCode(smileyIndex) {
+        $('#newCodes_' + smileyIndex).append(
+            `<div class="FlexCenter" style="padding-bottom:10px">
+                <div>
+                    <input type="text" name="dto[${smileyIndex}].Codes[${smileyCodeIndexes[smileyIndex]}]" />
+                </div>
+                <div>
+                    <a href="#!" onclick="cancelAddSmileyCode(this)">@Html.Raw(_languageProvider.Admin[Model.Language, "CANCEL"])</a>
+                </div>
+            </div>`
+        );
+        smileyCodeIndexes[smileyIndex]++;
+    }
+
+    function cancelAddSmileyCode(elem) {
+        $(elem).parent().parent().remove();
+        smileyCodeIndexes[smileyIndex]--;
+    }
+
+    function addSmiley() {
+        smileyCodeIndexes.push(1);
+        $('#newSmilies').append(
+            `<div>
+                <div class="FlexCenter FlexSpaced">
+                    <div class="FlexCaption">
+                        @Html.Raw(_languageProvider.Admin[Model.Language, "EMOTION"])
+                    </div>
+                    <div class="FlexRight PostInputWidth">
+                        <input type="text" name="dto[${smileyIndex}].Emotion" />
+                    </div>
+                </div>
+                <div class="FlexCenter FlexSpaced">
+                    <div class="FlexCaption">
+                        @Html.Raw(_languageProvider.Admin[Model.Language, "EMOJI_FILE"])
+                    </div>
+                    <div class="FlexRight PostInputWidth">
+                        <input type="file" name="dto[${smileyIndex}].File" id="dto[${smileyIndex}].File" class="HiddenFileInput" onchange="showElement('loadingConfirmation_${smileyIndex}')" />
+                        <label for="dto[${smileyIndex}].File" class="MyButton">@Html.Raw(_languageProvider.Admin[Model.Language, "CHOOSE_NEW_EMOJI"])</label><br />
+                        <div style="display:none" id="loadingConfirmation_${smileyIndex}">
+                            @Html.Raw(_languageProvider.Admin[Model.Language, "EMOJI_LOADED_CONFIRMATION"])
+                        </div>
+                        <span class="Caption">@Html.Raw(_languageProvider.Admin[Model.Language, "EMOJI_CAPTION"])</span><br />
+                    </div>
+                </div>
+                <div class="FlexCenter FlexSpaced">
+                    <div class="FlexCaption">
+                        @Html.Raw(_languageProvider.Admin[Model.Language, "EMOJI_CODES"])
+                    </div>
+                    <div class="FlexRight PostInputWidth">
+                        <div class="FlexCenter" style="padding-bottom:10px">
+                            <div>
+                                <input type="text" name="dto[${smileyIndex}].Codes[0]" />
+                            </div>
+                        </div>
+                        <div id="newCodes_${smileyIndex}"></div>
+                        <input type="button" onclick="addSmileyCode(${smileyIndex})" value="@Html.Raw(_languageProvider.Admin[Model.Language, "ADD_NEW_EMOJI_CODE"])" class="MyButton SpacedButton" />
+                    </div>
+                </div>
+                <p></p>
+                <a href="#!" onclick="cancelAddSmiley(this)">@Html.Raw(_languageProvider.Admin[Model.Language, "CANCEL"])</a>
+            </div>`
+        );
+        smileyIndex++;
+    }
+
+    function cancelAddSmiley(elem) {
+        $(elem).parent().remove();
+        smileyCodeIndexes.splice(smileyIndex, 1);
+        smileyIndex--;
+    }
+
 </script>
