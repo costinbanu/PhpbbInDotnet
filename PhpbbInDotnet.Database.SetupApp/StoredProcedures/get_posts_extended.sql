@@ -8,10 +8,10 @@ BEGIN
         returns the phpbb_users that are the posts authors
         returns the phpbb_attachments associated with these posts
 	*/
-    CALL get_posts(user_id, topic_id, page_no, page_size, post_id);
+    CALL get_posts(user_id, topic_id, page_no, page_size, post_id, 0);
     
     /* page */
-	SELECT CAST(@page_no AS SIGNED INT) AS page_num;
+	SELECT @page_no AS page_num;
 		
 	/* count */
 	SELECT COUNT(1) AS total_count
