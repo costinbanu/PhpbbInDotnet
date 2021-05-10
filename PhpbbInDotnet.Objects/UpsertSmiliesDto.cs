@@ -10,6 +10,13 @@ namespace PhpbbInDotnet.Objects
 
         public IFormFile File { get; set; }
 
-        public string[] Codes { get; set; }
+        public SmileyCode[] Codes { get; set; }
+
+        public class SmileyCode
+        {
+            public int Id { get; set; }
+
+            public string Value { get; set; }
+        }
     }
 }

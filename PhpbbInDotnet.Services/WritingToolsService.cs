@@ -15,6 +15,8 @@ using PhpbbInDotnet.Languages;
 using Microsoft.AspNetCore.Http;
 using System;
 using LazyCache;
+using System.Drawing;
+using System.IO;
 
 namespace PhpbbInDotnet.Services
 {
@@ -25,6 +27,7 @@ namespace PhpbbInDotnet.Services
         private readonly IAppCache _cache;
 
         private const int DB_CACHE_EXPIRATION_MINUTES = 20;
+        private static readonly Regex EMOJI_REGEX = new(@"^(\:|\;){1}[a-zA-Z0-9\-\)\(\]\[\}\{\\\|\*\'\>\<\?]+\:?$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         private List<PhpbbSmilies> _smilies;
 
@@ -201,28 +204,86 @@ namespace PhpbbInDotnet.Services
             try
             {
                 var conn = _context.Database.GetDbConnection();
-                
-                if (codesToDelete.Any())
-                {
-                    await conn.ExecuteAsync("DELETE FROM phpbb_smilies WHERE smiley_id IN @codesToDelete", new { codesToDelete });
-                }
-                if (smileyGroupsToDelete.Any())
-                {
-                    await conn.ExecuteAsync("DELETE FROM phpbb_smilies WHERE smiley_url IN @smileyGroupsToDelete", new { smileyGroupsToDelete });
-                }
 
-                var order = new Dictionary<string, int>(newOrder.Count);
+                //if (codesToDelete.Any())
+                //{
+                //    await conn.ExecuteAsync("DELETE FROM phpbb_smilies WHERE smiley_id IN @codesToDelete", new { codesToDelete });
+                //}
+                //if (smileyGroupsToDelete.Any())
+                //{
+                //    await conn.ExecuteAsync("DELETE FROM phpbb_smilies WHERE smiley_url IN @smileyGroupsToDelete", new { smileyGroupsToDelete });
+                //}
+
+                var orderOffset = 0;
+                var count = await _context.PhpbbSmilies.AsNoTracking().CountAsync();
+                var maxOrder = await _context.PhpbbSmilies.AsNoTracking().DefaultIfEmpty().MaxAsync(s => s == null ? 0 : s.SmileyOrder);
+                var orders = new Dictionary<string, int>(newOrder.Count);
                 for (var i = 0; i < newOrder.Count; i++)
                 {
-                    order.Add(newOrder[i], i);
+                    orders.Add(newOrder[i], i);
                 }
-                var offset = 0;
+                var errors = new List<string>(count * 2);
+                var flatSource = new List<PhpbbSmilies>(count * 2);
                 foreach (var smiley in dto)
                 {
-                    var 
+                    var fileName = smiley.File?.FileName ?? smiley.Url;
+                    var validCodes = smiley.Codes?.Where(c => EMOJI_REGEX.IsMatch(c?.Value ?? string.Empty)) ?? Enumerable.Empty<UpsertSmiliesDto.SmileyCode>();
+
+                    if (string.IsNullOrWhiteSpace(fileName))
+                    {
+                        errors.Add(string.Format(LanguageProvider.Admin[lang, "MISSING_EMOJI_FILE_FORMAT"], smiley.Codes?.FirstOrDefault()?.Value));
+                    }
+
+                    if (!validCodes.Any())
+                    {
+                        errors.Add(string.Format(LanguageProvider.Admin[lang, "INVALID_EMOJI_CODE_FORMAT"], fileName));
+                    }
+
+                    if (smiley.File != null)
+                    {
+                        using var stream = smiley.File.OpenReadStream();
+                        using var bmp = new Bitmap(stream);
+                        stream.Seek(0, SeekOrigin.Begin);
+                        if (bmp.Width > 100 || bmp.Height > 100)
+                        {
+                            return (string.Format(LanguageProvider.Admin[lang, "INVALID_EMOJI_FILE_FORMAT"], smiley.File.FileName), false);
+                        }
+                        else
+                        {
+                            if (!await _storageService.UpsertEmoji(smiley.File.Name, stream))
+                            {
+                                errors.Add(string.Format(LanguageProvider.Admin[lang, "EMOJI_NOT_UPLOADED_FORMAT"], smiley.File.FileName));
+                            }
+                        }
+                        smiley.Url = smiley.File.FileName;
+                    }
+
+                    foreach (var code in validCodes)
+                    {
+                        flatSource.Add(new PhpbbSmilies
+                        {
+                            SmileyId = code.Id,
+                            Code = code.Value,
+                            SmileyUrl = smiley.Url,
+                            Emotion = smiley.Emotion ?? string.Empty,
+                            SmileyOrder = orders.TryGetValue(smiley.Url, out var order) ? order + orderOffset++ : maxOrder++
+                        });
+                    }
                 }
 
+                if (flatSource.Count == 0)
+                {
+                    return (string.Join(Environment.NewLine, errors), false);
+                }
+                
+                await _context.PhpbbSmilies.AddRangeAsync(flatSource.Where(s => s.SmileyId == 0));
+                _context.PhpbbSmilies.UpdateRange(flatSource.Where(s => s.SmileyId != 0));
+                //await _context.SaveChangesAsync();
 
+                if (errors.Count > 0)
+                {
+                    return (string.Join(Environment.NewLine, errors), null);
+                }
                 return (LanguageProvider.Admin[lang, "EMOJI_UPDATED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)

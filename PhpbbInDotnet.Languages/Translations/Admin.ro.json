@@ -175,6 +175,10 @@
   "ADD_NEW_EMOJI_CODE": "Adaugă un cod nou emoji",
   "ADD_NEW_EMOJI": "Adaugă un emoji nou",
   "EMOJI_UPDATED_SUCCESSFULLY": "Emoji-urile au fost actualizate cu succes",
+  "INVALID_EMOJI_FILE_FORMAT": "Fișierul {0} nu este valid deoarece are cel puțin o latură mai lungă de 100px",
+  "INVALID_EMOJI_CODE_FORMAT": "Fișierul {0} nu are coduri / scurtături valide.",
+  "MISSING_EMOJI_FILE_FORMAT": "Codul {0} nu este asociat cu un fișier valid.",
+  "EMOJI_NOT_UPLOADED_FORMAT": "Fișierul {0} nu a putut fi încărcat. Încearcă mai târziu.",
 
   //LOGS
   "SYSTEM_LOGS": "Loguri sistem",

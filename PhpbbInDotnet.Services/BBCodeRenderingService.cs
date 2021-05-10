@@ -297,7 +297,6 @@ namespace PhpbbInDotnet.Services
                 $"TAGS_MAP_{lang}",
                 () =>
                 {
-
                     var tagsCache = new Dictionary<string, (BBTag Tag, BBTagSummary Summary)>
                     {
                         ["b"] = (

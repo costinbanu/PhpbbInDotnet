@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Objects.Configuration;
@@ -23,6 +22,7 @@ namespace PhpbbInDotnet.Services
         private readonly ForumDbContext _context;
         private readonly string _attachmentsPath;
         private readonly string _avatarsPath;
+        private readonly string _emojiPath;
 
         public StorageService(IConfiguration config, CommonUtils utils, IWebHostEnvironment environment, ForumDbContext context)
         {
@@ -33,6 +33,7 @@ namespace PhpbbInDotnet.Services
             _storageOptions = _config.GetObject<Storage>();
             _attachmentsPath = Path.Combine(environment.WebRootPath, _storageOptions.Files);
             _avatarsPath = Path.Combine(environment.WebRootPath, _storageOptions.Avatars);
+            _emojiPath = Path.Combine(environment.WebRootPath, "images", "smilies");
         }
 
         public string GetFileUrl(string name, bool isAvatar)
@@ -163,6 +164,22 @@ namespace PhpbbInDotnet.Services
                 }
             }
             return (succeeded, failed);
+        }
+
+        public async Task<bool> UpsertEmoji(string name, Stream file)
+        {
+            try
+            {
+                using var fs = File.OpenWrite(Path.Combine(_emojiPath, name));
+                await file.CopyToAsync(fs);
+                await fs.FlushAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _utils.HandleError(ex, $"Error uploading emoji '{name}'");
+                return false;
+            }
         }
     }
 }

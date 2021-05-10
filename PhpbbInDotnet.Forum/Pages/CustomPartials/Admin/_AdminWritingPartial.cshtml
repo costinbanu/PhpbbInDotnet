@@ -273,7 +273,8 @@
                                 {
                                     <div class="FlexCenter" style="padding-bottom:10px">
                                         <div>
-                                            <input type="text" name="dto[@smileyIndex].Codes[@codeIndex]" value="@Html.Raw(smiley.Code)" />
+                                            <input type="text" name="dto[@smileyIndex].Codes[@codeIndex].Value" value="@Html.Raw(smiley.Code)" />
+                                            <input type="hidden" name="dto[@smileyIndex].Codes[@codeIndex].Id" value="@Html.Raw(smiley.SmileyId)" />
                                         </div>
                                         <div>
                                             <label>
@@ -389,7 +390,7 @@
         $('#newCodes_' + smileyIndex).append(
             `<div class="FlexCenter" style="padding-bottom:10px">
                 <div>
-                    <input type="text" name="dto[${smileyIndex}].Codes[${smileyCodeIndexes[smileyIndex]}]" />
+                    <input type="text" name="dto[${smileyIndex}].Codes[${smileyCodeIndexes[smileyIndex]}].Value" />
                 </div>
                 <div>
                     <a href="#!" onclick="cancelAddSmileyCode(this)">@Html.Raw(_languageProvider.Admin[Model.Language, "CANCEL"])</a>
@@ -436,7 +437,7 @@
                     <div class="FlexRight PostInputWidth">
                         <div class="FlexCenter" style="padding-bottom:10px">
                             <div>
-                                <input type="text" name="dto[${smileyIndex}].Codes[0]" />
+                                <input type="text" name="dto[${smileyIndex}].Codes[0].Value" />
                             </div>
                         </div>
                         <div id="newCodes_${smileyIndex}"></div>
