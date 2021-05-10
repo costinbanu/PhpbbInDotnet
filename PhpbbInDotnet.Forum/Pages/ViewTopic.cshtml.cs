@@ -120,7 +120,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 _currentTopic = curTopic;
                 _currentForum = curForum;
-                await GetPostsLazy(null, null, PostId).ConfigureAwait(false);
+                await GetPostsLazy(null, null, PostId);
 
                 TopicId = _currentTopic.TopicId;
 
@@ -141,7 +141,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumId = curForum?.ForumId;
                 ForumTitle = HttpUtility.HtmlDecode(curForum?.ForumName ?? "untitled");
 
-                await GetPostsLazy(TopicId, PageNum, null).ConfigureAwait(false);
+                await GetPostsLazy(TopicId, PageNum, null);
 
                 Paginator = new Paginator(_count.Value, PageNum.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId, await GetCurrentUserAsync());
                 Poll = await _postService.GetPoll(_currentTopic);
@@ -153,7 +153,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (await IsTopicUnread(ForumId ?? 0, TopicId ?? 0))
                 {
-                    await MarkTopicRead(ForumId ?? 0, TopicId ?? 0, Paginator.IsLastPage, Posts.Max(p => p.PostTime));
+                    await MarkTopicRead(ForumId ?? 0, TopicId ?? 0, Paginator.IsLastPage, Posts.DefaultIfEmpty().Max(p => p?.PostTime ?? 0L));
                 }
 
                 await Context.Database.GetDbConnection().ExecuteAsync(
@@ -488,7 +488,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task GetPostsLazy(int? topicId, int? page, int? postId)
         {
-            if (Posts == null)
+            if (!(Posts?.Any() ?? false))
             {
                 var user = await GetCurrentUserAsync();
                 using var multi = await Context.Database.GetDbConnection().QueryMultipleAsync(
