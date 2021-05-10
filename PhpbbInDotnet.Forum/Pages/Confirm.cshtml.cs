@@ -94,7 +94,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     on u.UserId equals ug.UserId
                     into joined
                     from j in joined
-                    where j.GroupId == Constants.ADMIN_GROUP_ID && !string.IsNullOrWhiteSpace(u.UserEmail)
+                    where j.GroupId == Constants.ADMIN_GROUP_ID
                     select u
                 ).ToListAsync();
 
