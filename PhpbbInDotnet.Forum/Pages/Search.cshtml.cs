@@ -54,7 +54,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public List<KeyValuePair<string, int>> Users { get; set; }
 
-        public IEnumerable<ExtendedPostDisplay> Posts { get; private set; }
+        public IEnumerable<ExtendedPostDto> Posts { get; private set; }
 
         public Paginator Paginator { get; private set; }
 
@@ -146,7 +146,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             );
 
-            Posts = await multi.ReadAsync<ExtendedPostDisplay>();
+            Posts = await multi.ReadAsync<ExtendedPostDto>();
             TotalResults = unchecked((int)await multi.ReadFirstOrDefaultAsync<long>());
             Attachments = await multi.ReadAsync<PhpbbAttachments>();
             Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum.Value, link: GetSearchLinkForPage(PageNum.Value + 1), topicId: null);
@@ -223,16 +223,10 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             );
 
-            Posts = await multi.ReadAsync<ExtendedPostDisplay>();
+            Posts = await multi.ReadAsync<ExtendedPostDto>();
             TotalResults = unchecked((int)await multi.ReadFirstOrDefaultAsync<long>());
             Attachments = await multi.ReadAsync<PhpbbAttachments>();
             Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum.Value, link: GetSearchLinkForPage(PageNum.Value + 1), topicId: null);
-        }
-
-        public class ExtendedPostDisplay : PostDto
-        {
-            public string UserAvatar { get; set; }
-            public int ForumId { get; set; }
         }
     }
 }

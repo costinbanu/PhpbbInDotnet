@@ -191,8 +191,8 @@ namespace PhpbbInDotnet.Forum.Pages
             if (Action == PostingActions.NewTopic)
             {
                 curTopic = await connection.QueryFirstOrDefaultAsync<PhpbbTopics>(
-                    "INSERT INTO phpbb_topics (forum_id, topic_title, topic_time) VALUES (@forumId, @postTitle, @now); " +
-                    "SELECT * FROM phpbb_topics WHERE topic_id = LAST_INSERT_ID();", 
+                    @"INSERT INTO phpbb_topics (forum_id, topic_title, topic_time) VALUES (@forumId, @postTitle, @now); 
+                    SELECT * FROM phpbb_topics WHERE topic_id = LAST_INSERT_ID();", 
                     new { ForumId, PostTitle, now = DateTime.UtcNow.ToUnixTimestamp() }
                 );
                 TopicId = curTopic.TopicId;
@@ -203,9 +203,9 @@ namespace PhpbbInDotnet.Forum.Pages
             if (post == null)
             {
                 post = await connection.QueryFirstOrDefaultAsync<PhpbbPosts>(
-                    "INSERT INTO phpbb_posts (forum_id, topic_id, poster_id, post_subject, post_text, post_time, post_attachment, post_checksum, poster_ip, post_username) " +
-                        "VALUES (@forumId, @topicId, @userId, @subject, @textForSaving, @now, @attachment, @checksum, @ip, @username); " +
-                    "SELECT * FROM phpbb_posts WHERE post_id = LAST_INSERT_ID();",
+                    @"INSERT INTO phpbb_posts (forum_id, topic_id, poster_id, post_subject, post_text, post_time, post_attachment, post_checksum, poster_ip, post_username) 
+                        VALUES (@forumId, @topicId, @userId, @subject, @textForSaving, @now, @attachment, @checksum, @ip, @username); 
+                      SELECT * FROM phpbb_posts WHERE post_id = LAST_INSERT_ID();",
                     new
                     {
                         ForumId,
@@ -226,10 +226,10 @@ namespace PhpbbInDotnet.Forum.Pages
             else
             {
                 post = await connection.QueryFirstOrDefaultAsync<PhpbbPosts>(
-                    "UPDATE phpbb_posts " +
-                    "SET post_subject = @subject, post_text = @textForSaving, post_attachment = @attachment, post_checksum = @checksum, post_edit_time = @now, post_edit_reason = @reason, post_edit_user = @userId, post_edit_count = post_edit_count + 1 " +
-                    "WHERE post_id = @postId; " +
-                    "SELECT * FROM phpbb_posts WHERE post_id = @postId; ",
+                    @"UPDATE phpbb_posts 
+                    SET post_subject = @subject, post_text = @textForSaving, post_attachment = @attachment, post_checksum = @checksum, post_edit_time = @now, post_edit_reason = @reason, post_edit_user = @userId, post_edit_count = post_edit_count + 1 
+                    WHERE post_id = @postId; 
+                    SELECT * FROM phpbb_posts WHERE post_id = @postId; ",
                     new
                     {
                         subject = HttpUtility.HtmlEncode(PostTitle),
@@ -265,8 +265,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 if (!existing.SequenceEqual(pollOptionsArray, StringComparer.InvariantCultureIgnoreCase))
                 {
                     await connection.ExecuteAsync(
-                        "DELETE FROM phpbb_poll_options WHERE topic_id = @topicId;" +
-                        "DELETE FROM phpbb_poll_votes WHERE topic_id = @topicId",
+                        @"DELETE FROM phpbb_poll_options WHERE topic_id = @topicId;
+                          DELETE FROM phpbb_poll_votes WHERE topic_id = @topicId",
                         new { TopicId }
                     );
                     
