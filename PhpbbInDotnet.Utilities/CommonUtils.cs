@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -303,6 +304,13 @@ namespace PhpbbInDotnet.Utilities
             }
             return toReturn;
         }
+
+        public string ToCamelCaseJson<T>(T @object)
+            => JsonConvert.SerializeObject(
+                @object,
+                Formatting.None,
+                new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() }
+            );
 
         public void Dispose()
         {

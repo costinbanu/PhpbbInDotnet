@@ -33,14 +33,26 @@ namespace PhpbbInDotnet.Services
             _storageOptions = _config.GetObject<Storage>();
             _attachmentsPath = Path.Combine(environment.WebRootPath, _storageOptions.Files);
             _avatarsPath = Path.Combine(environment.WebRootPath, _storageOptions.Avatars);
-            _emojiPath = Path.Combine(environment.WebRootPath, "images", "smilies");
+            _emojiPath = Path.Combine(environment.WebRootPath, _storageOptions.Emojis);
         }
 
-        public string GetFileUrl(string name, bool isAvatar)
-            => isAvatar ? $"{_storageOptions.Avatars}/{name}" : $"{_storageOptions.Files}/{name}";
+        public string GetFileUrl(string name, FileType fileType)
+            => fileType switch
+            {
+                FileType.Attachment => $"./{_storageOptions.Files.Trim('/')}/{name.TrimStart('/')}",
+                FileType.Avatar => $"./{_storageOptions.Avatars.Trim('/')}/{name.TrimStart('/')}",
+                FileType.Emoji => $"./{_storageOptions.Emojis.Trim('/')}/{name.TrimStart('/')}",
+                _ => null
+            };
 
-        public string GetFilePath(string name, bool isAvatar)
-            => isAvatar ? Path.Combine(_avatarsPath, name) : Path.Combine(_attachmentsPath, name);
+        public string GetFilePath(string name, FileType fileType)
+            => fileType switch
+            {
+                FileType.Attachment => Path.Combine(_attachmentsPath, name),
+                FileType.Avatar => Path.Combine(_avatarsPath, name),
+                FileType.Emoji => Path.Combine(_emojiPath, name),
+                _ => null
+            };
 
         public async Task<(List<PhpbbAttachments> SucceededUploads, List<string> FailedUploads)> BulkAddAttachments(IEnumerable<IFormFile> attachedFiles, int userId)
         {

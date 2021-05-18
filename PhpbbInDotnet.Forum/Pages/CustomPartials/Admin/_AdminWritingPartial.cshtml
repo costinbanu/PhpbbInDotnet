@@ -5,8 +5,10 @@
 @using PhpbbInDotnet.Services
 
 @inject WritingToolsService _writingService
+@inject StorageService _storageService
 @inject CommonUtils _utils
 @inject Languages.LanguageProvider _languageProvider
+@inject Microsoft.Extensions.Configuration.IConfiguration _config
 
 <h4 onclick="expandSection('bannedWordsSection', 'bannedWordsChar')" style="cursor:pointer" id="bannedWordsTitle">
     @Html.Raw(_languageProvider.Admin[Model.Language, "BANNED_WORDS"])
@@ -227,6 +229,7 @@
 @{
     var smilies = (await _writingService.GetSmilies()).GroupBy(s => new { s.SmileyUrl, s.Emotion }).ToList();
     var smileyCodeCounts = new int[smilies.Count];
+    var smileyMaxSize = _config.GetObject<Objects.Configuration.ImageSize>("EmojiMaxSize");
 }
 <div id="smiliesSection" style="display:none">
     <hr class="SubtypeSeparator" />
@@ -235,7 +238,7 @@
         {
             <div>
                 <button type="button" class="collapsible">
-                    <img src="./images/smilies/@smilies[smileyIndex].Key.SmileyUrl.Trim('/')" />
+                    <img src="@_storageService.GetFileUrl(smilies[smileyIndex].Key.SmileyUrl, FileType.Emoji)" />
                     @Html.Raw(smilies[smileyIndex].Key.SmileyUrl)
                 </button>
                 <div class="content">
@@ -259,7 +262,7 @@
                             <div style="display:none" id="loadingConfirmation_@smileyIndex">
                                 @Html.Raw(_languageProvider.Admin[Model.Language, "EMOJI_LOADED_CONFIRMATION"])
                             </div>
-                            <span class="Caption">@Html.Raw(_languageProvider.Admin[Model.Language, "EMOJI_CAPTION"])</span><br />
+                            <span class="Caption">@Html.Raw(string.Format(_languageProvider.Admin[Model.Language, "EMOJI_CAPTION_FORMAT"], smileyMaxSize.Width, smileyMaxSize.Height))</span><br />
                         </div>
                     </div>
                     <div class="FlexCenter FlexSpaced">
@@ -427,7 +430,7 @@
                         <div style="display:none" id="loadingConfirmation_${smileyIndex}">
                             @Html.Raw(_languageProvider.Admin[Model.Language, "EMOJI_LOADED_CONFIRMATION"])
                         </div>
-                        <span class="Caption">@Html.Raw(_languageProvider.Admin[Model.Language, "EMOJI_CAPTION"])</span><br />
+                        <span class="Caption">@Html.Raw(string.Format(_languageProvider.Admin[Model.Language, "EMOJI_CAPTION_FORMAT"], smileyMaxSize.Width, smileyMaxSize.Height))</span><br />
                     </div>
                 </div>
                 <div class="FlexCenter FlexSpaced">
@@ -446,6 +449,7 @@
                 </div>
                 <p></p>
                 <a href="#!" onclick="cancelAddSmiley(this)">@Html.Raw(_languageProvider.Admin[Model.Language, "CANCEL"])</a>
+                <hr class="BoxSeparator" />
             </div>`
         );
         smileyIndex++;

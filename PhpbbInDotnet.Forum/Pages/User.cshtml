@@ -5,7 +5,6 @@
 @model PhpbbInDotnet.Forum.Pages.UserModel
 
 @inject Services.UserService _userService
-@inject Services.WritingToolsService _writingService
 @inject Database.ForumDbContext _context
 @inject Utilities.CommonUtils _utils
 
@@ -382,7 +381,7 @@ else
                     <div class="FlexRight PostInputWidth">
                         @Html.DropDownListFor(
                             m => m.CurrentUser.UserLang,
-                            (await _writingService.GetLanguages()).Select(x => new SelectListItem($"{x.LangLocalName} ({x.LangEnglishName})", x.LangIso, Model.CurrentUser.UserLang == x.LangIso)),
+                            (await Model.GetLanguages()).Select(x => new SelectListItem($"{x.LangLocalName} ({x.LangEnglishName})", x.LangIso, Model.CurrentUser.UserLang == x.LangIso)),
                             new { onchange = "changeDateFormats(this.options[this.selectedIndex].value)" }
                         )
                     </div>

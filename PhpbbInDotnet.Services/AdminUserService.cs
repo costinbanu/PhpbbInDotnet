@@ -121,7 +121,7 @@ namespace PhpbbInDotnet.Services
             void flagUserAsChanged()
             {
                 var key = $"UserMustLogIn_{user.UsernameClean}";
-                _cache.Add(key, true, TimeSpan.FromDays(_config.GetValue<int>("LoginSessionSlidingExpirationDays")));
+                _cache.Add(key, true, _config.GetValue<TimeSpan?>("LoginSessionSlidingExpiration") ?? TimeSpan.FromDays(30));
             }
 
             async Task deleteUser()

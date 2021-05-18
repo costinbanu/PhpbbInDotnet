@@ -6,8 +6,6 @@ namespace PhpbbInDotnet.Utilities
     {
         public const string REPLY = "Re: ";
 
-        public const string SMILEY_PATH = "./images/smilies";
-
         public const int ANONYMOUS_USER_ID = 1;
 
         public const int GUESTS_GROUP_ID = 1;

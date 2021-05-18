@@ -48,12 +48,12 @@ namespace PhpbbInDotnet.Forum.Pages
             return await WithValidForum(
                 forumId, 
                 await Cache.GetAsync<bool>(string.Format(Constants.FORUM_CHECK_OVERRIDE_CACHE_KEY_FORMAT, forumId)), 
-                _ => Task.FromResult(SendToClient(physicalFilename, realFilename, mimeType, false))
+                _ => Task.FromResult(SendToClient(physicalFilename, realFilename, mimeType, FileType.Attachment))
             );
         }
 
         public IActionResult OnGetPreview(string physicalFileName, string realFileName, string mimeType)
-            => SendToClient(physicalFileName, realFileName, mimeType, false);
+            => SendToClient(physicalFileName, realFileName, mimeType, FileType.Attachment);
 
         public async Task<IActionResult> OnGetAvatar(int userId)
         {
@@ -67,14 +67,14 @@ namespace PhpbbInDotnet.Forum.Pages
             }
             file = $"{Config.GetValue<string>("AvatarSalt")}_{userId}{Path.GetExtension(file)}";
 
-            return SendToClient(file, file, null, true);
+            return SendToClient(file, file, null, FileType.Avatar);
         }
 
-        private IActionResult SendToClient(string physicalFileName, string realFileName, string mimeType, bool isAvatar)
+        private IActionResult SendToClient(string physicalFileName, string realFileName, string mimeType, FileType fileType)
         {
             mimeType ??= (_contentTypeProvider.Mappings.TryGetValue(Path.GetExtension(realFileName), out var val) ? val : null) ?? "application/octet-stream";
 
-            var path = _storageService.GetFilePath(physicalFileName, isAvatar);
+            var path = _storageService.GetFilePath(physicalFileName, fileType);
             if (IOFile.Exists(path))
             {
                 var cd = new ContentDisposition

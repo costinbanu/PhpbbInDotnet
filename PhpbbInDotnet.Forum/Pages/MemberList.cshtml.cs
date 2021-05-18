@@ -131,7 +131,7 @@ namespace PhpbbInDotnet.Forum.Pages
                             $"SELECT count(distinct user_id) FROM phpbb_users WHERE user_lastvisit >= @lastVisit AND user_id <> @ANONYMOUS_USER_ID;" +
                             $"SELECT * FROM phpbb_groups;" +
                             $"SELECT * FROM phpbb_ranks;",
-                            new { lastVisit = DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(Config.GetValue<int?>("UserActivityTrackingIntervalMinutes") ?? 60)).ToUnixTimestamp(), skip = PAGE_SIZE * (PageNum - 1), take = PAGE_SIZE, Constants.ANONYMOUS_USER_ID }
+                            new { lastVisit = DateTime.UtcNow.Subtract(Config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1)).ToUnixTimestamp(), skip = PAGE_SIZE * (PageNum - 1), take = PAGE_SIZE, Constants.ANONYMOUS_USER_ID }
                         ))
                         {
                             UserList = await multi.ReadAsync<PhpbbUsers>();

@@ -31,7 +31,7 @@
 
   //user profile
   "DELETE_AVATAR_ERROR": "The avatar couldn't be deleted",
-  "AVATAR_FORMAT_ERROR": "The avatar maximum size must be 200px x 200px",
+  "AVATAR_FORMAT_ERROR_FORMAT": "The avatar maximum size must be {0}px x {1}px",
   "AVATAR_UPLOAD_ERROR": "The avatar couldn't be uploaded",
   "INVALID_DATE": "The date is invalid",
 

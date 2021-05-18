@@ -227,4 +227,11 @@ namespace PhpbbInDotnet.Utilities
         Error = 2,
         User = 3
     }
+
+    public enum FileType
+    {
+        Attachment,
+        Avatar,
+        Emoji
+    }
 }

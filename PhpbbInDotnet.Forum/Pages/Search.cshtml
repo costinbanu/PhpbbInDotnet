@@ -7,7 +7,7 @@
 @using PhpbbInDotnet.Utilities
 @using Microsoft.EntityFrameworkCore
 
-@inject Services.WritingToolsService _writingService
+@inject Utilities.CommonUtils _utils
 @inject Database.ForumDbContext _context
 @inject Services.BBCodeRenderingService _renderingService
 @inject Services.UserService _userService
@@ -193,7 +193,7 @@ else if (Model.Posts != null)
 <script src="~/lib/tribute/dist/tribute.js"></script>
 <script>
     var tribute = new Tribute({
-        values: @Html.Raw(_writingService.ToCamelCaseJson(Model.Users)),
+        values: @Html.Raw(_utils.ToCamelCaseJson(Model.Users)),
         selectTemplate: function (item) {
             return item.original.key;
         },

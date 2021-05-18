@@ -2,7 +2,6 @@
 
 @using System.Web
 @using Utilities
-@using Database.Entities
 @using CustomPartials
 @using Objects.Configuration
 @using Microsoft.Extensions.Configuration
@@ -13,6 +12,7 @@
 @inject Services.WritingToolsService _writingService
 @inject Services.BBCodeRenderingService _renderingService
 @inject Services.PostService _postService
+@inject Services.StorageService _storageService
 @inject CommonUtils _utils
 @inject IConfiguration _config
 
@@ -394,10 +394,11 @@ else if (IsPM)
         </div>
     }
     <div id="emojiPanel" style="display:none; clear:both;">
-        @foreach (var smiley in (await _writingService.GetLazySmilies()).GroupBy(s => s.SmileyUrl).Select(g => g.FirstOrDefault()))
+        @{ var dummy = (await _writingService.GetLazySmilies()).GroupBy(s => s.SmileyUrl).Select(g => g.FirstOrDefault()); }
+        @foreach (var smiley in dummy)
         {
             <a href="javascript:posting.insert_text('@smiley.Code', true);">
-                <img src="@($"{Constants.SMILEY_PATH}/{smiley.SmileyUrl}")" alt="@smiley.Code" title="@smiley.Emotion" width="@smiley.SmileyWidth" height="@smiley.SmileyHeight" style="margin:2px" />
+                <img src="@_storageService.GetFileUrl(smiley.SmileyUrl, FileType.Emoji)" alt="@smiley.Code" title="@smiley.Emotion" style="margin:2px" />
             </a>
         }
     </div>
@@ -464,7 +465,7 @@ else if (IsPM)
 
 <script>
     var tribute = new Tribute({
-        values: @Html.Raw(_writingService.ToCamelCaseJson(await Model.GetUsers())),
+        values: @Html.Raw(_utils.ToCamelCaseJson(await Model.GetUsers())),
         trigger: "@@",
         allowSpaces: true
     });
@@ -481,7 +482,7 @@ else if (IsPM)
 {
     <script>
         var secondTribute = new Tribute({
-            values: @Html.Raw(_writingService.ToCamelCaseJson(await Model.GetUserMap())),
+            values: @Html.Raw(_utils.ToCamelCaseJson(await Model.GetUserMap())),
             selectTemplate: function(item) {
                 return item.original.key;
             },

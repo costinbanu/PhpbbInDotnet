@@ -10,6 +10,7 @@ using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
+using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
 using System;
@@ -92,6 +93,8 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly StorageService _storageService;
         private readonly WritingToolsService _writingService;
         private readonly OperationLogService _operationLogService;
+
+        private const int DB_CACHE_EXPIRATION_MINUTES = 20;
 
         public UserModel(CommonUtils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, StorageService storageService, 
             WritingToolsService writingService, IConfiguration config, AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider, OperationLogService operationLogService)
@@ -302,12 +305,13 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 try
                 {
+                    var maxSize = Config.GetObject<ImageSize>("AvatarMaxSize");
                     using var stream = Avatar.OpenReadStream();
                     using var bmp = new Bitmap(stream);
                     stream.Seek(0, SeekOrigin.Begin);
-                    if (bmp.Width >200 || bmp.Height > 200)
+                    if (bmp.Width > maxSize.Width || bmp.Height > maxSize.Height)
                     {
-                        ModelState.AddModelError(nameof(Avatar), LanguageProvider.Errors[lang, "AVATAR_FORMAT_ERROR"]);
+                        ModelState.AddModelError(nameof(Avatar), string.Format(LanguageProvider.Errors[lang, "AVATAR_FORMAT_ERROR"], maxSize.Width, maxSize.Height));
                         return Page();
                     }
                     else
@@ -421,7 +425,7 @@ namespace PhpbbInDotnet.Forum.Pages
             else if (affectedEntries > 0 && userMustLogIn)
             {
                 var key = $"UserMustLogIn_{dbUser.UsernameClean}";
-                Cache.Add(key, true, TimeSpan.FromDays(Config.GetValue<int>("LoginSessionSlidingExpirationDays")));
+                Cache.Add(key, true, Config.GetValue<TimeSpan?>("LoginSessionSlidingExpiration") ?? TimeSpan.FromDays(30));
                 if (EmailChanged)
                 {
                     Mode = UserPageMode.Edit;
@@ -518,6 +522,13 @@ namespace PhpbbInDotnet.Forum.Pages
             var pageUser = await UserService.DbUserToAuthenticatedUser(CurrentUser);
             return viewingUser.Foes?.Contains(pageUser.UserId) ?? false;
         }
+
+        public async Task<List<PhpbbLang>> GetLanguages()
+            => await Cache.GetOrAddAsync(
+                key: nameof(PhpbbLang),
+                addItemFactory: async () => (await Context.Database.GetDbConnection().QueryAsync<PhpbbLang>("SELECT * FROM phpbb_lang")).AsList(),
+                expires: DateTimeOffset.UtcNow.AddMinutes(DB_CACHE_EXPIRATION_MINUTES)
+            );
 
         private async Task Render(PhpbbUsers cur)
         {

@@ -120,7 +120,6 @@ namespace PhpbbInDotnet.Services
             }
             bbCodeText = HttpUtility.HtmlDecode(html);
             bbCodeText = Utils.HtmlCommentRegex.Replace(bbCodeText, string.Empty);
-            bbCodeText = bbCodeText.Replace("{SMILIES_PATH}", Constants.SMILEY_PATH);
             bbCodeText = bbCodeText.Replace("\t", Utils.HtmlSafeWhitespace(4));
 
             var offset = 0;

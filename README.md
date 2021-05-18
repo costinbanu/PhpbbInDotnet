@@ -13,7 +13,7 @@ This application uses AES symmetric encryption for encrypting the password reset
 
 ## Installation
 ### Set up the configuration
-This application requires a custom configuration object. Use your own app settings provider (`appsettings.json` file, user secrets, Azure app settings store and so on) to set it up, but ensure that its structure and contents follow the sample below. All fields are detailed below.
+This application requires a custom configuration object. You may use your own app settings provider (`appsettings.json` file, user secrets, Azure app settings store and so on) to set it up, but be aware that by default it only supports `appsettings.json` (so it will require some coding to add your own provider). Either way,  ensure that its structure and contents follow the sample below. All fields are detailed below.
 
 ```json
 {
@@ -38,7 +38,7 @@ This application requires a custom configuration object. Use your own app settin
   "AvatarSalt": "...",
   "BaseUrl": "...",
   "ForumName": "...",
-  "LoginSessionSlidingExpirationDays": 30, 
+  "LoginSessionSlidingExpiration": "30.00:00:00", 
   "UploadLimitsMB": {
     "Images": 2,
     "OtherFiles": 20
@@ -47,11 +47,20 @@ This application requires a custom configuration object. Use your own app settin
     "Images": 10,
     "OtherFiles": 10
   },
-  "UserActivityTrackingIntervalMinutes": 60, 
+  "UserActivityTrackingInterval": "00.01:00:00", 
   "AdminEmail": "...",
   "Storage": { 
     "Files": "forumfiles",
-    "Avatars": "forumfiles/avatars"
+    "Avatars": "forumfiles/avatars",
+    "Emojis": "images/smilies"
+  },
+  "AvatarMaxSize": {
+    "Width": 200,
+    "Height": 200
+  },
+  "EmojiMaxSize": {
+    "Width": 100,
+    "Height": 100
   }
 }
 ```
@@ -66,7 +75,7 @@ Recaptcha.SecretKey | ... | secret key
 Recaptcha.BaseAddress | https://www.google.com | Base URL for captcha verification 
 Recaptcha.RelativeUri | recaptcha/api/siteverify | Relative URL for captcha verification 
 Recaptcha.ClientName | g-recaptcha | HttpClientName used in dependency injection 
-Recaptcha.MinScore | 0.6 | this value can be changed as per reCAPTCHA documentation; 0.6 is the value working best for our setup
+Recaptcha.MinScore | 0.6 | this value can be changed as per [reCAPTCHA documentation](https://developers.google.com/recaptcha/docs/v3); 0.6 is the value working best for our setup
 Smtp.Host | ... | your SSL-enabled SMTP host 
 Smtp.Username | ... | SMTP username 
 Smtp.Password | ... | SMTP password
@@ -75,15 +84,20 @@ Encryption.Key2 | ... | second guid for AES symmetric key generation
 AvatarSalt | ... | it is a unique way of naming avatar files and is expected to be a lowercase guid without dashes. If this is a new installation, then use the guid generator mentioned above to generate a lowercase guid without dashes. However, if this is an update from phpBB, then get your avatar salt by running this in your forum's DB: `SELECT config_value FROM phpbb_config WHERE config_name = 'avatar_salt'` 
 BaseUrl | ... | forum base url
 ForumName | ... | forum name 
-LoginSessionSlidingExpirationDays | 30 | days of inactivity before user is logged out
+LoginSessionSlidingExpiration | 30.00:00:00 | inactivity time before user is logged out. Is read as `TimeSpan` (format `dd.HH:mm:ss`), default value is 30 days
 UploadLimitsMB.Images | 2 | applies for both internally and externally hosted images
 UploadLimitsMB.OtherFiles | 20 | applies only for internally hosted attachments
 UploadLimitsCount.Images | 10 |  applies for both internally and externally hosted images
 UploadLimitsCount.OtherFiles | 10 | applies only for internally hosted attachments
-UserActivityTrackingIntervalMinutes | 60 | minutes between tracking same user's activity
+UserActivityTrackingInterval | 00.01:00:00 | time interval for tracking same user's activity. Is read as `TimeSpan` (format `dd.HH:mm:ss`), default value is 1 hour
 AdminEmail | ... | sender email address for forum generated emails 
 Storage.Files | forumfiles | path relative to `wwwroot` 
 Storage.Avatars | forumfiles/avatars | path relative to `wwwroot` 
+Storage.Emojis | images/smilies | path relative to `wwwroot` 
+AvatarMaxSize.Width | 200 | pixels
+AvatarMaxSize.Height | 200 | pixels
+EmojiMaxSize.Width | 100 | pixels
+EmojiMaxSize.Height | 100 | pixels
 
 ### Install the application
 

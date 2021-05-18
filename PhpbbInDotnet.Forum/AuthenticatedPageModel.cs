@@ -63,8 +63,8 @@ namespace PhpbbInDotnet.Forum
                 return _currentUser;
             }
             var user = User;
-            var authenticationExpiryDays = Config.GetValue<int?>("LoginSessionSlidingExpirationDays") ?? 30;
-            var sessionTrackingTimeoutMinutes = Config.GetValue<int?>("UserActivityTrackingIntervalMinutes") ?? 60;
+            var authenticationExpiryDays = Config.GetValue<TimeSpan?>("LoginSessionSlidingExpiration") ?? TimeSpan.FromDays(30);
+            var sessionTrackingTimeoutMinutes = Config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1);
             if (!(user?.Identity?.IsAuthenticated ?? false))
             {
                 user = await UserService.GetAnonymousClaimsPrincipal();
@@ -75,7 +75,7 @@ namespace PhpbbInDotnet.Forum
                     new AuthenticationProperties
                     {
                         AllowRefresh = true,
-                        ExpiresUtc = DateTimeOffset.UtcNow.Add(TimeSpan.FromDays(authenticationExpiryDays)),
+                        ExpiresUtc = DateTimeOffset.UtcNow.Add(authenticationExpiryDays),
                         IsPersistent = true,
                     }
                 );
@@ -98,11 +98,11 @@ namespace PhpbbInDotnet.Forum
                         if (dbUser == null || dbUser.UserInactiveTime > 0)
                         {
                             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                            Cache.Add(key, true, new MemoryCacheEntryOptions { SlidingExpiration = TimeSpan.FromDays(authenticationExpiryDays) });
+                            Cache.Add(key, true, new MemoryCacheEntryOptions { SlidingExpiration = authenticationExpiryDays });
                         }
                         else
                         {
-                            if (DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > TimeSpan.FromMinutes(sessionTrackingTimeoutMinutes))
+                            if (DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > sessionTrackingTimeoutMinutes)
                             {
                                 await ReloadCurrentUser();
                                 await connection.ExecuteAsync("UPDATE phpbb_users SET user_lastvisit = @now WHERE user_id = @userId", new { now = DateTime.UtcNow.ToUnixTimestamp(), _currentUser.UserId });
@@ -122,12 +122,12 @@ namespace PhpbbInDotnet.Forum
                     IsBot = dd.IsBot();
                     if (IsBot)
                     {
-                        _sessionCounter.UpsertBot(HttpContext.Connection.RemoteIpAddress.ToString(), userAgent, TimeSpan.FromMinutes(sessionTrackingTimeoutMinutes));
+                        _sessionCounter.UpsertBot(HttpContext.Connection.RemoteIpAddress.ToString(), userAgent, sessionTrackingTimeoutMinutes);
                     }
                     else
                     {
                         HttpContext.Session.SetInt32("SessionCounted", 1);
-                        _sessionCounter.UpsertSession(HttpContext.Session.Id, TimeSpan.FromMinutes(sessionTrackingTimeoutMinutes));
+                        _sessionCounter.UpsertSession(HttpContext.Session.Id, sessionTrackingTimeoutMinutes);
                     }
                 }
                 catch (Exception ex)

@@ -53,7 +53,7 @@ namespace PhpbbInDotnet.Forum
 
             services.AddSession(options =>
             {
-                options.IdleTimeout = TimeSpan.FromMinutes(Configuration.GetValue<double>("UserActivityTrackingIntervalMinutes"));
+                options.IdleTimeout = Configuration.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1);
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
             });

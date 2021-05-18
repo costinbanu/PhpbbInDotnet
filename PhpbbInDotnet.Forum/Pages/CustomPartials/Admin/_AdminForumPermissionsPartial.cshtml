@@ -7,7 +7,7 @@
 @using Utilities;
 
 @inject ForumDbContext _context
-@inject Services.WritingToolsService _writingSerivce
+@inject Utilities.CommonUtils _utils
 @inject Languages.LanguageProvider _languageProvider
 
 @{
@@ -106,7 +106,7 @@
         <script src="~/lib/tribute/dist/tribute.js"></script>
         <script type="text/javascript">
             var tribute = new Tribute({
-                values: @Html.Raw(_writingSerivce.ToCamelCaseJson(remainingEntities)),
+                values: @Html.Raw(_utils.ToCamelCaseJson(remainingEntities)),
                 selectTemplate: function (item) {
                     return item.original.key;
                 },
