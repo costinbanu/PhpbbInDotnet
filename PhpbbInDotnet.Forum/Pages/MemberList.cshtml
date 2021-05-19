@@ -159,7 +159,7 @@
 
 <div id="ActiveUsers" class="tabcontent" style="@(Model.Mode == MemberListPages.ActiveUsers || Model.Mode == MemberListPages.ActiveBots ? "display:inherit" : "display:none")">
     <h3>
-        @string.Format(Model.LanguageProvider.BasicText[Lang, "MEMBERLIST_STATS_HEADER_FORMAT", Casing.Title], (_config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1)).Minutes)
+        @string.Format(Model.LanguageProvider.BasicText[Lang, "MEMBERLIST_STATS_HEADER_FORMAT", Casing.Title], (int)(_config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1)).TotalMinutes)
     </h3>
     @if (Model.Mode == MemberListPages.ActiveUsers)
     {

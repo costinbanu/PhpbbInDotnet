@@ -174,7 +174,7 @@
   "REMOVE_EMOJI": "Remove emoji",
   "ADD_NEW_EMOJI_CODE": "Add new code",
   "ADD_NEW_EMOJI": "Add new emoji",
-  "EMOJI_UPDATED_SUCCESSFULLY": "Emojies have been successfully updated",
+  "EMOJI_UPDATED_SUCCESSFULLY": "Emojis have been successfully updated",
   "INVALID_EMOJI_FILE_FORMAT": "File {0} is invalid because it must be at most {1}px x {2}px in size.",
   "INVALID_EMOJI_CODE_FORMAT": "File {0} does not have valid codes / shortcuts associated.",
   "MISSING_EMOJI_FILE_FORMAT": "Code {0} is not associated to a valid file.",

@@ -74,27 +74,27 @@ namespace PhpbbInDotnet.Services
 
         public async Task LogAdminUserAction(AdminUserActions action, int adminUserId, PhpbbUsers user, string additionalData = null)
             => await WithErrorHandling(async () =>
-                await Log(EnumString(action), $"User Id: {user.UserId}, Username: {user.Username}, Additional data: {additionalData}", adminUserId, OperationLogType.Administrator)
+                await Log(_utils.EnumString(action), $"User Id: {user.UserId}, Username: {user.Username}, Additional data: {additionalData}", adminUserId, OperationLogType.Administrator)
             );
 
         public async Task LogAdminRankAction(AdminRankActions action, int adminUserId, PhpbbRanks rank)
             => await WithErrorHandling(async () =>
-                await Log(EnumString(action), $"Rank id: {rank.RankId}, Rank name: {rank.RankTitle}", adminUserId, OperationLogType.Administrator)
+                await Log(_utils.EnumString(action), $"Rank id: {rank.RankId}, Rank name: {rank.RankTitle}", adminUserId, OperationLogType.Administrator)
             );
 
         public async Task LogAdminGroupAction(AdminGroupActions action, int adminUserId, PhpbbGroups group)
             => await WithErrorHandling(async () =>
-                await Log(EnumString(action), $"Group id: {group.GroupId}, Group name: {group.GroupName}", adminUserId, OperationLogType.Administrator)
+                await Log(_utils.EnumString(action), $"Group id: {group.GroupId}, Group name: {group.GroupName}", adminUserId, OperationLogType.Administrator)
             );
 
         public async Task LogAdminBanListAction(AdminBanListActions action, int adminUserId, UpsertBanListDto banList)
             => await WithErrorHandling(async () =>
-                await Log(EnumString(action), $"Ban list id: {banList.BanId}, Ban list email: {banList.BanEmail}, Ban list IP: {banList.BanIp}", adminUserId, OperationLogType.Administrator)
+                await Log(_utils.EnumString(action), $"Ban list id: {banList.BanId}, Ban list email: {banList.BanEmail}, Ban list IP: {banList.BanIp}", adminUserId, OperationLogType.Administrator)
             );
 
         public async Task LogAdminForumAction(AdminForumActions action, int adminUserId, PhpbbForums forum)
             => await WithErrorHandling(async () =>
-                await Log(EnumString(action), $"Forum Id: {forum.ForumId}, Forum name: {forum.ForumName}", adminUserId, OperationLogType.Administrator, forum.ForumId)
+                await Log(_utils.EnumString(action), $"Forum Id: {forum.ForumId}, Forum name: {forum.ForumName}", adminUserId, OperationLogType.Administrator, forum.ForumId)
             );
 
         public async Task LogModeratorTopicAction(ModeratorTopicActions action, int modUserId, int topicId, string additionalData = null)
@@ -103,7 +103,7 @@ namespace PhpbbInDotnet.Services
                 var topic = await _context.Database.GetDbConnection().QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
                 if (topic != null)
                 {
-                    await Log(EnumString(action), $"Topic Id: {topicId}, Topic title: {topic.TopicTitle}, Additional data: {additionalData}", modUserId, OperationLogType.Moderator, topic.ForumId, topicId);
+                    await Log(_utils.EnumString(action), $"Topic Id: {topicId}, Topic title: {topic.TopicTitle}, Additional data: {additionalData}", modUserId, OperationLogType.Moderator, topic.ForumId, topicId);
                 }
             });
 
@@ -118,11 +118,11 @@ namespace PhpbbInDotnet.Services
             });
 
         public async Task LogModeratorPostAction(ModeratorPostActions action, int modUserId, PhpbbPosts post, string additionalData = null)
-            => await WithErrorHandling(async () => await Log(EnumString(action), $"Post Id: {post.PostId}, Post subject: {post.PostSubject}, Additional data: {additionalData}", modUserId, OperationLogType.Moderator, post.ForumId, post.TopicId));
+            => await WithErrorHandling(async () => await Log(_utils.EnumString(action), $"Post Id: {post.PostId}, Post subject: {post.PostSubject}, Additional data: {additionalData}", modUserId, OperationLogType.Moderator, post.ForumId, post.TopicId));
 
-        public async Task LogUserProfileAction(UserProfileActions action, int editingUser, PhpbbUsers targetUser)
+        public async Task LogUserProfileAction(UserProfileActions action, int editingUser, PhpbbUsers targetUser, string additionalData = null)
             => await WithErrorHandling(async () =>
-                await Log(EnumString(action), $"User {editingUser} has changed the profile of user {targetUser.UserId} ({targetUser.UsernameClean})", editingUser, OperationLogType.User)
+                await Log(_utils.EnumString(action), $"User {editingUser} has changed the profile of user {targetUser.UserId} ({targetUser.UsernameClean}), Additional data: {additionalData}", editingUser, OperationLogType.User)
             );
 
         private async Task Log(string action, string logData, int userId, OperationLogType operationType, int forumId = 0, int topicId = 0)
@@ -143,9 +143,6 @@ namespace PhpbbInDotnet.Services
                 }
             );
         }
-
-        private string EnumString(Enum @enum)
-            => $"{@enum.GetType().Name}.{@enum}";
 
         private async Task WithErrorHandling(Func<Task> toDo)
         {

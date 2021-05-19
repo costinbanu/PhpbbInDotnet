@@ -63,8 +63,8 @@ namespace PhpbbInDotnet.Forum
                 return _currentUser;
             }
             var user = User;
-            var authenticationExpiryDays = Config.GetValue<TimeSpan?>("LoginSessionSlidingExpiration") ?? TimeSpan.FromDays(30);
-            var sessionTrackingTimeoutMinutes = Config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1);
+            var authenticationExpiration = Config.GetValue<TimeSpan?>("LoginSessionSlidingExpiration") ?? TimeSpan.FromDays(30);
+            var sessionTrackingTimeout = Config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1);
             if (!(user?.Identity?.IsAuthenticated ?? false))
             {
                 user = await UserService.GetAnonymousClaimsPrincipal();
@@ -75,7 +75,7 @@ namespace PhpbbInDotnet.Forum
                     new AuthenticationProperties
                     {
                         AllowRefresh = true,
-                        ExpiresUtc = DateTimeOffset.UtcNow.Add(authenticationExpiryDays),
+                        ExpiresUtc = DateTimeOffset.UtcNow.Add(authenticationExpiration),
                         IsPersistent = true,
                     }
                 );
@@ -98,11 +98,11 @@ namespace PhpbbInDotnet.Forum
                         if (dbUser == null || dbUser.UserInactiveTime > 0)
                         {
                             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                            Cache.Add(key, true, new MemoryCacheEntryOptions { SlidingExpiration = authenticationExpiryDays });
+                            Cache.Add(key, true, new MemoryCacheEntryOptions { SlidingExpiration = authenticationExpiration });
                         }
                         else
                         {
-                            if (DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > sessionTrackingTimeoutMinutes)
+                            if (DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > sessionTrackingTimeout)
                             {
                                 await ReloadCurrentUser();
                                 await connection.ExecuteAsync("UPDATE phpbb_users SET user_lastvisit = @now WHERE user_id = @userId", new { now = DateTime.UtcNow.ToUnixTimestamp(), _currentUser.UserId });
@@ -122,12 +122,12 @@ namespace PhpbbInDotnet.Forum
                     IsBot = dd.IsBot();
                     if (IsBot)
                     {
-                        _sessionCounter.UpsertBot(HttpContext.Connection.RemoteIpAddress.ToString(), userAgent, sessionTrackingTimeoutMinutes);
+                        _sessionCounter.UpsertBot(HttpContext.Connection.RemoteIpAddress.ToString(), userAgent, sessionTrackingTimeout);
                     }
                     else
                     {
                         HttpContext.Session.SetInt32("SessionCounted", 1);
-                        _sessionCounter.UpsertSession(HttpContext.Session.Id, sessionTrackingTimeoutMinutes);
+                        _sessionCounter.UpsertSession(HttpContext.Session.Id, sessionTrackingTimeout);
                     }
                 }
                 catch (Exception ex)
@@ -268,7 +268,7 @@ namespace PhpbbInDotnet.Forum
 
         public async Task MarkTopicRead(int forumId, int topicId, bool isLastPage, long markTime)
         {
-            var (tree, tracking) = await GetForumTree(false, true);
+            var (_, tracking) = await GetForumTree(false, true);
             if (tracking.TryGetValue(forumId, out var tt) && tt.Count == 1 && isLastPage)
             {
                 //current topic was the last unread in its forum, and it is the last page of unread messages, so mark the whole forum read
@@ -279,14 +279,6 @@ namespace PhpbbInDotnet.Forum
                 {
                     await SetLastMark();
                 }
-
-                //remove forum from tracking so that the forum tree in the navigator no longer displays it as unread
-                //tracking.Remove(forumId);
-                //var node = _forumService.GetTreeNode(tree, forumId);
-                //if (node != null)
-                //{
-                //    node.IsUnread = false;
-                //}
             }
             else
             {
@@ -294,28 +286,15 @@ namespace PhpbbInDotnet.Forum
                 var userId = (await GetCurrentUserAsync()).UserId;
                 try
                 {
-                    using var connection = Context.Database.GetDbConnection();
-                    var existing = await connection.ExecuteScalarAsync<long?>("SELECT mark_time FROM phpbb_topics_track WHERE user_id = @userId AND topic_id = @topicId", new { userId, topicId = topicId });
-                    if (existing == null)
-                    {
-                        await connection.ExecuteAsync(
-                            "INSERT INTO phpbb_topics_track (forum_id, mark_time, topic_id, user_id) VALUES (@forumId, @markTime, @topicId, @userId)",
-                            new { forumId, markTime, topicId, userId }
-                        );
-                    }
-                    else if (markTime > existing)
-                    {
-                        await connection.ExecuteAsync(
-                            "UPDATE phpbb_topics_track SET forum_id = @forumId, mark_time = @markTime WHERE user_id = @userId AND topic_id = @topicId",
-                            new { forumId, markTime, userId, topicId }
-                        );
-                    }
+                    await Context.Database.GetDbConnection().ExecuteAsync(
+                        "CALL mark_topic_read(@forumId, @topicId, @userId, @markTime)",
+                        new { forumId, topicId, userId, markTime }
+                    );
                 }
                 catch (Exception ex)
                 {
-                    Utils.HandleError(ex, "Error marking topics as read.");
+                    Utils.HandleErrorAsWarning(ex, $"Error marking topics as read (forumId={forumId}, topicId={topicId}, userId={userId}).");
                 }
-                //tt.Remove(new Tracking { TopicId = topicId });
             }
         }
 

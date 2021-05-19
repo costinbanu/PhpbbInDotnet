@@ -147,6 +147,8 @@ namespace PhpbbInDotnet.Forum.Pages
             var validator = new UserProfileDataValidationService(ModelState, LanguageProvider, lang);
 
             var newCleanUsername = Utils.CleanString(CurrentUser.Username);
+            var usernameChanged = false;
+            var oldUsername = dbUser.Username;
             if (await IsCurrentUserAdminHere() && dbUser.UsernameClean != newCleanUsername && !string.IsNullOrWhiteSpace(CurrentUser.Username))
             {
                 if (!validator.ValidateUsername(nameof(CurrentUser), CurrentUser.Username))
@@ -171,6 +173,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     t.TopicLastPosterName = CurrentUser.Username;
                 }
                 userMustLogIn = true;
+                usernameChanged = true;
             }
 
             if (!string.IsNullOrWhiteSpace(Birthday) && Birthday != dbUser.UserBirthday)
@@ -439,6 +442,10 @@ namespace PhpbbInDotnet.Forum.Pages
             if (passwordChanged)
             {
                 await _operationLogService.LogUserProfileAction(UserProfileActions.ChangePassword, currentUserId, dbUser);
+            }
+            if (usernameChanged)
+            {
+                await _operationLogService.LogUserProfileAction(UserProfileActions.ChangeUsername, currentUserId, dbUser, $"Old username: '{oldUsername}'");
             }
 
             await Render(dbUser);

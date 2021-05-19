@@ -25,7 +25,7 @@ namespace PhpbbInDotnet.Services
         private readonly StorageService _storageService;
         private readonly IConfiguration _config;
         
-        private static readonly Regex EMOJI_REGEX = new(@"^(\:|\;){1}[a-zA-Z0-9\-\)\(\]\[\}\{\\\|\*\'\>\<\?]+\:?$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        private static readonly Regex EMOJI_REGEX = new(@"^(\:|\;){1}[a-zA-Z0-9\-\)\(\]\[\}\{\\\|\*\'\>\<\?\!]+\:?$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex WHITESPACE_REGEX = new(@"\s+", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnoreCase);
 
         private List<PhpbbSmilies> _smilies;
@@ -229,18 +229,22 @@ namespace PhpbbInDotnet.Services
                 Dictionary<string, int> orders = null;
                 HashSet<int> codesToDeleteHashSet = null;
                 HashSet<string> smileyGroupsToDeleteHashSet = null;
-                int maxCodeCount = 0;
+                //int maxCodeCount = 0;
                 await Task.WhenAll(
-                    Task.Run(() =>
-                    {nu e bine - trebuie sa stiu intai cine cate coduri are fiecare url (maxcode count sau ceva de genul). ordinea tre de la 1 nu zero (i+1 nu i). si factorizata cu nr de coduri per url (sau maximul, worst case)
+                    Task.Run(() => dto.Where(d => !smileyGroupsToDelete.Contains(d.Url)).ToDictionary(k => k.Url, v => v.Codes.Count(c => !codesToDelete.Contains(c.Id)))).ContinueWith(async countsTask =>
+                    {
+                        var counts = await countsTask;
+                        var increment = 1;
+                        orders = new Dictionary<string, int>(newOrder.Count);
                         for (var i = 0; i < newOrder.Count; i++)
                         {
-                            orders.Add(newOrder[i], i);
+                            orders.Add(newOrder[i], i + increment);
+                            increment = counts.TryGetValue(newOrder[i], out var val) ? val : 1;
                         }
                     }),
                     Task.Run(() => codesToDeleteHashSet = new HashSet<int>(codesToDelete)),
-                    Task.Run(() => smileyGroupsToDeleteHashSet = new HashSet<string>(smileyGroupsToDelete)),
-                    Task.Run(() => maxCodeCount = dto.Max(d => d.Codes.Count(c => !string.IsNullOrWhiteSpace(c.Value))))
+                    Task.Run(() => smileyGroupsToDeleteHashSet = new HashSet<string>(smileyGroupsToDelete))
+                    //Task.Run(() => maxCodeCount = dto.Max(d => d.Codes.Count(c => !string.IsNullOrWhiteSpace(c.Value))))
                 );
                 var errors = new List<string>(dto.Count * 2);
                 var flatSource = new List<PhpbbSmilies>(dto.Count * 2);
@@ -315,6 +319,7 @@ namespace PhpbbInDotnet.Services
 
                 if (errors.Count > 0)
                 {
+                    Utils.HandleErrorAsWarning(new AggregateException(errors.Select(e => new Exception(e))), "Error managing emojis");
                     return (string.Join(Environment.NewLine, errors), null);
                 }
                 return (LanguageProvider.Admin[lang, "EMOJI_UPDATED_SUCCESSFULLY"], true);

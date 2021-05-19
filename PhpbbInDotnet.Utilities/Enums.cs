@@ -138,7 +138,8 @@ namespace PhpbbInDotnet.Utilities
     public enum UserProfileActions
     {
         ChangeEmail,
-        ChangePassword
+        ChangePassword,
+        ChangeUsername
     }
 
     public enum PostingActions
