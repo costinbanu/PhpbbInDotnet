@@ -1,5 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database.Entities;
+using System.Data;
+using System.Data.Common;
+using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Database
 {
@@ -3859,6 +3862,26 @@ namespace PhpbbInDotnet.Database
                     .HasColumnType("tinyint(1) unsigned")
                     .HasDefaultValueSql("0");
             });
+        }
+
+        public async Task<DbConnection> GetDbConnectionAsync()
+        {
+            var conn = Database.GetDbConnection();
+            if (conn.State == ConnectionState.Closed)
+            {
+                await conn.OpenAsync();
+            }
+            return conn;
+        }
+
+        public DbConnection GetDbConnection()
+        {
+            var conn = Database.GetDbConnection();
+            if (conn.State == ConnectionState.Closed)
+            {
+                conn.Open();
+            }
+            return conn;
         }
     }
 }

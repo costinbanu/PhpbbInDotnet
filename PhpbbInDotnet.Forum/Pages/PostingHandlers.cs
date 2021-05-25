@@ -26,7 +26,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 CurrentTopic = curTopic;
                 ForumId = curForum.ForumId;
                 Action = PostingActions.NewForumPost;
-                var conn = Context.Database.GetDbConnection();
+                var conn = await Context.GetDbConnectionAsync();
                 var draft = conn.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = TopicId.Value });
                 if (draft != null)
                 {
@@ -47,7 +47,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var curAuthor = curPost.PostUsername;
                 if (string.IsNullOrWhiteSpace(curAuthor))
                 {
-                    var conn = Context.Database.GetDbConnection();
+                    var conn = await Context.GetDbConnectionAsync();
                     curAuthor = (await conn.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @posterId", new { curPost.PosterId }))?.Username ?? "Anonymous";
                 }
 
@@ -70,7 +70,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 CurrentTopic = null;
                 Action = PostingActions.NewTopic;
                 //await Init();
-                var conn = Context.Database.GetDbConnection();
+                var conn = await Context.GetDbConnectionAsync();
                 var draft = conn.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = 0 }); 
                 if (draft != null)
                 {
@@ -96,7 +96,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumId = curForum.ForumId;
                 Action = PostingActions.EditForumPost;
 
-                var conn = Context.Database.GetDbConnection();
+                var conn = await Context.GetDbConnectionAsync();
                 
                 Attachments = (await conn.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id = @postId ORDER BY attach_id", new { PostId })).AsList();
                 ShowAttach = Attachments.Any();
@@ -126,7 +126,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (usr) =>
             {
                 var lang = await GetLanguage();
-                var conn = Context.Database.GetDbConnection();
+                var conn = await Context.GetDbConnectionAsync();
                 
                 if ((PostId ?? 0) > 0)
                 {
@@ -188,7 +188,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetEditPrivateMessage()
             => await WithRegisteredUser(async (user) =>
             {
-                var conn = Context.Database.GetDbConnection();
+                var conn = await Context.GetDbConnectionAsync();
 
                 var pm = await conn.QueryFirstOrDefaultAsync<PhpbbPrivmsgs>("SELECT * FROM phpbb_privmsgs WHERE msg_id = @privateMessageId", new { PrivateMessageId });
                 PostText = _writingService.CleanBbTextForDisplay(pm.MessageText, pm.BbcodeUid);
@@ -219,7 +219,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if ((user.UploadLimit ?? 0) > 0)
                 {
-                    var connection = Context.Database.GetDbConnection();
+                    var connection = await Context.GetDbConnectionAsync();
                     var uploadSize = await connection.ExecuteScalarAsync<long>("SELECT sum(filesize) FROM phpbb_attachments WHERE poster_id = @userId", new { user.UserId });
                     if (uploadSize + Files.Sum(f => f.Length) > user.UploadLimit)
                     {
@@ -291,7 +291,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     }
                 }
 
-                var connection = Context.Database.GetDbConnection();
+                var connection = await Context.GetDbConnectionAsync();
                 await connection.ExecuteAsync("DELETE FROM phpbb_attachments WHERE attach_id = @attachId", new { attachment.AttachId });
                 var dummy = Attachments.Remove(attachment);
                 ShowAttach = Attachments.Any();
@@ -317,7 +317,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return PageWithError(curForum, nameof(PostText), LanguageProvider.Errors[lang, "POST_TOO_SHORT"]);
                 }
 
-                var conn = Context.Database.GetDbConnection();
+                var conn = await Context.GetDbConnectionAsync();
 
                 var currentPost = Action == PostingActions.EditForumPost ? await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @PostId", new { PostId }) : null;
                 var userId = Action == PostingActions.EditForumPost ? currentPost.PosterId : user.UserId;
@@ -382,7 +382,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return RedirectToPage("ViewTopic", "byPostId", new { PostId });
                 }
 
-                var post = await Context.Database.GetDbConnection().QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @PostId", new { PostId });
+                var post = await (await Context.GetDbConnectionAsync()).QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @PostId", new { PostId });
                 var addedPostId = await UpsertPost(post, user);
 
                 if (addedPostId == null)
@@ -455,7 +455,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return PageWithError(curForum, nameof(PostText), LanguageProvider.Errors[lang, "POST_TOO_SHORT"]);
                 }
 
-                var conn = Context.Database.GetDbConnection();
+                var conn = await Context.GetDbConnectionAsync();
                 var topicId = Action == PostingActions.NewTopic ? 0 : TopicId ?? 0;
                 var draft = conn.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId });
 
@@ -498,7 +498,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     return RedirectToPage("ViewTopic", "byPostId", new { PostId });
                 }
-                var connection = Context.Database.GetDbConnection();
+                var connection = await Context.GetDbConnectionAsync();
 
                 await connection.ExecuteAsync("UPDATE phpbb_topics SET poll_start = 0, poll_length = 0, poll_max_options = 1, poll_title = '', poll_vote_change = 0 WHERE topic_id = @topicId", new { curTopic.TopicId });
 

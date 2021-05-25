@@ -86,7 +86,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 TopicId = int.TryParse(query["topicid"], out var i) ? i as int? : null;
             }
 
-            var connection = Context.Database.GetDbConnection();
+            var connection = await Context.GetDbConnectionAsync();
 
             Users = await UserService.GetUserMap();
 
@@ -135,10 +135,10 @@ namespace PhpbbInDotnet.Forum.Pages
                 return await OnGet();
             }
 
-            var connection = Context.Database.GetDbConnection();
+            var connection = await Context.GetDbConnectionAsync();
             using var multi = await connection.QueryMultipleAsync(
-                "CALL `search_user_attachments`(@forums, @AuthorId, @page)",
-                new 
+                sql: "CALL search_user_attachments(@forums, @AuthorId, @page)",
+                param: new 
                 { 
                     AuthorId,
                     page = PageNum ?? 1,
@@ -181,7 +181,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return;
             }
 
-            var connection = Context.Database.GetDbConnection();
+            var connection = await Context.GetDbConnectionAsync();
             PageNum ??= 1;
 
             var (tree, _) = await GetForumTree(false, false);
@@ -212,8 +212,8 @@ namespace PhpbbInDotnet.Forum.Pages
             }
 
             using var multi = await connection.QueryMultipleAsync(
-                "CALL `search_post_text`(@forums, @topic, @author, @page, @search)",
-                new
+                sql: "CALL search_post_text(@forums, @topic, @author, @page, @search)",
+                param: new
                 {
                     topic = TopicId > 0 ? TopicId : null,
                     author = AuthorId > 0 ? AuthorId : null as int?,

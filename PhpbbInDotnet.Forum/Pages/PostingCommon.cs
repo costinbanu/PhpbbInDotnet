@@ -12,6 +12,7 @@ using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
@@ -122,9 +123,9 @@ namespace PhpbbInDotnet.Forum.Pages
             if (((TopicId.HasValue && PageNum.HasValue) || PostId.HasValue) && (Action == PostingActions.EditForumPost || Action == PostingActions.NewForumPost))
             {
                 var user = await GetCurrentUserAsync();
-                using var multi = await Context.Database.GetDbConnection().QueryMultipleAsync(
-                    "CALL get_posts(@userId, @topicId, null, @pageSize, null, 1);",
-                    new
+                using var multi = await (await Context.GetDbConnectionAsync()).QueryMultipleAsync(
+                    sql: "CALL get_posts(@userId, @topicId, null, @pageSize, null, 1);",
+                    param: new
                     {
                         user.UserId,
                         TopicId,
@@ -169,7 +170,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return null;
             }
 
-            var connection = Context.Database.GetDbConnection();
+            var connection = await Context.GetDbConnectionAsync();
 
             var curTopic = Action != PostingActions.NewTopic ? await connection.QuerySingleOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { TopicId }) : null;
             var canCreatePoll = Action == PostingActions.NewTopic || (Action == PostingActions.EditForumPost && (curTopic?.TopicFirstPostId ?? 0) == PostId);
@@ -313,7 +314,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if ((TopicId ?? 0) > 0 && (LastPostTime ?? 0) > 0)
             {
-                var connection = Context.Database.GetDbConnection();
+                var connection = await Context.GetDbConnectionAsync();
                 var times = await connection.QueryFirstOrDefaultAsync(
                     @"SELECT p.post_time, p.post_edit_time
                         FROM phpbb_posts p

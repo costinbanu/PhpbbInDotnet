@@ -130,7 +130,7 @@ namespace PhpbbInDotnet.Services
 
                 await _context.SaveChangesAsync();
 
-                var connection = _context.Database.GetDbConnection();
+                var connection = await _context.GetDbConnectionAsync();
                 var select = @"SELECT t.*
                              FROM {0} t
                              JOIN phpbb_acl_roles r ON t.auth_role_id = r.role_id
@@ -224,10 +224,10 @@ namespace PhpbbInDotnet.Services
         }
 
         public async Task<IEnumerable<ForumPermissions>> GetPermissions(int forumId)
-        {
-            var connection = _context.Database.GetDbConnection();
-            return await connection.QueryAsync<ForumPermissions>("CALL `forum`.`get_forum_permissions`(@forumId);", new { forumId });
-        }
+            => await (await _context.GetDbConnectionAsync()).QueryAsync<ForumPermissions>(
+                sql: "CALL get_forum_permissions`(@forumId);", 
+                param: new { forumId }
+            );
 
         public async Task<(string Message, bool? IsSuccess)> DeleteForum(int forumId, int adminUserId)
         {

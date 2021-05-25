@@ -36,7 +36,7 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                var conn = _context.Database.GetDbConnection();
+                var conn = await _context.GetDbConnectionAsync();
                 var rows = await conn.ExecuteAsync("UPDATE phpbb_topics SET topic_type = @topicType WHERE topic_id = @topicId", new { topicType, topicId });
 
                 if (rows == 1)
@@ -61,7 +61,7 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                var conn = _context.Database.GetDbConnection();
+                var conn = await _context.GetDbConnectionAsync();
                 
                 var topicRows = await conn.ExecuteAsync(
                     "UPDATE phpbb_topics SET forum_id = @destinationForumId WHERE topic_id = @topicID AND EXISTS(SELECT 1 FROM phpbb_forums WHERE forum_id = @destinationForumId)",
@@ -101,7 +101,7 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                var conn = _context.Database.GetDbConnection();
+                var conn = await _context.GetDbConnectionAsync();
                 
                 var rows = await conn.ExecuteAsync("UPDATE phpbb_topics SET topic_status = @status WHERE topic_id = @topicId", new { status = @lock.ToByte(), topicId });
 
@@ -124,7 +124,7 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                var conn = _context.Database.GetDbConnection();
+                var conn = await _context.GetDbConnectionAsync();
                 
                 var posts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId", new { topicId })).AsList();
                 
@@ -165,7 +165,7 @@ namespace PhpbbInDotnet.Services
                     return (LanguageProvider.Moderator[await GetLanguage(), "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
 
-                var conn = _context.Database.GetDbConnection();
+                var conn = await _context.GetDbConnectionAsync();
 
                 var posts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
 
@@ -215,7 +215,7 @@ namespace PhpbbInDotnet.Services
                     return (LanguageProvider.Moderator[await GetLanguage(), "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
 
-                var conn = _context.Database.GetDbConnection();
+                var conn = await _context.GetDbConnectionAsync();
 
                 var posts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
                 if (posts.Count != postIds.Length || posts.Select(p => p.TopicId).Distinct().Count() != 1)
@@ -259,7 +259,7 @@ namespace PhpbbInDotnet.Services
                     return (LanguageProvider.Moderator[await GetLanguage(), "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
 
-                var conn = _context.Database.GetDbConnection();
+                var conn = await _context.GetDbConnectionAsync();
 
                 var posts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
                 if (posts.Count != postIds.Length || posts.Select(p => p.TopicId).Distinct().Count() != 1)
@@ -342,7 +342,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<IEnumerable<Tuple<int, string>>> GetReportedMessages()
         {
-            var connection = _context.Database.GetDbConnection();
+            var connection = await _context.GetDbConnectionAsync();
             return (await connection.QueryAsync(
                 @"SELECT r.post_id, jr.reason_title
                     FROM phpbb_reports r

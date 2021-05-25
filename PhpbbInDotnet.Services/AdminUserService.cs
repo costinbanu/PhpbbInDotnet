@@ -136,7 +136,7 @@ namespace PhpbbInDotnet.Services
                 _context.PhpbbForumsWatch.RemoveRange(_context.PhpbbForumsWatch.Where(u => u.UserId == userId));
                 _context.PhpbbLog.RemoveRange(_context.PhpbbLog.Where(u => u.UserId == userId));
                 _context.PhpbbModeratorCache.RemoveRange(_context.PhpbbModeratorCache.Where(u => u.UserId == userId));
-                await _context.Database.GetDbConnection().ExecuteAsync("DELETE FROM phpbb_poll_votes WHERE vote_user_id = @userId", new { userId });
+                await (await _context.GetDbConnectionAsync()).ExecuteAsync("DELETE FROM phpbb_poll_votes WHERE vote_user_id = @userId", new { userId });
                 _context.PhpbbPrivmsgsFolder.RemoveRange(_context.PhpbbPrivmsgsFolder.Where(u => u.UserId == userId));
                 _context.PhpbbPrivmsgsRules.RemoveRange(_context.PhpbbPrivmsgsRules.Where(u => u.UserId == userId));
                 _context.PhpbbPrivmsgsTo.RemoveRange(_context.PhpbbPrivmsgsTo.Where(u => u.UserId == userId));
@@ -456,7 +456,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<List<UpsertGroupDto>> GetGroups()
             => (
-                await _context.Database.GetDbConnection().QueryAsync<UpsertGroupDto>(
+                await (await _context.GetDbConnectionAsync()).QueryAsync<UpsertGroupDto>(
                     @"SELECT g.group_id AS id, 
                              g.group_name AS `name`,
                              g.group_desc AS `desc`,
@@ -622,7 +622,7 @@ namespace PhpbbInDotnet.Services
             var lang = await GetLanguage();
             try
             {
-                var conn = _context.Database.GetDbConnection();
+                var conn = await _context.GetDbConnectionAsync();
                 var indexHash = new HashSet<int>(indexesToRemove);
                 var exceptions = new List<Exception>();
                 for (var i = 0; i < banlist.Count; i++)

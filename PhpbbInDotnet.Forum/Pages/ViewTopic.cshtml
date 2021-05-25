@@ -22,7 +22,7 @@
     var IsMod = await Model.IsCurrentUserModeratorHere();
     var HasPM = _userService.HasPrivateMessagePermissions(CurrentUser);
     var EditTime = CurrentUser.PostEditTime;
-    var Connection = _context.Database.GetDbConnection();
+    var Connection = await _context.GetDbConnectionAsync();
     var Lang = await Model.GetLanguage(); 
     var UserDateFormat = CurrentUser?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
 }

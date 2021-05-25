@@ -42,10 +42,10 @@ namespace PhpbbInDotnet.Services
         #region Banned words
 
         public async Task<List<PhpbbWords>> GetBannedWordsAsync()
-            => (await _context.Database.GetDbConnection().QueryAsync<PhpbbWords>("SELECT * FROM phpbb_words")).AsList();
+            => (await (await _context.GetDbConnectionAsync()).QueryAsync<PhpbbWords>("SELECT * FROM phpbb_words")).AsList();
 
         public List<PhpbbWords> GetBannedWords()
-            => _context.Database.GetDbConnection().Query<PhpbbWords>("SELECT * FROM phpbb_words").AsList();
+            => _context.GetDbConnection().Query<PhpbbWords>("SELECT * FROM phpbb_words").AsList();
 
         public async Task<(string Message, bool? IsSuccess)> ManageBannedWords(List<PhpbbWords> words, List<int> indexesToRemove)
         {
@@ -56,7 +56,7 @@ namespace PhpbbInDotnet.Services
                 _context.PhpbbWords.UpdateRange(words.Where(w => w.WordId != 0));
                 await _context.SaveChangesAsync();
 
-                var conn = _context.Database.GetDbConnection();
+                var conn = await _context.GetDbConnectionAsync();
                 await conn.ExecuteAsync("DELETE FROM phpbb_words WHERE word_id IN @ids", new { ids = indexesToRemove.Select(i => words[i].WordId) });
 
                 return (LanguageProvider.Admin[lang, "BANNED_WORDS_UPDATED_SUCCESSFULLY"], true);
@@ -82,7 +82,7 @@ namespace PhpbbInDotnet.Services
                 _context.PhpbbBbcodes.UpdateRange(codes.Where(c => c.BbcodeId != 0));
                 await _context.SaveChangesAsync();
 
-                var conn = _context.Database.GetDbConnection();
+                var conn = await _context.GetDbConnectionAsync();
                 await conn.ExecuteAsync("DELETE FROM phpbb_bbcodes WHERE bbcode_id IN @ids", new { ids = indexesToRemove.Select(i => codes[i].BbcodeId) });
                 return (LanguageProvider.Admin[lang, "BBCODES_UPDATED_SUCCESSFULLY"], true);
             }
@@ -94,7 +94,7 @@ namespace PhpbbInDotnet.Services
         }
 
         public async Task<List<PhpbbBbcodes>> GetCustomBBCodes()
-            => (await _context.Database.GetDbConnection().QueryAsync<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes")).AsList();
+            => (await (await _context.GetDbConnectionAsync()).QueryAsync<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes")).AsList();
 
         public async Task<string> PrepareTextForSaving(string text)
         {
@@ -153,7 +153,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<List<AttachmentManagementDto>> GetOrphanedFiles()
         {
-            var connection = _context.Database.GetDbConnection();
+            var connection = await _context.GetDbConnectionAsync();
             return (await connection.QueryAsync<AttachmentManagementDto>("SELECT a.*, u.username FROM phpbb_attachments a JOIN phpbb_users u on a.poster_id = u.user_id WHERE a.is_orphan = 1")).AsList();
         }
 
@@ -170,7 +170,7 @@ namespace PhpbbInDotnet.Services
 
             if (Succeeded?.Any() ?? false)
             {
-                var connection = _context.Database.GetDbConnection();
+                var connection = await _context.GetDbConnectionAsync();
                 await connection.ExecuteAsync(
                     "DELETE FROM phpbb_attachments WHERE attach_id IN @ids",
                     new { ids = files.Where(f => Succeeded.Contains(f.PhysicalFilename)).Select(f => f.AttachId).DefaultIfEmpty() }
@@ -195,14 +195,14 @@ namespace PhpbbInDotnet.Services
             => _smilies ??= await GetSmilies();
 
         public async Task<List<PhpbbSmilies>> GetSmilies()
-            => (await _context.Database.GetDbConnection().QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies ORDER BY smiley_order")).AsList();
+            => (await (await _context.GetDbConnectionAsync()).QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies ORDER BY smiley_order")).AsList();
 
         public async Task<(string Message, bool? IsSuccess)> ManageSmilies(List<UpsertSmiliesDto> dto, List<string> newOrder, List<int> codesToDelete, List<string> smileyGroupsToDelete)
         {
             var lang = await GetLanguage();
             try
             {
-                var conn = _context.Database.GetDbConnection();
+                var conn = await _context.GetDbConnectionAsync();
 
                 if (codesToDelete.Any())
                 {

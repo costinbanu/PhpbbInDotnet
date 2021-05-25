@@ -51,7 +51,7 @@ namespace PhpbbInDotnet.Services
 
             var restrictedForums = (user?.AllPermissions?.Where(p => p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE)?.Select(p => p.ForumId) ?? Enumerable.Empty<int>()).ToHashSet();
             var tracking = fetchUnreadData ? await GetForumTracking(user, forceRefresh) : null;
-            var connection = _context.Database.GetDbConnection();
+            var connection = await _context.GetDbConnectionAsync();
 
             using var multi = await connection.QueryMultipleAsync("CALL `forum`.`get_forum_tree`(); SELECT forum_id, count(topic_id) as topic_count FROM phpbb_topics GROUP BY forum_id;");
             _tree = (await multi.ReadAsync<ForumTree>()).ToHashSet();
@@ -113,7 +113,7 @@ namespace PhpbbInDotnet.Services
             }
 
             var dbResults = Enumerable.Empty<ExtendedTracking>();
-            var connection = _context.Database.GetDbConnection();
+            var connection = await _context.GetDbConnectionAsync();
             try
             {
                 dbResults = await connection.QueryAsync<ExtendedTracking>("CALL `forum`.`get_post_tracking`(@userId);", new { userId = user?.UserId ?? Constants.ANONYMOUS_USER_ID });
