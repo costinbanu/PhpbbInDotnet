@@ -99,7 +99,7 @@ Storage.Emojis | string | images/smilies | path relative to `wwwroot`
 AvatarMaxSize.Width | int | 200 | pixels
 AvatarMaxSize.Height | int | 200 | pixels
 EmojiMaxSize.Width | int | 100 | pixels
-EmojiMaxSize.Height | string | 100 | pixels
+EmojiMaxSize.Height | int | 100 | pixels
 DisplayExternalLinksMenu | bool | false | whether a menu with external links is displayed in the header, next to the forum Menu. If you need to display this, then edit the **`ExternalLinks.<lang>.html`** translation file as well and add your links.
 
 ### Install the application
