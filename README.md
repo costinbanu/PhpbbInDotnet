@@ -63,11 +63,12 @@ Either way,  ensure that its structure and contents follow the sample below. All
     "Width": 100,
     "Height": 100
   },
-  "DisplayExternalLinksMenu": false
+  "DisplayExternalLinksMenu": false,
+  "UseHeaderImage": false
 }
 ```
 
-Field details:
+**Field details**
 
 Field name | Data type | Value | Notes
 --- | --- | --- | ---
@@ -100,7 +101,22 @@ AvatarMaxSize.Width | int | 200 | pixels
 AvatarMaxSize.Height | int | 200 | pixels
 EmojiMaxSize.Width | int | 100 | pixels
 EmojiMaxSize.Height | int | 100 | pixels
-DisplayExternalLinksMenu | bool | false | whether a menu with external links is displayed in the header, next to the forum Menu. If you need to display this, then edit the **`ExternalLinks.<lang>.html`** translation file as well and add your links.
+DisplayExternalLinksMenu | bool | false | whether a menu with external links is displayed below the header, next to the forum Menu. 
+UseHeaderImage | bool | false | whether a custom image is displayed in the header, instead of the forum name
+
+### Branding
+#### Forum header
+The application will display the `ForumName` app setting value in the upper left corner of the screen (as a header that links to the forum's first page).
+
+The application supports custom header images and will require three versions (depending on the client's width, it will display the appropriate one):
+1. **wwwroot/images/forumlogo-full.png** with the exact size 682 x 100 px
+2. **wwwroot/images/forumlogo-medium.png** with the exact size 325 x 77 px
+3. **wwwroot/images/forumlogo-small.png** with the exact size 128 x 69 px
+
+In order to start using custom headers, set the `UseHeaderImage` app setting to `true`, then provide the three required images.
+
+#### Custom external links
+The application can display a custom set of external links next to the menu. If you need to display this, then set the `DisplayExternalLinksMenu` app setting to `true`, then edit the **`ExternalLinks.<lang>.html`** translation file to add your links.
 
 ### Install the application
 

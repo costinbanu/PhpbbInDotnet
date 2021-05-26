@@ -86,7 +86,18 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a asp-page="/Index"><div class="headerImg"></div></a>
+                <a asp-page="/Index">
+                    @if (_config.GetValue<bool>("UseHeaderImage"))
+                    {
+                        <div class="headerImg"></div>
+                    }
+                    else
+                    {
+                        <h2 style="color:white; font-weight:bold">
+                            @Html.Raw(_config.GetValue<string>("ForumName"))
+                        </h2>
+                    }
+                </a>
 
             </div>
             <div class="navbar-collapse collapse">
