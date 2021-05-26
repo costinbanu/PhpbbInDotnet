@@ -274,37 +274,22 @@ namespace PhpbbInDotnet.Forum
             {
                 //current topic was the last unread in its forum, and it is the last page of unread messages, so mark the whole forum read
                 await MarkForumRead(forumId);
-                //Utils.HandleErrorAsWarning(new Exception($"forum {forumId} mark as read for user {userId}"));
 
                 //current forum is the user's last unread forum, and it has just been read; set the mark time.
                 if (tracking.Count == 1)
                 {
                     await SetLastMark();
-                    //Utils.HandleErrorAsWarning(new Exception($"last mark set for user {userId}"));
                 }
-
             }
             else
             {
                 //there are other unread topics in this forum, or unread pages in this topic, so just mark the current page as read
                 try
                 {
-                    var connection = await Context.GetDbConnectionAsync();
-                    //using var transaction = await connection.BeginTransactionAsync();
-                    try
-                    {
-                        await connection.ExecuteAsync(
-                            sql: "CALL mark_topic_read(@forumId, @topicId, @userId, @markTime)",
-                            param: new { forumId, topicId, userId, markTime }/*,
-                            transaction: transaction*/
-                        );
-                        //await transaction.CommitAsync();
-                    }
-                    catch (Exception ex)
-                    {
-                        Utils.HandleErrorAsWarning(ex, $"Error marking topics as read (forumId={forumId}, topicId={topicId}, userId={userId}).");
-                        //await transaction.RollbackAsync();
-                    }
+                    await (await Context.GetDbConnectionAsync()).ExecuteAsync(
+                        sql: "CALL mark_topic_read(@forumId, @topicId, @userId, @markTime)",
+                        param: new { forumId, topicId, userId, markTime }
+                    );
                 }
                 catch (Exception ex)
                 {
