@@ -103,7 +103,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     var subject = LanguageProvider.Email[admin.UserLang, "NEWUSER_SUBJECT"];
                     using var emailMessage = new MailMessage
                     {
-                        From = new MailAddress($"admin@metrouusor.com", Config.GetValue<string>("ForumName")),
+                        From = new MailAddress(Config.GetValue<string>("AdminEmail"), Config.GetValue<string>("ForumName")),
                         Subject = subject,
                         Body = await Utils.RenderRazorViewToString(
                             "_NewUserNotification",

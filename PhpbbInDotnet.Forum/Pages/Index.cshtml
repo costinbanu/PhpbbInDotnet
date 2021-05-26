@@ -2,10 +2,13 @@
 @model IndexModel
 
 @using Utilities
+@using Microsoft.Extensions.Configuration
+
+@inject IConfiguration _config
 
 @{
     var CurrentUser = await Model.GetCurrentUserAsync();
-    var Lang = await Model.GetLanguage(); 
+    var Lang = await Model.GetLanguage();
     var UserDateFormat = CurrentUser?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
     ViewData["Title"] = Model.LanguageProvider.BasicText[Lang, "HOME", Casing.Title];
 }
@@ -20,35 +23,16 @@
         new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(Lang, true, $"<a href=\"javascript:MarkForumsRead.submit()\">{Model.LanguageProvider.BasicText[Lang, "MARK_FORUMS_READ", Casing.Title]}</a>"),
         ViewData
     )
-    <span>&nbsp;&bull;&nbsp;</span>
 }
-@*specific metrouusor*@
-<span onclick="toggleHeaderLinks('customLinks', 'headerLinks');" id="customLinksButton" class="MyButton MyMiniButton" style="line-height:1.1em">
-    &#x1F310;&nbsp;Site-urile „Metrou Ușor”
-</span>
 
-<ul class="Shortcuts" style="display:none" id="customLinks">
-    <li>
-        <span> &nbsp;</span>
-        <a href="https://metrouusor.com" target="_blank">Asociația „Metrou Ușor”</a>
-    </li>
-    <li>
-        <span> &nbsp;</span>
-        <a href="https://www.facebook.com/MetrouUsor/" target="_blank">Facebook</a>
-    </li>
-    <li>
-        <span> &nbsp;</span>
-        <a href="https://youtube.com/channel/UCczAlitk6NaUjQsbtCSdEjA" target="_blank">YouTube</a>
-    </li>
-    <li>
-        <span> &nbsp;</span>
-        <a href="https://campaniamea.declic.ro/petitions/petitie-pentru-infiintarea-muzeului-transportului-bucurestean" target="_blank">Inițiativa pentru Muzeul transportului bucureștean</a>
-    </li>
-    <li>
-        <span> &nbsp;</span>
-        <a href="https://metrouusor.com/Content/implica-te/directioneaza-2-din-impozit.html" target="_blank">2% pentru Asociația „Metrou Ușor”</a>
-    </li>
-</ul>
+@if (_config.GetValue<bool?>("DisplayExternalLinksMenu") ?? false)
+{
+    if (!CurrentUser.IsAnonymous)
+    {
+        <span>&nbsp;&bull;&nbsp;</span>
+    }
+    @Html.Raw(Model.LanguageProvider.ExternalLinks[Lang])
+}
 
 <div id="target"></div>
 

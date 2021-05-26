@@ -217,7 +217,7 @@ namespace PhpbbInDotnet.Services
                 var emailSubject = string.Format(LanguageProvider.Email[receiver.Language, "NEWPM_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
                 using var emailMessage = new MailMessage
                 {
-                    From = new MailAddress($"admin@metrouusor.com", _config.GetValue<string>("ForumName")),
+                    From = new MailAddress(_config.GetValue<string>("AdminEmail"), _config.GetValue<string>("ForumName")),
                     Subject = emailSubject,
                     Body = await Utils.RenderRazorViewToString(
                         "_NewPMEmailPartial",

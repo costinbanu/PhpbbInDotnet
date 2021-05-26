@@ -186,7 +186,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var subject = string.Format(LanguageProvider.Email[LanguageProvider.GetValidatedLanguage(null, Request), "WELCOME_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
             using var emailMessage = new MailMessage
             {
-                From = new MailAddress($"admin@metrouusor.com", _config.GetValue<string>("ForumName")),
+                From = new MailAddress(_config.GetValue<string>("AdminEmail"), _config.GetValue<string>("ForumName")),
                 Subject = subject,
                 Body = await _utils.RenderRazorViewToString(
                     "_WelcomeEmailPartial",

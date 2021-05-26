@@ -61,43 +61,45 @@ This application requires a custom configuration object. You may use your own ap
   "EmojiMaxSize": {
     "Width": 100,
     "Height": 100
-  }
+  },
+  "DisplayExternalLinksMenu": false
 }
 ```
 
 Field details:
 
-Field name | Value | Notes
---- | --- | ---
-ForumDbConnectionString | ... |  your DB connection string (root access, no implicit database selected)
-Recaptcha.SiteKey | ... | site key 
-Recaptcha.SecretKey | ... | secret key 
-Recaptcha.BaseAddress | https://www.google.com | Base URL for captcha verification 
-Recaptcha.RelativeUri | recaptcha/api/siteverify | Relative URL for captcha verification 
-Recaptcha.ClientName | g-recaptcha | HttpClientName used in dependency injection 
-Recaptcha.MinScore | 0.6 | this value can be changed as per [reCAPTCHA documentation](https://developers.google.com/recaptcha/docs/v3); 0.6 is the value working best for our setup
-Smtp.Host | ... | your SSL-enabled SMTP host 
-Smtp.Username | ... | SMTP username 
-Smtp.Password | ... | SMTP password
-Encryption.Key1 | ... | first guid for AES symmetric key generation 
-Encryption.Key2 | ... | second guid for AES symmetric key generation 
-AvatarSalt | ... | it is a unique way of naming avatar files and is expected to be a lowercase guid without dashes. If this is a new installation, then use the guid generator mentioned above to generate a lowercase guid without dashes. However, if this is an update from phpBB, then get your avatar salt by running this in your forum's DB: `SELECT config_value FROM phpbb_config WHERE config_name = 'avatar_salt'` 
-BaseUrl | ... | forum base url
-ForumName | ... | forum name 
-LoginSessionSlidingExpiration | 30.00:00:00 | inactivity time before user is logged out. Is read as `TimeSpan` (format `dd.HH:mm:ss`), default value is 30 days
-UploadLimitsMB.Images | 2 | applies for both internally and externally hosted images
-UploadLimitsMB.OtherFiles | 20 | applies only for internally hosted attachments
-UploadLimitsCount.Images | 10 |  applies for both internally and externally hosted images
-UploadLimitsCount.OtherFiles | 10 | applies only for internally hosted attachments
-UserActivityTrackingInterval | 00.01:00:00 | time interval for tracking same user's activity. Is read as `TimeSpan` (format `dd.HH:mm:ss`), default value is 1 hour
-AdminEmail | ... | sender email address for forum generated emails 
-Storage.Files | forumfiles | path relative to `wwwroot` 
-Storage.Avatars | forumfiles/avatars | path relative to `wwwroot` 
-Storage.Emojis | images/smilies | path relative to `wwwroot` 
-AvatarMaxSize.Width | 200 | pixels
-AvatarMaxSize.Height | 200 | pixels
-EmojiMaxSize.Width | 100 | pixels
-EmojiMaxSize.Height | 100 | pixels
+Field name | Data type | Value | Notes
+--- | --- | --- | ---
+ForumDbConnectionString | string | ... |  your DB connection string (root access, no implicit database selected)
+Recaptcha.SiteKey | string | ... | site key 
+Recaptcha.SecretKey | string | ... | secret key 
+Recaptcha.BaseAddress | string | https://www.google.com | Base URL for captcha verification 
+Recaptcha.RelativeUri | string | recaptcha/api/siteverify | Relative URL for captcha verification 
+Recaptcha.ClientName | string | g-recaptcha | HttpClientName used in dependency injection 
+Recaptcha.MinScore | decimal | 0.6 | this value can be changed as per [reCAPTCHA documentation](https://developers.google.com/recaptcha/docs/v3); 0.6 is the value working best for our setup
+Smtp.Host | string | ... | your SSL-enabled SMTP host 
+Smtp.Username | string | ... | SMTP username 
+Smtp.Password | string | ... | SMTP password
+Encryption.Key1 | Guid | ... | first guid for AES symmetric key generation 
+Encryption.Key2 | Guid | ... | second guid for AES symmetric key generation 
+AvatarSalt | string | ... | it is a unique way of naming avatar files and; the recommended default value is a lowercase guid without dashes. If this is a new installation, then use the guid generator mentioned above to generate a lowercase guid without dashes. However, if this is an update from phpBB, then get your avatar salt by running this in your forum's DB: `SELECT config_value FROM phpbb_config WHERE config_name = 'avatar_salt'`
+BaseUrl | string | ... | forum base url
+ForumName |string |  ... | forum name 
+LoginSessionSlidingExpiration | TimeSpan | 30.00:00:00 | inactivity time before user is logged out. Is read as `TimeSpan` (format `dd.HH:mm:ss`), default value is 30 days
+UploadLimitsMB.Images | int | 2 | applies for both internally and externally hosted images
+UploadLimitsMB.OtherFiles | int | 20 | applies only for internally hosted attachments
+UploadLimitsCount.Images | int | 10 |  applies for both internally and externally hosted images
+UploadLimitsCount.OtherFiles | int | 10 | applies only for internally hosted attachments
+UserActivityTrackingInterval | TimeSpan | 00.01:00:00 | time interval for tracking same user's activity. Is read as `TimeSpan` (format `dd.HH:mm:ss`), default value is 1 hour
+AdminEmail | string | ... | sender email address for forum generated emails 
+Storage.Files | string | forumfiles | path relative to `wwwroot` 
+Storage.Avatars | string | forumfiles/avatars | path relative to `wwwroot` 
+Storage.Emojis | string | images/smilies | path relative to `wwwroot` 
+AvatarMaxSize.Width | int | 200 | pixels
+AvatarMaxSize.Height | int | 200 | pixels
+EmojiMaxSize.Width | int | 100 | pixels
+EmojiMaxSize.Height | string | 100 | pixels
+DisplayExternalLinksMenu | bool | false | Whether a menu with external links is displayed in the header, next to the forum Menu. If you need to display this, then edit the **`ExternalLinks.<lang>.html`** translation file as well and add your links.
 
 ### Install the application
 

@@ -35,6 +35,7 @@ namespace PhpbbInDotnet.Languages
         private readonly Lazy<HtmlTranslation> _customBBCodeGuide;
         private readonly Lazy<HtmlTranslation> _attachmentGuide;
         private readonly Lazy<TextTranslation> _bbCodes;
+        private readonly Lazy<HtmlTranslation> _externalLinks;
 
         public TextTranslation BasicText => _basicText.Value;
 
@@ -62,6 +63,8 @@ namespace PhpbbInDotnet.Languages
 
         public TextTranslation BBCodes => _bbCodes.Value;
 
+        public HtmlTranslation ExternalLinks => _externalLinks.Value;
+
         #endregion Translation declarations
 
         public LanguageProvider(ILogger logger, IAppCache cache, ForumDbContext context, CommonUtils utils)
@@ -85,6 +88,7 @@ namespace PhpbbInDotnet.Languages
             _customBBCodeGuide = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(CustomBBCodeGuide), _logger, cache));
             _attachmentGuide = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(AttachmentGuide), _logger, cache));
             _bbCodes = new Lazy<TextTranslation>(() => new TextTranslation(nameof(BBCodes), _logger, cache));
+            _externalLinks = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(ExternalLinks), _logger, cache));
 
             #endregion Translation init
         }

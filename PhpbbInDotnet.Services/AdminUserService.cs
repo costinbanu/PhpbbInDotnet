@@ -166,7 +166,7 @@ namespace PhpbbInDotnet.Services
                         {
                             using var emailMessage = new MailMessage
                             {
-                                From = new MailAddress($"admin@metrouusor.com", forumName),
+                                From = new MailAddress(_config.GetValue<string>("AdminEmail"), forumName),
                                 Subject = string.Format(LanguageProvider.Email[user.UserLang, "ACCOUNT_ACTIVATED_NOTIFICATION_SUBJECT_FORMAT"], forumName),
                                 Body = await Utils.RenderRazorViewToString(
                                     "_AccountActivatedNotification",
@@ -272,7 +272,7 @@ namespace PhpbbInDotnet.Services
 
                             using var emailMessage = new MailMessage
                             {
-                                From = new MailAddress($"admin@metrouusor.com", forumName),
+                                From = new MailAddress(_config.GetValue<string>("AdminEmail"), forumName),
                                 Subject = subject,
                                 Body = await Utils.RenderRazorViewToString("_WelcomeEmailPartial", model, pageContext, httpContext),
                                 IsBodyHtml = true

@@ -290,6 +290,15 @@ label {
     word-break: break-word !important;
 }
 
+    .Shortcuts li {
+        margin-left: 15px;
+    }
+
+    .Shortcuts .Indented {
+        text-indent: -15px;
+        padding-left: 15px;
+    }
+
 .Hide1300 {
     display: inline-block;
 }
