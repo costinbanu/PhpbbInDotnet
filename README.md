@@ -13,7 +13,8 @@ This application uses AES symmetric encryption for encrypting the password reset
 
 ## Installation
 ### Set up the configuration
-This application requires a custom configuration object. You may use your own app settings provider (`appsettings.json` file, user secrets, Azure app settings store and so on) to set it up, but be aware that by default it only supports `appsettings.json` (so it will require some coding to add your own provider). Either way,  ensure that its structure and contents follow the sample below. All fields are detailed below.
+This application requires a custom configuration object. You may use your own app settings provider (`appsettings.json` file, user secrets, Azure app settings store and so on) to set it up, but be aware that by default it only supports `appsettings.json` (so it will require some coding to add your own provider).
+Either way,  ensure that its structure and contents follow the sample below. All fields are detailed below.
 
 ```json
 {
@@ -82,7 +83,7 @@ Smtp.Username | string | ... | SMTP username
 Smtp.Password | string | ... | SMTP password
 Encryption.Key1 | Guid | ... | first guid for AES symmetric key generation 
 Encryption.Key2 | Guid | ... | second guid for AES symmetric key generation 
-AvatarSalt | string | ... | it is a unique way of naming avatar files and; the recommended default value is a lowercase guid without dashes. If this is a new installation, then use the guid generator mentioned above to generate a lowercase guid without dashes. However, if this is an update from phpBB, then get your avatar salt by running this in your forum's DB: `SELECT config_value FROM phpbb_config WHERE config_name = 'avatar_salt'`
+AvatarSalt | string | ... | it is a unique way of naming avatar files; the recommended default value is a lowercase guid without dashes. If this is a new installation, then use the guid generator mentioned above to generate a lowercase guid without dashes. However, if this is an update from phpBB, then get your avatar salt by running this in your forum's DB: `SELECT config_value FROM phpbb_config WHERE config_name = 'avatar_salt'`
 BaseUrl | string | ... | forum base url
 ForumName |string |  ... | forum name 
 LoginSessionSlidingExpiration | TimeSpan | 30.00:00:00 | inactivity time before user is logged out. Is read as `TimeSpan` (format `dd.HH:mm:ss`), default value is 30 days
@@ -99,7 +100,7 @@ AvatarMaxSize.Width | int | 200 | pixels
 AvatarMaxSize.Height | int | 200 | pixels
 EmojiMaxSize.Width | int | 100 | pixels
 EmojiMaxSize.Height | string | 100 | pixels
-DisplayExternalLinksMenu | bool | false | Whether a menu with external links is displayed in the header, next to the forum Menu. If you need to display this, then edit the **`ExternalLinks.<lang>.html`** translation file as well and add your links.
+DisplayExternalLinksMenu | bool | false | whether a menu with external links is displayed in the header, next to the forum Menu. If you need to display this, then edit the **`ExternalLinks.<lang>.html`** translation file as well and add your links.
 
 ### Install the application
 
@@ -129,7 +130,10 @@ However, it has not yet been researched if the database support can be extended 
 
 ### phpBB backwards compatibility
 - Authentication is backwards compatible with the hashed passwords from an existing database. The [CryptSharp.Core](https://github.com/costinbanu/CryptSharp.Core) library is used to achieve this.
-- Text formatting and rendering is backwards-compatible with the original phpBB rendering engine (the new platform can render 100% of bb code written on a phpBB platform, while a phpBB platform can render around 90% of bb code written on this platform). The [CodeKicker.BBCode.Core](https://github.com/costinbanu/CodeKicker.BBCode.Core) library is used for rendering bb code.
+- Text formatting and rendering is backwards-compatible with the original phpBB rendering engine:
+the new platform can render 100% of bb code written on a phpBB platform, while a phpBB platform can render around 90% of bb code written on this platform. If you intend to use a phpBB platform in parallel (on the same DB), beware of the [bbcode_uid](https://www.phpbb.com/community/viewtopic.php?p=12406835) field! Our platform does not set it by default, which might cause problems for rendering in phpbb.
+However, our BB code rendering library DOES support this field and provides some methods for backwards compatibility (see its documentation, you will have to get your hands dirty for this).
+The [CodeKicker.BBCode.Core](https://github.com/costinbanu/CodeKicker.BBCode.Core) library is used for rendering bb code.
 
 ### Maintenance and future work
 This platform is currently live at https://forum.metrouusor.com/ (which has served as basis for feature implementation, as well as a beta-testing site by running the old phpBB installation and the new platform in parallel for several months). As long as this forum is up, this platform is expected to be maintained regularily.

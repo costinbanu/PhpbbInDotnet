@@ -207,8 +207,17 @@
     </div>
     <center style="color:white;">
         <p>&nbsp;</p>
-        <p>&copy; 2009 - @DateTime.UtcNow.Year <a href="https://metrouusor.com" style="color:white; text-decoration:underline">Asociația „Metrou Ușor”</a></p>
-        <p><a asp-page="/TermsAndConditions" style="color:white; text-decoration:underline">@_languageProvider.BasicText[lang, "TERMS", Casing.Title]</a></p>
+        <p>
+            Powered by
+            <a href="https://github.com/costinbanu/PhpbbInDotnet" target="_blank" style="color:white; text-decoration:underline">
+                PhpBB In DotNet
+            </a>
+        </p>
+        <p>
+            <a asp-page="/TermsAndConditions" style="color:white; text-decoration:underline">
+                @_languageProvider.BasicText[lang, "TERMS", Casing.Title]
+            </a>
+    </p>
         @if (await _userService.IsUserAdminInForum(currentUser, 0))
         {
             <p>
