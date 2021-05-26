@@ -15,7 +15,7 @@
     {
         css = "Light";
     }
-    var lang = _languageProvider.GetValidatedLanguage(currentUser, _httpContextAccessor.HttpContext?.Request); 
+    var lang = _languageProvider.GetValidatedLanguage(currentUser, _httpContextAccessor.HttpContext?.Request);
     var dateFormat = currentUser?.UserDateFormat ?? _languageProvider.GetDefaultDateFormat(lang);
     var statistics = await _statisticsService.GetStatistics();
 }
@@ -59,8 +59,8 @@
 
     <!-- global JS translation magic -->
     @if (ViewContext.RouteData.Values["page"].ToString() == "/ViewTopic"
-         || ViewContext.RouteData.Values["page"].ToString() == "/Posting"
-         || ViewContext.RouteData.Values["page"].ToString() == "/Admin")
+        || ViewContext.RouteData.Values["page"].ToString() == "/Posting"
+        || ViewContext.RouteData.Values["page"].ToString() == "/Admin")
     {
         <script>
             var dictionary = @(Html.Raw(_languageProvider.JSText[lang]));
@@ -207,6 +207,13 @@
     </div>
     <center style="color:white;">
         <p>&nbsp;</p>
+        @*specific metrouusor*@
+        <p>
+            &copy; 2009 - @DateTime.UtcNow.Year
+            <a href="https://metrouusor.com" style="color:white; text-decoration:underline">
+                Asociația „Metrou Ușor”
+            </a>
+        </p>
         <p>
             Powered by
             <a href="https://github.com/costinbanu/PhpbbInDotnet" target="_blank" style="color:white; text-decoration:underline">
@@ -217,7 +224,7 @@
             <a asp-page="/TermsAndConditions" style="color:white; text-decoration:underline">
                 @_languageProvider.BasicText[lang, "TERMS", Casing.Title]
             </a>
-    </p>
+        </p>
         @if (await _userService.IsUserAdminInForum(currentUser, 0))
         {
             <p>
