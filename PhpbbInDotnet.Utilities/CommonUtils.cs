@@ -312,6 +312,15 @@ namespace PhpbbInDotnet.Utilities
                 new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() }
             );
 
+        public string GetPostAttachmentsCacheKey(int postId, Guid correlationId)
+            => $"PostAttachments_{postId}_{correlationId}";
+
+        public string GetAttachmentCacheKey(int attachId, Guid correlationId)
+            => $"AttachmentDto_{attachId}_{correlationId}";
+
+        public string GetAvatarCacheKey(int userId, Guid correlationId)
+            => $"Avatar_{userId}_{correlationId}";
+
         public void Dispose()
         {
             _md5?.Dispose();

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using PhpbbInDotnet.Database.Entities;
+using System;
 using System.Web;
 
 namespace PhpbbInDotnet.Objects
@@ -16,7 +17,7 @@ namespace PhpbbInDotnet.Objects
         public string FileUrl { get; private set; }
         public string Language { get; private set; }
 
-        public AttachmentDto(PhpbbAttachments dbRecord, bool isPreview, string language)
+        public AttachmentDto(PhpbbAttachments dbRecord, bool isPreview, string language, Guid? correlationId = null)
         {
             DisplayName = dbRecord.RealFilename;
             Comment = dbRecord.AttachComment;
@@ -33,6 +34,10 @@ namespace PhpbbInDotnet.Objects
             else
             {
                 FileUrl = $"/File?id={Id}";
+            }
+            if (correlationId.HasValue)
+            {
+                FileUrl += $"&correlationId={correlationId.Value}";
             }
         }
     }

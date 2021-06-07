@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
 using System;
@@ -30,11 +31,20 @@ namespace PhpbbInDotnet.Forum.Pages
             _contentTypeProvider = contentTypeProvider;
         }
 
-        public async Task<IActionResult> OnGet(int Id)
+        public async Task<IActionResult> OnGet(int id, Guid? correlationId = null)
         {
+            if (correlationId.HasValue)
+            {
+                var dto = await Cache.GetAsync<AttachmentDto>(Utils.GetAttachmentCacheKey(id, correlationId.Value));
+                if (dto != null)
+                {
+                    return SendToClient(dto.PhysicalFileName, dto.DisplayName, dto.MimeType, FileType.Attachment);
+                }
+            }
+
             var connection = await Context.GetDbConnectionAsync();
    
-            var file = await connection.QuerySingleOrDefaultAsync("SELECT a.physical_filename, a.real_filename, a.mimetype, p.forum_id FROM phpbb_attachments a JOIN phpbb_posts p on a.post_msg_id = p.post_id WHERE attach_id = @Id", new { Id });
+            var file = await connection.QuerySingleOrDefaultAsync("SELECT a.physical_filename, a.real_filename, a.mimetype, p.forum_id FROM phpbb_attachments a JOIN phpbb_posts p on a.post_msg_id = p.post_id WHERE attach_id = @Id", new { id });
             if (file == null)
             {
                 return RedirectToPage("Error", new { isNotFound = true });
@@ -43,29 +53,43 @@ namespace PhpbbInDotnet.Forum.Pages
             string physicalFilename = file?.physical_filename;
             string realFilename = file?.real_filename;
             string mimeType = file?.mimetype;
-            await connection.ExecuteAsync("UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE attach_id = @Id", new { Id });
+            await connection.ExecuteAsync("UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE attach_id = @Id", new { id });
 
             return await WithValidForum(
                 forumId, 
-                await Cache.GetAsync<bool>(string.Format(Constants.FORUM_CHECK_OVERRIDE_CACHE_KEY_FORMAT, forumId)), 
                 _ => Task.FromResult(SendToClient(physicalFilename, realFilename, mimeType, FileType.Attachment))
             );
         }
 
-        public IActionResult OnGetPreview(string physicalFileName, string realFileName, string mimeType)
-            => SendToClient(physicalFileName, realFileName, mimeType, FileType.Attachment);
+        public async Task<IActionResult> OnGetPreview(int forumId, string physicalFileName, string realFileName, string mimeType)
+            => await WithValidForum(
+                forumId,
+                _ => Task.FromResult(SendToClient(physicalFileName, realFileName, mimeType, FileType.Attachment))
+            );
 
-        public async Task<IActionResult> OnGetAvatar(int userId)
+        public async Task<IActionResult> OnGetAvatar(int userId, Guid? correlationId = null)
         {
             string file;
-            var connection = await Context.GetDbConnectionAsync();
+            string getActualFileName(string fileName)
+                => $"{Config.GetValue<string>("AvatarSalt")}_{userId}{Path.GetExtension(fileName)}";
 
+            if (correlationId.HasValue)
+            {
+                file = await Cache.GetAsync<string>(Utils.GetAvatarCacheKey(userId, correlationId.Value));
+                if (file != null)
+                {
+                    file = getActualFileName(file);
+                    return SendToClient(file, file, null, FileType.Avatar);
+                }
+            }
+
+            var connection = await Context.GetDbConnectionAsync();
             file = await connection.QueryFirstOrDefaultAsync<string>("SELECT user_avatar FROM phpbb_users WHERE user_id = @userId", new { userId });
             if (file == null)
             {
                 return RedirectToPage("Error", new { isNotFound = true });
             }
-            file = $"{Config.GetValue<string>("AvatarSalt")}_{userId}{Path.GetExtension(file)}";
+            file = getActualFileName(file);
 
             return SendToClient(file, file, null, FileType.Avatar);
         }

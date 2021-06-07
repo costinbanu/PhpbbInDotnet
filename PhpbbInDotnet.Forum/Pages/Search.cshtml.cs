@@ -48,13 +48,13 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public bool? DoSearch { get; set; }
 
-        public IEnumerable<PhpbbAttachments> Attachments { get; private set; }
+        public List<PhpbbAttachments> Attachments { get; private set; }
 
         public bool IsAttachmentSearch { get; private set; }
 
         public List<KeyValuePair<string, int>> Users { get; set; }
 
-        public IEnumerable<ExtendedPostDto> Posts { get; private set; }
+        public List<ExtendedPostDto> Posts { get; private set; }
 
         public Paginator Paginator { get; private set; }
 
@@ -146,9 +146,9 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             );
 
-            Posts = await multi.ReadAsync<ExtendedPostDto>();
+            Posts = (await multi.ReadAsync<ExtendedPostDto>()).AsList();
             TotalResults = unchecked((int)await multi.ReadFirstOrDefaultAsync<long>());
-            Attachments = await multi.ReadAsync<PhpbbAttachments>();
+            Attachments = (await multi.ReadAsync<PhpbbAttachments>()).AsList();
             Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum.Value, link: GetSearchLinkForPage(PageNum.Value + 1), topicId: null);
 
             return await OnGet();
@@ -223,9 +223,9 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             );
 
-            Posts = await multi.ReadAsync<ExtendedPostDto>();
+            Posts = (await multi.ReadAsync<ExtendedPostDto>()).AsList();
             TotalResults = unchecked((int)await multi.ReadFirstOrDefaultAsync<long>());
-            Attachments = await multi.ReadAsync<PhpbbAttachments>();
+            Attachments = (await multi.ReadAsync<PhpbbAttachments>()).AsList();
             Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum.Value, link: GetSearchLinkForPage(PageNum.Value + 1), topicId: null);
         }
     }

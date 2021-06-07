@@ -1,9 +1,11 @@
 ﻿using Dapper;
+using LazyCache;
 using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -15,11 +17,35 @@ namespace PhpbbInDotnet.Services
     {
         private readonly ForumDbContext _context;
         private readonly UserService _userService;
+        private readonly IAppCache _cache;
+        private readonly CommonUtils _utils;
 
-        public PostService(ForumDbContext context, UserService userService)
+        public PostService(ForumDbContext context, UserService userService, IAppCache cache, CommonUtils utils)
         {
             _context = context;
             _userService = userService;
+            _cache = cache;
+            _utils = utils;
+        }
+
+        public (Guid CorrelationId, Dictionary<int, List<AttachmentDto>> Attachments) CacheAttachmentsAndPrepareForDisplay(List<PhpbbAttachments> dbAttachments, string language, int postCount)
+        {
+            var correlationId = Guid.NewGuid();
+            var attachments = new Dictionary<int, List<AttachmentDto>>(postCount);
+            foreach (var attach in dbAttachments)
+            {
+                var dto = new AttachmentDto(attach, false, language, correlationId);
+                _cache.Add(_utils.GetAttachmentCacheKey(attach.AttachId, correlationId), dto, TimeSpan.FromSeconds(30));
+                if (!attachments.ContainsKey(attach.PostMsgId))
+                {
+                    attachments.Add(attach.PostMsgId, new List<AttachmentDto>(10) { dto });
+                }
+                else
+                {
+                    attachments[attach.PostMsgId].Add(dto);
+                }
+            }
+            return (correlationId, attachments);
         }
 
         public async Task<PollDto> GetPoll(PhpbbTopics _currentTopic)
