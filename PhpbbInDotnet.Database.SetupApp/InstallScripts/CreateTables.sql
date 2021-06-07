@@ -1101,17 +1101,13 @@ CREATE TABLE IF NOT EXISTS `phpbb_user_group` (
 -- Data exporting was unselected.
 
 -- Dumping structure for table forum.phpbb_user_topic_post_number
-CREATE TABLE IF NOT EXISTS `phpbb_user_topic_post_number` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `phpbb_user_topic_post_number` (
   `user_id` int(11) NOT NULL,
   `topic_id` int(11) NOT NULL,
   `post_no` int(11) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `id_2` (`id`),
-  KEY `id` (`id`),
-  KEY `id_3` (`id`),
+  PRIMARY KEY (`user_id`,`topic_id`),
   KEY `user_id` (`user_id`,`topic_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=2302 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 -- Data exporting was unselected.
 

@@ -131,6 +131,12 @@ namespace PhpbbInDotnet.Services
                 _context.PhpbbBookmarks.RemoveRange(_context.PhpbbBookmarks.Where(u => u.UserId == userId));
                 _context.PhpbbBots.RemoveRange(_context.PhpbbBots.Where(u => u.UserId == userId));
                 _context.PhpbbDrafts.RemoveRange(_context.PhpbbDrafts.Where(u => u.UserId == userId));
+                (await _context.PhpbbForums.Where(f => f.ForumLastPosterId == userId).ToListAsync()).ForEach(f =>
+                {
+                    f.ForumLastPosterId = 1;
+                    f.ForumLastPosterColour = string.Empty;
+                    f.ForumLastPosterName = user.Username;
+                });
                 _context.PhpbbForumsAccess.RemoveRange(_context.PhpbbForumsAccess.Where(u => u.UserId == userId));
                 _context.PhpbbForumsTrack.RemoveRange(_context.PhpbbForumsTrack.Where(u => u.UserId == userId));
                 _context.PhpbbForumsWatch.RemoveRange(_context.PhpbbForumsWatch.Where(u => u.UserId == userId));
@@ -144,6 +150,17 @@ namespace PhpbbInDotnet.Services
                 _context.PhpbbReports.RemoveRange(_context.PhpbbReports.Where(u => u.UserId == userId));
                 _context.PhpbbSessions.RemoveRange(_context.PhpbbSessions.Where(u => u.SessionUserId == userId));
                 _context.PhpbbSessionsKeys.RemoveRange(_context.PhpbbSessionsKeys.Where(u => u.UserId == userId));
+                (await _context.PhpbbTopics.Where(t => t.TopicLastPosterId == userId).ToListAsync()).ForEach(t =>
+                {
+                    t.TopicLastPosterId = 1;
+                    t.TopicLastPosterColour = string.Empty;
+                    t.TopicLastPosterName = user.Username;
+                });
+                (await _context.PhpbbTopics.Where(t => t.TopicFirstPosterName == user.Username).ToListAsync()).ForEach(t =>
+                {
+                    t.TopicFirstPostId = 1;
+                    t.TopicFirstPosterColour = string.Empty;
+                });
                 _context.PhpbbTopicsPosted.RemoveRange(_context.PhpbbTopicsPosted.Where(u => u.UserId == userId));
                 _context.PhpbbTopicsTrack.RemoveRange(_context.PhpbbTopicsTrack.Where(u => u.UserId == userId));
                 _context.PhpbbTopicsWatch.RemoveRange(_context.PhpbbTopicsWatch.Where(u => u.UserId == userId));
