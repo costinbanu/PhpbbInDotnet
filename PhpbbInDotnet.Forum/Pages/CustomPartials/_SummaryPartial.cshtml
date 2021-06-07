@@ -1,5 +1,7 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._SummaryPartialModel
 
+@using Utilities;
+
 @inject Languages.LanguageProvider _languageProvider
 
 <ul class="Summary @(Model.Left ? "FlexLeft" : "FlexRight")" id="summary@(Model.AssetId)">
@@ -30,13 +32,9 @@
             }
             @Html.Raw(tag)
         }
-        @if (Model.AuthorId == null)
+        @if ((Model.AuthorId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID)
         {
             <span style="text-decoration: line-through">@Html.Raw(Model.AuthorName)</span>
-        }
-        else if (Model.AuthorId == 1)
-        {
-            @Html.Raw(Model.AuthorName)
         }
         else
         {

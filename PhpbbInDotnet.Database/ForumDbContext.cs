@@ -3317,15 +3317,10 @@ namespace PhpbbInDotnet.Database
             {
                 entity.ToTable("phpbb_user_topic_post_number", "forum");
 
-                entity.HasIndex(e => e.Id)
-                    .HasDatabaseName("id_3");
+                entity.HasKey(e => new { e.UserId, e.TopicId });
 
                 entity.HasIndex(e => new { e.UserId, e.TopicId })
                     .HasDatabaseName("user_id");
-
-                entity.Property(e => e.Id)
-                    .HasColumnName("id")
-                    .HasColumnType("int(11)");
 
                 entity.Property(e => e.PostNo)
                     .HasColumnName("post_no")
