@@ -23,7 +23,7 @@
     var HasPM = _userService.HasPrivateMessagePermissions(CurrentUser);
     var EditTime = CurrentUser.PostEditTime;
     var Connection = await _context.GetDbConnectionAsync();
-    var Lang = await Model.GetLanguage(); 
+    var Lang = await Model.GetLanguage();
     var UserDateFormat = CurrentUser?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
 }
 <environment include="Development">
@@ -113,7 +113,6 @@
     @foreach (var p in Model.Posts)
     {
         var ju = Model.Users?.FirstOrDefault(u => u.UserId == p.PosterId);
-        var joinedAttachments = Model.Attachments?.Where(a => a.PostMsgId == p.PostId);
         var jr = Model.Ranks?.FirstOrDefault(r => ju?.UserId == r.UserId);
         var lastEditUser = Model.LastEditUsers?.FirstOrDefault(u => u.UserId == p.PostEditUser);
         var lastEditUsername = lastEditUser == null ? "Anonymous" : lastEditUser.Username;
@@ -129,7 +128,6 @@
             PostCreationTime = p.PostTime.ToUtcTime(),
             PostModifiedTime = p.PostEditTime.ToUtcTime(),
             PostId = p.PostId,
-            Attachments = joinedAttachments.Select(a => new AttachmentDto(a, false, Lang)).ToList(),
             BbcodeUid = p.BbcodeUid,
             Unread = reachedAnUnreadPost || (reachedAnUnreadPost = await Model.IsPostUnread(p.ForumId, p.TopicId, p.PostId)),
             AuthorHasAvatar = !string.IsNullOrWhiteSpace(ju?.UserAvatar),
@@ -139,7 +137,8 @@
             LastEditReason = p.PostEditReason,
             EditCount = p.PostEditCount,
             IP = p.PosterIp,
-            Report = report
+            Report = report,
+            Attachments = Model.Attachments.TryGetValue(p.PostId, out var val) ? val : new List<AttachmentDto>()
         };
 
         int? closestPostIdIndex = null;
@@ -169,7 +168,8 @@
             ShowEditHistory = (index < Model.Posts.Count - 1 && post.LastEditTime > Model.Posts[index + 1].PostTime) || (post.EditCount > 0 && post.LastEditUser != post.AuthorName),
             Language = Lang,
             ParentHttpContext = HttpContext,
-            ParentPageContext = PageContext
+            ParentPageContext = PageContext,
+            CorrelationId = Model.CorrelationId,
         }, ViewData)
 
         index++;

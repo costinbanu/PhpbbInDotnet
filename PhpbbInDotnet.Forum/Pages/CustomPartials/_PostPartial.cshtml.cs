@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Objects;
+using System;
 
 namespace PhpbbInDotnet.Forum.Pages.CustomPartials
 {
@@ -42,6 +43,8 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
         public string ToHighlight { get; set; }
 
         public string Language { get; set; }
+
+        public Guid? CorrelationId { get; set; }
 
         public HttpContext ParentHttpContext { get; set; }
 

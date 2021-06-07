@@ -29,5 +29,6 @@ namespace PhpbbInDotnet.Utilities
         public const string DEFAULT_LANGUAGE = "en";
 
         public const string FORUM_CHECK_OVERRIDE_CACHE_KEY_FORMAT = "ForumCheckOverride_{0}";
+
     }
 }

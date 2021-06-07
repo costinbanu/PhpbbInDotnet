@@ -67,7 +67,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public string ForumTitle { get; private set; }
         public string ModeratorActionResult { get; private set; }
         public Paginator Paginator { get; private set; }
-
+        public Guid CorrelationId { get; private set; }
 
         public bool ShowTopic => TopicAction == ModeratorTopicActions.MoveTopic && (
             (ModelState[nameof(DestinationForumId)]?.Errors?.Any() ?? false) ||
@@ -96,7 +96,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public List<PhpbbUsers> Users { get; private set; }
         public List<PhpbbUsers> LastEditUsers { get; private set; }
-        public List<PhpbbAttachments> Attachments { get; private set; }
+        public Dictionary<int, List<AttachmentDto>> Attachments { get; private set; }
         public List<ReportDto> Reports { get; private set; }
         public List<UserRankDto> Ranks { get; private set; }
 
@@ -506,12 +506,14 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 Posts = (await multi.ReadAsync<PhpbbPosts>()).AsList();
                 Users = (await multi.ReadAsync<PhpbbUsers>()).AsList();
-                Attachments = (await multi.ReadAsync<PhpbbAttachments>()).AsList();
+                var dbAttachments = (await multi.ReadAsync<PhpbbAttachments>()).AsList();
                 PageNum = unchecked((int)await multi.ReadSingleAsync<long>());
                 _count = unchecked((int)await multi.ReadSingleAsync<long>());
                 LastEditUsers = (await multi.ReadAsync<PhpbbUsers>()).AsList();
                 Reports = (await multi.ReadAsync<ReportDto>()).AsList();
                 Ranks = (await multi.ReadAsync<UserRankDto>()).AsList();
+
+                (CorrelationId, Attachments) = _postService.CacheAttachmentsAndPrepareForDisplay(dbAttachments, await GetLanguage(), Posts.Count);
             }
         }
 

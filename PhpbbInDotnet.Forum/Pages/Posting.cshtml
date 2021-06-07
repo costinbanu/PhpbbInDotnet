@@ -152,7 +152,8 @@ else if (IsPM)
         TopicId = Model.TopicId ?? 0,
         Language = Lang,
         ParentHttpContext = HttpContext,
-        ParentPageContext = PageContext
+        ParentPageContext = PageContext,
+        CorrelationId = Model.CorrelationId
     }, ViewData)
 
     <hr class="BoxSeparator" />
@@ -420,7 +421,7 @@ else if (IsPM)
 </form>
 
 @if (!IsPM){
-    var (posts, attachments, users) = await Model.GetPreviousPosts();
+    var (posts, attachments, users, correlationId) = await Model.GetPreviousPosts();
     if (posts.Any())
     {
         <script>
@@ -433,7 +434,6 @@ else if (IsPM)
         foreach (var p in posts)
         {
             var ju = users.FirstOrDefault(u => u.UserId == p.PosterId);
-            var ja = attachments.Where(a => a.PostMsgId == p.PostId);
             var post = new Objects.PostDto
             {
                 PostSubject = p.PostSubject,
@@ -442,7 +442,7 @@ else if (IsPM)
                 AuthorName = ((ju?.UserId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID ? p.PostUsername : ju.Username),
                 AuthorId = ju?.UserId ?? Constants.ANONYMOUS_USER_ID,
                 AuthorColor = ju?.UserColour,
-                Attachments = ja.Select(a => new Objects.AttachmentDto(a, false, Lang)).ToList(),
+                Attachments = attachments.TryGetValue(p.PostId, out var val) ? val : new List<Objects.AttachmentDto>(),
                 PostCreationTime = p.PostTime.ToUtcTime(),
                 PostModifiedTime = p.PostEditTime.ToUtcTime(),
                 PostId = p.PostId
@@ -457,7 +457,8 @@ else if (IsPM)
                 ShowQuoteButton = !(CurrentUser.Foes?.Contains(post.AuthorId ?? 1) ?? false),
                 Language = Lang,
                 ParentHttpContext = HttpContext,
-                ParentPageContext = PageContext
+                ParentPageContext = PageContext,
+                CorrelationId = correlationId
             }, ViewData)
         }
     }

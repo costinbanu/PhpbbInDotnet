@@ -12,7 +12,7 @@
 @inject Services.BBCodeRenderingService _renderingService
 @inject Services.UserService _userService
 @inject Services.ForumTreeService _forumService
-
+@inject Services.PostService _postService
 
 @{
     ViewData["Title"] = "Search";
@@ -147,10 +147,16 @@ else
         ViewData
     )
     <hr class="BoxSeparator" />
+    var cacheResult = _postService.CacheAttachmentsAndPrepareForDisplay(Model.Attachments, Lang, Model.Posts.Count);
     foreach (var post in Model.Posts)
     {
+        if ((post.PostId ?? 0) == 0)
+        {
+            continue;
+        }
+
         post.AuthorHasAvatar = !string.IsNullOrWhiteSpace(post.UserAvatar);
-        post.Attachments = Model.Attachments?.Where(a => a.PostMsgId == post.PostId).Select(a => new Objects.AttachmentDto(a, false, Lang)).ToList();
+        post.Attachments = cacheResult.Attachments.TryGetValue(post.PostId.Value, out var val) ? val : new List<Objects.AttachmentDto>();
 
         @await Html.PartialAsync("_PostPartial", new _PostPartialModel
         {
@@ -163,6 +169,7 @@ else
             OpenPostLinkInNewTab = true,
             ToHighlight = Model.SearchText,
             Language = Lang,
+            CorrelationId = cacheResult.CorrelationId,
             ParentHttpContext = HttpContext,
             ParentPageContext = PageContext
         }, ViewData)
