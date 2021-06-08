@@ -156,7 +156,6 @@ else
             continue;
         }
 
-        //post.AuthorHasAvatar = !string.IsNullOrWhiteSpace(post.AuthorAvatar);
         post.Attachments = cacheResult.Attachments.TryGetValue(post.PostId.Value, out var val) ? val : new List<Objects.AttachmentDto>();
 
         @await Html.PartialAsync("_PostPartial", new _PostPartialModel
