@@ -327,18 +327,16 @@ namespace PhpbbInDotnet.Forum.Pages
                 var uid = string.Empty;
                 newPostText = HttpUtility.HtmlEncode(newPostText);
 
-                var cacheResult = _postService.CacheAttachmentsAndPrepareForDisplay(Attachments, lang, 1);
-                CorrelationId = cacheResult.CorrelationId;
+                var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(Attachments, lang, 1, true);
+                PreviewCorrelationId = cacheResult.CorrelationId;
                 PreviewablePost = new PostDto
                 {
                     Attachments = cacheResult.Attachments.FirstOrDefault().Value ?? new List<AttachmentDto>(),
                     AuthorColor = postAuthor.UserColour,
-                    AuthorHasAvatar = !string.IsNullOrWhiteSpace(postAuthor?.UserAvatar),
                     AuthorId = postAuthor.UserId,
                     AuthorName = postAuthor.Username,
                     AuthorRank = (await conn.QueryFirstOrDefaultAsync("SELECT * FROM phpbb_ranks WHERE rank_id = @rankId", new { rankId }))?.RankTitle,
                     BbcodeUid = uid,
-                    PostCreationTime = Action == PostingActions.EditForumPost ? PostTime?.ToUtcTime() : DateTime.UtcNow,
                     EditCount = (short)(Action == PostingActions.EditForumPost ? (currentPost?.PostEditCount ?? 0) + 1 : 0),
                     LastEditReason = Action == PostingActions.EditForumPost ? currentPost?.PostEditReason : string.Empty,
                     LastEditTime = Action == PostingActions.EditForumPost ? DateTime.UtcNow.ToUnixTimestamp() : 0,

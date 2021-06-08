@@ -27,14 +27,8 @@ namespace PhpbbInDotnet.Objects
             FileSize = dbRecord.Filesize;
             PhysicalFileName = dbRecord.PhysicalFilename;
             Language = language;
-            if (isPreview)
-            {
-                FileUrl = $"/File?physicalFileName={HttpUtility.UrlEncode(PhysicalFileName)}&realFileName={HttpUtility.UrlEncode(DisplayName)}&mimeType={HttpUtility.UrlEncode(MimeType)}&handler=preview";
-            }
-            else
-            {
-                FileUrl = $"/File?id={Id}";
-            }
+            FileUrl = $"/File?id={Id}&preview={isPreview}";
+            
             if (correlationId.HasValue)
             {
                 FileUrl += $"&correlationId={correlationId.Value}";

@@ -10,24 +10,41 @@ BEGIN
     
     set @sql = CONCAT (
         "CREATE TEMPORARY TABLE post_text_search_results
+			WITH ranks AS (
+				SELECT DISTINCT u.user_id, 
+					   COALESCE(r1.rank_id, r2.rank_id) AS rank_id, 
+					   COALESCE(r1.rank_title, r2.rank_title) AS rank_title
+				  FROM phpbb_users u
+				  JOIN phpbb_groups g ON u.group_id = g.group_id
+				  LEFT JOIN phpbb_ranks r1 ON u.user_rank = r1.rank_id
+				  LEFT JOIN phpbb_ranks r2 ON g.group_rank = r2.rank_id
+			)
 			SELECT *
             FROM (
-				SELECT p.post_id,
+				SELECT p.forum_id,
+					   p.topic_id,
+					   p.post_id,
 					   p.post_subject,
 					   p.post_text,
 					   case when p.poster_id = 1
 							then p.post_username 
-							else u.username
+							else a.username
 					   end as author_name,
 					   p.poster_id as author_id,
 					   p.bbcode_uid,
 					   p.post_time,
-					   u.user_colour as author_color,
-					   u.user_avatar,
-					   p.forum_id
+					   a.user_colour as author_color,
+					   a.user_avatar as author_avatar,
+					   p.post_edit_count,
+					   p.post_edit_reason,
+					   p.post_edit_time as last_edit_time,
+					   e.username as post_edit_user,
+					   r.rank_title as author_rank,
+					   p.poster_ip as ip
 				  FROM phpbb_posts p
-				  JOIN phpbb_users u
-					ON p.poster_id = u.user_id
+				  JOIN phpbb_users a ON p.poster_id = a.user_id
+				  LEFT JOIN phpbb_users e ON p.post_edit_user = e.user_id
+				  LEFT JOIN ranks r ON a.user_id = r.user_id
 				 WHERE FIND_IN_SET (p.forum_id, '", forums, "')
 				   AND (? IS NULL OR ? = p.topic_id)
 				   AND (? IS NULL OR ? = p.poster_id)
@@ -35,22 +52,30 @@ BEGIN
 				  
 				 UNION
 				  
-				SELECT p.post_id,
+				SELECT p.forum_id,
+					   p.topic_id,
+					   p.post_id,
 					   p.post_subject,
 					   p.post_text,
 					   case when p.poster_id = 1
-						    then p.post_username 
-						    else u.username
+							then p.post_username 
+							else a.username
 					   end as author_name,
 					   p.poster_id as author_id,
 					   p.bbcode_uid,
 					   p.post_time,
-					   u.user_colour as author_color,
-					   u.user_avatar,
-					   p.forum_id
+					   a.user_colour as author_color,
+					   a.user_avatar as author_avatar,
+					   p.post_edit_count,
+					   p.post_edit_reason,
+					   p.post_edit_time as last_edit_time,
+					   e.username as post_edit_user,
+					   r.rank_title as author_rank,
+					   p.poster_ip as ip
 				  FROM phpbb_posts p
-				  JOIN phpbb_users u
-					ON p.poster_id = u.user_id
+				  JOIN phpbb_users a ON p.poster_id = a.user_id
+				  LEFT JOIN phpbb_users e ON p.post_edit_user = e.user_id
+				  LEFT JOIN ranks r ON a.user_id = r.user_id
 				 WHERE FIND_IN_SET (p.forum_id, '", forums, "')
 				   AND (? IS NULL OR ? = p.topic_id)
 				   AND (? IS NULL OR ? = p.poster_id)

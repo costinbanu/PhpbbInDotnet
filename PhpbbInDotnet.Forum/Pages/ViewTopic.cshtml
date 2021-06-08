@@ -110,36 +110,11 @@
     var index = 0;
     var reachedAnUnreadPost = false;
     var useModActions = false;
-    @foreach (var p in Model.Posts)
+    @foreach (var post in Model.Posts)
     {
-        var ju = Model.Users?.FirstOrDefault(u => u.UserId == p.PosterId);
-        var jr = Model.Ranks?.FirstOrDefault(r => ju?.UserId == r.UserId);
-        var lastEditUser = Model.LastEditUsers?.FirstOrDefault(u => u.UserId == p.PostEditUser);
-        var lastEditUsername = lastEditUser == null ? "Anonymous" : lastEditUser.Username;
-        var report = Model.Reports?.FirstOrDefault(r => r.PostId == p.PostId);
-
-        var post = new Objects.PostDto
-        {
-            PostSubject = p.PostSubject,
-            PostText = p.PostText,
-            AuthorName = ((ju?.UserId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID ? p.PostUsername : ju.Username),
-            AuthorId = ju?.UserId ?? Constants.ANONYMOUS_USER_ID,
-            AuthorColor = ju?.UserColour,
-            PostCreationTime = p.PostTime.ToUtcTime(),
-            PostModifiedTime = p.PostEditTime.ToUtcTime(),
-            PostId = p.PostId,
-            BbcodeUid = p.BbcodeUid,
-            Unread = reachedAnUnreadPost || (reachedAnUnreadPost = await Model.IsPostUnread(p.ForumId, p.TopicId, p.PostId)),
-            AuthorHasAvatar = !string.IsNullOrWhiteSpace(ju?.UserAvatar),
-            AuthorRank = ju == null ? null : (jr?.RankTitle ?? Model.LanguageProvider.BasicText[Lang, "REGISTERED_MEMBER", Casing.FirstUpper]),
-            LastEditTime = p.PostEditTime,
-            LastEditUser = lastEditUsername,
-            LastEditReason = p.PostEditReason,
-            EditCount = p.PostEditCount,
-            IP = p.PosterIp,
-            Report = report,
-            Attachments = Model.Attachments.TryGetValue(p.PostId, out var val) ? val : new List<AttachmentDto>()
-        };
+        post.Report = Model.Reports?.FirstOrDefault(r => r.PostId == post.PostId);
+        post.Unread = reachedAnUnreadPost || (reachedAnUnreadPost = await Model.IsPostUnread(post.ForumId, post.TopicId, post.PostId ?? 0));
+        post.Attachments = Model.Attachments.TryGetValue(post.PostId ?? 0, out var val) ? val : new List<AttachmentDto>();
 
         int? closestPostIdIndex = null;
         if (Model.Posts.Count > 1)
@@ -160,11 +135,11 @@
             PostIdsForModerator = Model.GetModeratorPostIds(),
             HasCurrentUserPM = HasPM,
             IsCurrentUserMod = IsMod,
-            IsPostFirstInPage = p == Model.Posts.First(),
-            IsPostLastInPage = p == Model.Posts.Last(),
+            IsPostFirstInPage = post == Model.Posts.First(),
+            IsPostLastInPage = post == Model.Posts.Last(),
             IsLastPage = Model.Paginator.IsLastPage,
             IsTopicLocked = Model.IsLocked,
-            ShowFooter = !(CurrentUser.Foes?.Contains(p.PosterId) ?? false),
+            ShowFooter = !(CurrentUser.Foes?.Contains(post.AuthorId ?? 0) ?? false),
             ShowEditHistory = (index < Model.Posts.Count - 1 && post.LastEditTime > Model.Posts[index + 1].PostTime) || (post.EditCount > 0 && post.LastEditUser != post.AuthorName),
             Language = Lang,
             ParentHttpContext = HttpContext,
@@ -174,7 +149,7 @@
 
         index++;
 
-        useModActions = p == Model.Posts.Last() && (post.AuthorId == CurrentUser.UserId && (EditTime == 0 || DateTime.UtcNow.Subtract(post.PostCreationTime ?? default).TotalMinutes <= EditTime));
+        useModActions = post == Model.Posts.Last() && (post.AuthorId == CurrentUser.UserId && (EditTime == 0 || DateTime.UtcNow.Subtract(post.PostCreationTime ?? default).TotalMinutes <= EditTime));
     }
 
     <hr class="BoxSeparator" style="margin-top: 0px" />

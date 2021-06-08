@@ -225,7 +225,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<IEnumerable<ForumPermissions>> GetPermissions(int forumId)
             => await (await _context.GetDbConnectionAsync()).QueryAsync<ForumPermissions>(
-                sql: "CALL get_forum_permissions`(@forumId);", 
+                sql: "CALL get_forum_permissions(@forumId);", 
                 param: new { forumId }
             );
 

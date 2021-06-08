@@ -18,11 +18,6 @@ BEGIN
 	  FROM phpbb_posts p
 	WHERE p.topic_id = @topic_id;
       
-	/* last edit users */
-	SELECT DISTINCT u.*
-      FROM phpbb_users u
-      JOIN get_posts p ON u.user_id = p.post_edit_user;
-      
 	/* reports */
     SELECT r.report_id AS id, 
 		   rr.reason_title, 
@@ -36,14 +31,5 @@ BEGIN
       JOIN phpbb_users u on r.user_id = u.user_id
       JOIN get_posts p ON r.post_id = p.post_id
 	 WHERE report_closed = 0;
-     
-     /* ranks */
-	SELECT DISTINCT u.user_id, 
-		   COALESCE(r1.rank_id, r2.rank_id) AS rank_id, 
-           COALESCE(r1.rank_title, r2.rank_title) AS rank_title
-	  FROM phpbb_users u
-	  JOIN phpbb_groups g ON u.group_id = g.group_id
-      JOIN get_posts p on u.user_id = p.poster_id
-	  LEFT JOIN phpbb_ranks r1 ON u.user_rank = r1.rank_id
-	  LEFT JOIN phpbb_ranks r2 ON g.group_rank = r2.rank_id;
+
 END

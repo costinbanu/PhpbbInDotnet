@@ -253,6 +253,7 @@
   "SEARCH_IN_TOPIC": "Caută în subiectul...",
   "SEARCH_IN_ALL_TOPICS": "Caută în toate subiectele",
   "POSTS_BY_FORMAT": "Mesaje scrise de {0}",
+  "ATTACHMENTS_BY_FORMAT": "Fișiere atașate de {0}",
 
   //user profile
   "USER_PROFILE": "Panoul utilizatorului",

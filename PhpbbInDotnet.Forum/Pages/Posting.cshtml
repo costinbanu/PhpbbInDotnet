@@ -145,16 +145,16 @@ else if (IsPM)
     }
 
     @await Html.PartialAsync("_PostPartial", new _PostPartialModel
-    {
-        CurrentUser = CurrentUser,
-        Post = Model.PreviewablePost,
-        ForumId = Model.ForumId,
-        TopicId = Model.TopicId ?? 0,
-        Language = Lang,
-        ParentHttpContext = HttpContext,
-        ParentPageContext = PageContext,
-        CorrelationId = Model.CorrelationId
-    }, ViewData)
+{
+    CurrentUser = CurrentUser,
+    Post = Model.PreviewablePost,
+    ForumId = Model.ForumId,
+    TopicId = Model.TopicId ?? 0,
+    Language = Lang,
+    ParentHttpContext = HttpContext,
+    ParentPageContext = PageContext,
+    CorrelationId = Model.PreviewCorrelationId
+}, ViewData)
 
     <hr class="BoxSeparator" />
     <p></p>
@@ -421,32 +421,19 @@ else if (IsPM)
 </form>
 
 @if (!IsPM){
-    var (posts, attachments, users, correlationId) = await Model.GetPreviousPosts();
+    var (posts, attachments, previousPostsCorrelationId) = await Model.GetPreviousPosts();
     if (posts.Any())
     {
         <script>
             var texts = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(posts.ToDictionary(k => k.PostId, v => _writingService.CleanBbTextForDisplay(v.PostText, v.BbcodeUid))));
-            $('#lastPostTime').val(@Math.Max(posts.First().PostTime, posts.First().PostEditTime));
+            $('#lastPostTime').val(@Math.Max(posts.First().PostTime, posts.First().LastEditTime));
         </script>
         <br />
         <h3>Mesaje precedente</h3>
 
-        foreach (var p in posts)
+        foreach (var post in posts)
         {
-            var ju = users.FirstOrDefault(u => u.UserId == p.PosterId);
-            var post = new Objects.PostDto
-            {
-                PostSubject = p.PostSubject,
-                PostText = p.PostText,
-                BbcodeUid = p.BbcodeUid,
-                AuthorName = ((ju?.UserId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID ? p.PostUsername : ju.Username),
-                AuthorId = ju?.UserId ?? Constants.ANONYMOUS_USER_ID,
-                AuthorColor = ju?.UserColour,
-                Attachments = attachments.TryGetValue(p.PostId, out var val) ? val : new List<Objects.AttachmentDto>(),
-                PostCreationTime = p.PostTime.ToUtcTime(),
-                PostModifiedTime = p.PostEditTime.ToUtcTime(),
-                PostId = p.PostId
-            };
+            post.Attachments = attachments.TryGetValue(post.PostId ?? 0, out var val) ? val : new List<Objects.AttachmentDto>();
 
             @await Html.PartialAsync("_PostPartial", new _PostPartialModel
             {
@@ -458,7 +445,7 @@ else if (IsPM)
                 Language = Lang,
                 ParentHttpContext = HttpContext,
                 ParentPageContext = PageContext,
-                CorrelationId = correlationId
+                CorrelationId = previousPostsCorrelationId
             }, ViewData)
         }
     }

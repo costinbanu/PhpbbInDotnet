@@ -59,7 +59,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public int? ClosestPostId { get; set; }
 
         public PollDto Poll { get; private set; }
-        public List<PhpbbPosts> Posts { get; private set; }
+        public List<PostDto> Posts { get; private set; }
         public string TopicTitle { get; private set; }
         public string ForumRulesLink { get; private set; }
         public string ForumRules { get; private set; }
@@ -93,12 +93,10 @@ namespace PhpbbInDotnet.Forum.Pages
         public int PostCount => _currentTopic?.TopicReplies ?? 0;
 
         public int ViewCount => _currentTopic?.TopicViews ?? 0;
-
-        public List<PhpbbUsers> Users { get; private set; }
-        public List<PhpbbUsers> LastEditUsers { get; private set; }
+        
         public Dictionary<int, List<AttachmentDto>> Attachments { get; private set; }
+        
         public List<ReportDto> Reports { get; private set; }
-        public List<UserRankDto> Ranks { get; private set; }
 
         private PhpbbTopics _currentTopic;
         private PhpbbForums _currentForum;
@@ -504,16 +502,16 @@ namespace PhpbbInDotnet.Forum.Pages
                     }
                 );
 
-                Posts = (await multi.ReadAsync<PhpbbPosts>()).AsList();
-                Users = (await multi.ReadAsync<PhpbbUsers>()).AsList();
+                Posts = (await multi.ReadAsync<PostDto>()).AsList();
+                //Users = (await multi.ReadAsync<PhpbbUsers>()).AsList();
                 var dbAttachments = (await multi.ReadAsync<PhpbbAttachments>()).AsList();
                 PageNum = unchecked((int)await multi.ReadSingleAsync<long>());
                 _count = unchecked((int)await multi.ReadSingleAsync<long>());
-                LastEditUsers = (await multi.ReadAsync<PhpbbUsers>()).AsList();
+                //LastEditUsers = (await multi.ReadAsync<PhpbbUsers>()).AsList();
                 Reports = (await multi.ReadAsync<ReportDto>()).AsList();
-                Ranks = (await multi.ReadAsync<UserRankDto>()).AsList();
+                //Ranks = (await multi.ReadAsync<UserRankDto>()).AsList();
 
-                (CorrelationId, Attachments) = _postService.CacheAttachmentsAndPrepareForDisplay(dbAttachments, await GetLanguage(), Posts.Count);
+                (CorrelationId, Attachments) = await _postService.CacheAttachmentsAndPrepareForDisplay(dbAttachments, await GetLanguage(), Posts.Count, false);
             }
         }
 
