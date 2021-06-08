@@ -74,11 +74,43 @@ BEGIN
 			
 		PREPARE stmt FROM 
 			"CREATE TEMPORARY TABLE get_posts 
-			 SELECT * 
-			   FROM phpbb_posts 
-			  WHERE topic_id = ? 
-			  ORDER BY post_time 
-			  LIMIT ?, ?;";
+				WITH ranks AS (
+					SELECT DISTINCT u.user_id, 
+						   COALESCE(r1.rank_id, r2.rank_id) AS rank_id, 
+						   COALESCE(r1.rank_title, r2.rank_title) AS rank_title
+					  FROM phpbb_users u
+					  JOIN phpbb_groups g ON u.group_id = g.group_id
+					  LEFT JOIN phpbb_ranks r1 ON u.user_rank = r1.rank_id
+					  LEFT JOIN phpbb_ranks r2 ON g.group_rank = r2.rank_id
+				)
+				SELECT 
+					   p.forum_id,
+					   p.topic_id,
+					   p.post_id,
+					   p.post_subject,
+					   p.post_text,
+					   case when p.poster_id = 1
+							then p.post_username 
+							else a.username
+					   end as author_name,
+					   p.poster_id as author_id,
+					   p.bbcode_uid,
+					   p.post_time,
+					   a.user_colour as author_color,
+					   a.user_avatar as author_avatar,
+					   p.post_edit_count,
+					   p.post_edit_reason,
+					   p.post_edit_time as last_edit_time,
+					   e.username as post_edit_user,
+					   r.rank_title as author_rank,
+					   p.poster_ip as ip
+				  FROM phpbb_posts p
+				  JOIN phpbb_users a ON p.poster_id = a.user_id
+				  LEFT JOIN phpbb_users e ON p.post_edit_user = e.user_id
+				  LEFT JOIN ranks r ON a.user_id = r.user_id
+				  WHERE topic_id = ? 
+				  ORDER BY post_time 
+				  LIMIT ?, ?;";
 		EXECUTE stmt USING @topic_id, @start_idx, @page_size;
 		DEALLOCATE PREPARE stmt;
 	ELSE
@@ -95,11 +127,6 @@ BEGIN
     /* posts */
     SELECT *
       FROM get_posts;
-    
-    /* authors */
-    SELECT DISTINCT u.*
-      FROM phpbb_users u
-      JOIN get_posts p ON u.user_id = p.poster_id;
       
 	/* attachments */
     SELECT a.*

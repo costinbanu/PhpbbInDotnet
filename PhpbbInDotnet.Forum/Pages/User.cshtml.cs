@@ -314,7 +314,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     stream.Seek(0, SeekOrigin.Begin);
                     if (bmp.Width > maxSize.Width || bmp.Height > maxSize.Height)
                     {
-                        ModelState.AddModelError(nameof(Avatar), string.Format(LanguageProvider.Errors[lang, "AVATAR_FORMAT_ERROR"], maxSize.Width, maxSize.Height));
+                        ModelState.AddModelError(nameof(Avatar), string.Format(LanguageProvider.Errors[lang, "AVATAR_FORMAT_ERROR_FORMAT"], maxSize.Width, maxSize.Height));
                         return Page();
                     }
                     else

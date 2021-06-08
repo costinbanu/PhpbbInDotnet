@@ -5,7 +5,6 @@
 @using Dapper
 @using PhpbbInDotnet.Database.Entities
 @using PhpbbInDotnet.Utilities
-@using Microsoft.EntityFrameworkCore
 
 @inject Utilities.CommonUtils _utils
 @inject Database.ForumDbContext _context
@@ -19,7 +18,7 @@
     Layout = "~/Pages/_Layout.cshtml";
     var CurrentUser = await Model.GetCurrentUserAsync();
     var connection = await _context.GetDbConnectionAsync();
-    var Lang = await Model.GetLanguage(); 
+    var Lang = await Model.GetLanguage();
     var dateFormat = CurrentUser?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
 }
 <environment include="Development">
@@ -28,7 +27,7 @@
     <script type="text/javascript" src="~/js/viewTopic.js"></script>
     <script type="text/javascript" src="~/lib/he.js"></script>
 </environment>
-@if (!Model.IsAuthorSearch)
+@if (!Model.IsAuthorSearch && !Model.IsAttachmentSearch)
 {
     <h3>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEARCH"])</h3>
 }
@@ -74,7 +73,16 @@
         }
     }
 </script>
-@if (!Model.IsAuthorSearch)
+@if (Model.IsAuthorSearch || Model.IsAttachmentSearch)
+{
+    var user = await connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @authorId", new { Model.AuthorId });
+    if (!string.IsNullOrWhiteSpace(user?.Username))
+    {
+        var key = Model.IsAuthorSearch ? "POSTS_BY_FORMAT" : "ATTACHMENTS_BY_FORMAT";
+        <h4>@Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, key], user.Username))</h4>
+    }
+}
+else
 {
     <form method="post">
         <input asp-for="QueryString" type="hidden" />
@@ -118,17 +126,10 @@
     </form>
     <p>&nbsp;</p>
 }
-else
-{
-    var user = await connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @authorId", new { Model.AuthorId });
-    if (!string.IsNullOrWhiteSpace(user?.Username))
-    {
-        <h4>@Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, "POSTS_BY_FORMAT"], user.Username))</h4>
-    }
-}
+
 @if (Model.Posts != null && Model.Posts.Any())
 {
-    if (!Model.IsAuthorSearch)
+    if (!Model.IsAuthorSearch && !Model.IsAttachmentSearch)
     {
         <h3>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEARCH_RESULTS"])</h3>
     }
@@ -147,7 +148,7 @@ else
         ViewData
     )
     <hr class="BoxSeparator" />
-    var cacheResult = _postService.CacheAttachmentsAndPrepareForDisplay(Model.Attachments, Lang, Model.Posts.Count);
+    var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(Model.Attachments, Lang, Model.Posts.Count, false);
     foreach (var post in Model.Posts)
     {
         if ((post.PostId ?? 0) == 0)
@@ -155,7 +156,7 @@ else
             continue;
         }
 
-        post.AuthorHasAvatar = !string.IsNullOrWhiteSpace(post.UserAvatar);
+        //post.AuthorHasAvatar = !string.IsNullOrWhiteSpace(post.AuthorAvatar);
         post.Attachments = cacheResult.Attachments.TryGetValue(post.PostId.Value, out var val) ? val : new List<Objects.AttachmentDto>();
 
         @await Html.PartialAsync("_PostPartial", new _PostPartialModel

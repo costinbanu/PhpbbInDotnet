@@ -94,7 +94,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool ShowPoll { get; private set; } = false;
         public PhpbbForums CurrentForum { get; private set; }
         public bool DraftSavedSuccessfully { get; private set; } = false;
-        public Guid? CorrelationId { get; private set; }
+        public Guid? PreviewCorrelationId { get; private set; }
 
         private readonly PostService _postService;
         private readonly StorageService _storageService;
@@ -119,7 +119,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<string> GetActualCacheKey(string key, bool isPersonalizedData)
             => isPersonalizedData ? $"{(await GetCurrentUserAsync()).UserId}_{ForumId}_{TopicId ?? 0}_{key ?? throw new ArgumentNullException(nameof(key))}" : key;
 
-        public async Task<(List<PhpbbPosts> posts, Dictionary<int, List<AttachmentDto>> attachments, List<PhpbbUsers> users, Guid correlationId)> GetPreviousPosts()
+        public async Task<(List<PostDto> posts, Dictionary<int, List<AttachmentDto>> attachments, Guid correlationId)> GetPreviousPosts()
         {
             if (((TopicId.HasValue && PageNum.HasValue) || PostId.HasValue) && (Action == PostingActions.EditForumPost || Action == PostingActions.NewForumPost))
             {
@@ -134,15 +134,14 @@ namespace PhpbbInDotnet.Forum.Pages
                     }
                 );
 
-                var posts = (await multi.ReadAsync<PhpbbPosts>()).AsList();
-                var users = (await multi.ReadAsync<PhpbbUsers>()).AsList();
+                var posts = (await multi.ReadAsync<PostDto>()).AsList();
                 var attachments = (await multi.ReadAsync<PhpbbAttachments>()).AsList();
 
-                var cacheResult = _postService.CacheAttachmentsAndPrepareForDisplay(attachments, await GetLanguage(), posts.Count);
+                var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(attachments, await GetLanguage(), posts.Count, false);
 
-                return (posts, cacheResult.Attachments, users, cacheResult.CorrelationId);
+                return (posts, cacheResult.Attachments, cacheResult.CorrelationId);
             }
-            return (new List<PhpbbPosts>(), new Dictionary<int, List<AttachmentDto>>(), new List<PhpbbUsers>(), Guid.Empty);
+            return (new List<PostDto>(), new Dictionary<int, List<AttachmentDto>>(), Guid.Empty);
         }
 
         private List<KeyValuePair<string, int>> _userMap = null;

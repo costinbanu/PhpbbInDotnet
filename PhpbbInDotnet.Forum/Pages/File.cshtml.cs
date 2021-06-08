@@ -31,9 +31,9 @@ namespace PhpbbInDotnet.Forum.Pages
             _contentTypeProvider = contentTypeProvider;
         }
 
-        public async Task<IActionResult> OnGet(int id, Guid? correlationId = null)
+        public async Task<IActionResult> OnGet(int id, bool preview = false, Guid? correlationId = null)
         {
-            if (correlationId.HasValue)
+            if (correlationId.HasValue && !preview)
             {
                 var dto = await Cache.GetAsync<AttachmentDto>(Utils.GetAttachmentCacheKey(id, correlationId.Value));
                 if (dto != null)
@@ -44,28 +44,34 @@ namespace PhpbbInDotnet.Forum.Pages
 
             var connection = await Context.GetDbConnectionAsync();
    
-            var file = await connection.QuerySingleOrDefaultAsync("SELECT a.physical_filename, a.real_filename, a.mimetype, p.forum_id FROM phpbb_attachments a JOIN phpbb_posts p on a.post_msg_id = p.post_id WHERE attach_id = @Id", new { id });
+            var file = await connection.QuerySingleOrDefaultAsync<AttachmentCheckDto>(
+                @"SELECT a.physical_filename, a.real_filename, a.mimetype, p.forum_id, p.post_id 
+                    FROM phpbb_attachments a 
+                    LEFT JOIN phpbb_posts p ON a.post_msg_id = p.post_id 
+                   WHERE attach_id = @id", 
+                new { id }
+            );
+            
             if (file == null)
             {
                 return RedirectToPage("Error", new { isNotFound = true });
             }
-            var forumId = unchecked((int)(file?.forum_id ?? 0));
-            string physicalFilename = file?.physical_filename;
-            string realFilename = file?.real_filename;
-            string mimeType = file?.mimetype;
-            await connection.ExecuteAsync("UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE attach_id = @Id", new { id });
+
+            if (preview && file.PostId == null && file.ForumId == null)
+            {
+                return SendToClient(file.PhysicalFilename, file.RealFilename, file.Mimetype, FileType.Attachment);
+            }
+
+            if (!correlationId.HasValue)
+            {
+                await connection.ExecuteAsync("UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE attach_id = @Id", new { id });
+            }
 
             return await WithValidForum(
-                forumId, 
-                _ => Task.FromResult(SendToClient(physicalFilename, realFilename, mimeType, FileType.Attachment))
+                file.ForumId ?? 0, 
+                _ => Task.FromResult(SendToClient(file.PhysicalFilename, file.RealFilename, file.Mimetype, FileType.Attachment))
             );
         }
-
-        public async Task<IActionResult> OnGetPreview(int forumId, string physicalFileName, string realFileName, string mimeType)
-            => await WithValidForum(
-                forumId,
-                _ => Task.FromResult(SendToClient(physicalFileName, realFileName, mimeType, FileType.Attachment))
-            );
 
         public async Task<IActionResult> OnGetAvatar(int userId, Guid? correlationId = null)
         {

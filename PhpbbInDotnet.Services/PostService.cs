@@ -1,9 +1,11 @@
 ﻿using Dapper;
 using LazyCache;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Objects;
+using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
@@ -19,32 +21,54 @@ namespace PhpbbInDotnet.Services
         private readonly UserService _userService;
         private readonly IAppCache _cache;
         private readonly CommonUtils _utils;
+        private readonly int _maxAttachmentCount;
 
-        public PostService(ForumDbContext context, UserService userService, IAppCache cache, CommonUtils utils)
+        public PostService(ForumDbContext context, UserService userService, IAppCache cache, CommonUtils utils, IConfiguration config)
         {
             _context = context;
             _userService = userService;
             _cache = cache;
             _utils = utils;
+            var countLimit = config.GetObject<AttachmentLimits>("UploadLimitsCount");
+            _maxAttachmentCount = Math.Max(countLimit.Images, countLimit.OtherFiles);
         }
 
-        public (Guid CorrelationId, Dictionary<int, List<AttachmentDto>> Attachments) CacheAttachmentsAndPrepareForDisplay(List<PhpbbAttachments> dbAttachments, string language, int postCount)
+        public async Task<(Guid CorrelationId, Dictionary<int, List<AttachmentDto>> Attachments)> CacheAttachmentsAndPrepareForDisplay(List<PhpbbAttachments> dbAttachments, string language, int postCount, bool isPreview)
         {
             var correlationId = Guid.NewGuid();
             var attachments = new Dictionary<int, List<AttachmentDto>>(postCount);
+            var ids = new List<int>(dbAttachments.Count);
             foreach (var attach in dbAttachments)
             {
-                var dto = new AttachmentDto(attach, false, language, correlationId);
-                _cache.Add(_utils.GetAttachmentCacheKey(attach.AttachId, correlationId), dto, TimeSpan.FromSeconds(30));
+                var dto = new AttachmentDto(attach, isPreview, language, correlationId);
+                _cache.Add(_utils.GetAttachmentCacheKey(attach.AttachId, correlationId), dto, TimeSpan.FromSeconds(60));
                 if (!attachments.ContainsKey(attach.PostMsgId))
                 {
-                    attachments.Add(attach.PostMsgId, new List<AttachmentDto>(10) { dto });
+                    attachments.Add(attach.PostMsgId, new List<AttachmentDto>(_maxAttachmentCount) { dto });
                 }
                 else
                 {
                     attachments[attach.PostMsgId].Add(dto);
                 }
+                ids.Add(attach.AttachId);
             }
+
+            if (!isPreview)
+            {
+                try
+                {
+                    var conn = await _context.GetDbConnectionAsync();
+                    await conn.ExecuteAsync(
+                        "UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE attach_id IN @ids",
+                        new { ids }
+                    );
+                }
+                catch (Exception ex)
+                {
+                    _utils.HandleErrorAsWarning(ex, "Error updating attachment download count");
+                }
+            }
+
             return (correlationId, attachments);
         }
 

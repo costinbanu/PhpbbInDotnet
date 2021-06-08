@@ -161,7 +161,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         OthersId = otherUser.UserId,
                         OthersName = otherUser?.Username ?? "Anonymous",
                         OthersColor = otherUser?.UserColour,
-                        OtherHasAvatar = !string.IsNullOrWhiteSpace(otherUser.UserAvatar),
+                        OthersAvatar = otherUser.UserAvatar,
                         Subject = HttpUtility.HtmlDecode(message.MessageSubject),
                         Text = _renderingService.BbCodeToHtml(message.MessageText, message.BbcodeUid),
                         MessageTime = message.MessageTime

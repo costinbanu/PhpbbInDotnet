@@ -253,6 +253,7 @@
   "SEARCH_IN_TOPIC": "Search in topic...",
   "SEARCH_IN_ALL_TOPICS": "Search in all topics",
   "POSTS_BY_FORMAT": "Posts by {0}",
+  "ATTACHMENTS_BY_FORMAT": "Files attached by {0}",
 
   //user profile
   "USER_PROFILE": "User profile",

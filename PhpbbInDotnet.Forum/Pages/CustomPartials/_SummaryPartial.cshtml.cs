@@ -11,13 +11,15 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
 
         public string AuthorColor { get; set; }
 
+        public string AuthorAvatar { get; set; }
+
         public DateTime? CreationTime { get; set; }
 
         public int AssetId { get; set; }
 
         public string DateFormat { get; set; }
 
-        public bool ShowAvatar { get; set; } = false;
+        public bool ShowAvatar => !string.IsNullOrWhiteSpace(AuthorAvatar);
 
         public string LinkHref { get; set; }
 
@@ -42,5 +44,7 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
         public string Language { get; set; }
 
         public string DateLabel { get; set; }
+
+        public Guid? CorrelationId { get; set; }
     }
 }

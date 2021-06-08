@@ -8,7 +8,7 @@ namespace PhpbbInDotnet.Objects
         public int OthersId { get; set; }
         public string OthersName { get; set; }
         public string OthersColor { get; set; }
-        public bool OtherHasAvatar { get; set; }
+        public string OthersAvatar { get; set; }
         public string Subject { get; set; }
         public string Text { get; set; }
         public long MessageTime { get; set; }

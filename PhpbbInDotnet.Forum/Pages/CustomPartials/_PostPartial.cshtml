@@ -22,7 +22,7 @@
         Model.Post.AuthorId = 1;
         Model.Post.AuthorName = $"[{_languageProvider.BasicText[Model.Language, "HIDDEN", Casing.FirstUpper]}]";
         Model.Post.AuthorColor = null;
-        Model.Post.AuthorHasAvatar = false;
+        Model.Post.AuthorAvatar = null;
         Model.Post.Attachments?.Clear();
         Model.Post.BbcodeUid = string.Empty;
         Model.Post.PostSubject = $"[{_languageProvider.BasicText[Model.Language, "HIDDEN", Casing.FirstUpper]}]";
@@ -46,12 +46,13 @@
             CreationTime = Model.Post.PostCreationTime,
             AssetId = Model.Post.PostId.Value,
             DateFormat = userDateFormat,
-            ShowAvatar = Model.Post.AuthorHasAvatar,
+            AuthorAvatar = Model.Post.AuthorAvatar,
             AuthorRank = Model.Post.AuthorRank,
             Left = true,
             ShowAsLast = false,
             PMLink = Model.HasCurrentUserPM ? $"<a href=\"./Posting?handler=PrivateMessage&postId={Model.Post.PostId}\">&#x1F5E8; {_languageProvider.BasicText[Model.Language, "PRIVATE_MESSAGE", Casing.FirstUpper]}</a>" : null,
-            Language = Model.Language
+            Language = Model.Language,
+            CorrelationId = Model.CorrelationId
         })
         <div class="ForumContent VerticalContent FlexRight" id="@Model.Post.PostId" style="max-width:100%; overflow-wrap: break-word; display:flex">
             <span style="display:flex">
