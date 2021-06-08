@@ -503,13 +503,10 @@ namespace PhpbbInDotnet.Forum.Pages
                 );
 
                 Posts = (await multi.ReadAsync<PostDto>()).AsList();
-                //Users = (await multi.ReadAsync<PhpbbUsers>()).AsList();
                 var dbAttachments = (await multi.ReadAsync<PhpbbAttachments>()).AsList();
                 PageNum = unchecked((int)await multi.ReadSingleAsync<long>());
                 _count = unchecked((int)await multi.ReadSingleAsync<long>());
-                //LastEditUsers = (await multi.ReadAsync<PhpbbUsers>()).AsList();
                 Reports = (await multi.ReadAsync<ReportDto>()).AsList();
-                //Ranks = (await multi.ReadAsync<UserRankDto>()).AsList();
 
                 (CorrelationId, Attachments) = await _postService.CacheAttachmentsAndPrepareForDisplay(dbAttachments, await GetLanguage(), Posts.Count, false);
             }
