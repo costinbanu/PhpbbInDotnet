@@ -10,35 +10,35 @@ namespace PhpbbInDotnet.Objects
 
         public int TopicId { get; set; }
 
-        public int? PostId { get; set; } = null;
+        public int PostId { get; set; }
 
-        public string PostSubject { get; set; } = null;
+        public string PostSubject { get; set; }
 
-        public string PostText { get; set; } = null;
+        public string PostText { get; set; }
 
-        public string AuthorName { get; set; } = null;
+        public string AuthorName { get; set; }
 
-        public int? AuthorId { get; set; } = null;
+        public int AuthorId { get; set; }
 
-        public string AuthorColor { get; set; } = null;
+        public string AuthorColor { get; set; }
 
-        public string BbcodeUid { get; set; } = null;
+        public string BbcodeUid { get; set; }
 
         public DateTime? PostCreationTime => PostTime == 0 ? null : PostTime.ToUtcTime();
 
         public DateTime? PostModifiedTime => PostEditTime == 0 ? null : PostEditTime.ToUtcTime();
 
-        public List<AttachmentDto> Attachments { get; set; } = null;
+        public List<AttachmentDto> Attachments { get; set; }
 
         public bool Unread { get; set; }
 
         public bool AuthorHasAvatar => !string.IsNullOrWhiteSpace(AuthorAvatar);
 
-        public long PostEditTime { get; set; } = 0;
+        public long PostEditTime { get; set; }
 
         public string PostEditUser { get; set; }
 
-        public short PostEditCount { get; set; } = 0;
+        public short PostEditCount { get; set; }
 
         public string PostEditReason { get; set; }
 

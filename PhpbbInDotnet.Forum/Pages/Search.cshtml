@@ -151,12 +151,12 @@ else
     var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(Model.Attachments, Lang, Model.Posts.Count, false);
     foreach (var post in Model.Posts)
     {
-        if ((post.PostId ?? 0) == 0)
+        if (post.PostId == 0)
         {
             continue;
         }
 
-        post.Attachments = cacheResult.Attachments.TryGetValue(post.PostId.Value, out var val) ? val : new List<Objects.AttachmentDto>();
+        post.Attachments = cacheResult.Attachments.TryGetValue(post.PostId, out var val) ? val : new List<Objects.AttachmentDto>();
 
         @await Html.PartialAsync("_PostPartial", new _PostPartialModel
         {
