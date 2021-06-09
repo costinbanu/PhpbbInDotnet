@@ -16,7 +16,7 @@
     var titleClass = Model.Post.Unread ? "UnreadTitle" : "";
     var color = string.IsNullOrWhiteSpace(Model.Post.AuthorColor) || Model.Post.AuthorColor == "000000" ? "auto" : $"#{Model.Post.AuthorColor}";
 
-    @if (Model.CurrentUser.Foes?.Contains(Model.Post.AuthorId ?? 0) ?? false)
+    @if (Model.CurrentUser.Foes?.Contains(Model.Post.AuthorId) ?? false)
     {
         Model.HasCurrentUserPM = false;
         Model.Post.AuthorId = 1;
@@ -44,7 +44,7 @@
             AuthorName = Model.Post.AuthorName,
             AuthorColor = Model.Post.AuthorColor,
             CreationTime = Model.Post.PostCreationTime,
-            AssetId = Model.Post.PostId.Value,
+            AssetId = Model.Post.PostId,
             DateFormat = userDateFormat,
             AuthorAvatar = Model.Post.AuthorAvatar,
             AuthorRank = Model.Post.AuthorRank,
@@ -62,7 +62,7 @@
                     </a>
                 </span>
                 <span style="margin-left:auto">
-                    <span class="CollapsedMenu ThemeColor" onclick="expandCollapsedMenu('summary@(Model.Post.PostId.Value)', 'button@(Model.Post.PostId.Value)')" id="button@(Model.Post.PostId.Value)" style="color:@color;margin-left: auto; height:auto; width: min-content">
+                    <span class="CollapsedMenu ThemeColor" onclick="expandCollapsedMenu('summary@(Model.Post.PostId)', 'button@(Model.Post.PostId)')" id="button@(Model.Post.PostId)" style="color:@color;margin-left: auto; height:auto; width: min-content">
                         @Html.Raw(Model.Post.AuthorName)
                     </span>
                 </span>
@@ -151,11 +151,11 @@
                             <span>
                                 <label>
                                     @Html.Raw(_languageProvider.Moderator[Model.Language, "SELECT_FOR_MODERATION", Casing.FirstUpper])
-                                    <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @(Model.Post.PostId ?? -1))" @(Model.PostIdsForModerator.Contains(Model.Post.PostId ?? -1) ? "checked" : "") />
+                                    <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @Model.Post.PostId)" @(Model.PostIdsForModerator.Contains(Model.Post.PostId) ? "checked" : "") />
                                 </label>
                             </span>
                             <span>
-                                <a href="javascript:vt.duplicatePost(@(Model.Post.PostId ?? -1))">
+                                <a href="javascript:vt.duplicatePost(@Model.Post.PostId)">
                                     2️⃣ @Html.Raw(_languageProvider.Moderator[Model.Language, "DUPLICATE_POST"])
                                 </a>
                             </span>
@@ -171,10 +171,10 @@
                             {
                                 if (!Model.IsCurrentUserMod)
                                 {
-                                    <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @(Model.Post.PostId ?? -1))" @(Model.PostIdsForModerator.Contains(Model.Post.PostId ?? -1) ? "checked" : "") style="display:none" />
+                                    <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @Model.Post.PostId)" @(Model.PostIdsForModerator.Contains(Model.Post.PostId) ? "checked" : "") style="display:none" />
                                 }
                                 <span>
-                                    <a href="javascript:vt.deletePost(@(Model.Post.PostId ?? -1), @Model.ClosestPostId)">
+                                    <a href="javascript:vt.deletePost(@Model.Post.PostId, @Model.ClosestPostId)">
                                         &#x1F6AE; @Html.Raw(_languageProvider.BasicText[Model.Language, "DO_DELETE", Casing.FirstUpper])
                                     </a>
                                 </span>

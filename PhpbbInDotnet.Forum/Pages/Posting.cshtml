@@ -433,7 +433,7 @@ else if (IsPM)
 
         foreach (var post in posts)
         {
-            post.Attachments = attachments.TryGetValue(post.PostId ?? 0, out var val) ? val : new List<Objects.AttachmentDto>();
+            post.Attachments = attachments.TryGetValue(post.PostId, out var val) ? val : new List<Objects.AttachmentDto>();
 
             @await Html.PartialAsync("_PostPartial", new _PostPartialModel
             {
@@ -441,7 +441,7 @@ else if (IsPM)
                 Post = post,
                 ForumId = Model.ForumId,
                 TopicId = Model.TopicId ?? 0,
-                ShowQuoteButton = !(CurrentUser.Foes?.Contains(post.AuthorId ?? 1) ?? false),
+                ShowQuoteButton = !(CurrentUser.Foes?.Contains(post.AuthorId) ?? false),
                 Language = Lang,
                 ParentHttpContext = HttpContext,
                 ParentPageContext = PageContext,

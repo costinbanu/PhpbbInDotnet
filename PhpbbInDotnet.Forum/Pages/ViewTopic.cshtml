@@ -113,8 +113,8 @@
     @foreach (var post in Model.Posts)
     {
         post.Report = Model.Reports?.FirstOrDefault(r => r.PostId == post.PostId);
-        post.Unread = reachedAnUnreadPost || (reachedAnUnreadPost = await Model.IsPostUnread(post.ForumId, post.TopicId, post.PostId ?? 0));
-        post.Attachments = Model.Attachments.TryGetValue(post.PostId ?? 0, out var val) ? val : new List<AttachmentDto>();
+        post.Unread = reachedAnUnreadPost || (reachedAnUnreadPost = await Model.IsPostUnread(post.ForumId, post.TopicId, post.PostId));
+        post.Attachments = Model.Attachments.TryGetValue(post.PostId, out var val) ? val : new List<AttachmentDto>();
 
         int? closestPostIdIndex = null;
         if (Model.Posts.Count > 1)
@@ -139,7 +139,7 @@
             IsPostLastInPage = post == Model.Posts.Last(),
             IsLastPage = Model.Paginator.IsLastPage,
             IsTopicLocked = Model.IsLocked,
-            ShowFooter = !(CurrentUser.Foes?.Contains(post.AuthorId ?? 0) ?? false),
+            ShowFooter = !(CurrentUser.Foes?.Contains(post.AuthorId) ?? false),
             ShowEditHistory = (index < Model.Posts.Count - 1 && post.PostEditTime > Model.Posts[index + 1].PostTime) || (post.PostEditCount > 0 && post.PostEditUser != post.AuthorName),
             Language = Lang,
             ParentHttpContext = HttpContext,
