@@ -160,8 +160,6 @@ namespace PhpbbInDotnet.Forum.Pages
                     new { topicId = TopicId.Value }
                 );
 
-                Cache.Add(string.Format(Constants.FORUM_CHECK_OVERRIDE_CACHE_KEY_FORMAT, ForumId), true, TimeSpan.FromSeconds(30));
-
                 return Page();
             }
 

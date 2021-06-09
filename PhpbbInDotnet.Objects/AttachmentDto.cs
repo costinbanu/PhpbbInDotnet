@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Utilities;
 using System;
 using System.Web;
 
@@ -29,7 +30,7 @@ namespace PhpbbInDotnet.Objects
             Language = language;
             FileUrl = $"/File?id={Id}&preview={isPreview}";
             
-            if (correlationId.HasValue)
+            if (correlationId.HasValue && MimeType.IsMimeTypeInline())
             {
                 FileUrl += $"&correlationId={correlationId.Value}";
             }

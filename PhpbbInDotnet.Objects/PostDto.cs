@@ -26,7 +26,7 @@ namespace PhpbbInDotnet.Objects
 
         public DateTime? PostCreationTime => PostTime == 0 ? null : PostTime.ToUtcTime();
 
-        public DateTime? PostModifiedTime => LastEditTime == 0 ? null : LastEditTime.ToUtcTime();
+        public DateTime? PostModifiedTime => PostEditTime == 0 ? null : PostEditTime.ToUtcTime();
 
         public List<AttachmentDto> Attachments { get; set; } = null;
 
@@ -34,13 +34,13 @@ namespace PhpbbInDotnet.Objects
 
         public bool AuthorHasAvatar => !string.IsNullOrWhiteSpace(AuthorAvatar);
 
-        public long LastEditTime { get; set; } = 0;
+        public long PostEditTime { get; set; } = 0;
 
-        public string LastEditUser { get; set; }
+        public string PostEditUser { get; set; }
 
-        public short EditCount { get; set; } = 0;
+        public short PostEditCount { get; set; } = 0;
 
-        public string LastEditReason { get; set; }
+        public string PostEditReason { get; set; }
 
         public string AuthorRank { get;  set; }
 

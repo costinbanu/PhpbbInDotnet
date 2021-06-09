@@ -37,7 +37,7 @@ BEGIN
 					   a.user_avatar as author_avatar,
 					   p.post_edit_count,
 					   p.post_edit_reason,
-					   p.post_edit_time as last_edit_time,
+					   p.post_edit_time,
 					   e.username as post_edit_user,
 					   r.rank_title as author_rank,
 					   p.poster_ip as ip
@@ -68,7 +68,7 @@ BEGIN
 					   a.user_avatar as author_avatar,
 					   p.post_edit_count,
 					   p.post_edit_reason,
-					   p.post_edit_time as last_edit_time,
+					   p.post_edit_time,
 					   e.username as post_edit_user,
 					   r.rank_title as author_rank,
 					   p.poster_ip as ip

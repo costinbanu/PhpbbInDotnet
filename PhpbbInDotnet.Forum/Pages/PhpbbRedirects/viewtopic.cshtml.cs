@@ -1,7 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Dapper;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Utilities;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -10,24 +14,33 @@ namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
     public class viewtopicModel : PageModel
     {
         private readonly ForumDbContext _context;
+        private readonly CommonUtils _utils;
 
-        public viewtopicModel(ForumDbContext context)
+        public viewtopicModel(ForumDbContext context, CommonUtils utils)
         {
             _context = context;
+            _utils = utils;
         }
 
         public async Task<IActionResult> OnGet(int? f, int? t, int? p, int? start)
         {
-            if (f.HasValue && t.HasValue)
+            if (t.HasValue)
             {
                 if (start.HasValue)
                 {
-                    var posts = await (from post in _context.PhpbbPosts.AsNoTracking()
-                                       where post.TopicId == t.Value
-                                       select post.PostId).ToListAsync();
-                    if (start.Value < posts.Count)
+                    var conn = await _context.GetDbConnectionAsync();
+                    var post = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(
+                        "SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time LIMIT @skip, 1",
+                        new
+                        {
+                            topicId = t.Value,
+                            skip = start >= 1 ? start - 1 : 0
+                        }
+                    );
+
+                    if (post != null)
                     {
-                        return RedirectToPage("../ViewTopic", "ByPostId", new { PostId = posts[start.Value] });
+                        return RedirectToPage("../ViewTopic", "ByPostId", new { post.PostId });
                     }
                     else
                     {
@@ -45,7 +58,8 @@ namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
             }
             else
             {
-                return BadRequest("Parametri greșiți!");
+                _utils.HandleErrorAsWarning(new Exception($"Bad request to legacy viewtopic.php route: {Request.QueryString.Value}"));
+                return RedirectToPage("../Index");
             }
         }
     }

@@ -98,13 +98,13 @@
                     @if (Model.ShowEditHistory)
                     {
                         <div class="Caption ThemeColor">
-                            @Html.Raw(_languageProvider.BasicText[Model.Language, "LAST_EDITED_BY"]) @Model.Post.LastEditUser
-                            <script>writeDate("@Model.Post.LastEditTime.ToUtcTime().ToString("o")", "@userDateFormat");</script>.
-                            @if (!string.IsNullOrWhiteSpace(Model.Post.LastEditReason))
+                            @Html.Raw(_languageProvider.BasicText[Model.Language, "LAST_EDITED_BY"]) @Model.Post.PostEditUser
+                            <script>writeDate("@Model.Post.PostEditTime.ToUtcTime().ToString("o")", "@userDateFormat");</script>.
+                            @if (!string.IsNullOrWhiteSpace(Model.Post.PostEditReason))
                             {
-                                <span>@Html.Raw(_languageProvider.BasicText[Model.Language, "REASON", Casing.FirstUpper]): @HttpUtility.HtmlDecode(Model.Post.LastEditReason).</span>
+                                <span>@Html.Raw(_languageProvider.BasicText[Model.Language, "REASON", Casing.FirstUpper]): @HttpUtility.HtmlDecode(Model.Post.PostEditReason).</span>
                             }
-                            @Html.Raw(_languageProvider.BasicText[Model.Language, "TOTAL_EDITS"]): @Model.Post.EditCount.
+                            @Html.Raw(_languageProvider.BasicText[Model.Language, "TOTAL_EDITS"]): @Model.Post.PostEditCount.
                         </div>
                         <p></p>
                     }
@@ -144,7 +144,7 @@
                         @if (Model.IsCurrentUserMod)
                         {
                             <span>
-                                <a href="javascript:vt.showMessageDetails('@Model.Post.IP', '@Model.Post.LastEditTime.ToUtcTime().ToString("o")', '@userDateFormat', @Model.Post.EditCount, '@Model.Post.LastEditUser');">
+                                <a href="javascript:vt.showMessageDetails('@Model.Post.IP', '@Model.Post.PostEditTime.ToUtcTime().ToString("o")', '@userDateFormat', @Model.Post.PostEditCount, '@Model.Post.PostEditUser');">
                                     &#x2753; @Html.Raw(_languageProvider.BasicText[Model.Language, "INFORMATION", Casing.FirstUpper])
                                 </a>
                             </span>

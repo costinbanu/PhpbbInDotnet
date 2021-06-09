@@ -38,7 +38,7 @@ namespace PhpbbInDotnet.Services
             var correlationId = Guid.NewGuid();
             var attachments = new Dictionary<int, List<AttachmentDto>>(postCount);
             var ids = new List<int>(dbAttachments.Count);
-            foreach (var attach in dbAttachments)
+            foreach (var attach in dbAttachments.Where(a => a.Mimetype.IsMimeTypeInline()))
             {
                 var dto = new AttachmentDto(attach, isPreview, language, correlationId);
                 _cache.Add(_utils.GetAttachmentCacheKey(attach.AttachId, correlationId), dto, TimeSpan.FromSeconds(60));
@@ -53,7 +53,7 @@ namespace PhpbbInDotnet.Services
                 ids.Add(attach.AttachId);
             }
 
-            if (!isPreview)
+            if (!isPreview && ids.Any())
             {
                 try
                 {

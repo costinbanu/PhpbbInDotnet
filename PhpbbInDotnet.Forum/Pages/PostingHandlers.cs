@@ -337,13 +337,14 @@ namespace PhpbbInDotnet.Forum.Pages
                     AuthorName = postAuthor.Username,
                     AuthorRank = (await conn.QueryFirstOrDefaultAsync("SELECT * FROM phpbb_ranks WHERE rank_id = @rankId", new { rankId }))?.RankTitle,
                     BbcodeUid = uid,
-                    EditCount = (short)(Action == PostingActions.EditForumPost ? (currentPost?.PostEditCount ?? 0) + 1 : 0),
-                    LastEditReason = Action == PostingActions.EditForumPost ? currentPost?.PostEditReason : string.Empty,
-                    LastEditTime = Action == PostingActions.EditForumPost ? DateTime.UtcNow.ToUnixTimestamp() : 0,
-                    LastEditUser = Action == PostingActions.EditForumPost ? user.Username : string.Empty,
+                    PostEditCount = (short)(Action == PostingActions.EditForumPost ? (currentPost?.PostEditCount ?? 0) + 1 : 0),
+                    PostEditReason = Action == PostingActions.EditForumPost ? currentPost?.PostEditReason : string.Empty,
+                    PostEditTime = Action == PostingActions.EditForumPost ? DateTime.UtcNow.ToUnixTimestamp() : 0,
+                    PostEditUser = Action == PostingActions.EditForumPost ? user.Username : string.Empty,
                     PostId = currentPost?.PostId ?? 0,
                     PostSubject = HttpUtility.HtmlEncode(PostTitle),
-                    PostText = await _writingService.PrepareTextForSaving(newPostText)
+                    PostText = await _writingService.PrepareTextForSaving(newPostText),
+                    PostTime = currentPost?.PostTime ?? DateTime.UtcNow.ToUnixTimestamp()
                 };
 
                 if (!string.IsNullOrWhiteSpace(PollOptions))
