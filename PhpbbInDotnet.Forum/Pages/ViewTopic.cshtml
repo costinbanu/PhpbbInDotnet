@@ -140,7 +140,7 @@
             IsLastPage = Model.Paginator.IsLastPage,
             IsTopicLocked = Model.IsLocked,
             ShowFooter = !(CurrentUser.Foes?.Contains(post.AuthorId ?? 0) ?? false),
-            ShowEditHistory = (index < Model.Posts.Count - 1 && post.LastEditTime > Model.Posts[index + 1].PostTime) || (post.EditCount > 0 && post.LastEditUser != post.AuthorName),
+            ShowEditHistory = (index < Model.Posts.Count - 1 && post.PostEditTime > Model.Posts[index + 1].PostTime) || (post.PostEditCount > 0 && post.PostEditUser != post.AuthorName),
             Language = Lang,
             ParentHttpContext = HttpContext,
             ParentPageContext = PageContext,

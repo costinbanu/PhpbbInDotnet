@@ -1,10 +1,19 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using PhpbbInDotnet.Utilities;
+using System;
 
 namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
 {
     public class fileModel : PageModel
     {
+        private readonly CommonUtils _utils;
+
+        public fileModel(CommonUtils utils)
+        {
+            _utils = utils;
+        }
+
         public IActionResult OnGet(int? id, string avatar)
         {
             if (id.HasValue)
@@ -17,7 +26,8 @@ namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
                 return RedirectToPage("../File", "avatar",  new { userId });
             }
 
-            return BadRequest();
+            _utils.HandleErrorAsWarning(new Exception($"Bad request to legacy file.php route: {Request.QueryString.Value}"));
+            return RedirectToPage("../Index");
         }
     }
 }
