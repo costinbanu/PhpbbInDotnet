@@ -314,6 +314,11 @@ namespace PhpbbInDotnet.Forum.Pages
                 
 
                 var toDelete = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId = postIds[0] });
+                if (toDelete == null)
+                {
+                    return RedirectToPage("Error", new { isNotFound = true });
+                }
+                
                 var lastPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC", new { toDelete.TopicId });
 
                 if (toDelete.PostTime < lastPost.PostTime)
