@@ -66,7 +66,8 @@ BEGIN
 	DEALLOCATE PREPARE stmt;
     
     SELECT *
-    FROM attach_search_results;
+      FROM attach_search_results
+     ORDER BY post_time DESC;
 
 	WITH search_stmt AS (
 		SELECT p.post_id

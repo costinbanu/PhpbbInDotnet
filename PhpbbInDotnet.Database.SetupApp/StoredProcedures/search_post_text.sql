@@ -97,7 +97,8 @@ BEGIN
 	DEALLOCATE PREPARE stmt;
     
     SELECT *
-    FROM post_text_search_results;
+      FROM post_text_search_results
+     ORDER BY post_time DESC;
 
 	WITH search_stmt AS (
 		SELECT p.post_id
