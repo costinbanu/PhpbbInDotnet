@@ -158,7 +158,10 @@ BEGIN
 	
     /* posts */
     SELECT *
-      FROM get_posts;
+      FROM get_posts
+      ORDER BY 
+		CASE WHEN for_posting = 0 THEN post_time END ASC,
+        CASE WHEN for_posting = 1 THEN post_time END DESC;
       
 	/* attachments */
     SELECT a.*
