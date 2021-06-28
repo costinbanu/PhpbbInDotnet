@@ -1,6 +1,7 @@
 ﻿@page
 @using PhpbbInDotnet.Utilities
 @using Microsoft.Extensions.Configuration
+@using System.Globalization 
 
 @model PhpbbInDotnet.Forum.Pages.UserModel
 
@@ -246,7 +247,7 @@ else
 
                     @{
                         var birthday = DateTime.MinValue;
-                        if (canEdit || DateTime.TryParse(Model.CurrentUser.UserBirthday, out birthday))
+                        if (canEdit || DateTime.TryParseExact(Model.CurrentUser.UserBirthday, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out birthday))
                         {
                             <p></p>
                             <div class="FlexCenter">

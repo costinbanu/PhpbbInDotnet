@@ -16,6 +16,7 @@ using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Mail;
@@ -178,7 +179,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (!string.IsNullOrWhiteSpace(Birthday) && Birthday != dbUser.UserBirthday)
             {
-                if (!DateTime.TryParse(Birthday, out _))
+                if (!DateTime.TryParseExact(Birthday, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out _))
                 {
                     ModelState.AddModelError(nameof(Birthday), LanguageProvider.Errors[lang, "INVALID_DATE"]);
                     return Page();
