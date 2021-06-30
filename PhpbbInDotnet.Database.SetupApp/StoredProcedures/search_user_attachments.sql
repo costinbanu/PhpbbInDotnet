@@ -25,7 +25,7 @@ BEGIN
 				  LEFT JOIN phpbb_ranks r1 ON u.user_rank = r1.rank_id
 				  LEFT JOIN phpbb_ranks r2 ON g.group_rank = r2.rank_id
 			)
-			SELECT p.forum_id,
+			SELECT DISTINCT p.forum_id,
 				   p.topic_id,
 				   p.post_id,
 				   p.post_subject,
