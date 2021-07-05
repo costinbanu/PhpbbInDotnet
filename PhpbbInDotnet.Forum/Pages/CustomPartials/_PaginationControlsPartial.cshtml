@@ -4,7 +4,7 @@
 
 @inject Languages.LanguageProvider _languageProvider
 
-@if (Model.Paginator?.Pagination?.HasPages ?? false)
+@if ((Model.Paginator?.Pagination?.HasPages ?? false) || Model.Paginator.PageSize != Constants.DEFAULT_PAGE_SIZE)
 {
     <div class="PaginationHolder">
         <div class="LeftArrow">
@@ -38,7 +38,7 @@
                     ViewData
                 )
             </span>
-            @if (!Model.Paginator.IsAnonymous && Model.AllowPaginationChange)
+            @if (!Model.Paginator.IsAnonymous && (Model.AllowPaginationChange || Model.Paginator.PageSize != Constants.DEFAULT_PAGE_SIZE))
             {
                 <form method="post" asp-page-handler="Pagination" style="line-height:1.5em; display: inline; white-space:nowrap">
                     <span style="white-space:nowrap; display: inline">
@@ -92,7 +92,7 @@
                 ViewData
             )
             <p></p>
-            @if (!Model.Paginator.IsAnonymous && Model.AllowPaginationChange)
+            @if (!Model.Paginator.IsAnonymous && (Model.AllowPaginationChange || Model.Paginator.PageSize != Constants.DEFAULT_PAGE_SIZE))
             {
                 <form method="post" asp-page-handler="Pagination" style="line-height:1.5em">
                     <span style="white-space:nowrap; display: inline">

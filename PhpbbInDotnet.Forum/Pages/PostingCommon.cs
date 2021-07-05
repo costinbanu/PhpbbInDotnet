@@ -177,6 +177,15 @@ namespace PhpbbInDotnet.Forum.Pages
 
             var curTopic = Action != PostingActions.NewTopic ? await connection.QuerySingleOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { TopicId }) : null;
             var canCreatePoll = Action == PostingActions.NewTopic || (Action == PostingActions.EditForumPost && (curTopic?.TopicFirstPostId ?? 0) == PostId);
+
+            if ((curTopic?.TopicStatus.ToBool() ?? false) && !await IsCurrentUserModeratorHere(ForumId))
+            {
+                var key = Action == PostingActions.EditForumPost ? "CANT_EDIT_POST_TOPIC_CLOSED" : "CANT_SUBMIT_POST_TOPIC_CLOSED";
+                ModelState.AddModelError(nameof(PostText), LanguageProvider.Errors[lang, key, Casing.FirstUpper]);
+                ShowPoll = canCreatePoll;
+                return null;
+            }
+            
             if (canCreatePoll && (string.IsNullOrWhiteSpace(PollExpirationDaysString) || !double.TryParse(PollExpirationDaysString, out var val) || val < 0 || val > 365))
             {
                 ModelState.AddModelError(nameof(PollExpirationDaysString), LanguageProvider.Errors[lang, "INVALID_POLL_EXPIRATION"]);

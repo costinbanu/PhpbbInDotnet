@@ -311,7 +311,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
 
                 var conn = await Context.GetDbConnectionAsync();
-                
 
                 var toDelete = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId = postIds[0] });
                 if (toDelete == null)
@@ -320,16 +319,27 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 
                 var lastPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC", new { toDelete.TopicId });
+                var errorMessage = "<span class=\"validation\">&#x274C;&nbsp;{0}</span>";
 
                 if (toDelete.PostTime < lastPost.PostTime)
                 {
-                    ModelState.AddModelError(nameof(PostIdsForModerator), LanguageProvider.Errors[lang, "POST_NO_LONGER_LAST"]);
+                    ModeratorActionResult = string.Format(errorMessage, LanguageProvider.Errors[lang, "POST_NO_LONGER_LAST"]);
+                    PostId = postIds[0];
                     return await OnGet();
                 }
 
                 if (!(toDelete.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(toDelete.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime)))
                 {
-                    ModelState.AddModelError(nameof(PostIdsForModerator), LanguageProvider.Errors[lang, "EDIT_TIME_EXPIRED"]);
+                    ModeratorActionResult = string.Format(errorMessage, LanguageProvider.Errors[lang, "EDIT_TIME_EXPIRED"]);
+                    PostId = postIds[0]; 
+                    return await OnGet();
+                }
+
+                var curTopic = await conn.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { toDelete.TopicId });
+                if (curTopic?.TopicStatus.ToBool() ?? false)
+                {
+                    ModeratorActionResult = string.Format(errorMessage, LanguageProvider.Errors[lang, "CANT_DELETE_POST_TOPIC_CLOSED", Casing.FirstUpper]);
+                    PostId = postIds[0]; 
                     return await OnGet();
                 }
 

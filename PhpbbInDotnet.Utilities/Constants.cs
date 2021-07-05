@@ -28,5 +28,7 @@ namespace PhpbbInDotnet.Utilities
 
         public const string DEFAULT_LANGUAGE = "en";
 
+        public static readonly DateTime UNIX_TIMESTAMP_MIN_VALUE = 0L.ToUtcTime();
+
     }
 }

@@ -55,6 +55,9 @@
   "CANT_DELETE_ATTACHMENT_TRY_AGAIN": "Fișierul nu a putut fi șters, te rugăm să încerci din nou.",
   "GENERIC_POSTING_ERROR": "A intervenit o eroare iar mesajul nu a fost publicat. Te rugăm să încerci din nou.",
   "ENTER_VALID_RECEIVER": "Introduceți un destinatar valid.",
+  "CANT_DELETE_POST_TOPIC_CLOSED": "Mesajul nu poate fi șters deoarece subiectul este închis.",
+  "CANT_EDIT_POST_TOPIC_CLOSED": "Mesajul nu poate fi modificat deoarece subiectul este închis.",
+  "CANT_SUBMIT_POST_TOPIC_CLOSED": "Mesajul nu poate fi trimis deoarece subiectul este închis.",
 
   //pm
   "SENDER_CANT_SEND_PMS": "Expeditorul nu are dreptul să trimită mesaje private.",
