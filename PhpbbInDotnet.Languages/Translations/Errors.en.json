@@ -55,6 +55,9 @@
   "CANT_DELETE_ATTACHMENT_TRY_AGAIN": "The file couldn't be deleted, please try again later.",
   "GENERIC_POSTING_ERROR": "An error occurred and the post has not been posted. Please try again later.",
   "ENTER_VALID_RECEIVER": "Enter a valid receiver.",
+  "CANT_DELETE_POST_TOPIC_CLOSED": "Mesajul nu poate fi șters deoarece subiectul este închis.",
+  "CANT_EDIT_POST_TOPIC_CLOSED": "Mesajul nu poate fi modificat deoarece subiectul este închis.",
+  "CANT_SUBMIT_POST_TOPIC_CLOSED": "Mesajul nu poate fi trimis deoarece subiectul este închis.",
 
   //pm
   "SENDER_CANT_SEND_PMS": "The sender is not allowed to send private messages.",
