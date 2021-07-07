@@ -57,7 +57,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 Action = PostingActions.NewForumPost;
 
                 var title = HttpUtility.HtmlDecode(curPost.PostSubject);
-                PostText = $"[quote=\"{curAuthor}\"]\n{_writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid)}\n[/quote]\n";
+                PostText = $"[quote=\"{curAuthor}\",{PostId}]\n{_writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid)}\n[/quote]\n";
                 PostTitle = title.StartsWith(Constants.REPLY) ? title : $"{Constants.REPLY}{title}";
                 await RestoreBackupIfAny();
                 return Page();

@@ -176,7 +176,7 @@
     /**
     * Add quote text to message
     */
-    addquote(text, username) {
+    addquote(text, username, postId) {
         this.theSelection = '';
 
         // Get text selection - not only the post content :(
@@ -195,7 +195,7 @@
         }
 
         if (this.theSelection) {
-            this.insert_text('[quote="' + username + '"]\n' + this.theSelection + '\n[/quote]\n');
+            this.insert_text(`[quote="${username}",${postId}]\n${this.theSelection}\n[/quote]\n`);
         }
 
         return;
