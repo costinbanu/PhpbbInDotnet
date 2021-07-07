@@ -69,7 +69,7 @@
                 @if (Model.ShowQuoteButton)
                 {
                     <span style="margin-left: auto; min-width: max-content; padding-top: 3px; padding-bottom: 30px; margin-top: 4px; margin-bottom: 4px">
-                        <a href="javascript:posting.addquote(texts['@Model.Post.PostId'], '@Model.Post.AuthorName')">
+                        <a href="javascript:posting.addquote(texts['@Model.Post.PostId'], '@Model.Post.AuthorName', @Model.Post.PostId)">
                             &#x1F4AC; @Html.Raw(_languageProvider.BasicText[Model.Language, "DO_QUOTE", Casing.FirstUpper])
                         </a>
                     </span>

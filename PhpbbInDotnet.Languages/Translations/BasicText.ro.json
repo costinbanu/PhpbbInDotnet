@@ -51,7 +51,8 @@
   "GO": "du-te",
   "FROM": "de la",
   "TO": "până la",
-  "WROTE_FORMAT": "<b>{0}</b> a scris:<br />",
+  "WROTE_FORMAT": "<b>{0}</b> a scris",
+  "HERE": "aici",
 
   //post/topic/forum summary
   "LAST_POST_TEXT": "Ultimul mesaj de",

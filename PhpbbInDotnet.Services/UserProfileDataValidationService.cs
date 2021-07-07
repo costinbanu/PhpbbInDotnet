@@ -7,7 +7,7 @@ namespace PhpbbInDotnet.Services
 {
     public class UserProfileDataValidationService
     {
-        private readonly Regex USERNAME_REGEX = new(@"[a-zA-Z0-9 \._-]+", RegexOptions.Compiled);
+        private readonly Regex USERNAME_REGEX = new(@"^[a-zA-Z0-9 \._-]+$", RegexOptions.Compiled);
         private readonly Regex PASSWORD_REGEX = new(@"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$", RegexOptions.Compiled);
 
         private readonly EmailAddressAttribute _emailValidator;

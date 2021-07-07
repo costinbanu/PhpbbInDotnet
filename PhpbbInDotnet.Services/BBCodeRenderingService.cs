@@ -26,6 +26,7 @@ namespace PhpbbInDotnet.Services
         private static readonly Regex _htmlRegex = new("<.+?>", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
         private static readonly Regex _spaceRegex = new(" +", RegexOptions.Compiled | RegexOptions.Singleline, Constants.REGEX_TIMEOUT);
         private static readonly Regex _attachRegex = new("#{AttachmentFileName=[^/]+/AttachmentIndex=[0-9]+}#", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
+        private static readonly Regex _quoteAttributeRegex = new("(\".+\")[, ]{0,2}([0-9]+)?", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
 
         private readonly ForumDbContext _context;
         private readonly WritingToolsService _writingService;
@@ -357,7 +358,38 @@ namespace PhpbbInDotnet.Services
 
                         ["quote"] = (
                             Tag: new BBTag("quote", "<blockquote class=\"PostQuote\">${name}", "</blockquote>", 0, "", true,
-                                new BBAttribute("name", "", (a) => string.IsNullOrWhiteSpace(a.AttributeValue) ? "" : string.Format(LanguageProvider.BasicText[lang, "WROTE_FORMAT"], HttpUtility.HtmlDecode(a.AttributeValue).Trim('"')), HtmlEncodingMode.UnsafeDontEncode))
+                                new BBAttribute(
+                                    id: "name", 
+                                    name: "", 
+                                    contentTransformer: a =>
+                                    {
+                                        if (string.IsNullOrWhiteSpace(a.AttributeValue))
+                                        {
+                                            return string.Empty;
+                                        }
+                                        var match = _quoteAttributeRegex.Match(HttpUtility.HtmlDecode(a.AttributeValue));
+                                        if (!match.Success || match.Groups.Count != 3)
+                                        {
+                                            return string.Empty;
+                                        }
+                                        var toReturn = match.Groups[1].Success ? string.Format(LanguageProvider.BasicText[lang, "WROTE_FORMAT"], match.Groups[1].Value.Trim('"')) : string.Empty;
+                                        var postId = match.Groups[2].Success ? match.Groups[2].Value : string.Empty;
+                                        if (!string.IsNullOrWhiteSpace(toReturn))
+                                        {
+                                            if (!string.IsNullOrWhiteSpace(postId))
+                                            {
+                                                toReturn += $" <a href=\"./ViewTopic?postId={postId}&handler=byPostId\">{LanguageProvider.BasicText[lang, "HERE"]}</a>:<br />";
+                                            }
+                                            else
+                                            {
+                                                toReturn += ":<br />";
+                                            }
+                                        }
+                                        return toReturn;
+                                    }, 
+                                    htmlEncodingMode: HtmlEncodingMode.UnsafeDontEncode
+                                )
+                            )
                             {
                                 GreedyAttributeProcessing = true
                             },
