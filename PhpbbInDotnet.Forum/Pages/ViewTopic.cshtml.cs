@@ -351,18 +351,15 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 var conn = await Context.GetDbConnectionAsync();
                 await conn.ExecuteAsync(
-                    "INSERT INTO phpbb_reports (post_id, user_id, reason_id, report_text, report_time, report_closed) VALUES (@PostId, @UserId, @ReasonId, @ReportText, @ReportTime, 0); " +
-                    "UPDATE phpbb_topics SET topic_reported = 1 WHERE topic_id = @TopicId; " +
-                    "UPDATE phpbb_posts SET post_reported = 1 WHERE post_id = @reportPostId",
+                    "INSERT INTO phpbb_reports (post_id, user_id, reason_id, report_text, report_time, report_closed) " +
+                    "VALUES (@PostId, @UserId, @ReasonId, @ReportText, @ReportTime, 0)",
                     new
                     {
                         PostId = reportPostId.Value,
                         user.UserId,
                         ReasonId = reportReasonId.Value,
                         ReportText = await _writingToolsService.PrepareTextForSaving(reportDetails),
-                        ReportTime = DateTime.UtcNow.ToUnixTimestamp(),
-                        TopicId,
-                        reportPostId
+                        ReportTime = DateTime.UtcNow.ToUnixTimestamp()
                     }
                 );
 
@@ -392,10 +389,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 var conn = await Context.GetDbConnectionAsync();
                 await conn.ExecuteAsync(
-                    "UPDATE phpbb_reports SET report_closed = 1 WHERE report_id = @reportId; " +
-                    "UPDATE phpbb_topics SET topic_reported = 0 WHERE topic_id = @TopicId; " +
-                    "UPDATE phpbb_posts SET post_reported = 0 WHERE post_id = @reportPostId",
-                    new { reportId, TopicId, reportPostId }
+                    "UPDATE phpbb_reports SET report_closed = 1 WHERE report_id = @reportId;",
+                    new { reportId }
                 );
 
                 if (!(deletePost ?? false) && (redirectToEdit ?? false))
