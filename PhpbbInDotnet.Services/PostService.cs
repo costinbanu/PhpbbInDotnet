@@ -165,7 +165,7 @@ namespace PhpbbInDotnet.Services
             );
         }
 
-        public async Task CascadePostDelete(PhpbbPosts deleted, bool ignoreTopic, int? oldTopicId = null)
+        public async Task CascadePostDelete(PhpbbPosts deleted, bool ignoreTopic, bool ignoreReports, int? oldTopicId = null)
         {
             oldTopicId ??= deleted.TopicId;
             var conn = await _context.GetDbConnectionAsync();
@@ -207,17 +207,13 @@ namespace PhpbbInDotnet.Services
                             "UPDATE phpbb_topics SET topic_replies = GREATEST(topic_replies - 1, 0), topic_replies_real = GREATEST(topic_replies_real - 1, 0) WHERE topic_id = @topicId",
                             new { curTopic.TopicId }
                         );
-
-                        var report = await conn.QueryFirstOrDefaultAsync<PhpbbReports>("SELECT * FROM phpbb_reports WHERE post_id = @postId", new { deleted.PostId });
-                        if (report != null)
-                        {
-                            await conn.ExecuteAsync(
-                                "DELETE FROM phpbb_reports WHERE report_id = @reportId; UPDATE phpbb_topics SET topic_reported = 0 WHERE topic_id = @topicId",
-                                new { report.ReportId, curTopic.TopicId }
-                            );
-                        }
                     }
                 }
+            }
+
+            if (!ignoreReports)
+            {
+                await conn.ExecuteAsync("DELETE FROM phpbb_reports WHERE post_id = @postId", new { deleted.PostId });
             }
 
             var curForum = await conn.QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { forumId = curTopic?.ForumId ?? deleted.ForumId });

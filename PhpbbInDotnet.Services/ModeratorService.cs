@@ -82,7 +82,7 @@ namespace PhpbbInDotnet.Services
                 );
                 foreach (var post in oldPosts)
                 {
-                    await _postService.CascadePostDelete(post, true);
+                    await _postService.CascadePostDelete(post, true, true);
                     post.ForumId = destinationForumId;
                     await _postService.CascadePostAdd(post, true);
                 }
@@ -134,7 +134,7 @@ namespace PhpbbInDotnet.Services
                 }
 
                 await conn.ExecuteAsync("DELETE FROM phpbb_posts WHERE topic_id = @topicId", new { topicId });
-                posts.ForEach(async (p) => await _postService.CascadePostDelete(p, false));
+                posts.ForEach(async (p) => await _postService.CascadePostDelete(p, false, false));
 
                 await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.DeleteTopic, logDto.UserId, topicId);
 
@@ -185,7 +185,7 @@ namespace PhpbbInDotnet.Services
 
                 foreach (var post in posts)
                 {
-                    await _postService.CascadePostDelete(post, false);
+                    await _postService.CascadePostDelete(post, false, true);
                     post.TopicId = curTopic.TopicId;
                     post.ForumId = curTopic.ForumId;
                     await _postService.CascadePostAdd(post, false);
@@ -234,7 +234,7 @@ namespace PhpbbInDotnet.Services
                 var oldTopicId = posts.First().TopicId;
                 foreach (var post in posts)
                 {
-                    await _postService.CascadePostDelete(post, false);
+                    await _postService.CascadePostDelete(post, false, true);
                     post.TopicId = newTopic.TopicId;
                     post.ForumId = newTopic.ForumId;
                     await _postService.CascadePostAdd(post, false);
@@ -270,7 +270,7 @@ namespace PhpbbInDotnet.Services
                 await conn.ExecuteAsync("DELETE FROM phpbb_posts WHERE post_id IN @postIds", new { postIds });
                 foreach (var post in posts)
                 {
-                    await _postService.CascadePostDelete(post, false);
+                    await _postService.CascadePostDelete(post, false, false);
                     await _operationLogService.LogModeratorPostAction(ModeratorPostActions.DeleteSelectedPosts, logDto.UserId, post);
                 }
 
