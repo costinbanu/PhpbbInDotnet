@@ -347,7 +347,7 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostReportMessage(int? reportPostId, short? reportReasonId, string reportDetails)
-            => await WithRegisteredUser(async (user) =>
+            => await WithRegisteredUser(async (user) => await WithValidPost(reportPostId ?? 0, async (_, _, _) =>
             {
                 var conn = await Context.GetDbConnectionAsync();
                 await conn.ExecuteAsync(
@@ -365,7 +365,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 PostId = reportPostId;
                 return await OnGet();
-            });
+            }));
 
         public async Task<IActionResult> OnPostManageReport(int? reportPostId, int? reportId, bool? redirectToEdit, bool? deletePost)
             => await WithModerator(async () =>

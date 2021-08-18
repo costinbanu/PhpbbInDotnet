@@ -413,8 +413,8 @@ namespace PhpbbInDotnet.Services
                             }
                         ),
 
-                        ["url"] = (
-                            Tag: new BBTag("url", "<a href=\"${href}\" target=\"_blank\" style=\"word-break: break-all\">", "</a>", 3, "", false,
+                        ["url"] = ( //style=\"word-break: break-all\"
+                            Tag: new BBTag("url", "<a href=\"${href}\" target=\"_blank\">", "</a>", 3, "", false,
                                 new BBAttribute("href", "", context => UrlTransformer(string.IsNullOrWhiteSpace(context?.AttributeValue) ? context.TagContent : context.AttributeValue), HtmlEncodingMode.UnsafeDontEncode)),
                             Summary: new BBTagSummary
                             {
