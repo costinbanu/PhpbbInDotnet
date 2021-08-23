@@ -26,6 +26,7 @@
   "ModeratorPostActions.DeleteSelectedPosts": "Delete selected posts",
   "ModeratorPostActions.MoveSelectedPosts": "Move selected posts",
   "ModeratorPostActions.SplitSelectedPosts": "Split selected posts to a new topic",
+  "ModeratorPostActions.DuplicateSelectedPost": "Duplicate selected posts",
 
   "ForumType.Category": "Category",
   "ForumType.SubForum": "Subforum",

@@ -2,19 +2,26 @@
 @model PhpbbInDotnet.Forum.Pages.ViewForumModel
 
 @using PhpbbInDotnet.Utilities
-@using System.Web
 @inject Services.ForumTreeService _forumService
 @inject Services.BBCodeRenderingService _renderingService
 @inject CommonUtils _utils
 
 @{
-    ViewData["Title"] = Model.ForumTitle;
+    var Lang = await Model.GetLanguage();
+    var DocumentTitle = Model.Mode switch
+    {
+        ViewForumMode.NewPosts => Model.LanguageProvider.BasicText[Lang, "NEW_POSTS", Casing.FirstUpper],
+        ViewForumMode.OwnPosts => Model.LanguageProvider.BasicText[Lang, "OWN_TOPICS", Casing.FirstUpper],
+        ViewForumMode.Drafts => Model.LanguageProvider.BasicText[Lang, "DRAFTS", Casing.FirstUpper],
+        ViewForumMode.Forum => Model.ForumTitle,
+        _ => string.Empty
+    };
+    ViewData["Title"] = DocumentTitle;
     Layout = "~/Pages/_Layout.cshtml";
     var CurrentUser = await Model.GetCurrentUserAsync();
     var IsAnonymous = CurrentUser?.IsAnonymous ?? true;
     var hasSubForums = Model.ForumId != 0 && _forumService.HasUnrestrictedChildren((await Model.GetForumTree(false, false)).Tree, Model.ForumId);
     var hasTopics = Model.Topics?.SelectMany(x => x.Topics).Any() ?? false;
-    var Lang = await Model.GetLanguage(); 
     var UserDateFormat = CurrentUser?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
 }
 
@@ -50,26 +57,26 @@
 
 @if (Model.Mode == ViewForumMode.Forum && (CurrentUser.JumpToUnread ?? false))
 {
-    <script>
-        $(document).ready(function () {
-            var element = $('.UnreadTitle');
-            if (element && element.offset()) {
-                window.scrollTo(0, element.offset().top - 20);
-            }
-        });
-    </script>
+<script>
+    $(document).ready(function () {
+        var element = $('.UnreadTitle');
+        if (element && element.offset()) {
+            window.scrollTo(0, element.offset().top - 20);
+        }
+    });
+</script>
 }
 
 @if ((Model.ParentForumId ?? 0) != 0)
 {
-    <span style="padding-bottom: 10px">
-        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "PARENT_FORUM", Casing.FirstUpper]):
-        <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@Html.Raw(Model.ParentForumTitle)</a>
-    </span>
+<span style="padding-bottom: 10px">
+    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "PARENT_FORUM", Casing.FirstUpper]):
+    <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@Html.Raw(Model.ParentForumTitle)</a>
+</span>
 }
 else
 {
-    <a href="/" style="padding-bottom: 10px">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "HOME", Casing.FirstUpper])</a>
+<a href="/" style="padding-bottom: 10px">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "HOME", Casing.FirstUpper])</a>
 }
 
 @if (!IsAnonymous)
@@ -97,21 +104,21 @@ else
 @switch (Model.Mode)
 {
     case ViewForumMode.NewPosts:
-        <h3>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "NEW_POSTS", Casing.FirstUpper])</h3>
+        <h3>@Html.Raw(DocumentTitle)</h3>
         break;
 
     case ViewForumMode.OwnPosts:
-        <h3>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "OWN_TOPICS", Casing.FirstUpper])</h3>
+        <h3>@Html.Raw(DocumentTitle)</h3>
         @Html.Raw(Model.LanguageProvider.BasicText[Lang, "OWN_TOPICS_CAPTION", Casing.FirstUpper])
         break;
 
     case ViewForumMode.Drafts:
-        <h3>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DRAFTS", Casing.FirstUpper])</h3>
+        <h3>@Html.Raw(DocumentTitle)</h3>
         @Html.Raw(Model.LanguageProvider.BasicText[Lang, "DRAFTS_CAPTION", Casing.FirstUpper])
         break;
 
     case ViewForumMode.Forum:
-        <h3>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "FORUM", Casing.FirstUpper]): @Model.ForumTitle</h3>
+        <h3>@Html.Raw($"{Model.LanguageProvider.BasicText[Lang, "FORUM", Casing.FirstUpper]}: {DocumentTitle}")</h3>
         @await Html.PartialAsync("_RulesPartial", new CustomPartials._RulesPartialModel
         {
             ForumRules = Model.ForumRules,
@@ -372,20 +379,20 @@ else if (Model.Mode == ViewForumMode.Drafts)
 
 <div style="clear:both; margin: 10px 0px 10px 0px">
     @if (hasSubForums || hasTopics)
-    {
+{
         <a href="/" class="nowrap">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "HOME", Casing.FirstUpper])</a>
         <span class="bullet">&nbsp;&bull;&nbsp;</span>
         <div class="newline"></div>
-    }
+}
     @if ((Model.ParentForumId ?? 0) != 0)
-    {
+{
         <span>
             @Html.Raw(Model.LanguageProvider.BasicText[Lang, "PARENT_FORUM", Casing.FirstUpper]):
             <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@Html.Raw(Model.ParentForumTitle)</a>
         </span>
         <span class="bullet">&nbsp;&bull;&nbsp;</span>
         <div class="newline"></div>
-    }
+}
     <span onclick="showForumTree(this)" class="SpanLikeLink nowrap">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CHOOSE_DESTINATION"])</span>
 </div>
 <p></p>
