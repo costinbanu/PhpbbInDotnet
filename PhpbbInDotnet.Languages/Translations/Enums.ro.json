@@ -26,6 +26,7 @@
   "ModeratorPostActions.DeleteSelectedPosts": "Șterge mesajele selectate",
   "ModeratorPostActions.MoveSelectedPosts": "Mută mesajele selectate",
   "ModeratorPostActions.SplitSelectedPosts": "Desparte mesajele selectate într-un nou subiect",
+  "ModeratorPostActions.DuplicateSelectedPost": "Dublează mesajele selectate",
 
   "ForumType.Category": "Categorie",
   "ForumType.SubForum": "Subforum",
