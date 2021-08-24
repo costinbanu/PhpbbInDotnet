@@ -26,17 +26,15 @@ BEGIN
 				 ON ft.forum_id=t.forum_id 
 				AND ft.user_id = @user_id
 		  WHERE @user_id <> 1
-            AND t.topic_last_post_time > @user_lastmark
-            AND ((tt.mark_time IS NOT NULL AND t.topic_last_post_time > tt.mark_time) OR (ft.mark_time IS NOT NULL AND t.topic_last_post_time > ft.mark_time))
+            AND t.topic_last_post_time > coalesce(tt.mark_time, ft.mark_time, @user_lastmark, 0)
 	)
 	SELECT m.*, @user_lastmark as user_lastmark, group_concat(p.post_id) AS post_ids
 	  FROM marktimes m
 	  JOIN phpbb_posts p
 		ON m.topic_id = p.topic_id
-	 WHERE
-       p.poster_id <> @user_id
+	 WHERE p.poster_id <> @user_id
        AND @user_id <> 1
        AND post_time > @user_lastmark
-            AND ((topic_mark_time IS NOT NULL AND post_time > topic_mark_time) OR (forum_mark_time IS NOT NULL AND post_time > forum_mark_time))
-       GROUP BY m.topic_id;
+	   AND p.post_time > coalesce(topic_mark_time, forum_mark_time, @user_lastmark, 0)
+	 GROUP BY m.topic_id;
 END
