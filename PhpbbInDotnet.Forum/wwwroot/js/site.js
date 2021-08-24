@@ -3,10 +3,10 @@ var quoteWidthBleed, quoteHeightBleed;
 
 function resizeImage(img, customMaxWidth, customMaxHeight) {
     lazyInit(customMaxWidth, customMaxHeight);
-    var quotes = $(img).parents("blockquote").length;
-    var actualParentWidth = maxWidth - quotes * quoteWidthBleed,
+    let quotes = $(img).parents("blockquote").length;
+    let actualParentWidth = maxWidth - quotes * quoteWidthBleed,
         actualParentHeight = maxHeight - quotes * quoteHeightBleed;
-    var originalWidth = img.naturalWidth,
+    let originalWidth = img.naturalWidth,
         originalHeight = img.naturalHeight,
         ratio = Math.min(actualParentHeight / originalHeight, actualParentWidth / originalWidth);
     if (ratio < 1) {
@@ -22,11 +22,11 @@ function resizeImage(img, customMaxWidth, customMaxHeight) {
 
 function resizeIFrame(frame, customMaxWidth, customMaxHeight) {
     lazyInit(customMaxWidth, customMaxHeight);
-    var quotes = $(frame).parents("blockquote").length;
-    var actualParentWidth = maxWidth - quotes * quoteWidthBleed,
+    let quotes = $(frame).parents("blockquote").length;
+    let actualParentWidth = maxWidth - quotes * quoteWidthBleed,
         actualParentHeight = maxHeight - quotes * quoteHeightBleed;
     $(frame).attr({ 'width': roundToNextEvenNumber(actualParentWidth), 'height': Math.max(roundToNextEvenNumber(actualParentHeight / 1.8), roundToNextEvenNumber((actualParentWidth) * 9 / 16)) });
-    var src = $(frame).attr('src');
+    let src = $(frame).attr('src');
     if (src.indexOf('imgur') !== -1) {
         $(frame).attr('src', src + '?w=' + actualParentWidth)
     }
@@ -41,20 +41,20 @@ function lazyInit(customMaxWidth, customMaxHeight) {
 
 //Expand collapsed menus
 function expandCollapsedMenu(menuId, buttonId, left = false) {
-    var summary = $('#' + menuId);
-    var button = $('#' + buttonId);
+    let summary = $('#' + menuId);
+    let button = $('#' + buttonId);
 
     if (!summary.is(':visible')) {
-        var top = button.offset().top + button.height() + 10;
+        let top = button.offset().top + button.height() + 10;
         if (left) {
-            var left = button.offset().left;
+            let left = button.offset().left;
             summary.css({
                 'left': left + 'px',
                 'top': top + 'px'
             });
         }
         else {
-            var right = $(window).innerWidth() - button.offset().left - button.outerWidth();
+            let right = $(window).innerWidth() - button.offset().left - button.outerWidth();
             summary.css({
                 'right': right + 'px',
                 'top': top + 'px'
@@ -69,7 +69,7 @@ function expandCollapsedMenu(menuId, buttonId, left = false) {
 
 
 function showElement(id, whenHiding, whenShowing, roundSize = false) {
-    var elem = $('#' + id);
+    let elem = $('#' + id);
 
     if (!whenHiding) {
         whenHiding = function () { }
@@ -91,7 +91,7 @@ function showElement(id, whenHiding, whenShowing, roundSize = false) {
 }
 
 function writeDate(dateString, format) {
-    var date = new Date(dateString);
+    let date = new Date(dateString);
     if (!format) {
         format = defaultDateFormat;
     }
@@ -114,10 +114,10 @@ function showForumTree(caller) {
 }
 
 function toggleHeaderLinks(curId, otherId) {
-    var other = $('#' + otherId);
-    var cur = $('#' + curId);
-    var curButton = $('#' + curId + 'Button');
-    var otherButton = $('#' + otherId + 'Button');
+    let other = $('#' + otherId);
+    let cur = $('#' + curId);
+    let curButton = $('#' + curId + 'Button');
+    let otherButton = $('#' + otherId + 'Button');
     if (other.length && other.is(':visible') && !cur.is(':visible')) {
         showElement(
             otherId,
@@ -142,8 +142,8 @@ function toggleHeaderLinks(curId, otherId) {
     );
 }
 
-function selectAllCheckboxes() {
-    var checkboxes = $('input[type=checkbox]');
+function selectAllCheckboxes(parentId = null) {
+    let checkboxes = parentId ? $(`#${parentId}`).find('input[type=checkbox]') : $('input[type=checkbox]');
     checkboxes.prop('checked', !checkboxes.prop('checked'));
 }
 

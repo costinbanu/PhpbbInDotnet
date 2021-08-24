@@ -340,15 +340,28 @@ namespace PhpbbInDotnet.Services
 
         #endregion Post
 
-        public async Task<IEnumerable<Tuple<int, string>>> GetReportedMessages()
+        public async Task<List<ReportDto>> GetReportedMessages(int forumId)
         {
             var connection = await _context.GetDbConnectionAsync();
-            return (await connection.QueryAsync(
-                @"SELECT r.post_id, jr.reason_title
-                    FROM phpbb_reports r
-                    JOIN phpbb_reports_reasons jr ON r.reason_id = jr.reason_id
-                    WHERE r.report_closed = 0"
-            )).Select(r => Tuple.Create((int)r.post_id, (string)r.reason_title));
+            return (await connection.QueryAsync<ReportDto>(
+                @"SELECT r.report_id AS id, 
+	                   rr.reason_title, 
+	                   rr.reason_description, 
+	                   r.report_text AS details, 
+	                   r.user_id AS reporter_id, 
+	                   u.username AS reporter_username, 
+	                   r.post_id,
+                       p.topic_id,
+                       t.topic_title,
+                       p.forum_id
+                  FROM phpbb_reports r
+                  JOIN phpbb_reports_reasons rr ON r.reason_id = rr.reason_id
+                  JOIN phpbb_users u on r.user_id = u.user_id
+                  LEFT JOIN phpbb_posts p ON r.post_id = p.post_id
+                  LEFT JOIN phpbb_topics t on p.topic_id = t.topic_id
+                 WHERE report_closed = 0 AND (@forumId = 0 OR p.forum_id = @forumId)",
+                new { forumId }
+            )).AsList();
         }
     }
 }

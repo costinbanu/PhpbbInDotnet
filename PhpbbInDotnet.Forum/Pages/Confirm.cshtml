@@ -89,6 +89,7 @@
         <input type="hidden" asp-for="TopicAction" />
         <input type="hidden" asp-for="PostAction" />
         <input type="hidden" asp-for="SelectedPostIds" />
+        <input type="hidden" asp-for="SelectedTopicIds" />
         <p></p>
         <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[lang, "SUBMIT", Casing.FirstUpper])" />
     </form>

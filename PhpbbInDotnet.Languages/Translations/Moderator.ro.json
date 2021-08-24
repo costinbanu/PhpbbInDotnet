@@ -9,6 +9,8 @@
   "CHOOSE_DESTINATION_TOPIC_ID": "Alege id-ul subiectului de destinație",
   "CLOSE_REPORT": "Închide raport",
   "DUPLICATE_POST": "Dublează mesaj",
+  "OPEN_REPORT": "raport deschis",
+  "OPEN_REPORTS": "rapoarte deschise",
 
   //success messages
   "TOPIC_CHANGED_SUCCESSFULLY": "Subiectul a fost modificat cu succes!",

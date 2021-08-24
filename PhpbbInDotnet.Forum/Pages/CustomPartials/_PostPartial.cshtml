@@ -151,11 +151,11 @@
                             <span>
                                 <label>
                                     @Html.Raw(_languageProvider.Moderator[Model.Language, "SELECT_FOR_MODERATION", Casing.FirstUpper])
-                                    <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @Model.Post.PostId)" @(Model.PostIdsForModerator.Contains(Model.Post.PostId) ? "checked" : "") />
+                                    <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="mod.appendToStringList(this, 'selectedPostIds')" @(Model.PostIdsForModerator.Contains(Model.Post.PostId) ? "checked" : "") />
                                 </label>
                             </span>
                             <span>
-                                <a href="javascript:vt.duplicatePost(@Model.Post.PostId)">
+                                <a href="javascript:mod.duplicatePost(@Model.Post.PostId)">
                                     2️⃣ @Html.Raw(_languageProvider.Moderator[Model.Language, "DUPLICATE_POST"])
                                 </a>
                             </span>
@@ -171,10 +171,10 @@
                             {
                                 if (!Model.IsCurrentUserMod)
                                 {
-                                    <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="vt.appendPostId(this, @Model.Post.PostId)" @(Model.PostIdsForModerator.Contains(Model.Post.PostId) ? "checked" : "") style="display:none" />
+                                    <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="mod.appendToStringList(this, 'selectedPostIds')" @(Model.PostIdsForModerator.Contains(Model.Post.PostId) ? "checked" : "") style="display:none" />
                                 }
                                 <span>
-                                    <a href="javascript:vt.deletePost(@Model.Post.PostId, @Model.ClosestPostId)">
+                                    <a href="javascript:mod.deletePost(@Model.Post.PostId, @Model.ClosestPostId)">
                                         &#x1F6AE; @Html.Raw(_languageProvider.BasicText[Model.Language, "DO_DELETE", Casing.FirstUpper])
                                     </a>
                                 </span>

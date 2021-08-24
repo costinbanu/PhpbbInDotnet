@@ -212,6 +212,12 @@ namespace PhpbbInDotnet.Utilities
         RemoveMultipleFoes
     }
 
+    public enum ModeratorPanelMode
+    {
+        TopicModeration = 0,
+        Reports
+    }
+
     public enum Casing
     {
         None,

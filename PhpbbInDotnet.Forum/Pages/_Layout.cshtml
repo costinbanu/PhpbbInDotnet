@@ -18,6 +18,7 @@
     var lang = _languageProvider.GetValidatedLanguage(currentUser, _httpContextAccessor.HttpContext?.Request);
     var dateFormat = currentUser?.UserDateFormat ?? _languageProvider.GetDefaultDateFormat(lang);
     var statistics = await _statisticsService.GetStatistics();
+    var forumId = int.TryParse(Context.Request.Query["forumId"].ToString(), out var val) ? val : 0;
 }
 
 <!DOCTYPE html>
@@ -188,7 +189,7 @@
 
                 if (await _userService.IsUserModeratorInForum(currentUser, 0))
                 {
-                    var reports = await _moderatorService.GetReportedMessages();
+                    var reports = await _moderatorService.GetReportedMessages(0);
                     if (reports.Any())
                     {
                         if (!displayedBox)
@@ -196,10 +197,10 @@
                             <p style="clear:both"></p>
                         }
                         <div class="ReportedPost" style="margin:5px; padding:5px; width: max-content; max-width: 100%">
-                            <h4>@Html.Raw(reports.Count() > 1 ? _languageProvider.BasicText[lang, "OPEN_REPORTS", Casing.Title] : _languageProvider.BasicText[lang, "OPEN_REPORT", Casing.Title])</h4>
+                            <h4>@Html.Raw(reports.Count() > 1 ? _languageProvider.Moderator[lang, "OPEN_REPORTS", Casing.Title] : _languageProvider.Moderator[lang, "OPEN_REPORT", Casing.Title])</h4>
                             @foreach (var r in reports)
                             {
-                                <a asp-page="ViewTopic" asp-page-handler="byPostId" asp-route-postId="@r.Item1">@Html.Raw(r.Item2)</a> <br />
+                                <a asp-page="ViewTopic" asp-page-handler="byPostId" asp-route-postId="@r.PostId">@Html.Raw(r.ReasonTitle)</a> <br />
                             }
                         </div>
                         displayedBox = true;
@@ -236,11 +237,19 @@
                 @_languageProvider.BasicText[lang, "TERMS", Casing.Title]
             </a>
         </p>
-        @if (await _userService.IsUserAdminInForum(currentUser, 0))
+        @if (await _userService.IsUserModeratorInForum(currentUser, forumId))
+        {
+            <p>
+                <a href="./Moderator@(forumId > 0 ? $"?forumId={forumId}" : "")" style="color:white; text-decoration:underline">
+                    @Html.Raw(_languageProvider.Moderator[lang, "MOD_PANEL", Casing.Title])
+                </a>
+            </p>
+        }
+        @if (await _userService.IsUserAdminInForum(currentUser, forumId))
         {
             <p>
                 <a asp-page="./Admin" style="color:white; text-decoration:underline">
-                    @Html.Raw(_languageProvider.BasicText[lang, "ADMIN_PANEL", Casing.Title])
+                    @Html.Raw(_languageProvider.Admin[lang, "ADMIN_PANEL", Casing.Title])
                 </a>
             </p>
         }

@@ -289,15 +289,14 @@ namespace PhpbbInDotnet.Utilities
             return $"{(Math.Sign(fileSizeInBytes) * num).ToString("##.##", CultureInfo.InvariantCulture)} {suf[place]}";
         }
 
-        public List<SelectListItem> EnumToDropDownList<T>(T? selectedItem, Func<T, string> textTransform = null, Func<T, string> valueTransform = null, string defaultText = null) where T : struct, Enum
+        public List<SelectListItem> EnumToDropDownList<T>(T? selectedItem, Func<T, string> textTransform = null, Func<T, string> valueTransform = null, string defaultText = null, Func<T, bool> valueFilter = null) where T : struct, Enum
         {
-            textTransform ??= x => Enum.GetName(typeof(T), x);
-            valueTransform ??= x => Enum.GetName(typeof(T), x);
-            var toReturn = Enum.GetNames(typeof(T)).Select(x =>
-            {
-                var val = Enum.Parse(typeof(T), x);
-                return new SelectListItem(textTransform((T)val), valueTransform((T)val), selectedItem.HasValue && Enum.GetName(selectedItem.Value.GetType(), selectedItem.Value) == x);
-            }).ToList();
+            textTransform ??= x => Enum.GetName(x);
+            valueTransform ??= x => Enum.GetName(x);
+            valueFilter ??= x => true;
+            var toReturn = Enum.GetValues<T>().Where(valueFilter).Select(
+                val => new SelectListItem(textTransform(val), valueTransform(val), selectedItem.HasValue && Enum.GetName(selectedItem.Value) == Enum.GetName(val))
+            ).ToList();
             if (!selectedItem.HasValue && !string.IsNullOrWhiteSpace(defaultText))
             {
                 toReturn.Insert(0, new SelectListItem(defaultText, "dummyValue", true, true));

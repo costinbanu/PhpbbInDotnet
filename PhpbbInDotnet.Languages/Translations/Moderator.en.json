@@ -9,6 +9,8 @@
   "CHOOSE_DESTINATION_TOPIC_ID": "Choose destination topic ID",
   "CLOSE_REPORT": "Close report",
   "DUPLICATE_POST": "Duplicate post",
+  "OPEN_REPORT": "open report",
+  "OPEN_REPORTS": "open reports",
 
   //success messages
   "TOPIC_CHANGED_SUCCESSFULLY": "The topic has been modified successfully!",
