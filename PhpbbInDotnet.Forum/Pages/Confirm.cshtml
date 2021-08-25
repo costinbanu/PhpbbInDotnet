@@ -77,13 +77,14 @@
             ViewData
         )
     </div>
-    <form action="./ViewTopic" method="get">
+    <form action="@Model.Destination" method="get">
         <input type="hidden" name="DestinationForumId" id="DestinationForumId" />
         @if (Model.ShowTopicSelector)
         {
             <h3>@Html.Raw(Model.LanguageProvider.BasicText[lang, "CHOOSE_DESTINATION_TOPIC"])</h3>
             <select name="DestinationTopicId" id="DestinationTopicId" />
         }
+        <input type="hidden" asp-for="ForumId" />
         <input type="hidden" asp-for="TopicId" />
         <input type="hidden" asp-for="PageNum" />
         <input type="hidden" asp-for="TopicAction" />

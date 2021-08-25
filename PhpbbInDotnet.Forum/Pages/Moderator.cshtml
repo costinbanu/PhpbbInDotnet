@@ -34,6 +34,7 @@
 <environment include="Development">
     <script src="~/lib/Sortable.js"></script>
     <script src="~/js/tabbedPage.js"></script>
+    <script src="~/js/moderator.js"></script>
     <link rel="stylesheet" href="~/css/admin.css" />
     <link rel="stylesheet" href="~/css/tabbedPage.css" />
     <link rel="stylesheet" href="~/css/pagination.css" />
@@ -56,6 +57,14 @@
         '',
         '',
     );
+
+    $(document).ready(function () {
+        window.onload = function () {
+            if (@Json.Serialize(Model.ScrollToAction)) {
+                document.getElementById('SubmitTopics').scrollIntoView();
+            }
+        }
+    });
 </script>
 
 <span class="@Model.MessageClass">@Html.Raw(Model.Message)</span>
@@ -72,6 +81,7 @@
 <div id="Topics" class="tabcontent" style="@(Model.Mode == ModeratorPanelMode.TopicModeration ? "display:inherit" : "display:none")">
     @{
         var isForumSelected = Model.ForumId > 0 && !string.IsNullOrWhiteSpace(Model.ForumName);
+        var ordinaryTopicsDisplayed = false;
     }
     @if (isForumSelected)
     {
@@ -97,26 +107,28 @@
             @Html.AntiForgeryToken()
         </form>
     </div>
-    <p>&nbsp;</p>
+
     @foreach (var topicGroup in Model.Topics ?? Enumerable.Empty<TopicTransport>())
     {
+        if (topicGroup.TopicType == TopicType.Announcement || topicGroup.TopicType == TopicType.Global)
+        {
+            <p>&nbsp;</p>
+            <strong>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "ANNOUNCEMENTS", Casing.Title])</strong>
+        }
+        else if (!ordinaryTopicsDisplayed)
+        {
+            <p>&nbsp;</p>
+            <strong>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "TOPICS", Casing.Title])</strong>
+            ordinaryTopicsDisplayed = true;
+        }
         foreach (var topic in topicGroup.Topics)
         {
-            <hr class="BoxSeparator" />
             <div class="FlexRow RowMargin">
-                <input name="SelectedTopics" type="checkbox" value="@topic.TopicId" form="SubmitTopics" style="margin-right:10px; align-self:safe center" onchange="mod.appendToStringList(this, 'selectedPostIds')" @(Model.GetTopicIds().Contains(topic.TopicId.Value) ? "checked" : "") />
+                <input name="SelectedTopics" type="checkbox" value="@topic.TopicId" form="SubmitTopics" style="margin-right:30px; align-self:safe center" onchange="mod.appendToStringList(this, 'selectedTopicIds')" @(Model.GetTopicIds().Contains(topic.TopicId.Value) ? "checked" : "") />
                 <a asp-page="/ViewTopic" asp-route-topicId="@topic.TopicId" asp-route-pageNum="1" class="nav-link" style="font-weight: bold; align-self: safe center">
                     @if (topicGroup.TopicType == TopicType.Important)
                     {
                         <span>&#x26A0;&#xFE0F;&nbsp;</span>
-                    }
-                    else if (topicGroup.TopicType == TopicType.Announcement)
-                    {
-                        <span>&#x1F4E3;&nbsp;</span>
-                    }
-                    else if (topicGroup.TopicType == TopicType.Global)
-                    {
-                        <span>&#x1F310;&nbsp;</span>
                     }
                     @if (topic.IsLocked)
                     {
@@ -136,10 +148,14 @@
                     Language = Lang
                 })
             </div>
+            <hr class="BoxSeparator" />
         }
     }
     @if (isForumSelected)
     {
+        <button onclick="selectAllCheckboxes('Topics')" type="button" class="MyButton SpacedButton">
+            &#x2714;&nbsp;@Html.Raw(Model.LanguageProvider.Moderator[Lang, "SELECT_ALL_REPORTS"])
+        </button>
         <form method="post" name="SubmitTopics" id="SubmitTopics" asp-page-handler="SubmitTopics">
             @Html.Raw(Model.LanguageProvider.Moderator[Lang, "WITH_SELECTED_TOPICS"]):
             @Html.DropDownList(
@@ -154,20 +170,23 @@
                  )
             <div id="extraInputTopic" style="display:@(Model.DestinationForumId > 0 ? "block" : "none")">
                 <br />
-                <input type="text" asp-for="DestinationForumId" placeholder="@Html.Raw(Model.LanguageProvider.Moderator[Lang, "DESTINATION_FORUM_ID"])" /><br />
+                <input type="text" asp-for="DestinationForumId" placeholder="@Html.Raw(Model.LanguageProvider.Moderator[Lang, "DESTINATION_FORUM_ID"])" style="width:250px" /><br />
                 <a href="javascript:$('#modConfirmation').submit();">@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CHOOSE_DESTINATION_FORUM_ID"])</a>
                 <span asp-validation-for="DestinationForumId" class="validation"></span>
             </div>
             <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT", Casing.FirstUpper])" onclick="return mod.confirmAction('#TopicAction');" class="MyButton" style="height:30px" />
+            <input type="hidden" asp-for="ForumId" />
+            <input type="hidden" asp-for="Mode" />
             @Html.AntiForgeryToken()
         </form>
         <form id="modConfirmation" asp-page="Confirm" method="get">
             <input type="hidden" asp-for="ForumId" />
+            <input type="hidden" asp-for="TopicAction" id="topicAction" />
             <input type="hidden" name="showTopicSelector" id="showTopicSelector" value="false" />
-            <input type="hidden" name="selectedPostIds" id="selectedPostIds" value="" />
+            <input type="hidden" name="selectedTopicIds" id="selectedTopicIds" value="" />
             <input type="hidden" name="postAction" id="postAction" value="" />
-            <input type="hidden" name="topicAction" id="topicAction" value="" />
             <input type="hidden" name="handler" value="ModeratorConfirmation" />
+            <input type="hidden" name="Destination" id="Destination" value="./Moderator" />
             @Html.AntiForgeryToken()
         </form>
     }

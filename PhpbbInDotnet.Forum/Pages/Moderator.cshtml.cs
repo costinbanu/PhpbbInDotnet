@@ -32,19 +32,20 @@ namespace PhpbbInDotnet.Forum.Pages
         public int[] SelectedTopics { get; set; }
 
         [BindProperty(SupportsGet = true)]
-        public int DestinationForumId { get; set; }
+        public int? DestinationForumId { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public string SelectedTopicIds { get; set; }
 
-        [BindProperty]
-        public ModeratorTopicActions TopicAction { get; set; }
+        [BindProperty(SupportsGet = true)]
+        public ModeratorTopicActions? TopicAction { get; set; }
 
         public string ForumName { get; private set; }
         public List<TopicTransport> Topics { get; private set; }
         public List<ReportDto> Reports { get; private set; }
         public string MessageClass { get; private set; }
         public string Message { get; private set; }
+        public bool ScrollToAction => TopicAction.HasValue && DestinationForumId.HasValue;
 
         public ModeratorModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils,
              IConfiguration config, AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider, ModeratorService moderatorService)
@@ -105,7 +106,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 async Task SetReports()
                     => Reports = await _moderatorService.GetReportedMessages(0);
             });
-        js error mod is undefined??? also de revenit la lista veche dupa ce se aplica actiunea (acum nu e asa)
+
         public async Task<IActionResult> OnPostSubmitReports()
             => await WithModerator(ForumId, async () =>
             {
@@ -155,7 +156,7 @@ namespace PhpbbInDotnet.Forum.Pages
                                 ModeratorTopicActions.MakeTopicImportant => await _moderatorService.ChangeTopicType(topicId, TopicType.Important, logDto),
                                 ModeratorTopicActions.MakeTopicAnnouncement => await _moderatorService.ChangeTopicType(topicId, TopicType.Announcement, logDto),
                                 ModeratorTopicActions.MakeTopicGlobal => await _moderatorService.ChangeTopicType(topicId, TopicType.Global, logDto),
-                                ModeratorTopicActions.MoveTopic => await _moderatorService.MoveTopic(topicId, DestinationForumId, logDto),
+                                ModeratorTopicActions.MoveTopic => await _moderatorService.MoveTopic(topicId, DestinationForumId ?? 0, logDto),
                                 ModeratorTopicActions.LockTopic => await _moderatorService.LockUnlockTopic(topicId, true, logDto),
                                 ModeratorTopicActions.UnlockTopic => await _moderatorService.LockUnlockTopic(topicId, false, logDto),
                                 _ => throw new NotSupportedException($"Can't perform action '{TopicAction}'")
@@ -186,6 +187,9 @@ namespace PhpbbInDotnet.Forum.Pages
                     MessageClass = "message fail";
                     Message = string.Format(LanguageProvider.Errors[await GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id);
                 }
+
+                TopicAction = null;
+                DestinationForumId = null;
                 return await OnGet();
             });
     }
