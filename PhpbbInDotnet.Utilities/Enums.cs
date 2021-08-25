@@ -215,7 +215,8 @@ namespace PhpbbInDotnet.Utilities
     public enum ModeratorPanelMode
     {
         TopicModeration = 0,
-        Reports
+        Reports,
+        RecycleBin
     }
 
     public enum Casing
@@ -240,5 +241,12 @@ namespace PhpbbInDotnet.Utilities
         Attachment,
         Avatar,
         Emoji
+    }
+
+    public enum RecycleBinItemType
+    {
+        Forum,
+        Topic,
+        Post
     }
 }

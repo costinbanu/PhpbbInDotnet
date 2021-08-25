@@ -254,27 +254,53 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
+                var lang = await GetLanguage();
                 if (!(postIds?.Any() ?? false))
                 {
-                    return (LanguageProvider.Moderator[await GetLanguage(), "ATLEAST_ONE_POST_REQUIRED"], false);
+                    return (LanguageProvider.Moderator[lang, "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
 
                 var conn = await _context.GetDbConnectionAsync();
-
                 var posts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
+                var attachments = (await conn.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id IN @postIds", new { postIds })).AsList();
                 if (posts.Count != postIds.Length || posts.Select(p => p.TopicId).Distinct().Count() != 1)
                 {
-                    return (LanguageProvider.Moderator[await GetLanguage(), "ATLEAST_ONE_POST_MOVED_OR_DELETED"], false);
+                    return (LanguageProvider.Moderator[lang, "ATLEAST_ONE_POST_MOVED_OR_DELETED"], false);
                 }
 
                 await conn.ExecuteAsync("DELETE FROM phpbb_posts WHERE post_id IN @postIds", new { postIds });
                 foreach (var post in posts)
                 {
+                    var dto = new PostDto
+                    {
+                        Attachments = attachments.Where(a => a.PostMsgId == post.PostId).Select(a => new AttachmentDto(dbRecord: a, isPreview: false, language: lang, deletedFile: true)).ToList(),
+                        AuthorId = post.PosterId,
+                        AuthorName = post.PostUsername,
+                        BbcodeUid = post.BbcodeUid,
+                        ForumId = post.ForumId,
+                        TopicId = post.TopicId,
+                        PostId = post.PostId,
+                        PostTime = post.PostTime,
+                        PostSubject = post.PostSubject,
+                        PostText = post.PostText,
+                    };
+
+                    await conn.ExecuteAsync(
+                        "INSERT INTO phpbb_recycle_bin(type, id, content, delete_time, delete_user) VALUES (@type, @id, @content, @now, @userId)",
+                        new
+                        {
+                            type = RecycleBinItemType.Post,
+                            id = post.PostId,
+                            content = await Utils.CompressObject(dto),
+                            now = DateTime.UtcNow.ToUnixTimestamp(),
+                            logDto.UserId
+                        }
+                    );
                     await _postService.CascadePostDelete(post, false, false);
                     await _operationLogService.LogModeratorPostAction(ModeratorPostActions.DeleteSelectedPosts, logDto.UserId, post);
                 }
 
-                return (LanguageProvider.Moderator[await GetLanguage(), "POSTS_DELETED_SUCCESSFULLY"], true);
+                return (LanguageProvider.Moderator[lang, "POSTS_DELETED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {

@@ -19,14 +19,16 @@ namespace PhpbbInDotnet.Services
     {
         private readonly ForumDbContext _context;
         private readonly UserService _userService;
+        private readonly StorageService _storageService;
         private readonly IAppCache _cache;
         private readonly CommonUtils _utils;
         private readonly int _maxAttachmentCount;
 
-        public PostService(ForumDbContext context, UserService userService, IAppCache cache, CommonUtils utils, IConfiguration config)
+        public PostService(ForumDbContext context, UserService userService, StorageService storageService, IAppCache cache, CommonUtils utils, IConfiguration config)
         {
             _context = context;
             _userService = userService;
+            _storageService = storageService;
             _cache = cache;
             _utils = utils;
             var countLimit = config.GetObject<AttachmentLimits>("UploadLimitsCount");
@@ -165,7 +167,7 @@ namespace PhpbbInDotnet.Services
             );
         }
 
-        public async Task CascadePostDelete(PhpbbPosts deleted, bool ignoreTopic, bool ignoreReports, int? oldTopicId = null)
+        public async Task CascadePostDelete(PhpbbPosts deleted, bool ignoreTopic, bool ignoreAttachmentsAndReports, int? oldTopicId = null)
         {
             oldTopicId ??= deleted.TopicId;
             var conn = await _context.GetDbConnectionAsync();
@@ -211,9 +213,13 @@ namespace PhpbbInDotnet.Services
                 }
             }
 
-            if (!ignoreReports)
+            if (!ignoreAttachmentsAndReports)
             {
-                await conn.ExecuteAsync("DELETE FROM phpbb_reports WHERE post_id = @postId", new { deleted.PostId });
+                await conn.ExecuteAsync(
+                    "DELETE FROM phpbb_reports WHERE post_id = @postId; " +
+                    "DELETE FROM phpbb_attachments WHERE post_msg_id = @postId", 
+                    new { deleted.PostId }
+                );
             }
 
             var curForum = await conn.QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { forumId = curTopic?.ForumId ?? deleted.ForumId });

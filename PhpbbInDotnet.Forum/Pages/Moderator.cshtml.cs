@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using PhpbbInDotnet.Objects.Deleted;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -46,6 +47,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public string MessageClass { get; private set; }
         public string Message { get; private set; }
         public bool ScrollToAction => TopicAction.HasValue && DestinationForumId.HasValue;
+        public IEnumerable<DeletedItemDto> DeletedItems { get; private set; }
 
         public ModeratorModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils,
              IConfiguration config, AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider, ModeratorService moderatorService)
@@ -66,7 +68,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGet()
             => await WithModerator(ForumId, async () =>
             {
-                await Task.WhenAll(SetForumName(), SetTopics(), SetReports());
+                await Task.WhenAll(SetForumName(), SetTopics(), SetReports(), SetDeletedItems());
                 return Page();
 
                 async Task SetForumName()
@@ -103,8 +105,21 @@ namespace PhpbbInDotnet.Forum.Pages
                         }
                     ).ToList();
                 }
+
                 async Task SetReports()
                     => Reports = await _moderatorService.GetReportedMessages(0);
+
+                async Task SetDeletedItems()
+                {
+                    DeletedItems = from rb in await Context.PhpbbRecycleBin.AsNoTracking().ToListAsync()
+                                   orderby rb.DeleteTime descending
+                                   group rb by rb.Type into groups
+                                   select new DeletedItemDto
+                                   {
+                                       Type = groups.Key,
+                                       Items = groups
+                                   };
+                }
             });
 
         public async Task<IActionResult> OnPostSubmitReports()

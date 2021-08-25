@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
+using PhpbbInDotnet.Objects.Deleted;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
 using System;
@@ -23,7 +24,7 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly StorageService _storageService;
         private readonly FileExtensionContentTypeProvider _contentTypeProvider;
 
-        public FileModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, StorageService storageService, 
+        public FileModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, StorageService storageService,
             IConfiguration config, AnonymousSessionCounter sessionCounter, CommonUtils utils, FileExtensionContentTypeProvider contentTypeProvider, LanguageProvider languageProvider)
             : base(context, forumService, userService, cache, config, sessionCounter, utils, languageProvider)
         {
@@ -43,15 +44,15 @@ namespace PhpbbInDotnet.Forum.Pages
             }
 
             var connection = await Context.GetDbConnectionAsync();
-   
+
             var file = await connection.QuerySingleOrDefaultAsync<AttachmentCheckDto>(
                 @"SELECT a.physical_filename, a.real_filename, a.mimetype, p.forum_id, p.post_id 
                     FROM phpbb_attachments a 
                     LEFT JOIN phpbb_posts p ON a.post_msg_id = p.post_id 
-                   WHERE attach_id = @id", 
+                   WHERE attach_id = @id",
                 new { id }
             );
-            
+
             if (file == null)
             {
                 return RedirectToPage("Error", new { isNotFound = true });
@@ -68,7 +69,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }
 
             return await WithValidForum(
-                file.ForumId ?? 0, 
+                file.ForumId ?? 0,
                 _ => Task.FromResult(SendToClient(file.PhysicalFilename, file.RealFilename, file.Mimetype, FileType.Attachment))
             );
         }
@@ -98,6 +99,20 @@ namespace PhpbbInDotnet.Forum.Pages
             file = getActualFileName(file);
 
             return SendToClient(file, file, null, FileType.Avatar);
+        }
+
+        public async Task<IActionResult> OnGetDeletedFile(int id, Guid correlationId)
+        {
+            try
+            {
+                var file = (await Cache.GetAsync<AttachmentDto>(Utils.GetAttachmentCacheKey(id, correlationId))) ?? throw new InvalidOperationException($"File '{id}' does not exist.");
+                return SendToClient(file.PhysicalFileName, file.DisplayName, file.MimeType, FileType.Attachment);
+            }
+            catch (Exception ex)
+            {
+                Utils.HandleErrorAsWarning(ex, "Error displaying a deleted attachment");
+                return RedirectToPage("Error", new { isNotFound = true });
+            }
         }
 
         private IActionResult SendToClient(string physicalFileName, string realFileName, string mimeType, FileType fileType)
