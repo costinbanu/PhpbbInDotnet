@@ -7,7 +7,6 @@ using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Objects.Deleted;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
 using System;

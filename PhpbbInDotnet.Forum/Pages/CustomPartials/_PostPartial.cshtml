@@ -57,9 +57,16 @@
         <div class="ForumContent VerticalContent FlexRight" id="@Model.Post.PostId" style="max-width:100%; overflow-wrap: break-word; display:flex">
             <span style="display:flex">
                 <span class="PostTitle">
-                    <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@Model.Post.PostId" class="@titleClass" target="@(Model.OpenPostLinkInNewTab ? "_blank" : "_self")">
+                    @if (Model.DisablePostTitleLink)
+                    {
                         @Html.Raw(Model.Post.PostSubject)
-                    </a>
+                    }
+                    else
+                    {
+                        <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@Model.Post.PostId" class="@titleClass" target="@(Model.OpenPostLinkInNewTab ? "_blank" : "_self")">
+                            @Html.Raw(Model.Post.PostSubject)
+                        </a>
+                    }
                 </span>
                 <span style="margin-left:auto">
                     <span class="CollapsedMenu ThemeColor" onclick="expandCollapsedMenu('summary@(Model.Post.PostId)', 'button@(Model.Post.PostId)')" id="button@(Model.Post.PostId)" style="color:@color;margin-left: auto; height:auto; width: min-content">

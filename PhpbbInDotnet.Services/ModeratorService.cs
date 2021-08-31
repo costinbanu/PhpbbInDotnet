@@ -125,16 +125,44 @@ namespace PhpbbInDotnet.Services
             try
             {
                 var conn = await _context.GetDbConnectionAsync();
-                
                 var posts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId", new { topicId })).AsList();
-                
                 if (!posts.Any())
                 {
                     return (string.Format(LanguageProvider.Moderator[await GetLanguage(), "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
                 }
 
-                await conn.ExecuteAsync("DELETE FROM phpbb_posts WHERE topic_id = @topicId", new { topicId });
-                posts.ForEach(async (p) => await _postService.CascadePostDelete(p, false, false));
+                var topic = await conn.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
+                if (topic != null)
+                {
+                    var dto = new TopicDto
+                    {
+                        ForumId = topic.ForumId,
+                        TopicId = topic.TopicId,
+                        TopicTitle = topic.TopicTitle,
+                        TopicStatus = topic.TopicStatus,
+                        TopicType = topic.TopicType,
+                        TopicLastPosterColour = topic.TopicLastPosterColour,
+                        TopicLastPosterId = topic.TopicLastPosterId,
+                        TopicLastPosterName = topic.TopicLastPosterName,
+                        TopicLastPostId = topic.TopicLastPostId,
+                        TopicLastPostTime = topic.TopicLastPostTime,     
+                        Poll = await _postService.GetPoll(topic)
+                    };
+                    await conn.ExecuteAsync(
+                        "INSERT INTO phpbb_recycle_bin(type, id, content, delete_time, delete_user) VALUES (@type, @id, @content, @now, @userId)",
+                        new
+                        {
+                            type = RecycleBinItemType.Topic,
+                            id = topic.TopicId,
+                            content = await Utils.CompressObject(dto),
+                            now = DateTime.UtcNow.ToUnixTimestamp(),
+                            logDto.UserId
+                        }
+                    );
+                    await conn.ExecuteAsync("DELETE FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
+                }
+
+                await DeletePostsCore(posts, logDto, false);
 
                 await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.DeleteTopic, logDto.UserId, topicId);
 
@@ -262,43 +290,12 @@ namespace PhpbbInDotnet.Services
 
                 var conn = await _context.GetDbConnectionAsync();
                 var posts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
-                var attachments = (await conn.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id IN @postIds", new { postIds })).AsList();
                 if (posts.Count != postIds.Length || posts.Select(p => p.TopicId).Distinct().Count() != 1)
                 {
                     return (LanguageProvider.Moderator[lang, "ATLEAST_ONE_POST_MOVED_OR_DELETED"], false);
                 }
 
-                await conn.ExecuteAsync("DELETE FROM phpbb_posts WHERE post_id IN @postIds", new { postIds });
-                foreach (var post in posts)
-                {
-                    var dto = new PostDto
-                    {
-                        Attachments = attachments.Where(a => a.PostMsgId == post.PostId).Select(a => new AttachmentDto(dbRecord: a, isPreview: false, language: lang, deletedFile: true)).ToList(),
-                        AuthorId = post.PosterId,
-                        AuthorName = post.PostUsername,
-                        BbcodeUid = post.BbcodeUid,
-                        ForumId = post.ForumId,
-                        TopicId = post.TopicId,
-                        PostId = post.PostId,
-                        PostTime = post.PostTime,
-                        PostSubject = post.PostSubject,
-                        PostText = post.PostText,
-                    };
-
-                    await conn.ExecuteAsync(
-                        "INSERT INTO phpbb_recycle_bin(type, id, content, delete_time, delete_user) VALUES (@type, @id, @content, @now, @userId)",
-                        new
-                        {
-                            type = RecycleBinItemType.Post,
-                            id = post.PostId,
-                            content = await Utils.CompressObject(dto),
-                            now = DateTime.UtcNow.ToUnixTimestamp(),
-                            logDto.UserId
-                        }
-                    );
-                    await _postService.CascadePostDelete(post, false, false);
-                    await _operationLogService.LogModeratorPostAction(ModeratorPostActions.DeleteSelectedPosts, logDto.UserId, post);
-                }
+                await DeletePostsCore(posts, logDto, true);
 
                 return (LanguageProvider.Moderator[lang, "POSTS_DELETED_SUCCESSFULLY"], true);
             }
@@ -306,6 +303,48 @@ namespace PhpbbInDotnet.Services
             {
                 var id = Utils.HandleError(ex);
                 return (string.Format(LanguageProvider.Errors[await GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+            }
+        }
+
+        private async Task DeletePostsCore(List<PhpbbPosts> posts, OperationLogDto logDto, bool shouldLog)
+        {
+            var lang = await GetLanguage();
+            var conn = await _context.GetDbConnectionAsync();
+            var postIds = posts.Select(p => p.PostId).ToList();
+            var attachments = (await conn.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id IN @postIds", new { postIds })).AsList();
+            await conn.ExecuteAsync("DELETE FROM phpbb_posts WHERE post_id IN @postIds", new { postIds });
+            foreach (var post in posts)
+            {
+                var dto = new PostDto
+                {
+                    Attachments = attachments.Where(a => a.PostMsgId == post.PostId).Select(a => new AttachmentDto(dbRecord: a, isPreview: false, language: lang, deletedFile: true)).ToList(),
+                    AuthorId = post.PosterId,
+                    AuthorName = string.IsNullOrWhiteSpace(post.PostUsername) ? LanguageProvider.BasicText[lang, "ANONYMOUS"] : post.PostUsername,
+                    BbcodeUid = post.BbcodeUid,
+                    ForumId = post.ForumId,
+                    TopicId = post.TopicId,
+                    PostId = post.PostId,
+                    PostTime = post.PostTime,
+                    PostSubject = post.PostSubject,
+                    PostText = post.PostText,
+                };
+
+                await conn.ExecuteAsync(
+                    "INSERT INTO phpbb_recycle_bin(type, id, content, delete_time, delete_user) VALUES (@type, @id, @content, @now, @userId)",
+                    new
+                    {
+                        type = RecycleBinItemType.Post,
+                        id = post.PostId,
+                        content = await Utils.CompressObject(dto),
+                        now = DateTime.UtcNow.ToUnixTimestamp(),
+                        logDto.UserId
+                    }
+                );
+                await _postService.CascadePostDelete(post, false, false);
+                if (shouldLog)
+                {
+                    await _operationLogService.LogModeratorPostAction(ModeratorPostActions.DeleteSelectedPosts, logDto.UserId, post);
+                }
             }
         }
 

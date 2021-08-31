@@ -144,7 +144,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task CascadePostAdd(PhpbbPosts added, bool ignoreTopic)
+        public async Task CascadePostAdd(PhpbbPosts added, bool ignoreTopic, bool resetLastPost = false)
         {
             var conn = await _context.GetDbConnectionAsync();
             
@@ -156,7 +156,7 @@ namespace PhpbbInDotnet.Services
 
             if (!ignoreTopic)
             {
-                await SetTopicLastPost(curTopic, added, usr);
+                await SetTopicLastPost(curTopic, added, usr, resetLastPost);
                 await SetTopicFirstPost(curTopic, added, usr, false);
             }
 
@@ -167,20 +167,20 @@ namespace PhpbbInDotnet.Services
             );
         }
 
-        public async Task CascadePostDelete(PhpbbPosts deleted, bool ignoreTopic, bool ignoreAttachmentsAndReports, int? oldTopicId = null)
+        public async Task CascadePostDelete(PhpbbPosts deleted, bool ignoreTopic, bool ignoreAttachmentsAndReports/*, int? oldTopicId = null*/)
         {
-            oldTopicId ??= deleted.TopicId;
+            //oldTopicId ??= deleted.TopicId;
             var conn = await _context.GetDbConnectionAsync();
             
             var curTopic = await conn.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { deleted.TopicId });
             if (curTopic != null)
             {
-                if (await conn.ExecuteScalarAsync<long>("SELECT COUNT(1) FROM phpbb_posts WHERE topic_id = @oldTopicId", new { oldTopicId }) == 0L && !ignoreTopic)
-                {
-                    await conn.ExecuteAsync("DELETE FROM phpbb_topics WHERE topic_id = @topicId", new { curTopic.TopicId });
-                }
-                else
-                {
+                //if (await conn.ExecuteScalarAsync<long>("SELECT COUNT(1) FROM phpbb_posts WHERE topic_id = @oldTopicId", new { oldTopicId }) == 0L && !ignoreTopic)
+                //{
+                //    await conn.ExecuteAsync("DELETE FROM phpbb_topics WHERE topic_id = @topicId", new { curTopic.TopicId });
+                //}
+                //else
+                //{
                     if (curTopic.TopicLastPostId == deleted.PostId && !ignoreTopic)
                     {
                         var lastTopicPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(
@@ -195,8 +195,8 @@ namespace PhpbbInDotnet.Services
                     if (curTopic.TopicFirstPostId == deleted.PostId && !ignoreTopic)
                     {
                         var firstPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(
-                            "SELECT * FROM phpbb_posts WHERE topic_id = @oldTopicId AND post_id <> @postId ORDER BY post_time ASC",
-                            new { oldTopicId, deleted.PostId }
+                            "SELECT * FROM phpbb_posts WHERE topic_id = @topicId AND post_id <> @postId ORDER BY post_time ASC",
+                            new { /*oldTopicId = */deleted.TopicId, deleted.PostId }
                         );
                         var firstPostUser = await _userService.GetAuthenticatedUserById(firstPost.PosterId);
 
@@ -210,7 +210,7 @@ namespace PhpbbInDotnet.Services
                             new { curTopic.TopicId }
                         );
                     }
-                }
+                //}
             }
 
             if (!ignoreAttachmentsAndReports)
@@ -240,9 +240,9 @@ namespace PhpbbInDotnet.Services
             );
         }
 
-        private async Task SetTopicLastPost(PhpbbTopics topic, PhpbbPosts post, AuthenticatedUser author, bool goBack = false)
+        private async Task SetTopicLastPost(PhpbbTopics topic, PhpbbPosts post, AuthenticatedUser author, bool hardReset = false)
         {
-            if (goBack || topic.TopicLastPostTime < post.PostTime)
+            if (hardReset || topic.TopicLastPostTime < post.PostTime)
             {
                 topic.TopicLastPostId = post.PostId;
                 topic.TopicLastPostSubject = post.PostSubject;
@@ -266,9 +266,9 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        private async Task SetForumLastPost(PhpbbForums forum, PhpbbPosts post, AuthenticatedUser author, bool goBack = false)
+        private async Task SetForumLastPost(PhpbbForums forum, PhpbbPosts post, AuthenticatedUser author, bool hardReset = false)
         {
-            if (goBack || forum.ForumLastPostTime < post.PostTime)
+            if (hardReset || forum.ForumLastPostTime < post.PostTime)
             {
                 forum.ForumLastPostId = post.PostId;
                 forum.ForumLastPostSubject = post.PostSubject;

@@ -4,7 +4,6 @@
 @using Database.Entities
 @using LazyCache
 @using Objects
-@using Objects.Deleted
 @using Services
 @using Utilities
 
@@ -69,6 +68,9 @@
             }
         }
     });
+
+    //image resize constant
+    maxWidth = window.innerWidth > 800 ? window.innerWidth * 0.5 : window.innerWidth * 0.85;
 </script>
 
 <span class="@Model.MessageClass">@Html.Raw(Model.Message)</span>
@@ -115,7 +117,7 @@
         </form>
     </div>
 
-    @foreach (var topicGroup in Model.Topics ?? Enumerable.Empty<TopicTransport>())
+    @foreach (var topicGroup in Model.Topics ?? Enumerable.Empty<TopicGroup>())
     {
         if (topicGroup.TopicType == TopicType.Announcement || topicGroup.TopicType == TopicType.Global)
         {
@@ -242,110 +244,114 @@
 </div>
 
 <div id="RecycleBin" class="tabcontent" style="@(Model.Mode == ModeratorPanelMode.RecycleBin ? "display:inherit" : "display:none")">
-    <h4>@Html.Raw(Model.LanguageProvider.Moderator[Lang, "MANAGE_DELETED_ITEMS"]): @Model.ForumName</h4>
-    @{ var correlationId = Guid.NewGuid(); }
-    @foreach (var itemGroup in Model.DeletedItems ?? Enumerable.Empty<DeletedItemDto>())
+    <h4>@Html.Raw(Model.LanguageProvider.Moderator[Lang, "MANAGE_DELETED_ITEMS"])</h4>
+    @{ 
+        var correlationId = Guid.NewGuid();
+        var atLeastOneItem = false;
+    }
+    @foreach (var itemGroup in Model.DeletedItems ?? Enumerable.Empty<DeletedItemGroup>())
     {
-        switch (itemGroup.Type)
-        {
-            case RecycleBinItemType.Forum:
-                <p>&nbsp;</p>
-                <strong>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "FORUMS", Casing.Title])</strong>
-                break;
-
-            case RecycleBinItemType.Topic:
-                <p>&nbsp;</p>
-                <strong>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "TOPICS", Casing.Title])</strong>
-                break;
-
-            case RecycleBinItemType.Post:
-                <p>&nbsp;</p>
-                <strong>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "POSTS", Casing.Title])</strong>
-                break;
-        }
-        <p></p>
-        foreach (var item in itemGroup.Items ?? Enumerable.Empty<PhpbbRecycleBin>())
-        {
-            <label style="margin-right:30px">
-                <input name="SelectedDeletedItems" type="checkbox" value="@item.Type/@item.Id" form="SubmitTopics" />
-                @Html.Raw(Model.LanguageProvider.Moderator[Lang, "SELECT_THIS"])
-            </label>
-            <span>
-                &bull;
-                @Html.Raw(Model.LanguageProvider.Moderator[Lang, "DELETED_AT"])
-                <script>
-                    writeDate('@item.DeleteTime.ToUtcTime().ToString("o")', '@UserDateFormat');
-                </script>
-                &bull;
-                @Html.Raw(Model.LanguageProvider.Moderator[Lang, "DELETED_BY"])
-                @item.DeleteUser
-            </span>
-            <p></p>
-            @switch (item.Type)
+        <h4 onclick="expandSection('@(itemGroup.Type)Section', '@(itemGroup.Type)Char')" style="cursor:pointer" id="@(itemGroup.Type)Title">
+            @switch (itemGroup.Type)
             {
                 case RecycleBinItemType.Forum:
-                    var forum = await _utils.DecompressObject<PhpbbForums>(item.Content);
-                    <span class="Caption">
-                        @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, forum.ParentId))
-                    </span>
-                    <br />
-                    <strong>
-                        @Html.Raw(forum.ForumName)
-                    </strong>
-                    @if (!string.IsNullOrWhiteSpace(forum.ForumDesc))
-                    {
-                        <br />
-                        <span class="Caption">
-                            @Html.Raw(_renderingService.BbCodeToHtml(forum.ForumDesc, forum.ForumDescUid))
-                        </span>
-                    }
+                    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "FORUMS", Casing.Title])
                     break;
 
                 case RecycleBinItemType.Topic:
-                    var topic = await _utils.DecompressObject<PhpbbTopics>(item.Content);
-                    <span class="Caption">
-                        @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, topic.ForumId))
-                    </span>
-                    <br />
-                    <strong>
-                        @Html.Raw(topic.TopicTitle)
-                    </strong>
+                    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "TOPICS", Casing.Title])
                     break;
 
                 case RecycleBinItemType.Post:
-                    var post = await _utils.DecompressObject<PostDto>(item.Content);
-                    foreach (var attach in post.Attachments)
-                    {
-                        attach.CorrelationId = correlationId;
-                        _cache.Add(_utils.GetAttachmentCacheKey(attach.Id, correlationId), attach, TimeSpan.FromMinutes(1));
-                    }
-                    @await Html.PartialAsync("_PostPartial", new _PostPartialModel
-                    {
-                        CurrentUser = await Model.GetCurrentUserAsync(),
-                        Post = post,
-                        Language = Lang,
-                        ParentHttpContext = HttpContext,
-                        ParentPageContext = PageContext,
-                        IsPostFirstInPage = true,
-                        IsPostLastInPage = true
-                    }, ViewData)
+                    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "POSTS", Casing.Title])
                     break;
             }
-            <hr class="BoxSeparator" />
-        }
+            <span id="@(itemGroup.Type)Char">&#x1F53D;</span>
+        </h4>
+        <p></p>
+        <div id="@(itemGroup.Type)Section" style="display:none">
+            @foreach (var item in itemGroup.Items ?? Enumerable.Empty<DeletedItemDto>())
+            {
+                atLeastOneItem = true;
+                <label>
+                    <input name="SelectedDeletedItems" type="checkbox" value="@item.Type/@item.Id" form="SubmitDeletedItems" />
+                    @Html.Raw(Model.LanguageProvider.Moderator[Lang, "SELECT_THIS"])
+                </label>
+                <span>
+                    &bull;
+                    @Html.Raw(Model.LanguageProvider.Moderator[Lang, "DELETED_AT"])
+                    <script>
+                    writeDate('@item.DeleteTime.ToUtcTime().ToString("o")', '@UserDateFormat');
+                    </script>
+                    &bull;
+                    @Html.Raw(Model.LanguageProvider.Moderator[Lang, "DELETED_BY"])
+                    @Html.Raw(item.DeleteUserName)
+                </span>
+                <p></p>
+                @switch (item.Type)
+                {
+                    case RecycleBinItemType.Forum:
+                        var forum = await _utils.DecompressObject<PhpbbForums>(item.Content);
+                        <span class="Caption">
+                            @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, forum.ParentId))
+                        </span>
+                        <br />
+                        <strong>
+                            @Html.Raw(forum.ForumName)
+                        </strong>
+                        @if (!string.IsNullOrWhiteSpace(forum.ForumDesc))
+                        {
+                            <br />
+                            <span class="Caption">
+                                @Html.Raw(_renderingService.BbCodeToHtml(forum.ForumDesc, forum.ForumDescUid))
+                            </span>
+                        }
+                        break;
+
+                    case RecycleBinItemType.Topic:
+                        var topic = await _utils.DecompressObject<PhpbbTopics>(item.Content);
+                        <span class="Caption">
+                            @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, topic.ForumId))
+                        </span>
+                        <br />
+                        <strong>
+                            @Html.Raw(topic.TopicTitle)
+                        </strong>
+                        break;
+
+                    case RecycleBinItemType.Post:
+                        var post = await _utils.DecompressObject<PostDto>(item.Content);
+                        foreach (var attach in post.Attachments)
+                        {
+                            attach.CorrelationId = correlationId;
+                            _cache.Add(_utils.GetAttachmentCacheKey(attach.Id, correlationId), attach, TimeSpan.FromMinutes(1));
+                        }
+                        @await Html.PartialAsync("_PostPartial", new _PostPartialModel
+                        {
+                            CurrentUser = await Model.GetCurrentUserAsync(),
+                            Post = post,
+                            Language = Lang,
+                            ParentHttpContext = HttpContext,
+                            ParentPageContext = PageContext,
+                            IsPostFirstInPage = true,
+                            IsPostLastInPage = true,
+                            DisablePostTitleLink = true
+                        }, ViewData)
+                        break;
+                }
+                <hr class="BoxSeparator" />
+            }
+            <div style="width:100%; text-align:right; font-size:1.5em">
+                <a href="#@(itemGroup.Type)Title">&#x23EB;</a>
+            </div>
+        </div>
+        <p>&nbsp;</p>
     }
-    <script>
-        maxWidth = $('#RecycleBin').width();
-    </script>
-    <button onclick="selectAllCheckboxes('Reports')" type="button" class="MyButton SpacedButton">
-        &#x2714;&nbsp;@Html.Raw(Model.LanguageProvider.Moderator[Lang, "SELECT_ALL_DELETED ITEMS"])
-    </button>
-    <input type="submit" value="&#x274E;&nbsp;@Html.Raw(Model.LanguageProvider.Moderator[Lang, "RESTORE_SELECTED_DELETED_ITEMS"])" form="SubmitReports" onclick="return confirm('@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CONFIRM_CLOSE_REPORTS"])');" class="MyButton SpacedButton" />
-    <form method="post" name="SubmitDeletedItems" id="SubmitDeletedItems" asp-page-handler="SubmitDeletedItems">
-        <input type="hidden" name="Mode" value="@ModeratorPanelMode.Reports" />
-        <input type="hidden" asp-for="ForumId" />
-        @Html.AntiForgeryToken()
-    </form>
+<form method="post" name="SubmitDeletedItems" id="SubmitDeletedItems" asp-page-handler="SubmitDeletedItems">
+    <input type="submit" value="&#x274E;&nbsp;@Html.Raw(Model.LanguageProvider.Moderator[Lang, "RESTORE_SELECTED_DELETED_ITEMS"])" onclick="return confirm('@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CONFIRM_RESTORE_DELETED_ITEMS"])');" class="MyButton SpacedButton" @(atLeastOneItem ? "" : "disabled") />
+    <input type="hidden" name="Mode" value="@ModeratorPanelMode.RecycleBin" />
+    <input type="hidden" asp-for="ForumId" />
+    @Html.AntiForgeryToken()
+</form>
     <p>&nbsp;</p>
 </div>
-

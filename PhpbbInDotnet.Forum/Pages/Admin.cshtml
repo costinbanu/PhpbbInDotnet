@@ -23,20 +23,6 @@
     <link rel="stylesheet" href="~/css/admin.min.css" />
 </environment>
 
-<script>
-    function expandSection(sectionId, charHolderId) {
-        showElement(
-            sectionId,
-            () => {
-                $('#' + charHolderId).html('&#x1F53D;');
-            },
-            () => {
-                $('#' + charHolderId).html('&#x1F53C;');
-            }
-        )
-    }
-</script>
-
 <div class="tab">
     <button class="@(Model.Category == AdminCategories.Users ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Users')">
         @Html.Raw(Model.LanguageProvider.Admin[lang, "ADMIN_USERS"])

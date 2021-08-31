@@ -8,6 +8,7 @@
   "REPORT_ERROR_WITH_ID_FORMAT": "Dacă eroarea persistă, scrieți la <a href=\"mailto:{0}\">{0}</a> și includeți IDul de mai sus.",
   "REPORT_ERROR_FORMAT": "Dacă eroarea persistă, scrieți la <a href=\"mailto:{0}\">{0}</a>.",
   "MISSING_REQUIRED_FIELD": "Acest câmp este obligatoriu.",
+  "MISSING_REQUIRED_PERMISSIONS": "Nu ești autorizat să execuți acțiunea dorită.",
 
   //authentication
   "CONFIRM_ERROR": "A intervenit o eroare - utilizatorul nu există sau codul de resetare a parolei este greșit.",

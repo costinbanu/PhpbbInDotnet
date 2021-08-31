@@ -177,3 +177,15 @@ function getMonthNames(lang) {
     }
     return toReturn;
 }
+
+function expandSection(sectionId, charHolderId) {
+    showElement(
+        sectionId,
+        () => {
+            $('#' + charHolderId).html('&#x1F53D;');
+        },
+        () => {
+            $('#' + charHolderId).html('&#x1F53C;');
+        }
+    )
+}

@@ -46,6 +46,8 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
 
         public Guid? CorrelationId { get; set; }
 
+        public bool DisablePostTitleLink { get; set; }
+
         public HttpContext ParentHttpContext { get; set; }
 
         public PageContext ParentPageContext { get; set; }
