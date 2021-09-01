@@ -128,6 +128,15 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnGet()
         {
+            if (_currentForum != null && _currentTopic != null)
+            {
+                return await toDo(_currentForum, _currentTopic);
+            }
+            else
+            {
+                return await WithValidTopic(TopicId ?? 0, (curForum, curTopic) => toDo(curForum, curTopic));
+            }
+
             async Task<IActionResult> toDo(PhpbbForums curForum, PhpbbTopics curTopic)
             {
                 _currentTopic = curTopic;
@@ -140,36 +149,35 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumId = curForum?.ForumId;
                 ForumTitle = HttpUtility.HtmlDecode(curForum?.ForumName ?? "untitled");
 
-                await GetPostsLazy(TopicId, PageNum, null);
+                var postsTask = GetPostsLazy(TopicId, PageNum, null);
 
                 Paginator = new Paginator(_count.Value, PageNum.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId, await GetCurrentUserAsync());
-                Poll = await _postService.GetPoll(_currentTopic);
+                var pollTask = _postService.GetPoll(_currentTopic);
 
                 TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
                 ForumRulesLink = curForum.ForumRulesLink;
                 ForumRules = curForum.ForumRules;
                 ForumRulesUid = curForum.ForumRulesUid;
 
-                if (await IsTopicUnread(ForumId ?? 0, TopicId ?? 0))
-                {
-                    await MarkTopicRead(ForumId ?? 0, TopicId ?? 0, Paginator.IsLastPage, Posts.DefaultIfEmpty().Max(p => p?.PostTime ?? 0L));
-                }
-
-                await (await Context.GetDbConnectionAsync()).ExecuteAsync(
-                    "UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId", 
+                var markAsReadTask = MarkAsRead();
+                var updateViewCountTask =  (await Context.GetDbConnectionAsync()).ExecuteAsync(
+                    "UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId",
                     new { topicId = TopicId.Value }
                 );
+
+                await Task.WhenAll(postsTask, pollTask, markAsReadTask, updateViewCountTask);
+
+                Poll = await pollTask;
 
                 return Page();
             }
 
-            if (_currentForum != null && _currentTopic != null)
+            async Task MarkAsRead()
             {
-                return await toDo(_currentForum, _currentTopic);
-            }
-            else
-            {
-                return await WithValidTopic(TopicId ?? 0, async (curForum, curTopic) => await toDo(curForum, curTopic));
+                if (await IsTopicUnread(ForumId ?? 0, TopicId ?? 0))
+                {
+                    await MarkTopicRead(ForumId ?? 0, TopicId ?? 0, Paginator.IsLastPage, Posts.DefaultIfEmpty().Max(p => p?.PostTime ?? 0L));
+                }
             }
         }
 
@@ -196,7 +204,7 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostVote(int topicId, int[] votes, string queryString)
-            => await WithRegisteredUser(async (user) => await WithValidTopic(topicId, async (_, topic) =>
+            => await WithRegisteredUser((user) => WithValidTopic(topicId, async (_, topic) =>
             {
                 var conn = await Context.GetDbConnectionAsync();
                 
@@ -214,17 +222,16 @@ namespace PhpbbInDotnet.Forum.Pages
                                     from j in joined.DefaultIfEmpty()
                                     where j == default
                                     select prev.PollOptionId;
-                await conn.ExecuteAsync(
-                    "DELETE FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @UserId AND poll_option_id IN @noLongerVoted",
-                    new { topicId, user.UserId, noLongerVoted = noLongerVoted.DefaultIfEmpty() }
-                );
-                foreach (var vote in noLongerVoted)
-                {
-                    await conn.ExecuteAsync(
+                await Task.WhenAll(
+                    conn.ExecuteAsync(
+                        "DELETE FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @UserId AND poll_option_id IN @noLongerVoted",
+                        new { topicId, user.UserId, noLongerVoted = noLongerVoted.DefaultIfEmpty() }
+                    ),
+                    conn.ExecuteAsync(
                         "UPDATE phpbb_poll_options SET poll_option_total = poll_option_total - 1 WHERE topic_id = @topicId AND poll_option_id = @vote",
-                        new { topicId, vote }
-                    );
-                }
+                        noLongerVoted.Select(vote => new { topicId, vote })
+                    )
+                );
 
                 var newVotes = from cur in votes
                                join prev in existingVotes
@@ -234,18 +241,16 @@ namespace PhpbbInDotnet.Forum.Pages
                                where j == default
                                select cur;
 
-                foreach (var vote in newVotes)
-                {
-                    await conn.ExecuteAsync(
+                await Task.WhenAll(
+                    conn.ExecuteAsync(
                         "INSERT INTO phpbb_poll_votes (topic_id, poll_option_id, vote_user_id, vote_user_ip) VALUES (@topicId, @vote, @UserId, @usrIp)",
-                        new { topicId, vote, user.UserId, usrIp = HttpContext.Connection.RemoteIpAddress.ToString() }
-                    );
-                    await conn.ExecuteAsync(
+                        newVotes.Select(vote => new { topicId, vote, user.UserId, usrIp = HttpContext.Connection.RemoteIpAddress.ToString() })
+                    ),
+                    conn.ExecuteAsync(
                         "UPDATE phpbb_poll_options SET poll_option_total = poll_option_total + 1 WHERE topic_id = @topicId AND poll_option_id = @vote",
-                        new { topicId, vote }
-                    );
-                }
-
+                        newVotes.Select(vote => new { topicId, vote })
+                    )
+                );
                 return Redirect($"./ViewTopic{HttpUtility.UrlDecode(queryString)}");
             }));
 
@@ -278,11 +283,10 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 else if (TopicAction == ModeratorTopicActions.MoveTopic && (IsSuccess ?? false))
                 {
-                    var destinations = new List<string>
-                    {
-                        await Utils.CompressAndEncode($"<a href=\"./ViewForum?forumId={DestinationForumId ?? 0}\">{LanguageProvider.BasicText[lang, "GO_TO_NEW_FORUM"]}</a>"),
-                        await Utils.CompressAndEncode($"<a href=\"./ViewTopic?topicId={TopicId}&pageNum={PageNum}\">{LanguageProvider.BasicText[lang, "GO_TO_LAST_TOPIC"]}</a>")
-                    };
+                    var destinations = Task.WhenAll(
+                        Utils.CompressAndEncode($"<a href=\"./ViewForum?forumId={DestinationForumId ?? 0}\">{LanguageProvider.BasicText[lang, "GO_TO_NEW_FORUM"]}</a>"),
+                        Utils.CompressAndEncode($"<a href=\"./ViewTopic?topicId={TopicId}&pageNum={PageNum}\">{LanguageProvider.BasicText[lang, "GO_TO_LAST_TOPIC"]}</a>")
+                    );
                     return RedirectToPage("Confirm", "DestinationConfirmation", new { destinations });
                 }
                 else
@@ -293,7 +297,7 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostPostModerator()
-            => await WithModerator(ForumId ?? 0, async () => await ModeratePosts());
+            => await WithModerator(ForumId ?? 0, () => ModeratePosts());
 
         public async Task<IActionResult> OnPostDeleteMyMessage()
             => await WithRegisteredUser(async (user) =>
@@ -347,7 +351,7 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostReportMessage(int? reportPostId, short? reportReasonId, string reportDetails)
-            => await WithRegisteredUser(async (user) => await WithValidPost(reportPostId ?? 0, async (_, _, _) =>
+            => await WithRegisteredUser((user) => WithValidPost(reportPostId ?? 0, async (_, _, _) =>
             {
                 var conn = await Context.GetDbConnectionAsync();
                 await conn.ExecuteAsync(

@@ -59,14 +59,14 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
 
                 ForumTitle = HttpUtility.HtmlDecode(thisForum?.ForumName ?? "untitled");
-                IEnumerable<TopicDto> topics;
 
                 var connection = await Context.GetDbConnectionAsync();
                 
-                var parent = await connection.QuerySingleOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @ParentId", new { thisForum.ParentId });
-                ParentForumId = parent?.ForumId;
-                ParentForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? Config.GetValue<string>("ForumName"));
-                topics = await connection.QueryAsync<TopicDto>(
+                var parentTask = connection.QuerySingleOrDefaultAsync<PhpbbForums>(
+                    "SELECT * FROM phpbb_forums WHERE forum_id = @ParentId", 
+                    new { thisForum.ParentId }
+                );
+                var topicsTask = connection.QueryAsync<TopicDto>(
                     @"SELECT t.topic_id, 
 		                    t.forum_id,
 		                    t.topic_title, 
@@ -86,11 +86,12 @@ namespace PhpbbInDotnet.Forum.Pages
                     ORDER BY topic_last_post_time DESC",
                     new { ForumId, topicType = TopicType.Global }
                 );
-                
-                (Forums, _) = await GetForumTree(_forceTreeRefresh, true);
+                var treeTask = GetForumTree(_forceTreeRefresh, true);
+
+                await Task.WhenAll(parentTask, topicsTask, treeTask);
 
                 Topics = (
-                    from t in topics
+                    from t in await topicsTask
 
                     group t by t.TopicType into groups
                     orderby groups.Key descending
@@ -100,7 +101,10 @@ namespace PhpbbInDotnet.Forum.Pages
                         Topics = groups
                     }
                 ).ToList();
-
+                var parent = await parentTask;
+                ParentForumId = parent?.ForumId;
+                ParentForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? Config.GetValue<string>("ForumName"));
+                (Forums, _) = await treeTask;
                 ForumRulesLink = thisForum.ForumRulesLink;
                 ForumRules = thisForum.ForumRules;
                 ForumRulesUid = thisForum.ForumRulesUid;
@@ -113,12 +117,14 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (user) =>
             {
                 var tree = await GetForumTree(_forceTreeRefresh, true);
-                IEnumerable<TopicDto> topics = null;
                 var topicList = tree.Tracking.SelectMany(t => t.Value).Select(t => t.TopicId).Distinct();
-                var restrictedForums = await ForumService.GetRestrictedForumList(await GetCurrentUserAsync());
-                var connection = await Context.GetDbConnectionAsync();
 
-                topics = await connection.QueryAsync<TopicDto>(
+                var restrictedForumsTask = GetRestrictedForums();
+                var connectionTask = Context.GetDbConnectionAsync();
+
+                await Task.WhenAll(restrictedForumsTask, connectionTask);
+
+                var topics = await (await connectionTask).QueryAsync<TopicDto>(
                     @"SELECT t.topic_id, 
 	                            t.forum_id,
 	                            t.topic_title, 
@@ -141,7 +147,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         topicList = topicList.DefaultIfEmpty(),
                         skip = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE,
                         take = Constants.DEFAULT_PAGE_SIZE,
-                        restrictedForumList = restrictedForums.Select(f => f.forumId).DefaultIfEmpty()
+                        restrictedForumList = await restrictedForumsTask
                     }
                 );
 
@@ -157,17 +163,17 @@ namespace PhpbbInDotnet.Forum.Pages
                 var tree = await GetForumTree(false, true);
                 IEnumerable<TopicDto> topics = null;
                 var totalCount = 0;
-                var restrictedForums = await ForumService.GetRestrictedForumList(await GetCurrentUserAsync());
-                var connection = await Context.GetDbConnectionAsync();
+                var restrictedForumsTask = GetRestrictedForums();
+                var connectionTask = Context.GetDbConnectionAsync();
                 
-                using var multi = await connection.QueryMultipleAsync(
+                using var multi = await (await connectionTask).QueryMultipleAsync(
                     sql: "CALL get_own_topics(@userId, @skip, @take, @restrictedForumList)",
                     param: new
                     {
                         user.UserId,
                         skip = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE,
                         take = Constants.DEFAULT_PAGE_SIZE,
-                        restrictedForumList = string.Join(',', restrictedForums.Select(f => f.forumId).DefaultIfEmpty())
+                        restrictedForumList = string.Join(',', await restrictedForumsTask)
                     }
                 );
                 topics = await multi.ReadAsync<TopicDto>();
@@ -183,18 +189,18 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (user) =>
             {
                 IEnumerable<TopicDto> topics = null;
-                var restrictedForums = await ForumService.GetRestrictedForumList(await GetCurrentUserAsync());
+                var restrictedForumsTask = GetRestrictedForums();
                 var count = 0;
-                var connection = await Context.GetDbConnectionAsync();
+                var connectionTask = Context.GetDbConnectionAsync();
                 
-                using var multi = await connection.QueryMultipleAsync(
+                using var multi = await (await connectionTask).QueryMultipleAsync(
                     sql: "CALL get_drafts(@userId, @skip, @take, @restrictedForumList);",
                     param: new
                     {
                         user.UserId,
                         skip = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE,
                         take = Constants.DEFAULT_PAGE_SIZE,
-                        restrictedForumList = string.Join(',', restrictedForums.Select(f => f.forumId).DefaultIfEmpty())
+                        restrictedForumList = string.Join(',', await restrictedForumsTask)
                     }
                 );
                 topics = await multi.ReadAsync<TopicDto>();
@@ -208,7 +214,7 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostMarkForumsRead()
-            => await WithRegisteredUser(async (_) => await WithValidForum(ForumId, ForumId == 0, async (_) =>
+            => await WithRegisteredUser((_) => WithValidForum(ForumId, ForumId == 0, async (_) =>
             {
                 await MarkForumAndSubforumsRead(ForumId);
                 _forceTreeRefresh = true;
@@ -216,7 +222,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }));
 
         public async Task<IActionResult> OnPostMarkTopicsRead()
-            => await WithRegisteredUser(async (_) => await WithValidForum(ForumId, async (_) =>
+            => await WithRegisteredUser((_) => WithValidForum(ForumId, async (_) =>
              {
                  await MarkForumRead(ForumId);
                  _forceTreeRefresh = true;
@@ -248,5 +254,11 @@ namespace PhpbbInDotnet.Forum.Pages
                 await connection.ExecuteAsync("DELETE FROM phpbb_drafts WHERE draft_id IN @ids", new { ids = SelectedDrafts?.DefaultIfEmpty() ?? new[] { 0 } });
                 return await OnGetDrafts();
             });
+
+        private async Task<IEnumerable<int>> GetRestrictedForums()
+        {
+            var restrictedForums = await ForumService.GetRestrictedForumList(await GetCurrentUserAsync());
+            return restrictedForums.Select(f => f.forumId).DefaultIfEmpty();
+        }
     }
 }

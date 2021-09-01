@@ -68,8 +68,8 @@ namespace PhpbbInDotnet.Forum
             if (!(user?.Identity?.IsAuthenticated ?? false))
             {
                 user = await UserService.GetAnonymousClaimsPrincipal();
-                _currentUser = await UserService.ClaimsPrincipalToAuthenticatedUser(user);
-                await HttpContext.SignInAsync(
+                var currentUserTask = UserService.ClaimsPrincipalToAuthenticatedUser(user);
+                var signInTask = HttpContext.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme,
                     user,
                     new AuthenticationProperties
@@ -79,6 +79,8 @@ namespace PhpbbInDotnet.Forum
                         IsPersistent = true,
                     }
                 );
+                await Task.WhenAll(currentUserTask, signInTask);
+                _currentUser = await currentUserTask;
             }
             else
             {
@@ -393,8 +395,8 @@ namespace PhpbbInDotnet.Forum
             return await toDo(curForum);
         }
 
-        protected async Task<IActionResult> WithValidForum(int forumId, Func<PhpbbForums, Task<IActionResult>> toDo)
-            => await WithValidForum(forumId, false, toDo);
+        protected Task<IActionResult> WithValidForum(int forumId, Func<PhpbbForums, Task<IActionResult>> toDo)
+            => WithValidForum(forumId, false, toDo);
 
         protected async Task<IActionResult> WithValidTopic(int topicId, Func<PhpbbForums, PhpbbTopics, Task<IActionResult>> toDo)
         {
@@ -406,7 +408,7 @@ namespace PhpbbInDotnet.Forum
             {
                 return RedirectToPage("Error", new { isNotFound = true });
             }
-            return await WithValidForum(curTopic.ForumId, async (curForum) => await toDo(curForum, curTopic));
+            return await WithValidForum(curTopic.ForumId, curForum => toDo(curForum, curTopic));
         }
 
         protected async Task<IActionResult> WithValidPost(int postId, Func<PhpbbForums, PhpbbTopics, PhpbbPosts, Task<IActionResult>> toDo)
@@ -418,7 +420,7 @@ namespace PhpbbInDotnet.Forum
             {
                 return RedirectToPage("Error", new { isNotFound = true });
             }
-            return await WithValidTopic(curPost.TopicId, async (curForum, curTopic) => await toDo(curForum, curTopic, curPost));
+            return await WithValidTopic(curPost.TopicId, (curForum, curTopic) => toDo(curForum, curTopic, curPost));
         }
 
         #endregion Permission validation wrappers

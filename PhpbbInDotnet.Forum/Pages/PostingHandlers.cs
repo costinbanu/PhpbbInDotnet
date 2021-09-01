@@ -20,7 +20,7 @@ namespace PhpbbInDotnet.Forum.Pages
         #region GET
 
         public async Task<IActionResult> OnGetForumPost()
-            => await WithRegisteredUser(async (user) => await WithValidTopic(TopicId ?? 0, async (curForum, curTopic) =>
+            => await WithRegisteredUser((user) => WithValidTopic(TopicId ?? 0, async (curForum, curTopic) =>
             {
                 CurrentForum = curForum;
                 CurrentTopic = curTopic;
@@ -48,7 +48,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 if (string.IsNullOrWhiteSpace(curAuthor))
                 {
                     var conn = await Context.GetDbConnectionAsync();
-                    curAuthor = (await conn.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @posterId", new { curPost.PosterId }))?.Username ?? "Anonymous";
+                    curAuthor = await conn.QueryFirstOrDefaultAsync<string>("SELECT username FROM phpbb_users WHERE user_id = @posterId", new { curPost.PosterId }) ?? "Anonymous";
                 }
 
                 CurrentForum = curForum;
@@ -69,7 +69,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 CurrentForum = curForum;
                 CurrentTopic = null;
                 Action = PostingActions.NewTopic;
-                //await Init();
                 var conn = await Context.GetDbConnectionAsync();
                 var draft = conn.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = 0 }); 
                 if (draft != null)

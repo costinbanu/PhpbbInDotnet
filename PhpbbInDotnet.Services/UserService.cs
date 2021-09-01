@@ -82,9 +82,7 @@ namespace PhpbbInDotnet.Services
                 return _anonymousDbUser;
             }
             var connection = await _context.GetDbConnectionAsync();
-
             _anonymousDbUser = await connection.QuerySingleOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId = Constants.ANONYMOUS_USER_ID });
-
             return _anonymousDbUser;
         }
 
@@ -94,35 +92,32 @@ namespace PhpbbInDotnet.Services
             {
                 return _anonymousClaimsPrincipal;
             }
-
             _anonymousClaimsPrincipal = await DbUserToClaimsPrincipal(await GetAnonymousDbUser());
             return _anonymousClaimsPrincipal;
         }
 
         public async Task<ClaimsPrincipal> DbUserToClaimsPrincipal(PhpbbUsers user)
         {
+            var userDetailsTask = GetUserDetails(user.UserId);
             var connection = await _context.GetDbConnectionAsync();
-            using var multi = await connection.QueryMultipleAsync(
-                @"CALL `forum`.`get_user_details`(@UserId);
-
-                SELECT g.group_edit_time, g.group_user_upload_size
-                  FROM phpbb_groups g
-                  JOIN phpbb_users u ON g.group_id = u.group_id
-                 WHERE u.user_id = @UserId
-                 LIMIT 1;
-
-                SELECT style_name 
-                  FROM phpbb_styles 
-                 WHERE style_id = @UserStyle", 
-                new { user.UserId, user.UserStyle }
+            var groupPropertiesTask = connection.QueryFirstOrDefaultAsync(
+                @"SELECT g.group_edit_time, g.group_user_upload_size
+                    FROM phpbb_groups g
+                    JOIN phpbb_users u ON g.group_id = u.group_id
+                   WHERE u.user_id = @UserId",
+                new { user.UserId }
             );
-
-            var permissions = new HashSet<AuthenticatedUser.Permissions>(await multi.ReadAsync<AuthenticatedUser.Permissions>());
-            var tpp = (await multi.ReadAsync()).ToDictionary(x => checked((int)x.topic_id), y => checked((int)y.post_no));
-            var foes = new HashSet<int>((await multi.ReadAsync<uint>()).Select(x => unchecked((int)x)));
-            var groupProperties = await multi.ReadFirstOrDefaultAsync();
+            var styleTask = connection.QueryFirstOrDefaultAsync<string>(
+                @"SELECT style_name 
+                    FROM phpbb_styles 
+                   WHERE style_id = @UserStyle",
+                new { user.UserStyle }
+            );
+            await Task.WhenAll(userDetailsTask, groupPropertiesTask, styleTask);
+            var (permissions, tpp, foes) = await userDetailsTask;
+            var groupProperties = await groupPropertiesTask;
             var editTime = unchecked((int)groupProperties.group_edit_time);
-            var style = await multi.ReadFirstOrDefaultAsync<string>();
+            var style = await styleTask;
 
             var intermediary = new AuthenticatedUser
             {
@@ -143,9 +138,20 @@ namespace PhpbbInDotnet.Services
                 EmailAddress = user.UserEmail
             };
 
+            //todo: add claims one by one and stop doing this.
             var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
             identity.AddClaim(new Claim(ClaimTypes.UserData, Convert.ToBase64String(await Utils.CompressObject(intermediary))));
             return new ClaimsPrincipal(identity);
+
+            async Task<(HashSet<AuthenticatedUser.Permissions> permissions, Dictionary<int, int> topicPostsPerPage, HashSet<int> foes)> GetUserDetails(int userId)
+            {
+                var connection = await _context.GetDbConnectionAsync();
+                using var multi = await connection.QueryMultipleAsync("CALL get_user_details(@userId)", new { userId });
+                var permissions = new HashSet<AuthenticatedUser.Permissions>(await multi.ReadAsync<AuthenticatedUser.Permissions>());
+                var tpp = (await multi.ReadAsync()).ToDictionary(x => checked((int)x.topic_id), y => checked((int)y.post_no));
+                var foes = new HashSet<int>((await multi.ReadAsync<uint>()).Select(x => unchecked((int)x)));
+                return (permissions, tpp, foes);
+            }
         }
 
         public async new Task<AuthenticatedUser> ClaimsPrincipalToAuthenticatedUser(ClaimsPrincipal principal)
