@@ -9,5 +9,8 @@
         public int ReporterId { get; set; }
         public string ReporterUsername { get; set; }
         public int PostId { get; set; }
+        public int ForumId { get; set; }
+        public int TopicId { get; set; }
+        public string TopicTitle { get; set; }
     }
 }

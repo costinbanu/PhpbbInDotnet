@@ -142,6 +142,9 @@ namespace PhpbbInDotnet.Forum
             services.AddDbContext<ForumDbContext>(options => options.UseMySQL(Configuration["ForumDbConnectionString"], o => o.CommandTimeout(60)), ServiceLifetime.Scoped);
             services.AddLazyCache();
 
+            services.AddHostedService<DailyCleanupService>();
+            services.Configure<HostOptions>(opts => opts.ShutdownTimeout = TimeSpan.FromMinutes(5));
+
             DefaultTypeMap.MatchNamesWithUnderscores = true;
         }
 

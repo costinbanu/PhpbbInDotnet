@@ -23,7 +23,7 @@ namespace PhpbbInDotnet.Forum.Pages
         private bool _forceTreeRefresh;
 
         public HashSet<ForumTree> Forums { get; private set; }
-        public List<TopicTransport> Topics { get; private set; }
+        public List<TopicGroup> Topics { get; private set; }
         public string ForumRulesLink { get; private set; }
         public string ForumRules { get; private set; }
         public string ForumRulesUid { get; private set; }
@@ -94,7 +94,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                     group t by t.TopicType into groups
                     orderby groups.Key descending
-                    select new TopicTransport
+                    select new TopicGroup
                     {
                         TopicType = groups.Key,
                         Topics = groups
@@ -145,7 +145,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     }
                 );
 
-                Topics = new List<TopicTransport> { new TopicTransport { Topics = topics } };
+                Topics = new List<TopicGroup> { new TopicGroup { Topics = topics } };
                 Mode = ViewForumMode.NewPosts;
                 Paginator = new Paginator(count: topicList.Count(), pageNum: PageNum ?? 1, link: "/ViewForum?handler=NewPosts&pageNum=1", topicId: null);
                 return Page();
@@ -173,7 +173,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 topics = await multi.ReadAsync<TopicDto>();
                 totalCount = unchecked((int)await multi.ReadSingleAsync<long>());
 
-                Topics = new List<TopicTransport> { new TopicTransport { Topics = topics.OrderByDescending(t => t.LastPostTime) } };
+                Topics = new List<TopicGroup> { new TopicGroup { Topics = topics.OrderByDescending(t => t.LastPostTime) } };
                 Mode = ViewForumMode.OwnPosts;
                 Paginator = new Paginator(count: totalCount, pageNum: PageNum ?? 1, link: "/ViewForum?handler=OwnPosts&pageNum=1", topicId: null);
                 return Page();
@@ -201,7 +201,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 count = unchecked((int)await multi.ReadSingleAsync<long>());
                 
 
-                Topics = new List<TopicTransport> { new TopicTransport { Topics = topics } };
+                Topics = new List<TopicGroup> { new TopicGroup { Topics = topics } };
                 Mode = ViewForumMode.Drafts;
                 Paginator = new Paginator(count: count, pageNum: PageNum ?? 1, link: "/ViewForum?handler=drafts&pageNum=1", topicId: null);
                 return Page();

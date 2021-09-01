@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="~/css/pagination.css" />
     <link rel="stylesheet" href="~/css/posting.css" />
     <script type="text/javascript" src="~/js/viewTopic.js"></script>
+    <script type="text/javascript" src="~/js/moderator.js"></script>
     <script type="text/javascript" src="~/lib/he.js"></script>
 </environment>
 @if (!Model.IsAuthorSearch && !Model.IsAttachmentSearch)
@@ -32,7 +33,7 @@
     <h3>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEARCH"])</h3>
 }
 <script type="text/javascript">
-    var vt = new ViewTopic(-1, false, '', '', '', -1);
+    var vt = new ViewTopic(-1, false, -1);
 
     $(document).ready(function () {
         window.onload = function () {

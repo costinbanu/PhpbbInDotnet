@@ -1,9 +1,8 @@
-﻿using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Utilities;
+﻿using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
 
-namespace PhpbbInDotnet.Forum.Pages
+namespace PhpbbInDotnet.Objects
 {
     public class TopicDto
     {
@@ -41,12 +40,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public bool IsLocked => TopicStatus == 1;
 
-    }
+        public PollDto Poll { get; set; }
 
-    public class TopicTransport
-    {
-        public TopicType? TopicType { get; set; } = null;
-
-        public IEnumerable<TopicDto> Topics { get; set; }
     }
 }

@@ -326,9 +326,9 @@ namespace PhpbbInDotnet.Forum
             return await toDo(user);
         }
 
-        protected async Task<IActionResult> WithModerator(Func<Task<IActionResult>> toDo)
+        protected async Task<IActionResult> WithModerator(int forumId, Func<Task<IActionResult>> toDo)
         {
-            if (!await IsCurrentUserModeratorHere())
+            if (!await IsCurrentUserModeratorHere(forumId))
             {
                 return RedirectToPage("Login", new { ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString) });
             }

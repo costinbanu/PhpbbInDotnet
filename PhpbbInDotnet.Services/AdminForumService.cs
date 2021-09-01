@@ -248,6 +248,33 @@ namespace PhpbbInDotnet.Services
                     return (string.Format(LanguageProvider.Admin[lang, "CANT_DELETE_HAS_TOPICS_FORMAT"], forum.ForumName), false);
                 }
 
+                var dto = new ForumDto
+                {
+                    ForumId = forum.ForumId,
+                    ForumName = forum.ForumName,
+                    ForumDesc = forum.ForumDesc,
+                    ForumPassword = forum.ForumPassword,
+                    ParentId = forum.ParentId,
+                    ForumType = forum.ForumType,
+                    ForumRules = forum.ForumRules,
+                    ForumRulesLink = forum.ForumRulesLink,
+                    LeftId = forum.LeftId,
+                    ForumLastPostId = forum.ForumLastPostId,
+                    ForumLastPosterId = forum.ForumLastPosterId,
+                    ForumLastPostSubject = forum.ForumLastPostSubject,
+                    ForumLastPostTime = forum.ForumLastPostTime,
+                    ForumLastPosterName = forum.ForumLastPosterName,
+                    ForumLastPosterColour = forum.ForumLastPosterColour
+                };
+                await _context.PhpbbRecycleBin.AddAsync(new PhpbbRecycleBin
+                {
+                    Id = forum.ForumId,
+                    Type = RecycleBinItemType.Forum,
+                    Content = await Utils.CompressObject(dto),
+                    DeleteTime = DateTime.UtcNow.ToUnixTimestamp(),
+                    DeleteUser = adminUserId
+                });
+
                 _context.PhpbbForums.Remove(forum);
                 await _context.SaveChangesAsync();
 

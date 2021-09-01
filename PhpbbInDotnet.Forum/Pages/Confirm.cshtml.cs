@@ -43,6 +43,12 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public string SelectedPostIds { get; set; }
 
+        [BindProperty(SupportsGet = true)]
+        public string SelectedTopicIds { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public string Destination { get; set; }
+
         public bool IsModeratorConfirmation { get; private set; } = false;
 
         public bool IsDestinationConfirmation { get; private set; } = false;

@@ -45,6 +45,7 @@
       "wwwroot/js/site.js",
       "wwwroot/js/tabbedPage.js",
       "wwwroot/js/viewTopic.js",
+      "wwwroot/js/moderator.js",
       "wwwroot/lib/Sortable.js",
       "wwwroot/lib/he.js"
     ],

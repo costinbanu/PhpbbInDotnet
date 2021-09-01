@@ -352,7 +352,7 @@ else if (IsPM)
 
         <div id="attachPanel" style="display:@(Model.ShowAttach ? "block" : "none")">
             <br />
-            <h3>Fișiere atașate</h3>
+            <h3>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "ATTACHED_FILES"])</h3>
 
             @Html.Raw(string.Format(Model.LanguageProvider.AttachmentGuide[Lang], sizeLimit.Images, resizeTool.Url, resizeTool.Name))
 
@@ -429,7 +429,7 @@ else if (IsPM)
             $('#lastPostTime').val(@Math.Max(posts.First().PostTime, posts.First().PostEditTime));
         </script>
         <br />
-        <h3>Mesaje precedente</h3>
+        <h3>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "PREVIOUS_POSTS"])</h3>
 
         foreach (var post in posts)
         {

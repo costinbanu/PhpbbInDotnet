@@ -212,6 +212,13 @@ namespace PhpbbInDotnet.Utilities
         RemoveMultipleFoes
     }
 
+    public enum ModeratorPanelMode
+    {
+        TopicModeration = 0,
+        Reports,
+        RecycleBin
+    }
+
     public enum Casing
     {
         None,
@@ -234,5 +241,12 @@ namespace PhpbbInDotnet.Utilities
         Attachment,
         Avatar,
         Emoji
+    }
+
+    public enum RecycleBinItemType
+    {
+        Forum,
+        Topic,
+        Post
     }
 }

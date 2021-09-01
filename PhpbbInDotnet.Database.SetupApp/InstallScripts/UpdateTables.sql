@@ -62,3 +62,12 @@ CREATE TABLE `phpbb_user_topic_post_number` (
   KEY `user_id` (`user_id`,`topic_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
+CREATE TABLE `phpbb_recycle_bin` (
+  `type` int(11) NOT NULL,
+  `id` int(11) NOT NULL,
+  `content` longblob,
+  `delete_time` int(11) unsigned NOT NULL DEFAULT '0',
+  `delete_user` int(8) unsigned NOT NULL DEFAULT '0',
+  PRIMARY KEY (`type`,`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+

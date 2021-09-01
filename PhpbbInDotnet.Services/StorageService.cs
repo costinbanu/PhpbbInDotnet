@@ -193,5 +193,18 @@ namespace PhpbbInDotnet.Services
                 return false;
             }
         }
+
+        public async Task<byte[]> GetAttachmentContents(string name)
+        {
+            try
+            {
+                return await File.ReadAllBytesAsync(Path.Combine(_attachmentsPath, name));
+            }
+            catch (Exception ex)
+            {
+                _utils.HandleError(ex, $"Error getting attachment contents for '{name}'");
+                return Array.Empty<byte>();
+            }
+        }
     }
 }

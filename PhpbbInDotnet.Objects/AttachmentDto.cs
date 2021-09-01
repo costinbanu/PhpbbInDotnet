@@ -1,24 +1,29 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Newtonsoft.Json;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Utilities;
 using System;
-using System.Web;
 
 namespace PhpbbInDotnet.Objects
 {
     public class AttachmentDto
     {
-        public int Id { get; private set; }
-        public string DisplayName { get; private set; }
-        public string PhysicalFileName { get; private set; }
-        public string MimeType { get; private set; }
-        public int DownloadCount { get; private set; }
-        public string Comment { get; private set; }
-        public long FileSize { get; private set; }
-        public string FileUrl { get; private set; }
-        public string Language { get; private set; }
+        public int Id { get; set; }
+        public string DisplayName { get; set; }
+        public string PhysicalFileName { get; set; }
+        public string MimeType { get; set; }
+        public int DownloadCount { get; set; }
+        public string Comment { get; set; }
+        public long FileSize { get; set; }
+        public string Language { get; set; }
+        public bool IsPreview { get; set; }
+        public Guid? CorrelationId { get; set; }
+        public bool DeletedFile { get; set; }
 
-        public AttachmentDto(PhpbbAttachments dbRecord, bool isPreview, string language, Guid? correlationId = null)
+        [JsonIgnore]
+        public string FileUrl => GetUrl();
+
+
+        public AttachmentDto(PhpbbAttachments dbRecord, bool isPreview, string language, Guid? correlationId = null, bool deletedFile = false)
         {
             DisplayName = dbRecord.RealFilename;
             Comment = dbRecord.AttachComment;
@@ -28,11 +33,27 @@ namespace PhpbbInDotnet.Objects
             FileSize = dbRecord.Filesize;
             PhysicalFileName = dbRecord.PhysicalFilename;
             Language = language;
-            FileUrl = $"/File?id={Id}&preview={isPreview}";
-            
-            if (correlationId.HasValue && MimeType.IsMimeTypeInline())
+            IsPreview = isPreview;
+            CorrelationId = correlationId;
+            DeletedFile = deletedFile;
+        }
+
+        public AttachmentDto() { }
+
+        private string GetUrl()
+        {
+            if (DeletedFile)
             {
-                FileUrl += $"&correlationId={correlationId.Value}";
+                return $"/File?id={Id}&correlationId={CorrelationId}&handler=deletedFile";
+            }
+            else
+            {
+                var url = $"/File?id={Id}&preview={IsPreview}";
+                if (CorrelationId.HasValue && MimeType.IsMimeTypeInline())
+                {
+                    url += $"&correlationId={CorrelationId.Value}";
+                }
+                return url;
             }
         }
     }

@@ -19,14 +19,16 @@ namespace PhpbbInDotnet.Services
     {
         private readonly ForumDbContext _context;
         private readonly UserService _userService;
+        private readonly StorageService _storageService;
         private readonly IAppCache _cache;
         private readonly CommonUtils _utils;
         private readonly int _maxAttachmentCount;
 
-        public PostService(ForumDbContext context, UserService userService, IAppCache cache, CommonUtils utils, IConfiguration config)
+        public PostService(ForumDbContext context, UserService userService, StorageService storageService, IAppCache cache, CommonUtils utils, IConfiguration config)
         {
             _context = context;
             _userService = userService;
+            _storageService = storageService;
             _cache = cache;
             _utils = utils;
             var countLimit = config.GetObject<AttachmentLimits>("UploadLimitsCount");
@@ -165,20 +167,20 @@ namespace PhpbbInDotnet.Services
             );
         }
 
-        public async Task CascadePostDelete(PhpbbPosts deleted, bool ignoreTopic, bool ignoreReports, int? oldTopicId = null)
+        public async Task CascadePostDelete(PhpbbPosts deleted, bool ignoreTopic, bool ignoreAttachmentsAndReports/*, int? oldTopicId = null*/)
         {
-            oldTopicId ??= deleted.TopicId;
+            //oldTopicId ??= deleted.TopicId;
             var conn = await _context.GetDbConnectionAsync();
             
             var curTopic = await conn.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { deleted.TopicId });
             if (curTopic != null)
             {
-                if (await conn.ExecuteScalarAsync<long>("SELECT COUNT(1) FROM phpbb_posts WHERE topic_id = @oldTopicId", new { oldTopicId }) == 0L && !ignoreTopic)
-                {
-                    await conn.ExecuteAsync("DELETE FROM phpbb_topics WHERE topic_id = @topicId", new { curTopic.TopicId });
-                }
-                else
-                {
+                //if (await conn.ExecuteScalarAsync<long>("SELECT COUNT(1) FROM phpbb_posts WHERE topic_id = @oldTopicId", new { oldTopicId }) == 0L && !ignoreTopic)
+                //{
+                //    await conn.ExecuteAsync("DELETE FROM phpbb_topics WHERE topic_id = @topicId", new { curTopic.TopicId });
+                //}
+                //else
+                //{
                     if (curTopic.TopicLastPostId == deleted.PostId && !ignoreTopic)
                     {
                         var lastTopicPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(
@@ -193,8 +195,8 @@ namespace PhpbbInDotnet.Services
                     if (curTopic.TopicFirstPostId == deleted.PostId && !ignoreTopic)
                     {
                         var firstPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(
-                            "SELECT * FROM phpbb_posts WHERE topic_id = @oldTopicId AND post_id <> @postId ORDER BY post_time ASC",
-                            new { oldTopicId, deleted.PostId }
+                            "SELECT * FROM phpbb_posts WHERE topic_id = @topicId AND post_id <> @postId ORDER BY post_time ASC",
+                            new { /*oldTopicId = */deleted.TopicId, deleted.PostId }
                         );
                         var firstPostUser = await _userService.GetAuthenticatedUserById(firstPost.PosterId);
 
@@ -208,12 +210,16 @@ namespace PhpbbInDotnet.Services
                             new { curTopic.TopicId }
                         );
                     }
-                }
+                //}
             }
 
-            if (!ignoreReports)
+            if (!ignoreAttachmentsAndReports)
             {
-                await conn.ExecuteAsync("DELETE FROM phpbb_reports WHERE post_id = @postId", new { deleted.PostId });
+                await conn.ExecuteAsync(
+                    "DELETE FROM phpbb_reports WHERE post_id = @postId; " +
+                    "DELETE FROM phpbb_attachments WHERE post_msg_id = @postId", 
+                    new { deleted.PostId }
+                );
             }
 
             var curForum = await conn.QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { forumId = curTopic?.ForumId ?? deleted.ForumId });
@@ -234,9 +240,9 @@ namespace PhpbbInDotnet.Services
             );
         }
 
-        private async Task SetTopicLastPost(PhpbbTopics topic, PhpbbPosts post, AuthenticatedUser author, bool goBack = false)
+        private async Task SetTopicLastPost(PhpbbTopics topic, PhpbbPosts post, AuthenticatedUser author, bool hardReset = false)
         {
-            if (goBack || topic.TopicLastPostTime < post.PostTime)
+            if (hardReset || topic.TopicLastPostTime < post.PostTime)
             {
                 topic.TopicLastPostId = post.PostId;
                 topic.TopicLastPostSubject = post.PostSubject;
@@ -260,9 +266,9 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        private async Task SetForumLastPost(PhpbbForums forum, PhpbbPosts post, AuthenticatedUser author, bool goBack = false)
+        private async Task SetForumLastPost(PhpbbForums forum, PhpbbPosts post, AuthenticatedUser author, bool hardReset = false)
         {
-            if (goBack || forum.ForumLastPostTime < post.PostTime)
+            if (hardReset || forum.ForumLastPostTime < post.PostTime)
             {
                 forum.ForumLastPostId = post.PostId;
                 forum.ForumLastPostSubject = post.PostSubject;
