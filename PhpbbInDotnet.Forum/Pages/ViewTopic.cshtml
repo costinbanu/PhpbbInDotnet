@@ -29,6 +29,7 @@
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />
     <script type="text/javascript" src="~/js/viewTopic.js"></script>
+    <script type="text/javascript" src="~/js/moderator.js"></script>
     <script type="text/javascript" src="~/lib/he.js"></script>
     <link rel="stylesheet" href="~/css/posting.css" />
 </environment>
@@ -37,10 +38,13 @@
     var vt = new ViewTopic(
         @Json.Serialize(Model.PostId ?? -1),
         @Model.ScrollToModeratorPanel,
+        @Constants.OTHER_REPORT_REASON_ID
+    );
+
+    var mod = new Moderator(
         '@ModeratorTopicActions.MoveTopic',
         '@ModeratorPostActions.MoveSelectedPosts',
         '@ModeratorPostActions.SplitSelectedPosts',
-        @Constants.OTHER_REPORT_REASON_ID
     );
 
     $(document).ready(function () {
@@ -160,7 +164,7 @@
             @Html.DropDownList(
                 "PostAction",
                 _utils.EnumToDropDownList<ModeratorPostActions>(selectedItem: Model.PostAction, textTransform: item => Model.LanguageProvider.Enums[Lang, item], defaultText: Model.LanguageProvider.BasicText[Lang, "SELECT_AN_OPTION"]),
-                new { onchange = "vt.showPostExtraInput(this)", id = "PostAction", style = "display:none" }
+                new { onchange = "mod.showPostExtraInput(this)", id = "PostAction", style = "display:none" }
             )
             <input asp-for="ForumId" type="hidden" />
             <input asp-for="TopicId" type="hidden" />
@@ -250,7 +254,7 @@ else if (!IsAnonymous)
         @Html.DropDownList(
             "TopicAction",
             _utils.EnumToDropDownList<ModeratorTopicActions>(selectedItem: Model.TopicAction, textTransform: item => Model.LanguageProvider.Enums[Lang, item], defaultText: Model.LanguageProvider.BasicText[Lang, "SELECT_AN_OPTION"]),
-            new { onchange = "vt.showTopicExtraInput(this)", id = "TopicAction", style = "max-width:70%; height: 30px; padding-top: 0px" }
+            new { onchange = "mod.showTopicExtraInput(this)", id = "TopicAction", style = "max-width:70%; height: 30px; padding-top: 0px" }
         )
         <div id="extraInputTopic" style="display:@(Model.ShowTopic ? "block" : "none")">
             <br />
@@ -258,7 +262,7 @@ else if (!IsAnonymous)
             <a href="javascript:$('#modConfirmation').submit();">@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CHOOSE_DESTINATION_FORUM_ID"])</a>
             <span asp-validation-for="DestinationForumId" class="validation"></span>
         </div>
-        <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT", Casing.FirstUpper])" onclick="return vt.confirmAction('#TopicAction');" class="MyButton" style="height:30px" />
+        <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT", Casing.FirstUpper])" onclick="return mod.confirmAction('#TopicAction');" class="MyButton" style="height:30px" />
         <input asp-for="ForumId" type="hidden" />
         <input asp-for="TopicId" type="hidden" />
         <input asp-for="PageNum" type="hidden" />
@@ -266,11 +270,11 @@ else if (!IsAnonymous)
     </form>
 
     <form id="moderatorForm" method="post" asp-page-handler="PostModerator" style="padding-top:5px">
-        @Html.Raw(Model.LanguageProvider.Moderator[Lang, "MODERATE_SELECTED_POSTS", Casing.FirstUpper])
+        @Html.Raw(Model.LanguageProvider.Moderator[Lang, "MODERATE_SELECTED_POSTS", Casing.FirstUpper]):
         @Html.DropDownList(
             nameof(Model.PostAction),
             _utils.EnumToDropDownList<ModeratorPostActions>(selectedItem: Model.PostAction, textTransform: item => Model.LanguageProvider.Enums[Lang, item], defaultText: Model.LanguageProvider.BasicText[Lang, "SELECT_AN_OPTION"]),
-            new { onchange = "vt.showPostExtraInput(this)", id = "PostAction", style = "max-width:70%; height: 30px; padding-top: 0px" }
+            new { onchange = "mod.showPostExtraInput(this)", id = "PostAction", style = "max-width:70%; height: 30px; padding-top: 0px" }
         )
         <div id="extraInputPostForum" style="display:@(Model.ShowPostForum ? "block" : "none")">
             <br />
@@ -286,7 +290,7 @@ else if (!IsAnonymous)
             <span asp-validation-for="PostIdsForModerator" class="validation"></span>
             <span asp-validation-for="DestinationTopicId" class="validation"></span>
         </div>
-        <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT", Casing.FirstUpper])" onclick="return vt.confirmAction('#PostAction');" class="MyButton" style="height:30px" />
+        <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT", Casing.FirstUpper])" onclick="return mod.confirmAction('#PostAction');" class="MyButton" style="height:30px" />
         <br />
         <input asp-for="ForumId" type="hidden" />
         <input asp-for="TopicId" type="hidden" />
@@ -308,6 +312,7 @@ else if (!IsAnonymous)
         <input type="hidden" name="postAction" id="postAction" value="" />
         <input type="hidden" name="topicAction" id="topicAction" value="" />
         <input type="hidden" name="handler" value="ModeratorConfirmation" />
+        <input type="hidden" name="Destination" id="Destination" value="./ViewTopic" />
         @Html.AntiForgeryToken()
     </form>
 

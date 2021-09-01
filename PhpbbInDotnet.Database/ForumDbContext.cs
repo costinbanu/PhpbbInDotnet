@@ -53,6 +53,7 @@ namespace PhpbbInDotnet.Database
         public virtual DbSet<PhpbbProfileLang> PhpbbProfileLang { get; set; }
         public virtual DbSet<PhpbbQaConfirm> PhpbbQaConfirm { get; set; }
         public virtual DbSet<PhpbbRanks> PhpbbRanks { get; set; }
+        public virtual DbSet<PhpbbRecycleBin> PhpbbRecycleBin { get; set; }
         public virtual DbSet<PhpbbReports> PhpbbReports { get; set; }
         public virtual DbSet<PhpbbReportsReasons> PhpbbReportsReasons { get; set; }
         public virtual DbSet<PhpbbSearchResults> PhpbbSearchResults { get; set; }
@@ -3856,6 +3857,33 @@ namespace PhpbbInDotnet.Database
                     .HasColumnName("friend")
                     .HasColumnType("tinyint(1) unsigned")
                     .HasDefaultValueSql("0");
+            });
+
+            modelBuilder.Entity<PhpbbRecycleBin>(entity =>
+            {
+                entity.HasKey(e => new { e.Type, e.Id });
+
+                entity.ToTable("phpbb_recycle_bin", "forum");
+
+                entity.Property(e => e.Type)
+                    .HasColumnName("type")
+                    .HasColumnType("int");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("id")
+                    .HasColumnType("int");
+
+                entity.Property(e => e.Content)
+                    .HasColumnName("content")
+                    .HasColumnType("longblob");
+
+                entity.Property(e => e.DeleteTime)
+                    .HasColumnName("delete_time")
+                    .HasColumnType("int(11) unsigned");
+
+                entity.Property(e => e.DeleteUser)
+                    .HasColumnName("delete_user")
+                    .HasColumnType("int(8) unsigned");
             });
         }
 

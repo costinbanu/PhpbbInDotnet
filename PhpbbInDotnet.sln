@@ -21,7 +21,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhpbbInDotnet.Objects", "Ph
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhpbbInDotnet.Languages", "PhpbbInDotnet.Languages\PhpbbInDotnet.Languages.csproj", "{4C626DB9-7EE7-482B-93A5-0236645DC999}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhpbbInDotnet.Database.SetupApp", "PhpbbInDotnet.Database.SetupApp\PhpbbInDotnet.Database.SetupApp.csproj", "{CE12B216-F331-43DB-B792-DA168596A5F4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhpbbInDotnet.Database.SetupApp", "PhpbbInDotnet.Database.SetupApp\PhpbbInDotnet.Database.SetupApp.csproj", "{CE12B216-F331-43DB-B792-DA168596A5F4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

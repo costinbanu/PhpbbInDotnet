@@ -53,6 +53,7 @@
   "TO": "până la",
   "WROTE_FORMAT": "<b>{0}</b> a scris",
   "HERE": "aici",
+  "ANONYMOUS": "anonim",
 
   //post/topic/forum summary
   "LAST_POST_TEXT": "Ultimul mesaj de",
@@ -74,10 +75,7 @@
   "UNREAD_MESSAGE": "mesaj privat necitit",
   "UNREAD_MESSAGES": "mesaje private necitite",
   "SEARCH_IN_FORMAT": "Caută în {0}",
-  "OPEN_REPORT": "raport deschis",
-  "OPEN_REPORTS": "rapoarte deschise",
   "TERMS": "termenele și condițiile de utilizare",
-  "ADMIN_PANEL": "panoul administratorului",
 
   //cookies warning box
   "COOKIES_BOX_MESSAGE": "Acest site folosește cookie-uri pentru personalizarea conținutului afișat, autentificare și altele. Prin utilizarea site-ului nostru acceptați folosirea acestora.",
@@ -187,6 +185,7 @@
   "SUBMIT_POST": "Trimite mesajul",
   "DRAFT_SAVED_SUCCESSFULLY": "Mesajul în lucru a fost salvat cu succes și vei putea lucra în continuare la el mai târziu.",
   "CLOSED_TOPIC_CAPTION": "Subiectul este închis, nu se mai pot trimite răspunsuri.",
+  "PREVIOUS_POSTS": "Mesaje precedente",
 
   //post reporting
   "REPORT": "raport",

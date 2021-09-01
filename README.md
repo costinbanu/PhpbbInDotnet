@@ -64,7 +64,8 @@ Either way,  ensure that its structure and contents follow the sample below. All
     "Height": 100
   },
   "DisplayExternalLinksMenu": false,
-  "UseHeaderImage": false
+  "UseHeaderImage": false,
+  "RecycleBinRetentionTime": "7.00:00:00"
 }
 ```
 
@@ -103,6 +104,7 @@ EmojiMaxSize.Width | int | 100 | pixels
 EmojiMaxSize.Height | int | 100 | pixels
 DisplayExternalLinksMenu | bool | false | whether a menu with external links is displayed below the header, next to the forum Menu. 
 UseHeaderImage | bool | false | whether a custom image is displayed in the header, instead of the forum name
+RecycleBinRetentionTime | TimeSpan | 7.00:00:00 | for how long are deleted items kept in the recycle bin
 
 ### Branding
 #### Forum header

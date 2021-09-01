@@ -250,7 +250,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }));
 
         public async Task<IActionResult> OnPostTopicModerator()
-            => await WithModerator(async () =>
+            => await WithModerator(ForumId ?? 0, async () =>
             {
                 var logDto = new OperationLogDto
                 {
@@ -293,7 +293,7 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostPostModerator()
-            => await WithModerator(async () => await ModeratePosts());
+            => await WithModerator(ForumId ?? 0, async () => await ModeratePosts());
 
         public async Task<IActionResult> OnPostDeleteMyMessage()
             => await WithRegisteredUser(async (user) =>
@@ -368,7 +368,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }));
 
         public async Task<IActionResult> OnPostManageReport(int? reportPostId, int? reportId, bool? redirectToEdit, bool? deletePost)
-            => await WithModerator(async () =>
+            => await WithModerator(ForumId ?? 0, async () =>
             {
                 var logDto = new OperationLogDto
                 {
@@ -410,7 +410,7 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostDuplicatePost(int postIdForDuplication)
-            => await WithModerator(async () =>
+            => await WithModerator(ForumId ?? 0, async () =>
             {
                 var logDto = new OperationLogDto
                 {
@@ -426,7 +426,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 return await OnGetByPostId();
             });
-
 
         private async Task<IActionResult> ModeratePosts()
         {

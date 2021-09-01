@@ -1,0 +1,367 @@
+﻿@page
+
+@using CustomPartials
+@using LazyCache
+@using Objects
+@using Services
+@using Utilities
+
+@inject ForumTreeService _forumService
+@inject BBCodeRenderingService _renderingService
+@inject CommonUtils _utils
+@inject IAppCache _cache
+
+@model PhpbbInDotnet.Forum.Pages.ModeratorModel
+@{
+    var Lang = await Model.GetLanguage();
+    ViewData["Title"] = Model.LanguageProvider.Moderator[Lang, "MOD_PANEL"]; ;
+    Layout = "~/Pages/_Layout.cshtml";
+    var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
+}
+
+<style>
+    .FlexBox {
+        width: 50%;
+        margin: 10px;
+    }
+
+    @@media(max-width: 800px) {
+        .FlexBox {
+            width: 100%;
+        }
+    }
+</style>
+
+<h3>@Html.Raw(Model.LanguageProvider.Moderator[Lang, "MOD_PANEL"])</h3>
+<environment include="Development">
+    <script src="~/lib/Sortable.js"></script>
+    <script src="~/js/tabbedPage.js"></script>
+    <script src="~/js/moderator.js"></script>
+    <link rel="stylesheet" href="~/css/admin.css" />
+    <link rel="stylesheet" href="~/css/tabbedPage.css" />
+    <link rel="stylesheet" href="~/css/pagination.css" />
+</environment>
+<environment exclude="Development">
+    <link rel="stylesheet" href="~/css/admin.min.css" />
+</environment>
+
+<script>
+    //forum tree callback
+    function forumSelectCallback(forumId) {
+        var forumInput = $('#ForumIdInput');
+        if (forumInput != null) {
+            forumInput.val(forumId);
+        }
+    }
+
+    var mod = new Moderator(
+        '@ModeratorTopicActions.MoveTopic',
+        '',
+        '',
+    );
+
+    $(document).ready(function () {
+        window.onload = function () {
+            if (@Json.Serialize(Model.ScrollToAction)) {
+                document.getElementById('SubmitTopics').scrollIntoView();
+            }
+        }
+    });
+
+    //image resize constant
+    maxWidth = window.innerWidth > 800 ? window.innerWidth * 0.5 : window.innerWidth * 0.85;
+</script>
+
+<span class="@Model.MessageClass">@Html.Raw(Model.Message)</span>
+
+<div class="tab">
+    <button class="@(Model.Mode == ModeratorPanelMode.TopicModeration ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Topics')">
+        @Html.Raw(Model.LanguageProvider.Moderator[Lang, "MODERATE_TOPICS", Casing.Title])
+    </button>
+    <button class="@(Model.Mode == ModeratorPanelMode.Reports ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Reports')">
+        @Html.Raw(Model.LanguageProvider.Moderator[Lang, "OPEN_REPORTS", Casing.Title])
+    </button>
+    <button class="@(Model.Mode == ModeratorPanelMode.RecycleBin ? "tablinks active" : "tablinks")" onclick="openTab(event, 'RecycleBin')">
+        @Html.Raw(Model.LanguageProvider.Moderator[Lang, "RECYCLE_BIN", Casing.Title])
+    </button>
+</div>
+
+<div id="Topics" class="tabcontent" style="@(Model.Mode == ModeratorPanelMode.TopicModeration ? "display:inherit" : "display:none")">
+    @{
+        var isForumSelected = Model.ForumId > 0 && !string.IsNullOrWhiteSpace(Model.ForumName);
+        var ordinaryTopicsDisplayed = false;
+    }
+    @if (isForumSelected)
+    {
+        <h4>@Html.Raw(Model.LanguageProvider.Moderator[Lang, "FORUM_TO_MODERATE"]): @Model.ForumName</h4>
+    }
+    <span onclick="showForumTree(this)" class="SpanLikeLink nowrap" style="display:block">
+        @Html.Raw(Model.LanguageProvider.Moderator[Lang, "CHOOSE_FORUM_TO_MODERATE", Casing.FirstUpper])
+    </span>
+    <div id="forumTree" style="@(isForumSelected ? "display:none" : "display:unset")">
+        @await Html.PartialAsync(
+            "_ForumTreePartial",
+            new _ForumTreePartialModel(
+                tree: (await Model.GetForumTree(false, false)).Tree,
+                forumId: Model.ForumId == 0 ? null : Model.ForumId
+            ),
+            ViewData
+        )
+        <p></p>
+        <form>
+            <input type="hidden" name="ForumId" id="ForumIdInput" />
+            <input type="hidden" name="Mode" value="@ModeratorPanelMode.TopicModeration" />
+            <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "GO", Casing.FirstUpper])" class="MyButton SpacedButton" />
+            @Html.AntiForgeryToken()
+        </form>
+    </div>
+
+    @foreach (var topicGroup in Model.Topics ?? Enumerable.Empty<TopicGroup>())
+    {
+        if (topicGroup.TopicType == TopicType.Announcement || topicGroup.TopicType == TopicType.Global)
+        {
+            <p>&nbsp;</p>
+            <strong>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "ANNOUNCEMENTS", Casing.Title])</strong>
+        }
+        else if (!ordinaryTopicsDisplayed)
+        {
+            <p>&nbsp;</p>
+            <strong>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "TOPICS", Casing.Title])</strong>
+            ordinaryTopicsDisplayed = true;
+        }
+        foreach (var topic in topicGroup.Topics)
+        {
+            <div class="FlexRow RowMargin">
+                <input name="SelectedTopics" type="checkbox" value="@topic.TopicId" form="SubmitTopics" style="margin-right:30px; align-self:safe center" onchange="mod.appendToStringList(this, 'selectedTopicIds')" @(Model.GetTopicIds().Contains(topic.TopicId.Value) ? "checked" : "") />
+                <a asp-page="/ViewTopic" asp-route-topicId="@topic.TopicId" asp-route-pageNum="1" class="nav-link" style="font-weight: bold; align-self: safe center">
+                    @if (topicGroup.TopicType == TopicType.Important)
+                    {
+                        <span>&#x26A0;&#xFE0F;&nbsp;</span>
+                    }
+                    @if (topic.IsLocked)
+                    {
+                        <span>&#x1F512;&nbsp;</span>
+                    }
+                    @Html.Raw(topic.TopicTitle)
+                </a>
+                @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
+                {
+                    AuthorId = topic.TopicLastPosterId,
+                    AuthorName = topic.TopicLastPosterName,
+                    AuthorColor = topic.TopicLastPosterColour,
+                    CreationTime = topic.TopicLastPostTime?.ToUtcTime(),
+                    AssetId = topic.TopicId.Value,
+                    DateFormat = UserDateFormat,
+                    ShowAsLast = true,
+                    Language = Lang
+                })
+            </div>
+            <hr class="BoxSeparator" />
+        }
+    }
+    @if (isForumSelected)
+    {
+        <button onclick="selectAllCheckboxes('Topics')" type="button" class="MyButton SpacedButton">
+            &#x2714;&nbsp;@Html.Raw(Model.LanguageProvider.Moderator[Lang, "SELECT_ALL_REPORTS"])
+        </button>
+        <form method="post" name="SubmitTopics" id="SubmitTopics" asp-page-handler="ManageTopics">
+            @Html.Raw(Model.LanguageProvider.Moderator[Lang, "WITH_SELECTED_TOPICS"]):
+            @Html.DropDownList(
+                     "TopicAction",
+                     _utils.EnumToDropDownList<ModeratorTopicActions>(
+                         selectedItem: null,
+                         textTransform: item => Model.LanguageProvider.Enums[Lang, item],
+                         defaultText: Model.LanguageProvider.BasicText[Lang, "SELECT_AN_OPTION"],
+                         valueFilter: action => action != ModeratorTopicActions.DeleteTopic
+                     ),
+                     new { onchange = "mod.showTopicExtraInput(this)", id = "TopicAction", style = "max-width:400px; height: 30px; padding-top: 0px" }
+                 )
+            <div id="extraInputTopic" style="display:@(Model.DestinationForumId > 0 ? "block" : "none")">
+                <br />
+                <input type="text" asp-for="DestinationForumId" placeholder="@Html.Raw(Model.LanguageProvider.Moderator[Lang, "DESTINATION_FORUM_ID"])" style="width:250px" /><br />
+                <a href="javascript:$('#modConfirmation').submit();">@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CHOOSE_DESTINATION_FORUM_ID"])</a>
+                <span asp-validation-for="DestinationForumId" class="validation"></span>
+            </div>
+            <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT", Casing.FirstUpper])" onclick="return mod.confirmAction('#TopicAction');" class="MyButton SpacedButton" style="height:30px" />
+            <input type="hidden" asp-for="ForumId" />
+            <input type="hidden" asp-for="Mode" />
+            @Html.AntiForgeryToken()
+        </form>
+        <form id="modConfirmation" asp-page="Confirm" method="get">
+            <input type="hidden" asp-for="ForumId" />
+            <input type="hidden" asp-for="TopicAction" id="topicAction" />
+            <input type="hidden" name="showTopicSelector" id="showTopicSelector" value="false" />
+            <input type="hidden" name="selectedTopicIds" id="selectedTopicIds" value="" />
+            <input type="hidden" name="postAction" id="postAction" value="" />
+            <input type="hidden" name="handler" value="ModeratorConfirmation" />
+            <input type="hidden" name="Destination" id="Destination" value="./Moderator" />
+            @Html.AntiForgeryToken()
+        </form>
+    }
+</div>
+
+<div id="Reports" class="tabcontent" style="@(Model.Mode == ModeratorPanelMode.Reports ? "display:inherit" : "display:none")">
+    <h4>@Html.Raw(Model.LanguageProvider.Moderator[Lang, "MANAGE_REPORTS"])</h4>
+    @foreach (var report in Model.Reports ?? Enumerable.Empty<ReportDto>())
+    {
+        <hr class="BoxSeparator" />
+        <div class="FlexRow">
+            <input name="SelectedReports" type="checkbox" value="@report.Id" form="SubmitReports" style="margin-right:10px; align-self:safe center" />
+            <div class="FlexCenter" style="width:100%">
+                <div class="FlexBox">
+                    <span>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "REPORT", Casing.FirstUpper]): @Html.Raw(report.ReasonTitle)</span>
+                    <br />
+                    <span class="Caption">
+                        @Html.Raw(report.ReasonDescription)
+                    </span>
+                    <br />
+                    <span>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "ADDITIONAL_DETAILS", Casing.FirstUpper]): @Html.Raw(report.Details)</span>
+                    <br />
+                    <span>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "REPORTING_USER", Casing.FirstUpper]): @Html.Raw(report.ReporterUsername)</span>
+                </div>
+                <div class="FlexBox">
+                    <span class="Caption">
+                        @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, report.ForumId))
+                    </span>
+                    <br />
+                    <a asp-page="ViewTopic" asp-page-handler="byPostId" asp-route-postId="@report.PostId">
+                        @Html.Raw(report.TopicTitle)
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+    <hr class="BoxSeparator" />
+    <button onclick="selectAllCheckboxes('Reports')" type="button" class="MyButton SpacedButton">
+        &#x2714;&nbsp;@Html.Raw(Model.LanguageProvider.Moderator[Lang, "SELECT_ALL_REPORTS"])
+    </button>
+    <input type="submit" value="&#x274E;&nbsp;@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CLOSE_SELECTED_REPORTS"])" form="SubmitReports" onclick="return confirm('@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CONFIRM_CLOSE_REPORTS"])');" class="MyButton SpacedButton" />
+    <form method="post" name="SubmitReports" id="SubmitReports" asp-page-handler="CloseReports">
+        <input type="hidden" name="Mode" value="@ModeratorPanelMode.Reports" />
+        <input type="hidden" asp-for="ForumId" />
+        @Html.AntiForgeryToken()
+    </form>
+    <p>&nbsp;</p>
+</div>
+
+<div id="RecycleBin" class="tabcontent" style="@(Model.Mode == ModeratorPanelMode.RecycleBin ? "display:inherit" : "display:none")">
+    <h4>@Html.Raw(Model.LanguageProvider.Moderator[Lang, "MANAGE_DELETED_ITEMS"])</h4>
+    @{ 
+        var correlationId = Guid.NewGuid();
+        var atLeastOneItem = false;
+    }
+
+    @foreach (var itemGroup in Model.DeletedItems ?? Enumerable.Empty<DeletedItemGroup>())
+    {
+        var items = itemGroup.Items ?? Enumerable.Empty<DeletedItemDto>();
+        var itemName = Model.LanguageProvider.BasicText[Lang, itemGroup.Type.ToString().ToUpperInvariant()];
+
+        <h4 onclick="expandSection('@(itemGroup.Type)Section', '@(itemGroup.Type)Char')" style="cursor:pointer" id="@(itemGroup.Type)Title">
+            @switch (itemGroup.Type)
+            {
+                case RecycleBinItemType.Forum:
+                    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "FORUMS", Casing.Title])
+                    break;
+
+                case RecycleBinItemType.Topic:
+                    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "TOPICS", Casing.Title])
+                    break;
+
+                case RecycleBinItemType.Post:
+                    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "POSTS", Casing.Title])
+                    items = items.OrderBy(i => (i.Value as PostDto).PostTime);
+                    break;
+            }
+            <span id="@(itemGroup.Type)Char">&#x1F53D;</span>
+        </h4>
+        <p></p>
+        <div id="@(itemGroup.Type)Section" style="display:none">
+            @foreach (var item in items)
+            {
+                atLeastOneItem = true;
+                <label>
+                    <input name="SelectedDeletedItems" type="checkbox" value="@item.Type/@item.Id" form="SubmitDeletedItems" />
+                    @Html.Raw(string.Format(Model.LanguageProvider.Moderator[Lang, "SELECT_THIS_ITEM_FORMAT"], itemName))
+                </label>
+                <span>
+                    &bull;
+                    @Html.Raw(Model.LanguageProvider.Moderator[Lang, "DELETED_AT"]):
+                    <script>
+                    writeDate('@item.DeleteTime.ToUtcTime().ToString("o")', '@UserDateFormat');
+                    </script>
+                    &bull;
+                    @Html.Raw(Model.LanguageProvider.Moderator[Lang, "DELETED_BY"]):
+                    @Html.Raw(item.DeleteUserName)
+                </span>
+                <p></p>
+                @switch (item.Type)
+                {
+                    case RecycleBinItemType.Forum:
+                        var forum = item.Value as ForumDto;
+                        <span class="Caption">
+                            @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, forum.ParentId ?? 0))
+                        </span>
+                        <br />
+                        <strong>
+                            @Html.Raw(forum.ForumName)
+                        </strong>
+                        @if (!string.IsNullOrWhiteSpace(forum.ForumDesc))
+                        {
+                            <br />
+                            <span class="Caption">
+                                @Html.Raw(_renderingService.BbCodeToHtml(forum.ForumDesc, string.Empty))
+                            </span>
+                        }
+                        break;
+
+                    case RecycleBinItemType.Topic:
+                        var topic = item.Value as TopicDto;
+                        <span class="Caption">
+                            @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, topic.ForumId ?? 0))
+                        </span>
+                        <br />
+                        <strong>
+                            @Html.Raw(topic.TopicTitle)
+                        </strong>
+                        break;
+
+                    case RecycleBinItemType.Post:
+                        var post = item.Value as PostDto;
+                        <span class="Caption">
+                            @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, post.ForumId))
+                        </span>
+                        <br />
+                        foreach (var attach in post.Attachments)
+                        {
+                            attach.CorrelationId = correlationId;
+                            _cache.Add(_utils.GetAttachmentCacheKey(attach.Id, correlationId), attach, TimeSpan.FromMinutes(1));
+                        }
+                        @await Html.PartialAsync("_PostPartial", new _PostPartialModel
+                        {
+                            CurrentUser = await Model.GetCurrentUserAsync(),
+                            Post = post,
+                            Language = Lang,
+                            ParentHttpContext = HttpContext,
+                            ParentPageContext = PageContext,
+                            IsPostFirstInPage = true,
+                            IsPostLastInPage = true,
+                            DisablePostTitleLink = true
+                        }, ViewData)
+                        break;
+                }
+                <hr class="BoxSeparator" />
+            }
+            <div style="width:100%; text-align:right; font-size:1.5em">
+                <a href="#@(itemGroup.Type)Title">&#x23EB;</a>
+            </div>
+        </div>
+        <p>&nbsp;</p>
+    }
+<form method="post" name="SubmitDeletedItems" id="SubmitDeletedItems" asp-page-handler="RestoreDeletedItems">
+    <input type="submit" value="&#x274E;&nbsp;@Html.Raw(Model.LanguageProvider.Moderator[Lang, "RESTORE_SELECTED_DELETED_ITEMS"])" onclick="return confirm('@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CONFIRM_RESTORE_DELETED_ITEMS"])');" class="MyButton SpacedButton" @(atLeastOneItem ? "" : "disabled") />
+    <input type="hidden" name="Mode" value="@ModeratorPanelMode.RecycleBin" />
+    <input type="hidden" asp-for="ForumId" />
+    @Html.AntiForgeryToken()
+</form>
+    <p>&nbsp;</p>
+</div>
