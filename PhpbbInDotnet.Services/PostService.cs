@@ -144,7 +144,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task CascadePostAdd(PhpbbPosts added, bool ignoreTopic, bool resetLastPost = false)
+        public async Task CascadePostAdd(PhpbbPosts added, bool ignoreTopic)
         {
             var conn = await _context.GetDbConnectionAsync();
             
@@ -156,7 +156,7 @@ namespace PhpbbInDotnet.Services
 
             if (!ignoreTopic)
             {
-                await SetTopicLastPost(curTopic, added, usr, resetLastPost);
+                await SetTopicLastPost(curTopic, added, usr);
                 await SetTopicFirstPost(curTopic, added, usr, false);
             }
 

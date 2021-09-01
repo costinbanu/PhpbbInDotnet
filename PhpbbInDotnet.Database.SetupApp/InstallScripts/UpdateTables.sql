@@ -71,7 +71,3 @@ CREATE TABLE `phpbb_recycle_bin` (
   PRIMARY KEY (`type`,`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
-
-
-
-

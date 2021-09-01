@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
+using Serilog;
 using System;
 using System.Linq;
 using System.Threading;
@@ -27,6 +28,9 @@ namespace PhpbbInDotnet.Services
             var dbContext = scope.ServiceProvider.GetRequiredService<ForumDbContext>();
             var utils = scope.ServiceProvider.GetRequiredService<CommonUtils>();
             var storageService = scope.ServiceProvider.GetRequiredService<StorageService>();
+            var logger = scope.ServiceProvider.GetService<ILogger>();
+
+            logger.Information("Begin daily cleanup...");
 
             var retention = config.GetObject<TimeSpan?>("RecycleBinRetentionTime") ?? TimeSpan.FromDays(7);
             var now = DateTime.UtcNow.ToUnixTimestamp();
@@ -38,6 +42,7 @@ namespace PhpbbInDotnet.Services
 
             if (!toDelete.Any())
             {
+                logger.Information("Nothing to clean.");
                 return;
             }
 
@@ -62,13 +67,12 @@ namespace PhpbbInDotnet.Services
 
             if (deleteResults.Any(r => !r))
             {
-                utils.HandleErrorAsWarning(
-                    ex: new Exception("Not all attachments have been permanently deleted successfully."),
-                    message: "Unexpected failure during daily cleanup"
-                );
+                logger.Warning("Not all attachments have been permanently deleted successfully. This could have happened due to them being already deleted.");
             }
 
             await dbContext.SaveChangesAsync(CancellationToken.None);
+
+            logger.Information("End daily cleanup.");
         }
     }
 }

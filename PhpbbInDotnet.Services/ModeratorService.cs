@@ -159,7 +159,11 @@ namespace PhpbbInDotnet.Services
                             logDto.UserId
                         }
                     );
-                    await conn.ExecuteAsync("DELETE FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
+                    await conn.ExecuteAsync(
+                        "DELETE FROM phpbb_topics WHERE topic_id = @topicId; " +
+                        "DELETE FROM phpbb_poll_options WHERE topic_id = @topicId", 
+                        new { topicId }
+                    );
                 }
 
                 await DeletePostsCore(posts, logDto, false);

@@ -25,5 +25,30 @@
   "INVALID_DESTINATION_FORUM": "Invalid destination forum.",
   "INVALID_DESTINATION_TOPIC": "Invalid destination topic.",
   "ATLEAST_ONE_POST_REQUIRED": "At least one selected post is required.",
-  "ATLEAST_ONE_POST_MOVED_OR_DELETED": "At least one selected post has been moved or deleted in the meantime."
+  "ATLEAST_ONE_POST_MOVED_OR_DELETED": "At least one selected post has been moved or deleted in the meantime.",
+
+  //moderator panel
+  "MOD_PANEL": "Moderator panel",
+  "MODERATE_TOPICS": "Moderate topics",
+  "RECYCLE_BIN": "Recycle bin",
+  "FORUM_TO_MODERATE": "Forum to moderate",
+  "CHOOSE_FORUM_TO_MODERATE": "Choose forum to moderate",
+  "SELECT_ALL_REPORTS": "Select all reports",
+  "WITH_SELECTED_TOPICS": "With selected topics",
+  "MANAGE_REPORTS": "Manage reports",
+  "CONFIRM_CLOSE_REPORTS": "Are you sure you want to close the selected reports?",
+  "CLOSE_SELECTED_REPORTS": "Close selected reports",
+  "MANAGE_DELETED_ITEMS": "Manage deleted items",
+  "SELECT_THIS_ITEM_FORMAT": "Select this {0}",
+  "DELETED_AT": "Deleted at",
+  "DELETED_BY": "Deleted by",
+  "RESTORE_SELECTED_DELETED_ITEMS": "Restore selected items",
+  "CONFIRM_RESTORE_DELETED_ITEMS": "Are you sure you want to restore the selected items?",
+  "NO_REPORTS_SELECTED": "No reports selected",
+  "REPORTS_CLOSED_SUCCESSFULLY": "Reports closed successfully.",
+  "MODERATOR_TOPIC_ACTION_SUCCESSFUL_FORMAT": "Topics changed successfully.",
+  "MODERATOR_ACTION_PARTIAL_FAILED_FORMAT": "An error occurred and some topics have not been changed. Error ID: {0}",
+  "ITEMS_RESTORED_SUCCESSFULLY": "Items restored successfully.",
+  "ITEMS_RESTORATION_FAILED": "Item restoration failed.",
+  "ITEMS_RESTORATION_FAILED_PARTIALLY": "An error occurred and not all items have been restored."
 }

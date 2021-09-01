@@ -143,6 +143,7 @@ namespace PhpbbInDotnet.Forum
             services.AddLazyCache();
 
             services.AddHostedService<DailyCleanupService>();
+            services.Configure<HostOptions>(opts => opts.ShutdownTimeout = TimeSpan.FromMinutes(5));
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
         }

@@ -1,7 +1,6 @@
 ﻿@page
 
 @using CustomPartials
-@using Database.Entities
 @using LazyCache
 @using Objects
 @using Services
@@ -15,7 +14,7 @@
 @model PhpbbInDotnet.Forum.Pages.ModeratorModel
 @{
     var Lang = await Model.GetLanguage();
-    ViewData["Title"] = Model.LanguageProvider.Admin[Lang, "MOD_PANEL"]; ;
+    ViewData["Title"] = Model.LanguageProvider.Moderator[Lang, "MOD_PANEL"]; ;
     Layout = "~/Pages/_Layout.cshtml";
     var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
 }
@@ -33,7 +32,7 @@
     }
 </style>
 
-<h3>@Html.Raw(Model.LanguageProvider.Admin[Lang, "MOD_PANEL"])</h3>
+<h3>@Html.Raw(Model.LanguageProvider.Moderator[Lang, "MOD_PANEL"])</h3>
 <environment include="Development">
     <script src="~/lib/Sortable.js"></script>
     <script src="~/js/tabbedPage.js"></script>
@@ -112,7 +111,7 @@
         <form>
             <input type="hidden" name="ForumId" id="ForumIdInput" />
             <input type="hidden" name="Mode" value="@ModeratorPanelMode.TopicModeration" />
-            <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "GO", Casing.FirstUpper])" class="MyButton" />
+            <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "GO", Casing.FirstUpper])" class="MyButton SpacedButton" />
             @Html.AntiForgeryToken()
         </form>
     </div>
@@ -165,7 +164,7 @@
         <button onclick="selectAllCheckboxes('Topics')" type="button" class="MyButton SpacedButton">
             &#x2714;&nbsp;@Html.Raw(Model.LanguageProvider.Moderator[Lang, "SELECT_ALL_REPORTS"])
         </button>
-        <form method="post" name="SubmitTopics" id="SubmitTopics" asp-page-handler="SubmitTopics">
+        <form method="post" name="SubmitTopics" id="SubmitTopics" asp-page-handler="ManageTopics">
             @Html.Raw(Model.LanguageProvider.Moderator[Lang, "WITH_SELECTED_TOPICS"]):
             @Html.DropDownList(
                      "TopicAction",
@@ -183,7 +182,7 @@
                 <a href="javascript:$('#modConfirmation').submit();">@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CHOOSE_DESTINATION_FORUM_ID"])</a>
                 <span asp-validation-for="DestinationForumId" class="validation"></span>
             </div>
-            <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT", Casing.FirstUpper])" onclick="return mod.confirmAction('#TopicAction');" class="MyButton" style="height:30px" />
+            <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT", Casing.FirstUpper])" onclick="return mod.confirmAction('#TopicAction');" class="MyButton SpacedButton" style="height:30px" />
             <input type="hidden" asp-for="ForumId" />
             <input type="hidden" asp-for="Mode" />
             @Html.AntiForgeryToken()
@@ -202,7 +201,7 @@
 </div>
 
 <div id="Reports" class="tabcontent" style="@(Model.Mode == ModeratorPanelMode.Reports ? "display:inherit" : "display:none")">
-    <h4>@Html.Raw(Model.LanguageProvider.Moderator[Lang, "MANAGE_REPORTS"]): @Model.ForumName</h4>
+    <h4>@Html.Raw(Model.LanguageProvider.Moderator[Lang, "MANAGE_REPORTS"])</h4>
     @foreach (var report in Model.Reports ?? Enumerable.Empty<ReportDto>())
     {
         <hr class="BoxSeparator" />
@@ -210,13 +209,15 @@
             <input name="SelectedReports" type="checkbox" value="@report.Id" form="SubmitReports" style="margin-right:10px; align-self:safe center" />
             <div class="FlexCenter" style="width:100%">
                 <div class="FlexBox">
-                    <span>@Html.Raw(Model.LanguageProvider.Moderator[Lang, "REPORT_REASON"]): @Html.Raw(report.ReasonTitle)</span>
+                    <span>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "REPORT", Casing.FirstUpper]): @Html.Raw(report.ReasonTitle)</span>
                     <br />
                     <span class="Caption">
                         @Html.Raw(report.ReasonDescription)
                     </span>
                     <br />
-                    <span>@Html.Raw(Model.LanguageProvider.Moderator[Lang, "REPORT_DETAILS"]): @Html.Raw(report.Details)</span>
+                    <span>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "ADDITIONAL_DETAILS", Casing.FirstUpper]): @Html.Raw(report.Details)</span>
+                    <br />
+                    <span>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "REPORTING_USER", Casing.FirstUpper]): @Html.Raw(report.ReporterUsername)</span>
                 </div>
                 <div class="FlexBox">
                     <span class="Caption">
@@ -235,7 +236,7 @@
         &#x2714;&nbsp;@Html.Raw(Model.LanguageProvider.Moderator[Lang, "SELECT_ALL_REPORTS"])
     </button>
     <input type="submit" value="&#x274E;&nbsp;@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CLOSE_SELECTED_REPORTS"])" form="SubmitReports" onclick="return confirm('@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CONFIRM_CLOSE_REPORTS"])');" class="MyButton SpacedButton" />
-    <form method="post" name="SubmitReports" id="SubmitReports" asp-page-handler="SubmitReports">
+    <form method="post" name="SubmitReports" id="SubmitReports" asp-page-handler="CloseReports">
         <input type="hidden" name="Mode" value="@ModeratorPanelMode.Reports" />
         <input type="hidden" asp-for="ForumId" />
         @Html.AntiForgeryToken()
@@ -249,8 +250,12 @@
         var correlationId = Guid.NewGuid();
         var atLeastOneItem = false;
     }
+
     @foreach (var itemGroup in Model.DeletedItems ?? Enumerable.Empty<DeletedItemGroup>())
     {
+        var items = itemGroup.Items ?? Enumerable.Empty<DeletedItemDto>();
+        var itemName = Model.LanguageProvider.BasicText[Lang, itemGroup.Type.ToString().ToUpperInvariant()];
+
         <h4 onclick="expandSection('@(itemGroup.Type)Section', '@(itemGroup.Type)Char')" style="cursor:pointer" id="@(itemGroup.Type)Title">
             @switch (itemGroup.Type)
             {
@@ -264,36 +269,37 @@
 
                 case RecycleBinItemType.Post:
                     @Html.Raw(Model.LanguageProvider.BasicText[Lang, "POSTS", Casing.Title])
+                    items = items.OrderBy(i => (i.Value as PostDto).PostTime);
                     break;
             }
             <span id="@(itemGroup.Type)Char">&#x1F53D;</span>
         </h4>
         <p></p>
         <div id="@(itemGroup.Type)Section" style="display:none">
-            @foreach (var item in itemGroup.Items ?? Enumerable.Empty<DeletedItemDto>())
+            @foreach (var item in items)
             {
                 atLeastOneItem = true;
                 <label>
                     <input name="SelectedDeletedItems" type="checkbox" value="@item.Type/@item.Id" form="SubmitDeletedItems" />
-                    @Html.Raw(Model.LanguageProvider.Moderator[Lang, "SELECT_THIS"])
+                    @Html.Raw(string.Format(Model.LanguageProvider.Moderator[Lang, "SELECT_THIS_ITEM_FORMAT"], itemName))
                 </label>
                 <span>
                     &bull;
-                    @Html.Raw(Model.LanguageProvider.Moderator[Lang, "DELETED_AT"])
+                    @Html.Raw(Model.LanguageProvider.Moderator[Lang, "DELETED_AT"]):
                     <script>
                     writeDate('@item.DeleteTime.ToUtcTime().ToString("o")', '@UserDateFormat');
                     </script>
                     &bull;
-                    @Html.Raw(Model.LanguageProvider.Moderator[Lang, "DELETED_BY"])
+                    @Html.Raw(Model.LanguageProvider.Moderator[Lang, "DELETED_BY"]):
                     @Html.Raw(item.DeleteUserName)
                 </span>
                 <p></p>
                 @switch (item.Type)
                 {
                     case RecycleBinItemType.Forum:
-                        var forum = await _utils.DecompressObject<PhpbbForums>(item.Content);
+                        var forum = item.Value as ForumDto;
                         <span class="Caption">
-                            @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, forum.ParentId))
+                            @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, forum.ParentId ?? 0))
                         </span>
                         <br />
                         <strong>
@@ -303,15 +309,15 @@
                         {
                             <br />
                             <span class="Caption">
-                                @Html.Raw(_renderingService.BbCodeToHtml(forum.ForumDesc, forum.ForumDescUid))
+                                @Html.Raw(_renderingService.BbCodeToHtml(forum.ForumDesc, string.Empty))
                             </span>
                         }
                         break;
 
                     case RecycleBinItemType.Topic:
-                        var topic = await _utils.DecompressObject<PhpbbTopics>(item.Content);
+                        var topic = item.Value as TopicDto;
                         <span class="Caption">
-                            @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, topic.ForumId))
+                            @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, topic.ForumId ?? 0))
                         </span>
                         <br />
                         <strong>
@@ -320,7 +326,11 @@
                         break;
 
                     case RecycleBinItemType.Post:
-                        var post = await _utils.DecompressObject<PostDto>(item.Content);
+                        var post = item.Value as PostDto;
+                        <span class="Caption">
+                            @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, post.ForumId))
+                        </span>
+                        <br />
                         foreach (var attach in post.Attachments)
                         {
                             attach.CorrelationId = correlationId;
@@ -347,7 +357,7 @@
         </div>
         <p>&nbsp;</p>
     }
-<form method="post" name="SubmitDeletedItems" id="SubmitDeletedItems" asp-page-handler="SubmitDeletedItems">
+<form method="post" name="SubmitDeletedItems" id="SubmitDeletedItems" asp-page-handler="RestoreDeletedItems">
     <input type="submit" value="&#x274E;&nbsp;@Html.Raw(Model.LanguageProvider.Moderator[Lang, "RESTORE_SELECTED_DELETED_ITEMS"])" onclick="return confirm('@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CONFIRM_RESTORE_DELETED_ITEMS"])');" class="MyButton SpacedButton" @(atLeastOneItem ? "" : "disabled") />
     <input type="hidden" name="Mode" value="@ModeratorPanelMode.RecycleBin" />
     <input type="hidden" asp-for="ForumId" />

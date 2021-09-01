@@ -8,7 +8,9 @@ namespace PhpbbInDotnet.Objects
 
         public int Id { get; set; }
 
-        public byte[] Content { get; set; }
+        public byte[] RawContent { get; set; }
+
+        public object Value { get; set; }
 
         public long DeleteTime { get; set; }
 

@@ -185,6 +185,7 @@
   "SUBMIT_POST": "Submit post",
   "DRAFT_SAVED_SUCCESSFULLY": "The post has been successfuly saved as a draft. You can resume working on it later.",
   "CLOSED_TOPIC_CAPTION": "The topic is locked, replies can no longer be submitted",
+  "PREVIOUS_POSTS": "Previous posts",
 
   //post reporting
   "REPORT": "report",

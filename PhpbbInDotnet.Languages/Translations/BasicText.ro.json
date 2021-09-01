@@ -185,6 +185,7 @@
   "SUBMIT_POST": "Trimite mesajul",
   "DRAFT_SAVED_SUCCESSFULLY": "Mesajul în lucru a fost salvat cu succes și vei putea lucra în continuare la el mai târziu.",
   "CLOSED_TOPIC_CAPTION": "Subiectul este închis, nu se mai pot trimite răspunsuri.",
+  "PREVIOUS_POSTS": "Mesaje precedente",
 
   //post reporting
   "REPORT": "raport",
