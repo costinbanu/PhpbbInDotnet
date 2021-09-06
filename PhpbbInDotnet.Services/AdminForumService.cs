@@ -25,7 +25,7 @@ namespace PhpbbInDotnet.Services
         private readonly IConfiguration _config;
         private readonly OperationLogService _operationLogService;
 
-        public AdminForumService(ForumDbContext context, ForumTreeService forumService, IConfiguration config, CommonUtils utils, 
+        public AdminForumService(ForumDbContext context, ForumTreeService forumService, IConfiguration config, CommonUtils utils,
             LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor, OperationLogService operationLogService)
             : base(utils, languageProvider, httpContextAccessor)
         {
@@ -35,11 +35,18 @@ namespace PhpbbInDotnet.Services
             _operationLogService = operationLogService;
         }
 
-        public async Task<(string Message, bool? IsSuccess)> ManageForumsAsync(UpsertForumDto dto, int adminUserId)
+        public async Task<(string Message, bool? IsSuccess)> ManageForumsAsync(UpsertForumDto dto, int adminUserId, bool isRoot)
         {
             var lang = await GetLanguage();
             try
             {
+                if (isRoot)
+                {
+                    await ReorderChildren(0);
+                    await _context.SaveChangesAsync();
+                    return (string.Format(LanguageProvider.Admin[lang, "FORUM_UPDATED_SUCCESSFULLY_FORMAT"], _config.GetObject<string>("ForumName")), true);
+                }
+
                 var actual = await _context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == dto.ForumId);
                 var isNewForum = false;
                 if (string.IsNullOrWhiteSpace(dto.ForumName))
@@ -81,34 +88,7 @@ namespace PhpbbInDotnet.Services
                     await _context.SaveChangesAsync();
                 }
 
-                var children = await (
-                    from f in _context.PhpbbForums
-                    where f.ParentId == actual.ForumId
-                    orderby f.LeftId
-                    select f
-                ).ToListAsync();
-
-                if (children.Any())
-                {
-                    children.ForEach(c => c.LeftId = ((dto.ChildrenForums?.IndexOf(c.ForumId) ?? 0) + 1) * 2);
-                }
-
-                (int entityId, int roleId) translatePermission(string permission)
-                {
-                    if (string.IsNullOrWhiteSpace(permission))
-                    {
-                        return (-1, -1);
-                    }
-                    var items = permission.Split('_', StringSplitOptions.RemoveEmptyEntries);
-                    return (int.Parse(items[0]), int.Parse(items[1]));
-                }
-
-                Dictionary<int, int> translatePermissions(List<string> permissions)
-                    => (from fp in permissions ?? new List<string>()
-                        let item = translatePermission(fp)
-                        where item.entityId > 0
-                        select item
-                        ).ToDictionary(key => key.entityId, value => value.roleId);
+                await ReorderChildren(actual.ForumId);
 
                 foreach (var idx in dto.UserPermissionToRemove ?? new List<int>())
                 {
@@ -123,10 +103,10 @@ namespace PhpbbInDotnet.Services
                 }
 
                 var rolesForAclEntity = new Dictionary<AclEntityType, Dictionary<int, int>>
-                {
-                    { AclEntityType.User, translatePermissions(dto.UserForumPermissions) },
-                    { AclEntityType.Group, translatePermissions(dto.GroupForumPermissions) }
-                };
+                    {
+                        { AclEntityType.User, translatePermissions(dto.UserForumPermissions) },
+                        { AclEntityType.Group, translatePermissions(dto.GroupForumPermissions) }
+                    };
 
                 await _context.SaveChangesAsync();
 
@@ -159,10 +139,40 @@ namespace PhpbbInDotnet.Services
                         }
                     }
                 }
-
                 await _operationLogService.LogAdminForumAction(isNewForum ? AdminForumActions.Add : AdminForumActions.Update, adminUserId, actual);
-
                 return (string.Format(LanguageProvider.Admin[lang, "FORUM_UPDATED_SUCCESSFULLY_FORMAT"], actual.ForumName), true);
+
+                (int entityId, int roleId) translatePermission(string permission)
+                {
+                    if (string.IsNullOrWhiteSpace(permission))
+                    {
+                        return (-1, -1);
+                    }
+                    var items = permission.Split('_', StringSplitOptions.RemoveEmptyEntries);
+                    return (int.Parse(items[0]), int.Parse(items[1]));
+                }
+
+                Dictionary<int, int> translatePermissions(List<string> permissions)
+                    => (from fp in permissions ?? new List<string>()
+                        let item = translatePermission(fp)
+                        where item.entityId > 0
+                        select item
+                        ).ToDictionary(key => key.entityId, value => value.roleId);
+
+                async Task ReorderChildren(int forumId)
+                {
+                    var children = await (
+                        from f in _context.PhpbbForums
+                        where f.ParentId == forumId
+                        orderby f.LeftId
+                        select f
+                    ).ToListAsync();
+
+                    if (children.Any())
+                    {
+                        children.ForEach(c => c.LeftId = ((dto.ChildrenForums?.IndexOf(c.ForumId) ?? 0) + 1) * 2);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -225,7 +235,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<IEnumerable<ForumPermissions>> GetPermissions(int forumId)
             => await (await _context.GetDbConnectionAsync()).QueryAsync<ForumPermissions>(
-                sql: "CALL get_forum_permissions(@forumId);", 
+                sql: "CALL get_forum_permissions(@forumId);",
                 param: new { forumId }
             );
 

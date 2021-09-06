@@ -4,7 +4,7 @@
 @inject Services.ForumTreeService _forumTreeService
 @inject Services.AdminForumService _adminForumService
 @inject CommonUtils _utils
-@inject Languages.LanguageProvider _languageProvider 
+@inject Languages.LanguageProvider _languageProvider
 
 <environment include="Development">
     <link rel="stylesheet" href="~/css/posting.css" />
@@ -40,78 +40,81 @@
         {
             <h4 style="float:left">@Html.Raw(string.Format(_languageProvider.Admin[Model.Language, "ADMIN_FORUM_TITLE_FORMAT"], Model.Forum?.ForumName))</h4>
         }
-        else
+        else if (!Model.IsRoot)
         {
             <h4 style="float:left">@Html.Raw(_languageProvider.Admin[Model.Language, "CREATE_NEW_FORUM"])</h4>
         }
         <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('forumFields')">@Html.Raw(_languageProvider.BasicText[Model.Language, "CLOSE_BUTTON"])</div>
         <p>&nbsp;</p>
         <p>&nbsp;</p>
-        <div class="FlexCenter">
-            <div style="font-weight:bold; text-align: right">
-                @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_NAME"])
+        @if (!Model.IsRoot)
+        {
+            <div class="FlexCenter">
+                <div style="font-weight:bold; text-align: right">
+                    @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_NAME"])
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    <input type="Text" name="dto.forumName" value="@Html.Raw(Model.Forum?.ForumName)" autocomplete="new-password" />
+                </div>
             </div>
-            <div class="FlexRight PostInputWidth">
-                <input type="Text" name="dto.forumName" value="@Html.Raw(Model.Forum.ForumName)" autocomplete="new-password" />
+            <hr class="SubtypeSeparator" />
+            <div class="FlexCenter">
+                <div style="font-weight:bold; text-align: right">
+                    @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_DESCRIPTION"])
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    <textarea name="dto.forumDesc">@Html.Raw(Model.Forum?.ForumDesc)</textarea>
+                </div>
             </div>
-        </div>
-        <hr class="SubtypeSeparator" />
-        <div class="FlexCenter">
-            <div style="font-weight:bold; text-align: right">
-                @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_DESCRIPTION"])
+            <hr class="SubtypeSeparator" />
+            <div class="FlexCenter">
+                <div style="font-weight:bold; text-align: right">
+                    @Html.Raw(_languageProvider.BasicText[Model.Language, "FORUM_PASSWORD", Casing.FirstUpper])
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    <label>
+                        @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_HAS_PASSWORD"])
+                        @Html.CheckBox("dto.hasPassword", !string.IsNullOrWhiteSpace(Model.Forum?.ForumPassword))
+                    </label>
+                    <br />
+                    <span class="Caption DarkCaption">@Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_HAS_PASSWORD_CAPTION"])</span>
+                    <br /> <br />
+                    <input type="password" name="dto.forumPassword" id="forumPassword" value="@Html.Raw(Model.Forum?.ForumPassword)" autocomplete="new-password" style="width:75% !important" />&nbsp;
+                    <label>
+                        <input type="checkbox" onclick="Toggle()" />
+                        @Html.Raw(_languageProvider.Admin[Model.Language, "SHOW_PASSWORD"])
+                    </label>
+                    <br />
+                    <span class="Caption DarkCaption">@Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_PASSWORD_CAPTION"])</span>
+                </div>
             </div>
-            <div class="FlexRight PostInputWidth">
-                <textarea name="dto.forumDesc">@Html.Raw(Model.Forum.ForumDesc)</textarea>
+            <hr class="SubtypeSeparator" />
+            <div class="FlexCenter">
+                <div style="font-weight:bold; text-align: right">
+                    @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_TYPE"])
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    @Html.DropDownList("dto.forumType", _utils.EnumToDropDownList<ForumType>(Model.Forum?.ForumType ?? ForumType.SubForum, ft => _languageProvider.Enums[Model.Language, ft]))
+                </div>
             </div>
-        </div>
-        <hr class="SubtypeSeparator" />
-        <div class="FlexCenter">
-            <div style="font-weight:bold; text-align: right">
-                @Html.Raw(_languageProvider.BasicText[Model.Language, "FORUM_PASSWORD", Casing.FirstUpper])
-            </div>
-            <div class="FlexRight PostInputWidth">
-                <label>
-                    @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_HAS_PASSWORD"])
-                    @Html.CheckBox("dto.hasPassword", !string.IsNullOrWhiteSpace(Model.Forum?.ForumPassword))
-                </label>
-                <br />
-                <span class="Caption DarkCaption">@Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_HAS_PASSWORD_CAPTION"])</span>
-                <br /> <br />
-                <input type="password" name="dto.forumPassword" id="forumPassword" value="@Html.Raw(Model.Forum.ForumPassword)" autocomplete="new-password" style="width:75% !important" />&nbsp;
-                <label>
-                    <input type="checkbox" onclick="Toggle()" />
-                    @Html.Raw(_languageProvider.Admin[Model.Language, "SHOW_PASSWORD"])
-                </label>
-                <br />
-                <span class="Caption DarkCaption">@Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_PASSWORD_CAPTION"])</span>
-            </div>
-        </div>
-        <hr class="SubtypeSeparator" />
-        <div class="FlexCenter">
-            <div style="font-weight:bold; text-align: right">
-                @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_TYPE"])
-            </div>
-            <div class="FlexRight PostInputWidth">
-                @Html.DropDownList("dto.forumType", _utils.EnumToDropDownList<ForumType>(ForumType.SubForum, ft => _languageProvider.Enums[Model.Language, ft]))
-            </div>
-        </div>
-        <hr class="SubtypeSeparator" />
-        <div class="FlexCenter">
-            <div style="font-weight:bold; text-align: right">
-                @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_PARENT"])
-            </div>
-            <div class="FlexRight PostInputWidth">
-                @{ 
-                    var parentId = Model.Forum?.ParentId ?? 0;
-                    if (parentId == 0)
-                    {
-                        parentId = Model.ParentId ?? 0;
+            <hr class="SubtypeSeparator" />
+            <div class="FlexCenter">
+                <div style="font-weight:bold; text-align: right">
+                    @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_PARENT"])
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    @{
+                        var parentId = Model.Forum?.ParentId ?? 0;
+                        if (parentId == 0)
+                        {
+                            parentId = Model.ParentId ?? 0;
+                        }
                     }
-                }
-                @Html.DropDownList("dto.parentId", await _adminForumService.FlatForumTreeAsListItem(parentId, Model.CurrentUser))
+                    @Html.DropDownList("dto.parentId", await _adminForumService.FlatForumTreeAsListItem(parentId, Model.CurrentUser))
+                </div>
             </div>
-        </div>
-        <hr class="SubtypeSeparator" />
+            <hr class="SubtypeSeparator" />
+        }
         <div class="FlexCenter">
             <div style="font-weight:bold; text-align: right">
                 @Html.Raw(_languageProvider.Admin[Model.Language, "REORDER_SUBFORUMS"])
@@ -128,61 +131,65 @@
                 </div>
             </div>
         </div>
-        <hr class="SubtypeSeparator" />
-        <div class="FlexCenter">
-            <div style="font-weight:bold; text-align: right">
-                @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_RULES_LINK"])
+        @if (!Model.IsRoot)
+        {
+            <hr class="SubtypeSeparator" />
+            <div class="FlexCenter">
+                <div style="font-weight:bold; text-align: right">
+                    @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_RULES_LINK"])
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    <input type="text" name="dto.forumRulesLink" value="@Html.Raw(Model.Forum?.ForumRulesLink)" autocomplete="new-password" />
+                </div>
             </div>
-            <div class="FlexRight PostInputWidth">
-                <input type="text" name="dto.forumRulesLink" value="@Html.Raw(Model.Forum.ForumRulesLink)" autocomplete="new-password" />
+            <hr class="SubtypeSeparator" />
+            <div class="FlexCenter">
+                <div style="font-weight:bold; text-align: right">
+                    @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_RULES"])
+                </div>
+                <div class="FlexRight PostInputWidth">
+                    <textarea name="dto.forumRules">@Html.Raw(Model.Forum?.ForumRules)</textarea>
+                </div>
             </div>
-        </div>
-        <hr class="SubtypeSeparator" />
-        <div class="FlexCenter">
-            <div style="font-weight:bold; text-align: right">
-                @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_RULES"])
+            <hr />
+            <div style="font-weight:bold; vertical-align:top; font-size:1.2em">
+                @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_PERMISSIONS"])
             </div>
-            <div class="FlexRight PostInputWidth">
-                <textarea name="dto.forumRules">@Html.Raw(Model.Forum.ForumRules)</textarea>
-            </div>
-        </div>
-        <hr />
-        <div style="font-weight:bold; vertical-align:top; font-size:1.2em">
-            @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_PERMISSIONS"])
-        </div>
-        <br />
-        <span style="font-weight:bold">@Html.Raw(_languageProvider.Admin[Model.Language, "USER_PERMISSIONS"])</span>
-        <br />
-        @await Html.PartialAsync(
-            "_AdminForumPermissionsPartial",
-            new _AdminForumPermissionsPartialModel
-            {
-                Forum = Model.Forum,
-                ForumChildren = Model.ForumChildren,
-                Permissions = Model.Permissions?.Where(p => p.Type == AclEntityType.User),
-                EntityType = AclEntityType.User,
-                Language = Model.Language
-            },
-            ViewData
-        )
-        <hr class="SubtypeSeparator" />
-        <span style="font-weight:bold">@Html.Raw(_languageProvider.Admin[Model.Language, "GROUP_PERMISSIONS"])</span>
-        <br />
-        @await Html.PartialAsync(
-            "_AdminForumPermissionsPartial",
-            new _AdminForumPermissionsPartialModel
-            {
-                Forum = Model.Forum,
-                ForumChildren = Model.ForumChildren,
-                Permissions = Model.Permissions?.Where(p => p.Type == AclEntityType.Group),
-                EntityType = AclEntityType.Group,
-                Language = Model.Language
-            },
-            ViewData
-        )
-        <hr />
+            <br />
+            <span style="font-weight:bold">@Html.Raw(_languageProvider.Admin[Model.Language, "USER_PERMISSIONS"])</span>
+            <br />
+            @await Html.PartialAsync(
+                         "_AdminForumPermissionsPartial",
+                         new _AdminForumPermissionsPartialModel
+                         {
+                             Forum = Model.Forum,
+                             ForumChildren = Model.ForumChildren,
+                             Permissions = Model.Permissions?.Where(p => p.Type == AclEntityType.User),
+                             EntityType = AclEntityType.User,
+                             Language = Model.Language
+                         },
+                         ViewData
+                     )
+            <hr class="SubtypeSeparator" />
+            <span style="font-weight:bold">@Html.Raw(_languageProvider.Admin[Model.Language, "GROUP_PERMISSIONS"])</span>
+            <br />
+            @await Html.PartialAsync(
+                "_AdminForumPermissionsPartial",
+                new _AdminForumPermissionsPartialModel
+                {
+                    Forum = Model.Forum,
+                    ForumChildren = Model.ForumChildren,
+                    Permissions = Model.Permissions?.Where(p => p.Type == AclEntityType.Group),
+                    EntityType = AclEntityType.Group,
+                    Language = Model.Language
+                },
+                ViewData
+            )
+            <hr />
+        }
         <input type="submit" value="@Html.Raw(_languageProvider.Admin[Model.Language, "SAVE_CHANGES"])" style="margin-bottom:10px; float: left;" class="MyButton" /> &nbsp;
-        <input type="hidden" name="dto.forumId" value="@Model.Forum.ForumId" />
+        <input type="hidden" name="dto.forumId" value="@Model.Forum?.ForumId" />
+        <input type="hidden" name="dto.isRoot" value="@Model.IsRoot.ToString()" />
         <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('forumFields')">@Html.Raw(_languageProvider.BasicText[Model.Language, "CLOSE_BUTTON"])</div>
 
     </form>
