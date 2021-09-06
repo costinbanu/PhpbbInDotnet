@@ -100,13 +100,13 @@
     </span>
     <div id="forumTree" style="@(isForumSelected ? "display:none" : "display:unset")">
         @await Html.PartialAsync(
-            "_ForumTreePartial",
-            new _ForumTreePartialModel(
-                tree: (await Model.GetForumTree(false, false)).Tree,
-                forumId: Model.ForumId == 0 ? null : Model.ForumId
-            ),
-            ViewData
-        )
+         "_ForumTreePartial",
+         new _ForumTreePartialModel(
+             tree: (await Model.GetForumTree(false, false)).Tree,
+             forumId: Model.ForumId == 0 ? null : Model.ForumId
+         ),
+         ViewData
+     )
         <p></p>
         <form>
             <input type="hidden" name="ForumId" id="ForumIdInput" />
@@ -145,16 +145,16 @@
                     @Html.Raw(topic.TopicTitle)
                 </a>
                 @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
-                {
-                    AuthorId = topic.TopicLastPosterId,
-                    AuthorName = topic.TopicLastPosterName,
-                    AuthorColor = topic.TopicLastPosterColour,
-                    CreationTime = topic.TopicLastPostTime?.ToUtcTime(),
-                    AssetId = topic.TopicId.Value,
-                    DateFormat = UserDateFormat,
-                    ShowAsLast = true,
-                    Language = Lang
-                })
+           {
+               AuthorId = topic.TopicLastPosterId,
+               AuthorName = topic.TopicLastPosterName,
+               AuthorColor = topic.TopicLastPosterColour,
+               CreationTime = topic.TopicLastPostTime?.ToUtcTime(),
+               AssetId = topic.TopicId.Value,
+               DateFormat = UserDateFormat,
+               ShowAsLast = true,
+               Language = Lang
+           })
             </div>
             <hr class="BoxSeparator" />
         }
@@ -167,15 +167,15 @@
         <form method="post" name="SubmitTopics" id="SubmitTopics" asp-page-handler="ManageTopics">
             @Html.Raw(Model.LanguageProvider.Moderator[Lang, "WITH_SELECTED_TOPICS"]):
             @Html.DropDownList(
-                     "TopicAction",
-                     _utils.EnumToDropDownList<ModeratorTopicActions>(
-                         selectedItem: null,
-                         textTransform: item => Model.LanguageProvider.Enums[Lang, item],
-                         defaultText: Model.LanguageProvider.BasicText[Lang, "SELECT_AN_OPTION"],
-                         valueFilter: action => action != ModeratorTopicActions.DeleteTopic
-                     ),
-                     new { onchange = "mod.showTopicExtraInput(this)", id = "TopicAction", style = "max-width:400px; height: 30px; padding-top: 0px" }
-                 )
+                  "TopicAction",
+                  _utils.EnumToDropDownList<ModeratorTopicActions>(
+                      selectedItem: null,
+                      textTransform: item => Model.LanguageProvider.Enums[Lang, item],
+                      defaultText: Model.LanguageProvider.BasicText[Lang, "SELECT_AN_OPTION"],
+                      valueFilter: action => action != ModeratorTopicActions.DeleteTopic
+                  ),
+                  new { onchange = "mod.showTopicExtraInput(this)", id = "TopicAction", style = "max-width:400px; height: 30px; padding-top: 0px" }
+              )
             <div id="extraInputTopic" style="display:@(Model.DestinationForumId > 0 ? "block" : "none")">
                 <br />
                 <input type="text" asp-for="DestinationForumId" placeholder="@Html.Raw(Model.LanguageProvider.Moderator[Lang, "DESTINATION_FORUM_ID"])" style="width:250px" /><br />
@@ -202,8 +202,10 @@
 
 <div id="Reports" class="tabcontent" style="@(Model.Mode == ModeratorPanelMode.Reports ? "display:inherit" : "display:none")">
     <h4>@Html.Raw(Model.LanguageProvider.Moderator[Lang, "MANAGE_REPORTS"])</h4>
+    @{ var atLeastOneReport = false; }
     @foreach (var report in Model.Reports ?? Enumerable.Empty<ReportDto>())
     {
+        atLeastOneReport = true;
         <hr class="BoxSeparator" />
         <div class="FlexRow">
             <input name="SelectedReports" type="checkbox" value="@report.Id" form="SubmitReports" style="margin-right:10px; align-self:safe center" />
@@ -231,11 +233,20 @@
             </div>
         </div>
     }
-    <hr class="BoxSeparator" />
-    <button onclick="selectAllCheckboxes('Reports')" type="button" class="MyButton SpacedButton">
+    @if (!atLeastOneReport)
+    {
+        <p>&nbsp;</p>
+        @Html.Raw(Model.LanguageProvider.Moderator[Lang, "NO_OPEN_REPORTS"])
+        <p>&nbsp;</p>
+    }
+    else
+    {
+        <hr class="BoxSeparator" />
+    }
+    <button onclick="selectAllCheckboxes('Reports')" type="button" class="MyButton SpacedButton" @(atLeastOneReport ? "" : "disabled")>
         &#x2714;&nbsp;@Html.Raw(Model.LanguageProvider.Moderator[Lang, "SELECT_ALL_REPORTS"])
     </button>
-    <input type="submit" value="&#x274E;&nbsp;@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CLOSE_SELECTED_REPORTS"])" form="SubmitReports" onclick="return confirm('@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CONFIRM_CLOSE_REPORTS"])');" class="MyButton SpacedButton" />
+    <input type="submit" value="&#x274E;&nbsp;@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CLOSE_SELECTED_REPORTS"])" form="SubmitReports" onclick="return confirm('@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CONFIRM_CLOSE_REPORTS"])');" class="MyButton SpacedButton" @(atLeastOneReport ? "" : "disabled") />
     <form method="post" name="SubmitReports" id="SubmitReports" asp-page-handler="CloseReports">
         <input type="hidden" name="Mode" value="@ModeratorPanelMode.Reports" />
         <input type="hidden" asp-for="ForumId" />
@@ -246,7 +257,7 @@
 
 <div id="RecycleBin" class="tabcontent" style="@(Model.Mode == ModeratorPanelMode.RecycleBin ? "display:inherit" : "display:none")">
     <h4>@Html.Raw(Model.LanguageProvider.Moderator[Lang, "MANAGE_DELETED_ITEMS"])</h4>
-    @{ 
+    @{
         var correlationId = Guid.NewGuid();
         var atLeastOneItem = false;
     }
@@ -269,7 +280,11 @@
 
                 case RecycleBinItemType.Post:
                     @Html.Raw(Model.LanguageProvider.BasicText[Lang, "POSTS", Casing.Title])
-                    items = items.OrderBy(i => (i.Value as PostDto).PostTime);
+                    items = from i in items
+                            group i by (i.Value as PostDto).TopicId into groups
+                            from g in groups
+                            orderby (g.Value as PostDto).PostTime descending
+                            select g;
                     break;
             }
             <span id="@(itemGroup.Type)Char">&#x1F53D;</span>
@@ -357,11 +372,17 @@
         </div>
         <p>&nbsp;</p>
     }
-<form method="post" name="SubmitDeletedItems" id="SubmitDeletedItems" asp-page-handler="RestoreDeletedItems">
-    <input type="submit" value="&#x274E;&nbsp;@Html.Raw(Model.LanguageProvider.Moderator[Lang, "RESTORE_SELECTED_DELETED_ITEMS"])" onclick="return confirm('@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CONFIRM_RESTORE_DELETED_ITEMS"])');" class="MyButton SpacedButton" @(atLeastOneItem ? "" : "disabled") />
-    <input type="hidden" name="Mode" value="@ModeratorPanelMode.RecycleBin" />
-    <input type="hidden" asp-for="ForumId" />
-    @Html.AntiForgeryToken()
-</form>
+    @if (!atLeastOneItem)
+    {
+        <p>&nbsp;</p>
+        @Html.Raw(Model.LanguageProvider.Moderator[Lang, "NO_DELETED_ITEMS"])
+        <p>&nbsp;</p>
+    }
+    <form method="post" name="SubmitDeletedItems" id="SubmitDeletedItems" asp-page-handler="RestoreDeletedItems">
+        <input type="submit" value="&#x274E;&nbsp;@Html.Raw(Model.LanguageProvider.Moderator[Lang, "RESTORE_SELECTED_DELETED_ITEMS"])" onclick="return confirm('@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CONFIRM_RESTORE_DELETED_ITEMS"])');" class="MyButton SpacedButton" @(atLeastOneItem ? "" : "disabled") />
+        <input type="hidden" name="Mode" value="@ModeratorPanelMode.RecycleBin" />
+        <input type="hidden" asp-for="ForumId" />
+        @Html.AntiForgeryToken()
+    </form>
     <p>&nbsp;</p>
 </div>

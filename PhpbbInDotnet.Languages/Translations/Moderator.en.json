@@ -11,6 +11,8 @@
   "DUPLICATE_POST": "Duplicate post",
   "OPEN_REPORT": "open report",
   "OPEN_REPORTS": "open reports",
+  "NO_OPEN_REPORTS": "No open reports",
+  "NO_DELETED_ITEMS": "No deleted items",
 
   //success messages
   "TOPIC_CHANGED_SUCCESSFULLY": "The topic has been modified successfully!",

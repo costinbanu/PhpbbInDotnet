@@ -19,6 +19,7 @@ namespace PhpbbInDotnet.Forum.Pages
     {
         private readonly ModeratorService _moderatorService;
         private readonly PostService _postService;
+        private readonly OperationLogService _operationLogService;
 
         [BindProperty(SupportsGet = true)]
         public ModeratorPanelMode Mode { get; set; }
@@ -52,12 +53,13 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool ScrollToAction => TopicAction.HasValue && DestinationForumId.HasValue;
         public IEnumerable<DeletedItemGroup> DeletedItems { get; private set; }
 
-        public ModeratorModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils,
-             IConfiguration config, AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider, ModeratorService moderatorService, PostService postService)
+        public ModeratorModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, IConfiguration config, 
+            AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider, ModeratorService moderatorService, PostService postService, OperationLogService operationLogService)
             : base(context, forumService, userService, cache, config, sessionCounter, utils, languageProvider)
         {
             _moderatorService = moderatorService;
             _postService = postService;
+            _operationLogService = operationLogService;
         }
 
         public int[] GetTopicIds()
@@ -316,7 +318,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return false;
             }
             var dto = await Utils.DecompressObject<ForumDto>(deletedItem.Content);
-            Context.PhpbbForums.Add(new PhpbbForums
+            var toAdd = new PhpbbForums
             {
                 ForumId = dto.ForumId.Value,
                 ForumName = dto.ForumName,
@@ -333,9 +335,12 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumLastPostTime = dto.ForumLastPostTime,
                 ForumLastPosterName = dto.ForumLastPosterName,
                 ForumLastPosterColour = dto.ForumLastPosterColour
-            });
+            };
+            Context.PhpbbForums.Add(toAdd);
             Context.PhpbbRecycleBin.Remove(deletedItem);
             await Context.SaveChangesAsync();
+
+            await _operationLogService.LogAdminForumAction(AdminForumActions.Restore, (await GetCurrentUserAsync()).UserId, toAdd);
 
             return true;
         }
@@ -398,6 +403,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 await RestorePost(post.PostId);
             }
 
+            await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.RestoreTopic, (await GetCurrentUserAsync()).UserId, toAdd.TopicId);
+
             return true;
         }
 
@@ -452,6 +459,9 @@ namespace PhpbbInDotnet.Forum.Pages
             Context.PhpbbRecycleBin.Remove(deletedItem);
             await Context.SaveChangesAsync();
             await _postService.CascadePostAdd(toAdd, false);
+
+            await _operationLogService.LogModeratorPostAction(ModeratorPostActions.RestorePosts, (await GetCurrentUserAsync()).UserId, toAdd, $"<a href=\"./ViewTopic?postId={toAdd.PostId}&handler=ByPostId\" target=\"_blank\">LINK</a>");
+
             return true;
         }
 

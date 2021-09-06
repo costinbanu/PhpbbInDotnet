@@ -98,7 +98,8 @@ namespace PhpbbInDotnet.Utilities
     {
         Add,
         Delete,
-        Update
+        Update,
+        Restore
     }
 
     public enum AclEntityType
@@ -124,7 +125,8 @@ namespace PhpbbInDotnet.Utilities
         MakeTopicNormal,
         MakeTopicImportant,
         MakeTopicAnnouncement,
-        MakeTopicGlobal
+        MakeTopicGlobal,
+        RestoreTopic
     }
 
     public enum ModeratorPostActions
@@ -132,7 +134,8 @@ namespace PhpbbInDotnet.Utilities
         MoveSelectedPosts,
         SplitSelectedPosts,
         DeleteSelectedPosts,
-        DuplicateSelectedPost
+        DuplicateSelectedPost,
+        RestorePosts
     }
 
     public enum UserProfileActions
