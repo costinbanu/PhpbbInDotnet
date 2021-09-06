@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
+using System;
+using System.Collections.Generic;
 
 namespace PhpbbInDotnet.Forum.Pages.CustomPartials.Admin
 {
@@ -14,5 +17,11 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials.Admin
         public string Language { get; set; }
 
         public string DateFormat { get; set; }
+
+        public List<OperationLogSummary> CurrentLogItems { get; set; }
+
+        public int TotalLogItemCount { get; set; }
+
+        public List<(DateTime LogDate, string LogPath)> SystemLogs { get; set; }
     }
 }

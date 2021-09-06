@@ -8,6 +8,7 @@ using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mime;
@@ -19,6 +20,42 @@ namespace PhpbbInDotnet.Forum.Pages
     [RequestSizeLimit(10 * 1024 * 1024)]
     public partial class AdminModel : AuthenticatedPageModel
     {
+        [BindProperty]
+        public AdminUserSearch SearchParameters { get; set; }
+        public List<PhpbbUsers> UserSearchResults { get; private set; }
+        public List<PhpbbUsers> InactiveUsers { get; private set; }
+        public List<UpsertGroupDto> Groups { get; private set; }
+        public List<PhpbbRanks> Ranks { get; private set; }
+        public List<UpsertBanListDto> BanList { get; private set; }
+        public List<SelectListItem> RankListItems { get; private set; }
+        public List<SelectListItem> RoleListItems { get; private set; }
+        public bool WasSearchPerformed { get; private set; } = false;
+        [BindProperty]
+        public PhpbbForums Forum { get; set; } = null;
+        [BindProperty]
+        public int? ParentForumId { get; set; } = null;
+        public List<PhpbbForums> ForumChildren { get; private set; }
+        public List<SelectListItem> ForumSelectedParent { get; private set; }
+        public IEnumerable<ForumPermissions> Permissions { get; private set; }
+        public bool ShowForum { get; private set; }
+        public bool IsRootForum { get; private set; }
+        public List<PhpbbWords> BannedWords { get; set; }
+        public List<AttachmentManagementDto> OrphanFiles { get; set; }
+        public List<PhpbbBbcodes> CustomBbCodes { get; set; }
+        public List<PhpbbSmilies> Smilies { get; set; }
+        [BindProperty(SupportsGet = true)]
+        public OperationLogType? LogType { get; set; }
+        [BindProperty(SupportsGet = true)]
+        public int LogPage { get; set; } = 1;
+        [BindProperty(SupportsGet = true)]
+        public string AuthorName { get; set; }
+        [BindProperty]
+        public string SystemLogPath { get; set; }
+        public List<OperationLogSummary> CurrentLogItems { get; private set; }
+        public int TotalLogItemCount { get; private set; }
+        public List<(DateTime LogDate, string LogPath)> SystemLogs { get; private set; }
+
+
         public AdminCategories Category { get; private set; } = AdminCategories.Users;
         public bool? IsSuccess { get; private set; }
         public string Message { get; private set; }
@@ -34,29 +71,64 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly AdminUserService _adminUserService;
         private readonly AdminForumService _adminForumService;
         private readonly WritingToolsService _adminWritingService;
+        private readonly OperationLogService _logService;
 
         public AdminModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, 
             AdminUserService adminUserService, AdminForumService adminForumService, WritingToolsService adminWritingService, IConfiguration config, 
-            AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider) 
+            AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider, OperationLogService logService) 
             : base(context, forumService, userService, cache, config, sessionCounter, utils, languageProvider)
         {
             _adminUserService = adminUserService;
             _adminForumService = adminForumService;
             _adminWritingService = adminWritingService;
+            _logService = logService;
             UserSearchResults = new List<PhpbbUsers>();
             ForumChildren = new List<PhpbbForums>();
             ForumSelectedParent = new List<SelectListItem>();
         }
 
         public async Task<IActionResult> OnGet()
-            => await WithAdmin(async () => await Task.FromResult(Page()));
+            => await WithAdmin(async () =>
+            {
+                var inactiveUsersTask = _adminUserService.GetInactiveUsers();
+                var groupsTask = _adminUserService.GetGroups();
+                var ranksTask = Context.PhpbbRanks.AsNoTracking().ToListAsync();
+                var banListTask = _adminUserService.GetBanList();
+                var rankListItemsTask = _adminUserService.GetRanksSelectListItems();
+                var roleListItemsTask = _adminUserService.GetRolesSelectListItems();
+
+                var bannedWordsTask = Context.PhpbbWords.AsNoTracking().ToListAsync();
+                var orphanFilesTask = _adminWritingService.GetOrphanedFiles();
+                var customBbCodesTask = Context.PhpbbBbcodes.AsNoTracking().ToListAsync();
+                var smiliesTask = _adminWritingService.GetSmilies();
+
+                var logsTask = _logService.GetOperationLogs(LogType, AuthorName, LogPage);
+                var systemLogsTask = Task.Run(() => _logService.GetSystemLogs() ?? new List<(DateTime LogDate, string LogPath)>());
+                
+                await Task.WhenAll(
+                    inactiveUsersTask, groupsTask, ranksTask, banListTask, rankListItemsTask, roleListItemsTask,
+                    bannedWordsTask, orphanFilesTask, customBbCodesTask, smiliesTask,
+                    logsTask, systemLogsTask);
+                
+                InactiveUsers = await inactiveUsersTask;
+                Groups = await groupsTask;
+                Ranks = await ranksTask;
+                BanList = await banListTask;
+                RankListItems = await rankListItemsTask;
+                RoleListItems = await roleListItemsTask;
+
+                BannedWords = await bannedWordsTask;
+                OrphanFiles = await orphanFilesTask;
+                CustomBbCodes = await customBbCodesTask;
+                Smilies = await smiliesTask;
+
+                (CurrentLogItems, TotalLogItemCount) = await logsTask;
+                SystemLogs = await systemLogsTask;
+
+                return Page();
+            });
 
         #region Admin user
-
-        [BindProperty]
-        public AdminUserSearch SearchParameters { get; set; }
-        public List<PhpbbUsers> UserSearchResults { get; private set; }
-        public bool WasSearchPerformed { get; set; } = false;
 
         public async Task<IActionResult> OnPostUserSearch()
             => await WithAdmin(async () =>
@@ -70,7 +142,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     Message = LanguageProvider.Admin[lang, "TOO_FEW_SEARCH_CRITERIA"];
                     IsSuccess = false;
-                    return Page();
+                    return await OnGet();
                 }
 
                 (Message, IsSuccess, UserSearchResults) = await _adminUserService.UserSearchAsync(SearchParameters);
@@ -79,7 +151,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     Message = LanguageProvider.BasicText[lang, "NO_RESULTS_FOUND"];
                     IsSuccess = false;
                 }
-                return Page();
+                return await OnGet();
             });
 
         public async Task<IActionResult> OnPostUserManagement(AdminUserActions? userAction, int? userId)
@@ -87,7 +159,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 (Message, IsSuccess) = await _adminUserService.ManageUser(userAction, userId, PageContext, HttpContext, (await GetCurrentUserAsync()).UserId);
                 Category = AdminCategories.Users;
-                return Page();
+                return await OnGet();
             });
 
         public async Task<IActionResult> OnPostBatchUserManagement(int[] userIds)
@@ -95,7 +167,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 (Message, IsSuccess) = await _adminUserService.DeleteUsersWithEmailNotConfirmed(userIds, (await GetCurrentUserAsync()).UserId);
                 Category = AdminCategories.Users;
-                return Page();
+                return await OnGet();
             });
 
         public async Task<IActionResult> OnPostGroupManagement(UpsertGroupDto dto)
@@ -103,7 +175,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 (Message, IsSuccess) = await _adminUserService.ManageGroup(dto, (await GetCurrentUserAsync()).UserId);
                 Category = AdminCategories.Users;
-                return Page();
+                return await OnGet();
             });
 
         public async Task<IActionResult> OnPostRankManagement(int? rankId, string rankName, bool? deleteRank)
@@ -111,7 +183,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 (Message, IsSuccess) = await _adminUserService.ManageRank(rankId, rankName, deleteRank, (await GetCurrentUserAsync()).UserId);
                 Category = AdminCategories.Users;
-                return Page();
+                return await OnGet();
             });
 
         public async Task<IActionResult> OnPostBanUser(List<UpsertBanListDto> banlist, List<int> toRemove)
@@ -119,22 +191,12 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 (Message, IsSuccess) = await _adminUserService.BanUser(banlist, toRemove, (await GetCurrentUserAsync()).UserId);
                 Category = AdminCategories.Users;
-                return Page();
+                return await OnGet();
             });
 
         #endregion Admin user
 
         #region Admin forum
-
-        [BindProperty]
-        public PhpbbForums Forum { get; set; } = null;
-        [BindProperty]
-        public int? ParentForumId { get; set; } = null;
-        public List<PhpbbForums> ForumChildren { get; private set; }
-        public List<SelectListItem> ForumSelectedParent { get; private set; }
-        public IEnumerable<ForumPermissions> Permissions { get; private set; }
-        public bool ShowForum { get; private set; }
-        public bool IsRootForum { get; private set; }
 
         public async Task<IActionResult> OnPostShowForum(int? forumId)
             => await WithAdmin(async () =>
@@ -143,13 +205,16 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (forumId != null)
                 {
-                    Permissions = await _adminForumService.GetPermissions(forumId.Value);
-                    (Forum, ForumChildren) = await _adminForumService.ShowForum(forumId.Value);
+                    var permissionsTask = _adminForumService.GetPermissions(forumId.Value);
+                    var showForumTask = _adminForumService.ShowForum(forumId.Value);
+                    await Task.WhenAll(permissionsTask, showForumTask);
+                    Permissions = await permissionsTask;
+                    (Forum, ForumChildren) = await showForumTask;
                 }
 
                 ShowForum = true;
                 Category = AdminCategories.Forums;
-                return Page();
+                return await OnGet();
             });
 
         public async Task<IActionResult> OnPostForumManagement(UpsertForumDto dto)
@@ -159,7 +224,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 ShowForum = false;
                 Category = AdminCategories.Forums;
-                return Page();
+                return await OnGet();
             });
 
         public async Task<IActionResult> OnPostDeleteForum(int forumId)
@@ -169,7 +234,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 ShowForum = false;
                 Category = AdminCategories.Forums;
-                return Page();
+                return await OnGet();
             });
 
         #endregion Admin forum
@@ -181,7 +246,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 (Message, IsSuccess) = await _adminWritingService.ManageBannedWords(words, toRemove);
                 Category = AdminCategories.WritingTools;
-                return Page();
+                return await OnGet();
             });
 
         public async Task<IActionResult> OnPostOrphanedFiles()
@@ -191,7 +256,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 Category = AdminCategories.WritingTools;
 
-                return Page();
+                return await OnGet();
             });
 
         public async Task<IActionResult> OnPostBBCodes(List<PhpbbBbcodes> codes, List<int> toRemove, List<int> toDisplay)
@@ -199,7 +264,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 (Message, IsSuccess) = await _adminWritingService.ManageBBCodes(codes, toRemove, toDisplay);
                 Category = AdminCategories.WritingTools;
-                return Page();
+                return await OnGet();
             });
 
         public async Task<IActionResult> OnPostSmilies(List<UpsertSmiliesDto> dto, List<string> newOrder, List<int> codesToDelete, List<string> smileyGroupsToDelete)
@@ -211,28 +276,18 @@ namespace PhpbbInDotnet.Forum.Pages
                 var z = smileyGroupsToDelete;
                 var t = newOrder;
                 Category = AdminCategories.WritingTools;
-                return Page();
+                return await OnGet();
             });
 
         #endregion Admin writing
 
         #region Logs
 
-        [BindProperty(SupportsGet = true)]
-        public OperationLogType? LogType { get; set; }
-        [BindProperty(SupportsGet = true)]
-        public int LogPage { get; set; } = 1;
-        [BindProperty(SupportsGet = true)]
-        public string AuthorName { get; set; }
-
         public async Task<IActionResult> OnGetForumLogs()
         {
             Category = AdminCategories.Logs;
             return await OnGet();
         }
-
-        [BindProperty]
-        public string SystemLogPath { get; set; }
 
         public async Task<IActionResult> OnPostSystemLogs()
         {

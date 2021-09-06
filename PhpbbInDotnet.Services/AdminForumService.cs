@@ -197,6 +197,9 @@ namespace PhpbbInDotnet.Services
             var tree = await _forumService.GetForumTree(user, false, false);
             var list = new List<SelectListItem>();
 
+            traverse(0);
+            return list;
+
             int getOrder(int forumId)
             {
                 if (tree.TryGetValue(new ForumTree { ForumId = forumId }, out var forum))
@@ -228,9 +231,6 @@ namespace PhpbbInDotnet.Services
                     traverse(child);
                 }
             }
-
-            traverse(0);
-            return list;
         }
 
         public async Task<IEnumerable<ForumPermissions>> GetPermissions(int forumId)

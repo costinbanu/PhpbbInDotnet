@@ -464,9 +464,6 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<List<PhpbbRanks>> GetRawRanks()
-            => await _context.PhpbbRanks.AsNoTracking().ToListAsync();
-
         #endregion Rank
 
         #region Group
@@ -620,14 +617,20 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<(List<SelectListItem> Ranks, List<SelectListItem> Roles)> GetGroupRanksAndRolesSelectListItems()
+        public async Task<List<SelectListItem>> GetRanksSelectListItems()
         {
             var lang = await GetLanguage();
             var groupRanks = new List<SelectListItem> { new SelectListItem(LanguageProvider.Admin[lang, "NO_RANK"], "0", true) };
             groupRanks.AddRange(_context.PhpbbRanks.AsNoTracking().Select(x => new SelectListItem(x.RankTitle, x.RankId.ToString())));
+            return groupRanks;
+        }
+
+        public async Task<List<SelectListItem>> GetRolesSelectListItems()
+        {
+            var lang = await GetLanguage();
             var roles = new List<SelectListItem> { new SelectListItem(LanguageProvider.Admin[lang, "NO_ROLE"], "0", true) };
             roles.AddRange(_context.PhpbbAclRoles.AsNoTracking().Where(x => x.RoleType == "u_").Select(x => new SelectListItem(LanguageProvider.Admin[lang, x.RoleName, Casing.None, x.RoleName], x.RoleId.ToString())));
-            return (groupRanks, roles);
+            return roles;
         }
 
         #endregion Group

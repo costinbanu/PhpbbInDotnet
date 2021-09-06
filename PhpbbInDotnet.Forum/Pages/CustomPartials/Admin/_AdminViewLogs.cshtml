@@ -3,22 +3,17 @@
 @using Utilities
 @using System.Web
 
-@inject Services.OperationLogService _logService
-@inject Services.WritingToolsService _writingService
-@inject Services.UserService _userService
 @inject Languages.LanguageProvider _languageProvider
 @inject CommonUtils _utils
 
 @{
-    var (logItems, count) = await _logService.GetOperationLogs(Model.LogType, Model.AuthorName, Model.LogPage);
-    var systemLogs = _logService.GetSystemLogs() ?? new List<(DateTime LogDate, string LogPath)>();
-    var paginator = new Paginator(count, Model.LogPage, link: $"/Admin?LogType={Model.LogType}&LogPage=1&AuthorName={HttpUtility.UrlEncode(Model.AuthorName)}&handler=forumLogs", pageSize: _logService.LOG_PAGE_SIZE, pageNumKey: "LogPage");
+    var paginator = new Paginator(Model.TotalLogItemCount, Model.LogPage, link: $"/Admin?LogType={Model.LogType}&LogPage=1&AuthorName={HttpUtility.UrlEncode(Model.AuthorName)}&handler=forumLogs", pageSize: Services.OperationLogService.LOG_PAGE_SIZE, pageNumKey: "LogPage");
 }
 <h4>@Html.Raw(_languageProvider.Admin[Model.Language, "SYSTEM_LOGS"])</h4>
 <form method="post" asp-page-handler="systemLogs">
     @Html.DropDownList(
         nameof(AdminModel.SystemLogPath),
-        systemLogs.Select(l => new SelectListItem(l.LogDate.ToString("D", new System.Globalization.CultureInfo(Model.Language)), l.LogPath)),
+        Model.SystemLogs.Select(l => new SelectListItem(l.LogDate.ToString("D", new System.Globalization.CultureInfo(Model.Language)), l.LogPath)),
         _languageProvider.Admin[Model.Language, "GET_SYSTEM_LOG_FOR_DATE"],
         new { style = "height: 30px; padding-top: 0px" }
     )
@@ -57,7 +52,7 @@
 
 <p></p>
 <div>
-    @foreach (var item in logItems)
+    @foreach (var item in Model.CurrentLogItems)
     {
         <div class="FlexCenter">
             <div class="FlexCaption">
@@ -121,7 +116,7 @@
                 @Html.Raw(item.LogData)
             </div>
         </div>
-        @if (item != logItems.Last())
+        @if (item != Model.CurrentLogItems.Last())
         {
             <hr class="SubtypeSeparator" />
         }

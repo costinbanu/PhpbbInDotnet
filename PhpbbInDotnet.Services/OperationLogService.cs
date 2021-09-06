@@ -16,7 +16,7 @@ namespace PhpbbInDotnet.Services
 {
     public class OperationLogService
     {
-        public int LOG_PAGE_SIZE => 100;
+        public static int LOG_PAGE_SIZE = 100;
 
         private readonly ForumDbContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
@@ -54,6 +54,14 @@ namespace PhpbbInDotnet.Services
         public List<(DateTime LogDate, string LogPath)> GetSystemLogs()
             => WithErrorHandling(() =>
             {
+                return (
+                    from f in Directory.EnumerateFiles("logs", "log*.txt")
+                    let parsed = Parse(f)
+                    where parsed.LogDate != default && parsed.LogPath != default && parsed.LogDate < DateTime.Today
+                    orderby parsed.LogDate descending
+                    select parsed
+                ).ToList();
+
                 static (DateTime LogDate, string LogPath) Parse(string path)
                 {
                     if (DateTime.TryParseExact(Path.GetFileNameWithoutExtension(path)[3..], "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
@@ -62,13 +70,6 @@ namespace PhpbbInDotnet.Services
                     }
                     return (default, default);
                 }
-                return (
-                    from f in Directory.EnumerateFiles("logs", "log*.txt")
-                    let parsed = Parse(f)
-                    where parsed.LogDate != default && parsed.LogPath != default && parsed.LogDate < DateTime.Today
-                    orderby parsed.LogDate descending
-                    select parsed
-                ).ToList();
             });
 
 
