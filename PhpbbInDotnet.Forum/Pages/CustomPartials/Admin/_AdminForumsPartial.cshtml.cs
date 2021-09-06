@@ -14,5 +14,6 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials.Admin
         public bool Show { get; set; }
         public AuthenticatedUser CurrentUser { get; set; }
         public string Language { get; set; }
+        public bool IsRoot { get; set; }
     }
 }

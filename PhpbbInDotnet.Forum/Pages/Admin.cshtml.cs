@@ -134,10 +134,13 @@ namespace PhpbbInDotnet.Forum.Pages
         public List<SelectListItem> ForumSelectedParent { get; private set; }
         public IEnumerable<ForumPermissions> Permissions { get; private set; }
         public bool ShowForum { get; private set; }
+        public bool IsRootForum { get; private set; }
 
         public async Task<IActionResult> OnPostShowForum(int? forumId)
             => await WithAdmin(async () =>
             {
+                IsRootForum = forumId == 0;
+
                 if (forumId != null)
                 {
                     Permissions = await _adminForumService.GetPermissions(forumId.Value);
@@ -152,7 +155,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostForumManagement(UpsertForumDto dto)
             => await WithAdmin(async () =>
             {
-                (Message, IsSuccess) = await _adminForumService.ManageForumsAsync(dto, (await GetCurrentUserAsync()).UserId);
+                (Message, IsSuccess) = await _adminForumService.ManageForumsAsync(dto, (await GetCurrentUserAsync()).UserId, dto.IsRoot);
 
                 ShowForum = false;
                 Category = AdminCategories.Forums;

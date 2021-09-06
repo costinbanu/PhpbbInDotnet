@@ -19,5 +19,6 @@ namespace PhpbbInDotnet.Objects
         public List<int> GroupPermissionToRemove { get; set; }
         public string ForumRules { get; set; }
         public string ForumRulesLink { get; set; }
+        public bool IsRoot { get; set; }
     }
 }
