@@ -89,21 +89,23 @@ namespace PhpbbInDotnet.Forum.Pages
         public long AttachTotalSize { get; private set; }
         public UserPageMode Mode { get; private set; }
         public bool EmailChanged { get; private set; }
-        public new IConfiguration Config => base.Config;
 
         private readonly StorageService _storageService;
         private readonly WritingToolsService _writingService;
         private readonly OperationLogService _operationLogService;
+        private readonly IConfiguration _config;
+
 
         private const int DB_CACHE_EXPIRATION_MINUTES = 20;
 
         public UserModel(CommonUtils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, StorageService storageService, 
-            WritingToolsService writingService, IConfiguration config, AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider, OperationLogService operationLogService)
-            : base(context, forumService, userService, cache, config, sessionCounter, utils, languageProvider)
+            WritingToolsService writingService, IConfiguration config, LanguageProvider languageProvider, OperationLogService operationLogService)
+            : base(context, forumService, userService, cache, utils, languageProvider)
         {
             _storageService = storageService;
             _writingService = writingService;
             _operationLogService = operationLogService;
+            _config = config;
         }
 
         public async Task<IActionResult> OnGet()
@@ -141,10 +143,10 @@ namespace PhpbbInDotnet.Forum.Pages
                 return RedirectToPage("Error", new { isNotFound = true });
             }
 
-            var currentUserId = (await GetCurrentUserAsync()).UserId;
+            var currentUserId = (GetCurrentUser()).UserId;
             var isSelf = CurrentUser.UserId == currentUserId;
             var userMustLogIn = dbUser.UserAllowPm.ToBool() != AllowPM || dbUser.UserDateformat != CurrentUser.UserDateformat;
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
             var validator = new UserProfileDataValidationService(ModelState, LanguageProvider, lang);
 
             var newCleanUsername = Utils.CleanString(CurrentUser.Username);
@@ -244,10 +246,10 @@ namespace PhpbbInDotnet.Forum.Pages
                     dbUser.UserInactiveReason = UserInactiveReason.ChangedEmailNotConfirmed;
                     dbUser.UserActkey = registrationCode;
 
-                    var subject = string.Format(LanguageProvider.Email[lang, "EMAIL_CHANGED_SUBJECT_FORMAT"], Config.GetValue<string>("ForumName"));
+                    var subject = string.Format(LanguageProvider.Email[lang, "EMAIL_CHANGED_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
                     using var emailMessage = new MailMessage
                     {
-                        From = new MailAddress(Config.GetValue<string>("AdminEmail"), Config.GetValue<string>("ForumName")),
+                        From = new MailAddress(_config.GetValue<string>("AdminEmail"), _config.GetValue<string>("ForumName")),
                         Subject = subject,
                         Body = await Utils.RenderRazorViewToString(
                             "_WelcomeEmailPartial",
@@ -309,7 +311,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 try
                 {
-                    var maxSize = Config.GetObject<ImageSize>("AvatarMaxSize");
+                    var maxSize = _config.GetObject<ImageSize>("AvatarMaxSize");
                     using var stream = Avatar.OpenReadStream();
                     using var bmp = new Bitmap(stream);
                     stream.Seek(0, SeekOrigin.Begin);
@@ -422,14 +424,14 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (affectedEntries > 0 && isSelf && !EmailChanged)
             {
-                await ReloadCurrentUser();
+                ReloadCurrentUser();
                 Mode = UserPageMode.Edit;
                 return await OnGet();
             }
             else if (affectedEntries > 0 && userMustLogIn)
             {
                 var key = $"UserMustLogIn_{dbUser.UsernameClean}";
-                Cache.Add(key, true, Config.GetValue<TimeSpan?>("LoginSessionSlidingExpiration") ?? TimeSpan.FromDays(30));
+                Cache.Add(key, true, _config.GetValue<TimeSpan?>("LoginSessionSlidingExpiration") ?? TimeSpan.FromDays(30));
                 if (EmailChanged)
                 {
                     Mode = UserPageMode.Edit;
@@ -459,7 +461,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 if (! await CanAddFoe())
                 {
-                    ModelState.AddModelError(nameof(CurrentUser), LanguageProvider.Errors[await GetLanguage(), "AN_ERROR_OCCURRED"]);
+                    ModelState.AddModelError(nameof(CurrentUser), LanguageProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED"]);
                     Utils.HandleErrorAsWarning(new Exception($"Potential cross site forgery attempt in {nameof(OnPostAddFoe)}"));
                     Mode = UserPageMode.AddFoe;
                     return await OnGet();
@@ -471,7 +473,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     "INSERT INTO phpbb_zebra (user_id, zebra_id, friend, foe) VALUES (@userId, @otherId, 0, 1)",
                     new { user.UserId, otherId = cur.UserId }
                 );
-                await ReloadCurrentUser();
+                ReloadCurrentUser();
                 Mode = UserPageMode.AddFoe;
                 return await OnGet();
             });
@@ -479,9 +481,9 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostRemoveFoe()
             => await WithRegisteredUser(async (user) =>
             {
-                if (!await CanRemoveFoe())
+                if (!CanRemoveFoe())
                 {
-                    ModelState.AddModelError(nameof(CurrentUser), LanguageProvider.Errors[await GetLanguage(), "AN_ERROR_OCCURRED"]);
+                    ModelState.AddModelError(nameof(CurrentUser), LanguageProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED"]);
                     Utils.HandleErrorAsWarning(new Exception($"Potential cross site forgery attempt in {nameof(OnPostRemoveFoe)}"));
                     Mode = UserPageMode.AddFoe;
                     return await OnGet();
@@ -492,7 +494,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;",
                     new { user.UserId, otherId = cur.UserId }
                 );
-                await ReloadCurrentUser();
+                ReloadCurrentUser();
                 Mode = UserPageMode.RemoveFoe;
                 return await OnGet();
             });
@@ -509,25 +511,26 @@ namespace PhpbbInDotnet.Forum.Pages
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id IN @otherIds;",
                     new { user.UserId, otherIds = SelectedFoes.DefaultIfEmpty() }
                 );
-                await ReloadCurrentUser();
+                ReloadCurrentUser();
                 Mode = UserPageMode.RemoveMultipleFoes;
                 return await OnGet();
             });
 
         public async Task<bool> CanEdit() 
-            => !(ViewAsAnother ?? false) && ((await GetCurrentUserAsync()).UserId == CurrentUser.UserId || await IsCurrentUserAdminHere());
+            => !(ViewAsAnother ?? false) && ((GetCurrentUser()).UserId == CurrentUser.UserId || await IsCurrentUserAdminHere());
 
         public async Task<bool> CanAddFoe()
         {
-            var viewingUser = await GetCurrentUserAsync();
-            var pageUser = await UserService.DbUserToAuthenticatedUser(CurrentUser);
+            var viewingUser = GetCurrentUser();
+            var pageUser = new AuthenticatedUser(UserService.DbUserToAuthenticatedUserBase(CurrentUser));
+            pageUser.AllPermissions = await UserService.GetPermissions(pageUser.UserId);
             return !await UserService.IsUserModeratorInForum(pageUser, 0) && !await UserService.IsUserModeratorInForum(viewingUser, 0) && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false);
         }
 
-        public async Task<bool> CanRemoveFoe()
+        public bool CanRemoveFoe()
         {
-            var viewingUser = await GetCurrentUserAsync();
-            var pageUser = await UserService.DbUserToAuthenticatedUser(CurrentUser);
+            var viewingUser = GetCurrentUser();
+            var pageUser = UserService.DbUserToAuthenticatedUserBase(CurrentUser);
             return viewingUser.Foes?.Contains(pageUser.UserId) ?? false;
         }
 
@@ -540,39 +543,11 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task Render(PhpbbUsers cur)
         {
-            CurrentUser = cur;
-            CurrentUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : _writingService.CleanBbTextForDisplay(CurrentUser.UserSig, CurrentUser.UserSigBbcodeUid);
-            TotalPosts = cur.UserPosts;
-            var restrictedForums = (await ForumService.GetRestrictedForumList(await GetCurrentUserAsync())).Select(f => f.forumId);
-            var preferredTopic = await (
-                from p in Context.PhpbbPosts.AsNoTracking()
-                where p.PosterId == cur.UserId
-
-                join t in Context.PhpbbTopics.AsNoTracking()
-                on p.TopicId equals t.TopicId
-
-                where !restrictedForums.Contains(t.ForumId)
-
-                group p by new { t.ForumId, p.TopicId, t.TopicTitle } into groups
-                orderby groups.Count() descending
-                select groups.Key
-            ).FirstOrDefaultAsync();
-            string preferredTopicTitle = null;
-            if (preferredTopic != null)
-            {
-                preferredTopicTitle = ForumService.GetPathText((await GetForumTree(false, false)).Tree, preferredTopic.ForumId);
-                PreferredTopic = (preferredTopic.TopicId, preferredTopicTitle);
-            }
-            PostsPerDay = TotalPosts / DateTime.UtcNow.Subtract(cur.UserRegdate.ToUtcTime()).TotalDays;
-            Email = cur.UserEmail;
-            Birthday = cur.UserBirthday;
-            AclRole = await UserService.GetUserRole(await UserService.DbUserToAuthenticatedUser(cur));
-            var group = await UserService.GetUserGroup(cur.UserId);
-            GroupId = group?.GroupId;
-            UserRank = cur.UserRank == 0 ? group.GroupRank : cur.UserRank;
-            AllowPM = cur.UserAllowPm.ToBool();
-            ShowEmail = cur.UserAllowViewemail.ToBool();
-            Foes = await (
+            var tree = (await GetForumTree(false, false)).Tree;
+            var preferredTopicTask = GetPreferredTopic(tree);
+            var roleTask = GetRole();
+            var groupTask = UserService.GetUserGroup(cur.UserId);
+            var foesTask = (
                 from z in Context.PhpbbZebra.AsNoTracking()
                 where z.UserId == cur.UserId && z.Foe == 1
 
@@ -583,15 +558,66 @@ namespace PhpbbInDotnet.Forum.Pages
                 from j in joined
                 select j
             ).ToListAsync();
-            var result = await (await Context.GetDbConnectionAsync()).QueryFirstOrDefaultAsync(
+            var attachTask = (await Context.GetDbConnectionAsync()).QueryFirstOrDefaultAsync(
                 "SELECT sum(a.filesize) as size, count(a.attach_id) as cnt " +
                 "FROM phpbb_attachments a " +
                 "JOIN phpbb_posts p ON a.post_msg_id = p.post_id " +
                 "WHERE p.poster_id = @userId",
                 new { cur.UserId }
             );
+            await Task.WhenAll(preferredTopicTask, roleTask, groupTask, foesTask, attachTask);
+
+            CurrentUser = cur;
+            CurrentUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : _writingService.CleanBbTextForDisplay(CurrentUser.UserSig, CurrentUser.UserSigBbcodeUid);
+            TotalPosts = cur.UserPosts;
+            PreferredTopic = await preferredTopicTask;
+            PostsPerDay = TotalPosts / DateTime.UtcNow.Subtract(cur.UserRegdate.ToUtcTime()).TotalDays;
+            Email = cur.UserEmail;
+            Birthday = cur.UserBirthday;
+            var currentAuthenticatedUser = new AuthenticatedUser(UserService.DbUserToAuthenticatedUserBase(cur));
+            currentAuthenticatedUser.AllPermissions = await UserService.GetPermissions(cur.UserId);
+            AclRole = await roleTask;
+            var group = await groupTask;
+            GroupId = group?.GroupId;
+            UserRank = cur.UserRank == 0 ? group.GroupRank : cur.UserRank;
+            AllowPM = cur.UserAllowPm.ToBool();
+            ShowEmail = cur.UserAllowViewemail.ToBool();
+            Foes = await foesTask;
+            var result = await attachTask;
             AttachCount = (long?)result?.cnt ?? 0L;
             AttachTotalSize = (long?)result?.size ?? 0L;
+
+            async Task<(int? id, string title)> GetPreferredTopic(HashSet<ForumTree> tree)
+            {
+                var restrictedForums = (await ForumService.GetRestrictedForumList(GetCurrentUser())).Select(f => f.forumId);
+                var preferredTopic = await (
+                    from p in Context.PhpbbPosts.AsNoTracking()
+                    where p.PosterId == cur.UserId
+
+                    join t in Context.PhpbbTopics.AsNoTracking()
+                    on p.TopicId equals t.TopicId
+
+                    where !restrictedForums.Contains(t.ForumId)
+
+                    group p by new { t.ForumId, p.TopicId, t.TopicTitle } into groups
+                    orderby groups.Count() descending
+                    select groups.Key
+                ).FirstOrDefaultAsync();
+                string preferredTopicTitle = null;
+                if (preferredTopic != null)
+                {
+                    preferredTopicTitle = ForumService.GetPathText(tree, preferredTopic.ForumId);
+                    return (preferredTopic.TopicId, preferredTopicTitle);
+                }
+                return (null, null);
+            }
+
+            async Task<int?> GetRole()
+            {
+                var currentAuthenticatedUser = new AuthenticatedUser(UserService.DbUserToAuthenticatedUserBase(cur));
+                currentAuthenticatedUser.AllPermissions = await UserService.GetPermissions(cur.UserId);
+                return await UserService.GetUserRole(currentAuthenticatedUser);
+            }
         }
     }
 }

@@ -14,8 +14,8 @@
 @{
     ViewData["Title"] = "MemberList";
     Layout = "~/Pages/_Layout.cshtml";
-    var user = await Model.GetCurrentUserAsync();
-    var Lang = await Model.GetLanguage(); 
+    var user = Model.GetCurrentUser();
+    var Lang = Model.GetLanguage(); 
     var dateFormat = user.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
 }
 

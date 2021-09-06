@@ -106,8 +106,8 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly WritingToolsService _writingToolsService;
 
         public ViewTopicModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, PostService postService, 
-            ModeratorService moderatorService, WritingToolsService writingToolsService, IConfiguration config, AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider)
-            : base(context, forumService, userService, cache, config, sessionCounter, utils, languageProvider)
+            ModeratorService moderatorService, WritingToolsService writingToolsService, LanguageProvider languageProvider)
+            : base(context, forumService, userService, cache, utils, languageProvider)
         {
             _postService = postService;
             _moderatorService = moderatorService;
@@ -151,7 +151,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 var postsTask = GetPostsLazy(TopicId, PageNum, null);
 
-                Paginator = new Paginator(_count.Value, PageNum.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId, await GetCurrentUserAsync());
+                Paginator = new Paginator(_count.Value, PageNum.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId, GetCurrentUser());
                 var pollTask = _postService.GetPoll(_currentTopic);
 
                 TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
@@ -191,7 +191,7 @@ namespace PhpbbInDotnet.Forum.Pages
                      new { user.UserId, topicId, userPostsPerPage }
                 );
 
-                await ReloadCurrentUser();
+                ReloadCurrentUser();
 
                 if (postId.HasValue)
                 {
@@ -211,7 +211,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var existingVotes = (await conn.QueryAsync<PhpbbPollVotes>("SELECT * FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @UserId", new { topicId, user.UserId })).AsList();
                 if (existingVotes.Count > 0 && topic.PollVoteChange == 0)
                 {
-                    ModelState.AddModelError(nameof(Poll), LanguageProvider.Errors[await GetLanguage(), "CANT_CHANGE_VOTE"]);
+                    ModelState.AddModelError(nameof(Poll), LanguageProvider.Errors[GetLanguage(), "CANT_CHANGE_VOTE"]);
                     return Page();
                 }
 
@@ -260,10 +260,10 @@ namespace PhpbbInDotnet.Forum.Pages
                 var logDto = new OperationLogDto
                 {
                     Action = TopicAction.Value,
-                    UserId = (await GetCurrentUserAsync()).UserId
+                    UserId = (GetCurrentUser()).UserId
                 };
 
-                var lang = await GetLanguage();
+                var lang = GetLanguage();
                 var (Message, IsSuccess) = TopicAction switch
                 {
                     ModeratorTopicActions.MakeTopicNormal => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Normal, logDto),
@@ -302,7 +302,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostDeleteMyMessage()
             => await WithRegisteredUser(async (user) =>
             {
-                var lang = await GetLanguage();
+                var lang = GetLanguage();
                 if (await IsCurrentUserModeratorHere())
                 {
                     return await ModeratePosts();
@@ -377,7 +377,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var logDto = new OperationLogDto
                 {
                     Action = ModeratorPostActions.DeleteSelectedPosts,
-                    UserId = (await GetCurrentUserAsync()).UserId
+                    UserId = (GetCurrentUser()).UserId
                 };
                 var (_, nextRemaining) = await GetSelectedAndNextRemainingPostIds(reportPostId ?? 0);
                 if (deletePost ?? false)
@@ -419,7 +419,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var logDto = new OperationLogDto
                 {
                     Action = ModeratorPostActions.DuplicateSelectedPost,
-                    UserId = (await GetCurrentUserAsync()).UserId
+                    UserId = (GetCurrentUser()).UserId
                 };
                 var (Message, IsSuccess) = await _moderatorService.DuplicatePost(postIdForDuplication, logDto);
 
@@ -433,11 +433,11 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task<IActionResult> ModeratePosts()
         {
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
             var logDto = new OperationLogDto
             {
                 Action = PostAction.Value,
-                UserId = (await GetCurrentUserAsync()).UserId
+                UserId = (GetCurrentUser()).UserId
             };
             var postIds = GetModeratorPostIds();
             var (Message, IsSuccess) = PostAction switch
@@ -500,7 +500,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             if (!(Posts?.Any() ?? false))
             {
-                var user = await GetCurrentUserAsync();
+                var user = GetCurrentUser();
                 using var multi = await (await Context.GetDbConnectionAsync()).QueryMultipleAsync(
                     sql: "CALL get_posts_extended(@userId, @topicId, @page, @pageSize, @postId);", 
                     param: new 
@@ -519,7 +519,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 _count = unchecked((int)await multi.ReadSingleAsync<long>());
                 Reports = (await multi.ReadAsync<ReportDto>()).AsList();
 
-                (CorrelationId, Attachments) = await _postService.CacheAttachmentsAndPrepareForDisplay(dbAttachments, await GetLanguage(), Posts.Count, false);
+                (CorrelationId, Attachments) = await _postService.CacheAttachmentsAndPrepareForDisplay(dbAttachments, GetLanguage(), Posts.Count, false);
             }
         }
 

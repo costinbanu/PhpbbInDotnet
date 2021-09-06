@@ -1,4 +1,4 @@
-﻿CREATE DEFINER=`root`@`localhost` PROCEDURE `get_user_details`(user_id_parm int)
+﻿CREATE DEFINER=`root`@`localhost` PROCEDURE `get_user_permissions`(user_id_parm int)
 BEGIN
 	SET @user_id = coalesce(user_id_parm, 1);
     
@@ -23,12 +23,4 @@ BEGIN
 	LEFT JOIN user_permissions up ON gp.forum_id = up.forum_id AND gp.auth_role_id = 16 AND up.auth_role_id in (14, 15, 17)
 	WHERE up.forum_id IS NULL;
 
-	SELECT topic_id, post_no
-	FROM phpbb_user_topic_post_number
-	WHERE user_id = @user_id
-	GROUP BY topic_id;
-    
-    SELECT zebra_id
-    FROM phpbb_zebra
-    WHERE user_id = @user_id AND foe = 1;
 END

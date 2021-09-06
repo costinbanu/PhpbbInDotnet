@@ -28,9 +28,6 @@
     <PackageReference Include="System.Linq.Async" Version="5.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="wwwroot\images\" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\PhpbbInDotnet.Database\PhpbbInDotnet.Database.csproj" />
     <ProjectReference Include="..\PhpbbInDotnet.Languages\PhpbbInDotnet.Languages.csproj" />
     <ProjectReference Include="..\PhpbbInDotnet.Objects\PhpbbInDotnet.Objects.csproj" />

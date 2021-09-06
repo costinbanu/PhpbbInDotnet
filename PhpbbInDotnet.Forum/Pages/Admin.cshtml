@@ -4,10 +4,10 @@
 
 @model PhpbbInDotnet.Forum.Pages.AdminModel
 @{
-    var lang = await Model.GetLanguage();
+    var lang = Model.GetLanguage();
     ViewData["Title"] = Model.LanguageProvider.Admin[lang, "ADMIN_PANEL"];
     Layout = "~/Pages/_Layout.cshtml";
-    var user = await Model.GetCurrentUserAsync();
+    var user = Model.GetCurrentUser();
     var dateFormat = user?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(lang);
 }
 

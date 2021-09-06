@@ -37,7 +37,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> ManageForumsAsync(UpsertForumDto dto, int adminUserId, bool isRoot)
         {
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
             try
             {
                 if (isRoot)
@@ -241,7 +241,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> DeleteForum(int forumId, int adminUserId)
         {
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
             try
             {
                 var forum = await _context.PhpbbForums.FirstOrDefaultAsync(x => x.ForumId == forumId);

@@ -8,7 +8,7 @@
 @inject CommonUtils _utils
 
 @{
-    var Lang = await Model.GetLanguage();
+    var Lang = Model.GetLanguage();
     var DocumentTitle = Model.Mode switch
     {
         ViewForumMode.NewPosts => Model.LanguageProvider.BasicText[Lang, "NEW_POSTS", Casing.FirstUpper],
@@ -19,7 +19,7 @@
     };
     ViewData["Title"] = DocumentTitle;
     Layout = "~/Pages/_Layout.cshtml";
-    var CurrentUser = await Model.GetCurrentUserAsync();
+    var CurrentUser = Model.GetCurrentUser();
     var IsAnonymous = CurrentUser?.IsAnonymous ?? true;
     var hasSubForums = Model.ForumId != 0 && _forumService.HasUnrestrictedChildren((await Model.GetForumTree(false, false)).Tree, Model.ForumId);
     var hasTopics = Model.Topics?.SelectMany(x => x.Topics).Any() ?? false;

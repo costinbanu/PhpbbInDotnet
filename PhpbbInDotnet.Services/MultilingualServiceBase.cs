@@ -2,10 +2,6 @@
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
-using System;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
 {
@@ -24,13 +20,10 @@ namespace PhpbbInDotnet.Services
             Utils = utils;
         }
 
-        protected async Task<string> GetLanguage()
+        protected string GetLanguage()
             => _language ??= LanguageProvider.GetValidatedLanguage(
-                user: await ClaimsPrincipalToAuthenticatedUser(HttpContextAccessor.HttpContext.User), 
+                user: (AuthenticatedUser)(HttpContextAccessor.HttpContext.Items.TryGetValue(nameof(AuthenticatedUser), out var val) ? val : null), 
                 request: HttpContextAccessor.HttpContext.Request
             );
-
-        protected async Task<AuthenticatedUser> ClaimsPrincipalToAuthenticatedUser(ClaimsPrincipal principal)
-            => await Utils.DecompressObject<AuthenticatedUser>(Convert.FromBase64String(principal?.Claims?.FirstOrDefault()?.Value ?? string.Empty));
     }
 }

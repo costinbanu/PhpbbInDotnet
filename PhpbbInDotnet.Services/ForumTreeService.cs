@@ -49,7 +49,7 @@ namespace PhpbbInDotnet.Services
                 return _tree;
             }
 
-            var tracking = fetchUnreadData ? await GetForumTracking(user, forceRefresh) : null;
+            var tracking = fetchUnreadData ? await GetForumTracking(user?.UserId ?? Constants.ANONYMOUS_USER_ID, forceRefresh) : null;
             var connection = await _context.GetDbConnectionAsync();
 
             var treeTask = GetForumTree(connection);
@@ -123,7 +123,7 @@ namespace PhpbbInDotnet.Services
                 => Task.Run(() => (user?.AllPermissions?.Where(p => p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE)?.Select(p => p.ForumId) ?? Enumerable.Empty<int>()).ToHashSet());
         }
 
-        public async Task<Dictionary<int, HashSet<Tracking>>> GetForumTracking(AuthenticatedUser user, bool forceRefresh)
+        public async Task<Dictionary<int, HashSet<Tracking>>> GetForumTracking(int userId, bool forceRefresh)
         {
             if (_tracking != null && !forceRefresh)
             {
@@ -134,11 +134,11 @@ namespace PhpbbInDotnet.Services
             var connection = await _context.GetDbConnectionAsync();
             try
             {
-                dbResults = await connection.QueryAsync<ExtendedTracking>("CALL `forum`.`get_post_tracking`(@userId);", new { userId = user?.UserId ?? Constants.ANONYMOUS_USER_ID });
+                dbResults = await connection.QueryAsync<ExtendedTracking>("CALL `forum`.`get_post_tracking`(@userId);", new { userId });
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex, $"Error getting the forum tracking for user {user?.UserId ?? Constants.ANONYMOUS_USER_ID}");
+                _utils.HandleError(ex, $"Error getting the forum tracking for user {userId}");
             }
             
             var count = dbResults.Count();
@@ -168,13 +168,13 @@ namespace PhpbbInDotnet.Services
 
         public async Task<bool> IsTopicUnread(int forumId, int topicId, AuthenticatedUser user, bool forceRefresh = false)
         {
-            var ft = await GetForumTracking(user, forceRefresh);
+            var ft = await GetForumTracking(user?.UserId ?? Constants.ANONYMOUS_USER_ID, forceRefresh);
             return ft.TryGetValue(forumId, out var tt) && tt.Contains(new Tracking { TopicId = topicId });
         }
 
         public async Task<bool> IsPostUnread(int forumId, int topicId, int postId, AuthenticatedUser user)
         {
-            var ft = await GetForumTracking(user, false);
+            var ft = await GetForumTracking(user?.UserId ?? Constants.ANONYMOUS_USER_ID, false);
             Tracking item = null;
             var found = ft.TryGetValue(forumId, out var tt) && tt.TryGetValue(new Tracking { TopicId = topicId }, out item);
             if (!found)

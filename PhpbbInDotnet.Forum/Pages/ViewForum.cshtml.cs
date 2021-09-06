@@ -21,6 +21,7 @@ namespace PhpbbInDotnet.Forum.Pages
     public class ViewForumModel : AuthenticatedPageModel
     {
         private bool _forceTreeRefresh;
+        private readonly IConfiguration _config;
 
         public HashSet<ForumTree> Forums { get; private set; }
         public List<TopicGroup> Topics { get; private set; }
@@ -45,10 +46,11 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public string[] SelectedNewPosts { get; set; }
 
-        public ViewForumModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, IConfiguration config, 
-            AnonymousSessionCounter sessionCounter, CommonUtils utils, LanguageProvider languageProvider)
-            : base(context, forumService, userService, cache, config, sessionCounter, utils, languageProvider) 
-        { }
+        public ViewForumModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, IConfiguration config, CommonUtils utils, LanguageProvider languageProvider)
+            : base(context, forumService, userService, cache, utils, languageProvider) 
+        {
+            _config = config;
+        }
 
         public async Task<IActionResult> OnGet()
             => await WithValidForum(ForumId, ForumId == 0, async (thisForum) =>
@@ -103,7 +105,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 ).ToList();
                 var parent = await parentTask;
                 ParentForumId = parent?.ForumId;
-                ParentForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? Config.GetValue<string>("ForumName"));
+                ParentForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? _config.GetValue<string>("ForumName"));
                 (Forums, _) = await treeTask;
                 ForumRulesLink = thisForum.ForumRulesLink;
                 ForumRules = thisForum.ForumRules;
@@ -257,7 +259,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task<IEnumerable<int>> GetRestrictedForums()
         {
-            var restrictedForums = await ForumService.GetRestrictedForumList(await GetCurrentUserAsync());
+            var restrictedForums = await ForumService.GetRestrictedForumList(GetCurrentUser());
             return restrictedForums.Select(f => f.forumId).DefaultIfEmpty();
         }
     }

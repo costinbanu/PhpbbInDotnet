@@ -73,10 +73,9 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly WritingToolsService _adminWritingService;
         private readonly OperationLogService _logService;
 
-        public AdminModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, 
-            AdminUserService adminUserService, AdminForumService adminForumService, WritingToolsService adminWritingService, IConfiguration config, 
-            AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider, OperationLogService logService) 
-            : base(context, forumService, userService, cache, config, sessionCounter, utils, languageProvider)
+        public AdminModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, AdminUserService adminUserService, 
+            AdminForumService adminForumService, WritingToolsService adminWritingService, LanguageProvider languageProvider, OperationLogService logService) 
+            : base(context, forumService, userService, cache, utils, languageProvider)
         {
             _adminUserService = adminUserService;
             _adminForumService = adminForumService;
@@ -94,8 +93,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 var groupsTask = _adminUserService.GetGroups();
                 var ranksTask = Context.PhpbbRanks.AsNoTracking().ToListAsync();
                 var banListTask = _adminUserService.GetBanList();
-                var rankListItemsTask = _adminUserService.GetRanksSelectListItems();
-                var roleListItemsTask = _adminUserService.GetRolesSelectListItems();
 
                 var bannedWordsTask = Context.PhpbbWords.AsNoTracking().ToListAsync();
                 var orphanFilesTask = _adminWritingService.GetOrphanedFiles();
@@ -106,7 +103,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var systemLogsTask = Task.Run(() => _logService.GetSystemLogs() ?? new List<(DateTime LogDate, string LogPath)>());
                 
                 await Task.WhenAll(
-                    inactiveUsersTask, groupsTask, ranksTask, banListTask, rankListItemsTask, roleListItemsTask,
+                    inactiveUsersTask, groupsTask, ranksTask, banListTask,
                     bannedWordsTask, orphanFilesTask, customBbCodesTask, smiliesTask,
                     logsTask, systemLogsTask);
                 
@@ -114,8 +111,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 Groups = await groupsTask;
                 Ranks = await ranksTask;
                 BanList = await banListTask;
-                RankListItems = await rankListItemsTask;
-                RoleListItems = await roleListItemsTask;
+                RankListItems = _adminUserService.GetRanksSelectListItems();
+                RoleListItems = _adminUserService.GetRolesSelectListItems();
 
                 BannedWords = await bannedWordsTask;
                 OrphanFiles = await orphanFilesTask;
@@ -135,7 +132,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 Category = AdminCategories.Users;
                 WasSearchPerformed = true;
-                var lang = await GetLanguage();
+                var lang = GetLanguage();
                 if (new[] { SearchParameters?.Username, SearchParameters?.Email, SearchParameters?.RegisteredFrom, SearchParameters?.RegisteredTo, SearchParameters?.LastActiveFrom, SearchParameters?.LastActiveTo }.All(string.IsNullOrWhiteSpace) 
                     && ((SearchParameters?.UserId ?? 0) == 0) 
                     && !(SearchParameters?.NeverActive ?? false))
@@ -157,7 +154,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostUserManagement(AdminUserActions? userAction, int? userId)
             => await WithAdmin(async () =>
             {
-                (Message, IsSuccess) = await _adminUserService.ManageUser(userAction, userId, PageContext, HttpContext, (await GetCurrentUserAsync()).UserId);
+                (Message, IsSuccess) = await _adminUserService.ManageUser(userAction, userId, PageContext, HttpContext, (GetCurrentUser()).UserId);
                 Category = AdminCategories.Users;
                 return await OnGet();
             });
@@ -165,7 +162,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostBatchUserManagement(int[] userIds)
             => await WithAdmin(async () =>
             {
-                (Message, IsSuccess) = await _adminUserService.DeleteUsersWithEmailNotConfirmed(userIds, (await GetCurrentUserAsync()).UserId);
+                (Message, IsSuccess) = await _adminUserService.DeleteUsersWithEmailNotConfirmed(userIds, (GetCurrentUser()).UserId);
                 Category = AdminCategories.Users;
                 return await OnGet();
             });
@@ -173,7 +170,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostGroupManagement(UpsertGroupDto dto)
             => await WithAdmin(async () =>
             {
-                (Message, IsSuccess) = await _adminUserService.ManageGroup(dto, (await GetCurrentUserAsync()).UserId);
+                (Message, IsSuccess) = await _adminUserService.ManageGroup(dto, (GetCurrentUser()).UserId);
                 Category = AdminCategories.Users;
                 return await OnGet();
             });
@@ -181,7 +178,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostRankManagement(int? rankId, string rankName, bool? deleteRank)
             => await WithAdmin(async () =>
             {
-                (Message, IsSuccess) = await _adminUserService.ManageRank(rankId, rankName, deleteRank, (await GetCurrentUserAsync()).UserId);
+                (Message, IsSuccess) = await _adminUserService.ManageRank(rankId, rankName, deleteRank, (GetCurrentUser()).UserId);
                 Category = AdminCategories.Users;
                 return await OnGet();
             });
@@ -189,7 +186,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostBanUser(List<UpsertBanListDto> banlist, List<int> toRemove)
             => await WithAdmin(async () =>
             {
-                (Message, IsSuccess) = await _adminUserService.BanUser(banlist, toRemove, (await GetCurrentUserAsync()).UserId);
+                (Message, IsSuccess) = await _adminUserService.BanUser(banlist, toRemove, (GetCurrentUser()).UserId);
                 Category = AdminCategories.Users;
                 return await OnGet();
             });
@@ -220,7 +217,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostForumManagement(UpsertForumDto dto)
             => await WithAdmin(async () =>
             {
-                (Message, IsSuccess) = await _adminForumService.ManageForumsAsync(dto, (await GetCurrentUserAsync()).UserId, dto.IsRoot);
+                (Message, IsSuccess) = await _adminForumService.ManageForumsAsync(dto, (GetCurrentUser()).UserId, dto.IsRoot);
 
                 ShowForum = false;
                 Category = AdminCategories.Forums;
@@ -230,7 +227,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostDeleteForum(int forumId)
             => await WithAdmin(async () =>
             {
-                (Message, IsSuccess) = await _adminForumService.DeleteForum(forumId, (await GetCurrentUserAsync()).UserId);
+                (Message, IsSuccess) = await _adminForumService.DeleteForum(forumId, (GetCurrentUser()).UserId);
 
                 ShowForum = false;
                 Category = AdminCategories.Forums;

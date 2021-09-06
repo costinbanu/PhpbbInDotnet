@@ -84,9 +84,9 @@ namespace PhpbbInDotnet.Forum.Pages
             LanguageProvider = languageProvider;
         }
 
-        public async Task<IActionResult> OnGet()
+        public IActionResult OnGet()
         {
-            var currentUser = await _userService.ClaimsPrincipalToAuthenticatedUser(User);
+            var currentUser = _userService.ClaimsPrincipalToAuthenticatedUser(User);
             if (!(currentUser?.IsAnonymous ?? true))
             {
                 return RedirectToPage("Index");
@@ -97,7 +97,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnGetNewPassword()
         {
-            if ((User?.Identity?.IsAuthenticated ?? false) && !((await _userService.ClaimsPrincipalToAuthenticatedUser(User))?.IsAnonymous ?? true))
+            if ((User?.Identity?.IsAuthenticated ?? false) && (!_userService.ClaimsPrincipalToAuthenticatedUser(User)?.IsAnonymous ?? true))
             {
                 return RedirectToPage("Logout", new { returnUrl = ReturnUrl ?? "/" });
             }

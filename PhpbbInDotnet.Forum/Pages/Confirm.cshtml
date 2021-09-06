@@ -14,7 +14,7 @@
     ViewData["Title"] = "Confirm";
     Layout = "~/Pages/_Layout.cshtml";
     var connection = await _dbContext.GetDbConnectionAsync();
-    var lang = await Model.GetLanguage();
+    var lang = Model.GetLanguage();
 }
 
 <h2>@Model.Title</h2>

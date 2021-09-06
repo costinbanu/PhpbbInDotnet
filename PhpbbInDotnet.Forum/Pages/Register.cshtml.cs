@@ -65,9 +65,9 @@ namespace PhpbbInDotnet.Forum.Pages
             _userService = userService;
         }
 
-        public async Task<IActionResult> OnGet()
+        public IActionResult OnGet()
         {
-            var currentUser = await _userService.ClaimsPrincipalToAuthenticatedUser(User);
+            var currentUser = _userService.ClaimsPrincipalToAuthenticatedUser(User);
             if (!(currentUser?.IsAnonymous ?? true))
             {
                 return RedirectToPage("Index");

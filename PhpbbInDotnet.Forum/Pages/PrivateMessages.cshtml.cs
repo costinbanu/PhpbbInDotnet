@@ -54,8 +54,8 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly BBCodeRenderingService _renderingService;
 
         public PrivateMessagesModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache,
-            BBCodeRenderingService renderingService, IConfiguration config, AnonymousSessionCounter sessionCounter, CommonUtils utils, LanguageProvider languageProvider)
-            : base(context, forumService, userService, cache, config, sessionCounter, utils, languageProvider)
+            BBCodeRenderingService renderingService, CommonUtils utils, LanguageProvider languageProvider)
+            : base(context, forumService, userService, cache, utils, languageProvider)
         {
             _renderingService = renderingService;
         }
