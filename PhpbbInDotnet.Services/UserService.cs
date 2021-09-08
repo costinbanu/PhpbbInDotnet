@@ -120,7 +120,7 @@ namespace PhpbbInDotnet.Services
                    WHERE style_id = @UserStyle",
                 new { user.UserStyle }
             );
-
+            await Task.WhenAll(styleTask, groupPropertiesTask);
             var groupProperties = await groupPropertiesTask;
             var editTime = unchecked((int)groupProperties.group_edit_time);
             var style = await styleTask;
@@ -388,13 +388,13 @@ namespace PhpbbInDotnet.Services
         public async Task<HashSet<int>> GetFoes(int userId)
         {
             var conn = await _context.GetDbConnectionAsync();
-            return new HashSet<int>((await conn.QueryAsync(
+            return new HashSet<int>(await conn.QueryAsync<int>(
                 @"SELECT zebra_id
-                            FROM phpbb_zebra
-                            WHERE user_id = @user_id 
-                                AND foe = 1;",
+                    FROM phpbb_zebra
+                    WHERE user_id = @user_id 
+                      AND foe = 1;",
                 new { userId }
-            )).Select(x => unchecked((int)x)));
+            ));
         }
 
         public async Task<IEnumerable<PhpbbAclRoles>> GetUserRolesLazy()
