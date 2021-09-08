@@ -1,6 +1,7 @@
 ﻿@using System.Web
 @using Microsoft.Extensions.Configuration
 @using Utilities
+@using Objects;
 
 @inject IConfiguration _config
 @inject Services.UserService  _userService
@@ -9,7 +10,7 @@
 @inject Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor
 @inject Services.StatisticsService _statisticsService
 @{
-    var currentUser = await _userService.ClaimsPrincipalToAuthenticatedUser(User);
+    var currentUser = (AuthenticatedUser)Context.Items[nameof(AuthenticatedUser)];
     var css = currentUser?.Style;
     if (string.IsNullOrWhiteSpace(css))
     {

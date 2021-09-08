@@ -6,4 +6,4 @@
     Layout = "~/Pages/_Layout.cshtml";
 }
 
-@Html.Raw(Model.LanguageProvider.AboutCookies[await Model.GetLanguage()])
+@Html.Raw(Model.LanguageProvider.AboutCookies[Model.GetLanguage()])

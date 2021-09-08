@@ -292,7 +292,7 @@ namespace PhpbbInDotnet.Services
 
         private (List<BBTag> BBTags, Dictionary<string, BBTagSummary> TagMap) GenerateCompleteTagListAndMap(IEnumerable<PhpbbBbcodes> dbCodes)
         {
-            var lang = GetLanguage().GetAwaiter().GetResult();
+            var lang = GetLanguage();
             return _cache.GetOrAdd(
                 $"TAGS_MAP_{lang}",
                 () =>

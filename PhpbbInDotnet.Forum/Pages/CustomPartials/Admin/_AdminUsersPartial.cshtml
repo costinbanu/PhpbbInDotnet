@@ -1,8 +1,6 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials.Admin._AdminUsersPartialModel
-@using Microsoft.EntityFrameworkCore
 @using Utilities
 
-@inject Services.AdminUserService _adminUserService
 @inject Languages.LanguageProvider _languageProvider
 
 <h4 onclick="expandSection('inactiveUsersSection', 'inactiveUsersChar')" style="cursor:pointer" id="inactiveUsersTitle">
@@ -16,20 +14,18 @@
     </form>
 
     @{
-        var inactive = await _adminUserService.GetInactiveUsers();
-
         @await Html.PartialAsync(
             "_AdminUsersSummaryPartial",
             new _AdminUsersSummaryPartialModel
             {
                 DateFormat = Model.DateFormat,
-                Users = inactive,
+                Users = Model.InactiveUsers,
                 Language = Model.Language
             },
             ViewData
         );
 
-        if (inactive.Any(u => u.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed))
+        if (Model.InactiveUsers.Any(u => u.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed))
         {
             <p></p>
             <script>
@@ -56,7 +52,7 @@
     }
 </style>
 <script>
-    var $ = jQuery.noConflict();
+    let $ = jQuery.noConflict();
     $(function () {
         $(".DummyDatePicker").each((_, elem) => {
             $(elem).datepicker({
@@ -175,7 +171,7 @@
     <span id="groupsChar">&#x1F53D;</span>
 </h4>
 <div id="groupsSection" style="display:none">
-    @foreach (var group in await _adminUserService.GetGroups())
+    @foreach (var group in Model.Groups)
     {
         <a href='javascript:populateGroup(@Json.Serialize(group))'>@Html.Raw(group.Name)</a>
         <br />
@@ -192,7 +188,7 @@
     <span id="ranksChar">&#x1F53D;</span>
 </h4>
 <div id="ranksSection" style="display:none">
-    @foreach (var rank in await _adminUserService.GetRawRanks())
+    @foreach (var rank in Model.Ranks)
     {
         <a href="javascript:populateRank(@rank.RankId, '@rank.RankTitle')">@rank.RankTitle</a>
         <br />
@@ -210,16 +206,15 @@
 </h4>
 <div id="bansSection" style="display:none">
     @{
-        var banlist = await _adminUserService.GetBanList();
         <form method="post" asp-page-handler="BanUser">
-            @for (var i = 0; i < banlist.Count; i++)
+            @for (var i = 0; i < Model.BanList.Count; i++)
             {
                 <div class="FlexCenter">
                     <div class="FlexCaption">
                         IP
                     </div>
                     <div class="FlexRight PostInputWidth">
-                        <input type="text" name="banlist[@i].BanIp" value="@banlist[i].BanIp" />
+                        <input type="text" name="banlist[@i].BanIp" value="@Model.BanList[i].BanIp" />
                     </div>
                 </div>
                 <div class="FlexCenter FlexSpaced">
@@ -227,7 +222,7 @@
                         @Html.Raw(_languageProvider.BasicText[Model.Language, "EMAIL", Casing.FirstUpper])
                     </div>
                     <div class="FlexRight PostInputWidth">
-                        <input type="text" name="banlist[@i].BanEmail" value="@banlist[i].BanEmail" />
+                        <input type="text" name="banlist[@i].BanEmail" value="@Model.BanList[i].BanEmail" />
                     </div>
                 </div>
                 <div class="FlexCenter FlexSpaced">
@@ -241,10 +236,10 @@
                         </label>
                     </div>
                 </div>
-                <input type="hidden" name="banlist[@i].BanId" value="@banlist[i].BanId" />
-                <input type="hidden" name="banlist[@i].BanEmailOldValue" value="@banlist[i].BanEmailOldValue" />
-                <input type="hidden" name="banlist[@i].BanIpOldValue" value="@banlist[i].BanIpOldValue" />
-                @if (i < banlist.Count - 1)
+                <input type="hidden" name="banlist[@i].BanId" value="@Model.BanList[i].BanId" />
+                <input type="hidden" name="banlist[@i].BanEmailOldValue" value="@Model.BanList[i].BanEmailOldValue" />
+                <input type="hidden" name="banlist[@i].BanIpOldValue" value="@Model.BanList[i].BanIpOldValue" />
+                @if (i < Model.BanList.Count - 1)
                 {
                     <hr class="SubtypeSeparator" />
                 }
@@ -254,7 +249,7 @@
             <input type="submit" value="@Html.Raw(_languageProvider.Admin[Model.Language, "SAVE_CHANGES"])" class="MyButton SpacedButton" />
         </form>
         <script type="text/javascript">
-        var cur = @banlist.Count;
+        var cur = @Model.BanList.Count;
 
         function addBannedItem(email = '', ip = '') {
             var elem = $(
@@ -373,13 +368,11 @@
 
 </script>
 
-@{ 
-    var (groupRanks, groupRoles) = await _adminUserService.GetGroupRanksAndRolesSelectListItems();
-}
-
 <form method="post" asp-page-handler="GroupManagement" id="groupAdministration" class="MiddleBox" style="display:none; padding: 10px; overflow-y: scroll">
     <h4 style="float:left" id="groupNameTitle"></h4>
-    <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('groupAdministration')">Închide [X]</div>
+    <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('groupAdministration')">
+    @Html.Raw(_languageProvider.BasicText[Model.Language, "CLOSE_BUTTON"])
+    </div>
     <p>&nbsp;</p>
     <p>&nbsp;</p>
     <div class="FlexCenter">
@@ -405,7 +398,7 @@
             @Html.Raw(_languageProvider.BasicText[Model.Language, "RANK", Casing.FirstUpper])
         </div>
         <div class="FlexRight PostInputWidth">
-            @Html.DropDownList("dto.rank", groupRanks, new { id = "rank" })
+            @Html.DropDownList("dto.rank", Model.RankListItems, new { id = "rank" })
         </div>
     </div>
     <p></p>
@@ -444,7 +437,7 @@
             @Html.Raw(_languageProvider.Admin[Model.Language, "PERMISSIONS"])
         </div>
         <div class="FlexRight PostInputWidth">
-            @Html.DropDownList("dto.role", groupRoles, new { id = "role" })
+            @Html.DropDownList("dto.role", Model.RoleListItems, new { id = "role" })
         </div>
     </div>
     <p></p>

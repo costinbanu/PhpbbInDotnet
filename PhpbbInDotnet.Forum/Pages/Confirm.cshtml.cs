@@ -15,6 +15,8 @@ namespace PhpbbInDotnet.Forum.Pages
 {
     public class ConfirmModel : AuthenticatedPageModel
     {
+        private readonly IConfiguration _config;
+
         public string Message { get; private set; }
         
         public string Title { get; private set; }
@@ -53,15 +55,16 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public bool IsDestinationConfirmation { get; private set; } = false;
 
-        public ConfirmModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, IConfiguration config, 
-            AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider)
-            : base(context, forumService, userService, cache, config, sessionCounter, utils, languageProvider) 
-        { }
-
-        public async Task OnGetRegistrationComplete()
+        public ConfirmModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, IConfiguration config, LanguageProvider languageProvider)
+            : base(context, forumService, userService, cache, utils, languageProvider) 
         {
-            var lang = await GetLanguage();
-            Message = string.Format(LanguageProvider.BasicText[lang, "REGISTRATION_CONFIRM_MESSAGE_FORMAT"], Config.GetValue<string>("AdminEmail"));
+            _config = config;
+        }
+
+        public void OnGetRegistrationComplete()
+        {
+            var lang = GetLanguage();
+            Message = string.Format(LanguageProvider.BasicText[lang, "REGISTRATION_CONFIRM_MESSAGE_FORMAT"], _config.GetValue<string>("AdminEmail"));
             Title = LanguageProvider.BasicText[lang, "REGISTRATION_CONFIRM_TITLE"];
         }
 
@@ -73,15 +76,15 @@ namespace PhpbbInDotnet.Forum.Pages
                 (u.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed || u.UserInactiveReason == UserInactiveReason.ChangedEmailNotConfirmed)
             );
 
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
 
             if (user == null)
             {
-                Message = $"<span class=\"message fail\">{string.Format(LanguageProvider.Errors[lang, "REGISTRATION_ERROR_FORMAT"], Config.GetValue<string>("AdminEmail"))}</span>";
+                Message = $"<span class=\"message fail\">{string.Format(LanguageProvider.Errors[lang, "REGISTRATION_ERROR_FORMAT"], _config.GetValue<string>("AdminEmail"))}</span>";
             }
             else
             {
-                Message = $"<span class=\"message success\">{string.Format(LanguageProvider.BasicText[lang, "EMAIL_CONFIRM_MESSAGE_FORMAT"], Config.GetValue<string>("AdminEmail"))}</span>";
+                Message = $"<span class=\"message success\">{string.Format(LanguageProvider.BasicText[lang, "EMAIL_CONFIRM_MESSAGE_FORMAT"], _config.GetValue<string>("AdminEmail"))}</span>";
 
                 if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed)
                 {
@@ -109,7 +112,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     var subject = LanguageProvider.Email[admin.UserLang, "NEWUSER_SUBJECT"];
                     using var emailMessage = new MailMessage
                     {
-                        From = new MailAddress(Config.GetValue<string>("AdminEmail"), Config.GetValue<string>("ForumName")),
+                        From = new MailAddress(_config.GetValue<string>("AdminEmail"), _config.GetValue<string>("ForumName")),
                         Subject = subject,
                         Body = await Utils.RenderRazorViewToString(
                             "_NewUserNotification",
@@ -130,23 +133,23 @@ namespace PhpbbInDotnet.Forum.Pages
             Title = LanguageProvider.BasicText[lang, "EMAIL_CONFIRM_TITLE"];
         }
 
-        public async Task OnGetNewPassword()
+        public void OnGetNewPassword()
         {
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
             Message = $"<span class=\"success\">{LanguageProvider.BasicText[lang, "NEW_PASSWORD_MESSAGE"]}</span>";
             Title = LanguageProvider.BasicText[lang, "NEW_PASSWORD_TITLE"];
         }
 
-        public async Task OnGetPasswordChanged()
+        public void OnGetPasswordChanged()
         {
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
             Message = $"<span class=\"success\">{LanguageProvider.BasicText[lang, "NEW_PASSWORD_COMPLETE"]}</span>";
             Title = LanguageProvider.BasicText[lang, "NEW_PASSWORD_TITLE"];
         }
 
-        public async Task OnGetModeratorConfirmation()
+        public void OnGetModeratorConfirmation()
         {
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
             IsModeratorConfirmation = true;
             if (ShowTopicSelector)
             {
@@ -158,10 +161,10 @@ namespace PhpbbInDotnet.Forum.Pages
             }
         }
 
-        public async Task OnGetDestinationConfirmation()
+        public void OnGetDestinationConfirmation()
         {
             IsDestinationConfirmation = true;
-            Message = $"<span class=\"success\">{LanguageProvider.BasicText[await GetLanguage(), "GENERIC_SUCCESS"]}</span>";
+            Message = $"<span class=\"success\">{LanguageProvider.BasicText[GetLanguage(), "GENERIC_SUCCESS"]}</span>";
         }
     }
 }

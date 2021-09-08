@@ -240,7 +240,7 @@ namespace PhpbbInDotnet.Services
             );
         }
 
-        private async Task SetTopicLastPost(PhpbbTopics topic, PhpbbPosts post, AuthenticatedUser author, bool hardReset = false)
+        private async Task SetTopicLastPost(PhpbbTopics topic, PhpbbPosts post, AuthenticatedUserBase author, bool hardReset = false)
         {
             if (hardReset || topic.TopicLastPostTime < post.PostTime)
             {
@@ -266,7 +266,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        private async Task SetForumLastPost(PhpbbForums forum, PhpbbPosts post, AuthenticatedUser author, bool hardReset = false)
+        private async Task SetForumLastPost(PhpbbForums forum, PhpbbPosts post, AuthenticatedUserBase author, bool hardReset = false)
         {
             if (hardReset || forum.ForumLastPostTime < post.PostTime)
             {
@@ -293,7 +293,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        private async Task SetTopicFirstPost(PhpbbTopics topic, PhpbbPosts post, AuthenticatedUser author, bool setTopicTitle, bool goForward = false)
+        private async Task SetTopicFirstPost(PhpbbTopics topic, PhpbbPosts post, AuthenticatedUserBase author, bool setTopicTitle, bool goForward = false)
         {
             var conn = await _context.GetDbConnectionAsync();
 

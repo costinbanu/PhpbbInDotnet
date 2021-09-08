@@ -20,6 +20,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public const int PAGE_SIZE = 20;
 
         private readonly WritingToolsService _writingService;
+        private readonly IConfiguration _config;
 
         [BindProperty(SupportsGet = true)]
         public int PageNum { get; set; } = 1;
@@ -46,10 +47,11 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool SearchWasPerformed { get; private set; }
 
         public MemberListModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, 
-            IConfiguration config, WritingToolsService writingService, AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider) 
-            : base (context, forumService, userService, cache, config, sessionCounter, utils, languageProvider) 
+            IConfiguration config, WritingToolsService writingService, LanguageProvider languageProvider) 
+            : base (context, forumService, userService, cache, utils, languageProvider) 
         {
             _writingService = writingService;
+            _config = config;
         }
 
         public async Task<IActionResult> OnGet()
@@ -131,7 +133,7 @@ namespace PhpbbInDotnet.Forum.Pages
                             $"SELECT count(distinct user_id) FROM phpbb_users WHERE user_lastvisit >= @lastVisit AND user_id <> @ANONYMOUS_USER_ID;" +
                             $"SELECT * FROM phpbb_groups;" +
                             $"SELECT * FROM phpbb_ranks;",
-                            new { lastVisit = DateTime.UtcNow.Subtract(Config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1)).ToUnixTimestamp(), skip = PAGE_SIZE * (PageNum - 1), take = PAGE_SIZE, Constants.ANONYMOUS_USER_ID }
+                            new { lastVisit = DateTime.UtcNow.Subtract(_config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1)).ToUnixTimestamp(), skip = PAGE_SIZE * (PageNum - 1), take = PAGE_SIZE, Constants.ANONYMOUS_USER_ID }
                         ))
                         {
                             UserList = await multi.ReadAsync<PhpbbUsers>();

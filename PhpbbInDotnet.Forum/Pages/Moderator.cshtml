@@ -13,10 +13,10 @@
 
 @model PhpbbInDotnet.Forum.Pages.ModeratorModel
 @{
-    var Lang = await Model.GetLanguage();
+    var Lang = Model.GetLanguage();
     ViewData["Title"] = Model.LanguageProvider.Moderator[Lang, "MOD_PANEL"]; ;
     Layout = "~/Pages/_Layout.cshtml";
-    var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
+    var UserDateFormat = (Model.GetCurrentUser())?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
 }
 
 <style>
@@ -353,7 +353,7 @@
                         }
                         @await Html.PartialAsync("_PostPartial", new _PostPartialModel
                         {
-                            CurrentUser = await Model.GetCurrentUserAsync(),
+                            CurrentUser = Model.GetCurrentUser(),
                             Post = post,
                             Language = Lang,
                             ParentHttpContext = HttpContext,

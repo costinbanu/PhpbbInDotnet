@@ -20,7 +20,7 @@ namespace PhpbbInDotnet.Forum.Pages
         #region GET
 
         public async Task<IActionResult> OnGetForumPost()
-            => await WithRegisteredUser(async (user) => await WithValidTopic(TopicId ?? 0, async (curForum, curTopic) =>
+            => await WithRegisteredUser((user) => WithValidTopic(TopicId ?? 0, async (curForum, curTopic) =>
             {
                 CurrentForum = curForum;
                 CurrentTopic = curTopic;
@@ -48,7 +48,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 if (string.IsNullOrWhiteSpace(curAuthor))
                 {
                     var conn = await Context.GetDbConnectionAsync();
-                    curAuthor = (await conn.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @posterId", new { curPost.PosterId }))?.Username ?? "Anonymous";
+                    curAuthor = await conn.QueryFirstOrDefaultAsync<string>("SELECT username FROM phpbb_users WHERE user_id = @posterId", new { curPost.PosterId }) ?? "Anonymous";
                 }
 
                 CurrentForum = curForum;
@@ -69,7 +69,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 CurrentForum = curForum;
                 CurrentTopic = null;
                 Action = PostingActions.NewTopic;
-                //await Init();
                 var conn = await Context.GetDbConnectionAsync();
                 var draft = conn.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = 0 }); 
                 if (draft != null)
@@ -101,7 +100,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 Attachments = (await conn.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id = @postId ORDER BY attach_id", new { PostId })).AsList();
                 ShowAttach = Attachments.Any();
 
-                Cache.Add(await GetActualCacheKey("PostTime", true), curPost.PostTime, CACHE_EXPIRATION);
+                Cache.Add(GetActualCacheKey("PostTime", true), curPost.PostTime, CACHE_EXPIRATION);
 
                 if (canCreatePoll && curTopic.PollStart > 0)
                 {
@@ -125,7 +124,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetPrivateMessage()
             => await WithRegisteredUser(async (usr) =>
             {
-                var lang = await GetLanguage();
+                var lang = GetLanguage();
                 var conn = await Context.GetDbConnectionAsync();
                 
                 if ((PostId ?? 0) > 0)
@@ -137,7 +136,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         if ((author?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
                         {
                             PostTitle = HttpUtility.HtmlDecode(post.PostSubject);
-                            PostText = $"[quote]\n{_writingService.CleanBbTextForDisplay(post.PostText, post.BbcodeUid)}\n[/quote]\n[url={Config.GetValue<string>("BaseUrl").Trim('/')}/ViewTopic?postId={PostId}&handler=byPostId]{PostTitle}[/url]\n";
+                            PostText = $"[quote]\n{_writingService.CleanBbTextForDisplay(post.PostText, post.BbcodeUid)}\n[/quote]\n[url={_config.GetValue<string>("BaseUrl").Trim('/')}/ViewTopic?postId={PostId}&handler=byPostId]{PostTitle}[/url]\n";
                             ReceiverId = author.UserId;
                             ReceiverName = author.Username;
                         }
@@ -208,7 +207,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostAddAttachment()
             => await WithBackup(async () => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, async (curForum) =>
             {
-                var lang = await GetLanguage();
+                var lang = GetLanguage();
                 CurrentForum = curForum;
                 ShowAttach = true;
 
@@ -228,8 +227,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
 
                 var isAdmin = await IsCurrentUserAdminHere();
-                var sizeLimit = Config.GetObject<AttachmentLimits>("UploadLimitsMB");
-                var countLimit = Config.GetObject<AttachmentLimits>("UploadLimitsCount");
+                var sizeLimit = _config.GetObject<AttachmentLimits>("UploadLimitsMB");
+                var countLimit = _config.GetObject<AttachmentLimits>("UploadLimitsCount");
 
                 var tooLargeFiles = Files.Where(f => f.Length > 1024 * 1024 * (f.ContentType.IsImageMimeType() ? sizeLimit.Images : sizeLimit.OtherFiles));
                 if (tooLargeFiles.Any() && !isAdmin)
@@ -268,7 +267,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostDeleteAttachment(int index)
             => await WithBackup(async () => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, async (curForum) =>
             {
-                var lang = await GetLanguage();
+                var lang = GetLanguage();
                 var attachment = Attachments?.ElementAtOrDefault(index);
                 CurrentForum = curForum;
 
@@ -306,7 +305,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostPreview()
             => await WithBackup(async () => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, Action == PostingActions.NewPrivateMessage, async (curForum) => await WithNewestPostSincePageLoad(curForum, async () =>
             {
-                var lang = await GetLanguage();
+                var lang = GetLanguage();
                 if ((PostTitle?.Trim()?.Length ?? 0) < 3)
                 {
                     return PageWithError(curForum, nameof(PostTitle), LanguageProvider.Errors[lang, "TITLE_TOO_SHORT"]);
@@ -370,7 +369,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var addedPostId = await UpsertPost(null, user);
                 if (addedPostId == null)
                 {
-                    return PageWithError(curForum, nameof(PostText), LanguageProvider.Errors[await GetLanguage(), "GENERIC_POSTING_ERROR"]);
+                    return PageWithError(curForum, nameof(PostText), LanguageProvider.Errors[GetLanguage(), "GENERIC_POSTING_ERROR"]);
                 }
                 return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
             }))));
@@ -400,7 +399,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostPrivateMessage()
             => await WithRegisteredUser(async (user) =>
             {
-                var lang = await GetLanguage();
+                var lang = GetLanguage();
 
                 if ((ReceiverId ?? 1) == 1)
                 {
@@ -439,7 +438,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostSaveDraft()
             => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, async (curForum) => await WithNewestPostSincePageLoad(curForum, async () =>
             {
-                var lang = await GetLanguage();
+                var lang = GetLanguage();
 
                 if ((PostTitle?.Trim()?.Length ?? 0) < 3)
                 {
@@ -474,7 +473,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         new { message = HttpUtility.HtmlEncode(PostText), subject = HttpUtility.HtmlEncode(PostTitle), now = DateTime.UtcNow.ToUnixTimestamp(), draft.DraftId }
                     );
                 }
-                Cache.Remove(await GetActualCacheKey("Text", true));
+                Cache.Remove(GetActualCacheKey("Text", true));
                 DraftSavedSuccessfully = true;
 
                 if (Action == PostingActions.NewForumPost)

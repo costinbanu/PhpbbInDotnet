@@ -22,13 +22,15 @@ namespace PhpbbInDotnet.Forum.Pages
     {
         private readonly StorageService _storageService;
         private readonly FileExtensionContentTypeProvider _contentTypeProvider;
+        private readonly IConfiguration _config;
 
         public FileModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, StorageService storageService,
-            IConfiguration config, AnonymousSessionCounter sessionCounter, CommonUtils utils, FileExtensionContentTypeProvider contentTypeProvider, LanguageProvider languageProvider)
-            : base(context, forumService, userService, cache, config, sessionCounter, utils, languageProvider)
+            IConfiguration config, CommonUtils utils, FileExtensionContentTypeProvider contentTypeProvider, LanguageProvider languageProvider)
+            : base(context, forumService, userService, cache, utils, languageProvider)
         {
             _storageService = storageService;
             _contentTypeProvider = contentTypeProvider;
+            _config = config;
         }
 
         public async Task<IActionResult> OnGet(int id, bool preview = false, Guid? correlationId = null)
@@ -77,7 +79,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             string file;
             string getActualFileName(string fileName)
-                => $"{Config.GetValue<string>("AvatarSalt")}_{userId}{Path.GetExtension(fileName)}";
+                => $"{_config.GetValue<string>("AvatarSalt")}_{userId}{Path.GetExtension(fileName)}";
 
             if (correlationId.HasValue)
             {

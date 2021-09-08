@@ -132,6 +132,7 @@ namespace PhpbbInDotnet.Forum
             services.AddScoped<BBCodeRenderingService>();
             services.AddScoped<StatisticsService>();
             services.AddScoped<OperationLogService>();
+            services.AddScoped<AuthenticationMiddleware>();
 
             services.AddTransient<IHttpContextAccessor, HttpContextAccessor>();
             services.AddTransient<LanguageProvider>();
@@ -194,6 +195,7 @@ namespace PhpbbInDotnet.Forum
             app.UseCookiePolicy();
             app.UseAuthentication();
             app.UseSession();
+            app.UseMiddleware<AuthenticationMiddleware>();
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();

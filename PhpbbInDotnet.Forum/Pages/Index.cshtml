@@ -7,8 +7,8 @@
 @inject IConfiguration _config
 
 @{
-    var CurrentUser = await Model.GetCurrentUserAsync();
-    var Lang = await Model.GetLanguage();
+    var CurrentUser = Model.GetCurrentUser();
+    var Lang = Model.GetLanguage();
     var UserDateFormat = CurrentUser?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
     ViewData["Title"] = Model.LanguageProvider.BasicText[Lang, "HOME", Casing.Title];
 }

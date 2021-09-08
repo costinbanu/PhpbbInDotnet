@@ -51,7 +51,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> DeleteUsersWithEmailNotConfirmed(int[] userIds, int adminUserId)
         {
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
             if (!(userIds?.Any() ?? false))
             {
                 return (LanguageProvider.Admin[lang, "NO_USER_SELECTED"], null);
@@ -106,7 +106,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> ManageUser(AdminUserActions? action, int? userId, PageContext pageContext, HttpContext httpContext, int adminUserId)
         {
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
             if (userId == Constants.ANONYMOUS_USER_ID)
             {
                 return (LanguageProvider.Admin[lang, "CANT_DELETE_ANONYMOUS_USER"], false);
@@ -341,7 +341,7 @@ namespace PhpbbInDotnet.Services
                 }
             }
 
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
             try
             {
                 var rf = ParseDate(searchParameters?.RegisteredFrom, false);
@@ -411,7 +411,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> ManageRank(int? rankId, string rankName, bool? deleteRank, int adminUserId)
         {
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
             try
             {
                 if (string.IsNullOrWhiteSpace(rankName))
@@ -464,9 +464,6 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<List<PhpbbRanks>> GetRawRanks()
-            => await _context.PhpbbRanks.AsNoTracking().ToListAsync();
-
         #endregion Rank
 
         #region Group
@@ -494,7 +491,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> ManageGroup(UpsertGroupDto dto, int adminUserId)
         {
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
             try
             {
                 void update(PhpbbGroups destination, UpsertGroupDto source)
@@ -620,14 +617,20 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<(List<SelectListItem> Ranks, List<SelectListItem> Roles)> GetGroupRanksAndRolesSelectListItems()
+        public List<SelectListItem> GetRanksSelectListItems()
         {
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
             var groupRanks = new List<SelectListItem> { new SelectListItem(LanguageProvider.Admin[lang, "NO_RANK"], "0", true) };
             groupRanks.AddRange(_context.PhpbbRanks.AsNoTracking().Select(x => new SelectListItem(x.RankTitle, x.RankId.ToString())));
+            return groupRanks;
+        }
+
+        public List<SelectListItem> GetRolesSelectListItems()
+        {
+            var lang = GetLanguage();
             var roles = new List<SelectListItem> { new SelectListItem(LanguageProvider.Admin[lang, "NO_ROLE"], "0", true) };
             roles.AddRange(_context.PhpbbAclRoles.AsNoTracking().Where(x => x.RoleType == "u_").Select(x => new SelectListItem(LanguageProvider.Admin[lang, x.RoleName, Casing.None, x.RoleName], x.RoleId.ToString())));
-            return (groupRanks, roles);
+            return roles;
         }
 
         #endregion Group
@@ -636,7 +639,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> BanUser(List<UpsertBanListDto> banlist, List<int> indexesToRemove, int adminUserId)
         {
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
             try
             {
                 var conn = await _context.GetDbConnectionAsync();

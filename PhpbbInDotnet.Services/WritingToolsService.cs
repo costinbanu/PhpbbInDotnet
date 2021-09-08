@@ -49,7 +49,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> ManageBannedWords(List<PhpbbWords> words, List<int> indexesToRemove)
         {
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
             try
             {
                 await _context.PhpbbWords.AddRangeAsync(words.Where(w => w.WordId == 0));
@@ -74,7 +74,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> ManageBBCodes(List<PhpbbBbcodes> codes, List<int> indexesToRemove, List<int> indexesToDisplay)
         {
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
             try
             { 
                 indexesToDisplay.ForEach(i => codes[i].DisplayOnPosting = 1);
@@ -92,9 +92,6 @@ namespace PhpbbInDotnet.Services
                 return (LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }
-
-        public async Task<List<PhpbbBbcodes>> GetCustomBBCodes()
-            => (await (await _context.GetDbConnectionAsync()).QueryAsync<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes")).AsList();
 
         public async Task<string> PrepareTextForSaving(string text)
         {
@@ -159,7 +156,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> DeleteOrphanedFiles()
         {
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
             var files = await GetOrphanedFiles();
             if (!files.Any())
             {
@@ -199,7 +196,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> ManageSmilies(List<UpsertSmiliesDto> dto, List<string> newOrder, List<int> codesToDelete, List<string> smileyGroupsToDelete)
         {
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
             try
             {
                 var conn = await _context.GetDbConnectionAsync();

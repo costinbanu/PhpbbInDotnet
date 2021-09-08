@@ -20,10 +20,10 @@
     ViewData["Title"] = "Posting";
     Layout = "~/Pages/_Layout.cshtml";
 
-    var CurrentUser = await Model.GetCurrentUserAsync();
+    var CurrentUser = Model.GetCurrentUser();
     var IsPM = Model.Action == PostingActions.NewPrivateMessage || Model.Action == PostingActions.EditPrivateMessage;
     var CanCreatePoll = Model.Action == PostingActions.NewTopic || (Model.Action == PostingActions.EditForumPost && (Model.CurrentTopic?.TopicFirstPostId ?? 0) == Model.PostId);
-    var Lang = await Model.GetLanguage();
+    var Lang = Model.GetLanguage();
     var UserDateFormat = CurrentUser.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
     var IsAdmin = await Model.IsCurrentUserAdminHere();
 }
@@ -145,16 +145,16 @@ else if (IsPM)
     }
 
     @await Html.PartialAsync("_PostPartial", new _PostPartialModel
-{
-    CurrentUser = CurrentUser,
-    Post = Model.PreviewablePost,
-    ForumId = Model.ForumId,
-    TopicId = Model.TopicId ?? 0,
-    Language = Lang,
-    ParentHttpContext = HttpContext,
-    ParentPageContext = PageContext,
-    CorrelationId = Model.PreviewCorrelationId
-}, ViewData)
+    {
+        CurrentUser = CurrentUser,
+        Post = Model.PreviewablePost,
+        ForumId = Model.ForumId,
+        TopicId = Model.TopicId ?? 0,
+        Language = Lang,
+        ParentHttpContext = HttpContext,
+        ParentPageContext = PageContext,
+        CorrelationId = Model.PreviewCorrelationId
+    }, ViewData)
 
     <hr class="BoxSeparator" />
     <p></p>
@@ -184,12 +184,12 @@ else if (IsPM)
             if (code.Key == "size")
             {
                 @Html.DropDownList("addbbcode20", _utils.EnumToDropDownList<PostingFontSize>(null, size => Model.LanguageProvider.Enums[Lang, size], size => ((int)size).ToString(), buttonText), new
-           {
-               @class = "BbCodeButton PostingButton",
-               style = "border-radius: 2px; border: 1px solid #dcdcdc;",
-               onchange = "posting.bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;",
-               title = caption
-           })
+                {
+                    @class = "BbCodeButton PostingButton",
+                    style = "border-radius: 2px; border: 1px solid #dcdcdc;",
+                    onchange = "posting.bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;",
+                    title = caption
+                })
             }
             else if (code.Key == "color")
             {
