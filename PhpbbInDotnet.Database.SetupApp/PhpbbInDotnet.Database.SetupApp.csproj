@@ -54,7 +54,7 @@
     <None Update="StoredProcedures\get_post_tracking.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="StoredProcedures\get_user_details.sql">
+    <None Update="StoredProcedures\get_user_permissions.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="StoredProcedures\mark_topic_read.sql">

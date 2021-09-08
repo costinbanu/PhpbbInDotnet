@@ -64,7 +64,11 @@ namespace PhpbbInDotnet.Services
                 select up.AuthRoleId as int?).FirstOrDefault();
 
         public async Task<bool> HasPrivateMessagePermissions(int userId)
-            => HasPrivateMessagePermissions(await GetAuthenticatedUserById(userId));
+        {
+            var usr = new AuthenticatedUser(await GetAuthenticatedUserById(userId));
+            usr.AllPermissions = await GetPermissions(userId);
+            return HasPrivateMessagePermissions(usr);
+        }
 
         public bool HasPrivateMessagePermissions(AuthenticatedUser user)
             => !(user?.IsAnonymous ?? true) && !(user?.AllPermissions?.Contains(new AuthenticatedUser.Permissions { ForumId = 0, AuthRoleId = Constants.NO_PM_ROLE }) ?? false);
@@ -73,7 +77,11 @@ namespace PhpbbInDotnet.Services
             => user.AllowPM && HasPrivateMessagePermissions(user);
 
         public async Task<bool> HasPrivateMessages(int userId)
-            => HasPrivateMessages(await GetAuthenticatedUserById(userId));
+        {
+            var usr = new AuthenticatedUser(await GetAuthenticatedUserById(userId));
+            usr.AllPermissions = await GetPermissions(userId);
+            return HasPrivateMessages(usr);
+        }
 
         private async Task<PhpbbUsers> GetAnonymousDbUser()
         {
@@ -82,9 +90,7 @@ namespace PhpbbInDotnet.Services
                 return _anonymousDbUser;
             }
             var connection = await _context.GetDbConnectionAsync();
-
             _anonymousDbUser = await connection.QuerySingleOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId = Constants.ANONYMOUS_USER_ID });
-
             return _anonymousDbUser;
         }
 
@@ -94,7 +100,6 @@ namespace PhpbbInDotnet.Services
             {
                 return _anonymousClaimsPrincipal;
             }
-
             _anonymousClaimsPrincipal = await DbUserToClaimsPrincipal(await GetAnonymousDbUser());
             return _anonymousClaimsPrincipal;
         }
@@ -102,57 +107,101 @@ namespace PhpbbInDotnet.Services
         public async Task<ClaimsPrincipal> DbUserToClaimsPrincipal(PhpbbUsers user)
         {
             var connection = await _context.GetDbConnectionAsync();
-            using var multi = await connection.QueryMultipleAsync(
-                @"CALL `forum`.`get_user_details`(@UserId);
-
-                SELECT g.group_edit_time, g.group_user_upload_size
-                  FROM phpbb_groups g
-                  JOIN phpbb_users u ON g.group_id = u.group_id
-                 WHERE u.user_id = @UserId
-                 LIMIT 1;
-
-                SELECT style_name 
-                  FROM phpbb_styles 
-                 WHERE style_id = @UserStyle", 
-                new { user.UserId, user.UserStyle }
+            var groupPropertiesTask = connection.QueryFirstOrDefaultAsync(
+                @"SELECT g.group_edit_time, g.group_user_upload_size
+                    FROM phpbb_groups g
+                    JOIN phpbb_users u ON g.group_id = u.group_id
+                   WHERE u.user_id = @UserId",
+                new { user.UserId }
             );
-
-            var permissions = new HashSet<AuthenticatedUser.Permissions>(await multi.ReadAsync<AuthenticatedUser.Permissions>());
-            var tpp = (await multi.ReadAsync()).ToDictionary(x => checked((int)x.topic_id), y => checked((int)y.post_no));
-            var foes = new HashSet<int>((await multi.ReadAsync<uint>()).Select(x => unchecked((int)x)));
-            var groupProperties = await multi.ReadFirstOrDefaultAsync();
+            var styleTask = connection.QueryFirstOrDefaultAsync<string>(
+                @"SELECT style_name 
+                    FROM phpbb_styles 
+                   WHERE style_id = @UserStyle",
+                new { user.UserStyle }
+            );
+            await Task.WhenAll(styleTask, groupPropertiesTask);
+            var groupProperties = await groupPropertiesTask;
             var editTime = unchecked((int)groupProperties.group_edit_time);
-            var style = await multi.ReadFirstOrDefaultAsync<string>();
-
-            var intermediary = new AuthenticatedUser
-            {
-                UserId = user.UserId,
-                Username = user.Username,
-                UsernameClean = user.UsernameClean,
-                AllPermissions = permissions,
-                TopicPostsPerPage = tpp,
-                Foes = foes,
-                UserDateFormat = user.UserDateformat,
-                UserColor = user.UserColour,
-                PostEditTime = (editTime == 0 || user.UserEditTime == 0) ? 0 : Math.Min(Math.Abs(editTime), Math.Abs(user.UserEditTime)),
-                AllowPM = user.UserAllowPm.ToBool(),
-                Style = style,
-                JumpToUnread = user.JumpToUnread,
-                UploadLimit = unchecked((int)groupProperties.group_user_upload_size),
-                Language = user.UserLang,
-                EmailAddress = user.UserEmail
-            };
+            var style = await styleTask;
 
             var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
-            identity.AddClaim(new Claim(ClaimTypes.UserData, Convert.ToBase64String(await Utils.CompressObject(intermediary))));
+            identity.AddClaim(new Claim(nameof(AuthenticatedUser.UserId), user.UserId.ToString()));
+            identity.AddClaim(new Claim(nameof(AuthenticatedUser.Username), user.Username ?? string.Empty));
+            identity.AddClaim(new Claim(nameof(AuthenticatedUser.UsernameClean), user.UsernameClean ?? string.Empty));
+            identity.AddClaim(new Claim(nameof(AuthenticatedUser.UserDateFormat), user.UserDateformat ?? string.Empty));
+            identity.AddClaim(new Claim(nameof(AuthenticatedUser.UserColor), user.UserColour ?? string.Empty));
+            identity.AddClaim(new Claim(nameof(AuthenticatedUser.PostEditTime), ((editTime == 0 || user.UserEditTime == 0) ? 0 : Math.Min(Math.Abs(editTime), Math.Abs(user.UserEditTime))).ToString()));
+            identity.AddClaim(new Claim(nameof(AuthenticatedUser.UploadLimit), unchecked((int)groupProperties.group_user_upload_size).ToString()));
+            identity.AddClaim(new Claim(nameof(AuthenticatedUser.AllowPM), user.UserAllowPm.ToBool().ToString()));
+            identity.AddClaim(new Claim(nameof(AuthenticatedUser.Style), style ?? string.Empty));
+            identity.AddClaim(new Claim(nameof(AuthenticatedUser.JumpToUnread), user.JumpToUnread?.ToString() ?? string.Empty));
+            identity.AddClaim(new Claim(nameof(AuthenticatedUser.Language), user.UserLang ?? string.Empty));
+            identity.AddClaim(new Claim(nameof(AuthenticatedUser.EmailAddress), user.UserEmail ?? string.Empty));
             return new ClaimsPrincipal(identity);
         }
 
-        public async new Task<AuthenticatedUser> ClaimsPrincipalToAuthenticatedUser(ClaimsPrincipal principal)
-            => await base.ClaimsPrincipalToAuthenticatedUser(principal);
+        public AuthenticatedUserBase DbUserToAuthenticatedUserBase(PhpbbUsers dbUser)
+            => new()
+            {
+                UserId = dbUser.UserId,
+                Username = dbUser.Username,
+                UsernameClean = dbUser.UsernameClean,
+                EmailAddress = dbUser.UserEmail,
+                Language = dbUser.UserLang,
+                AllowPM = dbUser.UserAllowPm.ToBool(),
+                JumpToUnread = dbUser.JumpToUnread,
+                UserColor = dbUser.UserColour,
+                UserDateFormat = dbUser.UserDateformat
+            };
 
-        public async Task<AuthenticatedUser> DbUserToAuthenticatedUser(PhpbbUsers dbUser)
-            => await ClaimsPrincipalToAuthenticatedUser(await DbUserToClaimsPrincipal(dbUser));
+        public AuthenticatedUser ClaimsPrincipalToAuthenticatedUser(ClaimsPrincipal claimsPrincipal)
+        {
+            var user = new AuthenticatedUser();
+            foreach (var claim in claimsPrincipal.Claims)
+            {
+                switch (claim.Type)
+                {
+                    case nameof(AuthenticatedUser.UserId):
+                        user.UserId = int.Parse(claim.Value);
+                        break;
+                    case nameof(AuthenticatedUser.Username):
+                        user.Username = claim.Value;
+                        break;
+                    case nameof(AuthenticatedUser.UsernameClean):
+                        user.UsernameClean = claim.Value;
+                        break;
+                    case nameof(AuthenticatedUser.UserDateFormat):
+                        user.UserDateFormat = claim.Value;
+                        break;
+                    case nameof(AuthenticatedUser.UserColor):
+                        user.UserColor = claim.Value;
+                        break;
+                    case nameof(AuthenticatedUser.PostEditTime):
+                        user.PostEditTime = int.Parse(claim.Value);
+                        break;
+                    case nameof(AuthenticatedUser.UploadLimit):
+                        user.UploadLimit = int.Parse(claim.Value);
+                        break;
+                    case nameof(AuthenticatedUser.AllowPM):
+                        user.AllowPM = bool.TryParse(claim.Value, out var val) && val;
+                        break;
+                    case nameof(AuthenticatedUser.Style):
+                        user.Style = claim.Value;
+                        break;
+                    case nameof(AuthenticatedUser.JumpToUnread):
+                        user.JumpToUnread = bool.TryParse(claim.Value, out val) && val;
+                        break;
+                    case nameof(AuthenticatedUser.Language):
+                        user.Language = claim.Value;
+                        break;
+                    case nameof(AuthenticatedUser.EmailAddress):
+                        user.EmailAddress = claim.Value;
+                        break;
+                }
+            }
+            return user;
+        }
 
         public async Task<IEnumerable<PhpbbRanks>> GetRankList()
         {
@@ -177,16 +226,16 @@ namespace PhpbbInDotnet.Services
             );
         }
 
-        public async Task<AuthenticatedUser> GetAuthenticatedUserById(int userId)
+        public async Task<AuthenticatedUserBase> GetAuthenticatedUserById(int userId)
         {
             var connection = await _context.GetDbConnectionAsync();
             var usr = await connection.QuerySingleOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
-            return await DbUserToAuthenticatedUser(usr);
+            return DbUserToAuthenticatedUserBase(usr);
         }
 
         public async Task<(string Message, bool? IsSuccess)> SendPrivateMessage(int senderId, string senderName, int receiverId, string subject, string text, PageContext pageContext, HttpContext httpContext)
         {
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
             try
             {
                 if (!await HasPrivateMessagePermissions(senderId))
@@ -194,7 +243,9 @@ namespace PhpbbInDotnet.Services
                     return (LanguageProvider.Errors[lang, "SENDER_CANT_SEND_PMS"], false);
                 }
                 
-                var receiver = await GetAuthenticatedUserById(receiverId);
+                var receiver = new AuthenticatedUser(await GetAuthenticatedUserById(receiverId));
+                receiver.AllPermissions = await GetPermissions(receiverId);
+                receiver.Foes = await GetFoes(receiverId);
                 if (!HasPrivateMessages(receiver))
                 {
                     return (LanguageProvider.Errors[lang, "RECEIVER_CANT_RECEIVE_PMS"], false);
@@ -245,7 +296,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> EditPrivateMessage(int messageId, string subject, string text)
         {
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
             try
             {
                 var connection = await _context.GetDbConnectionAsync();
@@ -272,7 +323,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> DeletePrivateMessage(int messageId)
         {
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
             try
             {
                 var connection = await _context.GetDbConnectionAsync();
@@ -299,7 +350,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> HidePrivateMessages(int userId, params int[] messageIds)
         {
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
             try
             {
                 var connection = await _context.GetDbConnectionAsync();
@@ -326,6 +377,24 @@ namespace PhpbbInDotnet.Services
         {
             var connection = await _context.GetDbConnectionAsync();
             return await connection.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_privmsgs_to WHERE user_id = @userId AND folder_id >= 0 AND pm_unread = 1", new { userId });
+        }
+
+        public async Task<HashSet<AuthenticatedUser.Permissions>> GetPermissions(int userId)
+        {
+            var conn = await _context.GetDbConnectionAsync();
+            return new HashSet<AuthenticatedUser.Permissions>(await conn.QueryAsync<AuthenticatedUser.Permissions>("CALL get_user_permissions(@userId)", new { userId }));
+        }
+
+        public async Task<HashSet<int>> GetFoes(int userId)
+        {
+            var conn = await _context.GetDbConnectionAsync();
+            return new HashSet<int>(await conn.QueryAsync<int>(
+                @"SELECT zebra_id
+                    FROM phpbb_zebra
+                    WHERE user_id = @user_id 
+                      AND foe = 1;",
+                new { userId }
+            ));
         }
 
         public async Task<IEnumerable<PhpbbAclRoles>> GetUserRolesLazy()

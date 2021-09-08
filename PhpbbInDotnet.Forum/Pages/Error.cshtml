@@ -11,7 +11,7 @@
 
 @{
     ViewData["Title"] = "Error";
-    var lang = _languageProvider.GetValidatedLanguage(await _userService.ClaimsPrincipalToAuthenticatedUser(User), Model.Request);
+    var lang = _languageProvider.GetValidatedLanguage(_userService.ClaimsPrincipalToAuthenticatedUser(User), Model.Request);
     var adminEmail = _config.GetValue<string>("AdminEmail");
     var displayContact = !Model.IsUnauthorized && !Model.IsNotFound;
 }

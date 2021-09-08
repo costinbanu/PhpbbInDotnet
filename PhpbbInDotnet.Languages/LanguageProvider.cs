@@ -109,7 +109,7 @@ namespace PhpbbInDotnet.Languages
             return ValidatedOrDefault(user.Language, fromHeadersOrDefault);
         }
 
-        public (bool isValid, string twoLetterLanguageName) IsLanguageValid(string language)
+        private (bool isValid, string twoLetterLanguageName) IsLanguageValid(string language)
             => _cache.GetOrAdd(
                 $"{nameof(IsLanguageValid)}_{language}",
                 () =>

@@ -1,41 +1,36 @@
-﻿using PhpbbInDotnet.Utilities;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace PhpbbInDotnet.Objects
 {
-    public class AuthenticatedUser
+    public class AuthenticatedUser : AuthenticatedUserBase
     {
-        public int UserId { get; set; }
+        public AuthenticatedUser(AuthenticatedUserBase @base)
+        {
+            UserId = @base.UserId;
+            Username = @base.Username;
+            UsernameClean = @base.UsernameClean;
+            UserDateFormat = @base.UserDateFormat;
+            UserColor = @base.UserColor;
+            AllowPM = @base.AllowPM;
+            JumpToUnread = @base.JumpToUnread;
+            Language = @base.Language;
+            EmailAddress = @base.EmailAddress;
+        }
 
-        public string Username { get; set; } = null;
-
-        public string UsernameClean { get; set; } = null;
+        public AuthenticatedUser() { }
 
         public HashSet<Permissions> AllPermissions { get; set; } = null;
 
         public Dictionary<int, int> TopicPostsPerPage { get; set; } = null;
 
-        public string UserDateFormat { get; set; } = null;
-
-        public string UserColor { get; set; } = null;
-
         public int PostEditTime { get; set; } = 60;
 
-        public bool IsAnonymous => UserId == Constants.ANONYMOUS_USER_ID;
-
-        public bool AllowPM { get; set; }
+        public int? UploadLimit { get; set; }
 
         public HashSet<int> Foes { get; set; }
 
         public string Style { get; set; }
-
-        public bool? JumpToUnread { get; set; } = true;
-
-        public int? UploadLimit { get; set; }
-
-        public string Language { get; set; }
-        public string EmailAddress { get; set; }
 
         public class Permissions
         {

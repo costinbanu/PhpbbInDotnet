@@ -1,11 +1,11 @@
 ﻿using Dapper;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -49,13 +49,20 @@ namespace PhpbbInDotnet.Services
                 return _tree;
             }
 
-            var restrictedForums = (user?.AllPermissions?.Where(p => p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE)?.Select(p => p.ForumId) ?? Enumerable.Empty<int>()).ToHashSet();
-            var tracking = fetchUnreadData ? await GetForumTracking(user, forceRefresh) : null;
+            var tracking = fetchUnreadData ? await GetForumTracking(user?.UserId ?? Constants.ANONYMOUS_USER_ID, forceRefresh) : null;
             var connection = await _context.GetDbConnectionAsync();
 
-            using var multi = await connection.QueryMultipleAsync("CALL `forum`.`get_forum_tree`(); SELECT forum_id, count(topic_id) as topic_count FROM phpbb_topics GROUP BY forum_id;");
-            _tree = (await multi.ReadAsync<ForumTree>()).ToHashSet();
-            _forumTopicCount = (await multi.ReadAsync<ForumTopicCount>()).ToHashSet();
+            var treeTask = GetForumTree(connection);
+            var forumTopicCountTask = GetForumTopicCount(connection);
+            var restrictedForumsTask = GetRestrictedForumsFromPermissions(user);
+            await Task.WhenAll(treeTask, forumTopicCountTask, restrictedForumsTask);
+            _tree = await treeTask;
+            _forumTopicCount = await forumTopicCountTask;
+            var restrictedForums = await restrictedForumsTask;
+
+            traverse(0);
+
+            return _tree;
 
             void traverse(int forumId)
             {
@@ -72,7 +79,7 @@ namespace PhpbbInDotnet.Services
                 foreach (var childForumId in node.ChildrenList ?? new HashSet<int>())
                 {
                     var childForum = GetTreeNode(_tree, childForumId);
-                    if(childForum != null)
+                    if (childForum != null)
                     {
                         childForum.IsRestricted = node.IsRestricted;
                         if (childForum.PathList == null)
@@ -100,12 +107,23 @@ namespace PhpbbInDotnet.Services
                 }
             }
 
-            traverse(0);
+            async Task<HashSet<ForumTree>> GetForumTree(DbConnection connection)
+            {
+                var tree = await connection.QueryAsync<ForumTree>("CALL get_forum_tree()");
+                return tree.ToHashSet();
+            }
 
-            return _tree;
+            async Task<HashSet<ForumTopicCount>> GetForumTopicCount(DbConnection connection)
+            {
+                var count = await connection.QueryAsync<ForumTopicCount>("SELECT forum_id, count(topic_id) as topic_count FROM phpbb_topics GROUP BY forum_id");
+                return count.ToHashSet();
+            }
+
+            Task<HashSet<int>> GetRestrictedForumsFromPermissions(AuthenticatedUser user)
+                => Task.Run(() => (user?.AllPermissions?.Where(p => p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE)?.Select(p => p.ForumId) ?? Enumerable.Empty<int>()).ToHashSet());
         }
 
-        public async Task<Dictionary<int, HashSet<Tracking>>> GetForumTracking(AuthenticatedUser user, bool forceRefresh)
+        public async Task<Dictionary<int, HashSet<Tracking>>> GetForumTracking(int userId, bool forceRefresh)
         {
             if (_tracking != null && !forceRefresh)
             {
@@ -116,11 +134,11 @@ namespace PhpbbInDotnet.Services
             var connection = await _context.GetDbConnectionAsync();
             try
             {
-                dbResults = await connection.QueryAsync<ExtendedTracking>("CALL `forum`.`get_post_tracking`(@userId);", new { userId = user?.UserId ?? Constants.ANONYMOUS_USER_ID });
+                dbResults = await connection.QueryAsync<ExtendedTracking>("CALL `forum`.`get_post_tracking`(@userId);", new { userId });
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex, $"Error getting the forum tracking for user {user?.UserId ?? Constants.ANONYMOUS_USER_ID}");
+                _utils.HandleError(ex, $"Error getting the forum tracking for user {userId}");
             }
             
             var count = dbResults.Count();
@@ -150,13 +168,13 @@ namespace PhpbbInDotnet.Services
 
         public async Task<bool> IsTopicUnread(int forumId, int topicId, AuthenticatedUser user, bool forceRefresh = false)
         {
-            var ft = await GetForumTracking(user, forceRefresh);
+            var ft = await GetForumTracking(user?.UserId ?? Constants.ANONYMOUS_USER_ID, forceRefresh);
             return ft.TryGetValue(forumId, out var tt) && tt.Contains(new Tracking { TopicId = topicId });
         }
 
         public async Task<bool> IsPostUnread(int forumId, int topicId, int postId, AuthenticatedUser user)
         {
-            var ft = await GetForumTracking(user, false);
+            var ft = await GetForumTracking(user?.UserId ?? Constants.ANONYMOUS_USER_ID, false);
             Tracking item = null;
             var found = ft.TryGetValue(forumId, out var tt) && tt.TryGetValue(new Tracking { TopicId = topicId }, out item);
             if (!found)

@@ -2,24 +2,38 @@
 @using PhpbbInDotnet.Utilities
 @using Microsoft.Extensions.Configuration
 @using System.Globalization 
+@using Objects
 
 @model PhpbbInDotnet.Forum.Pages.UserModel
 
 @inject Services.UserService _userService
 @inject Database.ForumDbContext _context
 @inject Utilities.CommonUtils _utils
+@inject Microsoft.Extensions.Configuration.IConfiguration _config
 
 @{
     ViewData["Title"] = "User";
     Layout = "~/Pages/_Layout.cshtml";
-    var viewingUser = await Model.GetCurrentUserAsync();
-    var pageUser = await _userService.DbUserToAuthenticatedUser(Model.CurrentUser);
+
+    var pageUser = new AuthenticatedUser(_userService.DbUserToAuthenticatedUserBase(Model.CurrentUser));
+
+    var permissionsTask = _userService.GetPermissions(pageUser.UserId);
+    var foesTask = _userService.GetFoes(pageUser.UserId);
+    var canEditTask = Model.CanEdit();
+    var isAdminHereTask = Model.IsCurrentUserAdminHere();
+    var ranksTask = _userService.GetRankList();
+
+    await Task.WhenAll(permissionsTask, foesTask, canEditTask, isAdminHereTask, ranksTask);
+
+    var viewingUser = Model.GetCurrentUser();
+    pageUser.AllPermissions = await permissionsTask;
+    pageUser.Foes = await foesTask;
     var isSelf = viewingUser.UserId == Model.CurrentUser.UserId;
-    var canEdit = await Model.CanEdit();
-    var hasTabs = isSelf || await Model.IsCurrentUserAdminHere();
+    var canEdit = await canEditTask;
+    var hasTabs = isSelf || await isAdminHereTask;
     var showFlexAvatar = !string.IsNullOrWhiteSpace(Model.CurrentUser.UserAvatar) && !canEdit;
-    var rankList = await _userService.GetRankList();
-    var Lang = await Model.GetLanguage();
+    var rankList = await ranksTask;
+    var Lang = Model.GetLanguage();
 }
 
 <environment include="Development">
@@ -197,7 +211,7 @@ else
                                 {
                                     <br />
                                     <span class="Caption">
-                                        @Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, "CHANGE_USERNAME_CAPTION_FORMAT"], Model.Config.GetValue<string>("AdminEmail")))
+                                        @Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, "CHANGE_USERNAME_CAPTION_FORMAT"], _config.GetValue<string>("AdminEmail")))
                                     </span>
                                 }
                             }
@@ -591,7 +605,7 @@ else
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @{
-                            var UserDateFormat = (await Model.GetCurrentUserAsync())?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
+                            var UserDateFormat = (Model.GetCurrentUser())?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
                         }
                         <script>
                             writeDate("@Model.CurrentUser.UserRegdate.ToUtcTime().ToString("o")", "@UserDateFormat");
@@ -689,7 +703,7 @@ else
             @if (!isSelf && !canEdit)
             {
                 var canAddFoe = await Model.CanAddFoe();
-                var canRemoveFoe = await Model.CanRemoveFoe();
+                var canRemoveFoe = Model.CanRemoveFoe();
                 if (canAddFoe || canRemoveFoe)
                 {
                     <hr class="BoxSeparator" />

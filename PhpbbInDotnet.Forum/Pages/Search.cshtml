@@ -16,9 +16,9 @@
 @{
     ViewData["Title"] = "Search";
     Layout = "~/Pages/_Layout.cshtml";
-    var CurrentUser = await Model.GetCurrentUserAsync();
+    var CurrentUser = Model.GetCurrentUser();
     var connection = await _context.GetDbConnectionAsync();
-    var Lang = await Model.GetLanguage();
+    var Lang = Model.GetLanguage();
     var dateFormat = CurrentUser?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
 }
 <environment include="Development">

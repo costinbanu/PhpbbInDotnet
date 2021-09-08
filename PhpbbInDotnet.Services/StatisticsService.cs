@@ -25,19 +25,25 @@ namespace PhpbbInDotnet.Services
 
         public async Task<Statistics> GetStatistics()
             => await _cache.GetOrAddAsync(
-                CACHE_KEY, 
+                CACHE_KEY,
                 async () =>
                 {
-                    var time = await _dbContext.PhpbbPosts.AsNoTracking().MinAsync(p => p.PostTime);
+                    var timeTask = _dbContext.PhpbbPosts.AsNoTracking().MinAsync(p => p.PostTime);
+                    var userTask = _dbContext.PhpbbUsers.AsNoTracking().CountAsync();
+                    var messageTask = _dbContext.PhpbbPosts.AsNoTracking().CountAsync();
+                    var topicTask = _dbContext.PhpbbTopics.AsNoTracking().CountAsync();
+                    var forumTask = _dbContext.PhpbbForums.AsNoTracking().CountAsync();
+                    await Task.WhenAll(timeTask, userTask, messageTask, topicTask, forumTask);
+
                     return new Statistics
                     {
-                        FirstMessageDate = time == 0 ? null as DateTime? : time.ToUtcTime(),
-                        UserCount = await _dbContext.PhpbbUsers.AsNoTracking().CountAsync(),
-                        MessageCount = await _dbContext.PhpbbPosts.AsNoTracking().CountAsync(),
-                        TopicCount = await _dbContext.PhpbbTopics.AsNoTracking().CountAsync(),
-                        ForumCount = await _dbContext.PhpbbForums.AsNoTracking().CountAsync()
+                        FirstMessageDate = (await timeTask) == 0 ? null : (await timeTask).ToUtcTime(),
+                        UserCount = await userTask,
+                        MessageCount = await messageTask,
+                        TopicCount = await topicTask,
+                        ForumCount = await forumTask
                     };
-                }, 
+                },
                 DateTimeOffset.UtcNow.AddMinutes(RefreshIntervalMinutes)
             );
     }

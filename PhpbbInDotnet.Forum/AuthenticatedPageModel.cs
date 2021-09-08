@@ -1,15 +1,10 @@
 ﻿using Dapper;
-using DeviceDetectorNET;
 using LazyCache;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Net.Http.Headers;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Languages;
@@ -31,153 +26,41 @@ namespace PhpbbInDotnet.Forum
         protected readonly IAppCache Cache;
         protected readonly UserService UserService;
         protected readonly ForumDbContext Context;
-        protected readonly IConfiguration Config;
         protected readonly CommonUtils Utils;
         
         public LanguageProvider LanguageProvider { get; }
-        public bool IsBot { get; private set; }
 
-        private readonly AnonymousSessionCounter _sessionCounter;
-        private AuthenticatedUser _currentUser;
         private string _language;
 
-        public AuthenticatedPageModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cacheService, 
-            IConfiguration config, AnonymousSessionCounter sessionCounter, CommonUtils utils, LanguageProvider languageProvider)
+        public AuthenticatedPageModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cacheService, CommonUtils utils, LanguageProvider languageProvider)
         {
             ForumService = forumService;
             Cache = cacheService;
             UserService = userService;
             Context = context;
-            Config = config;
-            _sessionCounter = sessionCounter;
             Utils = utils;
             LanguageProvider = languageProvider;
         }
 
         #region User
 
-        public async Task<AuthenticatedUser> GetCurrentUserAsync()
+        public AuthenticatedUser GetCurrentUser()
+            => (AuthenticatedUser)HttpContext.Items[nameof(AuthenticatedUser)];
+
+        public void ReloadCurrentUser()
         {
-            if (_currentUser != null)
-            {
-                return _currentUser;
-            }
-            var user = User;
-            var authenticationExpiration = Config.GetValue<TimeSpan?>("LoginSessionSlidingExpiration") ?? TimeSpan.FromDays(30);
-            var sessionTrackingTimeout = Config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1);
-            if (!(user?.Identity?.IsAuthenticated ?? false))
-            {
-                user = await UserService.GetAnonymousClaimsPrincipal();
-                _currentUser = await UserService.ClaimsPrincipalToAuthenticatedUser(user);
-                await HttpContext.SignInAsync(
-                    CookieAuthenticationDefaults.AuthenticationScheme,
-                    user,
-                    new AuthenticationProperties
-                    {
-                        AllowRefresh = true,
-                        ExpiresUtc = DateTimeOffset.UtcNow.Add(authenticationExpiration),
-                        IsPersistent = true,
-                    }
-                );
-            }
-            else
-            {
-                _currentUser = await UserService.ClaimsPrincipalToAuthenticatedUser(user);
-                if (!_currentUser.IsAnonymous)
-                {
-                    var key = $"UserMustLogIn_{_currentUser.UsernameClean}";
-                    if (await Cache.GetAsync<bool?>(key) ?? false)
-                    {
-                        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                    }
-                    else
-                    {
-                        var connection = await Context.GetDbConnectionAsync();
-
-                        var dbUser = await connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { _currentUser.UserId });
-                        if (dbUser == null || dbUser.UserInactiveTime > 0)
-                        {
-                            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                            Cache.Add(key, true, new MemoryCacheEntryOptions { SlidingExpiration = authenticationExpiration });
-                        }
-                        else
-                        {
-                            if (DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > sessionTrackingTimeout)
-                            {
-                                await ReloadCurrentUser();
-                                await connection.ExecuteAsync("UPDATE phpbb_users SET user_lastvisit = @now WHERE user_id = @userId", new { now = DateTime.UtcNow.ToUnixTimestamp(), _currentUser.UserId });
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (_currentUser.IsAnonymous && HttpContext.Request.Headers.TryGetValue(HeaderNames.UserAgent, out var header) && (HttpContext.Session.GetInt32("SessionCounted") ?? 0) == 0 )
-            {
-                try
-                {
-                    var userAgent = header.ToString();
-                    var dd = new DeviceDetector(userAgent);
-                    dd.Parse();
-                    IsBot = dd.IsBot();
-                    if (IsBot)
-                    {
-                        _sessionCounter.UpsertBot(HttpContext.Connection.RemoteIpAddress.ToString(), userAgent, sessionTrackingTimeout);
-                    }
-                    else
-                    {
-                        HttpContext.Session.SetInt32("SessionCounted", 1);
-                        _sessionCounter.UpsertSession(HttpContext.Session.Id, sessionTrackingTimeout);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Utils.HandleErrorAsWarning(ex, "Failed to detect anonymous session type.");
-                }
-            }
-            return _currentUser;
-        }
-
-        public async Task ReloadCurrentUser()
-        {
-            var current = (await GetCurrentUserAsync()).UserId;
-            if (current != Constants.ANONYMOUS_USER_ID)
-            {
-                var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                await HttpContext.SignOutAsync();
-                var connection = await Context.GetDbConnectionAsync();
-
-                var dbUser = await connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId = current });
-
-                if (dbUser != null)
-                {
-                    var principal = await UserService.DbUserToClaimsPrincipal(dbUser);
-                    await HttpContext.SignInAsync(
-                        CookieAuthenticationDefaults.AuthenticationScheme,
-                        principal,
-                        new AuthenticationProperties
-                        {
-                            AllowRefresh = true,
-                            ExpiresUtc = result.Properties.ExpiresUtc,
-                            IsPersistent = true,
-                        }
-                    );
-                    if (_currentUser != null)
-                    {
-                        _currentUser = await UserService.ClaimsPrincipalToAuthenticatedUser(principal);
-                    }
-                }
-            }
+            var user = GetCurrentUser();
+            Cache.Add($"ReloadUser_{user.UsernameClean}", true);
         }
 
         public async Task<bool> IsCurrentUserAdminHere(int forumId = 0)
-            => await UserService.IsUserAdminInForum(await GetCurrentUserAsync(), forumId);
+            => await UserService.IsUserAdminInForum(GetCurrentUser(), forumId);
 
         public async Task<bool> IsCurrentUserModeratorHere(int forumId = 0)
-            => await UserService.IsUserModeratorInForum(await GetCurrentUserAsync(), forumId);
+            => await UserService.IsUserModeratorInForum(GetCurrentUser(), forumId);
 
-        public async Task<string> GetLanguage()
-            => _language ??= LanguageProvider.GetValidatedLanguage(await GetCurrentUserAsync(), Request);
+        public string GetLanguage()
+            => _language ??= LanguageProvider.GetValidatedLanguage(GetCurrentUser(), Request);
 
         #endregion User
 
@@ -185,25 +68,25 @@ namespace PhpbbInDotnet.Forum
 
         public async Task<bool> IsForumUnread(int forumId, bool forceRefresh = false)
         {
-            var usr = await GetCurrentUserAsync();
+            var usr = GetCurrentUser();
             return !usr.IsAnonymous && await ForumService.IsForumUnread(forumId, usr, forceRefresh);
         }
 
         public async Task<bool> IsTopicUnread(int forumId, int topicId, bool forceRefresh = false)
         {
-            var usr = await GetCurrentUserAsync();
+            var usr = GetCurrentUser();
             return !usr.IsAnonymous && await ForumService.IsTopicUnread(forumId, topicId, usr, forceRefresh);
         }
 
         public async Task<bool> IsPostUnread(int forumId, int topicId, int postId)
         {
-            var usr = await GetCurrentUserAsync();
+            var usr = GetCurrentUser();
             return !usr.IsAnonymous && await ForumService.IsPostUnread(forumId, topicId, postId, usr);
         }
 
         public async Task<int> GetFirstUnreadPost(int forumId, int topicId)
         {
-            if ((await GetCurrentUserAsync()).IsAnonymous)
+            if ((GetCurrentUser()).IsAnonymous)
             {
                 return 0;
             }
@@ -223,8 +106,8 @@ namespace PhpbbInDotnet.Forum
 
         public async Task<(HashSet<ForumTree> Tree, Dictionary<int, HashSet<Tracking>> Tracking)> GetForumTree(bool forceRefresh, bool fetchUnreadData)
             => (
-                    Tree: await ForumService.GetForumTree(await GetCurrentUserAsync(), forceRefresh, fetchUnreadData), 
-                    Tracking: fetchUnreadData ? await ForumService.GetForumTracking(await GetCurrentUserAsync(), forceRefresh) : null
+                    Tree: await ForumService.GetForumTree(GetCurrentUser(), forceRefresh, fetchUnreadData), 
+                    Tracking: fetchUnreadData ? await ForumService.GetForumTracking(GetCurrentUser().UserId, forceRefresh) : null
             );
 
         protected async Task MarkForumAndSubforumsRead(int forumId)
@@ -250,7 +133,7 @@ namespace PhpbbInDotnet.Forum
         {
             try
             {
-                var usrId = (await GetCurrentUserAsync()).UserId;
+                var usrId = (GetCurrentUser()).UserId;
                 var connection = await Context.GetDbConnectionAsync();
 
                 await connection.ExecuteAsync(
@@ -269,7 +152,7 @@ namespace PhpbbInDotnet.Forum
         public async Task MarkTopicRead(int forumId, int topicId, bool isLastPage, long markTime)
         {
             var (_, tracking) = await GetForumTree(false, true);
-            var userId = (await GetCurrentUserAsync()).UserId;
+            var userId = (GetCurrentUser()).UserId;
             if (tracking.TryGetValue(forumId, out var tt) && tt.Count == 1 && isLastPage)
             {
                 //current topic was the last unread in its forum, and it is the last page of unread messages, so mark the whole forum read
@@ -300,7 +183,7 @@ namespace PhpbbInDotnet.Forum
 
         protected async Task SetLastMark()
         {
-            var usrId = (await GetCurrentUserAsync()).UserId;
+            var usrId = (GetCurrentUser()).UserId;
             try
             {
                 var connection = await Context.GetDbConnectionAsync();
@@ -318,7 +201,7 @@ namespace PhpbbInDotnet.Forum
 
         protected async Task<IActionResult> WithRegisteredUser(Func<AuthenticatedUser, Task<IActionResult>> toDo)
         {
-            var user = await GetCurrentUserAsync();
+            var user = GetCurrentUser();
             if (user.IsAnonymous)
             {
                 return RedirectToPage("Login", new { ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString) });
@@ -356,7 +239,7 @@ namespace PhpbbInDotnet.Forum
                     return RedirectToPage("Error", new { isNotFound = true });
                 }
 
-                var usr = await GetCurrentUserAsync();
+                var usr = GetCurrentUser();
                 var restricted = await ForumService.GetRestrictedForumList(usr, true);
                 var tree = await ForumService.GetForumTree(usr, false, false);
                 var path = new List<int>();
@@ -393,8 +276,8 @@ namespace PhpbbInDotnet.Forum
             return await toDo(curForum);
         }
 
-        protected async Task<IActionResult> WithValidForum(int forumId, Func<PhpbbForums, Task<IActionResult>> toDo)
-            => await WithValidForum(forumId, false, toDo);
+        protected Task<IActionResult> WithValidForum(int forumId, Func<PhpbbForums, Task<IActionResult>> toDo)
+            => WithValidForum(forumId, false, toDo);
 
         protected async Task<IActionResult> WithValidTopic(int topicId, Func<PhpbbForums, PhpbbTopics, Task<IActionResult>> toDo)
         {
@@ -406,7 +289,7 @@ namespace PhpbbInDotnet.Forum
             {
                 return RedirectToPage("Error", new { isNotFound = true });
             }
-            return await WithValidForum(curTopic.ForumId, async (curForum) => await toDo(curForum, curTopic));
+            return await WithValidForum(curTopic.ForumId, curForum => toDo(curForum, curTopic));
         }
 
         protected async Task<IActionResult> WithValidPost(int postId, Func<PhpbbForums, PhpbbTopics, PhpbbPosts, Task<IActionResult>> toDo)
@@ -418,7 +301,7 @@ namespace PhpbbInDotnet.Forum
             {
                 return RedirectToPage("Error", new { isNotFound = true });
             }
-            return await WithValidTopic(curPost.TopicId, async (curForum, curTopic) => await toDo(curForum, curTopic, curPost));
+            return await WithValidTopic(curPost.TopicId, (curForum, curTopic) => toDo(curForum, curTopic, curPost));
         }
 
         #endregion Permission validation wrappers

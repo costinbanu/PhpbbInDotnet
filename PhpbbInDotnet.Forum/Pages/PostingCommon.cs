@@ -100,12 +100,12 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly StorageService _storageService;
         private readonly WritingToolsService _writingService;
         private readonly BBCodeRenderingService _renderingService;
-
+        private readonly IConfiguration _config;
         static readonly DateTimeOffset CACHE_EXPIRATION = DateTimeOffset.UtcNow.AddHours(4);
 
         public PostingModel(CommonUtils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cacheService, PostService postService, 
-            StorageService storageService, WritingToolsService writingService, BBCodeRenderingService renderingService, IConfiguration config, AnonymousSessionCounter sessionCounter, LanguageProvider languageProvider)
-            : base(context, forumService, userService, cacheService, config, sessionCounter, utils, languageProvider)
+            StorageService storageService, WritingToolsService writingService, BBCodeRenderingService renderingService, IConfiguration config, LanguageProvider languageProvider)
+            : base(context, forumService, userService, cacheService, utils, languageProvider)
         {
             PollExpirationDaysString = "1";
             PollMaxOptions = 1;
@@ -114,16 +114,17 @@ namespace PhpbbInDotnet.Forum.Pages
             _storageService = storageService;
             _writingService = writingService;
             _renderingService = renderingService;
+            _config = config;
         }
 
-        public async Task<string> GetActualCacheKey(string key, bool isPersonalizedData)
-            => isPersonalizedData ? $"{(await GetCurrentUserAsync()).UserId}_{ForumId}_{TopicId ?? 0}_{key ?? throw new ArgumentNullException(nameof(key))}" : key;
+        public string GetActualCacheKey(string key, bool isPersonalizedData)
+            => isPersonalizedData ? $"{GetCurrentUser().UserId}_{ForumId}_{TopicId ?? 0}_{key ?? throw new ArgumentNullException(nameof(key))}" : key;
 
         public async Task<(List<PostDto> posts, Dictionary<int, List<AttachmentDto>> attachments, Guid correlationId)> GetPreviousPosts()
         {
             if (((TopicId.HasValue && PageNum.HasValue) || PostId.HasValue) && (Action == PostingActions.EditForumPost || Action == PostingActions.NewForumPost))
             {
-                var user = await GetCurrentUserAsync();
+                var user = GetCurrentUser();
                 using var multi = await (await Context.GetDbConnectionAsync()).QueryMultipleAsync(
                     sql: "CALL get_posts(@userId, @topicId, null, @pageSize, null, 1);",
                     param: new
@@ -137,7 +138,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var posts = (await multi.ReadAsync<PostDto>()).AsList();
                 var attachments = (await multi.ReadAsync<PhpbbAttachments>()).AsList();
 
-                var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(attachments, await GetLanguage(), posts.Count, false);
+                var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(attachments, GetLanguage(), posts.Count, false);
 
                 return (posts, cacheResult.Attachments, cacheResult.CorrelationId);
             }
@@ -149,11 +150,11 @@ namespace PhpbbInDotnet.Forum.Pages
             => _userMap ??= await UserService.GetUserMap();
 
         public async Task<IEnumerable<KeyValuePair<string, string>>> GetUsers()
-            => (await GetUserMap()).Select(map => KeyValuePair.Create(map.Key, $"[url={Config.GetValue<string>("BaseUrl")}/User?UserId={map.Value}]{map.Key}[/url]")).ToList();
+            => (await GetUserMap()).Select(map => KeyValuePair.Create(map.Key, $"[url={_config.GetValue<string>("BaseUrl")}/User?UserId={map.Value}]{map.Key}[/url]")).ToList();
 
         private async Task<int?> UpsertPost(PhpbbPosts post, AuthenticatedUser usr)
         {
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
 
             if ((PostTitle?.Length ?? 0) > 255)
             {
@@ -312,17 +313,17 @@ namespace PhpbbInDotnet.Forum.Pages
                 new { usr.UserId, forumId = ForumId, topicId = Action == PostingActions.NewTopic ? 0 : TopicId }
             );
 
-            Cache.Remove(await GetActualCacheKey("Text", true));
-            Cache.Remove(await GetActualCacheKey("ForumId", true));
-            Cache.Remove(await GetActualCacheKey("TopicId", true));
-            Cache.Remove(await GetActualCacheKey("PostId", true));
+            Cache.Remove(GetActualCacheKey("Text", true));
+            Cache.Remove(GetActualCacheKey("ForumId", true));
+            Cache.Remove(GetActualCacheKey("TopicId", true));
+            Cache.Remove(GetActualCacheKey("PostId", true));
 
             return post.PostId;
         }
 
         private async Task<IActionResult> WithNewestPostSincePageLoad(PhpbbForums curForum, Func<Task<IActionResult>> toDo)
         {
-            var lang = await GetLanguage();
+            var lang = GetLanguage();
 
             if ((TopicId ?? 0) > 0 && (LastPostTime ?? 0) > 0)
             {
@@ -360,24 +361,24 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task<IActionResult> WithBackup(Func<Task<IActionResult>> toDo)
         {
-            Cache.Add(await GetActualCacheKey("Text", true), new CachedText { Text = PostText, CacheTime = DateTime.UtcNow }, CACHE_EXPIRATION);
-            Cache.Add(await GetActualCacheKey("ForumId", true), ForumId, CACHE_EXPIRATION);
-            Cache.Add(await GetActualCacheKey("TopicId", true), TopicId ?? 0, CACHE_EXPIRATION);
-            Cache.Add(await GetActualCacheKey("PostId", true), PostId ?? 0, CACHE_EXPIRATION);
+            Cache.Add(GetActualCacheKey("Text", true), new CachedText { Text = PostText, CacheTime = DateTime.UtcNow }, CACHE_EXPIRATION);
+            Cache.Add(GetActualCacheKey("ForumId", true), ForumId, CACHE_EXPIRATION);
+            Cache.Add(GetActualCacheKey("TopicId", true), TopicId ?? 0, CACHE_EXPIRATION);
+            Cache.Add(GetActualCacheKey("PostId", true), PostId ?? 0, CACHE_EXPIRATION);
             return await toDo();
         }
 
         private async Task RestoreBackupIfAny(DateTime? minCacheAge = null)
         {
-            var cachedText = await Cache.GetAndRemoveAsync<CachedText>(await GetActualCacheKey("Text", true));
+            var cachedText = await Cache.GetAndRemoveAsync<CachedText>(GetActualCacheKey("Text", true));
             if (!string.IsNullOrWhiteSpace(cachedText?.Text) && (cachedText?.CacheTime ?? DateTime.MinValue) > (minCacheAge ?? DateTime.UtcNow))
             {
                 PostText = cachedText.Text;
             }
-            var cachedForumId = await Cache.GetAndRemoveAsync<int>(await GetActualCacheKey("ForumId", true));
+            var cachedForumId = await Cache.GetAndRemoveAsync<int>(GetActualCacheKey("ForumId", true));
             ForumId = cachedForumId != 0 ? cachedForumId : ForumId;
-            TopicId ??= await Cache.GetAndRemoveAsync<int?>(await GetActualCacheKey("TopicId", true));
-            PostId ??= await Cache.GetAndRemoveAsync<int?>(await GetActualCacheKey("PostId", true));
+            TopicId ??= await Cache.GetAndRemoveAsync<int?>(GetActualCacheKey("TopicId", true));
+            PostId ??= await Cache.GetAndRemoveAsync<int?>(GetActualCacheKey("PostId", true));
         }
 
         private IEnumerable<string> GetPollOptionsEnumerable()

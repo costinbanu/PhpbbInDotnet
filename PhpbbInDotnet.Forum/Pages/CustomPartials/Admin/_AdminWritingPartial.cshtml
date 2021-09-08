@@ -4,7 +4,6 @@
 @using PhpbbInDotnet.Utilities
 @using PhpbbInDotnet.Services
 
-@inject WritingToolsService _writingService
 @inject StorageService _storageService
 @inject CommonUtils _utils
 @inject Languages.LanguageProvider _languageProvider
@@ -14,21 +13,19 @@
     @Html.Raw(_languageProvider.Admin[Model.Language, "BANNED_WORDS"])
     <span id="bannedWordsChar">&#x1F53D;</span>
 </h4>
-@{
-    var words = await _writingService.GetBannedWordsAsync();
-}
+
 <div id="bannedWordsSection" style="display:none">
     <form method="post" asp-page-handler="BanWords">
-        @for (var i = 0; i < words.Count; i++)
+        @for (var i = 0; i < Model.BannedWords.Count; i++)
         {
             <div class="FlexCenter">
                 <div class="FlexCaption">
                     @Html.Raw(_languageProvider.Admin[Model.Language, "WORD"])
                 </div>
                 <div class="FlexRight PostInputWidth">
-                    @Html.Raw(words[i].Word)
-                    <input type="hidden" name="words[@i].Word" value="@words[i].Word" />
-                    <input type="hidden" name="words[@i].WordId" value="@words[i].WordId" />
+                    @Html.Raw(Model.BannedWords[i].Word)
+                    <input type="hidden" name="words[@i].Word" value="@Model.BannedWords[i].Word" />
+                    <input type="hidden" name="words[@i].WordId" value="@Model.BannedWords[i].WordId" />
                 </div>
             </div>
             <div class="FlexCenter">
@@ -36,7 +33,7 @@
                     @Html.Raw(_languageProvider.Admin[Model.Language, "REPLACEMENT"])
                 </div>
                 <div class="FlexRight PostInputWidth">
-                    <input type="text" name="words[@i].Replacement" value="@words[i].Replacement" />
+                    <input type="text" name="words[@i].Replacement" value="@Model.BannedWords[i].Replacement" />
                 </div>
             </div>
             <div class="FlexCenter">
@@ -50,7 +47,7 @@
                     </label>
                 </div>
             </div>
-            @if (i < words.Count - 1)
+            @if (i < Model.BannedWords.Count - 1)
             {
                 <hr class="SubtypeSeparator" />
             }
@@ -68,16 +65,14 @@
     @Html.Raw(_languageProvider.Admin[Model.Language, "ORPHAN_FILES"])
     <span id="orphanFilesChar">&#x1F53D;</span>
 </h4>
-@{
-    var files = await _writingService.GetOrphanedFiles();
-}
+
 <div id="orphanFilesSection" style="display:none">
     <form method="post" asp-page-handler="OrphanedFiles" id="orphanedFilesForm">
         <input name="action" id="action" type="hidden" />
     </form>
     <h5>
         <b>
-            @Html.Raw(string.Format(_languageProvider.Admin[Model.Language, "ORPHAN_FILES_CAPTION_FORMAT"], files.Count, _utils.ReadableFileSize(files.Sum(f => f.Filesize))))
+            @Html.Raw(string.Format(_languageProvider.Admin[Model.Language, "ORPHAN_FILES_CAPTION_FORMAT"], Model.OrphanFiles.Count, _utils.ReadableFileSize(Model.OrphanFiles.Sum(f => f.Filesize))))
         </b>
     </h5>
     <p>
@@ -99,7 +94,7 @@
         </button>
     </p>
     <div id="fileHolder">
-        @foreach (var f in files)
+        @foreach (var f in Model.OrphanFiles)
         {
             <div>
                 <div class="FlexCenter">
@@ -151,9 +146,7 @@
     @Html.Raw(_languageProvider.Admin[Model.Language, "CUSTOM_BB_CODES"])
     <span id="customBBCodesChar">&#x1F53D;</span>
 </h4>
-@{
-    var codes = await _writingService.GetCustomBBCodes();
-}
+
 <div id="customBBCodesSection" style="display:none">
     <span class="Caption">
         @Html.Raw(_languageProvider.CustomBBCodeGuide[Model.Language])
@@ -161,16 +154,16 @@
     <hr class="SubtypeSeparator" />
     <form method="post" asp-page-handler="BBCodes" id="bbCodes">
 
-        @for (var i = 0; i < codes.Count; i++)
+        @for (var i = 0; i < Model.CustomBbCodes.Count; i++)
         {
             <div class="FlexCenter">
                 <div class="FlexCaption">
                     @Html.Raw(_languageProvider.Admin[Model.Language, "TAG_NAME"])
                 </div>
                 <div class="FlexRight PostInputWidth">
-                    @Html.Raw(codes[i].BbcodeTag)
-                    <input type="hidden" name="codes[@i].BbcodeTag" value="@codes[i].BbcodeTag" />
-                    <input type="hidden" name="codes[@i].BbcodeId" value="@codes[i].BbcodeId" />
+                    @Html.Raw(Model.CustomBbCodes[i].BbcodeTag)
+                    <input type="hidden" name="codes[@i].BbcodeTag" value="@Model.CustomBbCodes[i].BbcodeTag" />
+                    <input type="hidden" name="codes[@i].BbcodeId" value="@Model.CustomBbCodes[i].BbcodeId" />
                 </div>
             </div>
             <div class="FlexCenter FlexSpaced">
@@ -178,7 +171,7 @@
                     @Html.Raw(_languageProvider.Admin[Model.Language, "HTML_CODE"])
                 </div>
                 <div class="FlexRight PostInputWidth">
-                    <textarea name="codes[@i].BbcodeTpl" rows="3" class="InputBox" style="font-family:'Ubuntu Mono'">@codes[i].BbcodeTpl</textarea><br />
+                    <textarea name="codes[@i].BbcodeTpl" rows="3" class="InputBox" style="font-family:'Ubuntu Mono'">@Model.CustomBbCodes[i].BbcodeTpl</textarea><br />
                 </div>
             </div>
             <div class="FlexCenter FlexSpaced">
@@ -192,7 +185,7 @@
             <div class="FlexCenter FlexSpaced">
                 <div class="FlexLeft PostInputWidth">
                     <label>
-                        <input type="checkbox" name="toDisplay" value="@i" @(codes[i].DisplayOnPosting == 1 ? "checked" : "") />
+                        <input type="checkbox" name="toDisplay" value="@i" @(Model.CustomBbCodes[i].DisplayOnPosting == 1 ? "checked" : "") />
                         @Html.Raw(_languageProvider.Admin[Model.Language, "SHOW_IN_POSTING"])
                     </label>
                 </div>
@@ -205,7 +198,7 @@
                     </label>
                 </div>
             </div>
-            @if (i < codes.Count - 1)
+            @if (i < Model.CustomBbCodes.Count - 1)
             {
                 <hr class="SubtypeSeparator" />
             }
@@ -227,7 +220,7 @@
     <span id="smiliesChar">&#x1F53D;</span>
 </h4>
 @{
-    var smilies = (await _writingService.GetSmilies()).GroupBy(s => new { s.SmileyUrl, s.Emotion }).ToList();
+    var smilies = Model.Smilies.GroupBy(s => new { s.SmileyUrl, s.Emotion }).ToList();
     var smileyCodeCounts = new int[smilies.Count];
     var smileyMaxSize = _config.GetObject<Objects.Configuration.ImageSize>("EmojiMaxSize");
 }
@@ -342,8 +335,8 @@
         return $(row).children('td').eq(index).text();
     }
 
-    var wordIndex = @words.Count;
-    var codeIndex = @codes.Count;
+    var wordIndex = @Model.BannedWords.Count;
+    var codeIndex = @Model.CustomBbCodes.Count;
     var smileyIndex = @smilies.Count;
     var smileyCodeIndexes = @Json.Serialize(smileyCodeCounts);
 

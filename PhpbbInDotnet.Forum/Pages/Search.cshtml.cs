@@ -60,9 +60,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public bool IsAuthorSearch { get; private set; }
 
-        public SearchModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, IConfiguration config,
-            AnonymousSessionCounter sessionCounter, CommonUtils utils, LanguageProvider languageProvider)
-            : base(context, forumService, userService, cache, config, sessionCounter, utils, languageProvider)
+        public SearchModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, LanguageProvider languageProvider)
+            : base(context, forumService, userService, cache, utils, languageProvider)
         {
 
         }
@@ -117,7 +116,7 @@ namespace PhpbbInDotnet.Forum.Pages
             DoSearch = true;
             if (AuthorId == 0)
             {
-                ModelState.AddModelError(nameof(SearchText), LanguageProvider.BasicText[await GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN"]);
+                ModelState.AddModelError(nameof(SearchText), LanguageProvider.BasicText[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN"]);
                 return await OnGet();
             }
             return await OnGet();
@@ -131,7 +130,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (AuthorId == 0)
             {
-                ModelState.AddModelError(nameof(SearchText), LanguageProvider.BasicText[await GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN"]);
+                ModelState.AddModelError(nameof(SearchText), LanguageProvider.BasicText[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN"]);
                 return await OnGet();
             }
 
@@ -142,7 +141,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 { 
                     AuthorId,
                     page = PageNum ?? 1,
-                    forums = string.Join(',', (await ForumService.GetRestrictedForumList(await GetCurrentUserAsync(), true)).Select(f => f.forumId).DefaultIfEmpty())
+                    forums = string.Join(',', (await ForumService.GetRestrictedForumList(GetCurrentUser(), true)).Select(f => f.forumId).DefaultIfEmpty())
                 }
             );
 
@@ -177,7 +176,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             if (string.IsNullOrWhiteSpace(SearchText) && !IsAuthorSearch)
             {
-                ModelState.AddModelError(nameof(SearchText), LanguageProvider.Errors[await GetLanguage(), "MISSING_REQUIRED_FIELD"]);
+                ModelState.AddModelError(nameof(SearchText), LanguageProvider.Errors[GetLanguage(), "MISSING_REQUIRED_FIELD"]);
                 return;
             }
 
