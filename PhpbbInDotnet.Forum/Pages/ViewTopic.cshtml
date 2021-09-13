@@ -253,7 +253,12 @@ else if (!IsAnonymous)
         @Html.Raw(Model.LanguageProvider.Moderator[Lang, "MODERATE_TOPIC"]):
         @Html.DropDownList(
             "TopicAction",
-            _utils.EnumToDropDownList<ModeratorTopicActions>(selectedItem: Model.TopicAction, textTransform: item => Model.LanguageProvider.Enums[Lang, item], defaultText: Model.LanguageProvider.BasicText[Lang, "SELECT_AN_OPTION"]),
+            _utils.EnumToDropDownList<ModeratorTopicActions>(
+                selectedItem: Model.TopicAction, 
+                textTransform: item => Model.LanguageProvider.Enums[Lang, item], 
+                defaultText: Model.LanguageProvider.BasicText[Lang, "SELECT_AN_OPTION"],
+                valueFilter: action => action != ModeratorTopicActions.RestoreTopic
+            ),
             new { onchange = "mod.showTopicExtraInput(this)", id = "TopicAction", style = "max-width:70%; height: 30px; padding-top: 0px" }
         )
         <div id="extraInputTopic" style="display:@(Model.ShowTopic ? "block" : "none")">
@@ -273,7 +278,12 @@ else if (!IsAnonymous)
         @Html.Raw(Model.LanguageProvider.Moderator[Lang, "MODERATE_SELECTED_POSTS", Casing.FirstUpper]):
         @Html.DropDownList(
             nameof(Model.PostAction),
-            _utils.EnumToDropDownList<ModeratorPostActions>(selectedItem: Model.PostAction, textTransform: item => Model.LanguageProvider.Enums[Lang, item], defaultText: Model.LanguageProvider.BasicText[Lang, "SELECT_AN_OPTION"]),
+            _utils.EnumToDropDownList<ModeratorPostActions>(
+                selectedItem: Model.PostAction, 
+                textTransform: item => Model.LanguageProvider.Enums[Lang, item], 
+                defaultText: Model.LanguageProvider.BasicText[Lang, "SELECT_AN_OPTION"],
+                valueFilter: action => action != ModeratorPostActions.RestorePosts
+            ),
             new { onchange = "mod.showPostExtraInput(this)", id = "PostAction", style = "max-width:70%; height: 30px; padding-top: 0px" }
         )
         <div id="extraInputPostForum" style="display:@(Model.ShowPostForum ? "block" : "none")">
