@@ -105,21 +105,22 @@ else
 @switch (Model.Mode)
 {
     case ViewForumMode.NewPosts:
-        <h3>@Html.Raw(DocumentTitle)</h3>
+        <h2>@Html.Raw(DocumentTitle)</h2>
         break;
 
     case ViewForumMode.OwnPosts:
-        <h3>@Html.Raw(DocumentTitle)</h3>
+        <h2>@Html.Raw(DocumentTitle)</h2>
         @Html.Raw(Model.LanguageProvider.BasicText[Lang, "OWN_TOPICS_CAPTION", Casing.FirstUpper])
         break;
 
     case ViewForumMode.Drafts:
-        <h3>@Html.Raw(DocumentTitle)</h3>
+        <h2>@Html.Raw(DocumentTitle)</h2>
         @Html.Raw(Model.LanguageProvider.BasicText[Lang, "DRAFTS_CAPTION", Casing.FirstUpper])
         break;
 
     case ViewForumMode.Forum:
-        <h3>@Html.Raw($"{Model.LanguageProvider.BasicText[Lang, "FORUM", Casing.FirstUpper]}: {DocumentTitle}")</h3>
+        <h2>@Html.Raw(DocumentTitle)</h2>
+        @Html.Raw(_renderingService.BbCodeToHtml(Model.ForumDesc, string.Empty))
         @await Html.PartialAsync("_RulesPartial", new CustomPartials._RulesPartialModel
         {
             ForumRules = Model.ForumRules,

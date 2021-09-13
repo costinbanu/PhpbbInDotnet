@@ -28,6 +28,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public string ForumRulesLink { get; private set; }
         public string ForumRules { get; private set; }
         public string ForumRulesUid { get; private set; }
+        public string ForumDesc { get; private set; }
         public string ForumTitle { get; private set; }
         public string ParentForumTitle { get; private set; }
         public int? ParentForumId { get; private set; }
@@ -61,6 +62,10 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
 
                 ForumTitle = HttpUtility.HtmlDecode(thisForum?.ForumName ?? "untitled");
+                ForumRulesLink = thisForum.ForumRulesLink;
+                ForumRules = thisForum.ForumRules;
+                ForumRulesUid = thisForum.ForumRulesUid;
+                ForumDesc = thisForum.ForumDesc;
 
                 var connection = await Context.GetDbConnectionAsync();
                 
@@ -107,9 +112,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 ParentForumId = parent?.ForumId;
                 ParentForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? _config.GetValue<string>("ForumName"));
                 (Forums, _) = await treeTask;
-                ForumRulesLink = thisForum.ForumRulesLink;
-                ForumRules = thisForum.ForumRules;
-                ForumRulesUid = thisForum.ForumRulesUid;
                 Mode = ViewForumMode.Forum;
 
                 return Page();
