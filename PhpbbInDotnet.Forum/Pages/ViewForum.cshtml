@@ -4,8 +4,6 @@
 @using Utilities
 @using Objects
 @inject Services.ForumTreeService _forumService
-@inject Services.BBCodeRenderingService _renderingService
-@inject CommonUtils _utils
 
 @{
     var Lang = Model.GetLanguage();
@@ -120,7 +118,7 @@ else
 
     case ViewForumMode.Forum:
         <h2>@Html.Raw(DocumentTitle)</h2>
-        @Html.Raw(_renderingService.BbCodeToHtml(Model.ForumDesc, string.Empty))
+        @Html.Raw(Model.ForumDesc)
         @await Html.PartialAsync("_RulesPartial", new CustomPartials._RulesPartialModel
         {
             ForumRules = Model.ForumRules,

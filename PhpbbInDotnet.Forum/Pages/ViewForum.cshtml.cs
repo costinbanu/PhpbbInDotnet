@@ -22,6 +22,7 @@ namespace PhpbbInDotnet.Forum.Pages
     {
         private bool _forceTreeRefresh;
         private readonly IConfiguration _config;
+        private readonly BBCodeRenderingService _renderingService;
 
         public HashSet<ForumTree> Forums { get; private set; }
         public List<TopicGroup> Topics { get; private set; }
@@ -47,10 +48,12 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public string[] SelectedNewPosts { get; set; }
 
-        public ViewForumModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, IConfiguration config, CommonUtils utils, LanguageProvider languageProvider)
+        public ViewForumModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, BBCodeRenderingService renderingService,
+            IConfiguration config, CommonUtils utils, LanguageProvider languageProvider)
             : base(context, forumService, userService, cache, utils, languageProvider) 
         {
             _config = config;
+            _renderingService = renderingService;
         }
 
         public async Task<IActionResult> OnGet()
@@ -65,7 +68,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumRulesLink = thisForum.ForumRulesLink;
                 ForumRules = thisForum.ForumRules;
                 ForumRulesUid = thisForum.ForumRulesUid;
-                ForumDesc = thisForum.ForumDesc;
+                ForumDesc = _renderingService.BbCodeToHtml(thisForum.ForumDesc, thisForum.ForumDescUid ?? string.Empty);
 
                 var connection = await Context.GetDbConnectionAsync();
                 
