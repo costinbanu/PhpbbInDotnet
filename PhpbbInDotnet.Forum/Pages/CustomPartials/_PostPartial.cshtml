@@ -139,6 +139,15 @@
                                 </a>
                             </span>
                         }
+                        
+                        @if (!Model.CurrentUser.IsAnonymous)
+                        {
+                            <span>
+                                <a asp-page="/Confirm" asp-page-handler="DestinationPicker" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@Model.Post.PostId" asp-route-showTopicSelector="true" asp-route-quotePostInDifferentTopic="true" asp-route-destination="./Posting" asp-route-destinationHandler="QuoteForumPost">
+                                    <span>&#x1F4AC; @Html.Raw(_languageProvider.BasicText[Model.Language, "REPLY_AS_QUOTE_IN_ANOTHER_TOPIC"])</span>
+                                </a>
+                            </span>
+                        }
 
                         @if (Model.Post.Report == null && !Model.CurrentUser.IsAnonymous)
                         {

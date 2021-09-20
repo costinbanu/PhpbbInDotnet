@@ -204,7 +204,7 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostVote(int topicId, int[] votes, string queryString)
-            => await WithRegisteredUser((user) => WithValidTopic(topicId, async (_, topic) =>
+            => await WithRegisteredUser(user => WithValidTopic(topicId, async (_, topic) =>
             {
                 var conn = await Context.GetDbConnectionAsync();
                 
@@ -283,7 +283,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 else if (TopicAction == ModeratorTopicActions.MoveTopic && (IsSuccess ?? false))
                 {
-                    var destinations = Task.WhenAll(
+                    var destinations = await Task.WhenAll(
                         Utils.CompressAndEncode($"<a href=\"./ViewForum?forumId={DestinationForumId ?? 0}\">{LanguageProvider.BasicText[lang, "GO_TO_NEW_FORUM"]}</a>"),
                         Utils.CompressAndEncode($"<a href=\"./ViewTopic?topicId={TopicId}&pageNum={PageNum}\">{LanguageProvider.BasicText[lang, "GO_TO_LAST_TOPIC"]}</a>")
                     );

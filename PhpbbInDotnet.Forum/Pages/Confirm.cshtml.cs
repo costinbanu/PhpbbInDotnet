@@ -1,15 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using LazyCache;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Forum.Pages.CustomPartials.Email;
+using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Mail;
 using System.Threading.Tasks;
-using System.Linq;
-using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Languages;
-using LazyCache;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -51,9 +52,22 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public string Destination { get; set; }
 
+        [BindProperty(SupportsGet = true)]
+        public int? PostId { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public bool? QuotePostInDifferentTopic { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public string DestinationHandler { get; set; }
+
+        public bool IsDestinationPicker { get; private set; } = false;
+
         public bool IsModeratorConfirmation { get; private set; } = false;
 
         public bool IsDestinationConfirmation { get; private set; } = false;
+        public HashSet<ForumTree> ForumTree { get; private set; }
+        public List<MiniTopicDto> TopicData { get; private set; }
 
         public ConfirmModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, IConfiguration config, LanguageProvider languageProvider)
             : base(context, forumService, userService, cache, utils, languageProvider) 
@@ -147,7 +161,7 @@ namespace PhpbbInDotnet.Forum.Pages
             Title = LanguageProvider.BasicText[lang, "NEW_PASSWORD_TITLE"];
         }
 
-        public void OnGetModeratorConfirmation()
+        public async Task OnGetModeratorConfirmation()
         {
             var lang = GetLanguage();
             IsModeratorConfirmation = true;
@@ -159,12 +173,38 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 Title = LanguageProvider.BasicText[lang, "CHOOSE_DESTINATION_FORUM"];
             }
+            await SetFrontendData();
         }
 
         public void OnGetDestinationConfirmation()
         {
             IsDestinationConfirmation = true;
             Message = $"<span class=\"success\">{LanguageProvider.BasicText[GetLanguage(), "GENERIC_SUCCESS"]}</span>";
+        }
+
+        public async Task OnGetDestinationPicker()
+        {
+            IsDestinationPicker = true;
+            Message = $"<span class=\"success\">{LanguageProvider.BasicText[GetLanguage(), "GENERIC_SUCCESS"]}</span>";
+            await SetFrontendData();
+        }
+
+        private async Task SetFrontendData()
+        {
+            var treeTask = GetForumTree(false, false);
+            var topicDataTask = ShowTopicSelector ? (
+                from t in Context.PhpbbTopics.AsNoTracking()
+                select new MiniTopicDto
+                {
+                    ForumId = t.ForumId,
+                    TopicId = t.TopicId,
+                    TopicTitle = t.TopicTitle,
+                    IsLocked = t.TopicStatus.ToBool()
+                }).ToListAsync() : Task.FromResult(new List<MiniTopicDto>());
+            await Task.WhenAll(treeTask, topicDataTask);
+
+            ForumTree = (await treeTask).Tree;
+            TopicData = await topicDataTask;
         }
     }
 }
