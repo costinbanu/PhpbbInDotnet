@@ -30,7 +30,10 @@ namespace PhpbbInDotnet.Forum.Pages
         
         [BindProperty(SupportsGet = true)]
         public int ForumId { get; set; }
-        
+
+        [BindProperty(SupportsGet = true)]
+        public int? DestinationTopicId { get; set; }
+
         [BindProperty(SupportsGet = true)]
         public int? TopicId { get; set; }
 

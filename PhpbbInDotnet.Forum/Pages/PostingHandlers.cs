@@ -45,6 +45,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             if (QuotePostInDifferentTopic)
             {
+                TopicId = DestinationTopicId ?? 0;
                 return await WithRegisteredUser(_ => WithValidPost(PostId ?? 0, (_, _, curPost) => WithValidTopic(TopicId ?? 0, (curForum, curTopic) => toDo(curForum, curTopic, curPost))));
             }
             else
