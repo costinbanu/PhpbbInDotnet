@@ -614,8 +614,10 @@ namespace PhpbbInDotnet.Forum.Pages
 
             async Task<int?> GetRole()
             {
-                var currentAuthenticatedUser = new AuthenticatedUser(UserService.DbUserToAuthenticatedUserBase(cur));
-                currentAuthenticatedUser.AllPermissions = await UserService.GetPermissions(cur.UserId);
+                var currentAuthenticatedUser = new AuthenticatedUser(UserService.DbUserToAuthenticatedUserBase(cur))
+                {
+                    AllPermissions = await UserService.GetPermissions(cur.UserId)
+                };
                 return await UserService.GetUserRole(currentAuthenticatedUser);
             }
         }

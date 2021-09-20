@@ -1,8 +1,6 @@
 ﻿@page
 @model PhpbbInDotnet.Forum.Pages.ConfirmModel
 
-@using Microsoft.EntityFrameworkCore
-@using Dapper
 @using Utilities
 
 @inject Utilities.CommonUtils _utils
@@ -13,13 +11,12 @@
 @{
     ViewData["Title"] = "Confirm";
     Layout = "~/Pages/_Layout.cshtml";
-    var connection = await _dbContext.GetDbConnectionAsync();
     var lang = Model.GetLanguage();
 }
 
 <h2>@Model.Title</h2>
 
-@if (Model.IsModeratorConfirmation)
+@if (Model.IsModeratorConfirmation || Model.IsDestinationPicker)
 {
     <environment include="Development">
         <script type="text/javascript" src="~/lib/he.js"></script>
@@ -28,10 +25,8 @@
     <script type="text/javascript">
         //forum tree callback
         function forumSelectCallback(forumId) {
-            var forumInput = document.getElementById("DestinationForumId");
-            if (forumInput != null) {
-                forumInput.value = forumId;
-            }
+            let forumInput = $('#DestinationForumId');
+            forumInput && forumInput.val(forumId);
         }
     </script>
     @if (Model.ShowTopicSelector)
@@ -39,18 +34,16 @@
         <script type="text/javascript">
             //forum tree callback
             function topicSelectCallback(topics) {
-                var topicDisplay = document.getElementById("DestinationTopicId");
-                if (topicDisplay != null) {
-                    topicDisplay.options.length = 0;
-                    var option = document.createElement('option');
-                    option.text = "@Html.Raw(Model.LanguageProvider.BasicText[lang, "CHOOSE_DESTINATION_TOPIC"])";
-                    option.value = 0;
-                    topicDisplay.add(option);
-                    topics.forEach(t => {
-                        var option = document.createElement('option');
-                        option.text = he.decode(t.topicTitle);
-                        option.value = t.topicId;
-                        topicDisplay.add(option);
+                let topicDisplay = $('#DestinationTopicId');
+                const canReplyInTopic = (topic) => @Json.Serialize(await Model.IsCurrentUserModeratorHere(Model.ForumId ?? 0)) || !topic.isLocked;
+                if (topicDisplay) {
+                    topicDisplay.empty();
+                    let option = new Option(@Json.Serialize(Model.LanguageProvider.BasicText[lang, "CHOOSE_DESTINATION_TOPIC"]), 0);
+                    option.disabled = true;
+                    topicDisplay.append(option);
+                    topics.filter(canReplyInTopic).forEach(t => {
+                        let option = new Option(he.decode(t.topicTitle), t.topicId);
+                        topicDisplay.append(option);
                     });
                 }
             }
@@ -58,7 +51,7 @@
             //forum tree callback
             function topicSelectInit(topicId) {
                 if (topicId != null) {
-                    $("#DestinationTopicId").val(topicId).change();
+                    $('#DestinationTopicId').val(topicId).change();
                 }
             }
         </script>
@@ -69,8 +62,8 @@
         @await Html.PartialAsync(
             "_ForumTreePartial",
             new CustomPartials._ForumTreePartialModel(
-                tree: (await Model.GetForumTree(false, false)).Tree,
-                topicData: Model.ShowTopicSelector ? (await connection.QueryAsync<Objects.MiniTopicDto>("SELECT * FROM phpbb_topics")).AsList() : null,
+                tree: Model.ForumTree,
+                topicData: Model.TopicData,
                 forumId: Model.ForumId,
                 topicId: Model.TopicId
             ),
@@ -84,13 +77,22 @@
             <h3>@Html.Raw(Model.LanguageProvider.BasicText[lang, "CHOOSE_DESTINATION_TOPIC"])</h3>
             <select name="DestinationTopicId" id="DestinationTopicId" />
         }
-        <input type="hidden" asp-for="ForumId" />
-        <input type="hidden" asp-for="TopicId" />
-        <input type="hidden" asp-for="PageNum" />
-        <input type="hidden" asp-for="TopicAction" />
-        <input type="hidden" asp-for="PostAction" />
-        <input type="hidden" asp-for="SelectedPostIds" />
-        <input type="hidden" asp-for="SelectedTopicIds" />
+        @if (Model.IsModeratorConfirmation)
+        {
+            <input type="hidden" asp-for="ForumId" />
+            <input type="hidden" asp-for="TopicId" />
+            <input type="hidden" asp-for="PageNum" />
+            <input type="hidden" asp-for="TopicAction" />
+            <input type="hidden" asp-for="PostAction" />
+            <input type="hidden" asp-for="SelectedPostIds" />
+            <input type="hidden" asp-for="SelectedTopicIds" />
+        }
+        else if (Model.IsDestinationPicker)
+        {
+            <input type="hidden" asp-for="PostId" />
+            <input type="hidden" asp-for="QuotePostInDifferentTopic" />
+            <input type="hidden" name="handler" value="@Model.DestinationHandler" />
+        }
         <p></p>
         <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[lang, "SUBMIT", Casing.FirstUpper])" />
     </form>

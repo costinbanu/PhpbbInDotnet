@@ -172,7 +172,7 @@
                       selectedItem: null,
                       textTransform: item => Model.LanguageProvider.Enums[Lang, item],
                       defaultText: Model.LanguageProvider.BasicText[Lang, "SELECT_AN_OPTION"],
-                      valueFilter: action => action != ModeratorTopicActions.DeleteTopic
+                      valueFilter: action => action != ModeratorTopicActions.DeleteTopic && action != ModeratorTopicActions.RestoreTopic
                   ),
                   new { onchange = "mod.showTopicExtraInput(this)", id = "TopicAction", style = "max-width:400px; height: 30px; padding-top: 0px" }
               )
