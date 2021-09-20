@@ -453,7 +453,8 @@ namespace PhpbbInDotnet.Forum.Pages
                     Mimetype = a.MimeType,
                     DownloadCount = a.DownloadCount,
                     Filesize = a.FileSize,
-                    PhysicalFilename = a.PhysicalFileName
+                    PhysicalFilename = a.PhysicalFileName,
+                    IsOrphan = 0
                 }));
             }
             Context.PhpbbRecycleBin.Remove(deletedItem);

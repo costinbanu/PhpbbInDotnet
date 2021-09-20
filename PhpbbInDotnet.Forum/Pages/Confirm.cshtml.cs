@@ -199,7 +199,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     ForumId = t.ForumId,
                     TopicId = t.TopicId,
                     TopicTitle = t.TopicTitle,
-                    IsLocked = t.TopicStatus.ToBool()
+                    IsLocked = t.TopicStatus == 1
                 }).ToListAsync() : Task.FromResult(new List<MiniTopicDto>());
             await Task.WhenAll(treeTask, topicDataTask);
 
