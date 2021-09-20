@@ -150,8 +150,38 @@ namespace PhpbbInDotnet.Services
 
         public async Task<List<AttachmentManagementDto>> GetOrphanedFiles()
         {
-            var connection = await _context.GetDbConnectionAsync();
-            return (await connection.QueryAsync<AttachmentManagementDto>("SELECT a.*, u.username FROM phpbb_attachments a JOIN phpbb_users u on a.poster_id = u.user_id WHERE a.is_orphan = 1")).AsList();
+            var now = DateTime.UtcNow.ToUnixTimestamp();
+            var retention = _config.GetObject<TimeSpan?>("RecycleBinRetentionTime") ?? TimeSpan.FromDays(7);
+
+            return await (
+                from a in _context.PhpbbAttachments.AsNoTracking()
+                where a.IsOrphan == 1 && now - a.Filetime > retention.TotalSeconds
+
+                join u in _context.PhpbbUsers.AsNoTracking()
+                on a.PosterId equals u.UserId
+                into joinedUsers
+
+                from ju in joinedUsers.DefaultIfEmpty()
+                select new AttachmentManagementDto
+                {
+                    AttachComment = a.AttachComment,
+                    AttachId = a.AttachId,
+                    DownloadCount = a.DownloadCount,
+                    Extension = a.Extension,
+                    Filesize = a.Filesize,
+                    Filetime = a.Filetime,
+                    InMessage = a.InMessage,
+                    IsOrphan = a.IsOrphan,
+                    Mimetype = a.Mimetype,
+                    PhysicalFilename = a.PhysicalFilename,
+                    PosterId = a.PosterId,
+                    PostMsgId = a.PostMsgId,
+                    RealFilename = a.RealFilename,
+                    Thumbnail = a.Thumbnail,
+                    TopicId = a.TopicId,
+                    Username = ju != null ? ju.Username : null
+                }
+            ).ToListAsync();
         }
 
         public async Task<(string Message, bool? IsSuccess)> DeleteOrphanedFiles()

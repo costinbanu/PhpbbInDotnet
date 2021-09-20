@@ -316,7 +316,10 @@ namespace PhpbbInDotnet.Services
             var conn = await _context.GetDbConnectionAsync();
             var postIds = posts.Select(p => p.PostId).ToList();
             var attachments = (await conn.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id IN @postIds", new { postIds })).AsList();
-            await conn.ExecuteAsync("DELETE FROM phpbb_posts WHERE post_id IN @postIds", new { postIds });
+            await Task.WhenAll(
+                conn.ExecuteAsync("DELETE FROM phpbb_posts WHERE post_id IN @postIds", new { postIds }),
+                conn.ExecuteAsync("DELETE FROM phpbb_attachments WHERE post_msg_id IN @postIds", new { postIds })
+            );
             foreach (var post in posts)
             {
                 var dto = new PostDto
