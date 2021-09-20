@@ -204,7 +204,7 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostVote(int topicId, int[] votes, string queryString)
-            => await WithRegisteredUser((user) => WithValidTopic(topicId, async (_, topic) =>
+            => await WithRegisteredUser(user => WithValidTopic(topicId, async (_, topic) =>
             {
                 var conn = await Context.GetDbConnectionAsync();
                 

@@ -42,7 +42,17 @@ namespace PhpbbInDotnet.Forum.Pages
             }));
 
         public async Task<IActionResult> OnGetQuoteForumPost()
-            => await WithRegisteredUser(async (user) => await WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
+        {
+            if (QuotePostInDifferentTopic)
+            {
+                return await WithRegisteredUser(_ => WithValidPost(PostId ?? 0, (_, _, curPost) => WithValidTopic(TopicId ?? 0, (curForum, curTopic) => toDo(curForum, curTopic, curPost))));
+            }
+            else
+            {
+                return await WithRegisteredUser(_ => WithValidPost(PostId ?? 0, (curForum, curTopic, curPost) => toDo(curForum, curTopic, curPost)));
+            }
+
+            async Task<IActionResult> toDo(PhpbbForums curForum, PhpbbTopics curTopic, PhpbbPosts curPost)
             {
                 var curAuthor = curPost.PostUsername;
                 if (string.IsNullOrWhiteSpace(curAuthor))
@@ -61,10 +71,11 @@ namespace PhpbbInDotnet.Forum.Pages
                 PostTitle = title.StartsWith(Constants.REPLY) ? title : $"{Constants.REPLY}{title}";
                 await RestoreBackupIfAny();
                 return Page();
-            }));
+            }
+        }
 
         public async Task<IActionResult> OnGetNewTopic()
-            => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, async (curForum) =>
+            => await WithRegisteredUser(user => WithValidForum(ForumId, async (curForum) =>
             {
                 CurrentForum = curForum;
                 CurrentTopic = null;
@@ -81,7 +92,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }));
 
         public async Task<IActionResult> OnGetEditPost()
-            => await WithRegisteredUser(async (user) => await WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
+            => await WithRegisteredUser(user => WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
             {
                 if (!(await IsCurrentUserModeratorHere() || (curPost.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime))))
                 {
@@ -205,7 +216,7 @@ namespace PhpbbInDotnet.Forum.Pages
         #region POST Attachment
 
         public async Task<IActionResult> OnPostAddAttachment()
-            => await WithBackup(async () => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, async (curForum) =>
+            => await WithBackup(() => WithRegisteredUser(user => WithValidForum(ForumId, async (curForum) =>
             {
                 var lang = GetLanguage();
                 CurrentForum = curForum;
@@ -265,7 +276,7 @@ namespace PhpbbInDotnet.Forum.Pages
             })));
 
         public async Task<IActionResult> OnPostDeleteAttachment(int index)
-            => await WithBackup(async () => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, async (curForum) =>
+            => await WithBackup(() => WithRegisteredUser(user => WithValidForum(ForumId, async (curForum) =>
             {
                 var lang = GetLanguage();
                 var attachment = Attachments?.ElementAtOrDefault(index);
@@ -303,7 +314,7 @@ namespace PhpbbInDotnet.Forum.Pages
         #region POST Message
 
         public async Task<IActionResult> OnPostPreview()
-            => await WithBackup(async () => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, Action == PostingActions.NewPrivateMessage, async (curForum) => await WithNewestPostSincePageLoad(curForum, async () =>
+            => await WithBackup(() => WithRegisteredUser(user => WithValidForum(ForumId, Action == PostingActions.NewPrivateMessage, curForum => WithNewestPostSincePageLoad(curForum, async () =>
             {
                 var lang = GetLanguage();
                 if ((PostTitle?.Trim()?.Length ?? 0) < 3)
@@ -364,7 +375,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }))));
 
         public async Task<IActionResult> OnPostNewForumPost()
-            => await WithBackup(async() => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, async (curForum) => await WithNewestPostSincePageLoad(curForum, async () =>
+            => await WithBackup(() => WithRegisteredUser(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, async () =>
             {
                 var addedPostId = await UpsertPost(null, user);
                 if (addedPostId == null)
@@ -375,7 +386,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }))));
 
         public async Task<IActionResult> OnPostEditForumPost()
-            => await WithBackup(async () => await WithRegisteredUser(async (user) => await WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
+            => await WithBackup(() => WithRegisteredUser(user => WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
             {
                 if (!(await IsCurrentUserModeratorHere() || (curPost.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime))))
                 {
@@ -436,7 +447,7 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public async Task<IActionResult> OnPostSaveDraft()
-            => await WithRegisteredUser(async (user) => await WithValidForum(ForumId, async (curForum) => await WithNewestPostSincePageLoad(curForum, async () =>
+            => await WithRegisteredUser(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, async () =>
             {
                 var lang = GetLanguage();
 
@@ -492,7 +503,7 @@ namespace PhpbbInDotnet.Forum.Pages
         #region POST Poll
 
         public async Task<IActionResult> OnPostDeletePoll()
-            => await WithBackup(async () => await WithRegisteredUser(async (user) => await WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
+            => await WithBackup(() => WithRegisteredUser(user => WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
             {
                 if (!(await IsCurrentUserModeratorHere() || (curPost.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime))))
                 {

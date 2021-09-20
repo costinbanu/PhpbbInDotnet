@@ -39,6 +39,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
         [BindProperty(SupportsGet = true)]
         public int? PostId { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public bool QuotePostInDifferentTopic { get; set; }
         
         [BindProperty]
         public string PollQuestion { get; set; }
