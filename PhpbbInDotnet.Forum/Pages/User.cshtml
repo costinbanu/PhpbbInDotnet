@@ -203,7 +203,7 @@ else
                             }
                             else
                             {
-                                var color = string.IsNullOrWhiteSpace(Model.CurrentUser.UserColour) || Model.CurrentUser.UserColour == "000000" ? "auto" : $"#{Model.CurrentUser.UserColour}";
+                                var color = string.IsNullOrWhiteSpace(Model.CurrentUser.UserColour) || Model.CurrentUser.UserColour == Constants.DEFAULT_USER_COLOR ? "auto" : $"#{Model.CurrentUser.UserColour}";
                                 <span style="font-weight:bold; color:@color" , class="ThemeColor">
                                     @Html.Raw(Model.CurrentUser.Username)
                                 </span>

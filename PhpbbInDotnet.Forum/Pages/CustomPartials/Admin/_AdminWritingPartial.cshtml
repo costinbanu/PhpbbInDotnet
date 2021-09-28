@@ -60,87 +60,7 @@
         <a href="#bannedWordsTitle">&#x23EB;</a>
     </div>
 </div>
-<hr class="BoxSeparator" />
-<h4 onclick="expandSection('orphanFilesSection', 'orphanFilesChar')" style="cursor:pointer" id="orphanFilesTitle">
-    @Html.Raw(_languageProvider.Admin[Model.Language, "ORPHAN_FILES"])
-    <span id="orphanFilesChar">&#x1F53D;</span>
-</h4>
 
-<div id="orphanFilesSection" style="display:none">
-    <form method="post" asp-page-handler="OrphanedFiles" id="orphanedFilesForm">
-        <input name="action" id="action" type="hidden" />
-    </form>
-    <h5>
-        <b>
-            @Html.Raw(string.Format(_languageProvider.Admin[Model.Language, "ORPHAN_FILES_CAPTION_FORMAT"], Model.OrphanFiles.Count, _utils.ReadableFileSize(Model.OrphanFiles.Sum(f => f.Filesize))))
-        </b>
-    </h5>
-    <p>
-        <select id="sortOptions" onchange="sort()" style="width:auto">
-            <option value="-1" selected disabled>@Html.Raw(_languageProvider.BasicText[Model.Language, "ORDER_BY"])</option>
-            <option value="0">@Html.Raw(_languageProvider.Admin[Model.Language, "FILENAME_ASC"])</option>
-            <option value="1">@Html.Raw(_languageProvider.Admin[Model.Language, "FILENAME_DESC"])</option>
-            <option value="2">@Html.Raw(_languageProvider.Admin[Model.Language, "AUTHOR_ASC"])</option>
-            <option value="3">@Html.Raw(_languageProvider.Admin[Model.Language, "AUTHOR_DESC"])</option>
-            <option value="4">@Html.Raw(_languageProvider.Admin[Model.Language, "LAST_MODIFIED_ASC"])</option>
-            <option value="5">@Html.Raw(_languageProvider.Admin[Model.Language, "LAST_MODIFIED_DESC"])</option>
-            <option value="6">@Html.Raw(_languageProvider.Admin[Model.Language, "SIZE_ASC"])</option>
-            <option value="7">@Html.Raw(_languageProvider.Admin[Model.Language, "SIZE_DESC"])</option>
-        </select>
-    </p>
-    <p>
-        <button type="button" onclick="$('#orphanedFilesForm').submit()" class="MyButton SpacedButton">
-            @Html.Raw(_languageProvider.Admin[Model.Language, "DELETE_THESE_FILES"])
-        </button>
-    </p>
-    <div id="fileHolder">
-        @foreach (var f in Model.OrphanFiles)
-        {
-            <div>
-                <div class="FlexCenter">
-                    <div class="FlexCaption">
-                        @Html.Raw(_languageProvider.BasicText[Model.Language, "FILE_NAME"])
-                    </div>
-                    <div class="FlexRight PostInputWidth">
-                        @Html.Raw(f.RealFilename)
-                    </div>
-                    <meta content="@Html.Raw(f.RealFilename)" />
-                </div>
-                <div class="FlexCenter">
-                    <div class="FlexCaption">
-                        @Html.Raw(_languageProvider.Admin[Model.Language, "AUTHOR"])
-                    </div>
-                    <div class="FlexRight PostInputWidth">
-                        @Html.Raw(f.Username)
-                    </div>
-                    <meta content="@Html.Raw(f.Username)" />
-                </div>
-                <div class="FlexCenter">
-                    <div class="FlexCaption">
-                        @Html.Raw(_languageProvider.Admin[Model.Language, "LAST_MODIFIED"])
-                    </div>
-                    <div class="FlexRight PostInputWidth">
-                        <script>writeDate('@f.Filetime.ToUtcTime().ToString("o")', '@Model.DateFormat')</script>
-                    </div>
-                    <meta content="@Html.Raw(f.Filetime)" />
-                </div>
-                <div class="FlexCenter">
-                    <div class="FlexCaption">
-                        @Html.Raw(_languageProvider.Admin[Model.Language, "SIZE"])
-                    </div>
-                    <div class="FlexRight PostInputWidth">
-                        @_utils.ReadableFileSize(f.Filesize)
-                    </div>
-                    <meta content="@Html.Raw(f.Filesize)" />
-                </div>
-                <hr class="SubtypeSeparator" />
-            </div>
-        }
-    </div>
-    <div style="width:100%; text-align:right; font-size:1.5em">
-        <a href="#orphanFilesTitle">&#x23EB;</a>
-    </div>
-</div>
 <hr class="BoxSeparator" />
 <h4 onclick="expandSection('customBBCodesSection', 'customBBCodesChar')" style="cursor:pointer" id="customBBCodesTitle">
     @Html.Raw(_languageProvider.Admin[Model.Language, "CUSTOM_BB_CODES"])
@@ -219,6 +139,7 @@
     @Html.Raw(_languageProvider.BasicText[Model.Language, "EMOJI"])
     <span id="smiliesChar">&#x1F53D;</span>
 </h4>
+
 @{
     var smilies = Model.Smilies.GroupBy(s => new { s.SmileyUrl, s.Emotion }).ToList();
     var smileyCodeCounts = new int[smilies.Count];

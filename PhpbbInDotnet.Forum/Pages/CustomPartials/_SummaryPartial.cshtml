@@ -47,7 +47,7 @@
             }
             else
             {
-                var color = string.IsNullOrWhiteSpace(Model.AuthorColor) || Model.AuthorColor == "000000" ? "auto" : $"#{Model.AuthorColor}";
+                var color = string.IsNullOrWhiteSpace(Model.AuthorColor) || Model.AuthorColor == Constants.DEFAULT_USER_COLOR ? "auto" : $"#{Model.AuthorColor}";
                 <a asp-page="/User" asp-route-UserId="@Model.AuthorId" style="color:@color;font-weight:bold" class="ThemeColor">@Html.Raw(Model.AuthorName)</a>
             }
         </li>

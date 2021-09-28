@@ -21,9 +21,21 @@ namespace PhpbbInDotnet.Services
         }
 
         protected string GetLanguage()
-            => _language ??= LanguageProvider.GetValidatedLanguage(
-                user: (AuthenticatedUser)(HttpContextAccessor.HttpContext.Items.TryGetValue(nameof(AuthenticatedUser), out var val) ? val : null), 
-                request: HttpContextAccessor.HttpContext.Request
-            );
+        {
+            if (!string.IsNullOrWhiteSpace(_language))
+            {
+                return _language;
+            }
+
+            AuthenticatedUser user = null;
+            if (HttpContextAccessor.HttpContext != null)
+            {
+                user = (AuthenticatedUser)(HttpContextAccessor.HttpContext.Items.TryGetValue(nameof(AuthenticatedUser), out var val) ? val : null);
+            }
+
+            _language = LanguageProvider.GetValidatedLanguage(user, HttpContextAccessor.HttpContext?.Request);
+
+            return _language;
+        }
     }
 }

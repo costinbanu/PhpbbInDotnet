@@ -8,6 +8,10 @@ namespace PhpbbInDotnet.Utilities
 
         public const int ANONYMOUS_USER_ID = 1;
 
+        public const string ANONYMOUS_USER_NAME = "Anonymous";
+
+        public const string DEFAULT_USER_COLOR = "000000";
+
         public const int GUESTS_GROUP_ID = 1;
 
         public const int BOTS_GROUP_ID = 6;
