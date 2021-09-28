@@ -59,7 +59,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 if (string.IsNullOrWhiteSpace(curAuthor))
                 {
                     var conn = await Context.GetDbConnectionAsync();
-                    curAuthor = await conn.QueryFirstOrDefaultAsync<string>("SELECT username FROM phpbb_users WHERE user_id = @posterId", new { curPost.PosterId }) ?? "Anonymous";
+                    curAuthor = await conn.QueryFirstOrDefaultAsync<string>("SELECT username FROM phpbb_users WHERE user_id = @posterId", new { curPost.PosterId }) ?? Constants.ANONYMOUS_USER_NAME;
                 }
 
                 CurrentForum = curForum;

@@ -40,7 +40,6 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool ShowForum { get; private set; }
         public bool IsRootForum { get; private set; }
         public List<PhpbbWords> BannedWords { get; set; }
-        public List<AttachmentManagementDto> OrphanFiles { get; set; }
         public List<PhpbbBbcodes> CustomBbCodes { get; set; }
         public List<PhpbbSmilies> Smilies { get; set; }
         [BindProperty(SupportsGet = true)]
@@ -95,7 +94,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 var banListTask = _adminUserService.GetBanList();
 
                 var bannedWordsTask = Context.PhpbbWords.AsNoTracking().ToListAsync();
-                var orphanFilesTask = _adminWritingService.GetOrphanedFiles();
                 var customBbCodesTask = Context.PhpbbBbcodes.AsNoTracking().ToListAsync();
                 var smiliesTask = _adminWritingService.GetSmilies();
 
@@ -104,7 +102,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 
                 await Task.WhenAll(
                     inactiveUsersTask, groupsTask, ranksTask, banListTask,
-                    bannedWordsTask, orphanFilesTask, customBbCodesTask, smiliesTask,
+                    bannedWordsTask, customBbCodesTask, smiliesTask,
                     logsTask, systemLogsTask);
                 
                 InactiveUsers = await inactiveUsersTask;
@@ -115,7 +113,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 RoleListItems = _adminUserService.GetRolesSelectListItems();
 
                 BannedWords = await bannedWordsTask;
-                OrphanFiles = await orphanFilesTask;
                 CustomBbCodes = await customBbCodesTask;
                 Smilies = await smiliesTask;
 
@@ -243,16 +240,6 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 (Message, IsSuccess) = await _adminWritingService.ManageBannedWords(words, toRemove);
                 Category = AdminCategories.WritingTools;
-                return await OnGet();
-            });
-
-        public async Task<IActionResult> OnPostOrphanedFiles()
-            => await WithAdmin(async () =>
-            {
-                (Message, IsSuccess) = await _adminWritingService.DeleteOrphanedFiles();
-
-                Category = AdminCategories.WritingTools;
-
                 return await OnGet();
             });
 

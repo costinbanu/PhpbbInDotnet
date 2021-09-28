@@ -14,7 +14,7 @@
     var userDateFormat = Model.CurrentUser?.UserDateFormat ?? _languageProvider.GetDefaultDateFormat(Model.Language);
     var rowClass = Model.Post.Report != null && (Model.IsCurrentUserMod || Model.Post.Report.ReporterId == Model.CurrentUser.UserId) ? "ReportedPost" : string.Empty;
     var titleClass = Model.Post.Unread ? "UnreadTitle" : "";
-    var color = string.IsNullOrWhiteSpace(Model.Post.AuthorColor) || Model.Post.AuthorColor == "000000" ? "auto" : $"#{Model.Post.AuthorColor}";
+    var color = string.IsNullOrWhiteSpace(Model.Post.AuthorColor) || Model.Post.AuthorColor == Constants.DEFAULT_USER_COLOR ? "auto" : $"#{Model.Post.AuthorColor}";
 
     @if (Model.CurrentUser.Foes?.Contains(Model.Post.AuthorId) ?? false)
     {

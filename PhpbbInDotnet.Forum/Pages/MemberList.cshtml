@@ -134,7 +134,7 @@
                 <hr class="BoxSeparator" />
             }
 
-            var color = string.IsNullOrWhiteSpace(group.GroupColour) || group.GroupColour == "000000" ? "auto" : $"#{group.GroupColour}";
+            var color = string.IsNullOrWhiteSpace(group.GroupColour) || group.GroupColour == Constants.DEFAULT_USER_COLOR ? "auto" : $"#{group.GroupColour}";
 
             <div class="FlexCenter">
                 <div class="PostTitle ThemeColor" style="overflow-wrap: break-word; color:@color">

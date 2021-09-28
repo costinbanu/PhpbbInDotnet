@@ -11,7 +11,7 @@
     var isFirst = true;
     foreach (var user in Model.UserList)
     {
-        var color = string.IsNullOrWhiteSpace(user.UserColour) || user.UserColour == "000000" ? "auto" : $"#{user.UserColour}";
+        var color = string.IsNullOrWhiteSpace(user.UserColour) || user.UserColour == Constants.DEFAULT_USER_COLOR ? "auto" : $"#{user.UserColour}";
         if (!isFirst)
         {
             <hr class="BoxSeparator" />
@@ -57,7 +57,7 @@
                     {
                         <br />
                         <b>@Html.Raw(_languageProvider.BasicText[Model.Language, "GROUP", Casing.FirstUpper]):</b>
-                        color = string.IsNullOrWhiteSpace(group.GroupColour) || group.GroupColour == "000000" ? "auto" : $"#{group.GroupColour}";
+                        color = string.IsNullOrWhiteSpace(group.GroupColour) || group.GroupColour == Constants.DEFAULT_USER_COLOR ? "auto" : $"#{group.GroupColour}";
                         <span style="font-weight: bold; color: @color" class="ThemeColor">
                             @Html.Raw(group.GroupName)
                         </span>

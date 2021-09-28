@@ -159,7 +159,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     {
                         MessageId = message.MsgId,
                         OthersId = otherUser.UserId,
-                        OthersName = otherUser?.Username ?? "Anonymous",
+                        OthersName = otherUser?.Username ?? Constants.ANONYMOUS_USER_NAME,
                         OthersColor = otherUser?.UserColour,
                         OthersAvatar = otherUser.UserAvatar,
                         Subject = HttpUtility.HtmlDecode(message.MessageSubject),
