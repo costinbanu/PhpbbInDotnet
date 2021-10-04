@@ -202,7 +202,7 @@ else
         {
             if (Model.Mode != ViewForumMode.Drafts)
             {
-                topic.Unread = await Model.IsTopicUnread(topic.ForumId ?? 0, topic.TopicId ?? 0);
+                topic.Unread = Model.Mode == ViewForumMode.NewPosts || await Model.IsTopicUnread(topic.ForumId ?? 0, topic.TopicId ?? 0);
                 if (Model.Mode != ViewForumMode.NewPosts)
                 {
                     var pageSize = CurrentUser.TopicPostsPerPage.ContainsKey(topic.TopicId ?? 0) ? CurrentUser.TopicPostsPerPage[topic.TopicId ?? 0] : Constants.DEFAULT_PAGE_SIZE;
