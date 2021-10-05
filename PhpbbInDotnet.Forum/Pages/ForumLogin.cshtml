@@ -4,11 +4,11 @@
 @using Utilities 
 
 @{
-    ViewData["Title"] = "ForumLogin";
+    ViewData["Title"] = $"{Model.LanguageProvider.BasicText[Model.Language, "FORUM_LOGIN", Casing.Title]} - {Model.ForumName}";
     Layout = "~/Pages/_Layout.cshtml";
 }
 
-<h3>@Html.Raw(Model.LanguageProvider.BasicText[Model.Language, "FORUM_LOGIN", Casing.Title]) - @Model.ForumName</h3>
+<h3>@Html.Raw($"{Model.LanguageProvider.BasicText[Model.Language, "FORUM_LOGIN", Casing.Title]} - {Model.ForumName}")</h3>
 <form method="post">
     <input type="hidden" asp-for="ReturnUrl" />
     <input type="hidden" asp-for="ForumId" />

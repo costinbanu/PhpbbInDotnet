@@ -14,11 +14,11 @@
 @inject Services.PostService _postService
 
 @{
-    ViewData["Title"] = "Search";
+    var Lang = Model.GetLanguage();
+    ViewData["Title"] = Model.LanguageProvider.BasicText[Lang, "SEARCH"];
     Layout = "~/Pages/_Layout.cshtml";
     var CurrentUser = Model.GetCurrentUser();
     var connection = await _context.GetDbConnectionAsync();
-    var Lang = Model.GetLanguage();
     var dateFormat = CurrentUser?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
 }
 <environment include="Development">

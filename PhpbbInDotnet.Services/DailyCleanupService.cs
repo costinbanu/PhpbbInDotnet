@@ -8,8 +8,6 @@ using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
 using Serilog;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -241,24 +239,27 @@ namespace PhpbbInDotnet.Services
             await Task.WhenAll(fixedForumsTask, fixedLastPostTopicsTask, fixedFirstPostTopicsTask);
 
             var fixedForums = await fixedForumsTask;
-            var fixedLastPostTopics = await fixedLastPostTopicsTask;
-            var fixedFirstPostTopics = await fixedFirstPostTopicsTask;
+            var fixedTopics = (await fixedLastPostTopicsTask).ToDictionary(k => k.TopicId, v => v);
+            foreach(var fixedFirstPostTopic in await fixedFirstPostTopicsTask)
+            {
+                if (fixedTopics.TryGetValue(fixedFirstPostTopic.TopicId, out var fixedLastPostTopic))
+                {
+                    fixedLastPostTopic.TopicFirstPostId = fixedFirstPostTopic.TopicFirstPostId;
+                    fixedLastPostTopic.TopicFirstPosterName = fixedFirstPostTopic.TopicFirstPosterName;
+                    fixedLastPostTopic.TopicFirstPosterColour = fixedFirstPostTopic.TopicFirstPosterColour;
+                }
+                else
+                {
+                    fixedTopics.Add(fixedFirstPostTopic.TopicId, fixedFirstPostTopic);
+                }
+            }
 
             dbContext.PhpbbForums.UpdateRange(fixedForums);
-            dbContext.PhpbbTopics.UpdateRange(fixedLastPostTopics.Union(fixedFirstPostTopics, new TopicEqualityComparer()));
+            dbContext.PhpbbTopics.UpdateRange(fixedTopics.Values);
 
             stoppingToken.ThrowIfCancellationRequested();
 
             await dbContext.SaveChangesAsync(CancellationToken.None);
-        }
-
-        class TopicEqualityComparer : IEqualityComparer<PhpbbTopics>
-        {
-            public bool Equals(PhpbbTopics x, PhpbbTopics y)
-                => x != null && y != null && x.TopicId == y.TopicId;
-
-            public int GetHashCode([DisallowNull] PhpbbTopics obj)
-                => obj.TopicId.GetHashCode();
         }
     }
 }
