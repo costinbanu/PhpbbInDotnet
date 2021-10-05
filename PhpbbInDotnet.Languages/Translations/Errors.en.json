@@ -1,5 +1,6 @@
 ﻿{
   //generic errors
+  "ERROR": "error",
   "AN_ERROR_OCCURRED": "An error occurred",
   "AN_ERROR_OCCURRED_TRY_AGAIN": "An error occurred, try again later",
   "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT": "An error occurred, try again later. ID: {0}",

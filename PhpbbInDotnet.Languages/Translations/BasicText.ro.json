@@ -118,6 +118,7 @@
   "NEW_PASSWORD_COMPLETE": "Parola a fost modificată cu succes.",
 
   //memberlist
+  "MEMBERLIST": "Lista membrilor",
   "ALL_USERS": "Toți utilizatorii",
   "ACTIVE_USERS": "Utilizatori activi",
   "SEARCH_FOR_USER": "Caută un utilizator",

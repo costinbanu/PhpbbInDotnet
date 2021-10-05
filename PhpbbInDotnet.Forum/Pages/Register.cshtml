@@ -7,14 +7,14 @@
 @inject Microsoft.Extensions.Configuration.IConfiguration _config;
 
 @{
-    ViewData["Title"] = "Register";
-    Layout = "~/Pages/_Layout.cshtml";
     var lang = Model.GetLanguage();
+    ViewData["Title"] = Model.LanguageProvider.BasicText[lang, "REGISTER", Casing.Title];
+    Layout = "~/Pages/_Layout.cshtml";
     var opts = _config.GetObject<Recaptcha>();
 }
 
 
-<h3>Înregistrare</h3>
+<h3>@Html.Raw(Model.LanguageProvider.BasicText[lang, "REGISTER", Casing.Title])</h3>
 
 <script src="https://www.google.com/recaptcha/api.js?render=@(opts.SiteKey)"></script>
 <script>

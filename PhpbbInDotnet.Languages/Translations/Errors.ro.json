@@ -1,5 +1,6 @@
 ﻿{
   //generic errors
+  "ERROR": "eroare",
   "AN_ERROR_OCCURRED": "A intervenit o eroare.",
   "AN_ERROR_OCCURRED_TRY_AGAIN": "A intervenit o eroare, te rugăm să încerci mai târziu.",
   "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT": "A intervenit o eroare, încearcă din nou. ID: {0}",

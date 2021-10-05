@@ -12,10 +12,12 @@
 @inject Microsoft.Extensions.Configuration.IConfiguration _config
 
 @{
-    ViewData["Title"] = "User";
+    var pageUser = new AuthenticatedUser(_userService.DbUserToAuthenticatedUserBase(Model.CurrentUser));
+    var Lang = Model.GetLanguage();
+
+    ViewData["Title"] = $"{Model.LanguageProvider.BasicText[Lang, "USER", Casing.Title]}: {pageUser.Username}";
     Layout = "~/Pages/_Layout.cshtml";
 
-    var pageUser = new AuthenticatedUser(_userService.DbUserToAuthenticatedUserBase(Model.CurrentUser));
 
     var permissionsTask = _userService.GetPermissions(pageUser.UserId);
     var foesTask = _userService.GetFoes(pageUser.UserId);
@@ -33,7 +35,6 @@
     var hasTabs = isSelf || await isAdminHereTask;
     var showFlexAvatar = !string.IsNullOrWhiteSpace(Model.CurrentUser.UserAvatar) && !canEdit;
     var rankList = await ranksTask;
-    var Lang = Model.GetLanguage();
 }
 
 <environment include="Development">
@@ -44,7 +45,7 @@
 <style>
     .FlexCaption {
         font-weight: bold;
-        text-align: right;
+        text-align: left;
         margin-bottom: auto;
     }
 

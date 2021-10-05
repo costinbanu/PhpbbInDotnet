@@ -12,10 +12,10 @@
 @inject AnonymousSessionCounter _sessionCounter
 
 @{
-    ViewData["Title"] = "MemberList";
+    var Lang = Model.GetLanguage();
+    ViewData["Title"] = Model.LanguageProvider.BasicText[Lang, "MEMBERLIST"];
     Layout = "~/Pages/_Layout.cshtml";
     var user = Model.GetCurrentUser();
-    var Lang = Model.GetLanguage(); 
     var dateFormat = user.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
 }
 

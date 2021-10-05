@@ -118,6 +118,7 @@
   "NEW_PASSWORD_COMPLETE": "Your password has been changed.",
 
   //memberlist
+  "MEMBERLIST": "Member list",
   "ALL_USERS": "All users",
   "ACTIVE_USERS": "Active users",
   "SEARCH_FOR_USER": "Search for a user",

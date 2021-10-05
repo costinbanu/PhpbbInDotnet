@@ -10,8 +10,8 @@
 @inject CommonUtils _utils
 
 @{
-    ViewData["Title"] = "Error";
     var lang = _languageProvider.GetValidatedLanguage(_userService.ClaimsPrincipalToAuthenticatedUser(User), Model.Request);
+    ViewData["Title"] = _languageProvider.Errors[lang, "ERROR", Casing.Title];
     var adminEmail = _config.GetValue<string>("AdminEmail");
     var displayContact = !Model.IsUnauthorized && !Model.IsNotFound;
 }

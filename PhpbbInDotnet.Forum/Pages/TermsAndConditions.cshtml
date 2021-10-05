@@ -1,13 +1,14 @@
 ﻿@page
 @model PhpbbInDotnet.Forum.AuthenticatedPageModel
 @{
-    ViewData["Title"] = "TermsAndConditions";
+    var lang = Model.GetLanguage();
+    ViewData["Title"] = Model.LanguageProvider.BasicText[lang, "TERMS", Utilities.Casing.Title];
     Layout = "~/Pages/_Layout.cshtml";
 }
 
 @using Microsoft.Extensions.Configuration
 @inject IConfiguration _config
 
-@Html.Raw(string.Format(Model.LanguageProvider.TermsAndConditions[Model.GetLanguage()], _config.GetValue<string>("ForumName"), _config.GetValue<string>("AdminEmail")))
+@Html.Raw(string.Format(Model.LanguageProvider.TermsAndConditions[lang], _config.GetValue<string>("ForumName"), _config.GetValue<string>("AdminEmail")))
 
 

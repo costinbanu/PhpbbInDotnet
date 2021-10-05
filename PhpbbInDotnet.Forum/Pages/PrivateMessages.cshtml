@@ -1,10 +1,10 @@
 ﻿@page
 @model PhpbbInDotnet.Forum.Pages.PrivateMessagesModel
 @{
-    ViewData["Title"] = "PrivateMessages";
+    var Lang = Model.GetLanguage();
+    ViewData["Title"] = Model.LanguageProvider.BasicText[Lang, "PRIVATE_MESSAGING", Casing.Title];
     Layout = "~/Pages/_Layout.cshtml";
     var CurrentUser = Model.GetCurrentUser();
-    var Lang = Model.GetLanguage(); 
     var UserDateFormat = CurrentUser?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
 }
 
