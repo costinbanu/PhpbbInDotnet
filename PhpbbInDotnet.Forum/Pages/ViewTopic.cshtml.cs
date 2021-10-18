@@ -1,21 +1,20 @@
 ﻿using Dapper;
+using LazyCache;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
-using PhpbbInDotnet.Languages;
-using LazyCache;
-using System.Data;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -65,7 +64,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public string ForumRules { get; private set; }
         public string ForumRulesUid { get; private set; }
         public string ForumTitle { get; private set; }
-        public string ModeratorActionResult { get; private set; }
+        public (string Message, bool? IsSuccess) ModeratorActionResult { get; private set; }
         public Paginator Paginator { get; private set; }
         public Guid CorrelationId { get; private set; }
 
@@ -86,7 +85,7 @@ namespace PhpbbInDotnet.Forum.Pages
             DestinationForumId.HasValue
         );
 
-        public string ScrollToModeratorPanel => (ShowTopic || ShowPostForum || ShowPostTopic || !string.IsNullOrWhiteSpace(ModeratorActionResult)).ToString().ToLower();
+        public bool ScrollToModeratorPanel => ShowTopic || ShowPostForum || ShowPostTopic || !string.IsNullOrWhiteSpace(ModeratorActionResult.Message);
 
         public bool IsLocked => (_currentTopic?.TopicStatus ?? 0) == 1;
 
@@ -257,14 +256,21 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostTopicModerator()
             => await WithModerator(ForumId ?? 0, async () =>
             {
+                var lang = GetLanguage();
+
+                if (TopicAction == null)
+                {
+                    ModeratorActionResult = (LanguageProvider.BasicText[lang, "SELECT_AN_OPTION"], false);
+                    return await OnGet();
+                }
+
                 var logDto = new OperationLogDto
                 {
                     Action = TopicAction.Value,
-                    UserId = (GetCurrentUser()).UserId
+                    UserId = GetCurrentUser().UserId
                 };
 
-                var lang = GetLanguage();
-                var (Message, IsSuccess) = TopicAction switch
+                ModeratorActionResult = TopicAction switch
                 {
                     ModeratorTopicActions.MakeTopicNormal => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Normal, logDto),
                     ModeratorTopicActions.MakeTopicImportant => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Important, logDto),
@@ -281,7 +287,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     return RedirectToPage("ViewForum", new { ForumId });
                 }
-                else if (TopicAction == ModeratorTopicActions.MoveTopic && (IsSuccess ?? false))
+                else if (TopicAction == ModeratorTopicActions.MoveTopic && (ModeratorActionResult.IsSuccess ?? false))
                 {
                     var destinations = await Task.WhenAll(
                         Utils.CompressAndEncode($"<a href=\"./ViewForum?forumId={DestinationForumId ?? 0}\">{LanguageProvider.BasicText[lang, "GO_TO_NEW_FORUM"]}</a>"),
@@ -291,7 +297,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 else
                 {
-                    ModeratorActionResult = $"<span style=\"margin-left: 30px\" class=\"{((IsSuccess ?? false) ? "success" : "fail")}\">{Message}</span>";
+                    TopicAction = null;
                     return await OnGet();
                 }
             });
@@ -323,18 +329,18 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 
                 var lastPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC", new { toDelete.TopicId });
-                var errorMessage = "<span class=\"validation\">&#x274C;&nbsp;{0}</span>";
+                var errorMessage = "&#x274C;&nbsp;{0}";
 
                 if (toDelete.PostTime < lastPost.PostTime)
                 {
-                    ModeratorActionResult = string.Format(errorMessage, LanguageProvider.Errors[lang, "POST_NO_LONGER_LAST"]);
+                    ModeratorActionResult = (string.Format(errorMessage, LanguageProvider.Errors[lang, "POST_NO_LONGER_LAST"]), false);
                     PostId = postIds[0];
                     return await OnGet();
                 }
 
                 if (!(toDelete.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(toDelete.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime)))
                 {
-                    ModeratorActionResult = string.Format(errorMessage, LanguageProvider.Errors[lang, "EDIT_TIME_EXPIRED"]);
+                    ModeratorActionResult = (string.Format(errorMessage, LanguageProvider.Errors[lang, "EDIT_TIME_EXPIRED"]), false);
                     PostId = postIds[0]; 
                     return await OnGet();
                 }
@@ -342,7 +348,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var curTopic = await conn.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { toDelete.TopicId });
                 if (curTopic?.TopicStatus.ToBool() ?? false)
                 {
-                    ModeratorActionResult = string.Format(errorMessage, LanguageProvider.Errors[lang, "CANT_DELETE_POST_TOPIC_CLOSED", Casing.FirstUpper]);
+                    ModeratorActionResult = (string.Format(errorMessage, LanguageProvider.Errors[lang, "CANT_DELETE_POST_TOPIC_CLOSED", Casing.FirstUpper]), false);
                     PostId = postIds[0]; 
                     return await OnGet();
                 }
@@ -382,8 +388,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var (_, nextRemaining) = await GetSelectedAndNextRemainingPostIds(reportPostId ?? 0);
                 if (deletePost ?? false)
                 {
-                    var (Message, IsSuccess) = await _moderatorService.DeletePosts(new[] { reportPostId.Value }, logDto);
-                    ModeratorActionResult = $"<span style=\"margin-left: 30px\" class=\"{((IsSuccess ?? false) ? "success" : "fail")}\">{Message}</span>";
+                    ModeratorActionResult = await _moderatorService.DeletePosts(new[] { reportPostId.Value }, logDto);
                     PostId = nextRemaining;
                 }
                 else
@@ -421,26 +426,28 @@ namespace PhpbbInDotnet.Forum.Pages
                     Action = ModeratorPostActions.DuplicateSelectedPost,
                     UserId = (GetCurrentUser()).UserId
                 };
-                var (Message, IsSuccess) = await _moderatorService.DuplicatePost(postIdForDuplication, logDto);
-
+                ModeratorActionResult = await _moderatorService.DuplicatePost(postIdForDuplication, logDto);
                 PostId = postIdForDuplication;
-                if (!(IsSuccess ?? false))
-                {
-                    ModeratorActionResult = $"<span style=\"margin-left: 30px; color: red; display:block;\">{Message}</span>";
-                }
                 return await OnGetByPostId();
             });
 
         private async Task<IActionResult> ModeratePosts()
         {
             var lang = GetLanguage();
+
+            if (PostAction == null)
+            {
+                ModeratorActionResult = (LanguageProvider.BasicText[lang, "SELECT_AN_OPTION"], false);
+                return await OnGet();
+            }
+
             var logDto = new OperationLogDto
             {
                 Action = PostAction.Value,
-                UserId = (GetCurrentUser()).UserId
+                UserId = GetCurrentUser().UserId
             };
             var postIds = GetModeratorPostIds();
-            var (Message, IsSuccess) = PostAction switch
+            ModeratorActionResult = PostAction switch
             {
                 ModeratorPostActions.DeleteSelectedPosts => await _moderatorService.DeletePosts(postIds, logDto),
                 ModeratorPostActions.MoveSelectedPosts => await _moderatorService.MovePosts(postIds, DestinationTopicId, logDto),
@@ -448,13 +455,13 @@ namespace PhpbbInDotnet.Forum.Pages
                 _ => throw new NotImplementedException($"Unknown action '{PostAction}'")
             };
 
-            if ((IsSuccess ?? false) && PostAction == ModeratorPostActions.DeleteSelectedPosts && postIds.Length == 1 && ClosestPostId.HasValue)
+            if ((ModeratorActionResult.IsSuccess ?? false) && PostAction == ModeratorPostActions.DeleteSelectedPosts && postIds.Length == 1 && ClosestPostId.HasValue)
             {
                 PostId = ClosestPostId;
                 return await OnGetByPostId();
             }
 
-            if (IsSuccess ?? false)
+            if (ModeratorActionResult.IsSuccess ?? false)
             {
                 int? LatestSelected, NextRemaining;
                 if (ClosestPostId.HasValue && PostAction == ModeratorPostActions.DeleteSelectedPosts)
@@ -483,7 +490,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return RedirectToPage("Confirm", "DestinationConfirmation", new { destinations });
             }
 
-            ModeratorActionResult = $"<span style=\"margin-left: 30px; color: red; display:block;\">{Message}</span>";
+            PostAction = null;
             return await OnGet();
         }
 

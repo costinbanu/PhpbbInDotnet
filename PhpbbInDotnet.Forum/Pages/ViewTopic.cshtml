@@ -37,7 +37,7 @@
 <script type="text/javascript">
     var vt = new ViewTopic(
         @Json.Serialize(Model.PostId ?? -1),
-        @Model.ScrollToModeratorPanel,
+        @Json.Serialize(Model.ScrollToModeratorPanel),
         @Constants.OTHER_REPORT_REASON_ID
     );
 
@@ -252,7 +252,7 @@ else if (!IsAnonymous)
     <form method="post" asp-page-handler="TopicModerator" style="padding-top:5px">
         @Html.Raw(Model.LanguageProvider.Moderator[Lang, "MODERATE_TOPIC"]):
         @Html.DropDownList(
-            "TopicAction",
+            nameof(Model.TopicAction),
             _utils.EnumToDropDownList<ModeratorTopicActions>(
                 selectedItem: Model.TopicAction, 
                 textTransform: item => Model.LanguageProvider.Enums[Lang, item], 
@@ -335,10 +335,10 @@ else if (!IsAnonymous)
     </div>
 }
 
-@if (!string.IsNullOrWhiteSpace(Model.ModeratorActionResult))
+@if (!string.IsNullOrWhiteSpace(Model.ModeratorActionResult.Message))
 {
-    <br />
-    @Html.Raw(Model.ModeratorActionResult)
+    <p></p>
+    <span class="message @((Model.ModeratorActionResult.IsSuccess ?? false) ? "success" : "fail")">@Html.Raw(Model.ModeratorActionResult.Message)</span>
 }
 
 @*message reporting*@
