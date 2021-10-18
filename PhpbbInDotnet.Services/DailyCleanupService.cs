@@ -41,7 +41,8 @@ namespace PhpbbInDotnet.Services
                 await Task.WhenAll(
                     CleanRecycleBin(config, dbContext, utils, storageService, logger, stoppingToken),
                     ResyncOrphanFiles(config, dbContext, stoppingToken),
-                    ResyncForumsAndTopics(dbContext, stoppingToken)
+                    ResyncForumsAndTopics(dbContext, stoppingToken),
+                    CleanOperationLogs(config, dbContext, logger, stoppingToken)
                 );
 
                 stoppingToken.ThrowIfCancellationRequested();
@@ -61,6 +62,12 @@ namespace PhpbbInDotnet.Services
         private async Task CleanRecycleBin(IConfiguration config, ForumDbContext dbContext, CommonUtils utils, StorageService storageService, ILogger logger, CancellationToken stoppingToken)
         {
             var retention = config.GetObject<TimeSpan?>("RecycleBinRetentionTime") ?? TimeSpan.FromDays(7);
+
+            if (retention < TimeSpan.FromDays(1))
+            {
+                throw new ArgumentOutOfRangeException("RecycleBinRetentionTime", "Invalid app setting value.");
+            }
+
             var now = DateTime.UtcNow.ToUnixTimestamp();
             var toDelete = await (
                 from rb in dbContext.PhpbbRecycleBin
@@ -70,8 +77,12 @@ namespace PhpbbInDotnet.Services
 
             if (!toDelete.Any())
             {
-                logger.Information("Recycle bin is empty.");
+                logger.Information("Nothing to delete from the recycle bin.");
                 return;
+            }
+            else
+            {
+                logger.Information("Deleting {count} items older than {retention} from the recycle bin...", toDelete.Count, retention);
             }
 
             dbContext.PhpbbRecycleBin.RemoveRange(toDelete);
@@ -256,6 +267,45 @@ namespace PhpbbInDotnet.Services
 
             dbContext.PhpbbForums.UpdateRange(fixedForums);
             dbContext.PhpbbTopics.UpdateRange(fixedTopics.Values);
+
+            stoppingToken.ThrowIfCancellationRequested();
+
+            await dbContext.SaveChangesAsync(CancellationToken.None);
+        }
+
+        private async Task CleanOperationLogs(IConfiguration config, ForumDbContext dbContext, ILogger logger, CancellationToken stoppingToken)
+        {
+            var retention = config.GetObject<TimeSpan?>("OperationLogsRetentionTime") ?? TimeSpan.FromDays(365);
+            
+            if (retention == TimeSpan.Zero)
+            {
+                logger.Information("Was instructed to keep operation logs indefinitely, will not delete.");
+                return;
+            }
+
+            if (retention < TimeSpan.FromDays(1))
+            {
+                throw new ArgumentOutOfRangeException("OperationLogsRetentionTime", "Invalid app setting value.");
+            }
+
+            var now = DateTime.UtcNow.ToUnixTimestamp();
+            var toDelete = await (
+                from l in dbContext.PhpbbLog
+                where now - l.LogTime > retention.TotalSeconds
+                select l
+            ).ToListAsync();
+
+            if (!toDelete.Any())
+            {
+                logger.Information("Nothing to delete from the operation logs.");
+                return;
+            }
+            else
+            {
+                logger.Information("Deleting {count} items older than {retention} from the operation logs...", toDelete.Count, retention);
+            }
+
+            dbContext.PhpbbLog.RemoveRange(toDelete);
 
             stoppingToken.ThrowIfCancellationRequested();
 

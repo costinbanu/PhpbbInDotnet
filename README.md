@@ -65,7 +65,8 @@ Either way,  ensure that its structure and contents follow the sample below. All
   },
   "DisplayExternalLinksMenu": false,
   "UseHeaderImage": false,
-  "RecycleBinRetentionTime": "7.00:00:00"
+  "RecycleBinRetentionTime": "7.00:00:00",
+  "OperationLogsRetentionTime": "365.00:00:00"
 }
 ```
 
@@ -93,7 +94,7 @@ UploadLimitsMB.Images | int | 2 | applies for both internally and externally hos
 UploadLimitsMB.OtherFiles | int | 20 | applies only for internally hosted attachments
 UploadLimitsCount.Images | int | 10 |  applies for both internally and externally hosted images
 UploadLimitsCount.OtherFiles | int | 10 | applies only for internally hosted attachments
-UserActivityTrackingInterval | TimeSpan | 00.01:00:00 | time interval for tracking same user's activity. Is read as `TimeSpan` (format `dd.HH:mm:ss`), default value is 1 hour
+UserActivityTrackingInterval | TimeSpan | 00.01:00:00 | time interval for tracking same user's activity. Is read as `TimeSpan` (format `dd.HH:mm:ss`), default value is one hour
 AdminEmail | string | ... | sender email address for forum generated emails 
 Storage.Files | string | forumfiles | path relative to `wwwroot` 
 Storage.Avatars | string | forumfiles/avatars | path relative to `wwwroot` 
@@ -104,7 +105,8 @@ EmojiMaxSize.Width | int | 100 | pixels
 EmojiMaxSize.Height | int | 100 | pixels
 DisplayExternalLinksMenu | bool | false | whether a menu with external links is displayed below the header, next to the forum Menu. 
 UseHeaderImage | bool | false | whether a custom image is displayed in the header, instead of the forum name
-RecycleBinRetentionTime | TimeSpan | 7.00:00:00 | for how long are deleted items kept in the recycle bin
+RecycleBinRetentionTime | TimeSpan | 7.00:00:00 | for how long are deleted items kept in the recycle bin. Is read as `TimeSpan` (format `dd.HH:mm:ss`), default value is 7 days. A value less than one day will trigger an error and will not delete anything at all.
+OperationLogsRetentionTime | TimeSpan | 365.00:00:00 | Anything that alters post, topic, forum or user state is saved as an operation log and can be viewed in the forum's admin panel. This value controls for how long are the operation log items kept in the database. Is read as `TimeSpan` (format `dd.HH:mm:ss`), default value is 365 days. An explicit zero value (`0.00:00:00`) can be used for retaining logs indefinitely. A value less than one day will trigger an error and will not delete anything at all.
 
 ### Branding
 #### Forum header
