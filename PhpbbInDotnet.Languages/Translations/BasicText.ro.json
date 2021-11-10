@@ -226,7 +226,9 @@
 
   //attachments
   "CHOOSE_FILES": "Alege unul sau mai multe fișiere",
-  "CHOOSE_FILES_CAPTION_FORMAT": "Imagini: maxim {0} fișiere, dimensiune maximă: {1}MB. Alte tipuri: maxim {2} fișiere, dimensiune maximă: {3}MB.",
+  "CHOOSE_FILES_CAPTION_FORMAT": "Imagini: maxim {0} fișiere, dimensiune maximă: {1}MB fiecare. Alte tipuri: maxim {2} fișiere, dimensiune maximă: {3}MB fiecare.",
+  "SHOULD_RESIZE_IMAGES": "Redimensionează imaginile",
+  "SHOULD_HIDE_LICENSE_PLATES_IN_IMAGES": "Ascunde numerele de înmatriculare (funcționalitate experimentală)",
   "LOAD_FILES": "Încarcă fișierele alese",
   "ALREADY_ATTACHED": "Fișiere deja atașate",
   "FILE_NAME": "Nume",

@@ -349,14 +349,38 @@ else if (IsPM)
     {
         var sizeLimit = _config.GetObject<AttachmentLimits>("UploadLimitsMB");
         var countLimit = _config.GetObject<AttachmentLimits>("UploadLimitsCount");
-        var resizeTool = _config.GetObject<ExternalImageResizeTool>();
+        var resizeTool = _config.GetObject<ExternalImageProcessor>();
 
         <div id="attachPanel" style="display:@(Model.ShowAttach ? "block" : "none")">
             <br />
             <h3>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "ATTACHED_FILES"])</h3>
 
-            @Html.Raw(string.Format(Model.LanguageProvider.AttachmentGuide[Lang], sizeLimit.Images, resizeTool.Url, resizeTool.Name))
+            @if (resizeTool.Enabled)
+            {
+                @Html.Raw(string.Format(Model.LanguageProvider.AttachmentGuide[Lang], sizeLimit.Images, resizeTool.Url, resizeTool.Name, resizeTool.Api.Enabled ? "display:auto" : "display:none"))
+            }
 
+            @if (resizeTool.Api.Enabled)
+            { 
+                <p></p>
+                <label>
+                    @if (IsAdmin)
+                    {
+                        @Html.CheckBoxFor(m => m.ShouldResize)
+                    }
+                    else
+                    {
+                        @Html.CheckBoxFor(m => m.ShouldResize, new { disabled = true })
+                    }
+                    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SHOULD_RESIZE_IMAGES"])
+                </label>
+                <p></p>
+                <label>
+                    @Html.CheckBoxFor(m => m.ShouldHideLicensePlates)
+                    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SHOULD_HIDE_LICENSE_PLATES_IN_IMAGES"])
+                </label>
+            }
+            <p></p>
             <input asp-for="Files" onchange="posting.submitAttachments()" multiple class="HiddenFileInput" />
             <label for="Files" class="MyButton">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CHOOSE_FILES"])</label><br />
             @if (!IsAdmin)
@@ -421,7 +445,8 @@ else if (IsPM)
 
 </form>
 
-@if (!IsPM){
+@if (!IsPM)
+{
     var (posts, attachments, previousPostsCorrelationId) = await Model.GetPreviousPosts();
     if (posts.Any())
     {
