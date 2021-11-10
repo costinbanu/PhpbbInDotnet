@@ -34,5 +34,7 @@ namespace PhpbbInDotnet.Utilities
 
         public static readonly DateTime UNIX_TIMESTAMP_MIN_VALUE = 0L.ToUtcTime();
 
+        public const int ONE_MB = 1048576;
+
     }
 }

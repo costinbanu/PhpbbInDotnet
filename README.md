@@ -66,7 +66,19 @@ Either way,  ensure that its structure and contents follow the sample below. All
   "DisplayExternalLinksMenu": false,
   "UseHeaderImage": false,
   "RecycleBinRetentionTime": "7.00:00:00",
-  "OperationLogsRetentionTime": "365.00:00:00"
+  "OperationLogsRetentionTime": "365.00:00:00",
+  "ExternalImageProcessor": {
+    "Enabled": false,
+    "Name": "...",
+    "Url": "...",
+    "Api": {
+      "Enabled": false,
+      "ClientName": "ExternalImageProcessor",
+      "BaseAddress": "...",
+      "RelativeUri": "api/process-image",
+      "ApiKey": "..."
+    }
+  }
 }
 ```
 
@@ -107,6 +119,16 @@ DisplayExternalLinksMenu | bool | false | whether a menu with external links is 
 UseHeaderImage | bool | false | whether a custom image is displayed in the header, instead of the forum name
 RecycleBinRetentionTime | TimeSpan | 7.00:00:00 | for how long are deleted items kept in the recycle bin. Is read as `TimeSpan` (format `dd.HH:mm:ss`), default value is 7 days. A value less than one day will trigger an error and will not delete anything at all.
 OperationLogsRetentionTime | TimeSpan | 365.00:00:00 | Anything that alters post, topic, forum or user state is saved as an operation log and can be viewed in the forum's admin panel. This value controls for how long are the operation log items kept in the database. Is read as `TimeSpan` (format `dd.HH:mm:ss`), default value is 365 days. An explicit zero value (`0.00:00:00`) can be used for retaining logs indefinitely. A value less than one day will trigger an error and will not delete anything at all.
+ExternalImageProcessor.Enabled | bool | ... | Whether a link to an external image processing tool is displayed in the posting page or not
+ExternalImageProcessor.Name | string | ... | Name of the external image processing tool that is displayed in the posting page
+ExternalImageProcessor.Url | string | ... | Link to the external image processing tool that is displayed in the posting page
+ExternalImageProcessor.Api.Enabled | bool | ... | Whether the attached files upload logic integrates with the [Simple Image Processor Project](https://github.com/costinbanu/SimpleImageProcessor) or not
+ExternalImageProcessor.Api.ClientName | string | ExternalImageProcessor | Image Processor API `HttpClient` name
+ExternalImageProcessor.Api.BaseAddress | string | ... | Image Processor API base address
+ExternalImageProcessor.Api.RelativeUri | string | api/process-image | Image Processor API image processing route
+ExternalImageProcessor.Api.ApiKey | string | ... | Image Processor API Api Key
+
+
 
 ### Branding
 #### Forum header
@@ -158,4 +180,4 @@ The [CodeKicker.BBCode.Core](https://github.com/costinbanu/CodeKicker.BBCode.Cor
 ### Maintenance and future work
 This platform is currently live at https://forum.metrouusor.com/ (which has served as basis for feature implementation, as well as a beta-testing site by running the old phpBB installation and the new platform in parallel for several months). As long as this forum is up, this platform is expected to be maintained regularily.
 
-Although unplanned as of now, future work will include further personalization options (with regards to image rendering), more themes and more languages.
+Although unplanned as of now, future work will include more themes and more languages, as well as other features brought up by active users.

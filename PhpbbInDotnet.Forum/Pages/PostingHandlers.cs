@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using LazyCache;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -10,6 +11,7 @@ using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -228,28 +230,56 @@ namespace PhpbbInDotnet.Forum.Pages
                     return Page();
                 }
 
+                var isAdmin = await IsCurrentUserAdminHere();
+                var sizeLimit = _config.GetObject<AttachmentLimits>("UploadLimitsMB");
+                var countLimit = _config.GetObject<AttachmentLimits>("UploadLimitsCount");
+                var images = Files.Where(f => f.ContentType.IsImageMimeType());
+                var nonImages = Files.Where(f => !f.ContentType.IsImageMimeType());
+
+                if (_imageProcessorOptions.Api.Enabled && (ShouldResize || ShouldHideLicensePlates))
+                {
+                    images = await Task.WhenAll(images.Select(async image =>
+                    {
+                        var streamContent = new StreamContent(image.OpenReadStream());
+                        streamContent.Headers.Add("Content-Type", image.ContentType);
+                        using var formContent = new MultipartFormDataContent
+                        {
+                            { streamContent, "File", image.FileName },
+                            { new StringContent(ShouldHideLicensePlates.ToString()), "HideLicensePlates" },
+                        };
+                        if (ShouldResize)
+                        {
+                            formContent.Add(new StringContent((Constants.ONE_MB * sizeLimit.Images).ToString()), "SizeLimit");
+                        }
+
+                        var result = await _imageProcessorClient.PostAsync(_imageProcessorOptions.Api.RelativeUri, formContent);
+                        result.EnsureSuccessStatusCode();
+
+                        var resultStream = await result.Content.ReadAsStreamAsync();
+                        return new FormFile(resultStream, 0, resultStream.Length, image.Name, image.FileName)
+                        {
+                            Headers = image.Headers,
+                            ContentType = image.ContentType,
+                            ContentDisposition = image.ContentDisposition,
+                        };
+                    }));
+                }
+
                 if ((user.UploadLimit ?? 0) > 0)
                 {
-                    var connection = await Context.GetDbConnectionAsync();
-                    var uploadSize = await connection.ExecuteScalarAsync<long>("SELECT sum(filesize) FROM phpbb_attachments WHERE poster_id = @userId", new { user.UserId });
-                    if (uploadSize + Files.Sum(f => f.Length) > user.UploadLimit)
+                    var existingUploadSize = await Context.PhpbbAttachments.AsNoTracking().Where(a => a.PosterId == user.UserId).SumAsync(a => a.Filesize);
+                    if (existingUploadSize + images.Sum(f => f.Length) + nonImages.Sum(f => f.Length) > user.UploadLimit)
                     {
                         return PageWithError(curForum, nameof(Files), LanguageProvider.Errors[lang, "ATTACH_QUOTA_EXCEEDED"]);
                     }
                 }
 
-                var isAdmin = await IsCurrentUserAdminHere();
-                var sizeLimit = _config.GetObject<AttachmentLimits>("UploadLimitsMB");
-                var countLimit = _config.GetObject<AttachmentLimits>("UploadLimitsCount");
-
-                var tooLargeFiles = Files.Where(f => f.Length > 1024 * 1024 * (f.ContentType.IsImageMimeType() ? sizeLimit.Images : sizeLimit.OtherFiles));
+                var tooLargeFiles = images.Where(f => f.Length > Constants.ONE_MB * sizeLimit.Images).Union(nonImages.Where(f => f.Length > Constants.ONE_MB * sizeLimit.OtherFiles));
                 if (tooLargeFiles.Any() && !isAdmin)
                 {
                     return PageWithError(curForum, nameof(Files), string.Format(LanguageProvider.Errors[lang, "FILES_TOO_BIG_FORMAT"], string.Join(",", tooLargeFiles.Select(f => f.FileName))));
                 }
 
-                var images = Files.Where(f => f.ContentType.IsImageMimeType());
-                var nonImages = Files.Where(f => !f.ContentType.IsImageMimeType());
                 var existingImages = Attachments?.Count(a => a.Mimetype.IsImageMimeType()) ?? 0;
                 var existingNonImages = Attachments?.Count(a => !a.Mimetype.IsImageMimeType()) ?? 0;
                 if (!isAdmin && (existingImages + images.Count() > countLimit.Images || existingNonImages + nonImages.Count() > countLimit.OtherFiles))
@@ -257,7 +287,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return PageWithError(curForum, nameof(Files), LanguageProvider.Errors[lang, "TOO_MANY_FILES"]);
                 }
 
-                var (succeeded, failed) = await _storageService.BulkAddAttachments(Files, user.UserId);
+                var (succeeded, failed) = await _storageService.BulkAddAttachments(images.Union(nonImages), user.UserId);
 
                 if (failed.Any())
                 {

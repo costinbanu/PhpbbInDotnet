@@ -226,7 +226,9 @@
 
   //attachments
   "CHOOSE_FILES": "Choose one or more files",
-  "CHOOSE_FILES_CAPTION_FORMAT": "Images: at most {0} files, maximum size: {1}MB. Other file types: at most {2} files, maximum size: {3}MB",
+  "CHOOSE_FILES_CAPTION_FORMAT": "Images: at most {0} files, maximum size: {1}MB each. Other file types: at most {2} files, maximum size: {3}MB each.",
+  "SHOULD_RESIZE_IMAGES": "Resize images",
+  "SHOULD_HIDE_LICENSE_PLATES_IN_IMAGES": "Hide license plates (experimental)",
   "LOAD_FILES": "Load selected files",
   "ALREADY_ATTACHED": "Files already attached",
   "FILE_NAME": "File name",

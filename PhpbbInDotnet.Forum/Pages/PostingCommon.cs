@@ -8,12 +8,14 @@ using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
+using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -63,6 +65,12 @@ namespace PhpbbInDotnet.Forum.Pages
         
         [BindProperty]
         public IEnumerable<IFormFile> Files { get; set; }
+
+        [BindProperty]
+        public bool ShouldResize { get; set; } = true;
+
+        [BindProperty]
+        public bool ShouldHideLicensePlates { get; set; } = true;
         
         [BindProperty]
         public List<string> DeleteFileDummyForValidation { get; set; }
@@ -107,10 +115,13 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly WritingToolsService _writingService;
         private readonly BBCodeRenderingService _renderingService;
         private readonly IConfiguration _config;
+        private readonly ExternalImageProcessor _imageProcessorOptions;
+        private readonly HttpClient _imageProcessorClient;
+
         static readonly DateTimeOffset CACHE_EXPIRATION = DateTimeOffset.UtcNow.AddHours(4);
 
         public PostingModel(CommonUtils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cacheService, PostService postService, 
-            StorageService storageService, WritingToolsService writingService, BBCodeRenderingService renderingService, IConfiguration config, LanguageProvider languageProvider)
+            StorageService storageService, WritingToolsService writingService, BBCodeRenderingService renderingService, IConfiguration config, LanguageProvider languageProvider, IHttpClientFactory httpClientFactory)
             : base(context, forumService, userService, cacheService, utils, languageProvider)
         {
             PollExpirationDaysString = "1";
@@ -121,6 +132,8 @@ namespace PhpbbInDotnet.Forum.Pages
             _writingService = writingService;
             _renderingService = renderingService;
             _config = config;
+            _imageProcessorOptions = _config.GetObject<ExternalImageProcessor>();
+            _imageProcessorClient = _imageProcessorOptions.Api.Enabled ? httpClientFactory.CreateClient(_imageProcessorOptions.Api.ClientName) : null;
         }
 
         public string GetActualCacheKey(string key, bool isPersonalizedData)

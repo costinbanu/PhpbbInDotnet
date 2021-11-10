@@ -21,6 +21,7 @@ using PhpbbInDotnet.Utilities;
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -139,7 +140,17 @@ namespace PhpbbInDotnet.Forum
 
             var recaptchaOptions = Configuration.GetObject<Recaptcha>();
             services.AddHttpClient(recaptchaOptions.ClientName, client => client.BaseAddress = new Uri(recaptchaOptions.BaseAddress));
-            
+
+            var imageProcessorOptions = Configuration.GetObject<ExternalImageProcessor>();
+            if (imageProcessorOptions.Api.Enabled)
+            {
+                services.AddHttpClient(imageProcessorOptions.Api.ClientName, client =>
+                {
+                    client.BaseAddress = new Uri(imageProcessorOptions.Api.BaseAddress);
+                    client.DefaultRequestHeaders.Add("X-API-Key", imageProcessorOptions.Api.ApiKey);
+                });
+            }
+
             services.AddDbContext<ForumDbContext>(options => options.UseMySQL(Configuration["ForumDbConnectionString"], o => o.CommandTimeout(60)), ServiceLifetime.Scoped);
             services.AddLazyCache();
 
@@ -147,6 +158,7 @@ namespace PhpbbInDotnet.Forum
             services.Configure<HostOptions>(opts => opts.ShutdownTimeout = TimeSpan.FromMinutes(5));
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
+            ServicePointManager.DefaultConnectionLimit = 10;
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
