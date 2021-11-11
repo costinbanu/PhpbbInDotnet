@@ -224,13 +224,18 @@ namespace PhpbbInDotnet.Forum.Pages
                 var lang = GetLanguage();
                 CurrentForum = curForum;
                 ShowAttach = true;
+                var isAdmin = await IsCurrentUserAdminHere();
 
                 if (!(Files?.Any() ?? false))
                 {
                     return Page();
                 }
 
-                var isAdmin = await IsCurrentUserAdminHere();
+                if (!ShouldResize && !isAdmin)
+                {
+                    return PageWithError(curForum, nameof(Files), LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
+                }
+
                 var sizeLimit = _config.GetObject<AttachmentLimits>("UploadLimitsMB");
                 var countLimit = _config.GetObject<AttachmentLimits>("UploadLimitsCount");
                 var images = Files.Where(f => f.ContentType.IsImageMimeType());

@@ -370,7 +370,7 @@ else if (IsPM)
                     }
                     else
                     {
-                        @Html.CheckBoxFor(m => m.ShouldResize, new { disabled = true })
+                        <input type="checkbox" checked disabled />
                     }
                     @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SHOULD_RESIZE_IMAGES"])
                 </label>
