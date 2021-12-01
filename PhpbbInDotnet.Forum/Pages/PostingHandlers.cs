@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using LazyCache;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -28,6 +29,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 CurrentTopic = curTopic;
                 ForumId = curForum.ForumId;
                 Action = PostingActions.NewForumPost;
+                ReturnUrl = Request.GetEncodedPathAndQuery();
                 var conn = await Context.GetDbConnectionAsync();
                 var draft = conn.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = TopicId.Value });
                 if (draft != null)
@@ -40,6 +42,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     PostTitle = $"{Constants.REPLY}{HttpUtility.HtmlDecode(curTopic.TopicTitle)}";
                 }
                 await RestoreBackupIfAny(draft?.SaveTime.ToUtcTime());
+                ShowAttach = Attachments?.Any() == true;
                 return Page();
             }));
 
@@ -68,11 +71,13 @@ namespace PhpbbInDotnet.Forum.Pages
                 CurrentTopic = curTopic;
                 ForumId = curForum.ForumId;
                 Action = PostingActions.NewForumPost;
+                ReturnUrl = Request.GetEncodedPathAndQuery();
 
                 var title = HttpUtility.HtmlDecode(curPost.PostSubject);
                 PostText = $"[quote=\"{curAuthor}\",{PostId}]\n{_writingService.CleanBbTextForDisplay(curPost.PostText, curPost.BbcodeUid)}\n[/quote]\n";
                 PostTitle = title.StartsWith(Constants.REPLY) ? title : $"{Constants.REPLY}{title}";
                 await RestoreBackupIfAny();
+                ShowAttach = Attachments?.Any() == true;
                 return Page();
             }
         }
@@ -83,6 +88,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 CurrentForum = curForum;
                 CurrentTopic = null;
                 Action = PostingActions.NewTopic;
+                ReturnUrl = Request.GetEncodedPathAndQuery();
+
                 var conn = await Context.GetDbConnectionAsync();
                 var draft = conn.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = 0 }); 
                 if (draft != null)
@@ -91,6 +98,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     PostText = HttpUtility.HtmlDecode(draft.DraftMessage);
                 }
                 await RestoreBackupIfAny(draft?.SaveTime.ToUtcTime());
+                ShowAttach = Attachments?.Any() == true;
                 return Page();
             }));
 
@@ -108,11 +116,11 @@ namespace PhpbbInDotnet.Forum.Pages
                 CurrentTopic = curTopic;
                 ForumId = curForum.ForumId;
                 Action = PostingActions.EditForumPost;
+                ReturnUrl = Request.GetEncodedPathAndQuery();
 
                 var conn = await Context.GetDbConnectionAsync();
                 
                 Attachments = (await conn.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id = @postId ORDER BY attach_id", new { PostId })).AsList();
-                ShowAttach = Attachments.Any();
 
                 Cache.Add(GetActualCacheKey("PostTime", true), curPost.PostTime, CACHE_EXPIRATION);
 
@@ -132,6 +140,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 PostTitle = HttpUtility.HtmlDecode(curPost.PostSubject);
                 PostTime = curPost.PostTime;
                 await RestoreBackupIfAny();
+                ShowAttach = Attachments?.Any() == true;
                 return Page();
             }));
 
@@ -195,6 +204,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 CurrentForum = null;
                 CurrentTopic = null;
                 Action = PostingActions.NewPrivateMessage;
+                ReturnUrl = Request.GetEncodedPathAndQuery();
+
                 return Page();
             });
 
@@ -211,6 +222,8 @@ namespace PhpbbInDotnet.Forum.Pages
                     ReceiverName = (await conn.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @receiverId", new { ReceiverId }))?.Username;
                 }
                 Action = PostingActions.EditPrivateMessage;
+                ReturnUrl = Request.GetEncodedPathAndQuery();
+
                 return Page();
             });
 
@@ -309,7 +322,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
 
                 return Page();
-            })));
+            }, ReturnUrl)));
 
         public async Task<IActionResult> OnPostDeleteAttachment(int index)
             => await WithBackup(() => WithRegisteredUser(user => WithValidForum(ForumId, async (curForum) =>
@@ -340,10 +353,10 @@ namespace PhpbbInDotnet.Forum.Pages
                 var connection = await Context.GetDbConnectionAsync();
                 await connection.ExecuteAsync("DELETE FROM phpbb_attachments WHERE attach_id = @attachId", new { attachment.AttachId });
                 var dummy = Attachments.Remove(attachment);
-                ShowAttach = Attachments.Any();
+                ShowAttach = Attachments?.Any() == true;
                 ModelState.Clear();
                 return Page();
-            })));
+            }, ReturnUrl)));
 
         #endregion POST Attachment
 
@@ -395,6 +408,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (!string.IsNullOrWhiteSpace(PollOptions))
                 {
+                    var topicId = currentPost?.TopicId ?? 0;
+                    var curTopic = await Context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == topicId);
+                    var pollStart = ((curTopic?.PollStart ?? 0) == 0 ? DateTime.UtcNow.ToUnixTimestamp() : curTopic.PollStart).ToUtcTime();
                     PreviewablePoll = new PollDto
                     {
                         PollTitle = HttpUtility.HtmlEncode(PollQuestion),
@@ -402,13 +418,13 @@ namespace PhpbbInDotnet.Forum.Pages
                         VoteCanBeChanged = PollCanChangeVote,
                         PollDurationSecons = (int)TimeSpan.FromDays(double.Parse(PollExpirationDaysString)).TotalSeconds,
                         PollMaxOptions = PollMaxOptions ?? 1,
-                        PollStart = PreviewablePost.PostCreationTime ?? DateTime.UtcNow
+                        PollStart = pollStart
                     };
                 }
                 ShowAttach = Attachments?.Any() ?? false;
                 CurrentForum = curForum;
                 return Page();
-            }))));
+            }), ReturnUrl)));
 
         public async Task<IActionResult> OnPostNewForumPost()
             => await WithBackup(() => WithRegisteredUser(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, async () =>
@@ -419,7 +435,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return PageWithError(curForum, nameof(PostText), LanguageProvider.Errors[GetLanguage(), "GENERIC_POSTING_ERROR"]);
                 }
                 return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
-            }))));
+            }), ReturnUrl)));
 
         public async Task<IActionResult> OnPostEditForumPost()
             => await WithBackup(() => WithRegisteredUser(user => WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
@@ -441,7 +457,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return Page();
                 }
                 return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
-            })));
+            }, ReturnUrl)));
 
         public async Task<IActionResult> OnPostPrivateMessage()
             => await WithRegisteredUser(async (user) =>
@@ -532,7 +548,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return await OnGetNewTopic();
                 }
                 else return RedirectToPage("Index");
-            })));
+            }), ReturnUrl));
 
         #endregion POST Message
 
@@ -571,7 +587,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 Action = PostingActions.EditForumPost;
 
                 return Page();
-            })));
+            }, ReturnUrl)));
 
         #endregion POST Poll
 

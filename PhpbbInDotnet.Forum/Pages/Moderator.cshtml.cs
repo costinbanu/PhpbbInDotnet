@@ -196,7 +196,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var logDto = new OperationLogDto
                 {
                     Action = TopicAction,
-                    UserId = (GetCurrentUser()).UserId
+                    UserId = GetCurrentUser().UserId
                 };
 
                 try
@@ -340,7 +340,7 @@ namespace PhpbbInDotnet.Forum.Pages
             Context.PhpbbRecycleBin.Remove(deletedItem);
             await Context.SaveChangesAsync();
 
-            await _operationLogService.LogAdminForumAction(AdminForumActions.Restore, (GetCurrentUser()).UserId, toAdd);
+            await _operationLogService.LogAdminForumAction(AdminForumActions.Restore, GetCurrentUser().UserId, toAdd);
 
             return true;
         }
@@ -403,7 +403,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 await RestorePost(post.PostId);
             }
 
-            await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.RestoreTopic, (GetCurrentUser()).UserId, toAdd.TopicId);
+            await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.RestoreTopic, GetCurrentUser().UserId, toAdd.TopicId);
 
             return true;
         }
@@ -461,7 +461,7 @@ namespace PhpbbInDotnet.Forum.Pages
             await Context.SaveChangesAsync();
             await _postService.CascadePostAdd(toAdd, false);
 
-            await _operationLogService.LogModeratorPostAction(ModeratorPostActions.RestorePosts, (GetCurrentUser()).UserId, toAdd, $"<a href=\"./ViewTopic?postId={toAdd.PostId}&handler=ByPostId\" target=\"_blank\">LINK</a>");
+            await _operationLogService.LogModeratorPostAction(ModeratorPostActions.RestorePosts, GetCurrentUser().UserId, toAdd, $"<a href=\"./ViewTopic?postId={toAdd.PostId}&handler=ByPostId\" target=\"_blank\">LINK</a>");
 
             return true;
         }

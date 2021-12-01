@@ -143,7 +143,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return RedirectToPage("Error", new { isNotFound = true });
             }
 
-            var currentUserId = (GetCurrentUser()).UserId;
+            var currentUserId = GetCurrentUser().UserId;
             var isSelf = CurrentUser.UserId == currentUserId;
             var userMustLogIn = dbUser.UserAllowPm.ToBool() != AllowPM || dbUser.UserDateformat != CurrentUser.UserDateformat;
             var lang = GetLanguage();
@@ -517,7 +517,7 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public async Task<bool> CanEdit() 
-            => !(ViewAsAnother ?? false) && ((GetCurrentUser()).UserId == CurrentUser.UserId || await IsCurrentUserAdminHere());
+            => !(ViewAsAnother ?? false) && (GetCurrentUser().UserId == CurrentUser.UserId || await IsCurrentUserAdminHere());
 
         public async Task<bool> CanAddFoe()
         {

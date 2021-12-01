@@ -320,6 +320,9 @@ namespace PhpbbInDotnet.Utilities
         public string GetAvatarCacheKey(int userId, Guid correlationId)
             => $"Avatar_{userId}_{correlationId}";
 
+        public string GetForumLoginCacheKey(int userId, int forumId)
+            => $"ForumLogin_{userId}_{forumId}";
+
         public void Dispose()
         {
             _md5?.Dispose();

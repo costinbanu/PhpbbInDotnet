@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using LazyCache;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -86,7 +87,7 @@ namespace PhpbbInDotnet.Forum
 
         public async Task<int> GetFirstUnreadPost(int forumId, int topicId)
         {
-            if ((GetCurrentUser()).IsAnonymous)
+            if (GetCurrentUser().IsAnonymous)
             {
                 return 0;
             }
@@ -133,7 +134,7 @@ namespace PhpbbInDotnet.Forum
         {
             try
             {
-                var usrId = (GetCurrentUser()).UserId;
+                var usrId = GetCurrentUser().UserId;
                 var connection = await Context.GetDbConnectionAsync();
 
                 await connection.ExecuteAsync(
@@ -152,7 +153,7 @@ namespace PhpbbInDotnet.Forum
         public async Task MarkTopicRead(int forumId, int topicId, bool isLastPage, long markTime)
         {
             var (_, tracking) = await GetForumTree(false, true);
-            var userId = (GetCurrentUser()).UserId;
+            var userId = GetCurrentUser().UserId;
             if (tracking.TryGetValue(forumId, out var tt) && tt.Count == 1 && isLastPage)
             {
                 //current topic was the last unread in its forum, and it is the last page of unread messages, so mark the whole forum read
@@ -183,7 +184,7 @@ namespace PhpbbInDotnet.Forum
 
         protected async Task SetLastMark()
         {
-            var usrId = (GetCurrentUser()).UserId;
+            var usrId = GetCurrentUser().UserId;
             try
             {
                 var connection = await Context.GetDbConnectionAsync();
@@ -227,7 +228,7 @@ namespace PhpbbInDotnet.Forum
             return await toDo();
         }
 
-        protected async Task<IActionResult> WithValidForum(int forumId, bool overrideCheck, Func<PhpbbForums, Task<IActionResult>> toDo)
+        protected async Task<IActionResult> WithValidForum(int forumId, bool overrideCheck, Func<PhpbbForums, Task<IActionResult>> toDo, string forumLoginReturnUrl = null)
         {
             var connection = await Context.GetDbConnectionAsync();
             var curForum = await connection.QuerySingleOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { forumId });
@@ -247,13 +248,14 @@ namespace PhpbbInDotnet.Forum
                 {
                     path = cur?.PathList ?? new List<int>();
                 }    
+
                 var restrictedAncestor = (
                     from t in path
                     join r in restricted
                     on t equals r.forumId
                     into joined
                     from j in joined
-                    where !j.hasPassword || (HttpContext.Session.GetInt32($"ForumLogin_{t}") ?? 0) != 1
+                    where !j.hasPassword || Cache.Get<int>(Utils.GetForumLoginCacheKey(usr.UserId, t)) != 1
                     select t
                 ).FirstOrDefault();
 
@@ -267,7 +269,7 @@ namespace PhpbbInDotnet.Forum
                     {
                         return RedirectToPage("ForumLogin", new
                         {
-                            ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString),
+                            ReturnUrl = string.IsNullOrWhiteSpace(forumLoginReturnUrl) ? Request.GetEncodedPathAndQuery() : forumLoginReturnUrl,
                             ForumId = restrictedAncestor
                         });
                     }
@@ -276,10 +278,10 @@ namespace PhpbbInDotnet.Forum
             return await toDo(curForum);
         }
 
-        protected Task<IActionResult> WithValidForum(int forumId, Func<PhpbbForums, Task<IActionResult>> toDo)
-            => WithValidForum(forumId, false, toDo);
+        protected Task<IActionResult> WithValidForum(int forumId, Func<PhpbbForums, Task<IActionResult>> toDo, string forumLoginReturnUrl = null)
+            => WithValidForum(forumId, false, toDo, forumLoginReturnUrl);
 
-        protected async Task<IActionResult> WithValidTopic(int topicId, Func<PhpbbForums, PhpbbTopics, Task<IActionResult>> toDo)
+        protected async Task<IActionResult> WithValidTopic(int topicId, Func<PhpbbForums, PhpbbTopics, Task<IActionResult>> toDo, string forumLoginReturnUrl = null)
         {
             var connection = await Context.GetDbConnectionAsync();
             
@@ -289,10 +291,10 @@ namespace PhpbbInDotnet.Forum
             {
                 return RedirectToPage("Error", new { isNotFound = true });
             }
-            return await WithValidForum(curTopic.ForumId, curForum => toDo(curForum, curTopic));
+            return await WithValidForum(curTopic.ForumId, curForum => toDo(curForum, curTopic), forumLoginReturnUrl);
         }
 
-        protected async Task<IActionResult> WithValidPost(int postId, Func<PhpbbForums, PhpbbTopics, PhpbbPosts, Task<IActionResult>> toDo)
+        protected async Task<IActionResult> WithValidPost(int postId, Func<PhpbbForums, PhpbbTopics, PhpbbPosts, Task<IActionResult>> toDo, string forumLoginReturnUrl = null)
         {
             var connection = await Context.GetDbConnectionAsync();
 
@@ -301,7 +303,7 @@ namespace PhpbbInDotnet.Forum
             {
                 return RedirectToPage("Error", new { isNotFound = true });
             }
-            return await WithValidTopic(curPost.TopicId, (curForum, curTopic) => toDo(curForum, curTopic, curPost));
+            return await WithValidTopic(curPost.TopicId, (curForum, curTopic) => toDo(curForum, curTopic, curPost), forumLoginReturnUrl);
         }
 
         #endregion Permission validation wrappers
