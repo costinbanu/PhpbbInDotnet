@@ -361,7 +361,7 @@ else if (IsPM)
             }
 
             @if (resizeTool.Api.Enabled)
-            { 
+            {
                 <p></p>
                 <label>
                     @if (IsAdmin)
@@ -442,7 +442,7 @@ else if (IsPM)
     <input asp-for="ReceiverId" type="hidden" />
     <input asp-for="ReceiverName" type="hidden" />
     <input asp-for="PostTime" type="hidden" />
-
+    <input asp-for="ReturnUrl" type="hidden" />
 </form>
 
 @if (!IsPM)

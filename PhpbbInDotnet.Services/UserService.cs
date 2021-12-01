@@ -158,49 +158,62 @@ namespace PhpbbInDotnet.Services
         public AuthenticatedUser ClaimsPrincipalToAuthenticatedUser(ClaimsPrincipal claimsPrincipal)
         {
             var user = new AuthenticatedUser();
+            var found = false;
             foreach (var claim in claimsPrincipal.Claims)
             {
                 switch (claim.Type)
                 {
                     case nameof(AuthenticatedUser.UserId):
                         user.UserId = int.Parse(claim.Value);
+                        found = true;
                         break;
                     case nameof(AuthenticatedUser.Username):
                         user.Username = claim.Value;
+                        found = true;
                         break;
                     case nameof(AuthenticatedUser.UsernameClean):
                         user.UsernameClean = claim.Value;
+                        found = true;
                         break;
                     case nameof(AuthenticatedUser.UserDateFormat):
                         user.UserDateFormat = claim.Value;
+                        found = true;
                         break;
                     case nameof(AuthenticatedUser.UserColor):
                         user.UserColor = claim.Value;
+                        found = true;
                         break;
                     case nameof(AuthenticatedUser.PostEditTime):
                         user.PostEditTime = int.Parse(claim.Value);
+                        found = true;
                         break;
                     case nameof(AuthenticatedUser.UploadLimit):
                         user.UploadLimit = int.Parse(claim.Value);
+                        found = true;
                         break;
                     case nameof(AuthenticatedUser.AllowPM):
                         user.AllowPM = bool.TryParse(claim.Value, out var val) && val;
+                        found = true;
                         break;
                     case nameof(AuthenticatedUser.Style):
                         user.Style = claim.Value;
+                        found = true;
                         break;
                     case nameof(AuthenticatedUser.JumpToUnread):
                         user.JumpToUnread = bool.TryParse(claim.Value, out val) && val;
+                        found = true;
                         break;
                     case nameof(AuthenticatedUser.Language):
                         user.Language = claim.Value;
+                        found = true;
                         break;
                     case nameof(AuthenticatedUser.EmailAddress):
                         user.EmailAddress = claim.Value;
+                        found = true;
                         break;
                 }
             }
-            return user;
+            return found ? user : null;
         }
 
         public async Task<IEnumerable<PhpbbRanks>> GetRankList()

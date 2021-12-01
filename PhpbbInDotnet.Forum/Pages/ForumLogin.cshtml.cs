@@ -1,11 +1,13 @@
 ﻿using CryptSharp.Core;
-using Microsoft.AspNetCore.Http;
+using LazyCache;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
+using System;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -16,6 +18,8 @@ namespace PhpbbInDotnet.Forum.Pages
     {
         private readonly ForumDbContext _context;
         private readonly UserService _userService;
+        private readonly CommonUtils _utils;
+        private readonly IAppCache _cache;
 
         [BindProperty(SupportsGet = true)]
         public string ReturnUrl { get; set; }
@@ -32,11 +36,13 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public LanguageProvider LanguageProvider { get; }
 
-        public ForumLoginModel(ForumDbContext context, UserService userService, LanguageProvider languageProvider)
+        public ForumLoginModel(ForumDbContext context, UserService userService, LanguageProvider languageProvider, CommonUtils utils, IAppCache cache)
         {
             _context = context;
             _userService = userService;
             LanguageProvider = languageProvider;
+            _utils = utils;
+            _cache = cache;
         }
 
         public async Task<IActionResult> OnGet()
@@ -104,7 +110,8 @@ namespace PhpbbInDotnet.Forum.Pages
             }
             else
             {
-                HttpContext.Session.SetInt32($"ForumLogin_{ForumId}", 1);
+                var userId = _userService.ClaimsPrincipalToAuthenticatedUser(User)?.UserId ?? Constants.ANONYMOUS_USER_ID;
+                _cache.Add(_utils.GetForumLoginCacheKey(userId, ForumId), 1, TimeSpan.FromMinutes(30));
                 if (string.IsNullOrWhiteSpace(ReturnUrl))
                 {
                     return RedirectToPage("ViewForum", new { ForumId });

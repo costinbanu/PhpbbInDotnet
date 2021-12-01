@@ -383,7 +383,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var logDto = new OperationLogDto
                 {
                     Action = ModeratorPostActions.DeleteSelectedPosts,
-                    UserId = (GetCurrentUser()).UserId
+                    UserId = GetCurrentUser().UserId
                 };
                 var (_, nextRemaining) = await GetSelectedAndNextRemainingPostIds(reportPostId ?? 0);
                 if (deletePost ?? false)
@@ -424,7 +424,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var logDto = new OperationLogDto
                 {
                     Action = ModeratorPostActions.DuplicateSelectedPost,
-                    UserId = (GetCurrentUser()).UserId
+                    UserId = GetCurrentUser().UserId
                 };
                 ModeratorActionResult = await _moderatorService.DuplicatePost(postIdForDuplication, logDto);
                 PostId = postIdForDuplication;

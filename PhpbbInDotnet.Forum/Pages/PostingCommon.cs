@@ -101,7 +101,10 @@ namespace PhpbbInDotnet.Forum.Pages
 
         [BindProperty]
         public long? LastPostTime { get; set; }
-        
+
+        [BindProperty]
+        public string ReturnUrl { get; set; }
+
         public PostDto PreviewablePost { get; private set; }
         public PollDto PreviewablePoll { get; private set; }
         public bool ShowAttach { get; private set; } = false;
@@ -144,7 +147,8 @@ namespace PhpbbInDotnet.Forum.Pages
             if (((TopicId.HasValue && PageNum.HasValue) || PostId.HasValue) && (Action == PostingActions.EditForumPost || Action == PostingActions.NewForumPost))
             {
                 var user = GetCurrentUser();
-                using var multi = await (await Context.GetDbConnectionAsync()).QueryMultipleAsync(
+                var conn = await Context.GetDbConnectionAsync();
+                using var multi = await conn.QueryMultipleAsync(
                     sql: "CALL get_posts(@userId, @topicId, null, @pageSize, null, 1);",
                     param: new
                     {
@@ -384,20 +388,40 @@ namespace PhpbbInDotnet.Forum.Pages
             Cache.Add(GetActualCacheKey("ForumId", true), ForumId, CACHE_EXPIRATION);
             Cache.Add(GetActualCacheKey("TopicId", true), TopicId ?? 0, CACHE_EXPIRATION);
             Cache.Add(GetActualCacheKey("PostId", true), PostId ?? 0, CACHE_EXPIRATION);
-            return await toDo();
+            var toReturn = await toDo();
+            if (Attachments?.Any() == true)
+            {
+                Cache.Add(GetActualCacheKey("Attachments", true), Attachments?.Select(a => a.AttachId).ToList());
+            }
+            return toReturn;
         }
 
         private async Task RestoreBackupIfAny(DateTime? minCacheAge = null)
         {
-            var cachedText = await Cache.GetAndRemoveAsync<CachedText>(GetActualCacheKey("Text", true));
-            if (!string.IsNullOrWhiteSpace(cachedText?.Text) && (cachedText?.CacheTime ?? DateTime.MinValue) > (minCacheAge ?? DateTime.UtcNow))
+            var textTask = Cache.GetAndRemoveAsync<CachedText>(GetActualCacheKey("Text", true));
+            var forumIdTask = Cache.GetAndRemoveAsync<int>(GetActualCacheKey("ForumId", true));
+            var topicIdTask = Cache.GetAndRemoveAsync<int?>(GetActualCacheKey("TopicId", true));
+            var postIdTask = Cache.GetAndRemoveAsync<int?>(GetActualCacheKey("PostId", true));
+            var attachmentsTask = Cache.GetAndRemoveAsync<List<int>>(GetActualCacheKey("Attachments", true));
+            await Task.WhenAll(textTask, forumIdTask, topicIdTask, postIdTask, attachmentsTask);
+
+            var cachedText = await textTask;
+            if ((!string.IsNullOrWhiteSpace(cachedText?.Text) && string.IsNullOrWhiteSpace(PostText)) 
+                || (!string.IsNullOrWhiteSpace(cachedText?.Text) && (cachedText?.CacheTime ?? DateTime.MinValue) > (minCacheAge ?? DateTime.UtcNow)))
             {
                 PostText = cachedText.Text;
             }
-            var cachedForumId = await Cache.GetAndRemoveAsync<int>(GetActualCacheKey("ForumId", true));
+            var cachedForumId = await forumIdTask;
             ForumId = cachedForumId != 0 ? cachedForumId : ForumId;
-            TopicId ??= await Cache.GetAndRemoveAsync<int?>(GetActualCacheKey("TopicId", true));
-            PostId ??= await Cache.GetAndRemoveAsync<int?>(GetActualCacheKey("PostId", true));
+            TopicId ??= await topicIdTask;
+            PostId ??= await postIdTask;
+
+            var cachedAttachmentIds = await attachmentsTask;
+            if (Attachments?.Any() != true && cachedAttachmentIds?.Any() == true)
+            {
+                var conn = await Context.GetDbConnectionAsync();
+                Attachments = (await conn.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE attach_id IN @cachedAttachmentIds", new { cachedAttachmentIds }))?.AsList();
+            }
         }
 
         private IEnumerable<string> GetPollOptionsEnumerable()
