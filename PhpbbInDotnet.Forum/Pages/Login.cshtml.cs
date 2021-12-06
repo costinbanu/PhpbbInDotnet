@@ -87,7 +87,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public IActionResult OnGet()
         {
             var currentUser = _userService.ClaimsPrincipalToAuthenticatedUser(User);
-            if (!(currentUser?.IsAnonymous ?? true))
+            if (currentUser?.IsAnonymous == false)
             {
                 return RedirectToPage("Index");
             }
@@ -97,7 +97,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnGetNewPassword()
         {
-            if ((User?.Identity?.IsAuthenticated ?? false) && (!_userService.ClaimsPrincipalToAuthenticatedUser(User)?.IsAnonymous ?? true))
+            if (User?.Identity?.IsAuthenticated == true && _userService.ClaimsPrincipalToAuthenticatedUser(User)?.IsAnonymous != true)
             {
                 return RedirectToPage("Logout", new { returnUrl = ReturnUrl ?? "/" });
             }

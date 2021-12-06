@@ -159,7 +159,7 @@ namespace PhpbbInDotnet.Services
         {
             var user = new AuthenticatedUser();
             var found = false;
-            foreach (var claim in claimsPrincipal.Claims)
+            foreach (var claim in claimsPrincipal?.Claims ?? Enumerable.Empty<Claim>())
             {
                 switch (claim.Type)
                 {

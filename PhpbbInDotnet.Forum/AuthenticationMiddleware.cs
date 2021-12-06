@@ -37,16 +37,16 @@ namespace PhpbbInDotnet.Forum
         static AuthenticationMiddleware()
         {
             EXCLUDED_PAGES = new HashSet<string>(
-                new[] { "/File", "/Login", "/Logout", "/Register" }, 
+                new[] { "/File", "/Login", "/Logout", "/Register" },
                 StringComparer.InvariantCultureIgnoreCase
             );
             PAGES_REQUIRING_UNREAD_DATA = new HashSet<string>(
-                new[] { "/", "/Index", "/ViewForum", "/ViewTopic" }, 
+                new[] { "/", "/Index", "/ViewForum", "/ViewTopic" },
                 StringComparer.InvariantCultureIgnoreCase
             );
         }
 
-        public AuthenticationMiddleware(ILogger logger, IConfiguration config, IAppCache cache, ForumDbContext context, 
+        public AuthenticationMiddleware(ILogger logger, IConfiguration config, IAppCache cache, ForumDbContext context,
             ForumTreeService forumTreeService, UserService userService, AnonymousSessionCounter sessionCounter)
         {
             _logger = logger;
@@ -66,15 +66,23 @@ namespace PhpbbInDotnet.Forum
                 return;
             }
 
-            if (!context.User.Identity.IsAuthenticated)
-            {
-                await SignInAnonymousUser(context);
-            }
-
             AuthenticatedUser user;
             try
             {
-                user = _userService.ClaimsPrincipalToAuthenticatedUser(context.User);
+                if (context.User?.Identity?.IsAuthenticated != true)
+                {
+                    user = _userService.ClaimsPrincipalToAuthenticatedUser(await SignInAnonymousUser(context));
+                }
+                else
+                {
+                    user = _userService.ClaimsPrincipalToAuthenticatedUser(context.User);
+                }
+                if (user is null)
+                {
+                    _logger.Warning("Failed to log in neither a proper user nor the anonymous idendity.");
+                    await next(context);
+                    return;
+                }
             }
             catch (Exception ex)
             {
@@ -83,7 +91,7 @@ namespace PhpbbInDotnet.Forum
                 return;
             }
 
-            if (await _cache.GetAsync<bool?>($"UserMustLogIn_{user.UsernameClean}") ?? false)
+            if (await _cache.GetAsync<bool?>($"UserMustLogIn_{user.UsernameClean}") == true)
             {
                 await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 user = _userService.ClaimsPrincipalToAuthenticatedUser(await SignInAnonymousUser(context));
@@ -106,7 +114,7 @@ namespace PhpbbInDotnet.Forum
 
             var sessionTrackingTimeout = _config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1);
             if (dbUser != null && !user.IsAnonymous && (
-                    (await _cache.GetAsync<bool?>($"ReloadUser_{user.UsernameClean}") ?? false) || 
+                    await _cache.GetAsync<bool?>($"ReloadUser_{user.UsernameClean}") == true ||
                     DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > sessionTrackingTimeout))
             {
                 var claimsPrincipal = await _userService.DbUserToClaimsPrincipal(dbUser);
