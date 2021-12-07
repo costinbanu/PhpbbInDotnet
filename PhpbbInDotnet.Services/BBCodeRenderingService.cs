@@ -378,7 +378,7 @@ namespace PhpbbInDotnet.Services
                                         {
                                             if (!string.IsNullOrWhiteSpace(postId))
                                             {
-                                                toReturn += $" <a href=\"./ViewTopic?postId={postId}&handler=byPostId\">{LanguageProvider.BasicText[lang, "HERE"]}</a>:<br />";
+                                                toReturn += $" <a href=\"./ViewTopic?postId={postId}&handler=byPostId\" target=\"_blank\">{LanguageProvider.BasicText[lang, "HERE"]}</a>:<br />";
                                             }
                                             else
                                             {

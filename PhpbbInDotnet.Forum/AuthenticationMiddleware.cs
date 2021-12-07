@@ -37,7 +37,7 @@ namespace PhpbbInDotnet.Forum
         static AuthenticationMiddleware()
         {
             EXCLUDED_PAGES = new HashSet<string>(
-                new[] { "/File", "/Login", "/Logout", "/Register" },
+                new[] { "/Login", "/Logout", "/Register" },
                 StringComparer.InvariantCultureIgnoreCase
             );
             PAGES_REQUIRING_UNREAD_DATA = new HashSet<string>(
