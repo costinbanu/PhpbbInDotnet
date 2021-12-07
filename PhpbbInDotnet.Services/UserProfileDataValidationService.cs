@@ -23,7 +23,7 @@ namespace PhpbbInDotnet.Services
             _emailValidator = new EmailAddressAttribute();
         }
 
-        public bool ValidateUsername(string name, string value)
+        public bool ValidateUsername(string name, string? value)
         {
             var toReturn = true;
 
@@ -46,7 +46,7 @@ namespace PhpbbInDotnet.Services
             return toReturn;
         }
 
-        public bool ValidateEmail(string name, string value)
+        public bool ValidateEmail(string name, string? value)
         {
             var toReturn = true;
 
@@ -64,7 +64,7 @@ namespace PhpbbInDotnet.Services
             return toReturn;
         }
 
-        public bool ValidatePassword(string name, string value)
+        public bool ValidatePassword(string name, string? value)
         {
             var toReturn = true;
 
@@ -87,7 +87,7 @@ namespace PhpbbInDotnet.Services
             return toReturn;
         }
 
-        public bool ValidateSecondPassword(string secondName, string secondValue, string firstValue)
+        public bool ValidateSecondPassword(string secondName, string? secondValue, string? firstValue)
         {
             var toReturn = true;
 

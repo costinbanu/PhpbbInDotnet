@@ -8,6 +8,6 @@ namespace PhpbbInDotnet.Objects
     {
         public int UserId { get; set; }
 
-        public Enum Action { get; set; }
+        public Enum? Action { get; set; }
     }
 }

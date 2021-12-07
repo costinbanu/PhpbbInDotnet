@@ -6,13 +6,13 @@ namespace PhpbbInDotnet.Objects
 {
     public class ForumTree
     {
-        private string _children;
+        private string? _children;
 
         public int ForumId { get; set; }
 
         public ForumType? ForumType { get; set; }
 
-        public string ForumName { get; set; }
+        public string? ForumName { get; set; }
 
         public int? ParentId { get; set; }
 
@@ -26,43 +26,43 @@ namespace PhpbbInDotnet.Objects
 
         public int? LeftId { get; set; }
 
-        public string ForumDesc { get; set; }
+        public string? ForumDesc { get; set; }
 
-        public string ForumDescUid { get; set; }
+        public string? ForumDescUid { get; set; }
         
         public int? ForumLastPostId { get; set; }
         
         public int? ForumLastPosterId { get; set; }
         
-        public string ForumLastPostSubject { get; set; }
+        public string? ForumLastPostSubject { get; set; }
         
         public long? ForumLastPostTime { get; set; }
         
-        public string ForumLastPosterName { get; set; }
+        public string? ForumLastPosterName { get; set; }
         
-        public string ForumLastPosterColour { get; set; }
+        public string? ForumLastPosterColour { get; set; }
 
 
-        public string Children
+        public string? Children
         {
             get => _children;
             set
             {
                 _children = value;
-                ChildrenList = _children.ToIntHashSet();
+                ChildrenList = _children?.ToIntHashSet();
             }
         }
 
-        public List<int> PathList { get; set; }
+        public List<int>? PathList { get; set; }
 
-        public HashSet<int> ChildrenList { get; private set; }
+        public HashSet<int>? ChildrenList { get; private set; }
 
         public int TotalTopicCount { get; set; }
 
         public int TotalSubforumCount { get; set; }
 
-        public override bool Equals(object obj)
-            => obj != null && obj is ForumTree tree && ForumId == tree?.ForumId;
+        public override bool Equals(object? obj)
+            => obj is ForumTree tree && ForumId == tree?.ForumId;
 
         public override int GetHashCode()
             => HashCode.Combine(ForumId);

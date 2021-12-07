@@ -33,9 +33,9 @@ namespace PhpbbInDotnet.Languages
         public bool Exists(string language)
             => File.Exists(GetFile(language));
 
-        protected string GetRawTranslation(string language)
+        protected string? GetRawTranslation(string language)
         {
-            string getValue()
+            string? getValue()
             {
                 var path = GetFile(language);
                 if (!File.Exists(path))
@@ -67,19 +67,20 @@ namespace PhpbbInDotnet.Languages
                 return value;
             }, CACHE_EXPIRATION);
 
-            if (!dict.TryGetValue(key, out var toReturn))
+            var toReturn = @default;
+            if (dict?.TryGetValue(key, out toReturn) != true)
             {
                 return @default;
             }
 
             return casing switch
             {
-                Casing.AllLower => toReturn.ToLower(),
-                Casing.AllUpper => toReturn.ToUpper(),
-                Casing.FirstUpper => FirstUpper(toReturn),
-                Casing.Title => TitleCase(language, toReturn),
-                Casing.None => toReturn,
-                _ => toReturn
+                Casing.AllLower => toReturn!.ToLower(),
+                Casing.AllUpper => toReturn!.ToUpper(),
+                Casing.FirstUpper => FirstUpper(toReturn!),
+                Casing.Title => TitleCase(language, toReturn!),
+                Casing.None => toReturn!,
+                _ => toReturn!
             };
         }
 
@@ -89,7 +90,7 @@ namespace PhpbbInDotnet.Languages
         private string TitleCase(string language, string text)
             => language.Equals(EN.TwoLetterISOLanguageName, StringComparison.InvariantCultureIgnoreCase) ? EN.TextInfo.ToTitleCase(text) : FirstUpper(text);
 
-        private ConcurrentDictionary<string, string> GetDictionary(string language)
+        private ConcurrentDictionary<string, string>? GetDictionary(string language)
         {
             var rawValue = GetRawTranslation(language);
             if (string.IsNullOrWhiteSpace(rawValue))
@@ -111,7 +112,7 @@ namespace PhpbbInDotnet.Languages
         }
 
         private string GetFile(string language)
-            => Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Translations", $"{_name}.{language}.{FileExtension}");
+            => Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "Translations", $"{_name}.{language}.{FileExtension}");
 
         private string GetLanguageKey(string language)
             => $"LANG_{_name}_{language}";

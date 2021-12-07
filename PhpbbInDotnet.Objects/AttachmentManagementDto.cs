@@ -4,6 +4,6 @@ namespace PhpbbInDotnet.Objects
 {
     public class AttachmentManagementDto : PhpbbAttachments
     {
-        public string Username { get; set; }
+        public string? Username { get; set; }
     }
 }

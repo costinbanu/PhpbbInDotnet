@@ -34,36 +34,36 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IConfiguration _config;
 
         [BindProperty, Required]
-        public string UserName { get; set; }
+        public string? UserName { get; set; }
         
         [BindProperty, Required, PasswordPropertyText]
-        public string Password { get; set; }
+        public string? Password { get; set; }
         
         [BindProperty(SupportsGet = true)]
-        public string ReturnUrl { get; set; }
+        public string? ReturnUrl { get; set; }
         
-        public string LoginErrorMessage { get; set; }
+        public string? LoginErrorMessage { get; set; }
         
         [BindProperty, Required]
-        public string UserNameForPwdReset { get; set; }
+        public string? UserNameForPwdReset { get; set; }
         
         [BindProperty, Required, EmailAddress]
-        public string EmailForPwdReset { get; set; }
+        public string? EmailForPwdReset { get; set; }
         
-        public string PwdResetSuccessMessage { get; set; }
+        public string? PwdResetSuccessMessage { get; set; }
         
-        public string PwdResetErrorMessage { get; set; }
+        public string? PwdResetErrorMessage { get; set; }
         
         public bool ShowPwdResetOptions { get; set; } = false;
         
         [BindProperty, Required, PasswordPropertyText]
-        public string PwdResetFirstPassword { get; set; }
+        public string? PwdResetFirstPassword { get; set; }
         
         [BindProperty, Required, PasswordPropertyText]
-        public string PwdResetSecondPassword { get; set; }
+        public string? PwdResetSecondPassword { get; set; }
         
         [BindProperty(SupportsGet = true)]
-        public string ResetPasswordCode { get; set; }
+        public string? ResetPasswordCode { get; set; }
         
         [BindProperty(SupportsGet = true)]
         public int UserId { get; set; }
@@ -163,7 +163,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             var user = await _context.PhpbbUsers.FirstOrDefaultAsync(
                 x => x.UsernameClean == _utils.CleanString(UserNameForPwdReset) && 
-                x.UserEmailHash == _utils.CalculateCrc32Hash(EmailForPwdReset)
+                x.UserEmailHash == _utils.CalculateCrc32Hash(EmailForPwdReset!)
             );
             var lang = LanguageProvider.GetValidatedLanguage(null, Request);
 
@@ -201,7 +201,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     ),
                     IsBodyHtml = true
                 };
-                emailMessage.To.Add(EmailForPwdReset);
+                emailMessage.To.Add(EmailForPwdReset!);
                 await _utils.SendEmail(emailMessage);
             }
             catch

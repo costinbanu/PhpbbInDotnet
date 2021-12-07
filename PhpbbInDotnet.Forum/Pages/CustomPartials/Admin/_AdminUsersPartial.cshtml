@@ -25,7 +25,7 @@
             ViewData
         );
 
-        if (Model.InactiveUsers.Any(u => u.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed))
+        if (Model.InactiveUsers?.Any(u => u.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed) == true)
         {
             <p></p>
             <script>
@@ -100,7 +100,7 @@
                 @Html.Raw(_languageProvider.BasicText[Model.Language, "USERNAME", Casing.FirstUpper])
             </div>
             <div class="FlexRight PostInputWidth">
-                <input type="text" asp-for="SearchParameters.Username" />
+                <input type="text" asp-for="SearchParameters!.Username" />
             </div>
         </div>
         <div class="FlexCenter FlexSpaced">
@@ -108,7 +108,7 @@
                 @Html.Raw(_languageProvider.BasicText[Model.Language, "EMAIL", Casing.FirstUpper])
             </div>
             <div class="FlexRight PostInputWidth">
-                <input type="text" asp-for="SearchParameters.Email" />
+                <input type="text" asp-for="SearchParameters!.Email" />
             </div>
         </div>
         <div class="FlexCenter FlexSpaced">
@@ -116,7 +116,7 @@
                 ID
             </div>
             <div class="FlexRight PostInputWidth">
-                <input type="text" asp-for="SearchParameters.UserId" />
+                <input type="text" asp-for="SearchParameters!.UserId" />
             </div>
         </div>
         <div class="FlexCenter FlexSpaced">
@@ -125,9 +125,9 @@
             </div>
             <div class="FlexRight PostInputWidth">
                 @Html.Raw(_languageProvider.BasicText[Model.Language, "FROM", Casing.FirstUpper])<br />
-                <input type="text" asp-for="SearchParameters.RegisteredFrom" class="DummyDatePicker" /><br />
+                <input type="text" asp-for="SearchParameters!.RegisteredFrom" class="DummyDatePicker" /><br />
                 @Html.Raw(_languageProvider.BasicText[Model.Language, "TO", Casing.FirstUpper])<br />
-                <input type="text" asp-for="SearchParameters.RegisteredTo" class="DummyDatePicker" /><br />
+                <input type="text" asp-for="SearchParameters!.RegisteredTo" class="DummyDatePicker" /><br />
             </div>
         </div>
         <div class="FlexCenter FlexSpaced">
@@ -136,11 +136,11 @@
             </div>
             <div class="FlexRight PostInputWidth">
                 @Html.Raw(_languageProvider.BasicText[Model.Language, "FROM", Casing.FirstUpper])<br />
-                <input type="text" asp-for="SearchParameters.LastActiveFrom" class="DummyDatePicker" id="lastActiveFrom" /><br />
+                <input type="text" asp-for="SearchParameters!.LastActiveFrom" class="DummyDatePicker" id="lastActiveFrom" /><br />
                 @Html.Raw(_languageProvider.BasicText[Model.Language, "TO", Casing.FirstUpper])<br />
-                <input type="text" asp-for="SearchParameters.LastActiveTo" class="DummyDatePicker" id="lastActiveTo" /><br />
+                <input type="text" asp-for="SearchParameters!.LastActiveTo" class="DummyDatePicker" id="lastActiveTo" /><br />
                 <label>
-                    @Html.CheckBoxFor(m => m.SearchParameters.NeverActive, new { onchange = "clearActiveDates(this)", id = "neverActiveCheckbox" })
+                    @Html.CheckBoxFor(m => m.SearchParameters!.NeverActive, new { onchange = "clearActiveDates(this)", id = "neverActiveCheckbox" })
                     @Html.Raw(_languageProvider.Admin[Model.Language, "NEVER_ACTIVE"])
                 </label>
             </div>
@@ -148,7 +148,7 @@
         <input type="submit" value="@Html.Raw(_languageProvider.BasicText[Model.Language, "DO_SEARCH"])" class="MyButton SpacedButton" />
     </form>
 
-    @if (Model.SearchResults.Any())
+    @if (Model.SearchResults?.Any() == true)
     {
         @await Html.PartialAsync(
             "_AdminUsersSummaryPartial",
@@ -171,7 +171,7 @@
     <span id="groupsChar">&#x1F53D;</span>
 </h4>
 <div id="groupsSection" style="display:none">
-    @foreach (var group in Model.Groups)
+    @foreach (var group in Model.Groups ?? new List<Objects.UpsertGroupDto>())
     {
         <a href='javascript:populateGroup(@Json.Serialize(group))'>@Html.Raw(group.Name)</a>
         <br />
@@ -188,7 +188,7 @@
     <span id="ranksChar">&#x1F53D;</span>
 </h4>
 <div id="ranksSection" style="display:none">
-    @foreach (var rank in Model.Ranks)
+    @foreach (var rank in Model.Ranks ?? new List<Database.Entities.PhpbbRanks>())
     {
         <a href="javascript:populateRank(@rank.RankId, '@rank.RankTitle')">@rank.RankTitle</a>
         <br />
@@ -207,7 +207,7 @@
 <div id="bansSection" style="display:none">
     @{
         <form method="post" asp-page-handler="BanUser">
-            @for (var i = 0; i < Model.BanList.Count; i++)
+            @for (var i = 0; i < Model.BanList?.Count; i++)
             {
                 <div class="FlexCenter">
                     <div class="FlexCaption">
@@ -249,7 +249,7 @@
             <input type="submit" value="@Html.Raw(_languageProvider.Admin[Model.Language, "SAVE_CHANGES"])" class="MyButton SpacedButton" />
         </form>
         <script type="text/javascript">
-        var cur = @Model.BanList.Count;
+        var cur = @(Model.BanList?.Count ?? 0);
 
         function addBannedItem(email = '', ip = '') {
             var elem = $(

@@ -3,10 +3,10 @@
     public partial class PhpbbLang
     {
         public byte LangId { get; set; }
-        public string LangIso { get; set; }
-        public string LangDir { get; set; }
-        public string LangEnglishName { get; set; }
-        public string LangLocalName { get; set; }
-        public string LangAuthor { get; set; }
+        public string LangIso { get; set; } = string.Empty;
+        public string LangDir { get; set; } = string.Empty;
+        public string LangEnglishName { get; set; } = string.Empty;
+        public string LangLocalName { get; set; } = string.Empty;
+        public string LangAuthor { get; set; } = string.Empty;
     }
 }

@@ -32,24 +32,24 @@ namespace PhpbbInDotnet.Forum.Pages
         public int? MessageId { get; set; }
 
         [BindProperty]
-        public int[] SelectedMessages { get; set; }
+        public int[]? SelectedMessages { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public PrivateMessagesPages? Source { get; set; }
 
-        public List<PrivateMessageDto> InboxMessages { get; private set; }
+        public List<PrivateMessageDto>? InboxMessages { get; private set; }
 
-        public List<PrivateMessageDto> SentMessages { get; private set; }
+        public List<PrivateMessageDto>? SentMessages { get; private set; }
 
-        public PrivateMessageDto SelectedMessage { get; private set; }
+        public PrivateMessageDto? SelectedMessage { get; private set; }
 
         public bool SelectedMessageIsMine { get; private set; }
 
         public bool SelectedMessageIsUnread { get; private set; }
 
-        public Paginator InboxPaginator { get; private set; }
+        public Paginator? InboxPaginator { get; private set; }
 
-        public Paginator SentPaginator { get; private set; }
+        public Paginator? SentPaginator { get; private set; }
 
         private readonly BBCodeRenderingService _renderingService;
 
@@ -161,7 +161,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         OthersId = otherUser.UserId,
                         OthersName = otherUser?.Username ?? Constants.ANONYMOUS_USER_NAME,
                         OthersColor = otherUser?.UserColour,
-                        OthersAvatar = otherUser.UserAvatar,
+                        OthersAvatar = otherUser?.UserAvatar,
                         Subject = HttpUtility.HtmlDecode(message.MessageSubject),
                         Text = _renderingService.BbCodeToHtml(message.MessageText, message.BbcodeUid),
                         MessageTime = message.MessageTime
@@ -178,7 +178,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostDeleteMessage()
             => await WithUserHavingPM(async (user) =>
             {
-                var (Message, IsSuccess) = await UserService.DeletePrivateMessage(MessageId.Value);
+                var (Message, IsSuccess) = await UserService.DeletePrivateMessage(MessageId!.Value);
 
                 if (IsSuccess ?? false)
                 {
@@ -223,7 +223,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task OnPostHideSelectedMessages()
             => await WithUserHavingPM(async (user) =>
             {
-                var (Message, IsSuccess) = await UserService.HidePrivateMessages(user.UserId, SelectedMessages);
+                var (Message, IsSuccess) = await UserService.HidePrivateMessages(user.UserId, SelectedMessages!);
 
                 if (!(IsSuccess ?? false))
                 {
@@ -232,7 +232,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return await OnGet();
             });
 
-        private async Task<IActionResult> WithUserHavingPM(Func<AuthenticatedUser, Task<IActionResult>> toDo)
+        private async Task<IActionResult> WithUserHavingPM(Func<AuthenticatedUserExpanded, Task<IActionResult>> toDo)
             => await WithRegisteredUser(async (user) =>
             {
                 if (!UserService.HasPrivateMessagePermissions(user))

@@ -29,16 +29,16 @@
     {
         <div id="votes" style="display:block">
             <form method="post" asp-page-handler="vote">
-                @foreach (var option in Model.Poll.PollOptions)
+                @foreach (var option in Model.Poll?.PollOptions ?? new List<Objects.PollOption>())
                 {
-                    var isChecked = option.PollOptionVoters?.Any(v => v.UserId == Model.CurrentUser.UserId) ?? false;
+                    var isChecked = option.PollOptionVoters?.Any(v => v.UserId == Model.CurrentUser?.UserId) ?? false;
                     <table class="PollTable">
                         <tr>
                             <td>
                                 @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText ?? string.Empty))
                             </td>
                             <td>
-                                <input type="@(Model.Poll.PollMaxOptions > 1 ? "checkbox" : "radio")" name="Votes" value="@option.PollOptionId" @(isChecked ? "checked" : "") @(!Model.CanVoteNow ? "disabled" : "") />
+                                <input type="@(Model.Poll?.PollMaxOptions > 1 ? "checkbox" : "radio")" name="Votes" value="@option.PollOptionId" @(isChecked ? "checked" : "") @(!Model.CanVoteNow ? "disabled" : "") />
                             </td>
                         </tr>
                     </table>
@@ -60,9 +60,9 @@
     {
         <div id="results" style="display:@(displayVoteMenu ? "none" : "block")">
             <table class="PollTable">
-                @foreach (var option in Model.Poll.PollOptions)
+                @foreach (var option in Model.Poll?.PollOptions ?? new List<Objects.PollOption>())
                 {
-                    var percentage = (Model.Poll.TotalVotes == 0 ? 0 : option.PollOptionVotes * 100m / Model.Poll.TotalVotes).ToString("##0.##'%'", System.Globalization.CultureInfo.InvariantCulture);
+                    var percentage = (Model.Poll?.TotalVotes == 0 ? 0 : option.PollOptionVotes * 100m / Model.Poll?.TotalVotes)?.ToString("##0.##'%'", System.Globalization.CultureInfo.InvariantCulture);
                     <tr>
                         <td>
                             @Html.Raw(HttpUtility.HtmlDecode(option.PollOptionText))
@@ -87,7 +87,7 @@
             <input type="button" value="@_languageProvider.BasicText[Model.Language, "SHOW_RESULTS"]" onclick="vt.switchPollPanels('results', 'votes', this)" class="MyButton" style="margin-top: 5px" />
         }
     }
-    @if (Model.Poll.PollOptions?.Any(o => o.PollOptionVoters?.Any(v => v.UserId == Model.CurrentUser.UserId) ?? false) ?? false)
+    @if (Model.Poll?.PollOptions?.Any(o => o.PollOptionVoters?.Any(v => v.UserId == Model.CurrentUser?.UserId) == true) == true)
     {
         <p></p>
         <div style="background-color: darkgreen; color: white; padding: 5px; font-weight: bold">

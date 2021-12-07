@@ -24,17 +24,17 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IConfiguration _config;
         private readonly BBCodeRenderingService _renderingService;
 
-        public HashSet<ForumTree> Forums { get; private set; }
-        public List<TopicGroup> Topics { get; private set; }
-        public string ForumRulesLink { get; private set; }
-        public string ForumRules { get; private set; }
-        public string ForumRulesUid { get; private set; }
-        public string ForumDesc { get; private set; }
-        public string ForumTitle { get; private set; }
-        public string ParentForumTitle { get; private set; }
+        public HashSet<ForumTree>? Forums { get; private set; }
+        public List<TopicGroup>? Topics { get; private set; }
+        public string? ForumRulesLink { get; private set; }
+        public string? ForumRules { get; private set; }
+        public string? ForumRulesUid { get; private set; }
+        public string? ForumDesc { get; private set; }
+        public string? ForumTitle { get; private set; }
+        public string? ParentForumTitle { get; private set; }
         public int? ParentForumId { get; private set; }
         public ViewForumMode Mode { get; private set; }
-        public Paginator Paginator { get; private set; }
+        public Paginator? Paginator { get; private set; }
 
         [BindProperty(SupportsGet = true)]
         public int ForumId { get; set; }
@@ -43,10 +43,10 @@ namespace PhpbbInDotnet.Forum.Pages
         public int? PageNum { get; set; }
 
         [BindProperty]
-        public int[] SelectedDrafts { get; set; }
+        public int[]? SelectedDrafts { get; set; }
 
         [BindProperty]
-        public string[] SelectedNewPosts { get; set; }
+        public string[]? SelectedNewPosts { get; set; }
 
         public ViewForumModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, BBCodeRenderingService renderingService,
             IConfiguration config, CommonUtils utils, LanguageProvider languageProvider)
@@ -64,7 +64,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return RedirectToPage("Index");
                 }
 
-                ForumTitle = HttpUtility.HtmlDecode(thisForum?.ForumName ?? "untitled");
+                ForumTitle = HttpUtility.HtmlDecode(thisForum.ForumName ?? "untitled");
                 ForumRulesLink = thisForum.ForumRulesLink;
                 ForumRules = thisForum.ForumRules;
                 ForumRulesUid = thisForum.ForumRulesUid;
@@ -124,7 +124,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (user) =>
             {
                 var tree = await GetForumTree(_forceTreeRefresh, true);
-                var topicList = tree.Tracking.SelectMany(t => t.Value).Select(t => t.TopicId).Distinct();
+                var topicList = tree.Tracking!.SelectMany(t => t.Value).Select(t => t.TopicId).Distinct();
 
                 var restrictedForumsTask = GetRestrictedForums();
                 var connectionTask = Context.GetDbConnectionAsync();
@@ -168,7 +168,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (user) =>
             {
                 var tree = await GetForumTree(false, true);
-                IEnumerable<TopicDto> topics = null;
+                IEnumerable<TopicDto>? topics = null;
                 var totalCount = 0;
                 var restrictedForumsTask = GetRestrictedForums();
                 var connectionTask = Context.GetDbConnectionAsync();
@@ -195,7 +195,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetDrafts()
             => await WithRegisteredUser(async (user) =>
             {
-                IEnumerable<TopicDto> topics = null;
+                IEnumerable<TopicDto>? topics = null;
                 var restrictedForumsTask = GetRestrictedForums();
                 var count = 0;
                 var connectionTask = Context.GetDbConnectionAsync();
@@ -246,7 +246,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     {
                         continue;
                     }
-                    var forumId = int.TryParse(values[0], out var val) ? val : 0;
+                    var forumId = int.TryParse(values![0], out var val) ? val : 0;
                     var topicId = int.TryParse(values[1], out val) ? val : 0;
                     await MarkTopicRead(forumId, topicId, true, DateTime.UtcNow.ToUnixTimestamp());
                 }

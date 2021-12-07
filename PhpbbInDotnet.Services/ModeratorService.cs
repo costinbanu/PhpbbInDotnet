@@ -41,7 +41,7 @@ namespace PhpbbInDotnet.Services
 
                 if (rows == 1)
                 {
-                    await _operationLogService.LogModeratorTopicAction((ModeratorTopicActions)logDto.Action, logDto.UserId, topicId);
+                    await _operationLogService.LogModeratorTopicAction((ModeratorTopicActions)logDto.Action!, logDto.UserId, topicId);
                     return (LanguageProvider.Moderator[GetLanguage(), "TOPIC_CHANGED_SUCCESSFULLY"], true);
                 }
                 else
@@ -109,7 +109,7 @@ namespace PhpbbInDotnet.Services
                 {
                     return (string.Format(LanguageProvider.Moderator[GetLanguage(), "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
                 }
-                await _operationLogService.LogModeratorTopicAction((ModeratorTopicActions)logDto.Action, logDto.UserId, topicId);
+                await _operationLogService.LogModeratorTopicAction((ModeratorTopicActions)logDto.Action!, logDto.UserId, topicId);
 
                 return (LanguageProvider.Moderator[GetLanguage(), "TOPIC_CHANGED_SUCCESSFULLY"], true);
             }
@@ -209,7 +209,7 @@ namespace PhpbbInDotnet.Services
                 var curTopic = await conn.QueryFirstOrDefaultAsync<PhpbbTopics>(
                     "INSERT INTO phpbb_topics (forum_id, topic_title, topic_time) VALUES (@forumId, @title, @time); " +
                     "SELECT * FROM phpbb_topics WHERE topic_id = LAST_INSERT_ID();",
-                    new { forumId = destinationForumId.Value, title = posts.First().PostSubject, time = posts.First().PostTime }
+                    new { forumId = destinationForumId!.Value, title = posts.First().PostSubject, time = posts.First().PostTime }
                 );
                 var oldTopicId = posts.First().TopicId;
 
@@ -392,7 +392,7 @@ namespace PhpbbInDotnet.Services
                             a.PostMsgId = entity.Entity.PostId;
                             a.PhysicalFilename = name;
                             return a;
-                        }).Where(a => a != null));
+                        }).Where(a => a != null)!);
 
                     await _context.SaveChangesAsync();
                 }

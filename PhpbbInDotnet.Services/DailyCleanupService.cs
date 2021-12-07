@@ -29,12 +29,12 @@ namespace PhpbbInDotnet.Services
             await Task.Yield();
 
             using var scope = _serviceProvider.CreateScope();
-            var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
-            var dbContext = scope.ServiceProvider.GetRequiredService<ForumDbContext>();
-            var utils = scope.ServiceProvider.GetRequiredService<CommonUtils>();
-            var storageService = scope.ServiceProvider.GetRequiredService<StorageService>();
-            var logger = scope.ServiceProvider.GetService<ILogger>();
-            var writingToolsService = scope.ServiceProvider.GetService<WritingToolsService>();
+            var config = scope.ServiceProvider.GetRequiredService<IConfiguration>()!;
+            var dbContext = scope.ServiceProvider.GetRequiredService<ForumDbContext>()!;
+            var utils = scope.ServiceProvider.GetRequiredService<CommonUtils>()!;
+            var storageService = scope.ServiceProvider.GetRequiredService<StorageService>()!;
+            var logger = scope.ServiceProvider.GetService<ILogger>()!;
+            var writingToolsService = scope.ServiceProvider.GetService<WritingToolsService>()!;
 
             try
             {
@@ -96,12 +96,12 @@ namespace PhpbbInDotnet.Services
             stoppingToken.ThrowIfCancellationRequested();
 
             var deleteResults = from p in posts
-                                where p?.Attachments?.Any() ?? false
+                                where p?.Attachments?.Any() == true
 
-                                from a in p.Attachments
+                                from a in p.Attachments!
                                 where !string.IsNullOrWhiteSpace(a?.PhysicalFileName)
 
-                                select storageService.DeleteFile(a.PhysicalFileName, false);
+                                select storageService.DeleteFile(a!.PhysicalFileName, false);
 
             if (deleteResults.Any(r => !r))
             {

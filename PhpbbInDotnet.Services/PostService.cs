@@ -77,7 +77,7 @@ namespace PhpbbInDotnet.Services
             return (correlationId, attachments);
         }
 
-        public async Task<PollDto> GetPoll(PhpbbTopics _currentTopic)
+        public async Task<PollDto?> GetPoll(PhpbbTopics _currentTopic)
         {
             var options = Enumerable.Empty<PhpbbPollOptions>();
             var voters = Enumerable.Empty<PollOptionVoter>();
@@ -251,16 +251,16 @@ namespace PhpbbInDotnet.Services
             );
         }
 
-        private async Task SetTopicLastPost(PhpbbTopics topic, PhpbbPosts post, AuthenticatedUserBase author, bool hardReset = false)
+        private async Task SetTopicLastPost(PhpbbTopics topic, PhpbbPosts post, AuthenticatedUser author, bool hardReset = false)
         {
             if (hardReset || topic.TopicLastPostTime < post.PostTime)
             {
                 topic.TopicLastPostId = post.PostId;
                 topic.TopicLastPostSubject = post.PostSubject;
                 topic.TopicLastPostTime = post.PostTime;
-                topic.TopicLastPosterColour = author.UserColor;
+                topic.TopicLastPosterColour = author.UserColor!;
                 topic.TopicLastPosterId = post.PosterId;
-                topic.TopicLastPosterName = author.UserId == Constants.ANONYMOUS_USER_ID ? post.PostUsername : author.Username;
+                topic.TopicLastPosterName = author.UserId == Constants.ANONYMOUS_USER_ID ? post.PostUsername : author.Username!;
 
                 var conn = await _context.GetDbConnectionAsync();
                 await conn.ExecuteAsync(
@@ -277,16 +277,16 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        private async Task SetForumLastPost(PhpbbForums forum, PhpbbPosts post, AuthenticatedUserBase author, bool hardReset = false)
+        private async Task SetForumLastPost(PhpbbForums forum, PhpbbPosts post, AuthenticatedUser author, bool hardReset = false)
         {
             if (hardReset || forum.ForumLastPostTime < post.PostTime)
             {
                 forum.ForumLastPostId = post.PostId;
                 forum.ForumLastPostSubject = post.PostSubject;
                 forum.ForumLastPostTime = post.PostTime;
-                forum.ForumLastPosterColour = author.UserColor;
+                forum.ForumLastPosterColour = author.UserColor!;
                 forum.ForumLastPosterId = post.PosterId;
-                forum.ForumLastPosterName = author.UserId == Constants.ANONYMOUS_USER_ID ? post.PostUsername : author.Username;
+                forum.ForumLastPosterName = author.UserId == Constants.ANONYMOUS_USER_ID ? post.PostUsername : author.Username!;
 
                 var conn = await _context.GetDbConnectionAsync();
 
@@ -304,7 +304,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        private async Task SetTopicFirstPost(PhpbbTopics topic, PhpbbPosts post, AuthenticatedUserBase author, bool setTopicTitle, bool goForward = false)
+        private async Task SetTopicFirstPost(PhpbbTopics topic, PhpbbPosts post, AuthenticatedUser author, bool setTopicTitle, bool goForward = false)
         {
             var conn = await _context.GetDbConnectionAsync();
 
@@ -316,8 +316,8 @@ namespace PhpbbInDotnet.Services
                     topic.TopicTitle = post.PostSubject.Replace(Constants.REPLY, string.Empty).Trim();
                 }
                 topic.TopicFirstPostId = post.PostId;
-                topic.TopicFirstPosterColour = author.UserColor;
-                topic.TopicFirstPosterName = author.Username;
+                topic.TopicFirstPosterColour = author.UserColor!;
+                topic.TopicFirstPosterName = author.Username!;
 
                 await conn.ExecuteAsync(
                     @"UPDATE phpbb_topics 

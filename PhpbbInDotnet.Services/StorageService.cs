@@ -31,21 +31,21 @@ namespace PhpbbInDotnet.Services
             _context = context;
 
             _storageOptions = _config.GetObject<Storage>();
-            _attachmentsPath = Path.Combine(environment.WebRootPath, _storageOptions.Files);
-            _avatarsPath = Path.Combine(environment.WebRootPath, _storageOptions.Avatars);
-            _emojiPath = Path.Combine(environment.WebRootPath, _storageOptions.Emojis);
+            _attachmentsPath = Path.Combine(environment.WebRootPath, _storageOptions.Files!);
+            _avatarsPath = Path.Combine(environment.WebRootPath, _storageOptions.Avatars!);
+            _emojiPath = Path.Combine(environment.WebRootPath, _storageOptions.Emojis!);
         }
 
-        public string GetFileUrl(string name, FileType fileType)
+        public string? GetFileUrl(string name, FileType fileType)
             => fileType switch
             {
-                FileType.Attachment => $"./{_storageOptions.Files.Trim('/')}/{name.TrimStart('/')}",
-                FileType.Avatar => $"./{_storageOptions.Avatars.Trim('/')}/{name.TrimStart('/')}",
-                FileType.Emoji => $"./{_storageOptions.Emojis.Trim('/')}/{name.TrimStart('/')}",
+                FileType.Attachment => $"./{_storageOptions.Files!.Trim('/')}/{name.TrimStart('/')}",
+                FileType.Avatar => $"./{_storageOptions.Avatars!.Trim('/')}/{name.TrimStart('/')}",
+                FileType.Emoji => $"./{_storageOptions.Emojis!.Trim('/')}/{name.TrimStart('/')}",
                 _ => null
             };
 
-        public string GetFilePath(string name, FileType fileType)
+        public string? GetFilePath(string name, FileType fileType)
             => fileType switch
             {
                 FileType.Attachment => Path.Combine(_attachmentsPath, name),
@@ -101,7 +101,7 @@ namespace PhpbbInDotnet.Services
             return (succeeded, failed);
         }
 
-        public string DuplicateFile(PhpbbAttachments attachment, int userId)
+        public string? DuplicateFile(PhpbbAttachments attachment, int userId)
         {
             try
             {
@@ -143,11 +143,11 @@ namespace PhpbbInDotnet.Services
             return false;
         }
 
-        public bool DeleteFile(string name, bool isAvatar)
+        public bool DeleteFile(string? name, bool isAvatar)
         {
             try
             {
-                var path = isAvatar ? Path.Combine(_avatarsPath, name) : Path.Combine(_attachmentsPath, name);
+                var path = isAvatar ? Path.Combine(_avatarsPath, name!) : Path.Combine(_attachmentsPath, name!);
                 File.Delete(path);
                 return true;
             }

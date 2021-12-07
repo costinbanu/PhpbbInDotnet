@@ -12,11 +12,11 @@ namespace PhpbbInDotnet.Objects
 
         public int? ForumId { get; set; } = null;
 
-        public string TopicTitle { get; set; } = null;
+        public string? TopicTitle { get; set; } = null;
 
         public int? TopicLastPosterId { get; set; } = null;
 
-        public string TopicLastPosterName { get; set; } = null;
+        public string? TopicLastPosterName { get; set; } = null;
 
         public DateTime? LastPostTime => TopicLastPostTime?.ToUtcTime();
 
@@ -28,11 +28,11 @@ namespace PhpbbInDotnet.Objects
 
         public int? PostCount { get; set; } = null;
 
-        public PaginationDto Pagination { get; set; } = null;
+        public PaginationDto? Pagination { get; set; } = null;
 
         public bool Unread { get; set; } = false;
 
-        public string TopicLastPosterColour { get; set; } = null;
+        public string? TopicLastPosterColour { get; set; } = null;
 
         public int ViewCount { get; set; } = 0;
 
@@ -40,7 +40,7 @@ namespace PhpbbInDotnet.Objects
 
         public bool IsLocked => TopicStatus == 1;
 
-        public PollDto Poll { get; set; }
+        public PollDto? Poll { get; set; }
 
     }
 }

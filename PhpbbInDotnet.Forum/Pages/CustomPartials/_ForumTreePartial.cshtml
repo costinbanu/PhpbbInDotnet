@@ -63,7 +63,7 @@
             return;
         }
 
-        var children = thisForum?.ChildrenList?.Select(x => _forumService.GetTreeNode(Model.Tree, x))?.OrderBy(x => x.LeftId) ?? Enumerable.Empty<PhpbbInDotnet.Objects.ForumTree>();
+        var children = thisForum?.ChildrenList?.Select(x => _forumService.GetTreeNode(Model.Tree, x))?.OrderBy(x => x?.LeftId) ?? Enumerable.Empty<PhpbbInDotnet.Objects.ForumTree?>();
 
         if (children.Any())
         {
@@ -74,7 +74,7 @@
             );
             foreach (var child in children)
             {
-                await showTreeNode(child.ForumId);
+                await showTreeNode(child?.ForumId);
             }
             await Output.WriteAsync(
                     "</ul>" +

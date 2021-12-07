@@ -29,7 +29,7 @@ namespace PhpbbInDotnet.Services
             _utils = utils;
         }
 
-        public async Task<(List<OperationLogSummary> PageItems, int Count)> GetOperationLogs(OperationLogType? logType, string authorName = null, int page = 1)
+        public async Task<(List<OperationLogSummary> PageItems, int Count)> GetOperationLogs(OperationLogType? logType, string? authorName = null, int page = 1)
             => await WithErrorHandling(async () =>
             {
                 using var multi = await (await _context.GetDbConnectionAsync()).QueryMultipleAsync(
@@ -51,7 +51,7 @@ namespace PhpbbInDotnet.Services
                 return ((await multi.ReadAsync<OperationLogSummary>()).AsList(), unchecked((int)await multi.ReadSingleAsync<long>()));
             });
 
-        public List<(DateTime LogDate, string LogPath)> GetSystemLogs()
+        public List<(DateTime LogDate, string? LogPath)>? GetSystemLogs()
             => WithErrorHandling(() =>
             {
                 return (
@@ -62,7 +62,7 @@ namespace PhpbbInDotnet.Services
                     select parsed
                 ).ToList();
 
-                static (DateTime LogDate, string LogPath) Parse(string path)
+                static (DateTime LogDate, string? LogPath) Parse(string path)
                 {
                     if (DateTime.TryParseExact(Path.GetFileNameWithoutExtension(path)[3..], "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
                     {
@@ -73,7 +73,7 @@ namespace PhpbbInDotnet.Services
             });
 
 
-        public async Task LogAdminUserAction(AdminUserActions action, int adminUserId, PhpbbUsers user, string additionalData = null)
+        public async Task LogAdminUserAction(AdminUserActions action, int adminUserId, PhpbbUsers user, string? additionalData = null)
             => await WithErrorHandling(async () =>
                 await Log(_utils.EnumString(action), $"User Id: {user.UserId}, Username: {user.Username}, Additional data: {additionalData}", adminUserId, OperationLogType.Administrator)
             );
@@ -98,7 +98,7 @@ namespace PhpbbInDotnet.Services
                 await Log(_utils.EnumString(action), $"Forum Id: {forum.ForumId}, Forum name: {forum.ForumName}", adminUserId, OperationLogType.Administrator, forum.ForumId)
             );
 
-        public async Task LogModeratorTopicAction(ModeratorTopicActions action, int modUserId, int topicId, string additionalData = null)
+        public async Task LogModeratorTopicAction(ModeratorTopicActions action, int modUserId, int topicId, string? additionalData = null)
             => await WithErrorHandling(async () =>
             {
                 var topic = await (await _context.GetDbConnectionAsync()).QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
@@ -108,7 +108,7 @@ namespace PhpbbInDotnet.Services
                 }
             });
 
-        public async Task LogModeratorPostAction(ModeratorPostActions action, int modUserId, int postId, string additionalData = null)
+        public async Task LogModeratorPostAction(ModeratorPostActions action, int modUserId, int postId, string? additionalData = null)
             => await WithErrorHandling(async () =>
             {
                 var post = await (await _context.GetDbConnectionAsync()).QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId });
@@ -118,10 +118,10 @@ namespace PhpbbInDotnet.Services
                 }
             });
 
-        public async Task LogModeratorPostAction(ModeratorPostActions action, int modUserId, PhpbbPosts post, string additionalData = null)
+        public async Task LogModeratorPostAction(ModeratorPostActions action, int modUserId, PhpbbPosts post, string? additionalData = null)
             => await WithErrorHandling(async () => await Log(_utils.EnumString(action), $"Post Id: {post.PostId}, Post subject: {post.PostSubject}, Additional data: {additionalData}", modUserId, OperationLogType.Moderator, post.ForumId, post.TopicId));
 
-        public async Task LogUserProfileAction(UserProfileActions action, int editingUser, PhpbbUsers targetUser, string additionalData = null)
+        public async Task LogUserProfileAction(UserProfileActions action, int editingUser, PhpbbUsers targetUser, string? additionalData = null)
             => await WithErrorHandling(async () =>
                 await Log(_utils.EnumString(action), $"User {editingUser} has changed the profile of user {targetUser.UserId} ({targetUser.UsernameClean}), Additional data: {additionalData}", editingUser, OperationLogType.User)
             );
@@ -137,7 +137,7 @@ namespace PhpbbInDotnet.Services
                     forumId,
                     topicId,
                     logData,
-                    logIp = _httpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString(),
+                    logIp = _httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
                     logOperation = action,
                     logTime = DateTime.UtcNow.ToUnixTimestamp(),
                     logType = (int)operationType
@@ -157,7 +157,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        private async Task<T> WithErrorHandling<T>(Func<Task<T>> toDo)
+        private async Task<T?> WithErrorHandling<T>(Func<Task<T>> toDo)
         {
             try
             {
@@ -170,7 +170,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        private T WithErrorHandling<T>(Func<T> toDo)
+        private T? WithErrorHandling<T>(Func<T> toDo)
         {
             try
             {

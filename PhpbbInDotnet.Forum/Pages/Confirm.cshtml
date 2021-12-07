@@ -62,7 +62,7 @@
         @await Html.PartialAsync(
             "_ForumTreePartial",
             new CustomPartials._ForumTreePartialModel(
-                tree: Model.ForumTree,
+                tree: Model.ForumTree!,
                 topicData: Model.TopicData,
                 forumId: Model.ForumId,
                 topicId: Model.TopicId
@@ -101,7 +101,7 @@ else if (Model.IsDestinationConfirmation)
 {
     <span style="font-size:1.2em">@Html.Raw(Model.Message)</span>
     <p>&nbsp;</p>
-    foreach (var destination in Model.Destinations)
+    foreach (var destination in Model.Destinations ?? new List<string>())
     {
         @Html.Raw(await _utils.DecodeAndDecompress(destination));
         <p></p>

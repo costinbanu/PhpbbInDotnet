@@ -46,7 +46,7 @@
         <div class="FlexRight PostInputWidth">
             @Html.DropDownList(
                 $"dto.{Model.EntityType}ForumPermissions[{index}]",
-                permissions.Select(p => new SelectListItem(_languageProvider.Admin[Model.Language, p.RoleName, Casing.None], $"{permissions.Key.Id}_{p.RoleId}", p.HasRole)),
+                permissions.Select(p => new SelectListItem(_languageProvider.Admin[Model.Language, p.RoleName!, Casing.None], $"{permissions.Key.Id}_{p.RoleId}", p.HasRole)),
                 new { style = "width:75%; margin-top:10px;" }
             )
             <label>

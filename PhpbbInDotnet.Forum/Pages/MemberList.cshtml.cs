@@ -26,7 +26,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public int PageNum { get; set; } = 1;
 
         [BindProperty(SupportsGet = true)]
-        public string Username { get; set; }
+        public string? Username { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public MemberListOrder? Order { get; set; }
@@ -35,15 +35,15 @@ namespace PhpbbInDotnet.Forum.Pages
         public MemberListPages Mode { get; set; }
 
         [BindProperty]
-        public string ValidationDummy { get; set; }
+        public string? ValidationDummy { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public int? GroupId { get; set; }
 
-        public Paginator Paginator { get; private set; }
-        public IEnumerable<PhpbbUsers> UserList { get; private set; }
-        public IEnumerable<PhpbbRanks> RankList { get; private set; }
-        public IEnumerable<PhpbbGroups> GroupList { get; private set; }
+        public Paginator? Paginator { get; private set; }
+        public IEnumerable<PhpbbUsers>? UserList { get; private set; }
+        public IEnumerable<PhpbbRanks>? RankList { get; private set; }
+        public IEnumerable<PhpbbGroups>? GroupList { get; private set; }
         public bool SearchWasPerformed { get; private set; }
 
         public MemberListModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, 

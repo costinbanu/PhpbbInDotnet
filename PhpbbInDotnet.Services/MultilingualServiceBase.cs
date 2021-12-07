@@ -11,7 +11,7 @@ namespace PhpbbInDotnet.Services
         protected readonly IHttpContextAccessor HttpContextAccessor;
         protected readonly CommonUtils Utils;
 
-        private string _language;
+        private string? _language;
 
         public MultilingualServiceBase(CommonUtils utils, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
         {
@@ -27,10 +27,10 @@ namespace PhpbbInDotnet.Services
                 return _language;
             }
 
-            AuthenticatedUser user = null;
+            AuthenticatedUserExpanded? user = null;
             if (HttpContextAccessor.HttpContext != null)
             {
-                user = (AuthenticatedUser)(HttpContextAccessor.HttpContext.Items.TryGetValue(nameof(AuthenticatedUser), out var val) ? val : null);
+                user = (AuthenticatedUserExpanded?)(HttpContextAccessor.HttpContext.Items.TryGetValue(nameof(AuthenticatedUserExpanded), out var val) ? val : null);
             }
 
             _language = LanguageProvider.GetValidatedLanguage(user, HttpContextAccessor.HttpContext?.Request);

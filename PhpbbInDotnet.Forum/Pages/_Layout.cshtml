@@ -10,7 +10,7 @@
 @inject Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor
 @inject Services.StatisticsService _statisticsService
 @{
-    var currentUser = (AuthenticatedUser)Context.Items[nameof(AuthenticatedUser)];
+    var currentUser = (AuthenticatedUserExpanded?)Context.Items[nameof(AuthenticatedUserExpanded)];
     var css = currentUser?.Style;
     if (string.IsNullOrWhiteSpace(css))
     {
@@ -60,10 +60,10 @@
     </script>
 
     <!-- global JS translation magic -->
-    @if (ViewContext.RouteData.Values["page"].ToString() == "/ViewTopic"
-        || ViewContext.RouteData.Values["page"].ToString() == "/Posting"
-        || ViewContext.RouteData.Values["page"].ToString() == "/Admin"
-        || ViewContext.RouteData.Values["page"].ToString() == "/Moderator")
+    @if (ViewContext.RouteData.Values["page"]?.ToString() == "/ViewTopic"
+        || ViewContext.RouteData.Values["page"]?.ToString() == "/Posting"
+        || ViewContext.RouteData.Values["page"]?.ToString() == "/Admin"
+        || ViewContext.RouteData.Values["page"]?.ToString() == "/Moderator")
     {
         <script>
             var dictionary = @(Html.Raw(_languageProvider.JSText[lang]));
@@ -112,7 +112,7 @@
                 </form>
                 <ul style="float:right; padding-top:10px; list-style:none; line-height:1.5em;">
                     @{
-                        var isTopic = ViewContext.RouteData.Values["page"].ToString() == "/ViewTopic";
+                        var isTopic = ViewContext.RouteData.Values["page"]?.ToString() == "/ViewTopic";
                         if (string.IsNullOrWhiteSpace(currentUser?.Username) || (currentUser?.IsAnonymous ?? true))
                         {
                             <li>
@@ -174,9 +174,9 @@
             @{
                 var pmCount = 0;
                 var displayedBox = false;
-                if (!(currentUser?.IsAnonymous ?? true))
+                if (currentUser?.IsAnonymous == false)
                 {
-                    pmCount = await _userService.UnreadPMs(currentUser.UserId);
+                    pmCount = await _userService.UnreadPMs(currentUser!.UserId);
                 }
 
                 if (pmCount > 0)

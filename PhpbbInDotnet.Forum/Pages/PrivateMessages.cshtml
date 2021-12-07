@@ -70,7 +70,7 @@
         @await Html.PartialAsync(
             "_PaginationControlsPartial",
             new CustomPartials._PaginationControlsPartialModel(
-                paginator: Model.InboxPaginator,
+                paginator: Model.InboxPaginator!,
                 allowPaginationChange: false,
                 back: $"PrivateMessages?show=Inbox&InboxPage={Model.InboxPage - 1}",
                 forward: $"PrivateMessages?show=Inbox&InboxPage={Model.InboxPage + 1}",
@@ -130,7 +130,7 @@
         @await Html.PartialAsync(
             "_PaginationControlsPartial",
             new CustomPartials._PaginationControlsPartialModel(
-                paginator: Model.InboxPaginator,
+                paginator: Model.InboxPaginator!,
                 allowPaginationChange: false,
                 back: $"PrivateMessages?show=Inbox&InboxPage={Model.InboxPage - 1}",
                 forward: $"PrivateMessages?show=Inbox&InboxPage={Model.InboxPage + 1}",
@@ -154,7 +154,7 @@
         @await Html.PartialAsync(
             "_PaginationControlsPartial",
             new CustomPartials._PaginationControlsPartialModel(
-                paginator: Model.SentPaginator,
+                paginator: Model.SentPaginator!,
                 allowPaginationChange: false,
                 back: $"PrivateMessages?show=Sent&SentPage={Model.SentPage - 1}",
                 forward: $"PrivateMessages?show=Sent&SentPage={Model.SentPage + 1}",
@@ -212,7 +212,7 @@
         @await Html.PartialAsync(
             "_PaginationControlsPartial",
             new CustomPartials._PaginationControlsPartialModel(
-                paginator: Model.SentPaginator,
+                paginator: Model.SentPaginator!,
                 allowPaginationChange: false,
                 back: $"PrivateMessages?show=Sent&SentPage={Model.SentPage - 1}",
                 forward: $"PrivateMessages?show=Sent&SentPage={Model.SentPage + 1}",

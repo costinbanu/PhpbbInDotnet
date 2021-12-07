@@ -4,7 +4,7 @@
 
 @inject Languages.LanguageProvider _languageProvider
 
-@foreach (var user in Model.Users)
+@foreach (var user in Model.Users ?? new List<Database.Entities.PhpbbUsers>())
 {
     <button type="button" class="collapsible">@user.Username</button>
     <div class="content">

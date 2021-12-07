@@ -5,7 +5,7 @@
         public int TopicId { get; set; }
         public byte PollOptionId { get; set; }
         public int VoteUserId { get; set; }
-        public string VoteUserIp { get; set; }
+        public string VoteUserIp { get; set; } = string.Empty;
 
     }
 }
