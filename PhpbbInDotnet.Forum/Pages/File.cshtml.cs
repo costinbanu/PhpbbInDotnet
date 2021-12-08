@@ -46,7 +46,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             var connection = await Context.GetDbConnectionAsync();
 
-            var file = await connection.QuerySingleOrDefaultAsync<AttachmentCheckDto>(
+            var file = await connection.QuerySingleOrDefaultAsync<AttachmentPreviewDto>(
                 @"SELECT a.physical_filename, a.real_filename, a.mimetype, p.forum_id, p.post_id 
                     FROM phpbb_attachments a 
                     LEFT JOIN phpbb_posts p ON a.post_msg_id = p.post_id 

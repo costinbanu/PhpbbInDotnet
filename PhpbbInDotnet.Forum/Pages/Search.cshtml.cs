@@ -110,48 +110,18 @@ namespace PhpbbInDotnet.Forum.Pages
             return Page();
         }
 
-        public async Task<IActionResult> OnGetByAuthor()
-        {
-            IsAuthorSearch = true;
-            DoSearch = true;
-            if (AuthorId == 0)
+        public Task<IActionResult> OnGetByAuthor()
+            => WithRegisteredUser(async (_) =>
             {
-                ModelState.AddModelError(nameof(SearchText), LanguageProvider.BasicText[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN"]);
-                return await OnGet();
-            }
-            return await OnGet();
-        }
-
-        public async Task<IActionResult> OnGetAttachments()
-        {
-            IsAttachmentSearch = true;
-            DoSearch = false;
-            PageNum ??= 1;
-
-            if (AuthorId == 0)
-            {
-                ModelState.AddModelError(nameof(SearchText), LanguageProvider.BasicText[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN"]);
-                return await OnGet();
-            }
-
-            var connection = await Context.GetDbConnectionAsync();
-            using var multi = await connection.QueryMultipleAsync(
-                sql: "CALL search_user_attachments(@forums, @AuthorId, @page)",
-                param: new 
-                { 
-                    AuthorId,
-                    page = PageNum ?? 1,
-                    forums = string.Join(',', (await ForumService.GetRestrictedForumList(GetCurrentUser(), true)).Select(f => f.forumId).DefaultIfEmpty())
+                IsAuthorSearch = true;
+                DoSearch = true;
+                if (AuthorId == 0)
+                {
+                    ModelState.AddModelError(nameof(SearchText), LanguageProvider.BasicText[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN"]);
+                    return await OnGet();
                 }
-            );
-
-            Posts = (await multi.ReadAsync<PostDto>()).AsList();
-            TotalResults = unchecked((int)await multi.ReadFirstOrDefaultAsync<long>());
-            Attachments = (await multi.ReadAsync<PhpbbAttachments>()).AsList();
-            Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum!.Value, link: GetSearchLinkForPage(PageNum.Value + 1), topicId: null);
-
-            return await OnGet();
-        }
+                return await OnGet();
+            });
 
         public async Task<IActionResult> OnPost()
         {

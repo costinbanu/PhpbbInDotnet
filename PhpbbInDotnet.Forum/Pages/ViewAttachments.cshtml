@@ -1,0 +1,89 @@
+﻿@page
+@model ViewAttachmentsModel
+
+@using Utilities;
+@using Pages.CustomPartials;
+
+@inject Services.ForumTreeService _forumService
+@inject CommonUtils _utils
+
+@{
+    var title = string.Format(Model.LanguageProvider.BasicText[Model.GetLanguage(), "ATTACHMENTS_BY_FORMAT", Casing.Title], Model.PageUsername);
+    ViewData["Title"] = title;
+    Layout = "~/Pages/_Layout.cshtml";
+}
+
+<environment include="Development">
+    <link rel="stylesheet" href="~/css/pagination.css" />
+</environment>
+
+@if (!string.IsNullOrWhiteSpace(Model.PageUsername))
+{
+    <h2>@Html.Raw(title)</h2>
+
+    if (Model.Attachments.Any())
+    {
+        var paginator = new Paginator(Model.TotalCount, Model.PageNum, $"ViewAttachments?userId={Model.UserId}", Model.PAGE_SIZE, "pageNum");
+        @await Html.PartialAsync(
+            "_PaginationControlsPartial",
+            new _PaginationControlsPartialModel(
+                paginator: paginator,
+                allowPaginationChange: false,
+                includeEasyNavigation: false,
+                language: Model.GetLanguage(),
+                back: $"ViewAttachments?userId={Model.UserId}&pageNum={Model.PageNum - 1}",
+                forward: $"ViewAttachments?userId={Model.UserId}&pageNum={Model.PageNum + 1}"
+
+            )
+        )
+
+        <p>&nbsp;</p>
+        var tree = await _forumService.GetForumTree(Model.GetCurrentUser(), false, false);
+        @foreach (var attachment in Model.Attachments)
+        {
+            <p></p>
+            if (attachment.ForumId is not null && attachment.TopicTitle is not null)
+            {
+                <div class="Caption">
+                    @Html.Raw(_forumService.GetPathText(tree, attachment.ForumId.Value)) → @Html.Raw(attachment.TopicTitle)
+                </div>
+            }
+            <a asp-page="File" asp-route-id="@attachment.Id" target="_blank">
+                @Html.Raw(attachment.RealFilename)
+            </a>
+            <br />
+            @Html.Raw(_utils.ReadableFileSize(attachment.FileSize))
+            <span>&nbsp;&bull;&nbsp;</span>
+            @Html.Raw(Model.LanguageProvider.BasicText[Model.GetLanguage(), "SUBMITTED", Casing.FirstUpper])
+            <script>
+            writeDate('@(attachment.FileTime.ToUtcTime().ToString("o"))', '@(Model.GetCurrentUser().UserDateFormat)');
+            </script>
+            <p></p>
+            <hr class="BoxSeparator" />
+        }
+
+        <p>&nbsp;</p>
+        <div>
+            @await Html.PartialAsync(
+                "_PaginationControlsPartial",
+                new _PaginationControlsPartialModel(
+                    paginator: paginator,
+                    allowPaginationChange: false,
+                    includeEasyNavigation: true,
+                    language: Model.GetLanguage(),
+                    back: $"ViewAttachments?userId={Model.UserId}&pageNum={Model.PageNum - 1}",
+                    forward: $"ViewAttachments?userId={Model.UserId}&pageNum={Model.PageNum + 1}"
+
+                )
+            )
+        </div>
+    }
+    else
+    {
+        @Html.Raw(Model.LanguageProvider.BasicText[Model.GetLanguage(), "NO_ATTACHMENTS", Casing.FirstUpper])
+    }
+}
+else
+{
+    <span asp-validation-for="PageUsername" class="validation"></span>
+}

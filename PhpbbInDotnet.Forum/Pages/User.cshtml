@@ -691,7 +691,7 @@ else
                         @if (Model.AttachCount > 0)
                         {
                             <span>&nbsp;-&nbsp;</span>
-                            <a asp-page="Search" asp-page-handler="Attachments" asp-route-authorId="@Model.CurrentUser.UserId">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SHOW_USER_ATTACHED_FILES"])</a>
+                            <a asp-page="ViewAttachments" asp-route-userId="@Model.CurrentUser.UserId">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SHOW_USER_ATTACHED_FILES"])</a>
                         }
                     </div>
                 </div>

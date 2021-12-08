@@ -56,26 +56,26 @@
 
 @if (Model.Mode == ViewForumMode.Forum && (CurrentUser!.JumpToUnread ?? false))
 {
-<script>
-    $(document).ready(function () {
-        var element = $('.UnreadTitle');
-        if (element && element.offset()) {
-            window.scrollTo(0, element.offset().top - 20);
-        }
-    });
-</script>
+    <script>
+        $(document).ready(function () {
+            var element = $('.UnreadTitle');
+            if (element && element.offset()) {
+                window.scrollTo(0, element.offset().top - 20);
+            }
+        });
+    </script>
 }
 
 @if ((Model.ParentForumId ?? 0) != 0)
 {
-<span style="padding-bottom: 10px">
-    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "PARENT_FORUM", Casing.FirstUpper]):
-    <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@Html.Raw(Model.ParentForumTitle)</a>
-</span>
+    <span style="padding-bottom: 10px">
+        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "PARENT_FORUM", Casing.FirstUpper]):
+        <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@Html.Raw(Model.ParentForumTitle)</a>
+    </span>
 }
 else
 {
-<a href="/" style="padding-bottom: 10px">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "HOME", Casing.FirstUpper])</a>
+    <a href="/" style="padding-bottom: 10px">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "HOME", Casing.FirstUpper])</a>
 }
 
 @if (!IsAnonymous)
@@ -379,20 +379,20 @@ else if (Model.Mode == ViewForumMode.Drafts)
 
 <div style="clear:both; margin: 10px 0px 10px 0px">
     @if (hasSubForums || hasTopics)
-{
+    {
         <a href="/" class="nowrap">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "HOME", Casing.FirstUpper])</a>
         <span class="bullet">&nbsp;&bull;&nbsp;</span>
         <div class="newline"></div>
-}
+    }
     @if ((Model.ParentForumId ?? 0) != 0)
-{
+    {
         <span>
             @Html.Raw(Model.LanguageProvider.BasicText[Lang, "PARENT_FORUM", Casing.FirstUpper]):
             <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@Html.Raw(Model.ParentForumTitle)</a>
         </span>
         <span class="bullet">&nbsp;&bull;&nbsp;</span>
         <div class="newline"></div>
-}
+    }
     <span onclick="showForumTree(this)" class="SpanLikeLink nowrap">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CHOOSE_DESTINATION"])</span>
 </div>
 <p></p>
