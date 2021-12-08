@@ -258,21 +258,21 @@ else if (IsPM)
             &#x2714; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "POLL", Casing.Title])
         </button>
     }
-    <input type="submit" value="&#x1F440; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "DO_PREVIEW", Casing.Title])" onclick="return posting.censor()" asp-page-handler="Preview" class="PostingButton MyButton SpacedButton" />
+    <input type="submit" value="&#x1F440; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "DO_PREVIEW", Casing.Title])" onclick="return posting.censor()" asp-page-handler="Preview" class="PostingButton MyButton SpacedButton" formnovalidate />
 
     @switch (Model.Action)
     {
         case PostingActions.NewTopic:
         case PostingActions.NewForumPost:
-            <input type="submit" value="&#x1F4BE; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SAVE_DRAFT"])" onclick="return posting.censor()" asp-page-handler="SaveDraft" class="PostingButton MyButton SpacedButton" />
-            <input type="submit" value="&#x27A1; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="NewForumPost" class="PostingButton MyButton SpacedButton MyMainButton" />
+            <input type="submit" value="&#x1F4BE; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SAVE_DRAFT"])" onclick="return posting.censor()" asp-page-handler="SaveDraft" class="PostingButton MyButton SpacedButton" formnovalidate />
+            <input type="submit" value="&#x27A1; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="NewForumPost" class="PostingButton MyButton SpacedButton MyMainButton" formnovalidate />
             break;
         case PostingActions.EditForumPost:
-            <input type="submit" value="&#x27A1; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="EditForumPost" class="PostingButton MyButton SpacedButton MyMainButton" />
+            <input type="submit" value="&#x27A1; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="EditForumPost" class="PostingButton MyButton SpacedButton MyMainButton" formnovalidate />
             break;
         case PostingActions.NewPrivateMessage:
         case PostingActions.EditPrivateMessage:
-            <input type="submit" value="&#x27A1; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="PrivateMessage" class="PostingButton MyButton SpacedButton MyMainButton" />
+            <input type="submit" value="&#x27A1; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="PrivateMessage" class="PostingButton MyButton SpacedButton MyMainButton" formnovalidate />
             break;
         default:
             <span class="validation">@Html.Raw(Model.LanguageProvider.Errors[Lang, "AN_ERROR_OCCURRED"])</span>
@@ -296,7 +296,7 @@ else if (IsPM)
             {
                 <span style="margin-bottom:10px">
                     &nbsp;&bull;&nbsp;
-                    <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_POLL"])" asp-page-handler="DeletePoll" onclick="return confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_POLL"])')" class="MyButton" />
+                    <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_POLL"])" asp-page-handler="DeletePoll" onclick="return confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_POLL"])')" class="MyButton" formnovalidate />
                 </span>
             }
             <p style="clear:both"></p>
@@ -391,7 +391,7 @@ else if (IsPM)
             }
             <span asp-validation-for="Files" class="validation"></span>
             <div id="fileUploadStatus"></div>
-            <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "LOAD_FILES"])" asp-page-handler="AddAttachment" style="display:none" id="submitAttachmentsButton" />
+            <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "LOAD_FILES"])" asp-page-handler="AddAttachment" style="display:none" id="submitAttachmentsButton" formnovalidate />
             @if (Model.Attachments?.Any() ?? false)
             {
                 <hr class="SubtypeSeparator" />
@@ -405,7 +405,7 @@ else if (IsPM)
                         <textarea type="text" asp-for="Attachments![i].AttachComment" rows="4" cols="100" style="display:inline-block; color:black" class="InputBox"></textarea>
                         <p style="clear:both"></p>
                         <input type="button" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "MAKE_INLINE"])" onclick="posting.attach_inline(@i, '@Model.Attachments[i].RealFilename')" class="MyButton" /> &nbsp;
-                        <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_FILE"])" asp-page-handler="DeleteAttachment" onclick="$('#idToDelete').val(@i); return true;" class="MyButton" />
+                        <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_FILE"])" asp-page-handler="DeleteAttachment" onclick="$('#idToDelete').val(@i); return true;" class="MyButton" formnovalidate />
                         <br />
                         <span asp-validation-for="DeleteFileDummyForValidation[i]" class="validation"></span>
                     </div>
