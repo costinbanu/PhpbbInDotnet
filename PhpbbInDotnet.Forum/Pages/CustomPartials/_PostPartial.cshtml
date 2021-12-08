@@ -8,6 +8,7 @@
 @inject Database.ForumDbContext _context
 @inject Services.BBCodeRenderingService _renderingService
 @inject Services.UserService _userService
+@inject Services.ForumTreeService _forumService
 @inject Languages.LanguageProvider _languageProvider
 
 @{
@@ -55,6 +56,12 @@
             CorrelationId = Model.CorrelationId
         })
         <div class="ForumContent VerticalContent FlexRight" id="@Model.Post.PostId" style="max-width:100%; overflow-wrap: break-word; display:flex">
+            @if (Model.ShowPath)
+            {
+                <div class="Caption">
+                    @Html.Raw(_forumService.GetPathText((await _forumService.GetForumTree(Model.CurrentUser, false, false)), Model.Post.ForumId))
+                </div>
+            }
             <span style="display:flex">
                 <span class="PostTitle">
                     @if (Model.DisablePostTitleLink)
@@ -139,7 +146,7 @@
                                 </a>
                             </span>
                         }
-                        
+
                         @if (Model.CurrentUser?.IsAnonymous == false)
                         {
                             <span>

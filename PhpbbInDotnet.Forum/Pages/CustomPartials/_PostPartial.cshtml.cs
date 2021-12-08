@@ -52,5 +52,7 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
         public HttpContext? ParentHttpContext { get; set; }
 
         public PageContext? ParentPageContext { get; set; }
+
+        public bool ShowPath { get; set; }
     }
 }
