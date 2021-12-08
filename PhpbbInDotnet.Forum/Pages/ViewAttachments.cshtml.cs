@@ -49,6 +49,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return Page();
                 }
 
+                var restrictedForums = (await ForumService.GetRestrictedForumList(GetCurrentUser())).Select(f => f.forumId);
                 var attachmentsTask = (
                     from a in Context.PhpbbAttachments.AsNoTracking()
                     where a.PosterId == UserId
@@ -64,6 +65,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     into joinedTopics
 
                     from jt in joinedTopics.DefaultIfEmpty()
+                    where !restrictedForums.Contains(jt.ForumId)
                     orderby a.Filetime descending
                     select new AttachmentPreviewDto
                     {
@@ -74,6 +76,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         FileSize = a.Filesize,
                         FileTime = a.Filetime,
                         ForumId = jp == null ? null : jp.ForumId,
+                        PostId = jp == null ? null : jp.PostId,
                         TopicTitle = jt == null ? null : jt.TopicTitle
                     }).Skip((PageNum - 1) * PAGE_SIZE).Take(PAGE_SIZE).ToListAsync();
                 var countTask = Context.PhpbbAttachments.AsNoTracking().Where(a => a.PosterId == UserId).CountAsync(_ => true);
