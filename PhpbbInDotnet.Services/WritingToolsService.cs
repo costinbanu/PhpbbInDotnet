@@ -149,46 +149,17 @@ namespace PhpbbInDotnet.Services
 
         #region Orphan files
 
-        public async Task<List<AttachmentManagementDto>> GetOrphanedFiles()
-        {
-            var now = DateTime.UtcNow.ToUnixTimestamp();
-            var retention = _config.GetObject<TimeSpan?>("RecycleBinRetentionTime") ?? TimeSpan.FromDays(7);
-
-            return await (
-                from a in _context.PhpbbAttachments.AsNoTracking()
-                where a.IsOrphan == 1 && now - a.Filetime > retention.TotalSeconds
-
-                join u in _context.PhpbbUsers.AsNoTracking()
-                on a.PosterId equals u.UserId
-                into joinedUsers
-
-                from ju in joinedUsers.DefaultIfEmpty()
-                select new AttachmentManagementDto
-                {
-                    AttachComment = a.AttachComment,
-                    AttachId = a.AttachId,
-                    DownloadCount = a.DownloadCount,
-                    Extension = a.Extension,
-                    Filesize = a.Filesize,
-                    Filetime = a.Filetime,
-                    InMessage = a.InMessage,
-                    IsOrphan = a.IsOrphan,
-                    Mimetype = a.Mimetype,
-                    PhysicalFilename = a.PhysicalFilename,
-                    PosterId = a.PosterId,
-                    PostMsgId = a.PostMsgId,
-                    RealFilename = a.RealFilename,
-                    Thumbnail = a.Thumbnail,
-                    TopicId = a.TopicId,
-                    Username = ju != null ? ju.Username : null
-                }
-            ).ToListAsync();
-        }
-
         public async Task<(string Message, bool? IsSuccess)> DeleteOrphanedFiles()
         {
             var lang = GetLanguage();
-            var files = await GetOrphanedFiles();
+            var now = DateTime.UtcNow.ToUnixTimestamp();
+            var retention = _config.GetObject<TimeSpan?>("RecycleBinRetentionTime") ?? TimeSpan.FromDays(7);
+            var files = await (
+                from a in _context.PhpbbAttachments.AsNoTracking()
+                where a.IsOrphan == 1 && now - a.Filetime > retention.TotalSeconds
+                select a
+            ).ToListAsync();
+
             if (!files.Any())
             {
                 return (LanguageProvider.Admin[lang, "NO_ORPHANED_FILES_DELETED"], true);

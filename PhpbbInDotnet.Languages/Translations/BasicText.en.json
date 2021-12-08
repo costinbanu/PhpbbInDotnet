@@ -238,6 +238,8 @@
   "CLICK_TO_ENLARGE": "Click to enlarge.",
   "DOWNLOADED_ONCE": "downloaded once",
   "DOWNLOADED_COUNT_FORMAT": "downloaded {0} times",
+  "SUBMITTED": "submitted",
+  "NO_ATTACHMENTS": "No attached files",
 
   //navigation
   "CHOOSE_DESTINATION_FORUM_TOPIC": "Choose destination forum and topic",
