@@ -253,7 +253,7 @@ namespace PhpbbInDotnet.Forum
                     on t equals r.forumId
                     into joined
                     from j in joined
-                    where !j.hasPassword || Cache.Get<int>(Utils.GetForumLoginCacheKey(usr.UserId, t)) != 1
+                    where !j.hasPassword || Cache.Get<int>(Utils.GetForumLoginCacheKey(usr?.UserId ?? Constants.ANONYMOUS_USER_ID, t)) != 1
                     select t
                 ).FirstOrDefault();
 
