@@ -18,6 +18,7 @@ using System.Data;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
+    [ValidateAntiForgeryToken]
     public class ViewForumModel : AuthenticatedPageModel
     {
         private bool _forceTreeRefresh;

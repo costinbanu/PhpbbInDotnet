@@ -238,6 +238,8 @@
   "CLICK_TO_ENLARGE": "Click pentru imaginea mărită.",
   "DOWNLOADED_ONCE": "descărcat o dată",
   "DOWNLOADED_COUNT_FORMAT": "descărcat de {0} ori",
+  "SUBMITTED": "trimis",
+  "NO_ATTACHMENTS": "Nici un fisier atașat",
 
   //navigation
   "CHOOSE_DESTINATION_FORUM_TOPIC": "Alege forumul și subiectul de destinație",
