@@ -527,9 +527,9 @@ else
                     </div>
                     <div class="FlexRight PostInputWidth">
                         <input asp-for="Email" /><br />
+                        <span asp-validation-for="Email" class="validation"></span>
                         <span class="Caption">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "EMAIL_CAPTION"])</span><br />
                         <input asp-for="ShowEmail" style="width:auto" /> @Html.Raw(Model.LanguageProvider.BasicText[Lang, "ALLOW_EMAIL_CONTACT"])<br />
-                        <span asp-validation-for="Email" class="validation"></span>
                     </div>
                 }
                 else
@@ -699,7 +699,7 @@ else
             @if (canEdit)
             {
                 <p>&nbsp;</p>
-                <input class="MyButton" type="submit" value="@Html.Raw(Model.LanguageProvider.Admin[Lang, "SAVE_CHANGES"])" style="width:auto" />
+                <input class="MyButton" type="submit" value="@Html.Raw(Model.LanguageProvider.Admin[Lang, "SAVE_CHANGES"])" style="width:auto" formnovalidate />
             }
             @if (!isSelf && !canEdit)
             {
