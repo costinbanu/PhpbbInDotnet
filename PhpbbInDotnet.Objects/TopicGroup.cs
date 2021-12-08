@@ -7,6 +7,6 @@ namespace PhpbbInDotnet.Objects
     {
         public TopicType? TopicType { get; set; } = null;
 
-        public IEnumerable<TopicDto> Topics { get; set; }
+        public IEnumerable<TopicDto>? Topics { get; set; }
     }
 }

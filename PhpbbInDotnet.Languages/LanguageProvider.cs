@@ -8,6 +8,7 @@ using PhpbbInDotnet.Utilities;
 using Serilog;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
@@ -93,7 +94,7 @@ namespace PhpbbInDotnet.Languages
             #endregion Translation init
         }
 
-        public string GetValidatedLanguage(AuthenticatedUser user, HttpRequest request = null)
+        public string GetValidatedLanguage(AuthenticatedUserExpanded? user, HttpRequest? request = null)
         {
             StringValues val = default;
             var fromHeadersOrDefault = ValidatedOrDefault(
@@ -109,34 +110,38 @@ namespace PhpbbInDotnet.Languages
             return ValidatedOrDefault(user.Language, fromHeadersOrDefault);
         }
 
-        private (bool isValid, string twoLetterLanguageName) IsLanguageValid(string language)
-            => _cache.GetOrAdd(
-                $"{nameof(IsLanguageValid)}_{language}",
-                () =>
-                {
-                    try
-                    {
-                        var parsed = new CultureInfo(language).TwoLetterISOLanguageName;
+        private bool IsLanguageValid(string language, [MaybeNullWhen(false)]out string parsed)
+        {
+            var (valid, toReturn) = _cache.GetOrAdd<(bool, string?)>(
+                  $"{nameof(IsLanguageValid)}_{language}",
+                  () =>
+                  {
+                      try
+                      {
+                          var parsed = new CultureInfo(language).TwoLetterISOLanguageName;
 
-                        if (_context.PhpbbLang.AsNoTracking().Any(lang => lang.LangIso == parsed) &&
-                            new Translation[] { BasicText, AboutCookies, Email, Enums, JSText, Errors, PostingGuide, TermsAndConditions, Moderator, Admin, CustomBBCodeGuide, AttachmentGuide, BBCodes }
-                            .All(x => x.Exists(parsed)))
-                        {
-                            return (true, parsed);
-                        }
-                        _logger.Warning("Language '{language}' was requested, but it does not exist.", parsed);
-                        return (false, null);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.Warning(ex, "Unable to parse language code '{language}'.", language);
-                        return (false, null);
-                    }
-                },
-                Translation.CACHE_EXPIRATION
-            );
+                          if (_context.PhpbbLang.AsNoTracking().Any(lang => lang.LangIso == parsed) &&
+                              new Translation[] { BasicText, AboutCookies, Email, Enums, JSText, Errors, PostingGuide, TermsAndConditions, Moderator, Admin, CustomBBCodeGuide, AttachmentGuide, BBCodes }
+                              .All(x => x.Exists(parsed)))
+                          {
+                              return (true, parsed);
+                          }
+                          _logger.Warning("Language '{language}' was requested, but it does not exist.", parsed);
+                          return (false, null);
+                      }
+                      catch (Exception ex)
+                      {
+                          _logger.Warning(ex, "Unable to parse language code '{language}'.", language);
+                          return (false, null);
+                      }
+                  },
+                  Translation.CACHE_EXPIRATION
+              );
+            parsed = toReturn;
+            return valid;
+        }
 
-        private string ValidatedOrDefault(string language, string @default)
+        private string ValidatedOrDefault(string? language, string @default)
         {
             if (string.IsNullOrWhiteSpace(language))
             {
@@ -144,12 +149,12 @@ namespace PhpbbInDotnet.Languages
             }
 
             language = language.Split(',', ';').First().Trim();
-            var (isValid, twoLetterLanguageName) = IsLanguageValid(language);
+            var isValid = IsLanguageValid(language, out var twoLetterLanguageName);
             if (!isValid && language.Length >= 2)
             {
-                (isValid, twoLetterLanguageName) = IsLanguageValid(language.Substring(0, 2));
+                isValid = IsLanguageValid(language.Substring(0, 2), out twoLetterLanguageName);
             }
-            return isValid ? twoLetterLanguageName : @default;
+            return isValid ? twoLetterLanguageName! : @default;
         }
 
         private static readonly char[] DATE_FORMATS = new[] { 'f', 'g' };

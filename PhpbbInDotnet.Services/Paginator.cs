@@ -6,7 +6,7 @@ namespace PhpbbInDotnet.Utilities
 {
     public class Paginator
     {
-        public PaginationDto Pagination { get; private set; }
+        public PaginationDto? Pagination { get; private set; }
 
         public bool IsFirstPage { get; private set; }
 
@@ -29,7 +29,7 @@ namespace PhpbbInDotnet.Utilities
             Init(count, pageNum, link, pageNumKey);
         }
 
-        public Paginator(int count, int pageNum, string link, int? topicId = null, AuthenticatedUser usr = null, string pageNumKey = "PageNum")
+        public Paginator(int count, int pageNum, string link, int? topicId = null, AuthenticatedUserExpanded? usr = null, string pageNumKey = "PageNum")
         {
             PostsPerPage = new List<SelectListItem>();
             for (var i = 0; i < 5; i++)
@@ -40,9 +40,9 @@ namespace PhpbbInDotnet.Utilities
 
             PageSize = Constants.DEFAULT_PAGE_SIZE;
 
-            if (topicId != null && usr != null)
+            if (topicId is not null && usr is not null)
             {
-                PageSize = usr.TopicPostsPerPage.ContainsKey(topicId.Value) ? usr.TopicPostsPerPage[topicId.Value] : Constants.DEFAULT_PAGE_SIZE;
+                PageSize = usr.TopicPostsPerPage!.ContainsKey(topicId.Value)? usr.TopicPostsPerPage[topicId.Value] : Constants.DEFAULT_PAGE_SIZE;
             }
 
             IsAnonymous = usr?.IsAnonymous ?? true;

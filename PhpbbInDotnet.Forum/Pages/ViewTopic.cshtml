@@ -65,7 +65,7 @@
     @Html.Raw(Model.LanguageProvider.BasicText[Lang, "PARENT_FORUM", Casing.FirstUpper]):
     <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@Html.Raw(Model.ForumTitle)</a>
 </span>
-@if (!CurrentUser.IsAnonymous)
+@if (CurrentUser?.IsAnonymous == false)
 {
     <span>&nbsp;&bull;&nbsp;</span>
     @await Html.PartialAsync(
@@ -100,7 +100,7 @@
 }, ViewData)
 
 @await Html.PartialAsync("_PaginationControlsPartial", new _PaginationControlsPartialModel(
-    paginator: Model.Paginator,
+    paginator: Model.Paginator!,
     allowPaginationChange: true,
     back: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum - 1}",
     forward: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum + 1}",
@@ -114,11 +114,11 @@
     var index = 0;
     var reachedAnUnreadPost = false;
     var useModActions = false;
-    @foreach (var post in Model.Posts)
+    @foreach (var post in Model.Posts!)
     {
         post.Report = Model.Reports?.FirstOrDefault(r => r.PostId == post.PostId);
         post.Unread = reachedAnUnreadPost || (reachedAnUnreadPost = await Model.IsPostUnread(post.ForumId, post.TopicId, post.PostId));
-        post.Attachments = Model.Attachments.TryGetValue(post.PostId, out var val) ? val : new List<AttachmentDto>();
+        post.Attachments = Model.Attachments!.TryGetValue(post.PostId, out var val) ? val : new List<AttachmentDto>();
 
         int? closestPostIdIndex = null;
         if (Model.Posts.Count > 1)
@@ -141,9 +141,9 @@
             IsCurrentUserMod = IsMod,
             IsPostFirstInPage = post == Model.Posts.First(),
             IsPostLastInPage = post == Model.Posts.Last(),
-            IsLastPage = Model.Paginator.IsLastPage,
+            IsLastPage = Model.Paginator!.IsLastPage,
             IsTopicLocked = Model.IsLocked,
-            ShowFooter = !(CurrentUser.Foes?.Contains(post.AuthorId) ?? false),
+            ShowFooter = CurrentUser!.Foes?.Contains(post.AuthorId) != true,
             ShowEditHistory = (index < Model.Posts.Count - 1 && post.PostEditTime > Model.Posts[index + 1].PostTime) || (post.PostEditCount > 0 && post.PostEditUser != post.AuthorName),
             Language = Lang,
             ParentHttpContext = HttpContext,
@@ -198,7 +198,7 @@ else if (!IsAnonymous)
 @await Html.PartialAsync(
     "_PaginationControlsPartial",
     new _PaginationControlsPartialModel(
-        paginator: Model.Paginator,
+        paginator: Model.Paginator!,
         allowPaginationChange: true,
         back: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum - 1}",
         forward: $"ViewTopic?TopicId={Model.TopicId}&PageNum={Model.PageNum + 1}",

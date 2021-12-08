@@ -25,10 +25,10 @@ namespace PhpbbInDotnet.Forum.Pages
     public partial class PostingModel : AuthenticatedPageModel
     {
         [BindProperty]
-        public string PostTitle { get; set; }
+        public string? PostTitle { get; set; }
         
         [BindProperty]
-        public string PostText { get; set; }
+        public string? PostText { get; set; }
         
         [BindProperty(SupportsGet = true)]
         public int ForumId { get; set; }
@@ -49,13 +49,13 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool QuotePostInDifferentTopic { get; set; }
         
         [BindProperty]
-        public string PollQuestion { get; set; }
+        public string? PollQuestion { get; set; }
         
         [BindProperty]
-        public string PollOptions { get; set; }
+        public string? PollOptions { get; set; }
         
         [BindProperty]
-        public string PollExpirationDaysString { get; set; }
+        public string? PollExpirationDaysString { get; set; }
         
         [BindProperty]
         public int? PollMaxOptions { get; set; }
@@ -64,7 +64,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool PollCanChangeVote { get; set; }
         
         [BindProperty]
-        public IEnumerable<IFormFile> Files { get; set; }
+        public IEnumerable<IFormFile>? Files { get; set; }
 
         [BindProperty]
         public bool ShouldResize { get; set; } = true;
@@ -76,40 +76,40 @@ namespace PhpbbInDotnet.Forum.Pages
         public List<string> DeleteFileDummyForValidation { get; set; }
 
         [BindProperty]
-        public string EditReason { get; set; }
+        public string? EditReason { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public int? ReceiverId { get; set; }
 
         [BindProperty]
-        public string ReceiverName { get; set; }
+        public string? ReceiverName { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public int? PrivateMessageId { get; set; }
 
         [BindProperty]
-        public List<PhpbbAttachments> Attachments { get; set; }
+        public List<PhpbbAttachments>? Attachments { get; set; }
 
         [BindProperty]
         public long? PostTime { get; set; }
 
         [BindProperty]
-        public PhpbbTopics CurrentTopic { get; set; }
+        public PhpbbTopics? CurrentTopic { get; set; }
 
         [BindProperty]
-        public PostingActions Action { get; set; }
+        public PostingActions? Action { get; set; }
 
         [BindProperty]
         public long? LastPostTime { get; set; }
 
         [BindProperty]
-        public string ReturnUrl { get; set; }
+        public string? ReturnUrl { get; set; }
 
-        public PostDto PreviewablePost { get; private set; }
-        public PollDto PreviewablePoll { get; private set; }
+        public PostDto? PreviewablePost { get; private set; }
+        public PollDto? PreviewablePoll { get; private set; }
         public bool ShowAttach { get; private set; } = false;
         public bool ShowPoll { get; private set; } = false;
-        public PhpbbForums CurrentForum { get; private set; }
+        public PhpbbForums? CurrentForum { get; private set; }
         public bool DraftSavedSuccessfully { get; private set; } = false;
         public Guid? PreviewCorrelationId { get; private set; }
 
@@ -119,7 +119,7 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly BBCodeRenderingService _renderingService;
         private readonly IConfiguration _config;
         private readonly ExternalImageProcessor _imageProcessorOptions;
-        private readonly HttpClient _imageProcessorClient;
+        private readonly HttpClient? _imageProcessorClient;
 
         static readonly DateTimeOffset CACHE_EXPIRATION = DateTimeOffset.UtcNow.AddHours(4);
 
@@ -136,7 +136,7 @@ namespace PhpbbInDotnet.Forum.Pages
             _renderingService = renderingService;
             _config = config;
             _imageProcessorOptions = _config.GetObject<ExternalImageProcessor>();
-            _imageProcessorClient = _imageProcessorOptions.Api.Enabled ? httpClientFactory.CreateClient(_imageProcessorOptions.Api.ClientName) : null;
+            _imageProcessorClient = _imageProcessorOptions.Api?.Enabled == true ? httpClientFactory.CreateClient(_imageProcessorOptions.Api.ClientName) : null;
         }
 
         public string GetActualCacheKey(string key, bool isPersonalizedData)
@@ -154,7 +154,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     {
                         user.UserId,
                         TopicId,
-                        pageSize = user.TopicPostsPerPage.TryGetValue(TopicId ?? 0, out var val) ? val : null as int?
+                        pageSize = user.TopicPostsPerPage!.TryGetValue(TopicId ?? 0, out var val) ? val : null as int?
                     }
                 );
 
@@ -168,14 +168,14 @@ namespace PhpbbInDotnet.Forum.Pages
             return (new List<PostDto>(), new Dictionary<int, List<AttachmentDto>>(), Guid.Empty);
         }
 
-        private List<KeyValuePair<string, int>> _userMap = null;
+        private List<KeyValuePair<string, int>>? _userMap = null;
         public async Task<List<KeyValuePair<string, int>>> GetUserMap()
             => _userMap ??= await UserService.GetUserMap();
 
         public async Task<IEnumerable<KeyValuePair<string, string>>> GetUsers()
             => (await GetUserMap()).Select(map => KeyValuePair.Create(map.Key, $"[url={_config.GetValue<string>("BaseUrl")}/User?UserId={map.Value}]{map.Key}[/url]")).ToList();
 
-        private async Task<int?> UpsertPost(PhpbbPosts post, AuthenticatedUser usr)
+        private async Task<int?> UpsertPost(PhpbbPosts? post, AuthenticatedUserExpanded usr)
         {
             var lang = GetLanguage();
 
@@ -202,7 +202,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var curTopic = Action != PostingActions.NewTopic ? await connection.QuerySingleOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { TopicId }) : null;
             var canCreatePoll = Action == PostingActions.NewTopic || (Action == PostingActions.EditForumPost && (curTopic?.TopicFirstPostId ?? 0) == PostId);
 
-            if ((curTopic?.TopicStatus.ToBool() ?? false) && !await IsCurrentUserModeratorHere(ForumId))
+            if (curTopic?.TopicStatus == 1 && !await IsCurrentUserModeratorHere(ForumId))
             {
                 var key = Action == PostingActions.EditForumPost ? "CANT_EDIT_POST_TOPIC_CLOSED" : "CANT_SUBMIT_POST_TOPIC_CLOSED";
                 ModelState.AddModelError(nameof(PostText), LanguageProvider.Errors[lang, key, Casing.FirstUpper]);
@@ -246,14 +246,14 @@ namespace PhpbbInDotnet.Forum.Pages
                     new
                     {
                         ForumId,
-                        topicId = TopicId.Value,
+                        topicId = TopicId!.Value,
                         usr.UserId,
                         subject = HttpUtility.HtmlEncode(PostTitle),
                         textForSaving,
                         now = DateTime.UtcNow.ToUnixTimestamp(),
                         attachment = hasAttachments.ToByte(),
                         checksum = Utils.CalculateMD5Hash(textForSaving),
-                        ip = HttpContext.Connection.RemoteIpAddress.ToString(),
+                        ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
                         username = HttpUtility.HtmlEncode(usr.Username)
                     }
                 );
@@ -283,7 +283,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 await _postService.CascadePostEdit(post);
             }
 
-            foreach (var attach in Attachments)
+            foreach (var attach in Attachments!)
             {
                 await connection.ExecuteAsync(
                     "UPDATE phpbb_attachments SET post_msg_id = @postId, topic_id = @topicId, attach_comment = @comment, is_orphan = 0 WHERE attach_id = @attachId",
@@ -320,8 +320,8 @@ namespace PhpbbInDotnet.Forum.Pages
                         "UPDATE phpbb_topics SET poll_start = @start, poll_length = @length, poll_max_options = @maxOptions, poll_title = @title, poll_vote_change = @change WHERE topic_id = @topicId",
                         new
                         {
-                            start = curTopic.PollStart == 0 ? DateTime.UtcNow.ToUnixTimestamp() : curTopic.PollStart,
-                            length = (int)TimeSpan.FromDays(double.Parse(PollExpirationDaysString)).TotalSeconds,
+                            start = curTopic!.PollStart == 0 ? DateTime.UtcNow.ToUnixTimestamp() : curTopic.PollStart,
+                            length = (int)TimeSpan.FromDays(double.TryParse(PollExpirationDaysString, out var exp) ? exp : 1d).TotalSeconds,
                             maxOptions = (byte)(PollMaxOptions ?? 1),
                             title = HttpUtility.HtmlEncode(PollQuestion),
                             change = PollCanChangeVote.ToByte(),
@@ -375,7 +375,7 @@ namespace PhpbbInDotnet.Forum.Pages
             return await toDo();
         }
 
-        private IActionResult PageWithError(PhpbbForums curForum, string errorKey, string errorMessage)
+        private IActionResult PageWithError(PhpbbForums? curForum, string errorKey, string errorMessage)
         {
             ModelState.AddModelError(errorKey, errorMessage);
             CurrentForum = curForum;
@@ -384,7 +384,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task<IActionResult> WithBackup(Func<Task<IActionResult>> toDo)
         {
-            Cache.Add(GetActualCacheKey("Text", true), new CachedText { Text = PostText, CacheTime = DateTime.UtcNow }, CACHE_EXPIRATION);
+            Cache.Add(GetActualCacheKey("Text", true), new CachedText { Text = PostText!, CacheTime = DateTime.UtcNow }, CACHE_EXPIRATION);
             Cache.Add(GetActualCacheKey("ForumId", true), ForumId, CACHE_EXPIRATION);
             Cache.Add(GetActualCacheKey("TopicId", true), TopicId ?? 0, CACHE_EXPIRATION);
             Cache.Add(GetActualCacheKey("PostId", true), PostId ?? 0, CACHE_EXPIRATION);
@@ -409,7 +409,7 @@ namespace PhpbbInDotnet.Forum.Pages
             if ((!string.IsNullOrWhiteSpace(cachedText?.Text) && string.IsNullOrWhiteSpace(PostText)) 
                 || (!string.IsNullOrWhiteSpace(cachedText?.Text) && (cachedText?.CacheTime ?? DateTime.MinValue) > (minCacheAge ?? DateTime.UtcNow)))
             {
-                PostText = cachedText.Text;
+                PostText = cachedText!.Text;
             }
             var cachedForumId = await forumIdTask;
             ForumId = cachedForumId != 0 ? cachedForumId : ForumId;
@@ -429,7 +429,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public class CachedText
         {
-            public string Text { get; set; }
+            public string? Text { get; set; }
             public DateTime CacheTime { get; set; }
         }
     }

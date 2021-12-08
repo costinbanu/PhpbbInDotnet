@@ -54,7 +54,7 @@
     }
 </script>
 
-@if (Model.Mode == ViewForumMode.Forum && (CurrentUser.JumpToUnread ?? false))
+@if (Model.Mode == ViewForumMode.Forum && (CurrentUser!.JumpToUnread ?? false))
 {
 <script>
     $(document).ready(function () {
@@ -133,7 +133,7 @@ else
     <p>&nbsp;</p>
     @await Html.PartialAsync(
         "_ForumDisplayPartial",
-        new PhpbbInDotnet.Forum.Pages.CustomPartials._ForumDisplayPartialModel(Model.ForumId, Model.Forums, UserDateFormat, true, CurrentUser, true, Lang),
+        new PhpbbInDotnet.Forum.Pages.CustomPartials._ForumDisplayPartialModel(Model.ForumId, Model.Forums!, UserDateFormat, true, CurrentUser!, true, Lang),
         ViewData
     )
 }
@@ -155,7 +155,7 @@ else
         @await Html.PartialAsync(
             "_PaginationControlsPartial",
             new CustomPartials._PaginationControlsPartialModel(
-                paginator: Model.Paginator,
+                paginator: Model.Paginator!,
                 allowPaginationChange: false,
                 back: $"/ViewForum?handler={handler}&pageNum={(Model.PageNum ?? 1) - 1}",
                 forward: $"/ViewForum?handler={handler}&pageNum={(Model.PageNum ?? 1) + 1}",
@@ -166,7 +166,7 @@ else
         );
     }
     var isFirstTopicType = true;
-    foreach (var topicGroup in Model.Topics)
+    foreach (var topicGroup in Model.Topics!)
     {
         var isFirstInGroup = false;
         if (Model.Mode == ViewForumMode.Forum)
@@ -205,7 +205,7 @@ else
                 topic.Unread = Model.Mode == ViewForumMode.NewPosts || await Model.IsTopicUnread(topic.ForumId ?? 0, topic.TopicId ?? 0);
                 if (Model.Mode != ViewForumMode.NewPosts)
                 {
-                    var pageSize = CurrentUser.TopicPostsPerPage.ContainsKey(topic.TopicId ?? 0) ? CurrentUser.TopicPostsPerPage[topic.TopicId ?? 0] : Constants.DEFAULT_PAGE_SIZE;
+                    var pageSize = CurrentUser!.TopicPostsPerPage!.ContainsKey(topic.TopicId ?? 0) ? CurrentUser.TopicPostsPerPage[topic.TopicId ?? 0] : Constants.DEFAULT_PAGE_SIZE;
                     topic.Pagination = new Objects.PaginationDto($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", topic.PostCount ?? 0, pageSize, 0, "PageNum");
                 }
             }
@@ -233,7 +233,7 @@ else
                         </span>
                         <br />
                     }
-                    @if (topicGroup.TopicType == TopicType.Important)
+                    @if (topicGroup!.TopicType == TopicType.Important)
                     {
                         <span>&#x26A0;&#xFE0F;&nbsp;</span>
                     }
@@ -287,7 +287,7 @@ else
                 </span>
                 @if (Model.Mode != ViewForumMode.Drafts)
                 {
-                    if (CurrentUser.Foes?.Contains(topic.TopicLastPosterId ?? 0) ?? false)
+                    if (CurrentUser!.Foes?.Contains(topic.TopicLastPosterId ?? 0) ?? false)
                     {
                         topic.TopicLastPosterColour = null;
                         topic.TopicLastPosterName = "[Ascuns]";
@@ -299,7 +299,7 @@ else
                         AuthorName = topic.TopicLastPosterName,
                         AuthorColor = topic.TopicLastPosterColour,
                         CreationTime = topic.LastPostTime,
-                        AssetId = topic.TopicId.Value,
+                        AssetId = topic.TopicId!.Value,
                         DateFormat = UserDateFormat,
                         LinkHref = topic.TopicLastPostId == null ? null : $"./ViewTopic?postId={topic.TopicLastPostId}&handler=ByPostId",
                         ShowAsLast = true,
@@ -334,7 +334,7 @@ else
         @await Html.PartialAsync(
             "_PaginationControlsPartial",
             new CustomPartials._PaginationControlsPartialModel(
-                paginator: Model.Paginator,
+                paginator: Model.Paginator!,
                 allowPaginationChange: false,
                 back: $"/ViewForum?handler={handler}&pageNum={(Model.PageNum ?? 1) - 1}",
                 forward: $"/ViewForum?handler={handler}&pageNum={(Model.PageNum ?? 1) + 1}",

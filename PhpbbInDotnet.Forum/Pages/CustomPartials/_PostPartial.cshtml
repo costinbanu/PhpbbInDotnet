@@ -12,11 +12,11 @@
 
 @{
     var userDateFormat = Model.CurrentUser?.UserDateFormat ?? _languageProvider.GetDefaultDateFormat(Model.Language);
-    var rowClass = Model.Post.Report != null && (Model.IsCurrentUserMod || Model.Post.Report.ReporterId == Model.CurrentUser.UserId) ? "ReportedPost" : string.Empty;
+    var rowClass = Model.Post!.Report != null && (Model.IsCurrentUserMod || Model.Post.Report.ReporterId == Model.CurrentUser?.UserId) ? "ReportedPost" : string.Empty;
     var titleClass = Model.Post.Unread ? "UnreadTitle" : "";
     var color = string.IsNullOrWhiteSpace(Model.Post.AuthorColor) || Model.Post.AuthorColor == Constants.DEFAULT_USER_COLOR ? "auto" : $"#{Model.Post.AuthorColor}";
 
-    @if (Model.CurrentUser.Foes?.Contains(Model.Post.AuthorId) ?? false)
+    @if (Model.CurrentUser?.Foes?.Contains(Model.Post.AuthorId) == true)
     {
         Model.HasCurrentUserPM = false;
         Model.Post.AuthorId = 1;
@@ -29,7 +29,7 @@
         Model.Post.PostText = _languageProvider.BasicText[Model.Language, "CONTENT_HIDDEN_WARNING_BBCODE", Casing.FirstUpper];
     }
 
-    await _renderingService.ProcessPost(Model.Post, Model.ParentPageContext, Model.ParentHttpContext, true, Model.ToHighlight);
+    await _renderingService.ProcessPost(Model.Post, Model.ParentPageContext!, Model.ParentHttpContext!, true, Model.ToHighlight);
 
     @if (!Model.IsPostFirstInPage)
     {
@@ -83,7 +83,7 @@
                 }
             </span>
             <div style="max-width:100%; overflow-wrap: break-word">
-                @if (Model.Post.Report != null && (Model.IsCurrentUserMod || Model.Post.Report.ReporterId == Model.CurrentUser.UserId))
+                @if (Model.Post.Report != null && (Model.IsCurrentUserMod || Model.Post.Report.ReporterId == Model.CurrentUser?.UserId))
                 {
                     <a href="javascript:vt.showReportViewer(@Model.Post.PostId, @Model.Post.Report.Id, '@Model.Post.Report.ReasonTitle', '@Model.Post.Report.ReasonDescription', '@_renderingService.BbCodeToHtml(Model.Post.Report.Details, string.Empty)', '@Model.Post.Report.ReporterUsername')" style="font-weight:bold; font-size:1.2em">
                         @Html.Raw(_languageProvider.BasicText[Model.Language, "SHOW_REPORT", Casing.FirstUpper])
@@ -92,7 +92,7 @@
                 }
                 <br />
                 @Html.Raw(Model.Post.PostText)
-                @foreach (var attachment in Model.Post.Attachments)
+                @foreach (var attachment in Model.Post?.Attachments ?? new List<Objects.AttachmentDto>())
                 {
                     @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
                 }
@@ -105,7 +105,7 @@
                     @if (Model.ShowEditHistory)
                     {
                         <div class="Caption ThemeColor">
-                            @Html.Raw(_languageProvider.BasicText[Model.Language, "LAST_EDITED_BY"]) @Model.Post.PostEditUser
+                            @Html.Raw(_languageProvider.BasicText[Model.Language, "LAST_EDITED_BY"]) @Model.Post!.PostEditUser
                             <script>writeDate("@Model.Post.PostEditTime.ToUtcTime().ToString("o")", "@userDateFormat");</script>.
                             @if (!string.IsNullOrWhiteSpace(Model.Post.PostEditReason))
                             {
@@ -116,10 +116,10 @@
                         <p></p>
                     }
                     <div class="PostActions">
-                        @if ((!Model.IsTopicLocked || Model.IsCurrentUserMod) && !Model.CurrentUser.IsAnonymous && (!Model.IsPostLastInPage || !Model.IsLastPage))
+                        @if ((!Model.IsTopicLocked || Model.IsCurrentUserMod) && Model.CurrentUser?.IsAnonymous == false && (!Model.IsPostLastInPage || !Model.IsLastPage))
                         {
                             <span>
-                                <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@Model.Post.PostId">
+                                <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@Model.Post!.PostId">
                                     @if (Model.IsTopicLocked)
                                     {
                                         <span>&#x1F4AC; @Html.Raw(_languageProvider.BasicText[Model.Language, "CLOSED_TOPIC", Casing.FirstUpper])</span>
@@ -131,7 +131,7 @@
                                 </a>
                             </span>
                         }
-                        else if (!Model.CurrentUser.IsAnonymous && (!Model.IsPostLastInPage || !Model.IsLastPage))
+                        else if (Model.CurrentUser?.IsAnonymous == false && (!Model.IsPostLastInPage || !Model.IsLastPage))
                         {
                             <span>
                                 <a href="javascript:;" title="@Html.Raw(_languageProvider.BasicText[Model.Language, "CLOSED_TOPIC_CAPTION"])">
@@ -140,19 +140,19 @@
                             </span>
                         }
                         
-                        @if (!Model.CurrentUser.IsAnonymous)
+                        @if (Model.CurrentUser?.IsAnonymous == false)
                         {
                             <span>
-                                <a asp-page="/Confirm" asp-page-handler="DestinationPicker" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@Model.Post.PostId" asp-route-showTopicSelector="true" asp-route-quotePostInDifferentTopic="true" asp-route-destination="./Posting" asp-route-destinationHandler="QuoteForumPost">
+                                <a asp-page="/Confirm" asp-page-handler="DestinationPicker" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@Model.Post!.PostId" asp-route-showTopicSelector="true" asp-route-quotePostInDifferentTopic="true" asp-route-destination="./Posting" asp-route-destinationHandler="QuoteForumPost">
                                     <span>&#x1F4AC; @Html.Raw(_languageProvider.BasicText[Model.Language, "REPLY_AS_QUOTE_IN_ANOTHER_TOPIC"])</span>
                                 </a>
                             </span>
                         }
 
-                        @if (Model.Post.Report == null && !Model.CurrentUser.IsAnonymous)
+                        @if (Model.Post?.Report == null && Model.CurrentUser?.IsAnonymous == false)
                         {
                             <span>
-                                <a href="javascript:vt.showReportForm(@Model.Post.PostId);">
+                                <a href="javascript:vt.showReportForm(@Model.Post!.PostId);">
                                     &#x2757; @Html.Raw(_languageProvider.BasicText[Model.Language, "DO_REPORT", Casing.FirstUpper])
                                 </a>
                             </span>
@@ -160,14 +160,14 @@
                         @if (Model.IsCurrentUserMod)
                         {
                             <span>
-                                <a href="javascript:vt.showMessageDetails('@Model.Post.IP', '@Model.Post.PostEditTime.ToUtcTime().ToString("o")', '@userDateFormat', @Model.Post.PostEditCount, '@Model.Post.PostEditUser');">
+                                <a href="javascript:vt.showMessageDetails('@Model.Post!.IP', '@Model.Post.PostEditTime.ToUtcTime().ToString("o")', '@userDateFormat', @Model.Post.PostEditCount, '@Model.Post.PostEditUser');">
                                     &#x2753; @Html.Raw(_languageProvider.BasicText[Model.Language, "INFORMATION", Casing.FirstUpper])
                                 </a>
                             </span>
                             <span>
                                 <label>
                                     @Html.Raw(_languageProvider.Moderator[Model.Language, "SELECT_FOR_MODERATION", Casing.FirstUpper])
-                                    <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="mod.appendToStringList(this, 'selectedPostIds')" @(Model.PostIdsForModerator.Contains(Model.Post.PostId) ? "checked" : "") />
+                                    <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="mod.appendToStringList(this, 'selectedPostIds')" @(Model.PostIdsForModerator?.Contains(Model.Post.PostId) == true ? "checked" : "") />
                                 </label>
                             </span>
                             <span>
@@ -176,10 +176,10 @@
                                 </a>
                             </span>
                         }
-                        @if (Model.IsCurrentUserMod || (Model.Post.AuthorId == Model.CurrentUser.UserId && (Model.CurrentUser.PostEditTime == 0 || DateTime.UtcNow.Subtract(Model.Post.PostCreationTime ?? default).TotalMinutes <= Model.CurrentUser.PostEditTime)))
+                        @if (Model.IsCurrentUserMod || (Model.Post!.AuthorId == Model.CurrentUser?.UserId && (Model.CurrentUser.PostEditTime == 0 || DateTime.UtcNow.Subtract(Model.Post.PostCreationTime ?? default).TotalMinutes <= Model.CurrentUser.PostEditTime)))
                         {
                             <span>
-                                <a asp-page="/Posting" asp-page-handler="EditPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@Model.Post.PostId">
+                                <a asp-page="/Posting" asp-page-handler="EditPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@Model.Post!.PostId">
                                     &#x1F4DD; @Html.Raw(_languageProvider.BasicText[Model.Language, "DO_EDIT", Casing.FirstUpper])
                                 </a>
                             </span>
@@ -187,7 +187,7 @@
                             {
                                 if (!Model.IsCurrentUserMod)
                                 {
-                                    <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="mod.appendToStringList(this, 'selectedPostIds')" @(Model.PostIdsForModerator.Contains(Model.Post.PostId) ? "checked" : "") style="display:none" />
+                                    <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="mod.appendToStringList(this, 'selectedPostIds')" @(Model.PostIdsForModerator?.Contains(Model.Post.PostId) == true ? "checked" : "") style="display:none" />
                                 }
                                 <span>
                                     <a href="javascript:mod.deletePost(@Model.Post.PostId, @Model.ClosestPostId)">

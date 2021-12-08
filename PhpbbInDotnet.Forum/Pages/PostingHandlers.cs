@@ -31,7 +31,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 Action = PostingActions.NewForumPost;
                 ReturnUrl = Request.GetEncodedPathAndQuery();
                 var conn = await Context.GetDbConnectionAsync();
-                var draft = conn.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = TopicId.Value });
+                var draft = conn.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = TopicId ?? 0 });
                 if (draft != null)
                 {
                     PostTitle = HttpUtility.HtmlDecode(draft.DraftSubject);
@@ -160,7 +160,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         {
                             PostTitle = HttpUtility.HtmlDecode(post.PostSubject);
                             PostText = $"[quote]\n{_writingService.CleanBbTextForDisplay(post.PostText, post.BbcodeUid)}\n[/quote]\n[url={_config.GetValue<string>("BaseUrl").Trim('/')}/ViewTopic?postId={PostId}&handler=byPostId]{PostTitle}[/url]\n";
-                            ReceiverId = author.UserId;
+                            ReceiverId = author!.UserId;
                             ReceiverName = author.Username;
                         }
                         else
@@ -184,7 +184,7 @@ namespace PhpbbInDotnet.Forum.Pages
                             var title = HttpUtility.HtmlDecode(msg.MessageSubject);
                             PostTitle = title.StartsWith(Constants.REPLY) ? title : $"{Constants.REPLY}{title}";
                             PostText = $"[quote]\n{_writingService.CleanBbTextForDisplay(msg.MessageText, msg.BbcodeUid)}\n[/quote]\n";
-                            ReceiverName = author.Username;
+                            ReceiverName = author!.Username;
                         }
                         else
                         {
@@ -254,7 +254,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var images = Files.Where(f => f.ContentType.IsImageMimeType());
                 var nonImages = Files.Where(f => !f.ContentType.IsImageMimeType());
 
-                if (_imageProcessorOptions.Api.Enabled && (ShouldResize || ShouldHideLicensePlates))
+                if (_imageProcessorOptions.Api?.Enabled == true && (ShouldResize || ShouldHideLicensePlates))
                 {
                     images = await Task.WhenAll(images.Select(async image =>
                     {
@@ -270,7 +270,7 @@ namespace PhpbbInDotnet.Forum.Pages
                             formContent.Add(new StringContent((Constants.ONE_MB * sizeLimit.Images).ToString()), "SizeLimit");
                         }
 
-                        var result = await _imageProcessorClient.PostAsync(_imageProcessorOptions.Api.RelativeUri, formContent);
+                        var result = await _imageProcessorClient!.PostAsync(_imageProcessorOptions.Api.RelativeUri, formContent);
                         result.EnsureSuccessStatusCode();
 
                         var resultStream = await result.Content.ReadAsStreamAsync();
@@ -344,7 +344,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 if (!string.IsNullOrWhiteSpace(PostText))
                 {
                     PostText = PostText.Replace($"[attachment={index}]{attachment.RealFilename}[/attachment]", string.Empty, StringComparison.InvariantCultureIgnoreCase);
-                    for (int i = index + 1; i < Attachments.Count; i++)
+                    for (int i = index + 1; i < Attachments!.Count; i++)
                     {
                         PostText = PostText.Replace($"[attachment={i}]{Attachments[i].RealFilename}[/attachment]", $"[attachment={i - 1}]{Attachments[i].RealFilename}[/attachment]", StringComparison.InvariantCultureIgnoreCase);
                     }
@@ -352,7 +352,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 var connection = await Context.GetDbConnectionAsync();
                 await connection.ExecuteAsync("DELETE FROM phpbb_attachments WHERE attach_id = @attachId", new { attachment.AttachId });
-                var dummy = Attachments.Remove(attachment);
+                var dummy = Attachments!.Remove(attachment);
                 ShowAttach = Attachments?.Any() == true;
                 ModelState.Clear();
                 return Page();
@@ -379,21 +379,21 @@ namespace PhpbbInDotnet.Forum.Pages
                 var conn = await Context.GetDbConnectionAsync();
 
                 var currentPost = Action == PostingActions.EditForumPost ? await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @PostId", new { PostId }) : null;
-                var userId = Action == PostingActions.EditForumPost ? currentPost.PosterId : user.UserId;
+                var userId = Action == PostingActions.EditForumPost ? currentPost!.PosterId : user.UserId;
                 var postAuthor = await conn.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
                 var rankId = postAuthor?.UserRank ?? 0;
                 var newPostText = PostText;
                 var uid = string.Empty;
                 newPostText = HttpUtility.HtmlEncode(newPostText);
 
-                var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(Attachments, lang, 1, true);
+                var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(Attachments!, lang, 1, true);
                 PreviewCorrelationId = cacheResult.CorrelationId;
                 PreviewablePost = new PostDto
                 {
                     Attachments = cacheResult.Attachments.FirstOrDefault().Value ?? new List<AttachmentDto>(),
-                    AuthorColor = postAuthor.UserColour,
-                    AuthorId = postAuthor.UserId,
-                    AuthorName = postAuthor.Username,
+                    AuthorColor = postAuthor?.UserColour,
+                    AuthorId = postAuthor?.UserId ?? Constants.ANONYMOUS_USER_ID,
+                    AuthorName = postAuthor?.Username ?? Constants.ANONYMOUS_USER_NAME,
                     AuthorRank = (await conn.QueryFirstOrDefaultAsync("SELECT * FROM phpbb_ranks WHERE rank_id = @rankId", new { rankId }))?.RankTitle,
                     BbcodeUid = uid,
                     PostEditCount = (short)(Action == PostingActions.EditForumPost ? (currentPost?.PostEditCount ?? 0) + 1 : 0),
@@ -410,13 +410,13 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     var topicId = currentPost?.TopicId ?? 0;
                     var curTopic = await Context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == topicId);
-                    var pollStart = ((curTopic?.PollStart ?? 0) == 0 ? DateTime.UtcNow.ToUnixTimestamp() : curTopic.PollStart).ToUtcTime();
+                    var pollStart = ((curTopic?.PollStart ?? 0) == 0 ? DateTime.UtcNow.ToUnixTimestamp() : curTopic!.PollStart).ToUtcTime();
                     PreviewablePoll = new PollDto
                     {
                         PollTitle = HttpUtility.HtmlEncode(PollQuestion),
                         PollOptions = new List<PollOption>(GetPollOptionsEnumerable().Select(x => new PollOption { PollOptionText = HttpUtility.HtmlEncode(x) })),
                         VoteCanBeChanged = PollCanChangeVote,
-                        PollDurationSecons = (int)TimeSpan.FromDays(double.Parse(PollExpirationDaysString)).TotalSeconds,
+                        PollDurationSecons = (int)TimeSpan.FromDays(double.TryParse(PollExpirationDaysString, out var val) ? val : 1d).TotalSeconds,
                         PollMaxOptions = PollMaxOptions ?? 1,
                         PollStart = pollStart
                     };
@@ -486,8 +486,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 var (Message, IsSuccess) = Action switch
                 {
-                    PostingActions.NewPrivateMessage => await UserService.SendPrivateMessage(user.UserId, user.Username, ReceiverId.Value, HttpUtility.HtmlEncode(PostTitle), await _writingService.PrepareTextForSaving(PostText), PageContext, HttpContext),
-                    PostingActions.EditPrivateMessage => await UserService.EditPrivateMessage(PrivateMessageId.Value, HttpUtility.HtmlEncode(PostTitle), await _writingService.PrepareTextForSaving(PostText)),
+                    PostingActions.NewPrivateMessage => await UserService.SendPrivateMessage(user.UserId, user.Username!, ReceiverId!.Value, HttpUtility.HtmlEncode(PostTitle)!, await _writingService.PrepareTextForSaving(PostText), PageContext, HttpContext),
+                    PostingActions.EditPrivateMessage => await UserService.EditPrivateMessage(PrivateMessageId!.Value, HttpUtility.HtmlEncode(PostTitle)!, await _writingService.PrepareTextForSaving(PostText)),
                     _ => ("Unknown action", false)
                 };
 

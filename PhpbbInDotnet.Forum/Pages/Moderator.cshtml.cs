@@ -28,30 +28,30 @@ namespace PhpbbInDotnet.Forum.Pages
         public int ForumId { get; set; }
 
         [BindProperty]
-        public int[] SelectedReports { get; set; }
+        public int[]? SelectedReports { get; set; }
 
         [BindProperty]
-        public int[] SelectedTopics { get; set; }
+        public int[]? SelectedTopics { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public int? DestinationForumId { get; set; }
 
         [BindProperty(SupportsGet = true)]
-        public string SelectedTopicIds { get; set; }
+        public string? SelectedTopicIds { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public ModeratorTopicActions? TopicAction { get; set; }
 
         [BindProperty]
-        public string[] SelectedDeletedItems { get; set; }
+        public string[]? SelectedDeletedItems { get; set; }
 
-        public string ForumName { get; private set; }
-        public List<TopicGroup> Topics { get; private set; }
-        public List<ReportDto> Reports { get; private set; }
-        public string MessageClass { get; private set; }
-        public string Message { get; private set; }
+        public string? ForumName { get; private set; }
+        public List<TopicGroup>? Topics { get; private set; }
+        public List<ReportDto>? Reports { get; private set; }
+        public string? MessageClass { get; private set; }
+        public string? Message { get; private set; }
         public bool ScrollToAction => TopicAction.HasValue && DestinationForumId.HasValue;
-        public IEnumerable<DeletedItemGroup> DeletedItems { get; private set; }
+        public IEnumerable<DeletedItemGroup>? DeletedItems { get; private set; }
 
         public ModeratorModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, 
             LanguageProvider languageProvider, ModeratorService moderatorService, PostService postService, OperationLogService operationLogService)
@@ -144,7 +144,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         RecycleBinItemType.Forum => i.Value = await Utils.DecompressObject<ForumDto>(i.RawContent),
                         RecycleBinItemType.Topic => i.Value = await Utils.DecompressObject<TopicDto>(i.RawContent),
                         RecycleBinItemType.Post => i.Value = await Utils.DecompressObject<PostDto>(i.RawContent),
-                        _ => i.Value = Task.FromResult<object>(null)
+                        _ => i.Value = Task.FromResult<object?>(null)
                     }));
 
                     DeletedItems = from i in allItems
@@ -162,7 +162,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithModerator(ForumId, async () =>
             {
                 var lang = GetLanguage();
-                if (!SelectedReports.Any())
+                if (!SelectedReports!.Any())
                 {
                     MessageClass = "message warning";
                     Message = LanguageProvider.Moderator[lang, "NO_REPORTS_SELECTED"];
@@ -252,7 +252,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var lang = GetLanguage();
                 try
                 {
-                    var itemGroups = from i in SelectedDeletedItems
+                    var itemGroups = from i in SelectedDeletedItems!
                                      
                                      let elements = i.Split('/')
                                      let type = Enum.Parse<RecycleBinItemType>(elements[0])
@@ -271,7 +271,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     else
                     {
                         //async not supported here
-                        var results = new List<bool>(SelectedDeletedItems.Length);
+                        var results = new List<bool>(SelectedDeletedItems!.Length);
                         foreach (var group in itemGroups)
                         {
                             foreach (var id in group)
@@ -320,14 +320,14 @@ namespace PhpbbInDotnet.Forum.Pages
             var dto = await Utils.DecompressObject<ForumDto>(deletedItem.Content);
             var toAdd = new PhpbbForums
             {
-                ForumId = dto.ForumId.Value,
-                ForumName = dto.ForumName,
-                ForumDesc = dto.ForumDesc,
-                ForumPassword = dto.ForumPassword,
-                ParentId = dto.ParentId.Value,
-                ForumType = dto.ForumType.Value,
-                ForumRules = dto.ForumRules,
-                ForumRulesLink = dto.ForumRulesLink,
+                ForumId = dto!.ForumId!.Value,
+                ForumName = dto.ForumName!,
+                ForumDesc = dto.ForumDesc!,
+                ForumPassword = dto.ForumPassword!,
+                ParentId = dto.ParentId!.Value,
+                ForumType = dto.ForumType!.Value,
+                ForumRules = dto.ForumRules!,
+                ForumRulesLink = dto.ForumRulesLink!,
                 LeftId = dto.LeftId,
                 ForumLastPostId = dto.ForumLastPostId,
                 ForumLastPosterId = dto.ForumLastPosterId,
@@ -353,9 +353,9 @@ namespace PhpbbInDotnet.Forum.Pages
                 return false;
             }
             var dto = await Utils.DecompressObject<TopicDto>(deletedItem.Content);
-            if (!Context.PhpbbForums.AsNoTracking().Any(f => f.ForumId == dto.ForumId))
+            if (!Context.PhpbbForums.AsNoTracking().Any(f => f.ForumId == dto!.ForumId))
             {
-                if (!await RestoreForum(dto.ForumId.Value))
+                if (!await RestoreForum(dto!.ForumId!.Value))
                 {
                     return false;
                 }
@@ -366,20 +366,20 @@ namespace PhpbbInDotnet.Forum.Pages
             }
             var toAdd = new PhpbbTopics
             {
-                ForumId = dto.ForumId.Value,
-                TopicId = dto.TopicId.Value,
-                TopicTitle = dto.TopicTitle,
+                ForumId = dto!.ForumId!.Value,
+                TopicId = dto.TopicId!.Value,
+                TopicTitle = dto.TopicTitle!,
                 TopicStatus = dto.TopicStatus,
-                TopicType = dto.TopicType.Value,
-                TopicLastPosterColour = dto.TopicLastPosterColour,
-                TopicLastPosterId = dto.TopicLastPosterId.Value,
-                TopicLastPosterName = dto.TopicLastPosterName,
-                TopicLastPostTime = dto.TopicLastPostTime.Value,
-                TopicLastPostId = dto.TopicLastPostId.Value
+                TopicType = dto.TopicType!.Value,
+                TopicLastPosterColour = dto.TopicLastPosterColour!,
+                TopicLastPosterId = dto.TopicLastPosterId!.Value,
+                TopicLastPosterName = dto.TopicLastPosterName!,
+                TopicLastPostTime = dto.TopicLastPostTime!.Value,
+                TopicLastPostId = dto.TopicLastPostId!.Value
             };
             if (dto.Poll != null)
             {
-                toAdd.PollTitle = dto.Poll.PollTitle;
+                toAdd.PollTitle = dto.Poll.PollTitle!;
                 toAdd.PollStart = dto.Poll.PollStart.ToUnixTimestamp();
                 toAdd.PollLength = dto.Poll.PollDurationSecons;
                 toAdd.PollMaxOptions = (byte)dto.Poll.PollMaxOptions;
@@ -398,9 +398,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
             var deletedPosts = await Context.PhpbbRecycleBin.Where(rb => rb.Type == RecycleBinItemType.Post).ToListAsync();
             var posts = await Task.WhenAll(deletedPosts.Select(dp => Utils.DecompressObject<PostDto>(dp.Content)));
-            foreach (var post in posts.Where(p => p.TopicId == topicId))
+            foreach (var post in posts.Where(p => p!.TopicId == topicId))
             {
-                await RestorePost(post.PostId);
+                await RestorePost(post!.PostId);
             }
 
             await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.RestoreTopic, GetCurrentUser().UserId, toAdd.TopicId);
@@ -416,9 +416,9 @@ namespace PhpbbInDotnet.Forum.Pages
                 return false;
             }
             var dto = await Utils.DecompressObject<PostDto>(deletedItem.Content);
-            if (!Context.PhpbbTopics.AsNoTracking().Any(t => t.TopicId == dto.TopicId))
+            if (!Context.PhpbbTopics.AsNoTracking().Any(t => t.TopicId == dto!.TopicId))
             {
-                if (!await RestoreTopic(dto.TopicId))
+                if (!await RestoreTopic(dto!.TopicId))
                 {
                     return false;
                 }
@@ -430,15 +430,15 @@ namespace PhpbbInDotnet.Forum.Pages
             }
             var toAdd = new PhpbbPosts
             {
-                PosterId = dto.AuthorId,
-                PostUsername = dto.AuthorName,
-                BbcodeUid = dto.BbcodeUid,
+                PosterId = dto!.AuthorId,
+                PostUsername = dto.AuthorName!,
+                BbcodeUid = dto.BbcodeUid!,
                 ForumId = dto.ForumId,
                 TopicId = dto.TopicId,
                 PostId = dto.PostId,
                 PostTime = dto.PostTime,
-                PostSubject = dto.PostSubject,
-                PostText = dto.PostText
+                PostSubject = dto.PostSubject!,
+                PostText = dto.PostText!
             };
             Context.PhpbbPosts.Add(toAdd);
             if (dto.Attachments?.Any() ?? false)
@@ -447,13 +447,13 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     PostMsgId = dto.PostId,
                     PosterId = dto.AuthorId,
-                    RealFilename = a.DisplayName,
-                    AttachComment = a.Comment,
+                    RealFilename = a.DisplayName!,
+                    AttachComment = a.Comment!,
                     AttachId = a.Id,
-                    Mimetype = a.MimeType,
+                    Mimetype = a.MimeType!,
                     DownloadCount = a.DownloadCount,
                     Filesize = a.FileSize,
-                    PhysicalFilename = a.PhysicalFileName,
+                    PhysicalFilename = a.PhysicalFileName!,
                     IsOrphan = 0
                 }));
             }

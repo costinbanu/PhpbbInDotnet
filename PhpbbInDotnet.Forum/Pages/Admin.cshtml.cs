@@ -21,43 +21,43 @@ namespace PhpbbInDotnet.Forum.Pages
     public partial class AdminModel : AuthenticatedPageModel
     {
         [BindProperty]
-        public AdminUserSearch SearchParameters { get; set; }
+        public AdminUserSearch? SearchParameters { get; set; }
         public List<PhpbbUsers> UserSearchResults { get; private set; }
-        public List<PhpbbUsers> InactiveUsers { get; private set; }
-        public List<UpsertGroupDto> Groups { get; private set; }
-        public List<PhpbbRanks> Ranks { get; private set; }
-        public List<UpsertBanListDto> BanList { get; private set; }
-        public List<SelectListItem> RankListItems { get; private set; }
-        public List<SelectListItem> RoleListItems { get; private set; }
+        public List<PhpbbUsers>? InactiveUsers { get; private set; }
+        public List<UpsertGroupDto>? Groups { get; private set; }
+        public List<PhpbbRanks>? Ranks { get; private set; }
+        public List<UpsertBanListDto>? BanList { get; private set; }
+        public List<SelectListItem>? RankListItems { get; private set; }
+        public List<SelectListItem>? RoleListItems { get; private set; }
         public bool WasSearchPerformed { get; private set; } = false;
         [BindProperty]
-        public PhpbbForums Forum { get; set; } = null;
+        public PhpbbForums? Forum { get; set; } = null;
         [BindProperty]
         public int? ParentForumId { get; set; } = null;
         public List<PhpbbForums> ForumChildren { get; private set; }
         public List<SelectListItem> ForumSelectedParent { get; private set; }
-        public IEnumerable<ForumPermissions> Permissions { get; private set; }
+        public IEnumerable<ForumPermissions>? Permissions { get; private set; }
         public bool ShowForum { get; private set; }
         public bool IsRootForum { get; private set; }
-        public List<PhpbbWords> BannedWords { get; set; }
-        public List<PhpbbBbcodes> CustomBbCodes { get; set; }
-        public List<PhpbbSmilies> Smilies { get; set; }
+        public List<PhpbbWords>? BannedWords { get; set; }
+        public List<PhpbbBbcodes>? CustomBbCodes { get; set; }
+        public List<PhpbbSmilies>? Smilies { get; set; }
         [BindProperty(SupportsGet = true)]
         public OperationLogType? LogType { get; set; }
         [BindProperty(SupportsGet = true)]
         public int LogPage { get; set; } = 1;
         [BindProperty(SupportsGet = true)]
-        public string AuthorName { get; set; }
+        public string? AuthorName { get; set; }
         [BindProperty]
-        public string SystemLogPath { get; set; }
-        public List<OperationLogSummary> CurrentLogItems { get; private set; }
+        public string? SystemLogPath { get; set; }
+        public List<OperationLogSummary>? CurrentLogItems { get; private set; }
         public int TotalLogItemCount { get; private set; }
-        public List<(DateTime LogDate, string LogPath)> SystemLogs { get; private set; }
+        public List<(DateTime LogDate, string? LogPath)>? SystemLogs { get; private set; }
 
 
         public AdminCategories Category { get; private set; } = AdminCategories.Users;
         public bool? IsSuccess { get; private set; }
-        public string Message { get; private set; }
+        public string? Message { get; private set; }
         public string MessageClass
             => IsSuccess switch
             {
@@ -98,7 +98,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var smiliesTask = _adminWritingService.GetSmilies();
 
                 var logsTask = _logService.GetOperationLogs(LogType, AuthorName, LogPage);
-                var systemLogsTask = Task.Run(() => _logService.GetSystemLogs() ?? new List<(DateTime LogDate, string LogPath)>());
+                var systemLogsTask = Task.Run(() => _logService.GetSystemLogs() ?? new List<(DateTime LogDate, string? LogPath)>());
                 
                 await Task.WhenAll(
                     inactiveUsersTask, groupsTask, ranksTask, banListTask,

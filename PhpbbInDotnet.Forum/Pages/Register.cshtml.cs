@@ -31,25 +31,25 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly Recaptcha _recaptchaOptions;
         private readonly UserService _userService;
 
-        private string _language;
+        private string? _language;
 
         [BindProperty]
-        public string Email { get; set; }
+        public string? Email { get; set; }
 
         [BindProperty]
-        public string UserName { get; set; }
+        public string? UserName { get; set; }
 
         [BindProperty]
-        public string Password { get; set; }
+        public string? Password { get; set; }
 
         [BindProperty]
-        public string SecondPassword { get; set; }
+        public string? SecondPassword { get; set; }
 
         [BindProperty]
         public bool Agree { get; set; }
 
         [BindProperty]
-        public string RecaptchaResponse { get; set; }
+        public string? RecaptchaResponse { get; set; }
 
         public LanguageProvider LanguageProvider { get; }
 
@@ -106,7 +106,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 response.EnsureSuccessStatusCode();
                 var resultText = await response.Content.ReadAsStringAsync();
                 var result = JsonConvert.DeserializeObject<dynamic>(resultText);
-                if (!(bool)result.success)
+                if ((bool?)result?.success != true)
                 {
                     throw new InvalidOperationException($"Validating g-recaptcha failed. Response: {resultText}");
                 }
@@ -129,7 +129,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     FROM phpbb_banlist
                    WHERE @email LIKE LOWER(REPLACE(REPLACE(ban_email, '*', '%'), '?', '_')) 
                       OR @ip LIKE LOWER(REPLACE(REPLACE(ban_ip, '*', '%'), '?', '_'))",
-                new { email = Email.ToLower(), ip = HttpContext.Connection.RemoteIpAddress.ToString() }
+                new { email = Email!.ToLower(), ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty }
             );
 
             if (checkBanlist.Any(x => (long)x.Email == 1L))
@@ -157,7 +157,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             var newUser = _context.PhpbbUsers.Add(new PhpbbUsers
             {
-                Username = UserName,
+                Username = UserName!,
                 UsernameClean = _utils.CleanString(UserName),
                 GroupId = 2,
                 UserEmail = Email,
@@ -166,7 +166,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 UserInactiveTime = now,
                 UserInactiveReason = UserInactiveReason.NewlyRegisteredNotConfirmed,
                 UserActkey = registrationCode,
-                UserIp = HttpContext.Connection.RemoteIpAddress.ToString(),
+                UserIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
                 UserRegdate = now,
                 UserLastmark = now,
                 UserDateformat = LanguageProvider.GetDefaultDateFormat(lang),

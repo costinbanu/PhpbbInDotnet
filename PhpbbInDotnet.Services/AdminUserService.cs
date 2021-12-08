@@ -128,7 +128,6 @@ namespace PhpbbInDotnet.Services
             {
                 _context.PhpbbAclUsers.RemoveRange(_context.PhpbbAclUsers.Where(u => u.UserId == userId));
                 _context.PhpbbBanlist.RemoveRange(_context.PhpbbBanlist.Where(u => u.BanUserid == userId));
-                _context.PhpbbBookmarks.RemoveRange(_context.PhpbbBookmarks.Where(u => u.UserId == userId));
                 _context.PhpbbBots.RemoveRange(_context.PhpbbBots.Where(u => u.UserId == userId));
                 _context.PhpbbDrafts.RemoveRange(_context.PhpbbDrafts.Where(u => u.UserId == userId));
                 (await _context.PhpbbForums.Where(f => f.ForumLastPosterId == userId).ToListAsync()).ForEach(f =>
@@ -137,19 +136,12 @@ namespace PhpbbInDotnet.Services
                     f.ForumLastPosterColour = string.Empty;
                     f.ForumLastPosterName = user.Username;
                 });
-                _context.PhpbbForumsAccess.RemoveRange(_context.PhpbbForumsAccess.Where(u => u.UserId == userId));
                 _context.PhpbbForumsTrack.RemoveRange(_context.PhpbbForumsTrack.Where(u => u.UserId == userId));
                 _context.PhpbbForumsWatch.RemoveRange(_context.PhpbbForumsWatch.Where(u => u.UserId == userId));
                 _context.PhpbbLog.RemoveRange(_context.PhpbbLog.Where(u => u.UserId == userId));
-                _context.PhpbbModeratorCache.RemoveRange(_context.PhpbbModeratorCache.Where(u => u.UserId == userId));
                 await (await _context.GetDbConnectionAsync()).ExecuteAsync("DELETE FROM phpbb_poll_votes WHERE vote_user_id = @userId", new { userId });
-                _context.PhpbbPrivmsgsFolder.RemoveRange(_context.PhpbbPrivmsgsFolder.Where(u => u.UserId == userId));
-                _context.PhpbbPrivmsgsRules.RemoveRange(_context.PhpbbPrivmsgsRules.Where(u => u.UserId == userId));
                 _context.PhpbbPrivmsgsTo.RemoveRange(_context.PhpbbPrivmsgsTo.Where(u => u.UserId == userId));
-                _context.PhpbbProfileFieldsData.RemoveRange(_context.PhpbbProfileFieldsData.Where(u => u.UserId == userId));
                 _context.PhpbbReports.RemoveRange(_context.PhpbbReports.Where(u => u.UserId == userId));
-                _context.PhpbbSessions.RemoveRange(_context.PhpbbSessions.Where(u => u.SessionUserId == userId));
-                _context.PhpbbSessionsKeys.RemoveRange(_context.PhpbbSessionsKeys.Where(u => u.UserId == userId));
                 (await _context.PhpbbTopics.Where(t => t.TopicLastPosterId == userId).ToListAsync()).ForEach(t =>
                 {
                     t.TopicLastPosterId = 1;
@@ -161,20 +153,18 @@ namespace PhpbbInDotnet.Services
                     t.TopicFirstPostId = 1;
                     t.TopicFirstPosterColour = string.Empty;
                 });
-                _context.PhpbbTopicsPosted.RemoveRange(_context.PhpbbTopicsPosted.Where(u => u.UserId == userId));
                 _context.PhpbbTopicsTrack.RemoveRange(_context.PhpbbTopicsTrack.Where(u => u.UserId == userId));
                 _context.PhpbbTopicsWatch.RemoveRange(_context.PhpbbTopicsWatch.Where(u => u.UserId == userId));
                 _context.PhpbbUserGroup.RemoveRange(_context.PhpbbUserGroup.Where(u => u.UserId == userId));
                 _context.PhpbbUsers.RemoveRange(_context.PhpbbUsers.Where(u => u.UserId == userId));
                 _context.PhpbbUserTopicPostNumber.RemoveRange(_context.PhpbbUserTopicPostNumber.Where(u => u.UserId == userId));
-                _context.PhpbbWarnings.RemoveRange(_context.PhpbbWarnings.Where(u => u.UserId == userId));
                 _context.PhpbbZebra.RemoveRange(_context.PhpbbZebra.Where(u => u.UserId == userId));
                 _context.PhpbbUsers.Remove(user);
             }
 
             try
             {
-                string message = null;
+                string? message = null;
                 bool? isSuccess = null;
                 var forumName = _config.GetValue<string>("ForumName");
                 switch (action)
@@ -321,26 +311,8 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<(string Message, bool IsSuccess, List<PhpbbUsers> Result)> UserSearchAsync(AdminUserSearch searchParameters)
+        public async Task<(string? Message, bool IsSuccess, List<PhpbbUsers> Result)> UserSearchAsync(AdminUserSearch? searchParameters)
         {
-            long ParseDate(string value, bool isUpperLimit)
-            {
-                if (string.IsNullOrWhiteSpace(value))
-                {
-                    return isUpperLimit ? DateTime.UtcNow.ToUnixTimestamp() : 0L;
-                }
-
-                try
-                {
-                    var toReturn = DateTime.ParseExact(value, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
-                    return (isUpperLimit ? toReturn.AddDays(1).AddMilliseconds(-1) : toReturn).ToUnixTimestamp();
-                }
-                catch (Exception ex)
-                {
-                    throw new DateInputException(ex);
-                }
-            }
-
             var lang = GetLanguage();
             try
             {
@@ -387,13 +359,31 @@ namespace PhpbbInDotnet.Services
             }
             catch (DateInputException die)
             {
-                Utils.HandleError(die.InnerException, die.Message);
+                Utils.HandleError(die.InnerException!, die.Message);
                 return (LanguageProvider.Admin[lang, "ONE_OR_MORE_INVALID_INPUT_DATES"], false, new List<PhpbbUsers>());
             }
             catch (Exception ex)
             {
                 var id = Utils.HandleError(ex);
                 return (string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false, new List<PhpbbUsers>());
+            }
+
+            long ParseDate(string? value, bool isUpperLimit)
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    return isUpperLimit ? DateTime.UtcNow.ToUnixTimestamp() : 0L;
+                }
+
+                try
+                {
+                    var toReturn = DateTime.ParseExact(value, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
+                    return (isUpperLimit ? toReturn.AddDays(1).AddMilliseconds(-1) : toReturn).ToUnixTimestamp();
+                }
+                catch (Exception ex)
+                {
+                    throw new DateInputException(ex);
+                }
             }
         }
 
@@ -496,10 +486,10 @@ namespace PhpbbInDotnet.Services
             {
                 void update(PhpbbGroups destination, UpsertGroupDto source)
                 {
-                    destination.GroupName = source.Name;
-                    destination.GroupDesc = source.Desc;
+                    destination.GroupName = source.Name!;
+                    destination.GroupDesc = source.Desc!;
                     destination.GroupRank = source.Rank;
-                    destination.GroupColour = source.DbColor;
+                    destination.GroupColour = source.DbColor!;
                     destination.GroupUserUploadSize = source.UploadLimit * 1024 * 1024;
                     destination.GroupEditTime = source.EditTime;
                 }
@@ -508,7 +498,7 @@ namespace PhpbbInDotnet.Services
 
                 AdminGroupActions action;
                 var changedColor = false;
-                PhpbbGroups actual;
+                PhpbbGroups? actual;
                 if (dto.Id == 0)
                 {
                     actual = new PhpbbGroups();
@@ -546,7 +536,7 @@ namespace PhpbbInDotnet.Services
                     await _context.SaveChangesAsync();
                 }
 
-                if (actual != null)
+                if (actual is not null)
                 {
                     var currentRole = await _context.PhpbbAclGroups.FirstOrDefaultAsync(x => x.GroupId == actual.GroupId && x.ForumId == 0);
                     if (currentRole != null)
@@ -579,27 +569,30 @@ namespace PhpbbInDotnet.Services
                 if (changedColor)
                 {
                     var affectedUsers = await _context.PhpbbUsers.Where(x => x.GroupId == dto.Id).ToListAsync();
-                    affectedUsers.ForEach(x => x.UserColour = dto.DbColor);
+                    affectedUsers.ForEach(x => x.UserColour = dto.DbColor!);
                     _context.PhpbbUsers.UpdateRange(affectedUsers);
                     var affectedTopics = await (
                         from t in _context.PhpbbTopics
                         where affectedUsers.Select(u => u.UserId).Contains(t.TopicLastPosterId)
                         select t
                     ).ToListAsync();
-                    affectedTopics.ForEach(t => t.TopicLastPosterColour = dto.DbColor);
+                    affectedTopics.ForEach(t => t.TopicLastPosterColour = dto.DbColor!);
                     _context.PhpbbTopics.UpdateRange(affectedTopics);
                     var affectedForums = await (
                         from t in _context.PhpbbForums
                         where affectedUsers.Select(u => u.UserId).Contains(t.ForumLastPosterId)
                         select t
                     ).ToListAsync();
-                    affectedForums.ForEach(t => t.ForumLastPosterColour = dto.DbColor);
+                    affectedForums.ForEach(t => t.ForumLastPosterColour = dto.DbColor!);
                     _context.PhpbbForums.UpdateRange(affectedForums);
 
                     await _context.SaveChangesAsync();
                 }
 
-                await _operationLogService.LogAdminGroupAction(action, adminUserId, actual);
+                if (actual is not null)
+                {
+                    await _operationLogService.LogAdminGroupAction(action, adminUserId, actual);
+                }
 
                 var message = action switch
                 {

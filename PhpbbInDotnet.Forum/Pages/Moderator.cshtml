@@ -129,10 +129,10 @@
             <strong>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "TOPICS", Casing.Title])</strong>
             ordinaryTopicsDisplayed = true;
         }
-        foreach (var topic in topicGroup.Topics)
+        foreach (var topic in topicGroup.Topics!)
         {
             <div class="FlexRow RowMargin">
-                <input name="SelectedTopics" type="checkbox" value="@topic.TopicId" form="SubmitTopics" style="margin-right:30px; align-self:safe center" onchange="mod.appendToStringList(this, 'selectedTopicIds')" @(Model.GetTopicIds().Contains(topic.TopicId.Value) ? "checked" : "") />
+                <input name="SelectedTopics" type="checkbox" value="@topic.TopicId" form="SubmitTopics" style="margin-right:30px; align-self:safe center" onchange="mod.appendToStringList(this, 'selectedTopicIds')" @(Model.GetTopicIds().Contains(topic.TopicId!.Value) ? "checked" : "") />
                 <a asp-page="/ViewTopic" asp-route-topicId="@topic.TopicId" asp-route-pageNum="1" class="nav-link" style="font-weight: bold; align-self: safe center">
                     @if (topicGroup.TopicType == TopicType.Important)
                     {
@@ -281,9 +281,9 @@
                 case RecycleBinItemType.Post:
                     @Html.Raw(Model.LanguageProvider.BasicText[Lang, "POSTS", Casing.Title])
                     items = from i in items
-                            group i by (i.Value as PostDto).TopicId into groups
+                            group i by (i.Value as PostDto)?.TopicId into groups
                             from g in groups
-                            orderby (g.Value as PostDto).PostTime descending
+                            orderby (g.Value as PostDto)?.PostTime descending
                             select g;
                     break;
             }
@@ -314,7 +314,7 @@
                     case RecycleBinItemType.Forum:
                         var forum = item.Value as ForumDto;
                         <span class="Caption">
-                            @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, forum.ParentId ?? 0))
+                            @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, forum!.ParentId ?? 0))
                         </span>
                         <br />
                         <strong>
@@ -332,7 +332,7 @@
                     case RecycleBinItemType.Topic:
                         var topic = item.Value as TopicDto;
                         <span class="Caption">
-                            @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, topic.ForumId ?? 0))
+                            @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, topic!.ForumId ?? 0))
                         </span>
                         <br />
                         <strong>
@@ -343,10 +343,10 @@
                     case RecycleBinItemType.Post:
                         var post = item.Value as PostDto;
                         <span class="Caption">
-                            @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, post.ForumId))
+                            @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, post!.ForumId))
                         </span>
                         <br />
-                        foreach (var attach in post.Attachments)
+                        foreach (var attach in post.Attachments!)
                         {
                             attach.CorrelationId = correlationId;
                             _cache.Add(_utils.GetAttachmentCacheKey(attach.Id, correlationId), attach, TimeSpan.FromMinutes(1));

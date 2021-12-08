@@ -2,10 +2,10 @@
 {
     public class Storage
     {
-        public string Files { get; set; }
+        public string? Files { get; set; }
 
-        public string Avatars { get; set; }
+        public string? Avatars { get; set; }
 
-        public string Emojis { get; set; }
+        public string? Emojis { get; set; }
     }
 }

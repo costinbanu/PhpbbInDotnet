@@ -4,7 +4,7 @@
 
 @inject Languages.LanguageProvider _languageProvider
 
-@if ((Model.Paginator?.Pagination?.HasPages ?? false) || Model.Paginator.PageSize != Constants.DEFAULT_PAGE_SIZE)
+@if ((Model.Paginator?.Pagination?.HasPages ?? false) || Model.Paginator!.PageSize != Constants.DEFAULT_PAGE_SIZE)
 {
     <div class="PaginationHolder">
         <div class="LeftArrow">
@@ -32,7 +32,7 @@
                     "_PaginationPageListPartial",
                     new _PaginationPageListPartialModel
                     {
-                        Pagination = Model.Paginator.Pagination,
+                        Pagination = Model.Paginator!.Pagination,
                         Language = Model.Language
                     },
                     ViewData
@@ -86,7 +86,7 @@
                 "_PaginationPageListPartial",
                 new _PaginationPageListPartialModel
                 {
-                    Pagination = Model.Paginator.Pagination,
+                    Pagination = Model.Paginator!.Pagination,
                     Language = Model.Language
                 },
                 ViewData

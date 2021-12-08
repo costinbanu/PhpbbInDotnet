@@ -9,11 +9,11 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials.Admin
 {
     public class _AdminForumPermissionsPartialModel : PageModel
     {
-        public PhpbbForums Forum { get; set; }
-        public IEnumerable<PhpbbForums> ForumChildren { get; set; }
-        public IEnumerable<ForumPermissions> Permissions { get; set; }
+        public PhpbbForums? Forum { get; set; }
+        public IEnumerable<PhpbbForums>? ForumChildren { get; set; }
+        public IEnumerable<ForumPermissions>? Permissions { get; set; }
         public AclEntityType EntityType { get; set; }
-        public string Language { get; set; }
+        public string Language { get; set; } = Constants.DEFAULT_LANGUAGE;
         public string Self { get; }
 
         public _AdminForumPermissionsPartialModel()

@@ -2,9 +2,9 @@
 {
     public class BBTagSummary
     {
-        public string OpenTag { get; set; }
+        public string? OpenTag { get; set; }
         
-        public string CloseTag { get; set; }
+        public string? CloseTag { get; set; }
 
         public bool ShowOnPage { get; set; }
 

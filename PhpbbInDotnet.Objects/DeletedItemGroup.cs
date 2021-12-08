@@ -7,6 +7,6 @@ namespace PhpbbInDotnet.Objects
     {
         public RecycleBinItemType Type { get; set; }
 
-        public IEnumerable<DeletedItemDto> Items { get; set; }
+        public IEnumerable<DeletedItemDto>? Items { get; set; }
     }
 }

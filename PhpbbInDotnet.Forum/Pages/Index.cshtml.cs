@@ -15,7 +15,7 @@ namespace PhpbbInDotnet.Forum.Pages
     {
         private bool _forceTreeRefresh = false;
 
-        public HashSet<ForumTree> Tree { get; private set; }
+        public HashSet<ForumTree>? Tree { get; private set; }
 
         public IndexModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, LanguageProvider languageProvider)
             : base(context, forumService, userService, cache, utils, languageProvider)

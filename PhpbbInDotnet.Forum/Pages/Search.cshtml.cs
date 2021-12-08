@@ -22,10 +22,10 @@ namespace PhpbbInDotnet.Forum.Pages
     public class SearchModel : AuthenticatedPageModel
     {
         [BindProperty(SupportsGet = true)]
-        public string QueryString { get; set; }
+        public string? QueryString { get; set; }
 
         [BindProperty(SupportsGet = true)]
-        public string Author { get; set; }
+        public string? Author { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public int AuthorId { get; set; }
@@ -37,7 +37,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public int? TopicId { get; set; }
 
         [BindProperty(SupportsGet = true)]
-        public string SearchText { get; set; }
+        public string? SearchText { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public int? PageNum { get; set; }
@@ -48,15 +48,15 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public bool? DoSearch { get; set; }
 
-        public List<PhpbbAttachments> Attachments { get; private set; }
+        public List<PhpbbAttachments>? Attachments { get; private set; }
 
         public bool IsAttachmentSearch { get; private set; }
 
-        public List<KeyValuePair<string, int>> Users { get; set; }
+        public List<KeyValuePair<string, int>>? Users { get; set; }
 
-        public List<PostDto> Posts { get; private set; }
+        public List<PostDto>? Posts { get; private set; }
 
-        public Paginator Paginator { get; private set; }
+        public Paginator? Paginator { get; private set; }
 
         public bool IsAuthorSearch { get; private set; }
 
@@ -68,7 +68,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnGet()
         {
-            NameValueCollection query = null;
+            NameValueCollection? query = null;
 
             if (!string.IsNullOrWhiteSpace(QueryString))
             {
@@ -148,7 +148,7 @@ namespace PhpbbInDotnet.Forum.Pages
             Posts = (await multi.ReadAsync<PostDto>()).AsList();
             TotalResults = unchecked((int)await multi.ReadFirstOrDefaultAsync<long>());
             Attachments = (await multi.ReadAsync<PhpbbAttachments>()).AsList();
-            Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum.Value, link: GetSearchLinkForPage(PageNum.Value + 1), topicId: null);
+            Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum!.Value, link: GetSearchLinkForPage(PageNum.Value + 1), topicId: null);
 
             return await OnGet();
         }
@@ -203,7 +203,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         }
                     }
                 }
-                traverse(ForumId.Value);
+                traverse(ForumId!.Value);
             }
             else
             {
@@ -225,7 +225,7 @@ namespace PhpbbInDotnet.Forum.Pages
             Posts = (await multi.ReadAsync<PostDto>()).AsList();
             TotalResults = unchecked((int)await multi.ReadFirstOrDefaultAsync<long>());
             Attachments = (await multi.ReadAsync<PhpbbAttachments>()).AsList();
-            Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum.Value, link: GetSearchLinkForPage(PageNum.Value + 1), topicId: null);
+            Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum!.Value, link: GetSearchLinkForPage(PageNum.Value + 1), topicId: null);
         }
     }
 }

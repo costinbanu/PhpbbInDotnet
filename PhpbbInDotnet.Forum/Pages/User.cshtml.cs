@@ -28,16 +28,16 @@ namespace PhpbbInDotnet.Forum.Pages
     public class UserModel : AuthenticatedPageModel
     {
         [BindProperty]
-        public PhpbbUsers CurrentUser { get; set; }
+        public PhpbbUsers? CurrentUser { get; set; }
         
         [BindProperty]
-        public string FirstPassword { get; set; }
+        public string? FirstPassword { get; set; }
         
         [BindProperty]
-        public string SecondPassword { get; set; }
+        public string? SecondPassword { get; set; }
         
         [BindProperty]
-        public IFormFile Avatar { get; set; }
+        public IFormFile? Avatar { get; set; }
         
         [BindProperty]
         public bool DeleteAvatar { get; set; } = false;
@@ -46,10 +46,10 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool ShowEmail { get; set; } = false;
         
         [BindProperty]
-        public string Email { get; set; }
+        public string? Email { get; set; }
         
         [BindProperty]
-        public string Birthday { get; set; }
+        public string? Birthday { get; set; }
         
         [BindProperty]
         public int? AclRole { get; set; }
@@ -76,15 +76,15 @@ namespace PhpbbInDotnet.Forum.Pages
         public int SelectedFoeId { get; set; }
 
         [BindProperty]
-        public int[] SelectedFoes { get; set; }
+        public int[]? SelectedFoes { get; set; }
 
         [BindProperty]
         public bool JumpToUnread { get; set; }
 
         public int TotalPosts { get; private set; }
-        public (int? Id, string Title) PreferredTopic { get; private set; }
+        public (int? Id, string? Title) PreferredTopic { get; private set; }
         public double PostsPerDay { get; private set; }
-        public List<PhpbbUsers> Foes { get; private set; }
+        public List<PhpbbUsers>? Foes { get; private set; }
         public long AttachCount { get; private set; }
         public long AttachTotalSize { get; private set; }
         public UserPageMode Mode { get; private set; }
@@ -137,14 +137,14 @@ namespace PhpbbInDotnet.Forum.Pages
                 return RedirectToPage("Error", new { isUnauthorised = true });
             }
 
-            var dbUser = await Context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == CurrentUser.UserId);
+            var dbUser = await Context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == CurrentUser!.UserId);
             if (dbUser == null)
             {
                 return RedirectToPage("Error", new { isNotFound = true });
             }
 
             var currentUserId = GetCurrentUser().UserId;
-            var isSelf = CurrentUser.UserId == currentUserId;
+            var isSelf = CurrentUser!.UserId == currentUserId;
             var userMustLogIn = dbUser.UserAllowPm.ToBool() != AllowPM || dbUser.UserDateformat != CurrentUser.UserDateformat;
             var lang = GetLanguage();
             var validator = new UserProfileDataValidationService(ModelState, LanguageProvider, lang);
@@ -220,7 +220,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             }
 
-            var newEmailHash = Utils.CalculateCrc32Hash(Email);
+            var newEmailHash = Utils.CalculateCrc32Hash(Email!);
             if (newEmailHash != dbUser.UserEmailHash)
             {
                 if (!validator.ValidateEmail(nameof(Email), Email))
@@ -235,7 +235,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
 
 
-                dbUser.UserEmail = Email;
+                dbUser.UserEmail = Email!;
                 dbUser.UserEmailHash = newEmailHash;
                 dbUser.UserEmailtime = DateTime.UtcNow.ToUnixTimestamp();
 
@@ -265,7 +265,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         ),
                         IsBodyHtml = true
                     };
-                    emailMessage.To.Add(Email);
+                    emailMessage.To.Add(Email!);
                     await Utils.SendEmail(emailMessage);
                 }
 
@@ -358,7 +358,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     await Context.PhpbbAclUsers.AddAsync(new PhpbbAclUsers
                     {
                         AuthOptionId = 0,
-                        AuthRoleId = AclRole.Value,
+                        AuthRoleId = AclRole!.Value,
                         AuthSetting = 0,
                         ForumId = 0,
                         UserId = dbUser.UserId
@@ -509,7 +509,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var connection = await Context.GetDbConnectionAsync();
                 await connection.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id IN @otherIds;",
-                    new { user.UserId, otherIds = SelectedFoes.DefaultIfEmpty() }
+                    new { user.UserId, otherIds = SelectedFoes!.DefaultIfEmpty() }
                 );
                 ReloadCurrentUser();
                 Mode = UserPageMode.RemoveMultipleFoes;
@@ -517,12 +517,12 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public async Task<bool> CanEdit() 
-            => !(ViewAsAnother ?? false) && (GetCurrentUser().UserId == CurrentUser.UserId || await IsCurrentUserAdminHere());
+            => !(ViewAsAnother ?? false) && (GetCurrentUser().UserId == CurrentUser!.UserId || await IsCurrentUserAdminHere());
 
         public async Task<bool> CanAddFoe()
         {
             var viewingUser = GetCurrentUser();
-            var pageUser = new AuthenticatedUser(UserService.DbUserToAuthenticatedUserBase(CurrentUser));
+            var pageUser = new AuthenticatedUserExpanded(UserService.DbUserToAuthenticatedUserBase(CurrentUser!));
             pageUser.AllPermissions = await UserService.GetPermissions(pageUser.UserId);
             return !await UserService.IsUserModeratorInForum(pageUser, 0) && !await UserService.IsUserModeratorInForum(viewingUser, 0) && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false);
         }
@@ -530,7 +530,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool CanRemoveFoe()
         {
             var viewingUser = GetCurrentUser();
-            var pageUser = UserService.DbUserToAuthenticatedUserBase(CurrentUser);
+            var pageUser = UserService.DbUserToAuthenticatedUserBase(CurrentUser!);
             return viewingUser.Foes?.Contains(pageUser.UserId) ?? false;
         }
 
@@ -574,11 +574,13 @@ namespace PhpbbInDotnet.Forum.Pages
             PostsPerDay = TotalPosts / DateTime.UtcNow.Subtract(cur.UserRegdate.ToUtcTime()).TotalDays;
             Email = cur.UserEmail;
             Birthday = cur.UserBirthday;
-            var currentAuthenticatedUser = new AuthenticatedUser(UserService.DbUserToAuthenticatedUserBase(cur));
-            currentAuthenticatedUser.AllPermissions = await UserService.GetPermissions(cur.UserId);
+            var currentAuthenticatedUser = new AuthenticatedUserExpanded(UserService.DbUserToAuthenticatedUserBase(cur))
+            {
+                AllPermissions = await UserService.GetPermissions(cur.UserId)
+            };
             AclRole = await roleTask;
             var group = await groupTask;
-            GroupId = group?.GroupId;
+            GroupId = group!.GroupId;
             UserRank = cur.UserRank == 0 ? group.GroupRank : cur.UserRank;
             AllowPM = cur.UserAllowPm.ToBool();
             ShowEmail = cur.UserAllowViewemail.ToBool();
@@ -587,7 +589,7 @@ namespace PhpbbInDotnet.Forum.Pages
             AttachCount = (long?)result?.cnt ?? 0L;
             AttachTotalSize = (long?)result?.size ?? 0L;
 
-            async Task<(int? id, string title)> GetPreferredTopic(HashSet<ForumTree> tree)
+            async Task<(int? id, string? title)> GetPreferredTopic(HashSet<ForumTree> tree)
             {
                 var restrictedForums = (await ForumService.GetRestrictedForumList(GetCurrentUser())).Select(f => f.forumId);
                 var preferredTopic = await (
@@ -603,7 +605,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     orderby groups.Count() descending
                     select groups.Key
                 ).FirstOrDefaultAsync();
-                string preferredTopicTitle = null;
+                string? preferredTopicTitle = null;
                 if (preferredTopic != null)
                 {
                     preferredTopicTitle = ForumService.GetPathText(tree, preferredTopic.ForumId);
@@ -614,7 +616,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             async Task<int?> GetRole()
             {
-                var currentAuthenticatedUser = new AuthenticatedUser(UserService.DbUserToAuthenticatedUserBase(cur))
+                var currentAuthenticatedUser = new AuthenticatedUserExpanded(UserService.DbUserToAuthenticatedUserBase(cur))
                 {
                     AllPermissions = await UserService.GetPermissions(cur.UserId)
                 };

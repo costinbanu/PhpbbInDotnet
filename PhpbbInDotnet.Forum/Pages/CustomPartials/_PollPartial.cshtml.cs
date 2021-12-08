@@ -7,15 +7,15 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
 {
     public class _PollPartialModel : PageModel
     {
-        public AuthenticatedUser CurrentUser { get; set; }
+        public AuthenticatedUserExpanded? CurrentUser { get; set; }
 
-        public PollDto Poll { get; set; }
+        public PollDto? Poll { get; set; }
 
         public int TopicId { get; set; }
 
         public int PageNum { get; set; }
 
-        public string QueryString { get; set; }
+        public string? QueryString { get; set; }
 
         public bool IsCurrentUserMod { get; set; }
 
@@ -34,6 +34,6 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
             )
         );
 
-        public string Language { get; set; }
+        public string Language { get; set; } = Constants.DEFAULT_LANGUAGE;
     }
 }

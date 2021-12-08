@@ -2,15 +2,16 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Objects;
+using PhpbbInDotnet.Utilities;
 using System;
 
 namespace PhpbbInDotnet.Forum.Pages.CustomPartials
 {
     public class _PostPartialModel : PageModel
     {
-        public PostDto Post { get; set; }
+        public PostDto? Post { get; set; }
 
-        public AuthenticatedUser CurrentUser { get; set; }
+        public AuthenticatedUserExpanded? CurrentUser { get; set; }
 
         public int ForumId { get; set; }
 
@@ -18,7 +19,7 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
 
         public int? ClosestPostId { get; set; }
 
-        public int[] PostIdsForModerator { get; set; }
+        public int[]? PostIdsForModerator { get; set; }
 
         public bool HasCurrentUserPM { get; set; }
 
@@ -40,16 +41,16 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
 
         public bool OpenPostLinkInNewTab { get; set; }
 
-        public string ToHighlight { get; set; }
+        public string? ToHighlight { get; set; }
 
-        public string Language { get; set; }
+        public string Language { get; set; } = Constants.DEFAULT_LANGUAGE;
 
         public Guid? CorrelationId { get; set; }
 
         public bool DisablePostTitleLink { get; set; }
 
-        public HttpContext ParentHttpContext { get; set; }
+        public HttpContext? ParentHttpContext { get; set; }
 
-        public PageContext ParentPageContext { get; set; }
+        public PageContext? ParentPageContext { get; set; }
     }
 }

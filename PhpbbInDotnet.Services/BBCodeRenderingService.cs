@@ -45,7 +45,7 @@ namespace PhpbbInDotnet.Services
         {
             _context = context;
             _writingService = writingService;
-            _bannedWords = new Lazy<Dictionary<string, string>>(() => _writingService.GetBannedWords().GroupBy(p => p.Word).Select(grp => grp.FirstOrDefault()).ToDictionary(x => x.Word, y => y.Replacement));
+            _bannedWords = new Lazy<Dictionary<string, string>>(() => _writingService.GetBannedWords().GroupBy(p => p.Word).Select(grp => grp.FirstOrDefault()).ToDictionary(x => x!.Word, y => y!.Replacement));
             _cache = cache;
 
             var tagList = _context.GetDbConnection().Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes").AsList();
@@ -56,7 +56,7 @@ namespace PhpbbInDotnet.Services
             TagMap = tagMap;
         }
 
-        public async Task ProcessPost(PostDto post, PageContext pageContext, HttpContext httpContext, bool renderAttachments, string toHighlight = null)
+        public async Task ProcessPost(PostDto post, PageContext pageContext, HttpContext httpContext, bool renderAttachments, string? toHighlight = null)
         {
             var highlightWords = SplitHighlightWords(toHighlight);
             post.PostSubject = HighlightWords(CensorWords(HttpUtility.HtmlDecode(post.PostSubject), _bannedWords.Value), highlightWords);
@@ -74,15 +74,15 @@ namespace PhpbbInDotnet.Services
 
                 foreach (var (FileName, AttachIndex) in matches)
                 {
-                    AttachmentDto model = null;
-                    var candidates = post.Attachments.Where(a => BbCodeToHtml(a.DisplayName, string.Empty) == FileName).ToList();
-                    if (candidates.Count == 1)
+                    AttachmentDto? model = null;
+                    var candidates = post.Attachments?.Where(a => BbCodeToHtml(a.DisplayName, string.Empty) == FileName).ToList();
+                    if (candidates?.Count == 1)
                     {
                         model = candidates.First();
                     }
-                    else if (candidates.Count > 1)
+                    else if (candidates?.Count > 1)
                     {
-                        model = candidates.FirstOrDefault(a => post.Attachments.ElementAtOrDefault(AttachIndex)?.Id == a.Id);
+                        model = candidates.FirstOrDefault(a => post.Attachments?.ElementAtOrDefault(AttachIndex)?.Id == a.Id);
                     }
 
                     if (model != null)
@@ -91,7 +91,7 @@ namespace PhpbbInDotnet.Services
                             $"#{{AttachmentFileName={FileName}/AttachmentIndex={AttachIndex}}}#",
                             await Utils.RenderRazorViewToString("_AttachmentPartial", model, pageContext, httpContext)
                         );
-                        post.Attachments.Remove(model);
+                        post.Attachments?.Remove(model);
                     }
                 }
             }
@@ -99,7 +99,7 @@ namespace PhpbbInDotnet.Services
             post.PostText = _attachRegex.Replace(post.PostText, string.Empty);
         }
 
-        public string BbCodeToHtml(string bbCodeText, string bbCodeUid)
+        public string BbCodeToHtml(string? bbCodeText, string? bbCodeUid)
         {
             if (string.IsNullOrWhiteSpace(bbCodeText))
             {
@@ -134,7 +134,7 @@ namespace PhpbbInDotnet.Services
             return bbCodeText;
         }
 
-        private List<string> SplitHighlightWords(string search)
+        private List<string> SplitHighlightWords(string? search)
         {
             var highlightWords = new List<string>();
             if (string.IsNullOrWhiteSpace(search))
@@ -183,7 +183,7 @@ namespace PhpbbInDotnet.Services
                 }
             );
 
-        private string CensorWords(string text, Dictionary<string, string> wordMap)
+        private string CensorWords(string? text, Dictionary<string, string> wordMap)
         {
             Regex getRegex(string wildcard)
                 => new(@"\b" + Regex.Escape(wildcard).Replace(@"\*", @"\w*").Replace(@"\?", @"\w") + @"\b", RegexOptions.None, Constants.REGEX_TIMEOUT);
@@ -209,14 +209,14 @@ namespace PhpbbInDotnet.Services
             );
         }
 
-        private string ProcessAllWords(string input, IEnumerable<string> words, FirstIndexOf indexOf, Transform transform)
+        private string ProcessAllWords(string? input, IEnumerable<string> words, FirstIndexOf indexOf, Transform transform)
         {
             var cleanedInput = string.Empty;
             var shouldProcess = !string.IsNullOrWhiteSpace(input) && words.Any();
 
             if (shouldProcess)
             {
-                input = input.ReplaceHtmlDiacritics();
+                input = input!.ReplaceHtmlDiacritics();
                 cleanedInput = input.RemoveDiacritics();
                 shouldProcess = cleanedInput.Length == input.Length;
             }
@@ -234,7 +234,7 @@ namespace PhpbbInDotnet.Services
                             continue;
                         }
 
-                        var match = input.Substring(index, cleanedMatch.Length);
+                        var match = input!.Substring(index, cleanedMatch.Length);
 
                         if (!match.RemoveDiacritics().Equals(cleanedMatch, StringComparison.InvariantCultureIgnoreCase))
                         {
@@ -277,7 +277,7 @@ namespace PhpbbInDotnet.Services
                 }
             }
 
-            return input;
+            return input!;
         }
 
         private int GetIgnoreOffset(int index, params Match[] matches)
@@ -415,7 +415,7 @@ namespace PhpbbInDotnet.Services
 
                         ["url"] = ( //style=\"word-break: break-all\"
                             Tag: new BBTag("url", "<a href=\"${href}\" target=\"_blank\">", "</a>", 3, "", false,
-                                new BBAttribute("href", "", context => UrlTransformer(string.IsNullOrWhiteSpace(context?.AttributeValue) ? context.TagContent : context.AttributeValue), HtmlEncodingMode.UnsafeDontEncode)),
+                                new BBAttribute("href", "", context => UrlTransformer(string.IsNullOrWhiteSpace(context.AttributeValue) ? context.TagContent : context.AttributeValue), HtmlEncodingMode.UnsafeDontEncode)),
                             Summary: new BBTagSummary
                             {
                                 OpenTag = "[url]",

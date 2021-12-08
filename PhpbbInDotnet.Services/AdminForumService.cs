@@ -142,7 +142,7 @@ namespace PhpbbInDotnet.Services
                 await _operationLogService.LogAdminForumAction(isNewForum ? AdminForumActions.Add : AdminForumActions.Update, adminUserId, actual);
                 return (string.Format(LanguageProvider.Admin[lang, "FORUM_UPDATED_SUCCESSFULLY_FORMAT"], actual.ForumName), true);
 
-                (int entityId, int roleId) translatePermission(string permission)
+                (int entityId, int roleId) translatePermission(string? permission)
                 {
                     if (string.IsNullOrWhiteSpace(permission))
                     {
@@ -152,7 +152,7 @@ namespace PhpbbInDotnet.Services
                     return (int.Parse(items[0]), int.Parse(items[1]));
                 }
 
-                Dictionary<int, int> translatePermissions(List<string> permissions)
+                Dictionary<int, int> translatePermissions(List<string>? permissions)
                     => (from fp in permissions ?? new List<string>()
                         let item = translatePermission(fp)
                         where item.entityId > 0
@@ -192,7 +192,7 @@ namespace PhpbbInDotnet.Services
                 ).ToListAsync()
             );
 
-        public async Task<List<SelectListItem>> FlatForumTreeAsListItem(int parentId, AuthenticatedUser user)
+        public async Task<List<SelectListItem>> FlatForumTreeAsListItem(int parentId, AuthenticatedUserExpanded? user)
         {
             var tree = await _forumService.GetForumTree(user, false, false);
             var list = new List<SelectListItem>();

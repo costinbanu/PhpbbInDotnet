@@ -45,8 +45,8 @@ namespace PhpbbInDotnet.Database.Entities
         public long PollLastVote { get; set; } = 0;
         public byte PollVoteChange { get; set; } = 0;
 
-        public override bool Equals(object obj)
-            => obj != null && obj is PhpbbTopics t && TopicId == t?.TopicId;
+        public override bool Equals(object? obj)
+            => obj is PhpbbTopics t && TopicId == t?.TopicId;
 
         public override int GetHashCode()
             => HashCode.Combine(TopicId);

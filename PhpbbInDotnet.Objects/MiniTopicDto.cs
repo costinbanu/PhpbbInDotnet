@@ -9,7 +9,7 @@ namespace PhpbbInDotnet.Objects
 
         public int TopicId { get; set; }
 
-        public string TopicTitle { get; set; }
+        public string? TopicTitle { get; set; }
 
         public bool IsLocked { get; set; }
     }

@@ -18,10 +18,10 @@ namespace PhpbbInDotnet.Services
         private readonly ForumDbContext _context;
         private readonly IConfiguration _config;
         private readonly CommonUtils _utils;
-        private HashSet<ForumTree> _tree = null;
-        private HashSet<ForumTopicCount> _forumTopicCount;
-        private Dictionary<int, HashSet<Tracking>> _tracking = null;
-        private IEnumerable<(int forumId, bool hasPassword)> _restrictedForums = null;
+        private HashSet<ForumTree>? _tree;
+        private HashSet<ForumTopicCount>? _forumTopicCount;
+        private Dictionary<int, HashSet<Tracking>>? _tracking;
+        private IEnumerable<(int forumId, bool hasPassword)>? _restrictedForums;
 
         public ForumTreeService(ForumDbContext context, IConfiguration config, CommonUtils utils)
         {
@@ -30,7 +30,7 @@ namespace PhpbbInDotnet.Services
             _utils = utils;
         }
 
-        public async Task<IEnumerable<(int forumId, bool hasPassword)>> GetRestrictedForumList(AuthenticatedUser user, bool includePasswordProtected = false)
+        public async Task<IEnumerable<(int forumId, bool hasPassword)>> GetRestrictedForumList(AuthenticatedUserExpanded user, bool includePasswordProtected = false)
         {
             if (_restrictedForums == null)
             {
@@ -42,7 +42,7 @@ namespace PhpbbInDotnet.Services
         public bool IsNodeRestricted(ForumTree tree, bool includePasswordProtected = false)
             => tree.IsRestricted || (includePasswordProtected && tree.HasPassword);
 
-        public async Task<HashSet<ForumTree>> GetForumTree(AuthenticatedUser user, bool forceRefresh, bool fetchUnreadData)
+        public async Task<HashSet<ForumTree>> GetForumTree(AuthenticatedUserExpanded? user, bool forceRefresh, bool fetchUnreadData)
         {
             if (_tree != null && !forceRefresh && !(_tracking == null && fetchUnreadData))
             {
@@ -72,7 +72,7 @@ namespace PhpbbInDotnet.Services
                     return;
                 }
 
-                node.IsUnread = fetchUnreadData && tracking.ContainsKey(forumId);
+                node.IsUnread = fetchUnreadData && tracking!.ContainsKey(forumId);
                 node.IsRestricted = restrictedForums.Contains(forumId);
                 node.TotalSubforumCount = node.ChildrenList?.Count ?? 0;
                 node.TotalTopicCount = GetTopicCount(forumId);
@@ -93,7 +93,7 @@ namespace PhpbbInDotnet.Services
 
                         node.TotalSubforumCount += childForum.TotalSubforumCount;
                         node.TotalTopicCount += childForum.TotalTopicCount;
-                        node.IsUnread |= childForum.IsUnread || (fetchUnreadData && tracking.ContainsKey(childForumId));
+                        node.IsUnread |= childForum.IsUnread || (fetchUnreadData && tracking!.ContainsKey(childForumId));
                         if ((node.ForumLastPostTime ?? 0) < (childForum.ForumLastPostTime ?? 0))
                         {
                             node.ForumLastPosterColour = childForum.ForumLastPosterColour;
@@ -119,7 +119,7 @@ namespace PhpbbInDotnet.Services
                 return count.ToHashSet();
             }
 
-            Task<HashSet<int>> GetRestrictedForumsFromPermissions(AuthenticatedUser user)
+            Task<HashSet<int>> GetRestrictedForumsFromPermissions(AuthenticatedUserExpanded? user)
                 => Task.Run(() => (user?.AllPermissions?.Where(p => p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE)?.Select(p => p.ForumId) ?? Enumerable.Empty<int>()).ToHashSet());
         }
 
@@ -148,7 +148,7 @@ namespace PhpbbInDotnet.Services
             {
                 var track = new Tracking
                 {
-                    Posts = result.PostIds.ToIntHashSet(),
+                    Posts = result.PostIds?.ToIntHashSet(),
                     TopicId = result.TopicId
                 };
 
@@ -163,19 +163,19 @@ namespace PhpbbInDotnet.Services
             return _tracking;
         }
 
-        public async Task<bool> IsForumUnread(int forumId, AuthenticatedUser user, bool forceRefresh = false)
+        public async Task<bool> IsForumUnread(int forumId, AuthenticatedUserExpanded user, bool forceRefresh = false)
             => GetTreeNode(await GetForumTree(user, forceRefresh, true), forumId)?.IsUnread ?? false;
 
-        public async Task<bool> IsTopicUnread(int forumId, int topicId, AuthenticatedUser user, bool forceRefresh = false)
+        public async Task<bool> IsTopicUnread(int forumId, int topicId, AuthenticatedUserExpanded user, bool forceRefresh = false)
         {
             var ft = await GetForumTracking(user?.UserId ?? Constants.ANONYMOUS_USER_ID, forceRefresh);
             return ft.TryGetValue(forumId, out var tt) && tt.Contains(new Tracking { TopicId = topicId });
         }
 
-        public async Task<bool> IsPostUnread(int forumId, int topicId, int postId, AuthenticatedUser user)
+        public async Task<bool> IsPostUnread(int forumId, int topicId, int postId, AuthenticatedUserExpanded user)
         {
             var ft = await GetForumTracking(user?.UserId ?? Constants.ANONYMOUS_USER_ID, false);
-            Tracking item = null;
+            Tracking? item = null;
             var found = ft.TryGetValue(forumId, out var tt) && tt.TryGetValue(new Tracking { TopicId = topicId }, out item);
             if (!found)
             {
@@ -184,7 +184,7 @@ namespace PhpbbInDotnet.Services
             return item?.Posts?.Contains(postId) ?? false;
         }
 
-        public ForumTree GetTreeNode(HashSet<ForumTree> tree, int forumId)
+        public ForumTree? GetTreeNode(HashSet<ForumTree> tree, int forumId)
             => tree.TryGetValue(new ForumTree { ForumId = forumId }, out var node) ? node : null;
 
         public string GetPathText(HashSet<ForumTree> tree, int forumId)
@@ -215,10 +215,10 @@ namespace PhpbbInDotnet.Services
                 return false;
             }
 
-            return node.ChildrenList?.Select(x => GetTreeNode(tree, x))?.Any(x => !x.IsRestricted) ?? false;
+            return node.ChildrenList?.Select(x => GetTreeNode(tree, x))?.Any(x => x?.IsRestricted == false) ?? false;
         }
 
         private int GetTopicCount(int forumId)
-            => _forumTopicCount.TryGetValue(new ForumTopicCount { ForumId = forumId }, out var val) ? (val?.TopicCount ?? 0) : 0;
+            => _forumTopicCount is not null && _forumTopicCount.TryGetValue(new ForumTopicCount { ForumId = forumId }, out var val) ? (val?.TopicCount ?? 0) : 0;
     }
 }

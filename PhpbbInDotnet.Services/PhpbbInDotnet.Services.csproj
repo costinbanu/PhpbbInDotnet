@@ -1,9 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="CodeKicker.BBCode.Core" Version="2.0.0" />
     <PackageReference Include="CryptSharp.Core" Version="2.0.0" />

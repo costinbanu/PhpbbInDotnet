@@ -6,7 +6,7 @@ namespace PhpbbInDotnet.Forum.Pages
     public class ErrorModel : PageModel
     {
         [BindProperty(SupportsGet = true)]
-        public string ErrorId { get; set; }
+        public string? ErrorId { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public bool IsUnauthorized { get; set; }
@@ -15,7 +15,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool IsNotFound { get; set; }
 
         [BindProperty(SupportsGet = true)]
-        public string CustomErrorMessage { get; set; }
+        public string? CustomErrorMessage { get; set; }
 
         public void OnGet()
         {

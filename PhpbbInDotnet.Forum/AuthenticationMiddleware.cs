@@ -66,7 +66,7 @@ namespace PhpbbInDotnet.Forum
                 return;
             }
 
-            AuthenticatedUser user;
+            AuthenticatedUserExpanded? user;
             try
             {
                 if (context.User?.Identity?.IsAuthenticated != true)
@@ -99,7 +99,7 @@ namespace PhpbbInDotnet.Forum
 
             var connection = await _context.GetDbConnectionAsync();
 
-            var dbUserTask = connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { user.UserId });
+            var dbUserTask = connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { user!.UserId });
             var permissionsTask = _userService.GetPermissions(user.UserId);
             var tppTask = GetTopicPostsPage(connection, user.UserId);
             var foesTask = _userService.GetFoes(user.UserId);
@@ -113,7 +113,7 @@ namespace PhpbbInDotnet.Forum
             }
 
             var sessionTrackingTimeout = _config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1);
-            if (dbUser != null && !user.IsAnonymous && (
+            if (dbUser != null && !user!.IsAnonymous && (
                     await _cache.GetAsync<bool?>($"ReloadUser_{user.UsernameClean}") == true ||
                     DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > sessionTrackingTimeout))
             {
@@ -129,11 +129,11 @@ namespace PhpbbInDotnet.Forum
                 user = _userService.ClaimsPrincipalToAuthenticatedUser(claimsPrincipal);
             }
 
-            user.AllPermissions = await permissionsTask;
+            user!.AllPermissions = await permissionsTask;
             user.TopicPostsPerPage = await tppTask;
             user.Foes = await foesTask;
 
-            context.Items.TryAdd(nameof(AuthenticatedUser), user);
+            context.Items[nameof(AuthenticatedUserExpanded)] = user;
 
             if (user.IsAnonymous && context.Request.Headers.TryGetValue(HeaderNames.UserAgent, out var header) && (context.Session.GetInt32("SessionCounted") ?? 0) == 0)
             {
@@ -145,7 +145,10 @@ namespace PhpbbInDotnet.Forum
                     var IsBot = dd.IsBot();
                     if (IsBot)
                     {
-                        _sessionCounter.UpsertBot(context.Connection.RemoteIpAddress.ToString(), userAgent, sessionTrackingTimeout);
+                        if (context.Connection.RemoteIpAddress is not null)
+                        {
+                            _sessionCounter.UpsertBot(context.Connection.RemoteIpAddress.ToString(), userAgent, sessionTrackingTimeout);
+                        }
                     }
                     else
                     {
