@@ -59,9 +59,9 @@ namespace PhpbbInDotnet.Utilities
             return memory.ToArray();
         }
 
-        public async Task<T> DecompressObject<T>(byte[] source)
+        public async Task<T?> DecompressObject<T>(byte[]? source)
         {
-            if (!(source?.Any() ?? false))
+            if (source?.Any() != true)
             {
                 return default;
             }
@@ -77,7 +77,7 @@ namespace PhpbbInDotnet.Utilities
         public async Task<string> CompressAndEncode(string input)
             => Convert.ToBase64String(await CompressObject(input));
 
-        public async Task<string> DecodeAndDecompress(string input)
+        public async Task<string?> DecodeAndDecompress(string input)
             => await DecompressObject<string>(Convert.FromBase64String(input));
 
 
@@ -99,7 +99,7 @@ namespace PhpbbInDotnet.Utilities
         public long CalculateCrc32Hash(string input)
             => long.Parse(Crc32Algorithm.Compute(Encoding.UTF8.GetBytes(input.ToLower())).ToString() + input.Length.ToString());
 
-        public async Task<(string encrypted, Guid iv)> EncryptAES(string plainText, byte[] key = null)
+        public async Task<(string encrypted, Guid iv)> EncryptAES(string plainText, byte[]? key = null)
         {
             byte[] encrypted;
             var iv = Guid.NewGuid();
@@ -126,9 +126,9 @@ namespace PhpbbInDotnet.Utilities
             return (Convert.ToBase64String(encrypted), iv);
         }
 
-        public async Task<string> DecryptAES(string encryptedText, Guid iv, byte[] key = null)
+        public async Task<string> DecryptAES(string encryptedText, Guid iv, byte[]? key = null)
         {
-            string decrypted = null;
+            string? decrypted = null;
             byte[] cipher = Convert.FromBase64String(encryptedText);
             key ??= GetEncryptionKey();
 
@@ -161,7 +161,7 @@ namespace PhpbbInDotnet.Utilities
 
         #region String utils
 
-        public string CleanString(string input)
+        public string CleanString(string? input)
         {
             if (input == null)
             {
@@ -242,14 +242,14 @@ namespace PhpbbInDotnet.Utilities
 
         #region Error handling
 
-        public string HandleError(Exception ex, string message = null)
+        public string HandleError(Exception ex, string? message = null)
         {
             var id = Guid.NewGuid().ToString("n");
             _logger.Error(ex, "Exception id: {id}. Message: {message}", id, message);
             return id;
         }
 
-        public string HandleErrorAsWarning(Exception ex, string message = null)
+        public string HandleErrorAsWarning(Exception ex, string? message = null)
         {
             var id = Guid.NewGuid().ToString("n");
             _logger.Warning(ex, "Exception id: {id}. Message: {message}", id, message);
@@ -289,10 +289,11 @@ namespace PhpbbInDotnet.Utilities
             return $"{(Math.Sign(fileSizeInBytes) * num).ToString("##.##", CultureInfo.InvariantCulture)} {suf[place]}";
         }
 
-        public List<SelectListItem> EnumToDropDownList<T>(T? selectedItem, Func<T, string> textTransform = null, Func<T, string> valueTransform = null, string defaultText = null, Func<T, bool> valueFilter = null) where T : struct, Enum
+        public List<SelectListItem> EnumToDropDownList<T>(T? selectedItem, Func<T, string>? textTransform = null, Func<T, string>? valueTransform = null, string? defaultText = null, Func<T, bool>? valueFilter = null) 
+            where T : struct, Enum
         {
-            textTransform ??= x => Enum.GetName(x);
-            valueTransform ??= x => Enum.GetName(x);
+            textTransform ??= x => Enum.GetName(x)!;
+            valueTransform ??= x => Enum.GetName(x)!;
             valueFilter ??= x => true;
             var toReturn = Enum.GetValues<T>().Where(valueFilter).Select(
                 val => new SelectListItem(textTransform(val), valueTransform(val), selectedItem.HasValue && Enum.GetName(selectedItem.Value) == Enum.GetName(val))

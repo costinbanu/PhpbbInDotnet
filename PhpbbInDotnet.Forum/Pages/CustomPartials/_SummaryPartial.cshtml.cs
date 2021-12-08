@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
+using PhpbbInDotnet.Utilities;
 using System;
 
 namespace PhpbbInDotnet.Forum.Pages.CustomPartials
@@ -7,25 +8,25 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
     {
         public int? AuthorId { get; set; }
 
-        public string AuthorName { get; set; }
+        public string? AuthorName { get; set; }
 
-        public string AuthorColor { get; set; }
+        public string? AuthorColor { get; set; }
 
-        public string AuthorAvatar { get; set; }
+        public string? AuthorAvatar { get; set; }
 
         public DateTime? CreationTime { get; set; }
 
         public int AssetId { get; set; }
 
-        public string DateFormat { get; set; }
+        public string? DateFormat { get; set; }
 
         public bool ShowAvatar => !string.IsNullOrWhiteSpace(AuthorAvatar);
 
-        public string LinkHref { get; set; }
+        public string? LinkHref { get; set; }
 
         public bool Left { get; set; }
 
-        public string AuthorRank { get; set; }
+        public string? AuthorRank { get; set; }
 
         public bool ShowAsLast { get; set; }
 
@@ -37,13 +38,13 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
 
         public int? Topics { get; set; }
 
-        public string AuthorTag { get; set; }
+        public string? AuthorTag { get; set; }
 
-        public string PMLink { get; set; }
+        public string? PMLink { get; set; }
 
-        public string Language { get; set; }
+        public string Language { get; set; } = Constants.DEFAULT_LANGUAGE;
 
-        public string DateLabel { get; set; }
+        public string? DateLabel { get; set; }
 
         public Guid? CorrelationId { get; set; }
     }

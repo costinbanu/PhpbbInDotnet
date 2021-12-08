@@ -137,9 +137,9 @@ else
     @await Html.PartialAsync(
         "_PaginationControlsPartial",
         new _PaginationControlsPartialModel(
-            paginator: Model.Paginator,
+            paginator: Model.Paginator!,
             allowPaginationChange: false,
-            back: Model.GetSearchLinkForPage(Model.PageNum.Value - 1),
+            back: Model.GetSearchLinkForPage(Model.PageNum!.Value - 1),
             forward: Model.GetSearchLinkForPage(Model.PageNum.Value + 1),
             includeEasyNavigation: false,
             language: Lang,
@@ -149,7 +149,7 @@ else
         ViewData
     )
     <hr class="BoxSeparator" />
-    var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(Model.Attachments, Lang, Model.Posts.Count, false);
+    var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(Model.Attachments!, Lang, Model.Posts!.Count, false);
     foreach (var post in Model.Posts)
     {
         if (post.PostId == 0)
@@ -180,7 +180,7 @@ else
     @await Html.PartialAsync(
         "_PaginationControlsPartial",
         new _PaginationControlsPartialModel(
-            paginator: Model.Paginator,
+            paginator: Model.Paginator!,
             allowPaginationChange: false,
             back: Model.GetSearchLinkForPage(Model.PageNum.Value - 1),
             forward: Model.GetSearchLinkForPage(Model.PageNum.Value + 1),

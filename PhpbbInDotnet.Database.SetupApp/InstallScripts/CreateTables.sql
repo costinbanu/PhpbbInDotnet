@@ -131,15 +131,6 @@ CREATE TABLE IF NOT EXISTS `phpbb_bbcodes` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table forum.phpbb_bookmarks
-CREATE TABLE IF NOT EXISTS `phpbb_bookmarks` (
-  `topic_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `user_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  PRIMARY KEY (`topic_id`,`user_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
 -- Dumping structure for table forum.phpbb_bots
 CREATE TABLE IF NOT EXISTS `phpbb_bots` (
   `bot_id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
@@ -151,64 +142,6 @@ CREATE TABLE IF NOT EXISTS `phpbb_bots` (
   PRIMARY KEY (`bot_id`),
   KEY `bot_active` (`bot_active`)
 ) ENGINE=MyISAM AUTO_INCREMENT=52 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_captcha_answers
-CREATE TABLE IF NOT EXISTS `phpbb_captcha_answers` (
-  `question_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `answer_text` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  PRIMARY KEY (`id`),
-  KEY `question_id` (`question_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=13 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_captcha_questions
-CREATE TABLE IF NOT EXISTS `phpbb_captcha_questions` (
-  `question_id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
-  `strict` tinyint(1) unsigned NOT NULL DEFAULT 0,
-  `lang_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `lang_iso` varchar(30) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `question_text` text COLLATE utf8_bin NOT NULL,
-  PRIMARY KEY (`question_id`),
-  KEY `lang_iso` (`lang_iso`)
-) ENGINE=MyISAM AUTO_INCREMENT=7 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_config
-CREATE TABLE IF NOT EXISTS `phpbb_config` (
-  `config_name` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `config_value` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `is_dynamic` tinyint(1) unsigned NOT NULL DEFAULT 0,
-  PRIMARY KEY (`config_name`),
-  KEY `is_dynamic` (`is_dynamic`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_confirm
-CREATE TABLE IF NOT EXISTS `phpbb_confirm` (
-  `confirm_id` varchar(32) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `session_id` varchar(32) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `confirm_type` tinyint(3) NOT NULL DEFAULT 0,
-  `code` varchar(8) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `seed` int(10) unsigned NOT NULL DEFAULT 0,
-  `attempts` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  PRIMARY KEY (`session_id`,`confirm_id`),
-  KEY `confirm_type` (`confirm_type`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_disallow
-CREATE TABLE IF NOT EXISTS `phpbb_disallow` (
-  `disallow_id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
-  `disallow_username` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  PRIMARY KEY (`disallow_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 -- Data exporting was unselected.
 
@@ -224,32 +157,6 @@ CREATE TABLE IF NOT EXISTS `phpbb_drafts` (
   PRIMARY KEY (`draft_id`),
   KEY `save_time` (`save_time`)
 ) ENGINE=MyISAM AUTO_INCREMENT=1041 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_extensions
-CREATE TABLE IF NOT EXISTS `phpbb_extensions` (
-  `extension_id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
-  `group_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `extension` varchar(100) COLLATE utf8_bin NOT NULL DEFAULT '',
-  PRIMARY KEY (`extension_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=67 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_extension_groups
-CREATE TABLE IF NOT EXISTS `phpbb_extension_groups` (
-  `group_id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
-  `group_name` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `cat_id` tinyint(2) NOT NULL DEFAULT 0,
-  `allow_group` tinyint(1) unsigned NOT NULL DEFAULT 0,
-  `download_mode` tinyint(1) unsigned NOT NULL DEFAULT 1,
-  `upload_icon` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `max_filesize` int(20) unsigned NOT NULL DEFAULT 0,
-  `allowed_forums` text COLLATE utf8_bin NOT NULL,
-  `allow_in_pm` tinyint(1) unsigned NOT NULL DEFAULT 0,
-  PRIMARY KEY (`group_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=10 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 -- Data exporting was unselected.
 
@@ -302,16 +209,6 @@ CREATE TABLE IF NOT EXISTS `phpbb_forums` (
   KEY `left_right_id` (`left_id`,`right_id`),
   KEY `forum_lastpost_id` (`forum_last_post_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=494 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_forums_access
-CREATE TABLE IF NOT EXISTS `phpbb_forums_access` (
-  `forum_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `user_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `session_id` char(32) COLLATE utf8_bin NOT NULL DEFAULT '',
-  PRIMARY KEY (`forum_id`,`user_id`,`session_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 -- Data exporting was unselected.
 
@@ -369,20 +266,6 @@ CREATE TABLE IF NOT EXISTS `phpbb_groups` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table forum.phpbb_icons
-CREATE TABLE IF NOT EXISTS `phpbb_icons` (
-  `icons_id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
-  `icons_url` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `icons_width` tinyint(4) NOT NULL DEFAULT 0,
-  `icons_height` tinyint(4) NOT NULL DEFAULT 0,
-  `icons_order` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `display_on_posting` tinyint(1) unsigned NOT NULL DEFAULT 1,
-  PRIMARY KEY (`icons_id`),
-  KEY `display_on_posting` (`display_on_posting`)
-) ENGINE=MyISAM AUTO_INCREMENT=13 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
 -- Dumping structure for table forum.phpbb_lang
 CREATE TABLE IF NOT EXISTS `phpbb_lang` (
   `lang_id` tinyint(4) NOT NULL AUTO_INCREMENT,
@@ -416,42 +299,6 @@ CREATE TABLE IF NOT EXISTS `phpbb_log` (
   KEY `reportee_id` (`reportee_id`),
   KEY `user_id` (`user_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=105539 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_moderator_cache
-CREATE TABLE IF NOT EXISTS `phpbb_moderator_cache` (
-  `forum_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `user_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `username` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `group_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `group_name` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `display_on_index` tinyint(1) unsigned NOT NULL DEFAULT 1,
-  PRIMARY KEY (`forum_id`,`user_id`,`group_id`),
-  KEY `disp_idx` (`display_on_index`),
-  KEY `forum_id` (`forum_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_modules
-CREATE TABLE IF NOT EXISTS `phpbb_modules` (
-  `module_id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
-  `module_enabled` tinyint(1) unsigned NOT NULL DEFAULT 1,
-  `module_display` tinyint(1) unsigned NOT NULL DEFAULT 1,
-  `module_basename` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `module_class` varchar(10) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `parent_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `left_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `right_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `module_langname` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `module_mode` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `module_auth` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  PRIMARY KEY (`module_id`),
-  KEY `left_right_id` (`left_id`,`right_id`),
-  KEY `module_enabled` (`module_enabled`),
-  KEY `class_left_id` (`module_class`,`left_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=199 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 -- Data exporting was unselected.
 
@@ -557,35 +404,6 @@ CREATE TABLE IF NOT EXISTS `phpbb_privmsgs` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table forum.phpbb_privmsgs_folder
-CREATE TABLE IF NOT EXISTS `phpbb_privmsgs_folder` (
-  `folder_id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `folder_name` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `pm_count` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  PRIMARY KEY (`folder_id`),
-  KEY `user_id` (`user_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_privmsgs_rules
-CREATE TABLE IF NOT EXISTS `phpbb_privmsgs_rules` (
-  `rule_id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `rule_check` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `rule_connection` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `rule_string` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `rule_user_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `rule_group_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `rule_action` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `rule_folder_id` int(11) NOT NULL DEFAULT 0,
-  PRIMARY KEY (`rule_id`),
-  KEY `user_id` (`user_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=8 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
 -- Dumping structure for table forum.phpbb_privmsgs_to
 CREATE TABLE IF NOT EXISTS `phpbb_privmsgs_to` (
   `msg_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
@@ -604,80 +422,6 @@ CREATE TABLE IF NOT EXISTS `phpbb_privmsgs_to` (
   KEY `author_id` (`author_id`),
   KEY `usr_flder_id` (`user_id`,`folder_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=23510 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_profile_fields
-CREATE TABLE IF NOT EXISTS `phpbb_profile_fields` (
-  `field_id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
-  `field_name` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `field_type` tinyint(4) NOT NULL DEFAULT 0,
-  `field_ident` varchar(20) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `field_length` varchar(20) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `field_minlen` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `field_maxlen` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `field_novalue` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `field_default_value` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `field_validation` varchar(20) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `field_required` tinyint(1) unsigned NOT NULL DEFAULT 0,
-  `field_show_on_reg` tinyint(1) unsigned NOT NULL DEFAULT 0,
-  `field_show_on_vt` tinyint(1) unsigned NOT NULL DEFAULT 0,
-  `field_show_profile` tinyint(1) unsigned NOT NULL DEFAULT 0,
-  `field_hide` tinyint(1) unsigned NOT NULL DEFAULT 0,
-  `field_no_view` tinyint(1) unsigned NOT NULL DEFAULT 0,
-  `field_active` tinyint(1) unsigned NOT NULL DEFAULT 0,
-  `field_order` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  PRIMARY KEY (`field_id`),
-  KEY `fld_type` (`field_type`),
-  KEY `fld_ordr` (`field_order`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_profile_fields_data
-CREATE TABLE IF NOT EXISTS `phpbb_profile_fields_data` (
-  `user_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  PRIMARY KEY (`user_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_profile_fields_lang
-CREATE TABLE IF NOT EXISTS `phpbb_profile_fields_lang` (
-  `field_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `lang_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `option_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `field_type` tinyint(4) NOT NULL DEFAULT 0,
-  `lang_value` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  PRIMARY KEY (`field_id`,`lang_id`,`option_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_profile_lang
-CREATE TABLE IF NOT EXISTS `phpbb_profile_lang` (
-  `field_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `lang_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `lang_name` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `lang_explain` text COLLATE utf8_bin NOT NULL,
-  `lang_default_value` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  PRIMARY KEY (`field_id`,`lang_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_qa_confirm
-CREATE TABLE IF NOT EXISTS `phpbb_qa_confirm` (
-  `session_id` char(32) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `confirm_id` char(32) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `lang_iso` varchar(30) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `question_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `attempts` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `confirm_type` smallint(4) unsigned NOT NULL DEFAULT 0,
-  PRIMARY KEY (`confirm_id`),
-  KEY `session_id` (`session_id`),
-  KEY `lookup` (`confirm_id`,`session_id`,`lang_iso`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 -- Data exporting was unselected.
 
@@ -722,90 +466,6 @@ CREATE TABLE IF NOT EXISTS `phpbb_reports_reasons` (
 
 -- Data exporting was unselected.
 
--- Dumping structure for table forum.phpbb_search_results
-CREATE TABLE IF NOT EXISTS `phpbb_search_results` (
-  `search_key` varchar(32) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `search_time` int(11) unsigned NOT NULL DEFAULT 0,
-  `search_keywords` mediumtext COLLATE utf8_bin NOT NULL,
-  `search_authors` mediumtext COLLATE utf8_bin NOT NULL,
-  PRIMARY KEY (`search_key`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_search_wordlist
-CREATE TABLE IF NOT EXISTS `phpbb_search_wordlist` (
-  `word_id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
-  `word_text` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `word_common` tinyint(1) unsigned NOT NULL DEFAULT 0,
-  `word_count` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  PRIMARY KEY (`word_id`),
-  UNIQUE KEY `wrd_txt` (`word_text`),
-  KEY `wrd_cnt` (`word_count`)
-) ENGINE=MyISAM AUTO_INCREMENT=866 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_search_wordmatch
-CREATE TABLE IF NOT EXISTS `phpbb_search_wordmatch` (
-  `post_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `word_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `title_match` tinyint(1) unsigned NOT NULL DEFAULT 0,
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `unq_mtch` (`word_id`,`post_id`,`title_match`),
-  KEY `word_id` (`word_id`),
-  KEY `post_id` (`post_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=1089 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_sessions
-CREATE TABLE IF NOT EXISTS `phpbb_sessions` (
-  `session_id` varchar(32) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `session_user_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `session_forum_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `session_last_visit` int(11) unsigned NOT NULL DEFAULT 0,
-  `session_start` int(11) unsigned NOT NULL DEFAULT 0,
-  `session_time` int(11) unsigned NOT NULL DEFAULT 0,
-  `session_ip` varchar(40) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `session_browser` varchar(150) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `session_forwarded_for` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `session_page` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `session_viewonline` tinyint(1) unsigned NOT NULL DEFAULT 1,
-  `session_autologin` tinyint(1) unsigned NOT NULL DEFAULT 0,
-  `session_admin` tinyint(1) unsigned NOT NULL DEFAULT 0,
-  PRIMARY KEY (`session_id`),
-  KEY `session_time` (`session_time`),
-  KEY `session_user_id` (`session_user_id`),
-  KEY `session_fid` (`session_forum_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_sessions_keys
-CREATE TABLE IF NOT EXISTS `phpbb_sessions_keys` (
-  `key_id` varchar(32) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `user_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `last_ip` varchar(40) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `last_login` int(11) unsigned NOT NULL DEFAULT 0,
-  PRIMARY KEY (`key_id`,`user_id`),
-  KEY `last_login` (`last_login`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_sitelist
-CREATE TABLE IF NOT EXISTS `phpbb_sitelist` (
-  `site_id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
-  `site_ip` varchar(40) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `site_hostname` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `ip_exclude` tinyint(1) unsigned NOT NULL DEFAULT 0,
-  PRIMARY KEY (`site_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
 -- Dumping structure for table forum.phpbb_smilies
 CREATE TABLE IF NOT EXISTS `phpbb_smilies` (
   `smiley_id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
@@ -836,79 +496,6 @@ CREATE TABLE IF NOT EXISTS `phpbb_styles` (
   KEY `template_id` (`template_id`),
   KEY `theme_id` (`theme_id`),
   KEY `imageset_id` (`imageset_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=9 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_styles_imageset
-CREATE TABLE IF NOT EXISTS `phpbb_styles_imageset` (
-  `imageset_id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
-  `imageset_name` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `imageset_copyright` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `imageset_path` varchar(100) COLLATE utf8_bin NOT NULL DEFAULT '',
-  PRIMARY KEY (`imageset_id`),
-  UNIQUE KEY `imgset_nm` (`imageset_name`)
-) ENGINE=MyISAM AUTO_INCREMENT=9 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_styles_imageset_data
-CREATE TABLE IF NOT EXISTS `phpbb_styles_imageset_data` (
-  `image_id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
-  `image_name` varchar(200) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `image_filename` varchar(200) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `image_lang` varchar(30) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `image_height` smallint(4) unsigned NOT NULL DEFAULT 0,
-  `image_width` smallint(4) unsigned NOT NULL DEFAULT 0,
-  `imageset_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  PRIMARY KEY (`image_id`),
-  KEY `i_d` (`imageset_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=1573 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_styles_template
-CREATE TABLE IF NOT EXISTS `phpbb_styles_template` (
-  `template_id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
-  `template_name` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `template_copyright` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `template_path` varchar(100) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `bbcode_bitfield` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT 'kNg=',
-  `template_storedb` tinyint(1) unsigned NOT NULL DEFAULT 0,
-  `template_inherits_id` int(4) unsigned NOT NULL DEFAULT 0,
-  `template_inherit_path` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  PRIMARY KEY (`template_id`),
-  UNIQUE KEY `tmplte_nm` (`template_name`)
-) ENGINE=MyISAM AUTO_INCREMENT=9 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_styles_template_data
-CREATE TABLE IF NOT EXISTS `phpbb_styles_template_data` (
-  `template_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `template_filename` varchar(100) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `template_included` text COLLATE utf8_bin NOT NULL,
-  `template_mtime` int(11) unsigned NOT NULL DEFAULT 0,
-  `template_data` mediumtext COLLATE utf8_bin NOT NULL,
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  PRIMARY KEY (`id`),
-  KEY `tid` (`template_id`),
-  KEY `tfn` (`template_filename`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_styles_theme
-CREATE TABLE IF NOT EXISTS `phpbb_styles_theme` (
-  `theme_id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
-  `theme_name` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `theme_copyright` varchar(255) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `theme_path` varchar(100) COLLATE utf8_bin NOT NULL DEFAULT '',
-  `theme_storedb` tinyint(1) unsigned NOT NULL DEFAULT 0,
-  `theme_mtime` int(11) unsigned NOT NULL DEFAULT 0,
-  `theme_data` mediumtext COLLATE utf8_bin NOT NULL,
-  PRIMARY KEY (`theme_id`),
-  UNIQUE KEY `theme_name` (`theme_name`)
 ) ENGINE=MyISAM AUTO_INCREMENT=9 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 -- Data exporting was unselected.
@@ -957,16 +544,6 @@ CREATE TABLE IF NOT EXISTS `phpbb_topics` (
   KEY `forum_appr_last` (`forum_id`,`topic_approved`,`topic_last_post_id`),
   KEY `fid_time_moved` (`forum_id`,`topic_last_post_time`,`topic_moved_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=5550 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_topics_posted
-CREATE TABLE IF NOT EXISTS `phpbb_topics_posted` (
-  `user_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `topic_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `topic_posted` tinyint(1) unsigned NOT NULL DEFAULT 0,
-  PRIMARY KEY (`user_id`,`topic_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 -- Data exporting was unselected.
 
@@ -1108,18 +685,6 @@ CREATE TABLE `phpbb_user_topic_post_number` (
   PRIMARY KEY (`user_id`,`topic_id`),
   KEY `user_id` (`user_id`,`topic_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-
--- Data exporting was unselected.
-
--- Dumping structure for table forum.phpbb_warnings
-CREATE TABLE IF NOT EXISTS `phpbb_warnings` (
-  `warning_id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `post_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `log_id` mediumint(8) unsigned NOT NULL DEFAULT 0,
-  `warning_time` int(11) unsigned NOT NULL DEFAULT 0,
-  PRIMARY KEY (`warning_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 -- Data exporting was unselected.
 

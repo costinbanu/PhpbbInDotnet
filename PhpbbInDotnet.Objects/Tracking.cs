@@ -6,10 +6,10 @@ namespace PhpbbInDotnet.Objects
     {
         public int TopicId { get; set; }
 
-        public HashSet<int> Posts { get; set; }
+        public HashSet<int>? Posts { get; set; }
 
-        public override bool Equals(object obj)
-            => obj != null && obj is Tracking tr && TopicId == tr.TopicId;
+        public override bool Equals(object? obj)
+            => obj is Tracking tr && TopicId == tr.TopicId;
 
         public override int GetHashCode()
             => TopicId.GetHashCode();
@@ -17,7 +17,7 @@ namespace PhpbbInDotnet.Objects
 
     public class ExtendedTracking : Tracking
     {
-        public string PostIds { get; set; }
+        public string? PostIds { get; set; }
         public int ForumId { get; set; }
     }
 }

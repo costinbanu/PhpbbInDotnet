@@ -13,7 +13,7 @@
     ViewData["Title"] = Model.LanguageProvider.BasicText[Lang, "HOME", Casing.Title];
 }
 
-@if (!CurrentUser.IsAnonymous)
+@if (!CurrentUser!.IsAnonymous)
 {
     <form asp-page-handler="MarkForumsRead" method="post" name="MarkForumsRead">
         @Html.AntiForgeryToken()
@@ -50,6 +50,6 @@
 
 @await Html.PartialAsync(
     "_ForumDisplayPartial",
-    new PhpbbInDotnet.Forum.Pages.CustomPartials._ForumDisplayPartialModel(0, Model.Tree, UserDateFormat, false, CurrentUser, false, Lang),
+    new PhpbbInDotnet.Forum.Pages.CustomPartials._ForumDisplayPartialModel(0, Model.Tree!, UserDateFormat, false, CurrentUser!, false, Lang),
     ViewData
 )

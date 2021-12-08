@@ -88,7 +88,7 @@ namespace PhpbbInDotnet.Database.SetupApp
                 else
                 {
                     Console.WriteLine("Updating users table...");
-                    using var utils = new CommonUtils(null, null, null, null);
+                    using var utils = new CommonUtils(null!, null!, null!, null!);
                     var users = await connection.QueryAsync("SELECT user_id, username, username_clean FROM phpbb_users");
                     foreach (var user in users)
                     {
@@ -108,7 +108,7 @@ namespace PhpbbInDotnet.Database.SetupApp
             }
         }
 
-        static string ReadInput(string message, string[] allowedValues = null, Regex regex = null)
+        static string ReadInput(string message, string[]? allowedValues = null, Regex? regex = null)
         {
             Console.WriteLine(message.Trim());
             if (regex != null)
@@ -121,7 +121,7 @@ namespace PhpbbInDotnet.Database.SetupApp
             }
 
             var input = Console.ReadLine();
-            if (regex != null && !regex.IsMatch(input))
+            if (regex != null && !regex.IsMatch(input!))
             {
                 return ReadInput(message, null, regex);
             }
@@ -129,7 +129,7 @@ namespace PhpbbInDotnet.Database.SetupApp
             {
                 return ReadInput(message, allowedValues, null);
             }
-            return input;
+            return input!;
         }
     }
 }

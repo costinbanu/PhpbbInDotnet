@@ -16,7 +16,7 @@
 
 <div id="bannedWordsSection" style="display:none">
     <form method="post" asp-page-handler="BanWords">
-        @for (var i = 0; i < Model.BannedWords.Count; i++)
+        @for (var i = 0; i < Model.BannedWords?.Count; i++)
         {
             <div class="FlexCenter">
                 <div class="FlexCaption">
@@ -69,12 +69,12 @@
 
 <div id="customBBCodesSection" style="display:none">
     <span class="Caption">
-        @Html.Raw(_languageProvider.CustomBBCodeGuide[Model.Language])
+        @Html.Raw(_languageProvider.CustomBBCodeGuide[Model.Language!])
     </span>
     <hr class="SubtypeSeparator" />
     <form method="post" asp-page-handler="BBCodes" id="bbCodes">
 
-        @for (var i = 0; i < Model.CustomBbCodes.Count; i++)
+        @for (var i = 0; i < Model.CustomBbCodes?.Count; i++)
         {
             <div class="FlexCenter">
                 <div class="FlexCaption">
@@ -141,14 +141,14 @@
 </h4>
 
 @{
-    var smilies = Model.Smilies.GroupBy(s => new { s.SmileyUrl, s.Emotion }).ToList();
-    var smileyCodeCounts = new int[smilies.Count];
+    var smilies = Model.Smilies?.GroupBy(s => new { s.SmileyUrl, s.Emotion }).ToList();
+    var smileyCodeCounts = new int[smilies?.Count ?? 0];
     var smileyMaxSize = _config.GetObject<Objects.Configuration.ImageSize>("EmojiMaxSize");
 }
 <div id="smiliesSection" style="display:none">
     <hr class="SubtypeSeparator" />
     <form method="post" asp-page-handler="Smilies" id="smilies" enctype="multipart/form-data">
-        @for (var smileyIndex = 0; smileyIndex < smilies.Count; smileyIndex++)
+        @for (var smileyIndex = 0; smileyIndex < smilies?.Count; smileyIndex++)
         {
             <div>
                 <button type="button" class="collapsible">
@@ -256,9 +256,9 @@
         return $(row).children('td').eq(index).text();
     }
 
-    var wordIndex = @Model.BannedWords.Count;
-    var codeIndex = @Model.CustomBbCodes.Count;
-    var smileyIndex = @smilies.Count;
+    var wordIndex = @(Model.BannedWords?.Count ?? 0);
+    var codeIndex = @(Model.CustomBbCodes?.Count ?? 0);
+    var smileyIndex = @(smilies?.Count ?? 0);
     var smileyCodeIndexes = @Json.Serialize(smileyCodeCounts);
 
     function addBannedWord() {

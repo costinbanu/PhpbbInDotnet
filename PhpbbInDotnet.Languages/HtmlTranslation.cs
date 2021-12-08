@@ -11,7 +11,7 @@ namespace PhpbbInDotnet.Languages
 
         protected override bool ShouldCacheRawTranslation => true;
 
-        public string this[string language]
+        public string? this[string language]
             => GetRawTranslation(language);
     }
 }

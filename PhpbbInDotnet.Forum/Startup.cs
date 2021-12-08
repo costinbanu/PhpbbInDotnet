@@ -139,14 +139,14 @@ namespace PhpbbInDotnet.Forum
             services.AddTransient<LanguageProvider>();
 
             var recaptchaOptions = Configuration.GetObject<Recaptcha>();
-            services.AddHttpClient(recaptchaOptions.ClientName, client => client.BaseAddress = new Uri(recaptchaOptions.BaseAddress));
+            services.AddHttpClient(recaptchaOptions.ClientName, client => client.BaseAddress = new Uri(recaptchaOptions.BaseAddress!));
 
             var imageProcessorOptions = Configuration.GetObject<ExternalImageProcessor>();
-            if (imageProcessorOptions.Api.Enabled)
+            if (imageProcessorOptions.Api?.Enabled == true)
             {
                 services.AddHttpClient(imageProcessorOptions.Api.ClientName, client =>
                 {
-                    client.BaseAddress = new Uri(imageProcessorOptions.Api.BaseAddress);
+                    client.BaseAddress = new Uri(imageProcessorOptions.Api.BaseAddress!);
                     client.DefaultRequestHeaders.Add("X-API-Key", imageProcessorOptions.Api.ApiKey);
                 });
             }
@@ -185,14 +185,14 @@ namespace PhpbbInDotnet.Forum
                     errorApp.Run(async context =>
                     {
                         var handler = context.Features.Get<IExceptionHandlerPathFeature>();
-                        if ((context.Request?.Path.HasValue ?? false) && !context.Request.Path.Value.Equals("/Error", StringComparison.InvariantCultureIgnoreCase))
+                        if ((context.Request?.Path.HasValue ?? false) && !context.Request.Path.Value?.Equals("/Error", StringComparison.InvariantCultureIgnoreCase) == true)
                         {
-                            context.Response.Redirect($"/Error?errorId={utils.HandleError(handler.Error, $"Path: {handler.Path}")}");
+                            context.Response.Redirect($"/Error?errorId={utils!.HandleError(handler.Error, $"Path: {handler.Path}")}");
                         }
                         else
                         {
-                            var user = await utils.DecompressObject<AuthenticatedUser>(Convert.FromBase64String(context.User?.Claims?.FirstOrDefault()?.Value ?? string.Empty));
-                            var id = utils.HandleError(handler.Error, $"Path: {handler.Path} ({context.Request.Path}{context.Request.QueryString}). User: {user}.");
+                            var user = await utils!.DecompressObject<AuthenticatedUserExpanded>(Convert.FromBase64String(context.User?.Claims?.FirstOrDefault()?.Value ?? string.Empty));
+                            var id = utils.HandleError(handler.Error, $"Path: {handler.Path} ({context.Request?.Path}{context.Request?.QueryString}). User: {user}.");
                             await context.Response.WriteAsync($"A intervenit o eroare. ID: {id}");
                         }
                     });
@@ -223,7 +223,7 @@ namespace PhpbbInDotnet.Forum
         public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             Debug.Assert(typeToConvert == typeof(DateTime));
-            return DateTime.Parse(reader.GetString());
+            return DateTime.Parse(reader.GetString()!);
         }
 
         public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)

@@ -102,11 +102,11 @@
         @Html.Raw(Model.LanguageProvider.BasicText[Lang, "DO_REPLY", Casing.Title]):
         @if (Model.PostId.HasValue)
         {
-            <a asp-page="/ViewTopic" asp-route-postId="@Model.PostId.Value" asp-page-handler="ByPostId">@HttpUtility.HtmlDecode(Model.CurrentTopic.TopicTitle)</a>
+            <a asp-page="/ViewTopic" asp-route-postId="@Model.PostId.Value" asp-page-handler="ByPostId">@HttpUtility.HtmlDecode(Model.CurrentTopic!.TopicTitle)</a>
         }
         else
         {
-            <a asp-page="/ViewTopic" asp-route-topicId="@Model.TopicId.Value" asp-route-pageNum="1">@HttpUtility.HtmlDecode(Model.CurrentTopic.TopicTitle)</a>
+            <a asp-page="/ViewTopic" asp-route-topicId="@Model.TopicId!.Value" asp-route-pageNum="1">@HttpUtility.HtmlDecode(Model.CurrentTopic!.TopicTitle)</a>
         }
     </h3>
 }
@@ -357,10 +357,10 @@ else if (IsPM)
 
             @if (resizeTool.Enabled)
             {
-                @Html.Raw(string.Format(Model.LanguageProvider.AttachmentGuide[Lang], sizeLimit.Images, resizeTool.Url, resizeTool.Name, resizeTool.Api.Enabled ? "display:auto" : "display:none"))
+                @Html.Raw(string.Format(Model.LanguageProvider.AttachmentGuide[Lang]!, sizeLimit.Images, resizeTool.Url, resizeTool.Name, resizeTool.Api?.Enabled == true ? "display:auto" : "display:none"))
             }
 
-            @if (resizeTool.Api.Enabled)
+            @if (resizeTool.Api?.Enabled == true)
             {
                 <p></p>
                 <label>
@@ -402,28 +402,27 @@ else if (IsPM)
                         <b>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "FILE_NAME"]):</b> @Model.Attachments[i].RealFilename <br />
                         <b>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "FILE_COMMENT"]):</b>
                         <br />
-                        <textarea type="text" asp-for="Attachments[i].AttachComment" rows="4" cols="100" style="display:inline-block; color:black" class="InputBox"></textarea>
+                        <textarea type="text" asp-for="Attachments![i].AttachComment" rows="4" cols="100" style="display:inline-block; color:black" class="InputBox"></textarea>
                         <p style="clear:both"></p>
                         <input type="button" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "MAKE_INLINE"])" onclick="posting.attach_inline(@i, '@Model.Attachments[i].RealFilename')" class="MyButton" /> &nbsp;
                         <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_FILE"])" asp-page-handler="DeleteAttachment" onclick="$('#idToDelete').val(@i); return true;" class="MyButton" />
                         <br />
                         <span asp-validation-for="DeleteFileDummyForValidation[i]" class="validation"></span>
                     </div>
-                    <input type="hidden" asp-for="Attachments[i].AttachId" />
-                    <input type="hidden" asp-for="Attachments[i].RealFilename" />
-                    <input type="hidden" asp-for="Attachments[i].PhysicalFilename" />
-                    <input type="hidden" asp-for="Attachments[i].Mimetype" />
-                    <input type="hidden" asp-for="Attachments[i].Filesize" />
+                    <input type="hidden" asp-for="Attachments![i].AttachId" />
+                    <input type="hidden" asp-for="Attachments![i].RealFilename" />
+                    <input type="hidden" asp-for="Attachments![i].PhysicalFilename" />
+                    <input type="hidden" asp-for="Attachments![i].Mimetype" />
+                    <input type="hidden" asp-for="Attachments![i].Filesize" />
                 }
                 <input type="hidden" name="index" id="idToDelete" value="" />
             }
         </div>
     }
     <div id="emojiPanel" style="display:none; clear:both;">
-        @{ var dummy = (await _writingService.GetLazySmilies()).GroupBy(s => s.SmileyUrl).Select(g => g.FirstOrDefault()); }
-        @foreach (var smiley in dummy)
+        @foreach (var smiley in (await _writingService.GetLazySmilies()).GroupBy(s => s.SmileyUrl).Select(g => g.FirstOrDefault()))
         {
-            <a href="javascript:posting.insert_text('@smiley.Code', true);">
+            <a href="javascript:posting.insert_text('@smiley!.Code', true);">
                 <img src="@_storageService.GetFileUrl(smiley.SmileyUrl, FileType.Emoji)" alt="@smiley.Code" title="@smiley.Emotion" style="margin:2px" />
             </a>
         }
@@ -435,8 +434,8 @@ else if (IsPM)
     <input asp-for="ReceiverId" type="hidden" id="pmTo" />
     <input asp-for="PageNum" type="hidden" />
     <input asp-for="Action" type="hidden" />
-    <input asp-for="CurrentTopic.TopicFirstPostId" type="hidden" />
-    <input asp-for="CurrentTopic.TopicTitle" type="hidden" />
+    <input asp-for="CurrentTopic!.TopicFirstPostId" type="hidden" />
+    <input asp-for="CurrentTopic!.TopicTitle" type="hidden" />
     <input asp-for="LastPostTime" type="hidden" id="lastPostTime" />
     <input asp-for="PrivateMessageId" type="hidden" />
     <input asp-for="ReceiverId" type="hidden" />

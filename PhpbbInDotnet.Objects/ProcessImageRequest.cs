@@ -6,10 +6,10 @@
 
         public bool HideLicensePlates { get; set; }
 
-        public byte[] Contents { get; set; }
+        public byte[]? Contents { get; set; }
 
-        public string FileName { get; set; }
+        public string? FileName { get; set; }
 
-        public string MimeType { get; set; }
+        public string? MimeType { get; set; }
     }
 }

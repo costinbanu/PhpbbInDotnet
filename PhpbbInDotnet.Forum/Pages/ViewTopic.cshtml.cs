@@ -49,23 +49,23 @@ namespace PhpbbInDotnet.Forum.Pages
         public ModeratorPostActions? PostAction { get; set; }
 
         [BindProperty(SupportsGet = true)]
-        public string SelectedPostIds { get; set; }
+        public string? SelectedPostIds { get; set; }
 
         [BindProperty]
-        public int[] PostIdsForModerator { get; set; }
+        public int[]? PostIdsForModerator { get; set; }
 
         [BindProperty]
         public int? ClosestPostId { get; set; }
 
-        public PollDto Poll { get; private set; }
-        public List<PostDto> Posts { get; private set; }
-        public string TopicTitle { get; private set; }
-        public string ForumRulesLink { get; private set; }
-        public string ForumRules { get; private set; }
-        public string ForumRulesUid { get; private set; }
-        public string ForumTitle { get; private set; }
-        public (string Message, bool? IsSuccess) ModeratorActionResult { get; private set; }
-        public Paginator Paginator { get; private set; }
+        public PollDto? Poll { get; private set; }
+        public List<PostDto>? Posts { get; private set; }
+        public string? TopicTitle { get; private set; }
+        public string? ForumRulesLink { get; private set; }
+        public string? ForumRules { get; private set; }
+        public string? ForumRulesUid { get; private set; }
+        public string? ForumTitle { get; private set; }
+        public (string? Message, bool? IsSuccess) ModeratorActionResult { get; private set; }
+        public Paginator? Paginator { get; private set; }
         public Guid CorrelationId { get; private set; }
 
         public bool ShowTopic => TopicAction == ModeratorTopicActions.MoveTopic && (
@@ -93,12 +93,12 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public int ViewCount => _currentTopic?.TopicViews ?? 0;
         
-        public Dictionary<int, List<AttachmentDto>> Attachments { get; private set; }
+        public Dictionary<int, List<AttachmentDto>>? Attachments { get; private set; }
         
-        public List<ReportDto> Reports { get; private set; }
+        public List<ReportDto>? Reports { get; private set; }
 
-        private PhpbbTopics _currentTopic;
-        private PhpbbForums _currentForum;
+        private PhpbbTopics? _currentTopic;
+        private PhpbbForums? _currentForum;
         private int? _count;
         private readonly PostService _postService;
         private readonly ModeratorService _moderatorService;
@@ -145,12 +145,12 @@ namespace PhpbbInDotnet.Forum.Pages
                     PageNum = 1;
                 }
 
-                ForumId = curForum?.ForumId;
-                ForumTitle = HttpUtility.HtmlDecode(curForum?.ForumName ?? "untitled");
+                ForumId = curForum.ForumId;
+                ForumTitle = HttpUtility.HtmlDecode(curForum.ForumName);
 
                 var postsTask = GetPostsLazy(TopicId, PageNum, null);
 
-                Paginator = new Paginator(_count.Value, PageNum.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId, GetCurrentUser());
+                Paginator = new Paginator(_count!.Value, PageNum!.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId, GetCurrentUser());
                 var pollTask = _postService.GetPoll(_currentTopic);
 
                 TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
@@ -161,7 +161,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var markAsReadTask = MarkAsRead();
                 var updateViewCountTask =  (await Context.GetDbConnectionAsync()).ExecuteAsync(
                     "UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId",
-                    new { topicId = TopicId.Value }
+                    new { topicId = TopicId!.Value }
                 );
 
                 await Task.WhenAll(postsTask, pollTask, markAsReadTask, updateViewCountTask);
@@ -175,7 +175,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 if (await IsTopicUnread(ForumId ?? 0, TopicId ?? 0))
                 {
-                    await MarkTopicRead(ForumId ?? 0, TopicId ?? 0, Paginator.IsLastPage, Posts.DefaultIfEmpty().Max(p => p?.PostTime ?? 0L));
+                    await MarkTopicRead(ForumId ?? 0, TopicId ?? 0, Paginator.IsLastPage, Posts?.DefaultIfEmpty().Max(p => p?.PostTime ?? 0L) ?? 0);
                 }
             }
         }
@@ -198,7 +198,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 else
                 {
-                    return RedirectToPage("ViewTopic", new { topicId = TopicId.Value, pageNum = 1 });
+                    return RedirectToPage("ViewTopic", new { topicId = TopicId!.Value, pageNum = 1 });
                 }
             });
 
@@ -243,7 +243,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 await Task.WhenAll(
                     conn.ExecuteAsync(
                         "INSERT INTO phpbb_poll_votes (topic_id, poll_option_id, vote_user_id, vote_user_ip) VALUES (@topicId, @vote, @UserId, @usrIp)",
-                        newVotes.Select(vote => new { topicId, vote, user.UserId, usrIp = HttpContext.Connection.RemoteIpAddress.ToString() })
+                        newVotes.Select(vote => new { topicId, vote, user.UserId, usrIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty })
                     ),
                     conn.ExecuteAsync(
                         "UPDATE phpbb_poll_options SET poll_option_total = poll_option_total + 1 WHERE topic_id = @topicId AND poll_option_id = @vote",
@@ -272,14 +272,14 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 ModeratorActionResult = TopicAction switch
                 {
-                    ModeratorTopicActions.MakeTopicNormal => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Normal, logDto),
-                    ModeratorTopicActions.MakeTopicImportant => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Important, logDto),
-                    ModeratorTopicActions.MakeTopicAnnouncement => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Announcement, logDto),
-                    ModeratorTopicActions.MakeTopicGlobal => await _moderatorService.ChangeTopicType(TopicId.Value, TopicType.Global, logDto),
-                    ModeratorTopicActions.MoveTopic => await _moderatorService.MoveTopic(TopicId.Value, DestinationForumId.Value, logDto),
-                    ModeratorTopicActions.LockTopic => await _moderatorService.LockUnlockTopic(TopicId.Value, true, logDto),
-                    ModeratorTopicActions.UnlockTopic => await _moderatorService.LockUnlockTopic(TopicId.Value, false, logDto),
-                    ModeratorTopicActions.DeleteTopic => await _moderatorService.DeleteTopic(TopicId.Value, logDto),
+                    ModeratorTopicActions.MakeTopicNormal => await _moderatorService.ChangeTopicType(TopicId!.Value, TopicType.Normal, logDto),
+                    ModeratorTopicActions.MakeTopicImportant => await _moderatorService.ChangeTopicType(TopicId!.Value, TopicType.Important, logDto),
+                    ModeratorTopicActions.MakeTopicAnnouncement => await _moderatorService.ChangeTopicType(TopicId!.Value, TopicType.Announcement, logDto),
+                    ModeratorTopicActions.MakeTopicGlobal => await _moderatorService.ChangeTopicType(TopicId!.Value, TopicType.Global, logDto),
+                    ModeratorTopicActions.MoveTopic => await _moderatorService.MoveTopic(TopicId!.Value, DestinationForumId!.Value, logDto),
+                    ModeratorTopicActions.LockTopic => await _moderatorService.LockUnlockTopic(TopicId!.Value, true, logDto),
+                    ModeratorTopicActions.UnlockTopic => await _moderatorService.LockUnlockTopic(TopicId!.Value, false, logDto),
+                    ModeratorTopicActions.DeleteTopic => await _moderatorService.DeleteTopic(TopicId!.Value, logDto),
                     _ => throw new NotImplementedException($"Unknown action '{TopicAction}'")
                 };
 
@@ -365,9 +365,9 @@ namespace PhpbbInDotnet.Forum.Pages
                     "VALUES (@PostId, @UserId, @ReasonId, @ReportText, @ReportTime, 0)",
                     new
                     {
-                        PostId = reportPostId.Value,
+                        PostId = reportPostId!.Value,
                         user.UserId,
-                        ReasonId = reportReasonId.Value,
+                        ReasonId = reportReasonId!.Value,
                         ReportText = await _writingToolsService.PrepareTextForSaving(reportDetails),
                         ReportTime = DateTime.UtcNow.ToUnixTimestamp()
                     }
@@ -388,7 +388,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var (_, nextRemaining) = await GetSelectedAndNextRemainingPostIds(reportPostId ?? 0);
                 if (deletePost ?? false)
                 {
-                    ModeratorActionResult = await _moderatorService.DeletePosts(new[] { reportPostId.Value }, logDto);
+                    ModeratorActionResult = await _moderatorService.DeletePosts(new[] { reportPostId!.Value }, logDto);
                     PostId = nextRemaining;
                 }
                 else
@@ -515,7 +515,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         user.UserId, 
                         topicId, 
                         page,
-                        pageSize = user.TopicPostsPerPage.TryGetValue(topicId ?? 0, out var val) ? val : null as int?,
+                        pageSize = user.TopicPostsPerPage!.TryGetValue(topicId ?? 0, out var val) ? val : null as int?,
                         postId 
                     }
                 );
@@ -543,7 +543,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var postIds = GetModeratorPostIds();
             var nextRemainingPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(
                 "SELECT * FROM phpbb_posts WHERE topic_id = @topicId AND post_id NOT IN @ids AND post_time >= @time ORDER BY post_time ASC",
-                new { topicId = TopicId.Value, ids = postIds.DefaultIfEmpty(), time = latestSelectedPost?.PostTime }
+                new { topicId = TopicId!.Value, ids = postIds.DefaultIfEmpty(), time = latestSelectedPost?.PostTime }
             ) ?? await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(
                 "SELECT * FROM phpbb_posts WHERE topic_id = @topicId AND post_id NOT IN @ids ORDER BY post_time DESC",
                 new { topicId = TopicId.Value, ids = postIds.DefaultIfEmpty() }

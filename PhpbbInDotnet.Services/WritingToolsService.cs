@@ -28,7 +28,7 @@ namespace PhpbbInDotnet.Services
         private static readonly Regex EMOJI_REGEX = new(@"^(\:|\;){1}[a-zA-Z0-9\-\)\(\]\[\}\{\\\|\*\'\>\<\?\!]+\:?$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex WHITESPACE_REGEX = new(@"\s+", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnoreCase);
 
-        private List<PhpbbSmilies> _smilies;
+        private List<PhpbbSmilies>? _smilies;
 
         public WritingToolsService(ForumDbContext context, StorageService storageService, CommonUtils utils, LanguageProvider languageProvider, 
             IHttpContextAccessor httpContextAccessor, IConfiguration config)
@@ -93,7 +93,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<string> PrepareTextForSaving(string text)
+        public async Task<string> PrepareTextForSaving(string? text)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
@@ -109,12 +109,13 @@ namespace PhpbbInDotnet.Services
             return text;
         }
 
-        public string CleanBbTextForDisplay(string text, string uid)
+        public string CleanBbTextForDisplay(string? text, string? uid)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
                 return string.Empty;
             }
+            uid ??= string.Empty;
 
             var uidRegex = new Regex($":{uid}", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, Constants.REGEX_TIMEOUT);
             var tagRegex = new Regex(@"(:[a-z])(\]|:)", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, Constants.REGEX_TIMEOUT);
@@ -195,7 +196,7 @@ namespace PhpbbInDotnet.Services
 
             var (Succeeded, Failed) = _storageService.BulkDeleteAttachments(files.Select(f => f.PhysicalFilename));
 
-            if (Succeeded?.Any() ?? false)
+            if (Succeeded?.Any() == true)
             {
                 var connection = await _context.GetDbConnectionAsync();
                 await connection.ExecuteAsync(
@@ -204,13 +205,13 @@ namespace PhpbbInDotnet.Services
                 );
             }
 
-            if (Failed?.Any() ?? false)
+            if (Failed?.Any() == true)
             {
-                return (string.Format(LanguageProvider.Admin[lang, "SOME_ORPHANED_FILES_DELETED_FORMAT"], string.Join(",", Succeeded), string.Join(",", Failed)), false);
+                return (string.Format(LanguageProvider.Admin[lang, "SOME_ORPHANED_FILES_DELETED_FORMAT"], string.Join(",", Succeeded ?? Enumerable.Empty<string>()), string.Join(",", Failed)), false);
             }
             else
             {
-                return (string.Format(LanguageProvider.Admin[lang, "ORPHANED_FILES_DELETED_FORMAT"], string.Join(",", Succeeded)), true);
+                return (string.Format(LanguageProvider.Admin[lang, "ORPHANED_FILES_DELETED_FORMAT"], string.Join(",", Succeeded ?? Enumerable.Empty<string>())), true);
             }
         }
 
@@ -241,24 +242,12 @@ namespace PhpbbInDotnet.Services
                 }
 
                 var maxOrder = await _context.PhpbbSmilies.AsNoTracking().DefaultIfEmpty().MaxAsync(s => s == null ? 0 : s.SmileyOrder);
-                //var orders = new Dictionary<string, int>(newOrder.Count);
-                //for (var i = 0; i < newOrder.Count; i++)
-                //{
-                //    orders.Add(newOrder[i], i);
-                //}
-                //var codesToDeleteHashSet = new HashSet<int>(codesToDelete);
-                //var smileyGroupsToDeleteHashSet = new HashSet<string>(smileyGroupsToDelete);
-                //var errors = new List<string>(dto.Count * 2);
-                //var flatSource = new List<PhpbbSmilies>(dto.Count * 2);
-                //var maxSize = _config.GetObject<ImageSize>("EmojiMaxSize");
-                //var maxCodeCount = dto.Max(d => d.Codes.Count(c => !string.IsNullOrWhiteSpace(c.Value)));
 
-                Dictionary<string, int> orders = null;
-                HashSet<int> codesToDeleteHashSet = null;
-                HashSet<string> smileyGroupsToDeleteHashSet = null;
-                //int maxCodeCount = 0;
+                Dictionary<string, int>? orders = null;
+                HashSet<int>? codesToDeleteHashSet = null;
+                HashSet<string>? smileyGroupsToDeleteHashSet = null;
                 await Task.WhenAll(
-                    Task.Run(() => dto.Where(d => !smileyGroupsToDelete.Contains(d.Url)).ToDictionary(k => k.Url, v => v.Codes.Count(c => !codesToDelete.Contains(c.Id)))).ContinueWith(async countsTask =>
+                    Task.Run(() => dto.Where(d => !smileyGroupsToDelete.Contains(d.Url!)).ToDictionary(k => k.Url!, v => v.Codes!.Count(c => !codesToDelete.Contains(c.Id)))).ContinueWith(async countsTask =>
                     {
                         var counts = await countsTask;
                         var increment = 1;
@@ -271,7 +260,6 @@ namespace PhpbbInDotnet.Services
                     }),
                     Task.Run(() => codesToDeleteHashSet = new HashSet<int>(codesToDelete)),
                     Task.Run(() => smileyGroupsToDeleteHashSet = new HashSet<string>(smileyGroupsToDelete))
-                    //Task.Run(() => maxCodeCount = dto.Max(d => d.Codes.Count(c => !string.IsNullOrWhiteSpace(c.Value))))
                 );
                 var errors = new List<string>(dto.Count * 2);
                 var flatSource = new List<PhpbbSmilies>(dto.Count * 2);
@@ -279,7 +267,7 @@ namespace PhpbbInDotnet.Services
 
                 foreach (var smiley in dto)
                 {
-                    if (smileyGroupsToDeleteHashSet.Contains(smiley.Url))
+                    if (smileyGroupsToDeleteHashSet?.Contains(smiley.Url!) == true)
                     {
                         continue;
                     }
@@ -316,10 +304,10 @@ namespace PhpbbInDotnet.Services
                         }
                     }
 
-                    var order = orders.TryGetValue(smiley.Url ?? string.Empty, out var val) ? val : maxOrder++;
+                    var order = orders is not null && orders.TryGetValue(smiley.Url ?? string.Empty, out var val) ? val : maxOrder++;
                     foreach (var code in validCodes)
                     {
-                        if (codesToDeleteHashSet.Contains(code.Id))
+                        if (codesToDeleteHashSet?.Contains(code.Id) == true)
                         {
                             continue;
                         }
@@ -327,7 +315,7 @@ namespace PhpbbInDotnet.Services
                         flatSource.Add(new PhpbbSmilies
                         {
                             SmileyId = code.Id,
-                            Code = code.Value,
+                            Code = code.Value!,
                             SmileyUrl = fileName,
                             Emotion = smiley.Emotion ?? string.Empty,
                             SmileyOrder = order

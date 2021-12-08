@@ -8,13 +8,13 @@ namespace PhpbbInDotnet.Objects
     public class AttachmentDto
     {
         public int Id { get; set; }
-        public string DisplayName { get; set; }
-        public string PhysicalFileName { get; set; }
-        public string MimeType { get; set; }
+        public string? DisplayName { get; set; }
+        public string? PhysicalFileName { get; set; }
+        public string? MimeType { get; set; }
         public int DownloadCount { get; set; }
-        public string Comment { get; set; }
+        public string? Comment { get; set; }
         public long FileSize { get; set; }
-        public string Language { get; set; }
+        public string Language { get; set; } = Constants.DEFAULT_LANGUAGE;
         public bool IsPreview { get; set; }
         public Guid? CorrelationId { get; set; }
         public bool DeletedFile { get; set; }
@@ -49,7 +49,7 @@ namespace PhpbbInDotnet.Objects
             else
             {
                 var url = $"/File?id={Id}&preview={IsPreview}";
-                if (CorrelationId.HasValue && MimeType.IsMimeTypeInline())
+                if (CorrelationId.HasValue && MimeType?.IsMimeTypeInline() == true)
                 {
                     url += $"&correlationId={CorrelationId.Value}";
                 }

@@ -12,7 +12,7 @@
 @inject Microsoft.Extensions.Configuration.IConfiguration _config
 
 @{
-    var pageUser = new AuthenticatedUser(_userService.DbUserToAuthenticatedUserBase(Model.CurrentUser));
+    var pageUser = new AuthenticatedUserExpanded(_userService.DbUserToAuthenticatedUserBase(Model.CurrentUser!));
     var Lang = Model.GetLanguage();
 
     ViewData["Title"] = $"{Model.LanguageProvider.BasicText[Lang, "USER", Casing.Title]}: {pageUser.Username}";
@@ -30,7 +30,7 @@
     var viewingUser = Model.GetCurrentUser();
     pageUser.AllPermissions = await permissionsTask;
     pageUser.Foes = await foesTask;
-    var isSelf = viewingUser.UserId == Model.CurrentUser.UserId;
+    var isSelf = viewingUser.UserId == Model.CurrentUser!.UserId;
     var canEdit = await canEditTask;
     var hasTabs = isSelf || await isAdminHereTask;
     var showFlexAvatar = !string.IsNullOrWhiteSpace(Model.CurrentUser.UserAvatar) && !canEdit;
@@ -149,7 +149,7 @@
 @if (Model.ManageFoes ?? false)
 {
     <div class="tabcontent" style="display:block !important">
-        @if (!Model.Foes.Any())
+        @if (!Model.Foes!.Any())
         {
             <i>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "NO_FOES"])</i>
         }
@@ -157,7 +157,7 @@
         {
             <i>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "FOES_CAPTION"])</i>
             <form method="post" name="RemoveFoes" id="RemoveFoes" asp-page-handler="RemoveMultipleFoes">
-                @foreach (var foe in Model.Foes)
+                @foreach (var foe in Model.Foes!)
                 {
                     <div style="margin: 15px 15px">
                         <input name="SelectedFoes" type="checkbox" value="@foe.UserId" style="margin-right:10px" />
@@ -200,7 +200,7 @@ else
                         <div class="FlexRight PostInputWidth">
                             @if (!(Model.ViewAsAnother ?? false) && await Model.IsCurrentUserAdminHere())
                             {
-                                <input asp-for="CurrentUser.Username" />
+                                <input asp-for="CurrentUser!.Username" />
                             }
                             else
                             {
@@ -298,7 +298,7 @@ else
                         <div class="FlexRight PostInputWidth">
                             @if (canEdit)
                             {
-                                <input asp-for="CurrentUser.UserOcc" />
+                                <input asp-for="CurrentUser!.UserOcc" />
                             }
                             else
                             {
@@ -314,7 +314,7 @@ else
                         <div class="FlexRight PostInputWidth">
                             @if (canEdit)
                             {
-                                <input asp-for="CurrentUser.UserInterests" />
+                                <input asp-for="CurrentUser!.UserInterests" />
                             }
                             else
                             {
@@ -330,7 +330,7 @@ else
                         <div class="FlexRight PostInputWidth">
                             @if (canEdit)
                             {
-                                <input asp-for="CurrentUser.UserFrom" />
+                                <input asp-for="CurrentUser!.UserFrom" />
                             }
                             else
                             {
@@ -372,7 +372,7 @@ else
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @Html.DropDownListFor(
-                            m => m.CurrentUser.UserStyle,
+                            m => m.CurrentUser!.UserStyle,
                             await _context.PhpbbStyles.AsNoTracking().Select(x => new SelectListItem(x.StyleName, x.StyleId.ToString(), Model.CurrentUser.UserStyle == x.StyleId)).ToListAsync()
                         )
                     </div>
@@ -397,7 +397,7 @@ else
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @Html.DropDownListFor(
-                            m => m.CurrentUser.UserLang,
+                            m => m.CurrentUser!.UserLang,
                             (await Model.GetLanguages()).Select(x => new SelectListItem($"{x.LangLocalName} ({x.LangEnglishName})", x.LangIso, Model.CurrentUser.UserLang == x.LangIso)),
                             new { onchange = "changeDateFormats(this.options[this.selectedIndex].value)" }
                         )
@@ -461,7 +461,7 @@ else
                         @Html.Raw(Model.LanguageProvider.BasicText[Lang, "EDIT_OWN_POSTS_TIME"])
                     </div>
                     <div class="FlexRight PostInputWidth">
-                        <input asp-for="CurrentUser.UserEditTime" /><br />
+                        <input asp-for="CurrentUser!.UserEditTime" /><br />
                         <span class="Caption">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "EDIT_OWN_POSTS_CAPTION"])</span><br />
                     </div>
                 </div>
@@ -510,7 +510,7 @@ else
                             <span id="colorTitle" style="font-weight:bold; font-family:'Ubuntu Mono'; font-size: 1.5em">#@Model.CurrentUser.UserColour</span>
                             <br />
                             <span class="Caption">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "COLOR_CAPTION"])</span>
-                            <input asp-for="CurrentUser.UserColour" type="hidden" id="backendColor" />
+                            <input asp-for="CurrentUser!.UserColour" type="hidden" id="backendColor" />
                         }
                     </div>
                 </div>
@@ -527,9 +527,9 @@ else
                     </div>
                     <div class="FlexRight PostInputWidth">
                         <input asp-for="Email" /><br />
+                        <span asp-validation-for="Email" class="validation"></span>
                         <span class="Caption">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "EMAIL_CAPTION"])</span><br />
                         <input asp-for="ShowEmail" style="width:auto" /> @Html.Raw(Model.LanguageProvider.BasicText[Lang, "ALLOW_EMAIL_CONTACT"])<br />
-                        <span asp-validation-for="Email" class="validation"></span>
                     </div>
                 }
                 else
@@ -577,7 +577,7 @@ else
                         @Html.Raw(Model.LanguageProvider.BasicText[Lang, "WEBSITE"])
                     </div>
                     <div class="FlexRight PostInputWidth">
-                        <input asp-for="CurrentUser.UserWebsite" />
+                        <input asp-for="CurrentUser!.UserWebsite" />
                     </div>
                 </div>
             }
@@ -699,7 +699,7 @@ else
             @if (canEdit)
             {
                 <p>&nbsp;</p>
-                <input class="MyButton" type="submit" value="@Html.Raw(Model.LanguageProvider.Admin[Lang, "SAVE_CHANGES"])" style="width:auto" />
+                <input class="MyButton" type="submit" value="@Html.Raw(Model.LanguageProvider.Admin[Lang, "SAVE_CHANGES"])" style="width:auto" formnovalidate />
             }
             @if (!isSelf && !canEdit)
             {
@@ -722,7 +722,7 @@ else
                     </div>
                 }
             }
-            <input asp-for="CurrentUser.UserId" type="hidden" />
+            <input asp-for="CurrentUser!.UserId" type="hidden" />
             @Html.AntiForgeryToken()
         </form>
         <p></p>

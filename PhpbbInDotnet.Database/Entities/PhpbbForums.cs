@@ -53,8 +53,8 @@ namespace PhpbbInDotnet.Database.Entities
         public int PruneFreq { get; set; } = 0;
         public long ForumEditTime { get; set; } = 0;
 
-        public override bool Equals(object obj)
-            => obj != null && obj is PhpbbForums f && ForumId == f?.ForumId;
+        public override bool Equals(object? obj)
+            => obj is PhpbbForums f && ForumId == f?.ForumId;
 
         public override int GetHashCode()
             => HashCode.Combine(ForumId);

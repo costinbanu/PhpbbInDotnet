@@ -22,17 +22,17 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IAppCache _cache;
 
         [BindProperty(SupportsGet = true)]
-        public string ReturnUrl { get; set; }
+        public string? ReturnUrl { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public int ForumId { get; set; }
 
         [BindProperty]
-        public string Password { get; set; }
+        public string? Password { get; set; }
 
-        public string ForumName { get; private set; }
+        public string? ForumName { get; private set; }
 
-        public string Language { get; private set; }
+        public string Language { get; private set; } = Constants.DEFAULT_LANGUAGE;
 
         public LanguageProvider LanguageProvider { get; }
 

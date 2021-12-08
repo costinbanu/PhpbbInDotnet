@@ -11,7 +11,7 @@ namespace PhpbbInDotnet.Database.Entities
         public int Id { get; set; }
 
         [Column(TypeName = "longblob")]
-        public byte[] Content { get; set; }
+        public byte[]? Content { get; set; }
 
         public long DeleteTime { get; set; }
 

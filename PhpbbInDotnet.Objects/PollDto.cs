@@ -8,21 +8,21 @@ namespace PhpbbInDotnet.Objects
     {
         public int TopicId { get; set; }
 
-        public string PollTitle { get; set; }
+        public string? PollTitle { get; set; }
 
         public DateTime PollStart { get; set; }
 
-        public DateTime? PollEnd => PollDurationSecons == 0 ? null as DateTime? : PollStart.AddSeconds(PollDurationSecons);
+        public DateTime? PollEnd => PollDurationSecons == 0 ? null : PollStart.AddSeconds(PollDurationSecons);
 
         public int PollDurationSecons { get; set; } //86400 seconds in a day
 
-        public List<PollOption> PollOptions { get; set; }
+        public List<PollOption>? PollOptions { get; set; }
 
         public int PollMaxOptions { get; set; } = 1;
 
         public bool VoteCanBeChanged { get; set; } = false;
 
-        public int TotalVotes => PollOptions.Sum(o => o.PollOptionVotes);
+        public int TotalVotes => PollOptions?.Sum(o => o.PollOptionVotes) ?? 0;
 
         public bool PollEnded => PollEnd < DateTime.UtcNow;
     }
@@ -33,18 +33,18 @@ namespace PhpbbInDotnet.Objects
 
         public int TopicId { get; set; }
 
-        public string PollOptionText { get; set; }
+        public string? PollOptionText { get; set; }
 
-        public List<PollOptionVoter> PollOptionVoters { get; set; }
+        public List<PollOptionVoter>? PollOptionVoters { get; set; }
 
-        public int PollOptionVotes => PollOptionVoters.Count;
+        public int PollOptionVotes => PollOptionVoters?.Count ?? 0;
     }
 
     public class PollOptionVoter
     {
         public int UserId { get; set; }
 
-        public string Username { get; set; }
+        public string? Username { get; set; }
 
         public int PollOptionId { get; set; }
     }

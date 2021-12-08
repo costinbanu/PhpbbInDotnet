@@ -1,52 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using PhpbbInDotnet.Utilities;
 
 namespace PhpbbInDotnet.Objects
 {
-    public class AuthenticatedUser : AuthenticatedUserBase
+    public class AuthenticatedUser
     {
-        public AuthenticatedUser(AuthenticatedUserBase @base)
-        {
-            UserId = @base.UserId;
-            Username = @base.Username;
-            UsernameClean = @base.UsernameClean;
-            UserDateFormat = @base.UserDateFormat;
-            UserColor = @base.UserColor;
-            AllowPM = @base.AllowPM;
-            JumpToUnread = @base.JumpToUnread;
-            Language = @base.Language;
-            EmailAddress = @base.EmailAddress;
-        }
+        public int UserId { get; set; }
 
-        public AuthenticatedUser() { }
+        public string? Username { get; set; } = null;
 
-        public HashSet<Permissions> AllPermissions { get; set; } = null;
+        public string? UsernameClean { get; set; } = null;
 
-        public Dictionary<int, int> TopicPostsPerPage { get; set; } = null;
+        public string? UserDateFormat { get; set; } = null;
 
-        public int PostEditTime { get; set; } = 60;
+        public string? UserColor { get; set; } = null;
 
-        public int? UploadLimit { get; set; }
+        public bool IsAnonymous => UserId == Constants.ANONYMOUS_USER_ID;
 
-        public HashSet<int> Foes { get; set; }
+        public bool AllowPM { get; set; }
 
-        public string Style { get; set; }
+        public bool? JumpToUnread { get; set; } = true;
 
-        public class Permissions
-        {
-            public int ForumId { get; set; } = 0;
+        public string Language { get; set; } = Constants.DEFAULT_LANGUAGE;
 
-            public int AuthOptionId { get; set; } = 0;
-
-            public int AuthRoleId { get; set; } = 0;
-
-            public int AuthSetting { get; set; } = 0;
-
-            public override bool Equals(object obj)
-                => obj != null && obj is Permissions perm && ForumId == perm?.ForumId && AuthRoleId == perm?.AuthRoleId;
-
-            public override int GetHashCode()
-                => HashCode.Combine(ForumId, AuthRoleId);
-        }
+        public string? EmailAddress { get; set; }
     }
 }

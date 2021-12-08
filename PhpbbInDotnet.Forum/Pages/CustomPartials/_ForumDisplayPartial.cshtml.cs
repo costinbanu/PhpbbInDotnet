@@ -10,14 +10,14 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
     {
         public string DateFormat { get; }
         public bool ShowTitle { get; }
-        public AuthenticatedUser AuthenticatedUser { get; }
+        public AuthenticatedUserExpanded AuthenticatedUser { get; }
         public HashSet<ForumTree> Tree { get; }
         public IEnumerable<ForumTree> Categories { get; }
         public IEnumerable<ForumTree> SubForums { get; }
         public bool ShowLastSeparator { get; }
-        public string Language { get; set; }
+        public string Language { get; set; } = Constants.DEFAULT_LANGUAGE;
 
-        public _ForumDisplayPartialModel(int forumId, HashSet<ForumTree> tree, string dateFormat, bool showTitle, AuthenticatedUser authenticatedUser, bool showLastSeparator, string language)
+        public _ForumDisplayPartialModel(int forumId, HashSet<ForumTree> tree, string dateFormat, bool showTitle, AuthenticatedUserExpanded authenticatedUser, bool showLastSeparator, string language)
         {
             DateFormat = dateFormat;
             ShowTitle = showTitle;
@@ -30,9 +30,9 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
         }
 
         public IEnumerable<ForumTree> GetChildrenForums(int forumId)
-            => (GetForum(forumId)?.ChildrenList ?? new HashSet<int>()).Select(GetForum);
+            => (GetForum(forumId)?.ChildrenList ?? new HashSet<int>()).Select(GetForum).Where(ft => ft is not null).Cast<ForumTree>();
 
-        private ForumTree GetForum(int forumId)
+        private ForumTree? GetForum(int forumId)
         {
             if (Tree != null && Tree.TryGetValue(new ForumTree { ForumId = forumId }, out var forum))
             {

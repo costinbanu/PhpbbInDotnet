@@ -13,11 +13,10 @@
 <form method="post" asp-page-handler="systemLogs">
     @Html.DropDownList(
         nameof(AdminModel.SystemLogPath),
-        Model.SystemLogs.Select(l => new SelectListItem(l.LogDate.ToString("D", new System.Globalization.CultureInfo(Model.Language)), l.LogPath)),
+        Model.SystemLogs?.Select(l => new SelectListItem(l.LogDate.ToString("D", new System.Globalization.CultureInfo(Model.Language!)), l.LogPath)),
         _languageProvider.Admin[Model.Language, "GET_SYSTEM_LOG_FOR_DATE"],
         new { style = "height: 30px; padding-top: 0px" }
     )
-    @*<input type="hidden" name="handler" value="systemLogs" />*@
     <p style="clear:both"></p>
     <input type="submit" value="@Html.Raw(_languageProvider.BasicText[Model.Language, "SUBMIT", Casing.FirstUpper])" class="MyButton" />
 </form>
@@ -47,12 +46,12 @@
     back: $"/Admin?LogType={Model.LogType}&LogPage={Model.LogPage - 1}&AuthorName={HttpUtility.UrlEncode(Model.AuthorName)}&handler=forumLogs",
     forward: $"/Admin?LogType={Model.LogType}&LogPage={Model.LogPage + 1}&AuthorName={HttpUtility.UrlEncode(Model.AuthorName)}&handler=forumLogs",
     includeEasyNavigation: false,
-    language: Model.Language
+    language: Model.Language!
 ), ViewData)
 
 <p></p>
 <div>
-    @foreach (var item in Model.CurrentLogItems)
+    @foreach (var item in Model.CurrentLogItems ?? new List<Objects.OperationLogSummary>())
     {
         <div class="FlexCenter">
             <div class="FlexCaption">
@@ -116,7 +115,7 @@
                 @Html.Raw(item.LogData)
             </div>
         </div>
-        @if (item != Model.CurrentLogItems.Last())
+        @if (item != Model.CurrentLogItems?.Last())
         {
             <hr class="SubtypeSeparator" />
         }
@@ -129,6 +128,6 @@
     back: $"/Admin?LogType={Model.LogType}&LogPage={Model.LogPage - 1}&handler=forumLogs",
     forward: $"/Admin?LogType={Model.LogType}&LogPage={Model.LogPage + 1}&handler=forumLogs",
     includeEasyNavigation: true,
-    language: Model.Language
+    language: Model.Language!
 ), ViewData)
 

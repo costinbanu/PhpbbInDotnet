@@ -67,7 +67,7 @@ namespace PhpbbInDotnet.Utilities
             return await EntityFrameworkQueryableExtensions.ToListAsync<T>(source);
         }
 
-        public static HashSet<int> ToIntHashSet(this string list)
+        public static HashSet<int> ToIntHashSet(this string? list)
         {
             if (string.IsNullOrWhiteSpace(list))
             {
@@ -103,7 +103,7 @@ namespace PhpbbInDotnet.Utilities
             return input;
         }
 
-        public static T GetObject<T>(this IConfiguration config, string sectionName = null)
+        public static T GetObject<T>(this IConfiguration config, string? sectionName = null)
             => config.GetSection(sectionName ?? typeof(T).Name).Get<T>();
 
         public static async Task<T> GetAndRemoveAsync<T>(this IAppCache cache, string key)

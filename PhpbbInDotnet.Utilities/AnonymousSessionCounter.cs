@@ -54,9 +54,9 @@ namespace PhpbbInDotnet.Utilities
         {
             private readonly Timer _timer;
 
-            internal string Value { get; }
+            internal string? Value { get; }
 
-            internal Item(string key, string value, TimeSpan expiration, ConcurrentDictionary<string, Item> cache)
+            internal Item(string key, string? value, TimeSpan expiration, ConcurrentDictionary<string, Item> cache)
             {
                 Value = value;
                 _timer = new Timer(expiration.TotalMilliseconds);
@@ -79,9 +79,9 @@ namespace PhpbbInDotnet.Utilities
 
         public class BotData
         {
-            public string IP { get; set; }
+            public string? IP { get; set; }
 
-            public string UserAgent { get; set; }
+            public string? UserAgent { get; set; }
 
             public DateTime EntryTime { get; set; }
         }

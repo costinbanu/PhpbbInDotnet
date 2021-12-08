@@ -18,9 +18,9 @@ namespace PhpbbInDotnet.Forum.Pages
     {
         private readonly IConfiguration _config;
 
-        public string Message { get; private set; }
+        public string? Message { get; private set; }
         
-        public string Title { get; private set; }
+        public string? Title { get; private set; }
         
         [BindProperty(SupportsGet = true)]
         public int? ForumId { get; set; }
@@ -41,16 +41,16 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool ShowTopicSelector { get; set; }
 
         [BindProperty(SupportsGet = true)]
-        public List<string> Destinations { get; set; }
+        public List<string>? Destinations { get; set; }
 
         [BindProperty(SupportsGet = true)]
-        public string SelectedPostIds { get; set; }
+        public string? SelectedPostIds { get; set; }
 
         [BindProperty(SupportsGet = true)]
-        public string SelectedTopicIds { get; set; }
+        public string? SelectedTopicIds { get; set; }
 
         [BindProperty(SupportsGet = true)]
-        public string Destination { get; set; }
+        public string? Destination { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public int? PostId { get; set; }
@@ -59,15 +59,15 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool? QuotePostInDifferentTopic { get; set; }
 
         [BindProperty(SupportsGet = true)]
-        public string DestinationHandler { get; set; }
+        public string? DestinationHandler { get; set; }
 
         public bool IsDestinationPicker { get; private set; } = false;
 
         public bool IsModeratorConfirmation { get; private set; } = false;
 
         public bool IsDestinationConfirmation { get; private set; } = false;
-        public HashSet<ForumTree> ForumTree { get; private set; }
-        public List<MiniTopicDto> TopicData { get; private set; }
+        public HashSet<ForumTree>? ForumTree { get; private set; }
+        public List<MiniTopicDto>? TopicData { get; private set; }
 
         public ConfirmModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, IConfiguration config, LanguageProvider languageProvider)
             : base(context, forumService, userService, cache, utils, languageProvider) 
