@@ -72,20 +72,34 @@
                     @Html.Raw(_languageProvider.BasicText[Model.Language, "FORUM_PASSWORD", Casing.FirstUpper])
                 </div>
                 <div class="FlexRight PostInputWidth">
-                    <label>
-                        @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_HAS_PASSWORD"])
-                        @Html.CheckBox("dto.hasPassword", !string.IsNullOrWhiteSpace(Model.Forum?.ForumPassword))
-                    </label>
+                    @{
+                        var hasPassword = !string.IsNullOrWhiteSpace(Model.Forum?.ForumPassword);
+                        @if (hasPassword)
+                        {
+                            <label>
+                                @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_HAS_PASSWORD"])
+                                @Html.CheckBox("dto.hasPassword", hasPassword)
+                            </label>
+                            <br />
+                            <span class="Caption DarkCaption">@Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_HAS_PASSWORD_CAPTION"])</span>
+                            <br /> <br />
+                            <button type="button" class="MyButton" onclick="showElement('newPasswordInput')">
+                                @Html.Raw(_languageProvider.BasicText[Model.Language, "CHANGE_PASSWORD"])
+                            </button>
+                            <br />
+                        }
+                <div id="newPasswordInput" style="@(hasPassword ? "display:none" : "display:unset")">
                     <br />
-                    <span class="Caption DarkCaption">@Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_HAS_PASSWORD_CAPTION"])</span>
-                    <br /> <br />
-                    <input type="password" name="dto.forumPassword" id="forumPassword" value="@Html.Raw(Model.Forum?.ForumPassword)" autocomplete="new-password" style="width:75% !important" />&nbsp;
+                    <input type="password" name="dto.forumPassword" id="forumPassword" autocomplete="new-password" style="width:75% !important;" />
+                    <span>&nbsp;</span>
                     <label>
                         <input type="checkbox" onclick="Toggle()" />
                         @Html.Raw(_languageProvider.Admin[Model.Language, "SHOW_PASSWORD"])
                     </label>
                     <br />
                     <span class="Caption DarkCaption">@Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_PASSWORD_CAPTION"])</span>
+                </div>
+                    }
                 </div>
             </div>
             <hr class="SubtypeSeparator" />

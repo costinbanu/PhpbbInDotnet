@@ -88,7 +88,7 @@
     }
     <form method="get">
         <input type="hidden" name="handler" value="search" />
-        <input asp-for="Username" placeholder="@Model.LanguageProvider.BasicText[Lang, "SEARCH_BY_NAME"]" style="height:30px; margin-top: 5px" id="usernameUserInput" />
+        <input asp-for="Username" placeholder="@Model.LanguageProvider.BasicText[Lang, "SEARCH_BY_NAME"]" style="height:30px; margin-top: 5px" id="usernameUserInput" autocomplete="new-password" />
         @{
             var items = Model.GroupList!.Select(g => new SelectListItem(g.GroupName, g.GroupId.ToString(), g.GroupId == Model.GroupId, false)).ToList();
             items.Add(new SelectListItem(Model.LanguageProvider.BasicText[Lang, "SEARCH_IN_GROUP"], "null", !Model.GroupId.HasValue, true));

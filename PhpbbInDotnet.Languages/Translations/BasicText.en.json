@@ -116,6 +116,7 @@
   "NEW_PASSWORD_TITLE": "Change password",
   "NEW_PASSWORD_MESSAGE": "We have sent an e-mail (to the previously provided e-mail address) that contains instructions for the next steps to take to recover your account",
   "NEW_PASSWORD_COMPLETE": "Your password has been changed.",
+  "CHANGE_PASSWORD": "Change password",
 
   //memberlist
   "MEMBERLIST": "Member list",

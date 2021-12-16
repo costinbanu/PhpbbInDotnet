@@ -340,6 +340,7 @@ namespace PhpbbInDotnet.Forum.Pages
             Cache.Remove(GetActualCacheKey("ForumId", true));
             Cache.Remove(GetActualCacheKey("TopicId", true));
             Cache.Remove(GetActualCacheKey("PostId", true));
+            Cache.Remove(GetActualCacheKey("Attachments", true));
 
             return post.PostId;
         }
@@ -382,18 +383,17 @@ namespace PhpbbInDotnet.Forum.Pages
             return Page();
         }
 
-        private async Task<IActionResult> WithBackup(Func<Task<IActionResult>> toDo)
+        private Task<IActionResult> WithBackup(Func<Task<IActionResult>> toDo)
         {
             Cache.Add(GetActualCacheKey("Text", true), new CachedText { Text = PostText!, CacheTime = DateTime.UtcNow }, CACHE_EXPIRATION);
             Cache.Add(GetActualCacheKey("ForumId", true), ForumId, CACHE_EXPIRATION);
             Cache.Add(GetActualCacheKey("TopicId", true), TopicId ?? 0, CACHE_EXPIRATION);
             Cache.Add(GetActualCacheKey("PostId", true), PostId ?? 0, CACHE_EXPIRATION);
-            var toReturn = await toDo();
             if (Attachments?.Any() == true)
             {
-                Cache.Add(GetActualCacheKey("Attachments", true), Attachments?.Select(a => a.AttachId).ToList());
+                Cache.Add(GetActualCacheKey("Attachments", true), Attachments?.Select(a => a.AttachId).ToList(), CACHE_EXPIRATION);
             }
-            return toReturn;
+            return toDo();
         }
 
         private async Task RestoreBackupIfAny(DateTime? minCacheAge = null)
