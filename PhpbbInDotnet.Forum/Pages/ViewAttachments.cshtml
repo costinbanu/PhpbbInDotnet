@@ -44,11 +44,11 @@
             <p></p>
             if (attachment.PostId is not null && attachment.ForumId is not null && attachment.TopicTitle is not null)
             {
-                <div class="Caption">
+                <p class="Caption">
                     <a asp-page="ViewTopic" asp-page-handler="byPostId" asp-route-postId="@attachment.PostId" target="_blank">
                         @Html.Raw(_forumService.GetPathText(tree, attachment.ForumId.Value)) → @Html.Raw(attachment.TopicTitle)
                     </a>
-                </div>
+                </p>
             }
             <a asp-page="File" asp-route-id="@attachment.Id" target="_blank">
                 @Html.Raw(attachment.RealFilename)

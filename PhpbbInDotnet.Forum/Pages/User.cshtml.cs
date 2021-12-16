@@ -609,7 +609,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 if (preferredTopic != null)
                 {
                     preferredTopicTitle = ForumService.GetPathText(tree, preferredTopic.ForumId);
-                    return (preferredTopic.TopicId, preferredTopicTitle);
+                    return (preferredTopic.TopicId, $"{preferredTopicTitle} → {preferredTopic.TopicTitle}");
                 }
                 return (null, null);
             }

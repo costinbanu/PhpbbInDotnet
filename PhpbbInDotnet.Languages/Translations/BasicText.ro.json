@@ -116,6 +116,7 @@
   "NEW_PASSWORD_TITLE": "Modificarea parolei",
   "NEW_PASSWORD_MESSAGE": "Am trimis un e-mail, la adresa completată anterior, cu mai multe instrucțiuni pe care trebuie să le urmezi ca să îți poți recupera contul.",
   "NEW_PASSWORD_COMPLETE": "Parola a fost modificată cu succes.",
+  "CHANGE_PASSWORD": "Schimbă parola",
 
   //memberlist
   "MEMBERLIST": "Lista membrilor",
