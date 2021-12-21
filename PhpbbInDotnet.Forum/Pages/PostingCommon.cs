@@ -146,23 +146,18 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             if (((TopicId.HasValue && PageNum.HasValue) || PostId.HasValue) && (Action == PostingActions.EditForumPost || Action == PostingActions.NewForumPost))
             {
-                var user = GetCurrentUser();
-                var conn = await Context.GetDbConnectionAsync();
-                using var multi = await conn.QueryMultipleAsync(
-                    sql: "CALL get_posts(@userId, @topicId, null, @pageSize, null, 1);",
-                    param: new
-                    {
-                        user.UserId,
-                        TopicId,
-                        pageSize = user.TopicPostsPerPage!.TryGetValue(TopicId ?? 0, out var val) ? val : null as int?
-                    }
-                );
+                var unsortedPosts = (await _postService.GetPosts(TopicId ?? 0, 1, Constants.DEFAULT_PAGE_SIZE)).AsList();
+                var attachmentsTask = (
+                    from a in Context.PhpbbAttachments.AsNoTracking()
+                    where unsortedPosts.Select(p => p.PostId).Contains(a.PostMsgId)
+                    select a).ToListAsync();
+                var postsTask = Task.Run(() => unsortedPosts.OrderByDescending(p => p.PostTime).ToList());
 
-                var posts = (await multi.ReadAsync<PostDto>()).AsList();
-                var attachments = (await multi.ReadAsync<PhpbbAttachments>()).AsList();
+                await Task.WhenAll(attachmentsTask, postsTask);
 
+                var posts = await postsTask;
+                var attachments = await attachmentsTask;
                 var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(attachments, GetLanguage(), posts.Count, false);
-
                 return (posts, cacheResult.Attachments, cacheResult.CorrelationId);
             }
             return (new List<PostDto>(), new Dictionary<int, List<AttachmentDto>>(), Guid.Empty);
