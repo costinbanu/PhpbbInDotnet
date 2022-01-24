@@ -263,3 +263,6 @@ __pycache__/
 /wwwroot/logs
 /logs
 /PhpbbInDotnet.Forum/wwwroot/forumfiles
+
+*.min.js
+*.min.css
