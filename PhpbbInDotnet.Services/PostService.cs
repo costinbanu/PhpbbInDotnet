@@ -110,7 +110,7 @@ namespace PhpbbInDotnet.Services
 					       r.rank_title as author_rank,
 					       p.poster_ip as ip
 				      FROM phpbb_posts p
-				      JOIN phpbb_users a ON p.poster_id = a.user_id
+				      LEFT JOIN phpbb_users a ON p.poster_id = a.user_id
 				      LEFT JOIN phpbb_users e ON p.post_edit_user = e.user_id
 				      LEFT JOIN ranks r ON a.user_id = r.user_id
 				      WHERE topic_id = @topicId 

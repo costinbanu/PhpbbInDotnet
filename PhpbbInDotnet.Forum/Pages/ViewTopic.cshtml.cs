@@ -114,33 +114,12 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetByPostId()
             => await WithValidPost(PostId ?? 0, async (curForum, curTopic, _) =>
             {
-                var computedPageNum = await Context.GetDbConnection().ExecuteScalarAsync<int>(
-                    @"SET @rownum = 0;
-			          SET @idx = 1;
-			
-			          SELECT x.position
-			            INTO @idx 
-			            FROM (
-		                    SELECT p.post_id, 
-					               @rownum := @rownum + 1 AS position
-				              FROM phpbb_posts p
-				              JOIN (
-					            SELECT @rownum := 0
-				              ) r
-				             WHERE p.topic_id = @topicId
-				             ORDER BY p.post_time
-			            ) x
-			           WHERE x.post_id = @postId
-		               LIMIT 1;
-
-		              SELECT @idx DIV @pageSize + IF(@idx MOD @pageSize <> 0, 1, 0) as result;",
-                    new
-                    {
-                        pageSize = GetPageSize(),
-                        curTopic.TopicId,
-                        PostId
-                    });
-
+                var pageSize = GetCurrentUser().GetPageSize(curTopic.TopicId);
+                var idx = (from p in Context.PhpbbPosts.AsNoTracking()
+                           where p.TopicId == curTopic.TopicId
+                           orderby p.PostTime
+                           select p.PostId).ToList().IndexOf(PostId!.Value) + 1;
+                var computedPageNum = idx / pageSize + (idx % pageSize != 0 ? 1 : 0);
                 await PopulateModel(curForum, curTopic, computedPageNum);
                 return Page();
             });
@@ -482,16 +461,12 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if ((PageNum ?? 0) <= 0)
             {
-                if (computedPageNum < 1)
-                {
-                    computedPageNum = 1;
-                }
                 PageNum = computedPageNum;
             }
 
             ForumId = curForum.ForumId;
             ForumTitle = HttpUtility.HtmlDecode(curForum.ForumName);
-            Posts = (await _postService.GetPosts(TopicId ?? 0, PageNum!.Value, GetPageSize())).AsList();
+            Posts = (await _postService.GetPosts(TopicId.Value, PageNum!.Value, GetCurrentUser().GetPageSize(TopicId.Value))).AsList();
             var currentPostIds = new HashSet<int>(Posts.Select(p => p.PostId));
 
             var countTask = Context.PhpbbPosts.AsNoTracking().Where(p => p.TopicId == TopicId).CountAsync();
@@ -501,17 +476,17 @@ namespace PhpbbInDotnet.Forum.Pages
                 select a).ToListAsync();
             var reportsTask = Context.GetDbConnection().QueryAsync<ReportDto>(
                 @"SELECT r.report_id AS id, 
-		                     rr.reason_title, 
-                             rr.reason_description, 
-                             r.report_text AS details, 
-                             r.user_id AS reporter_id, 
-                             u.username AS reporter_username, 
-                             r.post_id 
-	                    FROM phpbb_reports r
-                        JOIN phpbb_reports_reasons rr ON r.reason_id = rr.reason_id
-                        JOIN phpbb_users u on r.user_id = u.user_id
-	                   WHERE report_closed = 0
-                         AND r.post_id IN @postIds;",
+		                 rr.reason_title, 
+                         rr.reason_description, 
+                         r.report_text AS details, 
+                         r.user_id AS reporter_id, 
+                         u.username AS reporter_username, 
+                         r.post_id 
+	                FROM phpbb_reports r
+                    JOIN phpbb_reports_reasons rr ON r.reason_id = rr.reason_id
+                    JOIN phpbb_users u on r.user_id = u.user_id
+	                WHERE report_closed = 0
+                        AND r.post_id IN @postIds;",
                 new
                 {
                     postIds = currentPostIds
@@ -545,19 +520,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     await MarkTopicRead(ForumId ?? 0, TopicId ?? 0, Paginator.IsLastPage, Posts?.DefaultIfEmpty().Max(p => p?.PostTime ?? 0L) ?? 0);
                 }
-            }
-        }
-
-        private int GetPageSize()
-        {
-            var newPageSize = Constants.DEFAULT_PAGE_SIZE;
-            if (GetCurrentUser().TopicPostsPerPage?.TryGetValue(TopicId ?? 0, out newPageSize) == true)
-            {
-                return newPageSize;
-            }
-            else
-            {
-                return Constants.DEFAULT_PAGE_SIZE;
             }
         }
 

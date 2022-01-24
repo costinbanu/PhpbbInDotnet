@@ -344,7 +344,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             var lang = GetLanguage();
 
-            if ((TopicId ?? 0) > 0 && (LastPostTime ?? 0) > 0)
+            if (TopicId > 0 && LastPostTime > 0 && Action != PostingActions.EditForumPost)
             {
                 var connection = await Context.GetDbConnectionAsync();
                 var times = await connection.QueryFirstOrDefaultAsync(

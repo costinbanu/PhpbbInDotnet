@@ -57,9 +57,9 @@
 
     <!-- global JS translation magic -->
     @if (ViewContext.RouteData.Values["page"]?.ToString() == "/ViewTopic"
- || ViewContext.RouteData.Values["page"]?.ToString() == "/Posting"
- || ViewContext.RouteData.Values["page"]?.ToString() == "/Admin"
- || ViewContext.RouteData.Values["page"]?.ToString() == "/Moderator")
+        || ViewContext.RouteData.Values["page"]?.ToString() == "/Posting"
+        || ViewContext.RouteData.Values["page"]?.ToString() == "/Admin"
+        || ViewContext.RouteData.Values["page"]?.ToString() == "/Moderator")
     {
         <script>
             var dictionary = @(Html.Raw(_languageProvider.JSText[lang]));

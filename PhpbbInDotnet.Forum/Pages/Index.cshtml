@@ -38,12 +38,10 @@
 
 <script>
     $(document).ready(function () {
-        window.onload = function () {
-            var header = $('#headerLinks');
-            if (header.length) {
-                var element = header.detach();
-                $('#target').append(element);
-            }
+        let header = $('#headerLinks');
+        if (header.length) {
+            let element = header.detach();
+            $('#target').append(element);
         }
     });
 </script>
