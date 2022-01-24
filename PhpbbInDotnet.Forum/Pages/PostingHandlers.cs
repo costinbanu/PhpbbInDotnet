@@ -271,7 +271,12 @@ namespace PhpbbInDotnet.Forum.Pages
                         }
 
                         var result = await _imageProcessorClient!.PostAsync(_imageProcessorOptions.Api.RelativeUri, formContent);
-                        result.EnsureSuccessStatusCode();
+
+                        if (!result.IsSuccessStatusCode)
+                        {
+                            var errorMessage = await result.Content.ReadAsStringAsync();
+                            throw new HttpRequestException($"The image processor API threw an exception: {errorMessage}");
+                        }
 
                         var resultStream = await result.Content.ReadAsStreamAsync();
                         return new FormFile(resultStream, 0, resultStream.Length, image.Name, image.FileName)

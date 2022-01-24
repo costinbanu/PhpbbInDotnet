@@ -171,7 +171,6 @@ namespace PhpbbInDotnet.Forum
                              reloadOnChange: true)
                 .AddEnvironmentVariables();
 
-            var utils = app.ApplicationServices.GetService<CommonUtils>();
 
             if (env.IsDevelopment())
             {
@@ -185,15 +184,22 @@ namespace PhpbbInDotnet.Forum
                     errorApp.Run(async context =>
                     {
                         var handler = context.Features.Get<IExceptionHandlerPathFeature>();
-                        if ((context.Request?.Path.HasValue ?? false) && !context.Request.Path.Value?.Equals("/Error", StringComparison.InvariantCultureIgnoreCase) == true)
+                        if (handler is not null)
                         {
-                            context.Response.Redirect($"/Error?errorId={utils!.HandleError(handler.Error, $"Path: {handler.Path}")}");
-                        }
-                        else
-                        {
-                            var user = await utils!.DecompressObject<AuthenticatedUserExpanded>(Convert.FromBase64String(context.User?.Claims?.FirstOrDefault()?.Value ?? string.Empty));
-                            var id = utils.HandleError(handler.Error, $"Path: {handler.Path} ({context.Request?.Path}{context.Request?.QueryString}). User: {user}.");
-                            await context.Response.WriteAsync($"A intervenit o eroare. ID: {id}");
+                            var utils = context.RequestServices.GetService<CommonUtils>();
+                            var userService = context.RequestServices.GetService<UserService>();
+                            var user = userService?.ClaimsPrincipalToAuthenticatedUser(context.User);
+                            var path = context.Request?.Path.Value ?? handler.Path;
+                            var id = utils?.HandleError(handler.Error, $"URL: {path}{context.Request?.QueryString}. UserId: {user?.UserId.ToString() ?? "N/A"}. UserName: {user?.Username ?? "N/A"}");
+
+                            if (path?.Equals("/Error", StringComparison.InvariantCultureIgnoreCase) != true)
+                            {
+                                context.Response.Redirect($"/Error?errorId={id}");
+                            }
+                            else
+                            {
+                                await context.Response.WriteAsync($"An error occurred. ID: {id}");
+                            }
                         }
                     });
                 });
