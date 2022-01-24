@@ -431,6 +431,20 @@ label {
         padding-bottom: 5px;
     }
 
+/*Tribute overrides*/
+.tribute-container {
+    max-width: 1000px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    color: black !important;
+}
+
+/*Bootstrap overrides*/
+a:focus,
+a:hover {
+    text-decoration: unset !important;
+}
+
 @media (max-width: 768px) {
     .headerImg {
         width: 128px;

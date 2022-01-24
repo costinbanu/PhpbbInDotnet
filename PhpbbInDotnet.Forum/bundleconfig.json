@@ -45,62 +45,7 @@
       "wwwroot/js/site.js",
       "wwwroot/js/tabbedPage.js",
       "wwwroot/js/viewTopic.js",
-      "wwwroot/js/moderator.js",
-      "wwwroot/lib/Sortable.js",
-      "wwwroot/lib/he.js"
-    ],
-    "minify": {
-      "enabled": true,
-      "renameLocals": true
-    },
-    "sourceMap": false
-  },
-  {
-    "outputFileName": "wwwroot/lib/bootstrap/dist/css/bootstrap.min.css",
-    "inputFiles": [
-      "wwwroot/lib/bootstrap/dist/css/bootstrap.css"
-    ],
-    "minify": {
-      "enabled": true,
-      "renameLocals": true
-    }
-  },
-  {
-    "outputFileName": "wwwroot/lib/bootstrap/dist/js/bootstrap.min.js",
-    "inputFiles": [
-      "wwwroot/lib/bootstrap/dist/js/bootstrap.js"
-    ],
-    "minify": {
-      "enabled": true,
-      "renameLocals": true
-    }
-  },
-  {
-    "outputFileName": "wwwroot/lib/jquery/dist/jquery.min.js",
-    "inputFiles": [
-      "wwwroot/lib/jquery/dist/jquery.js"
-    ],
-    "minify": {
-      "enabled": true,
-      "renameLocals": true
-    },
-    "sourceMap": false
-  },
-  {
-    "outputFileName": "wwwroot/lib/jquery-validation/dist/jquery.validate.min.js",
-    "inputFiles": [
-      "wwwroot/lib/jquery-validation/dist/jquery.validate.js"
-    ],
-    "minify": {
-      "enabled": true,
-      "renameLocals": true
-    },
-    "sourceMap": false
-  },
-  {
-    "outputFileName": "wwwroot/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js",
-    "inputFiles": [
-      "wwwroot/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"
+      "wwwroot/js/moderator.js"
     ],
     "minify": {
       "enabled": true,

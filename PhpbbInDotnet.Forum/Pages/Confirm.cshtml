@@ -18,10 +18,7 @@
 
 @if (Model.IsModeratorConfirmation || Model.IsDestinationPicker)
 {
-    <environment include="Development">
-        <script type="text/javascript" src="~/lib/he.js"></script>
-    </environment>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/he/1.2.0/he.min.js" integrity="sha512-PEsccDx9jqX6Dh4wZDCnWMaIO3gAaU0j46W//sSqQhUQxky6/eHZyeB3NrXD2xsyugAKd4KPiDANkcuoEa2JuA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="text/javascript">
         //forum tree callback
         function forumSelectCallback(forumId) {

@@ -33,8 +33,8 @@
     <script src="~/js/posting.js"></script>
     <link rel="stylesheet" href="~/css/posting.css" />
 </environment>
-<script src="~/lib/tribute/dist/tribute.js"></script>
-<link rel="stylesheet" href="~/lib/tribute/dist/tribute.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tributejs/5.1.3/tribute.min.css" integrity="sha512-x3tME/kvJ3wzZ664qyANYueTLeJmRsoEbcIONhCei3DZJgNou8YwHos3ONthiwfzDvLE/H91ByIhSHVM10vS8g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tributejs/5.1.3/tribute.min.js" integrity="sha512-KJYWC7RKz/Abtsu1QXd7VJ1IJua7P7GTpl3IKUqfa21Otg2opvRYmkui/CXBC6qeDYCNlQZ7c+7JfDXnKdILUA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 <script type="text/javascript">
     var posting = new Posting(
@@ -480,7 +480,8 @@ else if (IsPM)
     var tribute = new Tribute({
         values: @Html.Raw(_utils.ToCamelCaseJson(await Model.GetUsers())),
         trigger: "@@",
-        allowSpaces: true
+        allowSpaces: true,
+        noMatchTemplate: ''
     });
 
     tribute.attach(document.getElementById("message"));
@@ -502,7 +503,8 @@ else if (IsPM)
             allowSpaces: true,
             menuContainer: document.getElementById("tributeHolder"),
             positionMenu: false,
-            trigger: ' '
+            trigger: ' ',
+            noMatchTemplate: ''
         });
         var authorInput = document.getElementById("pmToInput");
 
