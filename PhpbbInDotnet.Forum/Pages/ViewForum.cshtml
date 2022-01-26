@@ -57,7 +57,7 @@
 @if (Model.Mode == ViewForumMode.Forum && (CurrentUser!.JumpToUnread ?? false))
 {
     <script>
-        $(document).ready(function () {
+        $(window).on('load', function () {
             var element = $('.UnreadTitle');
             if (element && element.offset()) {
                 window.scrollTo(0, element.offset().top - 20);

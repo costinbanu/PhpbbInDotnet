@@ -47,7 +47,7 @@
         '@(_config.GetValue<string>("BaseUrl"))'
     );
 
-    $(document).ready(function () {
+    $(window).on('load', function () {
         if ($('#attachPanel').is(':visible')) {
             $('#attachButton').text(posting.hideAttachText);
         }

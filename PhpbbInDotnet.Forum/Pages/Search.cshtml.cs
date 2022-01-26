@@ -235,7 +235,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     AuthorId,
                     searchText = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText),
                     skip = ((PageNum ?? 1) - 1) * 14,
-                    restrictedForums
+                    restrictedForums = restrictedForums.DefaultIfEmpty()
                 });
             var countTask = connection.ExecuteScalarAsync<int>(
                 @"WITH search_stmt AS (
@@ -262,7 +262,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     TopicId,
                     AuthorId,
                     searchText = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText),
-                    restrictedForums
+                    restrictedForums = restrictedForums.DefaultIfEmpty()
                 });
             await Task.WhenAll(searchTask, countTask);
 

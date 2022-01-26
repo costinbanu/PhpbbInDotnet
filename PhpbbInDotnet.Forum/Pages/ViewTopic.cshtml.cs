@@ -466,7 +466,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             ForumId = curForum.ForumId;
             ForumTitle = HttpUtility.HtmlDecode(curForum.ForumName);
-            Posts = (await _postService.GetPosts(TopicId.Value, PageNum!.Value, GetCurrentUser().GetPageSize(TopicId.Value))).AsList();
+            Posts = (await _postService.GetPosts(TopicId.Value, PageNum!.Value, GetCurrentUser().GetPageSize(TopicId.Value), descendingOrder: false)).AsList();
             var currentPostIds = Posts.Select(p => p.PostId).ToList();
 
             var countTask = Context.PhpbbPosts.AsNoTracking().Where(p => p.TopicId == TopicId).CountAsync();

@@ -272,7 +272,7 @@
 @if (!Model.Order.HasValue)
 {
     <script>
-        $(document).ready(function () {
+        $(window).on('load', function () {
             $('#userOrder').val('dummyValue');
             $('#searchOrder').val('dummyValue');
         });
@@ -282,7 +282,7 @@
 @if (!Model.GroupId.HasValue)
 {
     <script>
-        $(document).ready(function () {
+        $(window).on('load', function () {
             $('#searchGroup').val('null');
         });
     </script>
