@@ -37,7 +37,7 @@
 <div id="target"></div>
 
 <script>
-    $(document).ready(function () {
+    $(window).on('load', function () {
         let header = $('#headerLinks');
         if (header.length) {
             let element = header.detach();

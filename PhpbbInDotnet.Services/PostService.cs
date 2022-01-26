@@ -75,7 +75,7 @@ namespace PhpbbInDotnet.Services
             return (correlationId, attachments);
         }
 
-        public Task<IEnumerable<PostDto>> GetPosts(int topicId, int pageNum, int pageSize)
+        public Task<IEnumerable<PostDto>> GetPosts(int topicId, int pageNum, int pageSize, bool descendingOrder)
             => _context.GetDbConnection().QueryAsync<PostDto>(
                     @"WITH ranks AS (
 					    SELECT DISTINCT u.user_id, 
@@ -112,14 +112,21 @@ namespace PhpbbInDotnet.Services
 				      LEFT JOIN phpbb_users e ON p.post_edit_user = e.user_id
 				      LEFT JOIN ranks r ON a.user_id = r.user_id
 				      WHERE topic_id = @topicId 
-				      ORDER BY post_time 
+				      ORDER BY 
+                        CASE             
+                            WHEN @order = 'ASC' THEN post_time 
+                        END ASC, 
+                        CASE 
+                            WHEN @order = 'DESC' THEN post_time 
+                        END DESC 
 				      LIMIT @skip, @take;",
                     new
                     {
                         Constants.ANONYMOUS_USER_ID,
                         topicId,
                         skip = (pageNum - 1) * pageSize,
-                        take = pageSize
+                        take = pageSize,
+                        order = descendingOrder ? "DESC" : "ASC"
                     });
 
         public async Task<PollDto?> GetPoll(PhpbbTopics _currentTopic)

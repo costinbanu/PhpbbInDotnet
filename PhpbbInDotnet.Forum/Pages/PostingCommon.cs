@@ -146,17 +146,12 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             if (((TopicId.HasValue && PageNum.HasValue) || PostId.HasValue) && (Action == PostingActions.EditForumPost || Action == PostingActions.NewForumPost))
             {
-                var unsortedPosts = (await _postService.GetPosts(TopicId ?? 0, 1, Constants.DEFAULT_PAGE_SIZE)).AsList();
-                var attachmentsTask = (
+                var posts = (await _postService.GetPosts(TopicId ?? 0, 1, Constants.DEFAULT_PAGE_SIZE, descendingOrder: true)).AsList();
+                var attachments = await(
                     from a in Context.PhpbbAttachments.AsNoTracking()
-                    where unsortedPosts.Select(p => p.PostId).Contains(a.PostMsgId)
+                    where posts.Select(p => p.PostId).Contains(a.PostMsgId)
                     select a).ToListAsync();
-                var postsTask = Task.Run(() => unsortedPosts.OrderByDescending(p => p.PostTime).ToList());
 
-                await Task.WhenAll(attachmentsTask, postsTask);
-
-                var posts = await postsTask;
-                var attachments = await attachmentsTask;
                 var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(attachments, GetLanguage(), posts.Count, false);
                 return (posts, cacheResult.Attachments, cacheResult.CorrelationId);
             }
