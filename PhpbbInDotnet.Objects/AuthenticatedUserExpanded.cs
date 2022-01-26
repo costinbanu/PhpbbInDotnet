@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PhpbbInDotnet.Utilities;
+using System;
 using System.Collections.Generic;
 
 namespace PhpbbInDotnet.Objects
@@ -31,6 +32,19 @@ namespace PhpbbInDotnet.Objects
         public HashSet<int>? Foes { get; set; }
 
         public string? Style { get; set; }
+
+        public int GetPageSize(int topicId)
+        {
+            var newPageSize = Constants.DEFAULT_PAGE_SIZE;
+            if (TopicPostsPerPage?.TryGetValue(topicId, out newPageSize) == true)
+            {
+                return newPageSize;
+            }
+            else
+            {
+                return Constants.DEFAULT_PAGE_SIZE;
+            }
+        }
 
         public class Permissions
         {

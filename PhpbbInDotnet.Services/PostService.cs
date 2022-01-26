@@ -19,16 +19,14 @@ namespace PhpbbInDotnet.Services
     {
         private readonly ForumDbContext _context;
         private readonly UserService _userService;
-        private readonly StorageService _storageService;
         private readonly IAppCache _cache;
         private readonly CommonUtils _utils;
         private readonly int _maxAttachmentCount;
 
-        public PostService(ForumDbContext context, UserService userService, StorageService storageService, IAppCache cache, CommonUtils utils, IConfiguration config)
+        public PostService(ForumDbContext context, UserService userService, IAppCache cache, CommonUtils utils, IConfiguration config)
         {
             _context = context;
             _userService = userService;
-            _storageService = storageService;
             _cache = cache;
             _utils = utils;
             var countLimit = config.GetObject<AttachmentLimits>("UploadLimitsCount");
@@ -76,6 +74,53 @@ namespace PhpbbInDotnet.Services
 
             return (correlationId, attachments);
         }
+
+        public Task<IEnumerable<PostDto>> GetPosts(int topicId, int pageNum, int pageSize)
+            => _context.GetDbConnection().QueryAsync<PostDto>(
+                    @"WITH ranks AS (
+					    SELECT DISTINCT u.user_id, 
+						       COALESCE(r1.rank_id, r2.rank_id) AS rank_id, 
+						       COALESCE(r1.rank_title, r2.rank_title) AS rank_title
+					      FROM phpbb_users u
+					      JOIN phpbb_groups g ON u.group_id = g.group_id
+					      LEFT JOIN phpbb_ranks r1 ON u.user_rank = r1.rank_id
+					      LEFT JOIN phpbb_ranks r2 ON g.group_rank = r2.rank_id
+				    )
+				    SELECT 
+					       p.forum_id,
+					       p.topic_id,
+					       p.post_id,
+					       p.post_subject,
+					       p.post_text,
+					       case when p.poster_id = @ANONYMOUS_USER_ID
+							    then p.post_username 
+							    else a.username
+					       end as author_name,
+					       p.poster_id as author_id,
+					       p.bbcode_uid,
+					       p.post_time,
+					       a.user_colour as author_color,
+					       a.user_avatar as author_avatar,
+					       p.post_edit_count,
+					       p.post_edit_reason,
+					       p.post_edit_time,
+					       e.username as post_edit_user,
+					       r.rank_title as author_rank,
+					       p.poster_ip as ip
+				      FROM phpbb_posts p
+				      LEFT JOIN phpbb_users a ON p.poster_id = a.user_id
+				      LEFT JOIN phpbb_users e ON p.post_edit_user = e.user_id
+				      LEFT JOIN ranks r ON a.user_id = r.user_id
+				      WHERE topic_id = @topicId 
+				      ORDER BY post_time 
+				      LIMIT @skip, @take;",
+                    new
+                    {
+                        Constants.ANONYMOUS_USER_ID,
+                        topicId,
+                        skip = (pageNum - 1) * pageSize,
+                        take = pageSize
+                    });
 
         public async Task<PollDto?> GetPoll(PhpbbTopics _currentTopic)
         {

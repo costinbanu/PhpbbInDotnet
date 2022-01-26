@@ -98,8 +98,6 @@ namespace PhpbbInDotnet.Forum.Pages
         public List<ReportDto>? Reports { get; private set; }
 
         private PhpbbTopics? _currentTopic;
-        private PhpbbForums? _currentForum;
-        private int? _count;
         private readonly PostService _postService;
         private readonly ModeratorService _moderatorService;
         private readonly WritingToolsService _writingToolsService;
@@ -114,76 +112,29 @@ namespace PhpbbInDotnet.Forum.Pages
         }
 
         public async Task<IActionResult> OnGetByPostId()
-            => await WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
+            => await WithValidPost(PostId ?? 0, async (curForum, curTopic, _) =>
             {
-                _currentTopic = curTopic;
-                _currentForum = curForum;
-                await GetPostsLazy(null, null, PostId);
-
-                TopicId = _currentTopic.TopicId;
-
-                return await OnGet();
+                var pageSize = GetCurrentUser().GetPageSize(curTopic.TopicId);
+                var idx = (from p in Context.PhpbbPosts.AsNoTracking()
+                           where p.TopicId == curTopic.TopicId
+                           orderby p.PostTime
+                           select p.PostId).ToList().IndexOf(PostId!.Value) + 1;
+                var computedPageNum = idx / pageSize + (idx % pageSize != 0 ? 1 : 0);
+                await PopulateModel(curForum, curTopic, computedPageNum);
+                return Page();
             });
 
-        public async Task<IActionResult> OnGet()
-        {
-            if (_currentForum != null && _currentTopic != null)
+        public Task<IActionResult> OnGet()
+            => WithValidTopic(TopicId ?? 0, async (curForum, curTopic) =>
             {
-                return await toDo(_currentForum, _currentTopic);
-            }
-            else
-            {
-                return await WithValidTopic(TopicId ?? 0, (curForum, curTopic) => toDo(curForum, curTopic));
-            }
-
-            async Task<IActionResult> toDo(PhpbbForums curForum, PhpbbTopics curTopic)
-            {
-                _currentTopic = curTopic;
-
-                if ((PageNum ?? 0) <= 0)
-                {
-                    PageNum = 1;
-                }
-
-                ForumId = curForum.ForumId;
-                ForumTitle = HttpUtility.HtmlDecode(curForum.ForumName);
-
-                var postsTask = GetPostsLazy(TopicId, PageNum, null);
-
-                Paginator = new Paginator(_count!.Value, PageNum!.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId, GetCurrentUser());
-                var pollTask = _postService.GetPoll(_currentTopic);
-
-                TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
-                ForumRulesLink = curForum.ForumRulesLink;
-                ForumRules = curForum.ForumRules;
-                ForumRulesUid = curForum.ForumRulesUid;
-
-                var markAsReadTask = MarkAsRead();
-                var updateViewCountTask =  (await Context.GetDbConnectionAsync()).ExecuteAsync(
-                    "UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId",
-                    new { topicId = TopicId!.Value }
-                );
-
-                await Task.WhenAll(postsTask, pollTask, markAsReadTask, updateViewCountTask);
-
-                Poll = await pollTask;
-
+                await PopulateModel(curForum, curTopic);
                 return Page();
-            }
-
-            async Task MarkAsRead()
-            {
-                if (await IsTopicUnread(ForumId ?? 0, TopicId ?? 0))
-                {
-                    await MarkTopicRead(ForumId ?? 0, TopicId ?? 0, Paginator.IsLastPage, Posts?.DefaultIfEmpty().Max(p => p?.PostTime ?? 0L) ?? 0);
-                }
-            }
-        }
+            });
 
         public async Task<IActionResult> OnPostPagination(int topicId, int userPostsPerPage, int? postId)
             => await WithRegisteredUser(async (user) =>
             {
-                await (await Context.GetDbConnectionAsync()).ExecuteAsync(
+                await Context.GetDbConnection().ExecuteAsync(
                     @"INSERT INTO phpbb_user_topic_post_number (user_id, topic_id, post_no) 
                            VALUES (@userId, @topicId, @userPostsPerPage)
                       ON DUPLICATE KEY UPDATE post_no = @userPostsPerPage",
@@ -503,30 +454,72 @@ namespace PhpbbInDotnet.Forum.Pages
             return SelectedPostIds?.Split(',')?.Select(x => int.TryParse(x, out var val) ? val : 0)?.Where(x => x != 0)?.ToArray() ?? Array.Empty<int>();
         }
 
-        private async Task GetPostsLazy(int? topicId, int? page, int? postId)
+        private async Task PopulateModel(PhpbbForums curForum, PhpbbTopics curTopic, int computedPageNum = 1)
         {
-            if (!(Posts?.Any() ?? false))
+            _currentTopic = curTopic;
+            TopicId = curTopic.TopicId;
+
+            if ((PageNum ?? 0) <= 0)
             {
-                var user = GetCurrentUser();
-                using var multi = await (await Context.GetDbConnectionAsync()).QueryMultipleAsync(
-                    sql: "CALL get_posts_extended(@userId, @topicId, @page, @pageSize, @postId);", 
-                    param: new 
-                    { 
-                        user.UserId, 
-                        topicId, 
-                        page,
-                        pageSize = user.TopicPostsPerPage!.TryGetValue(topicId ?? 0, out var val) ? val : null as int?,
-                        postId 
-                    }
-                );
+                PageNum = computedPageNum;
+            }
 
-                Posts = (await multi.ReadAsync<PostDto>()).AsList();
-                var dbAttachments = (await multi.ReadAsync<PhpbbAttachments>()).AsList();
-                PageNum = unchecked((int)await multi.ReadSingleAsync<long>());
-                _count = unchecked((int)await multi.ReadSingleAsync<long>());
-                Reports = (await multi.ReadAsync<ReportDto>()).AsList();
+            ForumId = curForum.ForumId;
+            ForumTitle = HttpUtility.HtmlDecode(curForum.ForumName);
+            Posts = (await _postService.GetPosts(TopicId.Value, PageNum!.Value, GetCurrentUser().GetPageSize(TopicId.Value))).AsList();
+            var currentPostIds = Posts.Select(p => p.PostId).ToList();
 
-                (CorrelationId, Attachments) = await _postService.CacheAttachmentsAndPrepareForDisplay(dbAttachments, GetLanguage(), Posts.Count, false);
+            var countTask = Context.PhpbbPosts.AsNoTracking().Where(p => p.TopicId == TopicId).CountAsync();
+            var dbAttachmentsTask = (
+                from a in Context.PhpbbAttachments.AsNoTracking()
+                where currentPostIds.Contains(a.PostMsgId)
+                select a).ToListAsync();
+            var reportsTask = Context.GetDbConnection().QueryAsync<ReportDto>(
+                @"SELECT r.report_id AS id, 
+		                 rr.reason_title, 
+                         rr.reason_description, 
+                         r.report_text AS details, 
+                         r.user_id AS reporter_id, 
+                         u.username AS reporter_username, 
+                         r.post_id 
+	                FROM phpbb_reports r
+                    JOIN phpbb_reports_reasons rr ON r.reason_id = rr.reason_id
+                    JOIN phpbb_users u on r.user_id = u.user_id
+	               WHERE report_closed = 0
+                     AND r.post_id IN @postIds;",
+                new
+                {
+                    postIds = currentPostIds
+                });
+
+            await Task.WhenAll(countTask, dbAttachmentsTask, reportsTask);
+
+            var count = await countTask;
+            Reports = (await reportsTask).AsList();
+            var dbAttachments = (await dbAttachmentsTask).AsList();
+            (CorrelationId, Attachments) = await _postService.CacheAttachmentsAndPrepareForDisplay(dbAttachments, GetLanguage(), currentPostIds.Count, false);
+            Paginator = new Paginator(count, PageNum!.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId, GetCurrentUser());
+            TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
+            ForumRulesLink = curForum.ForumRulesLink;
+            ForumRules = curForum.ForumRules;
+            ForumRulesUid = curForum.ForumRulesUid;
+
+            var markAsReadTask = MarkAsRead();
+            var updateViewCountTask = Context.GetDbConnection().ExecuteAsync(
+                "UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId",
+                new { topicId = TopicId!.Value }
+            );
+            var pollTask = _postService.GetPoll(_currentTopic);
+            await Task.WhenAll(pollTask, markAsReadTask, updateViewCountTask);
+
+            Poll = await pollTask;
+
+            async Task MarkAsRead()
+            {
+                if (await IsTopicUnread(ForumId ?? 0, TopicId ?? 0))
+                {
+                    await MarkTopicRead(ForumId ?? 0, TopicId ?? 0, Paginator.IsLastPage, Posts?.DefaultIfEmpty().Max(p => p?.PostTime ?? 0L) ?? 0);
+                }
             }
         }
 

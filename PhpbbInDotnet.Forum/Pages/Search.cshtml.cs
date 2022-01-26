@@ -1,8 +1,6 @@
 ﻿using Dapper;
 using LazyCache;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Languages;
@@ -150,51 +148,130 @@ namespace PhpbbInDotnet.Forum.Pages
                 return;
             }
 
-            var connection = await Context.GetDbConnectionAsync();
             PageNum ??= 1;
 
-            var (tree, _) = await GetForumTree(false, false);
-            var forumIds = new List<int>(tree.Count);
+            var connectionTask = Context.GetDbConnectionAsync();
+            var restrictedForumsTask = ForumService.GetRestrictedForumList(GetCurrentUser());
+            await Task.WhenAll(connectionTask, restrictedForumsTask);
+            var connection = await connectionTask;
+            var restrictedForums = (await restrictedForumsTask).Select(f => f.forumId);
 
-            if ((ForumId ?? 0) > 0)
-            {
-                void traverse(int fid)
+            var searchTask = connection.QueryAsync<PostDto>(
+                @"WITH ranks AS (
+	                SELECT DISTINCT u.user_id, 
+		                   COALESCE(r1.rank_id, r2.rank_id) AS rank_id, 
+		                   COALESCE(r1.rank_title, r2.rank_title) AS rank_title
+	                  FROM phpbb_users u
+	                  JOIN phpbb_groups g ON u.group_id = g.group_id
+	                  LEFT JOIN phpbb_ranks r1 ON u.user_rank = r1.rank_id
+	                  LEFT JOIN phpbb_ranks r2 ON g.group_rank = r2.rank_id
+                )
+                SELECT p.forum_id,
+	                   p.topic_id,
+	                   p.post_id,
+	                   p.post_subject,
+	                   p.post_text,
+	                   case when p.poster_id = @ANONYMOUS_USER_ID
+			                then p.post_username 
+			                else a.username
+	                   end as author_name,
+	                   p.poster_id as author_id,
+	                   p.bbcode_uid,
+	                   p.post_time,
+	                   a.user_colour as author_color,
+	                   a.user_avatar as author_avatar,
+	                   p.post_edit_count,
+	                   p.post_edit_reason,
+	                   p.post_edit_time,
+	                   e.username as post_edit_user,
+	                   r.rank_title as author_rank,
+	                   p.poster_ip as ip
+                  FROM phpbb_posts p
+                  JOIN phpbb_users a ON p.poster_id = a.user_id
+                  LEFT JOIN phpbb_users e ON p.post_edit_user = e.user_id
+                  LEFT JOIN ranks r ON a.user_id = r.user_id
+                 WHERE p.forum_id NOT IN @restrictedForums
+                   AND (@topicId = 0 OR @topicId = p.topic_id)
+                   AND (@authorId = 0 OR @authorId = p.poster_id)
+                   AND (@searchText IS NULL OR MATCH(p.post_text) AGAINST(@searchText IN BOOLEAN MODE))
+  
+                 UNION
+  
+                SELECT p.forum_id,
+	                   p.topic_id,
+	                   p.post_id,
+	                   p.post_subject,
+	                   p.post_text,
+	                   case when p.poster_id = @ANONYMOUS_USER_ID
+			                then p.post_username 
+			                else a.username
+	                   end as author_name,
+	                   p.poster_id as author_id,
+	                   p.bbcode_uid,
+	                   p.post_time,
+	                   a.user_colour as author_color,
+	                   a.user_avatar as author_avatar,
+	                   p.post_edit_count,
+	                   p.post_edit_reason,
+	                   p.post_edit_time,
+	                   e.username as post_edit_user,
+	                   r.rank_title as author_rank,
+	                   p.poster_ip as ip
+                  FROM phpbb_posts p
+                  JOIN phpbb_users a ON p.poster_id = a.user_id
+                  LEFT JOIN phpbb_users e ON p.post_edit_user = e.user_id
+                  LEFT JOIN ranks r ON a.user_id = r.user_id
+                 WHERE p.forum_id NOT IN @restrictedForums
+                   AND (@topicId = 0 OR @topicId = p.topic_id)
+                   AND (@authorId = 0 OR @authorId = p.poster_id)
+                   AND (@searchText IS NULL OR MATCH(p.post_subject) AGAINST(@searchText IN BOOLEAN MODE))
+   
+                 ORDER BY post_time DESC
+                 LIMIT @skip, 14;",
+                new
                 {
-                    var node = ForumService.GetTreeNode(tree, fid);
-                    if (node != null)
-                    {
-                        if (!ForumService.IsNodeRestricted(node))
-                        {
-                            forumIds.Add(fid);
-                        }
-                        foreach (var child in node?.ChildrenList ?? new HashSet<int>())
-                        {
-                            traverse(child);
-                        }
-                    }
-                }
-                traverse(ForumId!.Value);
-            }
-            else
-            {
-                forumIds.AddRange(tree.Where(t => !ForumService.IsNodeRestricted(t)).Select(t => t.ForumId));
-            }
-
-            using var multi = await connection.QueryMultipleAsync(
-                sql: "CALL search_post_text(@forums, @topic, @author, @page, @search)",
-                param: new
+                    Constants.ANONYMOUS_USER_ID,
+                    TopicId,
+                    AuthorId,
+                    searchText = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText),
+                    skip = ((PageNum ?? 1) - 1) * 14,
+                    restrictedForums
+                });
+            var countTask = connection.ExecuteScalarAsync<int>(
+                @"WITH search_stmt AS (
+		            SELECT p.post_id
+		              FROM phpbb_posts p
+                     WHERE p.forum_id NOT IN @restrictedForums
+                       AND (@topicId = 0 OR @topicId = p.topic_id)
+                       AND (@authorId = 0 OR @authorId = p.poster_id)
+                       AND (@searchText IS NULL OR MATCH(p.post_text) AGAINST(@searchText IN BOOLEAN MODE))
+		 
+                     UNION            
+		
+		            SELECT p.post_id
+		              FROM phpbb_posts p
+                     WHERE p.forum_id NOT IN @restrictedForums
+                       AND (@topicId = 0 OR @topicId = p.topic_id)
+                       AND (@authorId = 0 OR @authorId = p.poster_id)
+                       AND (@searchText IS NULL OR MATCH(p.post_subject) AGAINST(@searchText IN BOOLEAN MODE))
+                )
+	            SELECT count(1) as total_count
+                  FROM search_stmt;",
+                new
                 {
-                    topic = TopicId > 0 ? TopicId : null,
-                    author = AuthorId > 0 ? AuthorId : null as int?,
-                    search = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText),
-                    page = PageNum ?? 1,
-                    forums = string.Join(',', forumIds.DefaultIfEmpty())
-                }
-            );
+                    TopicId,
+                    AuthorId,
+                    searchText = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText),
+                    restrictedForums
+                });
+            await Task.WhenAll(searchTask, countTask);
 
-            Posts = (await multi.ReadAsync<PostDto>()).AsList();
-            TotalResults = unchecked((int)await multi.ReadFirstOrDefaultAsync<long>());
-            Attachments = (await multi.ReadAsync<PhpbbAttachments>()).AsList();
+            Posts = (await searchTask).AsList();
+            TotalResults = await countTask;
+            Attachments = await (
+                from a in Context.PhpbbAttachments.AsNoTracking()
+                where Posts.Select(p => p.PostId).Contains(a.PostMsgId)
+                select a).ToListAsync();
             Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum!.Value, link: GetSearchLinkForPage(PageNum.Value + 1), topicId: null);
         }
     }

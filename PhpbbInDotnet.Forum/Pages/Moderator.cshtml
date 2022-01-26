@@ -61,10 +61,8 @@
     );
 
     $(document).ready(function () {
-        window.onload = function () {
-            if (@Json.Serialize(Model.ScrollToAction)) {
-                document.getElementById('SubmitTopics').scrollIntoView();
-            }
+        if (@Json.Serialize(Model.ScrollToAction)) {
+            document.getElementById('SubmitTopics').scrollIntoView();
         }
     });
 
@@ -145,16 +143,16 @@
                     @Html.Raw(topic.TopicTitle)
                 </a>
                 @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
-           {
-               AuthorId = topic.TopicLastPosterId,
-               AuthorName = topic.TopicLastPosterName,
-               AuthorColor = topic.TopicLastPosterColour,
-               CreationTime = topic.TopicLastPostTime?.ToUtcTime(),
-               AssetId = topic.TopicId.Value,
-               DateFormat = UserDateFormat,
-               ShowAsLast = true,
-               Language = Lang
-           })
+                {
+                    AuthorId = topic.TopicLastPosterId,
+                    AuthorName = topic.TopicLastPosterName,
+                    AuthorColor = topic.TopicLastPosterColour,
+                    CreationTime = topic.TopicLastPostTime?.ToUtcTime(),
+                    AssetId = topic.TopicId.Value,
+                    DateFormat = UserDateFormat,
+                    ShowAsLast = true,
+                    Language = Lang
+                })
             </div>
             <hr class="BoxSeparator" />
         }
@@ -162,7 +160,7 @@
     @if (isForumSelected)
     {
         <button onclick="selectAllCheckboxes('Topics')" type="button" class="MyButton SpacedButton">
-            &#x2714;&nbsp;@Html.Raw(Model.LanguageProvider.Moderator[Lang, "SELECT_ALL_REPORTS"])
+            &#x2714;&nbsp;@Html.Raw(Model.LanguageProvider.Moderator[Lang, "SELECT_ALL_TOPICS"])
         </button>
         <form method="post" name="SubmitTopics" id="SubmitTopics" asp-page-handler="ManageTopics">
             @Html.Raw(Model.LanguageProvider.Moderator[Lang, "WITH_SELECTED_TOPICS"]):
