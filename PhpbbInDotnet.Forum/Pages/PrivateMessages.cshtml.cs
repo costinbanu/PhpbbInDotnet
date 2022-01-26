@@ -1,19 +1,17 @@
 ﻿using Dapper;
+using LazyCache;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
-using PhpbbInDotnet.Database.Entities;
-using System;
-using PhpbbInDotnet.Languages;
-using LazyCache;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -63,11 +61,10 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGet()
             => await WithUserHavingPM(async (user) =>
             {
-                var connection = await Context.GetDbConnectionAsync();
-
+                var connection = Context.GetDbConnection();
                 if (Show != PrivateMessagesPages.Message)
                 {
-                    using var multi = await connection.QueryMultipleAsync(
+                    var messageTask = connection.QueryAsync<PrivateMessageDto>(
                         @"WITH other AS (
 	                        SELECT t.msg_id, 
 		                           CASE WHEN t.user_id = @userId THEN t.author_id
@@ -93,15 +90,7 @@ namespace PhpbbInDotnet.Forum.Pages
                            AND ((@isInbox AND tt.folder_id >= 0) OR (NOT @isInbox AND tt.folder_id = -1))
                            AND tt.folder_id <> -10
                          ORDER BY message_time DESC
-                         LIMIT @skip, @take;
- 
-                         SELECT COUNT(*) AS cnt
-                           FROM phpbb_privmsgs m
-                           JOIN phpbb_privmsgs_to t ON m.msg_id = t.msg_id AND t.user_id <> t.author_id AND (t.user_id <> @userId OR t.author_id <> @userId)
-                           JOIN  phpbb_privmsgs_to tt ON m.msg_id = tt.msg_id
-                          WHERE tt.user_id = @userId
-                            AND tt.folder_id <> -10
-                            AND ((@isInbox AND tt.folder_id >= 0) OR (NOT @isInbox AND tt.folder_id = -1))",
+                         LIMIT @skip, @take",
                         new
                         {
                             user.UserId,
@@ -115,12 +104,27 @@ namespace PhpbbInDotnet.Forum.Pages
                             take = Constants.DEFAULT_PAGE_SIZE
                         }
                     );
+                    var countTask = connection.ExecuteScalarAsync<int>(
+                        @"SELECT COUNT(*) AS cnt
+                            FROM phpbb_privmsgs m
+                            JOIN phpbb_privmsgs_to t ON m.msg_id = t.msg_id AND t.user_id <> t.author_id AND (t.user_id <> @userId OR t.author_id <> @userId)
+                            JOIN  phpbb_privmsgs_to tt ON m.msg_id = tt.msg_id
+                           WHERE tt.user_id = @userId
+                             AND tt.folder_id <> -10
+                             AND ((@isInbox AND tt.folder_id >= 0) OR (NOT @isInbox AND tt.folder_id = -1))",
+                        new
+                        {
+                            user.UserId,
+                            isInbox = Show == PrivateMessagesPages.Inbox
+                        });
+
+                    await Task.WhenAll(messageTask, countTask);
 
                     if (Show == PrivateMessagesPages.Inbox)
                     {
-                        InboxMessages = (await multi.ReadAsync<PrivateMessageDto>()).AsList();
+                        InboxMessages = (await messageTask).AsList();
                         InboxPaginator = new Paginator(
-                            count: unchecked((int)await multi.ReadSingleAsync<long>()),
+                            count: await countTask,
                             pageNum: InboxPage ?? 1,
                             topicId: null,
                             link: "/PrivateMessages?show=Inbox",
@@ -129,9 +133,9 @@ namespace PhpbbInDotnet.Forum.Pages
                     }
                     else if (Show == PrivateMessagesPages.Sent)
                     {
-                        SentMessages = (await multi.ReadAsync<PrivateMessageDto>()).AsList();
+                        SentMessages = (await messageTask).AsList();
                         SentPaginator = new Paginator(
-                            count: unchecked((int)await multi.ReadSingleAsync<long>()),
+                            count: await countTask,
                             pageNum: SentPage ?? 1,
                             topicId: null,
                             link: "/PrivateMessages?show=Sent",
@@ -142,19 +146,28 @@ namespace PhpbbInDotnet.Forum.Pages
                 else if (MessageId.HasValue && Source.HasValue)
                 {
                     SelectedMessageIsMine = Source == PrivateMessagesPages.Sent;
-                    using var multi = await connection.QueryMultipleAsync(
-                        "SELECT * FROM phpbb_privmsgs WHERE msg_id = @messageId; " +
-                        "SELECT * FROM phpbb_privmsgs_to WHERE msg_id = @messageId AND folder_id >= 0; " +
-                        "SELECT user_id, author_id FROM phpbb_privmsgs_to WHERE msg_id = @messageId AND user_id <> author_id",
-                        new { MessageId, isInbox = Source == PrivateMessagesPages.Inbox }
-                    );
-                    var message = await multi.ReadFirstOrDefaultAsync<PhpbbPrivmsgs>();
-                    var inboxEntry = await multi.ReadFirstOrDefaultAsync<PhpbbPrivmsgsTo>();
-                    var userIds = await multi.ReadFirstOrDefaultAsync();
+                    var messagesTask = (
+                        from pm in Context.PhpbbPrivmsgs.AsNoTracking()
+                        where pm.MsgId == MessageId
+                        select pm).FirstOrDefaultAsync();
+                    var msgToTask = (
+                        from mt in Context.PhpbbPrivmsgsTo.AsNoTracking()
+                        where mt.MsgId == MessageId && mt.FolderId >= 0
+                        select mt).FirstOrDefaultAsync();
+                    var otherUserTask = (
+                        from mt in Context.PhpbbPrivmsgsTo.AsNoTracking()
+                        where mt.MsgId == MessageId && mt.UserId != mt.AuthorId
+                        let userId = mt.AuthorId != user.UserId ? mt.AuthorId : mt.UserId
+                        join u in Context.PhpbbUsers.AsNoTracking()
+                        on userId equals u.UserId
+                        select u).FirstOrDefaultAsync();
+                   
+                    await Task.WhenAll(messagesTask, msgToTask, otherUserTask);
+
+                    var message = await messagesTask;
+                    var inboxEntry = await msgToTask;
                     SelectedMessageIsUnread = inboxEntry?.PmUnread.ToBool() ?? false;
-                    var otherUser = await connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", 
-                        new { userId = userIds.author_id != user.UserId ? userIds.author_id : userIds.user_id}
-                    );
+                    var otherUser = await otherUserTask; 
                     SelectedMessage = new PrivateMessageDto
                     {
                         MessageId = message.MsgId,

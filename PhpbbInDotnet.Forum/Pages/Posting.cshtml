@@ -47,7 +47,7 @@
         '@(_config.GetValue<string>("BaseUrl"))'
     );
 
-    window.onload = function () {
+    $(document).ready(function () {
         if ($('#attachPanel').is(':visible')) {
             $('#attachButton').text(posting.hideAttachText);
         }
@@ -61,7 +61,7 @@
             $('#pollButton').text(posting.showPollText);
         }
         $('#message').focus();
-    }
+    });
 
     function toggleFormattingHelp() {
         showElement(

@@ -328,6 +328,10 @@ else
         <input type="submit" value="&#x2705;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "MARK_SELECTED_POSTS_AS_READ"])" form="MarkNewPostsRead" class="MyButton SpacedButton" />
         <p>&nbsp;</p>
     }
+    else if (Model.Mode == ViewForumMode.OwnPosts)
+    {
+        <hr class="BoxSeparator" />
+    }
 
     if (Model.Mode != ViewForumMode.Forum)
     {

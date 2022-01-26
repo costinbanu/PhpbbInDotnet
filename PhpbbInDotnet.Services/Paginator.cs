@@ -42,7 +42,7 @@ namespace PhpbbInDotnet.Utilities
 
             if (topicId is not null && usr is not null)
             {
-                PageSize = usr.TopicPostsPerPage!.ContainsKey(topicId.Value)? usr.TopicPostsPerPage[topicId.Value] : Constants.DEFAULT_PAGE_SIZE;
+                PageSize = usr.GetPageSize(topicId.Value);
             }
 
             IsAnonymous = usr?.IsAnonymous ?? true;
