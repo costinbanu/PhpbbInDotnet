@@ -24,7 +24,6 @@ namespace PhpbbInDotnet.Forum
     public class AuthenticationMiddleware : IMiddleware
     {
         static readonly HashSet<string> EXCLUDED_PAGES;
-        static readonly HashSet<string> PAGES_REQUIRING_UNREAD_DATA;
 
         private readonly ILogger _logger;
         private readonly ForumTreeService _forumTreeService;
@@ -38,10 +37,6 @@ namespace PhpbbInDotnet.Forum
         {
             EXCLUDED_PAGES = new HashSet<string>(
                 new[] { "/Login", "/Logout", "/Register" },
-                StringComparer.InvariantCultureIgnoreCase
-            );
-            PAGES_REQUIRING_UNREAD_DATA = new HashSet<string>(
-                new[] { "/", "/Index", "/ViewForum", "/ViewTopic" },
                 StringComparer.InvariantCultureIgnoreCase
             );
         }
@@ -123,8 +118,7 @@ namespace PhpbbInDotnet.Forum
                     connection.ExecuteAsync(
                         "UPDATE phpbb_users SET user_lastvisit = @now WHERE user_id = @userId",
                         new { now = DateTime.UtcNow.ToUnixTimestamp(), user.UserId }
-                    ),
-                    PAGES_REQUIRING_UNREAD_DATA.Contains(context.Request.Path) ? _forumTreeService.GetForumTracking(user.UserId, false) : Task.CompletedTask
+                    )
                 );
                 user = _userService.ClaimsPrincipalToAuthenticatedUser(claimsPrincipal);
             }

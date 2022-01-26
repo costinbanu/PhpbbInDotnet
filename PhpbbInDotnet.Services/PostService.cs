@@ -19,16 +19,14 @@ namespace PhpbbInDotnet.Services
     {
         private readonly ForumDbContext _context;
         private readonly UserService _userService;
-        private readonly StorageService _storageService;
         private readonly IAppCache _cache;
         private readonly CommonUtils _utils;
         private readonly int _maxAttachmentCount;
 
-        public PostService(ForumDbContext context, UserService userService, StorageService storageService, IAppCache cache, CommonUtils utils, IConfiguration config)
+        public PostService(ForumDbContext context, UserService userService, IAppCache cache, CommonUtils utils, IConfiguration config)
         {
             _context = context;
             _userService = userService;
-            _storageService = storageService;
             _cache = cache;
             _utils = utils;
             var countLimit = config.GetObject<AttachmentLimits>("UploadLimitsCount");
@@ -94,7 +92,7 @@ namespace PhpbbInDotnet.Services
 					       p.post_id,
 					       p.post_subject,
 					       p.post_text,
-					       case when p.poster_id = @anonymousUserId
+					       case when p.poster_id = @ANONYMOUS_USER_ID
 							    then p.post_username 
 							    else a.username
 					       end as author_name,
@@ -118,7 +116,7 @@ namespace PhpbbInDotnet.Services
 				      LIMIT @skip, @take;",
                     new
                     {
-                        anonymousUserId = Constants.ANONYMOUS_USER_ID,
+                        Constants.ANONYMOUS_USER_ID,
                         topicId,
                         skip = (pageNum - 1) * pageSize,
                         take = pageSize

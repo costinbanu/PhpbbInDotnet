@@ -467,7 +467,7 @@ namespace PhpbbInDotnet.Forum.Pages
             ForumId = curForum.ForumId;
             ForumTitle = HttpUtility.HtmlDecode(curForum.ForumName);
             Posts = (await _postService.GetPosts(TopicId.Value, PageNum!.Value, GetCurrentUser().GetPageSize(TopicId.Value))).AsList();
-            var currentPostIds = new HashSet<int>(Posts.Select(p => p.PostId));
+            var currentPostIds = Posts.Select(p => p.PostId).ToList();
 
             var countTask = Context.PhpbbPosts.AsNoTracking().Where(p => p.TopicId == TopicId).CountAsync();
             var dbAttachmentsTask = (
@@ -485,8 +485,8 @@ namespace PhpbbInDotnet.Forum.Pages
 	                FROM phpbb_reports r
                     JOIN phpbb_reports_reasons rr ON r.reason_id = rr.reason_id
                     JOIN phpbb_users u on r.user_id = u.user_id
-	                WHERE report_closed = 0
-                        AND r.post_id IN @postIds;",
+	               WHERE report_closed = 0
+                     AND r.post_id IN @postIds;",
                 new
                 {
                     postIds = currentPostIds

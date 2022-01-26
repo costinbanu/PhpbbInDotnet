@@ -30,7 +30,7 @@
             @Html.Raw(category.ForumName)
         </div>
 
-        var children = Model.GetChildrenForums(category.ForumId).OrderBy(f => f.LeftId);
+        var children = Model.GetChildrenForums(category.ForumId);
         isFirst = true;
         @foreach (var forum in children)
         {
