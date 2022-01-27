@@ -78,7 +78,7 @@
     if (!string.IsNullOrWhiteSpace(user?.Username))
     {
         var key = Model.IsAuthorSearch ? "POSTS_BY_FORMAT" : "ATTACHMENTS_BY_FORMAT";
-        <h4>@Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, key], user.Username))</h4>
+        <h3>@Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, key], user.Username))</h3>
     }
 }
 else
