@@ -231,7 +231,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 new
                 {
                     Constants.ANONYMOUS_USER_ID,
-                    TopicId,
+                    topicId = TopicId ?? 0,
                     AuthorId,
                     searchText = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText),
                     skip = ((PageNum ?? 1) - 1) * 14,
@@ -259,7 +259,7 @@ namespace PhpbbInDotnet.Forum.Pages
                   FROM search_stmt;",
                 new
                 {
-                    TopicId,
+                    topicId = TopicId ?? 0,
                     AuthorId,
                     searchText = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText),
                     restrictedForums = restrictedForums.DefaultIfEmpty()
