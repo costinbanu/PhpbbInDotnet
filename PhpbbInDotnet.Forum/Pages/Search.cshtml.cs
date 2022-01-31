@@ -151,10 +151,10 @@ namespace PhpbbInDotnet.Forum.Pages
             PageNum ??= 1;
 
             var connectionTask = Context.GetDbConnectionAsync();
-            var restrictedForumsTask = ForumService.GetRestrictedForumList(GetCurrentUser());
-            await Task.WhenAll(connectionTask, restrictedForumsTask);
+            var searchableForumsTask = GetSearchableForums();
+            await Task.WhenAll(connectionTask, searchableForumsTask);
             var connection = await connectionTask;
-            var restrictedForums = (await restrictedForumsTask).Select(f => f.forumId);
+            var searchableForums = await searchableForumsTask;
 
             var searchTask = connection.QueryAsync<PostDto>(
                 @"WITH ranks AS (
@@ -190,7 +190,7 @@ namespace PhpbbInDotnet.Forum.Pages
                   JOIN phpbb_users a ON p.poster_id = a.user_id
                   LEFT JOIN phpbb_users e ON p.post_edit_user = e.user_id
                   LEFT JOIN ranks r ON a.user_id = r.user_id
-                 WHERE p.forum_id NOT IN @restrictedForums
+                 WHERE p.forum_id IN @searchableForums
                    AND (@topicId = 0 OR @topicId = p.topic_id)
                    AND (@authorId = 0 OR @authorId = p.poster_id)
                    AND (@searchText IS NULL OR MATCH(p.post_text) AGAINST(@searchText IN BOOLEAN MODE))
@@ -221,7 +221,7 @@ namespace PhpbbInDotnet.Forum.Pages
                   JOIN phpbb_users a ON p.poster_id = a.user_id
                   LEFT JOIN phpbb_users e ON p.post_edit_user = e.user_id
                   LEFT JOIN ranks r ON a.user_id = r.user_id
-                 WHERE p.forum_id NOT IN @restrictedForums
+                 WHERE p.forum_id IN @searchableForums
                    AND (@topicId = 0 OR @topicId = p.topic_id)
                    AND (@authorId = 0 OR @authorId = p.poster_id)
                    AND (@searchText IS NULL OR MATCH(p.post_subject) AGAINST(@searchText IN BOOLEAN MODE))
@@ -235,13 +235,13 @@ namespace PhpbbInDotnet.Forum.Pages
                     AuthorId,
                     searchText = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText),
                     skip = ((PageNum ?? 1) - 1) * 14,
-                    restrictedForums = restrictedForums.DefaultIfEmpty()
+                    searchableForums
                 });
             var countTask = connection.ExecuteScalarAsync<int>(
                 @"WITH search_stmt AS (
 		            SELECT p.post_id
 		              FROM phpbb_posts p
-                     WHERE p.forum_id NOT IN @restrictedForums
+                     WHERE p.forum_id IN @searchableForums
                        AND (@topicId = 0 OR @topicId = p.topic_id)
                        AND (@authorId = 0 OR @authorId = p.poster_id)
                        AND (@searchText IS NULL OR MATCH(p.post_text) AGAINST(@searchText IN BOOLEAN MODE))
@@ -250,7 +250,7 @@ namespace PhpbbInDotnet.Forum.Pages
 		
 		            SELECT p.post_id
 		              FROM phpbb_posts p
-                     WHERE p.forum_id NOT IN @restrictedForums
+                     WHERE p.forum_id IN @searchableForums
                        AND (@topicId = 0 OR @topicId = p.topic_id)
                        AND (@authorId = 0 OR @authorId = p.poster_id)
                        AND (@searchText IS NULL OR MATCH(p.post_subject) AGAINST(@searchText IN BOOLEAN MODE))
@@ -262,7 +262,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     topicId = TopicId ?? 0,
                     AuthorId,
                     searchText = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText),
-                    restrictedForums = restrictedForums.DefaultIfEmpty()
+                    searchableForums
                 });
             await Task.WhenAll(searchTask, countTask);
 
@@ -273,6 +273,39 @@ namespace PhpbbInDotnet.Forum.Pages
                 where Posts.Select(p => p.PostId).Contains(a.PostMsgId)
                 select a).ToListAsync();
             Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum!.Value, link: GetSearchLinkForPage(PageNum.Value + 1), topicId: null);
+        }
+
+        private async Task<List<int>> GetSearchableForums()
+        {
+            var (tree, _) = await GetForumTree(false, false);
+            var toReturn = new List<int>(tree.Count);
+
+            if ((ForumId ?? 0) > 0)
+            {
+                traverse(ForumId!.Value);
+            }
+            else
+            {
+                toReturn.AddRange(tree.Where(t => !ForumService.IsNodeRestricted(t)).Select(t => t.ForumId));
+            }
+
+            return toReturn;
+
+            void traverse(int fid)
+            {
+                var node = ForumService.GetTreeNode(tree, fid);
+                if (node != null)
+                {
+                    if (!ForumService.IsNodeRestricted(node))
+                    {
+                        toReturn.Add(fid);
+                    }
+                    foreach (var child in node?.ChildrenList ?? new HashSet<int>())
+                    {
+                        traverse(child);
+                    }
+                }
+            }
         }
     }
 }
