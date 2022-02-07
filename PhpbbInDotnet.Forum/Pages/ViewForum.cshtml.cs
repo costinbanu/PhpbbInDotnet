@@ -168,7 +168,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetOwnPosts()
             => await WithRegisteredUser(async (user) =>
             {
-                await Utils.RetryOnce(
+                await Utils.RetryOnceAsync(
                     toDo: async () =>
                     {
                         PageNum = Paginator.NormalizePageNumberLowerBound(PageNum);
@@ -236,7 +236,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetDrafts()
             => await WithRegisteredUser(async (user) =>
             {
-                await Utils.RetryOnce(
+                await Utils.RetryOnceAsync(
                     toDo: async () =>
                     {
                         var restrictedForumList = await GetRestrictedForums();

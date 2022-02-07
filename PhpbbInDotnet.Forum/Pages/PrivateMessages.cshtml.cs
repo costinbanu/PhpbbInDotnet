@@ -70,7 +70,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         PrivateMessagesPages.Sent => Paginator.NormalizePageNumberLowerBound(SentPage),
                         _ => 1
                     };
-                    await Utils.RetryOnce(
+                    await Utils.RetryOnceAsync(
                         toDo: async () =>
                         {
                             var messageTask = connection.QueryAsync<PrivateMessageDto>(
