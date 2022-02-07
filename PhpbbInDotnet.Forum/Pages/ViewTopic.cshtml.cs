@@ -127,7 +127,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnGet()
             => WithValidTopic(TopicId ?? 0, async (curForum, curTopic) =>
             {
-                await Utils.RetryOnce(
+                await Utils.RetryOnceAsync(
                     toDo: () => PopulateModel(curForum, curTopic),
                     evaluateSuccess: () => Posts!.Count > 0 && (PageNum ?? 1) == Paginator!.CurrentPage,
                     fix: () => PageNum = Paginator!.CurrentPage);

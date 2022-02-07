@@ -331,7 +331,7 @@ namespace PhpbbInDotnet.Utilities
         /// <param name="evaluateSuccess">Logic to evaluate the success of the initial run.</param>
         /// <param name="fix">Logic to run if the initial run has failed, before retrying it.</param>
         /// <returns></returns>
-        public async Task RetryOnce(Func<Task> toDo, Func<bool> evaluateSuccess, Action fix)
+        public async Task RetryOnceAsync(Func<Task> toDo, Func<bool> evaluateSuccess, Action fix)
         {
             await toDo();
             if (!evaluateSuccess())

@@ -76,13 +76,6 @@ namespace PhpbbInDotnet.Services
         public bool HasPrivateMessages(AuthenticatedUserExpanded user)
             => user.AllowPM && HasPrivateMessagePermissions(user);
 
-        public async Task<bool> HasPrivateMessages(int userId)
-        {
-            var usr = new AuthenticatedUserExpanded(await GetAuthenticatedUserById(userId));
-            usr.AllPermissions = await GetPermissions(userId);
-            return HasPrivateMessages(usr);
-        }
-
         private async Task<PhpbbUsers> GetAnonymousDbUser()
         {
             if (_anonymousDbUser != null)

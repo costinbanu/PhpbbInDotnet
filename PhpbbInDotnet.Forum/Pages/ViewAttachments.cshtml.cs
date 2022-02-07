@@ -42,7 +42,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 PhpbbUsers? user = null;
                 PageNum = Paginator.NormalizePageNumberLowerBound(PageNum);
-                await Utils.RetryOnce(
+                await Utils.RetryOnceAsync(
                     toDo: async () =>
                     {
                         var restrictedForums = (await ForumService.GetRestrictedForumList(GetCurrentUser())).Select(f => f.forumId);
