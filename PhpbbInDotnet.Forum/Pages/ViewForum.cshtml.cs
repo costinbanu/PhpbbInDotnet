@@ -70,48 +70,17 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumRules = thisForum.ForumRules;
                 ForumRulesUid = thisForum.ForumRulesUid;
                 ForumDesc = _renderingService.BbCodeToHtml(thisForum.ForumDesc, thisForum.ForumDescUid ?? string.Empty);
-
-                var connection = await Context.GetDbConnectionAsync();
-                
-                var parentTask = connection.QuerySingleOrDefaultAsync<PhpbbForums>(
+               
+                var parentTask = Context.GetDbConnection().QuerySingleOrDefaultAsync<PhpbbForums>(
                     "SELECT * FROM phpbb_forums WHERE forum_id = @ParentId", 
                     new { thisForum.ParentId }
                 );
-                var topicsTask = connection.QueryAsync<TopicDto>(
-                    @"SELECT t.topic_id, 
-		                    t.forum_id,
-		                    t.topic_title, 
-		                    count(p.post_id) AS post_count,
-		                    t.topic_views AS view_count,
-		                    t.topic_type,
-		                    t.topic_last_poster_id,
-		                    t.topic_last_poster_name,
-		                    t.topic_last_post_time,
-		                    t.topic_last_poster_colour,
-		                    t.topic_last_post_id,
-                            t.topic_status
-	                    FROM forum.phpbb_topics t
-	                    JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
-                    WHERE t.forum_id = @forumId OR topic_type = @topicType
-                    GROUP BY t.topic_id
-                    ORDER BY topic_last_post_time DESC",
-                    new { ForumId, topicType = TopicType.Global }
-                );
+                var topicsTask = GetTopics();
                 var treeTask = GetForumTree(_forceTreeRefresh, true);
 
                 await Task.WhenAll(parentTask, topicsTask, treeTask);
 
-                Topics = (
-                    from t in await topicsTask
-
-                    group t by t.TopicType into groups
-                    orderby groups.Key descending
-                    select new TopicGroup
-                    {
-                        TopicType = groups.Key,
-                        Topics = groups
-                    }
-                ).ToList();
+                Topics = await topicsTask;
                 var parent = await parentTask;
                 ParentForumId = parent?.ForumId;
                 ParentForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? _config.GetValue<string>("ForumName"));
@@ -119,13 +88,50 @@ namespace PhpbbInDotnet.Forum.Pages
                 Mode = ViewForumMode.Forum;
 
                 return Page();
+
+                async Task<List<TopicGroup>> GetTopics()
+                {
+                    var topics = await Context.GetDbConnection().QueryAsync<TopicDto>(
+                        @"SELECT t.topic_id, 
+		                        t.forum_id,
+		                        t.topic_title, 
+		                        count(p.post_id) AS post_count,
+		                        t.topic_views AS view_count,
+		                        t.topic_type,
+		                        t.topic_last_poster_id,
+		                        t.topic_last_poster_name,
+		                        t.topic_last_post_time,
+		                        t.topic_last_poster_colour,
+		                        t.topic_last_post_id,
+                                t.topic_status
+	                        FROM forum.phpbb_topics t
+	                        JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
+                        WHERE t.forum_id = @forumId OR topic_type = @topicType
+                        GROUP BY t.topic_id
+                        ORDER BY topic_last_post_time DESC",
+                        new { ForumId, topicType = TopicType.Global });
+
+                    return (from t in topics
+
+                            group t by t.TopicType into groups
+                            orderby groups.Key descending
+
+                            select new TopicGroup
+                            {
+                                TopicType = groups.Key,
+                                Topics = groups
+                            }).ToList();
+                }
             });
 
         public async Task<IActionResult> OnGetNewPosts()
             => await WithRegisteredUser(async (user) =>
             {
                 var tree = await GetForumTree(_forceTreeRefresh, true);
-                var topicList = tree.Tracking!.SelectMany(t => t.Value).Select(t => t.TopicId).Distinct();
+                var restrictedForumList = await GetRestrictedForums();
+                var topicList = tree.Tracking!.Where(ft => !restrictedForumList.Contains(ft.Key)).SelectMany(t => t.Value).Select(t => t.TopicId).Distinct();
+                Paginator = new Paginator(count: topicList.Count(), pageNum: PageNum ?? 1, link: "/ViewForum?handler=NewPosts&pageNum=1", topicId: null);
+                PageNum = Paginator.CurrentPage;
 
                 var topics = await Context.GetDbConnection().QueryAsync<TopicDto>(
                     @"SELECT t.topic_id, 
@@ -148,118 +154,119 @@ namespace PhpbbInDotnet.Forum.Pages
                     new
                     {
                         topicList = topicList.DefaultIfEmpty(),
-                        skip = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE,
+                        skip = (PageNum - 1) * Constants.DEFAULT_PAGE_SIZE,
                         take = Constants.DEFAULT_PAGE_SIZE,
-                        restrictedForumList = await GetRestrictedForums()
+                        restrictedForumList
                     }
                 );
 
                 Topics = new List<TopicGroup> { new TopicGroup { Topics = topics } };
                 Mode = ViewForumMode.NewPosts;
-                Paginator = new Paginator(count: topicList.Count(), pageNum: PageNum ?? 1, link: "/ViewForum?handler=NewPosts&pageNum=1", topicId: null);
                 return Page();
             });
 
         public async Task<IActionResult> OnGetOwnPosts()
             => await WithRegisteredUser(async (user) =>
             {
-                var tree = await GetForumTree(false, true);
-                IEnumerable<TopicDto>? topics = null;
-                var totalCount = 0;
-                var restrictedForumsTask = GetRestrictedForums();
-                var connectionTask = Context.GetDbConnectionAsync();
-                
-                var topicsTask = Context.GetDbConnection().QueryAsync<TopicDto>(
-                    @"WITH own_topics AS (
-			            SELECT DISTINCT p.topic_id
-			              FROM phpbb_posts p
-			              JOIN phpbb_topics t 
-			                ON p.topic_id = t.topic_id
-			             WHERE p.poster_id = @userId
-                           AND t.forum_id NOT IN @restrictedForumList
-                        ORDER BY t.topic_last_post_time DESC
-                        LIMIT @skip, @take
-                    )
-                    SELECT t.topic_id, 
-			               t.forum_id,
-			               t.topic_title, 
-			               count(p.post_id) AS post_count,
-                           t.topic_views AS view_count,
-			               t.topic_type,
-			               t.topic_last_poster_id,
-			               t.topic_last_poster_name,
-			               t.topic_last_post_time,
-			               t.topic_last_poster_colour,
-			               t.topic_last_post_id
-                      FROM phpbb_posts p
-                      JOIN own_topics ot
-                        ON p.topic_id = ot.topic_id
-                      JOIN phpbb_topics t
-                        ON t.topic_id = ot.topic_id
-                     GROUP BY p.topic_id;",
-                    new
+                await Utils.RetryOnce(
+                    toDo: async () =>
                     {
-                        user.UserId,
-                        skip = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE,
-                        take = Constants.DEFAULT_PAGE_SIZE,
-                        restrictedForumList = await restrictedForumsTask
-                    }
-                );
-                var countTask = Context.GetDbConnection().ExecuteScalarAsync<int>(
-                    @"SELECT COUNT(DISTINCT topic_id) AS total_count 
+                        PageNum = Paginator.NormalizePageNumberLowerBound(PageNum);
+                        var restrictedForumList = await GetRestrictedForums();
+                        var topicsTask = Context.GetDbConnection().QueryAsync<TopicDto>(
+                            @"WITH own_topics AS (
+			                    SELECT DISTINCT p.topic_id
+			                      FROM phpbb_posts p
+			                      JOIN phpbb_topics t 
+			                        ON p.topic_id = t.topic_id
+			                     WHERE p.poster_id = @userId
+                                   AND t.forum_id NOT IN @restrictedForumList
+                                ORDER BY t.topic_last_post_time DESC
+                                LIMIT @skip, @take
+                            )
+                            SELECT t.topic_id, 
+			                       t.forum_id,
+			                       t.topic_title, 
+			                       count(p.post_id) AS post_count,
+                                   t.topic_views AS view_count,
+			                       t.topic_type,
+			                       t.topic_last_poster_id,
+			                       t.topic_last_poster_name,
+			                       t.topic_last_post_time,
+			                       t.topic_last_poster_colour,
+			                       t.topic_last_post_id
+                              FROM phpbb_posts p
+                              JOIN own_topics ot
+                                ON p.topic_id = ot.topic_id
+                              JOIN phpbb_topics t
+                                ON t.topic_id = ot.topic_id
+                             GROUP BY p.topic_id;",
+                            new
+                            {
+                                user.UserId,
+                                skip = (PageNum - 1) * Constants.DEFAULT_PAGE_SIZE,
+                                take = Constants.DEFAULT_PAGE_SIZE,
+                                restrictedForumList
+                            }
+                        );
+                        var countTask = Context.GetDbConnection().ExecuteScalarAsync<int>(
+                            @"SELECT COUNT(DISTINCT topic_id) AS total_count 
 	                    FROM phpbb_posts 
 	                   WHERE poster_id = @user_id
                          AND forum_id NOT IN @restrictedForumList;",
-                    new
-                    {
-                        user.UserId,
-                        restrictedForumList = await restrictedForumsTask
-                    });
+                            new
+                            {
+                                user.UserId,
+                                restrictedForumList
+                            });
 
-                await Task.WhenAll(topicsTask, countTask);
+                        await Task.WhenAll(topicsTask, countTask);
 
-                topics = await topicsTask;
-                totalCount = await countTask;
-
-                Topics = new List<TopicGroup> { new TopicGroup { Topics = topics.OrderByDescending(t => t.LastPostTime) } };
-                Mode = ViewForumMode.OwnPosts;
-                Paginator = new Paginator(count: totalCount, pageNum: PageNum ?? 1, link: "/ViewForum?handler=OwnPosts&pageNum=1", topicId: null);
+                        var unsortedTopics = await topicsTask;
+                        Topics = new List<TopicGroup> { new TopicGroup { Topics = unsortedTopics.OrderByDescending(t => t.LastPostTime) } };
+                        Mode = ViewForumMode.OwnPosts;
+                        Paginator = new Paginator(count: await countTask, pageNum: PageNum.Value, link: "/ViewForum?handler=OwnPosts&pageNum=1", topicId: null);
+                    },
+                    evaluateSuccess: () => Topics!.Count > 0 && PageNum == Paginator!.CurrentPage,
+                    fix: () => PageNum = Paginator!.CurrentPage);
+                
                 return Page();
             });
 
         public async Task<IActionResult> OnGetDrafts()
             => await WithRegisteredUser(async (user) =>
             {
-                var restrictedForumsTask = GetRestrictedForums();
-                var count = 0;
-                var connectionTask = Context.GetDbConnectionAsync();
-                
-                var draftsTask = Context.GetDbConnection().QueryAsync<TopicDto>(
-                    @"SELECT d.draft_id,
-				             d.topic_id, 
-				             d.forum_id,
-				             d.draft_subject as topic_title,
-				             d.save_time as topic_last_post_time,
-				             t.topic_last_post_id
-			            FROM forum.phpbb_drafts d
-			            LEFT JOIN forum.phpbb_topics t
-			              ON d.topic_id = t.topic_id
-		               WHERE d.forum_id NOT IN @restrictedForumList
-                         AND d.user_id = @userId
-                         AND d.forum_id <> 0
-                         AND (t.topic_id IS NOT NULL OR d.topic_id = 0)
-                       ORDER BY d.save_time DESC
-                       LIMIT @skip, @take",
-                    new
+                await Utils.RetryOnce(
+                    toDo: async () =>
                     {
-                        user.UserId,
-                        skip = ((PageNum ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE,
-                        take = Constants.DEFAULT_PAGE_SIZE,
-                        restrictedForumList = await restrictedForumsTask
-                    }
-                );
-                var countTask = Context.GetDbConnection().ExecuteScalarAsync<int>(
-                    @"SELECT COUNT(*) as total_count
+                        var restrictedForumList = await GetRestrictedForums();
+                        PageNum = Paginator.NormalizePageNumberLowerBound(PageNum);
+                        var draftsTask = Context.GetDbConnection().QueryAsync<TopicDto>(
+                            @"SELECT d.draft_id,
+				                     d.topic_id, 
+				                     d.forum_id,
+				                     d.draft_subject as topic_title,
+				                     d.save_time as topic_last_post_time,
+				                     t.topic_last_post_id
+			                    FROM forum.phpbb_drafts d
+			                    LEFT JOIN forum.phpbb_topics t
+			                      ON d.topic_id = t.topic_id
+		                       WHERE d.forum_id NOT IN @restrictedForumList
+                                 AND d.user_id = @userId
+                                 AND d.forum_id <> 0
+                                 AND (t.topic_id IS NOT NULL OR d.topic_id = 0)
+                               ORDER BY d.save_time DESC
+                               LIMIT @skip, @take",
+                            new
+                            {
+                                user.UserId,
+                                skip = (PageNum - 1) * Constants.DEFAULT_PAGE_SIZE,
+                                take = Constants.DEFAULT_PAGE_SIZE,
+                                restrictedForumList
+                            }
+                        );
+                        var countTask = Context.GetDbConnection().ExecuteScalarAsync<int>(
+                            @"SELECT COUNT(*) as total_count
                         FROM forum.phpbb_drafts d
 	                    LEFT JOIN forum.phpbb_topics t
 	                      ON d.topic_id = t.topic_id
@@ -267,19 +274,21 @@ namespace PhpbbInDotnet.Forum.Pages
                          AND d.user_id = @user_id
 	                     AND d.forum_id <> 0
 	                     AND (t.topic_id IS NOT NULL OR d.topic_id = 0);",
-                    new
-                    {
-                        user.UserId,
-                        restrictedForumList = await restrictedForumsTask
-                    });
+                            new
+                            {
+                                user.UserId,
+                                restrictedForumList
+                            });
 
-                await Task.WhenAll(draftsTask, countTask);
+                        await Task.WhenAll(draftsTask, countTask);
 
-                count = await countTask;                
-
-                Topics = new List<TopicGroup> { new TopicGroup { Topics = await draftsTask } };
-                Mode = ViewForumMode.Drafts;
-                Paginator = new Paginator(count: count, pageNum: PageNum ?? 1, link: "/ViewForum?handler=drafts&pageNum=1", topicId: null);
+                        Topics = new List<TopicGroup> { new TopicGroup { Topics = await draftsTask } };
+                        Mode = ViewForumMode.Drafts;
+                        Paginator = new Paginator(count: await countTask, pageNum: PageNum.Value, link: "/ViewForum?handler=drafts&pageNum=1", topicId: null);
+                    },
+                    evaluateSuccess: () => Topics!.Count > 0 && PageNum == Paginator!.CurrentPage,
+                    fix: () => PageNum = Paginator!.CurrentPage);
+                
                 return Page();
             });
 

@@ -127,7 +127,10 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnGet()
             => WithValidTopic(TopicId ?? 0, async (curForum, curTopic) =>
             {
-                await PopulateModel(curForum, curTopic);
+                await Utils.RetryOnce(
+                    toDo: () => PopulateModel(curForum, curTopic),
+                    evaluateSuccess: () => Posts!.Count > 0 && (PageNum ?? 1) == Paginator!.CurrentPage,
+                    fix: () => PageNum = Paginator!.CurrentPage);
                 return Page();
             });
 
@@ -458,22 +461,19 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             _currentTopic = curTopic;
             TopicId = curTopic.TopicId;
-
-            if ((PageNum ?? 0) <= 0)
-            {
-                PageNum = computedPageNum;
-            }
+            PageNum = Paginator.NormalizePageNumberLowerBound(PageNum ?? computedPageNum);
 
             ForumId = curForum.ForumId;
             ForumTitle = HttpUtility.HtmlDecode(curForum.ForumName);
             Posts = (await _postService.GetPosts(TopicId.Value, PageNum!.Value, GetCurrentUser().GetPageSize(TopicId.Value), descendingOrder: false)).AsList();
-            var currentPostIds = Posts.Select(p => p.PostId).ToList();
+            var currentPostIds = Posts.Select(p => p.PostId).DefaultIfEmpty().ToList();
 
-            var countTask = Context.PhpbbPosts.AsNoTracking().Where(p => p.TopicId == TopicId).CountAsync();
-            var dbAttachmentsTask = (
-                from a in Context.PhpbbAttachments.AsNoTracking()
-                where currentPostIds.Contains(a.PostMsgId)
-                select a).ToListAsync();
+            var countTask = Context.GetDbConnection().ExecuteScalarAsync<int>(
+                "SELECT COUNT(post_id) FROM phpbb_posts WHERE topic_id = @topicId",
+                new { TopicId });
+            var dbAttachmentsTask = Context.GetDbConnection().QueryAsync<PhpbbAttachments>(
+                "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @currentPostIds",
+                new {currentPostIds});
             var reportsTask = Context.GetDbConnection().QueryAsync<ReportDto>(
                 @"SELECT r.report_id AS id, 
 		                 rr.reason_title, 
@@ -487,18 +487,14 @@ namespace PhpbbInDotnet.Forum.Pages
                     JOIN phpbb_users u on r.user_id = u.user_id
 	               WHERE report_closed = 0
                      AND r.post_id IN @postIds;",
-                new
-                {
-                    postIds = currentPostIds
-                });
+                new { postIds = currentPostIds });
 
             await Task.WhenAll(countTask, dbAttachmentsTask, reportsTask);
 
-            var count = await countTask;
             Reports = (await reportsTask).AsList();
             var dbAttachments = (await dbAttachmentsTask).AsList();
             (CorrelationId, Attachments) = await _postService.CacheAttachmentsAndPrepareForDisplay(dbAttachments, GetLanguage(), currentPostIds.Count, false);
-            Paginator = new Paginator(count, PageNum!.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId, GetCurrentUser());
+            Paginator = new Paginator(await countTask, PageNum!.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId, GetCurrentUser());
             TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
             ForumRulesLink = curForum.ForumRulesLink;
             ForumRules = curForum.ForumRules;

@@ -324,6 +324,23 @@ namespace PhpbbInDotnet.Utilities
         public string GetForumLoginCacheKey(int userId, int forumId)
             => $"ForumLogin_{userId}_{forumId}";
 
+        /// <summary>
+        /// If <paramref name="evaluateSuccess"/> returns false, then it retries the <paramref name="toDo"/> logic once, after applying the <paramref name="fix"/> logic.
+        /// </summary>
+        /// <param name="toDo">Logic to retry if failing.</param>
+        /// <param name="evaluateSuccess">Logic to evaluate the success of the initial run.</param>
+        /// <param name="fix">Logic to run if the initial run has failed, before retrying it.</param>
+        /// <returns></returns>
+        public async Task RetryOnce(Func<Task> toDo, Func<bool> evaluateSuccess, Action fix)
+        {
+            await toDo();
+            if (!evaluateSuccess())
+            {
+                fix();
+                await toDo();
+            }
+        }
+
         public void Dispose()
         {
             _md5?.Dispose();
