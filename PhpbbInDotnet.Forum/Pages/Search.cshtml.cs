@@ -102,7 +102,11 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (DoSearch ?? false)
             {
-                await Search();
+                PageNum = Paginator.NormalizePageNumberLowerBound(PageNum);
+                await Utils.RetryOnce(
+                    toDo: () => Search(),
+                    evaluateSuccess: () => Posts!.Count > 0 && PageNum == Paginator!.CurrentPage,
+                    fix: () => PageNum = Paginator!.CurrentPage);
             }
 
             return Page();
@@ -147,8 +151,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 ModelState.AddModelError(nameof(SearchText), LanguageProvider.Errors[GetLanguage(), "MISSING_REQUIRED_FIELD"]);
                 return;
             }
-
-            PageNum ??= 1;
 
             var connectionTask = Context.GetDbConnectionAsync();
             var searchableForumsTask = GetSearchableForums();
@@ -234,7 +236,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     topicId = TopicId ?? 0,
                     AuthorId,
                     searchText = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText),
-                    skip = ((PageNum ?? 1) - 1) * 14,
+                    skip = (PageNum - 1) * Constants.DEFAULT_PAGE_SIZE,
                     searchableForums
                 });
             var countTask = connection.ExecuteScalarAsync<int>(

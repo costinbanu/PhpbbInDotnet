@@ -31,13 +31,6 @@ namespace PhpbbInDotnet.Utilities
 
         public Paginator(int count, int pageNum, string link, int? topicId = null, AuthenticatedUserExpanded? usr = null, string pageNumKey = "PageNum")
         {
-            PostsPerPage = new List<SelectListItem>();
-            for (var i = 0; i < 5; i++)
-            {
-                var val = ((1 << i) * Constants.PAGE_SIZE_INCREMENT).ToString();
-                PostsPerPage.Add(new SelectListItem(val, val, false));
-            }
-
             PageSize = Constants.DEFAULT_PAGE_SIZE;
 
             if (topicId is not null && usr is not null)
@@ -45,10 +38,15 @@ namespace PhpbbInDotnet.Utilities
                 PageSize = usr.GetPageSize(topicId.Value);
             }
 
-            IsAnonymous = usr?.IsAnonymous ?? true;
+            PostsPerPage = new List<SelectListItem>(5);
+            for (var i = 0; i < 5; i++)
+            {
+                var val = (1 << i) * Constants.PAGE_SIZE_INCREMENT;
+                var stringVal = val.ToString();
+                PostsPerPage.Add(new SelectListItem(stringVal, stringVal, val == PageSize));
+            }
 
-            PostsPerPage.ForEach(ppp => ppp.Selected = int.TryParse(ppp.Value, out var value) && value == PageSize);
-            Pagination = new PaginationDto(link, count, PageSize, pageNum, pageNumKey);
+            IsAnonymous = usr?.IsAnonymous ?? true;
 
             Init(count, pageNum, link, pageNumKey);
         }
@@ -56,19 +54,20 @@ namespace PhpbbInDotnet.Utilities
         void Init(int count, int pageNum, string link, string pageNumKey)
         {
             Pagination = new PaginationDto(link, count, PageSize, pageNum, pageNumKey);
-            var noOfPages = (count / PageSize) + (count % PageSize == 0 ? 0 : 1);
-            if (pageNum > noOfPages)
+            var pageCount = (count / PageSize) + (count % PageSize == 0 ? 0 : 1);
+
+            pageNum = NormalizePageNumberLowerBound(pageNum);
+            if (pageNum > pageCount && pageCount > 0)
             {
-                pageNum = noOfPages;
-            }
-            if (pageNum < 1)
-            {
-                pageNum = 1;
+                pageNum = pageCount;
             }
 
             IsFirstPage = pageNum == 1;
-            IsLastPage = pageNum == noOfPages;
+            IsLastPage = pageNum == pageCount;
             CurrentPage = pageNum;
         }
+
+        public static int NormalizePageNumberLowerBound(int? candidate)
+            => candidate >= 1 == false ? 1 : candidate.Value;
     }
 }

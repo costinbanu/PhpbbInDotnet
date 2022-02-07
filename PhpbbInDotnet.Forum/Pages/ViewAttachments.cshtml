@@ -23,11 +23,10 @@
 
     if (Model.Attachments.Any())
     {
-        var paginator = new Paginator(Model.TotalCount, Model.PageNum, $"ViewAttachments?userId={Model.UserId}", Model.PAGE_SIZE, "pageNum");
         @await Html.PartialAsync(
             "_PaginationControlsPartial",
             new _PaginationControlsPartialModel(
-                paginator: paginator,
+                paginator: Model.Paginator!,
                 allowPaginationChange: false,
                 includeEasyNavigation: false,
                 language: Model.GetLanguage(),
@@ -69,7 +68,7 @@
             @await Html.PartialAsync(
                 "_PaginationControlsPartial",
                 new _PaginationControlsPartialModel(
-                    paginator: paginator,
+                    paginator: Model.Paginator!,
                     allowPaginationChange: false,
                     includeEasyNavigation: true,
                     language: Model.GetLanguage(),

@@ -64,84 +64,111 @@ namespace PhpbbInDotnet.Forum.Pages
                 var connection = Context.GetDbConnection();
                 if (Show != PrivateMessagesPages.Message)
                 {
-                    var messageTask = connection.QueryAsync<PrivateMessageDto>(
-                        @"WITH other AS (
-	                        SELECT t.msg_id, 
-		                           CASE WHEN t.user_id = @userId THEN t.author_id
-			                           ELSE t.user_id
-			                           END AS others_id, 
-                                   COALESCE(u.username, 'Anonymous') AS others_name, 
-                                   u.user_colour AS others_color
-                              FROM phpbb_privmsgs_to t
-                              LEFT JOIN phpbb_users u ON ((t.user_id = @userId AND t.author_id = u.user_id) OR (t.user_id <> @userId AND t.user_id = u.user_id))
-	                         WHERE t.user_id <> t.author_id AND (t.user_id <> @userId OR t.author_id <> @userId)
-                        )
-                        SELECT m.msg_id AS message_id, 
-	                           t.others_id,
-                               t.others_name,
-                               t.others_color,
-                               m.message_subject AS subject,
-                               m.message_time,
-                               tt.pm_unread
-                          FROM phpbb_privmsgs m
-                          JOIN other t ON m.msg_id = t.msg_id
-                          JOIN phpbb_privmsgs_to tt ON m.msg_id = tt.msg_id
-                         WHERE tt.user_id = @userId 
-                           AND ((@isInbox AND tt.folder_id >= 0) OR (NOT @isInbox AND tt.folder_id = -1))
-                           AND tt.folder_id <> -10
-                         ORDER BY message_time DESC
-                         LIMIT @skip, @take",
-                        new
+                    var pageNum = Show switch
+                    {
+                        PrivateMessagesPages.Inbox => Paginator.NormalizePageNumberLowerBound(InboxPage),
+                        PrivateMessagesPages.Sent => Paginator.NormalizePageNumberLowerBound(SentPage),
+                        _ => 1
+                    };
+                    await Utils.RetryOnce(
+                        toDo: async () =>
                         {
-                            user.UserId,
-                            isInbox = Show == PrivateMessagesPages.Inbox,
-                            skip = Show switch
+                            var messageTask = connection.QueryAsync<PrivateMessageDto>(
+                                @"WITH other AS (
+	                                SELECT t.msg_id, 
+		                                   CASE WHEN t.user_id = @userId THEN t.author_id
+			                                   ELSE t.user_id
+			                                   END AS others_id, 
+                                           COALESCE(u.username, 'Anonymous') AS others_name, 
+                                           u.user_colour AS others_color
+                                      FROM phpbb_privmsgs_to t
+                                      LEFT JOIN phpbb_users u ON ((t.user_id = @userId AND t.author_id = u.user_id) OR (t.user_id <> @userId AND t.user_id = u.user_id))
+	                                 WHERE t.user_id <> t.author_id AND (t.user_id <> @userId OR t.author_id <> @userId)
+                                )
+                                SELECT m.msg_id AS message_id, 
+	                                   t.others_id,
+                                       t.others_name,
+                                       t.others_color,
+                                       m.message_subject AS subject,
+                                       m.message_time,
+                                       tt.pm_unread
+                                  FROM phpbb_privmsgs m
+                                  JOIN other t ON m.msg_id = t.msg_id
+                                  JOIN phpbb_privmsgs_to tt ON m.msg_id = tt.msg_id
+                                 WHERE tt.user_id = @userId 
+                                   AND ((@isInbox AND tt.folder_id >= 0) OR (NOT @isInbox AND tt.folder_id = -1))
+                                   AND tt.folder_id <> -10
+                                 ORDER BY message_time DESC
+                                 LIMIT @skip, @take",
+                                new
+                                {
+                                    user.UserId,
+                                    isInbox = Show == PrivateMessagesPages.Inbox,
+                                    skip = (pageNum - 1) * Constants.DEFAULT_PAGE_SIZE,
+                                    take = Constants.DEFAULT_PAGE_SIZE
+                                });
+
+                            var countTask = connection.ExecuteScalarAsync<int>(
+                                @"SELECT COUNT(*) AS cnt
+                                    FROM phpbb_privmsgs m
+                                    JOIN phpbb_privmsgs_to t ON m.msg_id = t.msg_id AND t.user_id <> t.author_id AND (t.user_id <> @userId OR t.author_id <> @userId)
+                                    JOIN  phpbb_privmsgs_to tt ON m.msg_id = tt.msg_id
+                                   WHERE tt.user_id = @userId
+                                     AND tt.folder_id <> -10
+                                     AND ((@isInbox AND tt.folder_id >= 0) OR (NOT @isInbox AND tt.folder_id = -1))",
+                                new
+                                {
+                                    user.UserId,
+                                    isInbox = Show == PrivateMessagesPages.Inbox
+                                });
+
+                            await Task.WhenAll(messageTask, countTask);
+
+                            switch (Show)
                             {
-                                PrivateMessagesPages.Inbox => ((InboxPage ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE,
-                                PrivateMessagesPages.Sent => ((SentPage ?? 1) - 1) * Constants.DEFAULT_PAGE_SIZE,
-                                _ => 0
-                            },
-                            take = Constants.DEFAULT_PAGE_SIZE
-                        }
-                    );
-                    var countTask = connection.ExecuteScalarAsync<int>(
-                        @"SELECT COUNT(*) AS cnt
-                            FROM phpbb_privmsgs m
-                            JOIN phpbb_privmsgs_to t ON m.msg_id = t.msg_id AND t.user_id <> t.author_id AND (t.user_id <> @userId OR t.author_id <> @userId)
-                            JOIN  phpbb_privmsgs_to tt ON m.msg_id = tt.msg_id
-                           WHERE tt.user_id = @userId
-                             AND tt.folder_id <> -10
-                             AND ((@isInbox AND tt.folder_id >= 0) OR (NOT @isInbox AND tt.folder_id = -1))",
-                        new
+                                case PrivateMessagesPages.Inbox:
+                                    InboxMessages = (await messageTask).AsList();
+                                    InboxPaginator = new Paginator(
+                                        count: await countTask,
+                                        pageNum: pageNum,
+                                        topicId: null,
+                                        link: "/PrivateMessages?show=Inbox",
+                                        pageNumKey: nameof(InboxPage)
+                                    );
+                                    break;
+
+                                case PrivateMessagesPages.Sent:
+                                    SentMessages = (await messageTask).AsList();
+                                    SentPaginator = new Paginator(
+                                        count: await countTask,
+                                        pageNum: pageNum,
+                                        topicId: null,
+                                        link: "/PrivateMessages?show=Sent",
+                                        pageNumKey: nameof(SentPage)
+                                    );
+                                    break;
+                            }
+                        },
+                        evaluateSuccess: () => Show switch
                         {
-                            user.UserId,
-                            isInbox = Show == PrivateMessagesPages.Inbox
+                            PrivateMessagesPages.Inbox => InboxMessages!.Count > 0 && pageNum == InboxPaginator!.CurrentPage,
+                            PrivateMessagesPages.Sent => SentMessages!.Count > 0 && pageNum == SentPaginator!.CurrentPage,
+                            _ => true
+                        },
+                        fix: () =>
+                        {
+                            switch (Show)
+                            {
+                                case PrivateMessagesPages.Inbox:
+                                    pageNum = InboxPaginator!.CurrentPage;
+                                    break;
+
+                                case PrivateMessagesPages.Sent:
+                                    pageNum = SentPaginator!.CurrentPage;
+                                    break;
+                            }
                         });
-
-                    await Task.WhenAll(messageTask, countTask);
-
-                    if (Show == PrivateMessagesPages.Inbox)
-                    {
-                        InboxMessages = (await messageTask).AsList();
-                        InboxPaginator = new Paginator(
-                            count: await countTask,
-                            pageNum: InboxPage ?? 1,
-                            topicId: null,
-                            link: "/PrivateMessages?show=Inbox",
-                            pageNumKey: nameof(InboxPage)
-                        );
-                    }
-                    else if (Show == PrivateMessagesPages.Sent)
-                    {
-                        SentMessages = (await messageTask).AsList();
-                        SentPaginator = new Paginator(
-                            count: await countTask,
-                            pageNum: SentPage ?? 1,
-                            topicId: null,
-                            link: "/PrivateMessages?show=Sent",
-                            pageNumKey: nameof(SentPage)
-                        );
-                    }
+                    
                 }
                 else if (MessageId.HasValue && Source.HasValue)
                 {

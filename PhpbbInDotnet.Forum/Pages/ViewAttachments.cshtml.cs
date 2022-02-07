@@ -1,6 +1,7 @@
 using LazyCache;
 using Microsoft.AspNetCore.Mvc;
 using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
@@ -26,7 +27,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public int TotalCount { get; private set; }
 
-        public int PAGE_SIZE => 20;
+        public Paginator? Paginator { get; private set; }
+
+        const int PAGE_SIZE = 20;
 
         public ViewAttachmentsModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache,  CommonUtils utils, LanguageProvider languageProvider)
             : base(context, forumService, userService, cache, utils, languageProvider)
@@ -37,60 +40,60 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnGet()
             => WithRegisteredUser(async (_) =>
             {
-                if (UserId <= Constants.ANONYMOUS_USER_ID)
-                {
-                    ModelState.AddModelError(nameof(PageUsername), LanguageProvider.Errors[GetLanguage(), "ERROR_NOT_FOUND", Casing.FirstUpper]);
-                    return Page();
-                }
-
-                if (PageNum < 1)
-                {
-                    ModelState.AddModelError(nameof(PageUsername), LanguageProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN", Casing.FirstUpper]);
-                    return Page();
-                }
-
-                var restrictedForums = (await ForumService.GetRestrictedForumList(GetCurrentUser())).Select(f => f.forumId);
-                var attachmentsTask = (
-                    from a in Context.PhpbbAttachments.AsNoTracking()
-                    where a.PosterId == UserId
-
-                    join p in Context.PhpbbPosts.AsNoTracking()
-                    on a.PostMsgId equals p.PostId
-                    into joinedPosts
-
-                    from jp in joinedPosts.DefaultIfEmpty()
-
-                    join t in Context.PhpbbTopics.AsNoTracking()
-                    on jp.TopicId equals t.TopicId
-                    into joinedTopics
-
-                    from jt in joinedTopics.DefaultIfEmpty()
-                    where !restrictedForums.Contains(jt.ForumId)
-                    orderby a.Filetime descending
-                    select new AttachmentPreviewDto
+                PhpbbUsers? user = null;
+                PageNum = Paginator.NormalizePageNumberLowerBound(PageNum);
+                await Utils.RetryOnce(
+                    toDo: async () =>
                     {
-                        Id = a.AttachId,
-                        PhysicalFilename = a.PhysicalFilename,
-                        RealFilename = a.RealFilename,
-                        Mimetype = a.Mimetype,
-                        FileSize = a.Filesize,
-                        FileTime = a.Filetime,
-                        ForumId = jp == null ? null : jp.ForumId,
-                        PostId = jp == null ? null : jp.PostId,
-                        TopicTitle = jt == null ? null : jt.TopicTitle
-                    }).Skip((PageNum - 1) * PAGE_SIZE).Take(PAGE_SIZE).ToListAsync();
-                var countTask = Context.PhpbbAttachments.AsNoTracking().Where(a => a.PosterId == UserId).CountAsync(_ => true);
-                var usernameTask = Context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == UserId);
+                        var restrictedForums = (await ForumService.GetRestrictedForumList(GetCurrentUser())).Select(f => f.forumId);
+                        var attachmentsTask = (
+                            from a in Context.PhpbbAttachments.AsNoTracking()
+                            where a.PosterId == UserId
 
-                await Task.WhenAll(attachmentsTask, countTask, usernameTask);
+                            join p in Context.PhpbbPosts.AsNoTracking()
+                            on a.PostMsgId equals p.PostId
+                            into joinedPosts
 
-                Attachments = await attachmentsTask;
-                PageUsername = (await usernameTask).Username;
-                TotalCount = await countTask;
+                            from jp in joinedPosts.DefaultIfEmpty()
 
-                if (string.IsNullOrWhiteSpace(PageUsername))
+                            join t in Context.PhpbbTopics.AsNoTracking()
+                            on jp.TopicId equals t.TopicId
+                            into joinedTopics
+
+                            from jt in joinedTopics.DefaultIfEmpty()
+                            where !restrictedForums.Contains(jt.ForumId)
+                            orderby a.Filetime descending
+                            select new AttachmentPreviewDto
+                            {
+                                Id = a.AttachId,
+                                PhysicalFilename = a.PhysicalFilename,
+                                RealFilename = a.RealFilename,
+                                Mimetype = a.Mimetype,
+                                FileSize = a.Filesize,
+                                FileTime = a.Filetime,
+                                ForumId = jp == null ? null : jp.ForumId,
+                                PostId = jp == null ? null : jp.PostId,
+                                TopicTitle = jt == null ? null : jt.TopicTitle
+                            }).Skip((PageNum - 1) * PAGE_SIZE).Take(PAGE_SIZE).ToListAsync();
+                        var countTask = Context.PhpbbAttachments.AsNoTracking().Where(a => a.PosterId == UserId).CountAsync(_ => true);
+                        var userTask = Context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == UserId);
+
+                        await Task.WhenAll(attachmentsTask, countTask, userTask);
+
+                        Attachments = await attachmentsTask;
+                        user = await userTask;
+                        Paginator = new Paginator(await countTask, PageNum, $"ViewAttachments?userId={UserId}", PAGE_SIZE, "pageNum");
+                    },
+                    evaluateSuccess: () => user is null || (Attachments!.Count > 0 && PageNum == Paginator!.CurrentPage),
+                    fix: () => PageNum = Paginator!.CurrentPage);
+
+                if (user is null)
                 {
-                    ModelState.AddModelError(nameof(PageUsername), LanguageProvider.Errors[GetLanguage(), "ERROR_NOT_FOUND", Casing.FirstUpper]);
+                    return RedirectToPage("Error", new { isNotFound = true });
+                }
+                else
+                {
+                    PageUsername = user.Username;
                 }
 
                 return Page();
