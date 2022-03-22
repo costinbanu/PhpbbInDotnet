@@ -8,9 +8,9 @@ using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Utilities;
+using SixLabors.ImageSharp;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -260,7 +260,7 @@ namespace PhpbbInDotnet.Services
                     else if (smiley.File != null)
                     {
                         using var stream = smiley.File.OpenReadStream();
-                        using var bmp = new Bitmap(stream);
+                        using var bmp = Image.Load(stream);
                         stream.Seek(0, SeekOrigin.Begin);
                         if (bmp.Width > maxSize.Width || bmp.Height > maxSize.Height)
                         {

@@ -410,7 +410,7 @@ namespace PhpbbInDotnet.Services
                 }
 
                 AdminRankActions action;
-                PhpbbRanks actual;
+                PhpbbRanks? actual;
                 if ((rankId ?? 0) == 0)
                 {
                     actual = new PhpbbRanks
@@ -424,7 +424,7 @@ namespace PhpbbInDotnet.Services
                 else if (deleteRank ?? false)
                 {
                     actual = await _context.PhpbbRanks.FirstOrDefaultAsync(x => x.RankId == rankId);
-                    if (actual == null)
+                    if (actual is null)
                     {
                         return (string.Format(LanguageProvider.Admin[lang, "RANK_DOESNT_EXIST_FORMAT"], rankId), false);
                     }

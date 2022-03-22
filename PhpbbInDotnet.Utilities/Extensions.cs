@@ -37,36 +37,6 @@ namespace PhpbbInDotnet.Utilities
         public static bool IsImageMimeType(this string mimeType)
             => mimeType.StartsWith("image/", StringComparison.InvariantCultureIgnoreCase);
 
-        //public static async Task<T> FirstOrDefaultAsync<T>(this IQueryable<T> source) where T : class
-        //{
-        //    return await EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(source);
-        //}
-
-        //public static async Task<T> FirstOrDefaultAsync<T>(this IQueryable<T> source, Expression<Func<T, bool>> filter) where T : class
-        //{
-        //    return await EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(source, filter);
-        //}
-
-        //public static IQueryable<T> AsNoTracking<T>(this DbSet<T> source) where T : class
-        //{
-        //    return EntityFrameworkQueryableExtensions.AsNoTracking(source);
-        //}
-
-        //public static async Task<int> CountAsync<T>(this IQueryable<T> source, Expression<Func<T, bool>> filter) where T : class
-        //{
-        //    return await EntityFrameworkQueryableExtensions.CountAsync<T>(source, filter);
-        //}
-
-        //public static IQueryable<T> Where<T>(this DbSet<T> source, Expression<Func<T, bool>> filter) where T : class
-        //{
-        //    return Queryable.Where<T>(source, filter);
-        //}
-
-        //public static async Task<List<T>> ToListAsync<T>(this IQueryable<T> source)
-        //{
-        //    return await EntityFrameworkQueryableExtensions.ToListAsync<T>(source);
-        //}
-
         public static HashSet<int> ToIntHashSet(this string? list)
         {
             if (string.IsNullOrWhiteSpace(list))
