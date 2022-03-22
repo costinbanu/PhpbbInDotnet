@@ -161,7 +161,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPostResetPassword()
         {
-            var user = await _context.PhpbbUsers.FirstOrDefaultAsync(
+            var user = _context.PhpbbUsers.FirstOrDefault(
                 x => x.UsernameClean == _utils.CleanString(UserNameForPwdReset) && 
                 x.UserEmailHash == _utils.CalculateCrc32Hash(EmailForPwdReset!)
             );
@@ -231,7 +231,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return Page();
             }
 
-            var user = await _context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == UserId);
+            var user = _context.PhpbbUsers.FirstOrDefault(u => u.UserId == UserId);
             if (user == null || ResetPasswordCode != await _utils.DecryptAES(user.UserNewpasswd, Init))
             {
                 ModelState.AddModelError(nameof(PwdResetErrorMessage), LanguageProvider.Errors[lang, "CONFIRM_ERROR"]);

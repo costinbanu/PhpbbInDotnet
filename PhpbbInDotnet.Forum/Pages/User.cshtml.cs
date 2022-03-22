@@ -137,7 +137,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return RedirectToPage("Error", new { isUnauthorised = true });
             }
 
-            var dbUser = await Context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == CurrentUser!.UserId);
+            var dbUser = Context.PhpbbUsers.FirstOrDefault(u => u.UserId == CurrentUser!.UserId);
             if (dbUser == null)
             {
                 return RedirectToPage("Error", new { isNotFound = true });
@@ -349,7 +349,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }
 
             var userRoles = (await UserService.GetUserRolesLazy()).Select(r => r.RoleId);
-            var dbAclRole = await Context.PhpbbAclUsers.FirstOrDefaultAsync(r => r.UserId == dbUser.UserId && userRoles.Contains(r.AuthRoleId));
+            var dbAclRole = Context.PhpbbAclUsers.FirstOrDefault(r => r.UserId == dbUser.UserId && userRoles.Contains(r.AuthRoleId));
             if (dbAclRole != null && dbAclRole.AuthRoleId != (AclRole ?? -1))
             {
                 Context.PhpbbAclUsers.Remove(dbAclRole);
@@ -367,7 +367,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 userMustLogIn = true;
             }
 
-            var dbUserGroup = await Context.PhpbbUserGroup.FirstOrDefaultAsync(g => g.UserId == dbUser.UserId);
+            var dbUserGroup = Context.PhpbbUserGroup.FirstOrDefault(g => g.UserId == dbUser.UserId);
             if (dbUserGroup == null)
             {
                 if (dbUser.GroupId == 0)
