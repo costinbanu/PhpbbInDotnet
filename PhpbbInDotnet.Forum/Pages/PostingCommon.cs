@@ -360,7 +360,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 else
                 {
-                    ModelState[nameof(LastPostTime)].Errors.Clear();
+                    ModelState[nameof(LastPostTime)]?.Errors.Clear();
                 }
             }
             return await toDo();

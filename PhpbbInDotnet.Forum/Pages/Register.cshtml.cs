@@ -162,7 +162,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 GroupId = 2,
                 UserEmail = Email,
                 UserEmailHash = _utils.CalculateCrc32Hash(Email),
-                UserPassword = Crypter.Phpass.Crypt(Password, Crypter.Phpass.GenerateSalt()),
+                UserPassword = Crypter.Phpass.Crypt(Password!, Crypter.Phpass.GenerateSalt()),
                 UserInactiveTime = now,
                 UserInactiveReason = UserInactiveReason.NewlyRegisteredNotConfirmed,
                 UserActkey = registrationCode,

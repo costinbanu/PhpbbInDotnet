@@ -69,7 +69,6 @@ namespace PhpbbInDotnet.Forum
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie();
 
             var builder = services.AddMvc(o => o.EnableEndpointRouting = false)
-                .SetCompatibilityVersion(CompatibilityVersion.Version_3_0)
                 .AddRazorOptions(o =>
                 {
                     o.PageViewLocationFormats.Add("~/Pages/CustomPartials/{0}.cshtml");
@@ -80,7 +79,7 @@ namespace PhpbbInDotnet.Forum
                 {
                     o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
                     o.JsonSerializerOptions.Converters.Add(new DateTimeConverter());
-                    o.JsonSerializerOptions.IgnoreNullValues = true;
+                    o.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
                 });
 
 #if DEBUG

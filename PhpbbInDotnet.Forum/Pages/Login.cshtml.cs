@@ -134,7 +134,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return Page();
             }
 
-            if (currentUser.UserPassword != Crypter.Phpass.Crypt(Password, currentUser.UserPassword))
+            if (currentUser.UserPassword != Crypter.Phpass.Crypt(Password!, currentUser.UserPassword))
             {
                 ModelState.AddModelError(nameof(LoginErrorMessage), LanguageProvider.Errors[lang, "WRONG_USER_PASS"]);
                 return Page();
@@ -240,7 +240,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }
 
             user.UserNewpasswd = string.Empty;
-            user.UserPassword = Crypter.Phpass.Crypt(PwdResetFirstPassword, Crypter.Phpass.GenerateSalt());
+            user.UserPassword = Crypter.Phpass.Crypt(PwdResetFirstPassword!, Crypter.Phpass.GenerateSalt());
             user.UserPasschg = DateTime.UtcNow.ToUnixTimestamp();
             await _context.SaveChangesAsync();
 
