@@ -86,29 +86,32 @@ namespace PhpbbInDotnet.Forum
                 return;
             }
 
-            if (await _cache.GetAsync<bool?>($"UserMustLogIn_{user.UsernameClean}") == true)
+            var isAllowedToContinueTask = IsAllowedToContinue(user);
+            var connectionTask = _context.GetDbConnectionAsync();
+            await Task.WhenAll(isAllowedToContinueTask, connectionTask);
+
+            if (!await isAllowedToContinueTask)
             {
                 await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 user = _userService.ClaimsPrincipalToAuthenticatedUser(await SignInAnonymousUser(context));
             }
 
-            var connection = await _context.GetDbConnectionAsync();
-
+            var connection = await connectionTask;
             var dbUserTask = connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { user!.UserId });
-            var permissionsTask = _userService.GetPermissions(user.UserId);
+            var permissionsTask = _userService.GetPermissions(user!.UserId);
             var tppTask = GetTopicPostsPage(connection, user.UserId);
             var foesTask = _userService.GetFoes(user.UserId);
             await Task.WhenAll(permissionsTask, tppTask, foesTask);
             var dbUser = await dbUserTask;
 
-            if (dbUser == null)
+            if (dbUser is null)
             {
                 var anonymousClaimsPrincipal = await SignInAnonymousUser(context);
                 user = _userService.ClaimsPrincipalToAuthenticatedUser(anonymousClaimsPrincipal);
             }
 
             var sessionTrackingTimeout = _config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1);
-            if (dbUser != null && !user!.IsAnonymous && (
+            if (dbUser is not null && !user!.IsAnonymous && (
                     await _cache.GetAsync<bool?>($"ReloadUser_{user.UsernameClean}") == true ||
                     DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > sessionTrackingTimeout))
             {
@@ -188,6 +191,17 @@ namespace PhpbbInDotnet.Forum
                     IsPersistent = true,
                 }
             );
+        }
+
+        private async Task<bool> IsAllowedToContinue(AuthenticatedUser user)
+        {
+            if (await _cache.GetAsync<bool>($"UserMustLogIn_{user.UsernameClean}"))
+            {
+                return false;
+            }
+
+            var dbUser = await _context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == user.UserId);
+            return dbUser is not null && dbUser.UserInactiveReason == UserInactiveReason.NotInactive;
         }
     }
 }
