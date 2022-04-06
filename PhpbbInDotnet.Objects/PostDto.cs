@@ -46,7 +46,7 @@ namespace PhpbbInDotnet.Objects
 
         public string? IP { get; set; }
 
-        public ReportDto? Report { get; set; }
+        public IEnumerable<ReportDto>? Reports { get; set; }
 
         public string? AuthorAvatar { get; set; }
 

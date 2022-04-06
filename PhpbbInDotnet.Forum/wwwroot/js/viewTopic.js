@@ -33,11 +33,33 @@
 
     
 
-    showMessageDetails(ip, editTime, timeFormat, editCount, editUser) {
-        let content = '<b>IP:</b> ' + ip + '<br/>';
+    showMessageDetails(ip, editTime, timeFormat, editCount, editUser, encodedReports) {
+        let content = `<b>IP:</b> ${ip} [<a href='./IPLookup?ip=${ip}' target='_blank'>${dictionary.ViewTopic['DO_SEARCH']}</a>]<br/>`;
         if (editCount > 0) {
-            content = content + '<b>' + dictionary.ViewTopic['LAST_CHANGED'] + '</b> ' + new Date(editTime).format(timeFormat) + ', <b>' + dictionary.ViewTopic['CHANGED_BY'] + '</b> ' + editUser + '<br /> ' +
-                '<b>' + dictionary.ViewTopic['TOTAL_CHANGES'] + '</b> ' + editCount + '<br/>';
+            content = content +
+                `<b>${dictionary.ViewTopic['LAST_CHANGED']}</b> ${new Date(editTime).format(timeFormat)} <b>${dictionary.ViewTopic['CHANGED_BY']}</b> ${editUser}<br />
+                 <b>${dictionary.ViewTopic['TOTAL_CHANGES']}</b> ${editCount}<br/>`;
+        }
+        if (encodedReports) {
+            let reports = JSON.parse(atob(encodedReports));
+            if (reports.length) {
+                content = content + `<hr class='BoxSeparator' /><h4>${dictionary.ViewTopic['REPORTS']}</h4>`
+                let first = true;
+                for (const report of reports) {
+                    if (!first) {
+                        content = content + "<hr class='SubtypeSeparator' />";
+                    }
+                    first = false;
+
+                    let statusKey = report.ReportClosed === 1 ? 'REPORT_CLOSED' : 'REPORT_OPEN';
+                    content = content +
+                        `<b>${dictionary.ViewTopic['REPORT_REASON']}:</b> ${he.decode(report.ReasonTitle)} (${he.decode(report.ReasonDescription)})<br />
+                         <b>${dictionary.ViewTopic['REPORT_TIME']}:</b> ${new Date(report.ReportDateTime).format(timeFormat)}<br />
+                         <b>${dictionary.ViewTopic['REPORT_DETAILS']}:</b> ${he.decode(report.Details)}<br />
+                         <b>${dictionary.ViewTopic['REPORTING_USER']}:</b> ${he.decode(report.ReporterUsername)}<br />
+                         <b>${dictionary.ViewTopic['REPORT_STATUS']}:</b> ${he.decode(dictionary.ViewTopic[statusKey])}`;
+                }
+            }
         }
         $('#postInfoContent').html(content);
         showElement('postInfo', null, null, true);

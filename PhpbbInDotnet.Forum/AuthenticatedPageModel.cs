@@ -63,6 +63,39 @@ namespace PhpbbInDotnet.Forum
         public string GetLanguage()
             => _language ??= LanguageProvider.GetValidatedLanguage(GetCurrentUser(), Request);
 
+        public async Task<List<int>> GetUnrestrictedForums(int? forumId = null)
+        {
+            var (tree, _) = await GetForumTree(false, false);
+            var toReturn = new List<int>(tree.Count);
+
+            if ((forumId ?? 0) > 0)
+            {
+                traverse(forumId!.Value);
+            }
+            else
+            {
+                toReturn.AddRange(tree.Where(t => !ForumService.IsNodeRestricted(t)).Select(t => t.ForumId));
+            }
+
+            return toReturn;
+
+            void traverse(int fid)
+            {
+                var node = ForumService.GetTreeNode(tree, fid);
+                if (node != null)
+                {
+                    if (!ForumService.IsNodeRestricted(node))
+                    {
+                        toReturn.Add(fid);
+                    }
+                    foreach (var child in node?.ChildrenList ?? new HashSet<int>())
+                    {
+                        traverse(child);
+                    }
+                }
+            }
+        }
+
         #endregion User
 
         #region Forum for user

@@ -1,6 +1,7 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials.Admin._AdminUsersSummaryPartialModel
 
 @using PhpbbInDotnet.Utilities
+@using System.Web
 
 @inject Languages.LanguageProvider _languageProvider
 
@@ -26,6 +27,10 @@
             <div class="FlexRight PostInputWidth">
                 @Html.Raw(user.UserEmail)
                 &bull;
+                <a href="https://www.google.com/search?q=@HttpUtility.UrlEncode($"\"{user.UserEmail}\"")" target="_blank">
+                    @Html.Raw(_languageProvider.Admin[Model.Language, "EMAIL_LOOKUP"])
+                </a>
+                &bull;
                 <a href="#" onclick="addBannedItem('@user.UserEmail', '')">
                     @Html.Raw(_languageProvider.Admin[Model.Language, "BAN_EMAIL"])
                 </a>
@@ -40,6 +45,10 @@
                 &bull;
                 <a href="https://whatismyipaddress.com/ip/@user.UserIp" target="_blank">
                     @Html.Raw(_languageProvider.Admin[Model.Language, "IP_LOOKUP"])
+                </a>
+                &bull;
+                <a asp-page="IPLookup" asp-route-ip="@user.UserIp" target="_blank">
+                    @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_IP_SEARCH"])
                 </a>
                 &bull;
                 <a href="#" onclick="addBannedItem('', '@user.UserIp')">
