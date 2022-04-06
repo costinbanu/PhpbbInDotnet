@@ -76,13 +76,13 @@ namespace PhpbbInDotnet.Services
         public bool HasPrivateMessages(AuthenticatedUserExpanded user)
             => user.AllowPM && HasPrivateMessagePermissions(user);
 
-        private async Task<PhpbbUsers> GetAnonymousDbUser()
+        public async Task<PhpbbUsers> GetAnonymousDbUser()
         {
             if (_anonymousDbUser != null)
             {
                 return _anonymousDbUser;
             }
-            var connection = await _context.GetDbConnectionAsync();
+            var connection = _context.GetDbConnection();
             _anonymousDbUser = await connection.QuerySingleOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId = Constants.ANONYMOUS_USER_ID });
             return _anonymousDbUser;
         }
@@ -99,7 +99,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<ClaimsPrincipal> DbUserToClaimsPrincipal(PhpbbUsers user)
         {
-            var connection = await _context.GetDbConnectionAsync();
+            var connection = _context.GetDbConnection();
             var groupPropertiesTask = connection.QueryFirstOrDefaultAsync(
                 @"SELECT g.group_edit_time, g.group_user_upload_size
                     FROM phpbb_groups g
@@ -211,19 +211,19 @@ namespace PhpbbInDotnet.Services
 
         public async Task<IEnumerable<PhpbbRanks>> GetRankList()
         {
-            var connection = await _context.GetDbConnectionAsync();
+            var connection = _context.GetDbConnection();
             return await connection.QueryAsync<PhpbbRanks>("SELECT * FROM phpbb_ranks ORDER BY rank_title");
         }
 
         public async Task<IEnumerable<PhpbbGroups>> GetGroupList()
         {
-            var connection = await _context.GetDbConnectionAsync();
+            var connection = _context.GetDbConnection();
             return await connection.QueryAsync<PhpbbGroups>("SELECT * FROM phpbb_groups ORDER BY group_name");
         }
 
         public async Task<PhpbbGroups> GetUserGroup(int userId)
         {
-            var connection = await _context.GetDbConnectionAsync();
+            var connection = _context.GetDbConnection();
             return await connection.QueryFirstOrDefaultAsync<PhpbbGroups> (
                 "SELECT g.* FROM phpbb_groups g " +
                 "JOIN phpbb_user_group ug on g.group_id = ug.group_id " +
@@ -234,7 +234,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<AuthenticatedUser> GetAuthenticatedUserById(int userId)
         {
-            var connection = await _context.GetDbConnectionAsync();
+            var connection = _context.GetDbConnection();
             var usr = await connection.QuerySingleOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
             return DbUserToAuthenticatedUserBase(usr);
         }
@@ -263,7 +263,7 @@ namespace PhpbbInDotnet.Services
                     return (LanguageProvider.Errors[lang, "ON_RECEIVERS_FOE_LIST"], false);
                 }
 
-                var connection = await _context.GetDbConnectionAsync();
+                var connection = _context.GetDbConnection();
 
                 await connection.ExecuteAsync(
                     @"INSERT INTO phpbb_privmsgs (author_id, to_address, bcc_address, message_subject, message_text, message_time) VALUES (@senderId, @to, '', @subject, @text, @time); 
@@ -307,7 +307,7 @@ namespace PhpbbInDotnet.Services
             var lang = GetLanguage();
             try
             {
-                var connection = await _context.GetDbConnectionAsync();
+                var connection = _context.GetDbConnection();
 
                 var rows = await connection.ExecuteAsync(
                     "UPDATE phpbb_privmsgs SET message_subject = @subject, message_text = @text " +
@@ -334,7 +334,7 @@ namespace PhpbbInDotnet.Services
             var lang = GetLanguage();
             try
             {
-                var connection = await _context.GetDbConnectionAsync();
+                var connection = _context.GetDbConnection();
 
                 var rows = await connection.ExecuteAsync(
                     "DELETE m FROM phpbb_privmsgs m JOIN phpbb_privmsgs_to tt ON m.msg_id = tt.msg_id AND tt.pm_unread = 1 WHERE m.msg_id = @messageId; " +
@@ -361,7 +361,7 @@ namespace PhpbbInDotnet.Services
             var lang = GetLanguage();
             try
             {
-                var connection = await _context.GetDbConnectionAsync();
+                var connection = _context.GetDbConnection();
                 var rows = await connection.ExecuteAsync(
                     @"UPDATE phpbb_privmsgs_to
                          SET folder_id = -10
@@ -383,19 +383,19 @@ namespace PhpbbInDotnet.Services
 
         public async Task<int> UnreadPMs(int userId)
         {
-            var connection = await _context.GetDbConnectionAsync();
-            return await connection.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_privmsgs_to WHERE user_id = @userId AND folder_id >= 0 AND pm_unread = 1", new { userId });
+            var connection = _context.GetDbConnection();
+            return await connection.QueryFirstOrDefaultAsync<int>("SELECT count(1) FROM phpbb_privmsgs_to WHERE user_id = @userId AND folder_id >= 0 AND pm_unread = 1", new { userId });
         }
 
         public async Task<HashSet<AuthenticatedUserExpanded.Permissions>> GetPermissions(int userId)
         {
-            var conn = await _context.GetDbConnectionAsync();
+            var conn = _context.GetDbConnection();
             return new HashSet<AuthenticatedUserExpanded.Permissions>(await conn.QueryAsync<AuthenticatedUserExpanded.Permissions>("CALL get_user_permissions(@userId)", new { userId }));
         }
 
         public async Task<HashSet<int>> GetFoes(int userId)
         {
-            var conn = await _context.GetDbConnectionAsync();
+            var conn = _context.GetDbConnection();
             return new HashSet<int>(await conn.QueryAsync<int>(
                 @"SELECT zebra_id
                     FROM phpbb_zebra
@@ -412,7 +412,7 @@ namespace PhpbbInDotnet.Services
                 return _userRoles;
             }
 
-            var connection = await _context.GetDbConnectionAsync();
+            var connection = _context.GetDbConnection();
             
             _userRoles = await connection.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'u_'");
 
@@ -421,7 +421,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<List<KeyValuePair<string, int>>> GetUserMap()
         {
-            var connection = await _context.GetDbConnectionAsync();
+            var connection = _context.GetDbConnection();
             return (
                 await connection.QueryAsync("SELECT username, user_id FROM phpbb_users WHERE user_id <> @id AND user_type <> 2 ORDER BY username", new { id = Constants.ANONYMOUS_USER_ID })
             ).Select(u => KeyValuePair.Create((string)u.username, (int)u.user_id)).ToList();
@@ -434,7 +434,7 @@ namespace PhpbbInDotnet.Services
                 return _modRoles;
             }
 
-            var connection = await _context.GetDbConnectionAsync();
+            var connection = _context.GetDbConnection();
 
             _modRoles = await connection.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'm_'");           
 
@@ -448,7 +448,7 @@ namespace PhpbbInDotnet.Services
                 return _adminRoles;
             }
 
-            var connection = await _context.GetDbConnectionAsync();
+            var connection = _context.GetDbConnection();
 
             _adminRoles = await connection.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'a_'");            
 

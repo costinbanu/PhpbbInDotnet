@@ -28,7 +28,7 @@ namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
             {
                 if (start.HasValue)
                 {
-                    var conn = await _context.GetDbConnectionAsync();
+                    var conn = _context.GetDbConnection();
                     var post = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(
                         "SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time LIMIT @skip, 1",
                         new

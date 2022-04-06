@@ -62,7 +62,7 @@ namespace PhpbbInDotnet.Services
                     actual = new PhpbbForums();
                     isNewForum = true;
                 }
-                actual.ForumName = dto.ForumName;
+                actual!.ForumName = dto.ForumName;
                 actual.ForumDesc = dto.ForumDesc ?? string.Empty;
                 if (dto.HasPassword.HasValue && !dto.HasPassword.Value)
                 {
@@ -93,13 +93,13 @@ namespace PhpbbInDotnet.Services
                 foreach (var idx in dto.UserPermissionToRemove ?? new List<int>())
                 {
                     var (entityId, roleId) = translatePermission(dto.UserForumPermissions?[idx]);
-                    _context.PhpbbAclUsers.Remove(await _context.PhpbbAclUsers.FirstOrDefaultAsync(x => x.UserId == entityId && x.AuthRoleId == roleId && x.ForumId == actual.ForumId));
+                    _context.PhpbbAclUsers.Remove(await _context.PhpbbAclUsers.FirstAsync(x => x.UserId == entityId && x.AuthRoleId == roleId && x.ForumId == actual.ForumId));
                 }
 
                 foreach (var idx in dto.GroupPermissionToRemove ?? new List<int>())
                 {
                     var (entityId, roleId) = translatePermission(dto.GroupForumPermissions?[idx]);
-                    _context.PhpbbAclGroups.Remove(await _context.PhpbbAclGroups.FirstOrDefaultAsync(x => x.GroupId == entityId && x.AuthRoleId == roleId && x.ForumId == actual.ForumId));
+                    _context.PhpbbAclGroups.Remove(await _context.PhpbbAclGroups.FirstAsync(x => x.GroupId == entityId && x.AuthRoleId == roleId && x.ForumId == actual.ForumId));
                 }
 
                 var rolesForAclEntity = new Dictionary<AclEntityType, Dictionary<int, int>>
@@ -110,7 +110,7 @@ namespace PhpbbInDotnet.Services
 
                 await _context.SaveChangesAsync();
 
-                var connection = await _context.GetDbConnectionAsync();
+                var connection = _context.GetDbConnection();
                 var select = @"SELECT t.*
                              FROM {0} t
                              JOIN phpbb_acl_roles r ON t.auth_role_id = r.role_id
@@ -139,7 +139,9 @@ namespace PhpbbInDotnet.Services
                         }
                     }
                 }
+
                 await _operationLogService.LogAdminForumAction(isNewForum ? AdminForumActions.Add : AdminForumActions.Update, adminUserId, actual);
+                
                 return (string.Format(LanguageProvider.Admin[lang, "FORUM_UPDATED_SUCCESSFULLY_FORMAT"], actual.ForumName), true);
 
                 (int entityId, int roleId) translatePermission(string? permission)
@@ -156,8 +158,8 @@ namespace PhpbbInDotnet.Services
                     => (from fp in permissions ?? new List<string>()
                         let item = translatePermission(fp)
                         where item.entityId > 0
-                        select item
-                        ).ToDictionary(key => key.entityId, value => value.roleId);
+                        select item)
+                        .ToDictionary(key => key.entityId, value => value.roleId);
 
                 async Task ReorderChildren(int forumId)
                 {
@@ -182,15 +184,17 @@ namespace PhpbbInDotnet.Services
         }
 
         public async Task<(PhpbbForums Forum, List<PhpbbForums> Children)> ShowForum(int forumId)
-            => (
-                await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == forumId),
-                await (
-                    from f in _context.PhpbbForums
-                    where f.ParentId == forumId
-                    orderby f.LeftId
-                    select f
-                ).ToListAsync()
-            );
+        {
+            var forumTask = _context.PhpbbForums.AsNoTracking().FirstAsync(f => f.ForumId == forumId);
+            var childrenTask = (
+                from f in _context.PhpbbForums
+                where f.ParentId == forumId
+                orderby f.LeftId
+                select f
+            ).ToListAsync();
+            await Task.WhenAll(forumTask, childrenTask);
+            return (await forumTask, await childrenTask);
+        }
 
         public async Task<List<SelectListItem>> FlatForumTreeAsListItem(int parentId, AuthenticatedUserExpanded? user)
         {
@@ -234,7 +238,7 @@ namespace PhpbbInDotnet.Services
         }
 
         public async Task<IEnumerable<ForumPermissions>> GetPermissions(int forumId)
-            => await (await _context.GetDbConnectionAsync()).QueryAsync<ForumPermissions>(
+            => await (_context.GetDbConnection()).QueryAsync<ForumPermissions>(
                 sql: "CALL get_forum_permissions(@forumId);",
                 param: new { forumId }
             );

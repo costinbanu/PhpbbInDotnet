@@ -30,7 +30,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumId = curForum.ForumId;
                 Action = PostingActions.NewForumPost;
                 ReturnUrl = Request.GetEncodedPathAndQuery();
-                var conn = await Context.GetDbConnectionAsync();
+                var conn = Context.GetDbConnection();
                 var draft = conn.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = TopicId ?? 0 });
                 if (draft != null)
                 {
@@ -63,7 +63,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var curAuthor = curPost.PostUsername;
                 if (string.IsNullOrWhiteSpace(curAuthor))
                 {
-                    var conn = await Context.GetDbConnectionAsync();
+                    var conn = Context.GetDbConnection();
                     curAuthor = await conn.QueryFirstOrDefaultAsync<string>("SELECT username FROM phpbb_users WHERE user_id = @posterId", new { curPost.PosterId }) ?? Constants.ANONYMOUS_USER_NAME;
                 }
 
@@ -90,7 +90,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 Action = PostingActions.NewTopic;
                 ReturnUrl = Request.GetEncodedPathAndQuery();
 
-                var conn = await Context.GetDbConnectionAsync();
+                var conn = Context.GetDbConnection();
                 var draft = conn.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = 0 }); 
                 if (draft != null)
                 {
@@ -118,7 +118,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 Action = PostingActions.EditForumPost;
                 ReturnUrl = Request.GetEncodedPathAndQuery();
 
-                var conn = await Context.GetDbConnectionAsync();
+                var conn = Context.GetDbConnection();
                 
                 Attachments = (await conn.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id = @postId ORDER BY attach_id", new { PostId })).AsList();
 
@@ -148,7 +148,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (usr) =>
             {
                 var lang = GetLanguage();
-                var conn = await Context.GetDbConnectionAsync();
+                var conn = Context.GetDbConnection();
                 
                 if ((PostId ?? 0) > 0)
                 {
@@ -212,7 +212,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetEditPrivateMessage()
             => await WithRegisteredUser(async (user) =>
             {
-                var conn = await Context.GetDbConnectionAsync();
+                var conn = Context.GetDbConnection();
 
                 var pm = await conn.QueryFirstOrDefaultAsync<PhpbbPrivmsgs>("SELECT * FROM phpbb_privmsgs WHERE msg_id = @privateMessageId", new { PrivateMessageId });
                 PostText = _writingService.CleanBbTextForDisplay(pm.MessageText, pm.BbcodeUid);
@@ -355,7 +355,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     }
                 }
 
-                var connection = await Context.GetDbConnectionAsync();
+                var connection = Context.GetDbConnection();
                 await connection.ExecuteAsync("DELETE FROM phpbb_attachments WHERE attach_id = @attachId", new { attachment.AttachId });
                 var dummy = Attachments!.Remove(attachment);
                 ShowAttach = Attachments?.Any() == true;
@@ -381,7 +381,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return PageWithError(curForum, nameof(PostText), LanguageProvider.Errors[lang, "POST_TOO_SHORT"]);
                 }
 
-                var conn = await Context.GetDbConnectionAsync();
+                var conn = Context.GetDbConnection();
 
                 var currentPost = Action == PostingActions.EditForumPost ? await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @PostId", new { PostId }) : null;
                 var userId = Action == PostingActions.EditForumPost ? currentPost!.PosterId : user.UserId;
@@ -450,7 +450,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return RedirectToPage("ViewTopic", "byPostId", new { PostId });
                 }
 
-                var post = await (await Context.GetDbConnectionAsync()).QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @PostId", new { PostId });
+                var post = await (Context.GetDbConnection()).QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @PostId", new { PostId });
                 var addedPostId = await UpsertPost(post, user);
 
                 if (addedPostId == null)
@@ -523,7 +523,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return PageWithError(curForum, nameof(PostText), LanguageProvider.Errors[lang, "POST_TOO_SHORT"]);
                 }
 
-                var conn = await Context.GetDbConnectionAsync();
+                var conn = Context.GetDbConnection();
                 var topicId = Action == PostingActions.NewTopic ? 0 : TopicId ?? 0;
                 var draft = conn.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId });
 
@@ -566,7 +566,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     return RedirectToPage("ViewTopic", "byPostId", new { PostId });
                 }
-                var connection = await Context.GetDbConnectionAsync();
+                var connection = Context.GetDbConnection();
 
                 await connection.ExecuteAsync("UPDATE phpbb_topics SET poll_start = 0, poll_length = 0, poll_max_options = 1, poll_title = '', poll_vote_change = 0 WHERE topic_id = @topicId", new { curTopic.TopicId });
 

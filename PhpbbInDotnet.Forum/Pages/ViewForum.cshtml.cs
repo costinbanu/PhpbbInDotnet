@@ -329,7 +329,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostDeleteDrafts()
             => await WithRegisteredUser(async (_) =>
             {
-                var connection = await Context.GetDbConnectionAsync();
+                var connection = Context.GetDbConnection();
                 await connection.ExecuteAsync("DELETE FROM phpbb_drafts WHERE draft_id IN @ids", new { ids = SelectedDrafts?.DefaultIfEmpty() ?? new[] { 0 } });
                 return await OnGetDrafts();
             });

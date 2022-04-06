@@ -176,7 +176,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     var messagesTask = (
                         from pm in Context.PhpbbPrivmsgs.AsNoTracking()
                         where pm.MsgId == MessageId
-                        select pm).FirstOrDefaultAsync();
+                        select pm).FirstAsync();
                     var msgToTask = (
                         from mt in Context.PhpbbPrivmsgsTo.AsNoTracking()
                         where mt.MsgId == MessageId && mt.FolderId >= 0
@@ -187,7 +187,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         let userId = mt.AuthorId != user.UserId ? mt.AuthorId : mt.UserId
                         join u in Context.PhpbbUsers.AsNoTracking()
                         on userId equals u.UserId
-                        select u).FirstOrDefaultAsync();
+                        select u).FirstAsync();
                    
                     await Task.WhenAll(messagesTask, msgToTask, otherUserTask);
 
@@ -254,7 +254,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostMarkAsRead()
             => await WithUserHavingPM(async (user) =>
             {
-                var connection = await Context.GetDbConnectionAsync();
+                var connection = Context.GetDbConnection();
                 await connection.ExecuteAsync("UPDATE phpbb_privmsgs_to SET pm_unread = 0 WHERE msg_id IN @ids AND author_id <> user_id", new { ids = SelectedMessages?.DefaultIfEmpty() ?? new[] { 0 } });
 
                 return await OnGet();

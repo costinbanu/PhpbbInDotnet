@@ -187,7 +187,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return null;
             }
 
-            var connection = await Context.GetDbConnectionAsync();
+            var connection = Context.GetDbConnection();
 
             var curTopic = Action != PostingActions.NewTopic ? await connection.QuerySingleOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { TopicId }) : null;
             var canCreatePoll = Action == PostingActions.NewTopic || (Action == PostingActions.EditForumPost && (curTopic?.TopicFirstPostId ?? 0) == PostId);
@@ -341,7 +341,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (TopicId > 0 && LastPostTime > 0 && Action != PostingActions.EditForumPost)
             {
-                var connection = await Context.GetDbConnectionAsync();
+                var connection = Context.GetDbConnection();
                 var times = await connection.QueryFirstOrDefaultAsync(
                     @"SELECT p.post_time, p.post_edit_time
                         FROM phpbb_posts p
@@ -360,7 +360,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 else
                 {
-                    ModelState[nameof(LastPostTime)].Errors.Clear();
+                    ModelState[nameof(LastPostTime)]?.Errors.Clear();
                 }
             }
             return await toDo();
@@ -409,7 +409,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var cachedAttachmentIds = await attachmentsTask;
             if (Attachments?.Any() != true && cachedAttachmentIds?.Any() == true)
             {
-                var conn = await Context.GetDbConnectionAsync();
+                var conn = Context.GetDbConnection();
                 Attachments = (await conn.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE attach_id IN @cachedAttachmentIds", new { cachedAttachmentIds }))?.AsList();
             }
         }

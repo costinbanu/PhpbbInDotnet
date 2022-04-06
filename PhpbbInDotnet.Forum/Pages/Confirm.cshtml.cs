@@ -1,5 +1,6 @@
 ﻿using LazyCache;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Forum.Pages.CustomPartials.Email;
@@ -84,7 +85,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task OnGetConfirmEmail(string code, string username)
         {
-            var user = await Context.PhpbbUsers.FirstOrDefaultAsync(u =>
+            var user = Context.PhpbbUsers.FirstOrDefault(u =>
                 u.UsernameClean == username &&
                 u.UserActkey == code &&
                 (u.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed || u.UserInactiveReason == UserInactiveReason.ChangedEmailNotConfirmed)

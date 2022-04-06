@@ -13,6 +13,7 @@ using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
+using SixLabors.ImageSharp;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -137,7 +138,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return RedirectToPage("Error", new { isUnauthorised = true });
             }
 
-            var dbUser = await Context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == CurrentUser!.UserId);
+            var dbUser = Context.PhpbbUsers.FirstOrDefault(u => u.UserId == CurrentUser!.UserId);
             if (dbUser == null)
             {
                 return RedirectToPage("Error", new { isNotFound = true });
@@ -313,7 +314,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     var maxSize = _config.GetObject<ImageSize>("AvatarMaxSize");
                     using var stream = Avatar.OpenReadStream();
-                    using var bmp = new Bitmap(stream);
+                    using var bmp = Image.Load(stream);
                     stream.Seek(0, SeekOrigin.Begin);
                     if (bmp.Width > maxSize.Width || bmp.Height > maxSize.Height)
                     {
@@ -349,7 +350,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }
 
             var userRoles = (await UserService.GetUserRolesLazy()).Select(r => r.RoleId);
-            var dbAclRole = await Context.PhpbbAclUsers.FirstOrDefaultAsync(r => r.UserId == dbUser.UserId && userRoles.Contains(r.AuthRoleId));
+            var dbAclRole = Context.PhpbbAclUsers.FirstOrDefault(r => r.UserId == dbUser.UserId && userRoles.Contains(r.AuthRoleId));
             if (dbAclRole != null && dbAclRole.AuthRoleId != (AclRole ?? -1))
             {
                 Context.PhpbbAclUsers.Remove(dbAclRole);
@@ -367,7 +368,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 userMustLogIn = true;
             }
 
-            var dbUserGroup = await Context.PhpbbUserGroup.FirstOrDefaultAsync(g => g.UserId == dbUser.UserId);
+            var dbUserGroup = Context.PhpbbUserGroup.FirstOrDefault(g => g.UserId == dbUser.UserId);
             if (dbUserGroup == null)
             {
                 if (dbUser.GroupId == 0)
@@ -399,13 +400,13 @@ namespace PhpbbInDotnet.Forum.Pages
                 var group = await Context.PhpbbGroups.AsNoTracking().FirstOrDefaultAsync(g => g.GroupId == GroupId.Value);
                 foreach (var f in Context.PhpbbForums.Where(f => f.ForumLastPosterId == dbUser.UserId))
                 {
-                    f.ForumLastPosterColour = group.GroupColour;
+                    f.ForumLastPosterColour = group!.GroupColour;
                 }
                 foreach (var t in Context.PhpbbTopics.Where(t => t.TopicLastPosterId == dbUser.UserId))
                 {
-                    t.TopicLastPosterColour = group.GroupColour;
+                    t.TopicLastPosterColour = group!.GroupColour;
                 }
-                dbUser.UserColour = group.GroupColour;
+                dbUser.UserColour = group!.GroupColour;
                 dbUser.GroupId = group.GroupId;
                 userMustLogIn = true;
             }
@@ -467,11 +468,11 @@ namespace PhpbbInDotnet.Forum.Pages
                     return await OnGet();
                 }
                 var cur = await Context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
-                var connection = await Context.GetDbConnectionAsync();
+                var connection = Context.GetDbConnection();
                 await connection.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;" +
                     "INSERT INTO phpbb_zebra (user_id, zebra_id, friend, foe) VALUES (@userId, @otherId, 0, 1)",
-                    new { user.UserId, otherId = cur.UserId }
+                    new { user.UserId, otherId = cur!.UserId }
                 );
                 ReloadCurrentUser();
                 Mode = UserPageMode.AddFoe;
@@ -489,10 +490,10 @@ namespace PhpbbInDotnet.Forum.Pages
                     return await OnGet();
                 }
                 var cur = await Context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
-                var connection = await Context.GetDbConnectionAsync();
+                var connection = Context.GetDbConnection();
                 await connection.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;",
-                    new { user.UserId, otherId = cur.UserId }
+                    new { user.UserId, otherId = cur!.UserId }
                 );
                 ReloadCurrentUser();
                 Mode = UserPageMode.RemoveFoe;
@@ -506,7 +507,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     return RedirectToPage("Error", new { isUnauthorised = true });
                 }
-                var connection = await Context.GetDbConnectionAsync();
+                var connection = Context.GetDbConnection();
                 await connection.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id IN @otherIds;",
                     new { user.UserId, otherIds = SelectedFoes!.DefaultIfEmpty() }
@@ -537,7 +538,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<List<PhpbbLang>> GetLanguages()
             => await Cache.GetOrAddAsync(
                 key: nameof(PhpbbLang),
-                addItemFactory: async () => (await (await Context.GetDbConnectionAsync()).QueryAsync<PhpbbLang>("SELECT * FROM phpbb_lang")).AsList(),
+                addItemFactory: async () => (await (Context.GetDbConnection()).QueryAsync<PhpbbLang>("SELECT * FROM phpbb_lang")).AsList(),
                 expires: DateTimeOffset.UtcNow.AddMinutes(DB_CACHE_EXPIRATION_MINUTES)
             );
 
@@ -558,7 +559,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 from j in joined
                 select j
             ).ToListAsync();
-            var attachTask = (await Context.GetDbConnectionAsync()).QueryFirstOrDefaultAsync(
+            var attachTask = (Context.GetDbConnection()).QueryFirstOrDefaultAsync(
                 "SELECT sum(a.filesize) as size, count(a.attach_id) as cnt " +
                 "FROM phpbb_attachments a " +
                 "JOIN phpbb_posts p ON a.post_msg_id = p.post_id " +

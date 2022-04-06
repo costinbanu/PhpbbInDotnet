@@ -115,7 +115,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
-            var connection = await _context.GetDbConnectionAsync();
+            var connection = _context.GetDbConnection();
 
             var user = await connection.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE username_clean = @username", new { username = _utils.CleanString(UserName) });
             var lang = LanguageProvider.GetValidatedLanguage(null, Request);
@@ -134,7 +134,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return Page();
             }
 
-            if (currentUser.UserPassword != Crypter.Phpass.Crypt(Password, currentUser.UserPassword))
+            if (currentUser.UserPassword != Crypter.Phpass.Crypt(Password!, currentUser.UserPassword))
             {
                 ModelState.AddModelError(nameof(LoginErrorMessage), LanguageProvider.Errors[lang, "WRONG_USER_PASS"]);
                 return Page();
@@ -161,7 +161,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPostResetPassword()
         {
-            var user = await _context.PhpbbUsers.FirstOrDefaultAsync(
+            var user = _context.PhpbbUsers.FirstOrDefault(
                 x => x.UsernameClean == _utils.CleanString(UserNameForPwdReset) && 
                 x.UserEmailHash == _utils.CalculateCrc32Hash(EmailForPwdReset!)
             );
@@ -231,7 +231,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return Page();
             }
 
-            var user = await _context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == UserId);
+            var user = _context.PhpbbUsers.FirstOrDefault(u => u.UserId == UserId);
             if (user == null || ResetPasswordCode != await _utils.DecryptAES(user.UserNewpasswd, Init))
             {
                 ModelState.AddModelError(nameof(PwdResetErrorMessage), LanguageProvider.Errors[lang, "CONFIRM_ERROR"]);
@@ -240,7 +240,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }
 
             user.UserNewpasswd = string.Empty;
-            user.UserPassword = Crypter.Phpass.Crypt(PwdResetFirstPassword, Crypter.Phpass.GenerateSalt());
+            user.UserPassword = Crypter.Phpass.Crypt(PwdResetFirstPassword!, Crypter.Phpass.GenerateSalt());
             user.UserPasschg = DateTime.UtcNow.ToUnixTimestamp();
             await _context.SaveChangesAsync();
 

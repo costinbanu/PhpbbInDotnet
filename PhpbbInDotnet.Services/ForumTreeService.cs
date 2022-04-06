@@ -50,7 +50,7 @@ namespace PhpbbInDotnet.Services
             }
 
             var tracking = fetchUnreadData ? await GetForumTracking(user?.UserId ?? Constants.ANONYMOUS_USER_ID, forceRefresh) : null;
-            var connection = await _context.GetDbConnectionAsync();
+            var connection = _context.GetDbConnection();
 
             var treeTask = GetForumTree(connection);
             var forumTopicCountTask = GetForumTopicCount(connection);
@@ -131,7 +131,7 @@ namespace PhpbbInDotnet.Services
             }
 
             var dbResults = Enumerable.Empty<ExtendedTracking>();
-            var connection = await _context.GetDbConnectionAsync();
+            var connection = _context.GetDbConnection();
             try
             {
                 dbResults = await connection.QueryAsync<ExtendedTracking>("CALL `forum`.`get_post_tracking`(@userId);", new { userId });
