@@ -60,7 +60,7 @@ namespace PhpbbInDotnet.Services
             {
                 try
                 {
-                    var conn = await _context.GetDbConnectionAsync();
+                    var conn = _context.GetDbConnection();
                     await conn.ExecuteAsync(
                         "UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE attach_id IN @ids",
                         new { ids }
@@ -134,7 +134,7 @@ namespace PhpbbInDotnet.Services
             var options = Enumerable.Empty<PhpbbPollOptions>();
             var voters = Enumerable.Empty<PollOptionVoter>();
 
-            var connection = await _context.GetDbConnectionAsync();
+            var connection = _context.GetDbConnection();
 
             options = await connection.QueryAsync<PhpbbPollOptions>("SELECT * FROM phpbb_poll_options WHERE topic_id = @TopicId ORDER BY poll_option_id", new { _currentTopic.TopicId });
             if (options.Any())
@@ -174,7 +174,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task CascadePostEdit(PhpbbPosts added)
         {
-            var conn = await _context.GetDbConnectionAsync();
+            var conn = _context.GetDbConnection();
 
             var curTopic = await conn.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { added.TopicId });
             var curForum = await conn.QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { curTopic.ForumId });
@@ -198,7 +198,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task CascadePostAdd(PhpbbPosts added, bool ignoreTopic)
         {
-            var conn = await _context.GetDbConnectionAsync();
+            var conn = _context.GetDbConnection();
 
             var curTopic = await conn.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { added.TopicId });
             var curForum = await conn.QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { curTopic.ForumId });
@@ -221,7 +221,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task CascadePostDelete(PhpbbPosts deleted, bool ignoreTopic, bool ignoreAttachmentsAndReports)
         {
-            var conn = await _context.GetDbConnectionAsync();
+            var conn = _context.GetDbConnection();
             var curTopic = await _context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == deleted.TopicId);
 
             if (curTopic != null && await _context.PhpbbPosts.AsNoTracking().AnyAsync(p => p.TopicId == deleted.TopicId))
@@ -314,7 +314,7 @@ namespace PhpbbInDotnet.Services
                 topic.TopicLastPosterId = post.PosterId;
                 topic.TopicLastPosterName = author.UserId == Constants.ANONYMOUS_USER_ID ? post.PostUsername : author.Username!;
 
-                var conn = await _context.GetDbConnectionAsync();
+                var conn = _context.GetDbConnection();
                 await conn.ExecuteAsync(
                     @"UPDATE phpbb_topics 
                          SET topic_last_post_id = @TopicLastPostId, 
@@ -340,7 +340,7 @@ namespace PhpbbInDotnet.Services
                 forum.ForumLastPosterId = post.PosterId;
                 forum.ForumLastPosterName = author.UserId == Constants.ANONYMOUS_USER_ID ? post.PostUsername : author.Username!;
 
-                var conn = await _context.GetDbConnectionAsync();
+                var conn = _context.GetDbConnection();
 
                 await conn.ExecuteAsync(
                     @"UPDATE phpbb_forums 
@@ -358,7 +358,7 @@ namespace PhpbbInDotnet.Services
 
         private async Task SetTopicFirstPost(PhpbbTopics topic, PhpbbPosts post, AuthenticatedUser author, bool setTopicTitle, bool goForward = false)
         {
-            var conn = await _context.GetDbConnectionAsync();
+            var conn = _context.GetDbConnection();
 
             var curFirstPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @TopicFirstPostId", new { topic.TopicFirstPostId });
             if (topic.TopicFirstPostId == 0 || goForward || (curFirstPost != null && curFirstPost.PostTime >= post.PostTime))

@@ -44,7 +44,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             }
 
-            var connection = await Context.GetDbConnectionAsync();
+            var connection = Context.GetDbConnection();
 
             var file = await connection.QuerySingleOrDefaultAsync<AttachmentPreviewDto>(
                 @"SELECT a.physical_filename, a.real_filename, a.mimetype, p.forum_id, p.post_id 
@@ -91,7 +91,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             }
 
-            var connection = await Context.GetDbConnectionAsync();
+            var connection = Context.GetDbConnection();
             file = await connection.QueryFirstOrDefaultAsync<string>("SELECT user_avatar FROM phpbb_users WHERE user_id = @userId", new { userId });
             if (file == null)
             {

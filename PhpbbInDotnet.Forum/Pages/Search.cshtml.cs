@@ -84,7 +84,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 TopicId = int.TryParse(query["topicid"], out var i) ? i as int? : null;
             }
 
-            var connection = await Context.GetDbConnectionAsync();
+            var connection = Context.GetDbConnection();
 
             Users = await UserService.GetUserMap();
 

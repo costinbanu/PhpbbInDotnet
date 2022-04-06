@@ -113,7 +113,7 @@ namespace PhpbbInDotnet.Services
         public async Task LogModeratorTopicAction(ModeratorTopicActions action, int modUserId, int topicId, string? additionalData = null)
             => await WithErrorHandling(async () =>
             {
-                var topic = await (await _context.GetDbConnectionAsync()).QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
+                var topic = await (_context.GetDbConnection()).QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
                 if (topic != null)
                 {
                     await Log(_utils.EnumString(action), $"Topic Id: {topicId}, Topic title: {topic.TopicTitle}, Additional data: {additionalData}", modUserId, OperationLogType.Moderator, topic.ForumId, topicId);
@@ -123,7 +123,7 @@ namespace PhpbbInDotnet.Services
         public async Task LogModeratorPostAction(ModeratorPostActions action, int modUserId, int postId, string? additionalData = null)
             => await WithErrorHandling(async () =>
             {
-                var post = await (await _context.GetDbConnectionAsync()).QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId });
+                var post = await (_context.GetDbConnection()).QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId });
                 if (post != null)
                 { 
                     await LogModeratorPostAction(action, modUserId, post, additionalData); 
@@ -140,7 +140,7 @@ namespace PhpbbInDotnet.Services
 
         private async Task Log(string action, string logData, int userId, OperationLogType operationType, int forumId = 0, int topicId = 0)
         {
-            await (await _context.GetDbConnectionAsync()).ExecuteAsync(
+            await (_context.GetDbConnection()).ExecuteAsync(
                 "INSERT INTO phpbb_log (user_id, forum_id, topic_id, log_data, log_ip, log_operation, log_time, log_type) " +
                 "VALUES (@userId, @forumId, @topicId, @logData, @logIp, @logOperation, @logTime, @logType)",
                 new

@@ -136,8 +136,6 @@ namespace PhpbbInDotnet.Services
 
         private async Task ResyncForumsAndTopics(ForumDbContext dbContext, CancellationToken stoppingToken)
         {
-            var conn = await dbContext.GetDbConnectionAsync();
-
             var postsWithWrongForumId = await (
                 from p in dbContext.PhpbbPosts.AsNoTracking()
 
@@ -165,6 +163,7 @@ namespace PhpbbInDotnet.Services
 
             await dbContext.SaveChangesAsync(CancellationToken.None);
 
+            var conn = dbContext.GetDbConnection();
             var forumsHavingWrongLastPostTask = conn.QueryAsync<PhpbbForums, PhpbbPosts, (PhpbbForums Forum, PhpbbPosts Post)>(
                 sql: @"WITH maxes AS (
 	                    SELECT forum_id, MAX(post_time) AS post_time

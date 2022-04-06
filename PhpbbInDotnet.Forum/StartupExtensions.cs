@@ -76,11 +76,12 @@ namespace PhpbbInDotnet.Forum
                     o.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
                 });
 
-            if (environment.IsDevelopment() && Debugger.IsAttached)
+#if debug
+            if (environment.IsDevelopment())
             {
                 builder.AddRazorRuntimeCompilation();
             }
-
+#endif
             services.Configure<IISServerOptions>(options =>
             {
                 options.AutomaticAuthentication = false;

@@ -172,7 +172,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     try
                     {
-                        var connection = await Context.GetDbConnectionAsync();
+                        var connection = Context.GetDbConnection();
                         await connection.ExecuteAsync(
                             "UPDATE phpbb_reports SET report_closed = 1 WHERE report_id IN @ids",
                             new { ids = SelectedReports ?? new[] { 0 } }
@@ -386,7 +386,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 toAdd.PollMaxOptions = (byte)dto.Poll.PollMaxOptions;
                 toAdd.PollVoteChange = dto.Poll.VoteCanBeChanged.ToByte();
 
-                var conn = await Context.GetDbConnectionAsync();
+                var conn = Context.GetDbConnection();
                 await conn.ExecuteAsync(
                     "INSERT INTO phpbb_poll_options (poll_option_id, poll_option_text, topic_id) " +
                     "VALUES (@pollOptionId, @pollOptionText, @topicId)", 

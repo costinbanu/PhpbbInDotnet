@@ -110,7 +110,7 @@ namespace PhpbbInDotnet.Services
 
                 await _context.SaveChangesAsync();
 
-                var connection = await _context.GetDbConnectionAsync();
+                var connection = _context.GetDbConnection();
                 var select = @"SELECT t.*
                              FROM {0} t
                              JOIN phpbb_acl_roles r ON t.auth_role_id = r.role_id
@@ -238,7 +238,7 @@ namespace PhpbbInDotnet.Services
         }
 
         public async Task<IEnumerable<ForumPermissions>> GetPermissions(int forumId)
-            => await (await _context.GetDbConnectionAsync()).QueryAsync<ForumPermissions>(
+            => await (_context.GetDbConnection()).QueryAsync<ForumPermissions>(
                 sql: "CALL get_forum_permissions(@forumId);",
                 param: new { forumId }
             );
