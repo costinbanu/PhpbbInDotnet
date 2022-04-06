@@ -159,7 +159,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostVote(int topicId, int[] votes, string queryString)
             => await WithRegisteredUser(user => WithValidTopic(topicId, async (_, topic) =>
             {
-                var conn = await Context.GetDbConnectionAsync();
+                var conn = Context.GetDbConnection();
                 
                 var existingVotes = (await conn.QueryAsync<PhpbbPollVotes>("SELECT * FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @UserId", new { topicId, user.UserId })).AsList();
                 if (existingVotes.Count > 0 && topic.PollVoteChange == 0)
@@ -274,7 +274,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return RedirectToPage("Error", new { isUnauthorised = true });
                 }
 
-                var conn = await Context.GetDbConnectionAsync();
+                var conn = Context.GetDbConnection();
 
                 var toDelete = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId = postIds[0] });
                 if (toDelete == null)
@@ -313,7 +313,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostReportMessage(int? reportPostId, short? reportReasonId, string reportDetails)
             => await WithRegisteredUser((user) => WithValidPost(reportPostId ?? 0, async (_, _, _) =>
             {
-                var conn = await Context.GetDbConnectionAsync();
+                var conn = Context.GetDbConnection();
                 await conn.ExecuteAsync(
                     "INSERT INTO phpbb_reports (post_id, user_id, reason_id, report_text, report_time, report_closed) " +
                     "VALUES (@PostId, @UserId, @ReasonId, @ReportText, @ReportTime, 0)",
@@ -350,7 +350,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     PostId = reportPostId;
                 }
 
-                var conn = await Context.GetDbConnectionAsync();
+                var conn = Context.GetDbConnection();
                 await conn.ExecuteAsync(
                     "UPDATE phpbb_reports SET report_closed = 1 WHERE report_id = @reportId;",
                     new { reportId }
@@ -521,7 +521,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task<(int? LatestSelected, int? NextRemaining)> GetSelectedAndNextRemainingPostIds(params int[] idsToInclude)
         {
-            var conn = await Context.GetDbConnectionAsync();
+            var conn = Context.GetDbConnection();
             
 
             var latestSelectedPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(

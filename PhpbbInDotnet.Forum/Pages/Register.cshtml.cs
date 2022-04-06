@@ -121,7 +121,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return PageWithError(nameof(RecaptchaResponse), LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
             }
 
-            var conn = await _context.GetDbConnectionAsync();
+            var conn = _context.GetDbConnection();
 
             var checkBanlist = await conn.QueryAsync(
                 @"SELECT @email LIKE LOWER(REPLACE(REPLACE(ban_email, '*', '%'), '?', '_')) AS Email,
@@ -162,7 +162,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 GroupId = 2,
                 UserEmail = Email,
                 UserEmailHash = _utils.CalculateCrc32Hash(Email),
-                UserPassword = Crypter.Phpass.Crypt(Password, Crypter.Phpass.GenerateSalt()),
+                UserPassword = Crypter.Phpass.Crypt(Password!, Crypter.Phpass.GenerateSalt()),
                 UserInactiveTime = now,
                 UserInactiveReason = UserInactiveReason.NewlyRegisteredNotConfirmed,
                 UserActkey = registrationCode,

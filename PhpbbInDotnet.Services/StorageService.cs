@@ -59,7 +59,7 @@ namespace PhpbbInDotnet.Services
             var succeeded = new List<PhpbbAttachments>();
             var failed = new List<string>();
 
-            var conn = await _context.GetDbConnectionAsync();
+            var conn = _context.GetDbConnection();
 
             foreach (var file in attachedFiles)
             {

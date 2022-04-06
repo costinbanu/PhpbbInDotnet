@@ -36,7 +36,7 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                var conn = await _context.GetDbConnectionAsync();
+                var conn = _context.GetDbConnection();
                 var rows = await conn.ExecuteAsync("UPDATE phpbb_topics SET topic_type = @topicType WHERE topic_id = @topicId", new { topicType, topicId });
 
                 if (rows == 1)
@@ -61,7 +61,7 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                var conn = await _context.GetDbConnectionAsync();
+                var conn = _context.GetDbConnection();
                 
                 var topicRows = await conn.ExecuteAsync(
                     "UPDATE phpbb_topics SET forum_id = @destinationForumId WHERE topic_id = @topicID AND EXISTS(SELECT 1 FROM phpbb_forums WHERE forum_id = @destinationForumId)",
@@ -101,7 +101,7 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                var conn = await _context.GetDbConnectionAsync();
+                var conn = _context.GetDbConnection();
                 
                 var rows = await conn.ExecuteAsync("UPDATE phpbb_topics SET topic_status = @status WHERE topic_id = @topicId", new { status = @lock.ToByte(), topicId });
 
@@ -124,7 +124,7 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                var conn = await _context.GetDbConnectionAsync();
+                var conn = _context.GetDbConnection();
                 var posts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId", new { topicId })).AsList();
                 if (!posts.Any())
                 {
@@ -197,7 +197,7 @@ namespace PhpbbInDotnet.Services
                     return (LanguageProvider.Moderator[GetLanguage(), "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
 
-                var conn = await _context.GetDbConnectionAsync();
+                var conn = _context.GetDbConnection();
 
                 var posts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
 
@@ -247,7 +247,7 @@ namespace PhpbbInDotnet.Services
                     return (LanguageProvider.Moderator[GetLanguage(), "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
 
-                var conn = await _context.GetDbConnectionAsync();
+                var conn = _context.GetDbConnection();
 
                 var posts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
                 if (posts.Count != postIds.Length || posts.Select(p => p.TopicId).Distinct().Count() != 1)
@@ -292,7 +292,7 @@ namespace PhpbbInDotnet.Services
                     return (LanguageProvider.Moderator[lang, "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
 
-                var conn = await _context.GetDbConnectionAsync();
+                var conn = _context.GetDbConnection();
                 var posts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
                 if (posts.Count != postIds.Length || posts.Select(p => p.TopicId).Distinct().Count() != 1)
                 {
@@ -313,7 +313,7 @@ namespace PhpbbInDotnet.Services
         private async Task DeletePostsCore(List<PhpbbPosts> posts, OperationLogDto logDto, bool shouldLog)
         {
             var lang = GetLanguage();
-            var conn = await _context.GetDbConnectionAsync();
+            var conn = _context.GetDbConnection();
             var postIds = posts.Select(p => p.PostId).ToList();
             var attachments = (await conn.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id IN @postIds", new { postIds })).AsList();
             await Task.WhenAll(
@@ -414,7 +414,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<List<ReportDto>> GetReportedMessages(int forumId)
         {
-            var connection = await _context.GetDbConnectionAsync();
+            var connection = _context.GetDbConnection();
             return (await connection.QueryAsync<ReportDto>(
                 @"SELECT r.report_id AS id, 
 	                   rr.reason_title, 

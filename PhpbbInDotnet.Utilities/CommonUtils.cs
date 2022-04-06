@@ -105,7 +105,7 @@ namespace PhpbbInDotnet.Utilities
             var iv = Guid.NewGuid();
             key ??= GetEncryptionKey();
 
-            using (var aes = new AesCryptoServiceProvider())
+            using (var aes = Aes.Create())
             {
                 aes.Key = key;
                 aes.IV = iv.ToByteArray();
@@ -132,7 +132,7 @@ namespace PhpbbInDotnet.Utilities
             byte[] cipher = Convert.FromBase64String(encryptedText);
             key ??= GetEncryptionKey();
 
-            using (AesCryptoServiceProvider aes = new())
+            using (var aes = Aes.Create())
             {
                 aes.Key = key;
                 aes.IV = iv.ToByteArray();

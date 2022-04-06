@@ -139,7 +139,7 @@ namespace PhpbbInDotnet.Services
                 _context.PhpbbForumsTrack.RemoveRange(_context.PhpbbForumsTrack.Where(u => u.UserId == userId));
                 _context.PhpbbForumsWatch.RemoveRange(_context.PhpbbForumsWatch.Where(u => u.UserId == userId));
                 _context.PhpbbLog.RemoveRange(_context.PhpbbLog.Where(u => u.UserId == userId));
-                await (await _context.GetDbConnectionAsync()).ExecuteAsync("DELETE FROM phpbb_poll_votes WHERE vote_user_id = @userId", new { userId });
+                await (_context.GetDbConnection()).ExecuteAsync("DELETE FROM phpbb_poll_votes WHERE vote_user_id = @userId", new { userId });
                 _context.PhpbbPrivmsgsTo.RemoveRange(_context.PhpbbPrivmsgsTo.Where(u => u.UserId == userId));
                 _context.PhpbbReports.RemoveRange(_context.PhpbbReports.Where(u => u.UserId == userId));
                 (await _context.PhpbbTopics.Where(t => t.TopicLastPosterId == userId).ToListAsync()).ForEach(t =>
@@ -410,7 +410,7 @@ namespace PhpbbInDotnet.Services
                 }
 
                 AdminRankActions action;
-                PhpbbRanks actual;
+                PhpbbRanks? actual;
                 if ((rankId ?? 0) == 0)
                 {
                     actual = new PhpbbRanks
@@ -424,7 +424,7 @@ namespace PhpbbInDotnet.Services
                 else if (deleteRank ?? false)
                 {
                     actual = await _context.PhpbbRanks.FirstOrDefaultAsync(x => x.RankId == rankId);
-                    if (actual == null)
+                    if (actual is null)
                     {
                         return (string.Format(LanguageProvider.Admin[lang, "RANK_DOESNT_EXIST_FORMAT"], rankId), false);
                     }
@@ -460,7 +460,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<List<UpsertGroupDto>> GetGroups()
             => (
-                await (await _context.GetDbConnectionAsync()).QueryAsync<UpsertGroupDto>(
+                await (_context.GetDbConnection()).QueryAsync<UpsertGroupDto>(
                     @"SELECT g.group_id AS id, 
                              g.group_name AS `name`,
                              g.group_desc AS `desc`,
@@ -635,7 +635,7 @@ namespace PhpbbInDotnet.Services
             var lang = GetLanguage();
             try
             {
-                var conn = await _context.GetDbConnectionAsync();
+                var conn = _context.GetDbConnection();
                 var indexHash = new HashSet<int>(indexesToRemove);
                 var exceptions = new List<Exception>();
                 for (var i = 0; i < banlist.Count; i++)

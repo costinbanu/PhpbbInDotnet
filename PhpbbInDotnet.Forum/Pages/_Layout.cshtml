@@ -10,6 +10,7 @@
 @inject Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor
 @inject Services.StatisticsService _statisticsService
 @{
+    #nullable enable
     var currentUser = (AuthenticatedUserExpanded?)Context.Items[nameof(AuthenticatedUserExpanded)];
     var css = currentUser?.Style;
     if (string.IsNullOrWhiteSpace(css))

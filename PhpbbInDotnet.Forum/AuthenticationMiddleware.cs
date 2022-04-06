@@ -4,6 +4,7 @@ using LazyCache;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Net.Http.Headers;
 using PhpbbInDotnet.Database;
@@ -14,7 +15,6 @@ using PhpbbInDotnet.Utilities;
 using Serilog;
 using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -86,23 +86,17 @@ namespace PhpbbInDotnet.Forum
                 return;
             }
 
-            var isAllowedToContinueTask = IsAllowedToContinue(user);
-            var connectionTask = _context.GetDbConnectionAsync();
-            await Task.WhenAll(isAllowedToContinueTask, connectionTask);
-
-            if (!await isAllowedToContinueTask)
+            var (isAllowed, dbUser) = await GetDbUserOrAnonymousIfNotAllowed(user);
+            if (!isAllowed)
             {
                 await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                 user = _userService.ClaimsPrincipalToAuthenticatedUser(await SignInAnonymousUser(context));
             }
 
-            var connection = await connectionTask;
-            var dbUserTask = connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { user!.UserId });
             var permissionsTask = _userService.GetPermissions(user!.UserId);
-            var tppTask = GetTopicPostsPage(connection, user.UserId);
+            var tppTask = GetTopicPostsPage(user.UserId);
             var foesTask = _userService.GetFoes(user.UserId);
             await Task.WhenAll(permissionsTask, tppTask, foesTask);
-            var dbUser = await dbUserTask;
 
             if (dbUser is null)
             {
@@ -118,7 +112,7 @@ namespace PhpbbInDotnet.Forum
                 var claimsPrincipal = await _userService.DbUserToClaimsPrincipal(dbUser);
                 await Task.WhenAll(
                     SignIn(context, claimsPrincipal),
-                    connection.ExecuteAsync(
+                    _context.GetDbConnection().ExecuteAsync(
                         "UPDATE phpbb_users SET user_lastvisit = @now WHERE user_id = @userId",
                         new { now = DateTime.UtcNow.ToUnixTimestamp(), user.UserId }
                     )
@@ -160,15 +154,6 @@ namespace PhpbbInDotnet.Forum
             }
 
             await next(context);
-
-            static async Task<Dictionary<int, int>> GetTopicPostsPage(DbConnection conn, int userId)
-                => (await conn.QueryAsync(
-                        @"SELECT topic_id, post_no
-	                        FROM phpbb_user_topic_post_number
-	                       WHERE user_id = @user_id
-	                       GROUP BY topic_id;",
-                        new { userId }
-                    )).ToDictionary(x => checked((int)x.topic_id), y => checked((int)y.post_no));
         }
 
         private async Task<ClaimsPrincipal> SignInAnonymousUser(HttpContext context)
@@ -193,15 +178,31 @@ namespace PhpbbInDotnet.Forum
             );
         }
 
-        private async Task<bool> IsAllowedToContinue(AuthenticatedUser user)
+        async Task<Dictionary<int, int>> GetTopicPostsPage(int userId)
+        {
+            var results = await _context.GetDbConnection().QueryAsync(
+                @"SELECT topic_id, post_no
+	                    FROM phpbb_user_topic_post_number
+	                    WHERE user_id = @user_id
+	                    GROUP BY topic_id;",
+                new { userId });
+            return results.ToDictionary(x => checked((int)x.topic_id), y => checked((int)y.post_no));
+        }
+
+        async Task<(bool isAllowed, PhpbbUsers dbUser)> GetDbUserOrAnonymousIfNotAllowed(AuthenticatedUser user)
         {
             if (await _cache.GetAsync<bool>($"UserMustLogIn_{user.UsernameClean}"))
             {
-                return false;
+                return (false, await _userService.GetAnonymousDbUser());
             }
 
             var dbUser = await _context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == user.UserId);
-            return dbUser is not null && dbUser.UserInactiveReason == UserInactiveReason.NotInactive;
+            if (dbUser is not null && dbUser.UserInactiveReason == UserInactiveReason.NotInactive)
+            {
+                return (true, dbUser);
+            }
+
+            return (false, await _userService.GetAnonymousDbUser());
         }
     }
 }

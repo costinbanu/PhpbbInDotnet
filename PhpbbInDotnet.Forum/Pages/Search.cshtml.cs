@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using LazyCache;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Languages;
@@ -83,7 +84,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 TopicId = int.TryParse(query["topicid"], out var i) ? i as int? : null;
             }
 
-            var connection = await Context.GetDbConnectionAsync();
+            var connection = Context.GetDbConnection();
 
             Users = await UserService.GetUserMap();
 

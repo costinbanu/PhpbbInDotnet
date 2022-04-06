@@ -63,6 +63,7 @@
             return;
         }
 
+        #nullable enable
         var children = thisForum?.ChildrenList?.Select(x => _forumService.GetTreeNode(Model.Tree, x)) ?? Enumerable.Empty<PhpbbInDotnet.Objects.ForumTree?>();
 
         if (children.Any())
