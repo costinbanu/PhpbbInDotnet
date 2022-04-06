@@ -114,7 +114,7 @@
     var useModActions = false;
     @foreach (var post in Model.Posts!)
     {
-        post.Report = Model.Reports?.FirstOrDefault(r => r.PostId == post.PostId);
+        post.Reports = Model.Reports?.Where(r => r.PostId == post.PostId);
         post.Unread = reachedAnUnreadPost || (reachedAnUnreadPost = await Model.IsPostUnread(post.ForumId, post.TopicId, post.PostId));
         post.Attachments = Model.Attachments!.TryGetValue(post.PostId, out var val) ? val : new List<AttachmentDto>();
 
@@ -325,7 +325,7 @@ else if (!IsAnonymous)
     </form>
 
     <div class="MiddleBox" id="postInfo" style="display:none; padding: 10px; overflow-y: scroll">
-        <h4 style="float:left">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "INFORMATION"])</h4>
+        <h4 style="float:left">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "INFORMATION", Casing.Title])</h4>
         <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('postInfo')">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CLOSE_BUTTON"])</div>
         <p>&nbsp;</p>
         <p>&nbsp;</p>

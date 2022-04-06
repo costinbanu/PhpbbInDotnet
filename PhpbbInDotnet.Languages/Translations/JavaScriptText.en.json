@@ -1,37 +1,46 @@
 ﻿{
-  "ViewTopic": {
-    "SHOW_RESULTS": "Show results",
-    "DO_VOTE": "Vote",
-    "RECEIVED_COMMAND": "Received command",
-    "CONTINUE": "Do you wish to continue?",
-    "LAST_CHANGED": "Last changed:",
-    "CHANGED_BY": "by",
-    "TOTAL_CHANGES": "Total changes:",
-    "FILL_REPORT_DETAILS": "Fill in report details (at least 3 chars).",
-    "CHOOSE_REPORT_REASON": "Choose a report reason.",
-    "CONFIRM_DELETE_REPORTED_MESSAGE": "Are you sure you want to delete the reported post?"
-  },
-  "Posting": {
-    "FONT_COLOR": "Font color",
-    "HIDE_FONT_COLOR": "Hide font color",
-    "FORMATTING_OPTIONS": "Formatting options",
-    "HIDE_FORMATTING_OPTIONS": "Hide formatting options",
-    "SHOW_MORE": "Show more",
-    "SHOW_LESS": "Show less",
-    "TOO_MANY_IMAGES_ERROR_FORMAT": "You added {0} images in your post. Maximum allowed image count is {1}",
-    "CHECKING_IMAGES_FORMAT": "The added images are verified.<br/>Please wait...<br/>{0}%",
-    "IMAGES_TOO_BIG_ERROR_FORMAT": "Images larger than {0}MB are not allowed. The following images are larger:\n{1}",
-    "POLL_NEVER_EXPIRES": "The poll will never expire",
-    "POLL_EXPIRES_FORMAT": "The poll expires on {0}",
-    "CONFIRM_POLL_OPTIONS_CHANGE": "If you change the poll options, all votes registered so far will be deleted. Are you sure you want to continue?",
-    "LOADING_FILES": "The files are loading..."
-  },
-  "Moderator": {
-    "DUPLICATE_POST": "Duplicate post"
-  },
-  "Admin": {
-    "CONFIRM_USER_COMMAND_FORMAT": "Received command '{0}' for user '{1}'. Are you sure you want to continue?",
-    "ADMIN_GROUP_TITLE_FORMAT": "Manage group - {0}",
-    "ADD_NEW_GROUP": "Add new group"
-  }
+    "ViewTopic": {
+        "SHOW_RESULTS": "Show results",
+        "DO_VOTE": "Vote",
+        "RECEIVED_COMMAND": "Received command",
+        "CONTINUE": "Do you wish to continue?",
+        "LAST_CHANGED": "Last changed:",
+        "CHANGED_BY": "by",
+        "TOTAL_CHANGES": "Total changes:",
+        "FILL_REPORT_DETAILS": "Fill in report details (at least 3 chars).",
+        "CHOOSE_REPORT_REASON": "Choose a report reason.",
+        "CONFIRM_DELETE_REPORTED_MESSAGE": "Are you sure you want to delete the reported post?",
+        "REPORTS": "Reports",
+        "REPORT_REASON": "Reason",
+        "REPORT_TIME": "Report time",
+        "REPORT_DETAILS": "Details",
+        "REPORTING_USER": "Reporting user",
+        "REPORT_STATUS": "Report status",
+        "REPORT_CLOSED": "Closed",
+        "REPORT_OPEN": "Open",
+        "DO_SEARCH": "Search"
+    },
+    "Posting": {
+        "FONT_COLOR": "Font color",
+        "HIDE_FONT_COLOR": "Hide font color",
+        "FORMATTING_OPTIONS": "Formatting options",
+        "HIDE_FORMATTING_OPTIONS": "Hide formatting options",
+        "SHOW_MORE": "Show more",
+        "SHOW_LESS": "Show less",
+        "TOO_MANY_IMAGES_ERROR_FORMAT": "You added {0} images in your post. Maximum allowed image count is {1}",
+        "CHECKING_IMAGES_FORMAT": "The added images are verified.<br/>Please wait...<br/>{0}%",
+        "IMAGES_TOO_BIG_ERROR_FORMAT": "Images larger than {0}MB are not allowed. The following images are larger:\n{1}",
+        "POLL_NEVER_EXPIRES": "The poll will never expire",
+        "POLL_EXPIRES_FORMAT": "The poll expires on {0}",
+        "CONFIRM_POLL_OPTIONS_CHANGE": "If you change the poll options, all votes registered so far will be deleted. Are you sure you want to continue?",
+        "LOADING_FILES": "The files are loading..."
+    },
+    "Moderator": {
+        "DUPLICATE_POST": "Duplicate post"
+    },
+    "Admin": {
+        "CONFIRM_USER_COMMAND_FORMAT": "Received command '{0}' for user '{1}'. Are you sure you want to continue?",
+        "ADMIN_GROUP_TITLE_FORMAT": "Manage group - {0}",
+        "ADD_NEW_GROUP": "Add new group"
+    }
 }

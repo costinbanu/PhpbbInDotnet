@@ -1,0 +1,66 @@
+﻿@page
+@model PhpbbInDotnet.Forum.Pages.IPLookupModel
+
+@using Objects
+@using CustomPartials
+
+@{
+	var Lang = Model.GetLanguage();
+	ViewData["Title"] = Model.LanguageProvider.Moderator[Lang, "MOD_PANEL"]; ;
+	Layout = "~/Pages/_Layout.cshtml";
+	var UserDateFormat = (Model.GetCurrentUser())?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
+}
+
+<h3>@Html.Raw(string.Format(Model.LanguageProvider.Moderator[Lang, "IP_SEARCH_RESULTS_FORMAT"], Model.IP))</h3>
+
+@if (Model.Posts?.Any() == true)
+{
+	@await Html.PartialAsync(
+        "_PaginationControlsPartial",
+        new _PaginationControlsPartialModel(
+            paginator: Model.Paginator!,
+            allowPaginationChange: false,
+            back: $"/IPLookup?ip={Model.IP}&pageNum={Model.PageNum - 1}",
+            forward: $"/IPLookup?ip={Model.IP}&pageNum={Model.PageNum + 1}",
+            includeEasyNavigation: false,
+            language: Lang,
+            topicId: null,
+            firstPostId: Model.Posts?.FirstOrDefault()?.PostId),
+        ViewData)
+    <hr class="BoxSeparator" />
+
+    @foreach (var post in Model.Posts ?? new List<PostDto>())
+    {
+	    @await Html.PartialAsync("_PostPartial", new _PostPartialModel
+        {
+            CurrentUser = Model.GetCurrentUser(),
+            Post = post,
+            IsPostFirstInPage = post == Model.Posts!.First(),
+            IsPostLastInPage = post == Model.Posts!.Last(),
+            OpenPostLinkInNewTab = true,
+            Language = Lang,
+            ParentHttpContext = HttpContext,
+            ParentPageContext = PageContext,
+            ShowPath = true
+        }, ViewData)
+    }
+
+    <p>&nbsp;</p>
+    @await Html.PartialAsync(
+            "_PaginationControlsPartial",
+            new _PaginationControlsPartialModel(
+                paginator: Model.Paginator!,
+                allowPaginationChange: false,
+                back: $"/IPLookup?ip={Model.IP}&pageNum={Model.PageNum - 1}",
+                forward: $"/IPLookup?ip={Model.IP}&pageNum={Model.PageNum + 1}",
+                includeEasyNavigation: true,
+                language: Lang,
+                topicId: null,
+                firstPostId: Model.Posts?.FirstOrDefault()?.PostId),
+            ViewData)
+}
+else
+{
+    <p></p>
+    <p>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "NO_RESULTS_FOUND"])</p>
+}

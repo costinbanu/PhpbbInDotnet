@@ -481,12 +481,13 @@ namespace PhpbbInDotnet.Forum.Pages
                          r.report_text AS details, 
                          r.user_id AS reporter_id, 
                          u.username AS reporter_username, 
-                         r.post_id 
+                         r.post_id,
+                         r.report_time,
+                         r.report_closed
 	                FROM phpbb_reports r
                     JOIN phpbb_reports_reasons rr ON r.reason_id = rr.reason_id
                     JOIN phpbb_users u on r.user_id = u.user_id
-	               WHERE report_closed = 0
-                     AND r.post_id IN @postIds;",
+	               WHERE r.post_id IN @postIds;",
                 new { postIds = currentPostIds });
 
             await Task.WhenAll(countTask, dbAttachmentsTask, reportsTask);

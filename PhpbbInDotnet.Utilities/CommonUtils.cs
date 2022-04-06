@@ -261,7 +261,7 @@ namespace PhpbbInDotnet.Utilities
 
         #endregion Error handling
 
-        public async Task SendEmail(MailMessage emailMessage)
+        public Task SendEmail(MailMessage emailMessage)
         {
             using var smtp = new SmtpClient(_config.GetValue<string>("Smtp:Host"))
             {
@@ -273,7 +273,7 @@ namespace PhpbbInDotnet.Utilities
                     Password = _config.GetValue<string>("Smtp:Password")
                 }
             };
-            await smtp.SendMailAsync(emailMessage);
+            return smtp.SendMailAsync(emailMessage);
         }
 
         public string ReadableFileSize(long fileSizeInBytes)

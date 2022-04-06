@@ -154,7 +154,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }
 
             var connectionTask = Context.GetDbConnectionAsync();
-            var searchableForumsTask = GetSearchableForums();
+            var searchableForumsTask = GetUnrestrictedForums(ForumId);
             await Task.WhenAll(connectionTask, searchableForumsTask);
             var connection = await connectionTask;
             var searchableForums = await searchableForumsTask;
@@ -276,39 +276,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 where Posts.Select(p => p.PostId).Contains(a.PostMsgId)
                 select a).ToListAsync();
             Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum!.Value, link: GetSearchLinkForPage(PageNum.Value + 1), topicId: null);
-        }
-
-        private async Task<List<int>> GetSearchableForums()
-        {
-            var (tree, _) = await GetForumTree(false, false);
-            var toReturn = new List<int>(tree.Count);
-
-            if ((ForumId ?? 0) > 0)
-            {
-                traverse(ForumId!.Value);
-            }
-            else
-            {
-                toReturn.AddRange(tree.Where(t => !ForumService.IsNodeRestricted(t)).Select(t => t.ForumId));
-            }
-
-            return toReturn;
-
-            void traverse(int fid)
-            {
-                var node = ForumService.GetTreeNode(tree, fid);
-                if (node != null)
-                {
-                    if (!ForumService.IsNodeRestricted(node))
-                    {
-                        toReturn.Add(fid);
-                    }
-                    foreach (var child in node?.ChildrenList ?? new HashSet<int>())
-                    {
-                        traverse(child);
-                    }
-                }
-            }
         }
     }
 }

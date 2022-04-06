@@ -425,7 +425,9 @@ namespace PhpbbInDotnet.Services
 	                   r.post_id,
                        p.topic_id,
                        t.topic_title,
-                       p.forum_id
+                       p.forum_id,
+                       r.report_time,
+                       r.report_closed
                   FROM phpbb_reports r
                   JOIN phpbb_reports_reasons rr ON r.reason_id = rr.reason_id
                   JOIN phpbb_users u on r.user_id = u.user_id

@@ -1,7 +1,10 @@
 ﻿@model _PostPartialModel
 
 @using System.Web
+@using System.Text
+@using Newtonsoft.Json
 @using Utilities
+@using Objects
 
 @inject Services.UserService _userService
 @inject CommonUtils _utils
@@ -13,7 +16,8 @@
 
 @{
     var userDateFormat = Model.CurrentUser?.UserDateFormat ?? _languageProvider.GetDefaultDateFormat(Model.Language);
-    var rowClass = Model.Post!.Report != null && (Model.IsCurrentUserMod || Model.Post.Report.ReporterId == Model.CurrentUser?.UserId) ? "ReportedPost" : string.Empty;
+    var lastOpenReport = Model.Post!.Reports?.LastOrDefault(r => !r.ReportClosed.ToBool());
+    var rowClass = lastOpenReport != null && (Model.IsCurrentUserMod || lastOpenReport.ReporterId == Model.CurrentUser?.UserId) ? "ReportedPost" : string.Empty;
     var titleClass = Model.Post.Unread ? "UnreadTitle" : "";
     var color = string.IsNullOrWhiteSpace(Model.Post.AuthorColor) || Model.Post.AuthorColor == Constants.DEFAULT_USER_COLOR ? "auto" : $"#{Model.Post.AuthorColor}";
 
@@ -90,16 +94,16 @@
                 }
             </span>
             <div style="max-width:100%; overflow-wrap: break-word">
-                @if (Model.Post.Report != null && (Model.IsCurrentUserMod || Model.Post.Report.ReporterId == Model.CurrentUser?.UserId))
+                @if (lastOpenReport != null && (Model.IsCurrentUserMod || lastOpenReport.ReporterId == Model.CurrentUser?.UserId))
                 {
-                    <a href="javascript:vt.showReportViewer(@Model.Post.PostId, @Model.Post.Report.Id, '@Model.Post.Report.ReasonTitle', '@Model.Post.Report.ReasonDescription', '@_renderingService.BbCodeToHtml(Model.Post.Report.Details, string.Empty)', '@Model.Post.Report.ReporterUsername')" style="font-weight:bold; font-size:1.2em">
+                    <a href="javascript:vt.showReportViewer(@Model.Post.PostId, @lastOpenReport.Id, '@lastOpenReport.ReasonTitle', '@lastOpenReport.ReasonDescription', '@_renderingService.BbCodeToHtml(lastOpenReport.Details, string.Empty)', '@lastOpenReport.ReporterUsername')" style="font-weight:bold; font-size:1.2em">
                         @Html.Raw(_languageProvider.BasicText[Model.Language, "SHOW_REPORT", Casing.FirstUpper])
                     </a>
                     <br />
                 }
                 <br />
                 @Html.Raw(Model.Post.PostText)
-                @foreach (var attachment in Model.Post?.Attachments ?? new List<Objects.AttachmentDto>())
+                @foreach (var attachment in Model.Post?.Attachments ?? new List<AttachmentDto>())
                 {
                     @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
                 }
@@ -156,7 +160,7 @@
                             </span>
                         }
 
-                        @if (Model.Post?.Report == null && Model.CurrentUser?.IsAnonymous == false)
+                        @if (Model.CurrentUser?.IsAnonymous == false)
                         {
                             <span>
                                 <a href="javascript:vt.showReportForm(@Model.Post!.PostId);">
@@ -166,8 +170,9 @@
                         }
                         @if (Model.IsCurrentUserMod)
                         {
+                            var reports = Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(Model.Post!.Reports?.Select(ReportDto.HtmlEncode))));
                             <span>
-                                <a href="javascript:vt.showMessageDetails('@Model.Post!.IP', '@Model.Post.PostEditTime.ToUtcTime().ToString("o")', '@userDateFormat', @Model.Post.PostEditCount, '@Model.Post.PostEditUser');">
+                                <a href="javascript:vt.showMessageDetails('@Model.Post!.IP', '@Model.Post.PostEditTime.ToUtcTime().ToString("o")', '@userDateFormat', @Model.Post.PostEditCount, '@Model.Post.PostEditUser', '@reports');">
                                     &#x2753; @Html.Raw(_languageProvider.BasicText[Model.Language, "INFORMATION", Casing.FirstUpper])
                                 </a>
                             </span>
