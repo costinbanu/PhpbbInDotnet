@@ -248,11 +248,10 @@ namespace PhpbbInDotnet.Forum.Pages
                     dbUser.UserActkey = registrationCode;
 
                     var subject = string.Format(LanguageProvider.Email[lang, "EMAIL_CHANGED_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
-                    using var emailMessage = new MailMessage
-                    {
-                        From = new MailAddress(_config.GetValue<string>("AdminEmail"), _config.GetValue<string>("ForumName")),
-                        Subject = subject,
-                        Body = await Utils.RenderRazorViewToString(
+                    await Utils.SendEmail(
+                        to: Email!,
+                        subject: subject,
+                        body: await Utils.RenderRazorViewToString(
                             "_WelcomeEmailPartial",
                             new WelcomeEmailDto
                             {
@@ -263,11 +262,7 @@ namespace PhpbbInDotnet.Forum.Pages
                             },
                             PageContext,
                             HttpContext
-                        ),
-                        IsBodyHtml = true
-                    };
-                    emailMessage.To.Add(Email!);
-                    await Utils.SendEmail(emailMessage);
+                        ));
                 }
 
                 userMustLogIn = true;

@@ -76,7 +76,7 @@ namespace PhpbbInDotnet.Forum
                     o.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
                 });
 
-#if debug
+#if DEBUG
             if (environment.IsDevelopment())
             {
                 builder.AddRazorRuntimeCompilation();

@@ -180,15 +180,13 @@ namespace PhpbbInDotnet.Forum.Pages
                 GroupId = 2,
                 UserId = newUser.Entity.UserId
             });
-
-            await _context.SaveChangesAsync();
-
             var subject = string.Format(LanguageProvider.Email[LanguageProvider.GetValidatedLanguage(null, Request), "WELCOME_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
-            using var emailMessage = new MailMessage
-            {
-                From = new MailAddress(_config.GetValue<string>("AdminEmail"), _config.GetValue<string>("ForumName")),
-                Subject = subject,
-                Body = await _utils.RenderRazorViewToString(
+
+            var dbChangesTask = _context.SaveChangesAsync();
+            var emailTask = _utils.SendEmail(
+                to: Email,
+                subject: subject,
+                body: await _utils.RenderRazorViewToString(
                     "_WelcomeEmailPartial",
                     new WelcomeEmailDto
                     {
@@ -198,11 +196,8 @@ namespace PhpbbInDotnet.Forum.Pages
                     },
                     PageContext,
                     HttpContext
-                ),
-                IsBodyHtml = true
-            };
-            emailMessage.To.Add(Email);
-            await _utils.SendEmail(emailMessage);
+                ));
+            await Task.WhenAll(dbChangesTask, emailTask);
 
             return RedirectToPage("Confirm", "RegistrationComplete");
         }

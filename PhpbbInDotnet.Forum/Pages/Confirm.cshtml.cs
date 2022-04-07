@@ -122,14 +122,13 @@ namespace PhpbbInDotnet.Forum.Pages
                     select u
                 ).ToListAsync();
 
-                foreach (var admin in admins)
+                await Task.WhenAll(admins.Select(async admin =>
                 {
                     var subject = LanguageProvider.Email[admin.UserLang, "NEWUSER_SUBJECT"];
-                    using var emailMessage = new MailMessage
-                    {
-                        From = new MailAddress(_config.GetValue<string>("AdminEmail"), _config.GetValue<string>("ForumName")),
-                        Subject = subject,
-                        Body = await Utils.RenderRazorViewToString(
+                    await Utils.SendEmail(
+                        to: admin.UserEmail,
+                        subject: subject,
+                        body: await Utils.RenderRazorViewToString(
                             "_NewUserNotification",
                             new _NewUserNotificationModel
                             {
@@ -138,12 +137,8 @@ namespace PhpbbInDotnet.Forum.Pages
                             },
                             PageContext,
                             HttpContext
-                        ),
-                        IsBodyHtml = true
-                    };
-                    emailMessage.To.Add(admin.UserEmail.Trim());
-                    await Utils.SendEmail(emailMessage);
-                }
+                        ));
+                }));
             }
             Title = LanguageProvider.BasicText[lang, "EMAIL_CONFIRM_TITLE"];
         }
@@ -162,20 +157,23 @@ namespace PhpbbInDotnet.Forum.Pages
             Title = LanguageProvider.BasicText[lang, "NEW_PASSWORD_TITLE"];
         }
 
-        public async Task OnGetModeratorConfirmation()
-        {
-            var lang = GetLanguage();
-            IsModeratorConfirmation = true;
-            if (ShowTopicSelector)
+        public Task<IActionResult> OnGetModeratorConfirmation()
+            => WithModerator(0, async () =>
             {
-                Title = LanguageProvider.BasicText[lang, "CHOOSE_DESTINATION_FORUM_TOPIC"];
-            }
-            else
-            {
-                Title = LanguageProvider.BasicText[lang, "CHOOSE_DESTINATION_FORUM"];
-            }
-            await SetFrontendData();
-        }
+                var lang = GetLanguage();
+                IsModeratorConfirmation = true;
+                if (ShowTopicSelector)
+                {
+                    Title = LanguageProvider.BasicText[lang, "CHOOSE_DESTINATION_FORUM_TOPIC"];
+                }
+                else
+                {
+                    Title = LanguageProvider.BasicText[lang, "CHOOSE_DESTINATION_FORUM"];
+                }
+                await SetFrontendData();
+
+                return Page();
+            });
 
         public void OnGetDestinationConfirmation()
         {

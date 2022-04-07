@@ -41,24 +41,24 @@
                  <b>${dictionary.ViewTopic['TOTAL_CHANGES']}</b> ${editCount}<br/>`;
         }
         if (encodedReports) {
-            let reports = JSON.parse(atob(encodedReports));
-            if (reports.length) {
+            const reportsArray = JSON.parse(atob(encodedReports));
+            if (reportsArray.length) {
                 content = content + `<hr class='BoxSeparator' /><h4>${dictionary.ViewTopic['REPORTS']}</h4>`
                 let first = true;
-                for (const report of reports) {
+                reportsArray.forEach(report => {
                     if (!first) {
                         content = content + "<hr class='SubtypeSeparator' />";
                     }
                     first = false;
 
-                    let statusKey = report.ReportClosed === 1 ? 'REPORT_CLOSED' : 'REPORT_OPEN';
+                    const statusKey = report.ReportClosed === 1 ? 'REPORT_CLOSED' : 'REPORT_OPEN';
                     content = content +
                         `<b>${dictionary.ViewTopic['REPORT_REASON']}:</b> ${he.decode(report.ReasonTitle)} (${he.decode(report.ReasonDescription)})<br />
                          <b>${dictionary.ViewTopic['REPORT_TIME']}:</b> ${new Date(report.ReportDateTime).format(timeFormat)}<br />
                          <b>${dictionary.ViewTopic['REPORT_DETAILS']}:</b> ${he.decode(report.Details)}<br />
                          <b>${dictionary.ViewTopic['REPORTING_USER']}:</b> ${he.decode(report.ReporterUsername)}<br />
                          <b>${dictionary.ViewTopic['REPORT_STATUS']}:</b> ${he.decode(dictionary.ViewTopic[statusKey])}`;
-                }
+                });
             }
         }
         $('#postInfoContent').html(content);

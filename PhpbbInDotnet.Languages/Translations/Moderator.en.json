@@ -14,6 +14,7 @@
     "NO_OPEN_REPORTS": "No open reports",
     "NO_DELETED_ITEMS": "No deleted items",
     "IP_SEARCH_RESULTS_FORMAT": "Posts submitted from IP '{0}'",
+    "IP_MORE_INFO": "More information about this IP",
 
     //success messages
     "TOPIC_CHANGED_SUCCESSFULLY": "The topic has been modified successfully!",

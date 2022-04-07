@@ -18,7 +18,6 @@ using System;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
-using System.Net.Mail;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -35,36 +34,36 @@ namespace PhpbbInDotnet.Forum.Pages
 
         [BindProperty, Required]
         public string? UserName { get; set; }
-        
+
         [BindProperty, Required, PasswordPropertyText]
         public string? Password { get; set; }
-        
+
         [BindProperty(SupportsGet = true)]
         public string? ReturnUrl { get; set; }
-        
+
         public string? LoginErrorMessage { get; set; }
-        
+
         [BindProperty, Required]
         public string? UserNameForPwdReset { get; set; }
-        
+
         [BindProperty, Required, EmailAddress]
         public string? EmailForPwdReset { get; set; }
-        
+
         public string? PwdResetSuccessMessage { get; set; }
-        
+
         public string? PwdResetErrorMessage { get; set; }
-        
+
         public bool ShowPwdResetOptions { get; set; } = false;
-        
+
         [BindProperty, Required, PasswordPropertyText]
         public string? PwdResetFirstPassword { get; set; }
-        
+
         [BindProperty, Required, PasswordPropertyText]
         public string? PwdResetSecondPassword { get; set; }
-        
+
         [BindProperty(SupportsGet = true)]
         public string? ResetPasswordCode { get; set; }
-        
+
         [BindProperty(SupportsGet = true)]
         public int UserId { get; set; }
 
@@ -156,38 +155,44 @@ namespace PhpbbInDotnet.Forum.Pages
                 _cache.Remove(key);
             }
 
-            return Redirect(HttpUtility.UrlDecode(ReturnUrl ?? "/"));
+            var returnUrl = HttpUtility.UrlDecode(ReturnUrl ?? "/");
+            if (returnUrl.StartsWith("/login", StringComparison.InvariantCultureIgnoreCase) ||
+                returnUrl.StartsWith("/logout", StringComparison.InvariantCultureIgnoreCase) ||
+                returnUrl.StartsWith("/confirm", StringComparison.InvariantCultureIgnoreCase))
+            {
+                returnUrl = "/";
+            }
+            return Redirect(returnUrl);
         }
 
         public async Task<IActionResult> OnPostResetPassword()
         {
-            var user = _context.PhpbbUsers.FirstOrDefault(
-                x => x.UsernameClean == _utils.CleanString(UserNameForPwdReset) && 
-                x.UserEmailHash == _utils.CalculateCrc32Hash(EmailForPwdReset!)
-            );
             var lang = LanguageProvider.GetValidatedLanguage(null, Request);
-
-            if (user == null)
-            {
-                ModelState.AddModelError(nameof(PwdResetErrorMessage), LanguageProvider.Errors[lang, "WRONG_EMAIL_USER"]);
-                ShowPwdResetOptions = true;
-                Mode = LoginMode.PasswordReset;
-                return Page();
-            }
-
-            var resetKey = Guid.NewGuid().ToString("n");
-            var (encrypted, iv) = await _utils.EncryptAES(resetKey);
-            user.UserNewpasswd = encrypted;
-            await _context.SaveChangesAsync();
-
             try
             {
-                var subject = string.Format(LanguageProvider.Email[lang, "RESETPASS_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
-                using var emailMessage = new MailMessage
+                var user = _context.PhpbbUsers.FirstOrDefault(
+                    x => x.UsernameClean == _utils.CleanString(UserNameForPwdReset) &&
+                    x.UserEmailHash == _utils.CalculateCrc32Hash(EmailForPwdReset!)
+                );
+
+                if (user == null)
                 {
-                    From = new MailAddress(_config.GetValue<string>("AdminEmail"), _config.GetValue<string>("ForumName")),
-                    Subject = subject,
-                    Body = await _utils.RenderRazorViewToString(
+                    ModelState.AddModelError(nameof(PwdResetErrorMessage), LanguageProvider.Errors[lang, "WRONG_EMAIL_USER"]);
+                    ShowPwdResetOptions = true;
+                    Mode = LoginMode.PasswordReset;
+                    return Page();
+                }
+
+                var resetKey = Guid.NewGuid().ToString("n");
+                var (encrypted, iv) = await _utils.EncryptAES(resetKey);
+                user.UserNewpasswd = encrypted;
+
+                var dbChangesTask = _context.SaveChangesAsync();
+
+                var emailTask = _utils.SendEmail(
+                    to: EmailForPwdReset!,
+                    subject: string.Format(LanguageProvider.Email[lang, "RESETPASS_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName")),
+                    body: await _utils.RenderRazorViewToString(
                         "_ResetPasswordPartial",
                         new _ResetPasswordPartialModel
                         {
@@ -198,11 +203,9 @@ namespace PhpbbInDotnet.Forum.Pages
                         },
                         PageContext,
                         HttpContext
-                    ),
-                    IsBodyHtml = true
-                };
-                emailMessage.To.Add(EmailForPwdReset!);
-                await _utils.SendEmail(emailMessage);
+                    ));
+
+                await Task.WhenAll(dbChangesTask, emailTask);
             }
             catch
             {

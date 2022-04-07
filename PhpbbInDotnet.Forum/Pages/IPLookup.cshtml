@@ -1,17 +1,27 @@
 ﻿@page
 @model PhpbbInDotnet.Forum.Pages.IPLookupModel
 
+@using Microsoft.Extensions.Configuration
 @using Objects
 @using CustomPartials
 
+@inject IConfiguration _config
+
 @{
 	var Lang = Model.GetLanguage();
-	ViewData["Title"] = Model.LanguageProvider.Moderator[Lang, "MOD_PANEL"]; ;
+	ViewData["Title"] = Model.LanguageProvider.Moderator[Lang, "MOD_PANEL"];
 	Layout = "~/Pages/_Layout.cshtml";
 	var UserDateFormat = (Model.GetCurrentUser())?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
 }
 
+<environment include="Development">
+    <link rel="stylesheet" href="~/css/pagination.css" />
+</environment>
+
 <h3>@Html.Raw(string.Format(Model.LanguageProvider.Moderator[Lang, "IP_SEARCH_RESULTS_FORMAT"], Model.IP))</h3>
+<a href="@string.Format(_config.GetValue<string>("IpWhoIsUrlFormat"), Model.IP)" target="_blank">
+    @Html.Raw(Model.LanguageProvider.Moderator[Lang, "IP_MORE_INFO"])
+</a>
 
 @if (Model.Posts?.Any() == true)
 {
@@ -24,10 +34,10 @@
             forward: $"/IPLookup?ip={Model.IP}&pageNum={Model.PageNum + 1}",
             includeEasyNavigation: false,
             language: Lang,
-            topicId: null,
             firstPostId: Model.Posts?.FirstOrDefault()?.PostId),
         ViewData)
-    <hr class="BoxSeparator" />
+
+    <p>&nbsp;</p>
 
     @foreach (var post in Model.Posts ?? new List<PostDto>())
     {
@@ -46,6 +56,7 @@
     }
 
     <p>&nbsp;</p>
+
     @await Html.PartialAsync(
             "_PaginationControlsPartial",
             new _PaginationControlsPartialModel(
@@ -55,7 +66,6 @@
                 forward: $"/IPLookup?ip={Model.IP}&pageNum={Model.PageNum + 1}",
                 includeEasyNavigation: true,
                 language: Lang,
-                topicId: null,
                 firstPostId: Model.Posts?.FirstOrDefault()?.PostId),
             ViewData)
 }
