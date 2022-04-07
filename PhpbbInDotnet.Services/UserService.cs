@@ -274,11 +274,10 @@ namespace PhpbbInDotnet.Services
                 );
 
                 var emailSubject = string.Format(LanguageProvider.Email[receiver.Language!, "NEWPM_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
-                using var emailMessage = new MailMessage
-                {
-                    From = new MailAddress(_config.GetValue<string>("AdminEmail"), _config.GetValue<string>("ForumName")),
-                    Subject = emailSubject,
-                    Body = await Utils.RenderRazorViewToString(
+                await Utils.SendEmail(
+                    to: receiver.EmailAddress!,
+                    subject: emailSubject,
+                    body: await Utils.RenderRazorViewToString(
                         "_NewPMEmailPartial",
                         new NewPMEmailDto
                         {
@@ -287,11 +286,7 @@ namespace PhpbbInDotnet.Services
                         },
                         pageContext,
                         httpContext
-                    ),
-                    IsBodyHtml = true
-                };
-                emailMessage.To.Add(receiver.EmailAddress!);
-                await Utils.SendEmail(emailMessage);
+                    ));
 
                 return ("OK", true);
             }

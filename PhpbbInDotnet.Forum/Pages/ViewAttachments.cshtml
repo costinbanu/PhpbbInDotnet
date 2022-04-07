@@ -23,18 +23,20 @@
 
     if (Model.Attachments.Any())
     {
-        @await Html.PartialAsync(
-            "_PaginationControlsPartial",
-            new _PaginationControlsPartialModel(
-                paginator: Model.Paginator!,
-                allowPaginationChange: false,
-                includeEasyNavigation: false,
-                language: Model.GetLanguage(),
-                back: $"ViewAttachments?userId={Model.UserId}&pageNum={Model.PageNum - 1}",
-                forward: $"ViewAttachments?userId={Model.UserId}&pageNum={Model.PageNum + 1}"
+        <div>
+            @await Html.PartialAsync(
+                "_PaginationControlsPartial",
+                new _PaginationControlsPartialModel(
+                    paginator: Model.Paginator!,
+                    allowPaginationChange: false,
+                    includeEasyNavigation: false,
+                    language: Model.GetLanguage(),
+                    back: $"ViewAttachments?userId={Model.UserId}&pageNum={Model.PageNum - 1}",
+                    forward: $"ViewAttachments?userId={Model.UserId}&pageNum={Model.PageNum + 1}"
 
+                )
             )
-        )
+        </div>
 
         <p>&nbsp;</p>
         var tree = await _forumService.GetForumTree(Model.GetCurrentUser(), false, false);

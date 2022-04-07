@@ -1,12 +1,16 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials.Admin._AdminUsersSummaryPartialModel
 
-@using PhpbbInDotnet.Utilities
+@using Microsoft.Extensions.Configuration
+@using Utilities
 @using System.Web
 
 @inject Languages.LanguageProvider _languageProvider
+@inject IConfiguration _config
 
 @foreach (var user in Model.Users ?? new List<Database.Entities.PhpbbUsers>())
 {
+    var emailSearchLink = string.Format(_config.GetValue<string>("InternetSearchUrlFormat"), HttpUtility.UrlEncode($"\"{user.UserEmail}\""));
+    var ipWhoIsLink = string.Format(_config.GetValue<string>("IpWhoIsUrlFormat"), user.UserIp);
     <button type="button" class="collapsible">@user.Username</button>
     <div class="content">
         @if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed)
@@ -27,7 +31,7 @@
             <div class="FlexRight PostInputWidth">
                 @Html.Raw(user.UserEmail)
                 &bull;
-                <a href="https://www.google.com/search?q=@HttpUtility.UrlEncode($"\"{user.UserEmail}\"")" target="_blank">
+                <a href="@emailSearchLink" target="_blank">
                     @Html.Raw(_languageProvider.Admin[Model.Language, "EMAIL_LOOKUP"])
                 </a>
                 &bull;
@@ -43,7 +47,7 @@
             <div class="FlexRight PostInputWidth">
                 @user.UserIp
                 &bull;
-                <a href="https://whatismyipaddress.com/ip/@user.UserIp" target="_blank">
+                <a href="@ipWhoIsLink" target="_blank">
                     @Html.Raw(_languageProvider.Admin[Model.Language, "IP_LOOKUP"])
                 </a>
                 &bull;

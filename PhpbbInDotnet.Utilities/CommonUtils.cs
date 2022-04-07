@@ -1,4 +1,5 @@
 ﻿using Force.Crc32;
+using MailKit.Security;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -8,6 +9,8 @@ using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
+using MimeKit;
+using MimeKit.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Serilog;
@@ -17,8 +20,6 @@ using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Net;
-using System.Net.Mail;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -261,19 +262,21 @@ namespace PhpbbInDotnet.Utilities
 
         #endregion Error handling
 
-        public Task SendEmail(MailMessage emailMessage)
+        public async Task SendEmail(string to, string subject, string body)
         {
-            using var smtp = new SmtpClient(_config.GetValue<string>("Smtp:Host"))
-            {
-                EnableSsl = true,
-                UseDefaultCredentials = false,
-                Credentials = new NetworkCredential
-                {
-                    UserName = _config.GetValue<string>("Smtp:Username"),
-                    Password = _config.GetValue<string>("Smtp:Password")
-                }
+            using var email = new MimeMessage();
+            email.From.Add(MailboxAddress.Parse(_config.GetValue<string>("AdminEmail")));
+            email.To.Add(MailboxAddress.Parse(to));
+            email.Subject = subject;
+            email.Body = new TextPart(TextFormat.Html) 
+            { 
+                Text = body 
             };
-            return smtp.SendMailAsync(emailMessage);
+            using var smtp = new MailKit.Net.Smtp.SmtpClient();
+            smtp.Connect(_config.GetValue<string>("Smtp:Host"), _config.GetValue<int>("Smtp:Port"), SecureSocketOptions.SslOnConnect);
+            smtp.Authenticate(_config.GetValue<string>("Smtp:Username"), _config.GetValue<string>("Smtp:Password"));
+            await smtp.SendAsync(email);
+            smtp.Disconnect(true);
         }
 
         public string ReadableFileSize(long fileSizeInBytes)

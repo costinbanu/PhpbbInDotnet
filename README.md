@@ -30,7 +30,9 @@ Either way,  ensure that its structure and contents follow the sample below. All
   "Smtp": {
     "Host": "...",
     "Username": "...",
-    "Password": "..."
+    "Password": "...",
+    "EnableSsl": ...,
+    "Port": ...
   },
   "Encryption": {
     "Key1": "...",
@@ -78,7 +80,9 @@ Either way,  ensure that its structure and contents follow the sample below. All
       "RelativeUri": "api/process-image",
       "ApiKey": "..."
     }
-  }
+  },
+  "InternetSearchUrlFormat": "https://www.google.com/search?q={0}",
+  "IpWhoIsUrlFormat": "https://whatismyipaddress.com/ip/{0}"
 }
 ```
 
@@ -96,6 +100,8 @@ Recaptcha.MinScore | decimal | 0.6 | this value can be changed as per [reCAPTCHA
 Smtp.Host | string | ... | your SSL-enabled SMTP host 
 Smtp.Username | string | ... | SMTP username 
 Smtp.Password | string | ... | SMTP password
+Smtp.EnableSsl | boolean | ... | Whether SSL is enabled for this host
+Smtp.Port | int | ... | SMTP port
 Encryption.Key1 | Guid | ... | first guid for AES symmetric key generation 
 Encryption.Key2 | Guid | ... | second guid for AES symmetric key generation 
 AvatarSalt | string | ... | it is a unique way of naming avatar files; the recommended default value is a lowercase guid without dashes. If this is a new installation, then use the guid generator mentioned above to generate a lowercase guid without dashes. However, if this is an update from phpBB, then get your avatar salt by running this in your forum's DB: `SELECT config_value FROM phpbb_config WHERE config_name = 'avatar_salt'`
@@ -127,8 +133,8 @@ ExternalImageProcessor.Api.ClientName | string | ExternalImageProcessor | Image 
 ExternalImageProcessor.Api.BaseAddress | string | ... | Image Processor API base address
 ExternalImageProcessor.Api.RelativeUri | string | api/process-image | Image Processor API image processing route
 ExternalImageProcessor.Api.ApiKey | string | ... | Image Processor API Api Key
-
-
+InternetSearchUrlFormat | string | https://www.google.com/search?q={0} | Internet search link; query parameter should be URL-escaped
+IpWhoIsUrlFormat | string | https://whatismyipaddress.com/ip/{0} | IP WHOIS link
 
 ### Branding
 #### Forum header
@@ -146,9 +152,10 @@ The application can display a custom set of external links next to the menu. If 
 
 ### Install the application
 
-1. Build the solution and deploy it to your host.
-2. Execute the `PhpbbInDotnet.Database.SetupApp` application (make sure its `appsettings.json` file contains a valid connection string targeting your MySQL / MariaDB / AuroraDB server with root access)
-3. Done!
+1. Back up your installation and database (even though the installation performs only additive operatrions in the database, without altering or deleting existing structures or data, please do it anyway)
+2. Build the solution and deploy it to your host.
+3. Execute the `PhpbbInDotnet.Database.SetupApp` application (make sure its `appsettings.json` file contains a valid connection string targeting your MySQL / MariaDB / AuroraDB server with root access)
+4. Done!
 
 ## Feature and functionality differences
 As of now, the platform **does not support the following phpBB features**:
@@ -163,10 +170,11 @@ The platform also **supports some new features**:
 - Personalized pagination (per user and topic)
 - Attachment upload quota (per group)
 - Personalized edit time of own posts (per group or user, with the latter taking precedence if both defined)
+- Post soft delete and "recycle bin" functionality for moderators and admins (deleted posts are kept for a configurable period of time and can be restored during this period)
 
 ## Further reading
 ### Technical considerations
-This application targets .Net 5.0 and is platform agnostic.
+This application targets .Net 6.0 and is platform agnostic.
 
 However, it has not yet been researched if the database support can be extended further than the MySQL-compatible languages. Given that the code leverages both stored procedures and inline SQL (through [Dapper](https://github.com/DapperLib/Dapper)), as well as LINQ-to-SQL statements (through [Entity Framework Core](https://docs.microsoft.com/en-us/ef/core/)), it is expected that multiple database support might not be trivial and might take more time to set up.
 
@@ -177,7 +185,10 @@ the new platform can render 100% of bb code written on a phpBB platform, while a
 However, our BB code rendering library DOES support this field and provides some methods for backwards compatibility (see its documentation, you will have to get your hands dirty for this).
 The [CodeKicker.BBCode.Core](https://github.com/costinbanu/CodeKicker.BBCode.Core) library is used for rendering bb code.
 
+### "Bonus" features
+- This platform can be connected to an image resize and license plate hiding API and can perform these tasks automatically, for each uploaded image attachment. I have chosen to isolate the image resize and license plate detection and hiding logic in a distinct API because this functionality is built exclusively for Windows, while I intend PhpbbInDotnet to be platform-agnostic. So if you have a Windows host at hand, and wish to offer automatic image resize and license plate hiding functionality for all attached images within your forum installation, look up the [SimpleImageProcessor](https://github.com/costinbanu/SimpleImageProcessor) repo.
+
 ### Maintenance and future work
-This platform is currently live at https://forum.metrouusor.com/ (which has served as basis for feature implementation, as well as a beta-testing site by running the old phpBB installation and the new platform in parallel for several months). As long as this forum is up, this platform is expected to be maintained regularily.
+This platform is currently live at https://forum.metrouusor.com/ (which has served as basis for feature implementation, as well as a beta-testing site by running the old phpBB installation and the new platform in parallel for several months). As long as this forum is up, PhpbbInDotnet is expected to be maintained regularily. Established in 2009 and with a member base of over 1800 people as of march 2022, this forum is one of the largest communities for urban mobility, infrastructure and public transportation fans in Romania, so it is expected to be up and running for a long time (:
 
 Although unplanned as of now, future work will include more themes and more languages, as well as other features brought up by active users.

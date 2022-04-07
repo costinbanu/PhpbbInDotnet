@@ -14,6 +14,7 @@
     "NO_OPEN_REPORTS": "Nici un raport deschis",
     "NO_DELETED_ITEMS": "Nici un element șters",
     "IP_SEARCH_RESULTS_FORMAT": "Mesaje trimise de la IP '{0}'",
+    "IP_MORE_INFO": "Mai multe informații despre acest IP",
 
     //success messages
     "TOPIC_CHANGED_SUCCESSFULLY": "Subiectul a fost modificat cu succes!",

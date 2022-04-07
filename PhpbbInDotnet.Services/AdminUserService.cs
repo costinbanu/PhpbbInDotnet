@@ -171,11 +171,10 @@ namespace PhpbbInDotnet.Services
                 {
                     case AdminUserActions.Activate:
                         {
-                            using var emailMessage = new MailMessage
-                            {
-                                From = new MailAddress(_config.GetValue<string>("AdminEmail"), forumName),
-                                Subject = string.Format(LanguageProvider.Email[user.UserLang, "ACCOUNT_ACTIVATED_NOTIFICATION_SUBJECT_FORMAT"], forumName),
-                                Body = await Utils.RenderRazorViewToString(
+                            await Utils.SendEmail(
+                                to: user.UserEmail,
+                                subject: string.Format(LanguageProvider.Email[user.UserLang, "ACCOUNT_ACTIVATED_NOTIFICATION_SUBJECT_FORMAT"], forumName),
+                                body: await Utils.RenderRazorViewToString(
                                     "_AccountActivatedNotification",
                                     new AccountActivatedNotificationDto
                                     {
@@ -184,11 +183,7 @@ namespace PhpbbInDotnet.Services
                                     },
                                     pageContext,
                                     httpContext
-                                ),
-                                IsBodyHtml = true
-                            };
-                            emailMessage.To.Add(user.UserEmail);
-                            await Utils.SendEmail(emailMessage);
+                                ));
 
                             user.UserInactiveReason = UserInactiveReason.NotInactive;
                             user.UserInactiveTime = 0L;
@@ -277,15 +272,11 @@ namespace PhpbbInDotnet.Services
                                 break;
                             }
 
-                            using var emailMessage = new MailMessage
-                            {
-                                From = new MailAddress(_config.GetValue<string>("AdminEmail"), forumName),
-                                Subject = subject,
-                                Body = await Utils.RenderRazorViewToString("_WelcomeEmailPartial", model, pageContext, httpContext),
-                                IsBodyHtml = true
-                            };
-                            emailMessage.To.Add(user.UserEmail);
-                            await Utils.SendEmail(emailMessage);
+                            await Utils.SendEmail(
+                                to: user.UserEmail,
+                                subject: subject,
+                                body: await Utils.RenderRazorViewToString("_WelcomeEmailPartial", model, pageContext, httpContext));
+
                             user.UserReminded = 1;
                             user.UserRemindedTime = DateTime.UtcNow.ToUnixTimestamp();
                             message = string.Format(LanguageProvider.Admin[lang, "USER_REMINDED_FORMAT"], user.Username);
