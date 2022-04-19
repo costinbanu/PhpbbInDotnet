@@ -42,7 +42,6 @@ namespace PhpbbInDotnet.Forum
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
-            //services.AddSingleton(Configuration);
 
             services.AddDistributedMemoryCache();
 
@@ -147,7 +146,7 @@ namespace PhpbbInDotnet.Forum
             services.AddDbContext<ForumDbContext>(options => options.UseMySQL(config["ForumDbConnectionString"], o => o.CommandTimeout(60)), ServiceLifetime.Scoped);
             services.AddLazyCache();
 
-            services.AddHostedService<DailyCleanupService>();
+            services.AddHostedService<CleanupService>();
             services.Configure<HostOptions>(opts => opts.ShutdownTimeout = TimeSpan.FromMinutes(5));
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
