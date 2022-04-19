@@ -173,17 +173,17 @@ namespace PhpbbInDotnet.Services
                    WHERE p.forum_id <> t.forum_id");
 
             var forumsHavingWrongLastPostTask = dbConnection.ExecuteAsync(
-                @"WITH maxes AS (
-	                SELECT forum_id, MAX(post_time) AS post_time
-	                 FROM phpbb_posts
-	                GROUP BY forum_id
-                ), last_posts AS (
-	                SELECT DISTINCT p.*
-	                  FROM phpbb_posts p
-	                  JOIN maxes m ON p.forum_id = m.forum_id AND p.post_time = m.post_time
-                )
-                UPDATE phpbb_forums f
-                  JOIN last_posts lp ON f.forum_id = lp.forum_id
+                @"UPDATE phpbb_forums f
+                    JOIN (
+                        WITH maxes AS (
+	                        SELECT forum_id, MAX(post_time) AS post_time
+	                         FROM phpbb_posts
+	                        GROUP BY forum_id
+					    )
+                        SELECT DISTINCT p.*
+						  FROM phpbb_posts p
+						  JOIN maxes m ON p.forum_id = m.forum_id AND p.post_time = m.post_time
+					) lp ON f.forum_id = lp.forum_id
                   LEFT JOIN phpbb_users u ON lp.poster_id = u.user_id
                    SET f.forum_last_post_id = lp.post_id,
 	                   f.forum_last_poster_id = COALESCE(u.user_id, @ANONYMOUS_USER_ID),
@@ -200,26 +200,27 @@ namespace PhpbbInDotnet.Services
                 });
 
             var topicsHavingWrongLastOrFirstPostTask = dbConnection.ExecuteAsync(
-                @"WITH maxes AS (
-	                  SELECT topic_id, MAX(post_time) AS post_time
-		                FROM phpbb_posts
-		                GROUP BY topic_id
-                ), last_posts AS (
-	                SELECT DISTINCT p.*
-	                  FROM phpbb_posts p
-	                  JOIN maxes m ON p.topic_id = m.topic_id AND p.post_time = m.post_time
-                ), mins AS (
-	                SELECT topic_id, MIN(post_time) AS post_time
-	                  FROM phpbb_posts
-	                 GROUP BY topic_id
-                ), first_posts AS (
-	                SELECT DISTINCT p.*
-	                  FROM phpbb_posts p
-	                  JOIN mins m ON p.topic_id = m.topic_id AND p.post_time = m.post_time
-                )
-                UPDATE phpbb_topics t
-                  JOIN last_posts lp ON t.topic_id = lp.topic_id
-                  JOIN first_posts fp ON t.topic_id = fp.topic_id
+                @"UPDATE phpbb_topics t
+                    JOIN (
+                        WITH maxes AS (
+	                      SELECT topic_id, MAX(post_time) AS post_time
+		                    FROM phpbb_posts
+		                   GROUP BY topic_id
+                        )
+	                    SELECT DISTINCT p.*
+	                        FROM phpbb_posts p
+	                        JOIN maxes m ON p.topic_id = m.topic_id AND p.post_time = m.post_time
+                    ) lp ON t.topic_id = lp.topic_id
+                    JOIN (
+                        WITH mins AS (
+	                        SELECT topic_id, MIN(post_time) AS post_time
+	                          FROM phpbb_posts
+	                         GROUP BY topic_id
+                        )
+	                    SELECT DISTINCT p.*
+	                        FROM phpbb_posts p
+	                        JOIN mins m ON p.topic_id = m.topic_id AND p.post_time = m.post_time
+                    ) fp ON t.topic_id = fp.topic_id
                   LEFT JOIN phpbb_users lpu ON lp.poster_id = lpu.user_id
                   LEFT JOIN phpbb_users fpu ON fp.poster_id = fpu.user_id
                    SET t.topic_last_post_id = lp.post_id,
