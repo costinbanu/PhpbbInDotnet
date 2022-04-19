@@ -8,7 +8,7 @@ namespace PhpbbInDotnet.Objects
 
         public int UserCount { get; set; }
 
-        public int MessageCount { get; set; }
+        public int PostCount { get; set; }
 
         public int TopicCount { get; set; }
 

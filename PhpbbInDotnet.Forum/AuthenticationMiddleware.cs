@@ -182,9 +182,9 @@ namespace PhpbbInDotnet.Forum
         {
             var results = await _context.GetDbConnection().QueryAsync(
                 @"SELECT topic_id, post_no
-	                    FROM phpbb_user_topic_post_number
-	                    WHERE user_id = @user_id
-	                    GROUP BY topic_id;",
+	                FROM phpbb_user_topic_post_number
+	               WHERE user_id = @user_id
+	               GROUP BY topic_id;",
                 new { userId });
             return results.ToDictionary(x => checked((int)x.topic_id), y => checked((int)y.post_no));
         }

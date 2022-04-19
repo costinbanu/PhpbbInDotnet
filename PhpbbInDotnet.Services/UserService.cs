@@ -394,8 +394,8 @@ namespace PhpbbInDotnet.Services
             return new HashSet<int>(await conn.QueryAsync<int>(
                 @"SELECT zebra_id
                     FROM phpbb_zebra
-                    WHERE user_id = @user_id 
-                      AND foe = 1;",
+                   WHERE user_id = @user_id 
+                     AND foe = 1;",
                 new { userId }
             ));
         }

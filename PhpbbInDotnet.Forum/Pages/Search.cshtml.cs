@@ -39,7 +39,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public string? SearchText { get; set; }
 
         [BindProperty(SupportsGet = true)]
-        public int? PageNum { get; set; }
+        public int PageNum { get; set; } = 1;
 
         [BindProperty(SupportsGet = true)]
         public int? TotalResults { get; set; }
@@ -106,7 +106,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 PageNum = Paginator.NormalizePageNumberLowerBound(PageNum);
                 await Utils.RetryOnceAsync(
                     toDo: () => Search(),
-                    evaluateSuccess: () => Posts!.Count > 0 && PageNum == Paginator!.CurrentPage,
+                    evaluateSuccess: () => (Posts?.Count ?? 0) > 0 && PageNum == Paginator?.CurrentPage,
                     fix: () => PageNum = Paginator!.CurrentPage);
             }
 
@@ -275,7 +275,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 from a in Context.PhpbbAttachments.AsNoTracking()
                 where Posts.Select(p => p.PostId).Contains(a.PostMsgId)
                 select a).ToListAsync();
-            Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum!.Value, link: GetSearchLinkForPage(PageNum.Value + 1), topicId: null);
+            Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum, link: GetSearchLinkForPage(PageNum + 1), topicId: null);
         }
     }
 }
