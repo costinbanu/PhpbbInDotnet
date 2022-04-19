@@ -137,8 +137,8 @@ else
         new _PaginationControlsPartialModel(
             paginator: Model.Paginator!,
             allowPaginationChange: false,
-            back: Model.GetSearchLinkForPage(Model.PageNum!.Value - 1),
-            forward: Model.GetSearchLinkForPage(Model.PageNum.Value + 1),
+            back: Model.GetSearchLinkForPage(Model.PageNum - 1),
+            forward: Model.GetSearchLinkForPage(Model.PageNum + 1),
             includeEasyNavigation: false,
             language: Lang,
             topicId: null,
@@ -181,8 +181,8 @@ else
         new _PaginationControlsPartialModel(
             paginator: Model.Paginator!,
             allowPaginationChange: false,
-            back: Model.GetSearchLinkForPage(Model.PageNum.Value - 1),
-            forward: Model.GetSearchLinkForPage(Model.PageNum.Value + 1),
+            back: Model.GetSearchLinkForPage(Model.PageNum - 1),
+            forward: Model.GetSearchLinkForPage(Model.PageNum + 1),
             includeEasyNavigation: true,
             language: Lang,
             topicId: null,
