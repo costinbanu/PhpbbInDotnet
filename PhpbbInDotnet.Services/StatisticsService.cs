@@ -1,5 +1,5 @@
-﻿using LazyCache;
-using Microsoft.EntityFrameworkCore;
+﻿using Dapper;
+using LazyCache;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
@@ -28,18 +28,19 @@ namespace PhpbbInDotnet.Services
                 CACHE_KEY,
                 async () =>
                 {
-                    var timeTask = _dbContext.PhpbbPosts.AsNoTracking().MinAsync(p => p.PostTime);
-                    var userTask = _dbContext.PhpbbUsers.AsNoTracking().CountAsync();
-                    var messageTask = _dbContext.PhpbbPosts.AsNoTracking().CountAsync();
-                    var topicTask = _dbContext.PhpbbTopics.AsNoTracking().CountAsync();
-                    var forumTask = _dbContext.PhpbbForums.AsNoTracking().CountAsync();
-                    await Task.WhenAll(timeTask, userTask, messageTask, topicTask, forumTask);
+                    var conn = _dbContext.GetDbConnection();
+                    var timeTask = conn.ExecuteScalarAsync<long>("SELECT min(post_time) FROM phpbb_posts");
+                    var userTask = conn.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_users");
+                    var postTask = conn.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_posts");
+                    var topicTask = conn.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_topics");
+                    var forumTask = conn.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_forums");
+                    await Task.WhenAll(timeTask, userTask, postTask, topicTask, forumTask);
 
                     return new Statistics
                     {
                         FirstMessageDate = (await timeTask) == 0 ? null : (await timeTask).ToUtcTime(),
                         UserCount = await userTask,
-                        MessageCount = await messageTask,
+                        PostCount = await postTask,
                         TopicCount = await topicTask,
                         ForumCount = await forumTask
                     };

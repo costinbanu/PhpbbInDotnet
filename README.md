@@ -82,7 +82,8 @@ Either way,  ensure that its structure and contents follow the sample below. All
     }
   },
   "InternetSearchUrlFormat": "https://www.google.com/search?q={0}",
-  "IpWhoIsUrlFormat": "https://whatismyipaddress.com/ip/{0}"
+  "IpWhoIsUrlFormat": "https://whatismyipaddress.com/ip/{0}",
+  "CleanupServiceInterval": "1.00:00:00"
 }
 ```
 
@@ -135,6 +136,7 @@ ExternalImageProcessor.Api.RelativeUri | string | api/process-image | Image Proc
 ExternalImageProcessor.Api.ApiKey | string | ... | Image Processor API Api Key
 InternetSearchUrlFormat | string | https://www.google.com/search?q={0} | Internet search link; query parameter should be URL-escaped
 IpWhoIsUrlFormat | string | https://whatismyipaddress.com/ip/{0} | IP WHOIS link
+CleanupServiceInterval | TimeSpan | 1.00:00:00 | How often is the database cleaned up and tables resynchronized
 
 ### Branding
 #### Forum header

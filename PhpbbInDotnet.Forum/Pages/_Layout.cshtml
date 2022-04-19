@@ -204,7 +204,7 @@
     <div class="container body-content size1300">
         @Html.Raw(_languageProvider.BasicText[lang, "STARTING_ON"])
         <script>writeDate('@((statistics.FirstMessageDate ?? DateTime.UtcNow).ToString("o"))', '@dateFormat')</script>,
-        @Html.Raw(string.Format(_languageProvider.BasicText[lang, "FORUM_STATS_FORMAT"], statistics.UserCount, statistics.MessageCount, statistics.TopicCount, statistics.ForumCount))<br />
+        @Html.Raw(string.Format(_languageProvider.BasicText[lang, "FORUM_STATS_FORMAT"], statistics.UserCount, statistics.PostCount, statistics.TopicCount, statistics.ForumCount))<br />
         <span class="Caption">@Html.Raw(string.Format(_languageProvider.BasicText[lang, "FORUM_STATS_CAPTION_FORMAT"], _statisticsService.RefreshIntervalMinutes))</span>
     </div>
     <center style="color:white;">

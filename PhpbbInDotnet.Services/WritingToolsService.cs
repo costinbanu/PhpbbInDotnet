@@ -152,13 +152,16 @@ namespace PhpbbInDotnet.Services
         public async Task<(string Message, bool? IsSuccess)> DeleteOrphanedFiles()
         {
             var lang = GetLanguage();
-            var now = DateTime.UtcNow.ToUnixTimestamp();
+            var connection = _context.GetDbConnection();
+
             var retention = _config.GetObject<TimeSpan?>("RecycleBinRetentionTime") ?? TimeSpan.FromDays(7);
-            var files = await (
-                from a in _context.PhpbbAttachments.AsNoTracking()
-                where a.IsOrphan == 1 && now - a.Filetime > retention.TotalSeconds
-                select a
-            ).ToListAsync();
+            var files = await connection.QueryAsync<PhpbbAttachments>(
+                "SELECT * FROM phpbb_attachments WHERE is_orphan = 1 AND @now - filetime > @retention",
+                new
+                {
+                    now = DateTime.UtcNow.ToUnixTimestamp(),
+                    retention = retention.TotalSeconds
+                });
 
             if (!files.Any())
             {
@@ -169,7 +172,6 @@ namespace PhpbbInDotnet.Services
 
             if (Succeeded?.Any() == true)
             {
-                var connection = _context.GetDbConnection();
                 await connection.ExecuteAsync(
                     "DELETE FROM phpbb_attachments WHERE attach_id IN @ids",
                     new { ids = files.Where(f => Succeeded.Contains(f.PhysicalFilename)).Select(f => f.AttachId).DefaultIfEmpty() }
