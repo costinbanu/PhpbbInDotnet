@@ -107,7 +107,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 await Utils.RetryOnceAsync(
                     toDo: () => Search(),
                     evaluateSuccess: () => (Posts?.Count ?? 0) > 0 && PageNum == Paginator?.CurrentPage,
-                    fix: () => PageNum = Paginator!.CurrentPage);
+                    fix: () => PageNum = Paginator.NormalizePageNumberLowerBound(Paginator?.CurrentPage));
             }
 
             return Page();
