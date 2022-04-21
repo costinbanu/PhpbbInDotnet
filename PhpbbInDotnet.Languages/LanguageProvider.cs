@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -98,7 +99,7 @@ namespace PhpbbInDotnet.Languages
         {
             StringValues val = default;
             var fromHeadersOrDefault = ValidatedOrDefault(
-                (request?.Headers?.TryGetValue("Accept-Language", out val) ?? false) ? val.ToString() : Constants.DEFAULT_LANGUAGE, 
+                (request?.Headers?.TryGetValue("Accept-Language", out val) ?? false) ? val.ToString() : Constants.DEFAULT_LANGUAGE,
                 Constants.DEFAULT_LANGUAGE
             );
 
@@ -110,7 +111,7 @@ namespace PhpbbInDotnet.Languages
             return ValidatedOrDefault(user.Language, fromHeadersOrDefault);
         }
 
-        private bool IsLanguageValid(string language, [MaybeNullWhen(false)]out string parsed)
+        private bool IsLanguageValid(string language, [MaybeNullWhen(false)] out string parsed)
         {
             var (valid, toReturn) = _cache.GetOrAdd<(bool, string?)>(
                   $"{nameof(IsLanguageValid)}_{language}",
@@ -169,6 +170,23 @@ namespace PhpbbInDotnet.Languages
         {
             var culture = new CultureInfo(lang);
             return DATE_FORMATS.Select(x => culture.DateTimeFormat.GetAllDateTimePatterns(x)).SelectMany(x => x).Distinct().ToList();
+        }
+
+        public IEnumerable<string> AllLanguages
+            => Directory.GetFiles(Translation.TranslationsDirectory).Where(IsBasicText).Select(TranslationLanguage);
+
+        private bool IsBasicText(string path)
+        {
+            var file = Path.GetFileNameWithoutExtension(path);
+            var dotIndex = file.IndexOf('.');
+            return file[..dotIndex] == _basicText.Value.Name;
+        }
+
+        private string TranslationLanguage(string path)
+        {
+            var file = Path.GetFileNameWithoutExtension(path);
+            var dotIndex = file.IndexOf('.');
+            return file[(dotIndex + 1)..];
         }
     }
 }

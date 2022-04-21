@@ -170,8 +170,7 @@ namespace PhpbbInDotnet.Forum
 
                 await connection.ExecuteAsync(
                     "DELETE FROM phpbb_topics_track WHERE forum_id = @forumId AND user_id = @usrId; " +
-                    "DELETE FROM phpbb_forums_track WHERE forum_id = @forumId AND user_id = @usrId; " +
-                    "INSERT INTO phpbb_forums_track (forum_id, user_id, mark_time) VALUES (@forumId, @usrId, @markTime);",
+                    "REPLACE INTO phpbb_forums_track (forum_id, user_id, mark_time) VALUES (@forumId, @usrId, @markTime);",
                     new { forumId, usrId, markTime = DateTime.UtcNow.ToUnixTimestamp() }
                 );
             }

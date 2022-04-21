@@ -15,7 +15,8 @@ namespace PhpbbInDotnet.Languages
         static readonly CultureInfo EN = new("en");
         public static readonly TimeSpan CACHE_EXPIRATION = TimeSpan.FromHours(4);
 
-        private readonly string _name;
+        public string Name { get; }
+
         private readonly IAppCache _cache;
         private readonly ILogger _logger;
 
@@ -25,13 +26,16 @@ namespace PhpbbInDotnet.Languages
 
         protected Translation(string name, ILogger logger, IAppCache cache)
         {
-            _name = name;
+            Name = name;
             _cache = cache;
             _logger = logger;
         }
 
         public bool Exists(string language)
             => File.Exists(GetFile(language));
+
+        public static string TranslationsDirectory 
+            => Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "Translations");
 
         protected string? GetRawTranslation(string language)
         {
@@ -104,7 +108,7 @@ namespace PhpbbInDotnet.Languages
             }
             catch (Exception ex)
             {
-                _logger.Warning(ex, "Failed to read translation '{_name}' for language '{language}' and parse its contents.", _name, language);
+                _logger.Warning(ex, "Failed to read translation '{_name}' for language '{language}' and parse its contents.", Name, language);
                 return null;
             }
 
@@ -112,12 +116,12 @@ namespace PhpbbInDotnet.Languages
         }
 
         private string GetFile(string language)
-            => Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "Translations", $"{_name}.{language}.{FileExtension}");
+            => Path.Combine(TranslationsDirectory, $"{Name}.{language}.{FileExtension}");
 
         private string GetLanguageKey(string language)
-            => $"LANG_{_name}_{language}";
+            => $"LANG_{Name}_{language}";
 
         private string GetDictionaryKey(string language)
-            => $"DICT_{_name}_{language}";
+            => $"DICT_{Name}_{language}";
     }
 }

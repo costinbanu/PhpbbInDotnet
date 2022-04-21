@@ -96,7 +96,16 @@
             <div style="max-width:100%; overflow-wrap: break-word">
                 @if (lastOpenReport != null && (Model.IsCurrentUserMod || lastOpenReport.ReporterId == Model.CurrentUser?.UserId))
                 {
-                    <a href="javascript:vt.showReportViewer(@Model.Post.PostId, @lastOpenReport.Id, '@lastOpenReport.ReasonTitle', '@lastOpenReport.ReasonDescription', '@_renderingService.BbCodeToHtml(lastOpenReport.Details, string.Empty)', '@lastOpenReport.ReporterUsername')" style="font-weight:bold; font-size:1.2em">
+                    var data = new
+                    {
+                        postId = Model.Post.PostId,
+                        reportId = lastOpenReport.Id,
+                        reportReasonTitle = lastOpenReport.ReasonTitle,
+                        reportReasonDescription = lastOpenReport.ReasonDescription,
+                        reportDetails = _renderingService.BbCodeToHtml(lastOpenReport.Details, string.Empty),
+                        reportUsername = lastOpenReport.ReporterUsername
+                    };
+                    <a href="javascript:vt.showReportViewer(@Newtonsoft.Json.JsonConvert.SerializeObject(data))" style="font-weight:bold; font-size:1.2em">
                         @Html.Raw(_languageProvider.BasicText[Model.Language, "SHOW_REPORT", Casing.FirstUpper])
                     </a>
                     <br />

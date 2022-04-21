@@ -294,13 +294,14 @@ namespace PhpbbInDotnet.Services
         {
             var lang = GetLanguage();
             return _cache.GetOrAdd(
-                $"TAGS_MAP_{lang}",
+                _writingService.GetBbCodesCacheKey(lang),
                 () =>
                 {
+                    var maxId = _context.GetDbConnection().ExecuteScalar<int>("SELECT max(bbcode_id) FROM phpbb_bbcodes");
                     var tagsCache = new Dictionary<string, (BBTag Tag, BBTagSummary Summary)>
                     {
                         ["b"] = (
-                            Tag: new BBTag("b", "<b>", "</b>", 1),
+                            Tag: new BBTag("b", "<b>", "</b>", maxId + 1),
                             Summary: new BBTagSummary
                             {
                                 OpenTag = "[b]",
@@ -311,7 +312,7 @@ namespace PhpbbInDotnet.Services
                         ),
 
                         ["i"] = (
-                            Tag: new BBTag("i", "<span style=\"font-style:italic;\">", "</span>", 2),
+                            Tag: new BBTag("i", "<span style=\"font-style:italic;\">", "</span>", maxId + 2),
                             Summary: new BBTagSummary
                             {
                                 OpenTag = "[i]",
@@ -322,7 +323,7 @@ namespace PhpbbInDotnet.Services
                         ),
 
                         ["u"] = (
-                            Tag: new BBTag("u", "<span style=\"text-decoration:underline;\">", "</span>", 7),
+                            Tag: new BBTag("u", "<span style=\"text-decoration:underline;\">", "</span>", maxId + 3),
                             Summary: new BBTagSummary
                             {
                                 OpenTag = "[u]",
@@ -333,7 +334,7 @@ namespace PhpbbInDotnet.Services
                         ),
 
                         ["color"] = (
-                            Tag: new BBTag("color", "<span style=\"color:${code}\">", "</span>", 6, "", true,
+                            Tag: new BBTag("color", "<span style=\"color:${code}\">", "</span>", maxId + 4, "", true,
                                 new BBAttribute("code", "")),
                             Summary: new BBTagSummary
                             {
@@ -345,7 +346,7 @@ namespace PhpbbInDotnet.Services
                         ),
 
                         ["size"] = (
-                            Tag: new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>", 5, "", true,
+                            Tag: new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>", maxId + 5, "", true,
                                 new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
                             Summary: new BBTagSummary
                             {
@@ -357,7 +358,7 @@ namespace PhpbbInDotnet.Services
                         ),
 
                         ["quote"] = (
-                            Tag: new BBTag("quote", "<blockquote class=\"PostQuote\">${name}", "</blockquote>", 0, "", true,
+                            Tag: new BBTag("quote", "<blockquote class=\"PostQuote\">${name}", "</blockquote>", maxId + 6, "", true,
                                 new BBAttribute(
                                     id: "name", 
                                     name: "", 
@@ -403,7 +404,7 @@ namespace PhpbbInDotnet.Services
                         ),
 
                         ["img"] = (
-                            Tag: new BBTag("img", "<br/><img src=\"${content}\" onload=\"resizeImage(this)\" style=\"width: 100px; height: 100px\" /><br/>", string.Empty, false, BBTagClosingStyle.RequiresClosingTag, content => UrlTransformer(content), false, 4, allowUrlProcessingAsText: false),
+                            Tag: new BBTag("img", "<br/><img src=\"${content}\" onload=\"resizeImage(this)\" style=\"width: 100px; height: 100px\" /><br/>", string.Empty, false, BBTagClosingStyle.RequiresClosingTag, content => UrlTransformer(content), false, maxId + 7, allowUrlProcessingAsText: false),
                             Summary: new BBTagSummary
                             {
                                 OpenTag = "[img]",
@@ -413,8 +414,8 @@ namespace PhpbbInDotnet.Services
                             }
                         ),
 
-                        ["url"] = ( //style=\"word-break: break-all\"
-                            Tag: new BBTag("url", "<a href=\"${href}\" target=\"_blank\">", "</a>", 3, "", false,
+                        ["url"] = (
+                            Tag: new BBTag("url", "<a href=\"${href}\" target=\"_blank\">", "</a>", maxId + 8, "", false,
                                 new BBAttribute("href", "", context => UrlTransformer(string.IsNullOrWhiteSpace(context.AttributeValue) ? context.TagContent : context.AttributeValue), HtmlEncodingMode.UnsafeDontEncode)),
                             Summary: new BBTagSummary
                             {
@@ -426,7 +427,7 @@ namespace PhpbbInDotnet.Services
                         ),
 
                         ["code"] = (
-                            Tag: new BBTag("code", "<span class=\"CodeBlock\">", "</span>", 8, allowUrlProcessingAsText: false),
+                            Tag: new BBTag("code", "<span class=\"CodeBlock\">", "</span>", maxId + 9, allowUrlProcessingAsText: false),
                             Summary: new BBTagSummary
                             {
                                 OpenTag = "[code]",
@@ -437,7 +438,7 @@ namespace PhpbbInDotnet.Services
                         ),
 
                         ["list"] = (
-                            Tag: new BBTag("list", "<${attr}>", "</${attr}>", true, true, 9, "", true,
+                            Tag: new BBTag("list", "<${attr}>", "</${attr}>", true, true, maxId + 10, "", true,
                                 new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul style='list-style-type: circle'" : $"ol type=\"{a.AttributeValue}\"")),
                             Summary: new BBTagSummary
                             {
@@ -449,7 +450,7 @@ namespace PhpbbInDotnet.Services
                         ),
 
                         ["*"] = (
-                            Tag: new BBTag("*", "<li>", "</li>", true, BBTagClosingStyle.AutoCloseElement, x => x, true, 20),
+                            Tag: new BBTag("*", "<li>", "</li>", true, BBTagClosingStyle.AutoCloseElement, x => x, true, maxId + 11),
                             Summary: new BBTagSummary
                             {
                                 OpenTag = "[*]",
@@ -460,11 +461,22 @@ namespace PhpbbInDotnet.Services
                         ),
 
                         ["attachment"] = (
-                            Tag: new BBTag("attachment", "#{AttachmentFileName=${content}/AttachmentIndex=${num}}#", "", false, BBTagClosingStyle.AutoCloseElement, x => Utils.HtmlCommentRegex.Replace(HttpUtility.HtmlDecode(x), string.Empty), 12, "", true,
+                            Tag: new BBTag("attachment", "#{AttachmentFileName=${content}/AttachmentIndex=${num}}#", "", false, BBTagClosingStyle.AutoCloseElement, x => Utils.HtmlCommentRegex.Replace(HttpUtility.HtmlDecode(x), string.Empty), maxId + 12, "", true,
                                 new BBAttribute("num", "")),
                             Summary: new BBTagSummary
                             {
                                 ShowOnPage = false
+                            }
+                        ),
+
+                        ["youtube"] = (
+                            Tag: new BBTag("youtube", "<br /><iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/${content}?html5=1\" frameborder=\"0\" allowfullscreen onload=\"resizeIFrame(this)\"></iframe><br />", string.Empty, false, false, maxId + 13, ""),
+                            Summary: new BBTagSummary
+                            {
+                                OpenTag = "[youtube]",
+                                CloseTag = "[/youtube]",
+                                ShowOnPage = true,
+                                ShowWhenCollapsed = true
                             }
                         ),
                     };

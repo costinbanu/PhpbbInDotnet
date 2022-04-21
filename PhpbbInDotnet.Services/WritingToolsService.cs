@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using LazyCache;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -24,19 +25,21 @@ namespace PhpbbInDotnet.Services
         private readonly ForumDbContext _context;
         private readonly StorageService _storageService;
         private readonly IConfiguration _config;
-        
+        private readonly IAppCache _cache;
+
         private static readonly Regex EMOJI_REGEX = new(@"^(\:|\;){1}[a-zA-Z0-9\-\)\(\]\[\}\{\\\|\*\'\>\<\?\!]+\:?$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex WHITESPACE_REGEX = new(@"\s+", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnoreCase);
 
         private List<PhpbbSmilies>? _smilies;
 
         public WritingToolsService(ForumDbContext context, StorageService storageService, CommonUtils utils, LanguageProvider languageProvider, 
-            IHttpContextAccessor httpContextAccessor, IConfiguration config)
+            IHttpContextAccessor httpContextAccessor, IConfiguration config, IAppCache cache)
             : base(utils, languageProvider, httpContextAccessor)
         {
             _context = context;
             _storageService = storageService;
             _config = config;
+            _cache = cache;
         }
 
         #region Banned words
@@ -72,9 +75,12 @@ namespace PhpbbInDotnet.Services
 
         #region Text & BB Codes
 
+        public string GetBbCodesCacheKey(string language)
+            => $"TAGS_MAP_{language}";
+
         public async Task<(string Message, bool? IsSuccess)> ManageBBCodes(List<PhpbbBbcodes> codes, List<int> indexesToRemove, List<int> indexesToDisplay)
         {
-            var lang = GetLanguage();
+            var currentLanguage = GetLanguage();
             try
             { 
                 indexesToDisplay.ForEach(i => codes[i].DisplayOnPosting = 1);
@@ -84,12 +90,18 @@ namespace PhpbbInDotnet.Services
 
                 var conn = _context.GetDbConnection();
                 await conn.ExecuteAsync("DELETE FROM phpbb_bbcodes WHERE bbcode_id IN @ids", new { ids = indexesToRemove.Select(i => codes[i].BbcodeId) });
-                return (LanguageProvider.Admin[lang, "BBCODES_UPDATED_SUCCESSFULLY"], true);
+                
+                foreach(var language in LanguageProvider.AllLanguages)
+                {
+                    _cache.Remove(GetBbCodesCacheKey(language));
+                }
+
+                return (LanguageProvider.Admin[currentLanguage, "BBCODES_UPDATED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
                 Utils.HandleError(ex, "ManageBBCodes failed");
-                return (LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
+                return (LanguageProvider.Errors[currentLanguage, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }
 
