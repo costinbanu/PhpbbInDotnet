@@ -93,13 +93,14 @@
         }
     }
 
-    showReportViewer(postId, reportId, reportReasonTitle, reportReasonDescription, reportDetails, reportUsername) {
-        $('#reportViewerReportPostId').val(postId);
-        $('#reportViewerReportReasonTitle').text(he.decode(reportReasonTitle));
-        $('#reportViewerReportReasonDescription').text(reportReasonDescription);
-        $('#reportViewerReportId').val(reportId);
-        $('#reportViewerReportDetails').html(he.decode(reportDetails));
-        $('#reportViewerReporter').text(he.decode(reportUsername));
+    showReportViewer(data) {
+        console.log(data);
+        $('#reportViewerReportPostId').val(data.postId);
+        $('#reportViewerReportReasonTitle').text(he.decode(data.reportReasonTitle));
+        $('#reportViewerReportReasonDescription').text(data.reportReasonDescription);
+        $('#reportViewerReportId').val(data.reportId);
+        $('#reportViewerReportDetails').html(he.decode(data.reportDetails));
+        $('#reportViewerReporter').text(he.decode(data.reportUsername));
         $('#reportViewerEditMessage').prop("checked", false);
         $('#reportViewerDeleteMessage').prop("checked", false);
         showElement('reportViewer', null, null, true);
