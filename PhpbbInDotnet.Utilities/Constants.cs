@@ -18,9 +18,11 @@ namespace PhpbbInDotnet.Utilities
 
         public const int NO_PM_ROLE = 8;
 
-        public const int OTHER_REPORT_REASON_ID = 4;
+        public const int FORUM_RESTRICTED_ROLE = 16;
 
-        public const int ACCESS_TO_FORUM_DENIED_ROLE = 16;
+        public const int FORUM_READONLY_ROLE = 17;
+
+        public const int OTHER_REPORT_REASON_ID = 4;
 
         public const int ADMIN_GROUP_ID = 5;
 

@@ -291,9 +291,9 @@ namespace PhpbbInDotnet.Forum
 
                 if (restrictedAncestor != default)
                 {
-                    if (usr?.AllPermissions?.Contains(new AuthenticatedUserExpanded.Permissions { ForumId = restrictedAncestor, AuthRoleId = Constants.ACCESS_TO_FORUM_DENIED_ROLE }) ?? false)
+                    if (usr.IsForumRestricted(restrictedAncestor))
                     {
-                        return RedirectToPage("Index");
+                        return RedirectToPage("Error", new { IsUnauthorized = true });
                     }
                     else
                     {

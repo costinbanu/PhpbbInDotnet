@@ -275,7 +275,7 @@ namespace PhpbbInDotnet.Forum.Pages
         private async Task<IActionResult> WithUserHavingPM(Func<AuthenticatedUserExpanded, Task<IActionResult>> toDo)
             => await WithRegisteredUser(async (user) =>
             {
-                if (!UserService.HasPrivateMessagePermissions(user))
+                if (!user.HasPrivateMessagePermissions)
                 {
                     return RedirectToPage("Error", new { isUnauthorised = true });
                 }

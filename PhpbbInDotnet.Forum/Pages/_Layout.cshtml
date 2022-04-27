@@ -124,7 +124,7 @@
                                     @Html.Raw($"{_languageProvider.BasicText[lang, "MY_ACCOUNT", Casing.FirstUpper]} [{currentUser.Username}]")
                                 </a>
                             </li>
-                            if (_userService.HasPrivateMessagePermissions(currentUser))
+                            if (currentUser.HasPrivateMessagePermissions)
                             {
                                 <li>
                                     <a asp-page="/PrivateMessages">

@@ -4,18 +4,17 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Net.Mail;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using PhpbbInDotnet.Languages;
 
 namespace PhpbbInDotnet.Services
 {
@@ -67,14 +66,8 @@ namespace PhpbbInDotnet.Services
         {
             var usr = new AuthenticatedUserExpanded(await GetAuthenticatedUserById(userId));
             usr.AllPermissions = await GetPermissions(userId);
-            return HasPrivateMessagePermissions(usr);
+            return usr.HasPrivateMessagePermissions;
         }
-
-        public bool HasPrivateMessagePermissions(AuthenticatedUserExpanded user)
-            => !(user?.IsAnonymous ?? true) && !(user?.AllPermissions?.Contains(new AuthenticatedUserExpanded.Permissions { ForumId = 0, AuthRoleId = Constants.NO_PM_ROLE }) ?? false);
-
-        public bool HasPrivateMessages(AuthenticatedUserExpanded user)
-            => user.AllowPM && HasPrivateMessagePermissions(user);
 
         public async Task<PhpbbUsers> GetAnonymousDbUser()
         {
@@ -244,7 +237,11 @@ namespace PhpbbInDotnet.Services
             var lang = GetLanguage();
             try
             {
-                if (!await HasPrivateMessagePermissions(senderId))
+                var sender = new AuthenticatedUserExpanded(await GetAuthenticatedUserById(senderId))
+                {
+                    AllPermissions = await GetPermissions(senderId),
+                };
+                if (!sender.HasPrivateMessagePermissions)
                 {
                     return (LanguageProvider.Errors[lang, "SENDER_CANT_SEND_PMS"], false);
                 }
@@ -254,7 +251,7 @@ namespace PhpbbInDotnet.Services
                     AllPermissions = await GetPermissions(receiverId),
                     Foes = await GetFoes(receiverId)
                 };
-                if (!HasPrivateMessages(receiver))
+                if (!receiver.HasPrivateMessages)
                 {
                     return (LanguageProvider.Errors[lang, "RECEIVER_CANT_RECEIVE_PMS"], false);
                 }

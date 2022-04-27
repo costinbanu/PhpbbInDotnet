@@ -42,6 +42,18 @@ namespace PhpbbInDotnet.Services
         public bool IsNodeRestricted(ForumTree tree, bool includePasswordProtected = false)
             => tree.IsRestricted || (includePasswordProtected && tree.HasPassword);
 
+        public async Task<bool> IsForumReadOnlyForUser(AuthenticatedUserExpanded user, int forumId)
+        {
+            var tree = await GetForumTree(user, false, false);
+            var path = new List<int>();
+            if (tree.TryGetValue(new ForumTree { ForumId = forumId }, out var cur))
+            {
+                path = cur?.PathList ?? new List<int>();
+            }
+
+            return path.Any(fid => user.IsForumReadOnly(fid));
+        }
+
         public async Task<HashSet<ForumTree>> GetForumTree(AuthenticatedUserExpanded? user, bool forceRefresh, bool fetchUnreadData)
         {
             if (_tree != null && !forceRefresh && !(_tracking == null && fetchUnreadData))
@@ -54,11 +66,9 @@ namespace PhpbbInDotnet.Services
 
             var treeTask = GetForumTree(connection);
             var forumTopicCountTask = GetForumTopicCount(connection);
-            var restrictedForumsTask = GetRestrictedForumsFromPermissions(user);
-            await Task.WhenAll(treeTask, forumTopicCountTask, restrictedForumsTask);
+            await Task.WhenAll(treeTask, forumTopicCountTask);
             _tree = await treeTask;
             _forumTopicCount = await forumTopicCountTask;
-            var restrictedForums = await restrictedForumsTask;
 
             traverse(0);
 
@@ -73,7 +83,7 @@ namespace PhpbbInDotnet.Services
                 }
 
                 node.IsUnread = fetchUnreadData && tracking!.ContainsKey(forumId);
-                node.IsRestricted = restrictedForums.Contains(forumId);
+                node.IsRestricted = user?.IsForumRestricted(forumId) == true;
                 node.TotalSubforumCount = node.ChildrenList?.Count ?? 0;
                 node.TotalTopicCount = GetTopicCount(forumId);
                 foreach (var childForumId in node.ChildrenList ?? new HashSet<int>())
@@ -118,9 +128,6 @@ namespace PhpbbInDotnet.Services
                 var count = await connection.QueryAsync<ForumTopicCount>("SELECT forum_id, count(topic_id) as topic_count FROM phpbb_topics GROUP BY forum_id");
                 return count.ToHashSet();
             }
-
-            Task<HashSet<int>> GetRestrictedForumsFromPermissions(AuthenticatedUserExpanded? user)
-                => Task.Run(() => (user?.AllPermissions?.Where(p => p.AuthRoleId == Constants.ACCESS_TO_FORUM_DENIED_ROLE)?.Select(p => p.ForumId) ?? Enumerable.Empty<int>()).ToHashSet());
         }
 
         public async Task<Dictionary<int, HashSet<Tracking>>> GetForumTracking(int userId, bool forceRefresh)
