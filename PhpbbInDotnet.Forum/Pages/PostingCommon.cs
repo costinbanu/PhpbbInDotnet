@@ -366,6 +366,16 @@ namespace PhpbbInDotnet.Forum.Pages
             return await toDo();
         }
 
+        private Task<IActionResult> WithRegisteredUserAndCorrectPermissions(Func<AuthenticatedUserExpanded, Task<IActionResult>> toDo)
+            => WithRegisteredUser(async user =>
+            {
+                if (await ForumService.IsForumReadOnlyForUser(user, ForumId))
+                {
+                    return RedirectToPage("Error", new { IsUnauthorized = true });
+                }
+                return await toDo(user);
+            });
+
         private IActionResult PageWithError(PhpbbForums? curForum, string errorKey, string errorMessage)
         {
             ModelState.AddModelError(errorKey, errorMessage);

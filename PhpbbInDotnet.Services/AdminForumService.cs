@@ -90,96 +90,124 @@ namespace PhpbbInDotnet.Services
 
                 await ReorderChildren(actual.ForumId);
 
+                var rolesForAclEntity = new Dictionary<AclEntityType, HashSet<(int entityId, int roleId)>>
+                {
+                    { AclEntityType.User, translatePermissions(dto.UserForumPermissions) },
+                    { AclEntityType.Group, translatePermissions(dto.GroupForumPermissions) }
+                };
+
                 foreach (var idx in dto.UserPermissionToRemove ?? new List<int>())
                 {
                     var (entityId, roleId) = translatePermission(dto.UserForumPermissions?[idx]);
                     _context.PhpbbAclUsers.Remove(await _context.PhpbbAclUsers.FirstAsync(x => x.UserId == entityId && x.AuthRoleId == roleId && x.ForumId == actual.ForumId));
+                    rolesForAclEntity[AclEntityType.User].Remove((entityId, roleId));
                 }
 
                 foreach (var idx in dto.GroupPermissionToRemove ?? new List<int>())
                 {
                     var (entityId, roleId) = translatePermission(dto.GroupForumPermissions?[idx]);
                     _context.PhpbbAclGroups.Remove(await _context.PhpbbAclGroups.FirstAsync(x => x.GroupId == entityId && x.AuthRoleId == roleId && x.ForumId == actual.ForumId));
+                    rolesForAclEntity[AclEntityType.Group].Remove((entityId, roleId));
                 }
-
-                var rolesForAclEntity = new Dictionary<AclEntityType, Dictionary<int, int>>
-                    {
-                        { AclEntityType.User, translatePermissions(dto.UserForumPermissions) },
-                        { AclEntityType.Group, translatePermissions(dto.GroupForumPermissions) }
-                    };
 
                 await _context.SaveChangesAsync();
 
-                var connection = _context.GetDbConnection();
-                var select = @"SELECT t.*
-                             FROM {0} t
-                             JOIN phpbb_acl_roles r ON t.auth_role_id = r.role_id
-                            WHERE t.forum_id = @forumId AND t.{1} = @entityId AND r.role_type = 'f_'";
-                var update = @"UPDATE {0}
-                              SET auth_role_id = @roleId
-                            WHERE {1} = @entityId AND forum_id = @forumId AND auth_option_id = @auth_option_id";
-                var insert = @"INSERT INTO {0} ({1}, forum_id, auth_option_id, auth_role_id, auth_setting) 
-                           VALUES (@entityId, @forumId, 0, @roleId, 0)";
-
+                var tasks = new List<Task>();
                 foreach (var byType in rolesForAclEntity)
                 {
-                    foreach (var byId in byType.Value)
+                    foreach (var (entityId, roleId) in byType.Value)
                     {
                         var prefix = byType.Key == AclEntityType.Group ? "group" : "user";
                         var table = $"phpbb_acl_{prefix}s";
                         var entityIdColumn = $"{prefix}_id";
-                        var entity = await connection.QueryFirstOrDefaultAsync(string.Format(select, table, entityIdColumn), new { actual.ForumId, entityId = byId.Key });
-                        if (entity == null)
-                        {
-                            await connection.ExecuteAsync(string.Format(insert, table, entityIdColumn), new { entityId = byId.Key, actual.ForumId, roleId = byId.Value });
-                        }
-                        else
-                        {
-                            await connection.ExecuteAsync(string.Format(update, table, entityIdColumn), new { entityId = byId.Key, actual.ForumId, entity.auth_option_id, roleId = byId.Value });
-                        }
+
+                        tasks.Add(ManagePermissions(table, entityIdColumn, actual.ForumId, entityId, roleId));
                     }
                 }
+                await Task.WhenAll(tasks);
 
                 await _operationLogService.LogAdminForumAction(isNewForum ? AdminForumActions.Add : AdminForumActions.Update, adminUserId, actual);
                 
                 return (string.Format(LanguageProvider.Admin[lang, "FORUM_UPDATED_SUCCESSFULLY_FORMAT"], actual.ForumName), true);
-
-                (int entityId, int roleId) translatePermission(string? permission)
-                {
-                    if (string.IsNullOrWhiteSpace(permission))
-                    {
-                        return (-1, -1);
-                    }
-                    var items = permission.Split('_', StringSplitOptions.RemoveEmptyEntries);
-                    return (int.Parse(items[0]), int.Parse(items[1]));
-                }
-
-                Dictionary<int, int> translatePermissions(List<string>? permissions)
-                    => (from fp in permissions ?? new List<string>()
-                        let item = translatePermission(fp)
-                        where item.entityId > 0
-                        select item)
-                        .ToDictionary(key => key.entityId, value => value.roleId);
-
-                async Task ReorderChildren(int forumId)
-                {
-                    var children = await (
-                        from f in _context.PhpbbForums
-                        where f.ParentId == forumId
-                        orderby f.LeftId
-                        select f
-                    ).ToListAsync();
-
-                    if (children.Any())
-                    {
-                        children.ForEach(c => c.LeftId = ((dto.ChildrenForums?.IndexOf(c.ForumId) ?? 0) + 1) * 2);
-                    }
-                }
             }
             catch (Exception ex)
             {
                 var id = Utils.HandleError(ex);
                 return (string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+            }
+
+            (int entityId, int roleId) translatePermission(string? permission)
+            {
+                if (string.IsNullOrWhiteSpace(permission))
+                {
+                    return (-1, -1);
+                }
+                var items = permission.Split('_', StringSplitOptions.RemoveEmptyEntries);
+                return (int.Parse(items[0]), int.Parse(items[1]));
+            }
+
+            HashSet<(int entityId, int roleId)> translatePermissions(List<string>? permissions)
+                => new(
+                    from fp in permissions ?? new List<string>()
+                    let item = translatePermission(fp)
+                    where item.entityId > 0
+                    select item);
+
+            async Task ReorderChildren(int forumId)
+            {
+                var children = await (
+                    from f in _context.PhpbbForums
+                    where f.ParentId == forumId
+                    orderby f.LeftId
+                    select f
+                ).ToListAsync();
+
+                if (children.Any())
+                {
+                    children.ForEach(c => c.LeftId = ((dto.ChildrenForums?.IndexOf(c.ForumId) ?? 0) + 1) * 2);
+                }
+            }
+
+            async Task ManagePermissions(string table, string entityIdColumn, int forumId, int entityId, int roleId)
+            {
+                var connection = _context.GetDbConnection();
+                var existing = (await connection.QueryAsync(
+                    $@"SELECT t.*
+                        FROM {table} t
+                        JOIN phpbb_acl_roles r 
+                          ON t.auth_role_id = r.role_id
+                       WHERE t.forum_id = @forumId 
+                         AND t.{entityIdColumn} = @entityId 
+                         AND r.role_type = 'f_'",
+                    new { forumId, entityId })).AsList();
+
+                if (existing.Count == 1 && existing[0].auth_role_id != roleId)
+                {
+                    await connection.ExecuteAsync(
+                        $@"UPDATE {table}
+                              SET auth_role_id = @roleId
+                            WHERE {entityIdColumn} = @entityId 
+                              AND forum_id = @forumId 
+                              AND auth_option_id = @auth_option_id",
+                        new { entityId, forumId, existing[0].auth_option_id, roleId });
+                }
+                else if (existing.Count != 1)
+                {
+                    if (existing.Count > 1)
+                    {
+                        await connection.ExecuteAsync(
+                            $@"DELETE FROM {table}
+                                WHERE {entityIdColumn} = @entityId
+                                  AND forum_id = @forumId
+                                  AND auth_option_id = @auth_option_id
+                                  AND auth_role_id = @auth_role_id",
+                            existing.Select(e => new { entityId, forumId, e.auth_option_id, e.auth_role_id }));
+                    }
+                    await connection.ExecuteAsync(
+                        $@"INSERT INTO {table} ({entityIdColumn}, forum_id, auth_option_id, auth_role_id, auth_setting) 
+                                VALUES (@entityId, @forumId, 0, @roleId, 0)",
+                        new { entityId, forumId, roleId });
+                }
             }
         }
 

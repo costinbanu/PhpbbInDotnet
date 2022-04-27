@@ -542,7 +542,7 @@ else
                             &#x2709;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEND_EMAIL"])
                         </button>
                     }
-                    var showPMs = (_userService.HasPrivateMessagePermissions(viewingUser) && _userService.HasPrivateMessages(pageUser) && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false) && !(pageUser.Foes?.Contains(viewingUser.UserId) ?? false)) || (await Model.IsCurrentUserAdminHere() && _userService.HasPrivateMessagePermissions(pageUser));
+                    var showPMs = (viewingUser.HasPrivateMessagePermissions && pageUser.HasPrivateMessages && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false) && !(pageUser.Foes?.Contains(viewingUser.UserId) ?? false)) || (await Model.IsCurrentUserAdminHere() && pageUser.HasPrivateMessagePermissions);
                     if (showPMs)
                     {
                         if (showMail)
@@ -582,7 +582,7 @@ else
                     </div>
                 </div>
             }
-            @if (canEdit && _userService.HasPrivateMessagePermissions(pageUser))
+            @if (canEdit && pageUser.HasPrivateMessagePermissions)
             {
                 <p></p>
                 <div class="FlexCenter">

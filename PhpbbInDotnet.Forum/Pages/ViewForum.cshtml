@@ -17,11 +17,11 @@
     };
     ViewData["Title"] = DocumentTitle;
     Layout = "~/Pages/_Layout.cshtml";
-    var CurrentUser = Model.GetCurrentUser();
-    var IsAnonymous = CurrentUser?.IsAnonymous ?? true;
+    var currentUser = Model.GetCurrentUser();
     var hasSubForums = Model.ForumId != 0 && _forumService.HasUnrestrictedChildren((await Model.GetForumTree(false, false)).Tree, Model.ForumId);
     var hasTopics = Model.Topics?.SelectMany(x => x.Topics).Any() ?? false;
-    var UserDateFormat = CurrentUser?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
+    var userDateFormat = currentUser.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
+    var isCurrentForumReadOnly = await _forumService.IsForumReadOnlyForUser(currentUser, Model.ForumId);
 }
 
 <environment include="Development">
@@ -54,7 +54,7 @@
     }
 </script>
 
-@if (Model.Mode == ViewForumMode.Forum && (CurrentUser!.JumpToUnread ?? false))
+@if (Model.Mode == ViewForumMode.Forum && (currentUser.JumpToUnread ?? false))
 {
     <script>
         $(window).on('load', function () {
@@ -78,7 +78,7 @@ else
     <a href="/" style="padding-bottom: 10px">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "HOME", Casing.FirstUpper])</a>
 }
 
-@if (!IsAnonymous)
+@if (!currentUser.IsAnonymous)
 {
     var additionalLinks = new List<string>();
     @if (Model.Mode == ViewForumMode.Forum && (hasSubForums || hasTopics))
@@ -133,7 +133,7 @@ else
     <p>&nbsp;</p>
     @await Html.PartialAsync(
         "_ForumDisplayPartial",
-        new PhpbbInDotnet.Forum.Pages.CustomPartials._ForumDisplayPartialModel(Model.ForumId, Model.Forums!, UserDateFormat, true, CurrentUser!, true, Lang),
+        new PhpbbInDotnet.Forum.Pages.CustomPartials._ForumDisplayPartialModel(Model.ForumId, Model.Forums!, userDateFormat, true, currentUser, true, Lang),
         ViewData
     )
 }
@@ -187,12 +187,15 @@ else
                     }
                     <p>&nbsp;</p>
                     <h3 style="float:left">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "TOPICS", Casing.FirstUpper])</h3>
-                    <span>
-                        &nbsp;
-                        <button onclick="location.href='/Posting?forumId=@Model.ForumId&handler=newTopic'" type="button" class="MyButton SpacedButtonNotTop" style="height:26px; padding-top:1px; padding-bottom: 1px">
-                            &#x1F4DD;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "OPEN_NEW_TOPIC", Casing.FirstUpper])
-                        </button>
-                    </span>
+                    if (!isCurrentForumReadOnly)
+                    {
+                        <span>
+                            &nbsp;
+                            <button onclick="location.href='./Posting?forumId=@Model.ForumId&handler=newTopic'" type="button" class="MyButton SpacedButtonNotTop" style="height:26px; padding-top:1px; padding-bottom: 1px">
+                                &#x1F4DD;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "OPEN_NEW_TOPIC", Casing.FirstUpper])
+                            </button>
+                        </span>
+                    }
                     topicsDisplayed = isFirstInGroup = true;
                     break;
             }
@@ -205,7 +208,7 @@ else
                 topic.Unread = Model.Mode == ViewForumMode.NewPosts || await Model.IsTopicUnread(topic.ForumId ?? 0, topic.TopicId ?? 0);
                 if (Model.Mode != ViewForumMode.NewPosts)
                 {
-                    var pageSize = CurrentUser!.TopicPostsPerPage!.ContainsKey(topic.TopicId ?? 0) ? CurrentUser.TopicPostsPerPage[topic.TopicId ?? 0] : Constants.DEFAULT_PAGE_SIZE;
+                    var pageSize = currentUser!.GetPageSize(topic.TopicId ?? 0);
                     topic.Pagination = new Objects.PaginationDto($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", topic.PostCount ?? 0, pageSize, 0, "PageNum");
                 }
             }
@@ -253,22 +256,22 @@ else
                             <a asp-page="/ViewTopic" asp-route-topicId="@topic.TopicId" asp-route-pageNum="1" class="nav-link" style="font-weight:bold">@Html.Raw(topic.TopicTitle)</a>
                         }
                     }
-                    else
+                    else if (!currentUser.IsForumReadOnly(topic.ForumId ?? 0))
                     {
                         if ((topic.TopicId ?? 0) == 0)
                         {
-                            <a asp-page="/Posting" asp-page-handler="newTopic" asp-route-forumId="@topic.ForumId" style="white-space:nowrap">
+                            <a asp-page="./Posting" asp-page-handler="newTopic" asp-route-forumId="@topic.ForumId" style="white-space:nowrap">
                                 @Html.Raw(Model.LanguageProvider.BasicText[Lang, "NEW_TOPIC", Casing.FirstUpper]):
                                 @Html.Raw(topic.TopicTitle)
                             </a>
                         }
                         else
                         {
-                            <a asp-page="/Posting" asp-page-handler="forumPost" asp-route-forumId="@topic.ForumId" asp-route-topicId="@topic.TopicId" asp-route-postId="@topic.TopicLastPostId">@Html.Raw(topic.TopicTitle)</a>
+                            <a asp-page="./Posting" asp-page-handler="forumPost" asp-route-forumId="@topic.ForumId" asp-route-topicId="@topic.TopicId" asp-route-postId="@topic.TopicLastPostId">@Html.Raw(topic.TopicTitle)</a>
                         }
                         <span>
                             &nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "POSTED"])
-                            <script>writeDate("@topic.LastPostTime?.ToString("o")", "@UserDateFormat");</script>
+                            <script>writeDate("@topic.LastPostTime?.ToString("o")", "@userDateFormat");</script>
                         </span>
                     }
                     <br />
@@ -287,7 +290,7 @@ else
                 </span>
                 @if (Model.Mode != ViewForumMode.Drafts)
                 {
-                    if (CurrentUser!.Foes?.Contains(topic.TopicLastPosterId ?? 0) ?? false)
+                    if (currentUser.Foes?.Contains(topic.TopicLastPosterId ?? 0) ?? false)
                     {
                         topic.TopicLastPosterColour = null;
                         topic.TopicLastPosterName = "[Ascuns]";
@@ -300,7 +303,7 @@ else
                         AuthorColor = topic.TopicLastPosterColour,
                         CreationTime = topic.LastPostTime,
                         AssetId = topic.TopicId!.Value,
-                        DateFormat = UserDateFormat,
+                        DateFormat = userDateFormat,
                         LinkHref = topic.TopicLastPostId == null ? null : $"./ViewTopic?postId={topic.TopicLastPostId}&handler=ByPostId",
                         ShowAsLast = true,
                         Posts = topic.PostCount,
@@ -373,7 +376,7 @@ else if (Model.Mode == ViewForumMode.Drafts)
     <hr class="BoxSeparator" />
 }
 
-@if (!IsAnonymous && Model.Mode == ViewForumMode.Forum)
+@if (!isCurrentForumReadOnly && Model.Mode == ViewForumMode.Forum)
 {
     <p></p>
     <button onclick="location.href='/Posting?forumId=@Model.ForumId&handler=newTopic'" type="button" class="MyButton">

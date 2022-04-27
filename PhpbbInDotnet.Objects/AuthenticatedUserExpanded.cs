@@ -34,17 +34,19 @@ namespace PhpbbInDotnet.Objects
         public string? Style { get; set; }
 
         public int GetPageSize(int topicId)
-        {
-            var newPageSize = Constants.DEFAULT_PAGE_SIZE;
-            if (TopicPostsPerPage?.TryGetValue(topicId, out newPageSize) == true)
-            {
-                return newPageSize;
-            }
-            else
-            {
-                return Constants.DEFAULT_PAGE_SIZE;
-            }
-        }
+            => TopicPostsPerPage?.TryGetValue(topicId, out var pageSize) == true ? pageSize : Constants.DEFAULT_PAGE_SIZE;
+
+        public bool IsForumRestricted(int forumId)
+            => AllPermissions?.Contains(new Permissions { ForumId = forumId, AuthRoleId = Constants.FORUM_RESTRICTED_ROLE }) == true;
+
+        public bool IsForumReadOnly(int forumId)
+            => IsAnonymous || AllPermissions?.Contains(new Permissions { ForumId = forumId, AuthRoleId = Constants.FORUM_READONLY_ROLE }) == true;
+
+        public bool HasPrivateMessagePermissions
+            => !IsAnonymous && AllPermissions?.Contains(new Permissions { ForumId = 0, AuthRoleId = Constants.NO_PM_ROLE }) != true;
+
+        public bool HasPrivateMessages
+            => AllowPM && HasPrivateMessagePermissions;
 
         public class Permissions
         {
@@ -57,7 +59,7 @@ namespace PhpbbInDotnet.Objects
             public int AuthSetting { get; set; } = 0;
 
             public override bool Equals(object? obj)
-                => obj is Permissions perm && ForumId == perm?.ForumId && AuthRoleId == perm?.AuthRoleId;
+                => obj is Permissions perm && ForumId == perm.ForumId && AuthRoleId == perm.AuthRoleId;
 
             public override int GetHashCode()
                 => HashCode.Combine(ForumId, AuthRoleId);
