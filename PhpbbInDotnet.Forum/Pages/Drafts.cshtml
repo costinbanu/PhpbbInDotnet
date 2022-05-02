@@ -1,0 +1,121 @@
+﻿@page
+@model PhpbbInDotnet.Forum.Pages.DraftsModel
+
+@using Utilities
+@using Objects
+@inject Services.ForumTreeService _forumService
+
+@{
+    var Lang = Model.GetLanguage();
+    var DocumentTitle = Model.LanguageProvider.BasicText[Lang, "DRAFTS", Casing.FirstUpper];
+    ViewData["Title"] = DocumentTitle;
+    Layout = "~/Pages/_Layout.cshtml";
+    var currentUser = Model.GetCurrentUser();
+    var userDateFormat = currentUser.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
+    var isCurrentForumReadOnly = await _forumService.IsForumReadOnlyForUser(currentUser, Model.ForumId);
+}
+
+<environment include="Development">
+    <link rel="stylesheet" href="~/css/pagination.css" />
+</environment>
+
+<form asp-page-handler="DeleteDrafts" method="post" name="DeleteDrafts" id="DeleteDrafts">
+    @Html.AntiForgeryToken()
+</form>
+
+<a href="/" style="padding-bottom: 10px">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "HOME", Casing.FirstUpper])</a>
+
+@if (!currentUser.IsAnonymous)
+{
+    <span>&nbsp;&bull;&nbsp;</span>
+    @await Html.PartialAsync(
+        "_HeaderLinksPartial",
+        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(Lang, false),
+        ViewData
+    )
+}
+
+<p>&nbsp;</p>
+<h2>@Html.Raw(DocumentTitle)</h2>
+
+@if (Model.Topics.Any())
+{  
+    @await Html.PartialAsync(
+        "_PaginationControlsPartial",
+        new CustomPartials._PaginationControlsPartialModel(
+            paginator: Model.Paginator!,
+            allowPaginationChange: false,
+            back: $"/NewPosts?pageNum={Model.PageNum - 1}",
+            forward: $"/NewPosts?pageNum={Model.PageNum + 1}",
+            includeEasyNavigation: false,
+            language: Lang
+        ),
+        ViewData
+    )
+    
+    <hr class="BoxSeparator" />
+
+    foreach (var topic in Model.Topics)
+    {
+        topic.Unread = true;
+        if (topic != Model.Topics[0])
+        {
+            <hr class="BoxSeparator" />
+        }
+
+        <div class="FlexRow RowMargin">
+            <input name="SelectedDrafts" type="checkbox" value="@topic.DraftId" form="DeleteDrafts" style="margin-right:10px; align-self:safe center" />
+            <span class="ForumContent">
+                <span class="Caption">
+                    @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, topic.ForumId ?? 0))
+                </span>
+                <br />
+                @if (!currentUser.IsForumReadOnly(topic.ForumId ?? 0))
+                {
+                    if ((topic.TopicId ?? 0) == 0)
+                    {
+                        <a asp-page="./Posting" asp-page-handler="newTopic" asp-route-forumId="@topic.ForumId" style="white-space:nowrap">
+                            @Html.Raw(Model.LanguageProvider.BasicText[Lang, "NEW_TOPIC", Casing.FirstUpper]):
+                            @Html.Raw(topic.TopicTitle)
+                        </a>
+                    }
+                    else
+                    {
+                        <a asp-page="./Posting" asp-page-handler="forumPost" asp-route-forumId="@topic.ForumId" asp-route-topicId="@topic.TopicId" asp-route-postId="@topic.TopicLastPostId">@Html.Raw(topic.TopicTitle)</a>
+                    }
+                    <span>
+                        &nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "POSTED"])
+                        <script>writeDate("@topic.LastPostTime?.ToString("o")", "@userDateFormat");</script>
+                    </span>
+                }
+                <br />
+
+            </span>
+        </div>
+    }
+
+    <hr class="BoxSeparator" />
+
+    @await Html.PartialAsync(
+        "_PaginationControlsPartial",
+        new CustomPartials._PaginationControlsPartialModel(
+            paginator: Model.Paginator!,
+            allowPaginationChange: false,
+            back: $"/NewPosts?pageNum={Model.PageNum - 1}",
+            forward: $"/NewPosts?pageNum={Model.PageNum + 1}",
+            includeEasyNavigation: true,
+            language: Lang
+        ),
+        ViewData
+    );
+
+    <button onclick="selectAllCheckboxes()" type="button" class="MyButton SpacedButton">&#x2714;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SELECT_ALL_POSTS"])</button>
+    <input type="submit" value="&#x1F6AE;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_SELECTED_POSTS"])" form="DeleteDrafts" onclick="return confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_DRAFTS"])');" class="MyButton SpacedButton" />
+    <p>&nbsp;</p>
+}
+else 
+{
+    <p>&nbsp;</p>
+    <h4>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "NO_DRAFTS"])</h4>
+    <p>&nbsp;</p>
+}

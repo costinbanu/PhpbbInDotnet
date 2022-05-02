@@ -113,7 +113,8 @@ namespace PhpbbInDotnet.Utilities
         Normal = 0,
         Important = 1,
         Announcement = 2,
-        Global = 3
+        Global = 3,
+        Shortcut = 4
     }
 
     public enum ModeratorTopicActions

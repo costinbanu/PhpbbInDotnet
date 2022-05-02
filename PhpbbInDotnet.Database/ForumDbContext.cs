@@ -39,6 +39,7 @@ namespace PhpbbInDotnet.Database
         public virtual DbSet<PhpbbRecycleBin> PhpbbRecycleBin { get; set; }
         public virtual DbSet<PhpbbReports> PhpbbReports { get; set; }
         public virtual DbSet<PhpbbReportsReasons> PhpbbReportsReasons { get; set; }
+        public virtual DbSet<PhpbbShortcuts> PhpbbShortcuts { get; set; }
         public virtual DbSet<PhpbbSmilies> PhpbbSmilies { get; set; }
         public virtual DbSet<PhpbbStyles> PhpbbStyles { get; set; }
         public virtual DbSet<PhpbbTopics> PhpbbTopics { get; set; }
@@ -2601,6 +2602,21 @@ namespace PhpbbInDotnet.Database
 
                 entity.Property(e => e.DeleteUser)
                     .HasColumnName("delete_user")
+                    .HasColumnType("int(8) unsigned");
+            });
+
+            modelBuilder.Entity<PhpbbShortcuts>(entity =>
+            {
+                entity.HasKey(e => new { e.TopicId, e.ForumId });
+
+                entity.ToTable("phpbb_shortcuts", "forum");
+
+                entity.Property(e => e.TopicId)
+                    .HasColumnName("topic_id")
+                    .HasColumnType("int(8) unsigned");
+
+                entity.Property(e => e.ForumId)
+                    .HasColumnName("forum_id")
                     .HasColumnType("int(8) unsigned");
             });
         }
