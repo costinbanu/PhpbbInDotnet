@@ -7,9 +7,9 @@
 
 @if (Model.IsIndex)
 {
-    <a asp-page="ViewForum" asp-page-handler="newPosts" class="nowrap">@Html.Raw(_languageProvider.BasicText[Model.Language, "NEW_POSTS", Casing.Title])</a>
+    <a asp-page="NewPosts" class="nowrap">@Html.Raw(_languageProvider.BasicText[Model.Language, "NEW_POSTS", Casing.Title])</a>
     <span>&nbsp;&bull;&nbsp;</span>
-    <a asp-page="ViewForum" asp-page-handler="ownPosts" class="nowrap">@Html.Raw(_languageProvider.BasicText[Model.Language, "OWN_TOPICS", Casing.Title])</a>
+    <a asp-page="OwnPosts" class="nowrap">@Html.Raw(_languageProvider.BasicText[Model.Language, "OWN_TOPICS", Casing.Title])</a>
     <span class="Hide768">&nbsp;&bull;&nbsp;</span>
     <br class="Show768" /><span class="Show768" style="width:2.5px; display:inline-block; height: 20px"></span>
 }
@@ -22,16 +22,16 @@
     {
         <li>
             <span> &nbsp;</span>
-            <a asp-page="ViewForum" asp-page-handler="newPosts" class="nowrap">@Html.Raw(_languageProvider.BasicText[Model.Language, "NEW_POSTS", Casing.Title])</a>
+            <a asp-page="NewPosts" class="nowrap">@Html.Raw(_languageProvider.BasicText[Model.Language, "NEW_POSTS", Casing.Title])</a>
         </li>
         <li>
             <span> &nbsp;</span>
-            <a asp-page="ViewForum" asp-page-handler="ownPosts" class="nowrap">@Html.Raw(_languageProvider.BasicText[Model.Language, "OWN_TOPICS", Casing.Title])</a>
+            <a asp-page="OwnPosts" class="nowrap">@Html.Raw(_languageProvider.BasicText[Model.Language, "OWN_TOPICS", Casing.Title])</a>
         </li>
     }
     <li>
         <span> &nbsp;</span>
-        <a asp-page="ViewForum" asp-page-handler="drafts" class="nowrap">@Html.Raw(_languageProvider.BasicText[Model.Language, "DRAFTS", Casing.Title])</a>
+        <a asp-page="Drafts" class="nowrap">@Html.Raw(_languageProvider.BasicText[Model.Language, "DRAFTS", Casing.Title])</a>
     </li>
     <li>
         <span> &nbsp;</span>
