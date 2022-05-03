@@ -33,20 +33,9 @@ namespace PhpbbInDotnet.Forum.Pages
         public string? ForumTitle { get; private set; }
         public string? ParentForumTitle { get; private set; }
         public int? ParentForumId { get; private set; }
-        public ViewForumMode Mode { get; private set; }
-        public Paginator? Paginator { get; private set; }
 
         [BindProperty(SupportsGet = true)]
         public int ForumId { get; set; }
-
-        [BindProperty(SupportsGet = true)]
-        public int? PageNum { get; set; }
-
-        [BindProperty]
-        public int[]? SelectedDrafts { get; set; }
-
-        [BindProperty]
-        public string[]? SelectedNewPosts { get; set; }
 
         public ViewForumModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, BBCodeRenderingService renderingService,
             IConfiguration config, CommonUtils utils, LanguageProvider languageProvider)
@@ -74,7 +63,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     "SELECT * FROM phpbb_forums WHERE forum_id = @ParentId", 
                     new { thisForum.ParentId }
                 );
-                var topicsTask = GetTopics();
+                var topicsTask = ForumService.GetTopicGroups(ForumId);
                 var treeTask = GetForumTree(_forceTreeRefresh, true);
 
                 await Task.WhenAll(parentTask, topicsTask, treeTask);
@@ -84,64 +73,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 ParentForumId = parent?.ForumId;
                 ParentForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? _config.GetValue<string>("ForumName"));
                 (Forums, _) = await treeTask;
-                Mode = ViewForumMode.Forum;
 
                 return Page();
-
-                async Task<List<TopicGroup>> GetTopics()
-                {
-                    var topics = await Context.GetDbConnection().QueryAsync<TopicDto>(
-                        @"SELECT t.topic_id, 
-		                         t.forum_id,
-		                         t.topic_title, 
-		                         count(p.post_id) AS post_count,
-		                         t.topic_views AS view_count,
-		                         t.topic_type,
-		                         t.topic_last_poster_id,
-		                         t.topic_last_poster_name,
-		                         t.topic_last_post_time,
-		                         t.topic_last_poster_colour,
-		                         t.topic_last_post_id,
-		                         t.topic_status
-	                        FROM forum.phpbb_topics t
-	                        JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
-                           WHERE t.forum_id = @forumId OR topic_type = @topicType
-                           GROUP BY t.topic_id
-
-                        UNION ALL
-
-                          SELECT t.topic_id, 
-		                         t.forum_id,
-		                         t.topic_title, 
-		                         count(p.post_id) AS post_count,
-		                         t.topic_views AS view_count,
-		                         @shortcutType AS topic_type,
-		                         t.topic_last_poster_id,
-		                         t.topic_last_poster_name,
-		                         t.topic_last_post_time,
-		                         t.topic_last_poster_colour,
-		                         t.topic_last_post_id,
-		                         t.topic_status
-	                        FROM forum.phpbb_topics t
-	                        JOIN forum.phpbb_shortcuts s ON t.topic_id = s.topic_id
-                            JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
-                           WHERE s.forum_id = @forumId
-                           GROUP BY t.topic_id
-                           
-                           ORDER BY topic_last_post_time DESC",
-                        new { ForumId, topicType = TopicType.Global, shortcutType = TopicType.Shortcut });
-
-                    return (from t in topics
-
-                            group t by t.TopicType into groups
-                            orderby groups.Key descending
-
-                            select new TopicGroup
-                            {
-                                TopicType = groups.Key,
-                                Topics = groups
-                            }).ToList();
-                }
             });
 
         public IActionResult OnGetNewPosts()
@@ -173,9 +106,32 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostMarkTopicsRead()
             => await WithRegisteredUser((_) => WithValidForum(ForumId, async (_) =>
              {
-                 await MarkForumRead(ForumId);
+                 await Task.WhenAll(
+                     MarkShortcutsRead(),
+                     MarkForumRead(ForumId));
+
                  _forceTreeRefresh = true;
+
                  return await OnGet();
              }));
+
+        async Task MarkShortcutsRead()
+        {
+            var shortcuts = Context.GetDbConnection().Query(
+                @"SELECT t.forum_id AS actual_forum_id, t.topic_id, t.topic_last_post_time
+                    FROM phpbb_shortcuts s
+                    JOIN phpbb_topics t on s.topic_id = t.topic_id
+                   WHERE s.forum_id = @forumId",
+                new { ForumId });
+
+            foreach (var shortcut in shortcuts)
+            {
+                await MarkTopicRead(
+                    forumId: (int)shortcut.actual_forum_id, 
+                    topicId: (int)shortcut.topic_id, 
+                    isLastPage: true, 
+                    markTime: (long)shortcut.topic_last_post_time);
+            }
+        }
     }
 }

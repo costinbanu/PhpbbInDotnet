@@ -16,7 +16,9 @@
     var Lang = Model.GetLanguage();
     ViewData["Title"] = Model.LanguageProvider.Moderator[Lang, "MOD_PANEL"]; ;
     Layout = "~/Pages/_Layout.cshtml";
-    var UserDateFormat = (Model.GetCurrentUser())?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
+    var CurrentUser = Model.GetCurrentUser();
+    var UserDateFormat = CurrentUser.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
+    var isForumSelected = Model.ForumId > 0 && !string.IsNullOrWhiteSpace(Model.ForumName);
 }
 
 <style>
@@ -56,8 +58,9 @@
 
     var mod = new Moderator(
         '@ModeratorTopicActions.MoveTopic',
-        '',
-        '',
+        '@ModeratorPostActions.MoveSelectedPosts',
+        '@ModeratorPostActions.SplitSelectedPosts',
+        '@ModeratorTopicActions.CreateShortcut',
     );
 
     $(window).on('load', function () {
@@ -85,10 +88,6 @@
 </div>
 
 <div id="Topics" class="tabcontent" style="@(Model.Mode == ModeratorPanelMode.TopicModeration ? "display:inherit" : "display:none")">
-    @{
-        var isForumSelected = Model.ForumId > 0 && !string.IsNullOrWhiteSpace(Model.ForumName);
-        var ordinaryTopicsDisplayed = false;
-    }
     @if (isForumSelected)
     {
         <h4>@Html.Raw(Model.LanguageProvider.Moderator[Lang, "FORUM_TO_MODERATE"]): @Model.ForumName</h4>
@@ -103,8 +102,7 @@
              tree: (await Model.GetForumTree(false, false)).Tree,
              forumId: Model.ForumId == 0 ? null : Model.ForumId
          ),
-         ViewData
-     )
+         ViewData)
         <p></p>
         <form>
             <input type="hidden" name="ForumId" id="ForumIdInput" />
@@ -114,49 +112,14 @@
         </form>
     </div>
 
-    @foreach (var topicGroup in Model.Topics ?? Enumerable.Empty<TopicGroup>())
-    {
-        if (topicGroup.TopicType == TopicType.Announcement || topicGroup.TopicType == TopicType.Global)
+    @await Html.PartialAsync(
+        "_TopicDisplayPartial",
+        new _TopicDisplayPartialModel(CurrentUser, Lang, Model.Topics ?? new List<TopicGroup>(), Model.ForumId)
         {
-            <p>&nbsp;</p>
-            <strong>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "ANNOUNCEMENTS", Casing.Title])</strong>
-        }
-        else if (!ordinaryTopicsDisplayed)
-        {
-            <p>&nbsp;</p>
-            <strong>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "TOPICS", Casing.Title])</strong>
-            ordinaryTopicsDisplayed = true;
-        }
-        foreach (var topic in topicGroup.Topics!)
-        {
-            <div class="FlexRow RowMargin">
-                <input name="SelectedTopics" type="checkbox" value="@topic.TopicId" form="SubmitTopics" style="margin-right:30px; align-self:safe center" onchange="mod.appendToStringList(this, 'selectedTopicIds')" @(Model.GetTopicIds().Contains(topic.TopicId!.Value) ? "checked" : "") />
-                <a asp-page="/ViewTopic" asp-route-topicId="@topic.TopicId" asp-route-pageNum="1" class="nav-link" style="font-weight: bold; align-self: safe center">
-                    @if (topicGroup.TopicType == TopicType.Important)
-                    {
-                        <span>&#x26A0;&#xFE0F;&nbsp;</span>
-                    }
-                    @if (topic.IsLocked)
-                    {
-                        <span>&#x1F512;&nbsp;</span>
-                    }
-                    @Html.Raw(topic.TopicTitle)
-                </a>
-                @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
-                {
-                    AuthorId = topic.TopicLastPosterId,
-                    AuthorName = topic.TopicLastPosterName,
-                    AuthorColor = topic.TopicLastPosterColour,
-                    CreationTime = topic.TopicLastPostTime?.ToUtcTime(),
-                    AssetId = topic.TopicId.Value,
-                    DateFormat = UserDateFormat,
-                    ShowAsLast = true,
-                    Language = Lang
-                })
-            </div>
-            <hr class="BoxSeparator" />
-        }
-    }
+            AllowTopicSelection = true,
+            SelectedTopicIds = Model.GetTopicIds()
+        })
+
     @if (isForumSelected)
     {
         <button onclick="selectAllCheckboxes('Topics')" type="button" class="MyButton SpacedButton">

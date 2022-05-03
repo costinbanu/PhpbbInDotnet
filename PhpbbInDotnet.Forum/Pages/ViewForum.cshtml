@@ -3,6 +3,7 @@
 
 @using Utilities
 @using Objects
+@using CustomPartials
 @inject Services.ForumTreeService _forumService
 
 @{
@@ -12,7 +13,7 @@
     Layout = "~/Pages/_Layout.cshtml";
     var currentUser = Model.GetCurrentUser();
     var hasSubForums = Model.ForumId != 0 && _forumService.HasUnrestrictedChildren((await Model.GetForumTree(false, false)).Tree, Model.ForumId);
-    var hasTopics = Model.Topics?.SelectMany(x => x.Topics).Any() ?? false;
+    var hasTopics = Model.Topics?.SelectMany(x => x.Topics ?? Enumerable.Empty<TopicDto>()).Any() ?? false;
     var userDateFormat = currentUser.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
     var isCurrentForumReadOnly = await _forumService.IsForumReadOnlyForUser(currentUser, Model.ForumId);
 }
@@ -101,117 +102,12 @@
     )
 }
 
-@if (hasTopics)
-{
-    var topicsDisplayed = false;
-    var announcementsDisplayed = false;
-    var isFirstTopicType = true;
-    foreach (var topicGroup in Model.Topics!)
+@await Html.PartialAsync(
+    "_TopicDisplayPartial",
+    new _TopicDisplayPartialModel(currentUser, Lang, Model.Topics ?? new List<TopicGroup>(), Model.ForumId)
     {
-        var isFirstInGroup = false;
-        @switch (topicGroup.TopicType)
-        {
-            case TopicType.Announcement when !announcementsDisplayed:
-            case TopicType.Global when !announcementsDisplayed:
-                <p>&nbsp;</p>
-                <h3 style="float:left">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "ANNOUNCEMENTS", Casing.FirstUpper])</h3>
-                announcementsDisplayed = isFirstInGroup = true;
-                break;
-            case TopicType.Important when !topicsDisplayed:
-            case TopicType.Normal or TopicType.Shortcut when !topicsDisplayed:
-                if (!isFirstTopicType)
-                {
-                    <hr class="BoxSeparator" />
-                }
-                <p>&nbsp;</p>
-                <h3 style="float:left">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "TOPICS", Casing.FirstUpper])</h3>
-                if (!isCurrentForumReadOnly)
-                {
-                    <span>
-                        &nbsp;
-                        <button onclick="location.href='./Posting?forumId=@Model.ForumId&handler=newTopic'" type="button" class="MyButton SpacedButtonNotTop" style="height:26px; padding-top:1px; padding-bottom: 1px">
-                            &#x1F4DD;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "OPEN_NEW_TOPIC", Casing.FirstUpper])
-                        </button>
-                    </span>
-                }
-                topicsDisplayed = isFirstInGroup = true;
-                break;
-        }
-
-        foreach (var topic in topicGroup?.Topics ?? Enumerable.Empty<TopicDto>())
-        {
-            topic.Unread = await Model.IsTopicUnread(topic.ForumId ?? 0, topic.TopicId ?? 0);
-            var pageSize = currentUser!.GetPageSize(topic.TopicId ?? 0);
-            topic.Pagination = new Objects.PaginationDto($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", topic.PostCount ?? 0, pageSize, 0, "PageNum");
-
-            if (!isFirstInGroup)
-            {
-                <hr class="BoxSeparator" />
-            }
-
-            <div class="FlexRow RowMargin">
-                <span class="ForumContent">
-                    @if (topicGroup!.TopicType == TopicType.Important)
-                    {
-                        <span>&#x26A0;&#xFE0F;&nbsp;</span>
-                    }
-                    @if (topic.IsLocked)
-                    {
-                        <span>&#x1F512;&nbsp;</span>
-                    }
-                    @{
-                        var firstUnreadPost = await Model.GetFirstUnreadPost(topic.ForumId ?? 0, topic.TopicId ?? 0);
-                        if (firstUnreadPost > 0)
-                        {
-                            <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@firstUnreadPost" asp-route-highlight="false" class="nav-link UnreadTitle" style="font-weight:bold">@Html.Raw(topic.TopicTitle)</a>
-                        }
-                        else
-                        {
-                            <a asp-page="/ViewTopic" asp-route-topicId="@topic.TopicId" asp-route-pageNum="1" class="nav-link" style="font-weight:bold">@Html.Raw(topic.TopicTitle)</a>
-                        }
-                    }
-                    <br />
-                    @await Html.PartialAsync(
-                        "_PaginationPageListPartial",
-                        new Forum.Pages.CustomPartials._PaginationPageListPartialModel
-                        {
-                            Pagination = topic.Pagination,
-                            Language = Lang
-                        },
-                        ViewData
-                    )
-                </span>
-                @if (currentUser.Foes?.Contains(topic.TopicLastPosterId ?? 0) ?? false)
-                {
-                    topic.TopicLastPosterColour = null;
-                    topic.TopicLastPosterName = "[Ascuns]";
-                    topic.TopicLastPosterId = 1;
-                }
-                @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
-                {
-                    AuthorId = topic.TopicLastPosterId,
-                    AuthorName = topic.TopicLastPosterName,
-                    AuthorColor = topic.TopicLastPosterColour,
-                    CreationTime = topic.LastPostTime,
-                    AssetId = topic.TopicId!.Value,
-                    DateFormat = userDateFormat,
-                    LinkHref = topic.TopicLastPostId == null ? null : $"./ViewTopic?postId={topic.TopicLastPostId}&handler=ByPostId",
-                    ShowAsLast = true,
-                    Posts = topic.PostCount,
-                    Views = topic.ViewCount,
-                    Language = Lang
-                })
-            </div>
-            isFirstInGroup = false;
-        }
-        isFirstTopicType = false;
-    }
-}
-
-@if (hasTopics)
-{
-    <hr class="BoxSeparator" />
-}
+        AllowNewTopicCreation = true
+    })
 
 @if (!isCurrentForumReadOnly)
 {

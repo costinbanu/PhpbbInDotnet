@@ -5,7 +5,6 @@ using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -61,14 +60,17 @@ namespace PhpbbInDotnet.Services
                 return _tree;
             }
 
-            var tracking = fetchUnreadData ? await GetForumTracking(user?.UserId ?? Constants.ANONYMOUS_USER_ID, forceRefresh) : null;
-            var connection = _context.GetDbConnection();
-
-            var treeTask = GetForumTree(connection);
-            var forumTopicCountTask = GetForumTopicCount(connection);
-            await Task.WhenAll(treeTask, forumTopicCountTask);
+            var trackingTask = fetchUnreadData ? GetForumTracking(user?.UserId ?? Constants.ANONYMOUS_USER_ID, forceRefresh) : Task.FromResult(new Dictionary<int, HashSet<Tracking>>());
+            var treeTask = GetForumTree();
+            var forumTopicCountTask = GetForumTopicCount();
+            var shortcutParentForumsTask = fetchUnreadData ? GetShortcutParentForums() : Task.FromResult(new Dictionary<int, List<int>>());
+            
+            await Task.WhenAll(trackingTask, treeTask, forumTopicCountTask, shortcutParentForumsTask);
+            
+            var tracking = await trackingTask;
             _tree = await treeTask;
             _forumTopicCount = await forumTopicCountTask;
+            var shortcutParentForums = await shortcutParentForumsTask;
 
             traverse(0);
 
@@ -82,7 +84,7 @@ namespace PhpbbInDotnet.Services
                     return;
                 }
 
-                node.IsUnread = fetchUnreadData && tracking!.ContainsKey(forumId);
+                node.IsUnread = IsUnread(forumId);
                 node.IsRestricted = user?.IsForumRestricted(forumId) == true;
                 node.TotalSubforumCount = node.ChildrenList?.Count ?? 0;
                 node.TotalTopicCount = GetTopicCount(forumId);
@@ -103,7 +105,7 @@ namespace PhpbbInDotnet.Services
 
                         node.TotalSubforumCount += childForum.TotalSubforumCount;
                         node.TotalTopicCount += childForum.TotalTopicCount;
-                        node.IsUnread |= childForum.IsUnread || (fetchUnreadData && tracking!.ContainsKey(childForumId));
+                        node.IsUnread |= childForum.IsUnread || IsUnread(childForumId);
                         if ((node.ForumLastPostTime ?? 0) < (childForum.ForumLastPostTime ?? 0))
                         {
                             node.ForumLastPosterColour = childForum.ForumLastPosterColour;
@@ -117,16 +119,54 @@ namespace PhpbbInDotnet.Services
                 }
             }
 
-            async Task<HashSet<ForumTree>> GetForumTree(DbConnection connection)
+            async Task<HashSet<ForumTree>> GetForumTree()
             {
-                var tree = await connection.QueryAsync<ForumTree>("CALL get_forum_tree()");
+                var tree = await _context.GetDbConnection().QueryAsync<ForumTree>(
+                    "CALL get_forum_tree()");
                 return tree.ToHashSet();
             }
 
-            async Task<HashSet<ForumTopicCount>> GetForumTopicCount(DbConnection connection)
+            async Task<HashSet<ForumTopicCount>> GetForumTopicCount()
             {
-                var count = await connection.QueryAsync<ForumTopicCount>("SELECT forum_id, count(topic_id) as topic_count FROM phpbb_topics GROUP BY forum_id");
+                var count = await _context.GetDbConnection().QueryAsync<ForumTopicCount>(
+                    "SELECT forum_id, count(topic_id) as topic_count FROM phpbb_topics GROUP BY forum_id");
                 return count.ToHashSet();
+            }
+
+            async Task<Dictionary<int, List<int>>> GetShortcutParentForums()
+            {
+                var rawData = await _context.GetDbConnection().QueryAsync(
+                    @"SELECT s.forum_id AS shortcut_forum_id, 
+                             t.forum_id AS actual_forum_id
+                        FROM phpbb_shortcuts s
+                        JOIN phpbb_topics t on s.topic_id = t.topic_id");
+                
+                var toReturn = new Dictionary<int, List<int>>(rawData.Count());
+                foreach (var item in rawData)
+                {
+                    var shortcutForumId = (int)item.shortcut_forum_id;
+                    var actualForumId = (int)item.actual_forum_id;
+                    
+                    if (!toReturn.ContainsKey(shortcutForumId))
+                    {
+                        toReturn.Add(shortcutForumId, new List<int>());
+                    }
+                    toReturn[shortcutForumId].Add(actualForumId);
+                }
+
+                return toReturn;
+            }
+
+            bool IsUnread(int forumId)
+            {
+                if (!fetchUnreadData)
+                {
+                    return false;
+                }
+
+                return tracking.ContainsKey(forumId)
+                    || (shortcutParentForums.TryGetValue(forumId, out var shortcutParents) 
+                        && shortcutParents.Any(sp => tracking.ContainsKey(sp)));
             }
         }
 
@@ -168,6 +208,59 @@ namespace PhpbbInDotnet.Services
             }
 
             return _tracking;
+        }
+
+        public async Task<List<TopicGroup>> GetTopicGroups(int forumId)
+        {
+            var topics = await _context.GetDbConnection().QueryAsync<TopicDto>(
+                @"SELECT t.topic_id, 
+		                         t.forum_id,
+		                         t.topic_title, 
+		                         count(p.post_id) AS post_count,
+		                         t.topic_views AS view_count,
+		                         t.topic_type,
+		                         t.topic_last_poster_id,
+		                         t.topic_last_poster_name,
+		                         t.topic_last_post_time,
+		                         t.topic_last_poster_colour,
+		                         t.topic_last_post_id,
+		                         t.topic_status
+	                        FROM forum.phpbb_topics t
+	                        JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
+                           WHERE t.forum_id = @forumId OR topic_type = @global
+                           GROUP BY t.topic_id
+
+                        UNION ALL
+
+                          SELECT t.topic_id, 
+		                         t.forum_id,
+		                         t.topic_title, 
+		                         count(p.post_id) AS post_count,
+		                         t.topic_views AS view_count,
+		                         t.topic_type,
+		                         t.topic_last_poster_id,
+		                         t.topic_last_poster_name,
+		                         t.topic_last_post_time,
+		                         t.topic_last_poster_colour,
+		                         t.topic_last_post_id,
+		                         t.topic_status
+	                        FROM forum.phpbb_topics t
+	                        JOIN forum.phpbb_shortcuts s ON t.topic_id = s.topic_id
+                            JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
+                           WHERE s.forum_id = @forumId
+                           GROUP BY t.topic_id
+                           
+                           ORDER BY topic_last_post_time DESC",
+                new { forumId, global = TopicType.Global });
+
+            return (from t in topics
+                    group t by t.TopicType into groups
+                    orderby groups.Key descending
+                    select new TopicGroup
+                    {
+                        TopicType = groups.Key,
+                        Topics = groups
+                    }).ToList();
         }
 
         public async Task<bool> IsForumUnread(int forumId, AuthenticatedUserExpanded user, bool forceRefresh = false)
@@ -223,6 +316,25 @@ namespace PhpbbInDotnet.Services
             }
 
             return node.ChildrenList?.Select(x => GetTreeNode(tree, x))?.Any(x => x?.IsRestricted == false) ?? false;
+        }
+
+        public async Task<int> GetFirstUnreadPost(int forumId, int topicId, AuthenticatedUserExpanded user)
+        {
+            if (user.IsAnonymous)
+            {
+                return 0;
+            }
+            Tracking? item = null;
+            var found = (await GetForumTracking(user.UserId, false)).TryGetValue(forumId, out var tt) && tt.TryGetValue(new Tracking { TopicId = topicId }, out item);
+            if (!found)
+            {
+                return 0;
+            }
+
+            return unchecked((int)((await _context.GetDbConnection().QuerySingleOrDefaultAsync(
+                "SELECT post_id, post_time FROM phpbb_posts WHERE post_id IN @postIds HAVING post_time = MIN(post_time)",
+                new { postIds = item!.Posts?.DefaultIfEmpty() ?? new int[] { default } }
+            ))?.post_id ?? 0u));
         }
 
         private int GetTopicCount(int forumId)

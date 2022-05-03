@@ -113,8 +113,7 @@ namespace PhpbbInDotnet.Utilities
         Normal = 0,
         Important = 1,
         Announcement = 2,
-        Global = 3,
-        Shortcut = 4
+        Global = 3
     }
 
     public enum ModeratorTopicActions
@@ -127,7 +126,9 @@ namespace PhpbbInDotnet.Utilities
         MakeTopicImportant,
         MakeTopicAnnouncement,
         MakeTopicGlobal,
-        RestoreTopic
+        RestoreTopic,
+        CreateShortcut,
+        RemoveShortcut
     }
 
     public enum ModeratorPostActions
@@ -196,15 +197,6 @@ namespace PhpbbInDotnet.Utilities
         LastActiveDateDesc,
         MessageCountAsc,
         MessageCountDesc
-    }
-
-    [Flags]
-    public enum ViewForumMode
-    {
-        OwnPosts,
-        NewPosts,
-        Drafts,
-        Forum = ~OwnPosts & ~NewPosts & ~Drafts
     }
 
     public enum UserPageMode

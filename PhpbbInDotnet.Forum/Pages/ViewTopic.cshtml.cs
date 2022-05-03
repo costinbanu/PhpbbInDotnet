@@ -68,22 +68,20 @@ namespace PhpbbInDotnet.Forum.Pages
         public Paginator? Paginator { get; private set; }
         public Guid CorrelationId { get; private set; }
 
-        public bool ShowTopic => TopicAction == ModeratorTopicActions.MoveTopic && (
-            (ModelState[nameof(DestinationForumId)]?.Errors?.Any() ?? false) ||
-            DestinationForumId.HasValue
-        );
+        public bool ShowTopic => (TopicAction == ModeratorTopicActions.MoveTopic 
+            || TopicAction == ModeratorTopicActions.CreateShortcut) 
+            && ((ModelState[nameof(DestinationForumId)]?.Errors?.Any() ?? false) 
+                || DestinationForumId.HasValue);
 
-        public bool ShowPostTopic => PostAction == ModeratorPostActions.MoveSelectedPosts && (
-            (ModelState[nameof(DestinationTopicId)]?.Errors?.Any() ?? false) ||
-            (ModelState[nameof(PostIdsForModerator)]?.Errors?.Any() ?? false) ||
-            DestinationTopicId.HasValue
-        );
+        public bool ShowPostTopic => PostAction == ModeratorPostActions.MoveSelectedPosts 
+            && ((ModelState[nameof(DestinationTopicId)]?.Errors?.Any() ?? false) 
+                || (ModelState[nameof(PostIdsForModerator)]?.Errors?.Any() ?? false) 
+                || DestinationTopicId.HasValue);
 
-        public bool ShowPostForum => PostAction == ModeratorPostActions.SplitSelectedPosts && (
-            (ModelState[nameof(DestinationForumId)]?.Errors?.Any() ?? false) ||
-            (ModelState[nameof(PostIdsForModerator)]?.Errors?.Any() ?? false) ||
-            DestinationForumId.HasValue
-        );
+        public bool ShowPostForum => PostAction == ModeratorPostActions.SplitSelectedPosts 
+            && ((ModelState[nameof(DestinationForumId)]?.Errors?.Any() ?? false) 
+                || (ModelState[nameof(PostIdsForModerator)]?.Errors?.Any() ?? false) 
+                || DestinationForumId.HasValue);
 
         public bool ScrollToModeratorPanel => ShowTopic || ShowPostForum || ShowPostTopic || !string.IsNullOrWhiteSpace(ModeratorActionResult.Message);
 
@@ -243,6 +241,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     ModeratorTopicActions.LockTopic => await _moderatorService.LockUnlockTopic(TopicId!.Value, true, logDto),
                     ModeratorTopicActions.UnlockTopic => await _moderatorService.LockUnlockTopic(TopicId!.Value, false, logDto),
                     ModeratorTopicActions.DeleteTopic => await _moderatorService.DeleteTopic(TopicId!.Value, logDto),
+                    ModeratorTopicActions.CreateShortcut => await _moderatorService.CreateShortcut(TopicId!.Value, DestinationForumId!.Value, logDto),
                     _ => throw new NotImplementedException($"Unknown action '{TopicAction}'")
                 };
 
@@ -250,7 +249,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     return RedirectToPage("ViewForum", new { ForumId });
                 }
-                else if (TopicAction == ModeratorTopicActions.MoveTopic && (ModeratorActionResult.IsSuccess ?? false))
+                else if ((TopicAction == ModeratorTopicActions.MoveTopic || TopicAction == ModeratorTopicActions.CreateShortcut) && ModeratorActionResult.IsSuccess == true)
                 {
                     var destinations = await Task.WhenAll(
                         Utils.CompressAndEncode($"<a href=\"./ViewForum?forumId={DestinationForumId ?? 0}\">{LanguageProvider.BasicText[lang, "GO_TO_NEW_FORUM"]}</a>"),
@@ -463,7 +462,38 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 return PostIdsForModerator;
             }
-            return SelectedPostIds?.Split(',')?.Select(x => int.TryParse(x, out var val) ? val : 0)?.Where(x => x != 0)?.ToArray() ?? Array.Empty<int>();
+            return SelectedPostIds?.Split(',')?
+                .Select(x => int.TryParse(x, out var val) ? val : 0)?
+                .Where(x => x != 0)?
+                .ToArray() ?? Array.Empty<int>();
+        }
+
+        public bool FilterModeratorTopicActions(ModeratorTopicActions action)
+        {
+            var exclusionList = new List<ModeratorTopicActions> 
+            { 
+                ModeratorTopicActions.RestoreTopic,
+                ModeratorTopicActions.RemoveShortcut
+            };
+
+            if (_currentTopic!.TopicStatus.ToBool())
+            {
+                exclusionList.Add(ModeratorTopicActions.LockTopic);
+            }
+            else
+            {
+                exclusionList.Add(ModeratorTopicActions.UnlockTopic);
+            }
+
+            exclusionList.Add(_currentTopic.TopicType switch
+            {
+                TopicType.Normal => ModeratorTopicActions.MakeTopicNormal,
+                TopicType.Important => ModeratorTopicActions.MakeTopicImportant,
+                TopicType.Announcement => ModeratorTopicActions.MakeTopicAnnouncement,
+                TopicType.Global => ModeratorTopicActions.MakeTopicGlobal,
+                _ => throw new ArgumentException($"Unknown topic type '{_currentTopic.TopicType}' for topic id {_currentTopic.TopicId}.")
+            });
+            return !exclusionList.Any(e => e == action);
         }
 
         private async Task PopulateModel(PhpbbForums curForum, PhpbbTopics curTopic, int computedPageNum = 1)
