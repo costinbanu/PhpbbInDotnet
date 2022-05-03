@@ -12,125 +12,122 @@
     var hasTopics = Model.Topics.SelectMany(x => x.Topics ?? Enumerable.Empty<TopicDto>()).Any();
     var userDateFormat = Model.CurrentUser.UserDateFormat ?? _languageProvider.GetDefaultDateFormat(Model.Language);
     var isCurrentForumReadOnly = await _forumService.IsForumReadOnlyForUser(Model.CurrentUser, Model.ForumId);
-}
-
-@if (hasTopics)
-{
     var topicsDisplayed = false;
     var announcementsDisplayed = false;
     var isFirstTopicType = true;
-    foreach (var topicGroup in Model.Topics)
+}
+
+@foreach (var topicGroup in Model.Topics)
+{
+    var isFirstInGroup = false;
+    @switch (topicGroup.TopicType)
     {
-        var isFirstInGroup = false;
-        @switch (topicGroup.TopicType)
-        {
-            case TopicType.Announcement or TopicType.Global when !announcementsDisplayed:
-                <p>&nbsp;</p>
-                <h3 style="float:left">@Html.Raw(_languageProvider.BasicText[Model.Language, "ANNOUNCEMENTS", Casing.FirstUpper])</h3>
-                announcementsDisplayed = isFirstInGroup = true;
-                break;
+        case TopicType.Announcement or TopicType.Global when !announcementsDisplayed:
+            <p>&nbsp;</p>
+            <h3 style="float:left">@Html.Raw(_languageProvider.BasicText[Model.Language, "ANNOUNCEMENTS", Casing.FirstUpper])</h3>
+            announcementsDisplayed = isFirstInGroup = true;
+            break;
 
-            case TopicType.Important or TopicType.Normal when !topicsDisplayed:
-                if (!isFirstTopicType)
-                {
-                    <hr class="BoxSeparator" />
-                }
-                <p>&nbsp;</p>
-                <h3 style="float:left">@Html.Raw(_languageProvider.BasicText[Model.Language, "TOPICS", Casing.FirstUpper])</h3>
-                if (!isCurrentForumReadOnly && Model.AllowNewTopicCreation)
-                {
-                    <span>
-                        &nbsp;
-                        <button onclick="location.href='./Posting?forumId=@Model.ForumId&handler=newTopic'" type="button" class="MyButton SpacedButtonNotTop" style="height:26px; padding-top:1px; padding-bottom: 1px">
-                            &#x1F4DD;&nbsp;@Html.Raw(_languageProvider.BasicText[Model.Language, "OPEN_NEW_TOPIC", Casing.FirstUpper])
-                        </button>
-                    </span>
-                }
-                topicsDisplayed = isFirstInGroup = true;
-                break;
-        }
-
-        foreach (var topic in topicGroup.Topics ?? Enumerable.Empty<TopicDto>())
-        {
-            topic.Unread = await _forumService.IsTopicUnread(topic.ForumId ?? 0, topic.TopicId ?? 0, Model.CurrentUser);
-            var pageSize = Model.CurrentUser!.GetPageSize(topic.TopicId ?? 0);
-            topic.Pagination = new Objects.PaginationDto($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", topic.PostCount ?? 0, pageSize, 0, "PageNum");
-            var isShortcut = topic.ForumId != Model.ForumId;
-
-            if (!isFirstInGroup)
+        case TopicType.Important or TopicType.Normal when !topicsDisplayed:
+            if (!isFirstTopicType)
             {
                 <hr class="BoxSeparator" />
             }
-
-            <div class="FlexRow RowMargin">
-                @if(Model.AllowTopicSelection)
-                {
-                    var isChecked = Model.SelectedTopicIds?.Contains(topic.TopicId ?? 0) == true;
-                    <input name="SelectedTopics" type="checkbox" value="@topic.TopicId" form="SubmitTopics" style="margin-right:10px; align-self:safe center" onchange="mod.appendToStringList(this, 'selectedTopicIds')" @(isChecked ? "checked" : "") />
-                }
-                <span class="ForumContent">
-                    @if(isShortcut)
-                    {
-                        <span class="Caption">
-                            @Html.Raw(_forumService.GetPathText(await _forumService.GetForumTree(Model.CurrentUser, false, false), topic.ForumId ?? 0))
-                        </span>
-                        <br />
-                        <span>&#x21A9;&nbsp;</span>
-                    }
-                    @if (topicGroup!.TopicType == TopicType.Important)
-                    {
-                        <span>&#x26A0;&#xFE0F;&nbsp;</span>
-                    }
-                    @if (topic.IsLocked)
-                    {
-                        <span>&#x1F512;&nbsp;</span>
-                    }
-                    @{
-                        var firstUnreadPost = await _forumService.GetFirstUnreadPost(topic.ForumId ?? 0, topic.TopicId ?? 0, Model.CurrentUser);
-                        if (firstUnreadPost > 0)
-                        {
-                            <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@firstUnreadPost" asp-route-highlight="false" class="nav-link UnreadTitle" style="font-weight:bold">@Html.Raw(topic.TopicTitle)</a>
-                        }
-                        else
-                        {
-                            <a asp-page="/ViewTopic" asp-route-topicId="@topic.TopicId" asp-route-pageNum="1" class="nav-link" style="font-weight:bold">@Html.Raw(topic.TopicTitle)</a>
-                        }
-                    }
-                    <br />
-                    @await Html.PartialAsync(
-                        "_PaginationPageListPartial",
-                        new Forum.Pages.CustomPartials._PaginationPageListPartialModel
-                        {
-                            Pagination = topic.Pagination,
-                            Language = Model.Language
-                        },
-                        ViewData
-                    )
+            <p>&nbsp;</p>
+            <h3 style="float:left">@Html.Raw(_languageProvider.BasicText[Model.Language, "TOPICS", Casing.FirstUpper])</h3>
+            if (!isCurrentForumReadOnly && Model.AllowNewTopicCreation)
+            {
+                <span>
+                    &nbsp;
+                    <button onclick="location.href='./Posting?forumId=@Model.ForumId&handler=newTopic'" type="button" class="MyButton SpacedButtonNotTop" style="height:26px; padding-top:1px; padding-bottom: 1px">
+                        &#x1F4DD;&nbsp;@Html.Raw(_languageProvider.BasicText[Model.Language, "OPEN_NEW_TOPIC", Casing.FirstUpper])
+                    </button>
                 </span>
-                @if (Model.CurrentUser.Foes?.Contains(topic.TopicLastPosterId ?? 0) ?? false)
-                {
-                    topic.TopicLastPosterColour = null;
-                    topic.TopicLastPosterName = "[Ascuns]";
-                    topic.TopicLastPosterId = 1;
-                }
-                @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
-                {
-                    AuthorId = topic.TopicLastPosterId,
-                    AuthorName = topic.TopicLastPosterName,
-                    AuthorColor = topic.TopicLastPosterColour,
-                    CreationTime = topic.LastPostTime,
-                    AssetId = topic.TopicId!.Value,
-                    DateFormat = userDateFormat,
-                    LinkHref = topic.TopicLastPostId == null ? null : $"./ViewTopic?postId={topic.TopicLastPostId}&handler=ByPostId",
-                    ShowAsLast = true,
-                    Posts = topic.PostCount,
-                    Views = topic.ViewCount,
-                    Language = Model.Language
-                })
-            </div>
-            isFirstInGroup = false;
-        }
-        isFirstTopicType = false;
+            }
+            topicsDisplayed = isFirstInGroup = true;
+            break;
     }
-    <hr class="BoxSeparator" />
+
+    foreach (var topic in topicGroup.Topics ?? Enumerable.Empty<TopicDto>())
+    {
+        topic.Unread = await _forumService.IsTopicUnread(topic.ForumId ?? 0, topic.TopicId ?? 0, Model.CurrentUser);
+        var pageSize = Model.CurrentUser!.GetPageSize(topic.TopicId ?? 0);
+        topic.Pagination = new Objects.PaginationDto($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", topic.PostCount ?? 0, pageSize, 0, "PageNum");
+        var isShortcut = topic.ForumId != Model.ForumId;
+
+        if (!isFirstInGroup)
+        {
+            <hr class="BoxSeparator" />
+        }
+
+        <div class="FlexRow RowMargin">
+            @if(Model.AllowTopicSelection)
+            {
+                var isChecked = Model.SelectedTopicIds?.Contains(topic.TopicId ?? 0) == true;
+                <input name="SelectedTopics" type="checkbox" value="@topic.TopicId" form="SubmitTopics" style="margin-right:10px; align-self:safe center" onchange="mod.appendToStringList(this, 'selectedTopicIds')" @(isChecked ? "checked" : "") />
+            }
+            <span class="ForumContent">
+                @if(isShortcut)
+                {
+                    <span class="Caption">
+                        @Html.Raw(_forumService.GetPathText(await _forumService.GetForumTree(Model.CurrentUser, false, false), topic.ForumId ?? 0))
+                    </span>
+                    <br />
+                    <span>&#x21A9;&nbsp;</span>
+                }
+                @if (topicGroup!.TopicType == TopicType.Important)
+                {
+                    <span>&#x26A0;&#xFE0F;&nbsp;</span>
+                }
+                @if (topic.IsLocked)
+                {
+                    <span>&#x1F512;&nbsp;</span>
+                }
+                @{
+                    var firstUnreadPost = await _forumService.GetFirstUnreadPost(topic.ForumId ?? 0, topic.TopicId ?? 0, Model.CurrentUser);
+                    if (firstUnreadPost > 0)
+                    {
+                        <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@firstUnreadPost" asp-route-highlight="false" class="nav-link UnreadTitle" style="font-weight:bold">@Html.Raw(topic.TopicTitle)</a>
+                    }
+                    else
+                    {
+                        <a asp-page="/ViewTopic" asp-route-topicId="@topic.TopicId" asp-route-pageNum="1" class="nav-link" style="font-weight:bold">@Html.Raw(topic.TopicTitle)</a>
+                    }
+                }
+                <br />
+                @await Html.PartialAsync(
+                    "_PaginationPageListPartial",
+                    new Forum.Pages.CustomPartials._PaginationPageListPartialModel
+                    {
+                        Pagination = topic.Pagination,
+                        Language = Model.Language
+                    },
+                    ViewData
+                )
+            </span>
+            @if (Model.CurrentUser.Foes?.Contains(topic.TopicLastPosterId ?? 0) ?? false)
+            {
+                topic.TopicLastPosterColour = null;
+                topic.TopicLastPosterName = "[Ascuns]";
+                topic.TopicLastPosterId = 1;
+            }
+            @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
+            {
+                AuthorId = topic.TopicLastPosterId,
+                AuthorName = topic.TopicLastPosterName,
+                AuthorColor = topic.TopicLastPosterColour,
+                CreationTime = topic.LastPostTime,
+                AssetId = topic.TopicId!.Value,
+                DateFormat = userDateFormat,
+                LinkHref = topic.TopicLastPostId == null ? null : $"./ViewTopic?postId={topic.TopicLastPostId}&handler=ByPostId",
+                ShowAsLast = true,
+                Posts = topic.PostCount,
+                Views = topic.ViewCount,
+                Language = Model.Language
+            })
+        </div>
+        isFirstInGroup = false;
+    }
+    isFirstTopicType = false;
 }
+<hr class="BoxSeparator" />

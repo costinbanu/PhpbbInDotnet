@@ -62,16 +62,13 @@
 @if (!currentUser.IsAnonymous)
 {
     var additionalLinks = new List<string>();
-    @if (hasSubForums || hasTopics)
+    @if (hasSubForums)
     {
-        @if (hasSubForums)
-        {
-            additionalLinks.Add($"<a href=\"javascript:MarkForumsRead.submit()\">{Model.LanguageProvider.BasicText[Lang, "MARK_FORUMS_READ", Casing.FirstUpper]}</a>");
-        }
-        @if (hasTopics)
-        {
-            additionalLinks.Add($"<a href=\"javascript:MarkTopicsRead.submit()\">{Model.LanguageProvider.BasicText[Lang, "MARK_TOPICS_READ", Casing.FirstUpper]}</a>");
-        }
+        additionalLinks.Add($"<a href=\"javascript:MarkForumsRead.submit()\">{Model.LanguageProvider.BasicText[Lang, "MARK_FORUMS_READ", Casing.FirstUpper]}</a>");
+    }
+    @if (hasTopics)
+    {
+        additionalLinks.Add($"<a href=\"javascript:MarkTopicsRead.submit()\">{Model.LanguageProvider.BasicText[Lang, "MARK_TOPICS_READ", Casing.FirstUpper]}</a>");
     }
     <span>&nbsp;&bull;&nbsp;</span>
     @await Html.PartialAsync(
@@ -102,12 +99,15 @@
     )
 }
 
-@await Html.PartialAsync(
-    "_TopicDisplayPartial",
-    new _TopicDisplayPartialModel(currentUser, Lang, Model.Topics ?? new List<TopicGroup>(), Model.ForumId)
-    {
-        AllowNewTopicCreation = true
-    })
+@if (hasTopics)
+{
+    @await Html.PartialAsync(
+        "_TopicDisplayPartial",
+        new _TopicDisplayPartialModel(currentUser, Lang, Model.Topics ?? new List<TopicGroup>(), Model.ForumId)
+        {
+            AllowNewTopicCreation = true
+        })
+}
 
 @if (!isCurrentForumReadOnly)
 {

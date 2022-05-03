@@ -19,6 +19,7 @@
     var CurrentUser = Model.GetCurrentUser();
     var UserDateFormat = CurrentUser.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
     var isForumSelected = Model.ForumId > 0 && !string.IsNullOrWhiteSpace(Model.ForumName);
+    var hasTopics = Model.Topics?.SelectMany(t => t.Topics ?? Enumerable.Empty<TopicDto>())?.Any() == true;
 }
 
 <style>
@@ -112,15 +113,24 @@
         </form>
     </div>
 
-    @await Html.PartialAsync(
-        "_TopicDisplayPartial",
-        new _TopicDisplayPartialModel(CurrentUser, Lang, Model.Topics ?? new List<TopicGroup>(), Model.ForumId)
-        {
-            AllowTopicSelection = true,
-            SelectedTopicIds = Model.GetTopicIds()
-        })
+    @if(hasTopics)
+    {
+        @await Html.PartialAsync(
+            "_TopicDisplayPartial",
+            new _TopicDisplayPartialModel(CurrentUser, Lang, Model.Topics ?? new List<TopicGroup>(), Model.ForumId)
+            {
+                AllowTopicSelection = true,
+                SelectedTopicIds = Model.GetTopicIds()
+            })
+    }
+    else if (isForumSelected)
+    {
+        <p>&nbsp;</p>
+        <h5>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "NO_TOPICS"])</h5>
+        <p>&nbsp;</p>
+    }
 
-    @if (isForumSelected)
+    @if (isForumSelected && hasTopics)
     {
         <button onclick="selectAllCheckboxes('Topics')" type="button" class="MyButton SpacedButton">
             &#x2714;&nbsp;@Html.Raw(Model.LanguageProvider.Moderator[Lang, "SELECT_ALL_TOPICS"])

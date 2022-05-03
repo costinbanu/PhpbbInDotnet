@@ -214,43 +214,43 @@ namespace PhpbbInDotnet.Services
         {
             var topics = await _context.GetDbConnection().QueryAsync<TopicDto>(
                 @"SELECT t.topic_id, 
-		                         t.forum_id,
-		                         t.topic_title, 
-		                         count(p.post_id) AS post_count,
-		                         t.topic_views AS view_count,
-		                         t.topic_type,
-		                         t.topic_last_poster_id,
-		                         t.topic_last_poster_name,
-		                         t.topic_last_post_time,
-		                         t.topic_last_poster_colour,
-		                         t.topic_last_post_id,
-		                         t.topic_status
-	                        FROM forum.phpbb_topics t
-	                        JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
-                           WHERE t.forum_id = @forumId OR topic_type = @global
-                           GROUP BY t.topic_id
+		                 t.forum_id,
+		                 t.topic_title, 
+		                 count(p.post_id) AS post_count,
+		                 t.topic_views AS view_count,
+		                 t.topic_type,
+		                 t.topic_last_poster_id,
+		                 t.topic_last_poster_name,
+		                 t.topic_last_post_time,
+		                 t.topic_last_poster_colour,
+		                 t.topic_last_post_id,
+		                 t.topic_status
+	                FROM forum.phpbb_topics t
+	                JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
+                   WHERE t.forum_id = @forumId OR topic_type = @global
+                   GROUP BY t.topic_id
 
-                        UNION ALL
+                  UNION ALL
 
-                          SELECT t.topic_id, 
-		                         t.forum_id,
-		                         t.topic_title, 
-		                         count(p.post_id) AS post_count,
-		                         t.topic_views AS view_count,
-		                         t.topic_type,
-		                         t.topic_last_poster_id,
-		                         t.topic_last_poster_name,
-		                         t.topic_last_post_time,
-		                         t.topic_last_poster_colour,
-		                         t.topic_last_post_id,
-		                         t.topic_status
-	                        FROM forum.phpbb_topics t
-	                        JOIN forum.phpbb_shortcuts s ON t.topic_id = s.topic_id
-                            JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
-                           WHERE s.forum_id = @forumId
-                           GROUP BY t.topic_id
+                  SELECT t.topic_id, 
+		                 t.forum_id,
+		                 t.topic_title, 
+		                 count(p.post_id) AS post_count,
+		                 t.topic_views AS view_count,
+		                 t.topic_type,
+		                 t.topic_last_poster_id,
+		                 t.topic_last_poster_name,
+		                 t.topic_last_post_time,
+		                 t.topic_last_poster_colour,
+		                 t.topic_last_post_id,
+		                 t.topic_status
+	                FROM forum.phpbb_topics t
+	                JOIN forum.phpbb_shortcuts s ON t.topic_id = s.topic_id
+                    JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
+                   WHERE s.forum_id = @forumId
+                   GROUP BY t.topic_id
                            
-                           ORDER BY topic_last_post_time DESC",
+                   ORDER BY topic_last_post_time DESC",
                 new { forumId, global = TopicType.Global });
 
             return (from t in topics
