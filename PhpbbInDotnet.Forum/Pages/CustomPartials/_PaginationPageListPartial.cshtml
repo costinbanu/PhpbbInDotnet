@@ -9,9 +9,9 @@
         <span style="white-space:nowrap; line-height: 1.5em">
             @if (Model.Pagination.Pager.StartPage > 1)
             {
-                Model.Pagination.Link.Set(Model.Pagination.PageNumKey, "1");
+                Model.Pagination.UpdatePageNum("1");
                 <span class="PageNum">
-                    <a href="@Model.Pagination.Link.ToString()">1</a>
+                    <a href="@Model.Pagination.Url">1</a>
                 </span>
                 <span>&nbsp;...</span>
             }
@@ -24,28 +24,28 @@
                 }
                 else
                 {
-                    Model.Pagination.Link.Set(Model.Pagination.PageNumKey, curPage.ToString());
+                    Model.Pagination.UpdatePageNum(curPage.ToString());
                     <span class="PageNum">
-                        <a href="@Model.Pagination.Link.ToString()">@curPage</a>
+                        <a href="@Model.Pagination.Url">@curPage</a>
                     </span>
                 }
             }
 
             @if (Model.Pagination.Pager.EndPage + 3 < Model.Pagination.Pager.TotalPages)
             {
-                Model.Pagination.Link.Set(Model.Pagination.PageNumKey, Model.Pagination.Pager.TotalPages.ToString());
+                Model.Pagination.UpdatePageNum(Model.Pagination.Pager.TotalPages.ToString());
                 <span>&nbsp;...</span>
                 <span class="PageNum">
-                    <a href="@Model.Pagination.Link.ToString()">@Model.Pagination.Pager.TotalPages</a>
+                    <a href="@Model.Pagination.Url">@Model.Pagination.Pager.TotalPages</a>
                 </span>
             }
             else if (Model.Pagination.Pager.EndPage < Model.Pagination.Pager.TotalPages)
             {
                 for (var num = Model.Pagination.Pager.EndPage + 1; num <= Model.Pagination.Pager.TotalPages; num++)
                 {
-                    Model.Pagination.Link.Set(Model.Pagination.PageNumKey, num.ToString());
+                    Model.Pagination.UpdatePageNum(num.ToString());
                     <span class="PageNum">
-                        <a href="@Model.Pagination.Link.ToString()">@num</a>
+                        <a href="@Model.Pagination.Url">@num</a>
                     </span>
                 }
             }

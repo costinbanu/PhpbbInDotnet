@@ -22,6 +22,8 @@
     "POSTS_SPLIT_SUCCESSFULLY": "Mesajele au fost separate cu succes!",
     "POSTS_MOVED_SUCCESSFULLY": "Mesajele au fost mutate cu succes!",
     "POSTS_DELETED_SUCCESSFULLY": "Mesajele au fost șterse cu succes!",
+    "SHORTCUT_CREATED_SUCCESSFULLY": "Scurtătura a fost creată cu succes!",
+    "SHORTCUT_DELETED_SUCCESSFULLY": "Scurtătura a fost ștearsă cu succes!",
 
     //error messages
     "TOPIC_DOESNT_EXIST_FORMAT": "Subiectul {0} nu există.",
@@ -30,6 +32,8 @@
     "INVALID_DESTINATION_TOPIC": "Subiectul destinație nu este valid.",
     "ATLEAST_ONE_POST_REQUIRED": "Această acțiune necesită măcar un mesaj selectat.",
     "ATLEAST_ONE_POST_MOVED_OR_DELETED": "Cel puțin un mesaj dintre cele selectate a fost mutat sau șters între timp.",
+    "SHORTCUT_DOESNT_EXIST_FORMAT": "Nu există nici o scurtătură către subiectul {0} în forumul {1}.",
+    "INVALID_SHORTCUT_SELECTED": "Scurtătura selectată nu este validă.",
 
     //moderator panel
     "MOD_PANEL": "Panoul moderatorului",

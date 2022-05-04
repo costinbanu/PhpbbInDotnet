@@ -3,23 +3,17 @@
 
 @using Utilities
 @using Objects
+@using CustomPartials
 @inject Services.ForumTreeService _forumService
 
 @{
     var Lang = Model.GetLanguage();
-    var DocumentTitle = Model.Mode switch
-    {
-        ViewForumMode.NewPosts => Model.LanguageProvider.BasicText[Lang, "NEW_POSTS", Casing.FirstUpper],
-        ViewForumMode.OwnPosts => Model.LanguageProvider.BasicText[Lang, "OWN_TOPICS", Casing.FirstUpper],
-        ViewForumMode.Drafts => Model.LanguageProvider.BasicText[Lang, "DRAFTS", Casing.FirstUpper],
-        ViewForumMode.Forum => Model.ForumTitle,
-        _ => string.Empty
-    };
+    var DocumentTitle = Model.ForumTitle;
     ViewData["Title"] = DocumentTitle;
     Layout = "~/Pages/_Layout.cshtml";
     var currentUser = Model.GetCurrentUser();
     var hasSubForums = Model.ForumId != 0 && _forumService.HasUnrestrictedChildren((await Model.GetForumTree(false, false)).Tree, Model.ForumId);
-    var hasTopics = Model.Topics?.SelectMany(x => x.Topics).Any() ?? false;
+    var hasTopics = Model.Topics?.SelectMany(x => x.Topics ?? Enumerable.Empty<TopicDto>()).Any() ?? false;
     var userDateFormat = currentUser.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
     var isCurrentForumReadOnly = await _forumService.IsForumReadOnlyForUser(currentUser, Model.ForumId);
 }
@@ -35,14 +29,7 @@
     <input asp-for="ForumId" type="hidden" value="@Model.ForumId" />
     @Html.AntiForgeryToken()
 </form>
-<form asp-page-handler="DeleteDrafts" method="post" name="DeleteDrafts" id="DeleteDrafts">
-    <input asp-for="ForumId" type="hidden" value="@Model.ForumId" />
-    @Html.AntiForgeryToken()
-</form>
-<form asp-page-handler="MarkNewPostsRead" method="post" name="MarkNewPostsRead" id="MarkNewPostsRead">
-    <input asp-for="ForumId" type="hidden" value="@Model.ForumId" />
-    @Html.AntiForgeryToken()
-</form>
+
 
 <script>
     //forum tree callback
@@ -54,7 +41,7 @@
     }
 </script>
 
-@if (Model.Mode == ViewForumMode.Forum && (currentUser.JumpToUnread ?? false))
+@if (currentUser.JumpToUnread == true)
 {
     <script>
         $(window).on('load', function () {
@@ -66,31 +53,22 @@
     </script>
 }
 
-@if ((Model.ParentForumId ?? 0) != 0)
-{
-    <span style="padding-bottom: 10px">
-        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "PARENT_FORUM", Casing.FirstUpper]):
-        <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@Html.Raw(Model.ParentForumTitle)</a>
-    </span>
-}
-else
-{
-    <a href="/" style="padding-bottom: 10px">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "HOME", Casing.FirstUpper])</a>
-}
+<span style="padding-bottom: 10px">
+    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "PARENT_FORUM", Casing.FirstUpper]):
+    <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@Html.Raw(Model.ParentForumTitle)</a>
+</span>
+
 
 @if (!currentUser.IsAnonymous)
 {
     var additionalLinks = new List<string>();
-    @if (Model.Mode == ViewForumMode.Forum && (hasSubForums || hasTopics))
+    @if (hasSubForums)
     {
-        @if (hasSubForums)
-        {
-            additionalLinks.Add($"<a href=\"javascript:MarkForumsRead.submit()\">{Model.LanguageProvider.BasicText[Lang, "MARK_FORUMS_READ", Casing.FirstUpper]}</a>");
-        }
-        @if (hasTopics)
-        {
-            additionalLinks.Add($"<a href=\"javascript:MarkTopicsRead.submit()\">{Model.LanguageProvider.BasicText[Lang, "MARK_TOPICS_READ", Casing.FirstUpper]}</a>");
-        }
+        additionalLinks.Add($"<a href=\"javascript:MarkForumsRead.submit()\">{Model.LanguageProvider.BasicText[Lang, "MARK_FORUMS_READ", Casing.FirstUpper]}</a>");
+    }
+    @if (hasTopics)
+    {
+        additionalLinks.Add($"<a href=\"javascript:MarkTopicsRead.submit()\">{Model.LanguageProvider.BasicText[Lang, "MARK_TOPICS_READ", Casing.FirstUpper]}</a>");
     }
     <span>&nbsp;&bull;&nbsp;</span>
     @await Html.PartialAsync(
@@ -100,33 +78,16 @@ else
     )
 }
 <p>&nbsp;</p>
-@switch (Model.Mode)
+
+<h2>@Html.Raw(DocumentTitle)</h2>
+@Html.Raw(Model.ForumDesc)
+@await Html.PartialAsync("_RulesPartial", new CustomPartials._RulesPartialModel
 {
-    case ViewForumMode.NewPosts:
-        <h2>@Html.Raw(DocumentTitle)</h2>
-        break;
+    ForumRules = Model.ForumRules,
+    ForumRulesLink = Model.ForumRulesLink,
+    Language = Lang
+}, ViewData)
 
-    case ViewForumMode.OwnPosts:
-        <h2>@Html.Raw(DocumentTitle)</h2>
-        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "OWN_TOPICS_CAPTION", Casing.FirstUpper])
-        break;
-
-    case ViewForumMode.Drafts:
-        <h2>@Html.Raw(DocumentTitle)</h2>
-        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "DRAFTS_CAPTION", Casing.FirstUpper])
-        break;
-
-    case ViewForumMode.Forum:
-        <h2>@Html.Raw(DocumentTitle)</h2>
-        @Html.Raw(Model.ForumDesc)
-        @await Html.PartialAsync("_RulesPartial", new CustomPartials._RulesPartialModel
-        {
-            ForumRules = Model.ForumRules,
-            ForumRulesLink = Model.ForumRulesLink,
-            Language = Lang
-        }, ViewData)
-        break;
-}
 
 @if (hasSubForums)
 {
@@ -140,243 +101,15 @@ else
 
 @if (hasTopics)
 {
-    var topicsDisplayed = false;
-    var announcementsDisplayed = false;
-    var handler = Model.Mode switch
-    {
-        ViewForumMode.NewPosts => "newPosts",
-        ViewForumMode.OwnPosts => "ownPosts",
-        ViewForumMode.Drafts => "drafts",
-        _ => string.Empty
-    };
-
-    if (Model.Mode != ViewForumMode.Forum)
-    {
-        @await Html.PartialAsync(
-            "_PaginationControlsPartial",
-            new CustomPartials._PaginationControlsPartialModel(
-                paginator: Model.Paginator!,
-                allowPaginationChange: false,
-                back: $"/ViewForum?handler={handler}&pageNum={(Model.PageNum ?? 1) - 1}",
-                forward: $"/ViewForum?handler={handler}&pageNum={(Model.PageNum ?? 1) + 1}",
-                includeEasyNavigation: false,
-                language: Lang
-            ),
-            ViewData
-        );
-    }
-    var isFirstTopicType = true;
-    foreach (var topicGroup in Model.Topics!)
-    {
-        var isFirstInGroup = false;
-        if (Model.Mode == ViewForumMode.Forum)
+    @await Html.PartialAsync(
+        "_TopicDisplayPartial",
+        new _TopicDisplayPartialModel(currentUser, Lang, Model.Topics ?? new List<TopicGroup>(), Model.ForumId)
         {
-            @switch (topicGroup.TopicType)
-            {
-                case TopicType.Announcement when !announcementsDisplayed:
-                case TopicType.Global when !announcementsDisplayed:
-                    <p>&nbsp;</p>
-                    <h3 style="float:left">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "ANNOUNCEMENTS", Casing.FirstUpper])</h3>
-                    announcementsDisplayed = isFirstInGroup = true;
-                    break;
-                case TopicType.Important when !topicsDisplayed:
-                case TopicType.Normal when !topicsDisplayed:
-                    if (!isFirstTopicType)
-                    {
-                        <hr class="BoxSeparator" />
-                    }
-                    <p>&nbsp;</p>
-                    <h3 style="float:left">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "TOPICS", Casing.FirstUpper])</h3>
-                    if (!isCurrentForumReadOnly)
-                    {
-                        <span>
-                            &nbsp;
-                            <button onclick="location.href='./Posting?forumId=@Model.ForumId&handler=newTopic'" type="button" class="MyButton SpacedButtonNotTop" style="height:26px; padding-top:1px; padding-bottom: 1px">
-                                &#x1F4DD;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "OPEN_NEW_TOPIC", Casing.FirstUpper])
-                            </button>
-                        </span>
-                    }
-                    topicsDisplayed = isFirstInGroup = true;
-                    break;
-            }
-        }
-
-        foreach (var topic in topicGroup?.Topics ?? Enumerable.Empty<TopicDto>())
-        {
-            if (Model.Mode != ViewForumMode.Drafts)
-            {
-                topic.Unread = Model.Mode == ViewForumMode.NewPosts || await Model.IsTopicUnread(topic.ForumId ?? 0, topic.TopicId ?? 0);
-                if (Model.Mode != ViewForumMode.NewPosts)
-                {
-                    var pageSize = currentUser!.GetPageSize(topic.TopicId ?? 0);
-                    topic.Pagination = new Objects.PaginationDto($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", topic.PostCount ?? 0, pageSize, 0, "PageNum");
-                }
-            }
-
-            if (!isFirstInGroup)
-            {
-                <hr class="BoxSeparator" />
-            }
-
-            var divClass = "FlexRow RowMargin";
-            <div class="@divClass">
-                @if (Model.Mode == ViewForumMode.Drafts)
-                {
-                    <input name="SelectedDrafts" type="checkbox" value="@topic.DraftId" form="DeleteDrafts" style="margin-right:10px; align-self:safe center" />
-                }
-                else if (Model.Mode == ViewForumMode.NewPosts)
-                {
-                    <input name="SelectedNewPosts" type="checkbox" value="@($"{topic.ForumId};{topic.TopicId}")" form="MarkNewPostsRead" style="margin-right:10px; align-self:safe center" />
-                }
-                <span class="ForumContent">
-                    @if (Model.Mode != ViewForumMode.Forum)
-                    {
-                        <span class="Caption">
-                            @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, topic.ForumId ?? 0))
-                        </span>
-                        <br />
-                    }
-                    @if (topicGroup!.TopicType == TopicType.Important)
-                    {
-                        <span>&#x26A0;&#xFE0F;&nbsp;</span>
-                    }
-                    @if (topic.IsLocked)
-                    {
-                        <span>&#x1F512;&nbsp;</span>
-                    }
-                    @if (Model.Mode != ViewForumMode.Drafts)
-                    {
-                        var firstUnreadPost = await Model.GetFirstUnreadPost(topic.ForumId ?? 0, topic.TopicId ?? 0);
-                        if (firstUnreadPost > 0)
-                        {
-                            <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@firstUnreadPost" asp-route-highlight="false" class="nav-link UnreadTitle" style="font-weight:bold">@Html.Raw(topic.TopicTitle)</a>
-                        }
-                        else
-                        {
-                            <a asp-page="/ViewTopic" asp-route-topicId="@topic.TopicId" asp-route-pageNum="1" class="nav-link" style="font-weight:bold">@Html.Raw(topic.TopicTitle)</a>
-                        }
-                    }
-                    else if (!currentUser.IsForumReadOnly(topic.ForumId ?? 0))
-                    {
-                        if ((topic.TopicId ?? 0) == 0)
-                        {
-                            <a asp-page="./Posting" asp-page-handler="newTopic" asp-route-forumId="@topic.ForumId" style="white-space:nowrap">
-                                @Html.Raw(Model.LanguageProvider.BasicText[Lang, "NEW_TOPIC", Casing.FirstUpper]):
-                                @Html.Raw(topic.TopicTitle)
-                            </a>
-                        }
-                        else
-                        {
-                            <a asp-page="./Posting" asp-page-handler="forumPost" asp-route-forumId="@topic.ForumId" asp-route-topicId="@topic.TopicId" asp-route-postId="@topic.TopicLastPostId">@Html.Raw(topic.TopicTitle)</a>
-                        }
-                        <span>
-                            &nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "POSTED"])
-                            <script>writeDate("@topic.LastPostTime?.ToString("o")", "@userDateFormat");</script>
-                        </span>
-                    }
-                    <br />
-                    @if (Model.Mode != ViewForumMode.Drafts)
-                    {
-                        @await Html.PartialAsync(
-                            "_PaginationPageListPartial",
-                            new Forum.Pages.CustomPartials._PaginationPageListPartialModel
-                            {
-                                Pagination = topic.Pagination,
-                                Language = Lang
-                            },
-                            ViewData
-                        )
-                    }
-                </span>
-                @if (Model.Mode != ViewForumMode.Drafts)
-                {
-                    if (currentUser.Foes?.Contains(topic.TopicLastPosterId ?? 0) ?? false)
-                    {
-                        topic.TopicLastPosterColour = null;
-                        topic.TopicLastPosterName = "[Ascuns]";
-                        topic.TopicLastPosterId = 1;
-                    }
-                    @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
-                    {
-                        AuthorId = topic.TopicLastPosterId,
-                        AuthorName = topic.TopicLastPosterName,
-                        AuthorColor = topic.TopicLastPosterColour,
-                        CreationTime = topic.LastPostTime,
-                        AssetId = topic.TopicId!.Value,
-                        DateFormat = userDateFormat,
-                        LinkHref = topic.TopicLastPostId == null ? null : $"./ViewTopic?postId={topic.TopicLastPostId}&handler=ByPostId",
-                        ShowAsLast = true,
-                        Posts = topic.PostCount,
-                        Views = topic.ViewCount,
-                        Language = Lang
-                    });
-                }
-            </div>
-            isFirstInGroup = false;
-        }
-        isFirstTopicType = false;
-    }
-
-    if (Model.Mode == ViewForumMode.Drafts && hasTopics)
-    {
-        <hr class="BoxSeparator" />
-        <button onclick="selectAllCheckboxes()" type="button" class="MyButton SpacedButton">&#x2714;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SELECT_ALL_POSTS"])</button>
-        <input type="submit" value="&#x1F6AE;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_SELECTED_POSTS"])" form="DeleteDrafts" onclick="return confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_DRAFTS"])');" class="MyButton SpacedButton" />
-        <p>&nbsp;</p>
-    }
-    else if (Model.Mode == ViewForumMode.NewPosts && hasTopics)
-    {
-        <hr class="BoxSeparator" />
-        <button onclick="selectAllCheckboxes()" type="button" class="MyButton SpacedButton">&#x2714;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SELECT_ALL_POSTS"])</button>
-        <input type="submit" value="&#x2705;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "MARK_SELECTED_POSTS_AS_READ"])" form="MarkNewPostsRead" class="MyButton SpacedButton" />
-        <p>&nbsp;</p>
-    }
-    else if (Model.Mode == ViewForumMode.OwnPosts)
-    {
-        <hr class="BoxSeparator" />
-    }
-
-    if (Model.Mode != ViewForumMode.Forum)
-    {
-        @await Html.PartialAsync(
-            "_PaginationControlsPartial",
-            new CustomPartials._PaginationControlsPartialModel(
-                paginator: Model.Paginator!,
-                allowPaginationChange: false,
-                back: $"/ViewForum?handler={handler}&pageNum={(Model.PageNum ?? 1) - 1}",
-                forward: $"/ViewForum?handler={handler}&pageNum={(Model.PageNum ?? 1) + 1}",
-                includeEasyNavigation: true,
-                language: Lang
-            ),
-            ViewData
-        );
-    }
-}
-else if (Model.Mode == ViewForumMode.NewPosts)
-{
-    <p>&nbsp;</p>
-    <h4>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "NO_NEW_POSTS"])</h4>
-    <p>&nbsp;</p>
-}
-else if (Model.Mode == ViewForumMode.OwnPosts)
-{
-    <p>&nbsp;</p>
-    <h4>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "NO_OWN_POSTS"])</h4>
-    <p>&nbsp;</p>
-}
-else if (Model.Mode == ViewForumMode.Drafts)
-{
-    <p>&nbsp;</p>
-    <h4>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "NO_DRAFTS"])</h4>
-    <p>&nbsp;</p>
+            AllowNewTopicCreation = true
+        })
 }
 
-@if (hasTopics && Model.Mode != ViewForumMode.Drafts && Model.Mode != ViewForumMode.NewPosts)
-{
-    <hr class="BoxSeparator" />
-}
-
-@if (!isCurrentForumReadOnly && Model.Mode == ViewForumMode.Forum)
+@if (!isCurrentForumReadOnly)
 {
     <p></p>
     <button onclick="location.href='/Posting?forumId=@Model.ForumId&handler=newTopic'" type="button" class="MyButton">

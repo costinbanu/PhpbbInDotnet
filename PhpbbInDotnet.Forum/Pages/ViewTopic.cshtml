@@ -45,6 +45,7 @@
         '@ModeratorTopicActions.MoveTopic',
         '@ModeratorPostActions.MoveSelectedPosts',
         '@ModeratorPostActions.SplitSelectedPosts',
+        '@ModeratorTopicActions.CreateShortcut',
     );
 
     $(window).on('load', function () {
@@ -255,7 +256,7 @@ else if (!isCurrentForumReadOnly)
                 selectedItem: Model.TopicAction, 
                 textTransform: item => Model.LanguageProvider.Enums[lang, item], 
                 defaultText: Model.LanguageProvider.BasicText[lang, "SELECT_AN_OPTION"],
-                valueFilter: action => action != ModeratorTopicActions.RestoreTopic
+                valueFilter: Model.FilterModeratorTopicActions
             ),
             new { onchange = "mod.showTopicExtraInput(this)", id = "TopicAction", style = "max-width:70%; height: 30px; padding-top: 0px" }
         )

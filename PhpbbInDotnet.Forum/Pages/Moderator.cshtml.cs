@@ -82,36 +82,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     => ForumName = (await Context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId))?.ForumName;
 
                 async Task SetTopics()
-                {
-                    var dbTopics = await (
-                        from t in Context.PhpbbTopics.AsNoTracking()
-                        where t.ForumId == ForumId
-                        orderby t.TopicLastPostTime descending
-                        select new TopicDto
-                        {
-                            TopicId = t.TopicId,
-                            TopicTitle = t.TopicTitle,
-                            TopicStatus = t.TopicStatus,
-                            TopicType = t.TopicType,
-                            TopicLastPosterColour = t.TopicLastPosterColour,
-                            TopicLastPosterId = t.TopicLastPosterId,
-                            TopicLastPosterName = t.TopicLastPosterName,
-                            TopicLastPostId = t.TopicLastPostId,
-                            TopicLastPostTime = t.TopicLastPostTime
-                        }
-                    ).ToListAsync();
-
-                    Topics = (
-                        from t in dbTopics
-                        group t by t.TopicType into groups
-                        orderby groups.Key descending
-                        select new TopicGroup
-                        {
-                            TopicType = groups.Key,
-                            Topics = groups
-                        }
-                    ).ToList();
-                }
+                    => Topics = await ForumService.GetTopicGroups(ForumId);
 
                 async Task SetReports()
                     => Reports = await _moderatorService.GetReportedMessages(0);
@@ -213,6 +184,8 @@ namespace PhpbbInDotnet.Forum.Pages
                                 ModeratorTopicActions.MoveTopic => _moderatorService.MoveTopic(topicId, DestinationForumId ?? 0, logDto),
                                 ModeratorTopicActions.LockTopic => _moderatorService.LockUnlockTopic(topicId, true, logDto),
                                 ModeratorTopicActions.UnlockTopic => _moderatorService.LockUnlockTopic(topicId, false, logDto),
+                                ModeratorTopicActions.CreateShortcut => _moderatorService.CreateShortcut(topicId, DestinationForumId ?? 0, logDto),
+                                ModeratorTopicActions.RemoveShortcut => _moderatorService.RemoveShortcut(topicId, ForumId, logDto),
                                 _ => throw new NotSupportedException($"Can't perform action '{TopicAction}'")
                             }
                         )

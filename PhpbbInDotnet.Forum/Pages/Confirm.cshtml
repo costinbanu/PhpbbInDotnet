@@ -61,7 +61,7 @@
             new CustomPartials._ForumTreePartialModel(
                 tree: Model.ForumTree!,
                 topicData: Model.TopicData,
-                forumId: Model.ForumId,
+                forumId: Model.TopicAction == ModeratorTopicActions.CreateShortcut ? null : Model.ForumId,
                 topicId: Model.TopicId
             ),
             ViewData

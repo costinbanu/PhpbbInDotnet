@@ -226,6 +226,12 @@ namespace PhpbbInDotnet.Forum
             }
         }
 
+        protected async Task<IEnumerable<int>> GetRestrictedForums()
+        {
+            var restrictedForums = await ForumService.GetRestrictedForumList(GetCurrentUser());
+            return restrictedForums.Select(f => f.forumId).DefaultIfEmpty();
+        }
+
         #endregion Forum for user
 
         #region Permission validation wrappers
