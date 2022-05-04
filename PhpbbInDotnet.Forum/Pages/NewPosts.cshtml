@@ -1,0 +1,133 @@
+﻿@page
+@model PhpbbInDotnet.Forum.Pages.NewPostsModel
+
+@using Utilities
+@using Objects
+@inject Services.ForumTreeService _forumService
+
+@{
+    var Lang = Model.GetLanguage();
+    var DocumentTitle = Model.LanguageProvider.BasicText[Lang, "NEW_POSTS", Casing.FirstUpper];
+    ViewData["Title"] = DocumentTitle;
+    Layout = "~/Pages/_Layout.cshtml";
+    var currentUser = Model.GetCurrentUser();
+    var userDateFormat = currentUser.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
+}
+
+<environment include="Development">
+    <link rel="stylesheet" href="~/css/pagination.css" />
+</environment>
+
+<form asp-page-handler="MarkNewPostsRead" method="post" name="MarkNewPostsRead" id="MarkNewPostsRead">
+    @Html.AntiForgeryToken()
+</form>
+
+<a href="/" style="padding-bottom: 10px">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "HOME", Casing.FirstUpper])</a>
+
+@if (!currentUser.IsAnonymous)
+{
+    <span>&nbsp;&bull;&nbsp;</span>
+    @await Html.PartialAsync(
+        "_HeaderLinksPartial",
+        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(Lang, false),
+        ViewData
+    )
+}
+
+<p>&nbsp;</p>
+<h2>@Html.Raw(DocumentTitle)</h2>
+@if (Model.Topics.Any())
+{  
+    @await Html.PartialAsync(
+        "_PaginationControlsPartial",
+        new CustomPartials._PaginationControlsPartialModel(
+            paginator: Model.Paginator!,
+            allowPaginationChange: false,
+            back: $"/NewPosts?pageNum={Model.PageNum - 1}",
+            forward: $"/NewPosts?pageNum={Model.PageNum + 1}",
+            includeEasyNavigation: false,
+            language: Lang
+        ),
+        ViewData
+    )
+    
+    <hr class="BoxSeparator" />
+
+    foreach (var topic in Model.Topics)
+    {
+        topic.Unread = true;
+        if (topic != Model.Topics[0])
+        {
+            <hr class="BoxSeparator" />
+        }
+
+        <div class="FlexRow RowMargin">
+            <input name="SelectedNewPosts" type="checkbox" value="@($"{topic.ForumId};{topic.TopicId}")" form="MarkNewPostsRead" style="margin-right:10px; align-self:safe center" />
+            <span class="ForumContent">
+                <span class="Caption">
+                    @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, topic.ForumId ?? 0))
+                </span>
+                <br />
+                @{
+                    var firstUnreadPost = await Model.GetFirstUnreadPost(topic.ForumId ?? 0, topic.TopicId ?? 0);
+                    <a asp-page="/ViewTopic" asp-page-handler="ByPostId" asp-route-postId="@firstUnreadPost" asp-route-highlight="false" class="nav-link UnreadTitle" style="font-weight:bold">@Html.Raw(topic.TopicTitle)</a>
+                }
+                <br />
+                @await Html.PartialAsync(
+                    "_PaginationPageListPartial",
+                    new Forum.Pages.CustomPartials._PaginationPageListPartialModel
+                    {
+                        Pagination = topic.Pagination,
+                        Language = Lang
+                    },
+                    ViewData
+                )
+            </span>
+            @if (currentUser.Foes?.Contains(topic.TopicLastPosterId ?? 0) ?? false)
+            {
+                topic.TopicLastPosterColour = null;
+                topic.TopicLastPosterName = "[Ascuns]";
+                topic.TopicLastPosterId = 1;
+            }
+            @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
+            {
+                AuthorId = topic.TopicLastPosterId,
+                AuthorName = topic.TopicLastPosterName,
+                AuthorColor = topic.TopicLastPosterColour,
+                CreationTime = topic.LastPostTime,
+                AssetId = topic.TopicId!.Value,
+                DateFormat = userDateFormat,
+                LinkHref = topic.TopicLastPostId == null ? null : $"./ViewTopic?postId={topic.TopicLastPostId}&handler=ByPostId",
+                ShowAsLast = true,
+                Posts = topic.PostCount,
+                Views = topic.ViewCount,
+                Language = Lang
+            })
+        </div>
+    }
+
+    <hr class="BoxSeparator" />
+
+    @await Html.PartialAsync(
+        "_PaginationControlsPartial",
+        new CustomPartials._PaginationControlsPartialModel(
+            paginator: Model.Paginator!,
+            allowPaginationChange: false,
+            back: $"/NewPosts?pageNum={Model.PageNum - 1}",
+            forward: $"/NewPosts?pageNum={Model.PageNum + 1}",
+            includeEasyNavigation: true,
+            language: Lang
+        ),
+        ViewData
+    );
+
+    <button onclick="selectAllCheckboxes()" type="button" class="MyButton SpacedButton">&#x2714;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SELECT_ALL_POSTS"])</button>
+    <input type="submit" value="&#x2705;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "MARK_SELECTED_POSTS_AS_READ"])" form="MarkNewPostsRead" class="MyButton SpacedButton" />
+    <p>&nbsp;</p>
+}
+else 
+{
+    <p>&nbsp;</p>
+    <h4>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "NO_NEW_POSTS"])</h4>
+    <p>&nbsp;</p>
+}

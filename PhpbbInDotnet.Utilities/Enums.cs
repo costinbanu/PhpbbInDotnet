@@ -126,7 +126,9 @@ namespace PhpbbInDotnet.Utilities
         MakeTopicImportant,
         MakeTopicAnnouncement,
         MakeTopicGlobal,
-        RestoreTopic
+        RestoreTopic,
+        CreateShortcut,
+        RemoveShortcut
     }
 
     public enum ModeratorPostActions
@@ -195,15 +197,6 @@ namespace PhpbbInDotnet.Utilities
         LastActiveDateDesc,
         MessageCountAsc,
         MessageCountDesc
-    }
-
-    [Flags]
-    public enum ViewForumMode
-    {
-        OwnPosts,
-        NewPosts,
-        Drafts,
-        Forum = ~OwnPosts & ~NewPosts & ~Drafts
     }
 
     public enum UserPageMode

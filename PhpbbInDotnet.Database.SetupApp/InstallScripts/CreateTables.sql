@@ -716,6 +716,11 @@ CREATE TABLE `phpbb_recycle_bin` (
   PRIMARY KEY (`type`,`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
+CREATE TABLE `phpbb_shortcuts` (
+  `topic_id` MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT '0',
+  `forum_id` MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT '0',
+  PRIMARY KEY (`topic_id`, `forum_id`)
+) ENGINE = MyISAM DEFAULT CHARACTER SET = utf8 COLLATE = utf8_bin;
 
 
 

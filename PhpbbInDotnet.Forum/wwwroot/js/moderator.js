@@ -1,12 +1,13 @@
 ﻿class Moderator {
-    constructor(moveTopic, moveSelectedPosts, splitSelectedPosts) {
+    constructor(moveTopic, moveSelectedPosts, splitSelectedPosts, createShortcut) {
         this.moveTopic = moveTopic;
         this.moveSelectedPosts = moveSelectedPosts;
         this.splitSelectedPosts = splitSelectedPosts;
+        this.createShortcut = createShortcut;
     }
 
     showTopicExtraInput(source) {
-        if ($(source).val() == this.moveTopic) {
+        if ($(source).val() == this.moveTopic || $(source).val() == this.createShortcut) {
             $('#extraInputPostForum').hide("fast");
             $('#extraInputPostTopic').hide("fast");
             $('#extraInputTopic').show("fast");

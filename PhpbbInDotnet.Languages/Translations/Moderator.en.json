@@ -22,6 +22,8 @@
     "POSTS_SPLIT_SUCCESSFULLY": "The posts were split successfully!",
     "POSTS_MOVED_SUCCESSFULLY": "The posts were moved successfully!",
     "POSTS_DELETED_SUCCESSFULLY": "The posts were deleted successfully!",
+    "SHORTCUT_CREATED_SUCCESSFULLY": "Shortcut created successfully!",
+    "SHORTCUT_DELETED_SUCCESSFULLY": "Shortcut deleted successfully!",
 
     //error messages
     "TOPIC_DOESNT_EXIST_FORMAT": "The topic {0} does not exist.",
@@ -30,6 +32,8 @@
     "INVALID_DESTINATION_TOPIC": "Invalid destination topic.",
     "ATLEAST_ONE_POST_REQUIRED": "At least one selected post is required.",
     "ATLEAST_ONE_POST_MOVED_OR_DELETED": "At least one selected post has been moved or deleted in the meantime.",
+    "SHORTCUT_DOESNT_EXIST_FORMAT": "No shortcut to topic {0} in forum {1} exists.",
+    "INVALID_SHORTCUT_SELECTED": "The selected shortcut is invalid.",
 
     //moderator panel
     "MOD_PANEL": "Moderator panel",

@@ -179,6 +179,76 @@ namespace PhpbbInDotnet.Services
             }
         }
 
+        public async Task<(string Message, bool? IsSuccess)> CreateShortcut(int topicId, int forumId, OperationLogDto logDto)
+        {
+            var lang = GetLanguage();
+            try
+            {
+                var conn = _context.GetDbConnection();
+                var curTopic = await conn.QueryFirstOrDefaultAsync<PhpbbTopics>(
+                    "SELECT * FROM phpbb_topics WHERE topic_id = @topicId", 
+                    new { topicId });
+
+                if (curTopic is null)
+                {
+                    return (string.Format(LanguageProvider.Moderator[lang, "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
+                }
+                
+                if (curTopic.ForumId == forumId)
+                {
+                    return (LanguageProvider.Moderator[lang, "INVALID_DESTINATION_FORUM"], false);
+                }
+
+                await _context.GetDbConnection().ExecuteAsync(
+                    "INSERT INTO phpbb_shortcuts (topic_id, forum_id) VALUES(@topicId, @forumId)", 
+                    new { topicId, forumId });
+
+                await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.CreateShortcut, logDto.UserId, topicId);
+
+                return (LanguageProvider.Moderator[lang, "SHORTCUT_CREATED_SUCCESSFULLY"], true);
+            }
+            catch (Exception ex)
+            {
+                var id = Utils.HandleError(ex);
+                return (string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+            }
+        }
+
+        public async Task<(string Message, bool? IsSuccess)> RemoveShortcut(int topicId, int forumId, OperationLogDto logDto)
+        {
+            var lang = GetLanguage();
+            try
+            {
+                var conn = _context.GetDbConnection();
+                var curShortcut = await conn.QueryFirstOrDefaultAsync<PhpbbShortcuts>(
+                    "SELECT * FROM phpbb_shortcuts WHERE topic_id = @topicId",
+                    new { topicId });
+
+                if (curShortcut is null)
+                {
+                    return (string.Format(LanguageProvider.Moderator[lang, "SHORTCUT_DOESNT_EXIST_FORMAT"], topicId, forumId), false);
+                }
+
+                if (curShortcut.ForumId != forumId)
+                {
+                    return (LanguageProvider.Moderator[lang, "INVALID_SHORTCUT_SELECTED"], false);
+                }
+
+                await _context.GetDbConnection().ExecuteAsync(
+                    "DELETE FROM phpbb_shortcuts WHERE topic_id = @topicId AND forum_id = @forumId",
+                    new { topicId, forumId });
+
+                await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.CreateShortcut, logDto.UserId, topicId);
+
+                return (LanguageProvider.Moderator[lang, "SHORTCUT_DELETED_SUCCESSFULLY"], true);
+            }
+            catch (Exception ex)
+            {
+                var id = Utils.HandleError(ex);
+                return (string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+            }
+        }
+
         #endregion Topic
 
         #region Post
