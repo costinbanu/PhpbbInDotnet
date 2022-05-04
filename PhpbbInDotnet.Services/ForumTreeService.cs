@@ -63,14 +63,14 @@ namespace PhpbbInDotnet.Services
             var trackingTask = fetchUnreadData ? GetForumTracking(user?.UserId ?? Constants.ANONYMOUS_USER_ID, forceRefresh) : Task.FromResult(new Dictionary<int, HashSet<Tracking>>());
             var treeTask = GetForumTree();
             var forumTopicCountTask = GetForumTopicCount();
-            var shortcutParentForumsTask = fetchUnreadData ? GetShortcutParentForums() : Task.FromResult(new Dictionary<int, List<int>>());
+            var shortcutParentsTask = fetchUnreadData ? GetShortcutParentForums() : Task.FromResult(new Dictionary<int, List<(int ActualForumId, int TopicId)>>());
             
-            await Task.WhenAll(trackingTask, treeTask, forumTopicCountTask, shortcutParentForumsTask);
+            await Task.WhenAll(trackingTask, treeTask, forumTopicCountTask, shortcutParentsTask);
             
             var tracking = await trackingTask;
             _tree = await treeTask;
             _forumTopicCount = await forumTopicCountTask;
-            var shortcutParentForums = await shortcutParentForumsTask;
+            var shortcutParents = await shortcutParentsTask;
 
             traverse(0);
 
@@ -133,25 +133,27 @@ namespace PhpbbInDotnet.Services
                 return count.ToHashSet();
             }
 
-            async Task<Dictionary<int, List<int>>> GetShortcutParentForums()
+            async Task<Dictionary<int, List<(int ActualForumId, int TopicId)>>> GetShortcutParentForums()
             {
                 var rawData = await _context.GetDbConnection().QueryAsync(
                     @"SELECT s.forum_id AS shortcut_forum_id, 
+                             s.topic_id,
                              t.forum_id AS actual_forum_id
                         FROM phpbb_shortcuts s
                         JOIN phpbb_topics t on s.topic_id = t.topic_id");
                 
-                var toReturn = new Dictionary<int, List<int>>(rawData.Count());
+                var toReturn = new Dictionary<int, List<(int, int)>>(rawData.Count());
                 foreach (var item in rawData)
                 {
                     var shortcutForumId = (int)item.shortcut_forum_id;
                     var actualForumId = (int)item.actual_forum_id;
-                    
+                    var topicId = (int)item.topic_id;
+
                     if (!toReturn.ContainsKey(shortcutForumId))
                     {
-                        toReturn.Add(shortcutForumId, new List<int>());
+                        toReturn.Add(shortcutForumId, new List<(int, int)>());
                     }
-                    toReturn[shortcutForumId].Add(actualForumId);
+                    toReturn[shortcutForumId].Add((actualForumId, topicId));
                 }
 
                 return toReturn;
@@ -165,8 +167,8 @@ namespace PhpbbInDotnet.Services
                 }
 
                 return tracking.ContainsKey(forumId)
-                    || (shortcutParentForums.TryGetValue(forumId, out var shortcutParents) 
-                        && shortcutParents.Any(sp => tracking.ContainsKey(sp)));
+                    || (shortcutParents.TryGetValue(forumId, out var shortcuts)
+                        && shortcuts.Any(shortcut => tracking.TryGetValue(shortcut.ActualForumId, out var track) && track.Contains(new Tracking { TopicId = shortcut.TopicId })));
             }
         }
 

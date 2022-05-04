@@ -9,7 +9,6 @@
 @inject LanguageProvider _languageProvider
 
 @{
-    var hasTopics = Model.Topics.SelectMany(x => x.Topics ?? Enumerable.Empty<TopicDto>()).Any();
     var userDateFormat = Model.CurrentUser.UserDateFormat ?? _languageProvider.GetDefaultDateFormat(Model.Language);
     var isCurrentForumReadOnly = await _forumService.IsForumReadOnlyForUser(Model.CurrentUser, Model.ForumId);
     var topicsDisplayed = false;
@@ -53,7 +52,7 @@
         topic.Unread = await _forumService.IsTopicUnread(topic.ForumId ?? 0, topic.TopicId ?? 0, Model.CurrentUser);
         var pageSize = Model.CurrentUser!.GetPageSize(topic.TopicId ?? 0);
         topic.Pagination = new Objects.PaginationDto($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", topic.PostCount ?? 0, pageSize, 0, "PageNum");
-        var isShortcut = topic.ForumId != Model.ForumId;
+        var isShortcut = topic.ForumId != Model.ForumId && topic.TopicType != TopicType.Global;
 
         if (!isFirstInGroup)
         {
