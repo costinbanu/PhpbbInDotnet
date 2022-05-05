@@ -19,9 +19,6 @@ namespace PhpbbInDotnet.Forum.Pages
         public Paginator? Paginator { get; private set; }
 
         [BindProperty(SupportsGet = true)]
-        public int ForumId { get; set; }
-
-        [BindProperty(SupportsGet = true)]
         public int PageNum { get; set; } = 1;
 
         [BindProperty]

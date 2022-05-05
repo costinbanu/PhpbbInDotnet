@@ -10,20 +10,23 @@
 
 @{
     var userDateFormat = Model.CurrentUser.UserDateFormat ?? _languageProvider.GetDefaultDateFormat(Model.Language);
-    var isCurrentForumReadOnly = await _forumService.IsForumReadOnlyForUser(Model.CurrentUser, Model.ForumId);
+    var isCurrentForumReadOnly = Model.ForumId is null || await _forumService.IsForumReadOnlyForUser(Model.CurrentUser, Model.ForumId.Value);
     var topicsDisplayed = false;
     var announcementsDisplayed = false;
     var isFirstTopicType = true;
 }
 
-@foreach (var topicGroup in Model.Topics)
+@foreach (var topicGroup in Model.TopicGroups)
 {
     var isFirstInGroup = false;
     @switch (topicGroup.TopicType)
     {
         case TopicType.Announcement or TopicType.Global when !announcementsDisplayed:
-            <p>&nbsp;</p>
-            <h3 style="float:left">@Html.Raw(_languageProvider.BasicText[Model.Language, "ANNOUNCEMENTS", Casing.FirstUpper])</h3>
+            if (Model.ShowTypeName)
+            {
+                <p>&nbsp;</p>
+                <h3 style="float:left">@Html.Raw(_languageProvider.BasicText[Model.Language, "ANNOUNCEMENTS", Casing.FirstUpper])</h3>
+            }
             announcementsDisplayed = isFirstInGroup = true;
             break;
 
@@ -32,8 +35,11 @@
             {
                 <hr class="BoxSeparator" />
             }
-            <p>&nbsp;</p>
-            <h3 style="float:left">@Html.Raw(_languageProvider.BasicText[Model.Language, "TOPICS", Casing.FirstUpper])</h3>
+            if (Model.ShowTypeName)
+            {
+                <p>&nbsp;</p>
+                <h3 style="float:left">@Html.Raw(_languageProvider.BasicText[Model.Language, "TOPICS", Casing.FirstUpper])</h3>
+            }
             if (!isCurrentForumReadOnly && Model.AllowNewTopicCreation)
             {
                 <span>
@@ -52,7 +58,7 @@
         topic.Unread = await _forumService.IsTopicUnread(topic.ForumId ?? 0, topic.TopicId ?? 0, Model.CurrentUser);
         var pageSize = Model.CurrentUser!.GetPageSize(topic.TopicId ?? 0);
         topic.Pagination = new Objects.PaginationDto($"/ViewTopic?topicId={topic.TopicId}&pageNum=1", topic.PostCount ?? 0, pageSize, 0, "PageNum");
-        var isShortcut = topic.ForumId != Model.ForumId && topic.TopicType != TopicType.Global;
+        var isShortcut = Model.ForumId is not null && topic.ForumId != Model.ForumId && topic.TopicType != TopicType.Global;
 
         if (!isFirstInGroup)
         {
@@ -60,18 +66,27 @@
         }
 
         <div class="FlexRow RowMargin">
-            @if(Model.AllowTopicSelection)
+            @if(Model.TopicSelectionOptions is not null)
             {
-                var isChecked = Model.SelectedTopicIds?.Contains(topic.TopicId ?? 0) == true;
-                <input name="SelectedTopics" type="checkbox" value="@topic.TopicId" form="SubmitTopics" style="margin-right:10px; align-self:safe center" onchange="mod.appendToStringList(this, 'selectedTopicIds')" @(isChecked ? "checked" : "") />
+                var isChecked = Model.TopicSelectionOptions.SelectedTopicIds?.Contains(topic.TopicId ?? 0) == true;
+                <input name="@Model.TopicSelectionOptions.InputName" 
+                       type="checkbox" 
+                       value="@Model.TopicSelectionOptions.ValueFactory(topic)" 
+                       form="@Model.TopicSelectionOptions.FormName" 
+                       style="margin-right:10px; align-self:safe center" 
+                       @(Model.TopicSelectionOptions.OnChange is not null ? $"onchange=\"{Model.TopicSelectionOptions.OnChange}\"" : "")
+                       @(isChecked ? "checked" : "") />
             }
-            <span class="ForumContent">
-                @if(isShortcut)
+            <span class="ForumContent" style="align-self:safe center">
+                @if (isShortcut || Model.ShowPath)
                 {
                     <span class="Caption">
                         @Html.Raw(_forumService.GetPathText(await _forumService.GetForumTree(Model.CurrentUser, false, false), topic.ForumId ?? 0))
                     </span>
                     <br />
+                }
+                @if (isShortcut)
+                {
                     <span>&#x21A9;&nbsp;</span>
                 }
                 @if (topicGroup!.TopicType == TopicType.Important)
@@ -129,4 +144,3 @@
     }
     isFirstTopicType = false;
 }
-<hr class="BoxSeparator" />

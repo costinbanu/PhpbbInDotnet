@@ -59,5 +59,6 @@
     "MODERATOR_ACTION_PARTIAL_FAILED_FORMAT": "An error occurred and some topics have not been changed. Error ID: {0}",
     "ITEMS_RESTORED_SUCCESSFULLY": "Items restored successfully.",
     "ITEMS_RESTORATION_FAILED": "Item restoration failed.",
-    "ITEMS_RESTORATION_FAILED_PARTIALLY": "An error occurred and not all items have been restored."
+    "ITEMS_RESTORATION_FAILED_PARTIALLY": "An error occurred and not all items have been restored.",
+    "NO_TOPICS": "No topics"
 }

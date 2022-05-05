@@ -3,6 +3,7 @@
 
 @using Utilities
 @using Objects
+@using CustomPartials
 @inject Services.ForumTreeService _forumService
 
 @{
@@ -12,7 +13,6 @@
     Layout = "~/Pages/_Layout.cshtml";
     var currentUser = Model.GetCurrentUser();
     var userDateFormat = currentUser.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
-    var isCurrentForumReadOnly = await _forumService.IsForumReadOnlyForUser(currentUser, Model.ForumId);
 }
 
 <environment include="Development">
@@ -55,44 +55,16 @@
     
     <hr class="BoxSeparator" />
 
-    foreach (var topic in Model.Topics)
-    {
-        topic.Unread = true;
-        if (topic != Model.Topics[0])
+    @await Html.PartialAsync(
+        "_TopicDisplayPartial",
+        new _TopicDisplayPartialModel(currentUser, Lang, Model.Topics!)
         {
-            <hr class="BoxSeparator" />
-        }
-
-        <div class="FlexRow RowMargin">
-            <input name="SelectedDrafts" type="checkbox" value="@topic.DraftId" form="DeleteDrafts" style="margin-right:10px; align-self:safe center" />
-            <span class="ForumContent">
-                <span class="Caption">
-                    @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, topic.ForumId ?? 0))
-                </span>
-                <br />
-                @if (!currentUser.IsForumReadOnly(topic.ForumId ?? 0))
-                {
-                    if ((topic.TopicId ?? 0) == 0)
-                    {
-                        <a asp-page="./Posting" asp-page-handler="newTopic" asp-route-forumId="@topic.ForumId" style="white-space:nowrap">
-                            @Html.Raw(Model.LanguageProvider.BasicText[Lang, "NEW_TOPIC", Casing.FirstUpper]):
-                            @Html.Raw(topic.TopicTitle)
-                        </a>
-                    }
-                    else
-                    {
-                        <a asp-page="./Posting" asp-page-handler="forumPost" asp-route-forumId="@topic.ForumId" asp-route-topicId="@topic.TopicId" asp-route-postId="@topic.TopicLastPostId">@Html.Raw(topic.TopicTitle)</a>
-                    }
-                    <span>
-                        &nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "POSTED"])
-                        <script>writeDate("@topic.LastPostTime?.ToString("o")", "@userDateFormat");</script>
-                    </span>
-                }
-                <br />
-
-            </span>
-        </div>
-    }
+            ShowPath = true,
+            TopicSelectionOptions = new TopicSelectionOptions(
+                inputName: "SelectedDrafts",
+                formName: "DeleteDrafts",
+                inputValueFactory: topic => topic.DraftId!.Value.ToString())
+        })
 
     <hr class="BoxSeparator" />
 

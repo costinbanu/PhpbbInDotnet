@@ -103,10 +103,14 @@
 {
     @await Html.PartialAsync(
         "_TopicDisplayPartial",
-        new _TopicDisplayPartialModel(currentUser, Lang, Model.Topics ?? new List<TopicGroup>(), Model.ForumId)
+        new _TopicDisplayPartialModel(currentUser, Lang, Model.Topics!)
         {
-            AllowNewTopicCreation = true
+            ForumId = Model.ForumId,
+            AllowNewTopicCreation = true,
+            ShowTypeName = true
         })
+
+    <hr class="BoxSeparator" />
 }
 
 @if (!isCurrentForumReadOnly)
