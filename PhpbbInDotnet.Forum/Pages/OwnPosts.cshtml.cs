@@ -40,7 +40,8 @@ namespace PhpbbInDotnet.Forum.Pages
 			                        ON p.topic_id = t.topic_id
 			                     WHERE p.poster_id = @userId
                                    AND t.forum_id NOT IN @restrictedForumList
-                                LIMIT @skip, @take
+                                 ORDER BY t.topic_last_post_time DESC
+                                 LIMIT @skip, @take
                             )
                             SELECT t.topic_id, 
 			                       t.forum_id,
@@ -58,8 +59,7 @@ namespace PhpbbInDotnet.Forum.Pages
                                 ON p.topic_id = ot.topic_id
                               JOIN phpbb_topics t
                                 ON t.topic_id = ot.topic_id
-                             GROUP BY p.topic_id
-                             ORDER BY t.topic_last_post_time;",
+                             GROUP BY p.topic_id",
                             new
                             {
                                 user.UserId,

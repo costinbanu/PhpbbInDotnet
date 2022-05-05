@@ -115,18 +115,27 @@
 
     @if(hasTopics)
     {
+        <hr class="BoxSeparator" />
         @await Html.PartialAsync(
             "_TopicDisplayPartial",
-            new _TopicDisplayPartialModel(CurrentUser, Lang, Model.Topics ?? new List<TopicGroup>(), Model.ForumId)
+            new _TopicDisplayPartialModel(CurrentUser, Lang, Model.Topics!)
             {
-                AllowTopicSelection = true,
-                SelectedTopicIds = Model.GetTopicIds()
+                ForumId = Model.ForumId,
+                TopicSelectionOptions = new TopicSelectionOptions(
+                    inputName: "SelectedTopics",
+                    formName: "SubmitTopics",
+                    inputValueFactory: topic => topic.TopicId!.Value.ToString())
+                    {
+                        SelectedTopicIds = Model.GetTopicIds(),
+                        OnChange = "mod.appendToStringList(this, 'selectedTopicIds')"
+                    }
             })
+        <hr class="BoxSeparator" />
     }
     else if (isForumSelected)
     {
         <p>&nbsp;</p>
-        <h5>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "NO_TOPICS"])</h5>
+        <h5>@Html.Raw(Model.LanguageProvider.Moderator[Lang, "NO_TOPICS"])</h5>
         <p>&nbsp;</p>
     }
 

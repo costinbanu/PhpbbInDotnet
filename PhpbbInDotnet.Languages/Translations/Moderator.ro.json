@@ -59,5 +59,6 @@
     "MODERATOR_ACTION_PARTIAL_FAILED_FORMAT": "A intervenit o eroare și unele subiecte nu au fost modificate cu succes. ID eroare: {0}",
     "ITEMS_RESTORED_SUCCESSFULLY": "Elementele au fost recuperate cu succes.",
     "ITEMS_RESTORATION_FAILED": "A intervenit o eroare și nici un element nu a fost recuperat.",
-    "ITEMS_RESTORATION_FAILED_PARTIALLY": "A intervenit o eroare și unele elemente nu au fost recuperate."
+    "ITEMS_RESTORATION_FAILED_PARTIALLY": "A intervenit o eroare și unele elemente nu au fost recuperate.",
+    "NO_TOPICS": "Nici un subiect"
 }
