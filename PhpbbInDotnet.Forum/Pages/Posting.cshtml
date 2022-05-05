@@ -4,15 +4,15 @@
 @using Utilities
 @using CustomPartials
 @using Objects.Configuration
+@using Services
 @using Microsoft.Extensions.Configuration
 
 @model PhpbbInDotnet.Forum.Pages.PostingModel
 
-@inject LazyCache.IAppCache _cache
-@inject Services.WritingToolsService _writingService
-@inject Services.BBCodeRenderingService _renderingService
-@inject Services.PostService _postService
-@inject Services.StorageService _storageService
+@inject WritingToolsService _writingService
+@inject BBCodeRenderingService _renderingService
+@inject StorageService _storageService
+@inject UserService _userService
 @inject CommonUtils _utils
 @inject IConfiguration _config
 
@@ -23,7 +23,6 @@
     Layout = "~/Pages/_Layout.cshtml";
 
     var CurrentUser = Model.GetCurrentUser();
-    var IsPM = Model.Action == PostingActions.NewPrivateMessage || Model.Action == PostingActions.EditPrivateMessage;
     var CanCreatePoll = Model.Action == PostingActions.NewTopic || (Model.Action == PostingActions.EditForumPost && (Model.CurrentTopic?.TopicFirstPostId ?? 0) == Model.PostId);
     var UserDateFormat = CurrentUser.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
     var IsAdmin = await Model.IsCurrentUserAdminHere();
@@ -62,33 +61,6 @@
         }
         $('#message').focus();
     });
-
-    function toggleFormattingHelp() {
-        showElement(
-            'formattingHelp',
-            function () {
-                $('#formattingHelpHeader').toggle();
-            },
-            function () {
-                var header = $('#formattingHelpHeader');
-                header.toggle({
-                    duration: 'fast',
-                    start: function () {
-                        var boxPosition = $('#formattingHelp').offset();
-                        header.offset({ top: boxPosition.top - 40, left: boxPosition.left });
-                    }
-                });
-                $('#formattingHelp img, iframe').each(function () {
-                    var parent = $('#formattingHelp');
-                    $(this).css({
-                        'max-width': parent.width() * 0.9 + 'px',
-                        'max-height': parent.height() * 0.9 + 'px'
-                    });
-                });
-            },
-            true
-        );
-    }
 </script>
 
 
@@ -116,10 +88,6 @@ else if (Model.Action == PostingActions.NewTopic)
         @Html.Raw(Model.LanguageProvider.BasicText[Lang, "OPEN_NEW_TOPIC"]):
         <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(Model.CurrentForum?.ForumName ?? string.Empty)</a>
     </h3>
-}
-else if (IsPM)
-{
-    <h3>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "WRITE_NEW_PM"]):</h3>
 }
 
 @await Html.PartialAsync("_RulesPartial", new _RulesPartialModel
@@ -162,102 +130,29 @@ else if (IsPM)
 }
 
 <form name="postform" method="post" enctype="multipart/form-data">
-    @if (Model.Action == PostingActions.NewPrivateMessage)
-    {
-        <input type="text" asp-for="ReceiverName" placeholder="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "PM_CHOOSE_TO"])" id="pmToInput" style="width:100%" autocomplete="off" />
-        <p id="tributeHolder" style="position:relative"></p>
-        <span asp-validation-for="ReceiverName" class="validation"></span>
-    }
-    else if (Model.Action == PostingActions.EditPrivateMessage)
-    {
-        <input type="text" asp-for="ReceiverName" style="width:100%" disabled />
-        <p></p>
-        <span asp-validation-for="ReceiverName" class="validation"></span>
-    }
-    <input asp-for="PostTitle" type="text" id="subject" size="45" maxlength="256" tabindex="2" class="InputBox" placeholder="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "POST_TITLE"])" style="width:100%" />
-    <br />
+    @await Html.PartialAsync("_TextInputPartial", new _TextInputPartialModel(Lang))
 
-    <div class="PostingControls" id="controls" style="width:100%">
-        @foreach (var code in _renderingService.TagMap)
-        {
-            var caption = Model.LanguageProvider.BBCodes[Lang, $"CAPTION_{code.Value.OpenTag}", Casing.None, code.Key];
-            var buttonText = Model.LanguageProvider.BBCodes[Lang, $"BUTTON_TEXT_{code.Value.OpenTag}", Casing.None, code.Key];
-            if (code.Key == "size")
-            {
-                @Html.DropDownList("addbbcode20", _utils.EnumToDropDownList<PostingFontSize>(null, size => Model.LanguageProvider.Enums[Lang, size], size => ((int)size).ToString(), buttonText), new
-                {
-                    @class = "BbCodeButton PostingButton",
-                    style = "border-radius: 2px; border: 1px solid #dcdcdc;",
-                    onchange = "posting.bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;",
-                    title = caption
-                })
-            }
-            else if (code.Key == "color")
-            {
-                <button type="button" class="BbCodeButton Hide960 PostingButton MyButton" onclick="posting.change_palette();" title="@Html.Raw(caption)" id="colour_palette_button">
-                    @Html.Raw(buttonText)
-                </button>
-            }
-            else
-            {
-                <button type="button" class="BbCodeButton PostingButton @(code.Value.ShowWhenCollapsed ? "" : "Hide960") MyButton" onclick="posting.bbstyle('@code.Key')" title="@Html.Raw(caption)">
-                    @Html.Raw(buttonText)
-                </button>
-            }
-        }
-
-        <button type="button" class="BbCodeButton PostingButton MyButton" onclick="toggleFormattingHelp()" title="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SHOW_POSTING_GUIDE"])">&#x2754;</button>
-        <div class="ColorPalette" id="colour_palette">
-            <table>
-                @{
-                    var color = new[] { 0x0, 0x40, 0x80, 0xbf, 0xff };
-                    for (var r = 0; r < 5; r++)
-                    {
-                        <tr>
-                            @for (var g = 0; g < 5; g++)
-                            {
-                                for (var b = 0; b < 5; b++)
-                                {
-                                    var value = $"#{color[r]:X2}{color[g]:X2}{color[b]:X2}";
-                                    <td style="width: 15px; height: 10px; background-color: @value; border:solid 1px white">
-                                        <a href="javascript:posting.bbfontstyle('[color=@value]', '[/color]');">
-                                            <img src="./images/spacer.gif" alt="@value" title="@value" style="width: 15px; height: 10px">
-                                        </a>
-                                    </td>
-                                }
-                            }
-                        </tr>
-                    }
-                }
-            </table>
-        </div>
-    </div>
-    <a href="javascript:posting.show_hidden_formatters();" class="PostingControlsButton" style="margin-top:5px">
-        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "FORMATTING_OPTIONS"])
-    </a>
-    <div style="margin-top:5px">
-        <textarea asp-for="PostText" id="message" tabindex="3" onselect="posting.storeCaret(this);" onclick="posting.storeCaret(this);" onkeyup="posting.storeCaret(this);" onfocus="posting.initInsertions();" class="InputBox" style="width:100%; min-height:17em"></textarea>
-    </div>
     @if (Model.Action == PostingActions.EditForumPost)
     {
         <div style="clear:both">&nbsp;</div>
         <input asp-for="EditReason" type="text" style="width:100%" placeholder="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "EDIT_REASON"])" />
     }
-    @if (!IsPM)
-    {
-        <button onclick="posting.toggleAttach()" type="button" class="PostingButton MyButton SpacedButton">
-            &#128206; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "ATTACHED_FILES"])
-        </button>
-    }
+
+    <button onclick="posting.toggleAttach()" type="button" class="PostingButton MyButton SpacedButton">
+        &#128206; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "ATTACHED_FILES"])
+    </button>
+
     <button onclick="posting.toggleEmoji()" type="button" class="Hide960 PostingButton MyButton SpacedButton">
         &#x1F642; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "EMOJI"])
     </button>
+
     @if (CanCreatePoll)
     {
         <button onclick="posting.togglePoll()" type="button" class="PostingButton MyButton SpacedButton">
             &#x2714; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "POLL", Casing.Title])
         </button>
     }
+
     <input type="submit" value="&#x1F440; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "DO_PREVIEW", Casing.Title])" onclick="return posting.censor()" asp-page-handler="Preview" class="PostingButton MyButton SpacedButton" formnovalidate />
 
     @switch (Model.Action)
@@ -269,10 +164,6 @@ else if (IsPM)
             break;
         case PostingActions.EditForumPost:
             <input type="submit" value="&#x27A1; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="EditForumPost" class="PostingButton MyButton SpacedButton MyMainButton" formnovalidate />
-            break;
-        case PostingActions.NewPrivateMessage:
-        case PostingActions.EditPrivateMessage:
-            <input type="submit" value="&#x27A1; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="PrivateMessage" class="PostingButton MyButton SpacedButton MyMainButton" formnovalidate />
             break;
         default:
             <span class="validation">@Html.Raw(Model.LanguageProvider.Errors[Lang, "AN_ERROR_OCCURRED"])</span>
@@ -345,8 +236,7 @@ else if (IsPM)
             </div>
         </div>
     }
-    @if (!IsPM)
-    {
+    @{
         var sizeLimit = _config.GetObject<AttachmentLimits>("UploadLimitsMB");
         var countLimit = _config.GetObject<AttachmentLimits>("UploadLimitsCount");
         var resizeTool = _config.GetObject<ExternalImageProcessor>();
@@ -431,21 +321,16 @@ else if (IsPM)
     <input asp-for="ForumId" type="hidden" />
     <input asp-for="TopicId" type="hidden" />
     <input asp-for="PostId" type="hidden" />
-    <input asp-for="ReceiverId" type="hidden" id="pmTo" />
     <input asp-for="PageNum" type="hidden" />
     <input asp-for="Action" type="hidden" />
     <input asp-for="CurrentTopic!.TopicFirstPostId" type="hidden" />
     <input asp-for="CurrentTopic!.TopicTitle" type="hidden" />
     <input asp-for="LastPostTime" type="hidden" id="lastPostTime" />
-    <input asp-for="PrivateMessageId" type="hidden" />
-    <input asp-for="ReceiverId" type="hidden" />
-    <input asp-for="ReceiverName" type="hidden" />
     <input asp-for="PostTime" type="hidden" />
     <input asp-for="ReturnUrl" type="hidden" />
 </form>
 
-@if (!IsPM)
-{
+@{
     var (posts, attachments, previousPostsCorrelationId) = await Model.GetPreviousPosts();
     if (posts.Any())
     {
@@ -478,7 +363,7 @@ else if (IsPM)
 
 <script>
     var tribute = new Tribute({
-        values: @Html.Raw(_utils.ToCamelCaseJson(await Model.GetUsers())),
+        values: @Html.Raw(_utils.ToCamelCaseJson(await _userService.GetUsers())),
         trigger: "@@",
         allowSpaces: true,
         noMatchTemplate: ''
@@ -491,35 +376,6 @@ else if (IsPM)
         posting.showExpirationDate(pollExpiration.value);
     }
 </script>
-
-@if (Model.Action == PostingActions.NewPrivateMessage)
-{
-    <script>
-        var secondTribute = new Tribute({
-            values: @Html.Raw(_utils.ToCamelCaseJson(await Model.GetUserMap())),
-            selectTemplate: function(item) {
-                return item.original.key;
-            },
-            allowSpaces: true,
-            menuContainer: document.getElementById("tributeHolder"),
-            positionMenu: false,
-            trigger: ' ',
-            noMatchTemplate: ''
-        });
-        var authorInput = document.getElementById("pmToInput");
-
-        secondTribute.attach(authorInput);
-
-        authorInput.addEventListener("tribute-replaced", function(e) {
-            document.getElementById("pmTo").value = e.detail.item.original.value;
-            authorInput.value = e.detail.item.original.key;
-        });
-
-        authorInput.addEventListener("focusin", function(e) {
-            secondTribute.showMenuForCollection(authorInput);
-        });
-    </script>
-}
 
 <div id="imgcheckstatus" class="Popup"></div>
 

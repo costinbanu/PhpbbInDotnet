@@ -1,0 +1,104 @@
+﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._TextInputPartialModel
+
+@using Utilities
+@using Services
+@using Languages
+
+@inject LanguageProvider _languageProvider
+@inject CommonUtils _utils
+@inject BBCodeRenderingService _renderingService
+
+<script type="text/javascript">
+    function toggleFormattingHelp() {
+        showElement(
+            'formattingHelp',
+            function () {
+                $('#formattingHelpHeader').toggle();
+            },
+            function () {
+                var header = $('#formattingHelpHeader');
+                header.toggle({
+                    duration: 'fast',
+                    start: function () {
+                        var boxPosition = $('#formattingHelp').offset();
+                        header.offset({ top: boxPosition.top - 40, left: boxPosition.left });
+                    }
+                });
+                $('#formattingHelp img, iframe').each(function () {
+                    var parent = $('#formattingHelp');
+                    $(this).css({
+                        'max-width': parent.width() * 0.9 + 'px',
+                        'max-height': parent.height() * 0.9 + 'px'
+                    });
+                });
+            },
+            true
+        );
+    }
+</script>
+
+<input name="PostTitle" type="text" id="subject" size="45" maxlength="256" tabindex="2" class="InputBox" placeholder="@Html.Raw(_languageProvider.BasicText[Model.Language, "POST_TITLE"])" style="width:100%" />
+<br />
+
+<div class="PostingControls" id="controls" style="width:100%">
+    @foreach (var code in _renderingService.TagMap)
+    {
+        var caption = _languageProvider.BBCodes[Model.Language, $"CAPTION_{code.Value.OpenTag}", Casing.None, code.Key];
+        var buttonText = _languageProvider.BBCodes[Model.Language, $"BUTTON_TEXT_{code.Value.OpenTag}", Casing.None, code.Key];
+        if (code.Key == "size")
+        {
+            @Html.DropDownList("addbbcode20", _utils.EnumToDropDownList<PostingFontSize>(null, size => _languageProvider.Enums[Model.Language, size], size => ((int)size).ToString(), buttonText), new
+            {
+                @class = "BbCodeButton PostingButton",
+                style = "border-radius: 2px; border: 1px solid #dcdcdc;",
+                onchange = "posting.bbfontstyle('[size=' + this.form.addbbcode20.options[this.form.addbbcode20.selectedIndex].value + ']', '[/size]');this.form.addbbcode20.selectedIndex = 2;",
+                title = caption
+            })
+        }
+        else if (code.Key == "color")
+        {
+            <button type="button" class="BbCodeButton Hide960 PostingButton MyButton" onclick="posting.change_palette();" title="@Html.Raw(caption)" id="colour_palette_button">
+                @Html.Raw(buttonText)
+            </button>
+        }
+        else
+        {
+            <button type="button" class="BbCodeButton PostingButton @(code.Value.ShowWhenCollapsed ? "" : "Hide960") MyButton" onclick="posting.bbstyle('@code.Key')" title="@Html.Raw(caption)">
+                @Html.Raw(buttonText)
+            </button>
+        }
+    }
+
+    <button type="button" class="BbCodeButton PostingButton MyButton" onclick="toggleFormattingHelp()" title="@Html.Raw(_languageProvider.BasicText[Model.Language, "SHOW_POSTING_GUIDE"])">&#x2754;</button>
+    <div class="ColorPalette" id="colour_palette">
+        <table>
+            @{
+                var color = new[] { 0x0, 0x40, 0x80, 0xbf, 0xff };
+                for (var r = 0; r < 5; r++)
+                {
+                    <tr>
+                        @for (var g = 0; g < 5; g++)
+                        {
+                            for (var b = 0; b < 5; b++)
+                            {
+                                var value = $"#{color[r]:X2}{color[g]:X2}{color[b]:X2}";
+                                <td style="width: 15px; height: 10px; background-color: @value; border:solid 1px white">
+                                    <a href="javascript:posting.bbfontstyle('[color=@value]', '[/color]');">
+                                        <img src="./images/spacer.gif" alt="@value" title="@value" style="width: 15px; height: 10px">
+                                    </a>
+                                </td>
+                            }
+                        }
+                    </tr>
+                }
+            }
+        </table>
+    </div>
+</div>
+<a href="javascript:posting.show_hidden_formatters();" class="PostingControlsButton" style="margin-top:5px">
+    @Html.Raw(_languageProvider.BasicText[Model.Language, "FORMATTING_OPTIONS"])
+</a>
+<div style="margin-top:5px">
+    <textarea name="PostText" id="message" tabindex="3" onselect="posting.storeCaret(this);" onclick="posting.storeCaret(this);" onkeyup="posting.storeCaret(this);" onfocus="posting.initInsertions();" class="InputBox" style="width:100%; min-height:17em"></textarea>
+</div>
+

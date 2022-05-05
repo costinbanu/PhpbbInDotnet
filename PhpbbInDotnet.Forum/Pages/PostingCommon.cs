@@ -78,15 +78,6 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public string? EditReason { get; set; }
 
-        [BindProperty(SupportsGet = true)]
-        public int? ReceiverId { get; set; }
-
-        [BindProperty]
-        public string? ReceiverName { get; set; }
-
-        [BindProperty(SupportsGet = true)]
-        public int? PrivateMessageId { get; set; }
-
         [BindProperty]
         public List<PhpbbAttachments>? Attachments { get; set; }
 
@@ -147,7 +138,7 @@ namespace PhpbbInDotnet.Forum.Pages
             if (((TopicId.HasValue && PageNum.HasValue) || PostId.HasValue) && (Action == PostingActions.EditForumPost || Action == PostingActions.NewForumPost))
             {
                 var posts = (await _postService.GetPosts(TopicId ?? 0, 1, Constants.DEFAULT_PAGE_SIZE, descendingOrder: true)).AsList();
-                var attachments = await(
+                var attachments = await (
                     from a in Context.PhpbbAttachments.AsNoTracking()
                     where posts.Select(p => p.PostId).Contains(a.PostMsgId)
                     select a).ToListAsync();
@@ -157,13 +148,6 @@ namespace PhpbbInDotnet.Forum.Pages
             }
             return (new List<PostDto>(), new Dictionary<int, List<AttachmentDto>>(), Guid.Empty);
         }
-
-        private List<KeyValuePair<string, int>>? _userMap = null;
-        public async Task<List<KeyValuePair<string, int>>> GetUserMap()
-            => _userMap ??= await UserService.GetUserMap();
-
-        public async Task<IEnumerable<KeyValuePair<string, string>>> GetUsers()
-            => (await GetUserMap()).Select(map => KeyValuePair.Create(map.Key, $"[url={_config.GetValue<string>("BaseUrl")}/User?UserId={map.Value}]{map.Key}[/url]")).ToList();
 
         private async Task<int?> UpsertPost(PhpbbPosts? post, AuthenticatedUserExpanded usr)
         {

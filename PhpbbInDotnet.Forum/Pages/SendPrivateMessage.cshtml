@@ -1,0 +1,156 @@
+﻿@page
+
+@using System.Web
+@using Utilities
+@using CustomPartials
+@using Objects.Configuration
+@using Services
+@using Microsoft.Extensions.Configuration
+
+@model PhpbbInDotnet.Forum.Pages.SendPrivateMessageModel
+
+@inject WritingToolsService _writingService
+@inject BBCodeRenderingService _renderingService
+@inject StorageService _storageService
+@inject UserService _userService
+@inject CommonUtils _utils
+@inject IConfiguration _config
+
+@{
+    var Lang = Model.GetLanguage();
+
+    ViewData["Title"] = Model.LanguageProvider.BasicText[Lang, "WRITE_NEW_POST"];
+    Layout = "~/Pages/_Layout.cshtml";
+
+    var CurrentUser = Model.GetCurrentUser();
+    var UserDateFormat = CurrentUser.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
+    var IsAdmin = await Model.IsCurrentUserAdminHere();
+}
+
+<environment include="Development">
+    <script src="~/js/posting.js"></script>
+    <link rel="stylesheet" href="~/css/posting.css" />
+</environment>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tributejs/5.1.3/tribute.min.css" integrity="sha512-x3tME/kvJ3wzZ664qyANYueTLeJmRsoEbcIONhCei3DZJgNou8YwHos3ONthiwfzDvLE/H91ByIhSHVM10vS8g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tributejs/5.1.3/tribute.min.js" integrity="sha512-KJYWC7RKz/Abtsu1QXd7VJ1IJua7P7GTpl3IKUqfa21Otg2opvRYmkui/CXBC6qeDYCNlQZ7c+7JfDXnKdILUA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<script type="text/javascript">
+    var posting = new Posting(
+        @Json.Serialize(_renderingService.TagMap),
+        @(_config.GetValue<int>("UploadLimitsMB:Images")),
+        @(_config.GetValue<int>("UploadLimitsCount:Images")),
+        @(IsAdmin.ToString().ToLower()),
+        @((Model.Action == PostingActions.EditForumPost).ToString().ToLower()),
+        '@UserDateFormat',
+        '@(_config.GetValue<string>("BaseUrl"))'
+    );
+</script>
+
+<h3>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "WRITE_NEW_PM"])</h3>
+
+@if (Model.PreviewablePost != null)
+{
+    <p></p>
+
+    @await Html.PartialAsync("_PostPartial", new _PostPartialModel
+    {
+        CurrentUser = CurrentUser,
+        Post = Model.PreviewablePost,
+        Language = Lang,
+        ParentHttpContext = HttpContext,
+        ParentPageContext = PageContext,
+    }, ViewData)
+
+    <hr class="BoxSeparator" />
+    <p></p>
+}
+
+<form name="postform" method="post" enctype="multipart/form-data">
+    @if (Model.Action == PostingActions.NewPrivateMessage)
+    {
+        <input type="text" asp-for="ReceiverName" placeholder="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "PM_CHOOSE_TO"])" id="pmToInput" style="width:100%" autocomplete="off" />
+        <p id="tributeHolder" style="position:relative"></p>
+        <span asp-validation-for="ReceiverName" class="validation"></span>
+    }
+    else if (Model.Action == PostingActions.EditPrivateMessage)
+    {
+        <input type="text" asp-for="ReceiverName" style="width:100%" disabled />
+        <p></p>
+        <span asp-validation-for="ReceiverName" class="validation"></span>
+    }
+
+    @await Html.PartialAsync("_TextInputPartial", new _TextInputPartialModel(Lang))
+
+    <button onclick="posting.toggleEmoji()" type="button" class="Hide960 PostingButton MyButton SpacedButton">
+        &#x1F642; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "EMOJI"])
+    </button>
+
+    <input type="submit" value="&#x1F440; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "DO_PREVIEW", Casing.Title])" onclick="return posting.censor()" asp-page-handler="Preview" class="PostingButton MyButton SpacedButton" formnovalidate />
+
+    @switch (Model.Action)
+    {
+        case PostingActions.NewPrivateMessage:
+        case PostingActions.EditPrivateMessage:
+            <input type="submit" value="&#x27A1; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="PrivateMessage" class="PostingButton MyButton SpacedButton MyMainButton" formnovalidate />
+            break;
+        default:
+            <span class="validation">@Html.Raw(Model.LanguageProvider.Errors[Lang, "AN_ERROR_OCCURRED"])</span>
+            break;
+    }
+    <b>
+        <span asp-validation-for="PostTitle" class="validation"></span>
+        <span asp-validation-for="PostText" class="validation"></span>
+    </b>
+
+    <div id="emojiPanel" style="display:none; clear:both;">
+        @foreach (var smiley in (await _writingService.GetLazySmilies()).GroupBy(s => s.SmileyUrl).Select(g => g.FirstOrDefault()))
+        {
+            <a href="javascript:posting.insert_text('@smiley!.Code', true);">
+                <img src="@_storageService.GetFileUrl(smiley.SmileyUrl, FileType.Emoji)" alt="@smiley.Code" title="@smiley.Emotion" style="margin:2px" />
+            </a>
+        }
+    </div>
+
+    <input asp-for="PostId" type="hidden" />
+    <input asp-for="ReceiverId" type="hidden" id="pmTo" />
+    <input asp-for="Action" type="hidden" />
+    <input asp-for="PrivateMessageId" type="hidden" />
+    <input asp-for="ReceiverName" type="hidden" />
+</form>
+
+<script>
+    var tribute = new Tribute({
+        values: @Html.Raw(_utils.ToCamelCaseJson(await _userService.GetUsers())),
+        trigger: "@@",
+        allowSpaces: true,
+        noMatchTemplate: ''
+    });
+
+    tribute.attach(document.getElementById("message"));
+
+    var secondTribute = new Tribute({
+        values: @Html.Raw(_utils.ToCamelCaseJson(await _userService.GetUserMap())),
+        selectTemplate: function(item) {
+            return item.original.key;
+        },
+        allowSpaces: true,
+        menuContainer: document.getElementById("tributeHolder"),
+        positionMenu: false,
+        trigger: ' ',
+        noMatchTemplate: ''
+    });
+    var authorInput = document.getElementById("pmToInput");
+
+    secondTribute.attach(authorInput);
+
+    authorInput.addEventListener("tribute-replaced", function(e) {
+        document.getElementById("pmTo").value = e.detail.item.original.value;
+        authorInput.value = e.detail.item.original.key;
+    });
+
+    authorInput.addEventListener("focusin", function(e) {
+        secondTribute.showMenuForCollection(authorInput);
+    });
+</script>
+
+@Html.Raw(Model.LanguageProvider.PostingGuide[Lang])
