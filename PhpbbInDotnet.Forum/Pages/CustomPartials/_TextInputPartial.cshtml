@@ -102,3 +102,4 @@
     <textarea asp-for="PostText" id="message" tabindex="3" onselect="posting.storeCaret(this);" onclick="posting.storeCaret(this);" onkeyup="posting.storeCaret(this);" onfocus="posting.initInsertions();" class="InputBox" style="width:100%; min-height:17em"></textarea>
 </div>
 
+@Html.Raw(_languageProvider.PostingGuide[Model.Language])

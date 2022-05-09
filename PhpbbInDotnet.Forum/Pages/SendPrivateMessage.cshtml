@@ -36,10 +36,10 @@
 <script type="text/javascript">
     var posting = new Posting(
         @Json.Serialize(_renderingService.TagMap),
-        @(_config.GetValue<int>("UploadLimitsMB:Images")),
-        @(_config.GetValue<int>("UploadLimitsCount:Images")),
+        null,
+        null,
         @(IsAdmin.ToString().ToLower()),
-        @((Model.Action == PostingActions.EditForumPost).ToString().ToLower()),
+        false,
         '@UserDateFormat',
         '@(_config.GetValue<string>("BaseUrl"))'
     );
@@ -141,5 +141,3 @@
         secondTribute.showMenuForCollection(authorInput);
     });
 </script>
-
-@Html.Raw(Model.LanguageProvider.PostingGuide[Lang])
