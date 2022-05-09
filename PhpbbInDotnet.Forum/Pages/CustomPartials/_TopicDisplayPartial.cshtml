@@ -98,7 +98,8 @@
                 {
                     <span>&#x1F512;&nbsp;</span>
                 }
-                @{
+                @if (!Model.IsDraftsView)
+                {
                     var firstUnreadPost = await _forumService.GetFirstUnreadPost(topic.ForumId ?? 0, topic.TopicId ?? 0, Model.CurrentUser);
                     if (firstUnreadPost > 0)
                     {
@@ -108,39 +109,46 @@
                     {
                         <a asp-page="/ViewTopic" asp-route-topicId="@topic.TopicId" asp-route-pageNum="1" class="nav-link" style="font-weight:bold">@Html.Raw(topic.TopicTitle)</a>
                     }
+                    <br />
+                    @await Html.PartialAsync(
+                        "_PaginationPageListPartial",
+                        new _PaginationPageListPartialModel
+                        {
+                            Pagination = topic.Pagination,
+                            Language = Model.Language
+                        },
+                        ViewData
+                    )
                 }
-                <br />
-                @await Html.PartialAsync(
-                    "_PaginationPageListPartial",
-                    new _PaginationPageListPartialModel
-                    {
-                        Pagination = topic.Pagination,
-                        Language = Model.Language
-                    },
-                    ViewData
-                )
+                else
+                {
+                    <a asp-page="./Posting" asp-page-handler="forumPost" asp-route-forumId="@topic.ForumId" asp-route-topicId="@topic.TopicId" asp-route-postId="@topic.TopicLastPostId">@Html.Raw(topic.TopicTitle)</a>
+                    <br />
+                    <span>
+                        &nbsp;@Html.Raw(_languageProvider.BasicText[Model.Language, "POSTED"])
+                        <script>writeDate("@topic.LastPostTime?.ToString("o")", "@userDateFormat");</script>
+                    </span>
+                }
             </span>
-            @if (Model.CurrentUser.Foes?.Contains(topic.TopicLastPosterId ?? 0) ?? false)
+
+            @if (!Model.IsDraftsView)
             {
-                topic.TopicLastPosterColour = null;
-                topic.TopicLastPosterName = $"[{_languageProvider.BasicText[Model.Language, "HIDDEN"]}]";
-                topic.TopicLastPosterId = 1;
+                @await Html.PartialAsync("_SummaryPartial", new _SummaryPartialModel(
+                    authorId: topic.TopicLastPostId!.Value,
+                    authorName: topic.TopicLastPosterName!,
+                    authorColor: topic.TopicLastPosterColour!,
+                    creationTime: topic.LastPostTime!.Value,
+                    assetId: topic.TopicId!.Value,
+                    dateFormat: userDateFormat,
+                    language: Model.Language,
+                    authorOnFoeList: Model.CurrentUser.Foes?.Contains(topic.TopicLastPosterId ?? 0) == true)
+                {
+                    LinkHref = topic.TopicLastPostId == null ? null : $"./ViewTopic?postId={topic.TopicLastPostId}&handler=ByPostId",
+                    IsLastPostSummary = true,
+                    Posts = topic.PostCount,
+                    Views = topic.ViewCount,
+                })
             }
-            @await Html.PartialAsync("_SummaryPartial", new _SummaryPartialModel(
-                authorId: topic.TopicLastPostId!.Value,
-                authorName: topic.TopicLastPosterName!,
-                authorColor: topic.TopicLastPosterColour!,
-                creationTime: topic.LastPostTime!.Value,
-                assetId: topic.TopicId!.Value,
-                dateFormat: userDateFormat,
-                language: Model.Language,
-                authorOnFoeList: Model.CurrentUser.Foes?.Contains(topic.TopicLastPosterId ?? 0) == true)
-            {
-                LinkHref = topic.TopicLastPostId == null ? null : $"./ViewTopic?postId={topic.TopicLastPostId}&handler=ByPostId",
-                IsLastPostSummary = true,
-                Posts = topic.PostCount,
-                Views = topic.ViewCount,
-            })
         </div>
         isFirstInGroup = false;
     }
