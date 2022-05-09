@@ -5,6 +5,7 @@
 @inject Languages.LanguageProvider _languageProvider
 
 @using Utilities
+@using CustomPartials
 
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />
@@ -64,20 +65,21 @@
                     <a asp-page="/ViewForum" asp-route-forumId="@forum.ForumId" class="@titleClass" style="font-weight:bold">@Html.Raw(forum.ForumName)</a><br />
                     @Html.Raw(_renderingService.BbCodeToHtml(forum.ForumDesc, forum.ForumDescUid))
                 </span>
-                @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
+                @await Html.PartialAsync("_SummaryPartial", new _SummaryPartialModel(
+                    authorId: forum.ForumLastPosterId!.Value,
+                    authorName: forum.ForumLastPosterName!,
+                    authorColor: forum.ForumLastPosterColour!,
+                    creationTime: forum.ForumLastPostTime!.Value.ToUtcTime(),
+                    assetId: forum.ForumId,
+                    dateFormat:Model.DateFormat,
+                    language: Model.Language,
+                    authorOnFoeList: Model.AuthenticatedUser?.Foes?.Contains(forum.ForumLastPosterId ?? 0) == true)
                 {
-                    AuthorId = forum.ForumLastPosterId,
-                    AuthorName = forum.ForumLastPosterName,
-                    AuthorColor = forum.ForumLastPosterColour,
-                    CreationTime = forum.ForumLastPostTime?.ToUtcTime(),
-                    AssetId = forum.ForumId,
-                    DateFormat = Model.DateFormat,
                     LinkHref = forum.ForumLastPostId == 0 ? null : $"./ViewTopic?postId={forum.ForumLastPostId}&handler=ByPostId",
-                    Left = false,
-                    ShowAsLast = true,
+                    AlignLeft = false,
+                    IsLastPostSummary = true,
                     Forums = forum.TotalSubforumCount,
                     Topics = forum.TotalTopicCount,
-                    Language = Model.Language
                 })
 
             </div>
@@ -117,35 +119,28 @@
             <hr class="BoxSeparator" />
         }
 
-        if (Model.AuthenticatedUser?.Foes?.Contains(forum.ForumLastPosterId ?? 0) ?? false)
-        {
-            forum.ForumLastPosterColour = null;
-            forum.ForumLastPosterName = $"[{_languageProvider.BasicText[Model.Language, "HIDDEN", Casing.FirstUpper]}]";
-            forum.ForumLastPosterId = 1;
-        }
-
-        var divClass = "FlexRow RowMargin";
         var titleClass = isUnread ? "nav-link UnreadTitle" : "nav-link";
-        <div class="@divClass">
+        <div class="FlexRow RowMargin">
             <span class="ForumContent">
                 <a asp-page="/ViewForum" asp-route-forumId="@forum.ForumId" class="@titleClass" style="font-weight:bold">@Html.Raw(forum.ForumName)</a><br />
                 @Html.Raw(_renderingService.BbCodeToHtml(forum.ForumDesc, forum.ForumDescUid))
             </span>
-            @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
-            {
-                AuthorId = forum.ForumLastPosterId,
-                AuthorName = forum.ForumLastPosterName,
-                AuthorColor = forum.ForumLastPosterColour,
-                CreationTime = forum.ForumLastPostTime?.ToUtcTime(),
-                AssetId = forum.ForumId,
-                DateFormat = Model.DateFormat,
-                LinkHref = forum.ForumLastPostId == 0 ? null : $"./ViewTopic?postId={forum.ForumLastPostId}&handler=ByPostId",
-                Left = false,
-                ShowAsLast = true,
-                Forums = forum.TotalSubforumCount,
-                Topics = forum.TotalTopicCount,
-                Language = Model.Language
-            })
+                @await Html.PartialAsync("_SummaryPartial", new _SummaryPartialModel(
+                    authorId: forum.ForumLastPosterId!.Value,
+                    authorName: forum.ForumLastPosterName!,
+                    authorColor: forum.ForumLastPosterColour!,
+                    creationTime: forum.ForumLastPostTime!.Value.ToUtcTime(),
+                    assetId: forum.ForumId,
+                    dateFormat:Model.DateFormat,
+                    language: Model.Language,
+                    authorOnFoeList: Model.AuthenticatedUser?.Foes?.Contains(forum.ForumLastPosterId ?? 0) == true)
+                {
+                    LinkHref = forum.ForumLastPostId == 0 ? null : $"./ViewTopic?postId={forum.ForumLastPostId}&handler=ByPostId",
+                    AlignLeft = false,
+                    IsLastPostSummary = true,
+                    Forums = forum.TotalSubforumCount,
+                    Topics = forum.TotalTopicCount,
+                })
         </div>
         isFirst = false;
     }

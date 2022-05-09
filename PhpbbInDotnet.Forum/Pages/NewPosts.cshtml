@@ -52,10 +52,7 @@
         ViewData
     )
     
-    if (Model.Paginator!.Pagination!.HasPages)
-    {
-        <hr class="BoxSeparator" />
-    }
+    <hr class="BoxSeparator" />
 
     @await Html.PartialAsync(
         "_TopicDisplayPartial",
@@ -68,10 +65,7 @@
                 inputValueFactory: topic => $"{topic.ForumId};{topic.TopicId}")
         })
 
-    if (Model.Paginator!.Pagination!.HasPages)
-    {
-        <hr class="BoxSeparator" />
-    }
+    <hr class="BoxSeparator" />
 
     @await Html.PartialAsync(
         "_PaginationControlsPartial",

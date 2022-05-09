@@ -20,43 +20,40 @@
     var rowClass = lastOpenReport != null && (Model.IsCurrentUserMod || lastOpenReport.ReporterId == Model.CurrentUser?.UserId) ? "ReportedPost" : string.Empty;
     var titleClass = Model.Post.Unread ? "UnreadTitle" : "";
     var color = string.IsNullOrWhiteSpace(Model.Post.AuthorColor) || Model.Post.AuthorColor == Constants.DEFAULT_USER_COLOR ? "auto" : $"#{Model.Post.AuthorColor}";
+    var authorIsOnFoeList = Model.CurrentUser?.Foes?.Contains(Model.Post.AuthorId) == true;
 
-    @if (Model.CurrentUser?.Foes?.Contains(Model.Post.AuthorId) == true)
+    @if (authorIsOnFoeList)
     {
-        Model.HasCurrentUserPM = false;
-        Model.Post.AuthorId = 1;
-        Model.Post.AuthorName = $"[{_languageProvider.BasicText[Model.Language, "HIDDEN", Casing.FirstUpper]}]";
-        Model.Post.AuthorColor = null;
-        Model.Post.AuthorAvatar = null;
         Model.Post.Attachments?.Clear();
-        Model.Post.BbcodeUid = string.Empty;
         Model.Post.PostSubject = $"[{_languageProvider.BasicText[Model.Language, "HIDDEN", Casing.FirstUpper]}]";
         Model.Post.PostText = _languageProvider.BasicText[Model.Language, "CONTENT_HIDDEN_WARNING_BBCODE", Casing.FirstUpper];
     }
 
     await _renderingService.ProcessPost(Model.Post, Model.ParentPageContext!, Model.ParentHttpContext!, true, Model.ToHighlight);
-
-    @if (!Model.IsPostFirstInPage)
-    {
-        <hr class="BoxSeparator" style="margin-top: 0px" />
-    }
 }
+
+@if (!Model.IsPostFirstInPage)
+{
+    <hr class="BoxSeparator" style="margin-top: 0px" />
+}
+
 <div class="RowMargin @rowClass" style="max-width:100%; overflow-wrap: break-word">
     <div class="FlexRow" style="max-width:100%; overflow-wrap: break-word; padding-bottom: 0px">
-        @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
+        @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel(
+            authorId: Model.Post.AuthorId,
+            authorName: Model.Post.AuthorName!,
+            authorColor: Model.Post.AuthorColor!,
+            creationTime: Model.Post.PostCreationTime!.Value,
+            assetId: Model.Post.PostId,
+            dateFormat: userDateFormat,
+            language: Model.Language,
+            authorOnFoeList: authorIsOnFoeList)
         {
-            AuthorId = Model.Post.AuthorId,
-            AuthorName = Model.Post.AuthorName,
-            AuthorColor = Model.Post.AuthorColor,
-            CreationTime = Model.Post.PostCreationTime,
-            AssetId = Model.Post.PostId,
-            DateFormat = userDateFormat,
             AuthorAvatar = Model.Post.AuthorAvatar,
             AuthorRank = Model.Post.AuthorRank,
-            Left = true,
-            ShowAsLast = false,
-            PMLink = Model.HasCurrentUserPM ? $"<a href=\"./Posting?handler=PrivateMessage&postId={Model.Post.PostId}\">&#x1F5E8; {_languageProvider.BasicText[Model.Language, "PRIVATE_MESSAGE", Casing.FirstUpper]}</a>" : null,
-            Language = Model.Language,
+            AlignLeft = true,
+            IsLastPostSummary = false,
+            PMLink = Model.HasCurrentUserPM && !authorIsOnFoeList ? $"<a href=\"./Posting?handler=PrivateMessage&postId={Model.Post.PostId}\">&#x1F5E8; {_languageProvider.BasicText[Model.Language, "PRIVATE_MESSAGE", Casing.FirstUpper]}</a>" : null,
             CorrelationId = Model.CorrelationId
         })
         <div class="ForumContent VerticalContent FlexRight" id="@Model.Post.PostId" style="max-width:100%; overflow-wrap: break-word; display:flex">

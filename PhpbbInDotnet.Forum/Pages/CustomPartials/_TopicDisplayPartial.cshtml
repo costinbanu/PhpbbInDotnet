@@ -4,6 +4,7 @@
 @using Services
 @using Utilities
 @using Objects
+@using CustomPartials
 
 @inject ForumTreeService _forumService
 @inject LanguageProvider _languageProvider
@@ -111,7 +112,7 @@
                 <br />
                 @await Html.PartialAsync(
                     "_PaginationPageListPartial",
-                    new Forum.Pages.CustomPartials._PaginationPageListPartialModel
+                    new _PaginationPageListPartialModel
                     {
                         Pagination = topic.Pagination,
                         Language = Model.Language
@@ -122,22 +123,23 @@
             @if (Model.CurrentUser.Foes?.Contains(topic.TopicLastPosterId ?? 0) ?? false)
             {
                 topic.TopicLastPosterColour = null;
-                topic.TopicLastPosterName = "[Ascuns]";
+                topic.TopicLastPosterName = $"[{_languageProvider.BasicText[Model.Language, "HIDDEN"]}]";
                 topic.TopicLastPosterId = 1;
             }
-            @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
+            @await Html.PartialAsync("_SummaryPartial", new _SummaryPartialModel(
+                authorId: topic.TopicLastPostId!.Value,
+                authorName: topic.TopicLastPosterName!,
+                authorColor: topic.TopicLastPosterColour!,
+                creationTime: topic.LastPostTime!.Value,
+                assetId: topic.TopicId!.Value,
+                dateFormat: userDateFormat,
+                language: Model.Language,
+                authorOnFoeList: Model.CurrentUser.Foes?.Contains(topic.TopicLastPosterId ?? 0) == true)
             {
-                AuthorId = topic.TopicLastPosterId,
-                AuthorName = topic.TopicLastPosterName,
-                AuthorColor = topic.TopicLastPosterColour,
-                CreationTime = topic.LastPostTime,
-                AssetId = topic.TopicId!.Value,
-                DateFormat = userDateFormat,
                 LinkHref = topic.TopicLastPostId == null ? null : $"./ViewTopic?postId={topic.TopicLastPostId}&handler=ByPostId",
-                ShowAsLast = true,
+                IsLastPostSummary = true,
                 Posts = topic.PostCount,
                 Views = topic.ViewCount,
-                Language = Model.Language
             })
         </div>
         isFirstInGroup = false;
