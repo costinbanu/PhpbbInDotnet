@@ -59,6 +59,7 @@
         "_TopicDisplayPartial",
         new _TopicDisplayPartialModel(currentUser, Lang, Model.Topics!)
         {
+            IsDraftsView = true,
             ShowPath = true,
             TopicSelectionOptions = new TopicSelectionOptions(
                 inputName: "SelectedDrafts",
