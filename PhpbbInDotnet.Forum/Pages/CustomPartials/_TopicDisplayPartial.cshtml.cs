@@ -16,6 +16,7 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
         public bool ShowTypeName { get; set; }
         public bool AllowNewTopicCreation { get; set; }
         public TopicSelectionOptions? TopicSelectionOptions { get; set; }
+        public bool IsDraftsView { get; set; }
 
         public _TopicDisplayPartialModel(AuthenticatedUserExpanded currentUser, string language, List<TopicDto> topics)
             : this(
