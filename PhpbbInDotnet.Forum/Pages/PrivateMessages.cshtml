@@ -34,7 +34,7 @@
 <h3 style="float: left; margin-top: 0px">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "PRIVATE_MESSAGING", Casing.Title])</h3>
 <span>
     &nbsp;
-    <button onclick="location.href = '/Posting?handler=PrivateMessage'" style="height: 26px; padding-top: 1px; padding-bottom: 1px" class="MyButton SpacedButtonNotTop">
+    <button onclick="location.href = '/SendPrivateMessage'" style="height: 26px; padding-top: 1px; padding-bottom: 1px" class="MyButton SpacedButtonNotTop">
         &#x1F4DD;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "WRITE_NEW_PM"])
     </button>
 </span>
@@ -275,12 +275,12 @@
             </div>
         </div>
         <p>&nbsp;</p>
-        <button onclick="location.href='/Posting?handler=PrivateMessage&privateMessageId=@Model.SelectedMessage.MessageId&receiverId=@Model.SelectedMessage.OthersId'" type="button" class="MyButton SpacedButtonNotBottom">
+        <button onclick="location.href='/SendPrivateMessage?privateMessageId=@Model.SelectedMessage.MessageId&receiverId=@Model.SelectedMessage.OthersId'" type="button" class="MyButton SpacedButtonNotBottom">
             &#x1F5E8;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DO_REPLY", Casing.FirstUpper])
         </button>
         @if (Model.SelectedMessageIsMine && Model.SelectedMessageIsUnread)
         {
-            <button onclick="location.href='/Posting?handler=EditPrivateMessage&privateMessageId=@Model.SelectedMessage.MessageId&receiverId=@Model.SelectedMessage.OthersId'" type="button" class="MyButton SpacedButtonNotBottom">
+            <button onclick="location.href='/SendPrivateMessage?handler=Edit&privateMessageId=@Model.SelectedMessage.MessageId&receiverId=@Model.SelectedMessage.OthersId'" type="button" class="MyButton SpacedButtonNotBottom">
                 &#x1F4DD;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DO_EDIT"])
             </button>
             <form method="post" asp-page-handler="DeleteMessage" style="display:inline">

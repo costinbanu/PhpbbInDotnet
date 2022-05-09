@@ -1,4 +1,5 @@
 ﻿@page
+@model PhpbbInDotnet.Forum.Pages.SendPrivateMessageModel
 
 @using System.Web
 @using Utilities
@@ -6,8 +7,6 @@
 @using Objects.Configuration
 @using Services
 @using Microsoft.Extensions.Configuration
-
-@model PhpbbInDotnet.Forum.Pages.SendPrivateMessageModel
 
 @inject WritingToolsService _writingService
 @inject BBCodeRenderingService _renderingService
@@ -79,24 +78,14 @@
         <span asp-validation-for="ReceiverName" class="validation"></span>
     }
 
-    @await Html.PartialAsync("_TextInputPartial", new _TextInputPartialModel(Lang))
+    @await Html.PartialAsync("_TextInputPartial", new _TextInputPartialModel(Lang, Model.PostTitle, Model.PostText))
 
     <button onclick="posting.toggleEmoji()" type="button" class="Hide960 PostingButton MyButton SpacedButton">
         &#x1F642; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "EMOJI"])
     </button>
 
     <input type="submit" value="&#x1F440; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "DO_PREVIEW", Casing.Title])" onclick="return posting.censor()" asp-page-handler="Preview" class="PostingButton MyButton SpacedButton" formnovalidate />
-
-    @switch (Model.Action)
-    {
-        case PostingActions.NewPrivateMessage:
-        case PostingActions.EditPrivateMessage:
-            <input type="submit" value="&#x27A1; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="PrivateMessage" class="PostingButton MyButton SpacedButton MyMainButton" formnovalidate />
-            break;
-        default:
-            <span class="validation">@Html.Raw(Model.LanguageProvider.Errors[Lang, "AN_ERROR_OCCURRED"])</span>
-            break;
-    }
+    <input type="submit" value="&#x27A1; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="Submit" class="PostingButton MyButton SpacedButton MyMainButton" formnovalidate />
     <b>
         <span asp-validation-for="PostTitle" class="validation"></span>
         <span asp-validation-for="PostText" class="validation"></span>

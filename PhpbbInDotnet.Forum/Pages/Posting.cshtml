@@ -130,7 +130,7 @@ else if (Model.Action == PostingActions.NewTopic)
 }
 
 <form name="postform" method="post" enctype="multipart/form-data">
-    @await Html.PartialAsync("_TextInputPartial", new _TextInputPartialModel(Lang))
+    @await Html.PartialAsync("_TextInputPartial", new _TextInputPartialModel(Lang, Model.PostTitle, Model.PostText))
 
     @if (Model.Action == PostingActions.EditForumPost)
     {

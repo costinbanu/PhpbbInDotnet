@@ -1,8 +1,6 @@
 using Dapper;
 using LazyCache;
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
@@ -10,7 +8,7 @@ using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
-using System.Net.Http;
+using System;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -132,7 +130,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return Page();
             });
 
-        public Task<IActionResult> OnPostPrivateMessage()
+        public Task<IActionResult> OnPostSubmit()
             => WithRegisteredUser(async (user) =>
             {
                 var lang = GetLanguage();
@@ -197,6 +195,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     AuthorName = user.Username,
                     PostSubject = HttpUtility.HtmlEncode(PostTitle),
                     PostText = await _writingService.PrepareTextForSaving(newPostText),
+                    PostTime = DateTime.UtcNow.ToUnixTimestamp()
                 };
                 return Page();
             });

@@ -196,7 +196,7 @@ namespace PhpbbInDotnet.Forum
                 return (false, await _userService.GetAnonymousDbUser());
             }
 
-            var dbUser = await _context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == user.UserId);
+            var dbUser = await _context.GetDbConnection().QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { user.UserId });
             if (dbUser is not null && dbUser.UserInactiveReason == UserInactiveReason.NotInactive)
             {
                 return (true, dbUser);

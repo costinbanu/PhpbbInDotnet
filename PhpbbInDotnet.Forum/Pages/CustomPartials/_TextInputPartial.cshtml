@@ -37,7 +37,7 @@
     }
 </script>
 
-<input name="PostTitle" type="text" id="subject" size="45" maxlength="256" tabindex="2" class="InputBox" placeholder="@Html.Raw(_languageProvider.BasicText[Model.Language, "POST_TITLE"])" style="width:100%" />
+<input asp-for="PostTitle" type="text" id="subject" size="45" maxlength="256" tabindex="2" class="InputBox" placeholder="@Html.Raw(_languageProvider.BasicText[Model.Language, "POST_TITLE"])" style="width:100%" />
 <br />
 
 <div class="PostingControls" id="controls" style="width:100%">
@@ -99,6 +99,6 @@
     @Html.Raw(_languageProvider.BasicText[Model.Language, "FORMATTING_OPTIONS"])
 </a>
 <div style="margin-top:5px">
-    <textarea name="PostText" id="message" tabindex="3" onselect="posting.storeCaret(this);" onclick="posting.storeCaret(this);" onkeyup="posting.storeCaret(this);" onfocus="posting.initInsertions();" class="InputBox" style="width:100%; min-height:17em"></textarea>
+    <textarea asp-for="PostText" id="message" tabindex="3" onselect="posting.storeCaret(this);" onclick="posting.storeCaret(this);" onkeyup="posting.storeCaret(this);" onfocus="posting.initInsertions();" class="InputBox" style="width:100%; min-height:17em"></textarea>
 </div>
 
