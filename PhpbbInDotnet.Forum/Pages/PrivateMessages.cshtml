@@ -10,6 +10,7 @@
 
 @using Utilities
 @using Objects
+@using CustomPartials
 
 <environment include="Development">
     <script src="~/js/tabbedPage.js"></script>
@@ -69,7 +70,7 @@
     {
         @await Html.PartialAsync(
             "_PaginationControlsPartial",
-            new CustomPartials._PaginationControlsPartialModel(
+            new _PaginationControlsPartialModel(
                 paginator: Model.InboxPaginator!,
                 allowPaginationChange: false,
                 back: $"PrivateMessages?show=Inbox&InboxPage={Model.InboxPage - 1}",
@@ -101,16 +102,17 @@
                     </span>
                     <br />
                 </span>
-                @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
+                @await Html.PartialAsync("_SummaryPartial", new _SummaryPartialModel(
+                    authorId: msg.OthersId,
+                    authorName: msg.OthersName!,
+                    authorColor: msg.OthersColor!,
+                    creationTime: msg.Time,
+                    assetId: msg.MessageId,
+                    dateFormat: UserDateFormat,
+                    language: Lang,
+                    authorOnFoeList: false)
                 {
-                    AuthorId = msg.OthersId,
-                    AuthorName = msg.OthersName,
-                    AuthorColor = msg.OthersColor,
-                    CreationTime = msg.Time,
-                    AssetId = msg.MessageId,
-                    DateFormat = UserDateFormat,
                     AuthorTag = Model.LanguageProvider.BasicText[Lang, "MP_FROM"],
-                    Language = Lang,
                     DateLabel = Model.LanguageProvider.BasicText[Lang, "MP_SENT"]
                 })
             </div>
@@ -129,7 +131,7 @@
         </form>
         @await Html.PartialAsync(
             "_PaginationControlsPartial",
-            new CustomPartials._PaginationControlsPartialModel(
+            new _PaginationControlsPartialModel(
                 paginator: Model.InboxPaginator!,
                 allowPaginationChange: false,
                 back: $"PrivateMessages?show=Inbox&InboxPage={Model.InboxPage - 1}",
@@ -153,7 +155,7 @@
     {
         @await Html.PartialAsync(
             "_PaginationControlsPartial",
-            new CustomPartials._PaginationControlsPartialModel(
+            new _PaginationControlsPartialModel(
                 paginator: Model.SentPaginator!,
                 allowPaginationChange: false,
                 back: $"PrivateMessages?show=Sent&SentPage={Model.SentPage - 1}",
@@ -184,16 +186,17 @@
                     </span>
                     <br />
                 </span>
-                @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
+                @await Html.PartialAsync("_SummaryPartial", new _SummaryPartialModel(
+                    authorId: msg.OthersId,
+                    authorName: msg.OthersName!,
+                    authorColor: msg.OthersColor!,
+                    creationTime: msg.Time,
+                    assetId: msg.MessageId,
+                    dateFormat: UserDateFormat,
+                    language: Lang,
+                    authorOnFoeList: false)
                 {
-                    AuthorId = msg.OthersId,
-                    AuthorName = msg.OthersName,
-                    AuthorColor = msg.OthersColor,
-                    CreationTime = msg.Time,
-                    AssetId = msg.MessageId,
-                    DateFormat = UserDateFormat,
                     AuthorTag = Model.LanguageProvider.BasicText[Lang, "MP_FOR"],
-                    Language = Lang,
                     DateLabel = Model.LanguageProvider.BasicText[Lang, "MP_SENT"]
                 })
             </div>
@@ -211,7 +214,7 @@
         </form>
         @await Html.PartialAsync(
             "_PaginationControlsPartial",
-            new CustomPartials._PaginationControlsPartialModel(
+            new _PaginationControlsPartialModel(
                 paginator: Model.SentPaginator!,
                 allowPaginationChange: false,
                 back: $"PrivateMessages?show=Sent&SentPage={Model.SentPage - 1}",
@@ -236,18 +239,20 @@
     <div id="Message" class="tabcontent" style="@(Model.Show == PrivateMessagesPages.Message ? "display:inherit" : "display:none")">
         <div class="RowMargin">
             <div class="FlexRow">
-                @await Html.PartialAsync("_SummaryPartial", new CustomPartials._SummaryPartialModel
+                @await Html.PartialAsync("_SummaryPartial", new _SummaryPartialModel(
+                    authorId: Model.SelectedMessage.OthersId,
+                    authorName: Model.SelectedMessage.OthersName!,
+                    authorColor: Model.SelectedMessage.OthersColor!,
+                    creationTime: Model.SelectedMessage.Time,
+                    assetId: fakeId,
+                    dateFormat: UserDateFormat,
+                    language: Lang,
+                    authorOnFoeList: false
+                )
                 {
-                    AuthorId = Model.SelectedMessage.OthersId,
-                    AuthorName = Model.SelectedMessage.OthersName,
-                    AuthorColor = Model.SelectedMessage.OthersColor,
-                    CreationTime = Model.SelectedMessage.Time,
-                    AssetId = fakeId,
-                    DateFormat = UserDateFormat,
                     AuthorAvatar = Model.SelectedMessage.OthersAvatar,
-                    Left = true,
+                    AlignLeft = true,
                     AuthorTag = Model.SelectedMessageIsMine ? Model.LanguageProvider.BasicText[Lang, "MP_FOR"] : Model.LanguageProvider.BasicText[Lang, "MP_FROM"],
-                    Language = Lang,
                     DateLabel = Model.LanguageProvider.BasicText[Lang, "MP_SENT"]
                 })
                 <div class="ForumContent VerticalContent FlexRight" id="@fakeId">
