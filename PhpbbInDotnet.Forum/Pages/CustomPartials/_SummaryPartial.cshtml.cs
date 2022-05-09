@@ -1,34 +1,31 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
-using PhpbbInDotnet.Utilities;
 using System;
 
 namespace PhpbbInDotnet.Forum.Pages.CustomPartials
 {
     public class _SummaryPartialModel : PageModel
     {
-        public int? AuthorId { get; set; }
+        public int AuthorId { get; }
 
-        public string? AuthorName { get; set; }
+        public string AuthorName { get; }
 
-        public string? AuthorColor { get; set; }
+        public string AuthorColor { get; }
 
         public string? AuthorAvatar { get; set; }
 
-        public DateTime? CreationTime { get; set; }
+        public DateTime CreationTime { get; }
 
-        public int AssetId { get; set; }
+        public int AssetId { get; }
 
-        public string? DateFormat { get; set; }
-
-        public bool ShowAvatar => !string.IsNullOrWhiteSpace(AuthorAvatar);
+        public string DateFormat { get; }
 
         public string? LinkHref { get; set; }
 
-        public bool Left { get; set; }
+        public bool AlignLeft { get; set; }
 
         public string? AuthorRank { get; set; }
 
-        public bool ShowAsLast { get; set; }
+        public bool IsLastPostSummary { get; set; }
 
         public int? Posts { get; set; }
 
@@ -42,10 +39,24 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
 
         public string? PMLink { get; set; }
 
-        public string Language { get; set; } = Constants.DEFAULT_LANGUAGE;
+        public string Language { get; }
 
         public string? DateLabel { get; set; }
 
         public Guid? CorrelationId { get; set; }
+
+        public bool AuthorOnFoeList { get; }
+
+        public _SummaryPartialModel(int authorId, string authorName, string authorColor, DateTime creationTime, int assetId, string dateFormat, string language, bool authorOnFoeList)
+        {
+            AuthorId = authorId;
+            AuthorName = authorName;
+            AuthorColor = authorColor;
+            CreationTime = creationTime;
+            AssetId = assetId;
+            DateFormat = dateFormat;
+            Language = language;
+            AuthorOnFoeList = authorOnFoeList;
+        }
     }
 }

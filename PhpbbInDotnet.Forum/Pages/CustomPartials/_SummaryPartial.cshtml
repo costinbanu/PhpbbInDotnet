@@ -7,99 +7,100 @@
 @inject IAppCache _cache;
 @inject CommonUtils _utils;
 
-@if ((Model.CreationTime ?? Constants.UNIX_TIMESTAMP_MIN_VALUE) != Constants.UNIX_TIMESTAMP_MIN_VALUE)
-{
-    <ul class="Summary @(Model.Left ? "FlexLeft" : "FlexRight")" id="summary@(Model.AssetId)">
-        @if (Model.ShowAvatar)
+<ul class="Summary @(Model.AlignLeft ? "FlexLeft" : "FlexRight")" id="summary@(Model.AssetId)">
+    @if (!string.IsNullOrWhiteSpace(Model.AuthorAvatar) && !Model.AuthorOnFoeList)
+    {
+        if (Model.CorrelationId.HasValue)
         {
-            if (Model.AuthorId.HasValue && Model.CorrelationId.HasValue)
-            {
-                _cache.Add(_utils.GetAvatarCacheKey(Model.AuthorId ?? 0, Model.CorrelationId ?? Guid.Empty), Model.AuthorAvatar, TimeSpan.FromSeconds(30));
-            }
-            <li>
-                <img src="./File?userId=@Model.AuthorId&correlationId=@Model.CorrelationId&handler=avatar" />
-            </li>
+            _cache.Add(_utils.GetAvatarCacheKey(Model.AuthorId, Model.CorrelationId ?? Guid.Empty), Model.AuthorAvatar, TimeSpan.FromSeconds(30));
         }
         <li>
-            @if (Model.ShowAsLast)
+            <img src="./File?userId=@Model.AuthorId&correlationId=@Model.CorrelationId&handler=avatar" />
+        </li>
+    }
+    <li>
+        @if (Model.IsLastPostSummary)
+        {
+            if (!string.IsNullOrWhiteSpace(Model.LinkHref))
             {
-                if (!string.IsNullOrWhiteSpace(Model.LinkHref))
-                {
-                    @Html.Raw(string.Format(_languageProvider.BasicText[Model.Language, "LAST_POST_URL"], Model.LinkHref))
-                }
-                else
-                {
-                    @Html.Raw(_languageProvider.BasicText[Model.Language, "LAST_POST_TEXT"])
-                }
+                @Html.Raw(string.Format(_languageProvider.BasicText[Model.Language, "LAST_POST_URL"], Model.LinkHref))
             }
             else
             {
-                var tag = Model.AuthorTag;
-                if (string.IsNullOrWhiteSpace(tag))
-                {
-                    tag = _languageProvider.BasicText[Model.Language, "AUTHOR"];
-                }
-                @Html.Raw(tag)
+                @Html.Raw(_languageProvider.BasicText[Model.Language, "LAST_POST_TEXT"])
             }
-            @if ((Model.AuthorId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID)
+        }
+        else
+        {
+            var tag = Model.AuthorTag;
+            if (string.IsNullOrWhiteSpace(tag))
             {
-                <span style="text-decoration: line-through">@Html.Raw(Model.AuthorName)</span>
+                tag = _languageProvider.BasicText[Model.Language, "AUTHOR"];
             }
-            else
+            @Html.Raw(tag)
+        }
+        @if (Model.AuthorOnFoeList)
+        {
+            <span>@Html.Raw($"[{_languageProvider.BasicText[Model.Language, "HIDDEN"]}]")</span>
+        }
+        else if (Model.AuthorId == Constants.ANONYMOUS_USER_ID)
+        {
+            <span style="text-decoration: line-through">@Html.Raw(Model.AuthorName)</span>
+        }
+        else
+        {
+            var color = string.IsNullOrWhiteSpace(Model.AuthorColor) || Model.AuthorColor == Constants.DEFAULT_USER_COLOR ? "auto" : $"#{Model.AuthorColor}";
+            <a asp-page="/User" asp-route-UserId="@Model.AuthorId" style="color:@color;font-weight:bold" class="ThemeColor">@Html.Raw(Model.AuthorName)</a>
+        }
+    </li>
+    <li>
+        @if (!string.IsNullOrWhiteSpace(Model.AuthorRank) && !Model.AuthorOnFoeList)
+        {
+            <span class="Caption">
+                @Html.Raw(Model.AuthorRank)
+            </span>
+        }
+    </li>
+    <li>
+        @{
+            var label = Model.DateLabel;
+            if (string.IsNullOrWhiteSpace(label))
             {
-                var color = string.IsNullOrWhiteSpace(Model.AuthorColor) || Model.AuthorColor == Constants.DEFAULT_USER_COLOR ? "auto" : $"#{Model.AuthorColor}";
-                <a asp-page="/User" asp-route-UserId="@Model.AuthorId" style="color:@color;font-weight:bold" class="ThemeColor">@Html.Raw(Model.AuthorName)</a>
+                label = _languageProvider.BasicText[Model.Language, "POSTED"];
+            }
+        }
+        @Html.Raw(label)
+        <script>writeDate("@Model.CreationTime.ToString("o")", "@Model.DateFormat");</script>
+    </li>
+    @if (Model.Posts.HasValue && Model.Views.HasValue)
+    {
+        <li class="Caption">
+            @Html.Raw($"{Model.Posts} {(Model.Posts != 1 ? _languageProvider.BasicText[Model.Language, "POSTS"] : _languageProvider.BasicText[Model.Language, "POST"])}, {Model.Views} {(Model.Views != 1 ? _languageProvider.BasicText[Model.Language, "VIEWS"] : _languageProvider.BasicText[Model.Language, "VIEW"])}")
+        </li>
+    }
+    else if (Model.Forums.HasValue && Model.Topics.HasValue)
+    {
+        <li class="Caption">
+            @if (Model.Forums > 0)
+            {
+                @Html.Raw($"{Model.Forums} {(Model.Forums != 1 ? _languageProvider.BasicText[Model.Language, "FORUMS"] : _languageProvider.BasicText[Model.Language, "FORUM"])}{(Model.Topics > 0 ? ", " : "")}")
+            }
+            @if (Model.Topics > 0)
+            {
+                @Html.Raw($"{Model.Topics} {(Model.Topics != 1 ? _languageProvider.BasicText[Model.Language, "TOPICS"] : _languageProvider.BasicText[Model.Language, "TOPIC"])}")
             }
         </li>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.PMLink) && !Model.AuthorOnFoeList)
+    {
         <li>
-            @if (!string.IsNullOrWhiteSpace(Model.AuthorRank))
-            {
-                <span class="Caption">
-                    @Html.Raw(Model.AuthorRank)
-                </span>
-            }
+            @Html.Raw(Model.PMLink)
         </li>
-        <li>
-            @{
-                var label = Model.DateLabel;
-                if (string.IsNullOrWhiteSpace(label))
-                {
-                    label = _languageProvider.BasicText[Model.Language, "POSTED"];
-                }
-            }
-            @Html.Raw(label)
-            <script>writeDate("@Model.CreationTime?.ToString("o")", "@Model.DateFormat");</script>
+    }
+    @if (!Model.IsLastPostSummary && Model.AlignLeft)
+    {
+        <li class="Hide768">
+            <p>&nbsp;</p>
         </li>
-        @if (Model.Posts.HasValue && Model.Views.HasValue)
-        {
-            <li class="Caption">
-                @Html.Raw($"{Model.Posts} {(Model.Posts != 1 ? _languageProvider.BasicText[Model.Language, "POSTS"] : _languageProvider.BasicText[Model.Language, "POST"])}, {Model.Views} {(Model.Views != 1 ? _languageProvider.BasicText[Model.Language, "VIEWS"] : _languageProvider.BasicText[Model.Language, "VIEW"])}")
-            </li>
-        }
-        else if (Model.Forums.HasValue && Model.Topics.HasValue)
-        {
-            <li class="Caption">
-                @if (Model.Forums > 0)
-                {
-                    @Html.Raw($"{Model.Forums} {(Model.Forums != 1 ? _languageProvider.BasicText[Model.Language, "FORUMS"] : _languageProvider.BasicText[Model.Language, "FORUM"])}{(Model.Topics > 0 ? ", " : "")}")
-                }
-                @if (Model.Topics > 0)
-                {
-                    @Html.Raw($"{Model.Topics} {(Model.Topics != 1 ? _languageProvider.BasicText[Model.Language, "TOPICS"] : _languageProvider.BasicText[Model.Language, "TOPIC"])}")
-                }
-            </li>
-        }
-        @if (!string.IsNullOrWhiteSpace(Model.PMLink))
-        {
-            <li>
-                @Html.Raw(Model.PMLink)
-            </li>
-        }
-        @if (!Model.ShowAsLast && Model.Left)
-        {
-            <li class="Hide768">
-                <p>&nbsp;</p>
-            </li>
-        }
-    </ul>
-}
+    }
+</ul>
