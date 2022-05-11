@@ -249,34 +249,48 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostDeleteAttachment(int index)
             => await WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async (curForum) =>
             {
-                var lang = GetLanguage();
-                var attachment = Attachments?.ElementAtOrDefault(index);
                 CurrentForum = curForum;
 
-                if (attachment == null)
+                if (await DeleteAttachment(index, true) is null)
                 {
-                    return PageWithError(curForum, $"{nameof(DeleteFileDummyForValidation)}[{index}]", LanguageProvider.Errors[lang, "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
+                    return PageWithError(curForum, $"{nameof(DeleteFileDummyForValidation)}[{index}]", LanguageProvider.Errors[GetLanguage(), "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
                 }
 
-                if (!_storageService.DeleteFile(attachment.PhysicalFilename, false))
-                {
-                    ModelState.AddModelError($"{nameof(DeleteFileDummyForValidation)}[{index}]", LanguageProvider.Errors[lang, "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
-                }
+                ShowAttach = Attachments?.Any() == true;
+                ModelState.Clear();
 
-                if (!string.IsNullOrWhiteSpace(PostText))
+                return Page();
+            }, ReturnUrl)));
+
+        public async Task<IActionResult> OnPostDeleteAllAttachments()
+            => await WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async (curForum) =>
+            {
+                CurrentForum = curForum;
+
+                var error = false;
+                var successfullyDeleted = new HashSet<int>(Attachments?.Count ?? 0);
+                for (var index = 0; index < (Attachments?.Count ?? 0); index++)
                 {
-                    PostText = PostText.Replace($"[attachment={index}]{attachment.RealFilename}[/attachment]", string.Empty, StringComparison.InvariantCultureIgnoreCase);
-                    for (int i = index + 1; i < Attachments!.Count; i++)
+                    var deletedAttachment = await DeleteAttachment(index, false);
+                    if (deletedAttachment is null)
                     {
-                        PostText = PostText.Replace($"[attachment={i}]{Attachments[i].RealFilename}[/attachment]", $"[attachment={i - 1}]{Attachments[i].RealFilename}[/attachment]", StringComparison.InvariantCultureIgnoreCase);
+                        error = true;
+                        ModelState.AddModelError($"{nameof(DeleteFileDummyForValidation)}[{index}]", LanguageProvider.Errors[GetLanguage(), "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
+                    }
+                    else
+                    {
+                        successfullyDeleted.Add(deletedAttachment.AttachId);
                     }
                 }
 
-                var connection = Context.GetDbConnection();
-                await connection.ExecuteAsync("DELETE FROM phpbb_attachments WHERE attach_id = @attachId", new { attachment.AttachId });
-                var dummy = Attachments!.Remove(attachment);
-                ShowAttach = Attachments?.Any() == true;
-                ModelState.Clear();
+                Attachments?.RemoveAll(attachment => successfullyDeleted.Contains(attachment.AttachId));
+                ShowAttach = false;
+
+                if (!error)
+                {
+                    ModelState.Clear();
+                }
+
                 return Page();
             }, ReturnUrl)));
 

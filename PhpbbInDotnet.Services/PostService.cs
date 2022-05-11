@@ -75,9 +75,10 @@ namespace PhpbbInDotnet.Services
             return (correlationId, attachments);
         }
 
-        public Task<IEnumerable<PostDto>> GetPosts(int topicId, int pageNum, int pageSize, bool descendingOrder)
-            => _context.GetDbConnection().QueryAsync<PostDto>(
-                    @"WITH ranks AS (
+        public async Task<PostListDto> GetPosts(int topicId, int pageNum, int pageSize, bool isPostingView, string language)
+        {
+            var posts = await _context.GetDbConnection().QueryAsync<PostDto>(
+                     @"WITH ranks AS (
 					    SELECT DISTINCT u.user_id, 
 						       COALESCE(r1.rank_id, r2.rank_id) AS rank_id, 
 						       COALESCE(r1.rank_title, r2.rank_title) AS rank_title
@@ -92,10 +93,10 @@ namespace PhpbbInDotnet.Services
 					       p.post_id,
 					       p.post_subject,
 					       p.post_text,
-					       case when p.poster_id = @ANONYMOUS_USER_ID
-							    then p.post_username 
-							    else a.username
-					       end as author_name,
+					       CASE WHEN p.poster_id = @ANONYMOUS_USER_ID
+							    THEN p.post_username 
+							    ELSE a.username
+					       END AS author_name,
 					       p.poster_id as author_id,
 					       p.bbcode_uid,
 					       p.post_time,
@@ -120,14 +121,56 @@ namespace PhpbbInDotnet.Services
                             WHEN @order = 'DESC' THEN post_time 
                         END DESC 
 				      LIMIT @skip, @take;",
-                    new
-                    {
-                        Constants.ANONYMOUS_USER_ID,
-                        topicId,
-                        skip = (pageNum - 1) * pageSize,
-                        take = pageSize,
-                        order = descendingOrder ? "DESC" : "ASC"
-                    });
+                     new
+                     {
+                         Constants.ANONYMOUS_USER_ID,
+                         topicId,
+                         skip = (pageNum - 1) * pageSize,
+                         take = pageSize,
+                         order = isPostingView ? "DESC" : "ASC"
+                     });
+
+            var currentPostIds = posts.Select(p => p.PostId).DefaultIfEmpty().ToList();
+
+            var countTask = isPostingView 
+                ? Task.FromResult<int?>(null) 
+                : _context.GetDbConnection().ExecuteScalarAsync<int?>(
+                    "SELECT COUNT(post_id) FROM phpbb_posts WHERE topic_id = @topicId",
+                    new { topicId });
+            var dbAttachmentsTask = _context.GetDbConnection().QueryAsync<PhpbbAttachments>(
+                "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @currentPostIds",
+                new { currentPostIds });
+            var reportsTask = isPostingView
+                ? Task.FromResult(Enumerable.Empty<ReportDto>())
+                : _context.GetDbConnection().QueryAsync<ReportDto>(
+                    @"SELECT r.report_id AS id, 
+		                     rr.reason_title, 
+                             rr.reason_description, 
+                             r.report_text AS details, 
+                             r.user_id AS reporter_id, 
+                             u.username AS reporter_username, 
+                             r.post_id,
+                             r.report_time,
+                             r.report_closed
+	                    FROM phpbb_reports r
+                        JOIN phpbb_reports_reasons rr ON r.reason_id = rr.reason_id
+                        JOIN phpbb_users u on r.user_id = u.user_id
+	                   WHERE r.post_id IN @postIds;",
+                    new { postIds = currentPostIds });
+
+            await Task.WhenAll(countTask, dbAttachmentsTask, reportsTask);
+
+            var (CorrelationId, Attachments) = await CacheAttachmentsAndPrepareForDisplay((await dbAttachmentsTask).AsList(), language, currentPostIds.Count, false);
+
+            return new PostListDto
+            {
+                Posts = posts.AsList(),
+                Attachments = Attachments,
+                AttachmentDisplayCorrelationId = CorrelationId,
+                PostCount = await countTask,
+                Reports = (await reportsTask).AsList()
+            };
+        }
 
         public async Task<PollDto?> GetPoll(PhpbbTopics _currentTopic)
         {

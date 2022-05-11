@@ -285,7 +285,19 @@ else if (Model.Action == PostingActions.NewTopic)
             @if (Model.Attachments?.Any() ?? false)
             {
                 <hr class="SubtypeSeparator" />
-                <h4>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "ALREADY_ATTACHED"]):</h4>
+                <h4 style="float:left;margin-bottom:0px; margin-top:3px;">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "ALREADY_ATTACHED"])</h4>
+                <span>
+                    &nbsp;
+                    <input 
+                        type="submit" 
+                        value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_ALL_FILES"])" 
+                        asp-page-handler="DeleteAllAttachments" 
+                        class="MyButton" 
+                        style="height:26px; padding-top:1px; padding-bottom: 1px" 
+                        formnovalidate
+                        onclick="confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_ALL_ATTACHMENTS"])')"/>
+                </span>
+                <p>&nbsp;</p>
                 @for (var i = 0; i < Model.Attachments.Count; i++)
                 {
                     <div style="margin-bottom:20px; padding-bottom:20px">
