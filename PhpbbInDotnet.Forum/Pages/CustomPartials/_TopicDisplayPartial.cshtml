@@ -134,7 +134,7 @@
             @if (!Model.IsDraftsView)
             {
                 @await Html.PartialAsync("_SummaryPartial", new _SummaryPartialModel(
-                    authorId: topic.TopicLastPostId!.Value,
+                    authorId: topic.TopicLastPosterId!.Value,
                     authorName: topic.TopicLastPosterName!,
                     authorColor: topic.TopicLastPosterColour!,
                     creationTime: topic.LastPostTime!.Value,

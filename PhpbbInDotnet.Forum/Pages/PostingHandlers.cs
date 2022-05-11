@@ -175,7 +175,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     images = await Task.WhenAll(images.Select(async image =>
                     {
-                        var streamContent = new StreamContent(image.OpenReadStream());
+                        using var streamContent = new StreamContent(image.OpenReadStream());
                         streamContent.Headers.Add("Content-Type", image.ContentType);
                         using var formContent = new MultipartFormDataContent
                         {
