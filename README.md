@@ -83,7 +83,11 @@ Either way,  ensure that its structure and contents follow the sample below. All
   },
   "InternetSearchUrlFormat": "https://www.google.com/search?q={0}",
   "IpWhoIsUrlFormat": "https://whatismyipaddress.com/ip/{0}",
-  "CleanupServiceInterval": "1.00:00:00"
+  "CleanupService": {
+    "Interval": "1.00:00:00",
+    "MinimumAllowedRunTime": "02:00:00",
+    "MaximumAllowedRunTime": "04:00:00"
+  }
 }
 ```
 
@@ -136,8 +140,9 @@ ExternalImageProcessor.Api.RelativeUri | string | api/process-image | Image Proc
 ExternalImageProcessor.Api.ApiKey | string | ... | Image Processor API Api Key
 InternetSearchUrlFormat | string | https://www.google.com/search?q={0} | Internet search link; query parameter should be URL-escaped
 IpWhoIsUrlFormat | string | https://whatismyipaddress.com/ip/{0} | IP WHOIS link
-CleanupServiceInterval | TimeSpan | 1.00:00:00 | How often is the database cleaned up and tables resynchronized
-
+CleanupService.Interval | TimeSpan | 1.00:00:00 | How often is the cleanup service running (database is cleaned up and tables are resynchronized)
+CleanupService.MinimumAllowedRunTime | DateTimeOffset | 02:00:00 | The soonest time of the day when the cleanup service can run. Must not have a date component.
+CleanupService.MaximumAllowedRunTime | DateTimeOffset | 04:00:00 | The latest time of the day when the cleanup service can run. Must not have a date component.
 ### Branding
 #### Forum header
 The application will display the `ForumName` app setting value in the upper left corner of the screen (as a header that links to the forum's first page).
