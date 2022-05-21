@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Objects;
+using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Utilities;
 using Serilog;
 using System;
@@ -20,12 +21,12 @@ namespace PhpbbInDotnet.Services
     public class CleanupService : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly string _fileName;
+
+        private const string OK_FILE_NAME = $"{nameof(CleanupService)}.ok";
 
         public CleanupService(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            _fileName = $"{nameof(CleanupService)}.ok";
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -43,19 +44,12 @@ namespace PhpbbInDotnet.Services
 
             logger.Information("Launching a new {name} instance...", nameof(CleanupService));
 
-            var interval = config.GetObject<TimeSpan?>("CleanupServiceInterval") ?? TimeSpan.FromDays(1);
-            DateTime? lastRun = null;
-            try
+            var options = config.GetObject<CleanupServiceOptions>("CleanupService");
+            var timeToWait = GetTimeToWaitUntilRunIsAllowed(options);
+            if (timeToWait > TimeSpan.Zero)
             {
-                lastRun = new FileInfo(_fileName).LastWriteTimeUtc;
-            }
-            catch { }
-
-            TimeSpan? elapsed = lastRun.HasValue ? DateTime.UtcNow - lastRun.Value : null;
-            if (elapsed.HasValue && elapsed < interval)
-            {
-                Log.Information("Waiting {time} before executing cleanup tasks...", interval - elapsed.Value);
-                stoppingToken.WaitHandle.WaitOne(interval - elapsed.Value);
+                logger.Warning("Waiting for {time} before executing cleanup task...", timeToWait);
+                stoppingToken.WaitHandle.WaitOne(timeToWait);
             }
 
             try
@@ -80,7 +74,7 @@ namespace PhpbbInDotnet.Services
                     logger.Warning(Message);
                 }
 
-                File.WriteAllText(_fileName, string.Empty);
+                File.WriteAllText(OK_FILE_NAME, string.Empty);
             }
             catch (Exception ex)
             {
@@ -284,6 +278,59 @@ namespace PhpbbInDotnet.Services
                 {
                     ids = toDelete.Select(l => l.LogId).DefaultIfEmpty()
                 });
+        }
+    
+        private TimeSpan GetTimeToWaitUntilRunIsAllowed(CleanupServiceOptions options)
+        {
+            var now = DateTimeOffset.Now;
+            if (options.MinimumAllowedRunTime.Date != now.Date || options.MaximumAllowedRunTime.Date != now.Date)
+            {
+                throw new ArgumentOutOfRangeException(
+                    paramName: nameof(options),
+                    message: $"The {nameof(options.MinimumAllowedRunTime)} and {nameof(options.MaximumAllowedRunTime)} properties of {nameof(CleanupServiceOptions)} should not have a date component.");
+            }
+            if (options.MinimumAllowedRunTime >= options.MaximumAllowedRunTime)
+            {
+                throw new ArgumentOutOfRangeException(
+                    paramName: nameof(options),
+                    message: $"The {nameof(options.MinimumAllowedRunTime)} and {nameof(options.MaximumAllowedRunTime)} properties of {nameof(CleanupServiceOptions)} should be correctly ordered.");
+            }
+
+            var timeUntilAllowedTimeFrame = GetTimeUntilAllowedRunTimeFrame();
+            var timeSinceLastRun = GetElapsedTimeSinceLastRunIfAny();
+            if (timeUntilAllowedTimeFrame == TimeSpan.Zero && (!timeSinceLastRun.HasValue || timeSinceLastRun.Value >= options.Interval))
+            {
+                return timeUntilAllowedTimeFrame;
+            }
+            else
+            {
+                return timeUntilAllowedTimeFrame + options.Interval;
+            }
+
+            static TimeSpan? GetElapsedTimeSinceLastRunIfAny()
+            {
+                DateTime? lastRun = null;
+                try
+                {
+                    lastRun = new FileInfo(OK_FILE_NAME).LastWriteTimeUtc;
+                }
+                catch { }
+
+                return lastRun.HasValue ? DateTime.UtcNow - lastRun.Value : null;
+            }
+
+            TimeSpan GetTimeUntilAllowedRunTimeFrame()
+            {
+                if (now < options.MinimumAllowedRunTime)
+                {
+                    return options.MinimumAllowedRunTime - now;
+                }
+                else if (now > options.MaximumAllowedRunTime)
+                {
+                    return options.MinimumAllowedRunTime + TimeSpan.FromDays(1) - now;
+                }
+                return TimeSpan.Zero;
+            }
         }
     }
 }
