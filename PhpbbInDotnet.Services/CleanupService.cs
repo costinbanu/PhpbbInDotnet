@@ -298,16 +298,21 @@ namespace PhpbbInDotnet.Services
 
             var timeUntilAllowedTimeFrame = GetTimeUntilAllowedRunTimeFrame();
             var timeSinceLastRun = GetElapsedTimeSinceLastRunIfAny();
-            if (timeUntilAllowedTimeFrame == TimeSpan.Zero && (!timeSinceLastRun.HasValue || timeSinceLastRun.Value >= options.Interval))
+            if (!timeSinceLastRun.HasValue || (timeSinceLastRun.Value + timeUntilAllowedTimeFrame >= options.Interval && (now + timeUntilAllowedTimeFrame <= options.MaximumAllowedRunTime)))
             {
                 return timeUntilAllowedTimeFrame;
             }
             else
             {
-                return timeUntilAllowedTimeFrame + options.Interval;
+                var toReturn = timeUntilAllowedTimeFrame;
+                while (timeSinceLastRun.Value + toReturn < options.Interval)
+                {
+                    toReturn += TimeSpan.FromDays(1);
+                }
+                return toReturn;
             }
 
-            static TimeSpan? GetElapsedTimeSinceLastRunIfAny()
+            TimeSpan? GetElapsedTimeSinceLastRunIfAny()
             {
                 DateTime? lastRun = null;
                 try
@@ -316,7 +321,7 @@ namespace PhpbbInDotnet.Services
                 }
                 catch { }
 
-                return lastRun.HasValue ? DateTime.UtcNow - lastRun.Value : null;
+                return lastRun.HasValue ? now.DateTime.ToUniversalTime() - lastRun.Value : null;
             }
 
             TimeSpan GetTimeUntilAllowedRunTimeFrame()
