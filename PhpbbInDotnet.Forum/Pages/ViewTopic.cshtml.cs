@@ -96,12 +96,12 @@ namespace PhpbbInDotnet.Forum.Pages
         public List<ReportDto>? Reports { get; private set; }
 
         private PhpbbTopics? _currentTopic;
-        private readonly PostService _postService;
-        private readonly ModeratorService _moderatorService;
-        private readonly WritingToolsService _writingToolsService;
+        private readonly IPostService _postService;
+        private readonly IModeratorService _moderatorService;
+        private readonly IWritingToolsService _writingToolsService;
 
-        public ViewTopicModel(IForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, PostService postService, 
-            ModeratorService moderatorService, WritingToolsService writingToolsService, LanguageProvider languageProvider)
+        public ViewTopicModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, IPostService postService, 
+            IModeratorService moderatorService, IWritingToolsService writingToolsService, LanguageProvider languageProvider)
             : base(context, forumService, userService, cache, utils, languageProvider)
         {
             _postService = postService;

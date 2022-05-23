@@ -18,9 +18,9 @@ namespace PhpbbInDotnet.Forum.Pages
 {
     public class ModeratorModel : AuthenticatedPageModel
     {
-        private readonly ModeratorService _moderatorService;
-        private readonly PostService _postService;
-        private readonly OperationLogService _operationLogService;
+        private readonly IModeratorService _moderatorService;
+        private readonly IPostService _postService;
+        private readonly IOperationLogService _operationLogService;
 
         [BindProperty(SupportsGet = true)]
         public ModeratorPanelMode Mode { get; set; }
@@ -54,8 +54,8 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool ScrollToAction => TopicAction.HasValue && DestinationForumId.HasValue;
         public IEnumerable<DeletedItemGroup>? DeletedItems { get; private set; }
 
-        public ModeratorModel(IForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, 
-            LanguageProvider languageProvider, ModeratorService moderatorService, PostService postService, OperationLogService operationLogService)
+        public ModeratorModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, 
+            LanguageProvider languageProvider, IModeratorService moderatorService, IPostService postService, IOperationLogService operationLogService)
             : base(context, forumService, userService, cache, utils, languageProvider)
         {
             _moderatorService = moderatorService;

@@ -7,9 +7,9 @@
 
 @model PhpbbInDotnet.Forum.Pages.UserModel
 
-@inject Services.UserService _userService
+@inject Services.IUserService _userService
 @inject Database.IForumDbContext _context
-@inject Utilities.CommonUtils _utils
+@inject Utilities.ICommonUtils _utils
 @inject Microsoft.Extensions.Configuration.IConfiguration _config
 
 @{

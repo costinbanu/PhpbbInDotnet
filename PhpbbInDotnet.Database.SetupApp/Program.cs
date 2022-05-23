@@ -88,11 +88,12 @@ namespace PhpbbInDotnet.Database.SetupApp
                 else
                 {
                     Console.WriteLine("Updating users table...");
-                    using var utils = new CommonUtils(null!, null!, null!, null!);
                     var users = await connection.QueryAsync("SELECT user_id, username, username_clean FROM phpbb_users");
                     foreach (var user in users)
                     {
-                        await connection.ExecuteAsync("UPDATE phpbb_users SET username_clean = @clean WHERE user_id = @id", new { clean = utils.CleanString(user.username), id = user.user_id });
+                        await connection.ExecuteAsync(
+                            "UPDATE phpbb_users SET username_clean = @clean WHERE user_id = @id", 
+                            new { clean = StringUtils.CleanString(user.username), id = user.user_id });
                     }
                     Console.WriteLine("Done!");
                     Console.WriteLine();

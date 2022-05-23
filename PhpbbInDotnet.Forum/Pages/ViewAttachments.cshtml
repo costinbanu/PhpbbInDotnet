@@ -4,8 +4,8 @@
 @using Utilities;
 @using Pages.CustomPartials;
 
-@inject Services.ForumTreeService _forumService
-@inject CommonUtils _utils
+@inject Services.IForumTreeService _forumService
+@inject ICommonUtils _utils
 
 @{
     var title = string.Format(Model.LanguageProvider.BasicText[Model.GetLanguage(), "ATTACHMENTS_BY_FORMAT", Casing.Title], Model.PageUsername);

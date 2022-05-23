@@ -20,7 +20,7 @@ namespace PhpbbInDotnet.Forum.Pages
     {
         private bool _forceTreeRefresh;
         private readonly IConfiguration _config;
-        private readonly BBCodeRenderingService _renderingService;
+        private readonly IBBCodeRenderingService _renderingService;
 
         public HashSet<ForumTree>? Forums { get; private set; }
         public List<TopicGroup>? Topics { get; private set; }
@@ -35,8 +35,8 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public int ForumId { get; set; }
 
-        public ViewForumModel(IForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, BBCodeRenderingService renderingService,
-            IConfiguration config, CommonUtils utils, LanguageProvider languageProvider)
+        public ViewForumModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, IBBCodeRenderingService renderingService,
+            IConfiguration config, ICommonUtils utils, LanguageProvider languageProvider)
             : base(context, forumService, userService, cache, utils, languageProvider) 
         {
             _config = config;

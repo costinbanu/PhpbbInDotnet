@@ -23,21 +23,21 @@ namespace PhpbbInDotnet.Forum
 {
     public class AuthenticatedPageModel : PageModel
     {
-        protected readonly ForumTreeService ForumService;
+        protected readonly IForumTreeService ForumService;
         protected readonly IAppCache Cache;
-        protected readonly UserService UserService;
+        protected readonly IUserService IUserService;
         protected readonly IForumDbContext Context;
-        protected readonly CommonUtils Utils;
+        protected readonly ICommonUtils Utils;
         
         public LanguageProvider LanguageProvider { get; }
 
         private string? _language;
 
-        public AuthenticatedPageModel(IForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cacheService, CommonUtils utils, LanguageProvider languageProvider)
+        public AuthenticatedPageModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cacheService, ICommonUtils utils, LanguageProvider languageProvider)
         {
             ForumService = forumService;
             Cache = cacheService;
-            UserService = userService;
+            IUserService = userService;
             Context = context;
             Utils = utils;
             LanguageProvider = languageProvider;
@@ -55,10 +55,10 @@ namespace PhpbbInDotnet.Forum
         }
 
         public async Task<bool> IsCurrentUserAdminHere(int forumId = 0)
-            => await UserService.IsUserAdminInForum(GetCurrentUser(), forumId);
+            => await IUserService.IsUserAdminInForum(GetCurrentUser(), forumId);
 
         public async Task<bool> IsCurrentUserModeratorHere(int forumId = 0)
-            => await UserService.IsUserModeratorInForum(GetCurrentUser(), forumId);
+            => await IUserService.IsUserModeratorInForum(GetCurrentUser(), forumId);
 
         public string GetLanguage()
             => _language ??= LanguageProvider.GetValidatedLanguage(GetCurrentUser(), Request);

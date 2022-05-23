@@ -6,12 +6,12 @@
 @using Utilities
 @using Objects
 
-@inject Services.UserService _userService
-@inject CommonUtils _utils
+@inject Services.IUserService _userService
+@inject ICommonUtils _utils
 @inject Database.IForumDbContext _context
-@inject Services.BBCodeRenderingService _renderingService
-@inject Services.UserService _userService
-@inject Services.ForumTreeService _forumService
+@inject Services.IBBCodeRenderingService _renderingService
+@inject Services.IUserService _userService
+@inject Services.IForumTreeService _forumService
 @inject Languages.LanguageProvider _languageProvider
 
 @{

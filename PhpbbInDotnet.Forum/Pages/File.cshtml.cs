@@ -20,12 +20,12 @@ namespace PhpbbInDotnet.Forum.Pages
 {
     public class FileModel : AuthenticatedPageModel
     {
-        private readonly StorageService _storageService;
+        private readonly IStorageService _storageService;
         private readonly FileExtensionContentTypeProvider _contentTypeProvider;
         private readonly IConfiguration _config;
 
-        public FileModel(IForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, StorageService storageService,
-            IConfiguration config, CommonUtils utils, FileExtensionContentTypeProvider contentTypeProvider, LanguageProvider languageProvider)
+        public FileModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, IStorageService storageService,
+            IConfiguration config, ICommonUtils utils, FileExtensionContentTypeProvider contentTypeProvider, LanguageProvider languageProvider)
             : base(context, forumService, userService, cache, utils, languageProvider)
         {
             _storageService = storageService;

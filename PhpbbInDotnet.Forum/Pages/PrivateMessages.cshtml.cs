@@ -49,10 +49,10 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public Paginator? SentPaginator { get; private set; }
 
-        private readonly BBCodeRenderingService _renderingService;
+        private readonly IBBCodeRenderingService _renderingService;
 
-        public PrivateMessagesModel(IForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache,
-            BBCodeRenderingService renderingService, CommonUtils utils, LanguageProvider languageProvider)
+        public PrivateMessagesModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache,
+            IBBCodeRenderingService renderingService, ICommonUtils utils, LanguageProvider languageProvider)
             : base(context, forumService, userService, cache, utils, languageProvider)
         {
             _renderingService = renderingService;
@@ -218,7 +218,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostDeleteMessage()
             => await WithUserHavingPM(async (user) =>
             {
-                var (Message, IsSuccess) = await UserService.DeletePrivateMessage(MessageId!.Value);
+                var (Message, IsSuccess) = await IUserService.DeletePrivateMessage(MessageId!.Value);
 
                 if (IsSuccess ?? false)
                 {
@@ -236,7 +236,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostHideMessage()
             => await WithUserHavingPM(async (user) =>
             {
-                var (Message, IsSuccess) = await UserService.HidePrivateMessages(user.UserId, MessageId ?? 0);
+                var (Message, IsSuccess) = await IUserService.HidePrivateMessages(user.UserId, MessageId ?? 0);
 
                 if (IsSuccess ?? false)
                 {
@@ -263,7 +263,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task OnPostHideSelectedMessages()
             => await WithUserHavingPM(async (user) =>
             {
-                var (Message, IsSuccess) = await UserService.HidePrivateMessages(user.UserId, SelectedMessages!);
+                var (Message, IsSuccess) = await IUserService.HidePrivateMessages(user.UserId, SelectedMessages!);
 
                 if (!(IsSuccess ?? false))
                 {

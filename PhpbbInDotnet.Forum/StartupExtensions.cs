@@ -7,11 +7,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.StaticFiles;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
@@ -104,21 +102,12 @@ namespace PhpbbInDotnet.Forum
                 });
             }
 
-            services.AddSingleton<CommonUtils>();
+            services.AddCommonUtils();
+            services.AddApplicationServices();
+
             services.AddSingleton<AnonymousSessionCounter>();
             services.AddSingleton<FileExtensionContentTypeProvider>();
 
-            services.AddScoped<AdminForumService>();
-            services.AddScoped<AdminUserService>();
-            services.AddScoped<WritingToolsService>();
-            services.AddScoped<ForumTreeService>();
-            services.AddScoped<PostService>();
-            services.AddScoped<UserService>();
-            services.AddScoped<StorageService>();
-            services.AddScoped<ModeratorService>();
-            services.AddScoped<BBCodeRenderingService>();
-            services.AddScoped<StatisticsService>();
-            services.AddScoped<OperationLogService>();
             services.AddScoped<AuthenticationMiddleware>();
 
             services.AddTransient<IHttpContextAccessor, HttpContextAccessor>();
@@ -141,7 +130,6 @@ namespace PhpbbInDotnet.Forum
 
             services.AddLazyCache();
 
-            services.AddHostedService<CleanupService>();
             services.Configure<HostOptions>(opts => opts.ShutdownTimeout = TimeSpan.FromMinutes(5));
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
@@ -185,8 +173,8 @@ namespace PhpbbInDotnet.Forum
                         var handler = context.Features.Get<IExceptionHandlerPathFeature>();
                         if (handler is not null)
                         {
-                            var utils = context.RequestServices.GetService<CommonUtils>();
-                            var userService = context.RequestServices.GetService<UserService>();
+                            var utils = context.RequestServices.GetService<ICommonUtils>();
+                            var userService = context.RequestServices.GetService<IUserService>();
                             var user = userService?.ClaimsPrincipalToAuthenticatedUser(context.User);
                             var path = context.Request?.Path.Value ?? handler.Path;
                             var id = utils?.HandleError(handler.Error, $"URL: {path}{context.Request?.QueryString}. UserId: {user?.UserId.ToString() ?? "N/A"}. UserName: {user?.Username ?? "N/A"}");

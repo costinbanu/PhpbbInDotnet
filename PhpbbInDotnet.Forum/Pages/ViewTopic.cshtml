@@ -8,10 +8,10 @@
 @using CustomPartials
 @using Microsoft.EntityFrameworkCore
 
-@inject CommonUtils _utils
+@inject ICommonUtils _utils
 @inject Database.IForumDbContext _context
-@inject Services.BBCodeRenderingService _renderingService
-@inject Services.ForumTreeService _forumService
+@inject Services.IBBCodeRenderingService _renderingService
+@inject Services.IForumTreeService _forumService
 
 @{
     ViewData["Title"] = $"{Model.ForumTitle} - {Model.TopicTitle}";

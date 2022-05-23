@@ -25,11 +25,11 @@ namespace PhpbbInDotnet.Forum.Pages
     public class RegisterModel : PageModel
     {
         private readonly IForumDbContext _context;
-        private readonly CommonUtils _utils;
+        private readonly ICommonUtils _utils;
         private readonly IConfiguration _config;
         private readonly HttpClient _gClient;
         private readonly Recaptcha _recaptchaOptions;
-        private readonly UserService _userService;
+        private readonly IUserService _userService;
 
         private string? _language;
 
@@ -54,7 +54,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public LanguageProvider LanguageProvider { get; }
 
 
-        public RegisterModel(IForumDbContext context, CommonUtils utils, IConfiguration config, IHttpClientFactory httpClientFactory, LanguageProvider languageProvider, UserService userService)
+        public RegisterModel(IForumDbContext context, ICommonUtils utils, IConfiguration config, IHttpClientFactory httpClientFactory, LanguageProvider languageProvider, IUserService userService)
         {
             _context = context;
             _utils = utils;

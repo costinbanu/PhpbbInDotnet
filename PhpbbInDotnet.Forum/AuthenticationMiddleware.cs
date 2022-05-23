@@ -26,9 +26,9 @@ namespace PhpbbInDotnet.Forum
         static readonly HashSet<string> EXCLUDED_PAGES;
 
         private readonly ILogger _logger;
-        private readonly ForumTreeService _forumTreeService;
+        private readonly IForumTreeService _forumTreeService;
         private readonly IForumDbContext _context;
-        private readonly UserService _userService;
+        private readonly IUserService _userService;
         private readonly IConfiguration _config;
         private readonly IAppCache _cache;
         private readonly AnonymousSessionCounter _sessionCounter;
@@ -42,7 +42,7 @@ namespace PhpbbInDotnet.Forum
         }
 
         public AuthenticationMiddleware(ILogger logger, IConfiguration config, IAppCache cache, IForumDbContext context,
-            ForumTreeService forumTreeService, UserService userService, AnonymousSessionCounter sessionCounter)
+            IForumTreeService forumTreeService, IUserService userService, AnonymousSessionCounter sessionCounter)
         {
             _logger = logger;
             _forumTreeService = forumTreeService;

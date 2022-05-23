@@ -18,15 +18,15 @@ using Microsoft.AspNetCore.Http;
 
 namespace PhpbbInDotnet.Services
 {
-    public class AdminForumService : MultilingualServiceBase
+    class AdminForumService : MultilingualServiceBase, IAdminForumService
     {
         private readonly IForumDbContext _context;
-        private readonly ForumTreeService _forumService;
+        private readonly IForumTreeService _forumService;
         private readonly IConfiguration _config;
-        private readonly OperationLogService _operationLogService;
+        private readonly IOperationLogService _operationLogService;
 
-        public AdminForumService(IForumDbContext context, ForumTreeService forumService, IConfiguration config, CommonUtils utils,
-            LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor, OperationLogService operationLogService)
+        public AdminForumService(IForumDbContext context, IForumTreeService forumService, IConfiguration config, ICommonUtils utils,
+            LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor, IOperationLogService operationLogService)
             : base(utils, languageProvider, httpContextAccessor)
         {
             _context = context;
@@ -127,7 +127,7 @@ namespace PhpbbInDotnet.Services
                 await Task.WhenAll(tasks);
 
                 await _operationLogService.LogAdminForumAction(isNewForum ? AdminForumActions.Add : AdminForumActions.Update, adminUserId, actual);
-                
+
                 return (string.Format(LanguageProvider.Admin[lang, "FORUM_UPDATED_SUCCESSFULLY_FORMAT"], actual.ForumName), true);
             }
             catch (Exception ex)

@@ -12,17 +12,17 @@ using System.Web;
 
 namespace PhpbbInDotnet.Services
 {
-    public class ForumTreeService
+    class ForumTreeService : IForumTreeService
     {
         private readonly IForumDbContext _context;
         private readonly IConfiguration _config;
-        private readonly CommonUtils _utils;
+        private readonly ICommonUtils _utils;
         private HashSet<ForumTree>? _tree;
         private HashSet<ForumTopicCount>? _forumTopicCount;
         private Dictionary<int, HashSet<Tracking>>? _tracking;
         private IEnumerable<(int forumId, bool hasPassword)>? _restrictedForums;
 
-        public ForumTreeService(IForumDbContext context, IConfiguration config, CommonUtils utils)
+        public ForumTreeService(IForumDbContext context, IConfiguration config, ICommonUtils utils)
         {
             _context = context;
             _config = config;
@@ -64,9 +64,9 @@ namespace PhpbbInDotnet.Services
             var treeTask = GetForumTree();
             var forumTopicCountTask = GetForumTopicCount();
             var shortcutParentsTask = fetchUnreadData ? GetShortcutParentForums() : Task.FromResult(new Dictionary<int, List<(int ActualForumId, int TopicId)>>());
-            
+
             await Task.WhenAll(trackingTask, treeTask, forumTopicCountTask, shortcutParentsTask);
-            
+
             var tracking = await trackingTask;
             _tree = await treeTask;
             _forumTopicCount = await forumTopicCountTask;
@@ -141,7 +141,7 @@ namespace PhpbbInDotnet.Services
                              t.forum_id AS actual_forum_id
                         FROM phpbb_shortcuts s
                         JOIN phpbb_topics t on s.topic_id = t.topic_id");
-                
+
                 var toReturn = new Dictionary<int, List<(int, int)>>(rawData.Count());
                 foreach (var item in rawData)
                 {
@@ -189,10 +189,10 @@ namespace PhpbbInDotnet.Services
             {
                 _utils.HandleError(ex, $"Error getting the forum tracking for user {userId}");
             }
-            
+
             var count = dbResults.Count();
             _tracking = new Dictionary<int, HashSet<Tracking>>(count);
-            
+
             foreach (var result in dbResults)
             {
                 var track = new Tracking

@@ -20,10 +20,10 @@ using System.Web;
 
 namespace PhpbbInDotnet.Services
 {
-    public class WritingToolsService : MultilingualServiceBase
+    class WritingToolsService : MultilingualServiceBase, IWritingToolsService
     {
         private readonly IForumDbContext _context;
-        private readonly StorageService _storageService;
+        private readonly IStorageService _storageService;
         private readonly IConfiguration _config;
         private readonly IAppCache _cache;
 
@@ -32,7 +32,7 @@ namespace PhpbbInDotnet.Services
 
         private List<PhpbbSmilies>? _smilies;
 
-        public WritingToolsService(IForumDbContext context, StorageService storageService, CommonUtils utils, LanguageProvider languageProvider, 
+        public WritingToolsService(IForumDbContext context, IStorageService storageService, ICommonUtils utils, LanguageProvider languageProvider,
             IHttpContextAccessor httpContextAccessor, IConfiguration config, IAppCache cache)
             : base(utils, languageProvider, httpContextAccessor)
         {
@@ -82,7 +82,7 @@ namespace PhpbbInDotnet.Services
         {
             var currentLanguage = GetLanguage();
             try
-            { 
+            {
                 indexesToDisplay.ForEach(i => codes[i].DisplayOnPosting = 1);
                 await _context.PhpbbBbcodes.AddRangeAsync(codes.Where(c => c.BbcodeId == 0));
                 _context.PhpbbBbcodes.UpdateRange(codes.Where(c => c.BbcodeId != 0));
@@ -90,8 +90,8 @@ namespace PhpbbInDotnet.Services
 
                 var conn = _context.GetDbConnection();
                 await conn.ExecuteAsync("DELETE FROM phpbb_bbcodes WHERE bbcode_id IN @ids", new { ids = indexesToRemove.Select(i => codes[i].BbcodeId) });
-                
-                foreach(var language in LanguageProvider.AllLanguages)
+
+                foreach (var language in LanguageProvider.AllLanguages)
                 {
                     _cache.Remove(GetBbCodesCacheKey(language));
                 }

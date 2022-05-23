@@ -113,18 +113,18 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool DraftSavedSuccessfully { get; private set; } = false;
         public Guid? PreviewCorrelationId { get; private set; }
 
-        private readonly PostService _postService;
-        private readonly StorageService _storageService;
-        private readonly WritingToolsService _writingService;
-        private readonly BBCodeRenderingService _renderingService;
+        private readonly IPostService _postService;
+        private readonly IStorageService _storageService;
+        private readonly IWritingToolsService _writingService;
+        private readonly IBBCodeRenderingService _renderingService;
         private readonly IConfiguration _config;
         private readonly ExternalImageProcessor _imageProcessorOptions;
         private readonly HttpClient? _imageProcessorClient;
 
         static readonly DateTimeOffset CACHE_EXPIRATION = DateTimeOffset.UtcNow.AddHours(4);
 
-        public PostingModel(CommonUtils utils, IForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cacheService, PostService postService, 
-            StorageService storageService, WritingToolsService writingService, BBCodeRenderingService renderingService, IConfiguration config, LanguageProvider languageProvider, IHttpClientFactory httpClientFactory)
+        public PostingModel(ICommonUtils utils, IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cacheService, IPostService postService, 
+            IStorageService storageService, IWritingToolsService writingService, IBBCodeRenderingService renderingService, IConfiguration config, LanguageProvider languageProvider, IHttpClientFactory httpClientFactory)
             : base(context, forumService, userService, cacheService, utils, languageProvider)
         {
             PollExpirationDaysString = "1";
@@ -160,7 +160,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private List<KeyValuePair<string, int>>? _userMap = null;
         public async Task<List<KeyValuePair<string, int>>> GetUserMap()
-            => _userMap ??= await UserService.GetUserMap();
+            => _userMap ??= await IUserService.GetUserMap();
 
         public async Task<IEnumerable<KeyValuePair<string, string>>> GetUsers()
             => (await GetUserMap()).Select(map => KeyValuePair.Create(map.Key, $"[url={_config.GetValue<string>("BaseUrl")}/User?UserId={map.Value}]{map.Key}[/url]")).ToList();

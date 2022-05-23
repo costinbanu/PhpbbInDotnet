@@ -15,15 +15,15 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
 {
-    public class PostService
+    class PostService : IPostService
     {
         private readonly IForumDbContext _context;
-        private readonly UserService _userService;
+        private readonly IUserService _userService;
         private readonly IAppCache _cache;
-        private readonly CommonUtils _utils;
+        private readonly ICommonUtils _utils;
         private readonly int _maxAttachmentCount;
 
-        public PostService(IForumDbContext context, UserService userService, IAppCache cache, CommonUtils utils, IConfiguration config)
+        public PostService(IForumDbContext context, IUserService userService, IAppCache cache, ICommonUtils utils, IConfiguration config)
         {
             _context = context;
             _userService = userService;

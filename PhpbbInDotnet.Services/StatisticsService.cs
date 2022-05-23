@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
 {
-    public class StatisticsService
+    class StatisticsService : IStatisticsService
     {
         const string CACHE_KEY = "ForumStatistics";
 

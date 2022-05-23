@@ -4,7 +4,6 @@ using Diacritics.Extensions;
 using LazyCache;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
@@ -21,7 +20,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Services
 {
-    public class BBCodeRenderingService : MultilingualServiceBase
+    class BBCodeRenderingService : MultilingualServiceBase, IBBCodeRenderingService
     {
         private static readonly Regex _htmlRegex = new("<.+?>", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
         private static readonly Regex _spaceRegex = new(" +", RegexOptions.Compiled | RegexOptions.Singleline, Constants.REGEX_TIMEOUT);
@@ -29,7 +28,7 @@ namespace PhpbbInDotnet.Services
         private static readonly Regex _quoteAttributeRegex = new("(\".+\")[, ]{0,2}([0-9]+)?", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
 
         private readonly IForumDbContext _context;
-        private readonly WritingToolsService _writingService;
+        private readonly IWritingToolsService _writingService;
         private readonly BBCodeParser _parser;
         private readonly Lazy<Dictionary<string, string>> _bannedWords;
         private readonly IAppCache _cache;
@@ -40,7 +39,7 @@ namespace PhpbbInDotnet.Services
 
         public Dictionary<string, BBTagSummary> TagMap { get; }
 
-        public BBCodeRenderingService(CommonUtils utils, IForumDbContext context, WritingToolsService writingService, IAppCache cache, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
+        public BBCodeRenderingService(ICommonUtils utils, IForumDbContext context, IWritingToolsService writingService, IAppCache cache, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
             : base(utils, languageProvider, httpContextAccessor)
         {
             _context = context;
@@ -111,7 +110,7 @@ namespace PhpbbInDotnet.Services
             {
                 html = _parser.ToHtml(bbCodeText, bbCodeUid ?? string.Empty);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 if (!string.IsNullOrWhiteSpace(bbCodeUid))
                 {
@@ -249,7 +248,7 @@ namespace PhpbbInDotnet.Services
                         {
                             var startIndex = 0;
                             var ignoreOffset = GetIgnoreOffset(index, htmlMatch, attachMatch);
-                            
+
                             if (ignoreOffset == 0)
                             {
                                 var (transformedResult, transformednextIndex) = transform(input, cleanedMatch, index);
@@ -264,7 +263,7 @@ namespace PhpbbInDotnet.Services
 
                             var oldIndex = index;
                             index = startIndex > cleanedInput.Length ? -1 : indexOf(cleanedInput, cleanedWord, startIndex).index;
-                            
+
                             if (index == oldIndex || index == -1 || DateTime.UtcNow.Subtract(start) >= Constants.REGEX_TIMEOUT)
                             {
                                 break;
@@ -360,8 +359,8 @@ namespace PhpbbInDotnet.Services
                         ["quote"] = (
                             Tag: new BBTag("quote", "<blockquote class=\"PostQuote\">${name}", "</blockquote>", maxId + 6, "", true,
                                 new BBAttribute(
-                                    id: "name", 
-                                    name: "", 
+                                    id: "name",
+                                    name: "",
                                     contentTransformer: a =>
                                     {
                                         if (string.IsNullOrWhiteSpace(a.AttributeValue))
@@ -387,7 +386,7 @@ namespace PhpbbInDotnet.Services
                                             }
                                         }
                                         return toReturn;
-                                    }, 
+                                    },
                                     htmlEncodingMode: HtmlEncodingMode.UnsafeDontEncode
                                 )
                             )

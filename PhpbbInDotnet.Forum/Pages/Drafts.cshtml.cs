@@ -24,7 +24,7 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public int[]? SelectedDrafts { get; set; }
 
-        public DraftsModel(IForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, LanguageProvider languageProvider)
+        public DraftsModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, LanguageProvider languageProvider)
             : base(context, forumService, userService, cache, utils, languageProvider)
         {
         }

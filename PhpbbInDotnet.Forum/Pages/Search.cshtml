@@ -6,12 +6,12 @@
 @using PhpbbInDotnet.Database.Entities
 @using PhpbbInDotnet.Utilities
 
-@inject Utilities.CommonUtils _utils
+@inject Utilities.ICommonUtils _utils
 @inject Database.IForumDbContext _context
-@inject Services.BBCodeRenderingService _renderingService
-@inject Services.UserService _userService
-@inject Services.ForumTreeService _forumService
-@inject Services.PostService _postService
+@inject Services.IBBCodeRenderingService _renderingService
+@inject Services.IUserService _userService
+@inject Services.IForumTreeService _forumService
+@inject Services.IPostService _postService
 
 @{
     var Lang = Model.GetLanguage();

@@ -4,11 +4,11 @@
 @using Objects;
 
 @inject IConfiguration _config
-@inject Services.UserService  _userService
-@inject Services.ModeratorService _moderatorService
+@inject Services.IUserService  _userService
+@inject Services.IModeratorService _moderatorService
 @inject Languages.LanguageProvider _languageProvider
 @inject Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor
-@inject Services.StatisticsService _statisticsService
+@inject Services.IStatisticsService _statisticsService
 @{
     #nullable enable
     var currentUser = (AuthenticatedUserExpanded?)Context.Items[nameof(AuthenticatedUserExpanded)];

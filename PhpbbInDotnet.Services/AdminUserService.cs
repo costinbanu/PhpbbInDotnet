@@ -14,21 +14,20 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Net.Mail;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
 {
-    public class AdminUserService : MultilingualServiceBase
+    class AdminUserService : MultilingualServiceBase, IAdminUserService
     {
         private readonly IForumDbContext _context;
-        private readonly PostService _postService;
+        private readonly IPostService _postService;
         private readonly IAppCache _cache;
         private readonly IConfiguration _config;
-        private readonly OperationLogService _operationLogService;
+        private readonly IOperationLogService _operationLogService;
 
-        public AdminUserService(IForumDbContext context, PostService postService, IAppCache cache, IConfiguration config, CommonUtils utils,
-            LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor, OperationLogService operationLogService)
+        public AdminUserService(IForumDbContext context, IPostService postService, IAppCache cache, IConfiguration config, ICommonUtils utils,
+            LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor, IOperationLogService operationLogService)
             : base(utils, languageProvider, httpContextAccessor)
         {
             _context = context;

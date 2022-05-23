@@ -59,7 +59,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public bool IsAuthorSearch { get; private set; }
 
-        public SearchModel(IForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, LanguageProvider languageProvider)
+        public SearchModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, LanguageProvider languageProvider)
             : base(context, forumService, userService, cache, utils, languageProvider)
         {
 
@@ -86,7 +86,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             var connection = Context.GetDbConnection();
 
-            Users = await UserService.GetUserMap();
+            Users = await IUserService.GetUserMap();
 
             if (ForumId == null && TopicId != null)
             {

@@ -11,7 +11,6 @@ using PhpbbInDotnet.Utilities;
 using Serilog;
 using System;
 using System.Data;
-using System.Data.Common;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -19,7 +18,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
 {
-    public class CleanupService : BackgroundService
+    class CleanupService : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider;
 
@@ -36,17 +35,18 @@ namespace PhpbbInDotnet.Services
             await Task.Yield();
 
             using var scope = _serviceProvider.CreateScope();
-            var config = scope.ServiceProvider.GetRequiredService<IConfiguration>()!;
-            var dbContext = scope.ServiceProvider.GetRequiredService<IForumDbContext>()!;
-            var utils = scope.ServiceProvider.GetRequiredService<CommonUtils>()!;
-            var storageService = scope.ServiceProvider.GetRequiredService<StorageService>()!;
-            var logger = scope.ServiceProvider.GetService<ILogger>()!;
-            var writingToolsService = scope.ServiceProvider.GetService<WritingToolsService>()!;
+            var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+            var dbContext = scope.ServiceProvider.GetRequiredService<IForumDbContext>();
+            var utils = scope.ServiceProvider.GetRequiredService<ICommonUtils>();
+            var storageService = scope.ServiceProvider.GetRequiredService<IStorageService>();
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger>();
+            var writingToolsService = scope.ServiceProvider.GetRequiredService<IWritingToolsService>();
+            var timeService = scope.ServiceProvider.GetRequiredService<ITimeService>();
 
             logger.Information("Launching a new {name} instance...", nameof(CleanupService));
 
             var options = config.GetObject<CleanupServiceOptions>("CleanupService");
-            var timeToWait = GetTimeToWaitUntilRunIsAllowed(options);
+            var timeToWait = GetTimeToWaitUntilRunIsAllowed(timeService, options);
             if (timeToWait > TimeSpan.Zero)
             {
                 logger.Warning("Waiting for {time} before executing cleanup task...", timeToWait);
@@ -83,7 +83,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        private async Task CleanRecycleBin(IConfiguration config, IDbConnection dbConnection, CommonUtils utils, StorageService storageService, ILogger logger, CancellationToken stoppingToken)
+        private async Task CleanRecycleBin(IConfiguration config, IDbConnection dbConnection, ICommonUtils utils, IStorageService storageService, ILogger logger, CancellationToken stoppingToken)
         {
             var retention = config.GetObject<TimeSpan?>("RecycleBinRetentionTime") ?? TimeSpan.FromDays(7);
 
@@ -281,9 +281,9 @@ namespace PhpbbInDotnet.Services
                 });
         }
     
-        private TimeSpan GetTimeToWaitUntilRunIsAllowed(CleanupServiceOptions options)
+        private TimeSpan GetTimeToWaitUntilRunIsAllowed(ITimeService timeService, CleanupServiceOptions options)
         {
-            var now = DateTimeOffset.Now;
+            var now = timeService.DateTimeOffsetNow();
             if (options.MinimumAllowedRunTime.Date != now.Date || options.MaximumAllowedRunTime.Date != now.Date)
             {
                 throw new ArgumentOutOfRangeException(

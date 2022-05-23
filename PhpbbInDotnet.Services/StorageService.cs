@@ -14,17 +14,17 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
 {
-    public class StorageService
+    class StorageService : IStorageService
     {
         private readonly IConfiguration _config;
         private readonly Storage _storageOptions;
-        private readonly CommonUtils _utils;
+        private readonly ICommonUtils _utils;
         private readonly IForumDbContext _context;
         private readonly string _attachmentsPath;
         private readonly string _avatarsPath;
         private readonly string _emojiPath;
 
-        public StorageService(IConfiguration config, CommonUtils utils, IWebHostEnvironment environment, IForumDbContext context)
+        public StorageService(IConfiguration config, ICommonUtils utils, IWebHostEnvironment environment, IForumDbContext context)
         {
             _config = config;
             _utils = utils;

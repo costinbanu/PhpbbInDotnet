@@ -69,7 +69,7 @@ namespace PhpbbInDotnet.Languages
 
         #endregion Translation declarations
 
-        public LanguageProvider(ILogger logger, IAppCache cache, IForumDbContext context, CommonUtils utils)
+        public LanguageProvider(ILogger logger, IAppCache cache, IForumDbContext context, ICommonUtils utils)
         {
             _logger = logger;
             _context = context;

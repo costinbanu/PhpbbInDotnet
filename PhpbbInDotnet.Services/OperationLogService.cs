@@ -14,15 +14,15 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
 {
-    public class OperationLogService
+    class OperationLogService : IOperationLogService
     {
-        public static int LOG_PAGE_SIZE = 100;
+        public int LogPageSize => 100;
 
         private readonly IForumDbContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly CommonUtils _utils;
+        private readonly ICommonUtils _utils;
 
-        public OperationLogService(IForumDbContext context, IHttpContextAccessor httpContextAccessor, CommonUtils utils)
+        public OperationLogService(IForumDbContext context, IHttpContextAccessor httpContextAccessor, ICommonUtils utils)
         {
             _context = context;
             _httpContextAccessor = httpContextAccessor;
@@ -45,8 +45,8 @@ namespace PhpbbInDotnet.Services
                     new
                     {
                         logType,
-                        skip = LOG_PAGE_SIZE * (page - 1),
-                        take = LOG_PAGE_SIZE,
+                        skip = LogPageSize * (page - 1),
+                        take = LogPageSize,
                         authorName = _utils.CleanString(authorName)
                     });
                 var countTask = _context.GetDbConnection().ExecuteScalarAsync<int>(
@@ -125,8 +125,8 @@ namespace PhpbbInDotnet.Services
             {
                 var post = await (_context.GetDbConnection()).QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId });
                 if (post != null)
-                { 
-                    await LogModeratorPostAction(action, modUserId, post, additionalData); 
+                {
+                    await LogModeratorPostAction(action, modUserId, post, additionalData);
                 }
             });
 

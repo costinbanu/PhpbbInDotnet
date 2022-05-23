@@ -1,17 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <ItemGroup>
-    <PackageReference Include="CodeKicker.BBCode.Core" Version="3.0.0" />
-    <PackageReference Include="CryptSharp.Core" Version="3.0.0" />
-    <PackageReference Include="Diacritics" Version="3.3.14" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="2.1.1" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="CodeKicker.BBCode.Core" Version="3.0.0" />
+		<PackageReference Include="CryptSharp.Core" Version="3.0.0" />
+		<PackageReference Include="Diacritics" Version="3.3.14" />
+		<PackageReference Include="SixLabors.ImageSharp" Version="2.1.1" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\PhpbbInDotnet.Database\PhpbbInDotnet.Database.csproj" />
-    <ProjectReference Include="..\PhpbbInDotnet.Languages\PhpbbInDotnet.Languages.csproj" />
-    <ProjectReference Include="..\PhpbbInDotnet.Objects\PhpbbInDotnet.Objects.csproj" />
-    <ProjectReference Include="..\PhpbbInDotnet.Utilities\PhpbbInDotnet.Utilities.csproj" />
-  </ItemGroup>
-  
+	<ItemGroup>
+		<ProjectReference Include="..\PhpbbInDotnet.Database\PhpbbInDotnet.Database.csproj" />
+		<ProjectReference Include="..\PhpbbInDotnet.Languages\PhpbbInDotnet.Languages.csproj" />
+		<ProjectReference Include="..\PhpbbInDotnet.Objects\PhpbbInDotnet.Objects.csproj" />
+		<ProjectReference Include="..\PhpbbInDotnet.Utilities\PhpbbInDotnet.Utilities.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+			<_Parameter1>PhpbbInDotnet.Services.UnitTests</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
+
 </Project>

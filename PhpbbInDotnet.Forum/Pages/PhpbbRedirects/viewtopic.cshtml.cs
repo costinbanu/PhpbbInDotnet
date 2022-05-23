@@ -14,9 +14,9 @@ namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
     public class viewtopicModel : PageModel
     {
         private readonly IForumDbContext _context;
-        private readonly CommonUtils _utils;
+        private readonly ICommonUtils _utils;
 
-        public viewtopicModel(IForumDbContext context, CommonUtils utils)
+        public viewtopicModel(IForumDbContext context, ICommonUtils utils)
         {
             _context = context;
             _utils = utils;

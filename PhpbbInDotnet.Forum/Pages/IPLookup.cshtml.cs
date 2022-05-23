@@ -18,7 +18,7 @@ namespace PhpbbInDotnet.Forum.Pages
 {
     public class IPLookupModel : AuthenticatedPageModel
     {
-        public IPLookupModel(IForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, LanguageProvider languageProvider)
+        public IPLookupModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, LanguageProvider languageProvider)
             : base(context, forumService, userService, cache, utils, languageProvider)
         {
 

@@ -13,15 +13,15 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
 {
-    public class ModeratorService : MultilingualServiceBase
+    class ModeratorService : MultilingualServiceBase, IModeratorService
     {
         private readonly IForumDbContext _context;
-        private readonly PostService _postService;
-        private readonly StorageService _storageService;
-        private readonly OperationLogService _operationLogService;
+        private readonly IPostService _postService;
+        private readonly IStorageService _storageService;
+        private readonly IOperationLogService _operationLogService;
 
-        public ModeratorService(IForumDbContext context, PostService postService, StorageService storageService, CommonUtils utils, LanguageProvider languageProvider, 
-            IHttpContextAccessor httpContextAccessor, OperationLogService operationLogService)
+        public ModeratorService(IForumDbContext context, IPostService postService, IStorageService storageService, ICommonUtils utils, LanguageProvider languageProvider,
+            IHttpContextAccessor httpContextAccessor, IOperationLogService operationLogService)
             : base(utils, languageProvider, httpContextAccessor)
         {
             _context = context;
@@ -62,7 +62,7 @@ namespace PhpbbInDotnet.Services
             try
             {
                 var conn = _context.GetDbConnection();
-                
+
                 var topicRows = await conn.ExecuteAsync(
                     "UPDATE phpbb_topics SET forum_id = @destinationForumId WHERE topic_id = @topicID AND EXISTS(SELECT 1 FROM phpbb_forums WHERE forum_id = @destinationForumId)",
                     new { topicId, destinationForumId }
@@ -77,7 +77,7 @@ namespace PhpbbInDotnet.Services
                 var oldForumId = oldPosts.FirstOrDefault()?.ForumId ?? 0;
                 await conn.ExecuteAsync(
                     "UPDATE phpbb_posts SET forum_id = @destinationForumId WHERE topic_id = @topicId; " +
-                    "UPDATE phpbb_topics_track SET forum_id = @destinationForumId WHERE topic_id = @topicId", 
+                    "UPDATE phpbb_topics_track SET forum_id = @destinationForumId WHERE topic_id = @topicId",
                     new { destinationForumId, topicId }
                 );
                 foreach (var post in oldPosts)
@@ -102,7 +102,7 @@ namespace PhpbbInDotnet.Services
             try
             {
                 var conn = _context.GetDbConnection();
-                
+
                 var rows = await conn.ExecuteAsync("UPDATE phpbb_topics SET topic_status = @status WHERE topic_id = @topicId", new { status = @lock.ToByte(), topicId });
 
                 if (rows == 0)
@@ -119,7 +119,7 @@ namespace PhpbbInDotnet.Services
                 return (string.Format(LanguageProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
-        
+
         public async Task<(string Message, bool? IsSuccess)> DeleteTopic(int topicId, OperationLogDto logDto)
         {
             try
@@ -145,7 +145,7 @@ namespace PhpbbInDotnet.Services
                         TopicLastPosterId = topic.TopicLastPosterId,
                         TopicLastPosterName = topic.TopicLastPosterName,
                         TopicLastPostId = topic.TopicLastPostId,
-                        TopicLastPostTime = topic.TopicLastPostTime,     
+                        TopicLastPostTime = topic.TopicLastPostTime,
                         Poll = await _postService.GetPoll(topic)
                     };
                     await conn.ExecuteAsync(
@@ -161,7 +161,7 @@ namespace PhpbbInDotnet.Services
                     );
                     await conn.ExecuteAsync(
                         "DELETE FROM phpbb_topics WHERE topic_id = @topicId; " +
-                        "DELETE FROM phpbb_poll_options WHERE topic_id = @topicId", 
+                        "DELETE FROM phpbb_poll_options WHERE topic_id = @topicId",
                         new { topicId }
                     );
                 }
@@ -186,21 +186,21 @@ namespace PhpbbInDotnet.Services
             {
                 var conn = _context.GetDbConnection();
                 var curTopic = await conn.QueryFirstOrDefaultAsync<PhpbbTopics>(
-                    "SELECT * FROM phpbb_topics WHERE topic_id = @topicId", 
+                    "SELECT * FROM phpbb_topics WHERE topic_id = @topicId",
                     new { topicId });
 
                 if (curTopic is null)
                 {
                     return (string.Format(LanguageProvider.Moderator[lang, "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
                 }
-                
+
                 if (curTopic.ForumId == forumId)
                 {
                     return (LanguageProvider.Moderator[lang, "INVALID_DESTINATION_FORUM"], false);
                 }
 
                 await _context.GetDbConnection().ExecuteAsync(
-                    "INSERT INTO phpbb_shortcuts (topic_id, forum_id) VALUES(@topicId, @forumId)", 
+                    "INSERT INTO phpbb_shortcuts (topic_id, forum_id) VALUES(@topicId, @forumId)",
                     new { topicId, forumId });
 
                 await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.CreateShortcut, logDto.UserId, topicId);
@@ -259,7 +259,7 @@ namespace PhpbbInDotnet.Services
             {
                 if ((destinationForumId ?? 0) == 0)
                 {
-                    return (LanguageProvider.Moderator[GetLanguage(), "INVALID_DESTINATION_FORUM"], false); 
+                    return (LanguageProvider.Moderator[GetLanguage(), "INVALID_DESTINATION_FORUM"], false);
                 }
 
                 if (!(postIds?.Any() ?? false))

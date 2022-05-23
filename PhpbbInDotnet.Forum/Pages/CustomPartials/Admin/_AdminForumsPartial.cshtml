@@ -1,9 +1,9 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials.Admin._AdminForumsPartialModel
 @using PhpbbInDotnet.Utilities
 
-@inject Services.ForumTreeService _forumTreeService
-@inject Services.AdminForumService _adminForumService
-@inject CommonUtils _utils
+@inject Services.IForumTreeService _forumTreeService
+@inject Services.IAdminForumService _adminForumService
+@inject ICommonUtils _utils
 @inject Languages.LanguageProvider _languageProvider
 
 <environment include="Development">

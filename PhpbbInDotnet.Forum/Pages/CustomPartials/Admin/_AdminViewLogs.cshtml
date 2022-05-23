@@ -4,10 +4,11 @@
 @using System.Web
 
 @inject Languages.LanguageProvider _languageProvider
-@inject CommonUtils _utils
+@inject ICommonUtils _utils
+@inject Services.IOperationLogService _operationLogService
 
 @{
-    var paginator = new Paginator(Model.TotalLogItemCount, Model.LogPage, link: $"/Admin?LogType={Model.LogType}&LogPage=1&AuthorName={HttpUtility.UrlEncode(Model.AuthorName)}&handler=forumLogs", pageSize: Services.OperationLogService.LOG_PAGE_SIZE, pageNumKey: "LogPage");
+    var paginator = new Paginator(Model.TotalLogItemCount, Model.LogPage, link: $"/Admin?LogType={Model.LogType}&LogPage=1&AuthorName={HttpUtility.UrlEncode(Model.AuthorName)}&handler=forumLogs", pageSize: _operationLogService.LogPageSize, pageNumKey: "LogPage");
 }
 <h4>@Html.Raw(_languageProvider.Admin[Model.Language, "SYSTEM_LOGS"])</h4>
 <form method="post" asp-page-handler="systemLogs">

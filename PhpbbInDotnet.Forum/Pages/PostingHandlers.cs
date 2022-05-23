@@ -491,8 +491,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 var (Message, IsSuccess) = Action switch
                 {
-                    PostingActions.NewPrivateMessage => await UserService.SendPrivateMessage(user.UserId, user.Username!, ReceiverId!.Value, HttpUtility.HtmlEncode(PostTitle)!, await _writingService.PrepareTextForSaving(PostText), PageContext, HttpContext),
-                    PostingActions.EditPrivateMessage => await UserService.EditPrivateMessage(PrivateMessageId!.Value, HttpUtility.HtmlEncode(PostTitle)!, await _writingService.PrepareTextForSaving(PostText)),
+                    PostingActions.NewPrivateMessage => await IUserService.SendPrivateMessage(user.UserId, user.Username!, ReceiverId!.Value, HttpUtility.HtmlEncode(PostTitle)!, await _writingService.PrepareTextForSaving(PostText), PageContext, HttpContext),
+                    PostingActions.EditPrivateMessage => await IUserService.EditPrivateMessage(PrivateMessageId!.Value, HttpUtility.HtmlEncode(PostTitle)!, await _writingService.PrepareTextForSaving(PostText)),
                     _ => ("Unknown action", false)
                 };
 
