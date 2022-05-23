@@ -100,7 +100,7 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly ModeratorService _moderatorService;
         private readonly WritingToolsService _writingToolsService;
 
-        public ViewTopicModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, PostService postService, 
+        public ViewTopicModel(IForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, PostService postService, 
             ModeratorService moderatorService, WritingToolsService writingToolsService, LanguageProvider languageProvider)
             : base(context, forumService, userService, cache, utils, languageProvider)
         {

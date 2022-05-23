@@ -15,12 +15,12 @@ namespace PhpbbInDotnet.Services
 {
     public class ModeratorService : MultilingualServiceBase
     {
-        private readonly ForumDbContext _context;
+        private readonly IForumDbContext _context;
         private readonly PostService _postService;
         private readonly StorageService _storageService;
         private readonly OperationLogService _operationLogService;
 
-        public ModeratorService(ForumDbContext context, PostService postService, StorageService storageService, CommonUtils utils, LanguageProvider languageProvider, 
+        public ModeratorService(IForumDbContext context, PostService postService, StorageService storageService, CommonUtils utils, LanguageProvider languageProvider, 
             IHttpContextAccessor httpContextAccessor, OperationLogService operationLogService)
             : base(utils, languageProvider, httpContextAccessor)
         {

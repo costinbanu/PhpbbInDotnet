@@ -18,11 +18,11 @@ namespace PhpbbInDotnet.Services
     {
         public static int LOG_PAGE_SIZE = 100;
 
-        private readonly ForumDbContext _context;
+        private readonly IForumDbContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly CommonUtils _utils;
 
-        public OperationLogService(ForumDbContext context, IHttpContextAccessor httpContextAccessor, CommonUtils utils)
+        public OperationLogService(IForumDbContext context, IHttpContextAccessor httpContextAccessor, CommonUtils utils)
         {
             _context = context;
             _httpContextAccessor = httpContextAccessor;

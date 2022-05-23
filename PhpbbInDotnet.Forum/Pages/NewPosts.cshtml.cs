@@ -28,7 +28,7 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public string[]? SelectedNewPosts { get; set; }
 
-        public NewPostsModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, LanguageProvider languageProvider)
+        public NewPostsModel(IForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, LanguageProvider languageProvider)
             : base(context, forumService, userService, cache, utils, languageProvider)
         {
         }

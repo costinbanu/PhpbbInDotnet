@@ -21,13 +21,13 @@ namespace PhpbbInDotnet.Services
 {
     public class AdminUserService : MultilingualServiceBase
     {
-        private readonly ForumDbContext _context;
+        private readonly IForumDbContext _context;
         private readonly PostService _postService;
         private readonly IAppCache _cache;
         private readonly IConfiguration _config;
         private readonly OperationLogService _operationLogService;
 
-        public AdminUserService(ForumDbContext context, PostService postService, IAppCache cache, IConfiguration config, CommonUtils utils,
+        public AdminUserService(IForumDbContext context, PostService postService, IAppCache cache, IConfiguration config, CommonUtils utils,
             LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor, OperationLogService operationLogService)
             : base(utils, languageProvider, httpContextAccessor)
         {

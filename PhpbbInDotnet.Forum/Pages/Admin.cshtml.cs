@@ -73,7 +73,7 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly WritingToolsService _adminWritingService;
         private readonly OperationLogService _logService;
 
-        public AdminModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, AdminUserService adminUserService, 
+        public AdminModel(IForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, AdminUserService adminUserService, 
             AdminForumService adminForumService, WritingToolsService adminWritingService, LanguageProvider languageProvider, OperationLogService logService) 
             : base(context, forumService, userService, cache, utils, languageProvider)
         {

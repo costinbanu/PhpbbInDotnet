@@ -17,13 +17,13 @@ namespace PhpbbInDotnet.Services
 {
     public class PostService
     {
-        private readonly ForumDbContext _context;
+        private readonly IForumDbContext _context;
         private readonly UserService _userService;
         private readonly IAppCache _cache;
         private readonly CommonUtils _utils;
         private readonly int _maxAttachmentCount;
 
-        public PostService(ForumDbContext context, UserService userService, IAppCache cache, CommonUtils utils, IConfiguration config)
+        public PostService(IForumDbContext context, UserService userService, IAppCache cache, CommonUtils utils, IConfiguration config)
         {
             _context = context;
             _userService = userService;

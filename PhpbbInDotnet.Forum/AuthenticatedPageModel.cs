@@ -26,14 +26,14 @@ namespace PhpbbInDotnet.Forum
         protected readonly ForumTreeService ForumService;
         protected readonly IAppCache Cache;
         protected readonly UserService UserService;
-        protected readonly ForumDbContext Context;
+        protected readonly IForumDbContext Context;
         protected readonly CommonUtils Utils;
         
         public LanguageProvider LanguageProvider { get; }
 
         private string? _language;
 
-        public AuthenticatedPageModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cacheService, CommonUtils utils, LanguageProvider languageProvider)
+        public AuthenticatedPageModel(IForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cacheService, CommonUtils utils, LanguageProvider languageProvider)
         {
             ForumService = forumService;
             Cache = cacheService;

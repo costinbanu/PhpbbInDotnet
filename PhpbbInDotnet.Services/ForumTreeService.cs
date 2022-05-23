@@ -14,7 +14,7 @@ namespace PhpbbInDotnet.Services
 {
     public class ForumTreeService
     {
-        private readonly ForumDbContext _context;
+        private readonly IForumDbContext _context;
         private readonly IConfiguration _config;
         private readonly CommonUtils _utils;
         private HashSet<ForumTree>? _tree;
@@ -22,7 +22,7 @@ namespace PhpbbInDotnet.Services
         private Dictionary<int, HashSet<Tracking>>? _tracking;
         private IEnumerable<(int forumId, bool hasPassword)>? _restrictedForums;
 
-        public ForumTreeService(ForumDbContext context, IConfiguration config, CommonUtils utils)
+        public ForumTreeService(IForumDbContext context, IConfiguration config, CommonUtils utils)
         {
             _context = context;
             _config = config;

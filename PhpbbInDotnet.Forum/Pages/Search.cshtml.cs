@@ -59,7 +59,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public bool IsAuthorSearch { get; private set; }
 
-        public SearchModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, LanguageProvider languageProvider)
+        public SearchModel(IForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, LanguageProvider languageProvider)
             : base(context, forumService, userService, cache, utils, languageProvider)
         {
 

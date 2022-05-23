@@ -13,10 +13,10 @@ namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
 {
     public class viewtopicModel : PageModel
     {
-        private readonly ForumDbContext _context;
+        private readonly IForumDbContext _context;
         private readonly CommonUtils _utils;
 
-        public viewtopicModel(ForumDbContext context, CommonUtils utils)
+        public viewtopicModel(IForumDbContext context, CommonUtils utils)
         {
             _context = context;
             _utils = utils;

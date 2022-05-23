@@ -123,7 +123,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         static readonly DateTimeOffset CACHE_EXPIRATION = DateTimeOffset.UtcNow.AddHours(4);
 
-        public PostingModel(CommonUtils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cacheService, PostService postService, 
+        public PostingModel(CommonUtils utils, IForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cacheService, PostService postService, 
             StorageService storageService, WritingToolsService writingService, BBCodeRenderingService renderingService, IConfiguration config, LanguageProvider languageProvider, IHttpClientFactory httpClientFactory)
             : base(context, forumService, userService, cacheService, utils, languageProvider)
         {

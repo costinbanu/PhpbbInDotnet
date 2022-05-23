@@ -28,7 +28,7 @@ namespace PhpbbInDotnet.Services
         private static readonly Regex _attachRegex = new("#{AttachmentFileName=[^/]+/AttachmentIndex=[0-9]+}#", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
         private static readonly Regex _quoteAttributeRegex = new("(\".+\")[, ]{0,2}([0-9]+)?", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
 
-        private readonly ForumDbContext _context;
+        private readonly IForumDbContext _context;
         private readonly WritingToolsService _writingService;
         private readonly BBCodeParser _parser;
         private readonly Lazy<Dictionary<string, string>> _bannedWords;
@@ -40,7 +40,7 @@ namespace PhpbbInDotnet.Services
 
         public Dictionary<string, BBTagSummary> TagMap { get; }
 
-        public BBCodeRenderingService(CommonUtils utils, ForumDbContext context, WritingToolsService writingService, IAppCache cache, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
+        public BBCodeRenderingService(CommonUtils utils, IForumDbContext context, WritingToolsService writingService, IAppCache cache, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
             : base(utils, languageProvider, httpContextAccessor)
         {
             _context = context;

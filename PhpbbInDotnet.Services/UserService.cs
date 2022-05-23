@@ -20,7 +20,7 @@ namespace PhpbbInDotnet.Services
 {
     public class UserService : MultilingualServiceBase
     {
-        private readonly ForumDbContext _context;
+        private readonly IForumDbContext _context;
         private readonly IConfiguration _config;
         private IEnumerable<PhpbbAclRoles>? _adminRoles;
         private IEnumerable<PhpbbAclRoles>? _modRoles;
@@ -29,7 +29,7 @@ namespace PhpbbInDotnet.Services
         private static PhpbbUsers? _anonymousDbUser;
         private static ClaimsPrincipal? _anonymousClaimsPrincipal;
 
-        public UserService(CommonUtils utils, ForumDbContext context, IConfiguration config, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
+        public UserService(CommonUtils utils, IForumDbContext context, IConfiguration config, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
             : base(utils, languageProvider, httpContextAccessor)
         {
             _context = context;

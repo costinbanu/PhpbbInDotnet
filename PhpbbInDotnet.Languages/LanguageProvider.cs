@@ -19,7 +19,7 @@ namespace PhpbbInDotnet.Languages
     public class LanguageProvider
     {
         private readonly ILogger _logger;
-        private readonly ForumDbContext _context;
+        private readonly IForumDbContext _context;
         private readonly IAppCache _cache;
 
         #region Translation declarations
@@ -69,7 +69,7 @@ namespace PhpbbInDotnet.Languages
 
         #endregion Translation declarations
 
-        public LanguageProvider(ILogger logger, IAppCache cache, ForumDbContext context, CommonUtils utils)
+        public LanguageProvider(ILogger logger, IAppCache cache, IForumDbContext context, CommonUtils utils)
         {
             _logger = logger;
             _context = context;

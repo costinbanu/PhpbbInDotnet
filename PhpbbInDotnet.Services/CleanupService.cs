@@ -10,6 +10,7 @@ using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Utilities;
 using Serilog;
 using System;
+using System.Data;
 using System.Data.Common;
 using System.IO;
 using System.Linq;
@@ -36,7 +37,7 @@ namespace PhpbbInDotnet.Services
 
             using var scope = _serviceProvider.CreateScope();
             var config = scope.ServiceProvider.GetRequiredService<IConfiguration>()!;
-            var dbContext = scope.ServiceProvider.GetRequiredService<ForumDbContext>()!;
+            var dbContext = scope.ServiceProvider.GetRequiredService<IForumDbContext>()!;
             var utils = scope.ServiceProvider.GetRequiredService<CommonUtils>()!;
             var storageService = scope.ServiceProvider.GetRequiredService<StorageService>()!;
             var logger = scope.ServiceProvider.GetService<ILogger>()!;
@@ -82,7 +83,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        private async Task CleanRecycleBin(IConfiguration config, DbConnection dbConnection, CommonUtils utils, StorageService storageService, ILogger logger, CancellationToken stoppingToken)
+        private async Task CleanRecycleBin(IConfiguration config, IDbConnection dbConnection, CommonUtils utils, StorageService storageService, ILogger logger, CancellationToken stoppingToken)
         {
             var retention = config.GetObject<TimeSpan?>("RecycleBinRetentionTime") ?? TimeSpan.FromDays(7);
 
@@ -138,7 +139,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        private async Task ResyncOrphanFiles(IConfiguration config, DbConnection dbConnection, CancellationToken stoppingToken)
+        private async Task ResyncOrphanFiles(IConfiguration config, IDbConnection dbConnection, CancellationToken stoppingToken)
         {
             var retention = config.GetObject<TimeSpan?>("RecycleBinRetentionTime") ?? TimeSpan.FromDays(7);
 
@@ -156,7 +157,7 @@ namespace PhpbbInDotnet.Services
                 });
         }
 
-        private async Task ResyncForumsAndTopics(DbConnection dbConnection, CancellationToken stoppingToken)
+        private async Task ResyncForumsAndTopics(IDbConnection dbConnection, CancellationToken stoppingToken)
         {
             stoppingToken.ThrowIfCancellationRequested();
 
@@ -237,7 +238,7 @@ namespace PhpbbInDotnet.Services
             await Task.WhenAll(postsHavingWrongForumIdTask, forumsHavingWrongLastPostTask, topicsHavingWrongLastOrFirstPostTask);
         }
 
-        private async Task CleanOperationLogs(IConfiguration config, DbConnection dbConnection, ILogger logger, CancellationToken stoppingToken)
+        private async Task CleanOperationLogs(IConfiguration config, IDbConnection dbConnection, ILogger logger, CancellationToken stoppingToken)
         {
             var retention = config.GetObject<TimeSpan?>("OperationLogsRetentionTime") ?? TimeSpan.FromDays(365);
 

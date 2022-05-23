@@ -1,12 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database.Entities;
 using System.Data;
-using System.Data.Common;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Database
 {
-    public partial class ForumDbContext : DbContext
+    class ForumDbContext : DbContext, IForumDbContext
     {
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public ForumDbContext(DbContextOptions<ForumDbContext> options) : base(options) { }
@@ -2621,7 +2620,7 @@ namespace PhpbbInDotnet.Database
             });
         }
 
-        public async Task<DbConnection> GetDbConnectionAsync()
+        public async Task<IDbConnection> GetDbConnectionAsync()
         {
             var conn = Database.GetDbConnection();
             if (conn.State == ConnectionState.Closed)
@@ -2631,7 +2630,7 @@ namespace PhpbbInDotnet.Database
             return conn;
         }
 
-        public DbConnection GetDbConnection()
+        public IDbConnection GetDbConnection()
         {
             var conn = Database.GetDbConnection();
             if (conn.State == ConnectionState.Closed)

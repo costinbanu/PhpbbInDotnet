@@ -54,7 +54,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool ScrollToAction => TopicAction.HasValue && DestinationForumId.HasValue;
         public IEnumerable<DeletedItemGroup>? DeletedItems { get; private set; }
 
-        public ModeratorModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, 
+        public ModeratorModel(IForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, 
             LanguageProvider languageProvider, ModeratorService moderatorService, PostService postService, OperationLogService operationLogService)
             : base(context, forumService, userService, cache, utils, languageProvider)
         {

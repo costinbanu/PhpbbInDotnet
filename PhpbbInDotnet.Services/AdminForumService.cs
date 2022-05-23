@@ -20,12 +20,12 @@ namespace PhpbbInDotnet.Services
 {
     public class AdminForumService : MultilingualServiceBase
     {
-        private readonly ForumDbContext _context;
+        private readonly IForumDbContext _context;
         private readonly ForumTreeService _forumService;
         private readonly IConfiguration _config;
         private readonly OperationLogService _operationLogService;
 
-        public AdminForumService(ForumDbContext context, ForumTreeService forumService, IConfiguration config, CommonUtils utils,
+        public AdminForumService(IForumDbContext context, ForumTreeService forumService, IConfiguration config, CommonUtils utils,
             LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor, OperationLogService operationLogService)
             : base(utils, languageProvider, httpContextAccessor)
         {

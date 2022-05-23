@@ -99,7 +99,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private const int DB_CACHE_EXPIRATION_MINUTES = 20;
 
-        public UserModel(CommonUtils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, StorageService storageService, 
+        public UserModel(CommonUtils utils, IForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, StorageService storageService, 
             WritingToolsService writingService, IConfiguration config, LanguageProvider languageProvider, OperationLogService operationLogService)
             : base(context, forumService, userService, cache, utils, languageProvider)
         {

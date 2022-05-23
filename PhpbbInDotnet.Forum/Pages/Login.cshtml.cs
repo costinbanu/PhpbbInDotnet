@@ -26,7 +26,7 @@ namespace PhpbbInDotnet.Forum.Pages
     [ValidateAntiForgeryToken]
     public class LoginModel : PageModel
     {
-        private readonly ForumDbContext _context;
+        private readonly IForumDbContext _context;
         private readonly CommonUtils _utils;
         private readonly IAppCache _cache;
         private readonly UserService _userService;
@@ -73,7 +73,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public LoginMode Mode { get; private set; }
         public LanguageProvider LanguageProvider { get; }
 
-        public LoginModel(ForumDbContext context, CommonUtils utils, IAppCache cache, UserService userService, IConfiguration config, LanguageProvider languageProvider)
+        public LoginModel(IForumDbContext context, CommonUtils utils, IAppCache cache, UserService userService, IConfiguration config, LanguageProvider languageProvider)
         {
             _context = context;
             _utils = utils;

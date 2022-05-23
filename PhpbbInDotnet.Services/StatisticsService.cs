@@ -13,11 +13,11 @@ namespace PhpbbInDotnet.Services
         const string CACHE_KEY = "ForumStatistics";
 
         private readonly IAppCache _cache;
-        private readonly ForumDbContext _dbContext;
+        private readonly IForumDbContext _dbContext;
 
         public int RefreshIntervalMinutes => 30;
 
-        public StatisticsService(IAppCache cache, ForumDbContext dbContext)
+        public StatisticsService(IAppCache cache, IForumDbContext dbContext)
         {
             _cache = cache;
             _dbContext = dbContext;

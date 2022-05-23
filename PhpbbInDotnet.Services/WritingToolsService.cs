@@ -22,7 +22,7 @@ namespace PhpbbInDotnet.Services
 {
     public class WritingToolsService : MultilingualServiceBase
     {
-        private readonly ForumDbContext _context;
+        private readonly IForumDbContext _context;
         private readonly StorageService _storageService;
         private readonly IConfiguration _config;
         private readonly IAppCache _cache;
@@ -32,7 +32,7 @@ namespace PhpbbInDotnet.Services
 
         private List<PhpbbSmilies>? _smilies;
 
-        public WritingToolsService(ForumDbContext context, StorageService storageService, CommonUtils utils, LanguageProvider languageProvider, 
+        public WritingToolsService(IForumDbContext context, StorageService storageService, CommonUtils utils, LanguageProvider languageProvider, 
             IHttpContextAccessor httpContextAccessor, IConfiguration config, IAppCache cache)
             : base(utils, languageProvider, httpContextAccessor)
         {

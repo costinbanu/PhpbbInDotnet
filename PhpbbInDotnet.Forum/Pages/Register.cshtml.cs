@@ -24,7 +24,7 @@ namespace PhpbbInDotnet.Forum.Pages
     [ValidateAntiForgeryToken]
     public class RegisterModel : PageModel
     {
-        private readonly ForumDbContext _context;
+        private readonly IForumDbContext _context;
         private readonly CommonUtils _utils;
         private readonly IConfiguration _config;
         private readonly HttpClient _gClient;
@@ -54,7 +54,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public LanguageProvider LanguageProvider { get; }
 
 
-        public RegisterModel(ForumDbContext context, CommonUtils utils, IConfiguration config, IHttpClientFactory httpClientFactory, LanguageProvider languageProvider, UserService userService)
+        public RegisterModel(IForumDbContext context, CommonUtils utils, IConfiguration config, IHttpClientFactory httpClientFactory, LanguageProvider languageProvider, UserService userService)
         {
             _context = context;
             _utils = utils;

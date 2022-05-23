@@ -27,7 +27,7 @@ namespace PhpbbInDotnet.Forum
 
         private readonly ILogger _logger;
         private readonly ForumTreeService _forumTreeService;
-        private readonly ForumDbContext _context;
+        private readonly IForumDbContext _context;
         private readonly UserService _userService;
         private readonly IConfiguration _config;
         private readonly IAppCache _cache;
@@ -41,7 +41,7 @@ namespace PhpbbInDotnet.Forum
             );
         }
 
-        public AuthenticationMiddleware(ILogger logger, IConfiguration config, IAppCache cache, ForumDbContext context,
+        public AuthenticationMiddleware(ILogger logger, IConfiguration config, IAppCache cache, IForumDbContext context,
             ForumTreeService forumTreeService, UserService userService, AnonymousSessionCounter sessionCounter)
         {
             _logger = logger;
