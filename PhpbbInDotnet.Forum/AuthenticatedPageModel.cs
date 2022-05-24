@@ -131,8 +131,8 @@ namespace PhpbbInDotnet.Forum
                 return 0;
             }
 
-            var connection = Context.GetDbConnection();
-            return unchecked((int)((await connection.QuerySingleOrDefaultAsync(
+            var sqlExecuter = Context.GetSqlExecuter();
+            return unchecked((int)((await sqlExecuter.QuerySingleOrDefaultAsync(
                 "SELECT post_id, post_time FROM phpbb_posts WHERE post_id IN @postIds HAVING post_time = MIN(post_time)",
                 new { postIds = item!.Posts?.DefaultIfEmpty() ?? new int[] { default } }
             ))?.post_id ?? 0u));
@@ -166,9 +166,9 @@ namespace PhpbbInDotnet.Forum
             try
             {
                 var usrId = GetCurrentUser().UserId;
-                var connection = Context.GetDbConnection();
+                var sqlExecuter = Context.GetSqlExecuter();
 
-                await connection.ExecuteAsync(
+                await sqlExecuter.ExecuteAsync(
                     "DELETE FROM phpbb_topics_track WHERE forum_id = @forumId AND user_id = @usrId; " +
                     "REPLACE INTO phpbb_forums_track (forum_id, user_id, mark_time) VALUES (@forumId, @usrId, @markTime);",
                     new { forumId, usrId, markTime = DateTime.UtcNow.ToUnixTimestamp() }
@@ -200,7 +200,7 @@ namespace PhpbbInDotnet.Forum
                 //there are other unread topics in this forum, or unread pages in this topic, so just mark the current page as read
                 try
                 {
-                    await (Context.GetDbConnection()).ExecuteAsync(
+                    await (Context.GetSqlExecuter()).ExecuteAsync(
                         sql: "CALL mark_topic_read(@forumId, @topicId, @userId, @markTime)",
                         param: new { forumId, topicId, userId, markTime }
                     );
@@ -217,8 +217,8 @@ namespace PhpbbInDotnet.Forum
             var usrId = GetCurrentUser().UserId;
             try
             {
-                var connection = Context.GetDbConnection();
-                await connection.ExecuteAsync("UPDATE phpbb_users SET user_lastmark = @markTime WHERE user_id = @usrId", new { markTime = DateTime.UtcNow.ToUnixTimestamp(), usrId });
+                var sqlExecuter = Context.GetSqlExecuter();
+                await sqlExecuter.ExecuteAsync("UPDATE phpbb_users SET user_lastmark = @markTime WHERE user_id = @usrId", new { markTime = DateTime.UtcNow.ToUnixTimestamp(), usrId });
             }
             catch (Exception ex)
             {
@@ -266,8 +266,8 @@ namespace PhpbbInDotnet.Forum
 
         protected async Task<IActionResult> WithValidForum(int forumId, bool overrideCheck, Func<PhpbbForums, Task<IActionResult>> toDo, string? forumLoginReturnUrl = null)
         {
-            var connection = Context.GetDbConnection();
-            var curForum = await connection.QuerySingleOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { forumId });
+            var sqlExecuter = Context.GetSqlExecuter();
+            var curForum = await sqlExecuter.QuerySingleOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { forumId });
 
             if (!overrideCheck)
             {
@@ -319,9 +319,9 @@ namespace PhpbbInDotnet.Forum
 
         protected async Task<IActionResult> WithValidTopic(int topicId, Func<PhpbbForums, PhpbbTopics, Task<IActionResult>> toDo, string? forumLoginReturnUrl = null)
         {
-            var connection = Context.GetDbConnection();
+            var sqlExecuter = Context.GetSqlExecuter();
             
-            var curTopic = await connection.QuerySingleOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
+            var curTopic = await sqlExecuter.QuerySingleOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
             
             if (curTopic == null)
             {
@@ -332,9 +332,9 @@ namespace PhpbbInDotnet.Forum
 
         protected async Task<IActionResult> WithValidPost(int postId, Func<PhpbbForums, PhpbbTopics, PhpbbPosts, Task<IActionResult>> toDo, string? forumLoginReturnUrl = null)
         {
-            var connection = Context.GetDbConnection();
+            var sqlExecuter = Context.GetSqlExecuter();
 
-            var curPost = await connection.QuerySingleOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId });
+            var curPost = await sqlExecuter.QuerySingleOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId });
             if (curPost == null)
             {
                 return RedirectToPage("Error", new { isNotFound = true });

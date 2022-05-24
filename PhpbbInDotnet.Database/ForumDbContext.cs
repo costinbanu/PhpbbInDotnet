@@ -2620,24 +2620,24 @@ namespace PhpbbInDotnet.Database
             });
         }
 
-        public async Task<IDbConnection> GetDbConnectionAsync()
+        public async Task<ISqlExecuter> GetSqlExecuterAsync()
         {
             var conn = Database.GetDbConnection();
             if (conn.State == ConnectionState.Closed)
             {
                 await conn.OpenAsync();
             }
-            return conn;
+            return new SqlExecuter(conn);
         }
 
-        public IDbConnection GetDbConnection()
+        public ISqlExecuter GetSqlExecuter()
         {
             var conn = Database.GetDbConnection();
             if (conn.State == ConnectionState.Closed)
             {
                 conn.Open();
             }
-            return conn;
+            return new SqlExecuter(conn);
         }
     }
 }

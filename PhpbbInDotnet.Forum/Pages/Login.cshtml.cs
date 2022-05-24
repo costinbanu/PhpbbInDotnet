@@ -114,9 +114,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
-            var connection = _context.GetDbConnection();
+            var sqlExecuter = _context.GetSqlExecuter();
 
-            var user = await connection.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE username_clean = @username", new { username = _utils.CleanString(UserName) });
+            var user = await sqlExecuter.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE username_clean = @username", new { username = _utils.CleanString(UserName) });
             var lang = LanguageProvider.GetValidatedLanguage(null, Request);
 
             Mode = LoginMode.Normal;

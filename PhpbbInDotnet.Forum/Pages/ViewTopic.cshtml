@@ -21,7 +21,7 @@
     var isMod = await Model.IsCurrentUserModeratorHere();
     var hasPM = currentUser.HasPrivateMessagePermissions;
     var editTime = currentUser.PostEditTime;
-    var connection = _context.GetDbConnection();
+    var sqlExecuter = _context.GetSqlExecuter();
     var lang = Model.GetLanguage();
     var userDateFormat = currentUser.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(lang);
     var isCurrentForumReadOnly = await _forumService.IsForumReadOnlyForUser(currentUser, Model.ForumId ?? 0);
@@ -354,7 +354,7 @@ else if (!isCurrentForumReadOnly)
                 <div class="FlexRight PostInputWidth">
                     @{
                         var reasons = new List<SelectListItem> { new SelectListItem(Model.LanguageProvider.BasicText[lang, "CHOOSE_REASON"], "-1", true, true) };
-                        reasons.AddRange((await connection.QueryAsync("SELECT reason_description, reason_id FROM phpbb_reports_reasons ORDER BY reason_order")).Select(x => new SelectListItem(x.reason_description.ToString(), x.reason_id.ToString())));
+                        reasons.AddRange((await sqlExecuter.QueryAsync("SELECT reason_description, reason_id FROM phpbb_reports_reasons ORDER BY reason_order")).Select(x => new SelectListItem(x.reason_description.ToString(), x.reason_id.ToString())));
                     }
                     @Html.DropDownList("reportReasonId", reasons, new { id = "reportReason", style = "width: 100%" })
                 </div>

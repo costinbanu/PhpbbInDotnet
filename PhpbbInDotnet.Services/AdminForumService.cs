@@ -170,8 +170,8 @@ namespace PhpbbInDotnet.Services
 
             async Task ManagePermissions(string table, string entityIdColumn, int forumId, int entityId, int roleId)
             {
-                var connection = _context.GetDbConnection();
-                var existing = (await connection.QueryAsync(
+                var sqlExecuter = _context.GetSqlExecuter();
+                var existing = (await sqlExecuter.QueryAsync(
                     $@"SELECT t.*
                         FROM {table} t
                         JOIN phpbb_acl_roles r 
@@ -183,7 +183,7 @@ namespace PhpbbInDotnet.Services
 
                 if (existing.Count == 1 && existing[0].auth_role_id != roleId)
                 {
-                    await connection.ExecuteAsync(
+                    await sqlExecuter.ExecuteAsync(
                         $@"UPDATE {table}
                               SET auth_role_id = @roleId
                             WHERE {entityIdColumn} = @entityId 
@@ -195,7 +195,7 @@ namespace PhpbbInDotnet.Services
                 {
                     if (existing.Count > 1)
                     {
-                        await connection.ExecuteAsync(
+                        await sqlExecuter.ExecuteAsync(
                             $@"DELETE FROM {table}
                                 WHERE {entityIdColumn} = @entityId
                                   AND forum_id = @forumId
@@ -203,7 +203,7 @@ namespace PhpbbInDotnet.Services
                                   AND auth_role_id = @auth_role_id",
                             existing.Select(e => new { entityId, forumId, e.auth_option_id, e.auth_role_id }));
                     }
-                    await connection.ExecuteAsync(
+                    await sqlExecuter.ExecuteAsync(
                         $@"INSERT INTO {table} ({entityIdColumn}, forum_id, auth_option_id, auth_role_id, auth_setting) 
                                 VALUES (@entityId, @forumId, 0, @roleId, 0)",
                         new { entityId, forumId, roleId });
@@ -266,7 +266,7 @@ namespace PhpbbInDotnet.Services
         }
 
         public async Task<IEnumerable<ForumPermissions>> GetPermissions(int forumId)
-            => await (_context.GetDbConnection()).QueryAsync<ForumPermissions>(
+            => await (_context.GetSqlExecuter()).QueryAsync<ForumPermissions>(
                 sql: "CALL get_forum_permissions(@forumId);",
                 param: new { forumId }
             );

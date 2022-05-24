@@ -59,7 +59,7 @@ namespace PhpbbInDotnet.Services
             var succeeded = new List<PhpbbAttachments>();
             var failed = new List<string>();
 
-            var conn = _context.GetDbConnection();
+            var sqlExecuter = _context.GetSqlExecuter();
 
             foreach (var file in attachedFiles)
             {
@@ -73,7 +73,7 @@ namespace PhpbbInDotnet.Services
                     }
 
                     succeeded.Add(
-                        await conn.QueryFirstOrDefaultAsync<PhpbbAttachments>(
+                        await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbAttachments>(
                             "INSERT INTO phpbb_attachments (attach_comment, extension, filetime, filesize, mimetype, physical_filename, real_filename, poster_id) " +
                             "VALUES ('', @Extension, @Filetime, @Filesize, @Mimetype, @PhysicalFilename, @RealFilename, @PosterId); " +
                             "SELECT * FROM phpbb_attachments WHERE attach_id = LAST_INSERT_ID()",

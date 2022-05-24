@@ -25,7 +25,6 @@ namespace PhpbbInDotnet.Utilities
         List<SelectListItem> EnumToDropDownList<T>(T? selectedItem, Func<T, string>? textTransform = null, Func<T, string>? valueTransform = null, string? defaultText = null, Func<T, bool>? valueFilter = null) where T : struct, Enum;
         string GetAttachmentCacheKey(int attachId, Guid correlationId);
         string GetAvatarCacheKey(int userId, Guid correlationId);
-        byte[] GetEncryptionKey();
         string GetForumLoginCacheKey(int userId, int forumId);
         string GetPostAttachmentsCacheKey(int postId, Guid correlationId);
         string HandleError(Exception ex, string? message = null);

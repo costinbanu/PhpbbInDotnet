@@ -28,12 +28,12 @@ namespace PhpbbInDotnet.Services
                 CACHE_KEY,
                 async () =>
                 {
-                    var conn = _dbContext.GetDbConnection();
-                    var timeTask = conn.ExecuteScalarAsync<long>("SELECT min(post_time) FROM phpbb_posts");
-                    var userTask = conn.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_users");
-                    var postTask = conn.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_posts");
-                    var topicTask = conn.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_topics");
-                    var forumTask = conn.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_forums");
+                    var sqlExecuter = _dbContext.GetSqlExecuter();
+                    var timeTask = sqlExecuter.ExecuteScalarAsync<long>("SELECT min(post_time) FROM phpbb_posts");
+                    var userTask = sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_users");
+                    var postTask = sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_posts");
+                    var topicTask = sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_topics");
+                    var forumTask = sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_forums");
                     await Task.WhenAll(timeTask, userTask, postTask, topicTask, forumTask);
 
                     return new Statistics

@@ -15,13 +15,13 @@ namespace PhpbbInDotnet.Utilities
 {
     public static class Extensions
     {
-        static readonly DateTime DATE_SEED = new(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        public static readonly DateTime UNIX_TIMESTAMP_START_DATE = new(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
         public static DateTime ToUtcTime(this long timestamp)
-            => DATE_SEED.AddSeconds(timestamp);
+            => UNIX_TIMESTAMP_START_DATE.AddSeconds(timestamp);
 
         public static long ToUnixTimestamp(this DateTime time)
-            => (long)time.ToUniversalTime().Subtract(DATE_SEED).TotalSeconds;
+            => (long)time.ToUniversalTime().Subtract(UNIX_TIMESTAMP_START_DATE).TotalSeconds;
 
         public static bool ToBool(this byte @byte)
             => @byte == 1;

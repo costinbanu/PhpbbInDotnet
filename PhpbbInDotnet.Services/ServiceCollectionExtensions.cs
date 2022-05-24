@@ -18,6 +18,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddScoped<IStatisticsService, StatisticsService>();
             services.AddScoped<IOperationLogService, OperationLogService>();
             services.AddSingleton<ITimeService, TimeService>();
+            services.AddSingleton<IFileInfoService, FileInfoService>();
 
             services.AddHostedService<CleanupService>();
 

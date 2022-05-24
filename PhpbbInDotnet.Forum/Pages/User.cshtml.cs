@@ -463,8 +463,8 @@ namespace PhpbbInDotnet.Forum.Pages
                     return await OnGet();
                 }
                 var cur = await Context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
-                var connection = Context.GetDbConnection();
-                await connection.ExecuteAsync(
+                var sqlExecuter = Context.GetSqlExecuter();
+                await sqlExecuter.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;" +
                     "INSERT INTO phpbb_zebra (user_id, zebra_id, friend, foe) VALUES (@userId, @otherId, 0, 1)",
                     new { user.UserId, otherId = cur!.UserId }
@@ -485,8 +485,8 @@ namespace PhpbbInDotnet.Forum.Pages
                     return await OnGet();
                 }
                 var cur = await Context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
-                var connection = Context.GetDbConnection();
-                await connection.ExecuteAsync(
+                var sqlExecuter = Context.GetSqlExecuter();
+                await sqlExecuter.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;",
                     new { user.UserId, otherId = cur!.UserId }
                 );
@@ -502,8 +502,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     return RedirectToPage("Error", new { isUnauthorised = true });
                 }
-                var connection = Context.GetDbConnection();
-                await connection.ExecuteAsync(
+                var sqlExecuter = Context.GetSqlExecuter();
+                await sqlExecuter.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id IN @otherIds;",
                     new { user.UserId, otherIds = SelectedFoes!.DefaultIfEmpty() }
                 );
@@ -533,7 +533,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<List<PhpbbLang>> GetLanguages()
             => await Cache.GetOrAddAsync(
                 key: nameof(PhpbbLang),
-                addItemFactory: async () => (await (Context.GetDbConnection()).QueryAsync<PhpbbLang>("SELECT * FROM phpbb_lang")).AsList(),
+                addItemFactory: async () => (await (Context.GetSqlExecuter()).QueryAsync<PhpbbLang>("SELECT * FROM phpbb_lang")).AsList(),
                 expires: DateTimeOffset.UtcNow.AddMinutes(DB_CACHE_EXPIRATION_MINUTES)
             );
 
@@ -554,7 +554,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 from j in joined
                 select j
             ).ToListAsync();
-            var attachTask = (Context.GetDbConnection()).QueryFirstOrDefaultAsync(
+            var attachTask = (Context.GetSqlExecuter()).QueryFirstOrDefaultAsync(
                 "SELECT sum(a.filesize) as size, count(a.attach_id) as cnt " +
                 "FROM phpbb_attachments a " +
                 "JOIN phpbb_posts p ON a.post_msg_id = p.post_id " +

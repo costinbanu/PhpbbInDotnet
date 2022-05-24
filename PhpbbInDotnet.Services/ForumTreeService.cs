@@ -121,21 +121,21 @@ namespace PhpbbInDotnet.Services
 
             async Task<HashSet<ForumTree>> GetForumTree()
             {
-                var tree = await _context.GetDbConnection().QueryAsync<ForumTree>(
+                var tree = await _context.GetSqlExecuter().QueryAsync<ForumTree>(
                     "CALL get_forum_tree()");
                 return tree.ToHashSet();
             }
 
             async Task<HashSet<ForumTopicCount>> GetForumTopicCount()
             {
-                var count = await _context.GetDbConnection().QueryAsync<ForumTopicCount>(
+                var count = await _context.GetSqlExecuter().QueryAsync<ForumTopicCount>(
                     "SELECT forum_id, count(topic_id) as topic_count FROM phpbb_topics GROUP BY forum_id");
                 return count.ToHashSet();
             }
 
             async Task<Dictionary<int, List<(int ActualForumId, int TopicId)>>> GetShortcutParentForums()
             {
-                var rawData = await _context.GetDbConnection().QueryAsync(
+                var rawData = await _context.GetSqlExecuter().QueryAsync(
                     @"SELECT s.forum_id AS shortcut_forum_id, 
                              s.topic_id,
                              t.forum_id AS actual_forum_id
@@ -180,10 +180,10 @@ namespace PhpbbInDotnet.Services
             }
 
             var dbResults = Enumerable.Empty<ExtendedTracking>();
-            var connection = _context.GetDbConnection();
+            var sqlExecuter = _context.GetSqlExecuter();
             try
             {
-                dbResults = await connection.QueryAsync<ExtendedTracking>("CALL `forum`.`get_post_tracking`(@userId);", new { userId });
+                dbResults = await sqlExecuter.QueryAsync<ExtendedTracking>("CALL `forum`.`get_post_tracking`(@userId);", new { userId });
             }
             catch (Exception ex)
             {
@@ -214,7 +214,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<List<TopicGroup>> GetTopicGroups(int forumId)
         {
-            var topics = await _context.GetDbConnection().QueryAsync<TopicDto>(
+            var topics = await _context.GetSqlExecuter().QueryAsync<TopicDto>(
                 @"SELECT t.topic_id, 
 		                 t.forum_id,
 		                 t.topic_title, 
@@ -333,7 +333,7 @@ namespace PhpbbInDotnet.Services
                 return 0;
             }
 
-            return unchecked((int)((await _context.GetDbConnection().QuerySingleOrDefaultAsync(
+            return unchecked((int)((await _context.GetSqlExecuter().QuerySingleOrDefaultAsync(
                 "SELECT post_id, post_time FROM phpbb_posts WHERE post_id IN @postIds HAVING post_time = MIN(post_time)",
                 new { postIds = item!.Posts?.DefaultIfEmpty() ?? new int[] { default } }
             ))?.post_id ?? 0u));

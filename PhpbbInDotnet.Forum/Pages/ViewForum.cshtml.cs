@@ -57,7 +57,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumRulesUid = thisForum.ForumRulesUid;
                 ForumDesc = _renderingService.BbCodeToHtml(thisForum.ForumDesc, thisForum.ForumDescUid ?? string.Empty);
                
-                var parentTask = Context.GetDbConnection().QuerySingleOrDefaultAsync<PhpbbForums>(
+                var parentTask = Context.GetSqlExecuter().QuerySingleOrDefaultAsync<PhpbbForums>(
                     "SELECT * FROM phpbb_forums WHERE forum_id = @ParentId", 
                     new { thisForum.ParentId }
                 );
@@ -115,7 +115,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         async Task MarkShortcutsRead()
         {
-            var shortcuts = Context.GetDbConnection().Query(
+            var shortcuts = Context.GetSqlExecuter().Query(
                 @"SELECT t.forum_id AS actual_forum_id, t.topic_id, t.topic_last_post_time
                     FROM phpbb_shortcuts s
                     JOIN phpbb_topics t on s.topic_id = t.topic_id

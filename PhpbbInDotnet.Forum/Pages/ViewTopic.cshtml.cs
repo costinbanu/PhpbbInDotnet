@@ -113,7 +113,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithValidPost(PostId ?? 0, async (curForum, curTopic, _) =>
             {
                 var pageSize = GetCurrentUser().GetPageSize(curTopic.TopicId);
-                var idx = Context.GetDbConnection().ExecuteScalar<int>(
+                var idx = Context.GetSqlExecuter().ExecuteScalar<int>(
                     @"SET @row_num = 0;
                       WITH row_numbers AS (
 	                      SELECT @row_num := @row_num + 1 AS row_num,
@@ -144,7 +144,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostPagination(int topicId, int userPostsPerPage, int? postId)
             => await WithRegisteredUser(async (user) =>
             {
-                await Context.GetDbConnection().ExecuteAsync(
+                await Context.GetSqlExecuter().ExecuteAsync(
                     @"INSERT INTO phpbb_user_topic_post_number (user_id, topic_id, post_no) 
                            VALUES (@userId, @topicId, @userPostsPerPage)
                       ON DUPLICATE KEY UPDATE post_no = @userPostsPerPage",
@@ -166,9 +166,9 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostVote(int topicId, int[] votes, string queryString)
             => await WithRegisteredUser(user => WithValidTopic(topicId, async (_, topic) =>
             {
-                var conn = Context.GetDbConnection();
+                var sqlExecuter = Context.GetSqlExecuter();
                 
-                var existingVotes = (await conn.QueryAsync<PhpbbPollVotes>("SELECT * FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @UserId", new { topicId, user.UserId })).AsList();
+                var existingVotes = (await sqlExecuter.QueryAsync<PhpbbPollVotes>("SELECT * FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @UserId", new { topicId, user.UserId })).AsList();
                 if (existingVotes.Count > 0 && topic.PollVoteChange == 0)
                 {
                     ModelState.AddModelError(nameof(Poll), LanguageProvider.Errors[GetLanguage(), "CANT_CHANGE_VOTE"]);
@@ -183,11 +183,11 @@ namespace PhpbbInDotnet.Forum.Pages
                                     where j == default
                                     select prev.PollOptionId;
                 await Task.WhenAll(
-                    conn.ExecuteAsync(
+                    sqlExecuter.ExecuteAsync(
                         "DELETE FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @UserId AND poll_option_id IN @noLongerVoted",
                         new { topicId, user.UserId, noLongerVoted = noLongerVoted.DefaultIfEmpty() }
                     ),
-                    conn.ExecuteAsync(
+                    sqlExecuter.ExecuteAsync(
                         "UPDATE phpbb_poll_options SET poll_option_total = poll_option_total - 1 WHERE topic_id = @topicId AND poll_option_id = @vote",
                         noLongerVoted.Select(vote => new { topicId, vote })
                     )
@@ -202,11 +202,11 @@ namespace PhpbbInDotnet.Forum.Pages
                                select cur;
 
                 await Task.WhenAll(
-                    conn.ExecuteAsync(
+                    sqlExecuter.ExecuteAsync(
                         "INSERT INTO phpbb_poll_votes (topic_id, poll_option_id, vote_user_id, vote_user_ip) VALUES (@topicId, @vote, @UserId, @usrIp)",
                         newVotes.Select(vote => new { topicId, vote, user.UserId, usrIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty })
                     ),
-                    conn.ExecuteAsync(
+                    sqlExecuter.ExecuteAsync(
                         "UPDATE phpbb_poll_options SET poll_option_total = poll_option_total + 1 WHERE topic_id = @topicId AND poll_option_id = @vote",
                         newVotes.Select(vote => new { topicId, vote })
                     )
@@ -282,15 +282,15 @@ namespace PhpbbInDotnet.Forum.Pages
                     return RedirectToPage("Error", new { isUnauthorised = true });
                 }
 
-                var conn = Context.GetDbConnection();
+                var sqlExecuter = Context.GetSqlExecuter();
 
-                var toDelete = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId = postIds[0] });
+                var toDelete = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId = postIds[0] });
                 if (toDelete == null)
                 {
                     return RedirectToPage("Error", new { isNotFound = true });
                 }
                 
-                var lastPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC", new { toDelete.TopicId });
+                var lastPost = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC", new { toDelete.TopicId });
                 var errorMessage = "&#x274C;&nbsp;{0}";
 
                 if (toDelete.PostTime < lastPost.PostTime)
@@ -307,7 +307,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return await OnGet();
                 }
 
-                var curTopic = await conn.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { toDelete.TopicId });
+                var curTopic = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { toDelete.TopicId });
                 if (curTopic?.TopicStatus.ToBool() ?? false)
                 {
                     ModeratorActionResult = (string.Format(errorMessage, LanguageProvider.Errors[lang, "CANT_DELETE_POST_TOPIC_CLOSED", Casing.FirstUpper]), false);
@@ -321,8 +321,8 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostReportMessage(int? reportPostId, short? reportReasonId, string reportDetails)
             => await WithRegisteredUser((user) => WithValidPost(reportPostId ?? 0, async (_, _, _) =>
             {
-                var conn = Context.GetDbConnection();
-                await conn.ExecuteAsync(
+                var sqlExecuter = Context.GetSqlExecuter();
+                await sqlExecuter.ExecuteAsync(
                     "INSERT INTO phpbb_reports (post_id, user_id, reason_id, report_text, report_time, report_closed) " +
                     "VALUES (@PostId, @UserId, @ReasonId, @ReportText, @ReportTime, 0)",
                     new
@@ -358,15 +358,15 @@ namespace PhpbbInDotnet.Forum.Pages
                     PostId = reportPostId;
                 }
 
-                var conn = Context.GetDbConnection();
-                await conn.ExecuteAsync(
+                var sqlExecuter = Context.GetSqlExecuter();
+                await sqlExecuter.ExecuteAsync(
                     "UPDATE phpbb_reports SET report_closed = 1 WHERE report_id = @reportId;",
                     new { reportId }
                 );
 
                 if (!(deletePost ?? false) && (redirectToEdit ?? false))
                 {
-                    var reportedPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @reportPostId", new { reportPostId });
+                    var reportedPost = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @reportPostId", new { reportPostId });
                     if (reportedPost == null)
                     {
                         PostId = nextRemaining;
@@ -507,13 +507,13 @@ namespace PhpbbInDotnet.Forum.Pages
             Posts = (await _postService.GetPosts(TopicId.Value, PageNum!.Value, GetCurrentUser().GetPageSize(TopicId.Value), descendingOrder: false)).AsList();
             var currentPostIds = Posts.Select(p => p.PostId).DefaultIfEmpty().ToList();
 
-            var countTask = Context.GetDbConnection().ExecuteScalarAsync<int>(
+            var countTask = Context.GetSqlExecuter().ExecuteScalarAsync<int>(
                 "SELECT COUNT(post_id) FROM phpbb_posts WHERE topic_id = @topicId",
                 new { TopicId });
-            var dbAttachmentsTask = Context.GetDbConnection().QueryAsync<PhpbbAttachments>(
+            var dbAttachmentsTask = Context.GetSqlExecuter().QueryAsync<PhpbbAttachments>(
                 "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @currentPostIds",
                 new {currentPostIds});
-            var reportsTask = Context.GetDbConnection().QueryAsync<ReportDto>(
+            var reportsTask = Context.GetSqlExecuter().QueryAsync<ReportDto>(
                 @"SELECT r.report_id AS id, 
 		                 rr.reason_title, 
                          rr.reason_description, 
@@ -541,7 +541,7 @@ namespace PhpbbInDotnet.Forum.Pages
             ForumRulesUid = curForum.ForumRulesUid;
 
             var markAsReadTask = MarkAsRead();
-            var updateViewCountTask = Context.GetDbConnection().ExecuteAsync(
+            var updateViewCountTask = Context.GetSqlExecuter().ExecuteAsync(
                 "UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId",
                 new { topicId = TopicId!.Value }
             );
@@ -561,18 +561,18 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task<(int? LatestSelected, int? NextRemaining)> GetSelectedAndNextRemainingPostIds(params int[] idsToInclude)
         {
-            var conn = Context.GetDbConnection();
+            var sqlExecuter = Context.GetSqlExecuter();
 
-            var latestSelectedPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(
+            var latestSelectedPost = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
                 "SELECT * FROM phpbb_posts WHERE post_id IN @ids ORDER BY post_time DESC", 
                 new { ids = idsToInclude.DefaultIfEmpty() }
             );
 
             var postIds = GetModeratorPostIds();
-            var nextRemainingPost = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(
+            var nextRemainingPost = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
                 "SELECT * FROM phpbb_posts WHERE topic_id = @topicId AND post_id NOT IN @ids AND post_time >= @time ORDER BY post_time ASC",
                 new { topicId = TopicId!.Value, ids = postIds.DefaultIfEmpty(), time = latestSelectedPost?.PostTime }
-            ) ?? await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(
+            ) ?? await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
                 "SELECT * FROM phpbb_posts WHERE topic_id = @topicId AND post_id NOT IN @ids ORDER BY post_time DESC",
                 new { topicId = TopicId.Value, ids = postIds.DefaultIfEmpty() }
             );

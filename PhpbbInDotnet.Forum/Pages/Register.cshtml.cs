@@ -121,9 +121,9 @@ namespace PhpbbInDotnet.Forum.Pages
                 return PageWithError(nameof(RecaptchaResponse), LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
             }
 
-            var conn = _context.GetDbConnection();
+            var sqlExecuter = _context.GetSqlExecuter();
 
-            var checkBanlist = await conn.QueryAsync(
+            var checkBanlist = await sqlExecuter.QueryAsync(
                 @"SELECT @email LIKE LOWER(REPLACE(REPLACE(ban_email, '*', '%'), '?', '_')) AS Email,
                          @ip LIKE LOWER(REPLACE(REPLACE(ban_ip, '*', '%'), '?', '_')) AS IP
                     FROM phpbb_banlist

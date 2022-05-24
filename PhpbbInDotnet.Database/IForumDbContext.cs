@@ -45,8 +45,8 @@ namespace PhpbbInDotnet.Database
         DbSet<PhpbbWords> PhpbbWords { get; set; }
         DbSet<PhpbbZebra> PhpbbZebra { get; set; }
 
-        IDbConnection GetDbConnection();
-        Task<IDbConnection> GetDbConnectionAsync();
+        ISqlExecuter GetSqlExecuter();
+        Task<ISqlExecuter> GetSqlExecuterAsync();
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
         Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default);

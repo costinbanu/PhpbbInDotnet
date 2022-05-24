@@ -138,7 +138,7 @@ namespace PhpbbInDotnet.Services
                 _context.PhpbbForumsTrack.RemoveRange(_context.PhpbbForumsTrack.Where(u => u.UserId == userId));
                 _context.PhpbbForumsWatch.RemoveRange(_context.PhpbbForumsWatch.Where(u => u.UserId == userId));
                 _context.PhpbbLog.RemoveRange(_context.PhpbbLog.Where(u => u.UserId == userId));
-                await (_context.GetDbConnection()).ExecuteAsync("DELETE FROM phpbb_poll_votes WHERE vote_user_id = @userId", new { userId });
+                await (_context.GetSqlExecuter()).ExecuteAsync("DELETE FROM phpbb_poll_votes WHERE vote_user_id = @userId", new { userId });
                 _context.PhpbbPrivmsgsTo.RemoveRange(_context.PhpbbPrivmsgsTo.Where(u => u.UserId == userId));
                 _context.PhpbbReports.RemoveRange(_context.PhpbbReports.Where(u => u.UserId == userId));
                 (await _context.PhpbbTopics.Where(t => t.TopicLastPosterId == userId).ToListAsync()).ForEach(t =>
@@ -450,7 +450,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<List<UpsertGroupDto>> GetGroups()
             => (
-                await (_context.GetDbConnection()).QueryAsync<UpsertGroupDto>(
+                await (_context.GetSqlExecuter()).QueryAsync<UpsertGroupDto>(
                     @"SELECT g.group_id AS id, 
                              g.group_name AS `name`,
                              g.group_desc AS `desc`,
@@ -625,7 +625,7 @@ namespace PhpbbInDotnet.Services
             var lang = GetLanguage();
             try
             {
-                var conn = _context.GetDbConnection();
+                var sqlExecuter = _context.GetSqlExecuter();
                 var indexHash = new HashSet<int>(indexesToRemove);
                 var exceptions = new List<Exception>();
                 for (var i = 0; i < banlist.Count; i++)
@@ -635,17 +635,17 @@ namespace PhpbbInDotnet.Services
                         AdminBanListActions? action = null;
                         if (indexHash.Contains(i))
                         {
-                            await conn.ExecuteAsync("DELETE FROM phpbb_banlist WHERE ban_id = @BanId", banlist[i]);
+                            await sqlExecuter.ExecuteAsync("DELETE FROM phpbb_banlist WHERE ban_id = @BanId", banlist[i]);
                             action = AdminBanListActions.Delete;
                         }
                         else if (banlist[i].BanId == 0)
                         {
-                            await conn.ExecuteAsync("INSERT INTO phpbb_banlist (ban_ip, ban_email) VALUES (@BanIp, @BanEmail)", banlist[i]);
+                            await sqlExecuter.ExecuteAsync("INSERT INTO phpbb_banlist (ban_ip, ban_email) VALUES (@BanIp, @BanEmail)", banlist[i]);
                             action = AdminBanListActions.Add;
                         }
                         else if (banlist[i].BanEmail != banlist[i].BanEmailOldValue || banlist[i].BanIp != banlist[i].BanIpOldValue)
                         {
-                            await conn.ExecuteAsync("UPDATE phpbb_banlist SET ban_email = @BanEmail, ban_ip = @BanIp WHERE ban_id = @BanId", banlist[i]);
+                            await sqlExecuter.ExecuteAsync("UPDATE phpbb_banlist SET ban_email = @BanEmail, ban_ip = @BanIp WHERE ban_id = @BanId", banlist[i]);
                             action = AdminBanListActions.Update;
                         }
                         if (action != null)

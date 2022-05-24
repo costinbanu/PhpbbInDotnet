@@ -84,19 +84,19 @@ namespace PhpbbInDotnet.Forum.Pages
                 TopicId = int.TryParse(query["topicid"], out var i) ? i as int? : null;
             }
 
-            var connection = Context.GetDbConnection();
+            var sqlExecuter = Context.GetSqlExecuter();
 
             Users = await IUserService.GetUserMap();
 
             if (ForumId == null && TopicId != null)
             {
-                ForumId = (await connection.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { TopicId }))?.ForumId;
+                ForumId = (await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { TopicId }))?.ForumId;
             }
 
             if (ForumId == null && TopicId == null && query != null)
             {
                 var postId = int.TryParse(query["postid"], out var i) ? i as int? : null;
-                var post = await connection.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId });
+                var post = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId });
                 TopicId = post?.TopicId;
                 ForumId = post?.ForumId;
             }
@@ -153,13 +153,13 @@ namespace PhpbbInDotnet.Forum.Pages
                 return;
             }
 
-            var connectionTask = Context.GetDbConnectionAsync();
+            var sqlExecuterTask = Context.GetSqlExecuterAsync();
             var searchableForumsTask = GetUnrestrictedForums(ForumId);
-            await Task.WhenAll(connectionTask, searchableForumsTask);
-            var connection = await connectionTask;
+            await Task.WhenAll(sqlExecuterTask, searchableForumsTask);
+            var sqlExecuter = await sqlExecuterTask;
             var searchableForums = await searchableForumsTask;
 
-            var searchTask = connection.QueryAsync<PostDto>(
+            var searchTask = sqlExecuter.QueryAsync<PostDto>(
                 @"WITH ranks AS (
 	                SELECT DISTINCT u.user_id, 
 		                   COALESCE(r1.rank_id, r2.rank_id) AS rank_id, 
@@ -240,7 +240,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     skip = (PageNum - 1) * Constants.DEFAULT_PAGE_SIZE,
                     searchableForums
                 });
-            var countTask = connection.ExecuteScalarAsync<int>(
+            var countTask = sqlExecuter.ExecuteScalarAsync<int>(
                 @"WITH search_stmt AS (
 		            SELECT p.post_id
 		              FROM phpbb_posts p

@@ -42,7 +42,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 Paginator = new Paginator(count: topicList.Count(), pageNum: PageNum, link: "/NewPosts?pageNum=1", topicId: null);
                 PageNum = Paginator.CurrentPage;
 
-                Topics = (await Context.GetDbConnection().QueryAsync<TopicDto>(
+                Topics = (await Context.GetSqlExecuter().QueryAsync<TopicDto>(
                     @"SELECT t.topic_id, 
 	                         t.forum_id,
 	                         t.topic_title, 

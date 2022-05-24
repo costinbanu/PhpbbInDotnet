@@ -37,7 +37,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     {
                         var restrictedForumList = await GetRestrictedForums();
                         PageNum = Paginator.NormalizePageNumberLowerBound(PageNum);
-                        var draftsTask = Context.GetDbConnection().QueryAsync<TopicDto>(
+                        var draftsTask = Context.GetSqlExecuter().QueryAsync<TopicDto>(
                             @"SELECT d.draft_id,
 				                     d.topic_id, 
 				                     d.forum_id,
@@ -61,7 +61,7 @@ namespace PhpbbInDotnet.Forum.Pages
                                 restrictedForumList
                             }
                         );
-                        var countTask = Context.GetDbConnection().ExecuteScalarAsync<int>(
+                        var countTask = Context.GetSqlExecuter().ExecuteScalarAsync<int>(
                             @"SELECT COUNT(*) as total_count
                                 FROM forum.phpbb_drafts d
 	                            LEFT JOIN forum.phpbb_topics t
@@ -90,8 +90,8 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostDeleteDrafts()
             => await WithRegisteredUser(async (_) =>
             {
-                var connection = Context.GetDbConnection();
-                await connection.ExecuteAsync(
+                var sqlExecuter = Context.GetSqlExecuter();
+                await sqlExecuter.ExecuteAsync(
                     "DELETE FROM phpbb_drafts WHERE draft_id IN @ids", 
                     new { ids = SelectedDrafts?.DefaultIfEmpty() ?? new[] { 0 } });
                 return await OnGet();

@@ -47,7 +47,7 @@ namespace PhpbbInDotnet.Services
             _bannedWords = new Lazy<Dictionary<string, string>>(() => _writingService.GetBannedWords().GroupBy(p => p.Word).Select(grp => grp.FirstOrDefault()).ToDictionary(x => x!.Word, y => y!.Replacement));
             _cache = cache;
 
-            var tagList = _context.GetDbConnection().Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes").AsList();
+            var tagList = _context.GetSqlExecuter().Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes").AsList();
 
             _attrRegex = new Regex(@"\$\{[a-z0-9]+\}", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant);
             var (bbTags, tagMap) = GenerateCompleteTagListAndMap(tagList);
@@ -296,7 +296,7 @@ namespace PhpbbInDotnet.Services
                 _writingService.GetBbCodesCacheKey(lang),
                 () =>
                 {
-                    var maxId = _context.GetDbConnection().ExecuteScalar<int>("SELECT max(bbcode_id) FROM phpbb_bbcodes");
+                    var maxId = _context.GetSqlExecuter().ExecuteScalar<int>("SELECT max(bbcode_id) FROM phpbb_bbcodes");
                     var tagsCache = new Dictionary<string, (BBTag Tag, BBTagSummary Summary)>
                     {
                         ["b"] = (

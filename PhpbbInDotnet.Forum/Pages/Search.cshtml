@@ -18,7 +18,7 @@
     ViewData["Title"] = Model.LanguageProvider.BasicText[Lang, "SEARCH"];
     Layout = "~/Pages/_Layout.cshtml";
     var CurrentUser = Model.GetCurrentUser();
-    var connection = _context.GetDbConnection();
+    var sqlExecuter = _context.GetSqlExecuter();
     var dateFormat = CurrentUser?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
 }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/he/1.2.0/he.min.js" integrity="sha512-PEsccDx9jqX6Dh4wZDCnWMaIO3gAaU0j46W//sSqQhUQxky6/eHZyeB3NrXD2xsyugAKd4KPiDANkcuoEa2JuA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -74,7 +74,7 @@
 </script>
 @if (Model.IsAuthorSearch || Model.IsAttachmentSearch)
 {
-    var user = await connection.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @authorId", new { Model.AuthorId });
+    var user = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @authorId", new { Model.AuthorId });
     if (!string.IsNullOrWhiteSpace(user?.Username))
     {
         var key = Model.IsAuthorSearch ? "POSTS_BY_FORMAT" : "ATTACHMENTS_BY_FORMAT";
@@ -105,7 +105,7 @@ else
                  "_ForumTreePartial",
                   new _ForumTreePartialModel(
                       tree: (await Model.GetForumTree(false, false)).Tree,
-                      topicData: (await connection.QueryAsync<Objects.MiniTopicDto>("SELECT * FROM phpbb_topics")).AsList(),
+                      topicData: (await sqlExecuter.QueryAsync<Objects.MiniTopicDto>("SELECT * FROM phpbb_topics")).AsList(),
                       forumId: Model.ForumId,
                       topicId: Model.TopicId,
                       constrainSize: true

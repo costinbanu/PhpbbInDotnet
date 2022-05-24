@@ -22,7 +22,7 @@ namespace PhpbbInDotnet.Services
     {
         private readonly IServiceProvider _serviceProvider;
 
-        private const string OK_FILE_NAME = $"{nameof(CleanupService)}.ok";
+        public const string OK_FILE_NAME = $"{nameof(CleanupService)}.ok";
 
         public CleanupService(IServiceProvider serviceProvider)
         {
@@ -42,11 +42,12 @@ namespace PhpbbInDotnet.Services
             var logger = scope.ServiceProvider.GetRequiredService<ILogger>();
             var writingToolsService = scope.ServiceProvider.GetRequiredService<IWritingToolsService>();
             var timeService = scope.ServiceProvider.GetRequiredService<ITimeService>();
+            var fileInfoService = scope.ServiceProvider.GetRequiredService<IFileInfoService>();
 
             logger.Information("Launching a new {name} instance...", nameof(CleanupService));
 
             var options = config.GetObject<CleanupServiceOptions>("CleanupService");
-            var timeToWait = GetTimeToWaitUntilRunIsAllowed(timeService, options);
+            var timeToWait = GetTimeToWaitUntilRunIsAllowed(timeService, fileInfoService, options);
             if (timeToWait > TimeSpan.Zero)
             {
                 logger.Warning("Waiting for {time} before executing cleanup task...", timeToWait);
@@ -59,12 +60,12 @@ namespace PhpbbInDotnet.Services
 
                 logger.Information("Executing cleanup tasks NOW...");
 
-                var connection = dbContext.GetDbConnection();
+                var sqlExecuter = dbContext.GetSqlExecuter();
                 await Task.WhenAll(
-                    CleanRecycleBin(config, connection, utils, storageService, logger, stoppingToken),
-                    ResyncOrphanFiles(config, connection, stoppingToken),
-                    ResyncForumsAndTopics(connection, stoppingToken),
-                    CleanOperationLogs(config, connection, logger, stoppingToken)
+                    CleanRecycleBin(config, sqlExecuter, utils, storageService, logger, stoppingToken),
+                    ResyncOrphanFiles(config, sqlExecuter, stoppingToken),
+                    ResyncForumsAndTopics(sqlExecuter, stoppingToken),
+                    CleanOperationLogs(config, sqlExecuter, logger, stoppingToken)
                 );
 
                 stoppingToken.ThrowIfCancellationRequested();
@@ -83,7 +84,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        private async Task CleanRecycleBin(IConfiguration config, IDbConnection dbConnection, ICommonUtils utils, IStorageService storageService, ILogger logger, CancellationToken stoppingToken)
+        private async Task CleanRecycleBin(IConfiguration config, ISqlExecuter dbConnection, ICommonUtils utils, IStorageService storageService, ILogger logger, CancellationToken stoppingToken)
         {
             var retention = config.GetObject<TimeSpan?>("RecycleBinRetentionTime") ?? TimeSpan.FromDays(7);
 
@@ -139,7 +140,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        private async Task ResyncOrphanFiles(IConfiguration config, IDbConnection dbConnection, CancellationToken stoppingToken)
+        private async Task ResyncOrphanFiles(IConfiguration config, ISqlExecuter dbConnection, CancellationToken stoppingToken)
         {
             var retention = config.GetObject<TimeSpan?>("RecycleBinRetentionTime") ?? TimeSpan.FromDays(7);
 
@@ -157,7 +158,7 @@ namespace PhpbbInDotnet.Services
                 });
         }
 
-        private async Task ResyncForumsAndTopics(IDbConnection dbConnection, CancellationToken stoppingToken)
+        private async Task ResyncForumsAndTopics(ISqlExecuter dbConnection, CancellationToken stoppingToken)
         {
             stoppingToken.ThrowIfCancellationRequested();
 
@@ -238,7 +239,7 @@ namespace PhpbbInDotnet.Services
             await Task.WhenAll(postsHavingWrongForumIdTask, forumsHavingWrongLastPostTask, topicsHavingWrongLastOrFirstPostTask);
         }
 
-        private async Task CleanOperationLogs(IConfiguration config, IDbConnection dbConnection, ILogger logger, CancellationToken stoppingToken)
+        private async Task CleanOperationLogs(IConfiguration config, ISqlExecuter dbConnection, ILogger logger, CancellationToken stoppingToken)
         {
             var retention = config.GetObject<TimeSpan?>("OperationLogsRetentionTime") ?? TimeSpan.FromDays(365);
 
@@ -281,7 +282,7 @@ namespace PhpbbInDotnet.Services
                 });
         }
     
-        private TimeSpan GetTimeToWaitUntilRunIsAllowed(ITimeService timeService, CleanupServiceOptions options)
+        private TimeSpan GetTimeToWaitUntilRunIsAllowed(ITimeService timeService, IFileInfoService fileInfoService, CleanupServiceOptions options)
         {
             var now = timeService.DateTimeOffsetNow();
             if (options.MinimumAllowedRunTime.Date != now.Date || options.MaximumAllowedRunTime.Date != now.Date)
@@ -299,7 +300,7 @@ namespace PhpbbInDotnet.Services
 
             var timeUntilAllowedTimeFrame = GetTimeUntilAllowedRunTimeFrame();
             var timeSinceLastRun = GetElapsedTimeSinceLastRunIfAny();
-            if (!timeSinceLastRun.HasValue || (timeSinceLastRun.Value + timeUntilAllowedTimeFrame >= options.Interval && (now + timeUntilAllowedTimeFrame <= options.MaximumAllowedRunTime)))
+            if (!timeSinceLastRun.HasValue || (timeSinceLastRun.Value + timeUntilAllowedTimeFrame >= options.Interval))
             {
                 return timeUntilAllowedTimeFrame;
             }
@@ -315,14 +316,8 @@ namespace PhpbbInDotnet.Services
 
             TimeSpan? GetElapsedTimeSinceLastRunIfAny()
             {
-                DateTime? lastRun = null;
-                try
-                {
-                    lastRun = new FileInfo(OK_FILE_NAME).LastWriteTimeUtc;
-                }
-                catch { }
-
-                return lastRun.HasValue ? now.DateTime.ToUniversalTime() - lastRun.Value : null;
+               var lastRun = fileInfoService.GetLastWriteTime(OK_FILE_NAME);
+               return lastRun.HasValue ? now.DateTime.ToUniversalTime() - lastRun.Value : null;
             }
 
             TimeSpan GetTimeUntilAllowedRunTimeFrame()

@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
 using System.Text;
 
-namespace PhpbbInDotnet.Utilities
+namespace PhpbbInDotnet.Utilities.Core
 {
     public static class StringUtils
     {

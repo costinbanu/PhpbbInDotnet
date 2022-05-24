@@ -112,7 +112,7 @@ namespace PhpbbInDotnet.Forum
                 var claimsPrincipal = await _userService.DbUserToClaimsPrincipal(dbUser);
                 await Task.WhenAll(
                     SignIn(context, claimsPrincipal),
-                    _context.GetDbConnection().ExecuteAsync(
+                    _context.GetSqlExecuter().ExecuteAsync(
                         "UPDATE phpbb_users SET user_lastvisit = @now WHERE user_id = @userId",
                         new { now = DateTime.UtcNow.ToUnixTimestamp(), user.UserId }
                     )
@@ -180,7 +180,7 @@ namespace PhpbbInDotnet.Forum
 
         async Task<Dictionary<int, int>> GetTopicPostsPage(int userId)
         {
-            var results = await _context.GetDbConnection().QueryAsync(
+            var results = await _context.GetSqlExecuter().QueryAsync(
                 @"SELECT topic_id, post_no
 	                FROM phpbb_user_topic_post_number
 	               WHERE user_id = @user_id

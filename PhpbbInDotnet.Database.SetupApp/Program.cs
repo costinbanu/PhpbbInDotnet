@@ -1,7 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
-using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Core;
 using Serilog;
 using System;
 using System.IO;
@@ -49,23 +49,23 @@ namespace PhpbbInDotnet.Database.SetupApp
                 Console.WriteLine();
                 var dbName = ReadInput(message: "Database name? (Will be created if not existing already)", regex: NAME_REGEX);
 
-                using var connection = new MySqlConnection(connectionString);
-                await connection.OpenAsync();
+                using var sqlExecuter = new MySqlConnection(connectionString);
+                await sqlExecuter.OpenAsync();
 
                 if (newInstall)
                 {
                     Console.WriteLine();
                     Console.WriteLine("Creating database...");
-                    await connection.ExecuteAsync($"CREATE DATABASE IF NOT EXISTS {dbName}");
+                    await sqlExecuter.ExecuteAsync($"CREATE DATABASE IF NOT EXISTS {dbName}");
                     Console.WriteLine("Done!");
                     Console.WriteLine();
                 }
 
-                await connection.ChangeDataBaseAsync(dbName);
+                await sqlExecuter.ChangeDataBaseAsync(dbName);
 
                 Console.WriteLine($"{(newInstall ? "Creating" : "Updating")} tables...");
                 var upsertTables = await File.ReadAllTextAsync(Path.Combine("InstallScripts", newInstall ? "CreateTables.sql" : "UpdateTables.sql"));
-                await connection.ExecuteAsync(upsertTables);
+                await sqlExecuter.ExecuteAsync(upsertTables);
                 Console.WriteLine("Done!");
                 Console.WriteLine();
 
@@ -73,7 +73,7 @@ namespace PhpbbInDotnet.Database.SetupApp
                 foreach (var spFile in Directory.GetFiles("StoredProcedures"))
                 {
                     var sp = await File.ReadAllTextAsync(spFile);
-                    await connection.ExecuteAsync(sp);
+                    await sqlExecuter.ExecuteAsync(sp);
                 }
                 Console.WriteLine("Done!");
                 Console.WriteLine();
@@ -82,16 +82,16 @@ namespace PhpbbInDotnet.Database.SetupApp
                 {
                     Console.WriteLine("Inserting initial data...");
                     var dataSQL = await File.ReadAllTextAsync(Path.Combine("InstallScripts", "InsertInitialData.sql"));
-                    await connection.ExecuteAsync(dataSQL);
+                    await sqlExecuter.ExecuteAsync(dataSQL);
                     Console.WriteLine("Done!");
                 }
                 else
                 {
                     Console.WriteLine("Updating users table...");
-                    var users = await connection.QueryAsync("SELECT user_id, username, username_clean FROM phpbb_users");
+                    var users = await sqlExecuter.QueryAsync("SELECT user_id, username, username_clean FROM phpbb_users");
                     foreach (var user in users)
                     {
-                        await connection.ExecuteAsync(
+                        await sqlExecuter.ExecuteAsync(
                             "UPDATE phpbb_users SET username_clean = @clean WHERE user_id = @id", 
                             new { clean = StringUtils.CleanString(user.username), id = user.user_id });
                     }

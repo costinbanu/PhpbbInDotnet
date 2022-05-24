@@ -13,6 +13,7 @@ using MimeKit;
 using MimeKit.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using PhpbbInDotnet.Utilities.Core;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -50,30 +51,11 @@ namespace PhpbbInDotnet.Utilities
 
         #region Compression
 
-        public async Task<byte[]> CompressObject<T>(T source)
-        {
-            using var content = new MemoryStream(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(source)));
-            using var memory = new MemoryStream();
-            using var gzip = new GZipStream(memory, CompressionMode.Compress);
-            await content.CopyToAsync(gzip);
-            await gzip.FlushAsync();
-            return memory.ToArray();
-        }
+        public Task<byte[]> CompressObject<T>(T source)
+            => CompressionUtils.CompressObject<T>(source);
 
-        public async Task<T?> DecompressObject<T>(byte[]? source)
-        {
-            if (source?.Any() != true)
-            {
-                return default;
-            }
-
-            using var content = new MemoryStream();
-            using var memory = new MemoryStream(source);
-            using var gzip = new GZipStream(memory, CompressionMode.Decompress);
-            await gzip.CopyToAsync(content);
-            await content.FlushAsync();
-            return JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(content.ToArray()));
-        }
+        public Task<T?> DecompressObject<T>(byte[]? source)
+            => CompressionUtils.DecompressObject<T>(source);
 
         public async Task<string> CompressAndEncode(string input)
             => Convert.ToBase64String(await CompressObject(input));
@@ -150,7 +132,7 @@ namespace PhpbbInDotnet.Utilities
             return decrypted;
         }
 
-        public byte[] GetEncryptionKey()
+        private byte[] GetEncryptionKey()
         {
             var key1 = _config.GetValue<Guid>("Encryption:Key1").ToByteArray().ToList();
             var key2 = _config.GetValue<Guid>("Encryption:Key2").ToByteArray();
