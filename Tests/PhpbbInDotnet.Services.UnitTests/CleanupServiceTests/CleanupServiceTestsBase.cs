@@ -1,9 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using PhpbbInDotnet.Database;
-using PhpbbInDotnet.Utilities;
 using Serilog;
-using System.Data;
 
 namespace PhpbbInDotnet.Services.UnitTests.CleanupServiceTests
 {
@@ -11,7 +9,6 @@ namespace PhpbbInDotnet.Services.UnitTests.CleanupServiceTests
     {
         protected readonly Mock<ISqlExecuter> _mockSqlExecuter;
         protected readonly Mock<IForumDbContext> _mockForumDbContext;
-        protected readonly Mock<ICommonUtils> _mockUtils;
         protected readonly Mock<ILogger> _mockLogger;
         protected readonly Mock<IStorageService> _mockStorageService;
         protected readonly Mock<IWritingToolsService> _mockWritingToolsService;
@@ -25,7 +22,6 @@ namespace PhpbbInDotnet.Services.UnitTests.CleanupServiceTests
             _mockForumDbContext = new Mock<IForumDbContext>();
             _mockForumDbContext.Setup(ctx => ctx.GetSqlExecuter()).Returns(_mockSqlExecuter.Object);
             _mockForumDbContext.Setup(ctx => ctx.GetSqlExecuterAsync()).ReturnsAsync(_mockSqlExecuter.Object);
-            _mockUtils = new Mock<ICommonUtils>();
             _mockLogger = new Mock<ILogger>();
             _mockStorageService = new Mock<IStorageService>();
             _mockWritingToolsService = new Mock<IWritingToolsService>();
@@ -34,7 +30,6 @@ namespace PhpbbInDotnet.Services.UnitTests.CleanupServiceTests
 
             _services = new ServiceCollection();
             _services.AddScoped(_ => _mockForumDbContext.Object);
-            _services.AddSingleton(_mockUtils.Object);
             _services.AddSingleton(_mockLogger.Object);
             _services.AddScoped(_ => _mockStorageService.Object);
             _services.AddScoped(_ => _mockWritingToolsService.Object);

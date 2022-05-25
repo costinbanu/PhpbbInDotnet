@@ -6,5 +6,8 @@ namespace PhpbbInDotnet.Services
     {
         public DateTimeOffset DateTimeOffsetNow()
             => DateTimeOffset.Now;
+
+        public DateTime DateTimeUtcNow()
+            => DateTime.UtcNow;
     }
 }
