@@ -13,10 +13,10 @@ namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
 {
     public class viewtopicModel : PageModel
     {
-        private readonly ForumDbContext _context;
-        private readonly CommonUtils _utils;
+        private readonly IForumDbContext _context;
+        private readonly ICommonUtils _utils;
 
-        public viewtopicModel(ForumDbContext context, CommonUtils utils)
+        public viewtopicModel(IForumDbContext context, ICommonUtils utils)
         {
             _context = context;
             _utils = utils;
@@ -28,8 +28,8 @@ namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
             {
                 if (start.HasValue)
                 {
-                    var conn = _context.GetDbConnection();
-                    var post = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>(
+                    var sqlExecuter = _context.GetSqlExecuter();
+                    var post = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
                         "SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time LIMIT @skip, 1",
                         new
                         {

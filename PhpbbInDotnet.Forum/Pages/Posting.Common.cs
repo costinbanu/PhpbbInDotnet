@@ -23,18 +23,18 @@ namespace PhpbbInDotnet.Forum.Pages
 {
     public partial class PostingModel : AuthenticatedPageModel
     {
-        private readonly PostService _postService;
-        private readonly StorageService _storageService;
-        private readonly WritingToolsService _writingService;
-        private readonly BBCodeRenderingService _renderingService;
+        private readonly IPostService _postService;
+        private readonly IStorageService _storageService;
+        private readonly IWritingToolsService _writingService;
+        private readonly IBBCodeRenderingService _renderingService;
         private readonly IConfiguration _config;
         private readonly ExternalImageProcessor _imageProcessorOptions;
         private readonly HttpClient? _imageProcessorClient;
 
         static readonly DateTimeOffset CACHE_EXPIRATION = DateTimeOffset.UtcNow.AddHours(4);
 
-        public PostingModel(CommonUtils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cacheService, PostService postService, 
-            StorageService storageService, WritingToolsService writingService, BBCodeRenderingService renderingService, IConfiguration config, LanguageProvider languageProvider, IHttpClientFactory httpClientFactory)
+        public PostingModel(ICommonUtils utils, IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cacheService, IPostService postService, 
+            IStorageService storageService, IWritingToolsService writingService, IBBCodeRenderingService renderingService, IConfiguration config, LanguageProvider languageProvider, IHttpClientFactory httpClientFactory)
             : base(context, forumService, userService, cacheService, utils, languageProvider)
         {
             PollExpirationDaysString = "1";
@@ -85,8 +85,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             }
 
-            var connection = Context.GetDbConnection();
-            await connection.ExecuteAsync("DELETE FROM phpbb_attachments WHERE attach_id = @attachId", new { attachment.AttachId });
+            await Context.GetSqlExecuter().ExecuteAsync("DELETE FROM phpbb_attachments WHERE attach_id = @attachId", new { attachment.AttachId });
 
             if (removeFromList)
             {
@@ -118,9 +117,9 @@ namespace PhpbbInDotnet.Forum.Pages
                 return null;
             }
 
-            var connection = Context.GetDbConnection();
+            var sqlExecuter = Context.GetSqlExecuter();
 
-            var curTopic = Action != PostingActions.NewTopic ? await connection.QuerySingleOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { TopicId }) : null;
+            var curTopic = Action != PostingActions.NewTopic ? await sqlExecuter.QuerySingleOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { TopicId }) : null;
             var canCreatePoll = Action == PostingActions.NewTopic || (Action == PostingActions.EditForumPost && (curTopic?.TopicFirstPostId ?? 0) == PostId);
 
             if (curTopic?.TopicStatus == 1 && !await IsCurrentUserModeratorHere(ForumId))
@@ -148,7 +147,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (Action == PostingActions.NewTopic)
             {
-                curTopic = await connection.QueryFirstOrDefaultAsync<PhpbbTopics>(
+                curTopic = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>(
                     @"INSERT INTO phpbb_topics (forum_id, topic_title, topic_time) VALUES (@forumId, @postTitle, @now); 
                     SELECT * FROM phpbb_topics WHERE topic_id = LAST_INSERT_ID();", 
                     new { ForumId, PostTitle, now = DateTime.UtcNow.ToUnixTimestamp() }
@@ -160,7 +159,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var textForSaving = await _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText));
             if (post == null)
             {
-                post = await connection.QueryFirstOrDefaultAsync<PhpbbPosts>(
+                post = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
                     @"INSERT INTO phpbb_posts (forum_id, topic_id, poster_id, post_subject, post_text, post_time, post_attachment, post_checksum, poster_ip, post_username) 
                         VALUES (@forumId, @topicId, @userId, @subject, @textForSaving, @now, @attachment, @checksum, @ip, @username); 
                       SELECT * FROM phpbb_posts WHERE post_id = LAST_INSERT_ID();",
@@ -183,7 +182,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }
             else
             {
-                post = await connection.QueryFirstOrDefaultAsync<PhpbbPosts>(
+                post = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
                     @"UPDATE phpbb_posts 
                     SET post_subject = @subject, post_text = @textForSaving, post_attachment = @attachment, post_checksum = @checksum, post_edit_time = @now, post_edit_reason = @reason, post_edit_user = @userId, post_edit_count = post_edit_count + 1 
                     WHERE post_id = @postId; 
@@ -206,7 +205,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             foreach (var attach in Attachments!)
             {
-                await connection.ExecuteAsync(
+                await sqlExecuter.ExecuteAsync(
                     "UPDATE phpbb_attachments SET post_msg_id = @postId, topic_id = @topicId, attach_comment = @comment, is_orphan = 0 WHERE attach_id = @attachId",
                     new
                     {
@@ -219,10 +218,10 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (canCreatePoll && !string.IsNullOrWhiteSpace(PollOptions))
             {
-                var existing = await connection.QueryAsync<string>("SELECT LTRIM(RTRIM(poll_option_text)) FROM phpbb_poll_options WHERE topic_id = @topicId", new { TopicId });
+                var existing = await sqlExecuter.QueryAsync<string>("SELECT LTRIM(RTRIM(poll_option_text)) FROM phpbb_poll_options WHERE topic_id = @topicId", new { TopicId });
                 if (!existing.SequenceEqual(pollOptionsArray, StringComparer.InvariantCultureIgnoreCase))
                 {
-                    await connection.ExecuteAsync(
+                    await sqlExecuter.ExecuteAsync(
                         @"DELETE FROM phpbb_poll_options WHERE topic_id = @topicId;
                           DELETE FROM phpbb_poll_votes WHERE topic_id = @topicId",
                         new { TopicId }
@@ -231,13 +230,13 @@ namespace PhpbbInDotnet.Forum.Pages
                     byte id = 1;
                     foreach (var option in pollOptionsArray)
                     {
-                        await connection.ExecuteAsync(
+                        await sqlExecuter.ExecuteAsync(
                             "INSERT INTO forum.phpbb_poll_options (poll_option_id, topic_id, poll_option_text, poll_option_total) VALUES (@id, @topicId, @text, 0)",
                             new { id = id++, TopicId, text = HttpUtility.HtmlEncode(option) }
                         );
                     }
 
-                    await connection.ExecuteAsync(
+                    await sqlExecuter.ExecuteAsync(
                         "UPDATE phpbb_topics SET poll_start = @start, poll_length = @length, poll_max_options = @maxOptions, poll_title = @title, poll_vote_change = @change WHERE topic_id = @topicId",
                         new
                         {
@@ -252,7 +251,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             }
 
-            await connection.ExecuteAsync(
+            await sqlExecuter.ExecuteAsync(
                 "DELETE FROM forum.phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId",
                 new { usr.UserId, forumId = ForumId, topicId = Action == PostingActions.NewTopic ? 0 : TopicId }
             );
@@ -272,8 +271,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (TopicId > 0 && LastPostTime > 0 && Action != PostingActions.EditForumPost)
             {
-                var connection = Context.GetDbConnection();
-                var times = await connection.QueryFirstOrDefaultAsync(
+                var sqlExecuter = Context.GetSqlExecuter();
+                var times = await sqlExecuter.QueryFirstOrDefaultAsync(
                     @"SELECT p.post_time, p.post_edit_time
                         FROM phpbb_posts p
                         JOIN phpbb_topics t ON p.post_id = t.topic_last_post_id
@@ -350,8 +349,8 @@ namespace PhpbbInDotnet.Forum.Pages
             var cachedAttachmentIds = await attachmentsTask;
             if (Attachments?.Any() != true && cachedAttachmentIds?.Any() == true)
             {
-                var conn = Context.GetDbConnection();
-                Attachments = (await conn.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE attach_id IN @cachedAttachmentIds", new { cachedAttachmentIds }))?.AsList();
+                var sqlExecuter = Context.GetSqlExecuter();
+                Attachments = (await sqlExecuter.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE attach_id IN @cachedAttachmentIds", new { cachedAttachmentIds }))?.AsList();
             }
         }
 

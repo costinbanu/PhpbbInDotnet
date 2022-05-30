@@ -32,7 +32,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         const int PAGE_SIZE = 20;
 
-        public ViewAttachmentsModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache,  CommonUtils utils, LanguageProvider languageProvider)
+        public ViewAttachmentsModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache,  ICommonUtils utils, LanguageProvider languageProvider)
             : base(context, forumService, userService, cache, utils, languageProvider)
         {
 

@@ -1,10 +1,8 @@
-﻿using Dapper;
-using DeviceDetectorNET;
+﻿using DeviceDetectorNET;
 using LazyCache;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Net.Http.Headers;
 using PhpbbInDotnet.Database;
@@ -26,9 +24,9 @@ namespace PhpbbInDotnet.Forum
         static readonly HashSet<string> EXCLUDED_PAGES;
 
         private readonly ILogger _logger;
-        private readonly ForumTreeService _forumTreeService;
-        private readonly ForumDbContext _context;
-        private readonly UserService _userService;
+        private readonly IForumTreeService _forumTreeService;
+        private readonly IForumDbContext _context;
+        private readonly IUserService _userService;
         private readonly IConfiguration _config;
         private readonly IAppCache _cache;
         private readonly AnonymousSessionCounter _sessionCounter;
@@ -41,8 +39,8 @@ namespace PhpbbInDotnet.Forum
             );
         }
 
-        public AuthenticationMiddleware(ILogger logger, IConfiguration config, IAppCache cache, ForumDbContext context,
-            ForumTreeService forumTreeService, UserService userService, AnonymousSessionCounter sessionCounter)
+        public AuthenticationMiddleware(ILogger logger, IConfiguration config, IAppCache cache, IForumDbContext context,
+            IForumTreeService forumTreeService, IUserService userService, AnonymousSessionCounter sessionCounter)
         {
             _logger = logger;
             _forumTreeService = forumTreeService;
@@ -112,7 +110,7 @@ namespace PhpbbInDotnet.Forum
                 var claimsPrincipal = await _userService.DbUserToClaimsPrincipal(dbUser);
                 await Task.WhenAll(
                     SignIn(context, claimsPrincipal),
-                    _context.GetDbConnection().ExecuteAsync(
+                    _context.GetSqlExecuter().ExecuteAsync(
                         "UPDATE phpbb_users SET user_lastvisit = @now WHERE user_id = @userId",
                         new { now = DateTime.UtcNow.ToUnixTimestamp(), user.UserId }
                     )
@@ -180,7 +178,7 @@ namespace PhpbbInDotnet.Forum
 
         async Task<Dictionary<int, int>> GetTopicPostsPage(int userId)
         {
-            var results = await _context.GetDbConnection().QueryAsync(
+            var results = await _context.GetSqlExecuter().QueryAsync(
                 @"SELECT topic_id, post_no
 	                FROM phpbb_user_topic_post_number
 	               WHERE user_id = @user_id
@@ -196,7 +194,7 @@ namespace PhpbbInDotnet.Forum
                 return (false, await _userService.GetAnonymousDbUser());
             }
 
-            var dbUser = await _context.GetDbConnection().QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { user.UserId });
+            var dbUser = _context.GetSqlExecuter().QueryFirstOrDefault<PhpbbUsers>("SELECT * FROM phpbb_users where user_id = @userId", new { user.UserId });
             if (dbUser is not null && dbUser.UserInactiveReason == UserInactiveReason.NotInactive)
             {
                 return (true, dbUser);

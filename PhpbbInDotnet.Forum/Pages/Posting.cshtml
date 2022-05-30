@@ -9,11 +9,11 @@
 
 @model PhpbbInDotnet.Forum.Pages.PostingModel
 
-@inject WritingToolsService _writingService
-@inject BBCodeRenderingService _renderingService
-@inject StorageService _storageService
-@inject UserService _userService
-@inject CommonUtils _utils
+@inject IWritingToolsService _writingService
+@inject IBBCodeRenderingService _renderingService
+@inject IStorageService _storageService
+@inject IUserService _userService
+@inject ICommonUtils _utils
 @inject IConfiguration _config
 
 @{

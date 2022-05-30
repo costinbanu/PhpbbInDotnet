@@ -1,6 +1,6 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._RulesPartialModel
 
-@inject Services.BBCodeRenderingService _renderingService
+@inject Services.IBBCodeRenderingService _renderingService
 @inject Languages.LanguageProvider _languageProvider
 
 @if (!string.IsNullOrWhiteSpace(Model.ForumRules))

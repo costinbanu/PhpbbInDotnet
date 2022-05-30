@@ -4,7 +4,6 @@ using Diacritics.Extensions;
 using LazyCache;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
@@ -21,15 +20,15 @@ using System.Web;
 
 namespace PhpbbInDotnet.Services
 {
-    public class BBCodeRenderingService : MultilingualServiceBase
+    class BBCodeRenderingService : MultilingualServiceBase, IBBCodeRenderingService
     {
         private static readonly Regex _htmlRegex = new("<.+?>", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
         private static readonly Regex _spaceRegex = new(" +", RegexOptions.Compiled | RegexOptions.Singleline, Constants.REGEX_TIMEOUT);
         private static readonly Regex _attachRegex = new("#{AttachmentFileName=[^/]+/AttachmentIndex=[0-9]+}#", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
         private static readonly Regex _quoteAttributeRegex = new("(\".+\")[, ]{0,2}([0-9]+)?", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
 
-        private readonly ForumDbContext _context;
-        private readonly WritingToolsService _writingService;
+        private readonly IForumDbContext _context;
+        private readonly IWritingToolsService _writingService;
         private readonly BBCodeParser _parser;
         private readonly Lazy<Dictionary<string, string>> _bannedWords;
         private readonly IAppCache _cache;
@@ -40,7 +39,7 @@ namespace PhpbbInDotnet.Services
 
         public Dictionary<string, BBTagSummary> TagMap { get; }
 
-        public BBCodeRenderingService(CommonUtils utils, ForumDbContext context, WritingToolsService writingService, IAppCache cache, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
+        public BBCodeRenderingService(ICommonUtils utils, IForumDbContext context, IWritingToolsService writingService, IAppCache cache, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
             : base(utils, languageProvider, httpContextAccessor)
         {
             _context = context;
@@ -48,7 +47,7 @@ namespace PhpbbInDotnet.Services
             _bannedWords = new Lazy<Dictionary<string, string>>(() => _writingService.GetBannedWords().GroupBy(p => p.Word).Select(grp => grp.FirstOrDefault()).ToDictionary(x => x!.Word, y => y!.Replacement));
             _cache = cache;
 
-            var tagList = _context.GetDbConnection().Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes").AsList();
+            var tagList = _context.GetSqlExecuter().Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes").AsList();
 
             _attrRegex = new Regex(@"\$\{[a-z0-9]+\}", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant);
             var (bbTags, tagMap) = GenerateCompleteTagListAndMap(tagList);
@@ -111,7 +110,7 @@ namespace PhpbbInDotnet.Services
             {
                 html = _parser.ToHtml(bbCodeText, bbCodeUid ?? string.Empty);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 if (!string.IsNullOrWhiteSpace(bbCodeUid))
                 {
@@ -249,7 +248,7 @@ namespace PhpbbInDotnet.Services
                         {
                             var startIndex = 0;
                             var ignoreOffset = GetIgnoreOffset(index, htmlMatch, attachMatch);
-                            
+
                             if (ignoreOffset == 0)
                             {
                                 var (transformedResult, transformednextIndex) = transform(input, cleanedMatch, index);
@@ -264,7 +263,7 @@ namespace PhpbbInDotnet.Services
 
                             var oldIndex = index;
                             index = startIndex > cleanedInput.Length ? -1 : indexOf(cleanedInput, cleanedWord, startIndex).index;
-                            
+
                             if (index == oldIndex || index == -1 || DateTime.UtcNow.Subtract(start) >= Constants.REGEX_TIMEOUT)
                             {
                                 break;
@@ -297,7 +296,7 @@ namespace PhpbbInDotnet.Services
                 _writingService.GetBbCodesCacheKey(lang),
                 () =>
                 {
-                    var maxId = _context.GetDbConnection().ExecuteScalar<int>("SELECT max(bbcode_id) FROM phpbb_bbcodes");
+                    var maxId = _context.GetSqlExecuter().ExecuteScalar<int>("SELECT max(bbcode_id) FROM phpbb_bbcodes");
                     var tagsCache = new Dictionary<string, (BBTag Tag, BBTagSummary Summary)>
                     {
                         ["b"] = (
@@ -360,8 +359,8 @@ namespace PhpbbInDotnet.Services
                         ["quote"] = (
                             Tag: new BBTag("quote", "<blockquote class=\"PostQuote\">${name}", "</blockquote>", maxId + 6, "", true,
                                 new BBAttribute(
-                                    id: "name", 
-                                    name: "", 
+                                    id: "name",
+                                    name: "",
                                     contentTransformer: a =>
                                     {
                                         if (string.IsNullOrWhiteSpace(a.AttributeValue))
@@ -387,7 +386,7 @@ namespace PhpbbInDotnet.Services
                                             }
                                         }
                                         return toReturn;
-                                    }, 
+                                    },
                                     htmlEncodingMode: HtmlEncodingMode.UnsafeDontEncode
                                 )
                             )

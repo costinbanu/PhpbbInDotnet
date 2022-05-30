@@ -68,13 +68,13 @@ namespace PhpbbInDotnet.Forum.Pages
                 _ => "message fail",
             };
 
-        private readonly AdminUserService _adminUserService;
-        private readonly AdminForumService _adminForumService;
-        private readonly WritingToolsService _adminWritingService;
-        private readonly OperationLogService _logService;
+        private readonly IAdminUserService _adminUserService;
+        private readonly IAdminForumService _adminForumService;
+        private readonly IWritingToolsService _adminWritingService;
+        private readonly IOperationLogService _logService;
 
-        public AdminModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, AdminUserService adminUserService, 
-            AdminForumService adminForumService, WritingToolsService adminWritingService, LanguageProvider languageProvider, OperationLogService logService) 
+        public AdminModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, IAdminUserService adminUserService, 
+            IAdminForumService adminForumService, IWritingToolsService adminWritingService, LanguageProvider languageProvider, IOperationLogService logService) 
             : base(context, forumService, userService, cache, utils, languageProvider)
         {
             _adminUserService = adminUserService;

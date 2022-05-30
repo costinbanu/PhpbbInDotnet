@@ -13,6 +13,7 @@ using MimeKit;
 using MimeKit.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using PhpbbInDotnet.Utilities.Core;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -27,7 +28,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Utilities
 {
-    public class CommonUtils : IDisposable
+    class CommonUtils : ICommonUtils
     {
         private readonly IConfiguration _config;
         private readonly ICompositeViewEngine _viewEngine;
@@ -43,37 +44,18 @@ namespace PhpbbInDotnet.Utilities
             _viewEngine = viewEngine;
             _tempDataProvider = tempDataProvider;
             _logger = logger;
-            
+
             HtmlCommentRegex = new Regex("(<!--.*?-->)|(&lt;!--.*?--&gt;)", RegexOptions.Compiled | RegexOptions.Singleline, Constants.REGEX_TIMEOUT);
             _md5 = MD5.Create();
         }
 
         #region Compression
 
-        public async Task<byte[]> CompressObject<T>(T source)
-        {
-            using var content = new MemoryStream(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(source)));
-            using var memory = new MemoryStream();
-            using var gzip = new GZipStream(memory, CompressionMode.Compress);
-            await content.CopyToAsync(gzip);
-            await gzip.FlushAsync();
-            return memory.ToArray();
-        }
+        public Task<byte[]> CompressObject<T>(T source)
+            => CompressionUtils.CompressObject<T>(source);
 
-        public async Task<T?> DecompressObject<T>(byte[]? source)
-        {
-            if (source?.Any() != true)
-            {
-                return default;
-            }
-
-            using var content = new MemoryStream();
-            using var memory = new MemoryStream(source);
-            using var gzip = new GZipStream(memory, CompressionMode.Decompress);
-            await gzip.CopyToAsync(content);
-            await content.FlushAsync();
-            return JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(content.ToArray()));
-        }
+        public Task<T?> DecompressObject<T>(byte[]? source)
+            => CompressionUtils.DecompressObject<T>(source);
 
         public async Task<string> CompressAndEncode(string input)
             => Convert.ToBase64String(await CompressObject(input));
@@ -150,7 +132,7 @@ namespace PhpbbInDotnet.Utilities
             return decrypted;
         }
 
-        public byte[] GetEncryptionKey()
+        private byte[] GetEncryptionKey()
         {
             var key1 = _config.GetValue<Guid>("Encryption:Key1").ToByteArray().ToList();
             var key2 = _config.GetValue<Guid>("Encryption:Key2").ToByteArray();
@@ -163,26 +145,7 @@ namespace PhpbbInDotnet.Utilities
         #region String utils
 
         public string CleanString(string? input)
-        {
-            if (input == null)
-            {
-                return string.Empty;
-            }
-
-            var normalizedString = input.Normalize(NormalizationForm.FormD);
-            var stringBuilder = new StringBuilder();
-
-            foreach (var c in normalizedString)
-            {
-                var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
-                if (unicodeCategory != UnicodeCategory.NonSpacingMark)
-                {
-                    stringBuilder.Append(c);
-                }
-            }
-
-            return stringBuilder.ToString().ToLower().Normalize(NormalizationForm.FormC);
-        }
+            => StringUtils.CleanString(input);
 
         #endregion String utils
 
@@ -268,9 +231,9 @@ namespace PhpbbInDotnet.Utilities
             email.From.Add(MailboxAddress.Parse(_config.GetValue<string>("AdminEmail")));
             email.To.Add(MailboxAddress.Parse(to));
             email.Subject = subject;
-            email.Body = new TextPart(TextFormat.Html) 
-            { 
-                Text = body 
+            email.Body = new TextPart(TextFormat.Html)
+            {
+                Text = body
             };
             using var smtp = new MailKit.Net.Smtp.SmtpClient();
             smtp.Connect(_config.GetValue<string>("Smtp:Host"), _config.GetValue<int>("Smtp:Port"), SecureSocketOptions.SslOnConnect);
@@ -292,7 +255,7 @@ namespace PhpbbInDotnet.Utilities
             return $"{(Math.Sign(fileSizeInBytes) * num).ToString("##.##", CultureInfo.InvariantCulture)} {suf[place]}";
         }
 
-        public List<SelectListItem> EnumToDropDownList<T>(T? selectedItem, Func<T, string>? textTransform = null, Func<T, string>? valueTransform = null, string? defaultText = null, Func<T, bool>? valueFilter = null) 
+        public List<SelectListItem> EnumToDropDownList<T>(T? selectedItem, Func<T, string>? textTransform = null, Func<T, string>? valueTransform = null, string? defaultText = null, Func<T, bool>? valueFilter = null)
             where T : struct, Enum
         {
             textTransform ??= x => Enum.GetName(x)!;

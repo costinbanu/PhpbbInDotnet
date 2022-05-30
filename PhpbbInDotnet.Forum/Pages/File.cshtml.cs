@@ -20,12 +20,12 @@ namespace PhpbbInDotnet.Forum.Pages
 {
     public class FileModel : AuthenticatedPageModel
     {
-        private readonly StorageService _storageService;
+        private readonly IStorageService _storageService;
         private readonly FileExtensionContentTypeProvider _contentTypeProvider;
         private readonly IConfiguration _config;
 
-        public FileModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, StorageService storageService,
-            IConfiguration config, CommonUtils utils, FileExtensionContentTypeProvider contentTypeProvider, LanguageProvider languageProvider)
+        public FileModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, IStorageService storageService,
+            IConfiguration config, ICommonUtils utils, FileExtensionContentTypeProvider contentTypeProvider, LanguageProvider languageProvider)
             : base(context, forumService, userService, cache, utils, languageProvider)
         {
             _storageService = storageService;
@@ -44,9 +44,9 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             }
 
-            var connection = Context.GetDbConnection();
+            var sqlExecuter = Context.GetSqlExecuter();
 
-            var file = await connection.QuerySingleOrDefaultAsync<AttachmentPreviewDto>(
+            var file = await sqlExecuter.QuerySingleOrDefaultAsync<AttachmentPreviewDto>(
                 @"SELECT a.physical_filename, a.real_filename, a.mimetype, p.forum_id, p.post_id 
                     FROM phpbb_attachments a 
                     LEFT JOIN phpbb_posts p ON a.post_msg_id = p.post_id 
@@ -66,7 +66,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (!correlationId.HasValue)
             {
-                await connection.ExecuteAsync("UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE attach_id = @id", new { id });
+                await sqlExecuter.ExecuteAsync("UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE attach_id = @id", new { id });
             }
 
             return await WithValidForum(
@@ -91,8 +91,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             }
 
-            var connection = Context.GetDbConnection();
-            file = await connection.QueryFirstOrDefaultAsync<string>("SELECT user_avatar FROM phpbb_users WHERE user_id = @userId", new { userId });
+            var sqlExecuter = Context.GetSqlExecuter();
+            file = await sqlExecuter.QueryFirstOrDefaultAsync<string>("SELECT user_avatar FROM phpbb_users WHERE user_id = @userId", new { userId });
             if (file == null)
             {
                 return RedirectToPage("Error", new { isNotFound = true });

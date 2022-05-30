@@ -17,7 +17,7 @@ namespace PhpbbInDotnet.Forum.Pages
     [ValidateAntiForgeryToken]
     public class SendPrivateMessageModel : AuthenticatedPageModel
     {
-        private readonly WritingToolsService _writingService;
+        private readonly IWritingToolsService _writingService;
         private readonly IConfiguration _config;
 
         [BindProperty]
@@ -43,8 +43,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public PostDto? PreviewablePost { get; set; }
 
-        public SendPrivateMessageModel(CommonUtils utils, ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cacheService, 
-            LanguageProvider languageProvider, WritingToolsService writingService, IConfiguration config)
+        public SendPrivateMessageModel(ICommonUtils utils, IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cacheService, 
+            LanguageProvider languageProvider, IWritingToolsService writingService, IConfiguration config)
             : base(context, forumService, userService, cacheService, utils, languageProvider)
         {
             _writingService = writingService;
@@ -55,14 +55,14 @@ namespace PhpbbInDotnet.Forum.Pages
             => WithRegisteredUser(async (usr) =>
             {
                 var lang = GetLanguage();
-                var conn = Context.GetDbConnection();
+                var sqlExec = Context.GetSqlExecuter();
 
                 if ((PostId ?? 0) > 0)
                 {
-                    var post = await conn.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { PostId });
+                    var post = await sqlExec.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { PostId });
                     if (post != null)
                     {
-                        var author = await conn.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @posterId", new { post.PosterId });
+                        var author = await sqlExec.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @posterId", new { post.PosterId });
                         if ((author?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
                         {
                             PostTitle = HttpUtility.HtmlDecode(post.PostSubject);
@@ -82,10 +82,10 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 else if ((PrivateMessageId ?? 0) > 0 && (ReceiverId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
                 {
-                    var msg = await conn.QueryFirstOrDefaultAsync<PhpbbPrivmsgs>("SELECT * FROM phpbb_privmsgs WHERE msg_id = @privateMessageId", new { PrivateMessageId });
+                    var msg = await sqlExec.QueryFirstOrDefaultAsync<PhpbbPrivmsgs>("SELECT * FROM phpbb_privmsgs WHERE msg_id = @privateMessageId", new { PrivateMessageId });
                     if (msg != null && ReceiverId == msg.AuthorId)
                     {
-                        var author = await conn.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @receiverId", new { ReceiverId });
+                        var author = await sqlExec.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @receiverId", new { ReceiverId });
                         if ((author?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
                         {
                             var title = HttpUtility.HtmlDecode(msg.MessageSubject);
@@ -105,7 +105,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 else if ((ReceiverId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
                 {
-                    ReceiverName = (await conn.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @receiverId", new { ReceiverId }))?.Username;
+                    ReceiverName = (await sqlExec.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @receiverId", new { ReceiverId }))?.Username;
                 }
 
                 Action = PostingActions.NewPrivateMessage;
@@ -116,14 +116,14 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetEdit()
             => await WithRegisteredUser(async (user) =>
             {
-                var conn = Context.GetDbConnection();
+                var sqlExec = Context.GetSqlExecuter();
 
-                var pm = await conn.QueryFirstOrDefaultAsync<PhpbbPrivmsgs>("SELECT * FROM phpbb_privmsgs WHERE msg_id = @privateMessageId", new { PrivateMessageId });
+                var pm = await sqlExec.QueryFirstOrDefaultAsync<PhpbbPrivmsgs>("SELECT * FROM phpbb_privmsgs WHERE msg_id = @privateMessageId", new { PrivateMessageId });
                 PostText = _writingService.CleanBbTextForDisplay(pm.MessageText, pm.BbcodeUid);
                 PostTitle = HttpUtility.HtmlDecode(pm.MessageSubject);
                 if ((ReceiverId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
                 {
-                    ReceiverName = (await conn.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @receiverId", new { ReceiverId }))?.Username;
+                    ReceiverName = (await sqlExec.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @receiverId", new { ReceiverId }))?.Username;
                 }
                 Action = PostingActions.EditPrivateMessage;
 
@@ -183,7 +183,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return PageWithError(nameof(PostText), LanguageProvider.Errors[lang, "POST_TOO_SHORT"]);
                 }
 
-                var conn = Context.GetDbConnection();
+                var sqlExec = Context.GetSqlExecuter();
 
                 var newPostText = PostText;
                 newPostText = HttpUtility.HtmlEncode(newPostText);

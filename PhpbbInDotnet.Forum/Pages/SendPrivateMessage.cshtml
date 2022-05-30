@@ -8,11 +8,11 @@
 @using Services
 @using Microsoft.Extensions.Configuration
 
-@inject WritingToolsService _writingService
-@inject BBCodeRenderingService _renderingService
-@inject StorageService _storageService
-@inject UserService _userService
-@inject CommonUtils _utils
+@inject IWritingToolsService _writingService
+@inject IBBCodeRenderingService _renderingService
+@inject IStorageService _storageService
+@inject IUserService _userService
+@inject ICommonUtils _utils
 @inject IConfiguration _config
 
 @{
@@ -67,7 +67,8 @@
 <form name="postform" method="post" enctype="multipart/form-data">
     @if (Model.Action == PostingActions.NewPrivateMessage)
     {
-        <input type="text" asp-for="ReceiverName" placeholder="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "PM_CHOOSE_TO"])" id="pmToInput" style="width:100%" autocomplete="off" />
+        <input type="text" asp-for="ReceiverName" placeholder="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "PM_CHOOSE_TO"])" id="pmToInput" style="width:100%" autocomplete="off" class="InputBox" />
+        <div style="clear:both"></div>
         <p id="tributeHolder" style="position:relative"></p>
         <span asp-validation-for="ReceiverName" class="validation"></span>
     }
@@ -77,7 +78,6 @@
         <p></p>
         <span asp-validation-for="ReceiverName" class="validation"></span>
     }
-
     @await Html.PartialAsync("_TextInputPartial", new _TextInputPartialModel(Lang, Model.PostTitle, Model.PostText))
 
     <button onclick="posting.toggleEmoji()" type="button" class="Hide960 PostingButton MyButton SpacedButton">

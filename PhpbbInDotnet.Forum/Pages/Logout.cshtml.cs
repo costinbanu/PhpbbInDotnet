@@ -13,10 +13,10 @@ namespace PhpbbInDotnet.Forum.Pages
 {
     public class LogoutModel : PageModel
     {
-        private readonly UserService _userService;
+        private readonly IUserService _userService;
         private readonly IConfiguration _config;
 
-        public LogoutModel(UserService userService, IConfiguration config)
+        public LogoutModel(IUserService userService, IConfiguration config)
         {
             _userService = userService;
             _config = config;

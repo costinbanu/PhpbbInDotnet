@@ -20,7 +20,7 @@ namespace PhpbbInDotnet.Forum.Pages
     {
         private bool _forceTreeRefresh;
         private readonly IConfiguration _config;
-        private readonly BBCodeRenderingService _renderingService;
+        private readonly IBBCodeRenderingService _renderingService;
 
         public HashSet<ForumTree>? Forums { get; private set; }
         public List<TopicGroup>? Topics { get; private set; }
@@ -35,8 +35,8 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public int ForumId { get; set; }
 
-        public ViewForumModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, BBCodeRenderingService renderingService,
-            IConfiguration config, CommonUtils utils, LanguageProvider languageProvider)
+        public ViewForumModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, IBBCodeRenderingService renderingService,
+            IConfiguration config, ICommonUtils utils, LanguageProvider languageProvider)
             : base(context, forumService, userService, cache, utils, languageProvider) 
         {
             _config = config;
@@ -57,7 +57,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumRulesUid = thisForum.ForumRulesUid;
                 ForumDesc = _renderingService.BbCodeToHtml(thisForum.ForumDesc, thisForum.ForumDescUid ?? string.Empty);
                
-                var parentTask = Context.GetDbConnection().QuerySingleOrDefaultAsync<PhpbbForums>(
+                var parentTask = Context.GetSqlExecuter().QuerySingleOrDefaultAsync<PhpbbForums>(
                     "SELECT * FROM phpbb_forums WHERE forum_id = @ParentId", 
                     new { thisForum.ParentId }
                 );
@@ -115,7 +115,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         async Task MarkShortcutsRead()
         {
-            var shortcuts = Context.GetDbConnection().Query(
+            var shortcuts = Context.GetSqlExecuter().Query(
                 @"SELECT t.forum_id AS actual_forum_id, t.topic_id, t.topic_last_post_time
                     FROM phpbb_shortcuts s
                     JOIN phpbb_topics t on s.topic_id = t.topic_id

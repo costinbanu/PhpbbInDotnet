@@ -20,10 +20,10 @@ using System.Web;
 
 namespace PhpbbInDotnet.Services
 {
-    public class WritingToolsService : MultilingualServiceBase
+    class WritingToolsService : MultilingualServiceBase, IWritingToolsService
     {
-        private readonly ForumDbContext _context;
-        private readonly StorageService _storageService;
+        private readonly IForumDbContext _context;
+        private readonly IStorageService _storageService;
         private readonly IConfiguration _config;
         private readonly IAppCache _cache;
 
@@ -32,7 +32,7 @@ namespace PhpbbInDotnet.Services
 
         private List<PhpbbSmilies>? _smilies;
 
-        public WritingToolsService(ForumDbContext context, StorageService storageService, CommonUtils utils, LanguageProvider languageProvider, 
+        public WritingToolsService(IForumDbContext context, IStorageService storageService, ICommonUtils utils, LanguageProvider languageProvider,
             IHttpContextAccessor httpContextAccessor, IConfiguration config, IAppCache cache)
             : base(utils, languageProvider, httpContextAccessor)
         {
@@ -45,10 +45,10 @@ namespace PhpbbInDotnet.Services
         #region Banned words
 
         public async Task<List<PhpbbWords>> GetBannedWordsAsync()
-            => (await (_context.GetDbConnection()).QueryAsync<PhpbbWords>("SELECT * FROM phpbb_words")).AsList();
+            => (await (_context.GetSqlExecuter()).QueryAsync<PhpbbWords>("SELECT * FROM phpbb_words")).AsList();
 
         public List<PhpbbWords> GetBannedWords()
-            => _context.GetDbConnection().Query<PhpbbWords>("SELECT * FROM phpbb_words").AsList();
+            => _context.GetSqlExecuter().Query<PhpbbWords>("SELECT * FROM phpbb_words").AsList();
 
         public async Task<(string Message, bool? IsSuccess)> ManageBannedWords(List<PhpbbWords> words, List<int> indexesToRemove)
         {
@@ -59,8 +59,8 @@ namespace PhpbbInDotnet.Services
                 _context.PhpbbWords.UpdateRange(words.Where(w => w.WordId != 0));
                 await _context.SaveChangesAsync();
 
-                var conn = _context.GetDbConnection();
-                await conn.ExecuteAsync("DELETE FROM phpbb_words WHERE word_id IN @ids", new { ids = indexesToRemove.Select(i => words[i].WordId) });
+                var sqlExecuter = _context.GetSqlExecuter();
+                await sqlExecuter.ExecuteAsync("DELETE FROM phpbb_words WHERE word_id IN @ids", new { ids = indexesToRemove.Select(i => words[i].WordId) });
 
                 return (LanguageProvider.Admin[lang, "BANNED_WORDS_UPDATED_SUCCESSFULLY"], true);
             }
@@ -82,16 +82,16 @@ namespace PhpbbInDotnet.Services
         {
             var currentLanguage = GetLanguage();
             try
-            { 
+            {
                 indexesToDisplay.ForEach(i => codes[i].DisplayOnPosting = 1);
                 await _context.PhpbbBbcodes.AddRangeAsync(codes.Where(c => c.BbcodeId == 0));
                 _context.PhpbbBbcodes.UpdateRange(codes.Where(c => c.BbcodeId != 0));
                 await _context.SaveChangesAsync();
 
-                var conn = _context.GetDbConnection();
-                await conn.ExecuteAsync("DELETE FROM phpbb_bbcodes WHERE bbcode_id IN @ids", new { ids = indexesToRemove.Select(i => codes[i].BbcodeId) });
-                
-                foreach(var language in LanguageProvider.AllLanguages)
+                var sqlExecuter = _context.GetSqlExecuter();
+                await sqlExecuter.ExecuteAsync("DELETE FROM phpbb_bbcodes WHERE bbcode_id IN @ids", new { ids = indexesToRemove.Select(i => codes[i].BbcodeId) });
+
+                foreach (var language in LanguageProvider.AllLanguages)
                 {
                     _cache.Remove(GetBbCodesCacheKey(language));
                 }
@@ -164,10 +164,10 @@ namespace PhpbbInDotnet.Services
         public async Task<(string Message, bool? IsSuccess)> DeleteOrphanedFiles()
         {
             var lang = GetLanguage();
-            var connection = _context.GetDbConnection();
+            var sqlExecuter = _context.GetSqlExecuter();
 
             var retention = _config.GetObject<TimeSpan?>("RecycleBinRetentionTime") ?? TimeSpan.FromDays(7);
-            var files = await connection.QueryAsync<PhpbbAttachments>(
+            var files = await sqlExecuter.QueryAsync<PhpbbAttachments>(
                 "SELECT * FROM phpbb_attachments WHERE is_orphan = 1 AND @now - filetime > @retention",
                 new
                 {
@@ -184,7 +184,7 @@ namespace PhpbbInDotnet.Services
 
             if (Succeeded?.Any() == true)
             {
-                await connection.ExecuteAsync(
+                await sqlExecuter.ExecuteAsync(
                     "DELETE FROM phpbb_attachments WHERE attach_id IN @ids",
                     new { ids = files.Where(f => Succeeded.Contains(f.PhysicalFilename)).Select(f => f.AttachId).DefaultIfEmpty() }
                 );
@@ -208,22 +208,22 @@ namespace PhpbbInDotnet.Services
             => _smilies ??= await GetSmilies();
 
         public async Task<List<PhpbbSmilies>> GetSmilies()
-            => (await (_context.GetDbConnection()).QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies ORDER BY smiley_order")).AsList();
+            => (await (_context.GetSqlExecuter()).QueryAsync<PhpbbSmilies>("SELECT * FROM phpbb_smilies ORDER BY smiley_order")).AsList();
 
         public async Task<(string Message, bool? IsSuccess)> ManageSmilies(List<UpsertSmiliesDto> dto, List<string> newOrder, List<int> codesToDelete, List<string> smileyGroupsToDelete)
         {
             var lang = GetLanguage();
             try
             {
-                var conn = _context.GetDbConnection();
+                var sqlExecuter = _context.GetSqlExecuter();
 
                 if (codesToDelete.Any())
                 {
-                    await conn.ExecuteAsync("DELETE FROM phpbb_smilies WHERE smiley_id IN @codesToDelete", new { codesToDelete });
+                    await sqlExecuter.ExecuteAsync("DELETE FROM phpbb_smilies WHERE smiley_id IN @codesToDelete", new { codesToDelete });
                 }
                 if (smileyGroupsToDelete.Any())
                 {
-                    await conn.ExecuteAsync("DELETE FROM phpbb_smilies WHERE smiley_url IN @smileyGroupsToDelete", new { smileyGroupsToDelete });
+                    await sqlExecuter.ExecuteAsync("DELETE FROM phpbb_smilies WHERE smiley_url IN @smileyGroupsToDelete", new { smileyGroupsToDelete });
                 }
 
                 var maxOrder = await _context.PhpbbSmilies.AsNoTracking().DefaultIfEmpty().MaxAsync(s => s == null ? 0 : s.SmileyOrder);

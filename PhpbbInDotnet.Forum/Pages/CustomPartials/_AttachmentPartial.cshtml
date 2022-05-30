@@ -1,8 +1,8 @@
 ﻿@model PhpbbInDotnet.Objects.AttachmentDto
 
 @using Utilities
-@inject CommonUtils _utils
-@inject Services.BBCodeRenderingService _renderingService
+@inject ICommonUtils _utils
+@inject Services.IBBCodeRenderingService _renderingService
 @inject Languages.LanguageProvider _languageProvider
 
 @if (Model != null)
