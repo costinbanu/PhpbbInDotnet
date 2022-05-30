@@ -256,36 +256,43 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (_imageProcessorOptions.Api?.Enabled == true && (ShouldResize || ShouldHideLicensePlates))
                 {
-                    images = await Task.WhenAll(images.Select(async image =>
+                    try
                     {
-                        using var streamContent = new StreamContent(image.OpenReadStream());
-                        streamContent.Headers.Add("Content-Type", image.ContentType);
-                        using var formContent = new MultipartFormDataContent
+                        images = await Task.WhenAll(images.Select(async image =>
                         {
+                            using var streamContent = new StreamContent(image.OpenReadStream());
+                            streamContent.Headers.Add("Content-Type", image.ContentType);
+                            using var formContent = new MultipartFormDataContent
+                            {
                             { streamContent, "File", image.FileName },
                             { new StringContent(ShouldHideLicensePlates.ToString()), "HideLicensePlates" },
-                        };
-                        if (ShouldResize)
-                        {
-                            formContent.Add(new StringContent((Constants.ONE_MB * sizeLimit.Images).ToString()), "SizeLimit");
-                        }
+                            };
+                            if (ShouldResize)
+                            {
+                                formContent.Add(new StringContent((Constants.ONE_MB * sizeLimit.Images).ToString()), "SizeLimit");
+                            }
 
-                        var result = await _imageProcessorClient!.PostAsync(_imageProcessorOptions.Api.RelativeUri, formContent);
+                            var result = await _imageProcessorClient!.PostAsync(_imageProcessorOptions.Api.RelativeUri, formContent);
 
-                        if (!result.IsSuccessStatusCode)
-                        {
-                            var errorMessage = await result.Content.ReadAsStringAsync();
-                            throw new HttpRequestException($"The image processor API threw an exception: {errorMessage}");
-                        }
+                            if (!result.IsSuccessStatusCode)
+                            {
+                                var errorMessage = await result.Content.ReadAsStringAsync();
+                                throw new HttpRequestException($"The image processor API threw an exception: {errorMessage}");
+                            }
 
-                        var resultStream = await result.Content.ReadAsStreamAsync();
-                        return new FormFile(resultStream, 0, resultStream.Length, image.Name, image.FileName)
-                        {
-                            Headers = image.Headers,
-                            ContentType = image.ContentType,
-                            ContentDisposition = image.ContentDisposition,
-                        };
-                    }));
+                            var resultStream = await result.Content.ReadAsStreamAsync();
+                            return new FormFile(resultStream, 0, resultStream.Length, image.Name, image.FileName)
+                            {
+                                Headers = image.Headers,
+                                ContentType = image.ContentType,
+                                ContentDisposition = image.ContentDisposition,
+                            };
+                        }));
+                    }
+                    catch (Exception ex)
+                    {
+                        Utils.HandleErrorAsWarning(ex);
+                    }
                 }
 
                 if ((user.UploadLimit ?? 0) > 0)
