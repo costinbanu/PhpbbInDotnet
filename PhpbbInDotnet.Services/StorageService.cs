@@ -14,17 +14,17 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
 {
-    public class StorageService
+    class StorageService : IStorageService
     {
         private readonly IConfiguration _config;
         private readonly Storage _storageOptions;
-        private readonly CommonUtils _utils;
-        private readonly ForumDbContext _context;
+        private readonly ICommonUtils _utils;
+        private readonly IForumDbContext _context;
         private readonly string _attachmentsPath;
         private readonly string _avatarsPath;
         private readonly string _emojiPath;
 
-        public StorageService(IConfiguration config, CommonUtils utils, IWebHostEnvironment environment, ForumDbContext context)
+        public StorageService(IConfiguration config, ICommonUtils utils, IWebHostEnvironment environment, IForumDbContext context)
         {
             _config = config;
             _utils = utils;
@@ -59,7 +59,7 @@ namespace PhpbbInDotnet.Services
             var succeeded = new List<PhpbbAttachments>();
             var failed = new List<string>();
 
-            var conn = _context.GetDbConnection();
+            var sqlExecuter = _context.GetSqlExecuter();
 
             foreach (var file in attachedFiles)
             {
@@ -73,7 +73,7 @@ namespace PhpbbInDotnet.Services
                     }
 
                     succeeded.Add(
-                        await conn.QueryFirstOrDefaultAsync<PhpbbAttachments>(
+                        await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbAttachments>(
                             "INSERT INTO phpbb_attachments (attach_comment, extension, filetime, filesize, mimetype, physical_filename, real_filename, poster_id) " +
                             "VALUES ('', @Extension, @Filetime, @Filesize, @Mimetype, @PhysicalFilename, @RealFilename, @PosterId); " +
                             "SELECT * FROM phpbb_attachments WHERE attach_id = LAST_INSERT_ID()",

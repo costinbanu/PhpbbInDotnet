@@ -28,7 +28,7 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public string[]? SelectedNewPosts { get; set; }
 
-        public NewPostsModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, LanguageProvider languageProvider)
+        public NewPostsModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, LanguageProvider languageProvider)
             : base(context, forumService, userService, cache, utils, languageProvider)
         {
         }
@@ -42,7 +42,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 Paginator = new Paginator(count: topicList.Count(), pageNum: PageNum, link: "/NewPosts?pageNum=1", topicId: null);
                 PageNum = Paginator.CurrentPage;
 
-                Topics = (await Context.GetDbConnection().QueryAsync<TopicDto>(
+                Topics = (await Context.GetSqlExecuter().QueryAsync<TopicDto>(
                     @"SELECT t.topic_id, 
 	                         t.forum_id,
 	                         t.topic_title, 

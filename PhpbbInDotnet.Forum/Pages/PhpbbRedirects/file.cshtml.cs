@@ -7,9 +7,9 @@ namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
 {
     public class fileModel : PageModel
     {
-        private readonly CommonUtils _utils;
+        private readonly ICommonUtils _utils;
 
-        public fileModel(CommonUtils utils)
+        public fileModel(ICommonUtils utils)
         {
             _utils = utils;
         }

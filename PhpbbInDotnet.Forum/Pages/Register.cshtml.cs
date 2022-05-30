@@ -24,12 +24,12 @@ namespace PhpbbInDotnet.Forum.Pages
     [ValidateAntiForgeryToken]
     public class RegisterModel : PageModel
     {
-        private readonly ForumDbContext _context;
-        private readonly CommonUtils _utils;
+        private readonly IForumDbContext _context;
+        private readonly ICommonUtils _utils;
         private readonly IConfiguration _config;
         private readonly HttpClient _gClient;
         private readonly Recaptcha _recaptchaOptions;
-        private readonly UserService _userService;
+        private readonly IUserService _userService;
 
         private string? _language;
 
@@ -54,7 +54,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public LanguageProvider LanguageProvider { get; }
 
 
-        public RegisterModel(ForumDbContext context, CommonUtils utils, IConfiguration config, IHttpClientFactory httpClientFactory, LanguageProvider languageProvider, UserService userService)
+        public RegisterModel(IForumDbContext context, ICommonUtils utils, IConfiguration config, IHttpClientFactory httpClientFactory, LanguageProvider languageProvider, IUserService userService)
         {
             _context = context;
             _utils = utils;
@@ -121,9 +121,9 @@ namespace PhpbbInDotnet.Forum.Pages
                 return PageWithError(nameof(RecaptchaResponse), LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
             }
 
-            var conn = _context.GetDbConnection();
+            var sqlExecuter = _context.GetSqlExecuter();
 
-            var checkBanlist = await conn.QueryAsync(
+            var checkBanlist = await sqlExecuter.QueryAsync(
                 @"SELECT @email LIKE LOWER(REPLACE(REPLACE(ban_email, '*', '%'), '?', '_')) AS Email,
                          @ip LIKE LOWER(REPLACE(REPLACE(ban_ip, '*', '%'), '?', '_')) AS IP
                     FROM phpbb_banlist

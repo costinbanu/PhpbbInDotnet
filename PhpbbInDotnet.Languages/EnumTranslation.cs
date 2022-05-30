@@ -7,9 +7,9 @@ namespace PhpbbInDotnet.Languages
 {
     public class EnumTranslation : Translation
     {
-        private readonly CommonUtils _utils;
+        private readonly ICommonUtils _utils;
 
-        internal EnumTranslation(ILogger logger, IAppCache cache, CommonUtils utils) : base("Enums", logger, cache) 
+        internal EnumTranslation(ILogger logger, IAppCache cache, ICommonUtils utils) : base("Enums", logger, cache) 
         {
             _utils = utils;
         }

@@ -6,8 +6,8 @@
 @using Microsoft.Extensions.Configuration
 @using CustomPartials
 
-@inject CommonUtils _utils
-@inject Services.BBCodeRenderingService _renderingService
+@inject ICommonUtils _utils
+@inject Services.IBBCodeRenderingService _renderingService
 @inject IConfiguration _config
 @inject AnonymousSessionCounter _sessionCounter
 

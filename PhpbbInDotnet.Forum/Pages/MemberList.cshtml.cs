@@ -49,7 +49,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public IEnumerable<AnonymousSessionCounter.BotData>? BotList { get; private set; }
         public Paginator? BotPaginator { get; private set; }
 
-        public MemberListModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils,
+        public MemberListModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils,
             IConfiguration config, LanguageProvider languageProvider, AnonymousSessionCounter sessionCounter)
             : base(context, forumService, userService, cache, utils, languageProvider)
         {

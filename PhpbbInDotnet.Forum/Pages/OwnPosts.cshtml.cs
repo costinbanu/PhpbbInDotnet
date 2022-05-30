@@ -19,7 +19,7 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public int PageNum { get; set; } = 1;
 
-        public OwnPostsModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, LanguageProvider languageProvider)
+        public OwnPostsModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, LanguageProvider languageProvider)
             : base(context, forumService, userService, cache, utils, languageProvider)
         {
         }
@@ -32,7 +32,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     {
                         PageNum = Paginator.NormalizePageNumberLowerBound(PageNum);
                         var restrictedForumList = await GetRestrictedForums();
-                        var topicsTask = Context.GetDbConnection().QueryAsync<TopicDto>(
+                        var topicsTask = Context.GetSqlExecuter().QueryAsync<TopicDto>(
                             @"WITH own_topics AS (
 			                    SELECT DISTINCT p.topic_id
 			                      FROM phpbb_posts p
@@ -68,7 +68,7 @@ namespace PhpbbInDotnet.Forum.Pages
                                 restrictedForumList
                             }
                         );
-                        var countTask = Context.GetDbConnection().ExecuteScalarAsync<int>(
+                        var countTask = Context.GetSqlExecuter().ExecuteScalarAsync<int>(
                             @"SELECT COUNT(DISTINCT topic_id) AS total_count 
 	                            FROM phpbb_posts 
 	                           WHERE poster_id = @user_id

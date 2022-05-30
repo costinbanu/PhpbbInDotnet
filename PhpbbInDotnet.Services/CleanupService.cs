@@ -8,9 +8,10 @@ using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Core;
 using Serilog;
 using System;
-using System.Data.Common;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -18,11 +19,11 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
 {
-    public class CleanupService : BackgroundService
+    class CleanupService : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider;
 
-        private const string OK_FILE_NAME = $"{nameof(CleanupService)}.ok";
+        public const string OK_FILE_NAME = $"{nameof(CleanupService)}.ok";
 
         public CleanupService(IServiceProvider serviceProvider)
         {
@@ -35,17 +36,18 @@ namespace PhpbbInDotnet.Services
             await Task.Yield();
 
             using var scope = _serviceProvider.CreateScope();
-            var config = scope.ServiceProvider.GetRequiredService<IConfiguration>()!;
-            var dbContext = scope.ServiceProvider.GetRequiredService<ForumDbContext>()!;
-            var utils = scope.ServiceProvider.GetRequiredService<CommonUtils>()!;
-            var storageService = scope.ServiceProvider.GetRequiredService<StorageService>()!;
-            var logger = scope.ServiceProvider.GetService<ILogger>()!;
-            var writingToolsService = scope.ServiceProvider.GetService<WritingToolsService>()!;
+            var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+            var dbContext = scope.ServiceProvider.GetRequiredService<IForumDbContext>();
+            var storageService = scope.ServiceProvider.GetRequiredService<IStorageService>();
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger>();
+            var writingToolsService = scope.ServiceProvider.GetRequiredService<IWritingToolsService>();
+            var timeService = scope.ServiceProvider.GetRequiredService<ITimeService>();
+            var fileInfoService = scope.ServiceProvider.GetRequiredService<IFileInfoService>();
 
             logger.Information("Launching a new {name} instance...", nameof(CleanupService));
 
             var options = config.GetObject<CleanupServiceOptions>("CleanupService");
-            var timeToWait = GetTimeToWaitUntilRunIsAllowed(options);
+            var timeToWait = GetTimeToWaitUntilRunIsAllowed(timeService, fileInfoService, options);
             if (timeToWait > TimeSpan.Zero)
             {
                 logger.Warning("Waiting for {time} before executing cleanup task...", timeToWait);
@@ -58,12 +60,12 @@ namespace PhpbbInDotnet.Services
 
                 logger.Information("Executing cleanup tasks NOW...");
 
-                var connection = dbContext.GetDbConnection();
+                var sqlExecuter = dbContext.GetSqlExecuter();
                 await Task.WhenAll(
-                    CleanRecycleBin(config, connection, utils, storageService, logger, stoppingToken),
-                    ResyncOrphanFiles(config, connection, stoppingToken),
-                    ResyncForumsAndTopics(connection, stoppingToken),
-                    CleanOperationLogs(config, connection, logger, stoppingToken)
+                    CleanRecycleBin(config, timeService, sqlExecuter, storageService, logger, stoppingToken),
+                    ResyncOrphanFiles(config, timeService, sqlExecuter, stoppingToken),
+                    ResyncForumsAndTopics(sqlExecuter, stoppingToken),
+                    CleanOperationLogs(config, timeService, sqlExecuter, logger, stoppingToken)
                 );
 
                 stoppingToken.ThrowIfCancellationRequested();
@@ -82,7 +84,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        private async Task CleanRecycleBin(IConfiguration config, DbConnection dbConnection, CommonUtils utils, StorageService storageService, ILogger logger, CancellationToken stoppingToken)
+        private async Task CleanRecycleBin(IConfiguration config, ITimeService timeService, ISqlExecuter sqlExecuter, IStorageService storageService, ILogger logger, CancellationToken stoppingToken)
         {
             var retention = config.GetObject<TimeSpan?>("RecycleBinRetentionTime") ?? TimeSpan.FromDays(7);
 
@@ -91,12 +93,11 @@ namespace PhpbbInDotnet.Services
                 throw new ArgumentOutOfRangeException("RecycleBinRetentionTime", "Invalid app setting value.");
             }
 
-            var now = DateTime.UtcNow.ToUnixTimestamp();
-            var toDelete = await dbConnection.QueryAsync<PhpbbRecycleBin>(
+            var toDelete = await sqlExecuter.QueryAsync<PhpbbRecycleBin>(
                 "SELECT * FROM phpbb_recycle_bin WHERE @now - delete_time > @retention",
                 new
                 {
-                    now = DateTime.UtcNow.ToUnixTimestamp(),
+                    now = timeService.DateTimeUtcNow().ToUnixTimestamp(),
                     retention = retention.TotalSeconds
                 });
 
@@ -112,14 +113,14 @@ namespace PhpbbInDotnet.Services
 
             stoppingToken.ThrowIfCancellationRequested();
 
-            await dbConnection.ExecuteAsync(
+            await sqlExecuter.ExecuteAsync(
                 "DELETE FROM phpbb_recycle_bin WHERE type = @type AND id = @id",
                 toDelete);
 
             var posts = await Task.WhenAll(
                 from i in toDelete
                 where i.Type == RecycleBinItemType.Post
-                select utils.DecompressObject<PostDto>(i.Content)
+                select CompressionUtils.DecompressObject<PostDto>(i.Content)
             );
 
             stoppingToken.ThrowIfCancellationRequested();
@@ -138,35 +139,35 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        private async Task ResyncOrphanFiles(IConfiguration config, DbConnection dbConnection, CancellationToken stoppingToken)
+        private async Task ResyncOrphanFiles(IConfiguration config, ITimeService timeService, ISqlExecuter sqlExecuter, CancellationToken stoppingToken)
         {
             var retention = config.GetObject<TimeSpan?>("RecycleBinRetentionTime") ?? TimeSpan.FromDays(7);
 
             stoppingToken.ThrowIfCancellationRequested();
 
-            await dbConnection.ExecuteAsync(
+            await sqlExecuter.ExecuteAsync(
                 @"UPDATE phpbb_attachments a
                     LEFT JOIN phpbb_posts p ON a.post_msg_id = p.post_id
                      SET a.is_orphan = 1
                    WHERE p.post_id IS NULL AND @now - a.filetime > @retention AND a.is_orphan = 0",
                 new
                 {
-                    now = DateTime.UtcNow.ToUnixTimestamp(),
+                    now = timeService.DateTimeUtcNow().ToUnixTimestamp(),
                     retention = retention.TotalSeconds
                 });
         }
 
-        private async Task ResyncForumsAndTopics(DbConnection dbConnection, CancellationToken stoppingToken)
+        private async Task ResyncForumsAndTopics(ISqlExecuter sqlExecuter, CancellationToken stoppingToken)
         {
             stoppingToken.ThrowIfCancellationRequested();
 
-            var postsHavingWrongForumIdTask = dbConnection.ExecuteAsync(
+            var postsHavingWrongForumIdTask = sqlExecuter.ExecuteAsync(
                 @"UPDATE phpbb_posts p
                     JOIN phpbb_topics t ON p.topic_id = t.topic_id
                      SET p.forum_id = t.forum_id
                    WHERE p.forum_id <> t.forum_id");
 
-            var forumsHavingWrongLastPostTask = dbConnection.ExecuteAsync(
+            var forumsHavingWrongLastPostTask = sqlExecuter.ExecuteAsync(
                 @"UPDATE phpbb_forums f
                     JOIN (
                         WITH maxes AS (
@@ -193,7 +194,7 @@ namespace PhpbbInDotnet.Services
                     Constants.DEFAULT_USER_COLOR
                 });
 
-            var topicsHavingWrongLastOrFirstPostTask = dbConnection.ExecuteAsync(
+            var topicsHavingWrongLastOrFirstPostTask = sqlExecuter.ExecuteAsync(
                 @"UPDATE phpbb_topics t
                     JOIN (
                         WITH maxes AS (
@@ -237,7 +238,7 @@ namespace PhpbbInDotnet.Services
             await Task.WhenAll(postsHavingWrongForumIdTask, forumsHavingWrongLastPostTask, topicsHavingWrongLastOrFirstPostTask);
         }
 
-        private async Task CleanOperationLogs(IConfiguration config, DbConnection dbConnection, ILogger logger, CancellationToken stoppingToken)
+        private async Task CleanOperationLogs(IConfiguration config, ITimeService timeService, ISqlExecuter sqlExecuter, ILogger logger, CancellationToken stoppingToken)
         {
             var retention = config.GetObject<TimeSpan?>("OperationLogsRetentionTime") ?? TimeSpan.FromDays(365);
 
@@ -252,11 +253,11 @@ namespace PhpbbInDotnet.Services
                 throw new ArgumentOutOfRangeException("OperationLogsRetentionTime", "Invalid app setting value.");
             }
 
-            var toDelete = await dbConnection.QueryAsync<PhpbbLog>(
+            var toDelete = await sqlExecuter.QueryAsync<PhpbbLog>(
                 "SELECT * FROM phpbb_log WHERE @now - log_time > @retention",
                 new
                 {
-                    now = DateTime.UtcNow.ToUnixTimestamp(),
+                    now = timeService.DateTimeUtcNow().ToUnixTimestamp(),
                     retention = retention.TotalSeconds
                 });
                
@@ -272,7 +273,7 @@ namespace PhpbbInDotnet.Services
 
             stoppingToken.ThrowIfCancellationRequested();
 
-            await dbConnection.ExecuteAsync(
+            await sqlExecuter.ExecuteAsync(
                 "DELETE FROM phpbb_log WHERE log_id IN @ids",
                 new
                 {
@@ -280,9 +281,9 @@ namespace PhpbbInDotnet.Services
                 });
         }
     
-        private TimeSpan GetTimeToWaitUntilRunIsAllowed(CleanupServiceOptions options)
+        private TimeSpan GetTimeToWaitUntilRunIsAllowed(ITimeService timeService, IFileInfoService fileInfoService, CleanupServiceOptions options)
         {
-            var now = DateTimeOffset.Now;
+            var now = timeService.DateTimeOffsetNow();
             if (options.MinimumAllowedRunTime.Date != now.Date || options.MaximumAllowedRunTime.Date != now.Date)
             {
                 throw new ArgumentOutOfRangeException(
@@ -298,7 +299,7 @@ namespace PhpbbInDotnet.Services
 
             var timeUntilAllowedTimeFrame = GetTimeUntilAllowedRunTimeFrame();
             var timeSinceLastRun = GetElapsedTimeSinceLastRunIfAny();
-            if (!timeSinceLastRun.HasValue || (timeSinceLastRun.Value + timeUntilAllowedTimeFrame >= options.Interval && (now + timeUntilAllowedTimeFrame <= options.MaximumAllowedRunTime)))
+            if (!timeSinceLastRun.HasValue || (timeSinceLastRun.Value + timeUntilAllowedTimeFrame >= options.Interval))
             {
                 return timeUntilAllowedTimeFrame;
             }
@@ -314,14 +315,8 @@ namespace PhpbbInDotnet.Services
 
             TimeSpan? GetElapsedTimeSinceLastRunIfAny()
             {
-                DateTime? lastRun = null;
-                try
-                {
-                    lastRun = new FileInfo(OK_FILE_NAME).LastWriteTimeUtc;
-                }
-                catch { }
-
-                return lastRun.HasValue ? now.DateTime.ToUniversalTime() - lastRun.Value : null;
+               var lastRun = fileInfoService.GetLastWriteTime(OK_FILE_NAME);
+               return lastRun.HasValue ? now.DateTime.ToUniversalTime() - lastRun.Value : null;
             }
 
             TimeSpan GetTimeUntilAllowedRunTimeFrame()
