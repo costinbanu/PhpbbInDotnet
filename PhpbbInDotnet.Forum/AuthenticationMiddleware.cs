@@ -1,10 +1,8 @@
-﻿using Dapper;
-using DeviceDetectorNET;
+﻿using DeviceDetectorNET;
 using LazyCache;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Net.Http.Headers;
 using PhpbbInDotnet.Database;
@@ -196,7 +194,7 @@ namespace PhpbbInDotnet.Forum
                 return (false, await _userService.GetAnonymousDbUser());
             }
 
-            var dbUser = await _context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == user.UserId);
+            var dbUser = _context.GetSqlExecuter().QueryFirstOrDefault<PhpbbUsers>("SELECT * FROM phpbb_users where user_id = @userId", new { user.UserId });
             if (dbUser is not null && dbUser.UserInactiveReason == UserInactiveReason.NotInactive)
             {
                 return (true, dbUser);
