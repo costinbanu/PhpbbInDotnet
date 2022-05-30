@@ -70,7 +70,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public HashSet<ForumTree>? ForumTree { get; private set; }
         public List<MiniTopicDto>? TopicData { get; private set; }
 
-        public ConfirmModel(ForumDbContext context, ForumTreeService forumService, UserService userService, IAppCache cache, CommonUtils utils, IConfiguration config, LanguageProvider languageProvider)
+        public ConfirmModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, IConfiguration config, LanguageProvider languageProvider)
             : base(context, forumService, userService, cache, utils, languageProvider) 
         {
             _config = config;

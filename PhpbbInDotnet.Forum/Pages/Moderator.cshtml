@@ -6,9 +6,9 @@
 @using Services
 @using Utilities
 
-@inject ForumTreeService _forumService
-@inject BBCodeRenderingService _renderingService
-@inject CommonUtils _utils
+@inject IForumTreeService _forumService
+@inject IBBCodeRenderingService _renderingService
+@inject ICommonUtils _utils
 @inject IAppCache _cache
 
 @model PhpbbInDotnet.Forum.Pages.ModeratorModel

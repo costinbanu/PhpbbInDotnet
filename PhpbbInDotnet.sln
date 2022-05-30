@@ -24,6 +24,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhpbbInDotnet.Languages", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhpbbInDotnet.Database.SetupApp", "PhpbbInDotnet.Database.SetupApp\PhpbbInDotnet.Database.SetupApp.csproj", "{CE12B216-F331-43DB-B792-DA168596A5F4}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{46F225D0-0B80-4B22-8900-B7F0C31290DA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhpbbInDotnet.Services.UnitTests", "Tests\PhpbbInDotnet.Services.UnitTests\PhpbbInDotnet.Services.UnitTests.csproj", "{68A63359-5C25-4D67-9BFC-88FEEAF58CF9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -58,9 +62,16 @@ Global
 		{CE12B216-F331-43DB-B792-DA168596A5F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CE12B216-F331-43DB-B792-DA168596A5F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CE12B216-F331-43DB-B792-DA168596A5F4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{68A63359-5C25-4D67-9BFC-88FEEAF58CF9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{68A63359-5C25-4D67-9BFC-88FEEAF58CF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{68A63359-5C25-4D67-9BFC-88FEEAF58CF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{68A63359-5C25-4D67-9BFC-88FEEAF58CF9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{68A63359-5C25-4D67-9BFC-88FEEAF58CF9} = {46F225D0-0B80-4B22-8900-B7F0C31290DA}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {480BB1F0-8DB2-49F1-BD95-171B1AF0A8C0}

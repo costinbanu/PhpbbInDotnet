@@ -9,11 +9,11 @@ namespace PhpbbInDotnet.Services
     {
         protected readonly LanguageProvider LanguageProvider;
         protected readonly IHttpContextAccessor HttpContextAccessor;
-        protected readonly CommonUtils Utils;
+        protected readonly ICommonUtils Utils;
 
         private string? _language;
 
-        public MultilingualServiceBase(CommonUtils utils, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
+        public MultilingualServiceBase(ICommonUtils utils, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
         {
             LanguageProvider = languageProvider;
             HttpContextAccessor = httpContextAccessor;

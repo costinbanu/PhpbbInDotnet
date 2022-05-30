@@ -13,15 +13,15 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
 {
-    public class ModeratorService : MultilingualServiceBase
+    class ModeratorService : MultilingualServiceBase, IModeratorService
     {
-        private readonly ForumDbContext _context;
-        private readonly PostService _postService;
-        private readonly StorageService _storageService;
-        private readonly OperationLogService _operationLogService;
+        private readonly IForumDbContext _context;
+        private readonly IPostService _postService;
+        private readonly IStorageService _storageService;
+        private readonly IOperationLogService _operationLogService;
 
-        public ModeratorService(ForumDbContext context, PostService postService, StorageService storageService, CommonUtils utils, LanguageProvider languageProvider, 
-            IHttpContextAccessor httpContextAccessor, OperationLogService operationLogService)
+        public ModeratorService(IForumDbContext context, IPostService postService, IStorageService storageService, ICommonUtils utils, LanguageProvider languageProvider,
+            IHttpContextAccessor httpContextAccessor, IOperationLogService operationLogService)
             : base(utils, languageProvider, httpContextAccessor)
         {
             _context = context;
@@ -36,8 +36,8 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                var conn = _context.GetDbConnection();
-                var rows = await conn.ExecuteAsync("UPDATE phpbb_topics SET topic_type = @topicType WHERE topic_id = @topicId", new { topicType, topicId });
+                var sqlExecuter = _context.GetSqlExecuter();
+                var rows = await sqlExecuter.ExecuteAsync("UPDATE phpbb_topics SET topic_type = @topicType WHERE topic_id = @topicId", new { topicType, topicId });
 
                 if (rows == 1)
                 {
@@ -61,9 +61,9 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                var conn = _context.GetDbConnection();
-                
-                var topicRows = await conn.ExecuteAsync(
+                var sqlExecuter = _context.GetSqlExecuter();
+
+                var topicRows = await sqlExecuter.ExecuteAsync(
                     "UPDATE phpbb_topics SET forum_id = @destinationForumId WHERE topic_id = @topicID AND EXISTS(SELECT 1 FROM phpbb_forums WHERE forum_id = @destinationForumId)",
                     new { topicId, destinationForumId }
                 );
@@ -73,11 +73,11 @@ namespace PhpbbInDotnet.Services
                     return (LanguageProvider.Moderator[GetLanguage(), "DESTINATION_DOESNT_EXIST"], false);
                 }
 
-                var oldPosts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC", new { topicId })).AsList();
+                var oldPosts = (await sqlExecuter.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC", new { topicId })).AsList();
                 var oldForumId = oldPosts.FirstOrDefault()?.ForumId ?? 0;
-                await conn.ExecuteAsync(
+                await sqlExecuter.ExecuteAsync(
                     "UPDATE phpbb_posts SET forum_id = @destinationForumId WHERE topic_id = @topicId; " +
-                    "UPDATE phpbb_topics_track SET forum_id = @destinationForumId WHERE topic_id = @topicId", 
+                    "UPDATE phpbb_topics_track SET forum_id = @destinationForumId WHERE topic_id = @topicId",
                     new { destinationForumId, topicId }
                 );
                 foreach (var post in oldPosts)
@@ -101,9 +101,9 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                var conn = _context.GetDbConnection();
-                
-                var rows = await conn.ExecuteAsync("UPDATE phpbb_topics SET topic_status = @status WHERE topic_id = @topicId", new { status = @lock.ToByte(), topicId });
+                var sqlExecuter = _context.GetSqlExecuter();
+
+                var rows = await sqlExecuter.ExecuteAsync("UPDATE phpbb_topics SET topic_status = @status WHERE topic_id = @topicId", new { status = @lock.ToByte(), topicId });
 
                 if (rows == 0)
                 {
@@ -119,19 +119,19 @@ namespace PhpbbInDotnet.Services
                 return (string.Format(LanguageProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
-        
+
         public async Task<(string Message, bool? IsSuccess)> DeleteTopic(int topicId, OperationLogDto logDto)
         {
             try
             {
-                var conn = _context.GetDbConnection();
-                var posts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId", new { topicId })).AsList();
+                var sqlExecuter = _context.GetSqlExecuter();
+                var posts = (await sqlExecuter.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId", new { topicId })).AsList();
                 if (!posts.Any())
                 {
                     return (string.Format(LanguageProvider.Moderator[GetLanguage(), "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
                 }
 
-                var topic = await conn.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
+                var topic = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
                 if (topic != null)
                 {
                     var dto = new TopicDto
@@ -145,10 +145,10 @@ namespace PhpbbInDotnet.Services
                         TopicLastPosterId = topic.TopicLastPosterId,
                         TopicLastPosterName = topic.TopicLastPosterName,
                         TopicLastPostId = topic.TopicLastPostId,
-                        TopicLastPostTime = topic.TopicLastPostTime,     
+                        TopicLastPostTime = topic.TopicLastPostTime,
                         Poll = await _postService.GetPoll(topic)
                     };
-                    await conn.ExecuteAsync(
+                    await sqlExecuter.ExecuteAsync(
                         "INSERT INTO phpbb_recycle_bin(type, id, content, delete_time, delete_user) VALUES (@type, @id, @content, @now, @userId)",
                         new
                         {
@@ -159,9 +159,9 @@ namespace PhpbbInDotnet.Services
                             logDto.UserId
                         }
                     );
-                    await conn.ExecuteAsync(
+                    await sqlExecuter.ExecuteAsync(
                         "DELETE FROM phpbb_topics WHERE topic_id = @topicId; " +
-                        "DELETE FROM phpbb_poll_options WHERE topic_id = @topicId", 
+                        "DELETE FROM phpbb_poll_options WHERE topic_id = @topicId",
                         new { topicId }
                     );
                 }
@@ -184,23 +184,23 @@ namespace PhpbbInDotnet.Services
             var lang = GetLanguage();
             try
             {
-                var conn = _context.GetDbConnection();
-                var curTopic = await conn.QueryFirstOrDefaultAsync<PhpbbTopics>(
-                    "SELECT * FROM phpbb_topics WHERE topic_id = @topicId", 
+                var sqlExecuter = _context.GetSqlExecuter();
+                var curTopic = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>(
+                    "SELECT * FROM phpbb_topics WHERE topic_id = @topicId",
                     new { topicId });
 
                 if (curTopic is null)
                 {
                     return (string.Format(LanguageProvider.Moderator[lang, "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
                 }
-                
+
                 if (curTopic.ForumId == forumId)
                 {
                     return (LanguageProvider.Moderator[lang, "INVALID_DESTINATION_FORUM"], false);
                 }
 
-                await _context.GetDbConnection().ExecuteAsync(
-                    "INSERT INTO phpbb_shortcuts (topic_id, forum_id) VALUES(@topicId, @forumId)", 
+                await _context.GetSqlExecuter().ExecuteAsync(
+                    "INSERT INTO phpbb_shortcuts (topic_id, forum_id) VALUES(@topicId, @forumId)",
                     new { topicId, forumId });
 
                 await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.CreateShortcut, logDto.UserId, topicId);
@@ -219,8 +219,8 @@ namespace PhpbbInDotnet.Services
             var lang = GetLanguage();
             try
             {
-                var conn = _context.GetDbConnection();
-                var curShortcut = await conn.QueryFirstOrDefaultAsync<PhpbbShortcuts>(
+                var sqlExecuter = _context.GetSqlExecuter();
+                var curShortcut = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbShortcuts>(
                     "SELECT * FROM phpbb_shortcuts WHERE topic_id = @topicId",
                     new { topicId });
 
@@ -234,7 +234,7 @@ namespace PhpbbInDotnet.Services
                     return (LanguageProvider.Moderator[lang, "INVALID_SHORTCUT_SELECTED"], false);
                 }
 
-                await _context.GetDbConnection().ExecuteAsync(
+                await _context.GetSqlExecuter().ExecuteAsync(
                     "DELETE FROM phpbb_shortcuts WHERE topic_id = @topicId AND forum_id = @forumId",
                     new { topicId, forumId });
 
@@ -259,7 +259,7 @@ namespace PhpbbInDotnet.Services
             {
                 if ((destinationForumId ?? 0) == 0)
                 {
-                    return (LanguageProvider.Moderator[GetLanguage(), "INVALID_DESTINATION_FORUM"], false); 
+                    return (LanguageProvider.Moderator[GetLanguage(), "INVALID_DESTINATION_FORUM"], false);
                 }
 
                 if (!(postIds?.Any() ?? false))
@@ -267,23 +267,23 @@ namespace PhpbbInDotnet.Services
                     return (LanguageProvider.Moderator[GetLanguage(), "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
 
-                var conn = _context.GetDbConnection();
+                var sqlExecuter = _context.GetSqlExecuter();
 
-                var posts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
+                var posts = (await sqlExecuter.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
 
                 if (posts.Count != postIds.Length)
                 {
                     return (LanguageProvider.Moderator[GetLanguage(), "ATLEAST_ONE_POST_MOVED_OR_DELETED"], false);
                 }
 
-                var curTopic = await conn.QueryFirstOrDefaultAsync<PhpbbTopics>(
+                var curTopic = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>(
                     "INSERT INTO phpbb_topics (forum_id, topic_title, topic_time) VALUES (@forumId, @title, @time); " +
                     "SELECT * FROM phpbb_topics WHERE topic_id = LAST_INSERT_ID();",
                     new { forumId = destinationForumId!.Value, title = posts.First().PostSubject, time = posts.First().PostTime }
                 );
                 var oldTopicId = posts.First().TopicId;
 
-                await conn.ExecuteAsync("UPDATE phpbb_posts SET topic_id = @topicId, forum_id = @forumId WHERE post_id IN @postIds", new { curTopic.TopicId, curTopic.ForumId, postIds });
+                await sqlExecuter.ExecuteAsync("UPDATE phpbb_posts SET topic_id = @topicId, forum_id = @forumId WHERE post_id IN @postIds", new { curTopic.TopicId, curTopic.ForumId, postIds });
 
                 foreach (var post in posts)
                 {
@@ -317,21 +317,21 @@ namespace PhpbbInDotnet.Services
                     return (LanguageProvider.Moderator[GetLanguage(), "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
 
-                var conn = _context.GetDbConnection();
+                var sqlExecuter = _context.GetSqlExecuter();
 
-                var posts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
+                var posts = (await sqlExecuter.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
                 if (posts.Count != postIds.Length || posts.Select(p => p.TopicId).Distinct().Count() != 1)
                 {
                     return (LanguageProvider.Moderator[GetLanguage(), "AT_LEAST_ONE_POST_MOVED_OR_DELETED"], false);
                 }
 
-                var newTopic = await conn.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @destinationTopicId", new { destinationTopicId });
+                var newTopic = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @destinationTopicId", new { destinationTopicId });
                 if (newTopic == null)
                 {
                     return (string.Format(LanguageProvider.Moderator[GetLanguage(), "TOPIC_DOESNT_EXIST_FORMAT"], destinationTopicId), false);
                 }
 
-                await conn.ExecuteAsync("UPDATE phpbb_posts SET topic_id = @topicId, forum_id = @forumId WHERE post_id IN @postIds", new { newTopic.TopicId, newTopic.ForumId, postIds });
+                await sqlExecuter.ExecuteAsync("UPDATE phpbb_posts SET topic_id = @topicId, forum_id = @forumId WHERE post_id IN @postIds", new { newTopic.TopicId, newTopic.ForumId, postIds });
 
                 var oldTopicId = posts.First().TopicId;
                 foreach (var post in posts)
@@ -362,8 +362,8 @@ namespace PhpbbInDotnet.Services
                     return (LanguageProvider.Moderator[lang, "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
 
-                var conn = _context.GetDbConnection();
-                var posts = (await conn.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
+                var sqlExecuter = _context.GetSqlExecuter();
+                var posts = (await sqlExecuter.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
                 if (posts.Count != postIds.Length || posts.Select(p => p.TopicId).Distinct().Count() != 1)
                 {
                     return (LanguageProvider.Moderator[lang, "ATLEAST_ONE_POST_MOVED_OR_DELETED"], false);
@@ -383,12 +383,12 @@ namespace PhpbbInDotnet.Services
         private async Task DeletePostsCore(List<PhpbbPosts> posts, OperationLogDto logDto, bool shouldLog)
         {
             var lang = GetLanguage();
-            var conn = _context.GetDbConnection();
+            var sqlExecuter = _context.GetSqlExecuter();
             var postIds = posts.Select(p => p.PostId).ToList();
-            var attachments = (await conn.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id IN @postIds", new { postIds })).AsList();
+            var attachments = (await sqlExecuter.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id IN @postIds", new { postIds })).AsList();
             await Task.WhenAll(
-                conn.ExecuteAsync("DELETE FROM phpbb_posts WHERE post_id IN @postIds", new { postIds }),
-                conn.ExecuteAsync("DELETE FROM phpbb_attachments WHERE post_msg_id IN @postIds", new { postIds })
+                sqlExecuter.ExecuteAsync("DELETE FROM phpbb_posts WHERE post_id IN @postIds", new { postIds }),
+                sqlExecuter.ExecuteAsync("DELETE FROM phpbb_attachments WHERE post_msg_id IN @postIds", new { postIds })
             );
             foreach (var post in posts)
             {
@@ -406,7 +406,7 @@ namespace PhpbbInDotnet.Services
                     PostText = post.PostText,
                 };
 
-                await conn.ExecuteAsync(
+                await sqlExecuter.ExecuteAsync(
                     "INSERT INTO phpbb_recycle_bin(type, id, content, delete_time, delete_user) VALUES (@type, @id, @content, @now, @userId)",
                     new
                     {
@@ -484,8 +484,8 @@ namespace PhpbbInDotnet.Services
 
         public async Task<List<ReportDto>> GetReportedMessages(int forumId)
         {
-            var connection = _context.GetDbConnection();
-            return (await connection.QueryAsync<ReportDto>(
+            var sqlExecuter = _context.GetSqlExecuter();
+            return (await sqlExecuter.QueryAsync<ReportDto>(
                 @"SELECT r.report_id AS id, 
 	                   rr.reason_title, 
 	                   rr.reason_description, 

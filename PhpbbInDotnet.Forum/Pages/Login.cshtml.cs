@@ -26,10 +26,10 @@ namespace PhpbbInDotnet.Forum.Pages
     [ValidateAntiForgeryToken]
     public class LoginModel : PageModel
     {
-        private readonly ForumDbContext _context;
-        private readonly CommonUtils _utils;
+        private readonly IForumDbContext _context;
+        private readonly ICommonUtils _utils;
         private readonly IAppCache _cache;
-        private readonly UserService _userService;
+        private readonly IUserService _userService;
         private readonly IConfiguration _config;
 
         [BindProperty, Required]
@@ -73,7 +73,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public LoginMode Mode { get; private set; }
         public LanguageProvider LanguageProvider { get; }
 
-        public LoginModel(ForumDbContext context, CommonUtils utils, IAppCache cache, UserService userService, IConfiguration config, LanguageProvider languageProvider)
+        public LoginModel(IForumDbContext context, ICommonUtils utils, IAppCache cache, IUserService userService, IConfiguration config, LanguageProvider languageProvider)
         {
             _context = context;
             _utils = utils;
@@ -114,9 +114,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
-            var connection = _context.GetDbConnection();
+            var sqlExecuter = _context.GetSqlExecuter();
 
-            var user = await connection.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE username_clean = @username", new { username = _utils.CleanString(UserName) });
+            var user = await sqlExecuter.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE username_clean = @username", new { username = _utils.CleanString(UserName) });
             var lang = LanguageProvider.GetValidatedLanguage(null, Request);
 
             Mode = LoginMode.Normal;
