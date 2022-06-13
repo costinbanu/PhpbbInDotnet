@@ -181,8 +181,8 @@ namespace PhpbbInDotnet.Forum.Pages
                             streamContent.Headers.Add("Content-Type", image.ContentType);
                             using var formContent = new MultipartFormDataContent
                             {
-                            { streamContent, "File", image.FileName },
-                            { new StringContent(ShouldHideLicensePlates.ToString()), "HideLicensePlates" },
+                                { streamContent, "File", image.FileName },
+                                { new StringContent(ShouldHideLicensePlates.ToString()), "HideLicensePlates" },
                             };
                             if (ShouldResize)
                             {
