@@ -53,7 +53,7 @@
             AuthorRank = Model.Post.AuthorRank,
             AlignLeft = true,
             IsLastPostSummary = false,
-            PMLink = Model.HasCurrentUserPM && !authorIsOnFoeList ? $"<a href=\"./Posting?handler=PrivateMessage&postId={Model.Post.PostId}\">&#x1F5E8; {_languageProvider.BasicText[Model.Language, "PRIVATE_MESSAGE", Casing.FirstUpper]}</a>" : null,
+            PMLink = Model.HasCurrentUserPM && !authorIsOnFoeList ? $"<a href=\"./SendPrivateMessage?postId={Model.Post.PostId}\">&#x1F5E8; {_languageProvider.BasicText[Model.Language, "PRIVATE_MESSAGE", Casing.FirstUpper]}</a>" : null,
             CorrelationId = Model.CorrelationId
         })
         <div class="ForumContent VerticalContent FlexRight" id="@Model.Post.PostId" style="max-width:100%; overflow-wrap: break-word; display:flex">

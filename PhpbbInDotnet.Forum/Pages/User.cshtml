@@ -549,7 +549,7 @@ else
                         {
                             <span style="height:5px; width: 5px;">&nbsp;</span>
                         }
-                        <button class="MyButton" onclick="location.href='/Posting?handler=PrivateMessage&receiverId=@Model.CurrentUser.UserId'" type="button" @(isSelf ? "disabled" : "")>
+                        <button class="MyButton" onclick="location.href='/SendPrivateMessage?receiverId=@Model.CurrentUser.UserId'" type="button" @(isSelf ? "disabled" : "")>
                             &#x1F5E8;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEND_PM"])
                         </button>
                     }

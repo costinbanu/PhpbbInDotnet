@@ -13,6 +13,6 @@ namespace PhpbbInDotnet.Services
         Task CascadePostDelete(PhpbbPosts deleted, bool ignoreTopic, bool ignoreAttachmentsAndReports);
         Task CascadePostEdit(PhpbbPosts added);
         Task<PollDto?> GetPoll(PhpbbTopics _currentTopic);
-        Task<IEnumerable<PostDto>> GetPosts(int topicId, int pageNum, int pageSize, bool descendingOrder);
+        Task<PostListDto> GetPosts(int topicId, int pageNum, int pageSize, bool isPostingView, string language);
     }
 }

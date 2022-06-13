@@ -144,89 +144,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 return Page();
             }));
 
-        public async Task<IActionResult> OnGetPrivateMessage()
-            => await WithRegisteredUser(async (usr) =>
-            {
-                var lang = GetLanguage();
-                var sqlExecuter = Context.GetSqlExecuter();
-                
-                if ((PostId ?? 0) > 0)
-                {
-                    var post = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { PostId });
-                    if (post != null)
-                    {
-                        var author = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @posterId", new { post.PosterId });
-                        if ((author?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
-                        {
-                            PostTitle = HttpUtility.HtmlDecode(post.PostSubject);
-                            PostText = $"[quote]\n{_writingService.CleanBbTextForDisplay(post.PostText, post.BbcodeUid)}\n[/quote]\n[url={_config.GetValue<string>("BaseUrl").Trim('/')}/ViewTopic?postId={PostId}&handler=byPostId]{PostTitle}[/url]\n";
-                            ReceiverId = author!.UserId;
-                            ReceiverName = author.Username;
-                        }
-                        else
-                        {
-                            return RedirectToPage("Error", new { CustomErrorMessage = await Utils.CompressAndEncode(LanguageProvider.Errors[lang, "RECEIVER_DOESNT_EXIST"]) });
-                        }
-                    }
-                    else
-                    {
-                        return RedirectToPage("Error", new { CustomErrorMessage = await Utils.CompressAndEncode(LanguageProvider.Errors[lang, "POST_DOESNT_EXIST"]) });
-                    }
-                }
-                else if ((PrivateMessageId ?? 0) > 0 && (ReceiverId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
-                {
-                    var msg = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPrivmsgs>("SELECT * FROM phpbb_privmsgs WHERE msg_id = @privateMessageId", new { PrivateMessageId });
-                    if (msg != null && ReceiverId == msg.AuthorId)
-                    {
-                        var author = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @receiverId", new { ReceiverId});
-                        if ((author?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
-                        {
-                            var title = HttpUtility.HtmlDecode(msg.MessageSubject);
-                            PostTitle = title.StartsWith(Constants.REPLY) ? title : $"{Constants.REPLY}{title}";
-                            PostText = $"[quote]\n{_writingService.CleanBbTextForDisplay(msg.MessageText, msg.BbcodeUid)}\n[/quote]\n";
-                            ReceiverName = author!.Username;
-                        }
-                        else
-                        {
-                            return RedirectToPage("Error", new { CustomErrorMessage = await Utils.CompressAndEncode(LanguageProvider.Errors[lang, "RECEIVER_DOESNT_EXIST"]) });
-                        }
-                    }
-                    else
-                    {
-                        return RedirectToPage("Error", new { CustomErrorMessage = await Utils.CompressAndEncode(LanguageProvider.Errors[lang, "PM_DOESNT_EXIST"]) });
-                    }
-                }
-                else if ((ReceiverId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
-                {
-                    ReceiverName = (await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @receiverId", new { ReceiverId }))?.Username;
-                }
-
-                CurrentForum = null;
-                CurrentTopic = null;
-                Action = PostingActions.NewPrivateMessage;
-                ReturnUrl = Request.GetEncodedPathAndQuery();
-
-                return Page();
-            });
-
-        public async Task<IActionResult> OnGetEditPrivateMessage()
-            => await WithRegisteredUser(async (user) =>
-            {
-                var sqlExecuter = Context.GetSqlExecuter();
-
-                var pm = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPrivmsgs>("SELECT * FROM phpbb_privmsgs WHERE msg_id = @privateMessageId", new { PrivateMessageId });
-                PostText = _writingService.CleanBbTextForDisplay(pm.MessageText, pm.BbcodeUid);
-                PostTitle = HttpUtility.HtmlDecode(pm.MessageSubject);
-                if ((ReceiverId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
-                {
-                    ReceiverName = (await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @receiverId", new { ReceiverId }))?.Username;
-                }
-                Action = PostingActions.EditPrivateMessage;
-                ReturnUrl = Request.GetEncodedPathAndQuery();
-
-                return Page();
-            });
-
         #endregion GET
 
         #region POST Attachment
@@ -264,8 +181,8 @@ namespace PhpbbInDotnet.Forum.Pages
                             streamContent.Headers.Add("Content-Type", image.ContentType);
                             using var formContent = new MultipartFormDataContent
                             {
-                            { streamContent, "File", image.FileName },
-                            { new StringContent(ShouldHideLicensePlates.ToString()), "HideLicensePlates" },
+                                { streamContent, "File", image.FileName },
+                                { new StringContent(ShouldHideLicensePlates.ToString()), "HideLicensePlates" },
                             };
                             if (ShouldResize)
                             {
@@ -339,34 +256,48 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostDeleteAttachment(int index)
             => await WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async (curForum) =>
             {
-                var lang = GetLanguage();
-                var attachment = Attachments?.ElementAtOrDefault(index);
                 CurrentForum = curForum;
 
-                if (attachment == null)
+                if (await DeleteAttachment(index, true) is null)
                 {
-                    return PageWithError(curForum, $"{nameof(DeleteFileDummyForValidation)}[{index}]", LanguageProvider.Errors[lang, "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
+                    return PageWithError(curForum, $"{nameof(DeleteFileDummyForValidation)}[{index}]", LanguageProvider.Errors[GetLanguage(), "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
                 }
 
-                if (!_storageService.DeleteFile(attachment.PhysicalFilename, false))
-                {
-                    ModelState.AddModelError($"{nameof(DeleteFileDummyForValidation)}[{index}]", LanguageProvider.Errors[lang, "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
-                }
+                ShowAttach = Attachments?.Any() == true;
+                ModelState.Clear();
 
-                if (!string.IsNullOrWhiteSpace(PostText))
+                return Page();
+            }, ReturnUrl)));
+
+        public async Task<IActionResult> OnPostDeleteAllAttachments()
+            => await WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async (curForum) =>
+            {
+                CurrentForum = curForum;
+
+                var error = false;
+                var successfullyDeleted = new HashSet<int>(Attachments?.Count ?? 0);
+                for (var index = 0; index < (Attachments?.Count ?? 0); index++)
                 {
-                    PostText = PostText.Replace($"[attachment={index}]{attachment.RealFilename}[/attachment]", string.Empty, StringComparison.InvariantCultureIgnoreCase);
-                    for (int i = index + 1; i < Attachments!.Count; i++)
+                    var deletedAttachment = await DeleteAttachment(index, false);
+                    if (deletedAttachment is null)
                     {
-                        PostText = PostText.Replace($"[attachment={i}]{Attachments[i].RealFilename}[/attachment]", $"[attachment={i - 1}]{Attachments[i].RealFilename}[/attachment]", StringComparison.InvariantCultureIgnoreCase);
+                        error = true;
+                        ModelState.AddModelError($"{nameof(DeleteFileDummyForValidation)}[{index}]", LanguageProvider.Errors[GetLanguage(), "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
+                    }
+                    else
+                    {
+                        successfullyDeleted.Add(deletedAttachment.AttachId);
                     }
                 }
 
-                var sqlExecuter = Context.GetSqlExecuter();
-                await sqlExecuter.ExecuteAsync("DELETE FROM phpbb_attachments WHERE attach_id = @attachId", new { attachment.AttachId });
-                var dummy = Attachments!.Remove(attachment);
-                ShowAttach = Attachments?.Any() == true;
-                ModelState.Clear();
+                Attachments?.RemoveAll(attachment => successfullyDeleted.Contains(attachment.AttachId));
+                ShowAttach = false;
+
+                if (!error)
+                {
+                    ModelState.Clear();
+                }
+
                 return Page();
             }, ReturnUrl)));
 
@@ -471,44 +402,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
             }, ReturnUrl)));
 
-        public async Task<IActionResult> OnPostPrivateMessage()
-            => await WithRegisteredUser(async (user) =>
-            {
-                var lang = GetLanguage();
-
-                if ((ReceiverId ?? 1) == 1)
-                {
-                    return PageWithError(null, nameof(ReceiverName), LanguageProvider.Errors[lang, "ENTER_VALID_RECEIVER"]);
-                }
-
-                if ((PostTitle?.Trim()?.Length ?? 0) < 3)
-                {
-                    return PageWithError(null, nameof(PostTitle), LanguageProvider.Errors[lang, "TITLE_TOO_SHORT"]);
-                }
-
-                if ((PostTitle?.Length ?? 0) > 255)
-                {
-                    return PageWithError(null, nameof(PostTitle), LanguageProvider.Errors[lang, "TITLE_TOO_LONG"]);
-                }
-
-                if ((PostText?.Trim()?.Length ?? 0) < 3)
-                {
-                    return PageWithError(null, nameof(PostText), LanguageProvider.Errors[lang, "POST_TOO_SHORT"]);
-                }
-
-                var (Message, IsSuccess) = Action switch
-                {
-                    PostingActions.NewPrivateMessage => await IUserService.SendPrivateMessage(user.UserId, user.Username!, ReceiverId!.Value, HttpUtility.HtmlEncode(PostTitle)!, await _writingService.PrepareTextForSaving(PostText), PageContext, HttpContext),
-                    PostingActions.EditPrivateMessage => await IUserService.EditPrivateMessage(PrivateMessageId!.Value, HttpUtility.HtmlEncode(PostTitle)!, await _writingService.PrepareTextForSaving(PostText)),
-                    _ => ("Unknown action", false)
-                };
-
-                return IsSuccess switch
-                {
-                    true => RedirectToPage("PrivateMessages", new { show = PrivateMessagesPages.Sent }),
-                    _ => PageWithError(null, nameof(PostText), Message)
-                };
-            });
 
         public async Task<IActionResult> OnPostSaveDraft()
             => await WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, async () =>

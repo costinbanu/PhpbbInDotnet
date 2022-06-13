@@ -501,40 +501,16 @@ namespace PhpbbInDotnet.Forum.Pages
             _currentTopic = curTopic;
             TopicId = curTopic.TopicId;
             PageNum = Paginator.NormalizePageNumberLowerBound(PageNum ?? computedPageNum);
-
             ForumId = curForum.ForumId;
             ForumTitle = HttpUtility.HtmlDecode(curForum.ForumName);
-            Posts = (await _postService.GetPosts(TopicId.Value, PageNum!.Value, GetCurrentUser().GetPageSize(TopicId.Value), descendingOrder: false)).AsList();
-            var currentPostIds = Posts.Select(p => p.PostId).DefaultIfEmpty().ToList();
 
-            var countTask = Context.GetSqlExecuter().ExecuteScalarAsync<int>(
-                "SELECT COUNT(post_id) FROM phpbb_posts WHERE topic_id = @topicId",
-                new { TopicId });
-            var dbAttachmentsTask = Context.GetSqlExecuter().QueryAsync<PhpbbAttachments>(
-                "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @currentPostIds",
-                new {currentPostIds});
-            var reportsTask = Context.GetSqlExecuter().QueryAsync<ReportDto>(
-                @"SELECT r.report_id AS id, 
-		                 rr.reason_title, 
-                         rr.reason_description, 
-                         r.report_text AS details, 
-                         r.user_id AS reporter_id, 
-                         u.username AS reporter_username, 
-                         r.post_id,
-                         r.report_time,
-                         r.report_closed
-	                FROM phpbb_reports r
-                    JOIN phpbb_reports_reasons rr ON r.reason_id = rr.reason_id
-                    JOIN phpbb_users u on r.user_id = u.user_id
-	               WHERE r.post_id IN @postIds;",
-                new { postIds = currentPostIds });
-
-            await Task.WhenAll(countTask, dbAttachmentsTask, reportsTask);
-
-            Reports = (await reportsTask).AsList();
-            var dbAttachments = (await dbAttachmentsTask).AsList();
-            (CorrelationId, Attachments) = await _postService.CacheAttachmentsAndPrepareForDisplay(dbAttachments, GetLanguage(), currentPostIds.Count, false);
-            Paginator = new Paginator(await countTask, PageNum!.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId, GetCurrentUser());
+            var postList = await _postService.GetPosts(TopicId.Value, PageNum!.Value, GetCurrentUser().GetPageSize(TopicId.Value), isPostingView: false, GetLanguage());
+            
+            Posts = postList.Posts;
+            Attachments = postList.Attachments;
+            Reports = postList.Reports;
+            CorrelationId = postList.AttachmentDisplayCorrelationId;
+            Paginator = new Paginator(postList.PostCount!.Value, PageNum!.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId, GetCurrentUser());
             TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
             ForumRulesLink = curForum.ForumRulesLink;
             ForumRules = curForum.ForumRules;

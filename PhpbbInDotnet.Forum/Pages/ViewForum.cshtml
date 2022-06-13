@@ -106,7 +106,7 @@
         new _TopicDisplayPartialModel(currentUser, Lang, Model.Topics!)
         {
             ForumId = Model.ForumId,
-            AllowNewTopicCreation = true,
+            AllowNewTopicCreation = !isCurrentForumReadOnly,
             ShowTypeName = true
         })
 

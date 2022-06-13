@@ -86,7 +86,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             var sqlExecuter = Context.GetSqlExecuter();
 
-            Users = await IUserService.GetUserMap();
+            Users = await UserService.GetUserMap();
 
             if (ForumId == null && TopicId != null)
             {
