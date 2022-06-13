@@ -96,8 +96,8 @@
 
 <div id="Logs" class="tabcontent" style="@(Model.Category == AdminCategories.Logs ? "display:inherit" : "display:none")">
     @await Html.PartialAsync(
-        "_AdminViewLogs",
-        new _AdminViewLogsModel
+        "_AdminViewLogsPartial",
+        new _AdminViewLogsPartialModel
         {
             LogPage = Model.LogPage,
             LogType = Model.LogType,

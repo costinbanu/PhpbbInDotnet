@@ -301,7 +301,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 if (await ForumService.IsForumReadOnlyForUser(user, ForumId))
                 {
-                    return RedirectToPage("Error", new { IsUnauthorized = true });
+                    return Unauthorized();
                 }
                 return await toDo(user);
             });
@@ -346,7 +346,7 @@ namespace PhpbbInDotnet.Forum.Pages
             TopicId ??= await topicIdTask;
             PostId ??= await postIdTask;
 
-            var cachedAttachmentIds = await attachmentsTask;
+            var cachedAttachmentIds = (await attachmentsTask ?? Enumerable.Empty<int>()).DefaultIfEmpty();
             if (Attachments?.Any() != true && cachedAttachmentIds?.Any() == true)
             {
                 var sqlExecuter = Context.GetSqlExecuter();

@@ -90,7 +90,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (user is null)
                 {
-                    return RedirectToPage("Error", new { isNotFound = true });
+                    return NotFound();
                 }
                 else
                 {

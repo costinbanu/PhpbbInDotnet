@@ -384,7 +384,7 @@ namespace PhpbbInDotnet.Services
         {
             var lang = GetLanguage();
             var sqlExecuter = _context.GetSqlExecuter();
-            var postIds = posts.Select(p => p.PostId).ToList();
+            var postIds = posts.Select(p => p.PostId).DefaultIfEmpty();
             var attachments = (await sqlExecuter.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id IN @postIds", new { postIds })).AsList();
             await Task.WhenAll(
                 sqlExecuter.ExecuteAsync("DELETE FROM phpbb_posts WHERE post_id IN @postIds", new { postIds }),

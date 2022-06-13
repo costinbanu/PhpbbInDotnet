@@ -17,7 +17,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-namespace PhpbbInDotnet.Forum
+namespace PhpbbInDotnet.Forum.Middlewares
 {
     public class AuthenticationMiddleware : IMiddleware
     {

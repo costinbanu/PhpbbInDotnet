@@ -53,7 +53,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (forum == null)
             {
-                return RedirectToPage("Error", new { IsNotFound = true });
+                return NotFound();
             }
 
             if (string.IsNullOrWhiteSpace(forum.ForumPassword))
@@ -78,7 +78,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (forum == null)
             {
-                return RedirectToPage("Error", new { IsNotFound = true });
+                return NotFound();
             }
 
             if (string.IsNullOrWhiteSpace(Password))
@@ -89,7 +89,7 @@ namespace PhpbbInDotnet.Forum.Pages
                        
             if (forum == null)
             {
-                return RedirectToPage("Error", new { isNotFound = true });
+                return NotFound();
             }
 
             if (string.IsNullOrWhiteSpace(forum.ForumPassword))
