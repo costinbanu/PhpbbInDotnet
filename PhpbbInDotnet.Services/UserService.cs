@@ -357,7 +357,7 @@ namespace PhpbbInDotnet.Services
                     @"UPDATE phpbb_privmsgs_to
                          SET folder_id = -10
                        WHERE msg_id IN @messageIds AND user_id = @userId",
-                    new { messageIds, userId }
+                    new { messageIds = messageIds.DefaultIfEmpty(), userId }
                 );
                 if (rows < messageIds.Length)
                 {

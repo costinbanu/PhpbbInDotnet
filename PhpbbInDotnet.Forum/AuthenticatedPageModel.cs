@@ -63,7 +63,7 @@ namespace PhpbbInDotnet.Forum
         public string GetLanguage()
             => _language ??= LanguageProvider.GetValidatedLanguage(GetCurrentUser(), Request);
 
-        public async Task<List<int>> GetUnrestrictedForums(int? forumId = null)
+        public async Task<IEnumerable<int>> GetUnrestrictedForums(int? forumId = null)
         {
             var (tree, _) = await GetForumTree(false, false);
             var toReturn = new List<int>(tree.Count);
@@ -77,7 +77,7 @@ namespace PhpbbInDotnet.Forum
                 toReturn.AddRange(tree.Where(t => !ForumService.IsNodeRestricted(t)).Select(t => t.ForumId));
             }
 
-            return toReturn;
+            return toReturn.DefaultIfEmpty();
 
             void traverse(int fid)
             {
@@ -273,7 +273,7 @@ namespace PhpbbInDotnet.Forum
             {
                 if (curForum == null)
                 {
-                    return RedirectToPage("Error", new { isNotFound = true });
+                    return NotFound();
                 }
 
                 var usr = GetCurrentUser();
@@ -299,7 +299,7 @@ namespace PhpbbInDotnet.Forum
                 {
                     if (usr.IsForumRestricted(restrictedAncestor))
                     {
-                        return RedirectToPage("Error", new { IsUnauthorized = true });
+                        return Unauthorized();
                     }
                     else
                     {
@@ -325,7 +325,7 @@ namespace PhpbbInDotnet.Forum
             
             if (curTopic == null)
             {
-                return RedirectToPage("Error", new { isNotFound = true });
+                return NotFound();
             }
             return await WithValidForum(curTopic.ForumId, curForum => toDo(curForum, curTopic), forumLoginReturnUrl);
         }
@@ -337,7 +337,7 @@ namespace PhpbbInDotnet.Forum
             var curPost = await sqlExecuter.QuerySingleOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId });
             if (curPost == null)
             {
-                return RedirectToPage("Error", new { isNotFound = true });
+                return NotFound();
             }
             return await WithValidTopic(curPost.TopicId, (curForum, curTopic) => toDo(curForum, curTopic, curPost), forumLoginReturnUrl);
         }

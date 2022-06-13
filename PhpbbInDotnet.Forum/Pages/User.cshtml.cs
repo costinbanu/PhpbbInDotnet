@@ -114,13 +114,13 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 if ((UserId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID)
                 {
-                    return RedirectToPage("Error", new { isNotFound = true });
+                    return NotFound();
                 }
               
                 var cur = await Context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == UserId);
                 if (cur == null)
                 {
-                    return RedirectToPage("Error", new { isNotFound = true });
+                    return NotFound();
                 }
                 await Render(cur);
 
@@ -135,13 +135,13 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             if (!await CanEdit())
             {
-                return RedirectToPage("Error", new { isUnauthorised = true });
+                return Unauthorized();
             }
 
             var dbUser = Context.PhpbbUsers.FirstOrDefault(u => u.UserId == CurrentUser!.UserId);
             if (dbUser == null)
             {
-                return RedirectToPage("Error", new { isNotFound = true });
+                return NotFound();
             }
 
             var currentUserId = GetCurrentUser().UserId;
@@ -500,7 +500,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 if (!await CanEdit())
                 {
-                    return RedirectToPage("Error", new { isUnauthorised = true });
+                    return Unauthorized();
                 }
                 var sqlExecuter = Context.GetSqlExecuter();
                 await sqlExecuter.ExecuteAsync(

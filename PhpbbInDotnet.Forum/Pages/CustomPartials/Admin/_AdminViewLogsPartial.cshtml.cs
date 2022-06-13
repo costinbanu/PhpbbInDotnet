@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace PhpbbInDotnet.Forum.Pages.CustomPartials.Admin
 {
-    public class _AdminViewLogsModel : PageModel
+    public class _AdminViewLogsPartialModel : PageModel
     {
         public OperationLogType? LogType { get; set; }
         

@@ -255,7 +255,9 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithUserHavingPM(async (user) =>
             {
                 var sqlExecuter = Context.GetSqlExecuter();
-                await sqlExecuter.ExecuteAsync("UPDATE phpbb_privmsgs_to SET pm_unread = 0 WHERE msg_id IN @ids AND author_id <> user_id", new { ids = SelectedMessages?.DefaultIfEmpty() ?? new[] { 0 } });
+                await sqlExecuter.ExecuteAsync(
+                    "UPDATE phpbb_privmsgs_to SET pm_unread = 0 WHERE msg_id IN @ids AND author_id <> user_id", 
+                    new { ids = SelectedMessages?.DefaultIfEmpty() ?? new[] { 0 } });
 
                 return await OnGet();
             });
@@ -277,7 +279,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 if (!user.HasPrivateMessagePermissions)
                 {
-                    return RedirectToPage("Error", new { isUnauthorised = true });
+                    return Unauthorized();
                 }
 
                 return await toDo(user);

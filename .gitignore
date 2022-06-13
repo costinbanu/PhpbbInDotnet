@@ -267,3 +267,4 @@ __pycache__/
 *.min.js
 *.min.css
 *.ok
+/PhpbbInDotnet.Forum/logs

@@ -60,7 +60,9 @@ namespace PhpbbInDotnet.Services
                 await _context.SaveChangesAsync();
 
                 var sqlExecuter = _context.GetSqlExecuter();
-                await sqlExecuter.ExecuteAsync("DELETE FROM phpbb_words WHERE word_id IN @ids", new { ids = indexesToRemove.Select(i => words[i].WordId) });
+                await sqlExecuter.ExecuteAsync(
+                    "DELETE FROM phpbb_words WHERE word_id IN @ids", 
+                    new { ids = indexesToRemove.Select(i => words[i].WordId).DefaultIfEmpty() });
 
                 return (LanguageProvider.Admin[lang, "BANNED_WORDS_UPDATED_SUCCESSFULLY"], true);
             }
@@ -89,7 +91,9 @@ namespace PhpbbInDotnet.Services
                 await _context.SaveChangesAsync();
 
                 var sqlExecuter = _context.GetSqlExecuter();
-                await sqlExecuter.ExecuteAsync("DELETE FROM phpbb_bbcodes WHERE bbcode_id IN @ids", new { ids = indexesToRemove.Select(i => codes[i].BbcodeId) });
+                await sqlExecuter.ExecuteAsync(
+                    "DELETE FROM phpbb_bbcodes WHERE bbcode_id IN @ids", 
+                    new { ids = indexesToRemove.Select(i => codes[i].BbcodeId).DefaultIfEmpty() });
 
                 foreach (var language in LanguageProvider.AllLanguages)
                 {

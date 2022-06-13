@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Languages;
@@ -11,10 +10,12 @@ using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Mime;
 using System.Threading.Tasks;
 using System.Web;
+using IOFile = System.IO.File;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -281,16 +282,30 @@ namespace PhpbbInDotnet.Forum.Pages
                 return await OnGet();
             }
 
-            return await WithAdmin(() =>
+            return await WithAdmin(async () =>
             {
+                var originalFileName = Path.GetFileName(SystemLogPath)!;
+                var filePattern = $"{Path.GetFileNameWithoutExtension(originalFileName)}*";
+                var directory = Path.GetDirectoryName(SystemLogPath)!;
+
+                var toReturn = new MemoryStream();
+                foreach (var file in Directory.EnumerateFiles(directory, filePattern))
+                {
+                    using var fileStream = IOFile.OpenRead(file);
+                    await fileStream.CopyToAsync(toReturn);
+                }
+                await toReturn.FlushAsync();
+                toReturn.Seek(0, SeekOrigin.Begin);
+
                 var cd = new ContentDisposition
                 {
-                    FileName = HttpUtility.UrlEncode(System.IO.Path.GetFileName(SystemLogPath)),
+                    FileName = HttpUtility.UrlEncode(originalFileName),
                     Inline = false
                 };
                 Response.Headers.Add("Content-Disposition", cd.ToString());
                 Response.Headers.Add("X-Content-Type-Options", "nosniff");
-                return Task.FromResult<IActionResult>(File(System.IO.File.OpenRead(SystemLogPath), "text/plain"));
+
+                return File(toReturn, "text/plain");
             });
         }
 

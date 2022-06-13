@@ -134,7 +134,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithModerator(ForumId, async () =>
             {
                 var lang = GetLanguage();
-                if (!SelectedReports!.Any())
+                if (SelectedReports?.Any() != true)
                 {
                     MessageClass = "message warning";
                     Message = LanguageProvider.Moderator[lang, "NO_REPORTS_SELECTED"];
@@ -145,8 +145,8 @@ namespace PhpbbInDotnet.Forum.Pages
                     {
                         var sqlExecuter = Context.GetSqlExecuter();
                         await sqlExecuter.ExecuteAsync(
-                            "UPDATE phpbb_reports SET report_closed = 1 WHERE report_id IN @ids",
-                            new { ids = SelectedReports ?? new[] { 0 } }
+                            "UPDATE phpbb_reports SET report_closed = 1 WHERE report_id IN @SelectedReports",
+                            new { SelectedReports }
                         );
                         MessageClass = "message success";
                         Message = LanguageProvider.Moderator[lang, "REPORTS_CLOSED_SUCCESSFULLY"];

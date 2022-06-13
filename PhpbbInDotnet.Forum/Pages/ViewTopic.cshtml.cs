@@ -279,7 +279,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var postIds = GetModeratorPostIds();
                 if (postIds.Length != 1 || PostAction != ModeratorPostActions.DeleteSelectedPosts)
                 {
-                    return RedirectToPage("Error", new { isUnauthorised = true });
+                    return Unauthorized();
                 }
 
                 var sqlExecuter = Context.GetSqlExecuter();
@@ -287,7 +287,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var toDelete = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId = postIds[0] });
                 if (toDelete == null)
                 {
-                    return RedirectToPage("Error", new { isNotFound = true });
+                    return NotFound();
                 }
                 
                 var lastPost = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC", new { toDelete.TopicId });

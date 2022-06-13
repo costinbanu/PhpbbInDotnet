@@ -1,12 +1,8 @@
-﻿using Dapper;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
-using PhpbbInDotnet.Utilities;
-using System;
-using System.Linq;
+using Serilog;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
@@ -14,12 +10,12 @@ namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
     public class viewtopicModel : PageModel
     {
         private readonly IForumDbContext _context;
-        private readonly ICommonUtils _utils;
+        private readonly ILogger _logger;
 
-        public viewtopicModel(IForumDbContext context, ICommonUtils utils)
+        public viewtopicModel(IForumDbContext context, ILogger logger)
         {
             _context = context;
-            _utils = utils;
+            _logger = logger;
         }
 
         public async Task<IActionResult> OnGet(int? f, int? t, int? p, int? start)
@@ -44,7 +40,7 @@ namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
                     }
                     else
                     {
-                        return RedirectToPage("../ViewTopic", new { TopicId = t.Value, PageNum = 1 });
+                        return NotFound();
                     }
                 }
                 else
@@ -58,8 +54,8 @@ namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
             }
             else
             {
-                _utils.HandleErrorAsWarning(new Exception($"Bad request to legacy viewtopic.php route: {Request.QueryString.Value}"));
-                return RedirectToPage("../Index");
+                _logger.Warning("Bad request to legacy viewtopic.php route: {route}", Request.QueryString.Value);
+                return BadRequest();
             }
         }
     }

@@ -1,7 +1,6 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
@@ -10,9 +9,9 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using PhpbbInDotnet.Forum.Middlewares;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects.Configuration;
-using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
 using Serilog;
 using Serilog.Events;
@@ -109,6 +108,7 @@ namespace PhpbbInDotnet.Forum
             services.AddSingleton<FileExtensionContentTypeProvider>();
 
             services.AddScoped<AuthenticationMiddleware>();
+            services.AddScoped<ErrorHandlingMiddleware>();
 
             services.AddTransient<IHttpContextAccessor, HttpContextAccessor>();
             services.AddTransient<LanguageProvider>();
@@ -160,36 +160,15 @@ namespace PhpbbInDotnet.Forum
 
         public static WebApplication ConfigureApplication (this WebApplication webApplication)
         {
+            webApplication.UseStatusCodePagesWithReExecute("/Error", "?responseStatusCode={0}");
+
             if (webApplication.Environment.IsDevelopment())
             {
                 webApplication.UseDeveloperExceptionPage();
             }
             else
             {
-                webApplication.UseExceptionHandler(errorApp =>
-                {
-                    errorApp.Run(async context =>
-                    {
-                        var handler = context.Features.Get<IExceptionHandlerPathFeature>();
-                        if (handler is not null)
-                        {
-                            var utils = context.RequestServices.GetService<ICommonUtils>();
-                            var userService = context.RequestServices.GetService<IUserService>();
-                            var user = userService?.ClaimsPrincipalToAuthenticatedUser(context.User);
-                            var path = context.Request?.Path.Value ?? handler.Path;
-                            var id = utils?.HandleError(handler.Error, $"URL: {path}{context.Request?.QueryString}. UserId: {user?.UserId.ToString() ?? "N/A"}. UserName: {user?.Username ?? "N/A"}");
-
-                            if (path?.Equals("/Error", StringComparison.InvariantCultureIgnoreCase) != true)
-                            {
-                                context.Response.Redirect($"/Error?errorId={id}");
-                            }
-                            else
-                            {
-                                await context.Response.WriteAsync($"An error occurred. ID: {id}");
-                            }
-                        }
-                    });
-                });
+                webApplication.UseMiddleware<ErrorHandlingMiddleware>();
                 webApplication.UseHsts();
             }
 

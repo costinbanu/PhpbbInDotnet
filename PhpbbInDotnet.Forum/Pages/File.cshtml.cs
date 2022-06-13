@@ -56,7 +56,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (file == null)
             {
-                return RedirectToPage("Error", new { isNotFound = true });
+                return NotFound();
             }
 
             if (preview && file.PostId == null && file.ForumId == null)
@@ -95,7 +95,7 @@ namespace PhpbbInDotnet.Forum.Pages
             file = await sqlExecuter.QueryFirstOrDefaultAsync<string>("SELECT user_avatar FROM phpbb_users WHERE user_id = @userId", new { userId });
             if (file == null)
             {
-                return RedirectToPage("Error", new { isNotFound = true });
+                return NotFound();
             }
             file = getActualFileName(file);
 
@@ -112,7 +112,7 @@ namespace PhpbbInDotnet.Forum.Pages
             catch (Exception ex)
             {
                 Utils.HandleErrorAsWarning(ex, "Error displaying a deleted attachment");
-                return RedirectToPage("Error", new { isNotFound = true });
+                return NotFound();
             }
         }
 
@@ -134,7 +134,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }
             else
             {
-                return RedirectToPage("Error", new { isNotFound = true });
+                return NotFound();
             }
         }
     }

@@ -1,17 +1,18 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using PhpbbInDotnet.Utilities;
+using Serilog;
 using System;
 
 namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
 {
     public class fileModel : PageModel
     {
-        private readonly ICommonUtils _utils;
+        private readonly ILogger _logger;
 
-        public fileModel(ICommonUtils utils)
+        public fileModel(ILogger logger)
         {
-            _utils = utils;
+            _logger = logger;
         }
 
         public IActionResult OnGet(int? id, string avatar)
@@ -26,8 +27,8 @@ namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
                 return RedirectToPage("../File", "avatar",  new { userId });
             }
 
-            _utils.HandleErrorAsWarning(new Exception($"Bad request to legacy file.php route: {Request.QueryString.Value}"));
-            return RedirectToPage("../Index");
+            _logger.Warning("Bad request to legacy file.php route: {route}", Request.QueryString.Value);
+            return BadRequest();
         }
     }
 }
