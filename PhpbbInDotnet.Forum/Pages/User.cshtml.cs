@@ -344,7 +344,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             }
 
-            var userRoles = (await IUserService.GetUserRolesLazy()).Select(r => r.RoleId);
+            var userRoles = (await UserService.GetUserRolesLazy()).Select(r => r.RoleId);
             var dbAclRole = Context.PhpbbAclUsers.FirstOrDefault(r => r.UserId == dbUser.UserId && userRoles.Contains(r.AuthRoleId));
             if (dbAclRole != null && dbAclRole.AuthRoleId != (AclRole ?? -1))
             {
@@ -518,15 +518,15 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<bool> CanAddFoe()
         {
             var viewingUser = GetCurrentUser();
-            var pageUser = new AuthenticatedUserExpanded(IUserService.DbUserToAuthenticatedUserBase(CurrentUser!));
-            pageUser.AllPermissions = await IUserService.GetPermissions(pageUser.UserId);
-            return !await IUserService.IsUserModeratorInForum(pageUser, 0) && !await IUserService.IsUserModeratorInForum(viewingUser, 0) && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false);
+            var pageUser = new AuthenticatedUserExpanded(UserService.DbUserToAuthenticatedUserBase(CurrentUser!));
+            pageUser.AllPermissions = await UserService.GetPermissions(pageUser.UserId);
+            return !await UserService.IsUserModeratorInForum(pageUser, 0) && !await UserService.IsUserModeratorInForum(viewingUser, 0) && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false);
         }
 
         public bool CanRemoveFoe()
         {
             var viewingUser = GetCurrentUser();
-            var pageUser = IUserService.DbUserToAuthenticatedUserBase(CurrentUser!);
+            var pageUser = UserService.DbUserToAuthenticatedUserBase(CurrentUser!);
             return viewingUser.Foes?.Contains(pageUser.UserId) ?? false;
         }
 
@@ -542,7 +542,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var tree = (await GetForumTree(false, false)).Tree;
             var preferredTopicTask = GetPreferredTopic(tree);
             var roleTask = GetRole();
-            var groupTask = IUserService.GetUserGroup(cur.UserId);
+            var groupTask = UserService.GetUserGroup(cur.UserId);
             var foesTask = (
                 from z in Context.PhpbbZebra.AsNoTracking()
                 where z.UserId == cur.UserId && z.Foe == 1
@@ -570,9 +570,9 @@ namespace PhpbbInDotnet.Forum.Pages
             PostsPerDay = TotalPosts / DateTime.UtcNow.Subtract(cur.UserRegdate.ToUtcTime()).TotalDays;
             Email = cur.UserEmail;
             Birthday = cur.UserBirthday;
-            var currentAuthenticatedUser = new AuthenticatedUserExpanded(IUserService.DbUserToAuthenticatedUserBase(cur))
+            var currentAuthenticatedUser = new AuthenticatedUserExpanded(UserService.DbUserToAuthenticatedUserBase(cur))
             {
-                AllPermissions = await IUserService.GetPermissions(cur.UserId)
+                AllPermissions = await UserService.GetPermissions(cur.UserId)
             };
             AclRole = await roleTask;
             var group = await groupTask;
@@ -612,11 +612,11 @@ namespace PhpbbInDotnet.Forum.Pages
 
             async Task<int?> GetRole()
             {
-                var currentAuthenticatedUser = new AuthenticatedUserExpanded(IUserService.DbUserToAuthenticatedUserBase(cur))
+                var currentAuthenticatedUser = new AuthenticatedUserExpanded(UserService.DbUserToAuthenticatedUserBase(cur))
                 {
-                    AllPermissions = await IUserService.GetPermissions(cur.UserId)
+                    AllPermissions = await UserService.GetPermissions(cur.UserId)
                 };
-                return await IUserService.GetUserRole(currentAuthenticatedUser);
+                return await UserService.GetUserRole(currentAuthenticatedUser);
             }
         }
     }

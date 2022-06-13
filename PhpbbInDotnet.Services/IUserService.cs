@@ -25,6 +25,7 @@ namespace PhpbbInDotnet.Services
         Task<PhpbbGroups> GetUserGroup(int userId);
         Task<List<KeyValuePair<string, int>>> GetUserMap();
         Task<int?> GetUserRole(AuthenticatedUserExpanded user);
+        Task<IEnumerable<KeyValuePair<string, string>>> GetUsers();
         Task<IEnumerable<PhpbbAclRoles>> GetUserRolesLazy();
         Task<bool> HasPrivateMessagePermissions(int userId);
         Task<(string Message, bool? IsSuccess)> HidePrivateMessages(int userId, params int[] messageIds);

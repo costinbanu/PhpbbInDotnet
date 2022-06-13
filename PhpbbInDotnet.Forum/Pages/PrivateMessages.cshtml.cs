@@ -218,7 +218,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostDeleteMessage()
             => await WithUserHavingPM(async (user) =>
             {
-                var (Message, IsSuccess) = await IUserService.DeletePrivateMessage(MessageId!.Value);
+                var (Message, IsSuccess) = await UserService.DeletePrivateMessage(MessageId!.Value);
 
                 if (IsSuccess ?? false)
                 {
@@ -236,7 +236,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostHideMessage()
             => await WithUserHavingPM(async (user) =>
             {
-                var (Message, IsSuccess) = await IUserService.HidePrivateMessages(user.UserId, MessageId ?? 0);
+                var (Message, IsSuccess) = await UserService.HidePrivateMessages(user.UserId, MessageId ?? 0);
 
                 if (IsSuccess ?? false)
                 {
@@ -263,7 +263,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task OnPostHideSelectedMessages()
             => await WithUserHavingPM(async (user) =>
             {
-                var (Message, IsSuccess) = await IUserService.HidePrivateMessages(user.UserId, SelectedMessages!);
+                var (Message, IsSuccess) = await UserService.HidePrivateMessages(user.UserId, SelectedMessages!);
 
                 if (!(IsSuccess ?? false))
                 {

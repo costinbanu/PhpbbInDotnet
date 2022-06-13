@@ -25,7 +25,7 @@ namespace PhpbbInDotnet.Forum
     {
         protected readonly IForumTreeService ForumService;
         protected readonly IAppCache Cache;
-        protected readonly IUserService IUserService;
+        protected readonly IUserService UserService;
         protected readonly IForumDbContext Context;
         protected readonly ICommonUtils Utils;
         
@@ -37,7 +37,7 @@ namespace PhpbbInDotnet.Forum
         {
             ForumService = forumService;
             Cache = cacheService;
-            IUserService = userService;
+            UserService = userService;
             Context = context;
             Utils = utils;
             LanguageProvider = languageProvider;
@@ -55,10 +55,10 @@ namespace PhpbbInDotnet.Forum
         }
 
         public async Task<bool> IsCurrentUserAdminHere(int forumId = 0)
-            => await IUserService.IsUserAdminInForum(GetCurrentUser(), forumId);
+            => await UserService.IsUserAdminInForum(GetCurrentUser(), forumId);
 
         public async Task<bool> IsCurrentUserModeratorHere(int forumId = 0)
-            => await IUserService.IsUserModeratorInForum(GetCurrentUser(), forumId);
+            => await UserService.IsUserModeratorInForum(GetCurrentUser(), forumId);
 
         public string GetLanguage()
             => _language ??= LanguageProvider.GetValidatedLanguage(GetCurrentUser(), Request);

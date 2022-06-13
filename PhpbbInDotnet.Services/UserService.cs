@@ -1,8 +1,6 @@
-﻿using Dapper;
-using Microsoft.AspNetCore.Authentication.Cookies;
+﻿using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
@@ -25,6 +23,7 @@ namespace PhpbbInDotnet.Services
         private IEnumerable<PhpbbAclRoles>? _adminRoles;
         private IEnumerable<PhpbbAclRoles>? _modRoles;
         private IEnumerable<PhpbbAclRoles>? _userRoles;
+        private List<KeyValuePair<string, int>>? _userMap;
 
         private static PhpbbUsers? _anonymousDbUser;
         private static ClaimsPrincipal? _anonymousClaimsPrincipal;
@@ -413,11 +412,18 @@ namespace PhpbbInDotnet.Services
 
         public async Task<List<KeyValuePair<string, int>>> GetUserMap()
         {
-            var sqlExecuter = _context.GetSqlExecuter();
-            return (
-                await sqlExecuter.QueryAsync("SELECT username, user_id FROM phpbb_users WHERE user_id <> @id AND user_type <> 2 ORDER BY username", new { id = Constants.ANONYMOUS_USER_ID })
+            if (_userMap is not null)
+            {
+                return _userMap;
+            }
+            _userMap = (
+                await _context.GetSqlExecuter().QueryAsync("SELECT username, user_id FROM phpbb_users WHERE user_id <> @id AND user_type <> 2 ORDER BY username", new { id = Constants.ANONYMOUS_USER_ID })
             ).Select(u => KeyValuePair.Create((string)u.username, (int)u.user_id)).ToList();
+            return _userMap;
         }
+
+        public async Task<IEnumerable<KeyValuePair<string, string>>> GetUsers()
+            => (await GetUserMap()).Select(map => KeyValuePair.Create(map.Key, $"[url={_config.GetValue<string>("BaseUrl")}/User?UserId={map.Value}]{map.Key}[/url]")).ToList();
 
         private async Task<IEnumerable<PhpbbAclRoles>> GetModRolesLazy()
         {
