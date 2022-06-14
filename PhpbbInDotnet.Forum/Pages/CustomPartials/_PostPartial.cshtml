@@ -4,6 +4,7 @@
 @using System.Text
 @using Newtonsoft.Json
 @using Utilities
+@using Utilities.Extensions;
 @using Objects
 
 @inject Services.IUserService _userService
@@ -109,7 +110,7 @@
                 }
                 <br />
                 @Html.Raw(Model.Post.PostText)
-                @foreach (var attachment in Model.Post?.Attachments ?? new List<AttachmentDto>())
+                @foreach (var attachment in Model.Post?.Attachments.EmptyIfNull()!)
                 {
                     @await Html.PartialAsync("_AttachmentPartial", attachment, ViewData)
                 }

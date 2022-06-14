@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PhpbbInDotnet.Utilities.Extensions;
+using System;
 
 namespace PhpbbInDotnet.Utilities
 {

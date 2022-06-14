@@ -1,4 +1,4 @@
-﻿using PhpbbInDotnet.Utilities;
+﻿using PhpbbInDotnet.Utilities.Extensions;
 using System;
 
 namespace PhpbbInDotnet.Objects

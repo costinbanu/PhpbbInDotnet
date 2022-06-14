@@ -2,12 +2,13 @@
 
 @using Microsoft.Extensions.Configuration
 @using Utilities
+@using Utilities.Extensions;
 @using System.Web
 
 @inject Languages.LanguageProvider _languageProvider
 @inject IConfiguration _config
 
-@foreach (var user in Model.Users ?? new List<Database.Entities.PhpbbUsers>())
+@foreach (var user in Model.Users.EmptyIfNull())
 {
     var emailSearchLink = string.Format(_config.GetValue<string>("InternetSearchUrlFormat"), HttpUtility.UrlEncode($"\"{user.UserEmail}\""));
     var ipWhoIsLink = string.Format(_config.GetValue<string>("IpWhoIsUrlFormat"), user.UserIp);

@@ -1,10 +1,10 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Globalization;

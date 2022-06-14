@@ -1,7 +1,7 @@
 ﻿@model PhpbbInDotnet.Objects.AttachmentDto
 
-@using Utilities
-@inject ICommonUtils _utils
+@using Utilities.Extensions;
+@inject Utilities.ICommonUtils _utils
 @inject Services.IBBCodeRenderingService _renderingService
 @inject Languages.LanguageProvider _languageProvider
 

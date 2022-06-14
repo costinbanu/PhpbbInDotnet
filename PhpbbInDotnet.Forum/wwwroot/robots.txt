@@ -1,0 +1,13 @@
+﻿User-agent: * 
+Disallow: /search
+Disallow: /Search
+Disallow: /confirm
+Disallow: /Confirm
+Disallow: /login
+Disallow: /Login
+Disallow: /logout
+Disallow: /Logout
+Disallow: /search
+Disallow: /Search
+Disallow: /error
+Disallow: /Error

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -289,22 +290,43 @@ namespace PhpbbInDotnet.Services
         public ForumTree? GetTreeNode(HashSet<ForumTree> tree, int forumId)
             => tree.TryGetValue(new ForumTree { ForumId = forumId }, out var node) ? node : null;
 
-        public string GetPathText(HashSet<ForumTree> tree, int forumId)
+        private IEnumerable<(int ForumId, string ForumName)> GetBreadCrumbs(HashSet<ForumTree> tree, int forumId)
         {
             var pathParts = GetTreeNode(tree, forumId)?.PathList ?? new List<int>();
-            var sb = new StringBuilder();
             for (var i = 0; i < pathParts.Count; i++)
             {
                 var node = GetTreeNode(tree, pathParts[i]);
-                if (node?.IsRestricted ?? false)
+                if (node?.IsRestricted == true)
                 {
                     continue;
                 }
-                sb = sb.Append(HttpUtility.HtmlDecode(node?.ForumName ?? _config.GetValue<string>("ForumName")));
-                if (i < pathParts.Count - 1)
+                yield return (node?.ForumId ?? 0, HttpUtility.HtmlDecode(node?.ForumName ?? _config.GetValue<string>("ForumName")));
+            }
+        }
+
+        public BreadCrumbJSLD GetJSLDBreadCrumbsObject(HashSet<ForumTree> tree, int forumId)
+            => new()
+            {
+                ItemListElement = GetBreadCrumbs(tree, forumId).Indexed(startIndex: 1).Select(indexedItem => new ListItemJSLD
+                {
+                    Position = indexedItem.Index,
+                    Name = indexedItem.Item.ForumName,
+                    Item = new Uri(new Uri(_config.GetValue<string>("BaseUrl")), $"ViewForum?forumId={indexedItem.Item.ForumId}").ToString()
+                }).ToList()
+            };
+
+        public string GetPathText(HashSet<ForumTree> tree, int forumId)
+        {
+            var sb = new StringBuilder();
+            var isFirst = true;
+            foreach (var (_, ForumName) in GetBreadCrumbs(tree, forumId))
+            {
+                if (!isFirst)
                 {
                     sb = sb.Append(" → ");
                 }
+                isFirst = false;
+                sb = sb.Append(ForumName);
             }
             return sb.ToString();
         }
@@ -335,7 +357,7 @@ namespace PhpbbInDotnet.Services
 
             return unchecked((int)((await _context.GetSqlExecuter().QuerySingleOrDefaultAsync(
                 "SELECT post_id, post_time FROM phpbb_posts WHERE post_id IN @postIds HAVING post_time = MIN(post_time)",
-                new { postIds = item!.Posts?.DefaultIfEmpty() ?? new int[] { default } }
+                new { postIds = item?.Posts.DefaultIfNullOrEmpty() }
             ))?.post_id ?? 0u));
         }
 

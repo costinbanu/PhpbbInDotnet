@@ -7,6 +7,7 @@ using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Extensions;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -93,7 +94,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var sqlExecuter = Context.GetSqlExecuter();
                 await sqlExecuter.ExecuteAsync(
                     "DELETE FROM phpbb_drafts WHERE draft_id IN @ids", 
-                    new { ids = SelectedDrafts?.DefaultIfEmpty() ?? new[] { 0 } });
+                    new { ids = SelectedDrafts.DefaultIfNullOrEmpty() });
                 return await OnGet();
             });
     }

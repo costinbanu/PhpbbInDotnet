@@ -1,6 +1,7 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._PollPartialModel
 
 @using System.Web
+@using Utilities.Extensions
 
 @inject Languages.LanguageProvider _languageProvider
 
@@ -29,7 +30,7 @@
     {
         <div id="votes" style="display:block">
             <form method="post" asp-page-handler="vote">
-                @foreach (var option in Model.Poll?.PollOptions ?? new List<Objects.PollOption>())
+                @foreach (var option in Model.Poll?.PollOptions.EmptyIfNull()!)
                 {
                     var isChecked = option.PollOptionVoters?.Any(v => v.UserId == Model.CurrentUser?.UserId) ?? false;
                     <table class="PollTable">
@@ -60,7 +61,7 @@
     {
         <div id="results" style="display:@(displayVoteMenu ? "none" : "block")">
             <table class="PollTable">
-                @foreach (var option in Model.Poll?.PollOptions ?? new List<Objects.PollOption>())
+                @foreach (var option in Model.Poll?.PollOptions.EmptyIfNull()!)
                 {
                     var percentage = (Model.Poll?.TotalVotes == 0 ? 0 : option.PollOptionVotes * 100m / Model.Poll?.TotalVotes)?.ToString("##0.##'%'", System.Globalization.CultureInfo.InvariantCulture);
                     <tr>

@@ -12,10 +12,16 @@
     ViewData["Title"] = DocumentTitle;
     Layout = "~/Pages/_Layout.cshtml";
     var currentUser = Model.GetCurrentUser();
-    var hasSubForums = Model.ForumId != 0 && _forumService.HasUnrestrictedChildren((await Model.GetForumTree(false, false)).Tree, Model.ForumId);
+    var forumTree = (await Model.GetForumTree(false, false)).Tree;
+    var hasSubForums = Model.ForumId != 0 && _forumService.HasUnrestrictedChildren(forumTree, Model.ForumId);
     var hasTopics = Model.Topics?.SelectMany(x => x.Topics ?? Enumerable.Empty<TopicDto>()).Any() ?? false;
     var userDateFormat = currentUser.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
     var isCurrentForumReadOnly = await _forumService.IsForumReadOnlyForUser(currentUser, Model.ForumId);
+    if (Model.ForumId > 0)
+    {
+        ViewData["ForumId"] = Model.ForumId;
+        ViewData["BreadCrumbs"] = _forumService.GetJSLDBreadCrumbsObject(forumTree, Model.ForumId);
+    }
 }
 
 <environment include="Development">
@@ -144,7 +150,7 @@
     @await Html.PartialAsync(
         "_ForumTreePartial",
         new CustomPartials._ForumTreePartialModel(
-            tree: (await Model.GetForumTree(false, false)).Tree,
+            tree: forumTree,
             forumId: Model.ForumId,
             topicId: null,
             constrainSize: true

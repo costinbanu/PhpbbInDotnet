@@ -1,20 +1,21 @@
 ﻿using CryptSharp.Core;
 using Dapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
-using PhpbbInDotnet.Languages;
-using Microsoft.AspNetCore.Http;
 
 namespace PhpbbInDotnet.Services
 {
@@ -96,14 +97,14 @@ namespace PhpbbInDotnet.Services
                     { AclEntityType.Group, translatePermissions(dto.GroupForumPermissions) }
                 };
 
-                foreach (var idx in dto.UserPermissionToRemove ?? new List<int>())
+                foreach (var idx in dto.UserPermissionToRemove.EmptyIfNull())
                 {
                     var (entityId, roleId) = translatePermission(dto.UserForumPermissions?[idx]);
                     _context.PhpbbAclUsers.Remove(await _context.PhpbbAclUsers.FirstAsync(x => x.UserId == entityId && x.AuthRoleId == roleId && x.ForumId == actual.ForumId));
                     rolesForAclEntity[AclEntityType.User].Remove((entityId, roleId));
                 }
 
-                foreach (var idx in dto.GroupPermissionToRemove ?? new List<int>())
+                foreach (var idx in dto.GroupPermissionToRemove.EmptyIfNull())
                 {
                     var (entityId, roleId) = translatePermission(dto.GroupForumPermissions?[idx]);
                     _context.PhpbbAclGroups.Remove(await _context.PhpbbAclGroups.FirstAsync(x => x.GroupId == entityId && x.AuthRoleId == roleId && x.ForumId == actual.ForumId));
@@ -148,7 +149,7 @@ namespace PhpbbInDotnet.Services
 
             HashSet<(int entityId, int roleId)> translatePermissions(List<string>? permissions)
                 => new(
-                    from fp in permissions ?? new List<string>()
+                    from fp in permissions.EmptyIfNull()
                     let item = translatePermission(fp)
                     where item.entityId > 0
                     select item);

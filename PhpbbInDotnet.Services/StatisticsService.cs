@@ -3,6 +3,7 @@ using LazyCache;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Extensions;
 using System;
 using System.Threading.Tasks;
 
