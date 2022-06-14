@@ -1,5 +1,4 @@
 ﻿using CryptSharp.Core;
-using Dapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -12,10 +11,10 @@ using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Extensions;
 using System;
 using System.Linq;
 using System.Net.Http;
-using System.Net.Mail;
 using System.Text;
 using System.Threading.Tasks;
 

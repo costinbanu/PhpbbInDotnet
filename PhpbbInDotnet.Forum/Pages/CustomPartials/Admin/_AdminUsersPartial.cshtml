@@ -1,5 +1,6 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials.Admin._AdminUsersPartialModel
 @using Utilities
+@using Utilities.Extensions
 
 @inject Languages.LanguageProvider _languageProvider
 
@@ -171,7 +172,7 @@
     <span id="groupsChar">&#x1F53D;</span>
 </h4>
 <div id="groupsSection" style="display:none">
-    @foreach (var group in Model.Groups ?? new List<Objects.UpsertGroupDto>())
+    @foreach (var group in Model.Groups.EmptyIfNull())
     {
         <a href='javascript:populateGroup(@Json.Serialize(group))'>@Html.Raw(group.Name)</a>
         <br />
@@ -188,7 +189,7 @@
     <span id="ranksChar">&#x1F53D;</span>
 </h4>
 <div id="ranksSection" style="display:none">
-    @foreach (var rank in Model.Ranks ?? new List<Database.Entities.PhpbbRanks>())
+    @foreach (var rank in Model.Ranks.EmptyIfNull())
     {
         <a href="javascript:populateRank(@rank.RankId, '@rank.RankTitle')">@rank.RankTitle</a>
         <br />

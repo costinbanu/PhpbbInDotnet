@@ -13,6 +13,7 @@ using PhpbbInDotnet.Forum.Middlewares;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Extensions;
 using Serilog;
 using Serilog.Events;
 using System;

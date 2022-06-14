@@ -2,7 +2,6 @@
 using LazyCache;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
@@ -11,6 +10,7 @@ using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -346,7 +346,7 @@ namespace PhpbbInDotnet.Forum.Pages
             TopicId ??= await topicIdTask;
             PostId ??= await postIdTask;
 
-            var cachedAttachmentIds = (await attachmentsTask ?? Enumerable.Empty<int>()).DefaultIfEmpty();
+            var cachedAttachmentIds = await attachmentsTask;
             if (Attachments?.Any() != true && cachedAttachmentIds?.Any() == true)
             {
                 var sqlExecuter = Context.GetSqlExecuter();

@@ -1,6 +1,4 @@
-﻿using Dapper;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PhpbbInDotnet.Database;
@@ -9,6 +7,7 @@ using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Utilities;
 using PhpbbInDotnet.Utilities.Core;
+using PhpbbInDotnet.Utilities.Extensions;
 using Serilog;
 using System;
 using System.Data;

@@ -1,6 +1,7 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials.Admin._AdminViewLogsPartialModel
 
 @using Utilities
+@using Utilities.Extensions;
 @using System.Web
 
 @inject Languages.LanguageProvider _languageProvider
@@ -52,7 +53,7 @@
 
 <p></p>
 <div>
-    @foreach (var item in Model.CurrentLogItems ?? new List<Objects.OperationLogSummary>())
+    @foreach (var item in Model.CurrentLogItems.EmptyIfNull())
     {
         <div class="FlexCenter">
             <div class="FlexCaption">

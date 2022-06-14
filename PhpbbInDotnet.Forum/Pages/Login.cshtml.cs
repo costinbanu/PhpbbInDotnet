@@ -1,5 +1,4 @@
 ﻿using CryptSharp.Core;
-using Dapper;
 using LazyCache;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -14,6 +13,7 @@ using PhpbbInDotnet.Forum.Pages.CustomPartials.Email;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Extensions;
 using System;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;

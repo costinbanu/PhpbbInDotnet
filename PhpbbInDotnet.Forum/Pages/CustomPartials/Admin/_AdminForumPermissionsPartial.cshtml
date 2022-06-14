@@ -5,13 +5,14 @@
 @using Database;
 @using Database.Entities;
 @using Utilities;
+@using Utilities.Extensions
 
 @inject IForumDbContext _context
 @inject Utilities.ICommonUtils _utils
 @inject Languages.LanguageProvider _languageProvider
 
 @{
-    var groupedPermissions = from p in Model.Permissions ?? new List<ForumPermissions>()
+    var groupedPermissions = from p in Model.Permissions.EmptyIfNull()
                              group p by new { p.Id, p.Name } into groups
                              select groups;
 

@@ -1,34 +1,12 @@
-﻿using Dapper;
-using LazyCache;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Data.Common;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
-namespace PhpbbInDotnet.Utilities
+namespace PhpbbInDotnet.Utilities.Extensions
 {
-    public static class Extensions
+    public static class StringExtensions
     {
-        public static readonly DateTime UNIX_TIMESTAMP_START_DATE = new(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-
-        public static DateTime ToUtcTime(this long timestamp)
-            => UNIX_TIMESTAMP_START_DATE.AddSeconds(timestamp);
-
-        public static long ToUnixTimestamp(this DateTime time)
-            => (long)time.ToUniversalTime().Subtract(UNIX_TIMESTAMP_START_DATE).TotalSeconds;
-
-        public static bool ToBool(this byte @byte)
-            => @byte == 1;
-
-        public static byte ToByte(this bool @bool)
-            => (byte)(@bool ? 1 : 0);
-
         public static bool IsMimeTypeInline(this string mimeType)
             => mimeType.IsImageMimeType() /*||
                 mimeType.StartsWith("video", StringComparison.InvariantCultureIgnoreCase) ||
@@ -71,16 +49,6 @@ namespace PhpbbInDotnet.Utilities
             }
 
             return input;
-        }
-
-        public static T GetObject<T>(this IConfiguration config, string? sectionName = null)
-            => config.GetSection(sectionName ?? typeof(T).Name).Get<T>();
-
-        public static async Task<T> GetAndRemoveAsync<T>(this IAppCache cache, string key)
-        {
-            var toReturn = await cache.GetAsync<T>(key);
-            cache.Remove(key);
-            return toReturn;
         }
 
         private static readonly Regex CHAR_CODES_REGEX = new("&#[0-9]{3};", RegexOptions.Compiled | RegexOptions.CultureInvariant, Constants.REGEX_TIMEOUT);

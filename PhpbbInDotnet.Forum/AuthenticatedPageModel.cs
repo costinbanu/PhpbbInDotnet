@@ -12,6 +12,7 @@ using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -134,7 +135,7 @@ namespace PhpbbInDotnet.Forum
             var sqlExecuter = Context.GetSqlExecuter();
             return unchecked((int)((await sqlExecuter.QuerySingleOrDefaultAsync(
                 "SELECT post_id, post_time FROM phpbb_posts WHERE post_id IN @postIds HAVING post_time = MIN(post_time)",
-                new { postIds = item!.Posts?.DefaultIfEmpty() ?? new int[] { default } }
+                new { postIds = item?.Posts.DefaultIfNullOrEmpty() }
             ))?.post_id ?? 0u));
         }
 

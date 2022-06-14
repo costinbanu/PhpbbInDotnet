@@ -5,6 +5,7 @@ using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services.UnitTests.Utils;
 using PhpbbInDotnet.Utilities;
 using PhpbbInDotnet.Utilities.Core;
+using PhpbbInDotnet.Utilities.Extensions;
 using RandomTestValues;
 using System;
 using System.Collections.Generic;
@@ -62,7 +63,7 @@ namespace PhpbbInDotnet.Services.UnitTests.CleanupServiceTests
                         reports.ForEach(report => report.ReportTime = CustomRandomValue.UnixTimeStamp());
                         postDto.Reports = reports;
                     }
-                    foreach (var a in postDto.Attachments ?? new List<AttachmentDto>())
+                    foreach (var a in postDto.Attachments.EmptyIfNull())
                     {
                         _mockStorageService.Setup(s => s.DeleteFile(a.PhysicalFileName, false)).Returns(true);
                     }

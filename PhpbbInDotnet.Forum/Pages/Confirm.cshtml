@@ -2,6 +2,7 @@
 @model PhpbbInDotnet.Forum.Pages.ConfirmModel
 
 @using Utilities
+@using Utilities.Extensions
 
 @inject Utilities.ICommonUtils _utils
 @inject Services.IForumTreeService _forumService
@@ -98,7 +99,7 @@ else if (Model.IsDestinationConfirmation)
 {
     <span style="font-size:1.2em">@Html.Raw(Model.Message)</span>
     <p>&nbsp;</p>
-    foreach (var destination in Model.Destinations ?? new List<string>())
+    foreach (var destination in Model.Destinations.EmptyIfNull())
     {
         @Html.Raw(await _utils.DecodeAndDecompress(destination));
         <p></p>

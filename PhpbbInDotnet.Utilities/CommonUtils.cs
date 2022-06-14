@@ -25,6 +25,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace PhpbbInDotnet.Utilities
 {
@@ -58,10 +59,10 @@ namespace PhpbbInDotnet.Utilities
             => CompressionUtils.DecompressObject<T>(source);
 
         public async Task<string> CompressAndEncode(string input)
-            => Convert.ToBase64String(await CompressObject(input));
+            => HttpUtility.UrlEncode(Convert.ToBase64String(await CompressObject(input)));
 
         public async Task<string?> DecodeAndDecompress(string input)
-            => await DecompressObject<string>(Convert.FromBase64String(input));
+            => await DecompressObject<string>(Convert.FromBase64String(HttpUtility.UrlDecode(input)));
 
 
         #endregion Compression

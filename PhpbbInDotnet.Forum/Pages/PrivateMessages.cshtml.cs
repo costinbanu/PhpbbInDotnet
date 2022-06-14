@@ -7,6 +7,7 @@ using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -257,7 +258,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var sqlExecuter = Context.GetSqlExecuter();
                 await sqlExecuter.ExecuteAsync(
                     "UPDATE phpbb_privmsgs_to SET pm_unread = 0 WHERE msg_id IN @ids AND author_id <> user_id", 
-                    new { ids = SelectedMessages?.DefaultIfEmpty() ?? new[] { 0 } });
+                    new { ids = SelectedMessages.DefaultIfNullOrEmpty() });
 
                 return await OnGet();
             });

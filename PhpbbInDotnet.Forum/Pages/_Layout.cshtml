@@ -1,14 +1,17 @@
 ﻿@using System.Web
 @using Microsoft.Extensions.Configuration
+@using Newtonsoft.Json
 @using Utilities
 @using Objects;
 
 @inject IConfiguration _config
 @inject Services.IUserService  _userService
 @inject Services.IModeratorService _moderatorService
+@inject Services.IStatisticsService _statisticsService
+@inject Services.IForumTreeService _forumService
 @inject Languages.LanguageProvider _languageProvider
 @inject Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor
-@inject Services.IStatisticsService _statisticsService
+
 @{
     #nullable enable
     var currentUser = (AuthenticatedUserExpanded?)Context.Items[nameof(AuthenticatedUserExpanded)];
@@ -20,7 +23,8 @@
     var lang = _languageProvider.GetValidatedLanguage(currentUser, _httpContextAccessor.HttpContext?.Request); 
     var dateFormat = currentUser?.UserDateFormat ?? _languageProvider.GetDefaultDateFormat(lang);
     var statistics = await _statisticsService.GetStatistics();
-    var forumId = int.TryParse(Context.Request.Query["forumId"].ToString(), out var val) ? val : 0;
+    var forumId = ViewData.TryGetValue("ForumId", out var fidRaw) && fidRaw is int fidVal ? fidVal : 0;
+    var breadCrumbs = ViewData.TryGetValue("BreadCrumbs", out var bcRaw) && bcRaw is BreadCrumbJSLD bcVal ? bcVal : null;
 }
 
 <!DOCTYPE html>
@@ -29,6 +33,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1" />
     <title>@Html.Raw(_config.GetValue<string>("ForumName")) - @ViewData["Title"]</title>
+
+    @if (breadCrumbs is not null)
+    {
+        <script type="application/ld+json">
+            @Html.Raw(JsonConvert.SerializeObject(breadCrumbs, Formatting.Indented))
+        </script>
+    }
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.3/jquery.validate.min.js" integrity="sha512-37T7leoNS06R80c8Ulq7cdCDU5MNQBwlYoy1TX/WUsLFC2eYNqtKlV0QjH7r8JpG/S0GUMZwebnVFLPd6SU5yg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
