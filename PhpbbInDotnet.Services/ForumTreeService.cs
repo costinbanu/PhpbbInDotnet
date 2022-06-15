@@ -304,16 +304,36 @@ namespace PhpbbInDotnet.Services
             }
         }
 
+        public string GetAbsoluteUrlToForum(int forumId)
+            => new Uri(new Uri(_config.GetValue<string>("BaseUrl")), $"ViewForum?forumId={forumId}").ToString();
+
         public BreadCrumbJSLD GetJSLDBreadCrumbsObject(HashSet<ForumTree> tree, int forumId)
-            => new()
+        {
+            var elements = new List<ListItemJSLD>
             {
-                ItemListElement = GetBreadCrumbs(tree, forumId).Indexed(startIndex: 1).Select(indexedItem => new ListItemJSLD
+                new()
+                {
+                    Position = 1,
+                    Name = _config.GetValue<string>("ForumName"),
+                    Item = _config.GetValue<string>("BaseUrl")
+                }
+            };
+
+            elements.AddRange(
+                GetBreadCrumbs(tree, forumId)
+                .Indexed(startIndex: 2)
+                .Select(indexedItem => new ListItemJSLD
                 {
                     Position = indexedItem.Index,
                     Name = indexedItem.Item.ForumName,
-                    Item = new Uri(new Uri(_config.GetValue<string>("BaseUrl")), $"ViewForum?forumId={indexedItem.Item.ForumId}").ToString()
-                }).ToList()
+                    Item = GetAbsoluteUrlToForum(indexedItem.Item.ForumId)
+                }));
+
+            return new()
+            {
+                ItemListElement = elements
             };
+        }
 
         public string GetPathText(HashSet<ForumTree> tree, int forumId)
         {

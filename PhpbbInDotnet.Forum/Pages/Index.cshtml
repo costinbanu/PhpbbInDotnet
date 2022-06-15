@@ -5,12 +5,14 @@
 @using Microsoft.Extensions.Configuration
 
 @inject IConfiguration _config
+@inject Services.IForumTreeService _forumService
 
 @{
     var CurrentUser = Model.GetCurrentUser();
     var Lang = Model.GetLanguage();
     var UserDateFormat = CurrentUser?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
     ViewData["Title"] = Model.LanguageProvider.BasicText[Lang, "HOME", Casing.Title];
+    ViewData["BreadCrumbs"] = _forumService.GetJSLDBreadCrumbsObject((await Model.GetForumTree(false, false)).Tree, 0);
 }
 
 @if (!CurrentUser!.IsAnonymous)

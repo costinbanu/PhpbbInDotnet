@@ -26,7 +26,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhpbbInDotnet.Database.Setu
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{46F225D0-0B80-4B22-8900-B7F0C31290DA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhpbbInDotnet.Services.UnitTests", "Tests\PhpbbInDotnet.Services.UnitTests\PhpbbInDotnet.Services.UnitTests.csproj", "{68A63359-5C25-4D67-9BFC-88FEEAF58CF9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhpbbInDotnet.Services.UnitTests", "Tests\PhpbbInDotnet.Services.UnitTests\PhpbbInDotnet.Services.UnitTests.csproj", "{68A63359-5C25-4D67-9BFC-88FEEAF58CF9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
