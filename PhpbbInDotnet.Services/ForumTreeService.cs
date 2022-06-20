@@ -42,6 +42,39 @@ namespace PhpbbInDotnet.Services
         public bool IsNodeRestricted(ForumTree tree, bool includePasswordProtected = false)
             => tree.IsRestricted || (includePasswordProtected && tree.HasPassword);
 
+        public async Task<IEnumerable<int>> GetUnrestrictedForums(AuthenticatedUserExpanded user, int? forumId = null)
+        {
+            var tree = await GetForumTree(user, false, false);
+            var toReturn = new List<int>(tree.Count);
+
+            if ((forumId ?? 0) > 0)
+            {
+                traverse(forumId!.Value);
+            }
+            else
+            {
+                toReturn.AddRange(tree.Where(t => !IsNodeRestricted(t)).Select(t => t.ForumId));
+            }
+
+            return toReturn.DefaultIfEmpty();
+
+            void traverse(int fid)
+            {
+                var node = GetTreeNode(tree, fid);
+                if (node != null)
+                {
+                    if (!IsNodeRestricted(node))
+                    {
+                        toReturn.Add(fid);
+                    }
+                    foreach (var child in node?.ChildrenList ?? new HashSet<int>())
+                    {
+                        traverse(child);
+                    }
+                }
+            }
+        }
+
         public async Task<bool> IsForumReadOnlyForUser(AuthenticatedUserExpanded user, int forumId)
         {
             var tree = await GetForumTree(user, false, false);
@@ -306,6 +339,9 @@ namespace PhpbbInDotnet.Services
 
         public string GetAbsoluteUrlToForum(int forumId)
             => new Uri(new Uri(_config.GetValue<string>("BaseUrl")), $"ViewForum?forumId={forumId}").ToString();
+
+        public string GetAbsoluteUrlToTopic(int topicId, int pageNum)
+            => new Uri(new Uri(_config.GetValue<string>("BaseUrl")), $"ViewTopic?topicId={topicId}&pageNum={pageNum}").ToString();
 
         public BreadCrumbJSLD GetJSLDBreadCrumbsObject(HashSet<ForumTree> tree, int forumId)
         {
