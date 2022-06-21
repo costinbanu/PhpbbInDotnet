@@ -22,13 +22,13 @@ using XSitemaps;
 
 namespace PhpbbInDotnet.Services
 {
-    class CleanupService : BackgroundService
+    class ScheduledTasksService : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider;
 
-        public const string OK_FILE_NAME = $"{nameof(CleanupService)}.ok";
+        public const string OK_FILE_NAME = $"{nameof(ScheduledTasksService)}.ok";
 
-        public CleanupService(IServiceProvider serviceProvider)
+        public ScheduledTasksService(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
         }
@@ -50,7 +50,7 @@ namespace PhpbbInDotnet.Services
             var forumService = scope.ServiceProvider.GetRequiredService<IForumTreeService>();
             var environment = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
 
-            logger.Information("Launching a new {name} instance...", nameof(CleanupService));
+            logger.Information("Launching a new {name} instance...", nameof(ScheduledTasksService));
 
             var options = config.GetObject<CleanupServiceOptions>("CleanupService");
             var timeToWait = GetTimeToWaitUntilRunIsAllowed(timeService, fileInfoService, options);
@@ -72,7 +72,7 @@ namespace PhpbbInDotnet.Services
                     ResyncOrphanFiles(config, timeService, sqlExecuter, stoppingToken),
                     ResyncForumsAndTopics(sqlExecuter, stoppingToken),
                     CleanOperationLogs(config, timeService, sqlExecuter, logger, stoppingToken),
-                    GenerateSiteMap(config, sqlExecuter, userService, forumService, environment, stoppingToken)
+                    GenerateSiteMap(config, sqlExecuter, userService, forumService, environment, logger, stoppingToken)
                 );
 
                 stoppingToken.ThrowIfCancellationRequested();
@@ -288,8 +288,10 @@ namespace PhpbbInDotnet.Services
                 });
         }
 
-        private async Task GenerateSiteMap(IConfiguration config, ISqlExecuter sqlExecuter, IUserService userService, IForumTreeService forumTreeService, IWebHostEnvironment env, CancellationToken stoppingToken)
+        private async Task GenerateSiteMap(IConfiguration config, ISqlExecuter sqlExecuter, IUserService userService, IForumTreeService forumTreeService, IWebHostEnvironment env, ILogger logger, CancellationToken stoppingToken)
         {
+            logger.Information("Generating a new sitemap...");
+
             var claimsPrincipalTask = userService.GetAnonymousClaimsPrincipal();
             var permissionsTask = userService.GetPermissions(Constants.ANONYMOUS_USER_ID);
             await Task.WhenAll(claimsPrincipalTask, permissionsTask);
@@ -302,27 +304,31 @@ namespace PhpbbInDotnet.Services
             var urls = new ReadOnlyMemory<SitemapUrl>(await allSitemapUrls.ToArrayAsync(cancellationToken: stoppingToken));
             var siteMaps = Sitemap.Create(urls);
 
-            var infos = new List<SitemapInfo>();
-            var options = new SerializeOptions
+            var sitemapInfos = new List<SitemapInfo>();
+            var serializeOptions = new SerializeOptions
             {
                 EnableIndent = true,
                 EnableGzipCompression = false,
             };
-            foreach (var (item, index) in siteMaps.Indexed())
+            foreach (var (sitemap, index) in siteMaps.Indexed())
             {
                 stoppingToken.ThrowIfCancellationRequested();
 
-                var name = $"sitemap_{index}.xml";
-                var path = Path.Combine(env.WebRootPath, name);
-                using var stream = new FileStream(path, FileMode.Create);
-                item.Serialize(stream, options);
-                infos.Add(new SitemapInfo(new Uri(new Uri(config.GetValue<string>("BaseUrl")), name).ToString(), DateTimeOffset.UtcNow));
+                var sitemapName = $"sitemap_{index}.xml";
+                var sitemapPath = Path.Combine(env.WebRootPath, sitemapName);
+                using var sitemapStream = new FileStream(sitemapPath, FileMode.Create);
+                sitemap.Serialize(sitemapStream, serializeOptions);
+                sitemapInfos.Add(new SitemapInfo(
+                    location: new Uri(new Uri(config.GetValue<string>("BaseUrl")), sitemapName).ToString(), 
+                    modifiedAt: DateTimeOffset.UtcNow));
             }
 
-            var siteMapIndex = new SitemapIndex(infos);
-            var indexPath = Path.Combine(env.WebRootPath, $"sitemap.xml");
-            using var indexStream = new FileStream(indexPath, FileMode.Create);
-            siteMapIndex.Serialize(indexStream, options);
+            var sitemapIndex = new SitemapIndex(sitemapInfos);
+            var sitemapIndexPath = Path.Combine(env.WebRootPath, $"sitemap.xml");
+            using var sitemapIndexStream = new FileStream(sitemapIndexPath, FileMode.Create);
+            sitemapIndex.Serialize(sitemapIndexStream, serializeOptions);
+
+            logger.Information("Sitemap generated successfully!");
 
             async IAsyncEnumerable<SitemapUrl> GetForums()
             {
@@ -361,19 +367,18 @@ namespace PhpbbInDotnet.Services
             {
                 var topics = await sqlExecuter.QueryAsync(
                     @"WITH counts AS (
-	                SELECT count(1) as post_count, 
-		                   topic_id
-	                  FROM phpbb_posts
-                     WHERE forum_id IN @allowedForums
-                     GROUP BY topic_id
-                )
-                SELECT t.topic_id,
-	                   t.topic_last_post_time,
-                       c.post_count
-                  FROM phpbb_topics t
-                  JOIN counts c
-                    ON c.topic_id = t.topic_id 
-                 WHERE t.forum_id IN @allowedForums",
+	                    SELECT count(1) as post_count, 
+		                       topic_id
+	                      FROM phpbb_posts
+                         WHERE forum_id IN @allowedForums
+                         GROUP BY topic_id
+                    )
+                    SELECT t.topic_id,
+                           c.post_count
+                      FROM phpbb_topics t
+                      JOIN counts c
+                        ON c.topic_id = t.topic_id 
+                     WHERE t.forum_id IN @allowedForums",
                     new
                     {
                         allowedForums
@@ -386,14 +391,14 @@ namespace PhpbbInDotnet.Services
                     {
                         var time = await sqlExecuter.ExecuteScalarAsync<long>(
                             @"WITH times AS (
-	                        SELECT post_time, post_edit_time
-	                        FROM phpbb_posts
-	                        WHERE topic_id = @topicId
-	                        ORDER BY post_time
-	                        LIMIT @skip, @take
-                        )
-                        SELECT greatest(max(post_time), max(post_edit_time)) AS max_time
-                        FROM times",
+	                            SELECT post_time, post_edit_time
+	                              FROM phpbb_posts
+	                             WHERE topic_id = @topicId
+	                             ORDER BY post_time
+	                             LIMIT @skip, @take
+                            )
+                            SELECT greatest(max(post_time), max(post_edit_time)) AS max_time
+                            FROM times",
                             new
                             {
                                 topicId = topic.topic_id,
