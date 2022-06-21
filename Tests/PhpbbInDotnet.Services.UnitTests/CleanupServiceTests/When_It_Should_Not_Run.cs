@@ -15,9 +15,9 @@ namespace PhpbbInDotnet.Services.UnitTests.CleanupServiceTests
         {
             using var cts = new CancellationTokenSource();
             _mockTimeService.Setup(t => t.DateTimeOffsetNow()).Returns(now);
-            _mockFileInfoService.Setup(f => f.GetLastWriteTime(CleanupService.OK_FILE_NAME)).Returns(lastRun);
+            _mockFileInfoService.Setup(f => f.GetLastWriteTime(ScheduledTasksService.OK_FILE_NAME)).Returns(lastRun);
             _services.AddSingleton(TestUtils.GetAppConfiguration(opts => opts.CleanupService = options));
-            var cleanupService = new CleanupService(_services.BuildServiceProvider());
+            var cleanupService = new ScheduledTasksService(_services.BuildServiceProvider());
 
             await cleanupService.StartAsync(cts.Token);
             await Task.Delay(TimeSpan.FromSeconds(1));

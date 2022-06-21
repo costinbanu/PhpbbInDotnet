@@ -268,3 +268,4 @@ __pycache__/
 *.min.css
 *.ok
 /PhpbbInDotnet.Forum/logs
+/PhpbbInDotnet.Forum/wwwroot/sitemap*.xml

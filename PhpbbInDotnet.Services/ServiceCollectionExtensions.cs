@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddSingleton<ITimeService, TimeService>();
             services.AddSingleton<IFileInfoService, FileInfoService>();
 
-            services.AddHostedService<CleanupService>();
+            services.AddHostedService<ScheduledTasksService>();
 
             return services;
         }

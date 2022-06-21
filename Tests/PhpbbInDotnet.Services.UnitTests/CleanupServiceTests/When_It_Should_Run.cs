@@ -23,12 +23,12 @@ namespace PhpbbInDotnet.Services.UnitTests.CleanupServiceTests
         public async Task On_Exception_It_Gracefully_Stops()
         {
             _mockTimeService.Setup(t => t.DateTimeOffsetNow()).Returns(DateTimeOffset.Parse("02:30:00"));
-            _mockFileInfoService.Setup(f => f.GetLastWriteTime(CleanupService.OK_FILE_NAME)).Returns(DateTime.Parse("02:00:00").AddDays(-1).ToUniversalTime());
+            _mockFileInfoService.Setup(f => f.GetLastWriteTime(ScheduledTasksService.OK_FILE_NAME)).Returns(DateTime.Parse("02:00:00").AddDays(-1).ToUniversalTime());
             _services.AddSingleton(TestUtils.GetAppConfiguration());
             
             using var cts = new CancellationTokenSource();
             cts.Cancel();
-            var cleanupService = new CleanupService(_services.BuildServiceProvider());
+            var cleanupService = new ScheduledTasksService(_services.BuildServiceProvider());
             await cleanupService.StartAsync(cts.Token);
             await Task.Delay(TimeSpan.FromSeconds(1));
 
@@ -45,7 +45,7 @@ namespace PhpbbInDotnet.Services.UnitTests.CleanupServiceTests
             var now = DateTimeOffset.Parse("02:30:00");
             _mockTimeService.Setup(t => t.DateTimeOffsetNow()).Returns(now);
             _mockTimeService.Setup(t => t.DateTimeUtcNow()).Returns(now.UtcDateTime);
-            _mockFileInfoService.Setup(f => f.GetLastWriteTime(CleanupService.OK_FILE_NAME)).Returns(DateTime.Parse("02:00:00").AddDays(-1).ToUniversalTime());
+            _mockFileInfoService.Setup(f => f.GetLastWriteTime(ScheduledTasksService.OK_FILE_NAME)).Returns(DateTime.Parse("02:00:00").AddDays(-1).ToUniversalTime());
             _mockWritingToolsService.Setup(w => w.DeleteOrphanedFiles()).ReturnsAsync((string.Empty, true));
             var postDtos = new List<PostDto>();
             var recycleBinItems = new List<PhpbbRecycleBin>();
@@ -85,7 +85,7 @@ namespace PhpbbInDotnet.Services.UnitTests.CleanupServiceTests
                     It.IsAny<object>()))
                 .ReturnsAsync(operationLogs);
 
-            var cleanupService = new CleanupService(_services.BuildServiceProvider());
+            var cleanupService = new ScheduledTasksService(_services.BuildServiceProvider());
             await cleanupService.StartAsync(CancellationToken.None);
             await Task.Delay(TimeSpan.FromSeconds(2));
 
