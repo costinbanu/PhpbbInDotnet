@@ -11,8 +11,10 @@ namespace PhpbbInDotnet.Services
         Task<HashSet<ForumTree>> GetForumTree(AuthenticatedUserExpanded? user, bool forceRefresh, bool fetchUnreadData);
         string GetPathText(HashSet<ForumTree> tree, int forumId);
         string GetAbsoluteUrlToForum(int forumId);
+        string GetAbsoluteUrlToTopic(int topicId, int pageNum);
         BreadCrumbJSLD GetJSLDBreadCrumbsObject(HashSet<ForumTree> tree, int forumId);
         Task<IEnumerable<(int forumId, bool hasPassword)>> GetRestrictedForumList(AuthenticatedUserExpanded user, bool includePasswordProtected = false);
+        Task<IEnumerable<int>> GetUnrestrictedForums(AuthenticatedUserExpanded user, int? forumId = null);
         Task<List<TopicGroup>> GetTopicGroups(int forumId);
         ForumTree? GetTreeNode(HashSet<ForumTree> tree, int forumId);
         bool HasUnrestrictedChildren(HashSet<ForumTree> tree, int forumId);

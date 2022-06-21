@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using JW;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PhpbbInDotnet.Database;
@@ -10,21 +12,23 @@ using PhpbbInDotnet.Utilities.Core;
 using PhpbbInDotnet.Utilities.Extensions;
 using Serilog;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using XSitemaps;
 
 namespace PhpbbInDotnet.Services
 {
-    class CleanupService : BackgroundService
+    class ScheduledTasksService : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider;
 
-        public const string OK_FILE_NAME = $"{nameof(CleanupService)}.ok";
+        public const string OK_FILE_NAME = $"{nameof(ScheduledTasksService)}.ok";
 
-        public CleanupService(IServiceProvider serviceProvider)
+        public ScheduledTasksService(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
         }
@@ -42,8 +46,11 @@ namespace PhpbbInDotnet.Services
             var writingToolsService = scope.ServiceProvider.GetRequiredService<IWritingToolsService>();
             var timeService = scope.ServiceProvider.GetRequiredService<ITimeService>();
             var fileInfoService = scope.ServiceProvider.GetRequiredService<IFileInfoService>();
+            var userService = scope.ServiceProvider.GetRequiredService<IUserService>();
+            var forumService = scope.ServiceProvider.GetRequiredService<IForumTreeService>();
+            var environment = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
 
-            logger.Information("Launching a new {name} instance...", nameof(CleanupService));
+            logger.Information("Launching a new {name} instance...", nameof(ScheduledTasksService));
 
             var options = config.GetObject<CleanupServiceOptions>("CleanupService");
             var timeToWait = GetTimeToWaitUntilRunIsAllowed(timeService, fileInfoService, options);
@@ -64,7 +71,8 @@ namespace PhpbbInDotnet.Services
                     CleanRecycleBin(config, timeService, sqlExecuter, storageService, logger, stoppingToken),
                     ResyncOrphanFiles(config, timeService, sqlExecuter, stoppingToken),
                     ResyncForumsAndTopics(sqlExecuter, stoppingToken),
-                    CleanOperationLogs(config, timeService, sqlExecuter, logger, stoppingToken)
+                    CleanOperationLogs(config, timeService, sqlExecuter, logger, stoppingToken),
+                    GenerateSiteMap(config, sqlExecuter, userService, forumService, environment, logger, stoppingToken)
                 );
 
                 stoppingToken.ThrowIfCancellationRequested();
@@ -279,7 +287,179 @@ namespace PhpbbInDotnet.Services
                     ids = toDelete.Select(l => l.LogId).DefaultIfEmpty()
                 });
         }
-    
+
+        private async Task GenerateSiteMap(IConfiguration config, ISqlExecuter sqlExecuter, IUserService userService, IForumTreeService forumTreeService, IWebHostEnvironment env, ILogger logger, CancellationToken stoppingToken)
+        {
+            logger.Information("Generating a new sitemap...");
+
+            var claimsPrincipalTask = userService.GetAnonymousClaimsPrincipal();
+            var permissionsTask = userService.GetPermissions(Constants.ANONYMOUS_USER_ID);
+            await Task.WhenAll(claimsPrincipalTask, permissionsTask);
+
+            var anonymous = userService.ClaimsPrincipalToAuthenticatedUser(await claimsPrincipalTask)!;
+            anonymous.AllPermissions = await permissionsTask;
+
+            var allowedForums = await forumTreeService.GetUnrestrictedForums(anonymous);
+            var allSitemapUrls = GetForums().Union(GetTopics());
+            var urls = new ReadOnlyMemory<SitemapUrl>(await allSitemapUrls.ToArrayAsync(cancellationToken: stoppingToken));
+            var siteMaps = Sitemap.Create(urls);
+
+            var sitemapInfos = new List<SitemapInfo>();
+            var serializeOptions = new SerializeOptions
+            {
+                EnableIndent = true,
+                EnableGzipCompression = false,
+            };
+            foreach (var (sitemap, index) in siteMaps.Indexed())
+            {
+                stoppingToken.ThrowIfCancellationRequested();
+
+                var sitemapName = $"sitemap_{index}.xml";
+                var sitemapPath = Path.Combine(env.WebRootPath, sitemapName);
+                using var sitemapStream = new FileStream(sitemapPath, FileMode.Create);
+                sitemap.Serialize(sitemapStream, serializeOptions);
+                sitemapInfos.Add(new SitemapInfo(
+                    location: new Uri(new Uri(config.GetValue<string>("BaseUrl")), sitemapName).ToString(), 
+                    modifiedAt: DateTimeOffset.UtcNow));
+            }
+
+            var sitemapIndex = new SitemapIndex(sitemapInfos);
+            var sitemapIndexPath = Path.Combine(env.WebRootPath, $"sitemap.xml");
+            using var sitemapIndexStream = new FileStream(sitemapIndexPath, FileMode.Create);
+            sitemapIndex.Serialize(sitemapIndexStream, serializeOptions);
+
+            logger.Information("Sitemap generated successfully!");
+
+            async IAsyncEnumerable<SitemapUrl> GetForums()
+            {
+                var tree = await forumTreeService.GetForumTree(anonymous, forceRefresh: false, fetchUnreadData: false);
+                var maxTime = DateTime.MinValue;
+                foreach (var forumId in allowedForums.EmptyIfNull())
+                {
+                    var item = forumTreeService.GetTreeNode(tree, forumId);
+
+                    if (item is null || item.ForumId < 1)
+                    {
+                        continue;
+                    }
+
+                    var curTime = item.ForumLastPostTime?.ToUtcTime();
+                    if (curTime > maxTime)
+                    {
+                        maxTime = curTime.Value;
+                    }
+
+                    yield return new SitemapUrl(
+                        location: forumTreeService.GetAbsoluteUrlToForum(item.ForumId),
+                        modifiedAt: curTime,
+                        frequency: GetChangeFrequency(curTime),
+                        priority: GetForumPriority(item.Level));
+                }
+
+                yield return new SitemapUrl(
+                    location: config.GetValue<string>("BaseUrl"),
+                    modifiedAt: maxTime,
+                    frequency: GetChangeFrequency(maxTime),
+                    priority: GetForumPriority(0));
+            }
+
+            async IAsyncEnumerable<SitemapUrl> GetTopics()
+            {
+                var topics = await sqlExecuter.QueryAsync(
+                    @"WITH counts AS (
+	                    SELECT count(1) as post_count, 
+		                       topic_id
+	                      FROM phpbb_posts
+                         WHERE forum_id IN @allowedForums
+                         GROUP BY topic_id
+                    )
+                    SELECT t.topic_id,
+                           c.post_count
+                      FROM phpbb_topics t
+                      JOIN counts c
+                        ON c.topic_id = t.topic_id 
+                     WHERE t.forum_id IN @allowedForums",
+                    new
+                    {
+                        allowedForums
+                    });
+
+                foreach (var topic in topics)
+                {
+                    var pager = new Pager(totalItems: (int)topic.post_count, pageSize: Constants.DEFAULT_PAGE_SIZE);
+                    for (var currentPage = 1; currentPage <= pager.TotalPages; currentPage++)
+                    {
+                        var time = await sqlExecuter.ExecuteScalarAsync<long>(
+                            @"WITH times AS (
+	                            SELECT post_time, post_edit_time
+	                              FROM phpbb_posts
+	                             WHERE topic_id = @topicId
+	                             ORDER BY post_time
+	                             LIMIT @skip, @take
+                            )
+                            SELECT greatest(max(post_time), max(post_edit_time)) AS max_time
+                            FROM times",
+                            new
+                            {
+                                topicId = topic.topic_id,
+                                skip = (currentPage - 1) * Constants.DEFAULT_PAGE_SIZE,
+                                take = Constants.DEFAULT_PAGE_SIZE
+                            });
+
+                        var lastChange = time.ToUtcTime();
+                        var freq = GetChangeFrequency(lastChange);
+                        yield return new SitemapUrl(
+                            location: forumTreeService.GetAbsoluteUrlToTopic((int)topic.topic_id, currentPage),
+                            modifiedAt: lastChange,
+                            frequency: freq,
+                            priority: GetTopicPriority(freq));
+                    }
+                }
+            }
+
+            ChangeFrequency GetChangeFrequency(DateTime? lastChange)
+            {
+                if (lastChange is null)
+                {
+                    return ChangeFrequency.Never;
+                }
+
+                var diff = DateTime.UtcNow - lastChange.Value;
+                if (diff.TotalDays < 1)
+                {
+                    return ChangeFrequency.Hourly;
+                }
+                else if (diff.TotalDays < 7)
+                {
+                    return ChangeFrequency.Daily;
+                }
+                else if (diff.TotalDays < 30)
+                {
+                    return ChangeFrequency.Weekly;
+                }
+                else if (diff.TotalDays < 365)
+                {
+                    return ChangeFrequency.Monthly;
+                }
+                else
+                {
+                    return ChangeFrequency.Yearly;
+                }
+            }
+
+            double GetForumPriority(int forumLevel)
+            {
+                var values = new double[] { 1.0, 0.9, 0.8 };
+                return values[Math.Min(forumLevel, 2)];
+            }
+
+            double GetTopicPriority(ChangeFrequency changeFrequency)
+            {
+                var values = new double[] { 0.7, 0.6, 0.5, 0.4, 0.3 };
+                return values[Math.Min((int)changeFrequency - 1, 4)];
+            }
+        }
+
         private TimeSpan GetTimeToWaitUntilRunIsAllowed(ITimeService timeService, IFileInfoService fileInfoService, CleanupServiceOptions options)
         {
             var now = timeService.DateTimeOffsetNow();
