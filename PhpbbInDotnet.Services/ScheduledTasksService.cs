@@ -127,7 +127,7 @@ namespace PhpbbInDotnet.Services
             var posts = await Task.WhenAll(
                 from i in toDelete
                 where i.Type == RecycleBinItemType.Post
-                select CompressionUtils.DecompressObject<PostDto>(i.Content)
+                select CompressionUtility.DecompressObject<PostDto>(i.Content)
             );
 
             stoppingToken.ThrowIfCancellationRequested();

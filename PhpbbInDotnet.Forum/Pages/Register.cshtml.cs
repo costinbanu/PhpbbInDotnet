@@ -11,6 +11,7 @@ using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Core;
 using PhpbbInDotnet.Utilities.Extensions;
 using System;
 using System.Linq;
@@ -141,12 +142,12 @@ namespace PhpbbInDotnet.Forum.Pages
                 return PageWithError(nameof(UserName), LanguageProvider.Errors[lang, "BANNED_IP"]);
             }
 
-            if (await _context.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UsernameClean == _utils.CleanString(UserName)))
+            if (await _context.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UsernameClean == StringUtility.CleanString(UserName)))
             {
                 return PageWithError(nameof(UserName), LanguageProvider.Errors[lang, "EXISTING_USERNAME"]);
             }
 
-            if (await _context.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UserEmailHash == _utils.CalculateCrc32Hash(Email)))
+            if (await _context.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UserEmailHash == HashingUtility.ComputeCrc64Hash(Email)))
             {
                 return PageWithError(nameof(Email), LanguageProvider.Errors[lang, "EXISTING_EMAIL"]);
             }
@@ -157,10 +158,10 @@ namespace PhpbbInDotnet.Forum.Pages
             var newUser = _context.PhpbbUsers.Add(new PhpbbUsers
             {
                 Username = UserName!,
-                UsernameClean = _utils.CleanString(UserName),
+                UsernameClean = StringUtility.CleanString(UserName),
                 GroupId = 2,
                 UserEmail = Email,
-                UserEmailHash = _utils.CalculateCrc32Hash(Email),
+                UserEmailHash = HashingUtility.ComputeCrc64Hash(Email),
                 UserPassword = Crypter.Phpass.Crypt(Password!, Crypter.Phpass.GenerateSalt()),
                 UserInactiveTime = now,
                 UserInactiveReason = UserInactiveReason.NewlyRegisteredNotConfirmed,

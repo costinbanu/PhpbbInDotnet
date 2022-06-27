@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using PhpbbInDotnet.Services;
@@ -34,8 +35,14 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             if (ResponseStatusCode is not null)
             {
+                var path = "N/A";
+                var feature = HttpContext.Features.Get<IStatusCodeReExecuteFeature>();
+                if (feature is not null)
+                {
+                    path = feature.OriginalPath + feature.OriginalQueryString;
+                }
                 var userName = _userService.ClaimsPrincipalToAuthenticatedUser(User)?.Username ?? "N/A";
-                _logger.Warning("Serving response code {code} to user {user}.", ResponseStatusCode, userName);
+                _logger.Warning("Serving response code {code} to user {user} for path {path}.", ResponseStatusCode, userName, path);
             }
         }
     }

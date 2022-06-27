@@ -4,6 +4,7 @@ using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Core;
 using PhpbbInDotnet.Utilities.Extensions;
 using System;
 using System.Collections.Generic;
@@ -47,7 +48,7 @@ namespace PhpbbInDotnet.Services
                         logType,
                         skip = LogPageSize * (page - 1),
                         take = LogPageSize,
-                        authorName = _utils.CleanString(authorName)
+                        authorName = StringUtility.CleanString(authorName)
                     });
                 var countTask = _context.GetSqlExecuter().ExecuteScalarAsync<int>(
                     @"SELECT count(*)
@@ -58,7 +59,7 @@ namespace PhpbbInDotnet.Services
                     new
                     {
                         logType,
-                        authorName = _utils.CleanString(authorName)
+                        authorName = StringUtility.CleanString(authorName)
                     });
                 return ((await logTask).AsList(), await countTask);
             });

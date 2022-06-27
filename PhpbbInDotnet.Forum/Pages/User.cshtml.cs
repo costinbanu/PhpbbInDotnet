@@ -13,6 +13,7 @@ using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Core;
 using PhpbbInDotnet.Utilities.Extensions;
 using SixLabors.ImageSharp;
 using System;
@@ -149,7 +150,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var lang = GetLanguage();
             var validator = new UserProfileDataValidationService(ModelState, LanguageProvider, lang);
 
-            var newCleanUsername = Utils.CleanString(CurrentUser.Username);
+            var newCleanUsername = StringUtility.CleanString(CurrentUser.Username);
             var usernameChanged = false;
             var oldUsername = dbUser.Username;
             if (await IsCurrentUserAdminHere() && dbUser.UsernameClean != newCleanUsername && !string.IsNullOrWhiteSpace(CurrentUser.Username))
@@ -220,7 +221,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             }
 
-            var newEmailHash = Utils.CalculateCrc32Hash(Email!);
+            var newEmailHash = HashingUtility.ComputeCrc64Hash(Email!);
             if (newEmailHash != dbUser.UserEmailHash)
             {
                 if (!validator.ValidateEmail(nameof(Email), Email))

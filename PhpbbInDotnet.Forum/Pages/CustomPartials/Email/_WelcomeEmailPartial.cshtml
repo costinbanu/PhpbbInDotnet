@@ -1,9 +1,9 @@
 ﻿@model Objects.WelcomeEmailDto
 
 @using Microsoft.Extensions.Configuration
-@using PhpbbInDotnet.Utilities
+@using Utilities
+@using Utilities.Core
 
-@inject ICommonUtils _utils
 @inject IConfiguration _config
 @inject Languages.LanguageProvider _languageProvider
 @inject Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor
@@ -29,7 +29,7 @@ else if (Model.IsEmailChangeReminder && Model.EmailChangeDate != null)
     </p>
 }
 <p>
-    @Html.Raw(string.Format(_languageProvider.Email[lang, "WELCOME_BODY_FORMAT"], $"{baseUrl}/Confirm?code={Model.RegistrationCode}&username={_utils.CleanString(Model.UserName)}&handler=ConfirmEmail"))
+    @Html.Raw(string.Format(_languageProvider.Email[lang, "WELCOME_BODY_FORMAT"], $"{baseUrl}/Confirm?code={Model.RegistrationCode}&username={StringUtility.CleanString(Model.UserName)}&handler=ConfirmEmail"))
 </p>
 <p style="font-size:0.85em">
     @Html.Raw(string.Format(_languageProvider.Email[lang, "WELCOME_FOOTER_FORMAT"], Model.UserName, baseUrl, forumName))

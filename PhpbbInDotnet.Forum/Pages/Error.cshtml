@@ -2,12 +2,12 @@
 @model ErrorModel
 
 @using Utilities
+@using Utilities.Core
 @using Microsoft.Extensions.Configuration
 
 @inject Languages.LanguageProvider _languageProvider
 @inject Services.IUserService _userService
 @inject IConfiguration _config
-@inject ICommonUtils _utils
 
 @{
     var lang = _languageProvider.GetValidatedLanguage(_userService.ClaimsPrincipalToAuthenticatedUser(User), Model.Request);
@@ -28,7 +28,7 @@ else if (Model.IsNotFound)
 }
 else if (!string.IsNullOrWhiteSpace(Model.CustomErrorMessage))
 {
-    <p>@Html.Raw(await _utils.DecodeAndDecompress(Model.CustomErrorMessage))</p>
+    <p>@Html.Raw(await CompressionUtility.DecodeAndDecompress(Model.CustomErrorMessage))</p>
 }
 
 @if(displayContact)

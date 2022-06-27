@@ -343,11 +343,11 @@ namespace PhpbbInDotnet.Services
         public string GetAbsoluteUrlToTopic(int topicId, int pageNum)
             => new Uri(new Uri(_config.GetValue<string>("BaseUrl")), $"ViewTopic?topicId={topicId}&pageNum={pageNum}").ToString();
 
-        public BreadCrumbJSLD GetJSLDBreadCrumbsObject(HashSet<ForumTree> tree, int forumId)
+        public BreadCrumbJSLD GetJSLDBreadCrumbsObject(HashSet<ForumTree> tree, int forumId, int? topicId = null, string? topicName = null, int? pageNum = null)
         {
             var elements = new List<ListItemJSLD>
             {
-                new()
+                new ListItemJSLD
                 {
                     Position = 1,
                     Name = _config.GetValue<string>("ForumName"),
@@ -365,7 +365,18 @@ namespace PhpbbInDotnet.Services
                     Item = GetAbsoluteUrlToForum(indexedItem.Item.ForumId)
                 }));
 
-            return new()
+            if (topicId is not null && topicName is not null && pageNum is not null)
+            {
+                var position = elements.Last().Position + 1;
+                elements.Add(new ListItemJSLD 
+                { 
+                    Position = position, 
+                    Name = topicName,
+                    Item = GetAbsoluteUrlToTopic(topicId.Value, pageNum.Value)
+                });
+            }
+
+            return new BreadCrumbJSLD
             {
                 ItemListElement = elements
             };

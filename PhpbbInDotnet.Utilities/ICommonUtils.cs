@@ -10,15 +10,6 @@ namespace PhpbbInDotnet.Utilities
 {
     public interface ICommonUtils : IDisposable
     {
-        Regex HtmlCommentRegex { get; }
-
-        long CalculateCrc32Hash(string input);
-        string CalculateMD5Hash(string input);
-        string CleanString(string? input);
-        Task<string> CompressAndEncode(string input);
-        Task<byte[]> CompressObject<T>(T source);
-        Task<string?> DecodeAndDecompress(string input);
-        Task<T?> DecompressObject<T>(byte[]? source);
         Task<string> DecryptAES(string encryptedText, Guid iv, byte[]? key = null);
         Task<(string encrypted, Guid iv)> EncryptAES(string plainText, byte[]? key = null);
         string EnumString(Enum @enum);
