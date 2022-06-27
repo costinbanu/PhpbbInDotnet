@@ -10,6 +10,7 @@ using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Core;
 using PhpbbInDotnet.Utilities.Extensions;
 using System;
 using System.Collections.Generic;
@@ -172,7 +173,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         textForSaving,
                         now = DateTime.UtcNow.ToUnixTimestamp(),
                         attachment = hasAttachments.ToByte(),
-                        checksum = Utils.CalculateMD5Hash(textForSaving),
+                        checksum = HashingUtility.ComputeMD5Hash(textForSaving),
                         ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
                         username = HttpUtility.HtmlEncode(usr.Username)
                     }
@@ -191,7 +192,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     {
                         subject = HttpUtility.HtmlEncode(PostTitle),
                         textForSaving,
-                        checksum = Utils.CalculateMD5Hash(textForSaving),
+                        checksum = HashingUtility.ComputeMD5Hash(textForSaving),
                         attachment = hasAttachments.ToByte(),
                         post.PostId,
                         now = DateTime.UtcNow.ToUnixTimestamp(),

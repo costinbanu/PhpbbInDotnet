@@ -13,6 +13,7 @@ using PhpbbInDotnet.Forum.Pages.CustomPartials.Email;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Core;
 using PhpbbInDotnet.Utilities.Extensions;
 using System;
 using System.ComponentModel;
@@ -116,7 +117,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             var sqlExecuter = _context.GetSqlExecuter();
 
-            var user = await sqlExecuter.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE username_clean = @username", new { username = _utils.CleanString(UserName) });
+            var user = await sqlExecuter.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE username_clean = @username", new { username = StringUtility.CleanString(UserName) });
             var lang = LanguageProvider.GetValidatedLanguage(null, Request);
 
             Mode = LoginMode.Normal;
@@ -171,8 +172,8 @@ namespace PhpbbInDotnet.Forum.Pages
             try
             {
                 var user = _context.PhpbbUsers.FirstOrDefault(
-                    x => x.UsernameClean == _utils.CleanString(UserNameForPwdReset) &&
-                    x.UserEmailHash == _utils.CalculateCrc32Hash(EmailForPwdReset!)
+                    x => x.UsernameClean == StringUtility.CleanString(UserNameForPwdReset) &&
+                    x.UserEmailHash == HashingUtility.ComputeCrc64Hash(EmailForPwdReset!)
                 );
 
                 if (user == null)

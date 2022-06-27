@@ -1,5 +1,4 @@
-﻿using Force.Crc32;
-using MailKit.Security;
+﻿using MailKit.Security;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -13,19 +12,15 @@ using MimeKit;
 using MimeKit.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using PhpbbInDotnet.Utilities.Core;
 using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Web;
 
 namespace PhpbbInDotnet.Utilities
 {
@@ -37,8 +32,6 @@ namespace PhpbbInDotnet.Utilities
         private readonly ILogger _logger;
         private readonly MD5 _md5;
 
-        public Regex HtmlCommentRegex { get; }
-
         public CommonUtils(IConfiguration config, ICompositeViewEngine viewEngine, ITempDataProvider tempDataProvider, ILogger logger)
         {
             _config = config;
@@ -46,42 +39,10 @@ namespace PhpbbInDotnet.Utilities
             _tempDataProvider = tempDataProvider;
             _logger = logger;
 
-            HtmlCommentRegex = new Regex("(<!--.*?-->)|(&lt;!--.*?--&gt;)", RegexOptions.Compiled | RegexOptions.Singleline, Constants.REGEX_TIMEOUT);
             _md5 = MD5.Create();
         }
 
-        #region Compression
-
-        public Task<byte[]> CompressObject<T>(T source)
-            => CompressionUtils.CompressObject<T>(source);
-
-        public Task<T?> DecompressObject<T>(byte[]? source)
-            => CompressionUtils.DecompressObject<T>(source);
-
-        public async Task<string> CompressAndEncode(string input)
-            => HttpUtility.UrlEncode(Convert.ToBase64String(await CompressObject(input)));
-
-        public async Task<string?> DecodeAndDecompress(string input)
-            => await DecompressObject<string>(Convert.FromBase64String(HttpUtility.UrlDecode(input)));
-
-
-        #endregion Compression
-
         #region Hashing and encryption
-
-        public string CalculateMD5Hash(string input)
-        {
-            var hash = _md5.ComputeHash(Encoding.UTF8.GetBytes(input));
-            var sb = new StringBuilder();
-            for (int i = 0; i < hash.Length; i++)
-            {
-                sb.Append(hash[i].ToString("x2"));
-            }
-            return sb.ToString();
-        }
-
-        public long CalculateCrc32Hash(string input)
-            => long.Parse(Crc32Algorithm.Compute(Encoding.UTF8.GetBytes(input.ToLower())).ToString() + input.Length.ToString());
 
         public async Task<(string encrypted, Guid iv)> EncryptAES(string plainText, byte[]? key = null)
         {
@@ -142,13 +103,6 @@ namespace PhpbbInDotnet.Utilities
         }
 
         #endregion Hashing and encryption
-
-        #region String utils
-
-        public string CleanString(string? input)
-            => StringUtils.CleanString(input);
-
-        #endregion String utils
 
         #region HTML rendering
 

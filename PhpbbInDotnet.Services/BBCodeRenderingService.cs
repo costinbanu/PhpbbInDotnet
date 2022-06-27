@@ -10,6 +10,7 @@ using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Core;
 using PhpbbInDotnet.Utilities.Extensions;
 using System;
 using System.Collections.Generic;
@@ -120,7 +121,7 @@ namespace PhpbbInDotnet.Services
                 Utils.HandleError(ex, $"Error parsing bbcode text '{bbCodeText}'");
             }
             bbCodeText = HttpUtility.HtmlDecode(html);
-            bbCodeText = Utils.HtmlCommentRegex.Replace(bbCodeText, string.Empty);
+            bbCodeText = StringUtility.HtmlCommentRegex.Replace(bbCodeText, string.Empty);
             bbCodeText = bbCodeText.Replace("\t", Utils.HtmlSafeWhitespace(4));
 
             var offset = 0;
@@ -461,7 +462,7 @@ namespace PhpbbInDotnet.Services
                         ),
 
                         ["attachment"] = (
-                            Tag: new BBTag("attachment", "#{AttachmentFileName=${content}/AttachmentIndex=${num}}#", "", false, BBTagClosingStyle.AutoCloseElement, x => Utils.HtmlCommentRegex.Replace(HttpUtility.HtmlDecode(x), string.Empty), maxId + 12, "", true,
+                            Tag: new BBTag("attachment", "#{AttachmentFileName=${content}/AttachmentIndex=${num}}#", "", false, BBTagClosingStyle.AutoCloseElement, x => StringUtility.HtmlCommentRegex.Replace(HttpUtility.HtmlDecode(x), string.Empty), maxId + 12, "", true,
                                 new BBAttribute("num", "")),
                             Summary: new BBTagSummary
                             {

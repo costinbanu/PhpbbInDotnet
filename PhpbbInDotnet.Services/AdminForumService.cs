@@ -9,6 +9,7 @@ using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Core;
 using PhpbbInDotnet.Utilities.Extensions;
 using System;
 using System.Collections.Generic;
@@ -313,7 +314,7 @@ namespace PhpbbInDotnet.Services
                 {
                     Id = forum.ForumId,
                     Type = RecycleBinItemType.Forum,
-                    Content = await Utils.CompressObject(dto),
+                    Content = await CompressionUtility.CompressObject(dto),
                     DeleteTime = DateTime.UtcNow.ToUnixTimestamp(),
                     DeleteUser = adminUserId
                 });

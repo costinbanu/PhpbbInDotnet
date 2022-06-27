@@ -7,6 +7,7 @@ using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Core;
 using PhpbbInDotnet.Utilities.Extensions;
 using System;
 using System.Collections.Generic;
@@ -104,7 +105,7 @@ namespace PhpbbInDotnet.Forum.Pages
                             {
                                 if (!string.IsNullOrWhiteSpace(Username) || GroupId.HasValue)
                                 {
-                                    var usernameToSearch = Username == null ? null : Utils.CleanString(Username);
+                                    var usernameToSearch = Username == null ? null : StringUtility.CleanString(Username);
                                     var searchQuery = from u in Context.PhpbbUsers.AsNoTracking()
                                                       where (usernameToSearch == null || u.UsernameClean.Contains(usernameToSearch))
                                                          && (GroupId == null || u.GroupId == GroupId)

@@ -7,6 +7,7 @@ using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Core;
 using PhpbbInDotnet.Utilities.Extensions;
 using System;
 using System.Threading.Tasks;
@@ -72,12 +73,12 @@ namespace PhpbbInDotnet.Forum.Pages
                         }
                         else
                         {
-                            return RedirectToPage("Error", new { CustomErrorMessage = await Utils.CompressAndEncode(LanguageProvider.Errors[lang, "RECEIVER_DOESNT_EXIST"]) });
+                            return RedirectToPage("Error", new { CustomErrorMessage = await CompressionUtility.CompressAndEncode(LanguageProvider.Errors[lang, "RECEIVER_DOESNT_EXIST"]) });
                         }
                     }
                     else
                     {
-                        return RedirectToPage("Error", new { CustomErrorMessage = await Utils.CompressAndEncode(LanguageProvider.Errors[lang, "POST_DOESNT_EXIST"]) });
+                        return RedirectToPage("Error", new { CustomErrorMessage = await CompressionUtility.CompressAndEncode(LanguageProvider.Errors[lang, "POST_DOESNT_EXIST"]) });
                     }
                 }
                 else if ((PrivateMessageId ?? 0) > 0 && (ReceiverId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
@@ -95,12 +96,12 @@ namespace PhpbbInDotnet.Forum.Pages
                         }
                         else
                         {
-                            return RedirectToPage("Error", new { CustomErrorMessage = await Utils.CompressAndEncode(LanguageProvider.Errors[lang, "RECEIVER_DOESNT_EXIST"]) });
+                            return RedirectToPage("Error", new { CustomErrorMessage = await CompressionUtility.CompressAndEncode(LanguageProvider.Errors[lang, "RECEIVER_DOESNT_EXIST"]) });
                         }
                     }
                     else
                     {
-                        return RedirectToPage("Error", new { CustomErrorMessage = await Utils.CompressAndEncode(LanguageProvider.Errors[lang, "PM_DOESNT_EXIST"]) });
+                        return RedirectToPage("Error", new { CustomErrorMessage = await CompressionUtility.CompressAndEncode(LanguageProvider.Errors[lang, "PM_DOESNT_EXIST"]) });
                     }
                 }
                 else if ((ReceiverId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)

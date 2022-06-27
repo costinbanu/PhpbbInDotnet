@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
 using PhpbbInDotnet.Utilities.Core;
+using PhpbbInDotnet.Utilities.Extensions;
 using Serilog;
 using System;
 using System.IO;
@@ -49,23 +50,23 @@ namespace PhpbbInDotnet.Database.SetupApp
                 Console.WriteLine();
                 var dbName = ReadInput(message: "Database name? (Will be created if not existing already)", regex: NAME_REGEX);
 
-                using var sqlExecuter = new MySqlConnection(connectionString);
-                await sqlExecuter.OpenAsync();
+                using var connection = new MySqlConnection(connectionString);
+                await connection.OpenAsync();
 
                 if (newInstall)
                 {
                     Console.WriteLine();
                     Console.WriteLine("Creating database...");
-                    await sqlExecuter.ExecuteAsync($"CREATE DATABASE IF NOT EXISTS {dbName}");
+                    await connection.ExecuteAsync($"CREATE DATABASE IF NOT EXISTS {dbName}");
                     Console.WriteLine("Done!");
                     Console.WriteLine();
                 }
 
-                await sqlExecuter.ChangeDataBaseAsync(dbName);
+                await connection.ChangeDataBaseAsync(dbName);
 
                 Console.WriteLine($"{(newInstall ? "Creating" : "Updating")} tables...");
                 var upsertTables = await File.ReadAllTextAsync(Path.Combine("InstallScripts", newInstall ? "CreateTables.sql" : "UpdateTables.sql"));
-                await sqlExecuter.ExecuteAsync(upsertTables);
+                await connection.ExecuteAsync(upsertTables);
                 Console.WriteLine("Done!");
                 Console.WriteLine();
 
@@ -73,7 +74,7 @@ namespace PhpbbInDotnet.Database.SetupApp
                 foreach (var spFile in Directory.GetFiles("StoredProcedures"))
                 {
                     var sp = await File.ReadAllTextAsync(spFile);
-                    await sqlExecuter.ExecuteAsync(sp);
+                    await connection.ExecuteAsync(sp);
                 }
                 Console.WriteLine("Done!");
                 Console.WriteLine();
@@ -82,18 +83,23 @@ namespace PhpbbInDotnet.Database.SetupApp
                 {
                     Console.WriteLine("Inserting initial data...");
                     var dataSQL = await File.ReadAllTextAsync(Path.Combine("InstallScripts", "InsertInitialData.sql"));
-                    await sqlExecuter.ExecuteAsync(dataSQL);
+                    await connection.ExecuteAsync(dataSQL);
                     Console.WriteLine("Done!");
                 }
                 else
                 {
                     Console.WriteLine("Updating users table...");
-                    var users = await sqlExecuter.QueryAsync("SELECT user_id, username, username_clean FROM phpbb_users");
-                    foreach (var user in users)
+                    var users = await connection.QueryAsync("SELECT user_id, username, user_email FROM phpbb_users");
+                    foreach (var groups in users.Indexed().GroupBy(key => key.Index / 10, element => element.Item))
                     {
-                        await sqlExecuter.ExecuteAsync(
-                            "UPDATE phpbb_users SET username_clean = @clean WHERE user_id = @id", 
-                            new { clean = StringUtils.CleanString(user.username), id = user.user_id });
+                        await Task.WhenAll(groups.Select(user => connection.ExecuteAsync(
+                            "UPDATE phpbb_users SET username_clean = @clean, user_email_hash = @hash WHERE user_id = @id", 
+                            new 
+                            { 
+                                clean = StringUtility.CleanString(user.username), 
+                                hash = HashingUtility.ComputeCrc64Hash(user.user_email),
+                                id = user.user_id 
+                            })));
                     }
                     Console.WriteLine("Done!");
                     Console.WriteLine();

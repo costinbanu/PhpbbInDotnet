@@ -68,7 +68,7 @@ namespace PhpbbInDotnet.Services.UnitTests.CleanupServiceTests
                         _mockStorageService.Setup(s => s.DeleteFile(a.PhysicalFileName, false)).Returns(true);
                     }
                     postDtos.Add(postDto); 
-                    item.Content = await CompressionUtils.CompressObject(postDto);
+                    item.Content = await CompressionUtility.CompressObject(postDto);
                 }
                 recycleBinItems.Add(item);
             }

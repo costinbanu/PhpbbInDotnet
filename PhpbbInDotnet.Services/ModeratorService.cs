@@ -6,6 +6,7 @@ using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Core;
 using PhpbbInDotnet.Utilities.Extensions;
 using System;
 using System.Collections.Generic;
@@ -155,7 +156,7 @@ namespace PhpbbInDotnet.Services
                         {
                             type = RecycleBinItemType.Topic,
                             id = topic.TopicId,
-                            content = await Utils.CompressObject(dto),
+                            content = await CompressionUtility.CompressObject(dto),
                             now = DateTime.UtcNow.ToUnixTimestamp(),
                             logDto.UserId
                         }
@@ -413,7 +414,7 @@ namespace PhpbbInDotnet.Services
                     {
                         type = RecycleBinItemType.Post,
                         id = post.PostId,
-                        content = await Utils.CompressObject(dto),
+                        content = await CompressionUtility.CompressObject(dto),
                         now = DateTime.UtcNow.ToUnixTimestamp(),
                         logDto.UserId
                     }

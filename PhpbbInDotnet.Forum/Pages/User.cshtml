@@ -470,7 +470,7 @@ else
                 <p></p>
                 <div class="FlexCenter">
                     <div class="FlexCaption">
-
+                        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "USER_PERMISSIONS"])
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @Html.DropDownListFor(m => m.AclRole, permissions, new { autocomplete = "new-password" })

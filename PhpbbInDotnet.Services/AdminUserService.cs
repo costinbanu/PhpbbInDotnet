@@ -10,6 +10,7 @@ using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Core;
 using PhpbbInDotnet.Utilities.Extensions;
 using System;
 using System.Collections.Generic;
@@ -313,8 +314,8 @@ namespace PhpbbInDotnet.Services
                 var email = searchParameters?.Email;
                 var userId = searchParameters?.UserId ?? 0;
                 var query = from u in _context.PhpbbUsers.AsNoTracking()
-                            where (string.IsNullOrWhiteSpace(username) || u.UsernameClean.Contains(Utils.CleanString(username)))
-                                && (string.IsNullOrWhiteSpace(email) || u.UserEmailHash == Utils.CalculateCrc32Hash(email))
+                            where (string.IsNullOrWhiteSpace(username) || u.UsernameClean.Contains(StringUtility.CleanString(username)))
+                                && (string.IsNullOrWhiteSpace(email) || u.UserEmailHash == HashingUtility.ComputeCrc64Hash(email))
                                 && (userId == 0 || u.UserId == userId)
                                 && u.UserRegdate >= rf && u.UserRegdate <= rt
                                 && u.UserId != Constants.ANONYMOUS_USER_ID

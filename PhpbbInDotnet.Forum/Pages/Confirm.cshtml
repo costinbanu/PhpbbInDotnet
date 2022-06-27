@@ -2,12 +2,11 @@
 @model PhpbbInDotnet.Forum.Pages.ConfirmModel
 
 @using Utilities
+@using Utilities.Core
 @using Utilities.Extensions
 
-@inject Utilities.ICommonUtils _utils
 @inject Services.IForumTreeService _forumService
 @inject Database.IForumDbContext _dbContext
-
 
 @{
     ViewData["Title"] = "Confirm";
@@ -101,7 +100,7 @@ else if (Model.IsDestinationConfirmation)
     <p>&nbsp;</p>
     foreach (var destination in Model.Destinations.EmptyIfNull())
     {
-        @Html.Raw(await _utils.DecodeAndDecompress(destination));
+        @Html.Raw(await CompressionUtility.DecodeAndDecompress(destination));
         <p></p>
     }
 }

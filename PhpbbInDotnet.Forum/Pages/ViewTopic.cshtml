@@ -29,7 +29,7 @@
     if (Model.ForumId > 0)
     {
         ViewData["ForumId"] = Model.ForumId;
-        ViewData["BreadCrumbs"] = _forumService.GetJSLDBreadCrumbsObject(forumTree, Model.ForumId!.Value);
+        ViewData["BreadCrumbs"] = _forumService.GetJSLDBreadCrumbsObject(forumTree, Model.ForumId.Value, Model.TopicId, Model.TopicTitle, Model.PageNum);
     }
 }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/he/1.2.0/he.min.js" integrity="sha512-PEsccDx9jqX6Dh4wZDCnWMaIO3gAaU0j46W//sSqQhUQxky6/eHZyeB3NrXD2xsyugAKd4KPiDANkcuoEa2JuA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>

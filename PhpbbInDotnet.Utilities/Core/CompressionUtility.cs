@@ -1,13 +1,15 @@
 ﻿using Newtonsoft.Json;
+using System;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace PhpbbInDotnet.Utilities.Core
 {
-    public static class CompressionUtils
+    public static class CompressionUtility
     {
         public static async Task<byte[]> CompressObject<T>(T source)
         {
@@ -33,5 +35,11 @@ namespace PhpbbInDotnet.Utilities.Core
             await content.FlushAsync();
             return JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(content.ToArray()));
         }
+
+        public static async Task<string> CompressAndEncode(string input)
+            => HttpUtility.UrlEncode(Convert.ToBase64String(await CompressObject(input)));
+
+        public static async Task<string?> DecodeAndDecompress(string input)
+            => await DecompressObject<string>(Convert.FromBase64String(HttpUtility.UrlDecode(input)));
     }
 }

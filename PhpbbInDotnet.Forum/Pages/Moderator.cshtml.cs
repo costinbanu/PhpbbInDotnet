@@ -7,6 +7,7 @@ using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Utilities.Core;
 using PhpbbInDotnet.Utilities.Extensions;
 using System;
 using System.Collections.Generic;
@@ -112,9 +113,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
                     await Task.WhenAll(allItems.Select(async i => i.Type switch
                     {
-                        RecycleBinItemType.Forum => i.Value = await Utils.DecompressObject<ForumDto>(i.RawContent),
-                        RecycleBinItemType.Topic => i.Value = await Utils.DecompressObject<TopicDto>(i.RawContent),
-                        RecycleBinItemType.Post => i.Value = await Utils.DecompressObject<PostDto>(i.RawContent),
+                        RecycleBinItemType.Forum => i.Value = await CompressionUtility.DecompressObject<ForumDto>(i.RawContent),
+                        RecycleBinItemType.Topic => i.Value = await CompressionUtility.DecompressObject<TopicDto>(i.RawContent),
+                        RecycleBinItemType.Post => i.Value = await CompressionUtility.DecompressObject<PostDto>(i.RawContent),
                         _ => i.Value = Task.FromResult<object?>(null)
                     }));
 
@@ -290,7 +291,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 return false;
             }
-            var dto = await Utils.DecompressObject<ForumDto>(deletedItem.Content);
+            var dto = await CompressionUtility.DecompressObject<ForumDto>(deletedItem.Content);
             var toAdd = new PhpbbForums
             {
                 ForumId = dto!.ForumId!.Value,
@@ -325,7 +326,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 return false;
             }
-            var dto = await Utils.DecompressObject<TopicDto>(deletedItem.Content);
+            var dto = await CompressionUtility.DecompressObject<TopicDto>(deletedItem.Content);
             if (!Context.PhpbbForums.AsNoTracking().Any(f => f.ForumId == dto!.ForumId))
             {
                 if (!await RestoreForum(dto!.ForumId!.Value))
@@ -370,7 +371,7 @@ namespace PhpbbInDotnet.Forum.Pages
             await Context.SaveChangesAsync();
 
             var deletedPosts = await Context.PhpbbRecycleBin.Where(rb => rb.Type == RecycleBinItemType.Post).ToListAsync();
-            var posts = await Task.WhenAll(deletedPosts.Select(dp => Utils.DecompressObject<PostDto>(dp.Content)));
+            var posts = await Task.WhenAll(deletedPosts.Select(dp => CompressionUtility.DecompressObject<PostDto>(dp.Content)));
             foreach (var post in posts.Where(p => p!.TopicId == topicId))
             {
                 await RestorePost(post!.PostId);
@@ -388,7 +389,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 return false;
             }
-            var dto = await Utils.DecompressObject<PostDto>(deletedItem.Content);
+            var dto = await CompressionUtility.DecompressObject<PostDto>(deletedItem.Content);
             if (!Context.PhpbbTopics.AsNoTracking().Any(t => t.TopicId == dto!.TopicId))
             {
                 if (!await RestoreTopic(dto!.TopicId))
