@@ -48,7 +48,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnGet()
         {
-            Language = TranslationProvider.GetValidatedLanguage(_userService.ClaimsPrincipalToAuthenticatedUser(User), Request);
+            Language = TranslationProvider.GetLanguage(_userService.ClaimsPrincipalToAuthenticatedUser(User));
             var forum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(filter => filter.ForumId == ForumId);
 
             if (forum == null)
@@ -73,7 +73,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
-            Language = TranslationProvider.GetValidatedLanguage(_userService.ClaimsPrincipalToAuthenticatedUser(User), Request);
+            Language = TranslationProvider.GetLanguage(_userService.ClaimsPrincipalToAuthenticatedUser(User));
             var forum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(filter => filter.ForumId == ForumId);
 
             if (forum == null)

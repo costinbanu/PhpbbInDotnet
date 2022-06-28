@@ -5,7 +5,7 @@
 @{
     ViewData["Title"] = "Logout";
     Layout = "~/Pages/_Layout.cshtml";
-    var lang = _translationProvider.GetValidatedLanguage(null, Model.HttpContext?.Request);
+    var lang = _translationProvider.GetLanguage();
 }
 
 <h3>@_translationProvider.BasicText[lang, "LOGOUT", Casing.FirstUpper]</h3>

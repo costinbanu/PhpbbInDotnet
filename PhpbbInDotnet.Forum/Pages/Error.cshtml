@@ -10,7 +10,7 @@
 @inject IConfiguration _config
 
 @{
-    var lang = _translationProvider.GetValidatedLanguage(_userService.ClaimsPrincipalToAuthenticatedUser(User), Model.Request);
+    var lang = _translationProvider.GetLanguage(_userService.ClaimsPrincipalToAuthenticatedUser(User));
     ViewData["Title"] = _translationProvider.Errors[lang, "ERROR", Casing.Title];
     var adminEmail = _config.GetValue<string>("AdminEmail");
     var displayContact = !Model.IsUnauthorized && !Model.IsNotFound;

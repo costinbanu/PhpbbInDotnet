@@ -62,7 +62,7 @@ namespace PhpbbInDotnet.Forum
             => await UserService.IsUserModeratorInForum(GetCurrentUser(), forumId);
 
         public string GetLanguage()
-            => _language ??= TranslationProvider.GetValidatedLanguage(GetCurrentUser(), Request);
+            => _language ??= TranslationProvider.GetLanguage(GetCurrentUser());
 
         public Task<IEnumerable<int>> GetUnrestrictedForums(int? forumId = null)
             => ForumService.GetUnrestrictedForums(GetCurrentUser(), forumId);

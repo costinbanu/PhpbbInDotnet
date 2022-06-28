@@ -10,7 +10,6 @@
 @inject Services.IStatisticsService _statisticsService
 @inject Services.IForumTreeService _forumService
 @inject Languages.ITranslationProvider _translationProvider
-@inject Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor
 
 @{
     #nullable enable
@@ -20,7 +19,7 @@
     {
         css = "Light";
     }
-    var lang = _translationProvider.GetValidatedLanguage(currentUser, _httpContextAccessor.HttpContext?.Request);
+    var lang = _translationProvider.GetLanguage(currentUser);
     var dateFormat = currentUser?.UserDateFormat ?? _translationProvider.GetDefaultDateFormat(lang);
     var statistics = await _statisticsService.GetStatistics();
     var forumId = ViewData.TryGetValue("ForumId", out var fidRaw) && fidRaw is int fidVal ? fidVal : 0;

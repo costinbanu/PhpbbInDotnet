@@ -1,13 +1,12 @@
 ﻿using Dapper;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Domain;
-using PhpbbInDotnet.Domain.Utilities;
-using PhpbbInDotnet.Domain.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,17 +14,20 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
 {
-    class ModeratorService : MultilingualServiceBase, IModeratorService
+    class ModeratorService : IModeratorService
     {
         private readonly IForumDbContext _context;
         private readonly IPostService _postService;
         private readonly IStorageService _storageService;
         private readonly IOperationLogService _operationLogService;
+        private readonly ICommonUtils _utils;
+        private readonly ITranslationProvider _translationProvider;
 
         public ModeratorService(IForumDbContext context, IPostService postService, IStorageService storageService, ICommonUtils utils, ITranslationProvider translationProvider,
-            IHttpContextAccessor httpContextAccessor, IOperationLogService operationLogService)
-            : base(utils, translationProvider, httpContextAccessor)
+            IOperationLogService operationLogService)
         {
+            _utils = utils;
+            _translationProvider = translationProvider;
             _context = context;
             _postService = postService;
             _storageService = storageService;
@@ -36,6 +38,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> ChangeTopicType(int topicId, TopicType topicType, OperationLogDto logDto)
         {
+            var language = _translationProvider.GetLanguage();
             try
             {
                 var sqlExecuter = _context.GetSqlExecuter();
@@ -44,23 +47,24 @@ namespace PhpbbInDotnet.Services
                 if (rows == 1)
                 {
                     await _operationLogService.LogModeratorTopicAction((ModeratorTopicActions)logDto.Action!, logDto.UserId, topicId);
-                    return (TranslationProvider.Moderator[GetLanguage(), "TOPIC_CHANGED_SUCCESSFULLY"], true);
+                    return (_translationProvider.Moderator[language, "TOPIC_CHANGED_SUCCESSFULLY"], true);
                 }
                 else
                 {
-                    return (string.Format(TranslationProvider.Moderator[GetLanguage(), "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
+                    return (string.Format(_translationProvider.Moderator[language, "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
                 }
 
             }
             catch (Exception ex)
             {
-                var id = Utils.HandleError(ex);
-                return (string.Format(TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                var id = _utils.HandleError(ex);
+                return (string.Format(_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
         public async Task<(string Message, bool? IsSuccess)> MoveTopic(int topicId, int destinationForumId, OperationLogDto logDto)
         {
+            var language = _translationProvider.GetLanguage();
             try
             {
                 var sqlExecuter = _context.GetSqlExecuter();
@@ -72,7 +76,7 @@ namespace PhpbbInDotnet.Services
 
                 if (topicRows == 0)
                 {
-                    return (TranslationProvider.Moderator[GetLanguage(), "DESTINATION_DOESNT_EXIST"], false);
+                    return (_translationProvider.Moderator[language, "DESTINATION_DOESNT_EXIST"], false);
                 }
 
                 var oldPosts = (await sqlExecuter.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC", new { topicId })).AsList();
@@ -90,17 +94,18 @@ namespace PhpbbInDotnet.Services
                 }
                 await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.MoveTopic, logDto.UserId, topicId, $"Moved from {oldForumId} to {destinationForumId}.");
 
-                return (TranslationProvider.Moderator[GetLanguage(), "TOPIC_CHANGED_SUCCESSFULLY"], true);
+                return (_translationProvider.Moderator[language, "TOPIC_CHANGED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
-                var id = Utils.HandleError(ex);
-                return (string.Format(TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                var id = _utils.HandleError(ex);
+                return (string.Format(_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
         public async Task<(string Message, bool? IsSuccess)> LockUnlockTopic(int topicId, bool @lock, OperationLogDto logDto)
         {
+            var language = _translationProvider.GetLanguage();
             try
             {
                 var sqlExecuter = _context.GetSqlExecuter();
@@ -109,28 +114,29 @@ namespace PhpbbInDotnet.Services
 
                 if (rows == 0)
                 {
-                    return (string.Format(TranslationProvider.Moderator[GetLanguage(), "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
+                    return (string.Format(_translationProvider.Moderator[language, "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
                 }
                 await _operationLogService.LogModeratorTopicAction((ModeratorTopicActions)logDto.Action!, logDto.UserId, topicId);
 
-                return (TranslationProvider.Moderator[GetLanguage(), "TOPIC_CHANGED_SUCCESSFULLY"], true);
+                return (_translationProvider.Moderator[language, "TOPIC_CHANGED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
-                var id = Utils.HandleError(ex);
-                return (string.Format(TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                var id = _utils.HandleError(ex);
+                return (string.Format(_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
         public async Task<(string Message, bool? IsSuccess)> DeleteTopic(int topicId, OperationLogDto logDto)
         {
+            var language = _translationProvider.GetLanguage();
             try
             {
                 var sqlExecuter = _context.GetSqlExecuter();
                 var posts = (await sqlExecuter.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId", new { topicId })).AsList();
                 if (!posts.Any())
                 {
-                    return (string.Format(TranslationProvider.Moderator[GetLanguage(), "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
+                    return (string.Format(_translationProvider.Moderator[language, "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
                 }
 
                 var topic = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
@@ -172,18 +178,18 @@ namespace PhpbbInDotnet.Services
 
                 await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.DeleteTopic, logDto.UserId, topicId);
 
-                return (TranslationProvider.Moderator[GetLanguage(), "TOPIC_DELETED_SUCCESSFULLY"], true);
+                return (_translationProvider.Moderator[language, "TOPIC_DELETED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
-                var id = Utils.HandleError(ex);
-                return (string.Format(TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                var id = _utils.HandleError(ex);
+                return (string.Format(_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
         public async Task<(string Message, bool? IsSuccess)> CreateShortcut(int topicId, int forumId, OperationLogDto logDto)
         {
-            var lang = GetLanguage();
+            var language = _translationProvider.GetLanguage();
             try
             {
                 var sqlExecuter = _context.GetSqlExecuter();
@@ -193,12 +199,12 @@ namespace PhpbbInDotnet.Services
 
                 if (curTopic is null)
                 {
-                    return (string.Format(TranslationProvider.Moderator[lang, "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
+                    return (string.Format(_translationProvider.Moderator[language, "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
                 }
 
                 if (curTopic.ForumId == forumId)
                 {
-                    return (TranslationProvider.Moderator[lang, "INVALID_DESTINATION_FORUM"], false);
+                    return (_translationProvider.Moderator[language, "INVALID_DESTINATION_FORUM"], false);
                 }
 
                 await _context.GetSqlExecuter().ExecuteAsync(
@@ -207,18 +213,18 @@ namespace PhpbbInDotnet.Services
 
                 await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.CreateShortcut, logDto.UserId, topicId);
 
-                return (TranslationProvider.Moderator[lang, "SHORTCUT_CREATED_SUCCESSFULLY"], true);
+                return (_translationProvider.Moderator[language, "SHORTCUT_CREATED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
-                var id = Utils.HandleError(ex);
-                return (string.Format(TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                var id = _utils.HandleError(ex);
+                return (string.Format(_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
         public async Task<(string Message, bool? IsSuccess)> RemoveShortcut(int topicId, int forumId, OperationLogDto logDto)
         {
-            var lang = GetLanguage();
+            var language = _translationProvider.GetLanguage();
             try
             {
                 var sqlExecuter = _context.GetSqlExecuter();
@@ -228,12 +234,12 @@ namespace PhpbbInDotnet.Services
 
                 if (curShortcut is null)
                 {
-                    return (string.Format(TranslationProvider.Moderator[lang, "SHORTCUT_DOESNT_EXIST_FORMAT"], topicId, forumId), false);
+                    return (string.Format(_translationProvider.Moderator[language, "SHORTCUT_DOESNT_EXIST_FORMAT"], topicId, forumId), false);
                 }
 
                 if (curShortcut.ForumId != forumId)
                 {
-                    return (TranslationProvider.Moderator[lang, "INVALID_SHORTCUT_SELECTED"], false);
+                    return (_translationProvider.Moderator[language, "INVALID_SHORTCUT_SELECTED"], false);
                 }
 
                 await _context.GetSqlExecuter().ExecuteAsync(
@@ -242,12 +248,12 @@ namespace PhpbbInDotnet.Services
 
                 await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.CreateShortcut, logDto.UserId, topicId);
 
-                return (TranslationProvider.Moderator[lang, "SHORTCUT_DELETED_SUCCESSFULLY"], true);
+                return (_translationProvider.Moderator[language, "SHORTCUT_DELETED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
-                var id = Utils.HandleError(ex);
-                return (string.Format(TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                var id = _utils.HandleError(ex);
+                return (string.Format(_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
@@ -257,16 +263,17 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> SplitPosts(int[] postIds, int? destinationForumId, OperationLogDto logDto)
         {
+            var language = _translationProvider.GetLanguage();
             try
             {
                 if ((destinationForumId ?? 0) == 0)
                 {
-                    return (TranslationProvider.Moderator[GetLanguage(), "INVALID_DESTINATION_FORUM"], false);
+                    return (_translationProvider.Moderator[language, "INVALID_DESTINATION_FORUM"], false);
                 }
 
                 if (!(postIds?.Any() ?? false))
                 {
-                    return (TranslationProvider.Moderator[GetLanguage(), "ATLEAST_ONE_POST_REQUIRED"], false);
+                    return (_translationProvider.Moderator[language, "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
 
                 var sqlExecuter = _context.GetSqlExecuter();
@@ -275,7 +282,7 @@ namespace PhpbbInDotnet.Services
 
                 if (posts.Count != postIds.Length)
                 {
-                    return (TranslationProvider.Moderator[GetLanguage(), "ATLEAST_ONE_POST_MOVED_OR_DELETED"], false);
+                    return (_translationProvider.Moderator[language, "ATLEAST_ONE_POST_MOVED_OR_DELETED"], false);
                 }
 
                 var curTopic = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>(
@@ -296,27 +303,28 @@ namespace PhpbbInDotnet.Services
                     await _operationLogService.LogModeratorPostAction(ModeratorPostActions.SplitSelectedPosts, logDto.UserId, post.PostId, $"Split from topic {oldTopicId} as new topic in forum {destinationForumId}");
                 }
 
-                return (TranslationProvider.Moderator[GetLanguage(), "POSTS_SPLIT_SUCCESSFULLY"], true);
+                return (_translationProvider.Moderator[language, "POSTS_SPLIT_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
-                var id = Utils.HandleError(ex);
-                return (string.Format(TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                var id = _utils.HandleError(ex);
+                return (string.Format(_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
         public async Task<(string Message, bool? IsSuccess)> MovePosts(int[] postIds, int? destinationTopicId, OperationLogDto logDto)
         {
+            var language = _translationProvider.GetLanguage();
             try
             {
                 if ((destinationTopicId ?? 0) == 0)
                 {
-                    return (TranslationProvider.Moderator[GetLanguage(), "INVALID_DESTINATION_TOPIC"], false);
+                    return (_translationProvider.Moderator[language, "INVALID_DESTINATION_TOPIC"], false);
                 }
 
                 if (!(postIds?.Any() ?? false))
                 {
-                    return (TranslationProvider.Moderator[GetLanguage(), "ATLEAST_ONE_POST_REQUIRED"], false);
+                    return (_translationProvider.Moderator[language, "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
 
                 var sqlExecuter = _context.GetSqlExecuter();
@@ -324,13 +332,13 @@ namespace PhpbbInDotnet.Services
                 var posts = (await sqlExecuter.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
                 if (posts.Count != postIds.Length || posts.Select(p => p.TopicId).Distinct().Count() != 1)
                 {
-                    return (TranslationProvider.Moderator[GetLanguage(), "AT_LEAST_ONE_POST_MOVED_OR_DELETED"], false);
+                    return (_translationProvider.Moderator[language, "AT_LEAST_ONE_POST_MOVED_OR_DELETED"], false);
                 }
 
                 var newTopic = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @destinationTopicId", new { destinationTopicId });
                 if (newTopic == null)
                 {
-                    return (string.Format(TranslationProvider.Moderator[GetLanguage(), "TOPIC_DOESNT_EXIST_FORMAT"], destinationTopicId), false);
+                    return (string.Format(_translationProvider.Moderator[language, "TOPIC_DOESNT_EXIST_FORMAT"], destinationTopicId), false);
                 }
 
                 await sqlExecuter.ExecuteAsync("UPDATE phpbb_posts SET topic_id = @topicId, forum_id = @forumId WHERE post_id IN @postIds", new { newTopic.TopicId, newTopic.ForumId, postIds });
@@ -345,46 +353,46 @@ namespace PhpbbInDotnet.Services
                     await _operationLogService.LogModeratorPostAction(ModeratorPostActions.MoveSelectedPosts, logDto.UserId, post.PostId, $"Moved from {oldTopicId} to {destinationTopicId}");
                 }
 
-                return (TranslationProvider.Moderator[GetLanguage(), "POSTS_MOVED_SUCCESSFULLY"], true);
+                return (_translationProvider.Moderator[language, "POSTS_MOVED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
-                var id = Utils.HandleError(ex);
-                return (string.Format(TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                var id = _utils.HandleError(ex);
+                return (string.Format(_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
         public async Task<(string Message, bool? IsSuccess)> DeletePosts(int[] postIds, OperationLogDto logDto)
         {
+            var language = _translationProvider.GetLanguage();
             try
             {
-                var lang = GetLanguage();
                 if (!(postIds?.Any() ?? false))
                 {
-                    return (TranslationProvider.Moderator[lang, "ATLEAST_ONE_POST_REQUIRED"], false);
+                    return (_translationProvider.Moderator[language, "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
 
                 var sqlExecuter = _context.GetSqlExecuter();
                 var posts = (await sqlExecuter.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
                 if (posts.Count != postIds.Length || posts.Select(p => p.TopicId).Distinct().Count() != 1)
                 {
-                    return (TranslationProvider.Moderator[lang, "ATLEAST_ONE_POST_MOVED_OR_DELETED"], false);
+                    return (_translationProvider.Moderator[language, "ATLEAST_ONE_POST_MOVED_OR_DELETED"], false);
                 }
 
                 await DeletePostsCore(posts, logDto, true);
 
-                return (TranslationProvider.Moderator[lang, "POSTS_DELETED_SUCCESSFULLY"], true);
+                return (_translationProvider.Moderator[language, "POSTS_DELETED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
-                var id = Utils.HandleError(ex);
-                return (string.Format(TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                var id = _utils.HandleError(ex);
+                return (string.Format(_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
         private async Task DeletePostsCore(List<PhpbbPosts> posts, OperationLogDto logDto, bool shouldLog)
         {
-            var lang = GetLanguage();
+            var language = _translationProvider.GetLanguage();
             var sqlExecuter = _context.GetSqlExecuter();
             var postIds = posts.Select(p => p.PostId).DefaultIfEmpty();
             var attachments = (await sqlExecuter.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id IN @postIds", new { postIds })).AsList();
@@ -396,9 +404,9 @@ namespace PhpbbInDotnet.Services
             {
                 var dto = new PostDto
                 {
-                    Attachments = attachments.Where(a => a.PostMsgId == post.PostId).Select(a => new AttachmentDto(dbRecord: a, isPreview: false, language: lang, deletedFile: true)).ToList(),
+                    Attachments = attachments.Where(a => a.PostMsgId == post.PostId).Select(a => new AttachmentDto(dbRecord: a, isPreview: false, language: language, deletedFile: true)).ToList(),
                     AuthorId = post.PosterId,
-                    AuthorName = string.IsNullOrWhiteSpace(post.PostUsername) ? TranslationProvider.BasicText[lang, "ANONYMOUS"] : post.PostUsername,
+                    AuthorName = string.IsNullOrWhiteSpace(post.PostUsername) ? _translationProvider.BasicText[language, "ANONYMOUS"] : post.PostUsername,
                     BbcodeUid = post.BbcodeUid,
                     ForumId = post.ForumId,
                     TopicId = post.TopicId,
@@ -429,12 +437,13 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> DuplicatePost(int postId, OperationLogDto logDto)
         {
+            var language = _translationProvider.GetLanguage();
             try
             {
                 var post = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == postId);
                 if (post == null)
                 {
-                    return (TranslationProvider.Moderator[GetLanguage(), "ATLEAST_ONE_POST_REQUIRED"], false);
+                    return (_translationProvider.Moderator[language, "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
                 var attachments = await _context.PhpbbAttachments.AsNoTracking().Where(a => a.PostMsgId == postId).OrderBy(a => a.AttachId).ToListAsync();
 
@@ -477,8 +486,8 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = Utils.HandleError(ex);
-                return (string.Format(TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                var id = _utils.HandleError(ex);
+                return (string.Format(_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 

@@ -106,7 +106,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (user == null || ResetPasswordCode != await _utils.DecryptAES(user.UserNewpasswd, Init))
             {
-                ModelState.AddModelError(nameof(PwdResetErrorMessage), TranslationProvider.Errors[TranslationProvider.GetValidatedLanguage(null, Request), "CONFIRM_ERROR"]);
+                ModelState.AddModelError(nameof(PwdResetErrorMessage), TranslationProvider.Errors[TranslationProvider.GetLanguage(), "CONFIRM_ERROR"]);
                 return Page();
             }
             Mode = LoginMode.PasswordReset;
@@ -118,7 +118,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var sqlExecuter = _context.GetSqlExecuter();
 
             var user = await sqlExecuter.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE username_clean = @username", new { username = StringUtility.CleanString(UserName) });
-            var lang = TranslationProvider.GetValidatedLanguage(null, Request);
+            var lang = TranslationProvider.GetLanguage();
 
             Mode = LoginMode.Normal;
             if (user.Count() != 1)
@@ -168,7 +168,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPostResetPassword()
         {
-            var lang = TranslationProvider.GetValidatedLanguage(null, Request);
+            var lang = TranslationProvider.GetLanguage();
             try
             {
                 var user = _context.PhpbbUsers.FirstOrDefault(
@@ -221,7 +221,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPostSaveNewPassword()
         {
-            var lang = TranslationProvider.GetValidatedLanguage(null, Request);
+            var lang = TranslationProvider.GetLanguage();
             var validator = new UserProfileDataValidationService(ModelState, TranslationProvider, lang);
             var validations = new[]
             {

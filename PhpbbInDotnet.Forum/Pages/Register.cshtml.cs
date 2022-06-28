@@ -31,8 +31,6 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly Recaptcha _recaptchaOptions;
         private readonly IUserService _userService;
 
-        private string? _language;
-
         [BindProperty]
         public string? Email { get; set; }
 
@@ -77,7 +75,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
-            var lang = GetLanguage();
+            var lang = TranslationProvider.GetLanguage();
             var validator = new UserProfileDataValidationService(ModelState, TranslationProvider, lang);
             var validations = new[]
             {
@@ -180,7 +178,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 GroupId = 2,
                 UserId = newUser.Entity.UserId
             });
-            var subject = string.Format(TranslationProvider.Email[TranslationProvider.GetValidatedLanguage(null, Request), "WELCOME_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
+            var subject = string.Format(TranslationProvider.Email[TranslationProvider.GetLanguage(), "WELCOME_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
 
             var dbChangesTask = _context.SaveChangesAsync();
             var emailTask = _utils.SendEmail(
@@ -207,7 +205,5 @@ namespace PhpbbInDotnet.Forum.Pages
             ModelState.AddModelError(errorKey, errorMessage);
             return Page();
         }
-
-        public string GetLanguage() => _language ??= TranslationProvider.GetValidatedLanguage(null, HttpContext?.Request);
     }
 }

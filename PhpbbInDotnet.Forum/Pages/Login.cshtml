@@ -7,7 +7,7 @@
 @inject IConfiguration _config
 
 @{
-    var lang = Model.TranslationProvider.GetValidatedLanguage(null, Model.HttpContext?.Request);
+    var lang = Model.TranslationProvider.GetLanguage();
     ViewData["Title"] = Model.TranslationProvider.BasicText[lang, "LOGIN", Casing.Title];
     Layout = "~/Pages/_Layout.cshtml";
 }

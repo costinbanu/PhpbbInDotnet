@@ -18,9 +18,13 @@ namespace PhpbbInDotnet.Languages
 {
     class TranslationProvider : ITranslationProvider
     {
+        private string? _language;
+        private IEnumerable<string>? _allLanguages;
+
         private readonly ILogger _logger;
         private readonly IForumDbContext _context;
         private readonly IAppCache _cache;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         #region Translation declarations
 
@@ -69,11 +73,12 @@ namespace PhpbbInDotnet.Languages
 
         #endregion Translation declarations
 
-        public TranslationProvider(ILogger logger, IAppCache cache, IForumDbContext context, ICommonUtils utils)
+        public TranslationProvider(ILogger logger, IAppCache cache, IForumDbContext context, ICommonUtils utils, IHttpContextAccessor httpContextAccessor)
         {
             _logger = logger;
             _context = context;
             _cache = cache;
+            _httpContextAccessor = httpContextAccessor;
 
             #region Translation init
 
@@ -95,20 +100,29 @@ namespace PhpbbInDotnet.Languages
             #endregion Translation init
         }
 
-        public string GetValidatedLanguage(AuthenticatedUserExpanded? user, HttpRequest? request = null)
+        public string GetLanguage(AuthenticatedUserExpanded? user = null)
         {
-            StringValues val = default;
-            var fromHeadersOrDefault = ValidatedOrDefault(
-                (request?.Headers?.TryGetValue("Accept-Language", out val) ?? false) ? val.ToString() : Constants.DEFAULT_LANGUAGE,
-                Constants.DEFAULT_LANGUAGE
-            );
+            if (_language is not null)
+            {
+                return _language;
+            }
+
+            var fromHeadersOrDefault = Constants.DEFAULT_LANGUAGE;
+            if (_httpContextAccessor.HttpContext is not null)
+            {
+                fromHeadersOrDefault = ValidatedOrDefault(
+                    _httpContextAccessor.HttpContext.Request.Headers.TryGetValue("Accept-Language", out StringValues lang)? lang.ToString() : Constants.DEFAULT_LANGUAGE,
+                    Constants.DEFAULT_LANGUAGE
+                );
+                user ??= (AuthenticatedUserExpanded?)(_httpContextAccessor.HttpContext.Items.TryGetValue(nameof(AuthenticatedUserExpanded), out var aue) ? aue : null);
+            }
 
             if (user?.IsAnonymous ?? true)
             {
-                return fromHeadersOrDefault;
+                return _language = fromHeadersOrDefault;
             }
 
-            return ValidatedOrDefault(user.Language, fromHeadersOrDefault);
+            return _language = ValidatedOrDefault(user.Language, fromHeadersOrDefault);
         }
 
         private bool IsLanguageValid(string language, [MaybeNullWhen(false)] out string parsed)
@@ -173,7 +187,7 @@ namespace PhpbbInDotnet.Languages
         }
 
         public IEnumerable<string> AllLanguages
-            => Directory.GetFiles(Translation.TranslationsDirectory).Where(IsBasicText).Select(TranslationLanguage);
+            => _allLanguages ??= Directory.GetFiles(Translation.TranslationsDirectory).Where(IsBasicText).Select(TranslationLanguage);
 
         private bool IsBasicText(string path)
         {
