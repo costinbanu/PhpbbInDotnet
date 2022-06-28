@@ -23,6 +23,7 @@
     <ProjectReference Include="..\PhpbbInDotnet.Objects\PhpbbInDotnet.Objects.csproj" />
     <ProjectReference Include="..\PhpbbInDotnet.Services\PhpbbInDotnet.Services.csproj" />
     <ProjectReference Include="..\PhpbbInDotnet.Domain\PhpbbInDotnet.Domain.csproj" />
+    <ProjectReference Include="..\PhpbbInDotnet.Validation\PhpbbInDotnet.Validation.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Content Update="web.config">

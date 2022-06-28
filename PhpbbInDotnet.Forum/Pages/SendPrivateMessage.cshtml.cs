@@ -9,6 +9,7 @@ using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Validation;
 using Serilog;
 using System;
 using System.Threading.Tasks;
@@ -22,10 +23,10 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IWritingToolsService _writingService;
         private readonly IConfiguration _config;
 
-        [BindProperty]
+        [BindProperty, ValidateText(MinLength = 3, MaxLength = 255, TooShortKey = "TITLE_TOO_SHORT", TooLongKey = "TITLE_TOO_LONG")]
         public string? PostTitle { get; set; }
 
-        [BindProperty]
+        [BindProperty, ValidateText(MinLength = 3, MaxLength = 255, TooShortKey = "POST_TOO_SHORT", TooLongKey = "POST_TOO_LONG")]
         public string? PostText { get; set; }
 
         [BindProperty(SupportsGet = true)]
@@ -142,21 +143,6 @@ namespace PhpbbInDotnet.Forum.Pages
                     return PageWithError(nameof(ReceiverName), TranslationProvider.Errors[lang, "ENTER_VALID_RECEIVER"]);
                 }
 
-                if ((PostTitle?.Trim()?.Length ?? 0) < 3)
-                {
-                    return PageWithError(nameof(PostTitle), TranslationProvider.Errors[lang, "TITLE_TOO_SHORT"]);
-                }
-
-                if ((PostTitle?.Length ?? 0) > 255)
-                {
-                    return PageWithError(nameof(PostTitle), TranslationProvider.Errors[lang, "TITLE_TOO_LONG"]);
-                }
-
-                if ((PostText?.Trim()?.Length ?? 0) < 3)
-                {
-                    return PageWithError(nameof(PostText), TranslationProvider.Errors[lang, "POST_TOO_SHORT"]);
-                }
-
                 var (Message, IsSuccess) = Action switch
                 {
                     PostingActions.NewPrivateMessage => await UserService.SendPrivateMessage(user.UserId, user.Username!, ReceiverId!.Value, HttpUtility.HtmlEncode(PostTitle)!, await _writingService.PrepareTextForSaving(PostText), PageContext, HttpContext),
@@ -175,20 +161,8 @@ namespace PhpbbInDotnet.Forum.Pages
             => WithRegisteredUser(async user =>
             {
                 var lang = GetLanguage();
-                if ((PostTitle?.Trim()?.Length ?? 0) < 3)
-                {
-                    return PageWithError(nameof(PostTitle), TranslationProvider.Errors[lang, "TITLE_TOO_SHORT"]);
-                }
-
-                if ((PostText?.Trim()?.Length ?? 0) < 3)
-                {
-                    return PageWithError(nameof(PostText), TranslationProvider.Errors[lang, "POST_TOO_SHORT"]);
-                }
-
                 var sqlExec = Context.GetSqlExecuter();
-
-                var newPostText = PostText;
-                newPostText = HttpUtility.HtmlEncode(newPostText);
+                var newPostText = HttpUtility.HtmlEncode(PostText);
 
                 PreviewablePost = new PostDto
                 {

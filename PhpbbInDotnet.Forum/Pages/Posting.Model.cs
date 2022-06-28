@@ -5,16 +5,18 @@ using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Domain;
 using System;
 using System.Collections.Generic;
+using PhpbbInDotnet.Validation;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
     [ValidateAntiForgeryToken]
     public partial class PostingModel
     {
-        [BindProperty]
+        astea nu intorc pagina la starea initiala ce fac preview. de ce??????
+        [BindProperty/*, ValidateText(MinLength = 3, MaxLength = 255, TooShortKey = "TITLE_TOO_SHORT", TooLongKey = "TITLE_TOO_LONG")*/]
         public string? PostTitle { get; set; }
 
-        [BindProperty]
+        [BindProperty/*, ValidateText(MinLength = 3, TooShortKey = "POST_TOO_SHORT", TooLongKey = "POST_TOO_LONG")*/]
         public string? PostText { get; set; }
 
         [BindProperty(SupportsGet = true)]
