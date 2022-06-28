@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
 using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Domain;
 using System.Collections.Generic;
 using System.Linq;
 

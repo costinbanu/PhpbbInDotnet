@@ -1,9 +1,9 @@
 ﻿@page
 @model PhpbbInDotnet.Forum.Pages.ConfirmModel
 
-@using Utilities
-@using Utilities.Core
-@using Utilities.Extensions
+@using Domain
+@using Domain.Utilities
+@using Domain.Extensions
 
 @inject Services.IForumTreeService _forumService
 @inject Database.IForumDbContext _dbContext
@@ -108,7 +108,7 @@ else
 {
     <span style="font-size:1.2em">@Html.Raw(Model.Message)</span>
     <p>&nbsp;</p>
-    <a asp-page="./Login">@Html.Raw(Model.LanguageProvider.BasicText[lang, "LOGIN", Utilities.Casing.FirstUpper])</a>
+    <a asp-page="./Login">@Html.Raw(Model.LanguageProvider.BasicText[lang, "LOGIN", Domain.Casing.FirstUpper])</a>
     <br />
-    <a asp-page="./">@Html.Raw(Model.LanguageProvider.BasicText[lang, "HOME", Utilities.Casing.FirstUpper])</a>
+    <a asp-page="./">@Html.Raw(Model.LanguageProvider.BasicText[lang, "HOME", Domain.Casing.FirstUpper])</a>
 }

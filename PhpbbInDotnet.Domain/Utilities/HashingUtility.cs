@@ -1,7 +1,7 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 
-namespace PhpbbInDotnet.Utilities.Core
+namespace PhpbbInDotnet.Domain.Utilities
 {
     public static class HashingUtility
     {

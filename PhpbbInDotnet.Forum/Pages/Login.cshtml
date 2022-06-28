@@ -1,7 +1,7 @@
 ﻿@page
 @model PhpbbInDotnet.Forum.Pages.LoginModel
 
-@using Utilities
+@using Domain
 @using Microsoft.Extensions.Configuration
 
 @inject IConfiguration _config
@@ -14,7 +14,7 @@
 
 <h3>@Model.LanguageProvider.BasicText[lang, "LOGIN", Casing.FirstUpper]</h3>
 
-@if (Model.Mode == Utilities.LoginMode.Normal)
+@if (Model.Mode == Domain.LoginMode.Normal)
 {
     <form method="post">
         <input type="text" asp-for="UserName" placeholder="@Model.LanguageProvider.BasicText[lang, "USERNAME", Casing.FirstUpper]" class="form" autocomplete="username" />
@@ -46,7 +46,7 @@
         </form>
     </div>
 }
-else if (Model.Mode == Utilities.LoginMode.PasswordReset)
+else if (Model.Mode == Domain.LoginMode.PasswordReset)
 {
     <form method="post" asp-page-handler="SaveNewPassword">
         <input type="password" asp-for="PwdResetFirstPassword" placeholder="@Model.LanguageProvider.BasicText[lang, "NEW_PASSWORD"]" class="form" autocomplete="new-password" /><br />

@@ -1,5 +1,5 @@
 ﻿using LazyCache;
-using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Domain;
 using Serilog;
 using System;
 

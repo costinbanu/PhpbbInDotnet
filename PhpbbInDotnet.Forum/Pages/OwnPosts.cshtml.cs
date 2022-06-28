@@ -5,7 +5,7 @@ using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Domain;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace PhpbbInDotnet.Utilities
+namespace PhpbbInDotnet.Domain
 {
     public class ValidateDateAttribute : RequiredAttribute
     {

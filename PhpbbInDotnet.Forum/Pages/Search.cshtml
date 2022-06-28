@@ -4,9 +4,9 @@
 @using CustomPartials
 @using Dapper
 @using PhpbbInDotnet.Database.Entities
-@using PhpbbInDotnet.Utilities
+@using PhpbbInDotnet.Domain
 
-@inject Utilities.ICommonUtils _utils
+@inject Domain.ICommonUtils _utils
 @inject Database.IForumDbContext _context
 @inject Services.IBBCodeRenderingService _renderingService
 @inject Services.IUserService _userService

@@ -2,7 +2,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace PhpbbInDotnet.Utilities.Core
+namespace PhpbbInDotnet.Domain.Utilities
 {
     public static class StringUtility
     {

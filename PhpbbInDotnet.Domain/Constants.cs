@@ -1,7 +1,7 @@
-﻿using PhpbbInDotnet.Utilities.Extensions;
+﻿using PhpbbInDotnet.Domain.Extensions;
 using System;
 
-namespace PhpbbInDotnet.Utilities
+namespace PhpbbInDotnet.Domain
 {
     public static class Constants
     {

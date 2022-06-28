@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using PhpbbInDotnet.Database.Entities;
-using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Domain;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;

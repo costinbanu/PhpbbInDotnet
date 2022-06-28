@@ -7,7 +7,7 @@
 {
     <div class="RuleBox">
         <span>&#x26A0;&nbsp;</span>
-        <b>@Html.Raw(_languageProvider.BasicText[Model.Language, "FORUM_RULES", Utilities.Casing.Title])</b>
+        <b>@Html.Raw(_languageProvider.BasicText[Model.Language, "FORUM_RULES", Domain.Casing.Title])</b>
         <br />
         @Html.Raw(_renderingService.BbCodeToHtml(Model.ForumRules, string.Empty))
     </div>
@@ -17,7 +17,7 @@ else if (!string.IsNullOrWhiteSpace(Model.ForumRulesLink))
     <div class="RuleBox">
         <a href="@Html.Raw(Model.ForumRulesLink)" target="_blank">
             &#x26A0;&nbsp;
-            <b>@Html.Raw(_languageProvider.BasicText[Model.Language, "FORUM_RULES", Utilities.Casing.Title])</b>
+            <b>@Html.Raw(_languageProvider.BasicText[Model.Language, "FORUM_RULES", Domain.Casing.Title])</b>
         </a>
     </div>
 }

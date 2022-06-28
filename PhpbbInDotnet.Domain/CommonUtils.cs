@@ -22,7 +22,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PhpbbInDotnet.Utilities
+namespace PhpbbInDotnet.Domain
 {
     class CommonUtils : ICommonUtils
     {

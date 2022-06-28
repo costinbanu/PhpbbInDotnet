@@ -1,4 +1,4 @@
-﻿using PhpbbInDotnet.Utilities.Extensions;
+﻿using PhpbbInDotnet.Domain.Extensions;
 using System;
 using System.Text;
 using System.Web;

@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Domain;
 using System;
 using System.Collections.Generic;
 

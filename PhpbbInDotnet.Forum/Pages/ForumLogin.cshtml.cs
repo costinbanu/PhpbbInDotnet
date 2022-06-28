@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Domain;
 using System;
 using System.Linq;
 using System.Threading.Tasks;

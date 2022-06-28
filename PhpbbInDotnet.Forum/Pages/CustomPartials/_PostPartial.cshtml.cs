@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Domain;
 using System;
 
 namespace PhpbbInDotnet.Forum.Pages.CustomPartials

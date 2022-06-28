@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Domain;
 using Serilog;
 using System;
 

@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Domain;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using PhpbbInDotnet.Languages;

@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Domain;
 
 namespace PhpbbInDotnet.Services
 {

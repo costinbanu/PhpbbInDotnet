@@ -2,7 +2,7 @@
 @model PhpbbInDotnet.Forum.AuthenticatedPageModel
 @{
     var lang = Model.GetLanguage();
-    ViewData["Title"] = Model.LanguageProvider.BasicText[lang, "TERMS", Utilities.Casing.Title];
+    ViewData["Title"] = Model.LanguageProvider.BasicText[lang, "TERMS", Domain.Casing.Title];
     Layout = "~/Pages/_Layout.cshtml";
 }
 

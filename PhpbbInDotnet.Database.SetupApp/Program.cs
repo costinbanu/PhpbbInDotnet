@@ -1,8 +1,8 @@
 ﻿using Dapper;
 using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
-using PhpbbInDotnet.Utilities.Core;
-using PhpbbInDotnet.Utilities.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
+using PhpbbInDotnet.Domain.Extensions;
 using Serilog;
 using System;
 using System.IO;

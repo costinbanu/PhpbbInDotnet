@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Database.Entities;
-using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Domain;
 using System;
 using System.Collections.Generic;
 

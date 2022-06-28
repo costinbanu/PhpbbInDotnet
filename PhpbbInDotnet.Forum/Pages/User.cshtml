@@ -1,6 +1,6 @@
 ﻿@page
-@using Utilities
-@using Utilities.Extensions;
+@using Domain
+@using Domain.Extensions;
 @using Microsoft.Extensions.Configuration
 @using System.Globalization 
 @using Objects
@@ -10,7 +10,7 @@
 
 @inject Services.IUserService _userService
 @inject Database.IForumDbContext _context
-@inject Utilities.ICommonUtils _utils
+@inject Domain.ICommonUtils _utils
 @inject Microsoft.Extensions.Configuration.IConfiguration _config
 
 @{
