@@ -3,12 +3,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Domain;
-using PhpbbInDotnet.Domain.Utilities;
-using PhpbbInDotnet.Domain.Extensions;
+using Serilog;
 using System;
 using System.Threading.Tasks;
 using System.Web;
@@ -44,9 +45,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public PostDto? PreviewablePost { get; set; }
 
-        public SendPrivateMessageModel(ICommonUtils utils, IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cacheService, 
+        public SendPrivateMessageModel(ILogger logger, IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cacheService, 
             ITranslationProvider translationProvider, IWritingToolsService writingService, IConfiguration config)
-            : base(context, forumService, userService, cacheService, utils, translationProvider)
+            : base(context, forumService, userService, cacheService, logger, translationProvider)
         {
             _writingService = writingService;
             _config = config;

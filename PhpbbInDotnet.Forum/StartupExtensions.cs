@@ -22,6 +22,7 @@ using System.IO;
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 
 namespace PhpbbInDotnet.Forum
 {
@@ -112,6 +113,7 @@ namespace PhpbbInDotnet.Forum
             services.AddScoped<AuthenticationMiddleware>();
             services.AddScoped<ErrorHandlingMiddleware>();
 
+            services.AddTransient<IActionContextAccessor, ActionContextAccessor>();
             services.AddTransient<IHttpContextAccessor, HttpContextAccessor>();
 
             var recaptchaOptions = config.GetObject<Recaptcha>();

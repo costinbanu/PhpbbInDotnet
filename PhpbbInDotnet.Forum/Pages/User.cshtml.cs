@@ -8,13 +8,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Domain;
-using PhpbbInDotnet.Domain.Utilities;
-using PhpbbInDotnet.Domain.Extensions;
+using Serilog;
 using SixLabors.ImageSharp;
 using System;
 using System.Collections.Generic;
@@ -95,18 +96,19 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IWritingToolsService _writingService;
         private readonly IOperationLogService _operationLogService;
         private readonly IConfiguration _config;
-
+        private readonly IEmailService _emailService;
 
         private const int DB_CACHE_EXPIRATION_MINUTES = 20;
 
-        public UserModel(ICommonUtils utils, IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, IStorageService storageService, 
-            IWritingToolsService writingService, IConfiguration config, ITranslationProvider translationProvider, IOperationLogService operationLogService)
-            : base(context, forumService, userService, cache, utils, translationProvider)
+        public UserModel(ILogger logger, IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, IStorageService storageService, 
+            IWritingToolsService writingService, IConfiguration config, ITranslationProvider translationProvider, IOperationLogService operationLogService, IEmailService emailService)
+            : base(context, forumService, userService, cache, logger, translationProvider)
         {
             _storageService = storageService;
             _writingService = writingService;
             _operationLogService = operationLogService;
             _config = config;
+            _emailService = emailService;
         }
 
         public async Task<IActionResult> OnGet()
@@ -221,7 +223,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             }
 
-            var newEmailHash = HashingUtility.ComputeCrc64Hash(Email!);
+            var newEmailHash = HashUtility.ComputeCrc64Hash(Email!);
             if (newEmailHash != dbUser.UserEmailHash)
             {
                 if (!validator.ValidateEmail(nameof(Email), Email))
@@ -248,21 +250,17 @@ namespace PhpbbInDotnet.Forum.Pages
                     dbUser.UserActkey = registrationCode;
 
                     var subject = string.Format(TranslationProvider.Email[lang, "EMAIL_CHANGED_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
-                    await Utils.SendEmail(
+                    await _emailService.SendEmail(
                         to: Email!,
                         subject: subject,
-                        body: await Utils.RenderRazorViewToString(
-                            "_WelcomeEmailPartial",
-                            new WelcomeEmailDto
-                            {
-                                RegistrationCode = registrationCode,
-                                Subject = subject,
-                                UserName = dbUser.Username,
-                                Language = dbUser.UserLang
-                            },
-                            PageContext,
-                            HttpContext
-                        ));
+                        bodyRazorViewName: "_WelcomeEmailPartial",
+                        bodyRazorViewModel: new WelcomeEmailDto
+                        {
+                            RegistrationCode = registrationCode,
+                            Subject = subject,
+                            UserName = dbUser.Username,
+                            Language = dbUser.UserLang
+                        });
                 }
 
                 userMustLogIn = true;
@@ -338,7 +336,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 catch (Exception ex)
                 {
-                    Utils.HandleError(ex, $"Failed to upload avatar for {CurrentUser?.UserId ?? dbUser?.UserId ?? 1}");
+                    Logger.Error(ex, "Failed to upload avatar for {user}", CurrentUser?.Username ?? dbUser?.Username ?? "N/A");
                     ModelState.AddModelError(nameof(Avatar), TranslationProvider.Errors[lang, "AVATAR_UPLOAD_ERROR"]);
                     return Page();
                 }
@@ -413,7 +411,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }
             catch (Exception ex)
             {
-                Utils.HandleError(ex, $"Error updating user profile for {CurrentUser?.UserId ?? dbUser?.UserId ?? 1}");
+                Logger.Error(ex, "Error updating user profile for {user}", CurrentUser?.Username ?? dbUser?.Username ?? "N/A");
                 ModelState.AddModelError(nameof(CurrentUser), TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
                 return Page();
             }
@@ -455,10 +453,10 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostAddFoe()
             => await WithRegisteredUser(async (user) =>
             {
-                if (! await CanAddFoe())
+                if (!await CanAddFoe())
                 {
                     ModelState.AddModelError(nameof(CurrentUser), TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED"]);
-                    Utils.HandleErrorAsWarning(new Exception($"Potential cross site forgery attempt in {nameof(OnPostAddFoe)}"));
+                    Logger.Error("Potential cross site forgery attempt in {name}", nameof(OnPostAddFoe));
                     Mode = UserPageMode.AddFoe;
                     return await OnGet();
                 }
@@ -480,7 +478,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 if (!CanRemoveFoe())
                 {
                     ModelState.AddModelError(nameof(CurrentUser), TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED"]);
-                    Utils.HandleErrorAsWarning(new Exception($"Potential cross site forgery attempt in {nameof(OnPostRemoveFoe)}"));
+                    Logger.Error("Potential cross site forgery attempt in {name}", nameof(OnPostRemoveFoe));
                     Mode = UserPageMode.AddFoe;
                     return await OnGet();
                 }

@@ -10,6 +10,7 @@ using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -25,18 +26,18 @@ namespace PhpbbInDotnet.Services
         private readonly IForumTreeService _forumService;
         private readonly IConfiguration _config;
         private readonly IOperationLogService _operationLogService;
-        private readonly ICommonUtils _utils;
         private readonly ITranslationProvider _translationProvider;
+        private readonly ILogger _logger;
 
-        public AdminForumService(IForumDbContext context, IForumTreeService forumService, IConfiguration config, ICommonUtils utils,
-            ITranslationProvider translationProvider, IOperationLogService operationLogService)
+        public AdminForumService(IForumDbContext context, IForumTreeService forumService, IConfiguration config,
+            ITranslationProvider translationProvider, IOperationLogService operationLogService, ILogger logger)
         {
             _context = context;
             _forumService = forumService;
             _config = config;
             _operationLogService = operationLogService;
-            _utils = utils;
             _translationProvider = translationProvider;
+            _logger = logger;
         }
 
         public async Task<(string Message, bool? IsSuccess)> ManageForumsAsync(UpsertForumDto dto, int adminUserId, bool isRoot)
@@ -136,7 +137,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = _logger.ErrorWithId(ex);
                 return (string.Format(_translationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
 
@@ -330,7 +331,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = _logger.ErrorWithId(ex);
                 return (string.Format(_translationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }

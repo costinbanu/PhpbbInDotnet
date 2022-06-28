@@ -1,12 +1,12 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._SummaryPartialModel
 
 @using Domain;
-@using Domain.Extensions;
+@using Domain.Extensions
+@using Domain.Utilities
 @using LazyCache;
 
 @inject Languages.ITranslationProvider _translationProvider
 @inject IAppCache _cache
-@inject ICommonUtils _utils
 
 @if (Model.CreationTime != 0L.ToUtcTime())
 {
@@ -15,7 +15,7 @@
         {
             if (Model.CorrelationId.HasValue)
             {
-                _cache.Add(_utils.GetAvatarCacheKey(Model.AuthorId, Model.CorrelationId ?? Guid.Empty), Model.AuthorAvatar, TimeSpan.FromSeconds(30));
+                _cache.Add(CacheUtility.GetAvatarCacheKey(Model.AuthorId, Model.CorrelationId ?? Guid.Empty), Model.AuthorAvatar, TimeSpan.FromSeconds(30));
             }
             <li>
                 <img src="./File?userId=@Model.AuthorId&correlationId=@Model.CorrelationId&handler=avatar" />

@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+using Serilog;
 
 namespace PhpbbInDotnet.Services
 {
@@ -17,17 +18,17 @@ namespace PhpbbInDotnet.Services
     {
         private readonly IForumDbContext _context;
         private readonly IConfiguration _config;
-        private readonly ICommonUtils _utils;
+        private readonly ILogger _logger;
         private HashSet<ForumTree>? _tree;
         private HashSet<ForumTopicCount>? _forumTopicCount;
         private Dictionary<int, HashSet<Tracking>>? _tracking;
         private IEnumerable<(int forumId, bool hasPassword)>? _restrictedForums;
 
-        public ForumTreeService(IForumDbContext context, IConfiguration config, ICommonUtils utils)
+        public ForumTreeService(IForumDbContext context, IConfiguration config, ILogger logger)
         {
             _context = context;
             _config = config;
-            _utils = utils;
+            _logger = logger;
         }
 
         public async Task<IEnumerable<(int forumId, bool hasPassword)>> GetRestrictedForumList(AuthenticatedUserExpanded user, bool includePasswordProtected = false)
@@ -221,7 +222,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex, $"Error getting the forum tracking for user {userId}");
+                _logger.Error(ex, "Error getting the forum tracking for user {id}", userId);
             }
 
             var count = dbResults.Count();

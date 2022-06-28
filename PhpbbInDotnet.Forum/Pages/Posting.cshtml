@@ -2,7 +2,8 @@
 
 @using System.Web
 @using Domain
-@using Domain.Extensions;
+@using Domain.Extensions
+@using Domain.Utilities
 @using CustomPartials
 @using Objects.Configuration
 @using Services
@@ -14,7 +15,6 @@
 @inject IBBCodeRenderingService _renderingService
 @inject IStorageService _storageService
 @inject IUserService _userService
-@inject ICommonUtils _utils
 @inject IConfiguration _config
 
 @{
@@ -121,8 +121,6 @@ else if (Model.Action == PostingActions.NewTopic)
         ForumId = Model.ForumId,
         TopicId = Model.TopicId ?? 0,
         Language = Lang,
-        ParentHttpContext = HttpContext,
-        ParentPageContext = PageContext,
         CorrelationId = Model.PreviewCorrelationId
     }, ViewData)
 
@@ -366,8 +364,6 @@ else if (Model.Action == PostingActions.NewTopic)
                 TopicId = Model.TopicId ?? 0,
                 ShowQuoteButton = !(CurrentUser.Foes?.Contains(post.AuthorId) ?? false),
                 Language = Lang,
-                ParentHttpContext = HttpContext,
-                ParentPageContext = PageContext,
                 CorrelationId = previousPostsCorrelationId
             }, ViewData)
         }
@@ -376,7 +372,7 @@ else if (Model.Action == PostingActions.NewTopic)
 
 <script>
     var tribute = new Tribute({
-        values: @Html.Raw(_utils.ToCamelCaseJson(await _userService.GetUsers())),
+        values: @Html.Raw(SerializationUtility.ToCamelCaseJson(await _userService.GetUsers())),
         trigger: "@@",
         allowSpaces: true,
         noMatchTemplate: ''

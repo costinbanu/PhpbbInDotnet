@@ -4,12 +4,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Domain;
-using PhpbbInDotnet.Domain.Utilities;
-using PhpbbInDotnet.Domain.Extensions;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -101,9 +102,9 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IModeratorService _moderatorService;
         private readonly IWritingToolsService _writingToolsService;
 
-        public ViewTopicModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, IPostService postService, 
+        public ViewTopicModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger, IPostService postService, 
             IModeratorService moderatorService, IWritingToolsService writingToolsService, ITranslationProvider translationProvider)
-            : base(context, forumService, userService, cache, utils, translationProvider)
+            : base(context, forumService, userService, cache, logger, translationProvider)
         {
             _postService = postService;
             _moderatorService = moderatorService;
@@ -135,7 +136,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnGet()
             => WithValidTopic(TopicId ?? 0, async (curForum, curTopic) =>
             {
-                await Utils.RetryOnceAsync(
+                await ResiliencyUtility.RetryOnceAsync(
                     toDo: () => PopulateModel(curForum, curTopic),
                     evaluateSuccess: () => Posts!.Count > 0 && (PageNum ?? 1) == Paginator!.CurrentPage,
                     fix: () => PageNum = Paginator!.CurrentPage);

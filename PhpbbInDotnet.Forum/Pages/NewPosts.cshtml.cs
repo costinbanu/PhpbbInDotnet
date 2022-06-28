@@ -2,11 +2,12 @@ using Dapper;
 using LazyCache;
 using Microsoft.AspNetCore.Mvc;
 using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Domain;
-using PhpbbInDotnet.Domain.Extensions;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -29,8 +30,8 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public string[]? SelectedNewPosts { get; set; }
 
-        public NewPostsModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, ITranslationProvider translationProvider)
-            : base(context, forumService, userService, cache, utils, translationProvider)
+        public NewPostsModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger, ITranslationProvider translationProvider)
+            : base(context, forumService, userService, cache, logger, translationProvider)
         {
         }
 

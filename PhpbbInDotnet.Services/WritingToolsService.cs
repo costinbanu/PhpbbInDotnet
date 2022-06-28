@@ -9,6 +9,7 @@ using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
+using Serilog;
 using SixLabors.ImageSharp;
 using System;
 using System.Collections.Generic;
@@ -26,7 +27,7 @@ namespace PhpbbInDotnet.Services
         private readonly IStorageService _storageService;
         private readonly IConfiguration _config;
         private readonly IAppCache _cache;
-        private readonly ICommonUtils _utils;
+        private readonly ILogger _logger;
         private readonly ITranslationProvider _translationProvider;
 
         private static readonly Regex EMOJI_REGEX = new(@"^(\:|\;){1}[a-zA-Z0-9\-\)\(\]\[\}\{\\\|\*\'\>\<\?\!]+\:?$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -34,15 +35,15 @@ namespace PhpbbInDotnet.Services
 
         private List<PhpbbSmilies>? _smilies;
 
-        public WritingToolsService(IForumDbContext context, IStorageService storageService, ICommonUtils utils, ITranslationProvider translationProvider,
-            IConfiguration config, IAppCache cache)
+        public WritingToolsService(IForumDbContext context, IStorageService storageService, ITranslationProvider translationProvider,
+            IConfiguration config, IAppCache cache, ILogger logger)
         {
-            _utils = utils;
             _translationProvider = translationProvider;
             _context = context;
             _storageService = storageService;
             _config = config;
             _cache = cache;
+            _logger = logger;
         }
 
         #region Banned words
@@ -71,7 +72,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex, "ManageBannedWords failed");
+                _logger.Error(ex, "ManageBannedWords failed");
                 return (_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }
@@ -107,7 +108,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex, "ManageBBCodes failed");
+                _logger.Error(ex, "ManageBBCodes failed");
                 return (_translationProvider.Errors[currentLanguage, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }
@@ -326,14 +327,14 @@ namespace PhpbbInDotnet.Services
 
                 if (errors.Count > 0)
                 {
-                    _utils.HandleErrorAsWarning(new AggregateException(errors.Select(e => new Exception(e))), "Error managing emojis");
+                    _logger.Warning(new AggregateException(errors.Select(e => new Exception(e))), "Error managing emojis");
                     return (string.Join(Environment.NewLine, errors), null);
                 }
                 return (_translationProvider.Admin[language, "EMOJI_UPDATED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex, "ManageSmilies failed");
+                _logger.Error(ex, "ManageSmilies failed");
                 return (_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }

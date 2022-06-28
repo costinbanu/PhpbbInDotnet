@@ -3,6 +3,7 @@
 
 @using System.Web
 @using Domain
+@using Domain.Utilities
 @using CustomPartials
 @using Objects.Configuration
 @using Services
@@ -12,7 +13,6 @@
 @inject IBBCodeRenderingService _renderingService
 @inject IStorageService _storageService
 @inject IUserService _userService
-@inject ICommonUtils _utils
 @inject IConfiguration _config
 
 @{
@@ -56,8 +56,6 @@
         CurrentUser = CurrentUser,
         Post = Model.PreviewablePost,
         Language = Lang,
-        ParentHttpContext = HttpContext,
-        ParentPageContext = PageContext,
     }, ViewData)
 
     <hr class="BoxSeparator" />
@@ -109,7 +107,7 @@
 
 <script>
     var tribute = new Tribute({
-        values: @Html.Raw(_utils.ToCamelCaseJson(await _userService.GetUsers())),
+        values: @Html.Raw(SerializationUtility.ToCamelCaseJson(await _userService.GetUsers())),
         trigger: "@@",
         allowSpaces: true,
         noMatchTemplate: ''
@@ -118,7 +116,7 @@
     tribute.attach(document.getElementById("message"));
 
     var secondTribute = new Tribute({
-        values: @Html.Raw(_utils.ToCamelCaseJson(await _userService.GetUserMap())),
+        values: @Html.Raw(SerializationUtility.ToCamelCaseJson(await _userService.GetUserMap())),
         selectTemplate: function(item) {
             return item.original.key;
         },

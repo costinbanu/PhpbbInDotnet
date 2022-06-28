@@ -3,7 +3,7 @@ using System.Text;
 
 namespace PhpbbInDotnet.Domain.Utilities
 {
-    public static class HashingUtility
+    public static class HashUtility
     {
         public static long ComputeCrc64Hash(string input)
         {

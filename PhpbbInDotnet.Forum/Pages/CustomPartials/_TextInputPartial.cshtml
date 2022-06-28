@@ -1,11 +1,11 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._TextInputPartialModel
 
 @using Domain
+@using Domain.Utilities
 @using Services
 @using Languages
 
 @inject ITranslationProvider _translationProvider
-@inject ICommonUtils _utils
 @inject IBBCodeRenderingService _renderingService
 
 <script type="text/javascript">
@@ -47,7 +47,7 @@
         var buttonText = _translationProvider.BBCodes[Model.Language, $"BUTTON_TEXT_{code.Value.OpenTag}", Casing.None, code.Key];
         if (code.Key == "size")
         {
-            @Html.DropDownList("addbbcode20", _utils.EnumToDropDownList<PostingFontSize>(null, size => _translationProvider.Enums[Model.Language, size], size => ((int)size).ToString(), buttonText), new
+            @Html.DropDownList("addbbcode20", EnumUtility.EnumToDropDownList<PostingFontSize>(null, size => _translationProvider.Enums[Model.Language, size], size => ((int)size).ToString(), buttonText), new
             {
                 @class = "BbCodeButton PostingButton",
                 style = "border-radius: 2px; border: 1px solid #dcdcdc;",

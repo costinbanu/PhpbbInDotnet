@@ -12,12 +12,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mail;
 using System.Threading.Tasks;
+using Serilog;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
     public class ConfirmModel : AuthenticatedPageModel
     {
         private readonly IConfiguration _config;
+        private readonly IEmailService _emailService;
 
         public string? Message { get; private set; }
         
@@ -70,10 +72,12 @@ namespace PhpbbInDotnet.Forum.Pages
         public HashSet<ForumTree>? ForumTree { get; private set; }
         public List<MiniTopicDto>? TopicData { get; private set; }
 
-        public ConfirmModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, IConfiguration config, ITranslationProvider translationProvider)
-            : base(context, forumService, userService, cache, utils, translationProvider) 
+        public ConfirmModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger, 
+            IConfiguration config, ITranslationProvider translationProvider, IEmailService emailService)
+            : base(context, forumService, userService, cache, logger, translationProvider) 
         {
             _config = config;
+            _emailService = emailService;
         }
 
         public void OnGetRegistrationComplete()
@@ -122,22 +126,18 @@ namespace PhpbbInDotnet.Forum.Pages
                     select u
                 ).ToListAsync();
 
-                await Task.WhenAll(admins.Select(async admin =>
+                await Task.WhenAll(admins.Select(admin =>
                 {
                     var subject = TranslationProvider.Email[admin.UserLang, "NEWUSER_SUBJECT"];
-                    await Utils.SendEmail(
+                    return _emailService.SendEmail(
                         to: admin.UserEmail,
                         subject: subject,
-                        body: await Utils.RenderRazorViewToString(
-                            "_NewUserNotification",
-                            new _NewUserNotificationModel
-                            {
-                                Username = user.Username,
-                                Language = admin.UserLang
-                            },
-                            PageContext,
-                            HttpContext
-                        ));
+                        bodyRazorViewName: "_NewUserNotification",
+                        bodyRazorViewModel: new _NewUserNotificationModel
+                        {
+                            Username = user.Username,
+                            Language = admin.UserLang
+                        });
                 }));
             }
             Title = TranslationProvider.BasicText[lang, "EMAIL_CONFIRM_TITLE"];

@@ -16,6 +16,7 @@ using System.Net.Mime;
 using System.Threading.Tasks;
 using System.Web;
 using IOFile = System.IO.File;
+using Serilog;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -74,9 +75,9 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IWritingToolsService _adminWritingService;
         private readonly IOperationLogService _logService;
 
-        public AdminModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, IAdminUserService adminUserService, 
+        public AdminModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger, IAdminUserService adminUserService, 
             IAdminForumService adminForumService, IWritingToolsService adminWritingService, ITranslationProvider translationProvider, IOperationLogService logService) 
-            : base(context, forumService, userService, cache, utils, translationProvider)
+            : base(context, forumService, userService, cache, logger, translationProvider)
         {
             _adminUserService = adminUserService;
             _adminForumService = adminForumService;
@@ -153,7 +154,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostUserManagement(AdminUserActions? userAction, int? userId)
             => await WithAdmin(async () =>
             {
-                (Message, IsSuccess) = await _adminUserService.ManageUser(userAction, userId, PageContext, HttpContext, GetCurrentUser().UserId);
+                (Message, IsSuccess) = await _adminUserService.ManageUser(userAction, userId, GetCurrentUser().UserId);
                 Category = AdminCategories.Users;
                 return await OnGet();
             });

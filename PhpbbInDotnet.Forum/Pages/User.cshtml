@@ -1,6 +1,7 @@
 ﻿@page
 @using Domain
-@using Domain.Extensions;
+@using Domain.Extensions
+@using Domain.Utilities
 @using Microsoft.Extensions.Configuration
 @using System.Globalization 
 @using Objects
@@ -10,7 +11,6 @@
 
 @inject Services.IUserService _userService
 @inject Database.IForumDbContext _context
-@inject Domain.ICommonUtils _utils
 @inject Microsoft.Extensions.Configuration.IConfiguration _config
 
 @{
@@ -683,11 +683,11 @@ else
                         @Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "ATTACHED_FILES_COUNT_FORMAT"], Model.AttachCount))
                         @if (isSelf || await Model.IsCurrentUserAdminHere())
                         {
-                            <span>- @Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "USED_SPACE_FORMAT"], _utils.ReadableFileSize(Model.AttachTotalSize)))</span>
+                            <span>- @Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "USED_SPACE_FORMAT"], StringUtility.ReadableFileSize(Model.AttachTotalSize)))</span>
                             var limit = _context.PhpbbGroups.AsNoTracking().FirstOrDefault(g => g.GroupId == Model.CurrentUser.GroupId)?.GroupUserUploadSize ?? 0;
                             if (limit > 0)
                             {
-                                <span>@Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "TOTAL_SPACE_FORMAT"], _utils.ReadableFileSize(limit)))</span>
+                                <span>@Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "TOTAL_SPACE_FORMAT"], StringUtility.ReadableFileSize(limit)))</span>
                             }
                         }
                         @if (Model.AttachCount > 0)

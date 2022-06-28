@@ -5,11 +5,11 @@
 @using Objects
 @using Services
 @using Domain
-@using Domain.Extensions;
+@using Domain.Extensions
+@using Domain.Utilities
 
 @inject IForumTreeService _forumService
 @inject IBBCodeRenderingService _renderingService
-@inject ICommonUtils _utils
 @inject IAppCache _cache
 
 @model PhpbbInDotnet.Forum.Pages.ModeratorModel
@@ -149,7 +149,7 @@
             @Html.Raw(Model.TranslationProvider.Moderator[Lang, "WITH_SELECTED_TOPICS"]):
             @Html.DropDownList(
                   "TopicAction",
-                  _utils.EnumToDropDownList<ModeratorTopicActions>(
+                  EnumUtility.EnumToDropDownList<ModeratorTopicActions>(
                       selectedItem: null,
                       textTransform: item => Model.TranslationProvider.Enums[Lang, item],
                       defaultText: Model.TranslationProvider.BasicText[Lang, "SELECT_AN_OPTION"],
@@ -330,15 +330,13 @@
                         foreach (var attach in post.Attachments!)
                         {
                             attach.CorrelationId = correlationId;
-                            _cache.Add(_utils.GetAttachmentCacheKey(attach.Id, correlationId), attach, TimeSpan.FromMinutes(1));
+                            _cache.Add(CacheUtility.GetAttachmentCacheKey(attach.Id, correlationId), attach, TimeSpan.FromMinutes(1));
                         }
                         @await Html.PartialAsync("_PostPartial", new _PostPartialModel
                         {
                             CurrentUser = Model.GetCurrentUser(),
                             Post = post,
                             Language = Lang,
-                            ParentHttpContext = HttpContext,
-                            ParentPageContext = PageContext,
                             IsPostFirstInPage = true,
                             IsPostLastInPage = true,
                             DisablePostTitleLink = true

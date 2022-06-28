@@ -4,11 +4,11 @@
 @using System.Web
 @using Dapper
 @using Domain
+@using Domain.Utilities
 @using Objects
 @using CustomPartials
 @using Microsoft.EntityFrameworkCore
 
-@inject ICommonUtils _utils
 @inject Database.IForumDbContext _context
 @inject Services.IBBCodeRenderingService _renderingService
 @inject Services.IForumTreeService _forumService
@@ -151,8 +151,6 @@
             ShowFooter = currentUser!.Foes?.Contains(post.AuthorId) != true,
             ShowEditHistory = (index < Model.Posts.Count - 1 && post.PostEditTime > Model.Posts[index + 1].PostTime) || (post.PostEditCount > 0 && post.PostEditUser != post.AuthorName),
             Language = lang,
-            ParentHttpContext = HttpContext,
-            ParentPageContext = PageContext,
             CorrelationId = Model.CorrelationId,
         }, ViewData)
 
@@ -168,7 +166,7 @@
         <form id="moderatorForm" method="post" asp-page-handler="DeleteMyMessage" style="display:none">
             @Html.DropDownList(
                 "PostAction",
-                _utils.EnumToDropDownList<ModeratorPostActions>(selectedItem: Model.PostAction, textTransform: item => Model.TranslationProvider.Enums[lang, item], defaultText: Model.TranslationProvider.BasicText[lang, "SELECT_AN_OPTION"]),
+                EnumUtility.EnumToDropDownList<ModeratorPostActions>(selectedItem: Model.PostAction, textTransform: item => Model.TranslationProvider.Enums[lang, item], defaultText: Model.TranslationProvider.BasicText[lang, "SELECT_AN_OPTION"]),
                 new { onchange = "mod.showPostExtraInput(this)", id = "PostAction", style = "display:none" }
             )
             <input asp-for="ForumId" type="hidden" />
@@ -258,7 +256,7 @@ else if (!isCurrentForumReadOnly)
         @Html.Raw(Model.TranslationProvider.Moderator[lang, "MODERATE_TOPIC"]):
         @Html.DropDownList(
             nameof(Model.TopicAction),
-            _utils.EnumToDropDownList<ModeratorTopicActions>(
+            EnumUtility.EnumToDropDownList<ModeratorTopicActions>(
                 selectedItem: Model.TopicAction, 
                 textTransform: item => Model.TranslationProvider.Enums[lang, item], 
                 defaultText: Model.TranslationProvider.BasicText[lang, "SELECT_AN_OPTION"],
@@ -283,7 +281,7 @@ else if (!isCurrentForumReadOnly)
         @Html.Raw(Model.TranslationProvider.Moderator[lang, "MODERATE_SELECTED_POSTS", Casing.FirstUpper]):
         @Html.DropDownList(
             nameof(Model.PostAction),
-            _utils.EnumToDropDownList<ModeratorPostActions>(
+            EnumUtility.EnumToDropDownList<ModeratorPostActions>(
                 selectedItem: Model.PostAction, 
                 textTransform: item => Model.TranslationProvider.Enums[lang, item], 
                 defaultText: Model.TranslationProvider.BasicText[lang, "SELECT_AN_OPTION"],

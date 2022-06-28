@@ -5,13 +5,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Domain;
-using PhpbbInDotnet.Domain.Utilities;
-using PhpbbInDotnet.Domain.Extensions;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -34,9 +35,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
         static readonly DateTimeOffset CACHE_EXPIRATION = DateTimeOffset.UtcNow.AddHours(4);
 
-        public PostingModel(ICommonUtils utils, IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cacheService, IPostService postService, 
+        public PostingModel(ILogger logger, IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cacheService, IPostService postService, 
             IStorageService storageService, IWritingToolsService writingService, IBBCodeRenderingService renderingService, IConfiguration config, ITranslationProvider translationProvider, IHttpClientFactory httpClientFactory)
-            : base(context, forumService, userService, cacheService, utils, translationProvider)
+            : base(context, forumService, userService, cacheService, logger, translationProvider)
         {
             PollExpirationDaysString = "1";
             PollMaxOptions = 1;
@@ -173,7 +174,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         textForSaving,
                         now = DateTime.UtcNow.ToUnixTimestamp(),
                         attachment = hasAttachments.ToByte(),
-                        checksum = HashingUtility.ComputeMD5Hash(textForSaving),
+                        checksum = HashUtility.ComputeMD5Hash(textForSaving),
                         ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
                         username = HttpUtility.HtmlEncode(usr.Username)
                     }
@@ -192,7 +193,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     {
                         subject = HttpUtility.HtmlEncode(PostTitle),
                         textForSaving,
-                        checksum = HashingUtility.ComputeMD5Hash(textForSaving),
+                        checksum = HashUtility.ComputeMD5Hash(textForSaving),
                         attachment = hasAttachments.ToByte(),
                         post.PostId,
                         now = DateTime.UtcNow.ToUnixTimestamp(),

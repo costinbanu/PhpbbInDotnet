@@ -1,12 +1,12 @@
 ﻿@page
 @model ViewAttachmentsModel
 
-@using Domain;
-@using Domain.Extensions;
-@using Pages.CustomPartials;
+@using Domain
+@using Domain.Utilities
+@using Domain.Extensions
+@using Pages.CustomPartials
 
 @inject Services.IForumTreeService _forumService
-@inject ICommonUtils _utils
 
 @{
     var title = string.Format(Model.TranslationProvider.BasicText[Model.GetLanguage(), "ATTACHMENTS_BY_FORMAT", Casing.Title], Model.PageUsername);
@@ -56,7 +56,7 @@
                 @Html.Raw(attachment.RealFilename)
             </a>
             <br />
-            @Html.Raw(_utils.ReadableFileSize(attachment.FileSize))
+            @Html.Raw(StringUtility.ReadableFileSize(attachment.FileSize))
             <span>&nbsp;&bull;&nbsp;</span>
             @Html.Raw(Model.TranslationProvider.BasicText[Model.GetLanguage(), "SUBMITTED", Casing.FirstUpper])
             <script>

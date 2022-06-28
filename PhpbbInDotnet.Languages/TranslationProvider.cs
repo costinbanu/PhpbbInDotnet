@@ -73,7 +73,7 @@ namespace PhpbbInDotnet.Languages
 
         #endregion Translation declarations
 
-        public TranslationProvider(ILogger logger, IAppCache cache, IForumDbContext context, ICommonUtils utils, IHttpContextAccessor httpContextAccessor)
+        public TranslationProvider(ILogger logger, IAppCache cache, IForumDbContext context, IHttpContextAccessor httpContextAccessor)
         {
             _logger = logger;
             _context = context;
@@ -85,7 +85,7 @@ namespace PhpbbInDotnet.Languages
             _basicText = new Lazy<TextTranslation>(() => new TextTranslation(nameof(BasicText), _logger, cache));
             _aboutCookies = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(AboutCookies), _logger, cache));
             _email = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Email), _logger, cache));
-            _enums = new Lazy<EnumTranslation>(() => new EnumTranslation(_logger, cache, utils));
+            _enums = new Lazy<EnumTranslation>(() => new EnumTranslation(_logger, cache));
             _jsText = new Lazy<JavaScriptTranslation>(() => new JavaScriptTranslation(_logger, cache));
             _errors = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Errors), _logger, cache));
             _postingGuide = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(PostingGuide), _logger, cache));
@@ -134,8 +134,8 @@ namespace PhpbbInDotnet.Languages
                       try
                       {
                           var parsed = new CultureInfo(language).TwoLetterISOLanguageName;
-
-                          if (_context.PhpbbLang.AsNoTracking().Any(lang => lang.LangIso == parsed) &&
+                          
+                          if (_context.GetSqlExecuter().ExecuteScalar<bool>("SELECT count(1) FROM phpbb_lang WHERE lang_iso = @parsed", new { parsed }) &&
                               new Translation[] { BasicText, AboutCookies, Email, Enums, JSText, Errors, PostingGuide, TermsAndConditions, Moderator, Admin, CustomBBCodeGuide, AttachmentGuide, BBCodes }
                               .All(x => x.Exists(parsed)))
                           {

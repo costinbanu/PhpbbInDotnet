@@ -1,5 +1,4 @@
-﻿using Dapper;
-using LazyCache;
+﻿using LazyCache;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
@@ -7,8 +6,7 @@ using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Domain;
-using System;
+using Serilog;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Web;
@@ -36,8 +34,8 @@ namespace PhpbbInDotnet.Forum.Pages
         public int ForumId { get; set; }
 
         public ViewForumModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, IBBCodeRenderingService renderingService,
-            IConfiguration config, ICommonUtils utils, ITranslationProvider translationProvider)
-            : base(context, forumService, userService, cache, utils, translationProvider) 
+            IConfiguration config, ILogger logger, ITranslationProvider translationProvider)
+            : base(context, forumService, userService, cache, logger, translationProvider) 
         {
             _config = config;
             _renderingService = renderingService;
@@ -77,19 +75,19 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public IActionResult OnGetNewPosts()
         {
-            Utils.HandleErrorAsWarning(new Exception($"Deprecated route requested for user '{GetCurrentUser().Username}' - ViewForum/{nameof(OnGetNewPosts)}."));
+            Logger.Warning("Deprecated route requested for user '{user}' - ViewForum/{name}.", GetCurrentUser().Username, nameof(OnGetNewPosts));
             return RedirectToPage("NewPosts");
         }
 
         public IActionResult OnGetOwnPosts()
         {
-            Utils.HandleErrorAsWarning(new Exception($"Deprecated route requested for user '{GetCurrentUser().Username}' - ViewForum/{nameof(OnGetOwnPosts)}."));
+            Logger.Warning("Deprecated route requested for user '{user}' - ViewForum/{name}.", GetCurrentUser().Username, nameof(OnGetOwnPosts));
             return RedirectToPage("OwnPosts");
         }
 
         public IActionResult OnGetDrafts()
         {
-            Utils.HandleErrorAsWarning(new Exception($"Deprecated route requested for user '{GetCurrentUser().Username}' - ViewForum/{nameof(OnGetDrafts)}."));
+            Logger.Warning("Deprecated route requested for user '{user}' - ViewForum/{name}.", GetCurrentUser().Username, nameof(OnGetDrafts));
             return RedirectToPage("Drafts");
         }
 

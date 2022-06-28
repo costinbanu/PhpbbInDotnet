@@ -1,9 +1,9 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials.Admin._AdminForumsPartialModel
 @using PhpbbInDotnet.Domain
+@using PhpbbInDotnet.Domain.Utilities
 
 @inject Services.IForumTreeService _forumTreeService
 @inject Services.IAdminForumService _adminForumService
-@inject ICommonUtils _utils
 @inject Languages.ITranslationProvider _translationProvider
 
 <environment include="Development">
@@ -108,7 +108,7 @@
                     @Html.Raw(_translationProvider.Admin[Model.Language, "FORUM_TYPE"])
                 </div>
                 <div class="FlexRight PostInputWidth">
-                    @Html.DropDownList("dto.forumType", _utils.EnumToDropDownList<ForumType>(Model.Forum?.ForumType ?? ForumType.SubForum, ft => _translationProvider.Enums[Model.Language, ft]))
+                    @Html.DropDownList("dto.forumType", EnumUtility.EnumToDropDownList<ForumType>(Model.Forum?.ForumType ?? ForumType.SubForum, ft => _translationProvider.Enums[Model.Language, ft]))
                 </div>
             </div>
             <hr class="SubtypeSeparator" />

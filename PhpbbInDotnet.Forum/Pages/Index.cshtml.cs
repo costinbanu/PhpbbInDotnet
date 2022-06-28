@@ -1,13 +1,12 @@
+using LazyCache;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Domain;
+using Serilog;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using PhpbbInDotnet.Languages;
-using LazyCache;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -17,8 +16,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public HashSet<ForumTree>? Tree { get; private set; }
 
-        public IndexModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, ITranslationProvider translationProvider)
-            : base(context, forumService, userService, cache, utils, translationProvider)
+        public IndexModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger, ITranslationProvider translationProvider)
+            : base(context, forumService, userService, cache, logger, translationProvider)
         {
         }
 

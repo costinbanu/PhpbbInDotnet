@@ -7,6 +7,7 @@ using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,18 +21,18 @@ namespace PhpbbInDotnet.Services
         private readonly IPostService _postService;
         private readonly IStorageService _storageService;
         private readonly IOperationLogService _operationLogService;
-        private readonly ICommonUtils _utils;
+        private readonly ILogger _logger;
         private readonly ITranslationProvider _translationProvider;
 
-        public ModeratorService(IForumDbContext context, IPostService postService, IStorageService storageService, ICommonUtils utils, ITranslationProvider translationProvider,
-            IOperationLogService operationLogService)
+        public ModeratorService(IForumDbContext context, IPostService postService, IStorageService storageService, ITranslationProvider translationProvider,
+            IOperationLogService operationLogService, ILogger logger)
         {
-            _utils = utils;
             _translationProvider = translationProvider;
             _context = context;
             _postService = postService;
             _storageService = storageService;
             _operationLogService = operationLogService;
+            _logger = logger;
         }
 
         #region Topic
@@ -57,7 +58,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = _logger.ErrorWithId(ex);
                 return (string.Format(_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
@@ -98,7 +99,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = _logger.ErrorWithId(ex);
                 return (string.Format(_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
@@ -122,7 +123,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = _logger.ErrorWithId(ex);
                 return (string.Format(_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
@@ -182,7 +183,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = _logger.ErrorWithId(ex);
                 return (string.Format(_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
@@ -217,7 +218,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = _logger.ErrorWithId(ex);
                 return (string.Format(_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
@@ -252,7 +253,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = _logger.ErrorWithId(ex);
                 return (string.Format(_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
@@ -307,7 +308,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = _logger.ErrorWithId(ex);
                 return (string.Format(_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
@@ -357,7 +358,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = _logger.ErrorWithId(ex);
                 return (string.Format(_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
@@ -385,7 +386,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = _logger.ErrorWithId(ex);
                 return (string.Format(_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
@@ -486,7 +487,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = _logger.ErrorWithId(ex);
                 return (string.Format(_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }

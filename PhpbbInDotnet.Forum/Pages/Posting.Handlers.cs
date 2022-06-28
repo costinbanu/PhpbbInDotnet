@@ -209,7 +209,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     }
                     catch (Exception ex)
                     {
-                        Utils.HandleErrorAsWarning(ex);
+                        Logger.Warning(ex);
                     }
                 }
 

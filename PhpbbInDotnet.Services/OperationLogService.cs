@@ -12,6 +12,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Serilog;
 
 namespace PhpbbInDotnet.Services
 {
@@ -21,13 +22,13 @@ namespace PhpbbInDotnet.Services
 
         private readonly IForumDbContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly ICommonUtils _utils;
+        private readonly ILogger _logger;
 
-        public OperationLogService(IForumDbContext context, IHttpContextAccessor httpContextAccessor, ICommonUtils utils)
+        public OperationLogService(IForumDbContext context, IHttpContextAccessor httpContextAccessor, ILogger logger)
         {
             _context = context;
             _httpContextAccessor = httpContextAccessor;
-            _utils = utils;
+            _logger = logger;
         }
 
         public async Task<(List<OperationLogSummary> PageItems, int Count)> GetOperationLogs(OperationLogType? logType, string? authorName = null, int page = 1)
@@ -88,27 +89,27 @@ namespace PhpbbInDotnet.Services
 
         public async Task LogAdminUserAction(AdminUserActions action, int adminUserId, PhpbbUsers user, string? additionalData = null)
             => await WithErrorHandling(async () =>
-                await Log(_utils.EnumString(action), $"User Id: {user.UserId}, Username: {user.Username}, Additional data: {additionalData}", adminUserId, OperationLogType.Administrator)
+                await Log(EnumUtility.ExpandEnum(action), $"User Id: {user.UserId}, Username: {user.Username}, Additional data: {additionalData}", adminUserId, OperationLogType.Administrator)
             );
 
         public async Task LogAdminRankAction(AdminRankActions action, int adminUserId, PhpbbRanks rank)
             => await WithErrorHandling(async () =>
-                await Log(_utils.EnumString(action), $"Rank id: {rank.RankId}, Rank name: {rank.RankTitle}", adminUserId, OperationLogType.Administrator)
+                await Log(EnumUtility.ExpandEnum(action), $"Rank id: {rank.RankId}, Rank name: {rank.RankTitle}", adminUserId, OperationLogType.Administrator)
             );
 
         public async Task LogAdminGroupAction(AdminGroupActions action, int adminUserId, PhpbbGroups group)
             => await WithErrorHandling(async () =>
-                await Log(_utils.EnumString(action), $"Group id: {group.GroupId}, Group name: {group.GroupName}", adminUserId, OperationLogType.Administrator)
+                await Log(EnumUtility.ExpandEnum(action), $"Group id: {group.GroupId}, Group name: {group.GroupName}", adminUserId, OperationLogType.Administrator)
             );
 
         public async Task LogAdminBanListAction(AdminBanListActions action, int adminUserId, UpsertBanListDto banList)
             => await WithErrorHandling(async () =>
-                await Log(_utils.EnumString(action), $"Ban list id: {banList.BanId}, Ban list email: {banList.BanEmail}, Ban list IP: {banList.BanIp}", adminUserId, OperationLogType.Administrator)
+                await Log(EnumUtility.ExpandEnum(action), $"Ban list id: {banList.BanId}, Ban list email: {banList.BanEmail}, Ban list IP: {banList.BanIp}", adminUserId, OperationLogType.Administrator)
             );
 
         public async Task LogAdminForumAction(AdminForumActions action, int adminUserId, PhpbbForums forum)
             => await WithErrorHandling(async () =>
-                await Log(_utils.EnumString(action), $"Forum Id: {forum.ForumId}, Forum name: {forum.ForumName}", adminUserId, OperationLogType.Administrator, forum.ForumId)
+                await Log(EnumUtility.ExpandEnum(action), $"Forum Id: {forum.ForumId}, Forum name: {forum.ForumName}", adminUserId, OperationLogType.Administrator, forum.ForumId)
             );
 
         public async Task LogModeratorTopicAction(ModeratorTopicActions action, int modUserId, int topicId, string? additionalData = null)
@@ -117,7 +118,7 @@ namespace PhpbbInDotnet.Services
                 var topic = await (_context.GetSqlExecuter()).QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
                 if (topic != null)
                 {
-                    await Log(_utils.EnumString(action), $"Topic Id: {topicId}, Topic title: {topic.TopicTitle}, Additional data: {additionalData}", modUserId, OperationLogType.Moderator, topic.ForumId, topicId);
+                    await Log(EnumUtility.ExpandEnum(action), $"Topic Id: {topicId}, Topic title: {topic.TopicTitle}, Additional data: {additionalData}", modUserId, OperationLogType.Moderator, topic.ForumId, topicId);
                 }
             });
 
@@ -132,11 +133,11 @@ namespace PhpbbInDotnet.Services
             });
 
         public async Task LogModeratorPostAction(ModeratorPostActions action, int modUserId, PhpbbPosts post, string? additionalData = null)
-            => await WithErrorHandling(async () => await Log(_utils.EnumString(action), $"Post Id: {post.PostId}, Post subject: {post.PostSubject}, Additional data: {additionalData}", modUserId, OperationLogType.Moderator, post.ForumId, post.TopicId));
+            => await WithErrorHandling(async () => await Log(EnumUtility.ExpandEnum(action), $"Post Id: {post.PostId}, Post subject: {post.PostSubject}, Additional data: {additionalData}", modUserId, OperationLogType.Moderator, post.ForumId, post.TopicId));
 
         public async Task LogUserProfileAction(UserProfileActions action, int editingUser, PhpbbUsers targetUser, string? additionalData = null)
             => await WithErrorHandling(async () =>
-                await Log(_utils.EnumString(action), $"User {editingUser} has changed the profile of user {targetUser.UserId} ({targetUser.UsernameClean}), Additional data: {additionalData}", editingUser, OperationLogType.User)
+                await Log(EnumUtility.ExpandEnum(action), $"User {editingUser} has changed the profile of user {targetUser.UserId} ({targetUser.UsernameClean}), Additional data: {additionalData}", editingUser, OperationLogType.User)
             );
 
         private async Task Log(string action, string logData, int userId, OperationLogType operationType, int forumId = 0, int topicId = 0)
@@ -166,7 +167,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                _utils.HandleErrorAsWarning(ex);
+                _logger.WarningWithId(ex);
             }
         }
 
@@ -178,7 +179,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                _utils.HandleErrorAsWarning(ex);
+                _logger.WarningWithId(ex);
                 return default;
             }
         }
@@ -191,7 +192,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                _utils.HandleErrorAsWarning(ex);
+                _logger.WarningWithId(ex);
                 return default;
             }
         }

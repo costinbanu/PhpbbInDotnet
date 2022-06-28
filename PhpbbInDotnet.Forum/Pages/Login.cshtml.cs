@@ -9,12 +9,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Pages.CustomPartials.Email;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Domain;
-using PhpbbInDotnet.Domain.Utilities;
-using PhpbbInDotnet.Domain.Extensions;
 using System;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
@@ -28,10 +28,11 @@ namespace PhpbbInDotnet.Forum.Pages
     public class LoginModel : PageModel
     {
         private readonly IForumDbContext _context;
-        private readonly ICommonUtils _utils;
         private readonly IAppCache _cache;
         private readonly IUserService _userService;
         private readonly IConfiguration _config;
+        private readonly IEncryptionService _encryptionService;
+        private readonly IEmailService _emailService;
 
         [BindProperty, Required]
         public string? UserName { get; set; }
@@ -74,14 +75,16 @@ namespace PhpbbInDotnet.Forum.Pages
         public LoginMode Mode { get; private set; }
         public ITranslationProvider TranslationProvider { get; }
 
-        public LoginModel(IForumDbContext context, ICommonUtils utils, IAppCache cache, IUserService userService, IConfiguration config, ITranslationProvider translationProvider)
+        public LoginModel(IForumDbContext context, IAppCache cache, IUserService userService, IConfiguration config, ITranslationProvider translationProvider,
+            IEncryptionService encryptionService, IEmailService emailService)
         {
             _context = context;
-            _utils = utils;
             _cache = cache;
             _userService = userService;
             _config = config;
             TranslationProvider = translationProvider;
+            _encryptionService = encryptionService;
+            _emailService = emailService;
         }
 
         public IActionResult OnGet()
@@ -104,7 +107,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             var user = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == UserId);
 
-            if (user == null || ResetPasswordCode != await _utils.DecryptAES(user.UserNewpasswd, Init))
+            if (user == null || ResetPasswordCode != await _encryptionService.DecryptAES(user.UserNewpasswd, Init))
             {
                 ModelState.AddModelError(nameof(PwdResetErrorMessage), TranslationProvider.Errors[TranslationProvider.GetLanguage(), "CONFIRM_ERROR"]);
                 return Page();
@@ -173,7 +176,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 var user = _context.PhpbbUsers.FirstOrDefault(
                     x => x.UsernameClean == StringUtility.CleanString(UserNameForPwdReset) &&
-                    x.UserEmailHash == HashingUtility.ComputeCrc64Hash(EmailForPwdReset!)
+                    x.UserEmailHash == HashUtility.ComputeCrc64Hash(EmailForPwdReset!)
                 );
 
                 if (user == null)
@@ -185,26 +188,22 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
 
                 var resetKey = Guid.NewGuid().ToString("n");
-                var (encrypted, iv) = await _utils.EncryptAES(resetKey);
+                var (encrypted, iv) = await _encryptionService.EncryptAES(resetKey);
                 user.UserNewpasswd = encrypted;
 
                 var dbChangesTask = _context.SaveChangesAsync();
 
-                var emailTask = _utils.SendEmail(
+                var emailTask = _emailService.SendEmail(
                     to: EmailForPwdReset!,
                     subject: string.Format(TranslationProvider.Email[lang, "RESETPASS_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName")),
-                    body: await _utils.RenderRazorViewToString(
-                        "_ResetPasswordPartial",
-                        new _ResetPasswordPartialModel
-                        {
-                            Code = resetKey,
-                            IV = iv,
-                            UserId = user.UserId,
-                            UserName = user.Username
-                        },
-                        PageContext,
-                        HttpContext
-                    ));
+                    bodyRazorViewName: "_ResetPasswordPartial",
+                    bodyRazorViewModel: new _ResetPasswordPartialModel
+                    {
+                        Code = resetKey,
+                        IV = iv,
+                        UserId = user.UserId,
+                        UserName = user.Username
+                    });
 
                 await Task.WhenAll(dbChangesTask, emailTask);
             }
@@ -236,7 +235,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }
 
             var user = _context.PhpbbUsers.FirstOrDefault(u => u.UserId == UserId);
-            if (user == null || ResetPasswordCode != await _utils.DecryptAES(user.UserNewpasswd, Init))
+            if (user == null || ResetPasswordCode != await _encryptionService.DecryptAES(user.UserNewpasswd, Init))
             {
                 ModelState.AddModelError(nameof(PwdResetErrorMessage), TranslationProvider.Errors[lang, "CONFIRM_ERROR"]);
                 Mode = LoginMode.PasswordReset;

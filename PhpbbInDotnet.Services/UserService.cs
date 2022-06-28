@@ -14,6 +14,7 @@ using System.Data;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Serilog;
 
 namespace PhpbbInDotnet.Services
 {
@@ -21,10 +22,11 @@ namespace PhpbbInDotnet.Services
     {
         private readonly IForumDbContext _context;
         private readonly IConfiguration _config;
-        private readonly ICommonUtils _utils;
+        private readonly ILogger _logger;
+        private readonly IEmailService _emailService;
         private readonly ITranslationProvider _translationProvider;
+        
         private IEnumerable<PhpbbAclRoles>? _adminRoles;
-
         private IEnumerable<PhpbbAclRoles>? _modRoles;
         private IEnumerable<PhpbbAclRoles>? _userRoles;
         private List<KeyValuePair<string, int>>? _userMap;
@@ -32,12 +34,13 @@ namespace PhpbbInDotnet.Services
         private static PhpbbUsers? _anonymousDbUser;
         private static ClaimsPrincipal? _anonymousClaimsPrincipal;
 
-        public UserService(ICommonUtils utils, IForumDbContext context, IConfiguration config, ITranslationProvider translationProvider)
+        public UserService(IForumDbContext context, IConfiguration config, ITranslationProvider translationProvider, ILogger logger, IEmailService emailService)
         {
-            _utils = utils;
             _translationProvider = translationProvider;
             _context = context;
             _config = config;
+            _logger = logger;
+            _emailService = emailService;
         }
 
         public async Task<bool> IsUserAdminInForum(AuthenticatedUserExpanded? user, int forumId)
@@ -275,25 +278,21 @@ namespace PhpbbInDotnet.Services
                 );
 
                 var emailSubject = string.Format(_translationProvider.Email[receiver.Language!, "NEWPM_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
-                await _utils.SendEmail(
+                await _emailService.SendEmail(
                     to: receiver.EmailAddress!,
                     subject: emailSubject,
-                    body: await _utils.RenderRazorViewToString(
-                        "_NewPMEmailPartial",
-                        new NewPMEmailDto
-                        {
-                            SenderName = senderName,
-                            Language = receiver.Language!
-                        },
-                        pageContext,
-                        httpContext
-                    ));
+                    bodyRazorViewName: "_NewPMEmailPartial",
+                    bodyRazorViewModel: new NewPMEmailDto
+                    {
+                        SenderName = senderName,
+                        Language = receiver.Language!
+                    });
 
                 return ("OK", true);
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex);
+                _logger.Error(ex);
                 return (_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }
@@ -320,7 +319,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex);
+                _logger.Error(ex);
                 return (_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }
@@ -347,7 +346,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex);
+                _logger.Error(ex);
                 return (_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }
@@ -372,7 +371,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex);
+                _logger.Error(ex);
                 return (_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }

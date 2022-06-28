@@ -17,8 +17,12 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddScoped<IBBCodeRenderingService, BBCodeRenderingService>();
             services.AddScoped<IStatisticsService, StatisticsService>();
             services.AddScoped<IOperationLogService, OperationLogService>();
+
             services.AddSingleton<ITimeService, TimeService>();
             services.AddSingleton<IFileInfoService, FileInfoService>();
+            services.AddSingleton<IEmailService, EmailService>();
+            services.AddSingleton<IEncryptionService, EncryptionService>();
+            services.AddSingleton<IRazorViewService, RazorViewService>();
 
             services.AddHostedService<ScheduledTasksService>();
 

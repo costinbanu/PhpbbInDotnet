@@ -4,9 +4,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Domain;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -19,7 +20,6 @@ namespace PhpbbInDotnet.Forum.Pages
     {
         private readonly IForumDbContext _context;
         private readonly IUserService _userService;
-        private readonly ICommonUtils _utils;
         private readonly IAppCache _cache;
 
         [BindProperty(SupportsGet = true)]
@@ -37,12 +37,11 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public ITranslationProvider TranslationProvider { get; }
 
-        public ForumLoginModel(IForumDbContext context, IUserService userService, ITranslationProvider translationProvider, ICommonUtils utils, IAppCache cache)
+        public ForumLoginModel(IForumDbContext context, IUserService userService, ITranslationProvider translationProvider, IAppCache cache)
         {
             _context = context;
             _userService = userService;
             TranslationProvider = translationProvider;
-            _utils = utils;
             _cache = cache;
         }
 
@@ -112,7 +111,7 @@ namespace PhpbbInDotnet.Forum.Pages
             else
             {
                 var userId = _userService.ClaimsPrincipalToAuthenticatedUser(User)?.UserId ?? Constants.ANONYMOUS_USER_ID;
-                _cache.Add(_utils.GetForumLoginCacheKey(userId, ForumId), 1, TimeSpan.FromMinutes(30));
+                _cache.Add(CacheUtility.GetForumLoginCacheKey(userId, ForumId), 1, TimeSpan.FromMinutes(30));
                 if (string.IsNullOrWhiteSpace(ReturnUrl))
                 {
                     return RedirectToPage("ViewForum", new { ForumId });

@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System;
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -28,6 +29,30 @@ namespace PhpbbInDotnet.Domain.Utilities
             }
 
             return stringBuilder.ToString().ToLower().Normalize(NormalizationForm.FormC);
+        }
+
+        public static string HtmlSafeWhitespace(int count)
+        {
+            var options = new[] { " ", "&nbsp;" };
+            var sb = new StringBuilder();
+            for (int i = 0; i < count; i++)
+            {
+                sb.Append(options[i % 2]);
+            }
+            return sb.ToString();
+        }
+
+        public static string ReadableFileSize(long fileSizeInBytes)
+        {
+            var suf = new[] { "B", "KB", "MB", "GB", "TB", "PB", "EB" };
+            if (fileSizeInBytes == 0)
+            {
+                return "0" + suf[0];
+            }
+            var bytes = Math.Abs(fileSizeInBytes);
+            var place = Convert.ToInt32(Math.Floor(Math.Log(bytes, 1024)));
+            var num = Math.Round(bytes / Math.Pow(1024, place), 2);
+            return $"{(Math.Sign(fileSizeInBytes) * num).ToString("##.##", CultureInfo.InvariantCulture)} {suf[place]}";
         }
     }
 }

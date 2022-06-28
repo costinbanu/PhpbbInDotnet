@@ -1,11 +1,11 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials.Admin._AdminViewLogsPartialModel
 
 @using Domain
-@using Domain.Extensions;
+@using Domain.Extensions
+@using Domain.Utilities
 @using System.Web
 
 @inject Languages.ITranslationProvider _translationProvider
-@inject ICommonUtils _utils
 @inject Services.IOperationLogService _operationLogService
 
 @{
@@ -29,7 +29,7 @@
 <form method="get">
     @Html.DropDownListFor(
         m => m.LogType,
-        _utils.EnumToDropDownList(selectedItem: Model.LogType, textTransform: x => x.ToString()),
+        EnumUtility.EnumToDropDownList(selectedItem: Model.LogType, textTransform: x => x.ToString()),
         _translationProvider.Admin[Model.Language, "SORT_BY_LOG_TYPE"],
         new { style = "height: 30px; padding-top: 0px" }
     )

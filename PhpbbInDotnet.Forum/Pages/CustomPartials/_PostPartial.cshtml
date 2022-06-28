@@ -8,7 +8,6 @@
 @using Objects
 
 @inject Services.IUserService _userService
-@inject ICommonUtils _utils
 @inject Database.IForumDbContext _context
 @inject Services.IBBCodeRenderingService _renderingService
 @inject Services.IUserService _userService
@@ -30,7 +29,7 @@
         Model.Post.PostText = _translationProvider.BasicText[Model.Language, "CONTENT_HIDDEN_WARNING_BBCODE", Casing.FirstUpper];
     }
 
-    await _renderingService.ProcessPost(Model.Post, Model.ParentPageContext!, Model.ParentHttpContext!, true, Model.ToHighlight);
+    await _renderingService.ProcessPost(Model.Post, true, Model.ToHighlight);
 }
 
 @if (!Model.IsPostFirstInPage)

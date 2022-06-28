@@ -1,17 +1,16 @@
 ﻿using Dapper;
 using LazyCache;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Domain;
-using PhpbbInDotnet.Domain.Utilities;
-using PhpbbInDotnet.Domain.Extensions;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -27,19 +26,21 @@ namespace PhpbbInDotnet.Services
         private readonly IAppCache _cache;
         private readonly IConfiguration _config;
         private readonly IOperationLogService _operationLogService;
-        private readonly ICommonUtils _utils;
         private readonly ITranslationProvider _translationProvider;
+        private readonly ILogger _logger;
+        private readonly IEmailService _emailService;
 
-        public AdminUserService(IForumDbContext context, IPostService postService, IAppCache cache, IConfiguration config, ICommonUtils utils,
-            ITranslationProvider translationProvider, IOperationLogService operationLogService)
+        public AdminUserService(IForumDbContext context, IPostService postService, IAppCache cache, IConfiguration config, ITranslationProvider translationProvider,
+            IOperationLogService operationLogService, ILogger logger, IEmailService emailService)
         {
             _context = context;
             _postService = postService;
             _cache = cache;
             _config = config;
             _operationLogService = operationLogService;
-            _utils = utils;
             _translationProvider = translationProvider;
+            _logger = logger;
+            _emailService = emailService;
         }
 
         #region User
@@ -103,12 +104,12 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = _logger.ErrorWithId(ex);
                 return (string.Format(_translationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
-        public async Task<(string Message, bool? IsSuccess)> ManageUser(AdminUserActions? action, int? userId, PageContext pageContext, HttpContext httpContext, int adminUserId)
+        public async Task<(string Message, bool? IsSuccess)> ManageUser(AdminUserActions? action, int? userId, int adminUserId)
         {
             var lang = _translationProvider.GetLanguage();
             if (userId == Constants.ANONYMOUS_USER_ID)
@@ -175,19 +176,15 @@ namespace PhpbbInDotnet.Services
                 {
                     case AdminUserActions.Activate:
                         {
-                            await _utils.SendEmail(
+                            await _emailService.SendEmail(
                                 to: user.UserEmail,
                                 subject: string.Format(_translationProvider.Email[user.UserLang, "ACCOUNT_ACTIVATED_NOTIFICATION_SUBJECT_FORMAT"], forumName),
-                                body: await _utils.RenderRazorViewToString(
-                                    "_AccountActivatedNotification",
-                                    new AccountActivatedNotificationDto
-                                    {
-                                        Username = user.Username,
-                                        Language = user.UserLang
-                                    },
-                                    pageContext,
-                                    httpContext
-                                ));
+                                bodyRazorViewName: "_AccountActivatedNotification",
+                                bodyRazorViewModel:    new AccountActivatedNotificationDto
+                                {
+                                    Username = user.Username,
+                                    Language = user.UserLang
+                                });
 
                             user.UserInactiveReason = UserInactiveReason.NotInactive;
                             user.UserInactiveTime = 0L;
@@ -276,10 +273,11 @@ namespace PhpbbInDotnet.Services
                                 break;
                             }
 
-                            await _utils.SendEmail(
+                            await _emailService.SendEmail(
                                 to: user.UserEmail,
                                 subject: subject,
-                                body: await _utils.RenderRazorViewToString("_WelcomeEmailPartial", model, pageContext, httpContext));
+                                bodyRazorViewName: "_WelcomeEmailPartial",
+                                bodyRazorViewModel: model);
 
                             user.UserReminded = 1;
                             user.UserRemindedTime = DateTime.UtcNow.ToUnixTimestamp();
@@ -301,7 +299,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = _logger.ErrorWithId(ex);
                 return (string.Format(_translationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
@@ -318,7 +316,7 @@ namespace PhpbbInDotnet.Services
                 var userId = searchParameters?.UserId ?? 0;
                 var query = from u in _context.PhpbbUsers.AsNoTracking()
                             where (string.IsNullOrWhiteSpace(username) || u.UsernameClean.Contains(StringUtility.CleanString(username)))
-                                && (string.IsNullOrWhiteSpace(email) || u.UserEmailHash == HashingUtility.ComputeCrc64Hash(email))
+                                && (string.IsNullOrWhiteSpace(email) || u.UserEmailHash == HashUtility.ComputeCrc64Hash(email))
                                 && (userId == 0 || u.UserId == userId)
                                 && u.UserRegdate >= rf && u.UserRegdate <= rt
                                 && u.UserId != Constants.ANONYMOUS_USER_ID
@@ -354,12 +352,12 @@ namespace PhpbbInDotnet.Services
             }
             catch (DateInputException die)
             {
-                _utils.HandleError(die.InnerException!, die.Message);
+                _logger.ErrorWithId(die.InnerException!, die.Message);
                 return (_translationProvider.Admin[lang, "ONE_OR_MORE_INVALID_INPUT_DATES"], false, new List<PhpbbUsers>());
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = _logger.ErrorWithId(ex);
                 return (string.Format(_translationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false, new List<PhpbbUsers>());
             }
 
@@ -444,7 +442,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = _logger.ErrorWithId(ex);
                 return (string.Format(_translationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
@@ -600,7 +598,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = _logger.ErrorWithId(ex);
                 return (string.Format(_translationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
@@ -671,7 +669,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                var id = _utils.HandleError(ex);
+                var id = _logger.ErrorWithId(ex);
                 return (string.Format(_translationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
