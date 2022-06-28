@@ -35,7 +35,7 @@
                 const canReplyInTopic = (topic) => @Json.Serialize(await Model.IsCurrentUserModeratorHere(Model.ForumId ?? 0)) || !topic.isLocked;
                 if (topicDisplay) {
                     topicDisplay.empty();
-                    let option = new Option(@Json.Serialize(Model.LanguageProvider.BasicText[lang, "CHOOSE_DESTINATION_TOPIC"]), 0);
+                    let option = new Option(@Json.Serialize(Model.TranslationProvider.BasicText[lang, "CHOOSE_DESTINATION_TOPIC"]), 0);
                     option.disabled = true;
                     topicDisplay.append(option);
                     topics.filter(canReplyInTopic).forEach(t => {
@@ -54,7 +54,7 @@
         </script>
     }
 
-    <h3>@Html.Raw(Model.LanguageProvider.BasicText[lang, "CHOOSE_DESTINATION_FORUM"])</h3>
+    <h3>@Html.Raw(Model.TranslationProvider.BasicText[lang, "CHOOSE_DESTINATION_FORUM"])</h3>
     <div>
         @await Html.PartialAsync(
             "_ForumTreePartial",
@@ -71,7 +71,7 @@
         <input type="hidden" name="DestinationForumId" id="DestinationForumId" />
         @if (Model.ShowTopicSelector)
         {
-            <h3>@Html.Raw(Model.LanguageProvider.BasicText[lang, "CHOOSE_DESTINATION_TOPIC"])</h3>
+            <h3>@Html.Raw(Model.TranslationProvider.BasicText[lang, "CHOOSE_DESTINATION_TOPIC"])</h3>
             <select name="DestinationTopicId" id="DestinationTopicId" />
         }
         @if (Model.IsModeratorConfirmation)
@@ -91,7 +91,7 @@
             <input type="hidden" name="handler" value="@Model.DestinationHandler" />
         }
         <p></p>
-        <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[lang, "SUBMIT", Casing.FirstUpper])" />
+        <input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[lang, "SUBMIT", Casing.FirstUpper])" />
     </form>
 }
 else if (Model.IsDestinationConfirmation)
@@ -108,7 +108,7 @@ else
 {
     <span style="font-size:1.2em">@Html.Raw(Model.Message)</span>
     <p>&nbsp;</p>
-    <a asp-page="./Login">@Html.Raw(Model.LanguageProvider.BasicText[lang, "LOGIN", Domain.Casing.FirstUpper])</a>
+    <a asp-page="./Login">@Html.Raw(Model.TranslationProvider.BasicText[lang, "LOGIN", Domain.Casing.FirstUpper])</a>
     <br />
-    <a asp-page="./">@Html.Raw(Model.LanguageProvider.BasicText[lang, "HOME", Domain.Casing.FirstUpper])</a>
+    <a asp-page="./">@Html.Raw(Model.TranslationProvider.BasicText[lang, "HOME", Domain.Casing.FirstUpper])</a>
 }

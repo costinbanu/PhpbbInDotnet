@@ -2,10 +2,10 @@
 @using Domain
 @using Domain.Extensions
 
-@inject Languages.LanguageProvider _languageProvider
+@inject Languages.ITranslationProvider _translationProvider
 
 <h4 onclick="expandSection('inactiveUsersSection', 'inactiveUsersChar')" style="cursor:pointer" id="inactiveUsersTitle">
-    @Html.Raw(_languageProvider.Admin[Model.Language, "INACTIVE_USERS"])
+    @Html.Raw(_translationProvider.Admin[Model.Language, "INACTIVE_USERS"])
     <span id="inactiveUsersChar">&#x1F53D;</span>
 </h4>
 <div id="inactiveUsersSection" style="display:none">
@@ -36,8 +36,8 @@
                 }
             </script>
             <form method="post" id="batchAdminUsers" name="batchAdminUsers" asp-page-handler="BatchUserManagement">
-                <button type="button" onclick="selectAllUsers()" class="MyButton SpacedButton">@Html.Raw(_languageProvider.Admin[Model.Language, "SELECT_ALL_INACTIVE_USERS"])</button>
-                <input type="submit" value="@Html.Raw(_languageProvider.Admin[Model.Language, "DELETE_SELECTED_INACTIVE_USERS"])" onclick="return confirm('@Html.Raw(_languageProvider.Admin[Model.Language, "DELETE_INACTIVE_USERS_CONFIRMATION"])');" class="MyButton SpacedButton" />
+                <button type="button" onclick="selectAllUsers()" class="MyButton SpacedButton">@Html.Raw(_translationProvider.Admin[Model.Language, "SELECT_ALL_INACTIVE_USERS"])</button>
+                <input type="submit" value="@Html.Raw(_translationProvider.Admin[Model.Language, "DELETE_SELECTED_INACTIVE_USERS"])" onclick="return confirm('@Html.Raw(_translationProvider.Admin[Model.Language, "DELETE_INACTIVE_USERS_CONFIRMATION"])');" class="MyButton SpacedButton" />
             </form>
         }
     }
@@ -84,7 +84,7 @@
     }
 </script>
 <h4 onclick="expandSection('searchUsersSection', 'searchUsersChar')" style="cursor:pointer" id="searchUsersTitle">
-    @Html.Raw(_languageProvider.BasicText[Model.Language, "SEARCH_FOR_USER"])
+    @Html.Raw(_translationProvider.BasicText[Model.Language, "SEARCH_FOR_USER"])
     @if (Model.WasSearchPerformed|| (Model.SearchResults?.Any() ?? false))
     {
         <span id="searchUsersChar">&#x1F53C;</span>
@@ -98,7 +98,7 @@
     <form method="post" id="userSearch" asp-page-handler="UserSearch">
         <div class="FlexCenter">
             <div class="FlexCaption">
-                @Html.Raw(_languageProvider.BasicText[Model.Language, "USERNAME", Casing.FirstUpper])
+                @Html.Raw(_translationProvider.BasicText[Model.Language, "USERNAME", Casing.FirstUpper])
             </div>
             <div class="FlexRight PostInputWidth">
                 <input type="text" asp-for="SearchParameters!.Username" />
@@ -106,7 +106,7 @@
         </div>
         <div class="FlexCenter FlexSpaced">
             <div class="FlexCaption">
-                @Html.Raw(_languageProvider.BasicText[Model.Language, "EMAIL", Casing.FirstUpper])
+                @Html.Raw(_translationProvider.BasicText[Model.Language, "EMAIL", Casing.FirstUpper])
             </div>
             <div class="FlexRight PostInputWidth">
                 <input type="text" asp-for="SearchParameters!.Email" />
@@ -122,31 +122,31 @@
         </div>
         <div class="FlexCenter FlexSpaced">
             <div class="FlexCaption">
-                @Html.Raw(_languageProvider.BasicText[Model.Language, "REGISTERED", Casing.FirstUpper])
+                @Html.Raw(_translationProvider.BasicText[Model.Language, "REGISTERED", Casing.FirstUpper])
             </div>
             <div class="FlexRight PostInputWidth">
-                @Html.Raw(_languageProvider.BasicText[Model.Language, "FROM", Casing.FirstUpper])<br />
+                @Html.Raw(_translationProvider.BasicText[Model.Language, "FROM", Casing.FirstUpper])<br />
                 <input type="text" asp-for="SearchParameters!.RegisteredFrom" class="DummyDatePicker" /><br />
-                @Html.Raw(_languageProvider.BasicText[Model.Language, "TO", Casing.FirstUpper])<br />
+                @Html.Raw(_translationProvider.BasicText[Model.Language, "TO", Casing.FirstUpper])<br />
                 <input type="text" asp-for="SearchParameters!.RegisteredTo" class="DummyDatePicker" /><br />
             </div>
         </div>
         <div class="FlexCenter FlexSpaced">
             <div class="FlexCaption">
-                @Html.Raw(_languageProvider.Admin[Model.Language, "LAST_ACTIVE"])
+                @Html.Raw(_translationProvider.Admin[Model.Language, "LAST_ACTIVE"])
             </div>
             <div class="FlexRight PostInputWidth">
-                @Html.Raw(_languageProvider.BasicText[Model.Language, "FROM", Casing.FirstUpper])<br />
+                @Html.Raw(_translationProvider.BasicText[Model.Language, "FROM", Casing.FirstUpper])<br />
                 <input type="text" asp-for="SearchParameters!.LastActiveFrom" class="DummyDatePicker" id="lastActiveFrom" /><br />
-                @Html.Raw(_languageProvider.BasicText[Model.Language, "TO", Casing.FirstUpper])<br />
+                @Html.Raw(_translationProvider.BasicText[Model.Language, "TO", Casing.FirstUpper])<br />
                 <input type="text" asp-for="SearchParameters!.LastActiveTo" class="DummyDatePicker" id="lastActiveTo" /><br />
                 <label>
                     @Html.CheckBoxFor(m => m.SearchParameters!.NeverActive, new { onchange = "clearActiveDates(this)", id = "neverActiveCheckbox" })
-                    @Html.Raw(_languageProvider.Admin[Model.Language, "NEVER_ACTIVE"])
+                    @Html.Raw(_translationProvider.Admin[Model.Language, "NEVER_ACTIVE"])
                 </label>
             </div>
         </div>
-        <input type="submit" value="@Html.Raw(_languageProvider.BasicText[Model.Language, "DO_SEARCH"])" class="MyButton SpacedButton" />
+        <input type="submit" value="@Html.Raw(_translationProvider.BasicText[Model.Language, "DO_SEARCH"])" class="MyButton SpacedButton" />
     </form>
 
     @if (Model.SearchResults?.Any() == true)
@@ -168,7 +168,7 @@
 </div>
 <hr class="BoxSeparator" />
 <h4 onclick="expandSection('groupsSection', 'groupsChar')" style="cursor:pointer" id="groupsTitle">
-    @Html.Raw(_languageProvider.BasicText[Model.Language, "GROUPS", Casing.FirstUpper])
+    @Html.Raw(_translationProvider.BasicText[Model.Language, "GROUPS", Casing.FirstUpper])
     <span id="groupsChar">&#x1F53D;</span>
 </h4>
 <div id="groupsSection" style="display:none">
@@ -178,14 +178,14 @@
         <br />
     }
     <p>&nbsp;</p>
-    <a href="javascript:newGroup()">@Html.Raw(_languageProvider.Admin[Model.Language, "ADD_NEW_GROUP"])</a>
+    <a href="javascript:newGroup()">@Html.Raw(_translationProvider.Admin[Model.Language, "ADD_NEW_GROUP"])</a>
     <div style="width:100%; text-align:right; font-size:1.5em">
         <a href="#groupsTitle">&#x23EB;</a>
     </div>
 </div>
 <hr class="BoxSeparator" />
 <h4 onclick="expandSection('ranksSection', 'ranksChar')" style="cursor:pointer" id="ranksTitle">
-    @Html.Raw(_languageProvider.BasicText[Model.Language, "RANKS", Casing.FirstUpper])
+    @Html.Raw(_translationProvider.BasicText[Model.Language, "RANKS", Casing.FirstUpper])
     <span id="ranksChar">&#x1F53D;</span>
 </h4>
 <div id="ranksSection" style="display:none">
@@ -195,14 +195,14 @@
         <br />
     }
     <p>&nbsp;</p>
-    <a href="javascript:newRank()">@Html.Raw(_languageProvider.Admin[Model.Language, "ADD_NEW_RANK"])</a>
+    <a href="javascript:newRank()">@Html.Raw(_translationProvider.Admin[Model.Language, "ADD_NEW_RANK"])</a>
     <div style="width:100%; text-align:right; font-size:1.5em">
         <a href="#ranksTitle">&#x23EB;</a>
     </div>
 </div>
 <hr class="BoxSeparator" />
 <h4 onclick="expandSection('bansSection', 'bansChar')" style="cursor:pointer" id="bansTitle">
-    @Html.Raw(_languageProvider.Admin[Model.Language, "BANS"])
+    @Html.Raw(_translationProvider.Admin[Model.Language, "BANS"])
     <span id="bansChar">&#x1F53D;</span>
 </h4>
 <div id="bansSection" style="display:none">
@@ -220,7 +220,7 @@
                 </div>
                 <div class="FlexCenter FlexSpaced">
                     <div class="FlexCaption">
-                        @Html.Raw(_languageProvider.BasicText[Model.Language, "EMAIL", Casing.FirstUpper])
+                        @Html.Raw(_translationProvider.BasicText[Model.Language, "EMAIL", Casing.FirstUpper])
                     </div>
                     <div class="FlexRight PostInputWidth">
                         <input type="text" name="banlist[@i].BanEmail" value="@Model.BanList[i].BanEmail" />
@@ -228,12 +228,12 @@
                 </div>
                 <div class="FlexCenter FlexSpaced">
                     <div class="FlexCaption">
-                        @Html.Raw(_languageProvider.Admin[Model.Language, "ASK_DELETE"])
+                        @Html.Raw(_translationProvider.Admin[Model.Language, "ASK_DELETE"])
                     </div>
                     <div class="FlexRight PostInputWidth">
                         <label>
                             <input type="checkbox" name="toRemove" value="@i" />
-                            @Html.Raw(_languageProvider.Admin[Model.Language, "YES_DELETE"])
+                            @Html.Raw(_translationProvider.Admin[Model.Language, "YES_DELETE"])
                         </label>
                     </div>
                 </div>
@@ -246,8 +246,8 @@
                 }
             }
             <div id="newBans"></div>
-            <input type="button" onclick="addBannedItem()" value="@Html.Raw(_languageProvider.Admin[Model.Language, "ADD_NEW_BAN"])" class="MyButton SpacedButton" />
-            <input type="submit" value="@Html.Raw(_languageProvider.Admin[Model.Language, "SAVE_CHANGES"])" class="MyButton SpacedButton" />
+            <input type="button" onclick="addBannedItem()" value="@Html.Raw(_translationProvider.Admin[Model.Language, "ADD_NEW_BAN"])" class="MyButton SpacedButton" />
+            <input type="submit" value="@Html.Raw(_translationProvider.Admin[Model.Language, "SAVE_CHANGES"])" class="MyButton SpacedButton" />
         </form>
         <script type="text/javascript">
         var cur = @(Model.BanList?.Count ?? 0);
@@ -259,9 +259,9 @@
                 "<input type='hidden' name='banlist[" + cur + "].BanId' value='0'/>" +
                 "<b>IP</b><br /><input type='text' name='banlist[" + cur + "].BanIp' value='" + ip + "' />" +
                 "<p style='clear:both'></p>" +
-                "<b>@Html.Raw(_languageProvider.BasicText[Model.Language, "EMAIL", Casing.FirstUpper])</b><br /><input type='text' name='banlist[" + cur + "].BanEmail' value='" + email + "' />" +
+                "<b>@Html.Raw(_translationProvider.BasicText[Model.Language, "EMAIL", Casing.FirstUpper])</b><br /><input type='text' name='banlist[" + cur + "].BanEmail' value='" + email + "' />" +
                 "<p style='clear:both'></p>" +
-                "<a href=\"#!\" onclick=\"cancelAddBannedWord(this)\">@Html.Raw(_languageProvider.Admin[Model.Language, "CANCEL"])</a>" +
+                "<a href=\"#!\" onclick=\"cancelAddBannedWord(this)\">@Html.Raw(_translationProvider.Admin[Model.Language, "CANCEL"])</a>" +
                 "</div>"
             );
 
@@ -372,13 +372,13 @@
 <form method="post" asp-page-handler="GroupManagement" id="groupAdministration" class="MiddleBox" style="display:none; padding: 10px; overflow-y: scroll">
     <h4 style="float:left" id="groupNameTitle"></h4>
     <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('groupAdministration')">
-    @Html.Raw(_languageProvider.BasicText[Model.Language, "CLOSE_BUTTON"])
+    @Html.Raw(_translationProvider.BasicText[Model.Language, "CLOSE_BUTTON"])
     </div>
     <p>&nbsp;</p>
     <p>&nbsp;</p>
     <div class="FlexCenter">
         <div style="font-weight:bold; text-align: right">
-            @Html.Raw(_languageProvider.Admin[Model.Language, "GROUP_NAME"])
+            @Html.Raw(_translationProvider.Admin[Model.Language, "GROUP_NAME"])
         </div>
         <div class="FlexRight PostInputWidth">
             <input type="text" name="dto.name" autocomplete="new-password" id="groupName" />
@@ -387,7 +387,7 @@
     <p></p>
     <div class="FlexCenter">
         <div style="font-weight:bold; text-align: right">
-            @Html.Raw(_languageProvider.Admin[Model.Language, "GROUP_DESCRIPTION"])
+            @Html.Raw(_translationProvider.Admin[Model.Language, "GROUP_DESCRIPTION"])
         </div>
         <div class="FlexRight PostInputWidth">
             <textarea rows="4" cols="100" name="dto.desc" autocomplete="new-password" id="groupDesc"></textarea>
@@ -396,7 +396,7 @@
     <p></p>
     <div class="FlexCenter">
         <div style="font-weight:bold; text-align: right">
-            @Html.Raw(_languageProvider.BasicText[Model.Language, "RANK", Casing.FirstUpper])
+            @Html.Raw(_translationProvider.BasicText[Model.Language, "RANK", Casing.FirstUpper])
         </div>
         <div class="FlexRight PostInputWidth">
             @Html.DropDownList("dto.rank", Model.RankListItems, new { id = "rank" })
@@ -405,7 +405,7 @@
     <p></p>
     <div class="FlexCenter">
         <div style="font-weight:bold; text-align: right">
-            @Html.Raw(_languageProvider.BasicText[Model.Language, "COLOR", Casing.FirstUpper])
+            @Html.Raw(_translationProvider.BasicText[Model.Language, "COLOR", Casing.FirstUpper])
         </div>
         <div class="FlexRight PostInputWidth">
             <input type="color" name="dto.color" class="jscolor" autocomplete="new-password" id="color" onchange="$('#colorTitle').text($(this).val())" />
@@ -415,27 +415,27 @@
     <p></p>
     <div class="FlexCenter">
         <div style="font-weight:bold; text-align: right">
-            @Html.Raw(_languageProvider.Admin[Model.Language, "UPLOAD_LIMIT"])
+            @Html.Raw(_translationProvider.Admin[Model.Language, "UPLOAD_LIMIT"])
         </div>
         <div class="FlexRight PostInputWidth">
             <input type="text" name="dto.uploadLimit" autocomplete="new-password" id="uploadLimit" /><br />
-            <span class="Caption DarkCaption">@Html.Raw(_languageProvider.Admin[Model.Language, "UPLOAD_LIMIT_CAPTION"])</span>
+            <span class="Caption DarkCaption">@Html.Raw(_translationProvider.Admin[Model.Language, "UPLOAD_LIMIT_CAPTION"])</span>
         </div>
     </div>
     <p></p>
     <div class="FlexCenter">
         <div style="font-weight:bold; text-align: right">
-            @Html.Raw(_languageProvider.Admin[Model.Language, "POST_EDIT_TIME"])
+            @Html.Raw(_translationProvider.Admin[Model.Language, "POST_EDIT_TIME"])
         </div>
         <div class="FlexRight PostInputWidth">
             <input type="text" name="dto.editTime" autocomplete="new-password" id="editTime" /><br />
-            <span class="Caption DarkCaption">@Html.Raw(_languageProvider.Admin[Model.Language, "POST_EDIT_TIME_CAPTION"])</span>
+            <span class="Caption DarkCaption">@Html.Raw(_translationProvider.Admin[Model.Language, "POST_EDIT_TIME_CAPTION"])</span>
         </div>
     </div>
     <p></p>
     <div class="FlexCenter">
         <div style="font-weight:bold; text-align: right">
-            @Html.Raw(_languageProvider.Admin[Model.Language, "PERMISSIONS"])
+            @Html.Raw(_translationProvider.Admin[Model.Language, "PERMISSIONS"])
         </div>
         <div class="FlexRight PostInputWidth">
             @Html.DropDownList("dto.role", Model.RoleListItems, new { id = "role" })
@@ -446,23 +446,23 @@
         <div style="font-weight:bold; text-align: right">
             <label>
                 @Html.CheckBox("dto.delete", false, new { id = "deleteGroup" })
-                @Html.Raw(_languageProvider.Admin[Model.Language, "DELETE_THIS_GROUP"])
+                @Html.Raw(_translationProvider.Admin[Model.Language, "DELETE_THIS_GROUP"])
             </label>
         </div>
     </div>
     <p></p>
-    <input type="submit" value="@Html.Raw(_languageProvider.Admin[Model.Language, "SAVE_CHANGES"])" onclick="return validateGroup();" class="MyButton" />
+    <input type="submit" value="@Html.Raw(_translationProvider.Admin[Model.Language, "SAVE_CHANGES"])" onclick="return validateGroup();" class="MyButton" />
     <input type="hidden" name="dto.id" id="groupId" />
 </form>
 
 <form method="post" asp-page-handler="RankManagement" id="rankAdministration" class="MiddleBox" style="display:none; padding: 10px; overflow-y: scroll">
     <h4 style="float:left" id="groupNameTitle"></h4>
-    <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('rankAdministration')">@Html.Raw(_languageProvider.BasicText[Model.Language, "CLOSE_BUTTON"])</div>
+    <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('rankAdministration')">@Html.Raw(_translationProvider.BasicText[Model.Language, "CLOSE_BUTTON"])</div>
     <p>&nbsp;</p>
     <p>&nbsp;</p>
     <div class="FlexCenter">
         <div style="font-weight:bold; text-align: right">
-            @Html.Raw(_languageProvider.Admin[Model.Language, "RANK_NAME"])
+            @Html.Raw(_translationProvider.Admin[Model.Language, "RANK_NAME"])
         </div>
         <div class="FlexRight PostInputWidth">
             <input type="text" name="rankName" autocomplete="new-password" id="rankName" />
@@ -473,10 +473,10 @@
         <div style="font-weight:bold; text-align: right">
             <label>
                 @Html.CheckBox("deleteRank", false, new { id = "deleteRank" })
-                @Html.Raw(_languageProvider.Admin[Model.Language, "DELETE_THIS_RANK"])
+                @Html.Raw(_translationProvider.Admin[Model.Language, "DELETE_THIS_RANK"])
             </label>
         </div>
     </div>
     <input type="hidden" name="rankId" id="rankId" />
-    <input type="submit" value="@Html.Raw(_languageProvider.Admin[Model.Language, "SAVE_CHANGES"])" onclick="return $('#rankName').val() ? true : false;" class="MyButton" />
+    <input type="submit" value="@Html.Raw(_translationProvider.Admin[Model.Language, "SAVE_CHANGES"])" onclick="return $('#rankName').val() ? true : false;" class="MyButton" />
 </form>

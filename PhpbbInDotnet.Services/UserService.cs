@@ -29,8 +29,8 @@ namespace PhpbbInDotnet.Services
         private static PhpbbUsers? _anonymousDbUser;
         private static ClaimsPrincipal? _anonymousClaimsPrincipal;
 
-        public UserService(ICommonUtils utils, IForumDbContext context, IConfiguration config, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
-            : base(utils, languageProvider, httpContextAccessor)
+        public UserService(ICommonUtils utils, IForumDbContext context, IConfiguration config, ITranslationProvider translationProvider, IHttpContextAccessor httpContextAccessor)
+            : base(utils, translationProvider, httpContextAccessor)
         {
             _context = context;
             _config = config;
@@ -243,7 +243,7 @@ namespace PhpbbInDotnet.Services
                 };
                 if (!sender.HasPrivateMessagePermissions)
                 {
-                    return (LanguageProvider.Errors[lang, "SENDER_CANT_SEND_PMS"], false);
+                    return (TranslationProvider.Errors[lang, "SENDER_CANT_SEND_PMS"], false);
                 }
 
                 var receiver = new AuthenticatedUserExpanded(await GetAuthenticatedUserById(receiverId))
@@ -253,11 +253,11 @@ namespace PhpbbInDotnet.Services
                 };
                 if (!receiver.HasPrivateMessages)
                 {
-                    return (LanguageProvider.Errors[lang, "RECEIVER_CANT_RECEIVE_PMS"], false);
+                    return (TranslationProvider.Errors[lang, "RECEIVER_CANT_RECEIVE_PMS"], false);
                 }
                 if (receiver.Foes?.Contains(senderId) ?? false)
                 {
-                    return (LanguageProvider.Errors[lang, "ON_RECEIVERS_FOE_LIST"], false);
+                    return (TranslationProvider.Errors[lang, "ON_RECEIVERS_FOE_LIST"], false);
                 }
 
                 var sqlExecuter = _context.GetSqlExecuter();
@@ -270,7 +270,7 @@ namespace PhpbbInDotnet.Services
                     new { senderId, receiverId, to = $"u_{receiverId}", subject, text, time = DateTime.UtcNow.ToUnixTimestamp() }
                 );
 
-                var emailSubject = string.Format(LanguageProvider.Email[receiver.Language!, "NEWPM_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
+                var emailSubject = string.Format(TranslationProvider.Email[receiver.Language!, "NEWPM_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
                 await Utils.SendEmail(
                     to: receiver.EmailAddress!,
                     subject: emailSubject,
@@ -290,7 +290,7 @@ namespace PhpbbInDotnet.Services
             catch (Exception ex)
             {
                 Utils.HandleError(ex);
-                return (LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
+                return (TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }
 
@@ -309,7 +309,7 @@ namespace PhpbbInDotnet.Services
 
                 if (rows == 0)
                 {
-                    return (LanguageProvider.Errors[lang, "CANT_EDIT_ALREADY_READ"], false);
+                    return (TranslationProvider.Errors[lang, "CANT_EDIT_ALREADY_READ"], false);
                 }
 
                 return ("OK", true);
@@ -317,7 +317,7 @@ namespace PhpbbInDotnet.Services
             catch (Exception ex)
             {
                 Utils.HandleError(ex);
-                return (LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
+                return (TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }
 
@@ -336,7 +336,7 @@ namespace PhpbbInDotnet.Services
 
                 if (rows == 0)
                 {
-                    return (LanguageProvider.Errors[lang, "CANT_DELETE_ALREADY_READ_OR_NONEXISTING"], false);
+                    return (TranslationProvider.Errors[lang, "CANT_DELETE_ALREADY_READ_OR_NONEXISTING"], false);
                 }
 
                 return ("OK", true);
@@ -344,7 +344,7 @@ namespace PhpbbInDotnet.Services
             catch (Exception ex)
             {
                 Utils.HandleError(ex);
-                return (LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
+                return (TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }
 
@@ -362,14 +362,14 @@ namespace PhpbbInDotnet.Services
                 );
                 if (rows < messageIds.Length)
                 {
-                    return (string.Format(LanguageProvider.Errors[lang, "SOME_MESSAGES_MISSING_FORMAT"], rows, messageIds.Length - rows), false);
+                    return (string.Format(TranslationProvider.Errors[lang, "SOME_MESSAGES_MISSING_FORMAT"], rows, messageIds.Length - rows), false);
                 }
                 return ("OK", true);
             }
             catch (Exception ex)
             {
                 Utils.HandleError(ex);
-                return (LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
+                return (TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }
 

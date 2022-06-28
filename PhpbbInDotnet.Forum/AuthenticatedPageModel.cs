@@ -30,18 +30,18 @@ namespace PhpbbInDotnet.Forum
         protected readonly IForumDbContext Context;
         protected readonly ICommonUtils Utils;
         
-        public LanguageProvider LanguageProvider { get; }
+        public ITranslationProvider TranslationProvider { get; }
 
         private string? _language;
 
-        public AuthenticatedPageModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cacheService, ICommonUtils utils, LanguageProvider languageProvider)
+        public AuthenticatedPageModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cacheService, ICommonUtils utils, ITranslationProvider translationProvider)
         {
             ForumService = forumService;
             Cache = cacheService;
             UserService = userService;
             Context = context;
             Utils = utils;
-            LanguageProvider = languageProvider;
+            TranslationProvider = translationProvider;
         }
 
         #region User
@@ -62,7 +62,7 @@ namespace PhpbbInDotnet.Forum
             => await UserService.IsUserModeratorInForum(GetCurrentUser(), forumId);
 
         public string GetLanguage()
-            => _language ??= LanguageProvider.GetValidatedLanguage(GetCurrentUser(), Request);
+            => _language ??= TranslationProvider.GetValidatedLanguage(GetCurrentUser(), Request);
 
         public Task<IEnumerable<int>> GetUnrestrictedForums(int? forumId = null)
             => ForumService.GetUnrestrictedForums(GetCurrentUser(), forumId);

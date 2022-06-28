@@ -2,7 +2,7 @@
 
 @inject Services.IBBCodeRenderingService _renderingService
 @inject Services.IForumTreeService _forumService
-@inject Languages.LanguageProvider _languageProvider
+@inject Languages.ITranslationProvider _translationProvider
 
 @using Domain
 @using Domain.Extensions;
@@ -15,7 +15,7 @@
 @if (Model.ShowTitle && Model.Categories.Any(x => !x.IsRestricted))
 {
     <h3 style="float:left">
-        @Html.Raw(_languageProvider.BasicText[Model.Language, "CATEGORIES", Casing.FirstUpper])
+        @Html.Raw(_translationProvider.BasicText[Model.Language, "CATEGORIES", Casing.FirstUpper])
     </h3>
 }
 @{
@@ -55,7 +55,7 @@
             if (Model.AuthenticatedUser?.Foes?.Contains(forum.ForumLastPosterId ?? 0) ?? false)
             {
                 forum.ForumLastPosterColour = null;
-                forum.ForumLastPosterName = $"[{_languageProvider.BasicText[Model.Language, "HIDDEN", Casing.FirstUpper]}]";
+                forum.ForumLastPosterName = $"[{_translationProvider.BasicText[Model.Language, "HIDDEN", Casing.FirstUpper]}]";
                 forum.ForumLastPosterId = 1;
             }
 
@@ -97,7 +97,7 @@
             <p>&nbsp;</p>
         }
         <h3 style="float:left">
-            @Html.Raw(_languageProvider.BasicText[Model.Language, "FORUMS", Casing.FirstUpper])
+            @Html.Raw(_translationProvider.BasicText[Model.Language, "FORUMS", Casing.FirstUpper])
         </h3>
     }
 

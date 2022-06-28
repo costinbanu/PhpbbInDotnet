@@ -35,8 +35,8 @@ namespace PhpbbInDotnet.Forum.Pages
         static readonly DateTimeOffset CACHE_EXPIRATION = DateTimeOffset.UtcNow.AddHours(4);
 
         public PostingModel(ICommonUtils utils, IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cacheService, IPostService postService, 
-            IStorageService storageService, IWritingToolsService writingService, IBBCodeRenderingService renderingService, IConfiguration config, LanguageProvider languageProvider, IHttpClientFactory httpClientFactory)
-            : base(context, forumService, userService, cacheService, utils, languageProvider)
+            IStorageService storageService, IWritingToolsService writingService, IBBCodeRenderingService renderingService, IConfiguration config, ITranslationProvider translationProvider, IHttpClientFactory httpClientFactory)
+            : base(context, forumService, userService, cacheService, utils, translationProvider)
         {
             PollExpirationDaysString = "1";
             PollMaxOptions = 1;
@@ -102,19 +102,19 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if ((PostTitle?.Length ?? 0) > 255)
             {
-                ModelState.AddModelError(nameof(PostTitle), LanguageProvider.Errors[lang, "TITLE_TOO_LONG"]);
+                ModelState.AddModelError(nameof(PostTitle), TranslationProvider.Errors[lang, "TITLE_TOO_LONG"]);
                 return null;
             }
 
             if ((PostTitle?.Trim()?.Length ?? 0) < 3)
             {
-                ModelState.AddModelError(nameof(PostTitle), LanguageProvider.Errors[lang, "TITLE_TOO_SHORT"]);
+                ModelState.AddModelError(nameof(PostTitle), TranslationProvider.Errors[lang, "TITLE_TOO_SHORT"]);
                 return null;
             }
 
             if ((PostText?.Trim()?.Length ?? 0) < 3)
             {
-                ModelState.AddModelError(nameof(PostText), LanguageProvider.Errors[lang, "POST_TOO_SHORT"]);
+                ModelState.AddModelError(nameof(PostText), TranslationProvider.Errors[lang, "POST_TOO_SHORT"]);
                 return null;
             }
 
@@ -126,14 +126,14 @@ namespace PhpbbInDotnet.Forum.Pages
             if (curTopic?.TopicStatus == 1 && !await IsCurrentUserModeratorHere(ForumId))
             {
                 var key = Action == PostingActions.EditForumPost ? "CANT_EDIT_POST_TOPIC_CLOSED" : "CANT_SUBMIT_POST_TOPIC_CLOSED";
-                ModelState.AddModelError(nameof(PostText), LanguageProvider.Errors[lang, key, Casing.FirstUpper]);
+                ModelState.AddModelError(nameof(PostText), TranslationProvider.Errors[lang, key, Casing.FirstUpper]);
                 ShowPoll = canCreatePoll;
                 return null;
             }
             
             if (canCreatePoll && (string.IsNullOrWhiteSpace(PollExpirationDaysString) || !double.TryParse(PollExpirationDaysString, out var val) || val < 0 || val > 365))
             {
-                ModelState.AddModelError(nameof(PollExpirationDaysString), LanguageProvider.Errors[lang, "INVALID_POLL_EXPIRATION"]);
+                ModelState.AddModelError(nameof(PollExpirationDaysString), TranslationProvider.Errors[lang, "INVALID_POLL_EXPIRATION"]);
                 ShowPoll = true;
                 return null;
             }
@@ -141,7 +141,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var pollOptionsArray = GetPollOptionsEnumerable();
             if (canCreatePoll && (PollMaxOptions == null || (pollOptionsArray.Any() && (PollMaxOptions < 1 || PollMaxOptions > pollOptionsArray.Count()))))
             {
-                ModelState.AddModelError(nameof(PollMaxOptions), LanguageProvider.Errors[lang, "INVALID_POLL_OPTION_COUNT"]);
+                ModelState.AddModelError(nameof(PollMaxOptions), TranslationProvider.Errors[lang, "INVALID_POLL_OPTION_COUNT"]);
                 ShowPoll = true;
                 return null;
             }
@@ -282,12 +282,12 @@ namespace PhpbbInDotnet.Forum.Pages
                 );
                 if (((long?)times?.post_time ?? 0L) > LastPostTime)
                 {
-                    return PageWithError(curForum, nameof(LastPostTime), LanguageProvider.Errors[lang, "NEW_MESSAGES_SINCE_LOAD"]);
+                    return PageWithError(curForum, nameof(LastPostTime), TranslationProvider.Errors[lang, "NEW_MESSAGES_SINCE_LOAD"]);
                 }
                 else if(((long?)times?.post_edit_time ?? 0L) > LastPostTime)
                 {
                     LastPostTime = (long?)times?.post_edit_time;
-                    return PageWithError(curForum, nameof(LastPostTime), LanguageProvider.Errors[lang, "LAST_MESSAGE_WAS_EDITED_SINCE_LOAD"]);
+                    return PageWithError(curForum, nameof(LastPostTime), TranslationProvider.Errors[lang, "LAST_MESSAGE_WAS_EDITED_SINCE_LOAD"]);
                 }
                 else
                 {

@@ -28,8 +28,8 @@ namespace PhpbbInDotnet.Services
         private readonly IOperationLogService _operationLogService;
 
         public AdminForumService(IForumDbContext context, IForumTreeService forumService, IConfiguration config, ICommonUtils utils,
-            LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor, IOperationLogService operationLogService)
-            : base(utils, languageProvider, httpContextAccessor)
+            ITranslationProvider translationProvider, IHttpContextAccessor httpContextAccessor, IOperationLogService operationLogService)
+            : base(utils, translationProvider, httpContextAccessor)
         {
             _context = context;
             _forumService = forumService;
@@ -46,18 +46,18 @@ namespace PhpbbInDotnet.Services
                 {
                     await ReorderChildren(0);
                     await _context.SaveChangesAsync();
-                    return (string.Format(LanguageProvider.Admin[lang, "FORUM_UPDATED_SUCCESSFULLY_FORMAT"], _config.GetObject<string>("ForumName")), true);
+                    return (string.Format(TranslationProvider.Admin[lang, "FORUM_UPDATED_SUCCESSFULLY_FORMAT"], _config.GetObject<string>("ForumName")), true);
                 }
 
                 var actual = await _context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == dto.ForumId);
                 var isNewForum = false;
                 if (string.IsNullOrWhiteSpace(dto.ForumName))
                 {
-                    return (LanguageProvider.Admin[lang, "INVALID_FORUM_NAME"], false);
+                    return (TranslationProvider.Admin[lang, "INVALID_FORUM_NAME"], false);
                 }
                 if ((dto.ForumId ?? 0) > 0 && actual == null)
                 {
-                    return (string.Format(LanguageProvider.Admin[lang, "FORUM_DOESNT_EXIST_FORMAT"], dto.ForumId), false);
+                    return (string.Format(TranslationProvider.Admin[lang, "FORUM_DOESNT_EXIST_FORMAT"], dto.ForumId), false);
                 }
                 else if ((dto.ForumId ?? 0) == 0)
                 {
@@ -130,12 +130,12 @@ namespace PhpbbInDotnet.Services
 
                 await _operationLogService.LogAdminForumAction(isNewForum ? AdminForumActions.Add : AdminForumActions.Update, adminUserId, actual);
 
-                return (string.Format(LanguageProvider.Admin[lang, "FORUM_UPDATED_SUCCESSFULLY_FORMAT"], actual.ForumName), true);
+                return (string.Format(TranslationProvider.Admin[lang, "FORUM_UPDATED_SUCCESSFULLY_FORMAT"], actual.ForumName), true);
             }
             catch (Exception ex)
             {
                 var id = Utils.HandleError(ex);
-                return (string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                return (string.Format(TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
 
             (int entityId, int roleId) translatePermission(string? permission)
@@ -281,15 +281,15 @@ namespace PhpbbInDotnet.Services
                 var forum = await _context.PhpbbForums.FirstOrDefaultAsync(x => x.ForumId == forumId);
                 if (forum == null)
                 {
-                    return (string.Format(LanguageProvider.Admin[lang, "FORUM_DOESNT_EXIST_FORMAT"], forumId), false);
+                    return (string.Format(TranslationProvider.Admin[lang, "FORUM_DOESNT_EXIST_FORMAT"], forumId), false);
                 }
                 if (await _context.PhpbbForums.AsNoTracking().CountAsync(x => x.ParentId == forumId) > 0)
                 {
-                    return (string.Format(LanguageProvider.Admin[lang, "CANT_DELETE_HAS_CHILDREN_FORMAT"], forum.ForumName), false);
+                    return (string.Format(TranslationProvider.Admin[lang, "CANT_DELETE_HAS_CHILDREN_FORMAT"], forum.ForumName), false);
                 }
                 if (await _context.PhpbbTopics.AsNoTracking().CountAsync(x => x.ForumId == forumId) > 0)
                 {
-                    return (string.Format(LanguageProvider.Admin[lang, "CANT_DELETE_HAS_TOPICS_FORMAT"], forum.ForumName), false);
+                    return (string.Format(TranslationProvider.Admin[lang, "CANT_DELETE_HAS_TOPICS_FORMAT"], forum.ForumName), false);
                 }
 
                 var dto = new ForumDto
@@ -324,12 +324,12 @@ namespace PhpbbInDotnet.Services
 
                 await _operationLogService.LogAdminForumAction(AdminForumActions.Delete, adminUserId, forum);
 
-                return (string.Format(LanguageProvider.Admin[lang, "FORUM_DELETED_SUCCESSFULLY_FORMAT"], forum.ForumName), true);
+                return (string.Format(TranslationProvider.Admin[lang, "FORUM_DELETED_SUCCESSFULLY_FORMAT"], forum.ForumName), true);
             }
             catch (Exception ex)
             {
                 var id = Utils.HandleError(ex);
-                return (string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                return (string.Format(TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
     }

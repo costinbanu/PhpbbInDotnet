@@ -35,20 +35,20 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public string Language { get; private set; } = Constants.DEFAULT_LANGUAGE;
 
-        public LanguageProvider LanguageProvider { get; }
+        public ITranslationProvider TranslationProvider { get; }
 
-        public ForumLoginModel(IForumDbContext context, IUserService userService, LanguageProvider languageProvider, ICommonUtils utils, IAppCache cache)
+        public ForumLoginModel(IForumDbContext context, IUserService userService, ITranslationProvider translationProvider, ICommonUtils utils, IAppCache cache)
         {
             _context = context;
             _userService = userService;
-            LanguageProvider = languageProvider;
+            TranslationProvider = translationProvider;
             _utils = utils;
             _cache = cache;
         }
 
         public async Task<IActionResult> OnGet()
         {
-            Language = LanguageProvider.GetValidatedLanguage(_userService.ClaimsPrincipalToAuthenticatedUser(User), Request);
+            Language = TranslationProvider.GetValidatedLanguage(_userService.ClaimsPrincipalToAuthenticatedUser(User), Request);
             var forum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(filter => filter.ForumId == ForumId);
 
             if (forum == null)
@@ -73,7 +73,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
-            Language = LanguageProvider.GetValidatedLanguage(_userService.ClaimsPrincipalToAuthenticatedUser(User), Request);
+            Language = TranslationProvider.GetValidatedLanguage(_userService.ClaimsPrincipalToAuthenticatedUser(User), Request);
             var forum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(filter => filter.ForumId == ForumId);
 
             if (forum == null)
@@ -83,7 +83,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (string.IsNullOrWhiteSpace(Password))
             {
-                ModelState.AddModelError(nameof(Password), LanguageProvider.Errors[Language, "MISSING_REQUIRED_FIELD"]);
+                ModelState.AddModelError(nameof(Password), TranslationProvider.Errors[Language, "MISSING_REQUIRED_FIELD"]);
                 return Page();
             }
                        
@@ -106,7 +106,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (forum.ForumPassword != Crypter.Phpass.Crypt(Password, forum.ForumPassword))
             {
-                ModelState.AddModelError(nameof(Password), LanguageProvider.Errors[Language, "WRONG_PASS"]);
+                ModelState.AddModelError(nameof(Password), TranslationProvider.Errors[Language, "WRONG_PASS"]);
                 return await OnGet();
             }
             else

@@ -24,8 +24,8 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IConfiguration _config;
 
         public FileModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, IStorageService storageService,
-            IConfiguration config, ICommonUtils utils, FileExtensionContentTypeProvider contentTypeProvider, LanguageProvider languageProvider)
-            : base(context, forumService, userService, cache, utils, languageProvider)
+            IConfiguration config, ICommonUtils utils, FileExtensionContentTypeProvider contentTypeProvider, ITranslationProvider translationProvider)
+            : base(context, forumService, userService, cache, utils, translationProvider)
         {
             _storageService = storageService;
             _contentTypeProvider = contentTypeProvider;

@@ -7,15 +7,15 @@ namespace PhpbbInDotnet.Services
 {
     public abstract class MultilingualServiceBase
     {
-        protected readonly LanguageProvider LanguageProvider;
+        protected readonly ITranslationProvider TranslationProvider;
         protected readonly IHttpContextAccessor HttpContextAccessor;
         protected readonly ICommonUtils Utils;
 
         private string? _language;
 
-        public MultilingualServiceBase(ICommonUtils utils, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
+        public MultilingualServiceBase(ICommonUtils utils, ITranslationProvider translationProvider, IHttpContextAccessor httpContextAccessor)
         {
-            LanguageProvider = languageProvider;
+            TranslationProvider = translationProvider;
             HttpContextAccessor = httpContextAccessor;
             Utils = utils;
         }
@@ -33,7 +33,7 @@ namespace PhpbbInDotnet.Services
                 user = (AuthenticatedUserExpanded?)(HttpContextAccessor.HttpContext.Items.TryGetValue(nameof(AuthenticatedUserExpanded), out var val) ? val : null);
             }
 
-            _language = LanguageProvider.GetValidatedLanguage(user, HttpContextAccessor.HttpContext?.Request);
+            _language = TranslationProvider.GetValidatedLanguage(user, HttpContextAccessor.HttpContext?.Request);
 
             return _language;
         }

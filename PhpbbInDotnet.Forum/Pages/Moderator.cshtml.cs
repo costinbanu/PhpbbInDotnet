@@ -55,8 +55,8 @@ namespace PhpbbInDotnet.Forum.Pages
         public IEnumerable<DeletedItemGroup>? DeletedItems { get; private set; }
 
         public ModeratorModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, 
-            LanguageProvider languageProvider, IModeratorService moderatorService, IPostService postService, IOperationLogService operationLogService)
-            : base(context, forumService, userService, cache, utils, languageProvider)
+            ITranslationProvider translationProvider, IModeratorService moderatorService, IPostService postService, IOperationLogService operationLogService)
+            : base(context, forumService, userService, cache, utils, translationProvider)
         {
             _moderatorService = moderatorService;
             _postService = postService;
@@ -89,7 +89,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 async Task SetDeletedItems()
                 {
-                    var anonymous = LanguageProvider.BasicText[GetLanguage(), "ANONYMOUS", Casing.None];
+                    var anonymous = TranslationProvider.BasicText[GetLanguage(), "ANONYMOUS", Casing.None];
                     var allItems = await (
                         from rb in Context.PhpbbRecycleBin.AsNoTracking()
 
@@ -137,7 +137,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 if (SelectedReports?.Any() != true)
                 {
                     MessageClass = "message warning";
-                    Message = LanguageProvider.Moderator[lang, "NO_REPORTS_SELECTED"];
+                    Message = TranslationProvider.Moderator[lang, "NO_REPORTS_SELECTED"];
                 }
                 else
                 {
@@ -149,13 +149,13 @@ namespace PhpbbInDotnet.Forum.Pages
                             new { SelectedReports }
                         );
                         MessageClass = "message success";
-                        Message = LanguageProvider.Moderator[lang, "REPORTS_CLOSED_SUCCESSFULLY"];
+                        Message = TranslationProvider.Moderator[lang, "REPORTS_CLOSED_SUCCESSFULLY"];
                     }
                     catch (Exception ex)
                     {
                         var id = Utils.HandleError(ex);
                         MessageClass = "message fail";
-                        Message = string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id);
+                        Message = string.Format(TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id);
                     }
                 }
                 return await OnGet();
@@ -194,7 +194,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     if (results.All(r => r.IsSuccess ?? false))
                     {
                         MessageClass = "message success";
-                        Message = string.Format(LanguageProvider.Moderator[lang, "MODERATOR_TOPIC_ACTION_SUCCESSFUL_FORMAT"], TopicAction);
+                        Message = string.Format(TranslationProvider.Moderator[lang, "MODERATOR_TOPIC_ACTION_SUCCESSFUL_FORMAT"], TopicAction);
                     }
                     else if (results.All(r => !(r.IsSuccess ?? false)))
                     {
@@ -205,14 +205,14 @@ namespace PhpbbInDotnet.Forum.Pages
                         var failed = results.Where(r => !(r.IsSuccess ?? false));
                         var id = Utils.HandleErrorAsWarning(new AggregateException(failed.Select(r => new Exception(r.Message))));
                         MessageClass = "message warning";
-                        Message = string.Format(LanguageProvider.Moderator[lang, "MODERATOR_ACTION_PARTIAL_FAILED_FORMAT"], id);
+                        Message = string.Format(TranslationProvider.Moderator[lang, "MODERATOR_ACTION_PARTIAL_FAILED_FORMAT"], id);
                     }
                 }
                 catch (Exception ex)
                 {
                     var id = Utils.HandleError(ex);
                     MessageClass = "message fail";
-                    Message = string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id);
+                    Message = string.Format(TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id);
                 }
 
                 TopicAction = null;
@@ -240,7 +240,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     if (!await IsCurrentUserAdminHere() && itemGroups.Any(item => item.Key == RecycleBinItemType.Forum))
                     {
                         MessageClass = "message fail";
-                        Message = string.Format(LanguageProvider.Errors[lang, "MISSING_REQUIRED_PERMISSIONS"]);
+                        Message = string.Format(TranslationProvider.Errors[lang, "MISSING_REQUIRED_PERMISSIONS"]);
                     }
                     else
                     {
@@ -257,17 +257,17 @@ namespace PhpbbInDotnet.Forum.Pages
                         if (results.All(r => r))
                         {
                             MessageClass = "message success";
-                            Message = LanguageProvider.Moderator[lang, "ITEMS_RESTORED_SUCCESSFULLY"];
+                            Message = TranslationProvider.Moderator[lang, "ITEMS_RESTORED_SUCCESSFULLY"];
                         }
                         else if (results.All(r => !r))
                         {
                             MessageClass = "message fail";
-                            Message = LanguageProvider.Moderator[lang, "ITEMS_RESTORATION_FAILED"];
+                            Message = TranslationProvider.Moderator[lang, "ITEMS_RESTORATION_FAILED"];
                         }
                         else
                         {
                             MessageClass = "message fail";
-                            Message = LanguageProvider.Moderator[lang, "ITEMS_RESTORATION_FAILED_PARTIALLY"];
+                            Message = TranslationProvider.Moderator[lang, "ITEMS_RESTORATION_FAILED_PARTIALLY"];
                         }
                     }
                 }
@@ -275,7 +275,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     var id = Utils.HandleError(ex);
                     MessageClass = "message fail";
-                    Message = string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id);
+                    Message = string.Format(TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id);
                 }
 
                 TopicAction = null;

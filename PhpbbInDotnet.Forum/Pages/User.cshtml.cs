@@ -100,8 +100,8 @@ namespace PhpbbInDotnet.Forum.Pages
         private const int DB_CACHE_EXPIRATION_MINUTES = 20;
 
         public UserModel(ICommonUtils utils, IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, IStorageService storageService, 
-            IWritingToolsService writingService, IConfiguration config, LanguageProvider languageProvider, IOperationLogService operationLogService)
-            : base(context, forumService, userService, cache, utils, languageProvider)
+            IWritingToolsService writingService, IConfiguration config, ITranslationProvider translationProvider, IOperationLogService operationLogService)
+            : base(context, forumService, userService, cache, utils, translationProvider)
         {
             _storageService = storageService;
             _writingService = writingService;
@@ -148,7 +148,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var isSelf = CurrentUser!.UserId == currentUserId;
             var userMustLogIn = dbUser.UserAllowPm.ToBool() != AllowPM || dbUser.UserDateformat != CurrentUser.UserDateformat;
             var lang = GetLanguage();
-            var validator = new UserProfileDataValidationService(ModelState, LanguageProvider, lang);
+            var validator = new UserProfileDataValidationService(ModelState, TranslationProvider, lang);
 
             var newCleanUsername = StringUtility.CleanString(CurrentUser.Username);
             var usernameChanged = false;
@@ -162,7 +162,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (await Context.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UsernameClean == newCleanUsername))
                 {
-                    ModelState.AddModelError(nameof(CurrentUser), LanguageProvider.Errors[lang, "EXISTING_USERNAME"]);
+                    ModelState.AddModelError(nameof(CurrentUser), TranslationProvider.Errors[lang, "EXISTING_USERNAME"]);
                     return Page();
                 }
 
@@ -184,7 +184,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 if (!DateTime.TryParseExact(Birthday, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out _))
                 {
-                    ModelState.AddModelError(nameof(Birthday), LanguageProvider.Errors[lang, "INVALID_DATE"]);
+                    ModelState.AddModelError(nameof(Birthday), TranslationProvider.Errors[lang, "INVALID_DATE"]);
                     return Page();
                 }
             }
@@ -195,7 +195,7 @@ namespace PhpbbInDotnet.Forum.Pages
             dbUser.UserOcc = CurrentUser.UserOcc ?? string.Empty;
             dbUser.UserFrom = CurrentUser.UserFrom ?? string.Empty;
             dbUser.UserInterests = CurrentUser.UserInterests ?? string.Empty;
-            dbUser.UserDateformat = CurrentUser.UserDateformat ?? LanguageProvider.GetDefaultDateFormat(lang);
+            dbUser.UserDateformat = CurrentUser.UserDateformat ?? TranslationProvider.GetDefaultDateFormat(lang);
             dbUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : await _writingService.PrepareTextForSaving(CurrentUser.UserSig);
             dbUser.UserEditTime = CurrentUser.UserEditTime;
             dbUser.UserWebsite = CurrentUser.UserWebsite ?? string.Empty;
@@ -231,7 +231,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (await Context.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UserEmailHash == newEmailHash))
                 {
-                    ModelState.AddModelError(nameof(Email), LanguageProvider.Errors[lang, "EXISTING_EMAIL"]);
+                    ModelState.AddModelError(nameof(Email), TranslationProvider.Errors[lang, "EXISTING_EMAIL"]);
                     return Page();
                 }
 
@@ -247,7 +247,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     dbUser.UserInactiveReason = UserInactiveReason.ChangedEmailNotConfirmed;
                     dbUser.UserActkey = registrationCode;
 
-                    var subject = string.Format(LanguageProvider.Email[lang, "EMAIL_CHANGED_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
+                    var subject = string.Format(TranslationProvider.Email[lang, "EMAIL_CHANGED_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
                     await Utils.SendEmail(
                         to: Email!,
                         subject: subject,
@@ -293,7 +293,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 if (!_storageService.DeleteAvatar(dbUser.UserId, Path.GetExtension(dbUser.UserAvatar)))
                 {
-                    ModelState.AddModelError(nameof(Avatar), LanguageProvider.Errors[lang, "DELETE_AVATAR_ERROR"]);
+                    ModelState.AddModelError(nameof(Avatar), TranslationProvider.Errors[lang, "DELETE_AVATAR_ERROR"]);
                     return Page();
                 }
 
@@ -313,7 +313,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     stream.Seek(0, SeekOrigin.Begin);
                     if (bmp.Width > maxSize.Width || bmp.Height > maxSize.Height)
                     {
-                        ModelState.AddModelError(nameof(Avatar), string.Format(LanguageProvider.Errors[lang, "AVATAR_FORMAT_ERROR_FORMAT"], maxSize.Width, maxSize.Height));
+                        ModelState.AddModelError(nameof(Avatar), string.Format(TranslationProvider.Errors[lang, "AVATAR_FORMAT_ERROR_FORMAT"], maxSize.Width, maxSize.Height));
                         return Page();
                     }
                     else
@@ -324,7 +324,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         }
                         if (!await _storageService.UploadAvatar(dbUser.UserId, stream, Avatar.FileName))
                         {
-                            ModelState.AddModelError(nameof(Avatar), LanguageProvider.Errors[lang, "AVATAR_UPLOAD_ERROR"]);
+                            ModelState.AddModelError(nameof(Avatar), TranslationProvider.Errors[lang, "AVATAR_UPLOAD_ERROR"]);
                             return Page();
                         }
                         else
@@ -339,7 +339,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 catch (Exception ex)
                 {
                     Utils.HandleError(ex, $"Failed to upload avatar for {CurrentUser?.UserId ?? dbUser?.UserId ?? 1}");
-                    ModelState.AddModelError(nameof(Avatar), LanguageProvider.Errors[lang, "AVATAR_UPLOAD_ERROR"]);
+                    ModelState.AddModelError(nameof(Avatar), TranslationProvider.Errors[lang, "AVATAR_UPLOAD_ERROR"]);
                     return Page();
                 }
             }
@@ -414,7 +414,7 @@ namespace PhpbbInDotnet.Forum.Pages
             catch (Exception ex)
             {
                 Utils.HandleError(ex, $"Error updating user profile for {CurrentUser?.UserId ?? dbUser?.UserId ?? 1}");
-                ModelState.AddModelError(nameof(CurrentUser), LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
+                ModelState.AddModelError(nameof(CurrentUser), TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
                 return Page();
             }
 
@@ -457,7 +457,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 if (! await CanAddFoe())
                 {
-                    ModelState.AddModelError(nameof(CurrentUser), LanguageProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED"]);
+                    ModelState.AddModelError(nameof(CurrentUser), TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED"]);
                     Utils.HandleErrorAsWarning(new Exception($"Potential cross site forgery attempt in {nameof(OnPostAddFoe)}"));
                     Mode = UserPageMode.AddFoe;
                     return await OnGet();
@@ -479,7 +479,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 if (!CanRemoveFoe())
                 {
-                    ModelState.AddModelError(nameof(CurrentUser), LanguageProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED"]);
+                    ModelState.AddModelError(nameof(CurrentUser), TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED"]);
                     Utils.HandleErrorAsWarning(new Exception($"Potential cross site forgery attempt in {nameof(OnPostRemoveFoe)}"));
                     Mode = UserPageMode.AddFoe;
                     return await OnGet();

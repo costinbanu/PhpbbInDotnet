@@ -1,6 +1,6 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._UserSummaryPartialModel
 
-@inject Languages.LanguageProvider _languageProvider
+@inject Languages.ITranslationProvider _translationProvider
 
 @using Domain;
 @using Domain.Extensions;
@@ -30,12 +30,12 @@
                 }
             </div>
             <div class="FlexRight PostInputWidth">
-                <b>@Html.Raw(_languageProvider.BasicText[Model.Language, "REGISTERED", Casing.FirstUpper]):</b>
+                <b>@Html.Raw(_translationProvider.BasicText[Model.Language, "REGISTERED", Casing.FirstUpper]):</b>
                 <script>
                     writeDate("@user.UserRegdate.ToUtcTime().ToString("o")", "@Model.DateFormat");
                 </script>
                 <br />
-                <b>@Html.Raw(_languageProvider.BasicText[Model.Language, "LAST_ACTIVE", Casing.FirstUpper]):</b>
+                <b>@Html.Raw(_translationProvider.BasicText[Model.Language, "LAST_ACTIVE", Casing.FirstUpper]):</b>
                 @if (user.UserInactiveTime == 0 && user.UserLastvisit >= user.UserRegdate)
                 {
                     <script>
@@ -44,12 +44,12 @@
                 }
                 else
                 {
-            <span>@Html.Raw(_languageProvider.BasicText[Model.Language, "INACTIVE", Casing.FirstUpper])</span>
+            <span>@Html.Raw(_translationProvider.BasicText[Model.Language, "INACTIVE", Casing.FirstUpper])</span>
                 }
                 @if (!string.IsNullOrWhiteSpace(user.UserFrom))
                 {
                     <br />
-                    <b>@Html.Raw(_languageProvider.BasicText[Model.Language, "CITY", Casing.FirstUpper]):</b>
+                    <b>@Html.Raw(_translationProvider.BasicText[Model.Language, "CITY", Casing.FirstUpper]):</b>
                     @Html.Raw(user.UserFrom)
                 }
                 @{
@@ -57,7 +57,7 @@
                     if (group != null)
                     {
                         <br />
-                        <b>@Html.Raw(_languageProvider.BasicText[Model.Language, "GROUP", Casing.FirstUpper]):</b>
+                        <b>@Html.Raw(_translationProvider.BasicText[Model.Language, "GROUP", Casing.FirstUpper]):</b>
                         color = string.IsNullOrWhiteSpace(group.GroupColour) || group.GroupColour == Constants.DEFAULT_USER_COLOR ? "auto" : $"#{group.GroupColour}";
                         <span style="font-weight: bold; color: @color" class="ThemeColor">
                             @Html.Raw(group.GroupName)
@@ -67,12 +67,12 @@
                     if (rank != null)
                     {
                         <br />
-                        <b>@Html.Raw(_languageProvider.BasicText[Model.Language, "RANK", Casing.FirstUpper]):</b>
+                        <b>@Html.Raw(_translationProvider.BasicText[Model.Language, "RANK", Casing.FirstUpper]):</b>
                         @Html.Raw(rank.RankTitle)
                     }
                 }
                 <br />
-                <b>@Html.Raw(_languageProvider.BasicText[Model.Language, "POST_COUNT", Casing.FirstUpper]):</b>
+                <b>@Html.Raw(_translationProvider.BasicText[Model.Language, "POST_COUNT", Casing.FirstUpper]):</b>
                 @Html.Raw(user.UserPosts)
             </div>
         </div>

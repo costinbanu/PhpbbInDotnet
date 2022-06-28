@@ -51,8 +51,8 @@ namespace PhpbbInDotnet.Forum.Pages
         public Paginator? BotPaginator { get; private set; }
 
         public MemberListModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils,
-            IConfiguration config, LanguageProvider languageProvider, AnonymousSessionCounter sessionCounter)
-            : base(context, forumService, userService, cache, utils, languageProvider)
+            IConfiguration config, ITranslationProvider translationProvider, AnonymousSessionCounter sessionCounter)
+            : base(context, forumService, userService, cache, utils, translationProvider)
         {
             _config = config;
             _sessionCounter = sessionCounter;

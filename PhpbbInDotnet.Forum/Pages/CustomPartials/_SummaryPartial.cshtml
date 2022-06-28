@@ -4,7 +4,7 @@
 @using Domain.Extensions;
 @using LazyCache;
 
-@inject Languages.LanguageProvider _languageProvider
+@inject Languages.ITranslationProvider _translationProvider
 @inject IAppCache _cache
 @inject ICommonUtils _utils
 
@@ -26,11 +26,11 @@
             {
                 if (!string.IsNullOrWhiteSpace(Model.LinkHref))
                 {
-                    @Html.Raw(string.Format(_languageProvider.BasicText[Model.Language, "LAST_POST_URL"], Model.LinkHref))
+                    @Html.Raw(string.Format(_translationProvider.BasicText[Model.Language, "LAST_POST_URL"], Model.LinkHref))
                 }
                 else
                 {
-                    @Html.Raw(_languageProvider.BasicText[Model.Language, "LAST_POST_TEXT"])
+                    @Html.Raw(_translationProvider.BasicText[Model.Language, "LAST_POST_TEXT"])
                 }
             }
             else
@@ -38,13 +38,13 @@
                 var tag = Model.AuthorTag;
                 if (string.IsNullOrWhiteSpace(tag))
                 {
-                    tag = _languageProvider.BasicText[Model.Language, "AUTHOR"];
+                    tag = _translationProvider.BasicText[Model.Language, "AUTHOR"];
                 }
                 @Html.Raw(tag)
             }
             @if (Model.AuthorOnFoeList)
             {
-                <span>@Html.Raw($"[{_languageProvider.BasicText[Model.Language, "HIDDEN"]}]")</span>
+                <span>@Html.Raw($"[{_translationProvider.BasicText[Model.Language, "HIDDEN"]}]")</span>
             }
             else if (Model.AuthorId == Constants.ANONYMOUS_USER_ID)
             {
@@ -69,7 +69,7 @@
                 var label = Model.DateLabel;
                 if (string.IsNullOrWhiteSpace(label))
                 {
-                    label = _languageProvider.BasicText[Model.Language, "POSTED"];
+                    label = _translationProvider.BasicText[Model.Language, "POSTED"];
                 }
             }
             @Html.Raw(label)
@@ -78,7 +78,7 @@
         @if (Model.Posts.HasValue && Model.Views.HasValue)
         {
             <li class="Caption">
-                @Html.Raw($"{Model.Posts} {(Model.Posts != 1 ? _languageProvider.BasicText[Model.Language, "POSTS"] : _languageProvider.BasicText[Model.Language, "POST"])}, {Model.Views} {(Model.Views != 1 ? _languageProvider.BasicText[Model.Language, "VIEWS"] : _languageProvider.BasicText[Model.Language, "VIEW"])}")
+                @Html.Raw($"{Model.Posts} {(Model.Posts != 1 ? _translationProvider.BasicText[Model.Language, "POSTS"] : _translationProvider.BasicText[Model.Language, "POST"])}, {Model.Views} {(Model.Views != 1 ? _translationProvider.BasicText[Model.Language, "VIEWS"] : _translationProvider.BasicText[Model.Language, "VIEW"])}")
             </li>
         }
         else if (Model.Forums.HasValue && Model.Topics.HasValue)
@@ -86,11 +86,11 @@
             <li class="Caption">
                 @if (Model.Forums > 0)
                 {
-                    @Html.Raw($"{Model.Forums} {(Model.Forums != 1 ? _languageProvider.BasicText[Model.Language, "FORUMS"] : _languageProvider.BasicText[Model.Language, "FORUM"])}{(Model.Topics > 0 ? ", " : "")}")
+                    @Html.Raw($"{Model.Forums} {(Model.Forums != 1 ? _translationProvider.BasicText[Model.Language, "FORUMS"] : _translationProvider.BasicText[Model.Language, "FORUM"])}{(Model.Topics > 0 ? ", " : "")}")
                 }
                 @if (Model.Topics > 0)
                 {
-                    @Html.Raw($"{Model.Topics} {(Model.Topics != 1 ? _languageProvider.BasicText[Model.Language, "TOPICS"] : _languageProvider.BasicText[Model.Language, "TOPIC"])}")
+                    @Html.Raw($"{Model.Topics} {(Model.Topics != 1 ? _translationProvider.BasicText[Model.Language, "TOPICS"] : _translationProvider.BasicText[Model.Language, "TOPIC"])}")
                 }
             </li>
         }

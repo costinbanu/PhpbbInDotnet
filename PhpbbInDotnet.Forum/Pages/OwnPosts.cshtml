@@ -9,18 +9,18 @@
 @{
 
     var Lang = Model.GetLanguage();
-    var DocumentTitle = Model.LanguageProvider.BasicText[Lang, "OWN_TOPICS", Casing.FirstUpper];
+    var DocumentTitle = Model.TranslationProvider.BasicText[Lang, "OWN_TOPICS", Casing.FirstUpper];
     ViewData["Title"] = DocumentTitle;
     Layout = "~/Pages/_Layout.cshtml";
     var currentUser = Model.GetCurrentUser();
-    var userDateFormat = currentUser.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
+    var userDateFormat = currentUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
 }
 
 <environment include="Development">
     <link rel="stylesheet" href="~/css/pagination.css" />
 </environment>
 
-<a href="/" style="padding-bottom: 10px">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "HOME", Casing.FirstUpper])</a>
+<a href="/" style="padding-bottom: 10px">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "HOME", Casing.FirstUpper])</a>
 
 @if (!currentUser.IsAnonymous)
 {
@@ -33,7 +33,7 @@
 }
 <p>&nbsp;</p>
 <h2>@Html.Raw(DocumentTitle)</h2>
-@Html.Raw(Model.LanguageProvider.BasicText[Lang, "OWN_TOPICS_CAPTION", Casing.FirstUpper])
+@Html.Raw(Model.TranslationProvider.BasicText[Lang, "OWN_TOPICS_CAPTION", Casing.FirstUpper])
 
 @if (Model.Topics.Any())
 {  
@@ -77,6 +77,6 @@
 else 
 {
     <p>&nbsp;</p>
-    <h4>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "NO_OWN_POSTS"])</h4>
+    <h4>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "NO_OWN_POSTS"])</h4>
     <p>&nbsp;</p>
 }

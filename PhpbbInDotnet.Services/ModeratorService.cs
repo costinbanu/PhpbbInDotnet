@@ -22,9 +22,9 @@ namespace PhpbbInDotnet.Services
         private readonly IStorageService _storageService;
         private readonly IOperationLogService _operationLogService;
 
-        public ModeratorService(IForumDbContext context, IPostService postService, IStorageService storageService, ICommonUtils utils, LanguageProvider languageProvider,
+        public ModeratorService(IForumDbContext context, IPostService postService, IStorageService storageService, ICommonUtils utils, ITranslationProvider translationProvider,
             IHttpContextAccessor httpContextAccessor, IOperationLogService operationLogService)
-            : base(utils, languageProvider, httpContextAccessor)
+            : base(utils, translationProvider, httpContextAccessor)
         {
             _context = context;
             _postService = postService;
@@ -44,18 +44,18 @@ namespace PhpbbInDotnet.Services
                 if (rows == 1)
                 {
                     await _operationLogService.LogModeratorTopicAction((ModeratorTopicActions)logDto.Action!, logDto.UserId, topicId);
-                    return (LanguageProvider.Moderator[GetLanguage(), "TOPIC_CHANGED_SUCCESSFULLY"], true);
+                    return (TranslationProvider.Moderator[GetLanguage(), "TOPIC_CHANGED_SUCCESSFULLY"], true);
                 }
                 else
                 {
-                    return (string.Format(LanguageProvider.Moderator[GetLanguage(), "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
+                    return (string.Format(TranslationProvider.Moderator[GetLanguage(), "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
                 }
 
             }
             catch (Exception ex)
             {
                 var id = Utils.HandleError(ex);
-                return (string.Format(LanguageProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                return (string.Format(TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
@@ -72,7 +72,7 @@ namespace PhpbbInDotnet.Services
 
                 if (topicRows == 0)
                 {
-                    return (LanguageProvider.Moderator[GetLanguage(), "DESTINATION_DOESNT_EXIST"], false);
+                    return (TranslationProvider.Moderator[GetLanguage(), "DESTINATION_DOESNT_EXIST"], false);
                 }
 
                 var oldPosts = (await sqlExecuter.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC", new { topicId })).AsList();
@@ -90,12 +90,12 @@ namespace PhpbbInDotnet.Services
                 }
                 await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.MoveTopic, logDto.UserId, topicId, $"Moved from {oldForumId} to {destinationForumId}.");
 
-                return (LanguageProvider.Moderator[GetLanguage(), "TOPIC_CHANGED_SUCCESSFULLY"], true);
+                return (TranslationProvider.Moderator[GetLanguage(), "TOPIC_CHANGED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
                 var id = Utils.HandleError(ex);
-                return (string.Format(LanguageProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                return (string.Format(TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
@@ -109,16 +109,16 @@ namespace PhpbbInDotnet.Services
 
                 if (rows == 0)
                 {
-                    return (string.Format(LanguageProvider.Moderator[GetLanguage(), "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
+                    return (string.Format(TranslationProvider.Moderator[GetLanguage(), "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
                 }
                 await _operationLogService.LogModeratorTopicAction((ModeratorTopicActions)logDto.Action!, logDto.UserId, topicId);
 
-                return (LanguageProvider.Moderator[GetLanguage(), "TOPIC_CHANGED_SUCCESSFULLY"], true);
+                return (TranslationProvider.Moderator[GetLanguage(), "TOPIC_CHANGED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
                 var id = Utils.HandleError(ex);
-                return (string.Format(LanguageProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                return (string.Format(TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
@@ -130,7 +130,7 @@ namespace PhpbbInDotnet.Services
                 var posts = (await sqlExecuter.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE topic_id = @topicId", new { topicId })).AsList();
                 if (!posts.Any())
                 {
-                    return (string.Format(LanguageProvider.Moderator[GetLanguage(), "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
+                    return (string.Format(TranslationProvider.Moderator[GetLanguage(), "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
                 }
 
                 var topic = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
@@ -172,12 +172,12 @@ namespace PhpbbInDotnet.Services
 
                 await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.DeleteTopic, logDto.UserId, topicId);
 
-                return (LanguageProvider.Moderator[GetLanguage(), "TOPIC_DELETED_SUCCESSFULLY"], true);
+                return (TranslationProvider.Moderator[GetLanguage(), "TOPIC_DELETED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
                 var id = Utils.HandleError(ex);
-                return (string.Format(LanguageProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                return (string.Format(TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
@@ -193,12 +193,12 @@ namespace PhpbbInDotnet.Services
 
                 if (curTopic is null)
                 {
-                    return (string.Format(LanguageProvider.Moderator[lang, "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
+                    return (string.Format(TranslationProvider.Moderator[lang, "TOPIC_DOESNT_EXIST_FORMAT"], topicId), false);
                 }
 
                 if (curTopic.ForumId == forumId)
                 {
-                    return (LanguageProvider.Moderator[lang, "INVALID_DESTINATION_FORUM"], false);
+                    return (TranslationProvider.Moderator[lang, "INVALID_DESTINATION_FORUM"], false);
                 }
 
                 await _context.GetSqlExecuter().ExecuteAsync(
@@ -207,12 +207,12 @@ namespace PhpbbInDotnet.Services
 
                 await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.CreateShortcut, logDto.UserId, topicId);
 
-                return (LanguageProvider.Moderator[lang, "SHORTCUT_CREATED_SUCCESSFULLY"], true);
+                return (TranslationProvider.Moderator[lang, "SHORTCUT_CREATED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
                 var id = Utils.HandleError(ex);
-                return (string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                return (string.Format(TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
@@ -228,12 +228,12 @@ namespace PhpbbInDotnet.Services
 
                 if (curShortcut is null)
                 {
-                    return (string.Format(LanguageProvider.Moderator[lang, "SHORTCUT_DOESNT_EXIST_FORMAT"], topicId, forumId), false);
+                    return (string.Format(TranslationProvider.Moderator[lang, "SHORTCUT_DOESNT_EXIST_FORMAT"], topicId, forumId), false);
                 }
 
                 if (curShortcut.ForumId != forumId)
                 {
-                    return (LanguageProvider.Moderator[lang, "INVALID_SHORTCUT_SELECTED"], false);
+                    return (TranslationProvider.Moderator[lang, "INVALID_SHORTCUT_SELECTED"], false);
                 }
 
                 await _context.GetSqlExecuter().ExecuteAsync(
@@ -242,12 +242,12 @@ namespace PhpbbInDotnet.Services
 
                 await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.CreateShortcut, logDto.UserId, topicId);
 
-                return (LanguageProvider.Moderator[lang, "SHORTCUT_DELETED_SUCCESSFULLY"], true);
+                return (TranslationProvider.Moderator[lang, "SHORTCUT_DELETED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
                 var id = Utils.HandleError(ex);
-                return (string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                return (string.Format(TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
@@ -261,12 +261,12 @@ namespace PhpbbInDotnet.Services
             {
                 if ((destinationForumId ?? 0) == 0)
                 {
-                    return (LanguageProvider.Moderator[GetLanguage(), "INVALID_DESTINATION_FORUM"], false);
+                    return (TranslationProvider.Moderator[GetLanguage(), "INVALID_DESTINATION_FORUM"], false);
                 }
 
                 if (!(postIds?.Any() ?? false))
                 {
-                    return (LanguageProvider.Moderator[GetLanguage(), "ATLEAST_ONE_POST_REQUIRED"], false);
+                    return (TranslationProvider.Moderator[GetLanguage(), "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
 
                 var sqlExecuter = _context.GetSqlExecuter();
@@ -275,7 +275,7 @@ namespace PhpbbInDotnet.Services
 
                 if (posts.Count != postIds.Length)
                 {
-                    return (LanguageProvider.Moderator[GetLanguage(), "ATLEAST_ONE_POST_MOVED_OR_DELETED"], false);
+                    return (TranslationProvider.Moderator[GetLanguage(), "ATLEAST_ONE_POST_MOVED_OR_DELETED"], false);
                 }
 
                 var curTopic = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>(
@@ -296,12 +296,12 @@ namespace PhpbbInDotnet.Services
                     await _operationLogService.LogModeratorPostAction(ModeratorPostActions.SplitSelectedPosts, logDto.UserId, post.PostId, $"Split from topic {oldTopicId} as new topic in forum {destinationForumId}");
                 }
 
-                return (LanguageProvider.Moderator[GetLanguage(), "POSTS_SPLIT_SUCCESSFULLY"], true);
+                return (TranslationProvider.Moderator[GetLanguage(), "POSTS_SPLIT_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
                 var id = Utils.HandleError(ex);
-                return (string.Format(LanguageProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                return (string.Format(TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
@@ -311,12 +311,12 @@ namespace PhpbbInDotnet.Services
             {
                 if ((destinationTopicId ?? 0) == 0)
                 {
-                    return (LanguageProvider.Moderator[GetLanguage(), "INVALID_DESTINATION_TOPIC"], false);
+                    return (TranslationProvider.Moderator[GetLanguage(), "INVALID_DESTINATION_TOPIC"], false);
                 }
 
                 if (!(postIds?.Any() ?? false))
                 {
-                    return (LanguageProvider.Moderator[GetLanguage(), "ATLEAST_ONE_POST_REQUIRED"], false);
+                    return (TranslationProvider.Moderator[GetLanguage(), "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
 
                 var sqlExecuter = _context.GetSqlExecuter();
@@ -324,13 +324,13 @@ namespace PhpbbInDotnet.Services
                 var posts = (await sqlExecuter.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
                 if (posts.Count != postIds.Length || posts.Select(p => p.TopicId).Distinct().Count() != 1)
                 {
-                    return (LanguageProvider.Moderator[GetLanguage(), "AT_LEAST_ONE_POST_MOVED_OR_DELETED"], false);
+                    return (TranslationProvider.Moderator[GetLanguage(), "AT_LEAST_ONE_POST_MOVED_OR_DELETED"], false);
                 }
 
                 var newTopic = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @destinationTopicId", new { destinationTopicId });
                 if (newTopic == null)
                 {
-                    return (string.Format(LanguageProvider.Moderator[GetLanguage(), "TOPIC_DOESNT_EXIST_FORMAT"], destinationTopicId), false);
+                    return (string.Format(TranslationProvider.Moderator[GetLanguage(), "TOPIC_DOESNT_EXIST_FORMAT"], destinationTopicId), false);
                 }
 
                 await sqlExecuter.ExecuteAsync("UPDATE phpbb_posts SET topic_id = @topicId, forum_id = @forumId WHERE post_id IN @postIds", new { newTopic.TopicId, newTopic.ForumId, postIds });
@@ -345,12 +345,12 @@ namespace PhpbbInDotnet.Services
                     await _operationLogService.LogModeratorPostAction(ModeratorPostActions.MoveSelectedPosts, logDto.UserId, post.PostId, $"Moved from {oldTopicId} to {destinationTopicId}");
                 }
 
-                return (LanguageProvider.Moderator[GetLanguage(), "POSTS_MOVED_SUCCESSFULLY"], true);
+                return (TranslationProvider.Moderator[GetLanguage(), "POSTS_MOVED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
                 var id = Utils.HandleError(ex);
-                return (string.Format(LanguageProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                return (string.Format(TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
@@ -361,24 +361,24 @@ namespace PhpbbInDotnet.Services
                 var lang = GetLanguage();
                 if (!(postIds?.Any() ?? false))
                 {
-                    return (LanguageProvider.Moderator[lang, "ATLEAST_ONE_POST_REQUIRED"], false);
+                    return (TranslationProvider.Moderator[lang, "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
 
                 var sqlExecuter = _context.GetSqlExecuter();
                 var posts = (await sqlExecuter.QueryAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id IN @postIds ORDER BY post_time", new { postIds })).AsList();
                 if (posts.Count != postIds.Length || posts.Select(p => p.TopicId).Distinct().Count() != 1)
                 {
-                    return (LanguageProvider.Moderator[lang, "ATLEAST_ONE_POST_MOVED_OR_DELETED"], false);
+                    return (TranslationProvider.Moderator[lang, "ATLEAST_ONE_POST_MOVED_OR_DELETED"], false);
                 }
 
                 await DeletePostsCore(posts, logDto, true);
 
-                return (LanguageProvider.Moderator[lang, "POSTS_DELETED_SUCCESSFULLY"], true);
+                return (TranslationProvider.Moderator[lang, "POSTS_DELETED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
                 var id = Utils.HandleError(ex);
-                return (string.Format(LanguageProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                return (string.Format(TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
@@ -398,7 +398,7 @@ namespace PhpbbInDotnet.Services
                 {
                     Attachments = attachments.Where(a => a.PostMsgId == post.PostId).Select(a => new AttachmentDto(dbRecord: a, isPreview: false, language: lang, deletedFile: true)).ToList(),
                     AuthorId = post.PosterId,
-                    AuthorName = string.IsNullOrWhiteSpace(post.PostUsername) ? LanguageProvider.BasicText[lang, "ANONYMOUS"] : post.PostUsername,
+                    AuthorName = string.IsNullOrWhiteSpace(post.PostUsername) ? TranslationProvider.BasicText[lang, "ANONYMOUS"] : post.PostUsername,
                     BbcodeUid = post.BbcodeUid,
                     ForumId = post.ForumId,
                     TopicId = post.TopicId,
@@ -434,7 +434,7 @@ namespace PhpbbInDotnet.Services
                 var post = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == postId);
                 if (post == null)
                 {
-                    return (LanguageProvider.Moderator[GetLanguage(), "ATLEAST_ONE_POST_REQUIRED"], false);
+                    return (TranslationProvider.Moderator[GetLanguage(), "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
                 var attachments = await _context.PhpbbAttachments.AsNoTracking().Where(a => a.PostMsgId == postId).OrderBy(a => a.AttachId).ToListAsync();
 
@@ -478,7 +478,7 @@ namespace PhpbbInDotnet.Services
             catch (Exception ex)
             {
                 var id = Utils.HandleError(ex);
-                return (string.Format(LanguageProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                return (string.Format(TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 

@@ -18,11 +18,11 @@
 @{
     var Lang = Model.GetLanguage();
 
-    ViewData["Title"] = Model.LanguageProvider.BasicText[Lang, "WRITE_NEW_POST"];
+    ViewData["Title"] = Model.TranslationProvider.BasicText[Lang, "WRITE_NEW_POST"];
     Layout = "~/Pages/_Layout.cshtml";
 
     var CurrentUser = Model.GetCurrentUser();
-    var UserDateFormat = CurrentUser.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
+    var UserDateFormat = CurrentUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
     var IsAdmin = await Model.IsCurrentUserAdminHere();
 }
 
@@ -45,7 +45,7 @@
     );
 </script>
 
-<h3>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "WRITE_NEW_PM"])</h3>
+<h3>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "WRITE_NEW_PM"])</h3>
 
 @if (Model.PreviewablePost != null)
 {
@@ -67,7 +67,7 @@
 <form name="postform" method="post" enctype="multipart/form-data">
     @if (Model.Action == PostingActions.NewPrivateMessage)
     {
-        <input type="text" asp-for="ReceiverName" placeholder="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "PM_CHOOSE_TO"])" id="pmToInput" style="width:100%" autocomplete="off" class="InputBox" />
+        <input type="text" asp-for="ReceiverName" placeholder="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "PM_CHOOSE_TO"])" id="pmToInput" style="width:100%" autocomplete="off" class="InputBox" />
         <div style="clear:both"></div>
         <p id="tributeHolder" style="position:relative"></p>
         <span asp-validation-for="ReceiverName" class="validation"></span>
@@ -81,11 +81,11 @@
     @await Html.PartialAsync("_TextInputPartial", new _TextInputPartialModel(Lang, Model.PostTitle, Model.PostText))
 
     <button onclick="posting.toggleEmoji()" type="button" class="Hide960 PostingButton MyButton SpacedButton">
-        &#x1F642; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "EMOJI"])
+        &#x1F642; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "EMOJI"])
     </button>
 
-    <input type="submit" value="&#x1F440; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "DO_PREVIEW", Casing.Title])" onclick="return posting.censor()" asp-page-handler="Preview" class="PostingButton MyButton SpacedButton" formnovalidate />
-    <input type="submit" value="&#x27A1; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="Submit" class="PostingButton MyButton SpacedButton MyMainButton" formnovalidate />
+    <input type="submit" value="&#x1F440; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "DO_PREVIEW", Casing.Title])" onclick="return posting.censor()" asp-page-handler="Preview" class="PostingButton MyButton SpacedButton" formnovalidate />
+    <input type="submit" value="&#x27A1; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="Submit" class="PostingButton MyButton SpacedButton MyMainButton" formnovalidate />
     <b>
         <span asp-validation-for="PostTitle" class="validation"></span>
         <span asp-validation-for="PostText" class="validation"></span>

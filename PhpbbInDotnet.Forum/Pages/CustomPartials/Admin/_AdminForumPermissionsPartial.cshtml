@@ -9,7 +9,7 @@
 
 @inject IForumDbContext _context
 @inject Domain.ICommonUtils _utils
-@inject Languages.LanguageProvider _languageProvider
+@inject Languages.ITranslationProvider _translationProvider
 
 @{
     var groupedPermissions = from p in Model.Permissions.EmptyIfNull()
@@ -47,11 +47,11 @@
         <div class="FlexRight PostInputWidth">
             @Html.DropDownList(
                 $"dto.{Model.EntityType}ForumPermissions[{index}]",
-                permissions.Select(p => new SelectListItem(_languageProvider.Admin[Model.Language, p.RoleName!, Casing.None], $"{permissions.Key.Id}_{p.RoleId}", p.HasRole)),
+                permissions.Select(p => new SelectListItem(_translationProvider.Admin[Model.Language, p.RoleName!, Casing.None], $"{permissions.Key.Id}_{p.RoleId}", p.HasRole)),
                 new { style = "width:75%; margin-top:10px;" }
             )
             <label>
-                @Html.Raw(_languageProvider.Admin[Model.Language, "ASK_DELETE"])
+                @Html.Raw(_translationProvider.Admin[Model.Language, "ASK_DELETE"])
                 <input type="checkbox" name="dto.@(Model.EntityType)PermissionToRemove" value="@(index++)" />
             </label>
         </div>
@@ -71,18 +71,18 @@
     <p>&nbsp;</p>
     <div style="border:solid 1px black; padding:5px; border-radius:5px; width:95%">
         <strong>
-            @Html.Raw(_languageProvider.Admin[Model.Language, Model.EntityType == AclEntityType.Group ? "ADD_PERMISSIONS_FOR_NEW_GROUP" : "ADD_PERMISSIONS_FOR_NEW_USER"])
+            @Html.Raw(_translationProvider.Admin[Model.Language, Model.EntityType == AclEntityType.Group ? "ADD_PERMISSIONS_FOR_NEW_GROUP" : "ADD_PERMISSIONS_FOR_NEW_USER"])
         </strong>
         <p>&nbsp;</p>
         @if (Model.EntityType == AclEntityType.User)
         {
-            <input type="text" id="permissionsUser" placeholder="@Html.Raw(_languageProvider.Admin[Model.Language, "SEARCH_FOR_USER"])" autocomplete="new-password" />
+            <input type="text" id="permissionsUser" placeholder="@Html.Raw(_translationProvider.Admin[Model.Language, "SEARCH_FOR_USER"])" autocomplete="new-password" />
         }
         else
         {
             var dropDownItems = new List<SelectListItem>
 {
-                new SelectListItem(_languageProvider.Admin[Model.Language, "CHOOSE_GROUP"], "0", true, true)
+                new SelectListItem(_translationProvider.Admin[Model.Language, "CHOOSE_GROUP"], "0", true, true)
             };
             dropDownItems.AddRange(remainingEntities.Select(e => new SelectListItem(e.Key, e.Value.ToString())));
             @Html.DropDownList($"permissionsGroup", dropDownItems, new { onchange = "changeGroupId(this.options[this.selectedIndex].value, this.options[this.selectedIndex].text)" });
@@ -90,12 +90,12 @@
         <p id="tributeHolder" style="position:relative">&nbsp;</p>
         <div class="FlexCenter">
             <div id="entityName_@(Model.Self)">
-                @Html.Raw(_languageProvider.Admin[Model.Language, Model.EntityType == AclEntityType.Group ? "NEW_GROUP" : "NEW_USER"])
+                @Html.Raw(_translationProvider.Admin[Model.Language, Model.EntityType == AclEntityType.Group ? "NEW_GROUP" : "NEW_USER"])
             </div>
             <div class="FlexRight PostInputWidth">
                 @Html.DropDownList(
                     $"dto.{Model.EntityType}ForumPermissions[{index++}]",
-                    roles.Select(p => new SelectListItem(_languageProvider.Admin[Model.Language, p.RoleName, Casing.None], $"0_{p.RoleId}")),
+                    roles.Select(p => new SelectListItem(_translationProvider.Admin[Model.Language, p.RoleName, Casing.None], $"0_{p.RoleId}")),
                     new { id = $"newPermissions_{Model.Self}", style = "width:95%" }
                 )
             </div>

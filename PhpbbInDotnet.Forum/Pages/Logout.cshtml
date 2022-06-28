@@ -1,12 +1,12 @@
 ﻿@page
 @model PhpbbInDotnet.Forum.Pages.LogoutModel
 @using Domain
-@inject Languages.LanguageProvider _languageProvider
+@inject Languages.ITranslationProvider _translationProvider
 @{
     ViewData["Title"] = "Logout";
     Layout = "~/Pages/_Layout.cshtml";
-    var lang = _languageProvider.GetValidatedLanguage(null, Model.HttpContext?.Request);
+    var lang = _translationProvider.GetValidatedLanguage(null, Model.HttpContext?.Request);
 }
 
-<h3>@_languageProvider.BasicText[lang, "LOGOUT", Casing.FirstUpper]</h3>
+<h3>@_translationProvider.BasicText[lang, "LOGOUT", Casing.FirstUpper]</h3>
 

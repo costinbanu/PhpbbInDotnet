@@ -10,8 +10,8 @@
 @{
     var CurrentUser = Model.GetCurrentUser();
     var Lang = Model.GetLanguage();
-    var UserDateFormat = CurrentUser?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
-    ViewData["Title"] = Model.LanguageProvider.BasicText[Lang, "HOME", Casing.Title];
+    var UserDateFormat = CurrentUser?.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
+    ViewData["Title"] = Model.TranslationProvider.BasicText[Lang, "HOME", Casing.Title];
     ViewData["BreadCrumbs"] = _forumService.GetJSLDBreadCrumbsObject((await Model.GetForumTree(false, false)).Tree, 0);
 }
 
@@ -22,7 +22,7 @@
     </form>
     @await Html.PartialAsync(
         "_HeaderLinksPartial",
-        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(Lang, true, $"<a href=\"javascript:MarkForumsRead.submit()\">{Model.LanguageProvider.BasicText[Lang, "MARK_FORUMS_READ", Casing.Title]}</a>"),
+        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(Lang, true, $"<a href=\"javascript:MarkForumsRead.submit()\">{Model.TranslationProvider.BasicText[Lang, "MARK_FORUMS_READ", Casing.Title]}</a>"),
         ViewData
     )
 }
@@ -33,7 +33,7 @@
     {
         <span>&nbsp;&bull;&nbsp;</span>
     }
-    @Html.Raw(Model.LanguageProvider.ExternalLinks[Lang])
+    @Html.Raw(Model.TranslationProvider.ExternalLinks[Lang])
 }
 
 <div id="target"></div>

@@ -5,12 +5,12 @@
 
 @inject ICommonUtils _utils
 @inject IConfiguration _config
-@inject Languages.LanguageProvider _languageProvider
+@inject Languages.ITranslationProvider _translationProvider
 
-@Html.Raw(_languageProvider.Email[Model.Language, "GREETING_BEGIN"])
+@Html.Raw(_translationProvider.Email[Model.Language, "GREETING_BEGIN"])
 <br />
 <br />
-@Html.Raw(string.Format(_languageProvider.Email[Model.Language, "NEWUSER_BODY_FORMAT"], Model.Username, $"{_config.GetValue<string>("BaseUrl")}/Admin"))
+@Html.Raw(string.Format(_translationProvider.Email[Model.Language, "NEWUSER_BODY_FORMAT"], Model.Username, $"{_config.GetValue<string>("BaseUrl")}/Admin"))
 <br />
 <br />
-@Html.Raw(_languageProvider.Email[Model.Language, "GREETING_END"])
+@Html.Raw(_translationProvider.Email[Model.Language, "GREETING_END"])

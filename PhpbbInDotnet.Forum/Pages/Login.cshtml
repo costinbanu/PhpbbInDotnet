@@ -7,41 +7,41 @@
 @inject IConfiguration _config
 
 @{
-    var lang = Model.LanguageProvider.GetValidatedLanguage(null, Model.HttpContext?.Request);
-    ViewData["Title"] = Model.LanguageProvider.BasicText[lang, "LOGIN", Casing.Title];
+    var lang = Model.TranslationProvider.GetValidatedLanguage(null, Model.HttpContext?.Request);
+    ViewData["Title"] = Model.TranslationProvider.BasicText[lang, "LOGIN", Casing.Title];
     Layout = "~/Pages/_Layout.cshtml";
 }
 
-<h3>@Model.LanguageProvider.BasicText[lang, "LOGIN", Casing.FirstUpper]</h3>
+<h3>@Model.TranslationProvider.BasicText[lang, "LOGIN", Casing.FirstUpper]</h3>
 
 @if (Model.Mode == Domain.LoginMode.Normal)
 {
     <form method="post">
-        <input type="text" asp-for="UserName" placeholder="@Model.LanguageProvider.BasicText[lang, "USERNAME", Casing.FirstUpper]" class="form" autocomplete="username" />
+        <input type="text" asp-for="UserName" placeholder="@Model.TranslationProvider.BasicText[lang, "USERNAME", Casing.FirstUpper]" class="form" autocomplete="username" />
         <p></p>
-        <input type="password" asp-for="Password" placeholder="@Model.LanguageProvider.BasicText[lang, "PASSWORD", Casing.FirstUpper]" class="form" autocomplete="password" />
+        <input type="password" asp-for="Password" placeholder="@Model.TranslationProvider.BasicText[lang, "PASSWORD", Casing.FirstUpper]" class="form" autocomplete="password" />
         <p></p>
         <input type="hidden" asp-for="ReturnUrl" class="form" />
         <p></p>
         <span asp-validation-for="LoginErrorMessage" class="validation"></span>
-        <input type="submit" value="@Model.LanguageProvider.BasicText[lang, "LOGIN", Casing.FirstUpper]" class="MyButton" />
+        <input type="submit" value="@Model.TranslationProvider.BasicText[lang, "LOGIN", Casing.FirstUpper]" class="MyButton" />
         <p></p>
         @Html.AntiForgeryToken()
     </form>
-    <a href="javascript:showElement('forgotPassword')">@Model.LanguageProvider.BasicText[lang, "FORGOT_PASSWORD", Casing.FirstUpper]</a>
+    <a href="javascript:showElement('forgotPassword')">@Model.TranslationProvider.BasicText[lang, "FORGOT_PASSWORD", Casing.FirstUpper]</a>
     <div style="display:@(Model.ShowPwdResetOptions ? "block" : "none"); margin-left:15px" id="forgotPassword">
         <form asp-page-handler="ResetPassword">
             <p></p>
-            <input type="text" asp-for="UserNameForPwdReset" placeholder="@Model.LanguageProvider.BasicText[lang, "USERNAME", Casing.FirstUpper]" class="form" autocomplete="username" />
+            <input type="text" asp-for="UserNameForPwdReset" placeholder="@Model.TranslationProvider.BasicText[lang, "USERNAME", Casing.FirstUpper]" class="form" autocomplete="username" />
             <p></p>
-            <input type="email" asp-for="EmailForPwdReset" placeholder="@Model.LanguageProvider.BasicText[lang, "EMAIL", Casing.FirstUpper]" class="form" autocomplete="email" />
+            <input type="email" asp-for="EmailForPwdReset" placeholder="@Model.TranslationProvider.BasicText[lang, "EMAIL", Casing.FirstUpper]" class="form" autocomplete="email" />
             <p></p>
             <span class="caption">
-                @Html.Raw(string.Format(Model.LanguageProvider.BasicText[lang, "HELPER_TEXT_FORMAT"], _config.GetValue<string>("AdminEmail")))
+                @Html.Raw(string.Format(Model.TranslationProvider.BasicText[lang, "HELPER_TEXT_FORMAT"], _config.GetValue<string>("AdminEmail")))
             </span>
             <p></p>
             <span asp-validation-for="PwdResetErrorMessage" class="validation"></span>
-            <input type="submit" value="@Model.LanguageProvider.BasicText[lang, "RESET_PASSWORD", Casing.FirstUpper]" class="MyButton" />
+            <input type="submit" value="@Model.TranslationProvider.BasicText[lang, "RESET_PASSWORD", Casing.FirstUpper]" class="MyButton" />
             @Html.AntiForgeryToken()
         </form>
     </div>
@@ -49,10 +49,10 @@
 else if (Model.Mode == Domain.LoginMode.PasswordReset)
 {
     <form method="post" asp-page-handler="SaveNewPassword">
-        <input type="password" asp-for="PwdResetFirstPassword" placeholder="@Model.LanguageProvider.BasicText[lang, "NEW_PASSWORD"]" class="form" autocomplete="new-password" /><br />
+        <input type="password" asp-for="PwdResetFirstPassword" placeholder="@Model.TranslationProvider.BasicText[lang, "NEW_PASSWORD"]" class="form" autocomplete="new-password" /><br />
         <span asp-validation-for="PwdResetFirstPassword" class="validation"></span>
         <br />
-        <input type="password" asp-for="PwdResetSecondPassword" placeholder="@Model.LanguageProvider.BasicText[lang, "REPEAT_NEW_PASSWORD"]" class="form" autocomplete="new-password" /><br />
+        <input type="password" asp-for="PwdResetSecondPassword" placeholder="@Model.TranslationProvider.BasicText[lang, "REPEAT_NEW_PASSWORD"]" class="form" autocomplete="new-password" /><br />
         <span asp-validation-for="PwdResetSecondPassword" class="validation"></span>
         <input type="hidden" asp-for="UserId" />
         <input type="hidden" asp-for="ResetPasswordCode" />
@@ -60,7 +60,7 @@ else if (Model.Mode == Domain.LoginMode.PasswordReset)
         @Html.AntiForgeryToken()
         <p></p>
         <span asp-validation-for="PwdResetErrorMessage" class="validation"></span>
-        <input type="submit" value="@Model.LanguageProvider.BasicText[lang, "SAVE_NEW_PASSWORD", Casing.FirstUpper]" />
+        <input type="submit" value="@Model.TranslationProvider.BasicText[lang, "SAVE_NEW_PASSWORD", Casing.FirstUpper]" />
     </form>
 }
 

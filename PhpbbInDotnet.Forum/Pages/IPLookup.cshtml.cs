@@ -18,8 +18,8 @@ namespace PhpbbInDotnet.Forum.Pages
 {
     public class IPLookupModel : AuthenticatedPageModel
     {
-        public IPLookupModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, LanguageProvider languageProvider)
-            : base(context, forumService, userService, cache, utils, languageProvider)
+        public IPLookupModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, ITranslationProvider translationProvider)
+            : base(context, forumService, userService, cache, utils, translationProvider)
         {
 
         }

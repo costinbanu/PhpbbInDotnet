@@ -23,7 +23,7 @@
     var editTime = currentUser.PostEditTime;
     var sqlExecuter = _context.GetSqlExecuter();
     var lang = Model.GetLanguage();
-    var userDateFormat = currentUser.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(lang);
+    var userDateFormat = currentUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(lang);
     var isCurrentForumReadOnly = await _forumService.IsForumReadOnlyForUser(currentUser, Model.ForumId ?? 0);
     var forumTree = (await Model.GetForumTree(false, false)).Tree;
     if (Model.ForumId > 0)
@@ -67,7 +67,7 @@
     }
 </script>
 <span style="padding-top: 10px; padding-bottom: 10px">
-    @Html.Raw(Model.LanguageProvider.BasicText[lang, "PARENT_FORUM", Casing.FirstUpper]):
+    @Html.Raw(Model.TranslationProvider.BasicText[lang, "PARENT_FORUM", Casing.FirstUpper]):
     <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@Html.Raw(Model.ForumTitle)</a>
 </span>
 @if (!currentUser.IsAnonymous)
@@ -80,9 +80,9 @@
     )
 }
 <p>&nbsp;</p>
-<h3>@Html.Raw(Model.LanguageProvider.BasicText[lang, "TOPIC", Casing.FirstUpper]): @Html.Raw(Model.TopicTitle)</h3>
+<h3>@Html.Raw(Model.TranslationProvider.BasicText[lang, "TOPIC", Casing.FirstUpper]): @Html.Raw(Model.TopicTitle)</h3>
 <span class="Caption">
-    @Html.Raw($"{Model.PostCount} {(Model.PostCount != 1 ? Model.LanguageProvider.BasicText[lang, "POSTS"] : Model.LanguageProvider.BasicText[lang, "POST"])}, {Model.ViewCount} {(Model.ViewCount != 1 ? Model.LanguageProvider.BasicText[lang, "VIEWS"] : Model.LanguageProvider.BasicText[lang, "VIEW"])}")
+    @Html.Raw($"{Model.PostCount} {(Model.PostCount != 1 ? Model.TranslationProvider.BasicText[lang, "POSTS"] : Model.TranslationProvider.BasicText[lang, "POST"])}, {Model.ViewCount} {(Model.ViewCount != 1 ? Model.TranslationProvider.BasicText[lang, "VIEWS"] : Model.TranslationProvider.BasicText[lang, "VIEW"])}")
 </span>
 
 @await Html.PartialAsync("_RulesPartial", new _RulesPartialModel
@@ -168,7 +168,7 @@
         <form id="moderatorForm" method="post" asp-page-handler="DeleteMyMessage" style="display:none">
             @Html.DropDownList(
                 "PostAction",
-                _utils.EnumToDropDownList<ModeratorPostActions>(selectedItem: Model.PostAction, textTransform: item => Model.LanguageProvider.Enums[lang, item], defaultText: Model.LanguageProvider.BasicText[lang, "SELECT_AN_OPTION"]),
+                _utils.EnumToDropDownList<ModeratorPostActions>(selectedItem: Model.PostAction, textTransform: item => Model.TranslationProvider.Enums[lang, item], defaultText: Model.TranslationProvider.BasicText[lang, "SELECT_AN_OPTION"]),
                 new { onchange = "mod.showPostExtraInput(this)", id = "PostAction", style = "display:none" }
             )
             <input asp-for="ForumId" type="hidden" />
@@ -186,18 +186,18 @@
 
         @if (Model.IsLocked)
         {
-            <span>&#x1F512;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[lang, "CLOSED_TOPIC", Casing.FirstUpper])</span>
+            <span>&#x1F512;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[lang, "CLOSED_TOPIC", Casing.FirstUpper])</span>
         }
         else
         {
-            <span>&#x1F4DD;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[lang, "WRITE_NEW_POST", Casing.FirstUpper])</span>
+            <span>&#x1F4DD;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[lang, "WRITE_NEW_POST", Casing.FirstUpper])</span>
         }
     </button>
 }
 else if (!isCurrentForumReadOnly)
 {
     <p></p>
-    <button type="button" disabled class="MyButton">&#x1F512;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[lang, "CLOSED_TOPIC", Casing.FirstUpper])</button>
+    <button type="button" disabled class="MyButton">&#x1F512;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[lang, "CLOSED_TOPIC", Casing.FirstUpper])</button>
 }
 <p></p>
 @await Html.PartialAsync(
@@ -217,19 +217,19 @@ else if (!isCurrentForumReadOnly)
 
 @*shortcuts*@
 <div style="clear:both; margin: 10px 0px 10px 0px">
-    <a href="/" class="nowrap">@Html.Raw(Model.LanguageProvider.BasicText[lang, "HOME", Casing.FirstUpper])</a>
+    <a href="/" class="nowrap">@Html.Raw(Model.TranslationProvider.BasicText[lang, "HOME", Casing.FirstUpper])</a>
     <span class="bullet">&nbsp;&bull;&nbsp;</span>
     <div class="newline"></div>
     @if (Model.ForumId != null)
     {
         <span>
-            @Html.Raw(Model.LanguageProvider.BasicText[lang, "PARENT_FORUM", Casing.FirstUpper]):
+            @Html.Raw(Model.TranslationProvider.BasicText[lang, "PARENT_FORUM", Casing.FirstUpper]):
             <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@Html.Raw(@Model.ForumTitle)</a>
         </span>
         <span class="bullet">&nbsp;&bull;&nbsp;</span>
         <div class="newline"></div>
     }
-    <span onclick="showForumTree(this)" class="SpanLikeLink nowrap">@Html.Raw(Model.LanguageProvider.BasicText[lang, "CHOOSE_DESTINATION", Casing.FirstUpper])</span>
+    <span onclick="showForumTree(this)" class="SpanLikeLink nowrap">@Html.Raw(Model.TranslationProvider.BasicText[lang, "CHOOSE_DESTINATION", Casing.FirstUpper])</span>
 </div>
 
 <div id="forumTree" style="display:none">
@@ -247,7 +247,7 @@ else if (!isCurrentForumReadOnly)
     <p></p>
     <form action="/ViewForum">
         <input type="hidden" name="ForumId" id="ForumIdInput" />
-        <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[lang, "GO", Casing.FirstUpper])" class="MyButton" />
+        <input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[lang, "GO", Casing.FirstUpper])" class="MyButton" />
     </form>
 </div>
 
@@ -255,24 +255,24 @@ else if (!isCurrentForumReadOnly)
 @if (isMod)
 {
     <form method="post" asp-page-handler="TopicModerator" style="padding-top:5px">
-        @Html.Raw(Model.LanguageProvider.Moderator[lang, "MODERATE_TOPIC"]):
+        @Html.Raw(Model.TranslationProvider.Moderator[lang, "MODERATE_TOPIC"]):
         @Html.DropDownList(
             nameof(Model.TopicAction),
             _utils.EnumToDropDownList<ModeratorTopicActions>(
                 selectedItem: Model.TopicAction, 
-                textTransform: item => Model.LanguageProvider.Enums[lang, item], 
-                defaultText: Model.LanguageProvider.BasicText[lang, "SELECT_AN_OPTION"],
+                textTransform: item => Model.TranslationProvider.Enums[lang, item], 
+                defaultText: Model.TranslationProvider.BasicText[lang, "SELECT_AN_OPTION"],
                 valueFilter: Model.FilterModeratorTopicActions
             ),
             new { onchange = "mod.showTopicExtraInput(this)", id = "TopicAction", style = "max-width:70%; height: 30px; padding-top: 0px" }
         )
         <div id="extraInputTopic" style="display:@(Model.ShowTopic ? "block" : "none")">
             <br />
-            <input type="text" asp-for="DestinationForumId" placeholder="@Html.Raw(Model.LanguageProvider.Moderator[lang, "DESTINATION_FORUM_ID"])" /><br />
-            <a href="javascript:$('#modConfirmation').submit();">@Html.Raw(Model.LanguageProvider.Moderator[lang, "CHOOSE_DESTINATION_FORUM_ID"])</a>
+            <input type="text" asp-for="DestinationForumId" placeholder="@Html.Raw(Model.TranslationProvider.Moderator[lang, "DESTINATION_FORUM_ID"])" /><br />
+            <a href="javascript:$('#modConfirmation').submit();">@Html.Raw(Model.TranslationProvider.Moderator[lang, "CHOOSE_DESTINATION_FORUM_ID"])</a>
             <span asp-validation-for="DestinationForumId" class="validation"></span>
         </div>
-        <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[lang, "SUBMIT", Casing.FirstUpper])" onclick="return mod.confirmAction('#TopicAction');" class="MyButton" style="height:30px" />
+        <input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[lang, "SUBMIT", Casing.FirstUpper])" onclick="return mod.confirmAction('#TopicAction');" class="MyButton" style="height:30px" />
         <input asp-for="ForumId" type="hidden" />
         <input asp-for="TopicId" type="hidden" />
         <input asp-for="PageNum" type="hidden" />
@@ -280,32 +280,32 @@ else if (!isCurrentForumReadOnly)
     </form>
 
     <form id="moderatorForm" method="post" asp-page-handler="PostModerator" style="padding-top:5px">
-        @Html.Raw(Model.LanguageProvider.Moderator[lang, "MODERATE_SELECTED_POSTS", Casing.FirstUpper]):
+        @Html.Raw(Model.TranslationProvider.Moderator[lang, "MODERATE_SELECTED_POSTS", Casing.FirstUpper]):
         @Html.DropDownList(
             nameof(Model.PostAction),
             _utils.EnumToDropDownList<ModeratorPostActions>(
                 selectedItem: Model.PostAction, 
-                textTransform: item => Model.LanguageProvider.Enums[lang, item], 
-                defaultText: Model.LanguageProvider.BasicText[lang, "SELECT_AN_OPTION"],
+                textTransform: item => Model.TranslationProvider.Enums[lang, item], 
+                defaultText: Model.TranslationProvider.BasicText[lang, "SELECT_AN_OPTION"],
                 valueFilter: action => action != ModeratorPostActions.RestorePosts
             ),
             new { onchange = "mod.showPostExtraInput(this)", id = "PostAction", style = "max-width:70%; height: 30px; padding-top: 0px" }
         )
         <div id="extraInputPostForum" style="display:@(Model.ShowPostForum ? "block" : "none")">
             <br />
-            <input type="text" asp-for="DestinationForumId" placeholder="@Html.Raw(Model.LanguageProvider.Moderator[lang, "DESTINATION_FORUM_ID"])" /><br />
-            <a href="javascript:$('#modConfirmation').submit();">@Html.Raw(Model.LanguageProvider.Moderator[lang, "CHOOSE_DESTINATION_FORUM_ID"])</a>
+            <input type="text" asp-for="DestinationForumId" placeholder="@Html.Raw(Model.TranslationProvider.Moderator[lang, "DESTINATION_FORUM_ID"])" /><br />
+            <a href="javascript:$('#modConfirmation').submit();">@Html.Raw(Model.TranslationProvider.Moderator[lang, "CHOOSE_DESTINATION_FORUM_ID"])</a>
             <span asp-validation-for="PostIdsForModerator" class="validation"></span>
             <span asp-validation-for="DestinationForumId" class="validation"></span>
         </div>
         <div id="extraInputPostTopic" style="display:@(Model.ShowPostTopic ? "block" : "none")">
             <br />
-            <input type="text" asp-for="DestinationTopicId" placeholder="@Html.Raw(Model.LanguageProvider.Moderator[lang, "DESTINATION_TOPIC_ID"])" /><br />
-            <a href="javascript:$('#modConfirmation').submit();">@Html.Raw(Model.LanguageProvider.Moderator[lang, "CHOOSE_DESTINATION_TOPIC_ID"])</a>
+            <input type="text" asp-for="DestinationTopicId" placeholder="@Html.Raw(Model.TranslationProvider.Moderator[lang, "DESTINATION_TOPIC_ID"])" /><br />
+            <a href="javascript:$('#modConfirmation').submit();">@Html.Raw(Model.TranslationProvider.Moderator[lang, "CHOOSE_DESTINATION_TOPIC_ID"])</a>
             <span asp-validation-for="PostIdsForModerator" class="validation"></span>
             <span asp-validation-for="DestinationTopicId" class="validation"></span>
         </div>
-        <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[lang, "SUBMIT", Casing.FirstUpper])" onclick="return mod.confirmAction('#PostAction');" class="MyButton" style="height:30px" />
+        <input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[lang, "SUBMIT", Casing.FirstUpper])" onclick="return mod.confirmAction('#PostAction');" class="MyButton" style="height:30px" />
         <br />
         <input asp-for="ForumId" type="hidden" />
         <input asp-for="TopicId" type="hidden" />
@@ -332,8 +332,8 @@ else if (!isCurrentForumReadOnly)
     </form>
 
     <div class="MiddleBox" id="postInfo" style="display:none; padding: 10px; overflow-y: scroll">
-        <h4 style="float:left">@Html.Raw(Model.LanguageProvider.BasicText[lang, "INFORMATION", Casing.Title])</h4>
-        <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('postInfo')">@Html.Raw(Model.LanguageProvider.BasicText[lang, "CLOSE_BUTTON"])</div>
+        <h4 style="float:left">@Html.Raw(Model.TranslationProvider.BasicText[lang, "INFORMATION", Casing.Title])</h4>
+        <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('postInfo')">@Html.Raw(Model.TranslationProvider.BasicText[lang, "CLOSE_BUTTON"])</div>
         <p>&nbsp;</p>
         <p>&nbsp;</p>
         <div id="postInfoContent"></div>
@@ -350,16 +350,16 @@ else if (!isCurrentForumReadOnly)
 @if (!currentUser.IsAnonymous)
 {
     <form asp-page-handler="ReportMessage" method="post" class="MiddleBox" id="report" style="display:none; padding: 10px; overflow-y: scroll">
-        <h4 style="float:left">@Html.Raw(Model.LanguageProvider.BasicText[lang, "DO_REPORT"])</h4>
-        <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('report')">@Html.Raw(Model.LanguageProvider.BasicText[lang, "CLOSE_BUTTON"])</div>
+        <h4 style="float:left">@Html.Raw(Model.TranslationProvider.BasicText[lang, "DO_REPORT"])</h4>
+        <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('report')">@Html.Raw(Model.TranslationProvider.BasicText[lang, "CLOSE_BUTTON"])</div>
         <p>&nbsp;</p>
         <p>&nbsp;</p>
         <div>
             <div class="FlexCenter">
-                <div style="font-weight:bold; text-align: right">@Html.Raw(Model.LanguageProvider.BasicText[lang, "REASON", Casing.FirstUpper])</div>
+                <div style="font-weight:bold; text-align: right">@Html.Raw(Model.TranslationProvider.BasicText[lang, "REASON", Casing.FirstUpper])</div>
                 <div class="FlexRight PostInputWidth">
                     @{
-                        var reasons = new List<SelectListItem> { new SelectListItem(Model.LanguageProvider.BasicText[lang, "CHOOSE_REASON"], "-1", true, true) };
+                        var reasons = new List<SelectListItem> { new SelectListItem(Model.TranslationProvider.BasicText[lang, "CHOOSE_REASON"], "-1", true, true) };
                         reasons.AddRange((await sqlExecuter.QueryAsync("SELECT reason_description, reason_id FROM phpbb_reports_reasons ORDER BY reason_order")).Select(x => new SelectListItem(x.reason_description.ToString(), x.reason_id.ToString())));
                     }
                     @Html.DropDownList("reportReasonId", reasons, new { id = "reportReason", style = "width: 100%" })
@@ -367,7 +367,7 @@ else if (!isCurrentForumReadOnly)
             </div>
             <p></p>
             <div class="FlexCenter">
-                <div style="font-weight:bold; text-align: right">@Html.Raw(Model.LanguageProvider.BasicText[lang, "ADDITIONAL_DETAILS"])</div>
+                <div style="font-weight:bold; text-align: right">@Html.Raw(Model.TranslationProvider.BasicText[lang, "ADDITIONAL_DETAILS"])</div>
                 <div class="FlexRight PostInputWidth">
                     <textarea name="ReportDetails" rows="4" cols="100" id="reportDetails" style="width:100%"></textarea>
                 </div>
@@ -379,31 +379,31 @@ else if (!isCurrentForumReadOnly)
         <input type="hidden" asp-for="PageNum" />
         <input type="hidden" asp-for="PostId" />
         <input type="hidden" name="ReportId" id="reportId" />
-        <input type="submit" onclick="return vt.validateReportForm();" value="@Html.Raw(Model.LanguageProvider.BasicText[lang, "SUBMIT", Casing.FirstUpper])" class="MyButton" />
+        <input type="submit" onclick="return vt.validateReportForm();" value="@Html.Raw(Model.TranslationProvider.BasicText[lang, "SUBMIT", Casing.FirstUpper])" class="MyButton" />
         <span class="validation" id="reportValidation" style="display:none"></span>
         @Html.AntiForgeryToken()
     </form>
 
     <div id="reportViewer" class="MiddleBox" style="display:none; padding: 10px; overflow-y: scroll">
-        <h4 style="float:left">@Html.Raw(Model.LanguageProvider.BasicText[lang, "REPORT", Casing.FirstUpper])</h4>
-        <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('reportViewer')">@Html.Raw(Model.LanguageProvider.BasicText[lang, "CLOSE_BUTTON"])</div>
+        <h4 style="float:left">@Html.Raw(Model.TranslationProvider.BasicText[lang, "REPORT", Casing.FirstUpper])</h4>
+        <div style="float:right; cursor:pointer; font-weight:bold" onclick="showElement('reportViewer')">@Html.Raw(Model.TranslationProvider.BasicText[lang, "CLOSE_BUTTON"])</div>
         <p>&nbsp;</p>
         <p>&nbsp;</p>
         <div class="FlexCenter">
-            <div style="font-weight:bold; text-align: right">@Html.Raw(Model.LanguageProvider.BasicText[lang, "REPORT", Casing.FirstUpper])</div>
+            <div style="font-weight:bold; text-align: right">@Html.Raw(Model.TranslationProvider.BasicText[lang, "REPORT", Casing.FirstUpper])</div>
             <div class="FlexRight PostInputWidth">
                 <span id="reportViewerReportReasonTitle"></span> &nbsp;(<span id="reportViewerReportReasonDescription"></span>)
             </div>
         </div>
         <p></p>
         <div class="FlexCenter">
-            <div style="font-weight:bold; text-align: right">@Html.Raw(Model.LanguageProvider.BasicText[lang, "REPORTING_USER"])</div>
+            <div style="font-weight:bold; text-align: right">@Html.Raw(Model.TranslationProvider.BasicText[lang, "REPORTING_USER"])</div>
             <div class="FlexRight PostInputWidth" id="reportViewerReporter">
             </div>
         </div>
         <p></p>
         <div class="FlexCenter">
-            <div style="font-weight:bold; text-align: right">@Html.Raw(Model.LanguageProvider.BasicText[lang, "ADDITIONAL_DETAILS"])</div>
+            <div style="font-weight:bold; text-align: right">@Html.Raw(Model.TranslationProvider.BasicText[lang, "ADDITIONAL_DETAILS"])</div>
             <div class="FlexRight PostInputWidth" id="reportViewerReportDetails">
             </div>
         </div>
@@ -418,15 +418,15 @@ else if (!isCurrentForumReadOnly)
                 <br />
                 <label>
                     @Html.CheckBox("redirectToEdit", new { id = "reportViewerEditMessage" }) &nbsp;
-                    @Html.Raw(Model.LanguageProvider.BasicText[lang, "EDIT_POST"])
+                    @Html.Raw(Model.TranslationProvider.BasicText[lang, "EDIT_POST"])
                 </label>
                 <br />
                 <label>
                     @Html.CheckBox("deletePost", new { id = "reportViewerDeleteMessage" }) &nbsp;
-                    @Html.Raw(Model.LanguageProvider.BasicText[lang, "DELETE_POST"])
+                    @Html.Raw(Model.TranslationProvider.BasicText[lang, "DELETE_POST"])
                 </label>
                 <br /><br />
-                <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[lang, "CLOSE_REPORT"])" onclick="vt.confirmDeleteReportedPost()" class="MyButton" />
+                <input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[lang, "CLOSE_REPORT"])" onclick="vt.confirmDeleteReportedPost()" class="MyButton" />
                 @Html.AntiForgeryToken()
             </form>
         }

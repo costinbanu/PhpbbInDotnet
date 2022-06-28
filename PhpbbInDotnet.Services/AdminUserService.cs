@@ -29,8 +29,8 @@ namespace PhpbbInDotnet.Services
         private readonly IOperationLogService _operationLogService;
 
         public AdminUserService(IForumDbContext context, IPostService postService, IAppCache cache, IConfiguration config, ICommonUtils utils,
-            LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor, IOperationLogService operationLogService)
-            : base(utils, languageProvider, httpContextAccessor)
+            ITranslationProvider translationProvider, IHttpContextAccessor httpContextAccessor, IOperationLogService operationLogService)
+            : base(utils, translationProvider, httpContextAccessor)
         {
             _context = context;
             _postService = postService;
@@ -55,7 +55,7 @@ namespace PhpbbInDotnet.Services
             var lang = GetLanguage();
             if (!(userIds?.Any() ?? false))
             {
-                return (LanguageProvider.Admin[lang, "NO_USER_SELECTED"], null);
+                return (TranslationProvider.Admin[lang, "NO_USER_SELECTED"], null);
             }
 
             async Task Log(IEnumerable<PhpbbUsers> users)
@@ -80,7 +80,7 @@ namespace PhpbbInDotnet.Services
                 if (users.Count == userIds.Length)
                 {
                     await Log(users);
-                    return (LanguageProvider.Admin[lang, "USERS_DELETED_SUCCESSFULLY"], true);
+                    return (TranslationProvider.Admin[lang, "USERS_DELETED_SUCCESSFULLY"], true);
                 }
 
                 var dbUserIds = users.Select(u => u.UserId).ToList();
@@ -90,9 +90,9 @@ namespace PhpbbInDotnet.Services
 
                 return (
                     string.Format(
-                        LanguageProvider.Admin[lang, "USERS_DELETED_PARTIALLY_FORMAT"],
+                        TranslationProvider.Admin[lang, "USERS_DELETED_PARTIALLY_FORMAT"],
                         string.Join(", ", dbUserIds),
-                        LanguageProvider.Enums[lang, UserInactiveReason.NewlyRegisteredNotConfirmed],
+                        TranslationProvider.Enums[lang, UserInactiveReason.NewlyRegisteredNotConfirmed],
                         string.Join(", ", changedStatus)
                     ),
                     null
@@ -101,7 +101,7 @@ namespace PhpbbInDotnet.Services
             catch (Exception ex)
             {
                 var id = Utils.HandleError(ex);
-                return (string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                return (string.Format(TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
@@ -110,13 +110,13 @@ namespace PhpbbInDotnet.Services
             var lang = GetLanguage();
             if (userId == Constants.ANONYMOUS_USER_ID)
             {
-                return (LanguageProvider.Admin[lang, "CANT_DELETE_ANONYMOUS_USER"], false);
+                return (TranslationProvider.Admin[lang, "CANT_DELETE_ANONYMOUS_USER"], false);
             }
 
             var user = await _context.PhpbbUsers.FirstOrDefaultAsync(u => u.UserId == userId);
             if (user == null)
             {
-                return (string.Format(LanguageProvider.Admin[lang, "USER_DOESNT_EXIST_FORMAT"], userId ?? 0), false);
+                return (string.Format(TranslationProvider.Admin[lang, "USER_DOESNT_EXIST_FORMAT"], userId ?? 0), false);
             }
 
             void flagUserAsChanged()
@@ -174,7 +174,7 @@ namespace PhpbbInDotnet.Services
                         {
                             await Utils.SendEmail(
                                 to: user.UserEmail,
-                                subject: string.Format(LanguageProvider.Email[user.UserLang, "ACCOUNT_ACTIVATED_NOTIFICATION_SUBJECT_FORMAT"], forumName),
+                                subject: string.Format(TranslationProvider.Email[user.UserLang, "ACCOUNT_ACTIVATED_NOTIFICATION_SUBJECT_FORMAT"], forumName),
                                 body: await Utils.RenderRazorViewToString(
                                     "_AccountActivatedNotification",
                                     new AccountActivatedNotificationDto
@@ -190,7 +190,7 @@ namespace PhpbbInDotnet.Services
                             user.UserInactiveTime = 0L;
                             user.UserReminded = 0;
                             user.UserRemindedTime = 0L;
-                            message = string.Format(LanguageProvider.Admin[lang, "USER_ACTIVATED_FORMAT"], user.Username);
+                            message = string.Format(TranslationProvider.Admin[lang, "USER_ACTIVATED_FORMAT"], user.Username);
                             isSuccess = true;
                             break;
                         }
@@ -199,7 +199,7 @@ namespace PhpbbInDotnet.Services
                             user.UserInactiveReason = UserInactiveReason.InactivatedByAdmin;
                             user.UserInactiveTime = DateTime.UtcNow.ToUnixTimestamp();
                             flagUserAsChanged();
-                            message = string.Format(LanguageProvider.Admin[lang, "USER_DEACTIVATED_FORMAT"], user.Username);
+                            message = string.Format(TranslationProvider.Admin[lang, "USER_DEACTIVATED_FORMAT"], user.Username);
                             isSuccess = true;
                             break;
                         }
@@ -219,7 +219,7 @@ namespace PhpbbInDotnet.Services
 
                             flagUserAsChanged();
                             await deleteUser();
-                            message = string.Format(LanguageProvider.Admin[lang, "USER_DELETED_POSTS_KEPT_FORMAT"], user.Username);
+                            message = string.Format(TranslationProvider.Admin[lang, "USER_DELETED_POSTS_KEPT_FORMAT"], user.Username);
                             isSuccess = true;
                             break;
                         }
@@ -232,7 +232,7 @@ namespace PhpbbInDotnet.Services
 
                             flagUserAsChanged();
                             await deleteUser();
-                            message = string.Format(LanguageProvider.Admin[lang, "USER_DELETED_POSTS_DELETED_FORMAT"], user.Username);
+                            message = string.Format(TranslationProvider.Admin[lang, "USER_DELETED_POSTS_DELETED_FORMAT"], user.Username);
                             isSuccess = true;
                             break;
                         }
@@ -242,7 +242,7 @@ namespace PhpbbInDotnet.Services
                             WelcomeEmailDto model;
                             if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed)
                             {
-                                subject = string.Format(LanguageProvider.Email[user.UserLang, "WELCOME_REMINDER_SUBJECT_FORMAT"], forumName);
+                                subject = string.Format(TranslationProvider.Email[user.UserLang, "WELCOME_REMINDER_SUBJECT_FORMAT"], forumName);
                                 model = new WelcomeEmailDto
                                 {
                                     RegistrationCode = user.UserActkey,
@@ -255,7 +255,7 @@ namespace PhpbbInDotnet.Services
                             }
                             else if (user.UserInactiveReason == UserInactiveReason.ChangedEmailNotConfirmed)
                             {
-                                subject = string.Format(LanguageProvider.Email[user.UserLang, "EMAIL_CHANGED_REMINDER_SUBJECT_FORMAT"], forumName);
+                                subject = string.Format(TranslationProvider.Email[user.UserLang, "EMAIL_CHANGED_REMINDER_SUBJECT_FORMAT"], forumName);
                                 model = new WelcomeEmailDto
                                 {
                                     RegistrationCode = user.UserActkey,
@@ -268,7 +268,7 @@ namespace PhpbbInDotnet.Services
                             }
                             else
                             {
-                                message = string.Format(LanguageProvider.Admin[lang, "CANT_REMIND_INVALID_USER_STATE_FORMAT"], user.Username, LanguageProvider.Enums[lang, user.UserInactiveReason]);
+                                message = string.Format(TranslationProvider.Admin[lang, "CANT_REMIND_INVALID_USER_STATE_FORMAT"], user.Username, TranslationProvider.Enums[lang, user.UserInactiveReason]);
                                 isSuccess = false;
                                 break;
                             }
@@ -280,7 +280,7 @@ namespace PhpbbInDotnet.Services
 
                             user.UserReminded = 1;
                             user.UserRemindedTime = DateTime.UtcNow.ToUnixTimestamp();
-                            message = string.Format(LanguageProvider.Admin[lang, "USER_REMINDED_FORMAT"], user.Username);
+                            message = string.Format(TranslationProvider.Admin[lang, "USER_REMINDED_FORMAT"], user.Username);
                             isSuccess = true;
                             break;
                         }
@@ -299,7 +299,7 @@ namespace PhpbbInDotnet.Services
             catch (Exception ex)
             {
                 var id = Utils.HandleError(ex);
-                return (string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                return (string.Format(TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
@@ -352,12 +352,12 @@ namespace PhpbbInDotnet.Services
             catch (DateInputException die)
             {
                 Utils.HandleError(die.InnerException!, die.Message);
-                return (LanguageProvider.Admin[lang, "ONE_OR_MORE_INVALID_INPUT_DATES"], false, new List<PhpbbUsers>());
+                return (TranslationProvider.Admin[lang, "ONE_OR_MORE_INVALID_INPUT_DATES"], false, new List<PhpbbUsers>());
             }
             catch (Exception ex)
             {
                 var id = Utils.HandleError(ex);
-                return (string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false, new List<PhpbbUsers>());
+                return (string.Format(TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false, new List<PhpbbUsers>());
             }
 
             long ParseDate(string? value, bool isUpperLimit)
@@ -398,7 +398,7 @@ namespace PhpbbInDotnet.Services
             {
                 if (string.IsNullOrWhiteSpace(rankName))
                 {
-                    return (LanguageProvider.Admin[lang, "INVALID_RANK_NAME"], false);
+                    return (TranslationProvider.Admin[lang, "INVALID_RANK_NAME"], false);
                 }
 
                 AdminRankActions action;
@@ -418,7 +418,7 @@ namespace PhpbbInDotnet.Services
                     actual = await _context.PhpbbRanks.FirstOrDefaultAsync(x => x.RankId == rankId);
                     if (actual is null)
                     {
-                        return (string.Format(LanguageProvider.Admin[lang, "RANK_DOESNT_EXIST_FORMAT"], rankId), false);
+                        return (string.Format(TranslationProvider.Admin[lang, "RANK_DOESNT_EXIST_FORMAT"], rankId), false);
                     }
                     _context.PhpbbRanks.Remove(actual);
                     action = AdminRankActions.Delete;
@@ -428,7 +428,7 @@ namespace PhpbbInDotnet.Services
                     actual = await _context.PhpbbRanks.FirstOrDefaultAsync(x => x.RankId == rankId);
                     if (actual == null)
                     {
-                        return (string.Format(LanguageProvider.Admin[lang, "RANK_DOESNT_EXIST_FORMAT"], rankId), false);
+                        return (string.Format(TranslationProvider.Admin[lang, "RANK_DOESNT_EXIST_FORMAT"], rankId), false);
                     }
                     actual.RankTitle = rankName;
                     action = AdminRankActions.Update;
@@ -437,12 +437,12 @@ namespace PhpbbInDotnet.Services
 
                 await _operationLogService.LogAdminRankAction(action, adminUserId, actual);
 
-                return (LanguageProvider.Admin[lang, "RANK_UPDATED_SUCCESSFULLY"], true);
+                return (TranslationProvider.Admin[lang, "RANK_UPDATED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
                 var id = Utils.HandleError(ex);
-                return (string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                return (string.Format(TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
@@ -506,14 +506,14 @@ namespace PhpbbInDotnet.Services
                     actual = await _context.PhpbbGroups.FirstOrDefaultAsync(x => x.GroupId == dto.Id);
                     if (actual == null)
                     {
-                        return (string.Format(LanguageProvider.Admin[lang, "GROUP_DOESNT_EXIST"], dto.Id), false);
+                        return (string.Format(TranslationProvider.Admin[lang, "GROUP_DOESNT_EXIST"], dto.Id), false);
                     }
 
                     if (dto.Delete ?? false)
                     {
                         if (await _context.PhpbbUsers.AsNoTracking().CountAsync(x => x.GroupId == dto.Id) > 0)
                         {
-                            return (string.Format(LanguageProvider.Admin[lang, "CANT_DELETE_NOT_EMPTY_FORMAT"], actual.GroupName), false);
+                            return (string.Format(TranslationProvider.Admin[lang, "CANT_DELETE_NOT_EMPTY_FORMAT"], actual.GroupName), false);
                         }
                         _context.PhpbbGroups.Remove(actual);
                         actual = null;
@@ -588,24 +588,24 @@ namespace PhpbbInDotnet.Services
 
                 var message = action switch
                 {
-                    AdminGroupActions.Add => LanguageProvider.Admin[lang, "GROUP_ADDED_SUCCESSFULLY"],
-                    AdminGroupActions.Delete => LanguageProvider.Admin[lang, "GROUP_DELETED_SUCCESSFULLY"],
-                    AdminGroupActions.Update => LanguageProvider.Admin[lang, "GROUP_UPDATED_SUCCESSFULLY"],
-                    _ => LanguageProvider.Admin[lang, "GROUP_UPDATED_SUCCESSFULLY"],
+                    AdminGroupActions.Add => TranslationProvider.Admin[lang, "GROUP_ADDED_SUCCESSFULLY"],
+                    AdminGroupActions.Delete => TranslationProvider.Admin[lang, "GROUP_DELETED_SUCCESSFULLY"],
+                    AdminGroupActions.Update => TranslationProvider.Admin[lang, "GROUP_UPDATED_SUCCESSFULLY"],
+                    _ => TranslationProvider.Admin[lang, "GROUP_UPDATED_SUCCESSFULLY"],
                 };
                 return (message, true);
             }
             catch (Exception ex)
             {
                 var id = Utils.HandleError(ex);
-                return (string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                return (string.Format(TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 
         public List<SelectListItem> GetRanksSelectListItems()
         {
             var lang = GetLanguage();
-            var groupRanks = new List<SelectListItem> { new SelectListItem(LanguageProvider.Admin[lang, "NO_RANK"], "0", true) };
+            var groupRanks = new List<SelectListItem> { new SelectListItem(TranslationProvider.Admin[lang, "NO_RANK"], "0", true) };
             groupRanks.AddRange(_context.PhpbbRanks.AsNoTracking().Select(x => new SelectListItem(x.RankTitle, x.RankId.ToString())));
             return groupRanks;
         }
@@ -613,8 +613,8 @@ namespace PhpbbInDotnet.Services
         public List<SelectListItem> GetRolesSelectListItems()
         {
             var lang = GetLanguage();
-            var roles = new List<SelectListItem> { new SelectListItem(LanguageProvider.Admin[lang, "NO_ROLE"], "0", true) };
-            roles.AddRange(_context.PhpbbAclRoles.AsNoTracking().Where(x => x.RoleType == "u_").Select(x => new SelectListItem(LanguageProvider.Admin[lang, x.RoleName, Casing.None, x.RoleName], x.RoleId.ToString())));
+            var roles = new List<SelectListItem> { new SelectListItem(TranslationProvider.Admin[lang, "NO_ROLE"], "0", true) };
+            roles.AddRange(_context.PhpbbAclRoles.AsNoTracking().Where(x => x.RoleType == "u_").Select(x => new SelectListItem(TranslationProvider.Admin[lang, x.RoleName, Casing.None, x.RoleName], x.RoleId.ToString())));
             return roles;
         }
 
@@ -664,12 +664,12 @@ namespace PhpbbInDotnet.Services
                 {
                     throw new AggregateException(exceptions);
                 }
-                return (LanguageProvider.Admin[lang, "BANLIST_UPDATED_SUCCESSFULLY"], true);
+                return (TranslationProvider.Admin[lang, "BANLIST_UPDATED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
                 var id = Utils.HandleError(ex);
-                return (string.Format(LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                return (string.Format(TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
         }
 

@@ -45,8 +45,8 @@ namespace PhpbbInDotnet.Forum.Pages
         public PostDto? PreviewablePost { get; set; }
 
         public SendPrivateMessageModel(ICommonUtils utils, IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cacheService, 
-            LanguageProvider languageProvider, IWritingToolsService writingService, IConfiguration config)
-            : base(context, forumService, userService, cacheService, utils, languageProvider)
+            ITranslationProvider translationProvider, IWritingToolsService writingService, IConfiguration config)
+            : base(context, forumService, userService, cacheService, utils, translationProvider)
         {
             _writingService = writingService;
             _config = config;
@@ -73,12 +73,12 @@ namespace PhpbbInDotnet.Forum.Pages
                         }
                         else
                         {
-                            return RedirectToPage("Error", new { CustomErrorMessage = await CompressionUtility.CompressAndEncode(LanguageProvider.Errors[lang, "RECEIVER_DOESNT_EXIST"]) });
+                            return RedirectToPage("Error", new { CustomErrorMessage = await CompressionUtility.CompressAndEncode(TranslationProvider.Errors[lang, "RECEIVER_DOESNT_EXIST"]) });
                         }
                     }
                     else
                     {
-                        return RedirectToPage("Error", new { CustomErrorMessage = await CompressionUtility.CompressAndEncode(LanguageProvider.Errors[lang, "POST_DOESNT_EXIST"]) });
+                        return RedirectToPage("Error", new { CustomErrorMessage = await CompressionUtility.CompressAndEncode(TranslationProvider.Errors[lang, "POST_DOESNT_EXIST"]) });
                     }
                 }
                 else if ((PrivateMessageId ?? 0) > 0 && (ReceiverId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
@@ -96,12 +96,12 @@ namespace PhpbbInDotnet.Forum.Pages
                         }
                         else
                         {
-                            return RedirectToPage("Error", new { CustomErrorMessage = await CompressionUtility.CompressAndEncode(LanguageProvider.Errors[lang, "RECEIVER_DOESNT_EXIST"]) });
+                            return RedirectToPage("Error", new { CustomErrorMessage = await CompressionUtility.CompressAndEncode(TranslationProvider.Errors[lang, "RECEIVER_DOESNT_EXIST"]) });
                         }
                     }
                     else
                     {
-                        return RedirectToPage("Error", new { CustomErrorMessage = await CompressionUtility.CompressAndEncode(LanguageProvider.Errors[lang, "PM_DOESNT_EXIST"]) });
+                        return RedirectToPage("Error", new { CustomErrorMessage = await CompressionUtility.CompressAndEncode(TranslationProvider.Errors[lang, "PM_DOESNT_EXIST"]) });
                     }
                 }
                 else if ((ReceiverId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
@@ -138,22 +138,22 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if ((ReceiverId ?? 1) == 1)
                 {
-                    return PageWithError(nameof(ReceiverName), LanguageProvider.Errors[lang, "ENTER_VALID_RECEIVER"]);
+                    return PageWithError(nameof(ReceiverName), TranslationProvider.Errors[lang, "ENTER_VALID_RECEIVER"]);
                 }
 
                 if ((PostTitle?.Trim()?.Length ?? 0) < 3)
                 {
-                    return PageWithError(nameof(PostTitle), LanguageProvider.Errors[lang, "TITLE_TOO_SHORT"]);
+                    return PageWithError(nameof(PostTitle), TranslationProvider.Errors[lang, "TITLE_TOO_SHORT"]);
                 }
 
                 if ((PostTitle?.Length ?? 0) > 255)
                 {
-                    return PageWithError(nameof(PostTitle), LanguageProvider.Errors[lang, "TITLE_TOO_LONG"]);
+                    return PageWithError(nameof(PostTitle), TranslationProvider.Errors[lang, "TITLE_TOO_LONG"]);
                 }
 
                 if ((PostText?.Trim()?.Length ?? 0) < 3)
                 {
-                    return PageWithError(nameof(PostText), LanguageProvider.Errors[lang, "POST_TOO_SHORT"]);
+                    return PageWithError(nameof(PostText), TranslationProvider.Errors[lang, "POST_TOO_SHORT"]);
                 }
 
                 var (Message, IsSuccess) = Action switch
@@ -176,12 +176,12 @@ namespace PhpbbInDotnet.Forum.Pages
                 var lang = GetLanguage();
                 if ((PostTitle?.Trim()?.Length ?? 0) < 3)
                 {
-                    return PageWithError(nameof(PostTitle), LanguageProvider.Errors[lang, "TITLE_TOO_SHORT"]);
+                    return PageWithError(nameof(PostTitle), TranslationProvider.Errors[lang, "TITLE_TOO_SHORT"]);
                 }
 
                 if ((PostText?.Trim()?.Length ?? 0) < 3)
                 {
-                    return PageWithError(nameof(PostText), LanguageProvider.Errors[lang, "POST_TOO_SHORT"]);
+                    return PageWithError(nameof(PostText), TranslationProvider.Errors[lang, "POST_TOO_SHORT"]);
                 }
 
                 var sqlExec = Context.GetSqlExecuter();

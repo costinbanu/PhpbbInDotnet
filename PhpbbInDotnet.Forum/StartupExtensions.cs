@@ -102,6 +102,7 @@ namespace PhpbbInDotnet.Forum
                 });
             }
 
+            services.AddLanguageSupport();
             services.AddCommonUtils();
             services.AddApplicationServices();
 
@@ -112,7 +113,6 @@ namespace PhpbbInDotnet.Forum
             services.AddScoped<ErrorHandlingMiddleware>();
 
             services.AddTransient<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddTransient<LanguageProvider>();
 
             var recaptchaOptions = config.GetObject<Recaptcha>();
             services.AddHttpClient(recaptchaOptions.ClientName, client => client.BaseAddress = new Uri(recaptchaOptions.BaseAddress!));

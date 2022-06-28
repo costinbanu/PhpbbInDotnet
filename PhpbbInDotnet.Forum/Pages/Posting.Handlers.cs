@@ -164,7 +164,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (!ShouldResize && !isAdmin)
                 {
-                    return PageWithError(curForum, nameof(Files), LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
+                    return PageWithError(curForum, nameof(Files), TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
                 }
 
                 var sizeLimit = _config.GetObject<AttachmentLimits>("UploadLimitsMB");
@@ -218,28 +218,28 @@ namespace PhpbbInDotnet.Forum.Pages
                     var existingUploadSize = await Context.PhpbbAttachments.AsNoTracking().Where(a => a.PosterId == user.UserId).SumAsync(a => a.Filesize);
                     if (existingUploadSize + images.Sum(f => f.Length) + nonImages.Sum(f => f.Length) > user.UploadLimit)
                     {
-                        return PageWithError(curForum, nameof(Files), LanguageProvider.Errors[lang, "ATTACH_QUOTA_EXCEEDED"]);
+                        return PageWithError(curForum, nameof(Files), TranslationProvider.Errors[lang, "ATTACH_QUOTA_EXCEEDED"]);
                     }
                 }
 
                 var tooLargeFiles = images.Where(f => f.Length > Constants.ONE_MB * sizeLimit.Images).Union(nonImages.Where(f => f.Length > Constants.ONE_MB * sizeLimit.OtherFiles));
                 if (tooLargeFiles.Any() && !isAdmin)
                 {
-                    return PageWithError(curForum, nameof(Files), string.Format(LanguageProvider.Errors[lang, "FILES_TOO_BIG_FORMAT"], string.Join(",", tooLargeFiles.Select(f => f.FileName))));
+                    return PageWithError(curForum, nameof(Files), string.Format(TranslationProvider.Errors[lang, "FILES_TOO_BIG_FORMAT"], string.Join(",", tooLargeFiles.Select(f => f.FileName))));
                 }
 
                 var existingImages = Attachments?.Count(a => a.Mimetype.IsImageMimeType()) ?? 0;
                 var existingNonImages = Attachments?.Count(a => !a.Mimetype.IsImageMimeType()) ?? 0;
                 if (!isAdmin && (existingImages + images.Count() > countLimit.Images || existingNonImages + nonImages.Count() > countLimit.OtherFiles))
                 {
-                    return PageWithError(curForum, nameof(Files), LanguageProvider.Errors[lang, "TOO_MANY_FILES"]);
+                    return PageWithError(curForum, nameof(Files), TranslationProvider.Errors[lang, "TOO_MANY_FILES"]);
                 }
 
                 var (succeeded, failed) = await _storageService.BulkAddAttachments(images.Union(nonImages), user.UserId);
 
                 if (failed.Any())
                 {
-                    return PageWithError(curForum, nameof(Files), string.Format(LanguageProvider.Errors[lang, "GENERIC_ATTACH_ERROR_FORMAT"], string.Join(",", failed)));
+                    return PageWithError(curForum, nameof(Files), string.Format(TranslationProvider.Errors[lang, "GENERIC_ATTACH_ERROR_FORMAT"], string.Join(",", failed)));
                 }
 
                 if (Attachments == null)
@@ -261,7 +261,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (await DeleteAttachment(index, true) is null)
                 {
-                    return PageWithError(curForum, $"{nameof(DeleteFileDummyForValidation)}[{index}]", LanguageProvider.Errors[GetLanguage(), "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
+                    return PageWithError(curForum, $"{nameof(DeleteFileDummyForValidation)}[{index}]", TranslationProvider.Errors[GetLanguage(), "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
                 }
 
                 ShowAttach = Attachments?.Any() == true;
@@ -283,7 +283,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     if (deletedAttachment is null)
                     {
                         error = true;
-                        ModelState.AddModelError($"{nameof(DeleteFileDummyForValidation)}[{index}]", LanguageProvider.Errors[GetLanguage(), "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
+                        ModelState.AddModelError($"{nameof(DeleteFileDummyForValidation)}[{index}]", TranslationProvider.Errors[GetLanguage(), "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
                     }
                     else
                     {
@@ -312,12 +312,12 @@ namespace PhpbbInDotnet.Forum.Pages
                 var lang = GetLanguage();
                 if ((PostTitle?.Trim()?.Length ?? 0) < 3)
                 {
-                    return PageWithError(curForum, nameof(PostTitle), LanguageProvider.Errors[lang, "TITLE_TOO_SHORT"]);
+                    return PageWithError(curForum, nameof(PostTitle), TranslationProvider.Errors[lang, "TITLE_TOO_SHORT"]);
                 }
 
                 if ((PostText?.Trim()?.Length ?? 0) < 3)
                 {
-                    return PageWithError(curForum, nameof(PostText), LanguageProvider.Errors[lang, "POST_TOO_SHORT"]);
+                    return PageWithError(curForum, nameof(PostText), TranslationProvider.Errors[lang, "POST_TOO_SHORT"]);
                 }
 
                 var sqlExecuter = Context.GetSqlExecuter();
@@ -376,7 +376,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var addedPostId = await UpsertPost(null, user);
                 if (addedPostId == null)
                 {
-                    return PageWithError(curForum, nameof(PostText), LanguageProvider.Errors[GetLanguage(), "GENERIC_POSTING_ERROR"]);
+                    return PageWithError(curForum, nameof(PostText), TranslationProvider.Errors[GetLanguage(), "GENERIC_POSTING_ERROR"]);
                 }
                 return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
             }), ReturnUrl)));
@@ -411,17 +411,17 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if ((PostTitle?.Trim()?.Length ?? 0) < 3)
                 {
-                    return PageWithError(curForum, nameof(PostTitle), LanguageProvider.Errors[lang, "TITLE_TOO_SHORT"]);
+                    return PageWithError(curForum, nameof(PostTitle), TranslationProvider.Errors[lang, "TITLE_TOO_SHORT"]);
                 }
 
                 if ((PostTitle?.Length ?? 0) > 255)
                 {
-                    return PageWithError(curForum, nameof(PostTitle), LanguageProvider.Errors[lang, "TITLE_TOO_LONG"]);
+                    return PageWithError(curForum, nameof(PostTitle), TranslationProvider.Errors[lang, "TITLE_TOO_LONG"]);
                 }
 
                 if ((PostText?.Trim()?.Length ?? 0) < 3)
                 {
-                    return PageWithError(curForum, nameof(PostText), LanguageProvider.Errors[lang, "POST_TOO_SHORT"]);
+                    return PageWithError(curForum, nameof(PostText), TranslationProvider.Errors[lang, "POST_TOO_SHORT"]);
                 }
 
                 var sqlExecuter = Context.GetSqlExecuter();

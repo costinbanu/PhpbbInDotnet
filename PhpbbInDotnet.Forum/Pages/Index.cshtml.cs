@@ -17,8 +17,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public HashSet<ForumTree>? Tree { get; private set; }
 
-        public IndexModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, LanguageProvider languageProvider)
-            : base(context, forumService, userService, cache, utils, languageProvider)
+        public IndexModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, ITranslationProvider translationProvider)
+            : base(context, forumService, userService, cache, utils, translationProvider)
         {
         }
 

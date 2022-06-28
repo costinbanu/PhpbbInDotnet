@@ -41,8 +41,8 @@ namespace PhpbbInDotnet.Services
 
         public Dictionary<string, BBTagSummary> TagMap { get; }
 
-        public BBCodeRenderingService(ICommonUtils utils, IForumDbContext context, IWritingToolsService writingService, IAppCache cache, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
-            : base(utils, languageProvider, httpContextAccessor)
+        public BBCodeRenderingService(ICommonUtils utils, IForumDbContext context, IWritingToolsService writingService, IAppCache cache, ITranslationProvider translationProvider, IHttpContextAccessor httpContextAccessor)
+            : base(utils, translationProvider, httpContextAccessor)
         {
             _context = context;
             _writingService = writingService;
@@ -374,13 +374,13 @@ namespace PhpbbInDotnet.Services
                                         {
                                             return string.Empty;
                                         }
-                                        var toReturn = match.Groups[1].Success ? string.Format(LanguageProvider.BasicText[lang, "WROTE_FORMAT"], match.Groups[1].Value.Trim('"')) : string.Empty;
+                                        var toReturn = match.Groups[1].Success ? string.Format(TranslationProvider.BasicText[lang, "WROTE_FORMAT"], match.Groups[1].Value.Trim('"')) : string.Empty;
                                         var postId = match.Groups[2].Success ? match.Groups[2].Value : string.Empty;
                                         if (!string.IsNullOrWhiteSpace(toReturn))
                                         {
                                             if (!string.IsNullOrWhiteSpace(postId))
                                             {
-                                                toReturn += $" <a href=\"./ViewTopic?postId={postId}&handler=byPostId\" target=\"_blank\">{LanguageProvider.BasicText[lang, "HERE"]}</a>:<br />";
+                                                toReturn += $" <a href=\"./ViewTopic?postId={postId}&handler=byPostId\" target=\"_blank\">{TranslationProvider.BasicText[lang, "HERE"]}</a>:<br />";
                                             }
                                             else
                                             {

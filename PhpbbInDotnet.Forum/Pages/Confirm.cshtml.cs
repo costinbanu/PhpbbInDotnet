@@ -70,8 +70,8 @@ namespace PhpbbInDotnet.Forum.Pages
         public HashSet<ForumTree>? ForumTree { get; private set; }
         public List<MiniTopicDto>? TopicData { get; private set; }
 
-        public ConfirmModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, IConfiguration config, LanguageProvider languageProvider)
-            : base(context, forumService, userService, cache, utils, languageProvider) 
+        public ConfirmModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, IConfiguration config, ITranslationProvider translationProvider)
+            : base(context, forumService, userService, cache, utils, translationProvider) 
         {
             _config = config;
         }
@@ -79,8 +79,8 @@ namespace PhpbbInDotnet.Forum.Pages
         public void OnGetRegistrationComplete()
         {
             var lang = GetLanguage();
-            Message = string.Format(LanguageProvider.BasicText[lang, "REGISTRATION_CONFIRM_MESSAGE_FORMAT"], _config.GetValue<string>("AdminEmail"));
-            Title = LanguageProvider.BasicText[lang, "REGISTRATION_CONFIRM_TITLE"];
+            Message = string.Format(TranslationProvider.BasicText[lang, "REGISTRATION_CONFIRM_MESSAGE_FORMAT"], _config.GetValue<string>("AdminEmail"));
+            Title = TranslationProvider.BasicText[lang, "REGISTRATION_CONFIRM_TITLE"];
         }
 
         public async Task OnGetConfirmEmail(string code, string username)
@@ -95,11 +95,11 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (user == null)
             {
-                Message = $"<span class=\"message fail\">{string.Format(LanguageProvider.Errors[lang, "REGISTRATION_ERROR_FORMAT"], _config.GetValue<string>("AdminEmail"))}</span>";
+                Message = $"<span class=\"message fail\">{string.Format(TranslationProvider.Errors[lang, "REGISTRATION_ERROR_FORMAT"], _config.GetValue<string>("AdminEmail"))}</span>";
             }
             else
             {
-                Message = $"<span class=\"message success\">{string.Format(LanguageProvider.BasicText[lang, "EMAIL_CONFIRM_MESSAGE_FORMAT"], _config.GetValue<string>("AdminEmail"))}</span>";
+                Message = $"<span class=\"message success\">{string.Format(TranslationProvider.BasicText[lang, "EMAIL_CONFIRM_MESSAGE_FORMAT"], _config.GetValue<string>("AdminEmail"))}</span>";
 
                 if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed)
                 {
@@ -124,7 +124,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 await Task.WhenAll(admins.Select(async admin =>
                 {
-                    var subject = LanguageProvider.Email[admin.UserLang, "NEWUSER_SUBJECT"];
+                    var subject = TranslationProvider.Email[admin.UserLang, "NEWUSER_SUBJECT"];
                     await Utils.SendEmail(
                         to: admin.UserEmail,
                         subject: subject,
@@ -140,21 +140,21 @@ namespace PhpbbInDotnet.Forum.Pages
                         ));
                 }));
             }
-            Title = LanguageProvider.BasicText[lang, "EMAIL_CONFIRM_TITLE"];
+            Title = TranslationProvider.BasicText[lang, "EMAIL_CONFIRM_TITLE"];
         }
 
         public void OnGetNewPassword()
         {
             var lang = GetLanguage();
-            Message = $"<span class=\"success\">{LanguageProvider.BasicText[lang, "NEW_PASSWORD_MESSAGE"]}</span>";
-            Title = LanguageProvider.BasicText[lang, "NEW_PASSWORD_TITLE"];
+            Message = $"<span class=\"success\">{TranslationProvider.BasicText[lang, "NEW_PASSWORD_MESSAGE"]}</span>";
+            Title = TranslationProvider.BasicText[lang, "NEW_PASSWORD_TITLE"];
         }
 
         public void OnGetPasswordChanged()
         {
             var lang = GetLanguage();
-            Message = $"<span class=\"success\">{LanguageProvider.BasicText[lang, "NEW_PASSWORD_COMPLETE"]}</span>";
-            Title = LanguageProvider.BasicText[lang, "NEW_PASSWORD_TITLE"];
+            Message = $"<span class=\"success\">{TranslationProvider.BasicText[lang, "NEW_PASSWORD_COMPLETE"]}</span>";
+            Title = TranslationProvider.BasicText[lang, "NEW_PASSWORD_TITLE"];
         }
 
         public Task<IActionResult> OnGetModeratorConfirmation()
@@ -164,11 +164,11 @@ namespace PhpbbInDotnet.Forum.Pages
                 IsModeratorConfirmation = true;
                 if (ShowTopicSelector)
                 {
-                    Title = LanguageProvider.BasicText[lang, "CHOOSE_DESTINATION_FORUM_TOPIC"];
+                    Title = TranslationProvider.BasicText[lang, "CHOOSE_DESTINATION_FORUM_TOPIC"];
                 }
                 else
                 {
-                    Title = LanguageProvider.BasicText[lang, "CHOOSE_DESTINATION_FORUM"];
+                    Title = TranslationProvider.BasicText[lang, "CHOOSE_DESTINATION_FORUM"];
                 }
                 await SetFrontendData();
 
@@ -178,13 +178,13 @@ namespace PhpbbInDotnet.Forum.Pages
         public void OnGetDestinationConfirmation()
         {
             IsDestinationConfirmation = true;
-            Message = $"<span class=\"success\">{LanguageProvider.BasicText[GetLanguage(), "GENERIC_SUCCESS"]}</span>";
+            Message = $"<span class=\"success\">{TranslationProvider.BasicText[GetLanguage(), "GENERIC_SUCCESS"]}</span>";
         }
 
         public async Task OnGetDestinationPicker()
         {
             IsDestinationPicker = true;
-            Message = $"<span class=\"success\">{LanguageProvider.BasicText[GetLanguage(), "GENERIC_SUCCESS"]}</span>";
+            Message = $"<span class=\"success\">{TranslationProvider.BasicText[GetLanguage(), "GENERIC_SUCCESS"]}</span>";
             await SetFrontendData();
         }
 

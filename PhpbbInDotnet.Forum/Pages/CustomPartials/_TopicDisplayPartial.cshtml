@@ -7,10 +7,10 @@
 @using CustomPartials
 
 @inject IForumTreeService _forumService
-@inject LanguageProvider _languageProvider
+@inject ITranslationProvider _translationProvider
 
 @{
-    var userDateFormat = Model.CurrentUser.UserDateFormat ?? _languageProvider.GetDefaultDateFormat(Model.Language);
+    var userDateFormat = Model.CurrentUser.UserDateFormat ?? _translationProvider.GetDefaultDateFormat(Model.Language);
     var isCurrentForumReadOnly = Model.ForumId is null || await _forumService.IsForumReadOnlyForUser(Model.CurrentUser, Model.ForumId.Value);
     var topicsDisplayed = false;
     var announcementsDisplayed = false;
@@ -26,7 +26,7 @@
             if (Model.ShowTypeName)
             {
                 <p>&nbsp;</p>
-                <h3 style="float:left">@Html.Raw(_languageProvider.BasicText[Model.Language, "ANNOUNCEMENTS", Casing.FirstUpper])</h3>
+                <h3 style="float:left">@Html.Raw(_translationProvider.BasicText[Model.Language, "ANNOUNCEMENTS", Casing.FirstUpper])</h3>
             }
             announcementsDisplayed = isFirstInGroup = true;
             break;
@@ -39,14 +39,14 @@
             if (Model.ShowTypeName)
             {
                 <p>&nbsp;</p>
-                <h3 style="float:left">@Html.Raw(_languageProvider.BasicText[Model.Language, "TOPICS", Casing.FirstUpper])</h3>
+                <h3 style="float:left">@Html.Raw(_translationProvider.BasicText[Model.Language, "TOPICS", Casing.FirstUpper])</h3>
             }
             if (!isCurrentForumReadOnly && Model.AllowNewTopicCreation)
             {
                 <span>
                     &nbsp;
                     <button onclick="location.href='./Posting?forumId=@Model.ForumId&handler=newTopic'" type="button" class="MyButton SpacedButtonNotTop" style="height:26px; padding-top:1px; padding-bottom: 1px">
-                        &#x1F4DD;&nbsp;@Html.Raw(_languageProvider.BasicText[Model.Language, "OPEN_NEW_TOPIC", Casing.FirstUpper])
+                        &#x1F4DD;&nbsp;@Html.Raw(_translationProvider.BasicText[Model.Language, "OPEN_NEW_TOPIC", Casing.FirstUpper])
                     </button>
                 </span>
             }
@@ -125,7 +125,7 @@
                     <a asp-page="./Posting" asp-page-handler="forumPost" asp-route-forumId="@topic.ForumId" asp-route-topicId="@topic.TopicId" asp-route-postId="@topic.TopicLastPostId">@Html.Raw(topic.TopicTitle)</a>
                     <br />
                     <span>
-                        &nbsp;@Html.Raw(_languageProvider.BasicText[Model.Language, "POSTED"])
+                        &nbsp;@Html.Raw(_translationProvider.BasicText[Model.Language, "POSTED"])
                         <script>writeDate("@topic.LastPostTime?.ToString("o")", "@userDateFormat");</script>
                     </span>
                 }

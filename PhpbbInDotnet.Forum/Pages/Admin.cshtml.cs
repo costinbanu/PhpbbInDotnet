@@ -75,8 +75,8 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IOperationLogService _logService;
 
         public AdminModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, IAdminUserService adminUserService, 
-            IAdminForumService adminForumService, IWritingToolsService adminWritingService, LanguageProvider languageProvider, IOperationLogService logService) 
-            : base(context, forumService, userService, cache, utils, languageProvider)
+            IAdminForumService adminForumService, IWritingToolsService adminWritingService, ITranslationProvider translationProvider, IOperationLogService logService) 
+            : base(context, forumService, userService, cache, utils, translationProvider)
         {
             _adminUserService = adminUserService;
             _adminForumService = adminForumService;
@@ -136,7 +136,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     && ((SearchParameters?.UserId ?? 0) == 0) 
                     && !(SearchParameters?.NeverActive ?? false))
                 {
-                    Message = LanguageProvider.Admin[lang, "TOO_FEW_SEARCH_CRITERIA"];
+                    Message = TranslationProvider.Admin[lang, "TOO_FEW_SEARCH_CRITERIA"];
                     IsSuccess = false;
                     return await OnGet();
                 }
@@ -144,7 +144,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 (Message, IsSuccess, UserSearchResults) = await _adminUserService.UserSearchAsync(SearchParameters);
                 if (!UserSearchResults.Any())
                 {
-                    Message = LanguageProvider.BasicText[lang, "NO_RESULTS_FOUND"];
+                    Message = TranslationProvider.BasicText[lang, "NO_RESULTS_FOUND"];
                     IsSuccess = false;
                 }
                 return await OnGet();

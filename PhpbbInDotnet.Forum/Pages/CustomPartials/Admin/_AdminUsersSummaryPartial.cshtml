@@ -5,7 +5,7 @@
 @using Domain.Extensions;
 @using System.Web
 
-@inject Languages.LanguageProvider _languageProvider
+@inject Languages.ITranslationProvider _translationProvider
 @inject IConfiguration _config
 
 @foreach (var user in Model.Users.EmptyIfNull())
@@ -20,24 +20,24 @@
                 <div class="FlexLeft PostInputWidth">
                     <label>
                         <input type="checkbox" name="userIds" value="@user.UserId" form="batchAdminUsers" />
-                        @Html.Raw(_languageProvider.Admin[Model.Language, "SELECT_USER_FOR_DELETION"])
+                        @Html.Raw(_translationProvider.Admin[Model.Language, "SELECT_USER_FOR_DELETION"])
                     </label>
                 </div>
             </div>
         }
         <div class="FlexCenter FlexSpacedMini">
             <div class="FlexCaption">
-                @Html.Raw(_languageProvider.BasicText[Model.Language, "EMAIL", Casing.FirstUpper])
+                @Html.Raw(_translationProvider.BasicText[Model.Language, "EMAIL", Casing.FirstUpper])
             </div>
             <div class="FlexRight PostInputWidth">
                 @Html.Raw(user.UserEmail)
                 &bull;
                 <a href="@emailSearchLink" target="_blank">
-                    @Html.Raw(_languageProvider.Admin[Model.Language, "EMAIL_LOOKUP"])
+                    @Html.Raw(_translationProvider.Admin[Model.Language, "EMAIL_LOOKUP"])
                 </a>
                 &bull;
                 <a href="#" onclick="addBannedItem('@user.UserEmail', '')">
-                    @Html.Raw(_languageProvider.Admin[Model.Language, "BAN_EMAIL"])
+                    @Html.Raw(_translationProvider.Admin[Model.Language, "BAN_EMAIL"])
                 </a>
             </div>
         </div>
@@ -49,21 +49,21 @@
                 @user.UserIp
                 &bull;
                 <a href="@ipWhoIsLink" target="_blank">
-                    @Html.Raw(_languageProvider.Admin[Model.Language, "IP_LOOKUP"])
+                    @Html.Raw(_translationProvider.Admin[Model.Language, "IP_LOOKUP"])
                 </a>
                 &bull;
                 <a asp-page="IPLookup" asp-route-ip="@user.UserIp" target="_blank">
-                    @Html.Raw(_languageProvider.Admin[Model.Language, "FORUM_IP_SEARCH"])
+                    @Html.Raw(_translationProvider.Admin[Model.Language, "FORUM_IP_SEARCH"])
                 </a>
                 &bull;
                 <a href="#" onclick="addBannedItem('', '@user.UserIp')">
-                    @Html.Raw(_languageProvider.Admin[Model.Language, "BAN_IP"])
+                    @Html.Raw(_translationProvider.Admin[Model.Language, "BAN_IP"])
                 </a>
             </div>
         </div>
         <div class="FlexCenter FlexSpacedMini">
             <div class="FlexCaption">
-                @Html.Raw(_languageProvider.Admin[Model.Language, "REGISTRATION_DATE"])
+                @Html.Raw(_translationProvider.Admin[Model.Language, "REGISTRATION_DATE"])
             </div>
             <div class="FlexRight PostInputWidth">
                 <script>writeDate('@user.UserRegdate.ToUtcTime().ToString("o")', '@Model.DateFormat')</script>
@@ -71,7 +71,7 @@
         </div>
         <div class="FlexCenter FlexSpacedMini">
             <div class="FlexCaption">
-                @Html.Raw(_languageProvider.Admin[Model.Language, "DEACTIVATION_DATE"])
+                @Html.Raw(_translationProvider.Admin[Model.Language, "DEACTIVATION_DATE"])
             </div>
             <div class="FlexRight PostInputWidth">
                 @if (user.UserInactiveTime != 0)
@@ -86,15 +86,15 @@
         </div>
         <div class="FlexCenter FlexSpacedMini">
             <div class="FlexCaption">
-                @Html.Raw(_languageProvider.Admin[Model.Language, "DEACTIVATION_REASON"])
+                @Html.Raw(_translationProvider.Admin[Model.Language, "DEACTIVATION_REASON"])
             </div>
             <div class="FlexRight PostInputWidth">
-                @Html.Raw(_languageProvider.Enums[Model.Language, user.UserInactiveReason])
+                @Html.Raw(_translationProvider.Enums[Model.Language, user.UserInactiveReason])
             </div>
         </div>
         <div class="FlexCenter FlexSpacedMini">
             <div class="FlexCaption">
-                @Html.Raw(_languageProvider.Admin[Model.Language, "LAST_ACTIVE"])
+                @Html.Raw(_translationProvider.Admin[Model.Language, "LAST_ACTIVE"])
             </div>
             <div class="FlexRight PostInputWidth">
                 @if (user.UserLastvisit != 0)
@@ -109,7 +109,7 @@
         </div>
         <div class="FlexCenter FlexSpacedMini">
             <div class="FlexCaption">
-                @Html.Raw(_languageProvider.Admin[Model.Language, "REMINDERS"])
+                @Html.Raw(_translationProvider.Admin[Model.Language, "REMINDERS"])
             </div>
             <div class="FlexRight PostInputWidth">
                 @if (user.UserReminded.ToBool())
@@ -124,30 +124,30 @@
         </div>
         <div class="FlexCenter FlexSpacedMini">
             <div class="FlexCaption">
-                @Html.Raw(_languageProvider.Admin[Model.Language, "QUICK_ACTIONS"])
+                @Html.Raw(_translationProvider.Admin[Model.Language, "QUICK_ACTIONS"])
             </div>
             <ul class="FlexRight PostInputWidth">
                 <li>
                     @if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed || user.UserInactiveReason == UserInactiveReason.ChangedEmailNotConfirmed)
                     {
                         <s>
-                            <a href="#" title="@Html.Raw(_languageProvider.Admin[Model.Language, "CANT_ACTIVATE_EMAIL_NOT_CONFIRMED_TOOLTIP"])">
-                                @Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Activate])
+                            <a href="#" title="@Html.Raw(_translationProvider.Admin[Model.Language, "CANT_ACTIVATE_EMAIL_NOT_CONFIRMED_TOOLTIP"])">
+                                @Html.Raw(_translationProvider.Enums[Model.Language, AdminUserActions.Activate])
                             </a>
                         </s>
                     }
                     else if (user.UserInactiveReason == UserInactiveReason.NotInactive)
                     {
                         <s>
-                            <a href="#" title="@Html.Raw(_languageProvider.Admin[Model.Language, "CANT_ACTIVATE_ALREADY_ACTIVE_TOOLTIP"])">
-                                @Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Activate])
+                            <a href="#" title="@Html.Raw(_translationProvider.Admin[Model.Language, "CANT_ACTIVATE_ALREADY_ACTIVE_TOOLTIP"])">
+                                @Html.Raw(_translationProvider.Enums[Model.Language, AdminUserActions.Activate])
                             </a>
                         </s>
                     }
                     else
                     {
-                        <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Activate', '@Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Activate])')">
-                            @Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Activate])
+                        <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Activate', '@Html.Raw(_translationProvider.Enums[Model.Language, AdminUserActions.Activate])')">
+                            @Html.Raw(_translationProvider.Enums[Model.Language, AdminUserActions.Activate])
                         </a>
                     }
                 </li>
@@ -155,33 +155,33 @@
                     @if (user.UserInactiveTime > 0)
                     {
                         <s>
-                            <a href="#" title="@Html.Raw(_languageProvider.Admin[Model.Language, "CANT_DEACTIVATE_ALREADY_INACTIVE_TOOLTIP"])">
-                                @Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Deactivate])
+                            <a href="#" title="@Html.Raw(_translationProvider.Admin[Model.Language, "CANT_DEACTIVATE_ALREADY_INACTIVE_TOOLTIP"])">
+                                @Html.Raw(_translationProvider.Enums[Model.Language, AdminUserActions.Deactivate])
                             </a>
                         </s>
                     }
                     else
                     {
-                        <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Deactivate', '@Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Deactivate])')">
-                            @Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Deactivate])
+                        <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Deactivate', '@Html.Raw(_translationProvider.Enums[Model.Language, AdminUserActions.Deactivate])')">
+                            @Html.Raw(_translationProvider.Enums[Model.Language, AdminUserActions.Deactivate])
                         </a>
                     }
                 </li>
                 <li>
-                    <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Delete_KeepMessages', '@Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Delete_KeepMessages])')">
-                        @Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Delete_KeepMessages])
+                    <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Delete_KeepMessages', '@Html.Raw(_translationProvider.Enums[Model.Language, AdminUserActions.Delete_KeepMessages])')">
+                        @Html.Raw(_translationProvider.Enums[Model.Language, AdminUserActions.Delete_KeepMessages])
                     </a>
                 </li>
                 <li>
-                    <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Delete_DeleteMessages', '@Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Delete_DeleteMessages])')">
-                        @Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Delete_DeleteMessages])
+                    <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Delete_DeleteMessages', '@Html.Raw(_translationProvider.Enums[Model.Language, AdminUserActions.Delete_DeleteMessages])')">
+                        @Html.Raw(_translationProvider.Enums[Model.Language, AdminUserActions.Delete_DeleteMessages])
                     </a>
                 </li>
                 @if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed || user.UserInactiveReason == UserInactiveReason.ChangedEmailNotConfirmed)
                 {
                     <li>
-                        <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Remind', '@Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Remind])')">
-                            @Html.Raw(_languageProvider.Enums[Model.Language, AdminUserActions.Remind])
+                        <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Remind', '@Html.Raw(_translationProvider.Enums[Model.Language, AdminUserActions.Remind])')">
+                            @Html.Raw(_translationProvider.Enums[Model.Language, AdminUserActions.Remind])
                         </a>
                     </li>
                 }
@@ -190,7 +190,7 @@
         <div class="FlexCenter FlexSpacedMini" style="padding-bottom:20px; font-weight:bold">
             <div class="FlexLeft PostInputWidth">
                 <a asp-page="/User" asp-route-UserId="@user.UserId" target="_blank">
-                    @Html.Raw(_languageProvider.Admin[Model.Language, "VIEW_EDIT_FULL_PROFILE"])
+                    @Html.Raw(_translationProvider.Admin[Model.Language, "VIEW_EDIT_FULL_PROFILE"])
                 </a>
             </div>
         </div>

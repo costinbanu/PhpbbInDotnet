@@ -36,8 +36,8 @@ namespace PhpbbInDotnet.Forum.Pages
         public int ForumId { get; set; }
 
         public ViewForumModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, IBBCodeRenderingService renderingService,
-            IConfiguration config, ICommonUtils utils, LanguageProvider languageProvider)
-            : base(context, forumService, userService, cache, utils, languageProvider) 
+            IConfiguration config, ICommonUtils utils, ITranslationProvider translationProvider)
+            : base(context, forumService, userService, cache, utils, translationProvider) 
         {
             _config = config;
             _renderingService = renderingService;

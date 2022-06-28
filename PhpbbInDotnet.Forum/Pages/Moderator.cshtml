@@ -15,10 +15,10 @@
 @model PhpbbInDotnet.Forum.Pages.ModeratorModel
 @{
     var Lang = Model.GetLanguage();
-    ViewData["Title"] = Model.LanguageProvider.Moderator[Lang, "MOD_PANEL"]; ;
+    ViewData["Title"] = Model.TranslationProvider.Moderator[Lang, "MOD_PANEL"]; ;
     Layout = "~/Pages/_Layout.cshtml";
     var CurrentUser = Model.GetCurrentUser();
-    var UserDateFormat = CurrentUser.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
+    var UserDateFormat = CurrentUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
     var isForumSelected = Model.ForumId > 0 && !string.IsNullOrWhiteSpace(Model.ForumName);
     var hasTopics = Model.Topics?.SelectMany(t => t.Topics ?? Enumerable.Empty<TopicDto>())?.Any() == true;
 }
@@ -36,7 +36,7 @@
     }
 </style>
 
-<h3>@Html.Raw(Model.LanguageProvider.Moderator[Lang, "MOD_PANEL"])</h3>
+<h3>@Html.Raw(Model.TranslationProvider.Moderator[Lang, "MOD_PANEL"])</h3>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js" integrity="sha512-zYXldzJsDrNKV+odAwFYiDXV2Cy37cwizT+NkuiPGsa9X1dOz04eHvUWVuxaJ299GvcJT31ug2zO4itXBjFx4w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <environment include="Development">
     <script src="~/js/tabbedPage.js"></script>
@@ -79,23 +79,23 @@
 
 <div class="tab">
     <button class="@(Model.Mode == ModeratorPanelMode.TopicModeration ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Topics')">
-        @Html.Raw(Model.LanguageProvider.Moderator[Lang, "MODERATE_TOPICS", Casing.Title])
+        @Html.Raw(Model.TranslationProvider.Moderator[Lang, "MODERATE_TOPICS", Casing.Title])
     </button>
     <button class="@(Model.Mode == ModeratorPanelMode.Reports ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Reports')">
-        @Html.Raw(Model.LanguageProvider.Moderator[Lang, "OPEN_REPORTS", Casing.Title])
+        @Html.Raw(Model.TranslationProvider.Moderator[Lang, "OPEN_REPORTS", Casing.Title])
     </button>
     <button class="@(Model.Mode == ModeratorPanelMode.RecycleBin ? "tablinks active" : "tablinks")" onclick="openTab(event, 'RecycleBin')">
-        @Html.Raw(Model.LanguageProvider.Moderator[Lang, "RECYCLE_BIN", Casing.Title])
+        @Html.Raw(Model.TranslationProvider.Moderator[Lang, "RECYCLE_BIN", Casing.Title])
     </button>
 </div>
 
 <div id="Topics" class="tabcontent" style="@(Model.Mode == ModeratorPanelMode.TopicModeration ? "display:inherit" : "display:none")">
     @if (isForumSelected)
     {
-        <h4>@Html.Raw(Model.LanguageProvider.Moderator[Lang, "FORUM_TO_MODERATE"]): @Model.ForumName</h4>
+        <h4>@Html.Raw(Model.TranslationProvider.Moderator[Lang, "FORUM_TO_MODERATE"]): @Model.ForumName</h4>
     }
     <span onclick="showForumTree(this)" class="SpanLikeLink nowrap" style="display:block">
-        @Html.Raw(Model.LanguageProvider.Moderator[Lang, "CHOOSE_FORUM_TO_MODERATE", Casing.FirstUpper])
+        @Html.Raw(Model.TranslationProvider.Moderator[Lang, "CHOOSE_FORUM_TO_MODERATE", Casing.FirstUpper])
     </span>
     <div id="forumTree" style="@(isForumSelected ? "display:none" : "display:unset")">
         @await Html.PartialAsync(
@@ -109,7 +109,7 @@
         <form>
             <input type="hidden" name="ForumId" id="ForumIdInput" />
             <input type="hidden" name="Mode" value="@ModeratorPanelMode.TopicModeration" />
-            <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "GO", Casing.FirstUpper])" class="MyButton SpacedButton" />
+            <input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "GO", Casing.FirstUpper])" class="MyButton SpacedButton" />
             @Html.AntiForgeryToken()
         </form>
     </div>
@@ -136,34 +136,34 @@
     else if (isForumSelected)
     {
         <p>&nbsp;</p>
-        <h5>@Html.Raw(Model.LanguageProvider.Moderator[Lang, "NO_TOPICS"])</h5>
+        <h5>@Html.Raw(Model.TranslationProvider.Moderator[Lang, "NO_TOPICS"])</h5>
         <p>&nbsp;</p>
     }
 
     @if (isForumSelected && hasTopics)
     {
         <button onclick="selectAllCheckboxes('Topics')" type="button" class="MyButton SpacedButton">
-            &#x2714;&nbsp;@Html.Raw(Model.LanguageProvider.Moderator[Lang, "SELECT_ALL_TOPICS"])
+            &#x2714;&nbsp;@Html.Raw(Model.TranslationProvider.Moderator[Lang, "SELECT_ALL_TOPICS"])
         </button>
         <form method="post" name="SubmitTopics" id="SubmitTopics" asp-page-handler="ManageTopics">
-            @Html.Raw(Model.LanguageProvider.Moderator[Lang, "WITH_SELECTED_TOPICS"]):
+            @Html.Raw(Model.TranslationProvider.Moderator[Lang, "WITH_SELECTED_TOPICS"]):
             @Html.DropDownList(
                   "TopicAction",
                   _utils.EnumToDropDownList<ModeratorTopicActions>(
                       selectedItem: null,
-                      textTransform: item => Model.LanguageProvider.Enums[Lang, item],
-                      defaultText: Model.LanguageProvider.BasicText[Lang, "SELECT_AN_OPTION"],
+                      textTransform: item => Model.TranslationProvider.Enums[Lang, item],
+                      defaultText: Model.TranslationProvider.BasicText[Lang, "SELECT_AN_OPTION"],
                       valueFilter: action => action != ModeratorTopicActions.DeleteTopic && action != ModeratorTopicActions.RestoreTopic
                   ),
                   new { onchange = "mod.showTopicExtraInput(this)", id = "TopicAction", style = "max-width:400px; height: 30px; padding-top: 0px" }
               )
             <div id="extraInputTopic" style="display:@(Model.DestinationForumId > 0 ? "block" : "none")">
                 <br />
-                <input type="text" asp-for="DestinationForumId" placeholder="@Html.Raw(Model.LanguageProvider.Moderator[Lang, "DESTINATION_FORUM_ID"])" style="width:250px" /><br />
-                <a href="javascript:$('#modConfirmation').submit();">@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CHOOSE_DESTINATION_FORUM_ID"])</a>
+                <input type="text" asp-for="DestinationForumId" placeholder="@Html.Raw(Model.TranslationProvider.Moderator[Lang, "DESTINATION_FORUM_ID"])" style="width:250px" /><br />
+                <a href="javascript:$('#modConfirmation').submit();">@Html.Raw(Model.TranslationProvider.Moderator[Lang, "CHOOSE_DESTINATION_FORUM_ID"])</a>
                 <span asp-validation-for="DestinationForumId" class="validation"></span>
             </div>
-            <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT", Casing.FirstUpper])" onclick="return mod.confirmAction('#TopicAction');" class="MyButton SpacedButton" style="height:30px" />
+            <input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "SUBMIT", Casing.FirstUpper])" onclick="return mod.confirmAction('#TopicAction');" class="MyButton SpacedButton" style="height:30px" />
             <input type="hidden" asp-for="ForumId" />
             <input type="hidden" asp-for="Mode" />
             @Html.AntiForgeryToken()
@@ -182,7 +182,7 @@
 </div>
 
 <div id="Reports" class="tabcontent" style="@(Model.Mode == ModeratorPanelMode.Reports ? "display:inherit" : "display:none")">
-    <h4>@Html.Raw(Model.LanguageProvider.Moderator[Lang, "MANAGE_REPORTS"])</h4>
+    <h4>@Html.Raw(Model.TranslationProvider.Moderator[Lang, "MANAGE_REPORTS"])</h4>
     @{ var atLeastOneReport = false; }
     @foreach (var report in Model.Reports ?? Enumerable.Empty<ReportDto>())
     {
@@ -192,15 +192,15 @@
             <input name="SelectedReports" type="checkbox" value="@report.Id" form="SubmitReports" style="margin-right:10px; align-self:safe center" />
             <div class="FlexCenter" style="width:100%">
                 <div class="FlexBox">
-                    <span>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "REPORT", Casing.FirstUpper]): @Html.Raw(report.ReasonTitle)</span>
+                    <span>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "REPORT", Casing.FirstUpper]): @Html.Raw(report.ReasonTitle)</span>
                     <br />
                     <span class="Caption">
                         @Html.Raw(report.ReasonDescription)
                     </span>
                     <br />
-                    <span>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "ADDITIONAL_DETAILS", Casing.FirstUpper]): @Html.Raw(report.Details)</span>
+                    <span>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "ADDITIONAL_DETAILS", Casing.FirstUpper]): @Html.Raw(report.Details)</span>
                     <br />
-                    <span>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "REPORTING_USER", Casing.FirstUpper]): @Html.Raw(report.ReporterUsername)</span>
+                    <span>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "REPORTING_USER", Casing.FirstUpper]): @Html.Raw(report.ReporterUsername)</span>
                 </div>
                 <div class="FlexBox">
                     <span class="Caption">
@@ -217,7 +217,7 @@
     @if (!atLeastOneReport)
     {
         <p>&nbsp;</p>
-        @Html.Raw(Model.LanguageProvider.Moderator[Lang, "NO_OPEN_REPORTS"])
+        @Html.Raw(Model.TranslationProvider.Moderator[Lang, "NO_OPEN_REPORTS"])
         <p>&nbsp;</p>
     }
     else
@@ -225,9 +225,9 @@
         <hr class="BoxSeparator" />
     }
     <button onclick="selectAllCheckboxes('Reports')" type="button" class="MyButton SpacedButton" @(atLeastOneReport ? "" : "disabled")>
-        &#x2714;&nbsp;@Html.Raw(Model.LanguageProvider.Moderator[Lang, "SELECT_ALL_REPORTS"])
+        &#x2714;&nbsp;@Html.Raw(Model.TranslationProvider.Moderator[Lang, "SELECT_ALL_REPORTS"])
     </button>
-    <input type="submit" value="&#x274E;&nbsp;@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CLOSE_SELECTED_REPORTS"])" form="SubmitReports" onclick="return confirm('@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CONFIRM_CLOSE_REPORTS"])');" class="MyButton SpacedButton" @(atLeastOneReport ? "" : "disabled") />
+    <input type="submit" value="&#x274E;&nbsp;@Html.Raw(Model.TranslationProvider.Moderator[Lang, "CLOSE_SELECTED_REPORTS"])" form="SubmitReports" onclick="return confirm('@Html.Raw(Model.TranslationProvider.Moderator[Lang, "CONFIRM_CLOSE_REPORTS"])');" class="MyButton SpacedButton" @(atLeastOneReport ? "" : "disabled") />
     <form method="post" name="SubmitReports" id="SubmitReports" asp-page-handler="CloseReports">
         <input type="hidden" name="Mode" value="@ModeratorPanelMode.Reports" />
         <input type="hidden" asp-for="ForumId" />
@@ -237,7 +237,7 @@
 </div>
 
 <div id="RecycleBin" class="tabcontent" style="@(Model.Mode == ModeratorPanelMode.RecycleBin ? "display:inherit" : "display:none")">
-    <h4>@Html.Raw(Model.LanguageProvider.Moderator[Lang, "MANAGE_DELETED_ITEMS"])</h4>
+    <h4>@Html.Raw(Model.TranslationProvider.Moderator[Lang, "MANAGE_DELETED_ITEMS"])</h4>
     @{
         var correlationId = Guid.NewGuid();
         var atLeastOneItem = false;
@@ -246,21 +246,21 @@
     @foreach (var itemGroup in Model.DeletedItems ?? Enumerable.Empty<DeletedItemGroup>())
     {
         var items = itemGroup.Items ?? Enumerable.Empty<DeletedItemDto>();
-        var itemName = Model.LanguageProvider.BasicText[Lang, itemGroup.Type.ToString().ToUpperInvariant()];
+        var itemName = Model.TranslationProvider.BasicText[Lang, itemGroup.Type.ToString().ToUpperInvariant()];
 
         <h4 onclick="expandSection('@(itemGroup.Type)Section', '@(itemGroup.Type)Char')" style="cursor:pointer" id="@(itemGroup.Type)Title">
             @switch (itemGroup.Type)
             {
                 case RecycleBinItemType.Forum:
-                    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "FORUMS", Casing.Title])
+                    @Html.Raw(Model.TranslationProvider.BasicText[Lang, "FORUMS", Casing.Title])
                     break;
 
                 case RecycleBinItemType.Topic:
-                    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "TOPICS", Casing.Title])
+                    @Html.Raw(Model.TranslationProvider.BasicText[Lang, "TOPICS", Casing.Title])
                     break;
 
                 case RecycleBinItemType.Post:
-                    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "POSTS", Casing.Title])
+                    @Html.Raw(Model.TranslationProvider.BasicText[Lang, "POSTS", Casing.Title])
                     items = from i in items
                             group i by (i.Value as PostDto)?.TopicId into groups
                             from g in groups
@@ -277,16 +277,16 @@
                 atLeastOneItem = true;
                 <label>
                     <input name="SelectedDeletedItems" type="checkbox" value="@item.Type/@item.Id" form="SubmitDeletedItems" />
-                    @Html.Raw(string.Format(Model.LanguageProvider.Moderator[Lang, "SELECT_THIS_ITEM_FORMAT"], itemName))
+                    @Html.Raw(string.Format(Model.TranslationProvider.Moderator[Lang, "SELECT_THIS_ITEM_FORMAT"], itemName))
                 </label>
                 <span>
                     &bull;
-                    @Html.Raw(Model.LanguageProvider.Moderator[Lang, "DELETED_AT"]):
+                    @Html.Raw(Model.TranslationProvider.Moderator[Lang, "DELETED_AT"]):
                     <script>
                     writeDate('@item.DeleteTime.ToUtcTime().ToString("o")', '@UserDateFormat');
                     </script>
                     &bull;
-                    @Html.Raw(Model.LanguageProvider.Moderator[Lang, "DELETED_BY"]):
+                    @Html.Raw(Model.TranslationProvider.Moderator[Lang, "DELETED_BY"]):
                     @Html.Raw(item.DeleteUserName)
                 </span>
                 <p></p>
@@ -356,11 +356,11 @@
     @if (!atLeastOneItem)
     {
         <p>&nbsp;</p>
-        @Html.Raw(Model.LanguageProvider.Moderator[Lang, "NO_DELETED_ITEMS"])
+        @Html.Raw(Model.TranslationProvider.Moderator[Lang, "NO_DELETED_ITEMS"])
         <p>&nbsp;</p>
     }
     <form method="post" name="SubmitDeletedItems" id="SubmitDeletedItems" asp-page-handler="RestoreDeletedItems">
-        <input type="submit" value="&#x274E;&nbsp;@Html.Raw(Model.LanguageProvider.Moderator[Lang, "RESTORE_SELECTED_DELETED_ITEMS"])" onclick="return confirm('@Html.Raw(Model.LanguageProvider.Moderator[Lang, "CONFIRM_RESTORE_DELETED_ITEMS"])');" class="MyButton SpacedButton" @(atLeastOneItem ? "" : "disabled") />
+        <input type="submit" value="&#x274E;&nbsp;@Html.Raw(Model.TranslationProvider.Moderator[Lang, "RESTORE_SELECTED_DELETED_ITEMS"])" onclick="return confirm('@Html.Raw(Model.TranslationProvider.Moderator[Lang, "CONFIRM_RESTORE_DELETED_ITEMS"])');" class="MyButton SpacedButton" @(atLeastOneItem ? "" : "disabled") />
         <input type="hidden" name="Mode" value="@ModeratorPanelMode.RecycleBin" />
         <input type="hidden" asp-for="ForumId" />
         @Html.AntiForgeryToken()

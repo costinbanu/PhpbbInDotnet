@@ -51,17 +51,17 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public string? RecaptchaResponse { get; set; }
 
-        public LanguageProvider LanguageProvider { get; }
+        public ITranslationProvider TranslationProvider { get; }
 
 
-        public RegisterModel(IForumDbContext context, ICommonUtils utils, IConfiguration config, IHttpClientFactory httpClientFactory, LanguageProvider languageProvider, IUserService userService)
+        public RegisterModel(IForumDbContext context, ICommonUtils utils, IConfiguration config, IHttpClientFactory httpClientFactory, ITranslationProvider translationProvider, IUserService userService)
         {
             _context = context;
             _utils = utils;
             _config = config;
             _recaptchaOptions = _config.GetObject<Recaptcha>();
             _gClient = httpClientFactory.CreateClient(_recaptchaOptions.ClientName);
-            LanguageProvider = languageProvider;
+            TranslationProvider = translationProvider;
             _userService = userService;
         }
 
@@ -78,7 +78,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPost()
         {
             var lang = GetLanguage();
-            var validator = new UserProfileDataValidationService(ModelState, LanguageProvider, lang);
+            var validator = new UserProfileDataValidationService(ModelState, TranslationProvider, lang);
             var validations = new[]
             {
                 validator.ValidateUsername(nameof(UserName), UserName),
@@ -112,13 +112,13 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 if ((decimal)result.score < _recaptchaOptions.MinScore)
                 {
-                    return PageWithError(nameof(RecaptchaResponse), string.Format(LanguageProvider.Errors[lang, "YOURE_A_BOT_FORMAT"], _config.GetValue<string>("AdminEmail").Replace("@", " at ").Replace(".", " dot ")));
+                    return PageWithError(nameof(RecaptchaResponse), string.Format(TranslationProvider.Errors[lang, "YOURE_A_BOT_FORMAT"], _config.GetValue<string>("AdminEmail").Replace("@", " at ").Replace(".", " dot ")));
                 }
             }
             catch (Exception ex)
             {
                 _utils.HandleErrorAsWarning(ex, "Failed to check captcha");
-                return PageWithError(nameof(RecaptchaResponse), LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
+                return PageWithError(nameof(RecaptchaResponse), TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
             }
 
             var sqlExecuter = _context.GetSqlExecuter();
@@ -134,22 +134,22 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (checkBanlist.Any(x => (long)x.Email == 1L))
             {
-                return PageWithError(nameof(Email), LanguageProvider.Errors[lang, "BANNED_EMAIL"]);
+                return PageWithError(nameof(Email), TranslationProvider.Errors[lang, "BANNED_EMAIL"]);
             }
 
             if (checkBanlist.Any(x => (long)x.IP == 1L))
             {
-                return PageWithError(nameof(UserName), LanguageProvider.Errors[lang, "BANNED_IP"]);
+                return PageWithError(nameof(UserName), TranslationProvider.Errors[lang, "BANNED_IP"]);
             }
 
             if (await _context.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UsernameClean == StringUtility.CleanString(UserName)))
             {
-                return PageWithError(nameof(UserName), LanguageProvider.Errors[lang, "EXISTING_USERNAME"]);
+                return PageWithError(nameof(UserName), TranslationProvider.Errors[lang, "EXISTING_USERNAME"]);
             }
 
             if (await _context.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UserEmailHash == HashingUtility.ComputeCrc64Hash(Email)))
             {
-                return PageWithError(nameof(Email), LanguageProvider.Errors[lang, "EXISTING_EMAIL"]);
+                return PageWithError(nameof(Email), TranslationProvider.Errors[lang, "EXISTING_EMAIL"]);
             }
 
             var registrationCode = Guid.NewGuid().ToString("n");
@@ -169,7 +169,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 UserIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
                 UserRegdate = now,
                 UserLastmark = now,
-                UserDateformat = LanguageProvider.GetDefaultDateFormat(lang),
+                UserDateformat = TranslationProvider.GetDefaultDateFormat(lang),
                 UserLang = lang
             });
             newUser.Entity.UserId = 0;
@@ -180,7 +180,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 GroupId = 2,
                 UserId = newUser.Entity.UserId
             });
-            var subject = string.Format(LanguageProvider.Email[LanguageProvider.GetValidatedLanguage(null, Request), "WELCOME_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
+            var subject = string.Format(TranslationProvider.Email[TranslationProvider.GetValidatedLanguage(null, Request), "WELCOME_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
 
             var dbChangesTask = _context.SaveChangesAsync();
             var emailTask = _utils.SendEmail(
@@ -208,6 +208,6 @@ namespace PhpbbInDotnet.Forum.Pages
             return Page();
         }
 
-        public string GetLanguage() => _language ??= LanguageProvider.GetValidatedLanguage(null, HttpContext?.Request);
+        public string GetLanguage() => _language ??= TranslationProvider.GetValidatedLanguage(null, HttpContext?.Request);
     }
 }

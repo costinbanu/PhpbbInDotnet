@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Languages
 {
-    public class LanguageProvider
+    class TranslationProvider : ITranslationProvider
     {
         private readonly ILogger _logger;
         private readonly IForumDbContext _context;
@@ -69,7 +69,7 @@ namespace PhpbbInDotnet.Languages
 
         #endregion Translation declarations
 
-        public LanguageProvider(ILogger logger, IAppCache cache, IForumDbContext context, ICommonUtils utils)
+        public TranslationProvider(ILogger logger, IAppCache cache, IForumDbContext context, ICommonUtils utils)
         {
             _logger = logger;
             _context = context;

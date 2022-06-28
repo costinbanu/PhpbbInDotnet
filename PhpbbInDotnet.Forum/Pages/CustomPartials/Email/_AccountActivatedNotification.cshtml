@@ -5,7 +5,7 @@
 
 @inject ICommonUtils _utils
 @inject IConfiguration _config
-@inject Languages.LanguageProvider _languageProvider
+@inject Languages.ITranslationProvider _translationProvider
 
 @{
     var baseUrl = _config.GetValue<string>("BaseUrl");
@@ -13,14 +13,14 @@
 }
 
 <p>
-    @Html.Raw(_languageProvider.Email[Model.Language, "GREETING_BEGIN"])
+    @Html.Raw(_translationProvider.Email[Model.Language, "GREETING_BEGIN"])
 </p>
 <p>
-    @Html.Raw(string.Format(_languageProvider.Email[Model.Language, "ACCOUNT_ACTIVATED_NOTIFICATION_BODY_FORMAT"], baseUrl, forumName, Model.Username))
+    @Html.Raw(string.Format(_translationProvider.Email[Model.Language, "ACCOUNT_ACTIVATED_NOTIFICATION_BODY_FORMAT"], baseUrl, forumName, Model.Username))
 </p>
 <p style="font-size:0.85em">
-    @Html.Raw(string.Format(_languageProvider.Email[Model.Language, "WELCOME_FOOTER_FORMAT"], Model.Username, baseUrl, forumName))
+    @Html.Raw(string.Format(_translationProvider.Email[Model.Language, "WELCOME_FOOTER_FORMAT"], Model.Username, baseUrl, forumName))
 </p>
 <p>
-    @Html.Raw(_languageProvider.Email[Model.Language, "GREETING_END"])
+    @Html.Raw(_translationProvider.Email[Model.Language, "GREETING_END"])
 </p>
