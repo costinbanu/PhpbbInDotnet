@@ -3,13 +3,14 @@
 
 @using Domain
 @using Domain.Utilities
+@using Services
 @using System.Web
 @using Microsoft.Extensions.Configuration
 @using CustomPartials
 
-@inject Services.IBBCodeRenderingService _renderingService
+@inject IBBCodeRenderingService _renderingService
 @inject IConfiguration _config
-@inject AnonymousSessionCounter _sessionCounter
+@inject IAnonymousSessionCounter _sessionCounter
 
 @{
     var Lang = Model.GetLanguage();

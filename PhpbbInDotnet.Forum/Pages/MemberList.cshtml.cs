@@ -8,6 +8,7 @@ using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using Serilog;
 using System;
@@ -23,7 +24,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public const int PAGE_SIZE = 20;
 
         private readonly IConfiguration _config;
-        private readonly AnonymousSessionCounter _sessionCounter;
+        private readonly IAnonymousSessionCounter _sessionCounter;
 
         [BindProperty(SupportsGet = true)]
         public int PageNum { get; set; } = 1;
@@ -48,11 +49,11 @@ namespace PhpbbInDotnet.Forum.Pages
         public IEnumerable<PhpbbRanks>? RankList { get; private set; }
         public IEnumerable<PhpbbGroups>? GroupList { get; private set; }
         public bool SearchWasPerformed { get; private set; }
-        public IEnumerable<AnonymousSessionCounter.BotData>? BotList { get; private set; }
+        public IEnumerable<BotData>? BotList { get; private set; }
         public Paginator? BotPaginator { get; private set; }
 
         public MemberListModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger,
-            IConfiguration config, ITranslationProvider translationProvider, AnonymousSessionCounter sessionCounter)
+            IConfiguration config, ITranslationProvider translationProvider, IAnonymousSessionCounter sessionCounter)
             : base(context, forumService, userService, cache, logger, translationProvider)
         {
             _config = config;

@@ -1,13 +1,14 @@
 ﻿using Newtonsoft.Json;
+using PhpbbInDotnet.Objects;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Timers;
 
-namespace PhpbbInDotnet.Domain
+namespace PhpbbInDotnet.Services
 {
-    public class AnonymousSessionCounter
+    class AnonymousSessionCounter : IAnonymousSessionCounter
     {
         public AnonymousSessionCounter()
         {
@@ -26,16 +27,16 @@ namespace PhpbbInDotnet.Domain
         public void UpsertBot(string ip, string userAgent, TimeSpan expiration)
         {
             _ipCache.TryAdd(
-                ip, 
+                ip,
                 new Item(
-                    ip, 
+                    ip,
                     JsonConvert.SerializeObject(new BotData
                     {
                         IP = ip,
                         UserAgent = userAgent,
                         EntryTime = DateTime.UtcNow
-                    }), 
-                    expiration, 
+                    }),
+                    expiration,
                     _ipCache
                 )
             );
@@ -75,15 +76,6 @@ namespace PhpbbInDotnet.Domain
                 _timer?.Stop();
                 _timer?.Dispose();
             }
-        }
-
-        public class BotData
-        {
-            public string? IP { get; set; }
-
-            public string? UserAgent { get; set; }
-
-            public DateTime EntryTime { get; set; }
         }
     }
 }

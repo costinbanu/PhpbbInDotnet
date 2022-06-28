@@ -30,7 +30,7 @@ namespace PhpbbInDotnet.Forum.Middlewares
         private readonly IUserService _userService;
         private readonly IConfiguration _config;
         private readonly IAppCache _cache;
-        private readonly AnonymousSessionCounter _sessionCounter;
+        private readonly IAnonymousSessionCounter _sessionCounter;
 
         static AuthenticationMiddleware()
         {
@@ -41,7 +41,7 @@ namespace PhpbbInDotnet.Forum.Middlewares
         }
 
         public AuthenticationMiddleware(ILogger logger, IConfiguration config, IAppCache cache, IForumDbContext context,
-            IForumTreeService forumTreeService, IUserService userService, AnonymousSessionCounter sessionCounter)
+            IForumTreeService forumTreeService, IUserService userService, IAnonymousSessionCounter sessionCounter)
         {
             _logger = logger;
             _forumTreeService = forumTreeService;

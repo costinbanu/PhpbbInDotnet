@@ -23,6 +23,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddSingleton<IEmailService, EmailService>();
             services.AddSingleton<IEncryptionService, EncryptionService>();
             services.AddSingleton<IRazorViewService, RazorViewService>();
+            services.AddSingleton<IAnonymousSessionCounter, AnonymousSessionCounter>();
 
             services.AddHostedService<ScheduledTasksService>();
 

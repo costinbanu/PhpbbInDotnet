@@ -104,10 +104,9 @@ namespace PhpbbInDotnet.Forum
             }
 
             services.AddLanguageSupport();
-            services.AddCommonUtils();
             services.AddApplicationServices();
 
-            services.AddSingleton<AnonymousSessionCounter>();
+            
             services.AddSingleton<FileExtensionContentTypeProvider>();
 
             services.AddScoped<AuthenticationMiddleware>();
