@@ -2,14 +2,14 @@
 @model PhpbbInDotnet.Forum.Pages.PrivateMessagesModel
 @{
     var Lang = Model.GetLanguage();
-    ViewData["Title"] = Model.LanguageProvider.BasicText[Lang, "PRIVATE_MESSAGING", Casing.Title];
+    ViewData["Title"] = Model.TranslationProvider.BasicText[Lang, "PRIVATE_MESSAGING", Casing.Title];
     Layout = "~/Pages/_Layout.cshtml";
     var CurrentUser = Model.GetCurrentUser();
-    var UserDateFormat = CurrentUser?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
+    var UserDateFormat = CurrentUser?.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
 }
 
-@using Utilities
-@using Utilities.Extensions;
+@using Domain
+@using Domain.Extensions;
 @using Objects
 @using CustomPartials
 
@@ -32,11 +32,11 @@
     }
 </style>
 
-<h3 style="float: left; margin-top: 0px">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "PRIVATE_MESSAGING", Casing.Title])</h3>
+<h3 style="float: left; margin-top: 0px">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "PRIVATE_MESSAGING", Casing.Title])</h3>
 <span>
     &nbsp;
     <button onclick="location.href = '/SendPrivateMessage'" style="height: 26px; padding-top: 1px; padding-bottom: 1px" class="MyButton SpacedButtonNotTop">
-        &#x1F4DD;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "WRITE_NEW_PM"])
+        &#x1F4DD;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Lang, "WRITE_NEW_PM"])
     </button>
 </span>
 <p style="clear:both"></p>
@@ -53,15 +53,15 @@
 </script>
 <div class="tab">
     <button class="@(Model.Show == PrivateMessagesPages.Inbox ? "tablinks active" : "tablinks")" onclick="submitSwitcher('@PrivateMessagesPages.Inbox')" type="button">
-        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "RECEIVED"])
+        @Html.Raw(Model.TranslationProvider.BasicText[Lang, "RECEIVED"])
     </button>
     <button class="@(Model.Show == PrivateMessagesPages.Sent ? "tablinks active" : "tablinks")" onclick="submitSwitcher('@PrivateMessagesPages.Sent')" type="button">
-        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SENT"])
+        @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SENT"])
     </button>
     @if (Model.Show == PrivateMessagesPages.Message)
     {
         <button class="@(Model.Show == PrivateMessagesPages.Message ? "tablinks active" : "tablinks")" type="button">
-            @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SELECTED_MESSAGE"])
+            @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SELECTED_MESSAGE"])
         </button>
     }
 </div>
@@ -113,8 +113,8 @@
                     language: Lang,
                     authorOnFoeList: false)
                 {
-                    AuthorTag = Model.LanguageProvider.BasicText[Lang, "MP_FROM"],
-                    DateLabel = Model.LanguageProvider.BasicText[Lang, "MP_SENT"]
+                    AuthorTag = Model.TranslationProvider.BasicText[Lang, "MP_FROM"],
+                    DateLabel = Model.TranslationProvider.BasicText[Lang, "MP_SENT"]
                 })
             </div>
             isFirst = false;
@@ -123,12 +123,12 @@
         <hr class="BoxSeparator" />
         <form method="post" id="InboxActions" name="InboxActions">
             <button onclick="selectAllCheckboxes()" type="button" class="MyButton SpacedButton">
-                &#x2714;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SELECT_ALL_MESSAGES"])
+                &#x2714;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Lang, "SELECT_ALL_MESSAGES"])
             </button>
             <input type="hidden" asp-for="Show" />
             <input type="hidden" asp-for="InboxPage" />
-            <input type="submit" asp-page-handler="MarkAsRead" value="&#x2705;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "MARK_SELECTED_MESSAGES_AS_READ"])" onclick="return confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_MARK_MESSAGES_AS_READ"])');" class="MyButton SpacedButton" />
-            <input type="submit" asp-page-handler="HideSelectedMessages" value="&#x1F6AE;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_SELECTED_MESSAGES_FOR_MYSELF"])" onclick="return confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_RECEIVED_MESSAGES_FOR_MYSELF"])');" class="MyButton SpacedButton" />
+            <input type="submit" asp-page-handler="MarkAsRead" value="&#x2705;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Lang, "MARK_SELECTED_MESSAGES_AS_READ"])" onclick="return confirm('@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CONFIRM_MARK_MESSAGES_AS_READ"])');" class="MyButton SpacedButton" />
+            <input type="submit" asp-page-handler="HideSelectedMessages" value="&#x1F6AE;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_SELECTED_MESSAGES_FOR_MYSELF"])" onclick="return confirm('@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CONFIRM_DELETE_RECEIVED_MESSAGES_FOR_MYSELF"])');" class="MyButton SpacedButton" />
         </form>
         @await Html.PartialAsync(
             "_PaginationControlsPartial",
@@ -147,7 +147,7 @@
     }
     else
     {
-        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "NO_RECEIVED_MESSAGES"])
+        @Html.Raw(Model.TranslationProvider.BasicText[Lang, "NO_RECEIVED_MESSAGES"])
     }
 </div>
 
@@ -197,8 +197,8 @@
                     language: Lang,
                     authorOnFoeList: false)
                 {
-                    AuthorTag = Model.LanguageProvider.BasicText[Lang, "MP_FOR"],
-                    DateLabel = Model.LanguageProvider.BasicText[Lang, "MP_SENT"]
+                    AuthorTag = Model.TranslationProvider.BasicText[Lang, "MP_FOR"],
+                    DateLabel = Model.TranslationProvider.BasicText[Lang, "MP_SENT"]
                 })
             </div>
             isFirst = false;
@@ -207,11 +207,11 @@
         <hr class="BoxSeparator" />
         <form method="post" id="SentActions" name="SentActions">
             <button onclick="selectAllCheckboxes()" type="button" class="MyButton SpacedButton">
-                &#x2714;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SELECT_ALL_MESSAGES"])
+                &#x2714;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Lang, "SELECT_ALL_MESSAGES"])
             </button>
             <input type="hidden" asp-for="Show" />
             <input type="hidden" asp-for="SentPage" />
-            <input type="submit" asp-page-handler="HideSelectedMessages" value="&#x1F6AE;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_SELECTED_MESSAGES_FOR_MYSELF"])" onclick="return confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_SENT_MESSAGES_FOR_MYSELF"])');" class="MyButton SpacedButton" />
+            <input type="submit" asp-page-handler="HideSelectedMessages" value="&#x1F6AE;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_SELECTED_MESSAGES_FOR_MYSELF"])" onclick="return confirm('@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CONFIRM_DELETE_SENT_MESSAGES_FOR_MYSELF"])');" class="MyButton SpacedButton" />
         </form>
         @await Html.PartialAsync(
             "_PaginationControlsPartial",
@@ -230,7 +230,7 @@
     }
     else
     {
-        @Html.Raw(Model.LanguageProvider.BasicText[Lang, "NO_SENT_MESSAGES"])
+        @Html.Raw(Model.TranslationProvider.BasicText[Lang, "NO_SENT_MESSAGES"])
     }
 </div>
 
@@ -253,8 +253,8 @@
                 {
                     AuthorAvatar = Model.SelectedMessage.OthersAvatar,
                     AlignLeft = true,
-                    AuthorTag = Model.SelectedMessageIsMine ? Model.LanguageProvider.BasicText[Lang, "MP_FOR"] : Model.LanguageProvider.BasicText[Lang, "MP_FROM"],
-                    DateLabel = Model.LanguageProvider.BasicText[Lang, "MP_SENT"]
+                    AuthorTag = Model.SelectedMessageIsMine ? Model.TranslationProvider.BasicText[Lang, "MP_FOR"] : Model.TranslationProvider.BasicText[Lang, "MP_FROM"],
+                    DateLabel = Model.TranslationProvider.BasicText[Lang, "MP_SENT"]
                 })
                 <div class="ForumContent VerticalContent FlexRight" id="@fakeId">
                     <span style="display:flex">
@@ -277,19 +277,19 @@
         </div>
         <p>&nbsp;</p>
         <button onclick="location.href='/SendPrivateMessage?privateMessageId=@Model.SelectedMessage.MessageId&receiverId=@Model.SelectedMessage.OthersId'" type="button" class="MyButton SpacedButtonNotBottom">
-            &#x1F5E8;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DO_REPLY", Casing.FirstUpper])
+            &#x1F5E8;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DO_REPLY", Casing.FirstUpper])
         </button>
         @if (Model.SelectedMessageIsMine && Model.SelectedMessageIsUnread)
         {
             <button onclick="location.href='/SendPrivateMessage?handler=Edit&privateMessageId=@Model.SelectedMessage.MessageId&receiverId=@Model.SelectedMessage.OthersId'" type="button" class="MyButton SpacedButtonNotBottom">
-                &#x1F4DD;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DO_EDIT"])
+                &#x1F4DD;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DO_EDIT"])
             </button>
             <form method="post" asp-page-handler="DeleteMessage" style="display:inline">
                 <input type="hidden" asp-for="MessageId" />
                 <input type="hidden" asp-for="InboxPage" />
                 <input type="hidden" asp-for="SentPage" />
                 <input type="hidden" name="Show" value="@(Model.SelectedMessageIsMine ? PrivateMessagesPages.Sent : PrivateMessagesPages.Inbox)" />
-                <input type="submit" value="&#x1F6AE;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_MESSAGE_FOR_EVERYONE", Casing.FirstUpper])" onclick="return confirm('@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_MESSAGE_FOR_EVERYONE", Casing.FirstUpper])');" class="MyButton SpacedButtonNotBottom" />
+                <input type="submit" value="&#x1F6AE;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_MESSAGE_FOR_EVERYONE", Casing.FirstUpper])" onclick="return confirm('@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CONFIRM_DELETE_MESSAGE_FOR_EVERYONE", Casing.FirstUpper])');" class="MyButton SpacedButtonNotBottom" />
             </form>
         }
         <form method="post" id="hideForm" asp-page-handler="HideMessage" style="display:inline">
@@ -297,7 +297,7 @@
             <input type="hidden" asp-for="InboxPage" />
             <input type="hidden" asp-for="SentPage" />
             <input type="hidden" name="Show" value="@(Model.SelectedMessageIsMine ? PrivateMessagesPages.Sent : PrivateMessagesPages.Inbox)" />
-            <input type="submit" value="&#x1F6AE;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "DELETE_MESSAGE_FOR_MYSELF"])" onclick="return confirm('@Html.Raw(Model.SelectedMessageIsMine ? Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_MY_MESSAGE_FOR_MYSELF"] : Model.LanguageProvider.BasicText[Lang, "CONFIRM_DELETE_OTHERS_MESSAGE_FOR_MYSELF"])');" class="MyButton SpacedButtonNotBottom" />
+            <input type="submit" value="&#x1F6AE;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_MESSAGE_FOR_MYSELF"])" onclick="return confirm('@Html.Raw(Model.SelectedMessageIsMine ? Model.TranslationProvider.BasicText[Lang, "CONFIRM_DELETE_MY_MESSAGE_FOR_MYSELF"] : Model.TranslationProvider.BasicText[Lang, "CONFIRM_DELETE_OTHERS_MESSAGE_FOR_MYSELF"])');" class="MyButton SpacedButtonNotBottom" />
         </form>
         <p></p>
         <span asp-validation-for="MessageId" class="validation"></span>

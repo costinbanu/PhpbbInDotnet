@@ -4,11 +4,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Utilities;
-using PhpbbInDotnet.Utilities.Core;
-using PhpbbInDotnet.Utilities.Extensions;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,7 +24,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public const int PAGE_SIZE = 20;
 
         private readonly IConfiguration _config;
-        private readonly AnonymousSessionCounter _sessionCounter;
+        private readonly IAnonymousSessionCounter _sessionCounter;
 
         [BindProperty(SupportsGet = true)]
         public int PageNum { get; set; } = 1;
@@ -47,12 +49,12 @@ namespace PhpbbInDotnet.Forum.Pages
         public IEnumerable<PhpbbRanks>? RankList { get; private set; }
         public IEnumerable<PhpbbGroups>? GroupList { get; private set; }
         public bool SearchWasPerformed { get; private set; }
-        public IEnumerable<AnonymousSessionCounter.BotData>? BotList { get; private set; }
+        public IEnumerable<BotData>? BotList { get; private set; }
         public Paginator? BotPaginator { get; private set; }
 
-        public MemberListModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils,
-            IConfiguration config, LanguageProvider languageProvider, AnonymousSessionCounter sessionCounter)
-            : base(context, forumService, userService, cache, utils, languageProvider)
+        public MemberListModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger,
+            IConfiguration config, ITranslationProvider translationProvider, IAnonymousSessionCounter sessionCounter)
+            : base(context, forumService, userService, cache, logger, translationProvider)
         {
             _config = config;
             _sessionCounter = sessionCounter;
@@ -78,7 +80,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 switch (Mode)
                 {
                     case MemberListPages.AllUsers:
-                        await Utils.RetryOnceAsync(
+                        await ResiliencyUtility.RetryOnceAsync(
                             toDo: async () =>
                             {
                                 var userQuery = from u in Context.PhpbbUsers.AsNoTracking()
@@ -100,7 +102,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
 
                     case MemberListPages.SearchUsers:
-                        await Utils.RetryOnceAsync(
+                        await ResiliencyUtility.RetryOnceAsync(
                             toDo: async () =>
                             {
                                 if (!string.IsNullOrWhiteSpace(Username) || GroupId.HasValue)
@@ -131,7 +133,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         break;
 
                     case MemberListPages.ActiveBots:
-                        await Utils.RetryOnceAsync(
+                        await ResiliencyUtility.RetryOnceAsync(
                             toDo: async () =>
                             {
                                 BotList = _sessionCounter.GetBots().OrderByDescending(x => x.EntryTime).Skip(PAGE_SIZE * (PageNum - 1)).Take(PAGE_SIZE);
@@ -143,7 +145,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         break;
 
                     case MemberListPages.ActiveUsers:
-                        await Utils.RetryOnceAsync(
+                        await ResiliencyUtility.RetryOnceAsync(
                             toDo: async () =>
                             {
                                 var lastVisit = DateTime.UtcNow.Subtract(_config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1)).ToUnixTimestamp();

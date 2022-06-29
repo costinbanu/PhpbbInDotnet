@@ -2,7 +2,7 @@
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Database.Entities;
 using System.Collections.Generic;
-using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Domain;
 
 namespace PhpbbInDotnet.Forum.Pages.CustomPartials.Admin
 {

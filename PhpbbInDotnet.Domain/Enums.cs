@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace PhpbbInDotnet.Utilities
+namespace PhpbbInDotnet.Domain
 {
     public enum UserInactiveReason
     {

@@ -4,10 +4,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Utilities;
+using Serilog;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Data;
@@ -59,8 +61,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public bool IsAuthorSearch { get; private set; }
 
-        public SearchModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, LanguageProvider languageProvider)
-            : base(context, forumService, userService, cache, utils, languageProvider)
+        public SearchModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger, ITranslationProvider translationProvider)
+            : base(context, forumService, userService, cache, logger, translationProvider)
         {
 
         }
@@ -104,7 +106,7 @@ namespace PhpbbInDotnet.Forum.Pages
             if (DoSearch ?? false)
             {
                 PageNum = Paginator.NormalizePageNumberLowerBound(PageNum);
-                await Utils.RetryOnceAsync(
+                await ResiliencyUtility.RetryOnceAsync(
                     toDo: () => Search(),
                     evaluateSuccess: () => (Posts?.Count ?? 0) > 0 && PageNum == Paginator?.CurrentPage,
                     fix: () => PageNum = Paginator.NormalizePageNumberLowerBound(Paginator?.CurrentPage));
@@ -120,7 +122,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 DoSearch = true;
                 if (AuthorId == 0)
                 {
-                    ModelState.AddModelError(nameof(SearchText), LanguageProvider.BasicText[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN"]);
+                    ModelState.AddModelError(nameof(SearchText), TranslationProvider.BasicText[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN"]);
                     return await OnGet();
                 }
                 return await OnGet();
@@ -149,7 +151,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             if (string.IsNullOrWhiteSpace(SearchText) && !IsAuthorSearch)
             {
-                ModelState.AddModelError(nameof(SearchText), LanguageProvider.Errors[GetLanguage(), "MISSING_REQUIRED_FIELD"]);
+                ModelState.AddModelError(nameof(SearchText), TranslationProvider.Errors[GetLanguage(), "MISSING_REQUIRED_FIELD"]);
                 return;
             }
 

@@ -3,10 +3,10 @@
 
 @using CustomPartials
 @using Dapper
-@using PhpbbInDotnet.Database.Entities
-@using PhpbbInDotnet.Utilities
+@using Database.Entities
+@using Domain
+@using Domain.Utilities
 
-@inject Utilities.ICommonUtils _utils
 @inject Database.IForumDbContext _context
 @inject Services.IBBCodeRenderingService _renderingService
 @inject Services.IUserService _userService
@@ -15,11 +15,11 @@
 
 @{
     var Lang = Model.GetLanguage();
-    ViewData["Title"] = Model.LanguageProvider.BasicText[Lang, "SEARCH"];
+    ViewData["Title"] = Model.TranslationProvider.BasicText[Lang, "SEARCH"];
     Layout = "~/Pages/_Layout.cshtml";
     var CurrentUser = Model.GetCurrentUser();
     var sqlExecuter = _context.GetSqlExecuter();
-    var dateFormat = CurrentUser?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
+    var dateFormat = CurrentUser?.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
 }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/he/1.2.0/he.min.js" integrity="sha512-PEsccDx9jqX6Dh4wZDCnWMaIO3gAaU0j46W//sSqQhUQxky6/eHZyeB3NrXD2xsyugAKd4KPiDANkcuoEa2JuA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <environment include="Development">
@@ -30,7 +30,7 @@
 </environment>
 @if (!Model.IsAuthorSearch && !Model.IsAttachmentSearch)
 {
-    <h3>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEARCH"])</h3>
+    <h3>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "SEARCH"])</h3>
 }
 <script type="text/javascript">
     var vt = new ViewTopic(-1, false, -1);
@@ -53,7 +53,7 @@
         if (topicDisplay != null) {
             topicDisplay.options.length = 0;
             var option = document.createElement('option');
-            option.text = "@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEARCH_IN_ALL_TOPICS"])";
+            option.text = "@Html.Raw(Model.TranslationProvider.BasicText[Lang, "SEARCH_IN_ALL_TOPICS"])";
             option.value = 0;
             topicDisplay.add(option);
             topics.forEach(t => {
@@ -78,7 +78,7 @@
     if (!string.IsNullOrWhiteSpace(user?.Username))
     {
         var key = Model.IsAuthorSearch ? "POSTS_BY_FORMAT" : "ATTACHMENTS_BY_FORMAT";
-        <h3>@Html.Raw(string.Format(Model.LanguageProvider.BasicText[Lang, key], user.Username))</h3>
+        <h3>@Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, key], user.Username))</h3>
     }
 }
 else
@@ -89,18 +89,18 @@ else
         <input asp-for="TotalResults" type="hidden" />
         <input asp-for="AuthorId" type="hidden" id="authorId" />
 
-        <input asp-for="SearchText" type="text" placeholder="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEARCH_BY_TEXT"])" style="width:100%" autofocus class="InputBox" />
+        <input asp-for="SearchText" type="text" placeholder="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "SEARCH_BY_TEXT"])" style="width:100%" autofocus class="InputBox" />
         <span class="Caption">
-            @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEARCH_CAPTION"])
+            @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SEARCH_CAPTION"])
         </span>
         <span asp-validation-for="SearchText" class="validation"></span>
-        <a href="javascript:showElement('advanced')">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "ADVANCED_SEARCH"])</a>
+        <a href="javascript:showElement('advanced')">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "ADVANCED_SEARCH"])</a>
         <div id="advanced" style="display:none">
             <p></p>
-            <input asp-for="Author" type="text" placeholder="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEARCH_BY_AUTHOR"])" id="AuthorInput" style="width:100%" autocomplete="new-password" class="InputBox" />
+            <input asp-for="Author" type="text" placeholder="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "SEARCH_BY_AUTHOR"])" id="AuthorInput" style="width:100%" autocomplete="new-password" class="InputBox" />
             <p style="clear:both"></p>
             <p id="tributeHolder" style="position:relative"></p>
-            @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEARCH_IN_FORUM"])
+            @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SEARCH_IN_FORUM"])
             @await Html.PartialAsync(
                  "_ForumTreePartial",
                   new _ForumTreePartialModel(
@@ -115,13 +115,13 @@ else
             <input asp-for="ForumId" type="hidden" id="ForumIdInput" />
             <p></p>
             <select name="TopicId" id="TopicIdDisplay" style="width:100%">
-                <option selected disabled value="-1">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEARCH_IN_TOPIC"])</option>
-                <option value="0">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEARCH_IN_ALL_TOPICS"])</option>
+                <option selected disabled value="-1">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "SEARCH_IN_TOPIC"])</option>
+                <option value="0">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "SEARCH_IN_ALL_TOPICS"])</option>
             </select>
             <p></p>
         </div>
         <p></p>
-        <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT", Casing.FirstUpper])" class="MyButton" />
+        <input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "SUBMIT", Casing.FirstUpper])" class="MyButton" />
     </form>
     <p>&nbsp;</p>
 }
@@ -130,7 +130,7 @@ else
 {
     if (!Model.IsAuthorSearch && !Model.IsAttachmentSearch)
     {
-        <h3>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "SEARCH_RESULTS"])</h3>
+        <h3>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "SEARCH_RESULTS"])</h3>
     }
     @await Html.PartialAsync(
         "_PaginationControlsPartial",
@@ -169,8 +169,6 @@ else
             ToHighlight = Model.SearchText,
             Language = Lang,
             CorrelationId = cacheResult.CorrelationId,
-            ParentHttpContext = HttpContext,
-            ParentPageContext = PageContext,
             ShowPath = true
         }, ViewData)
     }
@@ -194,13 +192,13 @@ else
 else if (Model.Posts != null)
 {
     <p></p>
-    <p>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "NO_RESULTS_FOUND"])</p>
+    <p>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "NO_RESULTS_FOUND"])</p>
 }
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tributejs/5.1.3/tribute.min.css" integrity="sha512-x3tME/kvJ3wzZ664qyANYueTLeJmRsoEbcIONhCei3DZJgNou8YwHos3ONthiwfzDvLE/H91ByIhSHVM10vS8g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tributejs/5.1.3/tribute.min.js" integrity="sha512-KJYWC7RKz/Abtsu1QXd7VJ1IJua7P7GTpl3IKUqfa21Otg2opvRYmkui/CXBC6qeDYCNlQZ7c+7JfDXnKdILUA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
     var tribute = new Tribute({
-        values: @Html.Raw(_utils.ToCamelCaseJson(Model.Users)),
+        values: @Html.Raw(SerializationUtility.ToCamelCaseJson(Model.Users)),
         selectTemplate: function (item) {
             return item.original.key;
         },

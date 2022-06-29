@@ -8,13 +8,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Utilities;
-using PhpbbInDotnet.Utilities.Core;
-using PhpbbInDotnet.Utilities.Extensions;
+using Serilog;
 using SixLabors.ImageSharp;
 using System;
 using System.Collections.Generic;
@@ -95,18 +96,19 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IWritingToolsService _writingService;
         private readonly IOperationLogService _operationLogService;
         private readonly IConfiguration _config;
-
+        private readonly IEmailService _emailService;
 
         private const int DB_CACHE_EXPIRATION_MINUTES = 20;
 
-        public UserModel(ICommonUtils utils, IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, IStorageService storageService, 
-            IWritingToolsService writingService, IConfiguration config, LanguageProvider languageProvider, IOperationLogService operationLogService)
-            : base(context, forumService, userService, cache, utils, languageProvider)
+        public UserModel(ILogger logger, IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, IStorageService storageService, 
+            IWritingToolsService writingService, IConfiguration config, ITranslationProvider translationProvider, IOperationLogService operationLogService, IEmailService emailService)
+            : base(context, forumService, userService, cache, logger, translationProvider)
         {
             _storageService = storageService;
             _writingService = writingService;
             _operationLogService = operationLogService;
             _config = config;
+            _emailService = emailService;
         }
 
         public async Task<IActionResult> OnGet()
@@ -148,7 +150,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var isSelf = CurrentUser!.UserId == currentUserId;
             var userMustLogIn = dbUser.UserAllowPm.ToBool() != AllowPM || dbUser.UserDateformat != CurrentUser.UserDateformat;
             var lang = GetLanguage();
-            var validator = new UserProfileDataValidationService(ModelState, LanguageProvider, lang);
+            var validator = new UserProfileDataValidationService(ModelState, TranslationProvider, lang);
 
             var newCleanUsername = StringUtility.CleanString(CurrentUser.Username);
             var usernameChanged = false;
@@ -162,7 +164,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (await Context.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UsernameClean == newCleanUsername))
                 {
-                    ModelState.AddModelError(nameof(CurrentUser), LanguageProvider.Errors[lang, "EXISTING_USERNAME"]);
+                    ModelState.AddModelError(nameof(CurrentUser), TranslationProvider.Errors[lang, "EXISTING_USERNAME"]);
                     return Page();
                 }
 
@@ -184,7 +186,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 if (!DateTime.TryParseExact(Birthday, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out _))
                 {
-                    ModelState.AddModelError(nameof(Birthday), LanguageProvider.Errors[lang, "INVALID_DATE"]);
+                    ModelState.AddModelError(nameof(Birthday), TranslationProvider.Errors[lang, "INVALID_DATE"]);
                     return Page();
                 }
             }
@@ -195,7 +197,7 @@ namespace PhpbbInDotnet.Forum.Pages
             dbUser.UserOcc = CurrentUser.UserOcc ?? string.Empty;
             dbUser.UserFrom = CurrentUser.UserFrom ?? string.Empty;
             dbUser.UserInterests = CurrentUser.UserInterests ?? string.Empty;
-            dbUser.UserDateformat = CurrentUser.UserDateformat ?? LanguageProvider.GetDefaultDateFormat(lang);
+            dbUser.UserDateformat = CurrentUser.UserDateformat ?? TranslationProvider.GetDefaultDateFormat(lang);
             dbUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : await _writingService.PrepareTextForSaving(CurrentUser.UserSig);
             dbUser.UserEditTime = CurrentUser.UserEditTime;
             dbUser.UserWebsite = CurrentUser.UserWebsite ?? string.Empty;
@@ -221,7 +223,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             }
 
-            var newEmailHash = HashingUtility.ComputeCrc64Hash(Email!);
+            var newEmailHash = HashUtility.ComputeCrc64Hash(Email!);
             if (newEmailHash != dbUser.UserEmailHash)
             {
                 if (!validator.ValidateEmail(nameof(Email), Email))
@@ -231,7 +233,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (await Context.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UserEmailHash == newEmailHash))
                 {
-                    ModelState.AddModelError(nameof(Email), LanguageProvider.Errors[lang, "EXISTING_EMAIL"]);
+                    ModelState.AddModelError(nameof(Email), TranslationProvider.Errors[lang, "EXISTING_EMAIL"]);
                     return Page();
                 }
 
@@ -247,22 +249,18 @@ namespace PhpbbInDotnet.Forum.Pages
                     dbUser.UserInactiveReason = UserInactiveReason.ChangedEmailNotConfirmed;
                     dbUser.UserActkey = registrationCode;
 
-                    var subject = string.Format(LanguageProvider.Email[lang, "EMAIL_CHANGED_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
-                    await Utils.SendEmail(
+                    var subject = string.Format(TranslationProvider.Email[lang, "EMAIL_CHANGED_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
+                    await _emailService.SendEmail(
                         to: Email!,
                         subject: subject,
-                        body: await Utils.RenderRazorViewToString(
-                            "_WelcomeEmailPartial",
-                            new WelcomeEmailDto
-                            {
-                                RegistrationCode = registrationCode,
-                                Subject = subject,
-                                UserName = dbUser.Username,
-                                Language = dbUser.UserLang
-                            },
-                            PageContext,
-                            HttpContext
-                        ));
+                        bodyRazorViewName: "_WelcomeEmailPartial",
+                        bodyRazorViewModel: new WelcomeEmailDto
+                        {
+                            RegistrationCode = registrationCode,
+                            Subject = subject,
+                            UserName = dbUser.Username,
+                            Language = dbUser.UserLang
+                        });
                 }
 
                 userMustLogIn = true;
@@ -293,7 +291,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 if (!_storageService.DeleteAvatar(dbUser.UserId, Path.GetExtension(dbUser.UserAvatar)))
                 {
-                    ModelState.AddModelError(nameof(Avatar), LanguageProvider.Errors[lang, "DELETE_AVATAR_ERROR"]);
+                    ModelState.AddModelError(nameof(Avatar), TranslationProvider.Errors[lang, "DELETE_AVATAR_ERROR"]);
                     return Page();
                 }
 
@@ -313,7 +311,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     stream.Seek(0, SeekOrigin.Begin);
                     if (bmp.Width > maxSize.Width || bmp.Height > maxSize.Height)
                     {
-                        ModelState.AddModelError(nameof(Avatar), string.Format(LanguageProvider.Errors[lang, "AVATAR_FORMAT_ERROR_FORMAT"], maxSize.Width, maxSize.Height));
+                        ModelState.AddModelError(nameof(Avatar), string.Format(TranslationProvider.Errors[lang, "AVATAR_FORMAT_ERROR_FORMAT"], maxSize.Width, maxSize.Height));
                         return Page();
                     }
                     else
@@ -324,7 +322,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         }
                         if (!await _storageService.UploadAvatar(dbUser.UserId, stream, Avatar.FileName))
                         {
-                            ModelState.AddModelError(nameof(Avatar), LanguageProvider.Errors[lang, "AVATAR_UPLOAD_ERROR"]);
+                            ModelState.AddModelError(nameof(Avatar), TranslationProvider.Errors[lang, "AVATAR_UPLOAD_ERROR"]);
                             return Page();
                         }
                         else
@@ -338,8 +336,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 catch (Exception ex)
                 {
-                    Utils.HandleError(ex, $"Failed to upload avatar for {CurrentUser?.UserId ?? dbUser?.UserId ?? 1}");
-                    ModelState.AddModelError(nameof(Avatar), LanguageProvider.Errors[lang, "AVATAR_UPLOAD_ERROR"]);
+                    Logger.Error(ex, "Failed to upload avatar for {user}", CurrentUser?.Username ?? dbUser?.Username ?? "N/A");
+                    ModelState.AddModelError(nameof(Avatar), TranslationProvider.Errors[lang, "AVATAR_UPLOAD_ERROR"]);
                     return Page();
                 }
             }
@@ -413,8 +411,8 @@ namespace PhpbbInDotnet.Forum.Pages
             }
             catch (Exception ex)
             {
-                Utils.HandleError(ex, $"Error updating user profile for {CurrentUser?.UserId ?? dbUser?.UserId ?? 1}");
-                ModelState.AddModelError(nameof(CurrentUser), LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
+                Logger.Error(ex, "Error updating user profile for {user}", CurrentUser?.Username ?? dbUser?.Username ?? "N/A");
+                ModelState.AddModelError(nameof(CurrentUser), TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
                 return Page();
             }
 
@@ -455,10 +453,10 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostAddFoe()
             => await WithRegisteredUser(async (user) =>
             {
-                if (! await CanAddFoe())
+                if (!await CanAddFoe())
                 {
-                    ModelState.AddModelError(nameof(CurrentUser), LanguageProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED"]);
-                    Utils.HandleErrorAsWarning(new Exception($"Potential cross site forgery attempt in {nameof(OnPostAddFoe)}"));
+                    ModelState.AddModelError(nameof(CurrentUser), TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED"]);
+                    Logger.Error("Potential cross site forgery attempt in {name}", nameof(OnPostAddFoe));
                     Mode = UserPageMode.AddFoe;
                     return await OnGet();
                 }
@@ -479,8 +477,8 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 if (!CanRemoveFoe())
                 {
-                    ModelState.AddModelError(nameof(CurrentUser), LanguageProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED"]);
-                    Utils.HandleErrorAsWarning(new Exception($"Potential cross site forgery attempt in {nameof(OnPostRemoveFoe)}"));
+                    ModelState.AddModelError(nameof(CurrentUser), TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED"]);
+                    Logger.Error("Potential cross site forgery attempt in {name}", nameof(OnPostRemoveFoe));
                     Mode = UserPageMode.AddFoe;
                     return await OnGet();
                 }

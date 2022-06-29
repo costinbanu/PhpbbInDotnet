@@ -1,11 +1,11 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._PaginationPageListPartialModel
 
-@inject Languages.LanguageProvider _languageProvider
+@inject Languages.ITranslationProvider _translationProvider
 
 @if (Model.Pagination?.HasPages ?? false)
 {
     <span style="display:inline">
-        <span style="white-space:nowrap; line-height: 1.5em">@Html.Raw(_languageProvider.BasicText[Model.Language, "GO_TO_PAGE"]):&nbsp;</span>
+        <span style="white-space:nowrap; line-height: 1.5em">@Html.Raw(_translationProvider.BasicText[Model.Language, "GO_TO_PAGE"]):&nbsp;</span>
         <span style="white-space:nowrap; line-height: 1.5em">
             @if (Model.Pagination.Pager.StartPage > 1)
             {

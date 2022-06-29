@@ -2,7 +2,7 @@
 using PhpbbInDotnet.Objects;
 using System.Collections.Generic;
 
-namespace PhpbbInDotnet.Utilities
+namespace PhpbbInDotnet.Domain
 {
     public class Paginator
     {

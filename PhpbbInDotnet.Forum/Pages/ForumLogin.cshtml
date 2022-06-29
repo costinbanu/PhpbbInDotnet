@@ -1,20 +1,20 @@
 ﻿@page
 @model PhpbbInDotnet.Forum.Pages.ForumLoginModel
 
-@using Utilities 
+@using Domain 
 
 @{
-    ViewData["Title"] = $"{Model.LanguageProvider.BasicText[Model.Language, "FORUM_LOGIN", Casing.Title]} - {Model.ForumName}";
+    ViewData["Title"] = $"{Model.TranslationProvider.BasicText[Model.Language, "FORUM_LOGIN", Casing.Title]} - {Model.ForumName}";
     Layout = "~/Pages/_Layout.cshtml";
 }
 
-<h3>@Html.Raw($"{Model.LanguageProvider.BasicText[Model.Language, "FORUM_LOGIN", Casing.Title]} - {Model.ForumName}")</h3>
+<h3>@Html.Raw($"{Model.TranslationProvider.BasicText[Model.Language, "FORUM_LOGIN", Casing.Title]} - {Model.ForumName}")</h3>
 <form method="post">
     <input type="hidden" asp-for="ReturnUrl" />
     <input type="hidden" asp-for="ForumId" />
-    <input type="password" asp-for="Password" placeholder="@Html.Raw(Model.LanguageProvider.BasicText[Model.Language, "FORUM_PASSWORD", Casing.FirstUpper])" />
+    <input type="password" asp-for="Password" placeholder="@Html.Raw(Model.TranslationProvider.BasicText[Model.Language, "FORUM_PASSWORD", Casing.FirstUpper])" />
     <span class="validation" asp-validation-for="Password"></span>
     <p></p>
-    <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[Model.Language, "LOGIN", Casing.Title])" class="MyButton" />
+    <input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[Model.Language, "LOGIN", Casing.Title])" class="MyButton" />
     @Html.AntiForgeryToken()
 </form>

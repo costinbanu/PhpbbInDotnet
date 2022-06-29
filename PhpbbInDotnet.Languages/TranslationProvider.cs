@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Primitives;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Domain;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -16,11 +16,15 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Languages
 {
-    public class LanguageProvider
+    class TranslationProvider : ITranslationProvider
     {
+        private string? _language;
+        private IEnumerable<string>? _allLanguages;
+
         private readonly ILogger _logger;
         private readonly IForumDbContext _context;
         private readonly IAppCache _cache;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         #region Translation declarations
 
@@ -69,18 +73,19 @@ namespace PhpbbInDotnet.Languages
 
         #endregion Translation declarations
 
-        public LanguageProvider(ILogger logger, IAppCache cache, IForumDbContext context, ICommonUtils utils)
+        public TranslationProvider(ILogger logger, IAppCache cache, IForumDbContext context, IHttpContextAccessor httpContextAccessor)
         {
             _logger = logger;
             _context = context;
             _cache = cache;
+            _httpContextAccessor = httpContextAccessor;
 
             #region Translation init
 
             _basicText = new Lazy<TextTranslation>(() => new TextTranslation(nameof(BasicText), _logger, cache));
             _aboutCookies = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(AboutCookies), _logger, cache));
             _email = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Email), _logger, cache));
-            _enums = new Lazy<EnumTranslation>(() => new EnumTranslation(_logger, cache, utils));
+            _enums = new Lazy<EnumTranslation>(() => new EnumTranslation(_logger, cache));
             _jsText = new Lazy<JavaScriptTranslation>(() => new JavaScriptTranslation(_logger, cache));
             _errors = new Lazy<TextTranslation>(() => new TextTranslation(nameof(Errors), _logger, cache));
             _postingGuide = new Lazy<HtmlTranslation>(() => new HtmlTranslation(nameof(PostingGuide), _logger, cache));
@@ -95,20 +100,29 @@ namespace PhpbbInDotnet.Languages
             #endregion Translation init
         }
 
-        public string GetValidatedLanguage(AuthenticatedUserExpanded? user, HttpRequest? request = null)
+        public string GetLanguage(AuthenticatedUserExpanded? user = null)
         {
-            StringValues val = default;
-            var fromHeadersOrDefault = ValidatedOrDefault(
-                (request?.Headers?.TryGetValue("Accept-Language", out val) ?? false) ? val.ToString() : Constants.DEFAULT_LANGUAGE,
-                Constants.DEFAULT_LANGUAGE
-            );
+            if (_language is not null)
+            {
+                return _language;
+            }
+
+            var fromHeadersOrDefault = Constants.DEFAULT_LANGUAGE;
+            if (_httpContextAccessor.HttpContext is not null)
+            {
+                fromHeadersOrDefault = ValidatedOrDefault(
+                    _httpContextAccessor.HttpContext.Request.Headers.TryGetValue("Accept-Language", out StringValues lang)? lang.ToString() : Constants.DEFAULT_LANGUAGE,
+                    Constants.DEFAULT_LANGUAGE
+                );
+                user ??= (AuthenticatedUserExpanded?)(_httpContextAccessor.HttpContext.Items.TryGetValue(nameof(AuthenticatedUserExpanded), out var aue) ? aue : null);
+            }
 
             if (user?.IsAnonymous ?? true)
             {
-                return fromHeadersOrDefault;
+                return _language = fromHeadersOrDefault;
             }
 
-            return ValidatedOrDefault(user.Language, fromHeadersOrDefault);
+            return _language = ValidatedOrDefault(user.Language, fromHeadersOrDefault);
         }
 
         private bool IsLanguageValid(string language, [MaybeNullWhen(false)] out string parsed)
@@ -120,8 +134,8 @@ namespace PhpbbInDotnet.Languages
                       try
                       {
                           var parsed = new CultureInfo(language).TwoLetterISOLanguageName;
-
-                          if (_context.PhpbbLang.AsNoTracking().Any(lang => lang.LangIso == parsed) &&
+                          
+                          if (_context.GetSqlExecuter().ExecuteScalar<bool>("SELECT count(1) FROM phpbb_lang WHERE lang_iso = @parsed", new { parsed }) &&
                               new Translation[] { BasicText, AboutCookies, Email, Enums, JSText, Errors, PostingGuide, TermsAndConditions, Moderator, Admin, CustomBBCodeGuide, AttachmentGuide, BBCodes }
                               .All(x => x.Exists(parsed)))
                           {
@@ -173,7 +187,7 @@ namespace PhpbbInDotnet.Languages
         }
 
         public IEnumerable<string> AllLanguages
-            => Directory.GetFiles(Translation.TranslationsDirectory).Where(IsBasicText).Select(TranslationLanguage);
+            => _allLanguages ??= Directory.GetFiles(Translation.TranslationsDirectory).Where(IsBasicText).Select(TranslationLanguage);
 
         private bool IsBasicText(string path)
         {

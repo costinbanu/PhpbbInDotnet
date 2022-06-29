@@ -2,10 +2,12 @@ using Dapper;
 using LazyCache;
 using Microsoft.AspNetCore.Mvc;
 using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Utilities;
+using Serilog;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -19,15 +21,15 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public int PageNum { get; set; } = 1;
 
-        public OwnPostsModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, LanguageProvider languageProvider)
-            : base(context, forumService, userService, cache, utils, languageProvider)
+        public OwnPostsModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger, ITranslationProvider translationProvider)
+            : base(context, forumService, userService, cache, logger, translationProvider)
         {
         }
 
         public async Task<IActionResult> OnGet()
             => await WithRegisteredUser(async (user) =>
             {
-                await Utils.RetryOnceAsync(
+                await ResiliencyUtility.RetryOnceAsync(
                     toDo: async () =>
                     {
                         PageNum = Paginator.NormalizePageNumberLowerBound(PageNum);

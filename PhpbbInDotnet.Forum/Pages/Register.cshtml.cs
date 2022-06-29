@@ -6,13 +6,14 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Utilities;
-using PhpbbInDotnet.Utilities.Core;
-using PhpbbInDotnet.Utilities.Extensions;
+using Serilog;
 using System;
 using System.Linq;
 using System.Net.Http;
@@ -25,13 +26,12 @@ namespace PhpbbInDotnet.Forum.Pages
     public class RegisterModel : PageModel
     {
         private readonly IForumDbContext _context;
-        private readonly ICommonUtils _utils;
         private readonly IConfiguration _config;
         private readonly HttpClient _gClient;
         private readonly Recaptcha _recaptchaOptions;
         private readonly IUserService _userService;
-
-        private string? _language;
+        private readonly ILogger _logger;
+        private readonly IEmailService _emailService;
 
         [BindProperty]
         public string? Email { get; set; }
@@ -51,18 +51,20 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public string? RecaptchaResponse { get; set; }
 
-        public LanguageProvider LanguageProvider { get; }
+        public ITranslationProvider TranslationProvider { get; }
 
 
-        public RegisterModel(IForumDbContext context, ICommonUtils utils, IConfiguration config, IHttpClientFactory httpClientFactory, LanguageProvider languageProvider, IUserService userService)
+        public RegisterModel(IForumDbContext context, IConfiguration config, IHttpClientFactory httpClientFactory, ITranslationProvider translationProvider,
+            IUserService userService, ILogger logger, IEmailService emailService)
         {
             _context = context;
-            _utils = utils;
             _config = config;
             _recaptchaOptions = _config.GetObject<Recaptcha>();
             _gClient = httpClientFactory.CreateClient(_recaptchaOptions.ClientName);
-            LanguageProvider = languageProvider;
+            TranslationProvider = translationProvider;
             _userService = userService;
+            _logger = logger;
+            _emailService = emailService;
         }
 
         public IActionResult OnGet()
@@ -77,8 +79,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
-            var lang = GetLanguage();
-            var validator = new UserProfileDataValidationService(ModelState, LanguageProvider, lang);
+            var lang = TranslationProvider.GetLanguage();
+            var validator = new UserProfileDataValidationService(ModelState, TranslationProvider, lang);
+            Email = Email?.Trim();
             var validations = new[]
             {
                 validator.ValidateUsername(nameof(UserName), UserName),
@@ -112,13 +115,13 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 if ((decimal)result.score < _recaptchaOptions.MinScore)
                 {
-                    return PageWithError(nameof(RecaptchaResponse), string.Format(LanguageProvider.Errors[lang, "YOURE_A_BOT_FORMAT"], _config.GetValue<string>("AdminEmail").Replace("@", " at ").Replace(".", " dot ")));
+                    return PageWithError(nameof(RecaptchaResponse), string.Format(TranslationProvider.Errors[lang, "YOURE_A_BOT_FORMAT"], _config.GetValue<string>("AdminEmail").Replace("@", " at ").Replace(".", " dot ")));
                 }
             }
             catch (Exception ex)
             {
-                _utils.HandleErrorAsWarning(ex, "Failed to check captcha");
-                return PageWithError(nameof(RecaptchaResponse), LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
+                _logger.Warning(ex, "Failed to check captcha");
+                return PageWithError(nameof(RecaptchaResponse), TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
             }
 
             var sqlExecuter = _context.GetSqlExecuter();
@@ -134,22 +137,22 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (checkBanlist.Any(x => (long)x.Email == 1L))
             {
-                return PageWithError(nameof(Email), LanguageProvider.Errors[lang, "BANNED_EMAIL"]);
+                return PageWithError(nameof(Email), TranslationProvider.Errors[lang, "BANNED_EMAIL"]);
             }
 
             if (checkBanlist.Any(x => (long)x.IP == 1L))
             {
-                return PageWithError(nameof(UserName), LanguageProvider.Errors[lang, "BANNED_IP"]);
+                return PageWithError(nameof(UserName), TranslationProvider.Errors[lang, "BANNED_IP"]);
             }
 
             if (await _context.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UsernameClean == StringUtility.CleanString(UserName)))
             {
-                return PageWithError(nameof(UserName), LanguageProvider.Errors[lang, "EXISTING_USERNAME"]);
+                return PageWithError(nameof(UserName), TranslationProvider.Errors[lang, "EXISTING_USERNAME"]);
             }
 
-            if (await _context.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UserEmailHash == HashingUtility.ComputeCrc64Hash(Email)))
+            if (await _context.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UserEmailHash == HashUtility.ComputeCrc64Hash(Email)))
             {
-                return PageWithError(nameof(Email), LanguageProvider.Errors[lang, "EXISTING_EMAIL"]);
+                return PageWithError(nameof(Email), TranslationProvider.Errors[lang, "EXISTING_EMAIL"]);
             }
 
             var registrationCode = Guid.NewGuid().ToString("n");
@@ -161,7 +164,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 UsernameClean = StringUtility.CleanString(UserName),
                 GroupId = 2,
                 UserEmail = Email,
-                UserEmailHash = HashingUtility.ComputeCrc64Hash(Email),
+                UserEmailHash = HashUtility.ComputeCrc64Hash(Email),
                 UserPassword = Crypter.Phpass.Crypt(Password!, Crypter.Phpass.GenerateSalt()),
                 UserInactiveTime = now,
                 UserInactiveReason = UserInactiveReason.NewlyRegisteredNotConfirmed,
@@ -169,7 +172,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 UserIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
                 UserRegdate = now,
                 UserLastmark = now,
-                UserDateformat = LanguageProvider.GetDefaultDateFormat(lang),
+                UserDateformat = TranslationProvider.GetDefaultDateFormat(lang),
                 UserLang = lang
             });
             newUser.Entity.UserId = 0;
@@ -180,23 +183,19 @@ namespace PhpbbInDotnet.Forum.Pages
                 GroupId = 2,
                 UserId = newUser.Entity.UserId
             });
-            var subject = string.Format(LanguageProvider.Email[LanguageProvider.GetValidatedLanguage(null, Request), "WELCOME_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
+            var subject = string.Format(TranslationProvider.Email[TranslationProvider.GetLanguage(), "WELCOME_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
 
             var dbChangesTask = _context.SaveChangesAsync();
-            var emailTask = _utils.SendEmail(
+            var emailTask = _emailService.SendEmail(
                 to: Email,
                 subject: subject,
-                body: await _utils.RenderRazorViewToString(
-                    "_WelcomeEmailPartial",
-                    new WelcomeEmailDto
-                    {
-                        RegistrationCode = registrationCode,
-                        Subject = subject,
-                        UserName = UserName
-                    },
-                    PageContext,
-                    HttpContext
-                ));
+                bodyRazorViewName: "_WelcomeEmailPartial",
+                bodyRazorViewModel: new WelcomeEmailDto
+                {
+                    RegistrationCode = registrationCode,
+                    Subject = subject,
+                    UserName = UserName
+                });
             await Task.WhenAll(dbChangesTask, emailTask);
 
             return RedirectToPage("Confirm", "RegistrationComplete");
@@ -207,7 +206,5 @@ namespace PhpbbInDotnet.Forum.Pages
             ModelState.AddModelError(errorKey, errorMessage);
             return Page();
         }
-
-        public string GetLanguage() => _language ??= LanguageProvider.GetValidatedLanguage(null, HttpContext?.Request);
     }
 }

@@ -9,9 +9,9 @@ using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Utilities;
-using PhpbbInDotnet.Utilities.Core;
-using PhpbbInDotnet.Utilities.Extensions;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Utilities;
+using PhpbbInDotnet.Domain.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,10 +19,11 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
+using Serilog;
 
 namespace PhpbbInDotnet.Services
 {
-    class BBCodeRenderingService : MultilingualServiceBase, IBBCodeRenderingService
+    class BBCodeRenderingService : IBBCodeRenderingService
     {
         private static readonly Regex _htmlRegex = new("<.+?>", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
         private static readonly Regex _spaceRegex = new(" +", RegexOptions.Compiled | RegexOptions.Singleline, Constants.REGEX_TIMEOUT);
@@ -34,6 +35,9 @@ namespace PhpbbInDotnet.Services
         private readonly BBCodeParser _parser;
         private readonly Lazy<Dictionary<string, string>> _bannedWords;
         private readonly IAppCache _cache;
+        private readonly ITranslationProvider _translationProvider;
+        private readonly ILogger _logger;
+        private readonly IRazorViewService _razorViewService;
         private readonly Regex _attrRegex;
 
         private delegate (int index, string match) FirstIndexOf(string haystack, string needle, int startIndex);
@@ -41,13 +45,20 @@ namespace PhpbbInDotnet.Services
 
         public Dictionary<string, BBTagSummary> TagMap { get; }
 
-        public BBCodeRenderingService(ICommonUtils utils, IForumDbContext context, IWritingToolsService writingService, IAppCache cache, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
-            : base(utils, languageProvider, httpContextAccessor)
+        public BBCodeRenderingService(IForumDbContext context, IWritingToolsService writingService, IAppCache cache, 
+            ITranslationProvider translationProvider, ILogger logger, IRazorViewService razorViewService)
         {
             _context = context;
             _writingService = writingService;
-            _bannedWords = new Lazy<Dictionary<string, string>>(() => _writingService.GetBannedWords().GroupBy(p => p.Word).Select(grp => grp.FirstOrDefault()).ToDictionary(x => x!.Word, y => y!.Replacement));
+            _bannedWords = new Lazy<Dictionary<string, string>>(() => 
+                _writingService.GetBannedWords()
+                    .GroupBy(p => p.Word)
+                    .Select(grp => grp.FirstOrDefault())
+                    .ToDictionary(x => x!.Word, y => y!.Replacement));
             _cache = cache;
+            _translationProvider = translationProvider;
+            _logger = logger;
+            _razorViewService = razorViewService;
 
             var tagList = _context.GetSqlExecuter().Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes").AsList();
 
@@ -57,7 +68,7 @@ namespace PhpbbInDotnet.Services
             TagMap = tagMap;
         }
 
-        public async Task ProcessPost(PostDto post, PageContext pageContext, HttpContext httpContext, bool renderAttachments, string? toHighlight = null)
+        public async Task ProcessPost(PostDto post, bool renderAttachments, string? toHighlight = null)
         {
             var highlightWords = SplitHighlightWords(toHighlight);
             post.PostSubject = HighlightWords(CensorWords(HttpUtility.HtmlDecode(post.PostSubject), _bannedWords.Value), highlightWords);
@@ -90,7 +101,7 @@ namespace PhpbbInDotnet.Services
                     {
                         post.PostText = post.PostText.Replace(
                             $"#{{AttachmentFileName={FileName}/AttachmentIndex={AttachIndex}}}#",
-                            await Utils.RenderRazorViewToString("_AttachmentPartial", model, pageContext, httpContext)
+                            await _razorViewService.RenderRazorViewToString("_AttachmentPartial", model)
                         );
                         post.Attachments?.Remove(model);
                     }
@@ -118,16 +129,16 @@ namespace PhpbbInDotnet.Services
                 {
                     html = html.Replace($":{bbCodeUid}", string.Empty);
                 }
-                Utils.HandleError(ex, $"Error parsing bbcode text '{bbCodeText}'");
+                _logger.Error(ex, "Error parsing bbcode text '{text}'", bbCodeText);
             }
             bbCodeText = HttpUtility.HtmlDecode(html);
             bbCodeText = StringUtility.HtmlCommentRegex.Replace(bbCodeText, string.Empty);
-            bbCodeText = bbCodeText.Replace("\t", Utils.HtmlSafeWhitespace(4));
+            bbCodeText = bbCodeText.Replace("\t", StringUtility.HtmlSafeWhitespace(4));
 
             var offset = 0;
             foreach (Match m in _spaceRegex.Matches(bbCodeText))
             {
-                var (result, curOffset) = TextHelper.ReplaceAtIndex(bbCodeText, m.Value, Utils.HtmlSafeWhitespace(m.Length), m.Index + offset);
+                var (result, curOffset) = TextHelper.ReplaceAtIndex(bbCodeText, m.Value, StringUtility.HtmlSafeWhitespace(m.Length), m.Index + offset);
                 bbCodeText = result;
                 offset += curOffset;
             }
@@ -293,7 +304,7 @@ namespace PhpbbInDotnet.Services
 
         private (List<BBTag> BBTags, Dictionary<string, BBTagSummary> TagMap) GenerateCompleteTagListAndMap(IEnumerable<PhpbbBbcodes> dbCodes)
         {
-            var lang = GetLanguage();
+            var lang = _translationProvider.GetLanguage();
             return _cache.GetOrAdd(
                 _writingService.GetBbCodesCacheKey(lang),
                 () =>
@@ -374,13 +385,13 @@ namespace PhpbbInDotnet.Services
                                         {
                                             return string.Empty;
                                         }
-                                        var toReturn = match.Groups[1].Success ? string.Format(LanguageProvider.BasicText[lang, "WROTE_FORMAT"], match.Groups[1].Value.Trim('"')) : string.Empty;
+                                        var toReturn = match.Groups[1].Success ? string.Format(_translationProvider.BasicText[lang, "WROTE_FORMAT"], match.Groups[1].Value.Trim('"')) : string.Empty;
                                         var postId = match.Groups[2].Success ? match.Groups[2].Value : string.Empty;
                                         if (!string.IsNullOrWhiteSpace(toReturn))
                                         {
                                             if (!string.IsNullOrWhiteSpace(postId))
                                             {
-                                                toReturn += $" <a href=\"./ViewTopic?postId={postId}&handler=byPostId\" target=\"_blank\">{LanguageProvider.BasicText[lang, "HERE"]}</a>:<br />";
+                                                toReturn += $" <a href=\"./ViewTopic?postId={postId}&handler=byPostId\" target=\"_blank\">{_translationProvider.BasicText[lang, "HERE"]}</a>:<br />";
                                             }
                                             else
                                             {

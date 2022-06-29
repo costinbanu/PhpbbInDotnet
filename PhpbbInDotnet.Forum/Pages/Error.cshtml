@@ -1,30 +1,30 @@
 ﻿@page
 @model ErrorModel
 
-@using Utilities
-@using Utilities.Core
+@using Domain
+@using Domain.Utilities
 @using Microsoft.Extensions.Configuration
 
-@inject Languages.LanguageProvider _languageProvider
+@inject Languages.ITranslationProvider _translationProvider
 @inject Services.IUserService _userService
 @inject IConfiguration _config
 
 @{
-    var lang = _languageProvider.GetValidatedLanguage(_userService.ClaimsPrincipalToAuthenticatedUser(User), Model.Request);
-    ViewData["Title"] = _languageProvider.Errors[lang, "ERROR", Casing.Title];
+    var lang = _translationProvider.GetLanguage(_userService.ClaimsPrincipalToAuthenticatedUser(User));
+    ViewData["Title"] = _translationProvider.Errors[lang, "ERROR", Casing.Title];
     var adminEmail = _config.GetValue<string>("AdminEmail");
     var displayContact = !Model.IsUnauthorized && !Model.IsNotFound;
 }
 
-<h3 class="Error">@Html.Raw(_languageProvider.Errors[lang, "AN_ERROR_OCCURRED", Casing.Title])</h3>
+<h3 class="Error">@Html.Raw(_translationProvider.Errors[lang, "AN_ERROR_OCCURRED", Casing.Title])</h3>
 
 @if (Model.IsUnauthorized)
 {
-    <p>@Html.Raw(_languageProvider.Errors[lang, "ERROR_UNAUTHORIZED"])</p>
+    <p>@Html.Raw(_translationProvider.Errors[lang, "ERROR_UNAUTHORIZED"])</p>
 }
 else if (Model.IsNotFound)
 {
-    <p>@Html.Raw(_languageProvider.Errors[lang, "ERROR_NOT_FOUND"])</p>
+    <p>@Html.Raw(_translationProvider.Errors[lang, "ERROR_NOT_FOUND"])</p>
 }
 else if (!string.IsNullOrWhiteSpace(Model.CustomErrorMessage))
 {
@@ -43,8 +43,8 @@ else if (!string.IsNullOrWhiteSpace(Model.CustomErrorMessage))
     <p>
         @Html.Raw(
             string.IsNullOrWhiteSpace(Model.ErrorId) 
-                ? string.Format(_languageProvider.Errors[lang, "REPORT_ERROR_FORMAT"], adminEmail) 
-                : string.Format(_languageProvider.Errors[lang, "REPORT_ERROR_WITH_ID_FORMAT"], adminEmail)
+                ? string.Format(_translationProvider.Errors[lang, "REPORT_ERROR_FORMAT"], adminEmail) 
+                : string.Format(_translationProvider.Errors[lang, "REPORT_ERROR_WITH_ID_FORMAT"], adminEmail)
         )
     </p>
 }

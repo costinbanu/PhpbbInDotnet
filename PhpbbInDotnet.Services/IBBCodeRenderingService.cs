@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using PhpbbInDotnet.Objects;
+﻿using PhpbbInDotnet.Objects;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -11,6 +9,6 @@ namespace PhpbbInDotnet.Services
         Dictionary<string, BBTagSummary> TagMap { get; }
 
         string BbCodeToHtml(string? bbCodeText, string? bbCodeUid);
-        Task ProcessPost(PostDto post, PageContext pageContext, HttpContext httpContext, bool renderAttachments, string? toHighlight = null);
+        Task ProcessPost(PostDto post, bool renderAttachments, string? toHighlight = null);
     }
 }

@@ -1,11 +1,11 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._TextInputPartialModel
 
-@using Utilities
+@using Domain
+@using Domain.Utilities
 @using Services
 @using Languages
 
-@inject LanguageProvider _languageProvider
-@inject ICommonUtils _utils
+@inject ITranslationProvider _translationProvider
 @inject IBBCodeRenderingService _renderingService
 
 <script type="text/javascript">
@@ -37,17 +37,17 @@
     }
 </script>
 
-<input asp-for="PostTitle" type="text" id="subject" size="45" maxlength="256" tabindex="2" class="InputBox" placeholder="@Html.Raw(_languageProvider.BasicText[Model.Language, "POST_TITLE"])" style="width:100%" />
+<input asp-for="PostTitle" type="text" id="subject" size="45" maxlength="256" tabindex="2" class="InputBox" placeholder="@Html.Raw(_translationProvider.BasicText[Model.Language, "POST_TITLE"])" style="width:100%" />
 <br />
 
 <div class="PostingControls" id="controls" style="width:100%">
     @foreach (var code in _renderingService.TagMap)
     {
-        var caption = _languageProvider.BBCodes[Model.Language, $"CAPTION_{code.Value.OpenTag}", Casing.None, code.Key];
-        var buttonText = _languageProvider.BBCodes[Model.Language, $"BUTTON_TEXT_{code.Value.OpenTag}", Casing.None, code.Key];
+        var caption = _translationProvider.BBCodes[Model.Language, $"CAPTION_{code.Value.OpenTag}", Casing.None, code.Key];
+        var buttonText = _translationProvider.BBCodes[Model.Language, $"BUTTON_TEXT_{code.Value.OpenTag}", Casing.None, code.Key];
         if (code.Key == "size")
         {
-            @Html.DropDownList("addbbcode20", _utils.EnumToDropDownList<PostingFontSize>(null, size => _languageProvider.Enums[Model.Language, size], size => ((int)size).ToString(), buttonText), new
+            @Html.DropDownList("addbbcode20", EnumUtility.EnumToDropDownList<PostingFontSize>(null, size => _translationProvider.Enums[Model.Language, size], size => ((int)size).ToString(), buttonText), new
             {
                 @class = "BbCodeButton PostingButton",
                 style = "border-radius: 2px; border: 1px solid #dcdcdc;",
@@ -69,7 +69,7 @@
         }
     }
 
-    <button type="button" class="BbCodeButton PostingButton MyButton" onclick="toggleFormattingHelp()" title="@Html.Raw(_languageProvider.BasicText[Model.Language, "SHOW_POSTING_GUIDE"])">&#x2754;</button>
+    <button type="button" class="BbCodeButton PostingButton MyButton" onclick="toggleFormattingHelp()" title="@Html.Raw(_translationProvider.BasicText[Model.Language, "SHOW_POSTING_GUIDE"])">&#x2754;</button>
     <div class="ColorPalette" id="colour_palette">
         <table>
             @{
@@ -96,10 +96,10 @@
     </div>
 </div>
 <a href="javascript:posting.show_hidden_formatters();" class="PostingControlsButton" style="margin-top:5px">
-    @Html.Raw(_languageProvider.BasicText[Model.Language, "FORMATTING_OPTIONS"])
+    @Html.Raw(_translationProvider.BasicText[Model.Language, "FORMATTING_OPTIONS"])
 </a>
 <div style="margin-top:5px">
     <textarea asp-for="PostText" id="message" tabindex="3" onselect="posting.storeCaret(this);" onclick="posting.storeCaret(this);" onkeyup="posting.storeCaret(this);" onfocus="posting.initInsertions();" class="InputBox" style="width:100%; min-height:17em"></textarea>
 </div>
 
-@Html.Raw(_languageProvider.PostingGuide[Model.Language])
+@Html.Raw(_translationProvider.PostingGuide[Model.Language])

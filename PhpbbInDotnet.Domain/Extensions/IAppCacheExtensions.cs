@@ -1,7 +1,7 @@
 ﻿using LazyCache;
 using System.Threading.Tasks;
 
-namespace PhpbbInDotnet.Utilities.Extensions
+namespace PhpbbInDotnet.Domain.Extensions
 {
     public static class IAppCacheExtensions
     {

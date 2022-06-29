@@ -7,7 +7,7 @@ using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Domain;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -16,6 +16,7 @@ using System.Net.Mime;
 using System.Threading.Tasks;
 using System.Web;
 using IOFile = System.IO.File;
+using Serilog;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -74,9 +75,9 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IWritingToolsService _adminWritingService;
         private readonly IOperationLogService _logService;
 
-        public AdminModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, IAdminUserService adminUserService, 
-            IAdminForumService adminForumService, IWritingToolsService adminWritingService, LanguageProvider languageProvider, IOperationLogService logService) 
-            : base(context, forumService, userService, cache, utils, languageProvider)
+        public AdminModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger, IAdminUserService adminUserService, 
+            IAdminForumService adminForumService, IWritingToolsService adminWritingService, ITranslationProvider translationProvider, IOperationLogService logService) 
+            : base(context, forumService, userService, cache, logger, translationProvider)
         {
             _adminUserService = adminUserService;
             _adminForumService = adminForumService;
@@ -136,7 +137,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     && ((SearchParameters?.UserId ?? 0) == 0) 
                     && !(SearchParameters?.NeverActive ?? false))
                 {
-                    Message = LanguageProvider.Admin[lang, "TOO_FEW_SEARCH_CRITERIA"];
+                    Message = TranslationProvider.Admin[lang, "TOO_FEW_SEARCH_CRITERIA"];
                     IsSuccess = false;
                     return await OnGet();
                 }
@@ -144,7 +145,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 (Message, IsSuccess, UserSearchResults) = await _adminUserService.UserSearchAsync(SearchParameters);
                 if (!UserSearchResults.Any())
                 {
-                    Message = LanguageProvider.BasicText[lang, "NO_RESULTS_FOUND"];
+                    Message = TranslationProvider.BasicText[lang, "NO_RESULTS_FOUND"];
                     IsSuccess = false;
                 }
                 return await OnGet();
@@ -153,7 +154,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostUserManagement(AdminUserActions? userAction, int? userId)
             => await WithAdmin(async () =>
             {
-                (Message, IsSuccess) = await _adminUserService.ManageUser(userAction, userId, PageContext, HttpContext, GetCurrentUser().UserId);
+                (Message, IsSuccess) = await _adminUserService.ManageUser(userAction, userId, GetCurrentUser().UserId);
                 Category = AdminCategories.Users;
                 return await OnGet();
             });

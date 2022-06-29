@@ -4,10 +4,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
-using PhpbbInDotnet.Utilities;
-using PhpbbInDotnet.Utilities.Extensions;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -21,17 +23,17 @@ namespace PhpbbInDotnet.Services
         private readonly IForumDbContext _context;
         private readonly IUserService _userService;
         private readonly IAppCache _cache;
-        private readonly ICommonUtils _utils;
         private readonly int _maxAttachmentCount;
+        private readonly ILogger _logger;
 
-        public PostService(IForumDbContext context, IUserService userService, IAppCache cache, ICommonUtils utils, IConfiguration config)
+        public PostService(IForumDbContext context, IUserService userService, IAppCache cache, IConfiguration config, ILogger logger)
         {
             _context = context;
             _userService = userService;
             _cache = cache;
-            _utils = utils;
             var countLimit = config.GetObject<AttachmentLimits>("UploadLimitsCount");
             _maxAttachmentCount = Math.Max(countLimit.Images, countLimit.OtherFiles);
+            _logger = logger;
         }
 
         public async Task<(Guid CorrelationId, Dictionary<int, List<AttachmentDto>> Attachments)> CacheAttachmentsAndPrepareForDisplay(List<PhpbbAttachments> dbAttachments, string language, int postCount, bool isPreview)
@@ -52,7 +54,7 @@ namespace PhpbbInDotnet.Services
                 }
                 if (attach.Mimetype.IsMimeTypeInline())
                 {
-                    _cache.Add(_utils.GetAttachmentCacheKey(attach.AttachId, correlationId), dto, TimeSpan.FromSeconds(60));
+                    _cache.Add(CacheUtility.GetAttachmentCacheKey(attach.AttachId, correlationId), dto, TimeSpan.FromSeconds(60));
                     ids.Add(attach.AttachId);
                 }
             }
@@ -69,7 +71,7 @@ namespace PhpbbInDotnet.Services
                 }
                 catch (Exception ex)
                 {
-                    _utils.HandleErrorAsWarning(ex, "Error updating attachment download count");
+                    _logger.WarningWithId(ex, "Error updating attachment download count");
                 }
             }
 

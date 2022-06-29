@@ -12,8 +12,8 @@ using Microsoft.Extensions.Hosting;
 using PhpbbInDotnet.Forum.Middlewares;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects.Configuration;
-using PhpbbInDotnet.Utilities;
-using PhpbbInDotnet.Utilities.Extensions;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
 using Serilog;
 using Serilog.Events;
 using System;
@@ -22,6 +22,7 @@ using System.IO;
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 
 namespace PhpbbInDotnet.Forum
 {
@@ -102,17 +103,17 @@ namespace PhpbbInDotnet.Forum
                 });
             }
 
-            services.AddCommonUtils();
+            services.AddLanguageSupport();
             services.AddApplicationServices();
 
-            services.AddSingleton<AnonymousSessionCounter>();
+            
             services.AddSingleton<FileExtensionContentTypeProvider>();
 
             services.AddScoped<AuthenticationMiddleware>();
             services.AddScoped<ErrorHandlingMiddleware>();
 
+            services.AddTransient<IActionContextAccessor, ActionContextAccessor>();
             services.AddTransient<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddTransient<LanguageProvider>();
 
             var recaptchaOptions = config.GetObject<Recaptcha>();
             services.AddHttpClient(recaptchaOptions.ClientName, client => client.BaseAddress = new Uri(recaptchaOptions.BaseAddress!));

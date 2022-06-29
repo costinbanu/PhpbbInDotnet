@@ -1,15 +1,15 @@
 ﻿using Dapper;
 using LazyCache;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
-using PhpbbInDotnet.Utilities;
-using PhpbbInDotnet.Utilities.Extensions;
+using Serilog;
 using SixLabors.ImageSharp;
 using System;
 using System.Collections.Generic;
@@ -21,26 +21,29 @@ using System.Web;
 
 namespace PhpbbInDotnet.Services
 {
-    class WritingToolsService : MultilingualServiceBase, IWritingToolsService
+    class WritingToolsService : IWritingToolsService
     {
         private readonly IForumDbContext _context;
         private readonly IStorageService _storageService;
         private readonly IConfiguration _config;
         private readonly IAppCache _cache;
+        private readonly ILogger _logger;
+        private readonly ITranslationProvider _translationProvider;
 
         private static readonly Regex EMOJI_REGEX = new(@"^(\:|\;){1}[a-zA-Z0-9\-\)\(\]\[\}\{\\\|\*\'\>\<\?\!]+\:?$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex WHITESPACE_REGEX = new(@"\s+", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnoreCase);
 
         private List<PhpbbSmilies>? _smilies;
 
-        public WritingToolsService(IForumDbContext context, IStorageService storageService, ICommonUtils utils, LanguageProvider languageProvider,
-            IHttpContextAccessor httpContextAccessor, IConfiguration config, IAppCache cache)
-            : base(utils, languageProvider, httpContextAccessor)
+        public WritingToolsService(IForumDbContext context, IStorageService storageService, ITranslationProvider translationProvider,
+            IConfiguration config, IAppCache cache, ILogger logger)
         {
+            _translationProvider = translationProvider;
             _context = context;
             _storageService = storageService;
             _config = config;
             _cache = cache;
+            _logger = logger;
         }
 
         #region Banned words
@@ -53,7 +56,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> ManageBannedWords(List<PhpbbWords> words, List<int> indexesToRemove)
         {
-            var lang = GetLanguage();
+            var language = _translationProvider.GetLanguage();
             try
             {
                 await _context.PhpbbWords.AddRangeAsync(words.Where(w => w.WordId == 0));
@@ -62,15 +65,15 @@ namespace PhpbbInDotnet.Services
 
                 var sqlExecuter = _context.GetSqlExecuter();
                 await sqlExecuter.ExecuteAsync(
-                    "DELETE FROM phpbb_words WHERE word_id IN @ids", 
+                    "DELETE FROM phpbb_words WHERE word_id IN @ids",
                     new { ids = indexesToRemove.Select(i => words[i].WordId).DefaultIfEmpty() });
 
-                return (LanguageProvider.Admin[lang, "BANNED_WORDS_UPDATED_SUCCESSFULLY"], true);
+                return (_translationProvider.Admin[language, "BANNED_WORDS_UPDATED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
-                Utils.HandleError(ex, "ManageBannedWords failed");
-                return (LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
+                _logger.Error(ex, "ManageBannedWords failed");
+                return (_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }
 
@@ -83,7 +86,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> ManageBBCodes(List<PhpbbBbcodes> codes, List<int> indexesToRemove, List<int> indexesToDisplay)
         {
-            var currentLanguage = GetLanguage();
+            var currentLanguage = _translationProvider.GetLanguage();
             try
             {
                 indexesToDisplay.ForEach(i => codes[i].DisplayOnPosting = 1);
@@ -93,20 +96,20 @@ namespace PhpbbInDotnet.Services
 
                 var sqlExecuter = _context.GetSqlExecuter();
                 await sqlExecuter.ExecuteAsync(
-                    "DELETE FROM phpbb_bbcodes WHERE bbcode_id IN @ids", 
+                    "DELETE FROM phpbb_bbcodes WHERE bbcode_id IN @ids",
                     new { ids = indexesToRemove.Select(i => codes[i].BbcodeId).DefaultIfEmpty() });
 
-                foreach (var language in LanguageProvider.AllLanguages)
+                foreach (var language in _translationProvider.AllLanguages)
                 {
                     _cache.Remove(GetBbCodesCacheKey(language));
                 }
 
-                return (LanguageProvider.Admin[currentLanguage, "BBCODES_UPDATED_SUCCESSFULLY"], true);
+                return (_translationProvider.Admin[currentLanguage, "BBCODES_UPDATED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
-                Utils.HandleError(ex, "ManageBBCodes failed");
-                return (LanguageProvider.Errors[currentLanguage, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
+                _logger.Error(ex, "ManageBBCodes failed");
+                return (_translationProvider.Errors[currentLanguage, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }
 
@@ -168,7 +171,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> DeleteOrphanedFiles()
         {
-            var lang = GetLanguage();
+            var language = _translationProvider.GetLanguage();
             var sqlExecuter = _context.GetSqlExecuter();
 
             var retention = _config.GetObject<TimeSpan?>("RecycleBinRetentionTime") ?? TimeSpan.FromDays(7);
@@ -182,7 +185,7 @@ namespace PhpbbInDotnet.Services
 
             if (!files.Any())
             {
-                return (LanguageProvider.Admin[lang, "NO_ORPHANED_FILES_DELETED"], true);
+                return (_translationProvider.Admin[language, "NO_ORPHANED_FILES_DELETED"], true);
             }
 
             var (Succeeded, Failed) = _storageService.BulkDeleteAttachments(files.Select(f => f.PhysicalFilename));
@@ -197,11 +200,11 @@ namespace PhpbbInDotnet.Services
 
             if (Failed?.Any() == true)
             {
-                return (string.Format(LanguageProvider.Admin[lang, "SOME_ORPHANED_FILES_DELETED_FORMAT"], string.Join(",", Succeeded ?? Enumerable.Empty<string>()), string.Join(",", Failed)), false);
+                return (string.Format(_translationProvider.Admin[language, "SOME_ORPHANED_FILES_DELETED_FORMAT"], string.Join(",", Succeeded ?? Enumerable.Empty<string>()), string.Join(",", Failed)), false);
             }
             else
             {
-                return (string.Format(LanguageProvider.Admin[lang, "ORPHANED_FILES_DELETED_FORMAT"], string.Join(",", Succeeded ?? Enumerable.Empty<string>())), true);
+                return (string.Format(_translationProvider.Admin[language, "ORPHANED_FILES_DELETED_FORMAT"], string.Join(",", Succeeded ?? Enumerable.Empty<string>())), true);
             }
         }
 
@@ -217,7 +220,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> ManageSmilies(List<UpsertSmiliesDto> dto, List<string> newOrder, List<int> codesToDelete, List<string> smileyGroupsToDelete)
         {
-            var lang = GetLanguage();
+            var language = _translationProvider.GetLanguage();
             try
             {
                 var sqlExecuter = _context.GetSqlExecuter();
@@ -267,14 +270,14 @@ namespace PhpbbInDotnet.Services
 
                     if (string.IsNullOrWhiteSpace(fileName))
                     {
-                        errors.Add(string.Format(LanguageProvider.Admin[lang, "MISSING_EMOJI_FILE_FORMAT"], smiley.Codes?.FirstOrDefault()?.Value));
+                        errors.Add(string.Format(_translationProvider.Admin[language, "MISSING_EMOJI_FILE_FORMAT"], smiley.Codes?.FirstOrDefault()?.Value));
                         continue;
                     }
                     fileName = WHITESPACE_REGEX.Replace(fileName, "+");
 
                     if (!validCodes.Any())
                     {
-                        errors.Add(string.Format(LanguageProvider.Admin[lang, "INVALID_EMOJI_CODE_FORMAT"], fileName));
+                        errors.Add(string.Format(_translationProvider.Admin[language, "INVALID_EMOJI_CODE_FORMAT"], fileName));
                     }
                     else if (smiley.File != null)
                     {
@@ -283,13 +286,13 @@ namespace PhpbbInDotnet.Services
                         stream.Seek(0, SeekOrigin.Begin);
                         if (bmp.Width > maxSize.Width || bmp.Height > maxSize.Height)
                         {
-                            errors.Add(string.Format(LanguageProvider.Admin[lang, "INVALID_EMOJI_FILE_FORMAT"], fileName, maxSize.Width, maxSize.Height));
+                            errors.Add(string.Format(_translationProvider.Admin[language, "INVALID_EMOJI_FILE_FORMAT"], fileName, maxSize.Width, maxSize.Height));
                         }
                         else
                         {
                             if (!await _storageService.UpsertEmoji(fileName, stream))
                             {
-                                errors.Add(string.Format(LanguageProvider.Admin[lang, "EMOJI_NOT_UPLOADED_FORMAT"], fileName));
+                                errors.Add(string.Format(_translationProvider.Admin[language, "EMOJI_NOT_UPLOADED_FORMAT"], fileName));
                             }
                         }
                     }
@@ -324,15 +327,15 @@ namespace PhpbbInDotnet.Services
 
                 if (errors.Count > 0)
                 {
-                    Utils.HandleErrorAsWarning(new AggregateException(errors.Select(e => new Exception(e))), "Error managing emojis");
+                    _logger.Warning(new AggregateException(errors.Select(e => new Exception(e))), "Error managing emojis");
                     return (string.Join(Environment.NewLine, errors), null);
                 }
-                return (LanguageProvider.Admin[lang, "EMOJI_UPDATED_SUCCESSFULLY"], true);
+                return (_translationProvider.Admin[language, "EMOJI_UPDATED_SUCCESSFULLY"], true);
             }
             catch (Exception ex)
             {
-                Utils.HandleError(ex, "ManageSmilies failed");
-                return (LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
+                _logger.Error(ex, "ManageSmilies failed");
+                return (_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }
 

@@ -1,41 +1,41 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel
 
-@using Utilities
+@using Domain
 
 @inject Services.IUserService  _userService
-@inject Languages.LanguageProvider _languageProvider
+@inject Languages.ITranslationProvider _translationProvider
 
 @if (Model.IsIndex)
 {
-    <a asp-page="NewPosts" class="nowrap">@Html.Raw(_languageProvider.BasicText[Model.Language, "NEW_POSTS", Casing.Title])</a>
+    <a asp-page="NewPosts" class="nowrap">@Html.Raw(_translationProvider.BasicText[Model.Language, "NEW_POSTS", Casing.Title])</a>
     <span>&nbsp;&bull;&nbsp;</span>
-    <a asp-page="OwnPosts" class="nowrap">@Html.Raw(_languageProvider.BasicText[Model.Language, "OWN_TOPICS", Casing.Title])</a>
+    <a asp-page="OwnPosts" class="nowrap">@Html.Raw(_translationProvider.BasicText[Model.Language, "OWN_TOPICS", Casing.Title])</a>
     <span class="Hide768">&nbsp;&bull;&nbsp;</span>
     <br class="Show768" /><span class="Show768" style="width:2.5px; display:inline-block; height: 20px"></span>
 }
 
 <span onclick="toggleHeaderLinks('headerLinks', 'customLinks');" id="headerLinksButton" class="MyButton MyMiniButton" style="line-height:1.1em">
-    &#X1F6E0;&nbsp;@Html.Raw(_languageProvider.BasicText[Model.Language, "MENU", Casing.Title])
+    &#X1F6E0;&nbsp;@Html.Raw(_translationProvider.BasicText[Model.Language, "MENU", Casing.Title])
 </span>
 <ul class="Shortcuts" style="display:none" id="headerLinks">
     @if (!Model.IsIndex)
     {
         <li>
             <span> &nbsp;</span>
-            <a asp-page="NewPosts" class="nowrap">@Html.Raw(_languageProvider.BasicText[Model.Language, "NEW_POSTS", Casing.Title])</a>
+            <a asp-page="NewPosts" class="nowrap">@Html.Raw(_translationProvider.BasicText[Model.Language, "NEW_POSTS", Casing.Title])</a>
         </li>
         <li>
             <span> &nbsp;</span>
-            <a asp-page="OwnPosts" class="nowrap">@Html.Raw(_languageProvider.BasicText[Model.Language, "OWN_TOPICS", Casing.Title])</a>
+            <a asp-page="OwnPosts" class="nowrap">@Html.Raw(_translationProvider.BasicText[Model.Language, "OWN_TOPICS", Casing.Title])</a>
         </li>
     }
     <li>
         <span> &nbsp;</span>
-        <a asp-page="Drafts" class="nowrap">@Html.Raw(_languageProvider.BasicText[Model.Language, "DRAFTS", Casing.Title])</a>
+        <a asp-page="Drafts" class="nowrap">@Html.Raw(_translationProvider.BasicText[Model.Language, "DRAFTS", Casing.Title])</a>
     </li>
     <li>
         <span> &nbsp;</span>
-        <a asp-page="/MemberList">@Html.Raw(_languageProvider.BasicText[Model.Language, "FORUM_MEMBERS", Casing.Title])</a>
+        <a asp-page="/MemberList">@Html.Raw(_translationProvider.BasicText[Model.Language, "FORUM_MEMBERS", Casing.Title])</a>
     </li>
 
     @foreach (var elem in (Model.ExtraElements ?? Enumerable.Empty<string>()).Where(elem => !string.IsNullOrWhiteSpace(elem)))

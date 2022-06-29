@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Domain;
 using System;
 
 namespace PhpbbInDotnet.Forum.Pages.CustomPartials
@@ -47,10 +47,6 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
         public Guid? CorrelationId { get; set; }
 
         public bool DisablePostTitleLink { get; set; }
-
-        public HttpContext? ParentHttpContext { get; set; }
-
-        public PageContext? ParentPageContext { get; set; }
 
         public bool ShowPath { get; set; }
     }

@@ -9,8 +9,8 @@ using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Utilities;
-using PhpbbInDotnet.Utilities.Extensions;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -30,7 +30,7 @@ namespace PhpbbInDotnet.Forum.Middlewares
         private readonly IUserService _userService;
         private readonly IConfiguration _config;
         private readonly IAppCache _cache;
-        private readonly AnonymousSessionCounter _sessionCounter;
+        private readonly IAnonymousSessionCounter _sessionCounter;
 
         static AuthenticationMiddleware()
         {
@@ -41,7 +41,7 @@ namespace PhpbbInDotnet.Forum.Middlewares
         }
 
         public AuthenticationMiddleware(ILogger logger, IConfiguration config, IAppCache cache, IForumDbContext context,
-            IForumTreeService forumTreeService, IUserService userService, AnonymousSessionCounter sessionCounter)
+            IForumTreeService forumTreeService, IUserService userService, IAnonymousSessionCounter sessionCounter)
         {
             _logger = logger;
             _forumTreeService = forumTreeService;

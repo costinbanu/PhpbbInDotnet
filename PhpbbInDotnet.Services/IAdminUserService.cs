@@ -1,9 +1,7 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Mvc.Rendering;
+﻿using Microsoft.AspNetCore.Mvc.Rendering;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Utilities;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -20,7 +18,7 @@ namespace PhpbbInDotnet.Services
         List<SelectListItem> GetRolesSelectListItems();
         Task<(string Message, bool? IsSuccess)> ManageGroup(UpsertGroupDto dto, int adminUserId);
         Task<(string Message, bool? IsSuccess)> ManageRank(int? rankId, string rankName, bool? deleteRank, int adminUserId);
-        Task<(string Message, bool? IsSuccess)> ManageUser(AdminUserActions? action, int? userId, PageContext pageContext, HttpContext httpContext, int adminUserId);
+        Task<(string Message, bool? IsSuccess)> ManageUser(AdminUserActions? action, int? userId, int adminUserId);
         Task<(string? Message, bool IsSuccess, List<PhpbbUsers> Result)> UserSearchAsync(AdminUserSearch? searchParameters);
     }
 }

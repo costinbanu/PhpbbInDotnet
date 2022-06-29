@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
-using Serilog;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
@@ -10,12 +9,10 @@ namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
     public class viewtopicModel : PageModel
     {
         private readonly IForumDbContext _context;
-        private readonly ILogger _logger;
 
-        public viewtopicModel(IForumDbContext context, ILogger logger)
+        public viewtopicModel(IForumDbContext context)
         {
             _context = context;
-            _logger = logger;
         }
 
         public async Task<IActionResult> OnGet(int? f, int? t, int? p, int? start)
@@ -54,7 +51,6 @@ namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
             }
             else
             {
-                _logger.Warning("Bad request to legacy viewtopic.php route: {route}", Request.QueryString.Value);
                 return BadRequest();
             }
         }

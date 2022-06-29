@@ -3,11 +3,13 @@ using LazyCache;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Utilities;
-using PhpbbInDotnet.Utilities.Extensions;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -53,8 +55,8 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IBBCodeRenderingService _renderingService;
 
         public PrivateMessagesModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache,
-            IBBCodeRenderingService renderingService, ICommonUtils utils, LanguageProvider languageProvider)
-            : base(context, forumService, userService, cache, utils, languageProvider)
+            IBBCodeRenderingService renderingService, ILogger logger, ITranslationProvider translationProvider)
+            : base(context, forumService, userService, cache, logger, translationProvider)
         {
             _renderingService = renderingService;
         }
@@ -71,7 +73,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         PrivateMessagesPages.Sent => Paginator.NormalizePageNumberLowerBound(SentPage),
                         _ => 1
                     };
-                    await Utils.RetryOnceAsync(
+                    await ResiliencyUtility.RetryOnceAsync(
                         toDo: async () =>
                         {
                             var messageTask = sqlExecuter.QueryAsync<PrivateMessageDto>(

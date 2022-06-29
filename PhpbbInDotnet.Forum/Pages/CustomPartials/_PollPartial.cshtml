@@ -1,19 +1,19 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._PollPartialModel
 
 @using System.Web
-@using Utilities.Extensions
+@using Domain.Extensions
 
-@inject Languages.LanguageProvider _languageProvider
+@inject Languages.ITranslationProvider _translationProvider
 
 @if (Model.Poll != null)
 {
-    var UserDateFormat = Model.CurrentUser?.UserDateFormat ?? _languageProvider.GetDefaultDateFormat(Model.Language);
+    var UserDateFormat = Model.CurrentUser?.UserDateFormat ?? _translationProvider.GetDefaultDateFormat(Model.Language);
     var displayResultsMenu = !Model.IsPreview && (Model.Poll.PollEnded || !Model.Poll.PollEnd.HasValue || Model.IsCurrentUserMod);
     var displayVoteMenu = Model.CanVoteNow || !displayResultsMenu;
 
-    <h3>@Html.Raw(string.Format(_languageProvider.BasicText[Model.Language, "POLL_TITLE_FORMAT"], HttpUtility.HtmlDecode(Model.Poll.PollTitle)))</h3>
+    <h3>@Html.Raw(string.Format(_translationProvider.BasicText[Model.Language, "POLL_TITLE_FORMAT"], HttpUtility.HtmlDecode(Model.Poll.PollTitle)))</h3>
     <div>
-        @Html.Raw(Model.Poll.PollEnded ? _languageProvider.BasicText[Model.Language, "POLL_WAS_CLOSED"] : _languageProvider.BasicText[Model.Language, "POLL_WILL_BE_CLOSED"])
+        @Html.Raw(Model.Poll.PollEnded ? _translationProvider.BasicText[Model.Language, "POLL_WAS_CLOSED"] : _translationProvider.BasicText[Model.Language, "POLL_WILL_BE_CLOSED"])
         @if (Model.Poll.PollEnd.HasValue)
         {
             <script>
@@ -22,7 +22,7 @@
         }
         else
         {
-            @Html.Raw(_languageProvider.BasicText[Model.Language, "NEVER"]);
+            @Html.Raw(_translationProvider.BasicText[Model.Language, "NEVER"]);
         }
     </div>
 
@@ -50,7 +50,7 @@
                 <input name="queryString" type="hidden" value="@HttpUtility.UrlEncode(Model.QueryString)" />
                 @if (Model.CanVoteNow)
                 {
-                    <input type="submit" value="@_languageProvider.BasicText[Model.Language, "SEND_VOTE"]" class="MyButton" style="margin-top: 5px" @(Model.IsPreview ? "disabled" : "") />
+                    <input type="submit" value="@_translationProvider.BasicText[Model.Language, "SEND_VOTE"]" class="MyButton" style="margin-top: 5px" @(Model.IsPreview ? "disabled" : "") />
                     <span asp-validation-for="Poll" class="validation"></span>
                 }
                 @Html.AntiForgeryToken()
@@ -70,13 +70,13 @@
                             @if (Model.IsCurrentUserAdmin)
                             {
                                 <div class="Caption">
-                                    @Html.Raw(string.Format(_languageProvider.BasicText[Model.Language, "VOTERS_FORMAT"], HttpUtility.HtmlDecode(string.Join(", ", option.PollOptionVoters?.Select(v => v.Username) ?? Enumerable.Empty<string>()))))
+                                    @Html.Raw(string.Format(_translationProvider.BasicText[Model.Language, "VOTERS_FORMAT"], HttpUtility.HtmlDecode(string.Join(", ", option.PollOptionVoters?.Select(v => v.Username) ?? Enumerable.Empty<string>()))))
                                 </div>
                             }
                         </td>
                         <td style="padding-right: unset">
                             <span class="PollResultBar" style="background: linear-gradient(to right, #87ceeb @percentage, #ffffff 0%)">
-                                @Html.Raw(option.PollOptionVotes == 1 ? string.Format(_languageProvider.BasicText[Model.Language, "VOTE_FORMAT"], option.PollOptionVotes, percentage) : string.Format(_languageProvider.BasicText[Model.Language, "VOTES_FORMAT"], option.PollOptionVotes, percentage))
+                                @Html.Raw(option.PollOptionVotes == 1 ? string.Format(_translationProvider.BasicText[Model.Language, "VOTE_FORMAT"], option.PollOptionVotes, percentage) : string.Format(_translationProvider.BasicText[Model.Language, "VOTES_FORMAT"], option.PollOptionVotes, percentage))
                             </span>
                         </td>
                     </tr>
@@ -85,14 +85,14 @@
         </div>
         @if (Model.CanVoteNow && Model.IsCurrentUserAdmin)
         {
-            <input type="button" value="@_languageProvider.BasicText[Model.Language, "SHOW_RESULTS"]" onclick="vt.switchPollPanels('results', 'votes', this)" class="MyButton" style="margin-top: 5px" />
+            <input type="button" value="@_translationProvider.BasicText[Model.Language, "SHOW_RESULTS"]" onclick="vt.switchPollPanels('results', 'votes', this)" class="MyButton" style="margin-top: 5px" />
         }
     }
     @if (Model.Poll?.PollOptions?.Any(o => o.PollOptionVoters?.Any(v => v.UserId == Model.CurrentUser?.UserId) == true) == true)
     {
         <p></p>
         <div style="background-color: darkgreen; color: white; padding: 5px; font-weight: bold">
-            @Html.Raw(_languageProvider.BasicText[Model.Language, "VOTE_REGISTERED"])
+            @Html.Raw(_translationProvider.BasicText[Model.Language, "VOTE_REGISTERED"])
         </div>
     }
 }

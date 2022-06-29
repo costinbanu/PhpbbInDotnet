@@ -1,8 +1,8 @@
 ﻿using Dapper;
 using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
-using PhpbbInDotnet.Utilities.Core;
-using PhpbbInDotnet.Utilities.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
+using PhpbbInDotnet.Domain.Extensions;
 using Serilog;
 using System;
 using System.IO;
@@ -97,7 +97,7 @@ namespace PhpbbInDotnet.Database.SetupApp
                             new 
                             { 
                                 clean = StringUtility.CleanString(user.username), 
-                                hash = HashingUtility.ComputeCrc64Hash(user.user_email),
+                                hash = HashUtility.ComputeCrc64Hash(user.user_email),
                                 id = user.user_id 
                             })));
                     }

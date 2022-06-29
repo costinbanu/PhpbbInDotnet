@@ -1,9 +1,10 @@
 ﻿@model PhpbbInDotnet.Objects.AttachmentDto
 
-@using Utilities.Extensions;
-@inject Utilities.ICommonUtils _utils
+@using Domain.Extensions
+@using Domain.Utilities
+
 @inject Services.IBBCodeRenderingService _renderingService
-@inject Languages.LanguageProvider _languageProvider
+@inject Languages.ITranslationProvider _translationProvider
 
 @if (Model != null)
 {
@@ -33,7 +34,7 @@
                 @Html.Raw(_renderingService.BbCodeToHtml(Model.Comment, string.Empty))
             }
             <div>
-                @Html.Raw($"{Model.DisplayName} ({_utils.ReadableFileSize(Model.FileSize)}; {(Model.DownloadCount == 1 ? _languageProvider.BasicText[Model.Language, "DOWNLOADED_ONCE"] : string.Format(_languageProvider.BasicText[Model.Language, "DOWNLOADED_COUNT_FORMAT"], Model.DownloadCount))})")
+                @Html.Raw($"{Model.DisplayName} ({StringUtility.ReadableFileSize(Model.FileSize)}; {(Model.DownloadCount == 1 ? _translationProvider.BasicText[Model.Language, "DOWNLOADED_ONCE"] : string.Format(_translationProvider.BasicText[Model.Language, "DOWNLOADED_COUNT_FORMAT"], Model.DownloadCount))})")
             </div>
         </div>
     </div>

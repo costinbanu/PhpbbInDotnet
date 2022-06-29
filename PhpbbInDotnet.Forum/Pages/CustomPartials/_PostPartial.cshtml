@@ -3,20 +3,19 @@
 @using System.Web
 @using System.Text
 @using Newtonsoft.Json
-@using Utilities
-@using Utilities.Extensions;
+@using Domain
+@using Domain.Extensions;
 @using Objects
 
 @inject Services.IUserService _userService
-@inject ICommonUtils _utils
 @inject Database.IForumDbContext _context
 @inject Services.IBBCodeRenderingService _renderingService
 @inject Services.IUserService _userService
 @inject Services.IForumTreeService _forumService
-@inject Languages.LanguageProvider _languageProvider
+@inject Languages.ITranslationProvider _translationProvider
 
 @{
-    var userDateFormat = Model.CurrentUser?.UserDateFormat ?? _languageProvider.GetDefaultDateFormat(Model.Language);
+    var userDateFormat = Model.CurrentUser?.UserDateFormat ?? _translationProvider.GetDefaultDateFormat(Model.Language);
     var lastOpenReport = Model.Post!.Reports?.LastOrDefault(r => !r.ReportClosed.ToBool());
     var rowClass = lastOpenReport != null && (Model.IsCurrentUserMod || lastOpenReport.ReporterId == Model.CurrentUser?.UserId) ? "ReportedPost" : string.Empty;
     var titleClass = Model.Post.Unread ? "UnreadTitle" : "";
@@ -26,11 +25,11 @@
     @if (authorIsOnFoeList)
     {
         Model.Post.Attachments?.Clear();
-        Model.Post.PostSubject = $"[{_languageProvider.BasicText[Model.Language, "HIDDEN", Casing.FirstUpper]}]";
-        Model.Post.PostText = _languageProvider.BasicText[Model.Language, "CONTENT_HIDDEN_WARNING_BBCODE", Casing.FirstUpper];
+        Model.Post.PostSubject = $"[{_translationProvider.BasicText[Model.Language, "HIDDEN", Casing.FirstUpper]}]";
+        Model.Post.PostText = _translationProvider.BasicText[Model.Language, "CONTENT_HIDDEN_WARNING_BBCODE", Casing.FirstUpper];
     }
 
-    await _renderingService.ProcessPost(Model.Post, Model.ParentPageContext!, Model.ParentHttpContext!, true, Model.ToHighlight);
+    await _renderingService.ProcessPost(Model.Post, true, Model.ToHighlight);
 }
 
 @if (!Model.IsPostFirstInPage)
@@ -54,7 +53,7 @@
             AuthorRank = Model.Post.AuthorRank,
             AlignLeft = true,
             IsLastPostSummary = false,
-            PMLink = Model.HasCurrentUserPM && !authorIsOnFoeList ? $"<a href=\"./SendPrivateMessage?postId={Model.Post.PostId}\">&#x1F5E8; {_languageProvider.BasicText[Model.Language, "PRIVATE_MESSAGE", Casing.FirstUpper]}</a>" : null,
+            PMLink = Model.HasCurrentUserPM && !authorIsOnFoeList ? $"<a href=\"./SendPrivateMessage?postId={Model.Post.PostId}\">&#x1F5E8; {_translationProvider.BasicText[Model.Language, "PRIVATE_MESSAGE", Casing.FirstUpper]}</a>" : null,
             CorrelationId = Model.CorrelationId
         })
         <div class="ForumContent VerticalContent FlexRight" id="@Model.Post.PostId" style="max-width:100%; overflow-wrap: break-word; display:flex">
@@ -86,7 +85,7 @@
                 {
                     <span style="margin-left: auto; min-width: max-content; padding-top: 3px; padding-bottom: 30px; margin-top: 4px; margin-bottom: 4px">
                         <a href="javascript:posting.addquote(texts['@Model.Post.PostId'], '@Model.Post.AuthorName', @Model.Post.PostId)">
-                            &#x1F4AC; @Html.Raw(_languageProvider.BasicText[Model.Language, "DO_QUOTE", Casing.FirstUpper])
+                            &#x1F4AC; @Html.Raw(_translationProvider.BasicText[Model.Language, "DO_QUOTE", Casing.FirstUpper])
                         </a>
                     </span>
                 }
@@ -104,7 +103,7 @@
                         reportUsername = lastOpenReport.ReporterUsername
                     };
                     <a href="javascript:vt.showReportViewer(@Newtonsoft.Json.JsonConvert.SerializeObject(data))" style="font-weight:bold; font-size:1.2em">
-                        @Html.Raw(_languageProvider.BasicText[Model.Language, "SHOW_REPORT", Casing.FirstUpper])
+                        @Html.Raw(_translationProvider.BasicText[Model.Language, "SHOW_REPORT", Casing.FirstUpper])
                     </a>
                     <br />
                 }
@@ -123,13 +122,13 @@
                     @if (Model.ShowEditHistory)
                     {
                         <div class="Caption ThemeColor">
-                            @Html.Raw(_languageProvider.BasicText[Model.Language, "LAST_EDITED_BY"]) @Model.Post!.PostEditUser
+                            @Html.Raw(_translationProvider.BasicText[Model.Language, "LAST_EDITED_BY"]) @Model.Post!.PostEditUser
                             <script>writeDate("@Model.Post.PostEditTime.ToUtcTime().ToString("o")", "@userDateFormat");</script>.
                             @if (!string.IsNullOrWhiteSpace(Model.Post.PostEditReason))
                             {
-                                <span>@Html.Raw(_languageProvider.BasicText[Model.Language, "REASON", Casing.FirstUpper]): @HttpUtility.HtmlDecode(Model.Post.PostEditReason).</span>
+                                <span>@Html.Raw(_translationProvider.BasicText[Model.Language, "REASON", Casing.FirstUpper]): @HttpUtility.HtmlDecode(Model.Post.PostEditReason).</span>
                             }
-                            @Html.Raw(_languageProvider.BasicText[Model.Language, "TOTAL_EDITS"]): @Model.Post.PostEditCount.
+                            @Html.Raw(_translationProvider.BasicText[Model.Language, "TOTAL_EDITS"]): @Model.Post.PostEditCount.
                         </div>
                         <p></p>
                     }
@@ -140,11 +139,11 @@
                                 <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@Model.Post!.PostId">
                                     @if (Model.IsTopicLocked)
                                     {
-                                        <span>&#x1F4AC; @Html.Raw(_languageProvider.BasicText[Model.Language, "CLOSED_TOPIC", Casing.FirstUpper])</span>
+                                        <span>&#x1F4AC; @Html.Raw(_translationProvider.BasicText[Model.Language, "CLOSED_TOPIC", Casing.FirstUpper])</span>
                                     }
                                     else
                                     {
-                                        <span>&#x1F4AC; @Html.Raw(_languageProvider.BasicText[Model.Language, "REPLY_AS_QUOTE"])</span>
+                                        <span>&#x1F4AC; @Html.Raw(_translationProvider.BasicText[Model.Language, "REPLY_AS_QUOTE"])</span>
                                     }
                                 </a>
                             </span>
@@ -152,8 +151,8 @@
                         else if (Model.CurrentUser?.IsAnonymous == false && (!Model.IsPostLastInPage || !Model.IsLastPage))
                         {
                             <span>
-                                <a href="javascript:;" title="@Html.Raw(_languageProvider.BasicText[Model.Language, "CLOSED_TOPIC_CAPTION"])">
-                                    <s>&#x1F5E8; @Html.Raw(_languageProvider.BasicText[Model.Language, "CLOSED_TOPIC", Casing.FirstUpper])</s>
+                                <a href="javascript:;" title="@Html.Raw(_translationProvider.BasicText[Model.Language, "CLOSED_TOPIC_CAPTION"])">
+                                    <s>&#x1F5E8; @Html.Raw(_translationProvider.BasicText[Model.Language, "CLOSED_TOPIC", Casing.FirstUpper])</s>
                                 </a>
                             </span>
                         }
@@ -162,7 +161,7 @@
                         {
                             <span>
                                 <a asp-page="/Confirm" asp-page-handler="DestinationPicker" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@Model.Post!.PostId" asp-route-showTopicSelector="true" asp-route-quotePostInDifferentTopic="true" asp-route-destination="./Posting" asp-route-destinationHandler="QuoteForumPost">
-                                    <span>&#x1F4AC; @Html.Raw(_languageProvider.BasicText[Model.Language, "REPLY_AS_QUOTE_IN_ANOTHER_TOPIC"])</span>
+                                    <span>&#x1F4AC; @Html.Raw(_translationProvider.BasicText[Model.Language, "REPLY_AS_QUOTE_IN_ANOTHER_TOPIC"])</span>
                                 </a>
                             </span>
                         }
@@ -171,7 +170,7 @@
                         {
                             <span>
                                 <a href="javascript:vt.showReportForm(@Model.Post!.PostId);">
-                                    &#x2757; @Html.Raw(_languageProvider.BasicText[Model.Language, "DO_REPORT", Casing.FirstUpper])
+                                    &#x2757; @Html.Raw(_translationProvider.BasicText[Model.Language, "DO_REPORT", Casing.FirstUpper])
                                 </a>
                             </span>
                         }
@@ -180,18 +179,18 @@
                             var reports = Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(Model.Post!.Reports?.Select(ReportDto.HtmlEncode))));
                             <span>
                                 <a href="javascript:vt.showMessageDetails('@Model.Post!.IP', '@Model.Post.PostEditTime.ToUtcTime().ToString("o")', '@userDateFormat', @Model.Post.PostEditCount, '@Model.Post.PostEditUser', '@reports');">
-                                    &#x2753; @Html.Raw(_languageProvider.BasicText[Model.Language, "INFORMATION", Casing.FirstUpper])
+                                    &#x2753; @Html.Raw(_translationProvider.BasicText[Model.Language, "INFORMATION", Casing.FirstUpper])
                                 </a>
                             </span>
                             <span>
                                 <label>
-                                    @Html.Raw(_languageProvider.Moderator[Model.Language, "SELECT_FOR_MODERATION", Casing.FirstUpper])
+                                    @Html.Raw(_translationProvider.Moderator[Model.Language, "SELECT_FOR_MODERATION", Casing.FirstUpper])
                                     <input name="PostIdsForModerator" type="checkBox" value="@Model.Post.PostId" form="moderatorForm" onchange="mod.appendToStringList(this, 'selectedPostIds')" @(Model.PostIdsForModerator?.Contains(Model.Post.PostId) == true ? "checked" : "") />
                                 </label>
                             </span>
                             <span>
                                 <a href="javascript:mod.duplicatePost(@Model.Post.PostId)">
-                                    2️⃣ @Html.Raw(_languageProvider.Moderator[Model.Language, "DUPLICATE_POST"])
+                                    2️⃣ @Html.Raw(_translationProvider.Moderator[Model.Language, "DUPLICATE_POST"])
                                 </a>
                             </span>
                         }
@@ -199,7 +198,7 @@
                         {
                             <span>
                                 <a asp-page="/Posting" asp-page-handler="EditPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@Model.Post!.PostId">
-                                    &#x1F4DD; @Html.Raw(_languageProvider.BasicText[Model.Language, "DO_EDIT", Casing.FirstUpper])
+                                    &#x1F4DD; @Html.Raw(_translationProvider.BasicText[Model.Language, "DO_EDIT", Casing.FirstUpper])
                                 </a>
                             </span>
                             if (Model.IsCurrentUserMod || (Model.IsPostLastInPage && Model.IsLastPage))
@@ -210,7 +209,7 @@
                                 }
                                 <span>
                                     <a href="javascript:mod.deletePost(@Model.Post.PostId, @Model.ClosestPostId)">
-                                        &#x1F6AE; @Html.Raw(_languageProvider.BasicText[Model.Language, "DO_DELETE", Casing.FirstUpper])
+                                        &#x1F6AE; @Html.Raw(_translationProvider.BasicText[Model.Language, "DO_DELETE", Casing.FirstUpper])
                                     </a>
                                 </span>
                             }

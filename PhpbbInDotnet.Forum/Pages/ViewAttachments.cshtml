@@ -1,15 +1,15 @@
 ﻿@page
 @model ViewAttachmentsModel
 
-@using Utilities;
-@using Utilities.Extensions;
-@using Pages.CustomPartials;
+@using Domain
+@using Domain.Utilities
+@using Domain.Extensions
+@using Pages.CustomPartials
 
 @inject Services.IForumTreeService _forumService
-@inject ICommonUtils _utils
 
 @{
-    var title = string.Format(Model.LanguageProvider.BasicText[Model.GetLanguage(), "ATTACHMENTS_BY_FORMAT", Casing.Title], Model.PageUsername);
+    var title = string.Format(Model.TranslationProvider.BasicText[Model.GetLanguage(), "ATTACHMENTS_BY_FORMAT", Casing.Title], Model.PageUsername);
     ViewData["Title"] = title;
     Layout = "~/Pages/_Layout.cshtml";
 }
@@ -56,9 +56,9 @@
                 @Html.Raw(attachment.RealFilename)
             </a>
             <br />
-            @Html.Raw(_utils.ReadableFileSize(attachment.FileSize))
+            @Html.Raw(StringUtility.ReadableFileSize(attachment.FileSize))
             <span>&nbsp;&bull;&nbsp;</span>
-            @Html.Raw(Model.LanguageProvider.BasicText[Model.GetLanguage(), "SUBMITTED", Casing.FirstUpper])
+            @Html.Raw(Model.TranslationProvider.BasicText[Model.GetLanguage(), "SUBMITTED", Casing.FirstUpper])
             <script>
             writeDate('@(attachment.FileTime.ToUtcTime().ToString("o"))', '@(Model.GetCurrentUser().UserDateFormat)');
             </script>
@@ -84,7 +84,7 @@
     }
     else
     {
-        @Html.Raw(Model.LanguageProvider.BasicText[Model.GetLanguage(), "NO_ATTACHMENTS", Casing.FirstUpper])
+        @Html.Raw(Model.TranslationProvider.BasicText[Model.GetLanguage(), "NO_ATTACHMENTS", Casing.FirstUpper])
     }
 }
 else

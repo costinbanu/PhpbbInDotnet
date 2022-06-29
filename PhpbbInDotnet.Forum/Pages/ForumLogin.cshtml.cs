@@ -4,9 +4,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Utilities;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -19,7 +20,6 @@ namespace PhpbbInDotnet.Forum.Pages
     {
         private readonly IForumDbContext _context;
         private readonly IUserService _userService;
-        private readonly ICommonUtils _utils;
         private readonly IAppCache _cache;
 
         [BindProperty(SupportsGet = true)]
@@ -35,20 +35,19 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public string Language { get; private set; } = Constants.DEFAULT_LANGUAGE;
 
-        public LanguageProvider LanguageProvider { get; }
+        public ITranslationProvider TranslationProvider { get; }
 
-        public ForumLoginModel(IForumDbContext context, IUserService userService, LanguageProvider languageProvider, ICommonUtils utils, IAppCache cache)
+        public ForumLoginModel(IForumDbContext context, IUserService userService, ITranslationProvider translationProvider, IAppCache cache)
         {
             _context = context;
             _userService = userService;
-            LanguageProvider = languageProvider;
-            _utils = utils;
+            TranslationProvider = translationProvider;
             _cache = cache;
         }
 
         public async Task<IActionResult> OnGet()
         {
-            Language = LanguageProvider.GetValidatedLanguage(_userService.ClaimsPrincipalToAuthenticatedUser(User), Request);
+            Language = TranslationProvider.GetLanguage(_userService.ClaimsPrincipalToAuthenticatedUser(User));
             var forum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(filter => filter.ForumId == ForumId);
 
             if (forum == null)
@@ -73,7 +72,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
-            Language = LanguageProvider.GetValidatedLanguage(_userService.ClaimsPrincipalToAuthenticatedUser(User), Request);
+            Language = TranslationProvider.GetLanguage(_userService.ClaimsPrincipalToAuthenticatedUser(User));
             var forum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(filter => filter.ForumId == ForumId);
 
             if (forum == null)
@@ -83,7 +82,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (string.IsNullOrWhiteSpace(Password))
             {
-                ModelState.AddModelError(nameof(Password), LanguageProvider.Errors[Language, "MISSING_REQUIRED_FIELD"]);
+                ModelState.AddModelError(nameof(Password), TranslationProvider.Errors[Language, "MISSING_REQUIRED_FIELD"]);
                 return Page();
             }
                        
@@ -106,13 +105,13 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (forum.ForumPassword != Crypter.Phpass.Crypt(Password, forum.ForumPassword))
             {
-                ModelState.AddModelError(nameof(Password), LanguageProvider.Errors[Language, "WRONG_PASS"]);
+                ModelState.AddModelError(nameof(Password), TranslationProvider.Errors[Language, "WRONG_PASS"]);
                 return await OnGet();
             }
             else
             {
                 var userId = _userService.ClaimsPrincipalToAuthenticatedUser(User)?.UserId ?? Constants.ANONYMOUS_USER_ID;
-                _cache.Add(_utils.GetForumLoginCacheKey(userId, ForumId), 1, TimeSpan.FromMinutes(30));
+                _cache.Add(CacheUtility.GetForumLoginCacheKey(userId, ForumId), 1, TimeSpan.FromMinutes(30));
                 if (string.IsNullOrWhiteSpace(ReturnUrl))
                 {
                     return RedirectToPage("ViewForum", new { ForumId });
