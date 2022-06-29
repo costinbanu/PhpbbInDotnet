@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 
-namespace PhpbbInDotnet.Utilities.Core
+namespace PhpbbInDotnet.Domain.Utilities
 {
     public static class CompressionUtility
     {

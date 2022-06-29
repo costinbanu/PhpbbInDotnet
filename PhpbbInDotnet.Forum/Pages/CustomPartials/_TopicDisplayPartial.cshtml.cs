@@ -26,7 +26,7 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
                   {
                       new TopicGroup 
                       { 
-                          TopicType = Utilities.TopicType.Normal, 
+                          TopicType = Domain.TopicType.Normal, 
                           Topics = topics 
                       } 
                   })

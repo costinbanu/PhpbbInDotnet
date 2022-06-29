@@ -4,12 +4,13 @@ using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Objects.Configuration;
-using PhpbbInDotnet.Utilities;
-using PhpbbInDotnet.Utilities.Extensions;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using Serilog;
 
 namespace PhpbbInDotnet.Services
 {
@@ -17,17 +18,17 @@ namespace PhpbbInDotnet.Services
     {
         private readonly IConfiguration _config;
         private readonly Storage _storageOptions;
-        private readonly ICommonUtils _utils;
         private readonly IForumDbContext _context;
+        private readonly ILogger _logger;
         private readonly string _attachmentsPath;
         private readonly string _avatarsPath;
         private readonly string _emojiPath;
 
-        public StorageService(IConfiguration config, ICommonUtils utils, IWebHostEnvironment environment, IForumDbContext context)
+        public StorageService(IConfiguration config, IWebHostEnvironment environment, IForumDbContext context, ILogger logger)
         {
             _config = config;
-            _utils = utils;
             _context = context;
+            _logger = logger;
 
             _storageOptions = _config.GetObject<Storage>();
             _attachmentsPath = Path.Combine(environment.WebRootPath, _storageOptions.Files!);
@@ -92,7 +93,7 @@ namespace PhpbbInDotnet.Services
                 }
                 catch (Exception ex)
                 {
-                    _utils.HandleError(ex, $"Error uploading attachment by user {userId}.");
+                    _logger.Error(ex, "Error uploading attachment by user {id}.", userId);
                     failed.Add(file.FileName);
                 }
             }
@@ -110,7 +111,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex);
+                _logger.Error(ex);
                 return null;
             }
         }
@@ -127,7 +128,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex, "Error uploading avatar.");
+                _logger.Error(ex, "Error uploading avatar.");
                 return false;
             }
         }
@@ -152,7 +153,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex, $"Error deleting file '{name}'.");
+                _logger.Error(ex, "Error deleting file '{name}'.", name);
                 return false;
             }
         }
@@ -170,7 +171,7 @@ namespace PhpbbInDotnet.Services
                 }
                 catch (Exception ex)
                 {
-                    _utils.HandleError(ex, $"Error deleting file '{file}'.");
+                    _logger.Error(ex, "Error deleting file '{file}'.", file);
                     failed.Add(file);
                 }
             }
@@ -188,7 +189,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex, $"Error uploading emoji '{name}'");
+                _logger.Error(ex, "Error uploading emoji '{name}'", name);
                 return false;
             }
         }
@@ -201,7 +202,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                _utils.HandleError(ex, $"Error getting attachment contents for '{name}'");
+                _logger.Error(ex, "Error getting attachment contents for '{name}'", name);
                 return Array.Empty<byte>();
             }
         }

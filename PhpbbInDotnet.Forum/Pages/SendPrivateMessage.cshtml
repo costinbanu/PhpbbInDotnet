@@ -2,7 +2,8 @@
 @model PhpbbInDotnet.Forum.Pages.SendPrivateMessageModel
 
 @using System.Web
-@using Utilities
+@using Domain
+@using Domain.Utilities
 @using CustomPartials
 @using Objects.Configuration
 @using Services
@@ -12,17 +13,16 @@
 @inject IBBCodeRenderingService _renderingService
 @inject IStorageService _storageService
 @inject IUserService _userService
-@inject ICommonUtils _utils
 @inject IConfiguration _config
 
 @{
     var Lang = Model.GetLanguage();
 
-    ViewData["Title"] = Model.LanguageProvider.BasicText[Lang, "WRITE_NEW_POST"];
+    ViewData["Title"] = Model.TranslationProvider.BasicText[Lang, "WRITE_NEW_POST"];
     Layout = "~/Pages/_Layout.cshtml";
 
     var CurrentUser = Model.GetCurrentUser();
-    var UserDateFormat = CurrentUser.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
+    var UserDateFormat = CurrentUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
     var IsAdmin = await Model.IsCurrentUserAdminHere();
 }
 
@@ -45,7 +45,7 @@
     );
 </script>
 
-<h3>@Html.Raw(Model.LanguageProvider.BasicText[Lang, "WRITE_NEW_PM"])</h3>
+<h3>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "WRITE_NEW_PM"])</h3>
 
 @if (Model.PreviewablePost != null)
 {
@@ -56,8 +56,6 @@
         CurrentUser = CurrentUser,
         Post = Model.PreviewablePost,
         Language = Lang,
-        ParentHttpContext = HttpContext,
-        ParentPageContext = PageContext,
     }, ViewData)
 
     <hr class="BoxSeparator" />
@@ -67,7 +65,7 @@
 <form name="postform" method="post" enctype="multipart/form-data">
     @if (Model.Action == PostingActions.NewPrivateMessage)
     {
-        <input type="text" asp-for="ReceiverName" placeholder="@Html.Raw(Model.LanguageProvider.BasicText[Lang, "PM_CHOOSE_TO"])" id="pmToInput" style="width:100%" autocomplete="off" class="InputBox" />
+        <input type="text" asp-for="ReceiverName" placeholder="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "PM_CHOOSE_TO"])" id="pmToInput" style="width:100%" autocomplete="off" class="InputBox" />
         <div style="clear:both"></div>
         <p id="tributeHolder" style="position:relative"></p>
         <span asp-validation-for="ReceiverName" class="validation"></span>
@@ -81,11 +79,11 @@
     @await Html.PartialAsync("_TextInputPartial", new _TextInputPartialModel(Lang, Model.PostTitle, Model.PostText))
 
     <button onclick="posting.toggleEmoji()" type="button" class="Hide960 PostingButton MyButton SpacedButton">
-        &#x1F642; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "EMOJI"])
+        &#x1F642; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "EMOJI"])
     </button>
 
-    <input type="submit" value="&#x1F440; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "DO_PREVIEW", Casing.Title])" onclick="return posting.censor()" asp-page-handler="Preview" class="PostingButton MyButton SpacedButton" formnovalidate />
-    <input type="submit" value="&#x27A1; @Html.Raw(Model.LanguageProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="Submit" class="PostingButton MyButton SpacedButton MyMainButton" formnovalidate />
+    <input type="submit" value="&#x1F440; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "DO_PREVIEW", Casing.Title])" onclick="return posting.censor()" asp-page-handler="Preview" class="PostingButton MyButton SpacedButton" formnovalidate />
+    <input type="submit" value="&#x27A1; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="Submit" class="PostingButton MyButton SpacedButton MyMainButton" formnovalidate />
     <b>
         <span asp-validation-for="PostTitle" class="validation"></span>
         <span asp-validation-for="PostText" class="validation"></span>
@@ -109,7 +107,7 @@
 
 <script>
     var tribute = new Tribute({
-        values: @Html.Raw(_utils.ToCamelCaseJson(await _userService.GetUsers())),
+        values: @Html.Raw(SerializationUtility.ToCamelCaseJson(await _userService.GetUsers())),
         trigger: "@@",
         allowSpaces: true,
         noMatchTemplate: ''
@@ -118,7 +116,7 @@
     tribute.attach(document.getElementById("message"));
 
     var secondTribute = new Tribute({
-        values: @Html.Raw(_utils.ToCamelCaseJson(await _userService.GetUserMap())),
+        values: @Html.Raw(SerializationUtility.ToCamelCaseJson(await _userService.GetUserMap())),
         selectTemplate: function(item) {
             return item.original.key;
         },

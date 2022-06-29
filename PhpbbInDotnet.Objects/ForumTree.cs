@@ -1,5 +1,5 @@
-﻿using PhpbbInDotnet.Utilities;
-using PhpbbInDotnet.Utilities.Extensions;
+﻿using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
 using System;
 using System.Collections.Generic;
 

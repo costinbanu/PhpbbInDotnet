@@ -1,5 +1,6 @@
 ﻿using LazyCache;
-using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Utilities;
 using Serilog;
 using System;
 
@@ -7,11 +8,8 @@ namespace PhpbbInDotnet.Languages
 {
     public class EnumTranslation : Translation
     {
-        private readonly ICommonUtils _utils;
-
-        internal EnumTranslation(ILogger logger, IAppCache cache, ICommonUtils utils) : base("Enums", logger, cache) 
+        internal EnumTranslation(ILogger logger, IAppCache cache) : base("Enums", logger, cache) 
         {
-            _utils = utils;
         }
 
         protected override string FileExtension => "json";
@@ -19,6 +17,6 @@ namespace PhpbbInDotnet.Languages
         protected override bool ShouldCacheRawTranslation => false;
 
         public string this[string language, Enum key, Casing casing = Casing.None]
-            =>  GetFromDictionary(language, _utils.EnumString(key), casing, _utils.EnumString(key));
+            =>  GetFromDictionary(language, EnumUtility.ExpandEnum(key), casing, EnumUtility.ExpandEnum(key));
     }
 }

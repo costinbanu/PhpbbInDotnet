@@ -1,15 +1,14 @@
 ﻿@model Objects.WelcomeEmailDto
 
 @using Microsoft.Extensions.Configuration
-@using Utilities
-@using Utilities.Core
+@using Domain
+@using Domain.Utilities
 
 @inject IConfiguration _config
-@inject Languages.LanguageProvider _languageProvider
-@inject Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor
+@inject Languages.ITranslationProvider _translationProvider
 
 @{
-    var lang = Model.Language ?? _languageProvider.GetValidatedLanguage(null, _httpContextAccessor.HttpContext?.Request);
+    var lang = Model.Language ?? _translationProvider.GetLanguage();
     var culture = new System.Globalization.CultureInfo(lang);
     var baseUrl = _config.GetValue<string>("BaseUrl");
     var forumName = _config.GetValue<string>("ForumName");
@@ -19,21 +18,21 @@
 @if (Model.IsRegistrationReminder && Model.RegistrationDate != null)
 {
     <p>
-        @Html.Raw(string.Format(culture, _languageProvider.Email[lang, "WELCOME_REMINDER_FORMAT"], Model.RegistrationDate, forumName))
+        @Html.Raw(string.Format(culture, _translationProvider.Email[lang, "WELCOME_REMINDER_FORMAT"], Model.RegistrationDate, forumName))
     </p>
 }
 else if (Model.IsEmailChangeReminder && Model.EmailChangeDate != null)
 {
     <p>
-        @Html.Raw(string.Format(culture, _languageProvider.Email[lang, "EMAIL_CHANGED_REMINDER_FORMAT"], Model.EmailChangeDate, forumName))
+        @Html.Raw(string.Format(culture, _translationProvider.Email[lang, "EMAIL_CHANGED_REMINDER_FORMAT"], Model.EmailChangeDate, forumName))
     </p>
 }
 <p>
-    @Html.Raw(string.Format(_languageProvider.Email[lang, "WELCOME_BODY_FORMAT"], $"{baseUrl}/Confirm?code={Model.RegistrationCode}&username={StringUtility.CleanString(Model.UserName)}&handler=ConfirmEmail"))
+    @Html.Raw(string.Format(_translationProvider.Email[lang, "WELCOME_BODY_FORMAT"], $"{baseUrl.TrimEnd('/')}/Confirm?code={Model.RegistrationCode}&username={StringUtility.CleanString(Model.UserName)}&handler=ConfirmEmail"))
 </p>
 <p style="font-size:0.85em">
-    @Html.Raw(string.Format(_languageProvider.Email[lang, "WELCOME_FOOTER_FORMAT"], Model.UserName, baseUrl, forumName))
+    @Html.Raw(string.Format(_translationProvider.Email[lang, "WELCOME_FOOTER_FORMAT"], Model.UserName, baseUrl, forumName))
 </p>
 <p>
-    @Html.Raw(_languageProvider.Email[lang, "GREETING_END"])
+    @Html.Raw(_translationProvider.Email[lang, "GREETING_END"])
 </p>

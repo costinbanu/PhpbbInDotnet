@@ -1,4 +1,4 @@
-﻿using PhpbbInDotnet.Utilities;
+﻿using PhpbbInDotnet.Domain;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PhpbbInDotnet.Database.Entities

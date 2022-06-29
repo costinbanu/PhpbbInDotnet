@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace PhpbbInDotnet.Utilities.Extensions
+namespace PhpbbInDotnet.Domain.Extensions
 {
     public static class UnixTimeStampExtensions
     {

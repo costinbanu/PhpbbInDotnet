@@ -1,7 +1,7 @@
 ﻿@page
 @model PhpbbInDotnet.Forum.Pages.ViewForumModel
 
-@using Utilities
+@using Domain
 @using Objects
 @using CustomPartials
 @inject Services.IForumTreeService _forumService
@@ -15,7 +15,7 @@
     var forumTree = (await Model.GetForumTree(false, false)).Tree;
     var hasSubForums = Model.ForumId != 0 && _forumService.HasUnrestrictedChildren(forumTree, Model.ForumId);
     var hasTopics = Model.Topics?.SelectMany(x => x.Topics ?? Enumerable.Empty<TopicDto>()).Any() ?? false;
-    var userDateFormat = currentUser.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(Lang);
+    var userDateFormat = currentUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
     var isCurrentForumReadOnly = await _forumService.IsForumReadOnlyForUser(currentUser, Model.ForumId);
     if (Model.ForumId > 0)
     {
@@ -60,7 +60,7 @@
 }
 
 <span style="padding-bottom: 10px">
-    @Html.Raw(Model.LanguageProvider.BasicText[Lang, "PARENT_FORUM", Casing.FirstUpper]):
+    @Html.Raw(Model.TranslationProvider.BasicText[Lang, "PARENT_FORUM", Casing.FirstUpper]):
     <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@Html.Raw(Model.ParentForumTitle)</a>
 </span>
 
@@ -70,11 +70,11 @@
     var additionalLinks = new List<string>();
     @if (hasSubForums)
     {
-        additionalLinks.Add($"<a href=\"javascript:MarkForumsRead.submit()\">{Model.LanguageProvider.BasicText[Lang, "MARK_FORUMS_READ", Casing.FirstUpper]}</a>");
+        additionalLinks.Add($"<a href=\"javascript:MarkForumsRead.submit()\">{Model.TranslationProvider.BasicText[Lang, "MARK_FORUMS_READ", Casing.FirstUpper]}</a>");
     }
     @if (hasTopics)
     {
-        additionalLinks.Add($"<a href=\"javascript:MarkTopicsRead.submit()\">{Model.LanguageProvider.BasicText[Lang, "MARK_TOPICS_READ", Casing.FirstUpper]}</a>");
+        additionalLinks.Add($"<a href=\"javascript:MarkTopicsRead.submit()\">{Model.TranslationProvider.BasicText[Lang, "MARK_TOPICS_READ", Casing.FirstUpper]}</a>");
     }
     <span>&nbsp;&bull;&nbsp;</span>
     @await Html.PartialAsync(
@@ -123,27 +123,27 @@
 {
     <p></p>
     <button onclick="location.href='/Posting?forumId=@Model.ForumId&handler=newTopic'" type="button" class="MyButton">
-        &#x1F4DD;&nbsp;@Html.Raw(Model.LanguageProvider.BasicText[Lang, "OPEN_NEW_TOPIC"])
+        &#x1F4DD;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Lang, "OPEN_NEW_TOPIC"])
     </button>
 }
 
 <div style="clear:both; margin: 10px 0px 10px 0px">
     @if (hasSubForums || hasTopics)
     {
-        <a href="/" class="nowrap">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "HOME", Casing.FirstUpper])</a>
+        <a href="/" class="nowrap">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "HOME", Casing.FirstUpper])</a>
         <span class="bullet">&nbsp;&bull;&nbsp;</span>
         <div class="newline"></div>
     }
     @if ((Model.ParentForumId ?? 0) != 0)
     {
         <span>
-            @Html.Raw(Model.LanguageProvider.BasicText[Lang, "PARENT_FORUM", Casing.FirstUpper]):
+            @Html.Raw(Model.TranslationProvider.BasicText[Lang, "PARENT_FORUM", Casing.FirstUpper]):
             <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@Html.Raw(Model.ParentForumTitle)</a>
         </span>
         <span class="bullet">&nbsp;&bull;&nbsp;</span>
         <div class="newline"></div>
     }
-    <span onclick="showForumTree(this)" class="SpanLikeLink nowrap">@Html.Raw(Model.LanguageProvider.BasicText[Lang, "CHOOSE_DESTINATION"])</span>
+    <span onclick="showForumTree(this)" class="SpanLikeLink nowrap">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CHOOSE_DESTINATION"])</span>
 </div>
 <p></p>
 <div id="forumTree" style=" display:none">

@@ -1,18 +1,18 @@
-﻿using Dapper;
-using LazyCache;
+﻿using LazyCache;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Utilities;
-using PhpbbInDotnet.Utilities.Extensions;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -28,20 +28,20 @@ namespace PhpbbInDotnet.Forum
         protected readonly IAppCache Cache;
         protected readonly IUserService UserService;
         protected readonly IForumDbContext Context;
-        protected readonly ICommonUtils Utils;
-        
-        public LanguageProvider LanguageProvider { get; }
+        protected readonly ILogger Logger;
+
+        public ITranslationProvider TranslationProvider { get; }
 
         private string? _language;
 
-        public AuthenticatedPageModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cacheService, ICommonUtils utils, LanguageProvider languageProvider)
+        public AuthenticatedPageModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cacheService, ILogger logger, ITranslationProvider translationProvider)
         {
             ForumService = forumService;
             Cache = cacheService;
             UserService = userService;
             Context = context;
-            Utils = utils;
-            LanguageProvider = languageProvider;
+            Logger = logger;
+            TranslationProvider = translationProvider;
         }
 
         #region User
@@ -62,7 +62,7 @@ namespace PhpbbInDotnet.Forum
             => await UserService.IsUserModeratorInForum(GetCurrentUser(), forumId);
 
         public string GetLanguage()
-            => _language ??= LanguageProvider.GetValidatedLanguage(GetCurrentUser(), Request);
+            => _language ??= TranslationProvider.GetLanguage(GetCurrentUser());
 
         public Task<IEnumerable<int>> GetUnrestrictedForums(int? forumId = null)
             => ForumService.GetUnrestrictedForums(GetCurrentUser(), forumId);
@@ -147,7 +147,7 @@ namespace PhpbbInDotnet.Forum
             }
             catch (Exception ex)
             {
-                Utils.HandleError(ex, "Error marking forums as read.");
+                Logger.Error(ex, "Error marking forums as read.");
             }
         }
 
@@ -178,7 +178,7 @@ namespace PhpbbInDotnet.Forum
                 }
                 catch (Exception ex)
                 {
-                    Utils.HandleErrorAsWarning(ex, $"Error marking topics as read (forumId={forumId}, topicId={topicId}, userId={userId}).");
+                    Logger.Warning(ex, "Error marking topics as read (forumId={forumId}, topicId={topicId}, userId={userId}).", forumId, topicId, userId);
                 }
             }
         }
@@ -193,7 +193,7 @@ namespace PhpbbInDotnet.Forum
             }
             catch (Exception ex)
             {
-                Utils.HandleError(ex, "Error setting user last mark.");
+                Logger.Error(ex, "Error setting user last mark.");
             }
         }
 
@@ -262,7 +262,7 @@ namespace PhpbbInDotnet.Forum
                     on t equals r.forumId
                     into joined
                     from j in joined
-                    where !j.hasPassword || Cache.Get<int>(Utils.GetForumLoginCacheKey(usr?.UserId ?? Constants.ANONYMOUS_USER_ID, t)) != 1
+                    where !j.hasPassword || Cache.Get<int>(CacheUtility.GetForumLoginCacheKey(usr?.UserId ?? Constants.ANONYMOUS_USER_ID, t)) != 1
                     select t
                 ).FirstOrDefault();
 

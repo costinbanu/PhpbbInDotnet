@@ -4,12 +4,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Utilities;
-using PhpbbInDotnet.Utilities.Core;
-using PhpbbInDotnet.Utilities.Extensions;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -101,9 +102,9 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IModeratorService _moderatorService;
         private readonly IWritingToolsService _writingToolsService;
 
-        public ViewTopicModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ICommonUtils utils, IPostService postService, 
-            IModeratorService moderatorService, IWritingToolsService writingToolsService, LanguageProvider languageProvider)
-            : base(context, forumService, userService, cache, utils, languageProvider)
+        public ViewTopicModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger, IPostService postService, 
+            IModeratorService moderatorService, IWritingToolsService writingToolsService, ITranslationProvider translationProvider)
+            : base(context, forumService, userService, cache, logger, translationProvider)
         {
             _postService = postService;
             _moderatorService = moderatorService;
@@ -135,7 +136,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnGet()
             => WithValidTopic(TopicId ?? 0, async (curForum, curTopic) =>
             {
-                await Utils.RetryOnceAsync(
+                await ResiliencyUtility.RetryOnceAsync(
                     toDo: () => PopulateModel(curForum, curTopic),
                     evaluateSuccess: () => Posts!.Count > 0 && (PageNum ?? 1) == Paginator!.CurrentPage,
                     fix: () => PageNum = Paginator!.CurrentPage);
@@ -172,7 +173,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var existingVotes = (await sqlExecuter.QueryAsync<PhpbbPollVotes>("SELECT * FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @UserId", new { topicId, user.UserId })).AsList();
                 if (existingVotes.Count > 0 && topic.PollVoteChange == 0)
                 {
-                    ModelState.AddModelError(nameof(Poll), LanguageProvider.Errors[GetLanguage(), "CANT_CHANGE_VOTE"]);
+                    ModelState.AddModelError(nameof(Poll), TranslationProvider.Errors[GetLanguage(), "CANT_CHANGE_VOTE"]);
                     return Page();
                 }
 
@@ -222,7 +223,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (TopicAction == null)
                 {
-                    ModeratorActionResult = (LanguageProvider.BasicText[lang, "SELECT_AN_OPTION"], false);
+                    ModeratorActionResult = (TranslationProvider.BasicText[lang, "SELECT_AN_OPTION"], false);
                     return await OnGet();
                 }
 
@@ -253,8 +254,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 else if ((TopicAction == ModeratorTopicActions.MoveTopic || TopicAction == ModeratorTopicActions.CreateShortcut) && ModeratorActionResult.IsSuccess == true)
                 {
                     var destinations = await Task.WhenAll(
-                        CompressionUtility.CompressAndEncode($"<a href=\"./ViewForum?forumId={DestinationForumId ?? 0}\">{LanguageProvider.BasicText[lang, "GO_TO_NEW_FORUM"]}</a>"),
-                        CompressionUtility.CompressAndEncode($"<a href=\"./ViewTopic?topicId={TopicId}&pageNum={PageNum}\">{LanguageProvider.BasicText[lang, "GO_TO_LAST_TOPIC"]}</a>")
+                        CompressionUtility.CompressAndEncode($"<a href=\"./ViewForum?forumId={DestinationForumId ?? 0}\">{TranslationProvider.BasicText[lang, "GO_TO_NEW_FORUM"]}</a>"),
+                        CompressionUtility.CompressAndEncode($"<a href=\"./ViewTopic?topicId={TopicId}&pageNum={PageNum}\">{TranslationProvider.BasicText[lang, "GO_TO_LAST_TOPIC"]}</a>")
                     );
                     return RedirectToPage("Confirm", "DestinationConfirmation", new { destinations });
                 }
@@ -296,14 +297,14 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (toDelete.PostTime < lastPost.PostTime)
                 {
-                    ModeratorActionResult = (string.Format(errorMessage, LanguageProvider.Errors[lang, "POST_NO_LONGER_LAST"]), false);
+                    ModeratorActionResult = (string.Format(errorMessage, TranslationProvider.Errors[lang, "POST_NO_LONGER_LAST"]), false);
                     PostId = postIds[0];
                     return await OnGet();
                 }
 
                 if (!(toDelete.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(toDelete.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime)))
                 {
-                    ModeratorActionResult = (string.Format(errorMessage, LanguageProvider.Errors[lang, "EDIT_TIME_EXPIRED"]), false);
+                    ModeratorActionResult = (string.Format(errorMessage, TranslationProvider.Errors[lang, "EDIT_TIME_EXPIRED"]), false);
                     PostId = postIds[0]; 
                     return await OnGet();
                 }
@@ -311,7 +312,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var curTopic = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { toDelete.TopicId });
                 if (curTopic?.TopicStatus.ToBool() ?? false)
                 {
-                    ModeratorActionResult = (string.Format(errorMessage, LanguageProvider.Errors[lang, "CANT_DELETE_POST_TOPIC_CLOSED", Casing.FirstUpper]), false);
+                    ModeratorActionResult = (string.Format(errorMessage, TranslationProvider.Errors[lang, "CANT_DELETE_POST_TOPIC_CLOSED", Casing.FirstUpper]), false);
                     PostId = postIds[0]; 
                     return await OnGet();
                 }
@@ -400,7 +401,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (PostAction == null)
             {
-                ModeratorActionResult = (LanguageProvider.BasicText[lang, "SELECT_AN_OPTION"], false);
+                ModeratorActionResult = (TranslationProvider.BasicText[lang, "SELECT_AN_OPTION"], false);
                 return await OnGet();
             }
 
@@ -438,16 +439,16 @@ namespace PhpbbInDotnet.Forum.Pages
                 var destinations = new List<string>();
                 if (LatestSelected != null)
                 {
-                    destinations.Add(await CompressionUtility.CompressAndEncode($"<a href=\"./ViewTopic?postId={LatestSelected}&handler=byPostId\">{LanguageProvider.BasicText[lang, "GO_TO_NEW_TOPIC"]}</a>"));
+                    destinations.Add(await CompressionUtility.CompressAndEncode($"<a href=\"./ViewTopic?postId={LatestSelected}&handler=byPostId\">{TranslationProvider.BasicText[lang, "GO_TO_NEW_TOPIC"]}</a>"));
                 };
 
                 if (NextRemaining != null)
                 {
-                    destinations.Add(await CompressionUtility.CompressAndEncode($"<a href=\"./ViewTopic?postId={NextRemaining}&handler=byPostId\">{LanguageProvider.BasicText[lang, "GO_TO_LAST_TOPIC"]}</a>"));
+                    destinations.Add(await CompressionUtility.CompressAndEncode($"<a href=\"./ViewTopic?postId={NextRemaining}&handler=byPostId\">{TranslationProvider.BasicText[lang, "GO_TO_LAST_TOPIC"]}</a>"));
                 }
                 else
                 {
-                    destinations.Add(await CompressionUtility.CompressAndEncode($"<a href=\"./ViewForum?forumId={ForumId}\">{LanguageProvider.BasicText[lang, "GO_TO_LAST_FORUM"]}</a>"));
+                    destinations.Add(await CompressionUtility.CompressAndEncode($"<a href=\"./ViewForum?forumId={ForumId}\">{TranslationProvider.BasicText[lang, "GO_TO_LAST_FORUM"]}</a>"));
                 }
 
                 return RedirectToPage("Confirm", "DestinationConfirmation", new { destinations });

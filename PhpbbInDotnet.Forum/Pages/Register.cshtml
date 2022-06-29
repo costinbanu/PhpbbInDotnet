@@ -1,21 +1,21 @@
 ﻿@page
 @model PhpbbInDotnet.Forum.Pages.RegisterModel
 
-@using Utilities
-@using Utilities.Extensions;
+@using Domain
+@using Domain.Extensions;
 @using Objects.Configuration 
 
 @inject Microsoft.Extensions.Configuration.IConfiguration _config;
 
 @{
-    var lang = Model.GetLanguage();
-    ViewData["Title"] = Model.LanguageProvider.BasicText[lang, "REGISTER", Casing.Title];
+    var lang = Model.TranslationProvider.GetLanguage();
+    ViewData["Title"] = Model.TranslationProvider.BasicText[lang, "REGISTER", Casing.Title];
     Layout = "~/Pages/_Layout.cshtml";
     var opts = _config.GetObject<Recaptcha>();
 }
 
 
-<h3>@Html.Raw(Model.LanguageProvider.BasicText[lang, "REGISTER", Casing.Title])</h3>
+<h3>@Html.Raw(Model.TranslationProvider.BasicText[lang, "REGISTER", Casing.Title])</h3>
 
 <script src="https://www.google.com/recaptcha/api.js?render=@(opts.SiteKey)"></script>
 <script>
@@ -31,28 +31,28 @@
 
     <div asp-validation-summary="ModelOnly" class="Error"></div>
 
-    <input type="text" name="Email" asp-for="Email" placeholder="@Html.Raw(Model.LanguageProvider.BasicText[lang, "EMAIL", Casing.FirstUpper])" class="form" autocomplete="email" />
+    <input type="text" name="Email" asp-for="Email" placeholder="@Html.Raw(Model.TranslationProvider.BasicText[lang, "EMAIL", Casing.FirstUpper])" class="form" autocomplete="email" />
     <br />
     <span asp-validation-for="Email" class="validation"></span>
     <p></p>
-    <input type="text" name="UserName" asp-for="UserName" placeholder="@Html.Raw(Model.LanguageProvider.BasicText[lang, "USERNAME", Casing.FirstUpper])" class="form" autocomplete="username" />
+    <input type="text" name="UserName" asp-for="UserName" placeholder="@Html.Raw(Model.TranslationProvider.BasicText[lang, "USERNAME", Casing.FirstUpper])" class="form" autocomplete="username" />
     <br />
     <span asp-validation-for="UserName" class="validation"></span>
     <p></p>
-    <input type="password" name="Password" asp-for="Password" placeholder="@Html.Raw(Model.LanguageProvider.BasicText[lang, "PASSWORD", Casing.FirstUpper])" class="form" autocomplete="new-password" />
+    <input type="password" name="Password" asp-for="Password" placeholder="@Html.Raw(Model.TranslationProvider.BasicText[lang, "PASSWORD", Casing.FirstUpper])" class="form" autocomplete="new-password" />
     <br />
     <span asp-validation-for="Password" class="validation"></span>
     <p></p>
-    <input type="password" name="SecondPassword" asp-for="SecondPassword" placeholder="@Html.Raw(Model.LanguageProvider.BasicText[lang, "REPEAT_PASSWORD", Casing.FirstUpper])" class="form" autocomplete="new-password" />
+    <input type="password" name="SecondPassword" asp-for="SecondPassword" placeholder="@Html.Raw(Model.TranslationProvider.BasicText[lang, "REPEAT_PASSWORD", Casing.FirstUpper])" class="form" autocomplete="new-password" />
     <br />
     <span asp-validation-for="SecondPassword" class="validation"></span>
     <p></p>
     <input type="checkbox" asp-for="Agree" style="width:auto" />
-    @Html.Raw(string.Format(Model.LanguageProvider.BasicText[lang, "AGREE_WITH_TERMS_FORMAT"], Model.LanguageProvider.BasicText[lang, "TERMS"]))
+    @Html.Raw(string.Format(Model.TranslationProvider.BasicText[lang, "AGREE_WITH_TERMS_FORMAT"], Model.TranslationProvider.BasicText[lang, "TERMS"]))
     <br />
     <span asp-validation-for="Agree" class="validation"></span>
     <p></p>
-    <input type="submit" value="@Html.Raw(Model.LanguageProvider.BasicText[lang, "SUBMIT", Casing.FirstUpper])" style="width:auto" />
+    <input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[lang, "SUBMIT", Casing.FirstUpper])" style="width:auto" />
     <input type="hidden" asp-for="RecaptchaResponse" id="RecaptchaResponse" />
     <br />
     <span asp-validation-for="RecaptchaResponse" class="validation"></span>

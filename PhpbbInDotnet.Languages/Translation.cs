@@ -1,6 +1,6 @@
 ﻿using LazyCache;
 using Newtonsoft.Json;
-using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Domain;
 using Serilog;
 using System;
 using System.Collections.Concurrent;

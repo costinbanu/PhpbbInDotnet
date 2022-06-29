@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Utilities;
+using PhpbbInDotnet.Domain;
 using System.Collections.Generic;
 
 namespace PhpbbInDotnet.Forum.Pages.CustomPartials.Admin

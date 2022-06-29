@@ -12,13 +12,13 @@ namespace PhpbbInDotnet.Services
 
         private readonly EmailAddressAttribute _emailValidator;
         private readonly ModelStateDictionary _modelState;
-        private readonly LanguageProvider _languageProvider;
+        private readonly ITranslationProvider _translationProvider;
         private readonly string _language;
 
-        public UserProfileDataValidationService(ModelStateDictionary modelState, LanguageProvider languageProvider, string language)
+        public UserProfileDataValidationService(ModelStateDictionary modelState, ITranslationProvider translationProvider, string language)
         {
             _modelState = modelState;
-            _languageProvider = languageProvider;
+            _translationProvider = translationProvider;
             _language = language;
             _emailValidator = new EmailAddressAttribute();
         }
@@ -29,17 +29,17 @@ namespace PhpbbInDotnet.Services
 
             if (string.IsNullOrWhiteSpace(value))
             {
-                _modelState.AddModelError(name, _languageProvider.Errors[_language, "MISSING_REQUIRED_FIELD"]);
+                _modelState.AddModelError(name, _translationProvider.Errors[_language, "MISSING_REQUIRED_FIELD"]);
                 toReturn = false;
             }
             else if (value.Length < 2 || value.Length > 32)
             {
-                _modelState.AddModelError(name, _languageProvider.Errors[_language, "BAD_USERNAME_LENGTH"]);
+                _modelState.AddModelError(name, _translationProvider.Errors[_language, "BAD_USERNAME_LENGTH"]);
                 toReturn = false;
             }
             else if (!USERNAME_REGEX.IsMatch(value))
             {
-                _modelState.AddModelError(name, _languageProvider.Errors[_language, "BAD_USERNAME_CHARS"]);
+                _modelState.AddModelError(name, _translationProvider.Errors[_language, "BAD_USERNAME_CHARS"]);
                 toReturn = false;
             }
 
@@ -52,12 +52,12 @@ namespace PhpbbInDotnet.Services
 
             if (string.IsNullOrWhiteSpace(value))
             {
-                _modelState.AddModelError(name, _languageProvider.Errors[_language, "MISSING_REQUIRED_FIELD"]);
+                _modelState.AddModelError(name, _translationProvider.Errors[_language, "MISSING_REQUIRED_FIELD"]);
                 toReturn = false;
             }
             else if (!_emailValidator.IsValid(value))
             {
-                _modelState.AddModelError(name, _languageProvider.Errors[_language, "INVALID_EMAIL_ADDRESS"]);
+                _modelState.AddModelError(name, _translationProvider.Errors[_language, "INVALID_EMAIL_ADDRESS"]);
                 toReturn = false;
             }
 
@@ -70,17 +70,17 @@ namespace PhpbbInDotnet.Services
 
             if (string.IsNullOrWhiteSpace(value))
             {
-                _modelState.AddModelError(name, _languageProvider.Errors[_language, "MISSING_REQUIRED_FIELD"]);
+                _modelState.AddModelError(name, _translationProvider.Errors[_language, "MISSING_REQUIRED_FIELD"]);
                 toReturn = false;
             }
             else if (value.Length < 8 || value.Length > 256)
             {
-                _modelState.AddModelError(name, _languageProvider.Errors[_language, "BAD_PASSWORD_LENGTH"]);
+                _modelState.AddModelError(name, _translationProvider.Errors[_language, "BAD_PASSWORD_LENGTH"]);
                 toReturn = false;
             }
             else if (!PASSWORD_REGEX.IsMatch(value))
             {
-                _modelState.AddModelError(name, _languageProvider.Errors[_language, "BAD_PASSWORD_CHARS"]);
+                _modelState.AddModelError(name, _translationProvider.Errors[_language, "BAD_PASSWORD_CHARS"]);
                 toReturn = false;
             }
 
@@ -93,12 +93,12 @@ namespace PhpbbInDotnet.Services
 
             if (string.IsNullOrWhiteSpace(secondValue))
             {
-                _modelState.AddModelError(secondName, _languageProvider.Errors[_language, "MISSING_REQUIRED_FIELD"]);
+                _modelState.AddModelError(secondName, _translationProvider.Errors[_language, "MISSING_REQUIRED_FIELD"]);
                 toReturn = false;
             }
             else if (firstValue != secondValue)
             {
-                _modelState.AddModelError(secondName, _languageProvider.Errors[_language, "PASSWORD_MISMATCH"]);
+                _modelState.AddModelError(secondName, _translationProvider.Errors[_language, "PASSWORD_MISMATCH"]);
                 toReturn = false;
             }
 
@@ -109,7 +109,7 @@ namespace PhpbbInDotnet.Services
         {
             if (!value)
             {
-                _modelState.AddModelError(name, _languageProvider.Errors[_language, "MUST_AGREE_WITH_TERMS"]);
+                _modelState.AddModelError(name, _translationProvider.Errors[_language, "MUST_AGREE_WITH_TERMS"]);
                 return false;
             }
             return true;

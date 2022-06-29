@@ -6,21 +6,26 @@ using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Utilities;
-using PhpbbInDotnet.Utilities.Extensions;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Serilog;
 
 namespace PhpbbInDotnet.Services
 {
-    class UserService : MultilingualServiceBase, IUserService
+    class UserService : IUserService
     {
         private readonly IForumDbContext _context;
         private readonly IConfiguration _config;
+        private readonly ILogger _logger;
+        private readonly IEmailService _emailService;
+        private readonly ITranslationProvider _translationProvider;
+        
         private IEnumerable<PhpbbAclRoles>? _adminRoles;
         private IEnumerable<PhpbbAclRoles>? _modRoles;
         private IEnumerable<PhpbbAclRoles>? _userRoles;
@@ -29,11 +34,13 @@ namespace PhpbbInDotnet.Services
         private static PhpbbUsers? _anonymousDbUser;
         private static ClaimsPrincipal? _anonymousClaimsPrincipal;
 
-        public UserService(ICommonUtils utils, IForumDbContext context, IConfiguration config, LanguageProvider languageProvider, IHttpContextAccessor httpContextAccessor)
-            : base(utils, languageProvider, httpContextAccessor)
+        public UserService(IForumDbContext context, IConfiguration config, ITranslationProvider translationProvider, ILogger logger, IEmailService emailService)
         {
+            _translationProvider = translationProvider;
             _context = context;
             _config = config;
+            _logger = logger;
+            _emailService = emailService;
         }
 
         public async Task<bool> IsUserAdminInForum(AuthenticatedUserExpanded? user, int forumId)
@@ -234,7 +241,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(string Message, bool? IsSuccess)> SendPrivateMessage(int senderId, string senderName, int receiverId, string subject, string text, PageContext pageContext, HttpContext httpContext)
         {
-            var lang = GetLanguage();
+            var language = _translationProvider.GetLanguage();
             try
             {
                 var sender = new AuthenticatedUserExpanded(await GetAuthenticatedUserById(senderId))
@@ -243,7 +250,7 @@ namespace PhpbbInDotnet.Services
                 };
                 if (!sender.HasPrivateMessagePermissions)
                 {
-                    return (LanguageProvider.Errors[lang, "SENDER_CANT_SEND_PMS"], false);
+                    return (_translationProvider.Errors[language, "SENDER_CANT_SEND_PMS"], false);
                 }
 
                 var receiver = new AuthenticatedUserExpanded(await GetAuthenticatedUserById(receiverId))
@@ -253,11 +260,11 @@ namespace PhpbbInDotnet.Services
                 };
                 if (!receiver.HasPrivateMessages)
                 {
-                    return (LanguageProvider.Errors[lang, "RECEIVER_CANT_RECEIVE_PMS"], false);
+                    return (_translationProvider.Errors[language, "RECEIVER_CANT_RECEIVE_PMS"], false);
                 }
                 if (receiver.Foes?.Contains(senderId) ?? false)
                 {
-                    return (LanguageProvider.Errors[lang, "ON_RECEIVERS_FOE_LIST"], false);
+                    return (_translationProvider.Errors[language, "ON_RECEIVERS_FOE_LIST"], false);
                 }
 
                 var sqlExecuter = _context.GetSqlExecuter();
@@ -270,33 +277,29 @@ namespace PhpbbInDotnet.Services
                     new { senderId, receiverId, to = $"u_{receiverId}", subject, text, time = DateTime.UtcNow.ToUnixTimestamp() }
                 );
 
-                var emailSubject = string.Format(LanguageProvider.Email[receiver.Language!, "NEWPM_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
-                await Utils.SendEmail(
+                var emailSubject = string.Format(_translationProvider.Email[receiver.Language!, "NEWPM_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
+                await _emailService.SendEmail(
                     to: receiver.EmailAddress!,
                     subject: emailSubject,
-                    body: await Utils.RenderRazorViewToString(
-                        "_NewPMEmailPartial",
-                        new NewPMEmailDto
-                        {
-                            SenderName = senderName,
-                            Language = receiver.Language!
-                        },
-                        pageContext,
-                        httpContext
-                    ));
+                    bodyRazorViewName: "_NewPMEmailPartial",
+                    bodyRazorViewModel: new NewPMEmailDto
+                    {
+                        SenderName = senderName,
+                        Language = receiver.Language!
+                    });
 
                 return ("OK", true);
             }
             catch (Exception ex)
             {
-                Utils.HandleError(ex);
-                return (LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
+                _logger.Error(ex);
+                return (_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }
 
         public async Task<(string Message, bool? IsSuccess)> EditPrivateMessage(int messageId, string subject, string text)
         {
-            var lang = GetLanguage();
+            var language = _translationProvider.GetLanguage();
             try
             {
                 var sqlExecuter = _context.GetSqlExecuter();
@@ -309,21 +312,21 @@ namespace PhpbbInDotnet.Services
 
                 if (rows == 0)
                 {
-                    return (LanguageProvider.Errors[lang, "CANT_EDIT_ALREADY_READ"], false);
+                    return (_translationProvider.Errors[language, "CANT_EDIT_ALREADY_READ"], false);
                 }
 
                 return ("OK", true);
             }
             catch (Exception ex)
             {
-                Utils.HandleError(ex);
-                return (LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
+                _logger.Error(ex);
+                return (_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }
 
         public async Task<(string Message, bool? IsSuccess)> DeletePrivateMessage(int messageId)
         {
-            var lang = GetLanguage();
+            var language = _translationProvider.GetLanguage();
             try
             {
                 var sqlExecuter = _context.GetSqlExecuter();
@@ -336,21 +339,21 @@ namespace PhpbbInDotnet.Services
 
                 if (rows == 0)
                 {
-                    return (LanguageProvider.Errors[lang, "CANT_DELETE_ALREADY_READ_OR_NONEXISTING"], false);
+                    return (_translationProvider.Errors[language, "CANT_DELETE_ALREADY_READ_OR_NONEXISTING"], false);
                 }
 
                 return ("OK", true);
             }
             catch (Exception ex)
             {
-                Utils.HandleError(ex);
-                return (LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
+                _logger.Error(ex);
+                return (_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }
 
         public async Task<(string Message, bool? IsSuccess)> HidePrivateMessages(int userId, params int[] messageIds)
         {
-            var lang = GetLanguage();
+            var language = _translationProvider.GetLanguage();
             try
             {
                 var sqlExecuter = _context.GetSqlExecuter();
@@ -362,14 +365,14 @@ namespace PhpbbInDotnet.Services
                 );
                 if (rows < messageIds.Length)
                 {
-                    return (string.Format(LanguageProvider.Errors[lang, "SOME_MESSAGES_MISSING_FORMAT"], rows, messageIds.Length - rows), false);
+                    return (string.Format(_translationProvider.Errors[language, "SOME_MESSAGES_MISSING_FORMAT"], rows, messageIds.Length - rows), false);
                 }
                 return ("OK", true);
             }
             catch (Exception ex)
             {
-                Utils.HandleError(ex);
-                return (LanguageProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
+                _logger.Error(ex);
+                return (_translationProvider.Errors[language, "AN_ERROR_OCCURRED_TRY_AGAIN"], false);
             }
         }
 
@@ -424,7 +427,7 @@ namespace PhpbbInDotnet.Services
         }
 
         public async Task<IEnumerable<KeyValuePair<string, string>>> GetUsers()
-            => (await GetUserMap()).Select(map => KeyValuePair.Create(map.Key, $"[url={_config.GetValue<string>("BaseUrl")}/User?UserId={map.Value}]{map.Key}[/url]")).ToList();
+            => (await GetUserMap()).Select(map => KeyValuePair.Create(map.Key, $"[url={_config.GetValue<string>("BaseUrl").TrimEnd('/')}/User?UserId={map.Value}]{map.Key}[/url]")).ToList();
 
         private async Task<IEnumerable<PhpbbAclRoles>> GetModRolesLazy()
         {

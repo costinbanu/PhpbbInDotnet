@@ -1,17 +1,17 @@
 ﻿@page
-@using PhpbbInDotnet.Utilities
+@using PhpbbInDotnet.Domain
 @using PhpbbInDotnet.Forum.Pages.CustomPartials.Admin;
 
 @model PhpbbInDotnet.Forum.Pages.AdminModel
 @{
     var lang = Model.GetLanguage();
-    ViewData["Title"] = Model.LanguageProvider.Admin[lang, "ADMIN_PANEL"];
+    ViewData["Title"] = Model.TranslationProvider.Admin[lang, "ADMIN_PANEL"];
     Layout = "~/Pages/_Layout.cshtml";
     var user = Model.GetCurrentUser();
-    var dateFormat = user?.UserDateFormat ?? Model.LanguageProvider.GetDefaultDateFormat(lang);
+    var dateFormat = user?.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(lang);
 }
 
-<h3>@Html.Raw(Model.LanguageProvider.Admin[lang, "ADMIN_PANEL"])</h3>
+<h3>@Html.Raw(Model.TranslationProvider.Admin[lang, "ADMIN_PANEL"])</h3>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js" integrity="sha512-zYXldzJsDrNKV+odAwFYiDXV2Cy37cwizT+NkuiPGsa9X1dOz04eHvUWVuxaJ299GvcJT31ug2zO4itXBjFx4w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <environment include="Development">
     <script src="~/js/tabbedPage.js"></script>
@@ -25,16 +25,16 @@
 
 <div class="tab">
     <button class="@(Model.Category == AdminCategories.Users ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Users')">
-        @Html.Raw(Model.LanguageProvider.Admin[lang, "ADMIN_USERS"])
+        @Html.Raw(Model.TranslationProvider.Admin[lang, "ADMIN_USERS"])
     </button>
     <button class="@(Model.Category == AdminCategories.Forums ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Forums')">
-        @Html.Raw(Model.LanguageProvider.Admin[lang, "ADMIN_FORUMS"])
+        @Html.Raw(Model.TranslationProvider.Admin[lang, "ADMIN_FORUMS"])
     </button>
     <button class="@(Model.Category == AdminCategories.WritingTools ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Writing')">
-        @Html.Raw(Model.LanguageProvider.Admin[lang, "WRITING_TOOLS"])
+        @Html.Raw(Model.TranslationProvider.Admin[lang, "WRITING_TOOLS"])
     </button>
     <button class="@(Model.Category == AdminCategories.Logs ? "tablinks active" : "tablinks")" onclick="openTab(event, 'Logs')">
-        @Html.Raw(Model.LanguageProvider.Admin[lang, "VIEW_LOGS"])
+        @Html.Raw(Model.TranslationProvider.Admin[lang, "VIEW_LOGS"])
     </button>
 </div>
 

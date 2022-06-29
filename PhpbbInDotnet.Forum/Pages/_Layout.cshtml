@@ -1,7 +1,7 @@
 ﻿@using System.Web
 @using Microsoft.Extensions.Configuration
 @using Newtonsoft.Json
-@using Utilities
+@using Domain
 @using Objects;
 
 @inject IConfiguration _config
@@ -9,8 +9,7 @@
 @inject Services.IModeratorService _moderatorService
 @inject Services.IStatisticsService _statisticsService
 @inject Services.IForumTreeService _forumService
-@inject Languages.LanguageProvider _languageProvider
-@inject Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor
+@inject Languages.ITranslationProvider _translationProvider
 
 @{
     #nullable enable
@@ -20,8 +19,8 @@
     {
         css = "Light";
     }
-    var lang = _languageProvider.GetValidatedLanguage(currentUser, _httpContextAccessor.HttpContext?.Request);
-    var dateFormat = currentUser?.UserDateFormat ?? _languageProvider.GetDefaultDateFormat(lang);
+    var lang = _translationProvider.GetLanguage(currentUser);
+    var dateFormat = currentUser?.UserDateFormat ?? _translationProvider.GetDefaultDateFormat(lang);
     var statistics = await _statisticsService.GetStatistics();
     var forumId = ViewData.TryGetValue("ForumId", out var fidRaw) && fidRaw is int fidVal ? fidVal : 0;
     var breadCrumbs = ViewData.TryGetValue("BreadCrumbs", out var bcRaw) && bcRaw is BreadCrumbJSLD bcVal ? bcVal : null;
@@ -74,8 +73,8 @@
         || ViewContext.RouteData.Values["page"]?.ToString() == "/Moderator")
     {
         <script>
-            var dictionary = @(Html.Raw(_languageProvider.JSText[lang]));
-            var clickToEnlarge = '@Html.Raw(_languageProvider.BasicText[lang, "CLICK_TO_ENLARGE"])';
+            var dictionary = @(Html.Raw(_translationProvider.JSText[lang]));
+            var clickToEnlarge = '@Html.Raw(_translationProvider.BasicText[lang, "CLICK_TO_ENLARGE"])';
         </script>
     }
     <script>
@@ -126,13 +125,13 @@
                             <li>
                                 <a href="javascript:loginForm.submit()">
                                     <span style="width:25px; display:inline-block">&#x2705;</span>
-                                    @Html.Raw(_languageProvider.BasicText[lang, "LOGIN", Casing.FirstUpper])
+                                    @Html.Raw(_translationProvider.BasicText[lang, "LOGIN", Casing.FirstUpper])
                                 </a>
                             </li>
                             <li>
                                 <a asp-page="/Register">
                                     <span style="width:25px; display:inline-block">&#x1F4C3;</span>
-                                    @Html.Raw(_languageProvider.BasicText[lang, "REGISTER", Casing.FirstUpper])
+                                    @Html.Raw(_translationProvider.BasicText[lang, "REGISTER", Casing.FirstUpper])
                                 </a>
                             </li>
                         }
@@ -141,7 +140,7 @@
                             <li>
                                 <a asp-page="/User" asp-route-UserId="@currentUser.UserId">
                                     <span style="text-shadow: 0 0 4px white; width:25px; display:inline-block">&#x1F464;</span>
-                                    @Html.Raw($"{_languageProvider.BasicText[lang, "MY_ACCOUNT", Casing.FirstUpper]} [{currentUser.Username}]")
+                                    @Html.Raw($"{_translationProvider.BasicText[lang, "MY_ACCOUNT", Casing.FirstUpper]} [{currentUser.Username}]")
                                 </a>
                             </li>
                             if (currentUser.HasPrivateMessagePermissions)
@@ -149,7 +148,7 @@
                                 <li>
                                     <a asp-page="/PrivateMessages">
                                         <span style="width:25px; display:inline-block">&#x1F5E8;</span>
-                                        @Html.Raw(_languageProvider.BasicText[lang, "PRIVATE_MESSAGING", Casing.FirstUpper])
+                                        @Html.Raw(_translationProvider.BasicText[lang, "PRIVATE_MESSAGING", Casing.FirstUpper])
                                     </a>
                                 </li>
                             }
@@ -159,7 +158,7 @@
                         <li>
                             <a asp-page="/Search" asp-route-QueryString="@HttpUtility.UrlEncode(Context.Request.QueryString.ToString())">
                                 <span style="width:25px; display:inline-block">&#x1F50E;</span>
-                                @Html.Raw(string.Format(_languageProvider.BasicText[lang, "SEARCH_IN_FORMAT"], isTopic ? _languageProvider.BasicText[lang, "TOPIC", Casing.AllLower] : _languageProvider.BasicText[lang, "FORUM", Casing.AllLower]))
+                                @Html.Raw(string.Format(_translationProvider.BasicText[lang, "SEARCH_IN_FORMAT"], isTopic ? _translationProvider.BasicText[lang, "TOPIC", Casing.AllLower] : _translationProvider.BasicText[lang, "FORUM", Casing.AllLower]))
                             </a>
                         </li>
 
@@ -168,7 +167,7 @@
                             <li>
                                 <a href="javascript:logoutForm.submit()">
                                     <span style="width:25px; display:inline-block">&#x274C;</span>
-                                    @Html.Raw(_languageProvider.BasicText[lang, "LOGOUT", Casing.FirstUpper])
+                                    @Html.Raw(_translationProvider.BasicText[lang, "LOGOUT", Casing.FirstUpper])
                                 </a>
                             </li>
                         }
@@ -191,7 +190,7 @@
                 {
                     <p style="clear:both"></p>
                     <span class="Unread" style="padding:5px; font-size:1.2em">
-                        <a asp-page="/PrivateMessages" asp-route-Show="Inbox">@pmCount @Html.Raw(pmCount > 1 ? _languageProvider.BasicText[lang, "UNREAD_MESSAGES", Casing.AllLower] : _languageProvider.BasicText[lang, "UNREAD_MESSAGE", Casing.AllLower])</a>
+                        <a asp-page="/PrivateMessages" asp-route-Show="Inbox">@pmCount @Html.Raw(pmCount > 1 ? _translationProvider.BasicText[lang, "UNREAD_MESSAGES", Casing.AllLower] : _translationProvider.BasicText[lang, "UNREAD_MESSAGE", Casing.AllLower])</a>
                     </span>
                     <p style="clear:both"></p>
                     displayedBox = true;
@@ -207,7 +206,7 @@
                             <p style="clear:both"></p>
                         }
                         <div class="ReportedPost" style="margin:5px; padding:5px; width: max-content; max-width: 100%">
-                            <h4>@Html.Raw(reports.Count() > 1 ? _languageProvider.Moderator[lang, "OPEN_REPORTS", Casing.Title] : _languageProvider.Moderator[lang, "OPEN_REPORT", Casing.Title])</h4>
+                            <h4>@Html.Raw(reports.Count() > 1 ? _translationProvider.Moderator[lang, "OPEN_REPORTS", Casing.Title] : _translationProvider.Moderator[lang, "OPEN_REPORT", Casing.Title])</h4>
                             @foreach (var r in reports)
                             {
                                 <a asp-page="ViewTopic" asp-page-handler="byPostId" asp-route-postId="@r.PostId">@Html.Raw(r.ReasonTitle)</a> <br />
@@ -222,10 +221,10 @@
     </div>
     <p></p>
     <div class="container body-content size1300">
-        @Html.Raw(_languageProvider.BasicText[lang, "STARTING_ON"])
+        @Html.Raw(_translationProvider.BasicText[lang, "STARTING_ON"])
         <script>writeDate('@((statistics.FirstMessageDate ?? DateTime.UtcNow).ToString("o"))', '@dateFormat')</script>,
-        @Html.Raw(string.Format(_languageProvider.BasicText[lang, "FORUM_STATS_FORMAT"], statistics.UserCount, statistics.PostCount, statistics.TopicCount, statistics.ForumCount))<br />
-        <span class="Caption">@Html.Raw(string.Format(_languageProvider.BasicText[lang, "FORUM_STATS_CAPTION_FORMAT"], _statisticsService.RefreshIntervalMinutes))</span>
+        @Html.Raw(string.Format(_translationProvider.BasicText[lang, "FORUM_STATS_FORMAT"], statistics.UserCount, statistics.PostCount, statistics.TopicCount, statistics.ForumCount))<br />
+        <span class="Caption">@Html.Raw(string.Format(_translationProvider.BasicText[lang, "FORUM_STATS_CAPTION_FORMAT"], _statisticsService.RefreshIntervalMinutes))</span>
     </div>
     <center style="color:white;">
         <p>&nbsp;</p>
@@ -244,14 +243,14 @@
         </p>
         <p>
             <a asp-page="/TermsAndConditions" style="color:white; text-decoration:underline">
-                @_languageProvider.BasicText[lang, "TERMS", Casing.Title]
+                @_translationProvider.BasicText[lang, "TERMS", Casing.Title]
             </a>
         </p>
         @if (await _userService.IsUserModeratorInForum(currentUser, forumId))
         {
             <p>
                 <a href="./Moderator@(forumId > 0 ? $"?forumId={forumId}" : "")" style="color:white; text-decoration:underline">
-                    @Html.Raw(_languageProvider.Moderator[lang, "MOD_PANEL", Casing.Title])
+                    @Html.Raw(_translationProvider.Moderator[lang, "MOD_PANEL", Casing.Title])
                 </a>
             </p>
         }
@@ -259,7 +258,7 @@
         {
             <p>
                 <a asp-page="./Admin" style="color:white; text-decoration:underline">
-                    @Html.Raw(_languageProvider.Admin[lang, "ADMIN_PANEL", Casing.Title])
+                    @Html.Raw(_translationProvider.Admin[lang, "ADMIN_PANEL", Casing.Title])
                 </a>
             </p>
         }
@@ -282,9 +281,9 @@
             "showLink": true,
             "theme": "edgeless",
             "content": {
-                "message": "@Html.Raw(_languageProvider.BasicText[lang, "COOKIES_BOX_MESSAGE"])",
-                "dismiss": "@Html.Raw(_languageProvider.BasicText[lang, "COOKIES_BOX_DISMISS"])",
-                "link": "@Html.Raw(_languageProvider.BasicText[lang, "COOKIES_BOX_LINK_TEXT"])",
+                "message": "@Html.Raw(_translationProvider.BasicText[lang, "COOKIES_BOX_MESSAGE"])",
+                "dismiss": "@Html.Raw(_translationProvider.BasicText[lang, "COOKIES_BOX_DISMISS"])",
+                "link": "@Html.Raw(_translationProvider.BasicText[lang, "COOKIES_BOX_LINK_TEXT"])",
                 "href": "./AboutCookies"
             }
         });

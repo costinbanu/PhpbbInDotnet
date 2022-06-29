@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace PhpbbInDotnet.Utilities.Extensions
+namespace PhpbbInDotnet.Domain.Extensions
 {
     public static class StringExtensions
     {

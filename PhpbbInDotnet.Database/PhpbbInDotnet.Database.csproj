@@ -1,11 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <PackageReference Include="MySql.EntityFrameworkCore" Version="6.0.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PhpbbInDotnet.Utilities\PhpbbInDotnet.Utilities.csproj" />
+    <ProjectReference Include="..\PhpbbInDotnet.Domain\PhpbbInDotnet.Domain.csproj" />
   </ItemGroup>
 
 </Project>

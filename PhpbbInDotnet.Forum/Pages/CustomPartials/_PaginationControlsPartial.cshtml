@@ -1,8 +1,8 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._PaginationControlsPartialModel
 
-@using Utilities
+@using Domain
 
-@inject Languages.LanguageProvider _languageProvider
+@inject Languages.ITranslationProvider _translationProvider
 
 @if ((Model.Paginator?.Pagination?.HasPages ?? false) || Model.Paginator!.PageSize != Constants.DEFAULT_PAGE_SIZE)
 {
@@ -16,7 +16,7 @@
                             ◄
                         </div>
                         <div style="display:table-cell; vertical-align:middle; text-align:left; line-height:1.1em">
-                            @Html.Raw(_languageProvider.BasicText[Model.Language, "PREVIOUS_PAGE"])
+                            @Html.Raw(_translationProvider.BasicText[Model.Language, "PREVIOUS_PAGE"])
                         </div>
                     </div>
                 </a>
@@ -42,14 +42,14 @@
             {
                 <form method="post" asp-page-handler="Pagination" style="line-height:1.5em; display: inline; white-space:nowrap">
                     <span style="white-space:nowrap; display: inline">
-                        &nbsp;@Html.Raw(_languageProvider.BasicText[Model.Language, "POSTS_PER_PAGE"]):&nbsp;
+                        &nbsp;@Html.Raw(_translationProvider.BasicText[Model.Language, "POSTS_PER_PAGE"]):&nbsp;
                     </span>
                     <span style="white-space:nowrap; display: inline">
                         <input type="hidden" name="topicId" value="@Model.TopicId" />
                         <input type="hidden" name="postId" value="@Model.FirstPostId" />
                         @Html.DropDownList("userPostsPerPage", Model.Paginator.PostsPerPage, new { style = "height:30px" })
                         &nbsp;
-                        <input type="submit" value="@Html.Raw(_languageProvider.BasicText[Model.Language, "SUBMIT", Casing.FirstUpper])" class="MyButton" style="height:30px" />
+                        <input type="submit" value="@Html.Raw(_translationProvider.BasicText[Model.Language, "SUBMIT", Casing.FirstUpper])" class="MyButton" style="height:30px" />
                     </span>
                 </form>
             }
@@ -61,7 +61,7 @@
                 <a href="@Model.Forward" style="text-decoration:none">
                     <div style="display:table">
                         <div style="display:table-cell; vertical-align:middle; text-align:right; line-height:1.1em; padding-right: 5px">
-                            @Html.Raw(_languageProvider.BasicText[Model.Language, "NEXT_PAGE"])
+                            @Html.Raw(_translationProvider.BasicText[Model.Language, "NEXT_PAGE"])
                         </div>
                         <div style="display:table-cell; vertical-align:middle; font-size:2.5em; line-height:1.1em">
                             ►
@@ -78,7 +78,7 @@
     <div class="ControlsMiddleCollapsed">
         <p></p>
         <span class="MyButton MyMiniButton" onclick="showElement('paginationControls_@(Model.Self)')" style="white-space:nowrap">
-            &#x1F4D6;&nbsp;@Html.Raw(_languageProvider.BasicText[Model.Language, "PAGINATION_OPTIONS"])
+            &#x1F4D6;&nbsp;@Html.Raw(_translationProvider.BasicText[Model.Language, "PAGINATION_OPTIONS"])
         </span>
         <div id="paginationControls_@(Model.Self)" style="display: none; width: 100%; line-height: 1.5em">
             <p></p>
@@ -96,14 +96,14 @@
             {
                 <form method="post" asp-page-handler="Pagination" style="line-height:1.5em">
                     <span style="white-space:nowrap; display: inline">
-                        @Html.Raw(_languageProvider.BasicText[Model.Language, "POSTS_PER_PAGE"]):&nbsp;
+                        @Html.Raw(_translationProvider.BasicText[Model.Language, "POSTS_PER_PAGE"]):&nbsp;
                     </span>
                     <span style="white-space:nowrap; display: inline">
                         <input type="hidden" name="topicId" value="@Model.TopicId" />
                         <input type="hidden" name="postId" value="@Model.FirstPostId" />
                         @Html.DropDownList("userPostsPerPage", Model.Paginator.PostsPerPage, new { style = "height:30px" })
                         &nbsp;
-                        <input type="submit" value="@Html.Raw(_languageProvider.BasicText[Model.Language, "SUBMIT", Casing.FirstUpper])" class="MyButton" style="height:30px" />
+                        <input type="submit" value="@Html.Raw(_translationProvider.BasicText[Model.Language, "SUBMIT", Casing.FirstUpper])" class="MyButton" style="height:30px" />
                     </span>
                 </form>
             }
