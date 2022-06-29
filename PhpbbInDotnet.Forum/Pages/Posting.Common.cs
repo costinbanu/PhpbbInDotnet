@@ -100,6 +100,25 @@ namespace PhpbbInDotnet.Forum.Pages
         private async Task<int?> UpsertPost(PhpbbPosts? post, AuthenticatedUserExpanded usr)
         {
             var lang = GetLanguage();
+
+            if ((PostTitle?.Length ?? 0) > 255)
+            {
+                ModelState.AddModelError(nameof(PostTitle), TranslationProvider.Errors[lang, "TITLE_TOO_LONG"]);
+                return null;
+            }
+
+            if ((PostTitle?.Trim()?.Length ?? 0) < 3)
+            {
+                ModelState.AddModelError(nameof(PostTitle), TranslationProvider.Errors[lang, "TITLE_TOO_SHORT"]);
+                return null;
+            }
+
+            if ((PostText?.Trim()?.Length ?? 0) < 3)
+            {
+                ModelState.AddModelError(nameof(PostText), TranslationProvider.Errors[lang, "POST_TOO_SHORT"]);
+                return null;
+            }
+
             var sqlExecuter = Context.GetSqlExecuter();
 
             var curTopic = Action != PostingActions.NewTopic ? await sqlExecuter.QuerySingleOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { TopicId }) : null;

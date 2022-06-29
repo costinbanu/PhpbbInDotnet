@@ -408,6 +408,22 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, async () =>
             {
                 var lang = GetLanguage();
+
+                if ((PostTitle?.Trim()?.Length ?? 0) < 3)
+                {
+                    return PageWithError(curForum, nameof(PostTitle), TranslationProvider.Errors[lang, "TITLE_TOO_SHORT"]);
+                }
+
+                if ((PostTitle?.Length ?? 0) > 255)
+                {
+                    return PageWithError(curForum, nameof(PostTitle), TranslationProvider.Errors[lang, "TITLE_TOO_LONG"]);
+                }
+
+                if ((PostText?.Trim()?.Length ?? 0) < 3)
+                {
+                    return PageWithError(curForum, nameof(PostText), TranslationProvider.Errors[lang, "POST_TOO_SHORT"]);
+                }
+
                 var sqlExecuter = Context.GetSqlExecuter();
                 var topicId = Action == PostingActions.NewTopic ? 0 : TopicId ?? 0;
                 var draft = sqlExecuter.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId });
