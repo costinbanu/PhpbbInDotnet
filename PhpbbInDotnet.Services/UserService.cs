@@ -427,7 +427,7 @@ namespace PhpbbInDotnet.Services
         }
 
         public async Task<IEnumerable<KeyValuePair<string, string>>> GetUsers()
-            => (await GetUserMap()).Select(map => KeyValuePair.Create(map.Key, $"[url={_config.GetValue<string>("BaseUrl")}/User?UserId={map.Value}]{map.Key}[/url]")).ToList();
+            => (await GetUserMap()).Select(map => KeyValuePair.Create(map.Key, $"[url={_config.GetValue<string>("BaseUrl").TrimEnd('/')}/User?UserId={map.Value}]{map.Key}[/url]")).ToList();
 
         private async Task<IEnumerable<PhpbbAclRoles>> GetModRolesLazy()
         {

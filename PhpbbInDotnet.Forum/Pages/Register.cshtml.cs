@@ -81,6 +81,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             var lang = TranslationProvider.GetLanguage();
             var validator = new UserProfileDataValidationService(ModelState, TranslationProvider, lang);
+            Email = Email?.Trim();
             var validations = new[]
             {
                 validator.ValidateUsername(nameof(UserName), UserName),

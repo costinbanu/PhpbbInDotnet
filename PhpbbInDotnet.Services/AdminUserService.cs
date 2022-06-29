@@ -312,7 +312,7 @@ namespace PhpbbInDotnet.Services
                 var rf = ParseDate(searchParameters?.RegisteredFrom, false);
                 var rt = ParseDate(searchParameters?.RegisteredTo, true);
                 var username = searchParameters?.Username;
-                var email = searchParameters?.Email;
+                var email = searchParameters?.Email?.Trim();
                 var userId = searchParameters?.UserId ?? 0;
                 var query = from u in _context.PhpbbUsers.AsNoTracking()
                             where (string.IsNullOrWhiteSpace(username) || u.UsernameClean.Contains(StringUtility.CleanString(username)))

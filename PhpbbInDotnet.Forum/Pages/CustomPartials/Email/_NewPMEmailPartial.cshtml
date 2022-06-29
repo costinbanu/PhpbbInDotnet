@@ -9,7 +9,7 @@
 @Html.Raw(_translationProvider.Email[Model.Language, "GREETING_BEGIN"])
 <br />
 <br />
-@Html.Raw(string.Format(_translationProvider.Email[Model.Language, "NEWPM_BODY_FORMAT"], Model.SenderName, $"{_config.GetValue<string>("BaseUrl")}/PrivateMessages"))
+@Html.Raw(string.Format(_translationProvider.Email[Model.Language, "NEWPM_BODY_FORMAT"], Model.SenderName, $"{_config.GetValue<string>("BaseUrl").TrimEnd('/')}/PrivateMessages"))
 <br />
 <br />
 @Html.Raw(_translationProvider.Email[Model.Language, "GREETING_END"])

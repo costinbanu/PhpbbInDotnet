@@ -103,7 +103,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }
             else
             {
-                Message = $"<span class=\"message success\">{string.Format(TranslationProvider.BasicText[lang, "EMAIL_CONFIRM_MESSAGE_FORMAT"], _config.GetValue<string>("AdminEmail"))}</span>";
+                Message = string.Format(TranslationProvider.BasicText[lang, "EMAIL_CONFIRM_MESSAGE_FORMAT"], _config.GetValue<string>("AdminEmail"));
 
                 if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed)
                 {
