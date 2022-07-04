@@ -1,7 +1,6 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Objects;
 using System;
 
 namespace PhpbbInDotnet.Forum.Pages.CustomPartials
@@ -11,10 +10,6 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
         public PostDto? Post { get; set; }
 
         public AuthenticatedUserExpanded? CurrentUser { get; set; }
-
-        public int ForumId { get; set; }
-
-        public int TopicId { get; set; }
 
         public int? ClosestPostId { get; set; }
 
@@ -48,6 +43,8 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
 
         public bool DisablePostTitleLink { get; set; }
 
-        public bool ShowPath { get; set; }
+        public string? Path { get; set; }
+
+        public bool IsForumReadOnly { get; set; }
     }
 }

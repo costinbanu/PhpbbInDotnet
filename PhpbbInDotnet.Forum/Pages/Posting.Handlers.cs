@@ -23,8 +23,8 @@ namespace PhpbbInDotnet.Forum.Pages
     {
         #region GET
 
-        public async Task<IActionResult> OnGetForumPost()
-            => await WithRegisteredUserAndCorrectPermissions((user) => WithValidTopic(TopicId ?? 0, async (curForum, curTopic) =>
+        public Task<IActionResult> OnGetForumPost()
+            => WithRegisteredUserAndCorrectPermissions((user) => WithValidTopic(TopicId ?? 0, async (curForum, curTopic) =>
             {
                 CurrentForum = curForum;
                 CurrentTopic = curTopic;
@@ -47,16 +47,16 @@ namespace PhpbbInDotnet.Forum.Pages
                 return Page();
             }));
 
-        public async Task<IActionResult> OnGetQuoteForumPost()
+        public Task<IActionResult> OnGetQuoteForumPost()
         {
             if (QuotePostInDifferentTopic)
             {
                 TopicId = DestinationTopicId ?? 0;
-                return await WithRegisteredUserAndCorrectPermissions(_ => WithValidPost(PostId ?? 0, (_, _, curPost) => WithValidTopic(TopicId ?? 0, (curForum, curTopic) => toDo(curForum, curTopic, curPost))));
+                return WithRegisteredUserAndCorrectPermissions(_ => WithValidPost(PostId ?? 0, (_, _, curPost) => WithValidTopic(TopicId ?? 0, (curForum, curTopic) => toDo(curForum, curTopic, curPost))));
             }
             else
             {
-                return await WithRegisteredUserAndCorrectPermissions(_ => WithValidPost(PostId ?? 0, (curForum, curTopic, curPost) => toDo(curForum, curTopic, curPost)));
+                return WithRegisteredUserAndCorrectPermissions(_ => WithValidPost(PostId ?? 0, (curForum, curTopic, curPost) => toDo(curForum, curTopic, curPost)));
             }
 
             async Task<IActionResult> toDo(PhpbbForums curForum, PhpbbTopics curTopic, PhpbbPosts curPost)
@@ -83,8 +83,8 @@ namespace PhpbbInDotnet.Forum.Pages
             }
         }
 
-        public async Task<IActionResult> OnGetNewTopic()
-            => await WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async (curForum) =>
+        public Task<IActionResult> OnGetNewTopic()
+            => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async (curForum) =>
             {
                 CurrentForum = curForum;
                 CurrentTopic = null;
@@ -103,8 +103,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 return Page();
             }));
 
-        public async Task<IActionResult> OnGetEditPost()
-            => await WithRegisteredUserAndCorrectPermissions(user => WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
+        public Task<IActionResult> OnGetEditPost()
+            => WithRegisteredUserAndCorrectPermissions(user => WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
             {
                 if (!(await IsCurrentUserModeratorHere() || (curPost.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime))))
                 {
@@ -149,8 +149,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
         #region POST Attachment
 
-        public async Task<IActionResult> OnPostAddAttachment()
-            => await WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async (curForum) =>
+        public Task<IActionResult> OnPostAddAttachment()
+            => WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async (curForum) =>
             {
                 var lang = GetLanguage();
                 CurrentForum = curForum;
@@ -213,9 +213,9 @@ namespace PhpbbInDotnet.Forum.Pages
                     }
                 }
 
-                if ((user.UploadLimit ?? 0) > 0)
+                if (user.UploadLimit > 0)
                 {
-                    var existingUploadSize = await Context.PhpbbAttachments.AsNoTracking().Where(a => a.PosterId == user.UserId).SumAsync(a => a.Filesize);
+                    var existingUploadSize = await Context.GetSqlExecuter().ExecuteScalarAsync<long>("SELECT sum(filesize) FROM phpbb_attachments WHERE poster_id = @userId", new { user.UserId });
                     if (existingUploadSize + images.Sum(f => f.Length) + nonImages.Sum(f => f.Length) > user.UploadLimit)
                     {
                         return PageWithError(curForum, nameof(Files), TranslationProvider.Errors[lang, "ATTACH_QUOTA_EXCEEDED"]);
@@ -353,7 +353,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 if (!string.IsNullOrWhiteSpace(PollOptions))
                 {
                     var topicId = currentPost?.TopicId ?? 0;
-                    var curTopic = await Context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == topicId);
+                    var curTopic = await Context.GetSqlExecuter().QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
                     var pollStart = ((curTopic?.PollStart ?? 0) == 0 ? DateTime.UtcNow.ToUnixTimestamp() : curTopic!.PollStart).ToUtcTime();
                     PreviewablePoll = new PollDto
                     {

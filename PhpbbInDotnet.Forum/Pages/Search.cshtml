@@ -161,15 +161,13 @@ else
         {
             CurrentUser = CurrentUser,
             Post = post,
-            ForumId = Model.ForumId ?? 0,
-            TopicId = Model.TopicId ?? 0,
             IsPostFirstInPage = post == Model.Posts.First(),
             IsPostLastInPage = post == Model.Posts.Last(),
             OpenPostLinkInNewTab = true,
             ToHighlight = Model.SearchText,
             Language = Lang,
             CorrelationId = cacheResult.CorrelationId,
-            ShowPath = true
+            Path = _forumService.GetPathText((await _forumService.GetForumTree(CurrentUser, false, false)), post.ForumId)
         }, ViewData)
     }
 
