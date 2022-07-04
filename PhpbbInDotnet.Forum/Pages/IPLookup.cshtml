@@ -3,16 +3,18 @@
 
 @using Microsoft.Extensions.Configuration
 @using Objects
+@using Services
 @using CustomPartials
 @using Domain.Extensions
 
 @inject IConfiguration _config
+@inject IForumTreeService _forumService
 
 @{
 	var Lang = Model.GetLanguage();
 	ViewData["Title"] = Model.TranslationProvider.Moderator[Lang, "MOD_PANEL"];
 	Layout = "~/Pages/_Layout.cshtml";
-	var UserDateFormat = (Model.GetCurrentUser())?.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
+	var UserDateFormat = Model.GetCurrentUser().UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
 }
 
 <environment include="Development">
@@ -50,7 +52,7 @@
             IsPostLastInPage = post == Model.Posts!.Last(),
             OpenPostLinkInNewTab = true,
             Language = Lang,
-            ShowPath = true
+            Path = _forumService.GetPathText((await _forumService.GetForumTree(Model.GetCurrentUser(), false, false)), post.ForumId)
         }, ViewData)
     }
 

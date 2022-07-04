@@ -7,11 +7,7 @@
 @using Domain.Extensions;
 @using Objects
 
-@inject Services.IUserService _userService
-@inject Database.IForumDbContext _context
 @inject Services.IBBCodeRenderingService _renderingService
-@inject Services.IUserService _userService
-@inject Services.IForumTreeService _forumService
 @inject Languages.ITranslationProvider _translationProvider
 
 @{
@@ -57,10 +53,10 @@
             CorrelationId = Model.CorrelationId
         })
         <div class="ForumContent VerticalContent FlexRight" id="@Model.Post.PostId" style="max-width:100%; overflow-wrap: break-word; display:flex">
-            @if (Model.ShowPath)
+            @if (!string.IsNullOrWhiteSpace(Model.Path))
             {
                 <div class="Caption">
-                    @Html.Raw(_forumService.GetPathText((await _forumService.GetForumTree(Model.CurrentUser, false, false)), Model.Post.ForumId))
+                    @Html.Raw(Model.Path)
                 </div>
             }
             <span style="display:flex">
@@ -133,10 +129,10 @@
                         <p></p>
                     }
                     <div class="PostActions">
-                        @if ((!Model.IsTopicLocked || Model.IsCurrentUserMod) && Model.CurrentUser?.IsAnonymous == false && (!Model.IsPostLastInPage || !Model.IsLastPage))
+                        @if ((!Model.IsTopicLocked || Model.IsCurrentUserMod) && Model.CurrentUser?.IsAnonymous == false && (!Model.IsPostLastInPage || !Model.IsLastPage) && !Model.IsForumReadOnly)
                         {
                             <span>
-                                <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@Model.Post!.PostId">
+                                <a asp-page="/Posting" asp-page-handler="QuoteForumPost" asp-route-forumId="@Model.Post.ForumId" asp-route-topicId="@Model.Post.TopicId" asp-route-postId="@Model.Post!.PostId">
                                     @if (Model.IsTopicLocked)
                                     {
                                         <span>&#x1F4AC; @Html.Raw(_translationProvider.BasicText[Model.Language, "CLOSED_TOPIC", Casing.FirstUpper])</span>
@@ -148,7 +144,7 @@
                                 </a>
                             </span>
                         }
-                        else if (Model.CurrentUser?.IsAnonymous == false && (!Model.IsPostLastInPage || !Model.IsLastPage))
+                        else if (Model.CurrentUser?.IsAnonymous == false && (!Model.IsPostLastInPage || !Model.IsLastPage) && !Model.IsForumReadOnly)
                         {
                             <span>
                                 <a href="javascript:;" title="@Html.Raw(_translationProvider.BasicText[Model.Language, "CLOSED_TOPIC_CAPTION"])">
@@ -160,7 +156,7 @@
                         @if (Model.CurrentUser?.IsAnonymous == false)
                         {
                             <span>
-                                <a asp-page="/Confirm" asp-page-handler="DestinationPicker" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@Model.Post!.PostId" asp-route-showTopicSelector="true" asp-route-quotePostInDifferentTopic="true" asp-route-destination="./Posting" asp-route-destinationHandler="QuoteForumPost">
+                                <a asp-page="/Confirm" asp-page-handler="DestinationPicker" asp-route-forumId="@Model.Post.ForumId" asp-route-topicId="@Model.Post.TopicId" asp-route-postId="@Model.Post!.PostId" asp-route-showTopicSelector="true" asp-route-quotePostInDifferentTopic="true" asp-route-destination="./Posting" asp-route-destinationHandler="QuoteForumPost">
                                     <span>&#x1F4AC; @Html.Raw(_translationProvider.BasicText[Model.Language, "REPLY_AS_QUOTE_IN_ANOTHER_TOPIC"])</span>
                                 </a>
                             </span>
@@ -197,7 +193,7 @@
                         @if (Model.IsCurrentUserMod || (Model.Post!.AuthorId == Model.CurrentUser?.UserId && (Model.CurrentUser.PostEditTime == 0 || DateTime.UtcNow.Subtract(Model.Post.PostCreationTime ?? default).TotalMinutes <= Model.CurrentUser.PostEditTime)))
                         {
                             <span>
-                                <a asp-page="/Posting" asp-page-handler="EditPost" asp-route-forumId="@Model.ForumId" asp-route-topicId="@Model.TopicId" asp-route-postId="@Model.Post!.PostId">
+                                <a asp-page="/Posting" asp-page-handler="EditPost" asp-route-forumId="@Model.Post.ForumId" asp-route-topicId="@Model.Post.TopicId" asp-route-postId="@Model.Post!.PostId">
                                     &#x1F4DD; @Html.Raw(_translationProvider.BasicText[Model.Language, "DO_EDIT", Casing.FirstUpper])
                                 </a>
                             </span>

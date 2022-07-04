@@ -5,6 +5,7 @@
 @using Dapper
 @using Domain
 @using Domain.Utilities
+@using Domain.Extensions
 @using Objects
 @using CustomPartials
 @using Microsoft.EntityFrameworkCore
@@ -116,31 +117,27 @@
 ), ViewData)
 
 @{
-    var index = 0;
     var reachedAnUnreadPost = false;
     var useModActions = false;
-    @foreach (var post in Model.Posts!)
+    @foreach (var (post, index) in Model.Posts!.Indexed())
     {
         post.Reports = Model.Reports?.Where(r => r.PostId == post.PostId);
         post.Unread = reachedAnUnreadPost || (reachedAnUnreadPost = await Model.IsPostUnread(post.ForumId, post.TopicId, post.PostId));
         post.Attachments = Model.Attachments!.TryGetValue(post.PostId, out var val) ? val : new List<AttachmentDto>();
 
-        int? closestPostIdIndex = null;
-        if (Model.Posts.Count > 1)
+        var closestPostId = 0;
+        if (Model.Posts!.Count > 1)
         {
-            if (index == 0) closestPostIdIndex = 1;
-            else if (index == Model.Posts.Count - 1) closestPostIdIndex = Model.Posts.Count - 2;
-            else closestPostIdIndex = index + 1;
+            if (index == 0) closestPostId = Model.Posts[1].PostId;
+            else if (index == Model.Posts.Count - 1) closestPostId = Model.Posts[Model.Posts.Count - 2].PostId;
+            else closestPostId = Model.Posts[index + 1].PostId;
         }
-        var closestPostId = closestPostIdIndex.HasValue ? Model.Posts[closestPostIdIndex.Value].PostId : 0;
 
         @await Html.PartialAsync("_PostPartial", new _PostPartialModel
         {
             CurrentUser = currentUser,
             Post = post,
-            ForumId = Model.ForumId ?? 0,
-            TopicId = Model.TopicId ?? 0,
-            ClosestPostId = closestPostIdIndex.HasValue ? Model.Posts[closestPostIdIndex.Value].PostId : 0,
+            ClosestPostId = closestPostId,
             PostIdsForModerator = Model.GetModeratorPostIds(),
             HasCurrentUserPM = hasPM,
             IsCurrentUserMod = isMod,
@@ -149,12 +146,11 @@
             IsLastPage = Model.Paginator!.IsLastPage,
             IsTopicLocked = Model.IsLocked,
             ShowFooter = currentUser!.Foes?.Contains(post.AuthorId) != true,
+            IsForumReadOnly = isCurrentForumReadOnly,
             ShowEditHistory = (index < Model.Posts.Count - 1 && post.PostEditTime > Model.Posts[index + 1].PostTime) || (post.PostEditCount > 0 && post.PostEditUser != post.AuthorName),
             Language = lang,
             CorrelationId = Model.CorrelationId,
         }, ViewData)
-
-        index++;
 
         useModActions = post == Model.Posts.Last() && (post.AuthorId == currentUser.UserId && (editTime == 0 || DateTime.UtcNow.Subtract(post.PostCreationTime ?? default).TotalMinutes <= editTime));
     }

@@ -1,8 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
+﻿using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
@@ -28,12 +25,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<string> RenderRazorViewToString(string viewName, object model)
         {
-            var httpContext = _actionContextAccessor.ActionContext?.HttpContext ?? throw new Exception($"Error rendering view '{viewName}': Expected a ActionContext but found none");
-            var pageContext = new PageContext(_actionContextAccessor.ActionContext)
-            {
-                ActionDescriptor = (CompiledPageActionDescriptor)_actionContextAccessor.ActionContext.ActionDescriptor
-            };
-            var actionContext = new ActionContext(httpContext, httpContext.GetRouteData(), pageContext.ActionDescriptor);
+            var actionContext = _actionContextAccessor.ActionContext ?? throw new Exception($"Error rendering view '{viewName}': Expected a ActionContext but found none");
             var viewResult = _viewEngine.FindView(actionContext, viewName, false);
 
             var viewDictionary = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary())
@@ -48,10 +40,9 @@ namespace PhpbbInDotnet.Services
                 viewDictionary,
                 new TempDataDictionary(actionContext.HttpContext, _tempDataProvider),
                 sw,
-                new HtmlHelperOptions()
-            )
+                new HtmlHelperOptions())
             {
-                RouteData = httpContext.GetRouteData()
+                RouteData = actionContext.HttpContext.GetRouteData()
             };
 
             await viewResult.View.RenderAsync(viewContext);
