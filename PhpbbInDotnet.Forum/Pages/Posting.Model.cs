@@ -5,6 +5,8 @@ using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Domain;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using PhpbbInDotnet.Domain.Extensions;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -90,5 +92,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public PhpbbForums? CurrentForum { get; private set; }
         public bool DraftSavedSuccessfully { get; private set; } = false;
         public Guid? PreviewCorrelationId { get; private set; }
+        private IEnumerable<string> PollOptionsEnumerable 
+            => (PollOptions?.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()).Where(x => !string.IsNullOrWhiteSpace(x))).EmptyIfNull();
     }
 }
