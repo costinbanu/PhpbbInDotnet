@@ -10,11 +10,11 @@ namespace PhpbbInDotnet.Domain.Extensions
             var id = Guid.NewGuid().ToString("n");
             if (string.IsNullOrWhiteSpace(format))
             {
-                logger.Error(exception, "Exception id: {id}.");
+                logger.Error(exception, "Exception id: {id}.", id);
             }
             else
             {
-                logger.Error(exception, "Exception id: {id}. Message: {message}", id, string.Format(format, @params));
+                logger.Error(exception, $"Exception id: {id}. Message: {format}", @params);
             }
             return id;
         }
@@ -24,11 +24,11 @@ namespace PhpbbInDotnet.Domain.Extensions
             var id = Guid.NewGuid().ToString("n");
             if (string.IsNullOrWhiteSpace(format))
             {
-                logger.Warning(exception, "Exception id: {id}.");
+                logger.Warning(exception, "Exception id: {id}.", id);
             }
             else
             {
-                logger.Warning(exception, "Exception id: {id}. Message: {message}", id, string.Format(format, @params));
+                logger.Warning(exception, $"Exception id: {id}. Message: {format}", @params);
             }
             return id;
         }

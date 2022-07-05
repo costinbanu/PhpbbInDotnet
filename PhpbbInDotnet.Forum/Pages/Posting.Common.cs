@@ -52,7 +52,10 @@ namespace PhpbbInDotnet.Forum.Pages
         }
 
         public string GetActualCacheKey(string key, bool isPersonalizedData)
-            => isPersonalizedData ? $"{GetCurrentUser().UserId}_{ForumId}_{TopicId ?? 0}_{key ?? throw new ArgumentNullException(nameof(key))}" : key;
+        {
+            var topicId = Action == PostingActions.NewTopic ? 0 : TopicId ?? 0;
+            return isPersonalizedData ? $"{GetCurrentUser().UserId}_{ForumId}_{topicId}_{key}" : key;
+        }
 
         public async Task<(List<PostDto> posts, Dictionary<int, List<AttachmentDto>> attachments, Guid correlationId)> GetPreviousPosts()
         {
@@ -138,8 +141,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return null;
             }
 
-            var pollOptionsArray = GetPollOptionsEnumerable();
-            if (canCreatePoll && (PollMaxOptions == null || (pollOptionsArray.Any() && (PollMaxOptions < 1 || PollMaxOptions > pollOptionsArray.Count()))))
+            if (canCreatePoll && (PollMaxOptions == null || (PollOptionsEnumerable.Any() && (PollMaxOptions < 1 || PollMaxOptions > PollOptionsEnumerable.Count()))))
             {
                 ModelState.AddModelError(nameof(PollMaxOptions), TranslationProvider.Errors[lang, "INVALID_POLL_OPTION_COUNT"]);
                 ShowPoll = true;
@@ -217,14 +219,14 @@ namespace PhpbbInDotnet.Forum.Pages
             if (canCreatePoll && !string.IsNullOrWhiteSpace(PollOptions))
             {
                 var existing = await sqlExecuter.QueryAsync<string>("SELECT LTRIM(RTRIM(poll_option_text)) FROM phpbb_poll_options WHERE topic_id = @topicId", new { TopicId });
-                if (!existing.SequenceEqual(pollOptionsArray, StringComparer.InvariantCultureIgnoreCase))
+                if (!existing.SequenceEqual(PollOptionsEnumerable, StringComparer.InvariantCultureIgnoreCase))
                 {
                     await sqlExecuter.ExecuteAsync(
                         @"DELETE FROM phpbb_poll_options WHERE topic_id = @topicId;
                           DELETE FROM phpbb_poll_votes WHERE topic_id = @topicId",
                         new { TopicId });
 
-                    foreach (var (option, id) in pollOptionsArray.Indexed(startIndex: 1))
+                    foreach (var (option, id) in PollOptionsEnumerable.Indexed(startIndex: 1))
                     {
                         await sqlExecuter.ExecuteAsync(
                             "INSERT INTO forum.phpbb_poll_options (poll_option_id, topic_id, poll_option_text, poll_option_total) VALUES (@id, @topicId, @text, 0)",
@@ -345,9 +347,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 Attachments = (await sqlExecuter.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE attach_id IN @cachedAttachmentIds", new { cachedAttachmentIds }))?.AsList();
             }
         }
-
-        private IEnumerable<string> GetPollOptionsEnumerable()
-            => PollOptions?.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()).Where(x => !string.IsNullOrWhiteSpace(x)).EmptyIfNull()!;
 
         public class CachedText
         {
