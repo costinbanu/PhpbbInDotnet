@@ -164,11 +164,11 @@ namespace PhpbbInDotnet.Forum
         {
             webApplication.UseStatusCodePagesWithReExecute("/Error", "?responseStatusCode={0}");
 
-            //if (webApplication.Environment.IsDevelopment())
-            //{
-            //    webApplication.UseDeveloperExceptionPage();
-            //}
-            //else
+            if (webApplication.Environment.IsDevelopment())
+            {
+                webApplication.UseDeveloperExceptionPage();
+            }
+            else
             {
                 webApplication.UseMiddleware<ErrorHandlingMiddleware>();
                 webApplication.UseHsts();
