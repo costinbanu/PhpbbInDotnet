@@ -22,7 +22,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum
 {
-    public class AuthenticatedPageModel : PageModel
+    public abstract class AuthenticatedPageModel : PageModel
     {
         protected readonly IForumTreeService ForumService;
         protected readonly IAppCache Cache;

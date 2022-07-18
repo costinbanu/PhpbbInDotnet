@@ -3,13 +3,12 @@ using LazyCache;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database.Entities;
-using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Objects;
+using PhpbbInDotnet.Objects.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -254,8 +253,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 return Page();
             }, ReturnUrl)));
 
-        public async Task<IActionResult> OnPostDeleteAttachment(int index)
-            => await WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async (curForum) =>
+        public Task<IActionResult> OnPostDeleteAttachment(int index)
+            => WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async (curForum) =>
             {
                 CurrentForum = curForum;
 
@@ -270,8 +269,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 return Page();
             }, ReturnUrl)));
 
-        public async Task<IActionResult> OnPostDeleteAllAttachments()
-            => await WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async (curForum) =>
+        public Task<IActionResult> OnPostDeleteAllAttachments()
+            => WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async (curForum) =>
             {
                 CurrentForum = curForum;
 
@@ -306,22 +305,11 @@ namespace PhpbbInDotnet.Forum.Pages
 
         #region POST Message
 
-        public async Task<IActionResult> OnPostPreview()
-            => await WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, Action == PostingActions.NewPrivateMessage, curForum => WithNewestPostSincePageLoad(curForum, async () =>
+        public Task<IActionResult> OnPostPreview()
+            => WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, () => WithValidInput(curForum, async() =>
             {
                 var lang = GetLanguage();
-                if ((PostTitle?.Trim()?.Length ?? 0) < 3)
-                {
-                    return PageWithError(curForum, nameof(PostTitle), TranslationProvider.Errors[lang, "TITLE_TOO_SHORT"]);
-                }
-
-                if ((PostText?.Trim()?.Length ?? 0) < 3)
-                {
-                    return PageWithError(curForum, nameof(PostText), TranslationProvider.Errors[lang, "POST_TOO_SHORT"]);
-                }
-
                 var sqlExecuter = Context.GetSqlExecuter();
-
                 var currentPost = Action == PostingActions.EditForumPost ? await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @PostId", new { PostId }) : null;
                 var userId = Action == PostingActions.EditForumPost ? currentPost!.PosterId : user.UserId;
                 var postAuthor = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
@@ -368,10 +356,10 @@ namespace PhpbbInDotnet.Forum.Pages
                 ShowAttach = Attachments?.Any() ?? false;
                 CurrentForum = curForum;
                 return Page();
-            }), ReturnUrl)));
+            })), ReturnUrl)));
 
-        public async Task<IActionResult> OnPostNewForumPost()
-            => await WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, async () =>
+        public Task<IActionResult> OnPostNewForumPost()
+            => WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, () => WithValidInput(curForum, async () =>
             {
                 var addedPostId = await UpsertPost(null, user);
                 if (addedPostId == null)
@@ -379,19 +367,18 @@ namespace PhpbbInDotnet.Forum.Pages
                     return PageWithError(curForum, nameof(PostText), TranslationProvider.Errors[GetLanguage(), "GENERIC_POSTING_ERROR"]);
                 }
                 return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
-            }), ReturnUrl)));
+            })), ReturnUrl)));
 
-        public async Task<IActionResult> OnPostEditForumPost()
-            => await WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
+        public Task<IActionResult> OnPostEditForumPost()
+            => WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidPost(PostId ?? 0, (curForum, curTopic, curPost) => WithValidInput(curForum, async() =>
             {
                 if (!(await IsCurrentUserModeratorHere() || (curPost.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime))))
                 {
                     return RedirectToPage("ViewTopic", "byPostId", new { PostId });
                 }
 
-                var post = await (Context.GetSqlExecuter()).QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @PostId", new { PostId });
+                var post = await Context.GetSqlExecuter().QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @PostId", new { PostId });
                 var addedPostId = await UpsertPost(post, user);
-
                 if (addedPostId == null)
                 {
                     CurrentForum = curForum;
@@ -401,29 +388,13 @@ namespace PhpbbInDotnet.Forum.Pages
                     return Page();
                 }
                 return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
-            }, ReturnUrl)));
+            }), ReturnUrl)));
 
 
-        public async Task<IActionResult> OnPostSaveDraft()
-            => await WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, async () =>
+        public Task<IActionResult> OnPostSaveDraft()
+            => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, () => WithValidInput(curForum, async() =>
             {
                 var lang = GetLanguage();
-
-                if ((PostTitle?.Trim()?.Length ?? 0) < 3)
-                {
-                    return PageWithError(curForum, nameof(PostTitle), TranslationProvider.Errors[lang, "TITLE_TOO_SHORT"]);
-                }
-
-                if ((PostTitle?.Length ?? 0) > 255)
-                {
-                    return PageWithError(curForum, nameof(PostTitle), TranslationProvider.Errors[lang, "TITLE_TOO_LONG"]);
-                }
-
-                if ((PostText?.Trim()?.Length ?? 0) < 3)
-                {
-                    return PageWithError(curForum, nameof(PostText), TranslationProvider.Errors[lang, "POST_TOO_SHORT"]);
-                }
-
                 var sqlExecuter = Context.GetSqlExecuter();
                 var topicId = Action == PostingActions.NewTopic ? 0 : TopicId ?? 0;
                 var draft = sqlExecuter.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId });
@@ -454,7 +425,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return await OnGetNewTopic();
                 }
                 else return RedirectToPage("Index");
-            }), ReturnUrl));
+            })), ReturnUrl));
 
         #endregion POST Message
 

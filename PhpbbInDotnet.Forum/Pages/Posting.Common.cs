@@ -23,7 +23,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    public partial class PostingModel : AuthenticatedPageModel
+    public partial class PostingModel : BasePostingModel
     {
         private readonly IPostService _postService;
         private readonly IStorageService _storageService;
@@ -103,25 +103,6 @@ namespace PhpbbInDotnet.Forum.Pages
         private async Task<int?> UpsertPost(PhpbbPosts? post, AuthenticatedUserExpanded usr)
         {
             var lang = GetLanguage();
-
-            if (PostTitle?.Length > 255)
-            {
-                ModelState.AddModelError(nameof(PostTitle), TranslationProvider.Errors[lang, "TITLE_TOO_LONG"]);
-                return null;
-            }
-
-            if (PostTitle?.Trim()?.Length < 3)
-            {
-                ModelState.AddModelError(nameof(PostTitle), TranslationProvider.Errors[lang, "TITLE_TOO_SHORT"]);
-                return null;
-            }
-
-            if (PostText?.Trim()?.Length < 3)
-            {
-                ModelState.AddModelError(nameof(PostText), TranslationProvider.Errors[lang, "POST_TOO_SHORT"]);
-                return null;
-            }
-
             var sqlExecuter = Context.GetSqlExecuter();
             var curTopic = Action != PostingActions.NewTopic ? await sqlExecuter.QuerySingleOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { TopicId }) : null;
             var canCreatePoll = Action == PostingActions.NewTopic || (Action == PostingActions.EditForumPost && curTopic?.TopicFirstPostId == PostId);
@@ -300,11 +281,10 @@ namespace PhpbbInDotnet.Forum.Pages
                 return await toDo(user);
             });
 
-        private IActionResult PageWithError(PhpbbForums? curForum, string errorKey, string errorMessage)
+        protected override IActionResult PageWithError(PhpbbForums curForum, string errorKey, string errorMessage)
         {
-            ModelState.AddModelError(errorKey, errorMessage);
             CurrentForum = curForum;
-            return Page();
+            return PageWithError(errorKey, errorMessage);
         }
 
         private Task<IActionResult> WithBackup(Func<Task<IActionResult>> toDo)
