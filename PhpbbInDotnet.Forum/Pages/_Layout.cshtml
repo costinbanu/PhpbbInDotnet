@@ -53,8 +53,8 @@
         <script src="~/js/dateFormatter.js"></script>
     </environment>
     <environment exclude="Development">
-        <link rel="stylesheet" href="~/css/@(css).min.css" />
-        <script src="~/js/site.min.js"></script>
+        <link rel="stylesheet" href="~/css/@(css).min.css?v=2.0" />
+        <script src="~/js/site.min.js?v=2.0"></script>
     </environment>
 
     <!-- Global site tag (gtag.js) - Google Analytics -->
@@ -223,7 +223,7 @@
     <p></p>
     <div class="container body-content size1300">
         @Html.Raw(_translationProvider.BasicText[lang, "STARTING_ON"])
-        <script>writeDate('@((statistics.FirstMessageDate ?? DateTime.UtcNow).ToString("o"))', '@dateFormat')</script>,
+        <formatted-date date="@((statistics.FirstMessageDate ?? DateTime.UtcNow).ToString("o"))" format="@dateFormat" />
         @Html.Raw(string.Format(_translationProvider.BasicText[lang, "FORUM_STATS_FORMAT"], statistics.UserCount, statistics.PostCount, statistics.TopicCount, statistics.ForumCount))<br />
         <span class="Caption">@Html.Raw(string.Format(_translationProvider.BasicText[lang, "FORUM_STATS_CAPTION_FORMAT"], _statisticsService.RefreshIntervalMinutes))</span>
     </div>

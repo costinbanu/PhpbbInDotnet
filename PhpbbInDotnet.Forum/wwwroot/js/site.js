@@ -90,14 +90,6 @@ function showElement(id, whenHiding, whenShowing, roundSize = false) {
     }
 }
 
-function writeDate(dateString, format) {
-    let date = new Date(dateString);
-    if (!format) {
-        format = defaultDateFormat;
-    }
-    document.write(date.format(format));
-}
-
 function roundToNextEvenNumber(value) {
     value = Math.round(value);
     if (value % 2 == 1) {

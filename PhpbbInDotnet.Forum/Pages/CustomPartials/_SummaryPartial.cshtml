@@ -73,7 +73,7 @@
                 }
             }
             @Html.Raw(label)
-            <script>writeDate("@Model.CreationTime.ToString("o")", "@Model.DateFormat");</script>
+            <formatted-date date="@Model.CreationTime.ToString("o")" format="@Model.DateFormat" />
         </li>
         @if (Model.Posts.HasValue && Model.Views.HasValue)
         {

@@ -118,8 +118,8 @@
                     @if (Model.ShowEditHistory)
                     {
                         <div class="Caption ThemeColor">
-                            @Html.Raw(_translationProvider.BasicText[Model.Language, "LAST_EDITED_BY"]) @Model.Post!.PostEditUser
-                            <script>writeDate("@Model.Post.PostEditTime.ToUtcTime().ToString("o")", "@userDateFormat");</script>.
+                            @Html.Raw(_translationProvider.BasicText[Model.Language, "LAST_EDITED_BY"]) @Html.Raw(Model.Post!.PostEditUser)
+                            <formatted-date date="@Model.Post.PostEditTime.ToUtcTime().ToString("o")" format="@userDateFormat" />
                             @if (!string.IsNullOrWhiteSpace(Model.Post.PostEditReason))
                             {
                                 <span>@Html.Raw(_translationProvider.BasicText[Model.Language, "REASON", Casing.FirstUpper]): @HttpUtility.HtmlDecode(Model.Post.PostEditReason).</span>

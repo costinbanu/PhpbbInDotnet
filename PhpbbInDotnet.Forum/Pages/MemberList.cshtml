@@ -247,9 +247,7 @@
                         }
                         @Html.Raw(bot.UserAgent) <br />
                         @Model.TranslationProvider.BasicText[Lang, "LAST_ACTIVE"]:
-                        <script>
-                            writeDate('@bot.EntryTime.ToString("o")', '@dateFormat');
-                        </script>
+                        <formatted-date date="@bot.EntryTime.ToString("o")" format="@dateFormat" />
                     </div>
                 </div>
                 isFirst = false;

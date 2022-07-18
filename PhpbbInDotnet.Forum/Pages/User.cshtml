@@ -610,9 +610,7 @@ else
                         @{
                             var UserDateFormat = (Model.GetCurrentUser())?.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
                         }
-                        <script>
-                            writeDate("@Model.CurrentUser.UserRegdate.ToUtcTime().ToString("o")", "@UserDateFormat");
-                        </script>
+                        <formatted-date date="@Model.CurrentUser.UserRegdate.ToUtcTime().ToString("o")" format="@UserDateFormat" />
                     </div>
                 </div>
                 <p></p>
@@ -623,9 +621,7 @@ else
                     <div class="FlexRight PostInputWidth">
                         @if (Model.CurrentUser.UserLastvisit > 0)
                         {
-                            <script>
-                                writeDate("@Model.CurrentUser.UserLastvisit.ToUtcTime().ToString("o")", "@UserDateFormat");
-                            </script>
+                            <formatted-date date="@Model.CurrentUser.UserLastvisit.ToUtcTime().ToString("o")" format="@UserDateFormat" />
                         }
                         else
                         {
