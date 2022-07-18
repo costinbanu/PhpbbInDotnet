@@ -16,9 +16,7 @@
         @Html.Raw(Model.Poll.PollEnded ? _translationProvider.BasicText[Model.Language, "POLL_WAS_CLOSED"] : _translationProvider.BasicText[Model.Language, "POLL_WILL_BE_CLOSED"])
         @if (Model.Poll.PollEnd.HasValue)
         {
-            <script>
-                writeDate('@Model.Poll.PollEnd.Value.ToString("o")', '@UserDateFormat');
-            </script>
+            <formatted-date date="@Model.Poll.PollEnd.Value.ToString("o")" format="@UserDateFormat" />
         }
         else
         {

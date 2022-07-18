@@ -76,7 +76,7 @@
                 @Html.Raw(_translationProvider.Admin[Model.Language, "LOG_DATE"])
             </div>
             <div class="FlexRight PostInputWidth">
-                <script>writeDate('@item.LogTime.ToUtcTime().ToString("o")', '@Model.DateFormat');</script>
+                <formatted-date date="@item.LogTime.ToUtcTime().ToString("o")" format="@Model.DateFormat" />
             </div>
         </div>
         <div class="FlexCenter">

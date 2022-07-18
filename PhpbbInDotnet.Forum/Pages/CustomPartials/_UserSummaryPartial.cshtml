@@ -31,20 +31,16 @@
             </div>
             <div class="FlexRight PostInputWidth">
                 <b>@Html.Raw(_translationProvider.BasicText[Model.Language, "REGISTERED", Casing.FirstUpper]):</b>
-                <script>
-                    writeDate("@user.UserRegdate.ToUtcTime().ToString("o")", "@Model.DateFormat");
-                </script>
+                <formatted-date date="@user.UserRegdate.ToUtcTime().ToString("o")" format="@Model.DateFormat" />
                 <br />
                 <b>@Html.Raw(_translationProvider.BasicText[Model.Language, "LAST_ACTIVE", Casing.FirstUpper]):</b>
                 @if (user.UserInactiveTime == 0 && user.UserLastvisit >= user.UserRegdate)
                 {
-                    <script>
-                        writeDate("@user.UserLastvisit.ToUtcTime().ToString("o")", "@Model.DateFormat");
-                    </script>
+                    <formatted-date date="@user.UserLastvisit.ToUtcTime().ToString("o")" format="@Model.DateFormat" />
                 }
                 else
                 {
-            <span>@Html.Raw(_translationProvider.BasicText[Model.Language, "INACTIVE", Casing.FirstUpper])</span>
+                    <span>@Html.Raw(_translationProvider.BasicText[Model.Language, "INACTIVE", Casing.FirstUpper])</span>
                 }
                 @if (!string.IsNullOrWhiteSpace(user.UserFrom))
                 {

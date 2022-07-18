@@ -46,7 +46,7 @@
     <link rel="stylesheet" href="~/css/pagination.css" />
 </environment>
 <environment exclude="Development">
-    <link rel="stylesheet" href="~/css/admin.min.css" />
+    <link rel="stylesheet" href="~/css/admin.min.css?v=2.0" />
 </environment>
 
 <script>
@@ -287,9 +287,7 @@
                 <span>
                     &bull;
                     @Html.Raw(Model.TranslationProvider.Moderator[Lang, "DELETED_AT"]):
-                    <script>
-                    writeDate('@item.DeleteTime.ToUtcTime().ToString("o")', '@UserDateFormat');
-                    </script>
+                    <formatted-date date="@item.DeleteTime.ToUtcTime().ToString("o")" format="@UserDateFormat" />
                     &bull;
                     @Html.Raw(Model.TranslationProvider.Moderator[Lang, "DELETED_BY"]):
                     @Html.Raw(item.DeleteUserName)

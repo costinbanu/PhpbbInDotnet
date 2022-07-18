@@ -1,6 +1,19 @@
-﻿String.prototype.replaceAt = function (index, replacement) {
-    return this.substr(0, index) + replacement + this.substr(index + replacement.length);
+﻿class FormattedDate extends HTMLElement {
+    constructor() {
+        super();
+    }
+
+    connectedCallback() {
+        let date = new Date(this.getAttribute('date'));
+        let format = this.getAttribute('format');
+        if (!format) {
+            format = defaultDateFormat;
+        }
+        this.innerText = date.format(format);
+    }
 }
+
+customElements.define('formatted-date', FormattedDate);
 
 Date.prototype.format = function (format, customDayNames = dayNames, customMonthNames = monthNames) {
     var wordSplitter = /\W+/, _date = this;

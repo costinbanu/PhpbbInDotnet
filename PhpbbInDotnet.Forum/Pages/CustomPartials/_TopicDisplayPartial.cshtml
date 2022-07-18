@@ -126,7 +126,7 @@
                     <br />
                     <span>
                         &nbsp;@Html.Raw(_translationProvider.BasicText[Model.Language, "POSTED"])
-                        <script>writeDate("@topic.LastPostTime?.ToString("o")", "@userDateFormat");</script>
+                        <formatted-date date="@topic.LastPostTime?.ToString("o")" format="@userDateFormat" />
                     </span>
                 }
             </span>

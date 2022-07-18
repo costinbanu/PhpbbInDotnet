@@ -66,7 +66,7 @@
                 @Html.Raw(_translationProvider.Admin[Model.Language, "REGISTRATION_DATE"])
             </div>
             <div class="FlexRight PostInputWidth">
-                <script>writeDate('@user.UserRegdate.ToUtcTime().ToString("o")', '@Model.DateFormat')</script>
+                <formatted-date date="@user.UserRegdate.ToUtcTime().ToString("o")", format="@Model.DateFormat" />
             </div>
         </div>
         <div class="FlexCenter FlexSpacedMini">
@@ -76,7 +76,7 @@
             <div class="FlexRight PostInputWidth">
                 @if (user.UserInactiveTime != 0)
                 {
-                    <script>writeDate('@user.UserInactiveTime.ToUtcTime().ToString("o")', '@Model.DateFormat')</script>
+                    <formatted-date date="@user.UserInactiveTime.ToUtcTime().ToString("o")" format="@Model.DateFormat" />
                 }
                 else
                 {
@@ -99,7 +99,7 @@
             <div class="FlexRight PostInputWidth">
                 @if (user.UserLastvisit != 0)
                 {
-                    <script>writeDate('@user.UserLastvisit.ToUtcTime().ToString("o")', '@Model.DateFormat')</script>
+                    <formatted-date date="@user.UserLastvisit.ToUtcTime().ToString("o")" format="@Model.DateFormat" />
                 }
                 else
                 {
@@ -114,7 +114,7 @@
             <div class="FlexRight PostInputWidth">
                 @if (user.UserReminded.ToBool())
                 {
-                    <script>writeDate('@user.UserRemindedTime.ToUtcTime().ToString("o")', '@Model.DateFormat')</script>
+                    <formatted-date date="@user.UserRemindedTime.ToUtcTime().ToString("o")" format="@Model.DateFormat" />
                 }
                 else
                 {
