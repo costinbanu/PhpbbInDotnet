@@ -75,7 +75,7 @@
                        value="@Model.TopicSelectionOptions.ValueFactory(topic)" 
                        form="@Model.TopicSelectionOptions.FormName" 
                        style="margin-right:10px; align-self:safe center" 
-                       @(Model.TopicSelectionOptions.OnChange is not null ? $"onchange=\"{Model.TopicSelectionOptions.OnChange}\"" : "")
+                       @Html.Raw(Model.TopicSelectionOptions.OnChange is not null ? $"onchange=\"{Model.TopicSelectionOptions.OnChange}\"" : "")
                        @(isChecked ? "checked" : "") />
             }
             <span class="ForumContent" style="align-self:safe center">

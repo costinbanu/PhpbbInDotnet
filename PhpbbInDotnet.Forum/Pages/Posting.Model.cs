@@ -13,12 +13,6 @@ namespace PhpbbInDotnet.Forum.Pages
     [ValidateAntiForgeryToken]
     public partial class PostingModel
     {
-        [BindProperty]
-        public string? PostTitle { get; set; }
-
-        [BindProperty]
-        public string? PostText { get; set; }
-
         [BindProperty(SupportsGet = true)]
         public int ForumId { get; set; }
 

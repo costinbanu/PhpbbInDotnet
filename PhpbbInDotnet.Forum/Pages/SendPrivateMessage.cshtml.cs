@@ -17,16 +17,10 @@ using System.Web;
 namespace PhpbbInDotnet.Forum.Pages
 {
     [ValidateAntiForgeryToken]
-    public class SendPrivateMessageModel : AuthenticatedPageModel
+    public class SendPrivateMessageModel : BasePostingModel
     {
         private readonly IWritingToolsService _writingService;
         private readonly IConfiguration _config;
-
-        [BindProperty]
-        public string? PostTitle { get; set; }
-
-        [BindProperty]
-        public string? PostText { get; set; }
 
         [BindProperty(SupportsGet = true)]
         public int? PostId { get; set; }
@@ -133,28 +127,13 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public Task<IActionResult> OnPostSubmit()
-            => WithRegisteredUser(async (user) =>
+            => WithRegisteredUser(user => WithValidInput(async () =>
             {
                 var lang = GetLanguage();
 
                 if ((ReceiverId ?? 1) == 1)
                 {
                     return PageWithError(nameof(ReceiverName), TranslationProvider.Errors[lang, "ENTER_VALID_RECEIVER"]);
-                }
-
-                if ((PostTitle?.Trim()?.Length ?? 0) < 3)
-                {
-                    return PageWithError(nameof(PostTitle), TranslationProvider.Errors[lang, "TITLE_TOO_SHORT"]);
-                }
-
-                if ((PostTitle?.Length ?? 0) > 255)
-                {
-                    return PageWithError(nameof(PostTitle), TranslationProvider.Errors[lang, "TITLE_TOO_LONG"]);
-                }
-
-                if ((PostText?.Trim()?.Length ?? 0) < 3)
-                {
-                    return PageWithError(nameof(PostText), TranslationProvider.Errors[lang, "POST_TOO_SHORT"]);
                 }
 
                 var (Message, IsSuccess) = Action switch
@@ -169,24 +148,13 @@ namespace PhpbbInDotnet.Forum.Pages
                     true => RedirectToPage("PrivateMessages", new { show = PrivateMessagesPages.Sent }),
                     _ => PageWithError(nameof(PostText), Message)
                 };
-            });
+            }));
 
         public Task<IActionResult> OnPostPreview()
-            => WithRegisteredUser(async user =>
+            => WithRegisteredUser(user => WithValidInput(async () =>
             {
                 var lang = GetLanguage();
-                if ((PostTitle?.Trim()?.Length ?? 0) < 3)
-                {
-                    return PageWithError(nameof(PostTitle), TranslationProvider.Errors[lang, "TITLE_TOO_SHORT"]);
-                }
-
-                if ((PostText?.Trim()?.Length ?? 0) < 3)
-                {
-                    return PageWithError(nameof(PostText), TranslationProvider.Errors[lang, "POST_TOO_SHORT"]);
-                }
-
                 var sqlExec = Context.GetSqlExecuter();
-
                 var newPostText = PostText;
                 newPostText = HttpUtility.HtmlEncode(newPostText);
 
@@ -200,12 +168,6 @@ namespace PhpbbInDotnet.Forum.Pages
                     PostTime = DateTime.UtcNow.ToUnixTimestamp()
                 };
                 return Page();
-            });
-
-        private IActionResult PageWithError(string errorKey, string errorMessage)
-        {
-            ModelState.AddModelError(errorKey, errorMessage);
-            return Page();
-        }
+            }));
     }
 }

@@ -15,7 +15,7 @@
 @model PhpbbInDotnet.Forum.Pages.ModeratorModel
 @{
     var Lang = Model.GetLanguage();
-    ViewData["Title"] = Model.TranslationProvider.Moderator[Lang, "MOD_PANEL"]; ;
+    ViewData["Title"] = Model.TranslationProvider.Moderator[Lang, "MOD_PANEL"];
     Layout = "~/Pages/_Layout.cshtml";
     var CurrentUser = Model.GetCurrentUser();
     var UserDateFormat = CurrentUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
@@ -92,7 +92,12 @@
 <div id="Topics" class="tabcontent" style="@(Model.Mode == ModeratorPanelMode.TopicModeration ? "display:inherit" : "display:none")">
     @if (isForumSelected)
     {
-        <h4>@Html.Raw(Model.TranslationProvider.Moderator[Lang, "FORUM_TO_MODERATE"]): @Model.ForumName</h4>
+        <h4>
+            @Html.Raw(Model.TranslationProvider.Moderator[Lang, "FORUM_TO_MODERATE"]):
+            <a asp-page="ViewForum" asp-route-forumId="@Model.ForumId">
+                @Html.Raw(Model.ForumName)
+            </a>
+        </h4>
     }
     <span onclick="showForumTree(this)" class="SpanLikeLink nowrap" style="display:block">
         @Html.Raw(Model.TranslationProvider.Moderator[Lang, "CHOOSE_FORUM_TO_MODERATE", Casing.FirstUpper])

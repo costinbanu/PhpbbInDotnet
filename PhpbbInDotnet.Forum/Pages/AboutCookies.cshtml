@@ -1,9 +1,9 @@
 ﻿@page
-@model AuthenticatedPageModel
+@inject Languages.ITranslationProvider _translationProvider
 
 @{
     ViewData["Title"] = "AboutCookies";
     Layout = "~/Pages/_Layout.cshtml";
 }
 
-@Html.Raw(Model.TranslationProvider.AboutCookies[Model.GetLanguage()])
+@Html.Raw(_translationProvider.AboutCookies[_translationProvider.GetLanguage()])

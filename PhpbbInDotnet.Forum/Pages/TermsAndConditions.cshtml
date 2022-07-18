@@ -1,14 +1,15 @@
 ﻿@page
-@model PhpbbInDotnet.Forum.AuthenticatedPageModel
-@{
-    var lang = Model.GetLanguage();
-    ViewData["Title"] = Model.TranslationProvider.BasicText[lang, "TERMS", Domain.Casing.Title];
-    Layout = "~/Pages/_Layout.cshtml";
-}
 
 @using Microsoft.Extensions.Configuration
 @inject IConfiguration _config
+@inject Languages.ITranslationProvider _translationProvider
 
-@Html.Raw(string.Format(Model.TranslationProvider.TermsAndConditions[lang]!, _config.GetValue<string>("ForumName"), _config.GetValue<string>("AdminEmail")))
+@{
+    var lang = _translationProvider.GetLanguage();
+    ViewData["Title"] = _translationProvider.BasicText[lang, "TERMS", Domain.Casing.Title];
+    Layout = "~/Pages/_Layout.cshtml";
+}
+
+@Html.Raw(string.Format(_translationProvider.TermsAndConditions[lang]!, _config.GetValue<string>("ForumName"), _config.GetValue<string>("AdminEmail")))
 
 
