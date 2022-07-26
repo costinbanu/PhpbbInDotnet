@@ -1,17 +1,26 @@
-﻿using PhpbbInDotnet.Domain;
-using System;
+﻿using System;
 
 namespace PhpbbInDotnet.Objects
 {
-    public class WelcomeEmailDto
+    public class WelcomeEmailDto : SimpleEmailBody
     {
-        public string? Subject { get; set; }
-        public string? RegistrationCode { get; set; }
-        public string? UserName { get; set; }
-        public bool IsRegistrationReminder { get; set; } = false;
-        public DateTime? RegistrationDate { get; set; } = null;
-        public bool IsEmailChangeReminder { get; set; } = false;
-        public DateTime? EmailChangeDate { get; set; } = null;
-        public string Language { get; set; } = Constants.DEFAULT_LANGUAGE;
+        public WelcomeEmailDto(string subject, string registrationCode, string userName, string language)
+            : base(userName, language)
+        {
+            Subject = subject;
+            RegistrationCode = registrationCode;
+        }
+
+        public string Subject { get; }
+
+        public string RegistrationCode { get; }
+
+        public bool IsRegistrationReminder { get; set; }
+
+        public DateTime? RegistrationDate { get; set; }
+
+        public bool IsEmailChangeReminder { get; set; }
+
+        public DateTime? EmailChangeDate { get; set; }
     }
 }

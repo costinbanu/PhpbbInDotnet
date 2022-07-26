@@ -133,11 +133,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         to: admin.UserEmail,
                         subject: subject,
                         bodyRazorViewName: "_NewUserNotification",
-                        bodyRazorViewModel: new _NewUserNotificationModel
-                        {
-                            Username = user.Username,
-                            Language = admin.UserLang
-                        });
+                        bodyRazorViewModel: new SimpleEmailBody(user.Username, admin.UserLang));
                 }));
             }
             Title = TranslationProvider.BasicText[lang, "EMAIL_CONFIRM_TITLE"];

@@ -180,11 +180,7 @@ namespace PhpbbInDotnet.Services
                                 to: user.UserEmail,
                                 subject: string.Format(_translationProvider.Email[user.UserLang, "ACCOUNT_ACTIVATED_NOTIFICATION_SUBJECT_FORMAT"], forumName),
                                 bodyRazorViewName: "_AccountActivatedNotification",
-                                bodyRazorViewModel:    new AccountActivatedNotificationDto
-                                {
-                                    Username = user.Username,
-                                    Language = user.UserLang
-                                });
+                                bodyRazorViewModel: new SimpleEmailBody(user.Username, user.UserLang));
 
                             user.UserInactiveReason = UserInactiveReason.NotInactive;
                             user.UserInactiveTime = 0L;
@@ -243,27 +239,19 @@ namespace PhpbbInDotnet.Services
                             if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed)
                             {
                                 subject = string.Format(_translationProvider.Email[user.UserLang, "WELCOME_REMINDER_SUBJECT_FORMAT"], forumName);
-                                model = new WelcomeEmailDto
+                                model = new WelcomeEmailDto(subject, user.UserActkey, user.Username, user.UserLang)
                                 {
-                                    RegistrationCode = user.UserActkey,
-                                    Subject = subject,
-                                    UserName = user.Username,
                                     IsRegistrationReminder = true,
                                     RegistrationDate = user.UserRegdate.ToUtcTime(),
-                                    Language = user.UserLang
                                 };
                             }
                             else if (user.UserInactiveReason == UserInactiveReason.ChangedEmailNotConfirmed)
                             {
                                 subject = string.Format(_translationProvider.Email[user.UserLang, "EMAIL_CHANGED_REMINDER_SUBJECT_FORMAT"], forumName);
-                                model = new WelcomeEmailDto
+                                model = new WelcomeEmailDto(subject, user.UserActkey, user.Username, user.UserLang)
                                 {
-                                    RegistrationCode = user.UserActkey,
-                                    Subject = subject,
-                                    UserName = user.Username,
                                     IsEmailChangeReminder = true,
                                     EmailChangeDate = user.UserInactiveTime.ToUtcTime(),
-                                    Language = user.UserLang
                                 };
                             }
                             else
