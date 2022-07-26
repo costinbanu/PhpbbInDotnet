@@ -227,9 +227,12 @@ namespace PhpbbInDotnet.Forum.Pages
                     });
             }
 
-            await sqlExecuter.ExecuteAsync(
-                "DELETE FROM forum.phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId",
-                new { usr.UserId, forumId = ForumId, topicId = Action == PostingActions.NewTopic ? 0 : TopicId });
+            if (Action == PostingActions.NewTopic || Action == PostingActions.NewForumPost)
+            {
+                await sqlExecuter.ExecuteAsync(
+                    "DELETE FROM forum.phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId",
+                    new { usr.UserId, forumId = ForumId, topicId = Action == PostingActions.NewTopic ? 0 : TopicId });
+            }
 
             Cache.Remove(GetActualCacheKey("Text", true));
             Cache.Remove(GetActualCacheKey("ForumId", true));

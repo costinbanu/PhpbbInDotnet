@@ -197,13 +197,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     to: EmailForPwdReset!,
                     subject: string.Format(TranslationProvider.Email[lang, "RESETPASS_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName")),
                     bodyRazorViewName: "_ResetPasswordPartial",
-                    bodyRazorViewModel: new _ResetPasswordPartialModel
-                    {
-                        Code = resetKey,
-                        IV = iv,
-                        UserId = user.UserId,
-                        UserName = user.Username
-                    });
+                    bodyRazorViewModel: new _ResetPasswordPartialModel(resetKey, user.UserId, user.Username, iv, lang));
 
                 await Task.WhenAll(dbChangesTask, emailTask);
             }

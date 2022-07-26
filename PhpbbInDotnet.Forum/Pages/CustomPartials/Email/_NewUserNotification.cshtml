@@ -1,4 +1,4 @@
-﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials.Email._NewUserNotificationModel
+﻿@model Objects.SimpleEmailBody
 
 @using Microsoft.Extensions.Configuration
 @using PhpbbInDotnet.Domain
@@ -9,7 +9,7 @@
 @Html.Raw(_translationProvider.Email[Model.Language, "GREETING_BEGIN"])
 <br />
 <br />
-@Html.Raw(string.Format(_translationProvider.Email[Model.Language, "NEWUSER_BODY_FORMAT"], Model.Username, $"{_config.GetValue<string>("BaseUrl").TrimEnd('/')}/Admin"))
+@Html.Raw(string.Format(_translationProvider.Email[Model.Language, "NEWUSER_BODY_FORMAT"], Model.UserName, $"{_config.GetValue<string>("BaseUrl").TrimEnd('/')}/Admin"))
 <br />
 <br />
 @Html.Raw(_translationProvider.Email[Model.Language, "GREETING_END"])

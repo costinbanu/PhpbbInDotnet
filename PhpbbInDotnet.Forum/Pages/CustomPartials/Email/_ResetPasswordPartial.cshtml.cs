@@ -1,12 +1,19 @@
-﻿using System;
+﻿using PhpbbInDotnet.Objects;
+using System;
 
 namespace PhpbbInDotnet.Forum.Pages.CustomPartials.Email
 {
-    public class _ResetPasswordPartialModel
+    public class _ResetPasswordPartialModel : SimpleEmailBody
     {
-        public string? Code { get; set; }
-        public int UserId { get; set; }
-        public string? UserName { get; set; }
-        public Guid IV { get; set; }
+        public _ResetPasswordPartialModel(string code, int userId, string userName, Guid iv, string language)
+            : base(userName, language)
+        {
+            Code = code;
+            UserId = userId;
+            IV = iv;
+        }
+        public string Code { get; }
+        public int UserId { get; }
+        public Guid IV { get; }
     }
 }

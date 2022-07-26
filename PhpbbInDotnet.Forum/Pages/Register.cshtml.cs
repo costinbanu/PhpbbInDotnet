@@ -183,19 +183,14 @@ namespace PhpbbInDotnet.Forum.Pages
                 GroupId = 2,
                 UserId = newUser.Entity.UserId
             });
-            var subject = string.Format(TranslationProvider.Email[TranslationProvider.GetLanguage(), "WELCOME_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
+            var subject = string.Format(TranslationProvider.Email[lang, "WELCOME_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
 
             var dbChangesTask = _context.SaveChangesAsync();
             var emailTask = _emailService.SendEmail(
                 to: Email,
                 subject: subject,
                 bodyRazorViewName: "_WelcomeEmailPartial",
-                bodyRazorViewModel: new WelcomeEmailDto
-                {
-                    RegistrationCode = registrationCode,
-                    Subject = subject,
-                    UserName = UserName
-                });
+                bodyRazorViewModel: new WelcomeEmailDto(subject, registrationCode, UserName!, lang));
             await Task.WhenAll(dbChangesTask, emailTask);
 
             return RedirectToPage("Confirm", "RegistrationComplete");

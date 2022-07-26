@@ -249,18 +249,12 @@ namespace PhpbbInDotnet.Forum.Pages
                     dbUser.UserInactiveReason = UserInactiveReason.ChangedEmailNotConfirmed;
                     dbUser.UserActkey = registrationCode;
 
-                    var subject = string.Format(TranslationProvider.Email[lang, "EMAIL_CHANGED_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
+                    var subject = string.Format(TranslationProvider.Email[dbUser.UserLang, "EMAIL_CHANGED_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
                     await _emailService.SendEmail(
                         to: Email!,
                         subject: subject,
                         bodyRazorViewName: "_WelcomeEmailPartial",
-                        bodyRazorViewModel: new WelcomeEmailDto
-                        {
-                            RegistrationCode = registrationCode,
-                            Subject = subject,
-                            UserName = dbUser.Username,
-                            Language = dbUser.UserLang
-                        });
+                        bodyRazorViewModel: new WelcomeEmailDto(subject, registrationCode, dbUser.Username, dbUser.UserLang));
                 }
 
                 userMustLogIn = true;

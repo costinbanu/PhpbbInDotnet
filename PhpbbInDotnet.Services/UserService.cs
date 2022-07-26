@@ -282,11 +282,7 @@ namespace PhpbbInDotnet.Services
                     to: receiver.EmailAddress!,
                     subject: emailSubject,
                     bodyRazorViewName: "_NewPMEmailPartial",
-                    bodyRazorViewModel: new NewPMEmailDto
-                    {
-                        SenderName = senderName,
-                        Language = receiver.Language!
-                    });
+                    bodyRazorViewModel: new NewPMEmailDto(senderName, receiver.Language));
 
                 return ("OK", true);
             }

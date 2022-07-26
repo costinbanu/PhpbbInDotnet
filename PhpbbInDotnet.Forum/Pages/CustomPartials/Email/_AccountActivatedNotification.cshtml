@@ -1,4 +1,4 @@
-﻿@model Objects.AccountActivatedNotificationDto
+﻿@model Objects.SimpleEmailBody
 
 @using Microsoft.Extensions.Configuration
 @using PhpbbInDotnet.Domain
@@ -15,10 +15,10 @@
     @Html.Raw(_translationProvider.Email[Model.Language, "GREETING_BEGIN"])
 </p>
 <p>
-    @Html.Raw(string.Format(_translationProvider.Email[Model.Language, "ACCOUNT_ACTIVATED_NOTIFICATION_BODY_FORMAT"], baseUrl, forumName, Model.Username))
+    @Html.Raw(string.Format(_translationProvider.Email[Model.Language, "ACCOUNT_ACTIVATED_NOTIFICATION_BODY_FORMAT"], baseUrl, forumName, Model.UserName))
 </p>
 <p style="font-size:0.85em">
-    @Html.Raw(string.Format(_translationProvider.Email[Model.Language, "WELCOME_FOOTER_FORMAT"], Model.Username, baseUrl, forumName))
+    @Html.Raw(string.Format(_translationProvider.Email[Model.Language, "WELCOME_FOOTER_FORMAT"], Model.UserName, baseUrl, forumName))
 </p>
 <p>
     @Html.Raw(_translationProvider.Email[Model.Language, "GREETING_END"])
