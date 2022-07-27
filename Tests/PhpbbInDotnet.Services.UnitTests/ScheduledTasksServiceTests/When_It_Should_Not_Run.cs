@@ -7,9 +7,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace PhpbbInDotnet.Services.UnitTests.CleanupServiceTests
+namespace PhpbbInDotnet.Services.UnitTests.ScheduledTasksServiceTests
 {
-    public class When_It_Should_Not_Run : CleanupServiceTestsBase
+    public class When_It_Should_Not_Run : ScheduledTasksServiceTestsBase
     {
         protected async Task RunTest(CleanupServiceOptions options, DateTime? lastRun, DateTimeOffset now, TimeSpan waitTime)
         {

@@ -3,9 +3,9 @@ using Moq;
 using PhpbbInDotnet.Database;
 using Serilog;
 
-namespace PhpbbInDotnet.Services.UnitTests.CleanupServiceTests
+namespace PhpbbInDotnet.Services.UnitTests.ScheduledTasksServiceTests
 {
-    public abstract class CleanupServiceTestsBase
+    public abstract class ScheduledTasksServiceTestsBase
     {
         protected readonly Mock<ISqlExecuter> _mockSqlExecuter;
         protected readonly Mock<IForumDbContext> _mockForumDbContext;
@@ -16,7 +16,7 @@ namespace PhpbbInDotnet.Services.UnitTests.CleanupServiceTests
         protected readonly Mock<IFileInfoService> _mockFileInfoService;
         protected readonly IServiceCollection _services;
 
-        public CleanupServiceTestsBase()
+        public ScheduledTasksServiceTestsBase()
         {
             _mockSqlExecuter = new Mock<ISqlExecuter>();
             _mockForumDbContext = new Mock<IForumDbContext>();
