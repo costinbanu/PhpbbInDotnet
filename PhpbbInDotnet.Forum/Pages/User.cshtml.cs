@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
@@ -91,17 +92,20 @@ namespace PhpbbInDotnet.Forum.Pages
         public long AttachTotalSize { get; private set; }
         public UserPageMode Mode { get; private set; }
         public bool EmailChanged { get; private set; }
+        public bool ShowAvatarCaption => _imageProcessorOptions.Api?.Enabled != true;
 
         private readonly IStorageService _storageService;
         private readonly IWritingToolsService _writingService;
         private readonly IOperationLogService _operationLogService;
         private readonly IConfiguration _config;
         private readonly IEmailService _emailService;
+        private readonly ExternalImageProcessor _imageProcessorOptions;
+        private readonly HttpClient? _imageProcessorClient;
 
         private const int DB_CACHE_EXPIRATION_MINUTES = 20;
 
-        public UserModel(ILogger logger, IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, IStorageService storageService, 
-            IWritingToolsService writingService, IConfiguration config, ITranslationProvider translationProvider, IOperationLogService operationLogService, IEmailService emailService)
+        public UserModel(ILogger logger, IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, IStorageService storageService, IWritingToolsService writingService, 
+            IConfiguration config, ITranslationProvider translationProvider, IOperationLogService operationLogService, IEmailService emailService, IHttpClientFactory httpClientFactory)
             : base(context, forumService, userService, cache, logger, translationProvider)
         {
             _storageService = storageService;
@@ -109,6 +113,8 @@ namespace PhpbbInDotnet.Forum.Pages
             _operationLogService = operationLogService;
             _config = config;
             _emailService = emailService;
+            _imageProcessorOptions = _config.GetObject<ExternalImageProcessor>();
+            _imageProcessorClient = _imageProcessorOptions.Api?.Enabled == true ? httpClientFactory.CreateClient(_imageProcessorOptions.Api.ClientName) : null;
         }
 
         public async Task<IActionResult> OnGet()
@@ -297,35 +303,57 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (Avatar != null)
             {
+                Stream? output = null;
                 try
                 {
                     var maxSize = _config.GetObject<ImageSize>("AvatarMaxSize");
-                    using var stream = Avatar.OpenReadStream();
-                    using var bmp = Image.Load(stream);
-                    stream.Seek(0, SeekOrigin.Begin);
+                    using var input = Avatar.OpenReadStream();
+                    using var bmp = Image.Load(input);
+                    input.Seek(0, SeekOrigin.Begin);
                     if (bmp.Width > maxSize.Width || bmp.Height > maxSize.Height)
                     {
-                        ModelState.AddModelError(nameof(Avatar), string.Format(TranslationProvider.Errors[lang, "AVATAR_FORMAT_ERROR_FORMAT"], maxSize.Width, maxSize.Height));
+                        if (_imageProcessorOptions.Api?.Enabled == true)
+                        {
+                            using var streamContent = new StreamContent(input);
+                            streamContent.Headers.Add("Content-Type", Avatar.ContentType);
+                            using var formContent = new MultipartFormDataContent
+                            {
+                                { streamContent, "File", Avatar.FileName },
+                                { new StringContent(Math.Max(maxSize.Width, maxSize.Height).ToString()), "ResolutionLimit" },
+                            };
+
+                            var result = await _imageProcessorClient!.PostAsync(_imageProcessorOptions.Api.RelativeUri, formContent);
+
+                            if (!result.IsSuccessStatusCode)
+                            {
+                                var errorMessage = await result.Content.ReadAsStringAsync();
+                                throw new HttpRequestException($"The image processor API threw an exception: {errorMessage}");
+                            }
+
+                            output = await result.Content.ReadAsStreamAsync();
+                        }
+                        else
+                        {
+                            ModelState.AddModelError(nameof(Avatar), string.Format(TranslationProvider.Errors[lang, "AVATAR_FORMAT_ERROR_FORMAT"], maxSize.Width, maxSize.Height));
+                            return Page();
+                        }
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(dbUser.UserAvatar))
+                    {
+                        _storageService.DeleteAvatar(dbUser.UserId, Path.GetExtension(dbUser.UserAvatar));
+                    }
+                    if (!await _storageService.UploadAvatar(dbUser.UserId, output ?? input, Avatar.FileName))
+                    {
+                        ModelState.AddModelError(nameof(Avatar), TranslationProvider.Errors[lang, "AVATAR_UPLOAD_ERROR"]);
                         return Page();
                     }
                     else
                     {
-                        if (!string.IsNullOrWhiteSpace(dbUser.UserAvatar))
-                        {
-                            _storageService.DeleteAvatar(dbUser.UserId, Path.GetExtension(dbUser.UserAvatar));
-                        }
-                        if (!await _storageService.UploadAvatar(dbUser.UserId, stream, Avatar.FileName))
-                        {
-                            ModelState.AddModelError(nameof(Avatar), TranslationProvider.Errors[lang, "AVATAR_UPLOAD_ERROR"]);
-                            return Page();
-                        }
-                        else
-                        {
-                            dbUser.UserAvatarType = 1;
-                            dbUser.UserAvatarWidth = unchecked((short)bmp.Width);
-                            dbUser.UserAvatarHeight = unchecked((short)bmp.Height);
-                            dbUser.UserAvatar = Avatar.FileName;
-                        }
+                        dbUser.UserAvatarType = 1;
+                        dbUser.UserAvatarWidth = unchecked((short)bmp.Width);
+                        dbUser.UserAvatarHeight = unchecked((short)bmp.Height);
+                        dbUser.UserAvatar = Avatar.FileName;
                     }
                 }
                 catch (Exception ex)
@@ -333,6 +361,10 @@ namespace PhpbbInDotnet.Forum.Pages
                     Logger.Error(ex, "Failed to upload avatar for {user}", CurrentUser?.Username ?? dbUser?.Username ?? "N/A");
                     ModelState.AddModelError(nameof(Avatar), TranslationProvider.Errors[lang, "AVATAR_UPLOAD_ERROR"]);
                     return Page();
+                }
+                finally
+                {
+                    output?.Dispose();
                 }
             }
 
