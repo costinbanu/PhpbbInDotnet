@@ -164,7 +164,6 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
 
     .SpanLikeLink:hover {
         color: #23527c;
-        text-decoration: underline;
     }
 
 .RuleBox {

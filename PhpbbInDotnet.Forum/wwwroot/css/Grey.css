@@ -1,16 +1,16 @@
 body {
     padding-bottom: 20px;
-    background-color: #323234;
+    background-color: #b3abad; /*#c7bdbf;*/
     font-family: Ubuntu;
     font-size: 1.5em;
 }
 
 a {
-    color: #96c9f6;
+    color: #9e2c47; /*#851d1d;*/
 }
 
     a:hover, a:focus {
-        color: #d5e9fb;
+        color: #d64d6d;
     }
 
 select, input {
@@ -72,10 +72,10 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
 
 .body-content {
     padding: 15px 15px;
-    background-color: #474749;
-    border: solid 1px #5a5a5c;
+    background-color: white;
+    /*border: solid 1px #5a5a5c;*/
     max-width: 100vw;
-    color: whitesmoke;
+    color: #302528;
 }
 
 .PostQuote {
@@ -118,7 +118,7 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
     display: table;
     margin-top: 10px;
     margin-bottom: 10px;
-    background-image: linear-gradient(#85a0b7, #4a779f);
+    background-color: #9e2c47;
     color: white;
     font-size: 1.1em;
     min-height: unset;
@@ -147,7 +147,7 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
 .Caption {
     font-style: italic;
     font-size: 0.8em;
-    color: lightgray;
+    color: dimgray;
 }
 
 .ReportedPost {
@@ -178,25 +178,25 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
         }
 
 .SpanLikeLink {
-    color: #96c9f6;
+    color: #9e2c47;
     text-decoration: none;
     cursor: pointer;
 }
 
     .SpanLikeLink:hover, .SpanLikeLink:focus {
-        color: #d5e9fb;
+        color: #d64d6d;
     }
 
 .RuleBox {
-    border: solid 3px #BC2A4D;
-    color: #ffebee;
+    border: solid 3px #9e2c47;
+    color: #d64d6d;
     padding: 10px;
     margin: 10px
 }
 
 .PageNum {
     display: inline-block;
-    background-color: #666667;
+    background-color: lightgray;
     padding: 2px;
     white-space: nowrap;
     line-height: 1.2em !important;
@@ -216,9 +216,7 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
 }
 
 .ThemeColor {
-    /*text-shadow: -2px -2px 0 white, 0 -2px 0 white, 2px -2px 0 white, 2px 0 0 white, 2px 2px 0 white, 0 2px 0 white, -2px 2px 0 white, -2px 0 0 white;*/
-    filter: brightness(150%);
-    color: white;
+    color: black;
 }
 
 .tab { /* foregreound color override; rest is defined in tabbedPage.css */
