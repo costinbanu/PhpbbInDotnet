@@ -1,31 +1,42 @@
 body {
-    padding-bottom: 20px;
-    background-color: #b3abad; /*#c7bdbf;*/
+    background-color: #f2f6f7;
     font-family: Ubuntu;
     font-size: 1.5em;
 }
 
 a {
-    color: #9e2c47; /*#851d1d;*/
+    color: #436370;
 }
 
     a:hover, a:focus {
-        color: #d64d6d;
+        color: slategrey;
     }
 
 select, input {
     color: #474749;
+    background-color: white;
+    border: solid 1px #436370;
+    border-radius: 3px;
 }
+
+.navbar {
+    background-color: #436370;
+    border: none !important;
+}
+
+    .navbar li > a {
+        color: white !important;
+    }
 
 .MyButton {
     box-shadow: inset 0px 1px 0px 0px #ffffff;
-    background: linear-gradient(to bottom, #e3e1e1 5%, #cdcdcd 100%);
-    background-color: #e3e1e1;
+    background: linear-gradient(to bottom, #f9f9f9 5%, #e9e9e9 100%);
+    background-color: #f9f9f9;
     border-radius: 2px;
-    border: 1px solid #e3e1e1;
+    border: 1px solid #436370;
     display: inline-block;
     cursor: pointer;
-    color: #222222;
+    color: #444444;
     font-family: Ubuntu;
     font-size: 15px;
     font-weight: 400;
@@ -36,8 +47,8 @@ select, input {
 }
 
     .MyButton:hover {
-        background: linear-gradient(to bottom, #cdcdcd 5%, #e3e1e1 100%);
-        background-color: #cdcdcd;
+        background: linear-gradient(to bottom, #e9e9e9 5%, #f9f9f9 100%);
+        background-color: #e9e9e9;
     }
 
     .MyButton:active {
@@ -47,44 +58,42 @@ select, input {
 
 button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hover, input:disabled.MyButton:hover {
     color: #888888;
-    background: linear-gradient(to bottom, #e3e1e1 5%, #cdcdcd 100%);
-    background-color: #e3e1e1;
+    background: linear-gradient(to bottom, #f9f9f9 5%, #e9e9e9 100%);
+    background-color: #f9f9f9;
     position: initial;
     top: initial;
 }
 
 .MyMainButton {
     box-shadow: inset 0px 1px 0px 0px #a3b3bf !important;
-    background: linear-gradient(to bottom, #f9f9f9 5%, #e9e9e9 100%) !important;
-    background-color: #f9f9f9 !important;
+    background: linear-gradient(to bottom, #8b9caa 5%, #445664 100%) !important;
+    background-color: #8b9caa !important;
     font-weight: 900 !important;
-    color: black !important;
+    color: white !important;
     text-shadow: none !important;
     border: 1px solid #243a4b !important;
-    height: 31px !important;
-    font-size: 1.1em;
 }
 
     .MyMainButton:hover {
-        background: linear-gradient(to bottom, #e9e9e9 5%, #f9f9f9 100%) !important;
-        background-color: #e9e9e9 !important;
+        background: linear-gradient(to bottom, #445664 5%, #8b9caa 100%) !important;
+        background-color: #445664 !important;
     }
 
 .body-content {
     padding: 15px 15px;
-    background-color: white;
-    /*border: solid 1px #5a5a5c;*/
+    background-color: #f2f6f7;
     max-width: 100vw;
-    color: #302528;
+    color: black;
+    min-height: 60vh;
 }
 
 .PostQuote {
-    background-color: slategray;
-    border: solid 1px darkslategray;
+    border: solid 1px #436370;
+    border-left-width: thick;
+    background-color: whitesmoke;
     margin: 20px 0px 20px 0px !important;
     font-size: 1em !important;
     border-radius: 3px;
-    color: white;
 }
 
 .CodeBlock {
@@ -96,7 +105,7 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
     max-height: 100px;
     width: 97%;
     overflow-y: scroll;
-    background-color: #69696b;
+    background-color: whitesmoke;
     border: solid 1px gray;
     border-radius: 3px;
     margin: 10px 20px 10px 10px;
@@ -118,7 +127,7 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
     display: table;
     margin-top: 10px;
     margin-bottom: 10px;
-    background-color: #9e2c47;
+    background-color: #436370;
     color: white;
     font-size: 1.1em;
     min-height: unset;
@@ -178,13 +187,13 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
         }
 
 .SpanLikeLink {
-    color: #9e2c47;
+    color: #436370;
     text-decoration: none;
     cursor: pointer;
 }
 
     .SpanLikeLink:hover, .SpanLikeLink:focus {
-        color: #d64d6d;
+        color: slategrey;
     }
 
 .RuleBox {
@@ -219,17 +228,22 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
     color: black;
 }
 
-.tab { /* foregreound color override; rest is defined in tabbedPage.css */
-    color: #474749;
+.ThemeLayoutAndColor {
+    width: 100%;
+    background-color: #436370;
+    color: white !important;
+    display: flex;
+    flex-flow: column;
+}
+
+.ParentLayoutAndColor {
+    background-color: unset !important;
+    color: unset !important;
+    min-height: unset !important;
 }
 
 .content {
     background-color: #888888 !important;
-}
-
-.InputBox {
-    background-color: #555555 !important;
-    color: white !important;
 }
 
 .Popup {

@@ -55,6 +55,10 @@ h3 {
     margin-top: 0px !important;
 }
 
+select, input, button {
+    height: 30px;
+}
+
 .message {
     display: none;
     color: white;
@@ -103,16 +107,10 @@ h3 {
 }
 
 .navbar {
-    background: none !important;
-    border: none !important;
     padding-bottom: 0px !important;
     margin-bottom: 0px !important;
     position: unset !important;
 }
-
-    .navbar li > a {
-        color: white !important;
-    }
 
     .navbar li:after {
         content: "\A" !important;

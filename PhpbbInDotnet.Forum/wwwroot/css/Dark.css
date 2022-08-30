@@ -17,6 +17,15 @@ select, input {
     color: #474749;
 }
 
+.navbar {
+    background: none !important;
+    border: none !important;
+}
+
+    .navbar li > a {
+        color: white !important;
+    }
+
 .MyButton {
     box-shadow: inset 0px 1px 0px 0px #ffffff;
     background: linear-gradient(to bottom, #e3e1e1 5%, #cdcdcd 100%);
