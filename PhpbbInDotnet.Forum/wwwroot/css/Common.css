@@ -429,6 +429,18 @@ label {
         padding-bottom: 5px;
     }
 
+.CollapsedMenu {
+    display: none;
+    border-radius: 3px;
+    float: right;
+    padding: 3px;
+    margin: 3px;
+    cursor: pointer;
+    font-weight: bold;
+    min-width: 70px;
+    text-align: center;
+}
+
 /*Tribute overrides*/
 .tribute-container {
     max-width: 1000px !important;
@@ -513,6 +525,25 @@ a:hover {
 
     .Show768 {
         display: initial;
+    }
+
+    .Summary {
+        display: none;
+        position: absolute;
+        clear: both;
+        width: auto !important;
+        min-width: unset;
+        height: auto !important;
+        border-radius: 3px;
+        padding: 5px !important;
+    }
+
+        .Summary img {
+            display: none;
+        }
+
+    .CollapsedMenu {
+        display: inline-block;
     }
 }
 
