@@ -179,7 +179,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     var messagesTask = (
                         from pm in Context.PhpbbPrivmsgs.AsNoTracking()
                         where pm.MsgId == MessageId
-                        select pm).FirstAsync();
+                        select pm).FirstOrDefaultAsync();
                     var msgToTask = (
                         from mt in Context.PhpbbPrivmsgsTo.AsNoTracking()
                         where mt.MsgId == MessageId && mt.FolderId >= 0
@@ -190,18 +190,24 @@ namespace PhpbbInDotnet.Forum.Pages
                         let userId = mt.AuthorId != user.UserId ? mt.AuthorId : mt.UserId
                         join u in Context.PhpbbUsers.AsNoTracking()
                         on userId equals u.UserId
-                        select u).FirstAsync();
+                        select u).FirstOrDefaultAsync();
                    
                     await Task.WhenAll(messagesTask, msgToTask, otherUserTask);
 
                     var message = await messagesTask;
                     var inboxEntry = await msgToTask;
+                    var otherUser = await otherUserTask;
+
+                    if (message is null)
+                    {
+                        return NotFound();
+                    }
+
                     SelectedMessageIsUnread = inboxEntry?.PmUnread.ToBool() ?? false;
-                    var otherUser = await otherUserTask; 
                     SelectedMessage = new PrivateMessageDto
                     {
                         MessageId = message.MsgId,
-                        OthersId = otherUser.UserId,
+                        OthersId = otherUser?.UserId ?? Constants.ANONYMOUS_USER_ID,
                         OthersName = otherUser?.Username ?? Constants.ANONYMOUS_USER_NAME,
                         OthersColor = otherUser?.UserColour,
                         OthersAvatar = otherUser?.UserAvatar,

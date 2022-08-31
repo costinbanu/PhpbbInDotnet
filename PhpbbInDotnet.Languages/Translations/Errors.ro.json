@@ -20,6 +20,7 @@
   "INACTIVE_USER": "Utilizatorul nu este activat!",
   "BAD_USERNAME_LENGTH": "Numele de utilizator trebuie să aibă o lungime cuprinsă între 2 și 32 de caractere.",
   "BAD_USERNAME_CHARS": "Caractere permise în numele de utilizator: a-z, A-Z, 0-9, [space], [dot], [underscore], [dash].",
+  "ILLEGAL_USERNAME": "Numele de utilizator ales nu este permis.",
   "BAD_PASSWORD_LENGTH": "Parola trebuie să aibă o lungime cuprinsă între 8 și 256 de caractere.",
   "BAD_PASSWORD_CHARS": "Parola trebuie să conțină cel puțin o literă și o cifră",
   "PASSWORD_MISMATCH": "Cele două parole trebuie să fie identice",

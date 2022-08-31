@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
+using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Languages;
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
@@ -40,6 +41,11 @@ namespace PhpbbInDotnet.Services
             else if (!USERNAME_REGEX.IsMatch(value))
             {
                 _modelState.AddModelError(name, _translationProvider.Errors[_language, "BAD_USERNAME_CHARS"]);
+                toReturn = false;
+            }
+            else if (value.Equals(Constants.ANONYMOUS_USER_NAME, System.StringComparison.InvariantCultureIgnoreCase))
+            {
+                _modelState.AddModelError(name, _translationProvider.Errors[_language, "ILLEGAL_USERNAME"]);
                 toReturn = false;
             }
 
