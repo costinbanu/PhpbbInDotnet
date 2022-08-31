@@ -20,6 +20,7 @@
   "INACTIVE_USER": "The user is inactive!",
   "BAD_USERNAME_LENGTH": "The username must be between 2 and 32 chars long.",
   "BAD_USERNAME_CHARS": "Allowed chars in the username: a-z, A-Z, 0-9, [space], [dot], [underscore], [dash].",
+  "ILLEGAL_USERNAME": "The selected username is not allowed",
   "BAD_PASSWORD_LENGTH": "The password must be between 8 and 256 chars long.",
   "BAD_PASSWORD_CHARS": "The password must contain at least a letter and a digit.",
   "PASSWORD_MISMATCH": "The two passwords must match.",

@@ -140,10 +140,14 @@
         <div class="FlexCenter helperRow">
             <div style="margin-right:15px">[youtube]video_id[/youtube]</div>
             <div class="FlexRight PostInputWidth" id="dummy">
-                video_id is the code between „v=” and „&” (if any) from the video address:<br />
+                video_id is the code between „v=” and „&” (if any) or the code following „youtu.be/” from the video address. For example:<br />
                 https://www.youtube.com/watch?v=<span style="font-weight:bold; font-size:1.2em">Gf7_a2DVl7E</span>&x=....
                 <br />
-                Result:
+                or
+                <br />
+                https://youtu.be/<span style="font-weight:bold; font-size:1.2em">Gf7_a2DVl7E</span>
+                <br />
+                become [youtube]Gf7_a2DVl7E[/youtube], having this result:
                 <br />
                 <iframe width="560" height="315" src="https://www.youtube.com/embed/Gf7_a2DVl7E?html5=1" frameborder="0"></iframe>
             </div>
