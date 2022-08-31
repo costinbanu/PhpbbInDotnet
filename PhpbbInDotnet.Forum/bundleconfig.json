@@ -1,56 +1,70 @@
 ﻿[
-  {
-    "outputFileName": "wwwroot/css/Light.min.css",
-    "inputFiles": [
-      "wwwroot/css/Common.css",
-      "wwwroot/css/posting.css",
-      "wwwroot/css/pagination.css",
-      "wwwroot/css/Light.css",
-      "wwwroot/css/tabbedPage.css"
-    ],
-    "minify": {
-      "enabled": true,
-      "renameLocals": true
-    }
-  },
-  {
-    "outputFileName": "wwwroot/css/Dark.min.css",
-    "inputFiles": [
-      "wwwroot/css/Common.css",
-      "wwwroot/css/posting.css",
-      "wwwroot/css/pagination.css",
-      "wwwroot/css/Dark.css",
-      "wwwroot/css/tabbedPage.css"
-    ],
-    "minify": {
-      "enabled": true,
-      "renameLocals": true
-    }
-  },
-  {
-    "outputFileName": "wwwroot/css/admin.min.css",
-    "inputFiles": [
-      "wwwroot/css/admin.css"
-    ],
-    "minify": {
-      "enabled": true,
-      "renameLocals": true
-    }
-  },
-  {
-    "outputFileName": "wwwroot/js/site.min.js",
-    "inputFiles": [
-      "wwwroot/js/dateFormatter.js",
-      "wwwroot/js/posting.js",
-      "wwwroot/js/site.js",
-      "wwwroot/js/tabbedPage.js",
-      "wwwroot/js/viewTopic.js",
-      "wwwroot/js/moderator.js"
-    ],
-    "minify": {
-      "enabled": true,
-      "renameLocals": true
+    {
+        "outputFileName": "wwwroot/css/Light.min.css",
+        "inputFiles": [
+            "wwwroot/css/Common.css",
+            "wwwroot/css/posting.css",
+            "wwwroot/css/pagination.css",
+            "wwwroot/css/Light.css",
+            "wwwroot/css/tabbedPage.css"
+        ],
+        "minify": {
+            "enabled": true,
+            "renameLocals": true
+        }
     },
-    "sourceMap": false
-  }
+    {
+        "outputFileName": "wwwroot/css/Dark.min.css",
+        "inputFiles": [
+            "wwwroot/css/Common.css",
+            "wwwroot/css/posting.css",
+            "wwwroot/css/pagination.css",
+            "wwwroot/css/Dark.css",
+            "wwwroot/css/tabbedPage.css"
+        ],
+        "minify": {
+            "enabled": true,
+            "renameLocals": true
+        }
+    },
+    {
+        "outputFileName": "wwwroot/css/Teal.min.css",
+        "inputFiles": [
+            "wwwroot/css/Common.css",
+            "wwwroot/css/posting.css",
+            "wwwroot/css/pagination.css",
+            "wwwroot/css/Teal.css",
+            "wwwroot/css/tabbedPage.css"
+        ],
+        "minify": {
+            "enabled": true,
+            "renameLocals": true
+        }
+    },
+    {
+        "outputFileName": "wwwroot/css/admin.min.css",
+        "inputFiles": [
+            "wwwroot/css/admin.css"
+        ],
+        "minify": {
+            "enabled": true,
+            "renameLocals": true
+        }
+    },
+    {
+        "outputFileName": "wwwroot/js/site.min.js",
+        "inputFiles": [
+            "wwwroot/js/dateFormatter.js",
+            "wwwroot/js/posting.js",
+            "wwwroot/js/site.js",
+            "wwwroot/js/tabbedPage.js",
+            "wwwroot/js/viewTopic.js",
+            "wwwroot/js/moderator.js"
+        ],
+        "minify": {
+            "enabled": true,
+            "renameLocals": true
+        },
+        "sourceMap": false
+    }
 ]

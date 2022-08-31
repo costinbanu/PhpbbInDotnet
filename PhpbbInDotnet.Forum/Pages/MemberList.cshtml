@@ -56,10 +56,10 @@
 <div id="AllUsers" class="tabcontent" style="@(Model.Mode == MemberListPages.AllUsers ? "display:inherit" : "display:none")">
     <h3>@Model.TranslationProvider.BasicText[Lang, "FORUM_MEMBERS", Casing.Title]</h3>
     <form method="get">
-        @Html.DropDownListFor(m => m.Order, EnumUtility.EnumToDropDownList<MemberListOrder>(selectedItem: Model.Order, textTransform: order => Model.TranslationProvider.Enums[Lang, order], defaultText: Model.TranslationProvider.BasicText[Lang, "ORDER_BY"]), new { id = "userOrder", style = "height:30px; margin-top: 5px" })
+        @Html.DropDownListFor(m => m.Order, EnumUtility.EnumToDropDownList<MemberListOrder>(selectedItem: Model.Order, textTransform: order => Model.TranslationProvider.Enums[Lang, order], defaultText: Model.TranslationProvider.BasicText[Lang, "ORDER_BY"]), new { id = "userOrder", style = "margin-top: 5px" })
         <input asp-for="Mode" type="hidden" />
         <input asp-for="PageNum" type="hidden" />
-        <input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "SUBMIT", Casing.FirstUpper])" style="height:32px; margin-top: 5px" />
+        <input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "SUBMIT", Casing.FirstUpper])" style="margin-top: 5px" />
     </form>
     @if (Model.UserList?.Any() ?? false)
     {
@@ -89,17 +89,17 @@
     }
     <form method="get">
         <input type="hidden" name="handler" value="search" />
-        <input asp-for="Username" placeholder="@Model.TranslationProvider.BasicText[Lang, "SEARCH_BY_NAME"]" style="height:30px; margin-top: 5px" id="usernameUserInput" autocomplete="new-password" />
+        <input asp-for="Username" placeholder="@Model.TranslationProvider.BasicText[Lang, "SEARCH_BY_NAME"]" style="margin-top: 5px" id="usernameUserInput" autocomplete="new-password" />
         @{
             var items = Model.GroupList!.Select(g => new SelectListItem(g.GroupName, g.GroupId.ToString(), g.GroupId == Model.GroupId, false)).ToList();
             items.Add(new SelectListItem(Model.TranslationProvider.BasicText[Lang, "SEARCH_IN_GROUP"], "null", !Model.GroupId.HasValue, true));
-            @Html.DropDownListFor(m => m.GroupId, items, new { id = "searchGroup", style = "height:30px; margin-top: 5px" });
+            @Html.DropDownListFor(m => m.GroupId, items, new { id = "searchGroup", style = "margin-top: 5px" });
         }
-        @Html.DropDownListFor(m => m.Order, EnumUtility.EnumToDropDownList<MemberListOrder>(selectedItem: Model.Order, textTransform: order => Model.TranslationProvider.Enums[Lang, order], defaultText: Model.TranslationProvider.BasicText[Lang, "ORDER_BY"]), new { id = "searchOrder", style = "height:30px; margin-top: 5px" })
+        @Html.DropDownListFor(m => m.Order, EnumUtility.EnumToDropDownList<MemberListOrder>(selectedItem: Model.Order, textTransform: order => Model.TranslationProvider.Enums[Lang, order], defaultText: Model.TranslationProvider.BasicText[Lang, "ORDER_BY"]), new { id = "searchOrder", style = "margin-top: 5px" })
         <input asp-for="Mode" type="hidden" />
         <input asp-for="PageNum" type="hidden" id="pageNumInput" />
         <input type="hidden" value="@Model.Username" id="usernameOriginalValue" />
-        <input type="submit" value="@Model.TranslationProvider.BasicText[Lang, "SUBMIT", Casing.FirstUpper]" style="height:32px; margin-top: 5px" onclick="return shouldChangePageNum()" />
+        <input type="submit" value="@Model.TranslationProvider.BasicText[Lang, "SUBMIT", Casing.FirstUpper]" style="margin-top: 5px" onclick="return shouldChangePageNum()" />
     </form>
 
     @if (Model.UserList?.Any() ?? false)
@@ -165,11 +165,11 @@
     @if (Model.Mode == MemberListPages.ActiveUsers)
     {
         <form method="get">
-            @Html.DropDownListFor(m => m.Order, EnumUtility.EnumToDropDownList<MemberListOrder>(selectedItem: Model.Order, textTransform: order => Model.TranslationProvider.Enums[Lang, order], defaultText: Model.TranslationProvider.BasicText[Lang, "ORDER_BY"]), new { id = "userOrder", style = "height:30px; margin-top: 5px" })
+            @Html.DropDownListFor(m => m.Order, EnumUtility.EnumToDropDownList<MemberListOrder>(selectedItem: Model.Order, textTransform: order => Model.TranslationProvider.Enums[Lang, order], defaultText: Model.TranslationProvider.BasicText[Lang, "ORDER_BY"]), new { id = "userOrder", style = "margin-top: 5px" })
             <input asp-for="Mode" type="hidden" />
             <input asp-for="PageNum" type="hidden" />
             <input name="handler" value="setMode" type="hidden" />
-            <input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "SUBMIT", Casing.FirstUpper])" style="height:32px; margin-top: 5px" />
+            <input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "SUBMIT", Casing.FirstUpper])" style="margin-top: 5px" />
         </form>
     }
     @{
