@@ -134,16 +134,7 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
 }
 
 .CollapsedMenu {
-    display: none;
-    border-radius: 3px;
-    border: solid 1px white;
-    float: right;
-    padding: 3px;
-    margin: 3px;
-    cursor: pointer;
-    font-weight: bold;
-    min-width: 70px;
-    text-align: center;
+    border: solid 1px #436370;
 }
 
 .validation {
@@ -260,25 +251,8 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
     color: #f57371;
 }
 
-@media (max-width: 768px) {
-    .Summary {
-        display: none;
-        position: absolute;
-        clear: both;
-        width: auto !important;
-        min-width: unset;
-        height: auto !important;
-        border-radius: 3px;
-        padding: 5px !important;
-        background-color: #666667 !important;
-        border: solid 1px white;
-    }
-
-        .Summary img {
-            display: none;
-        }
-
-    .CollapsedMenu {
-        display: inline-block;
-    }
+.Summary {
+    background-color: #f2f6f7 !important;
+    border: solid 1px #436370;
 }
+
