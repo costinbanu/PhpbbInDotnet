@@ -55,7 +55,7 @@ h3 {
     margin-top: 0px !important;
 }
 
-select, input, button {
+select, input:not([type=checkbox]):not([type=radio]), button {
     height: 30px;
 }
 

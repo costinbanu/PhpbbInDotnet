@@ -214,6 +214,10 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
     color: #a94442;
 }
 
+.content {
+    background-color: #f1f1f1;
+}
+
 @media (max-width: 768px) {
     .Summary {
         display: none;

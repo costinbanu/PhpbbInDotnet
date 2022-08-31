@@ -156,7 +156,7 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
 .Caption {
     font-style: italic;
     font-size: 0.8em;
-    color: dimgray;
+    color: #5e5e5e;
 }
 
 .ReportedPost {
@@ -205,7 +205,7 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
 
 .PageNum {
     display: inline-block;
-    background-color: lightgray;
+    background-color: #ccc;
     padding: 2px;
     white-space: nowrap;
     line-height: 1.2em !important;
@@ -243,7 +243,8 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
 }
 
 .content {
-    background-color: #888888 !important;
+    background-color: #f1f1f1;
+    border: 1px solid #ccc;
 }
 
 .Popup {

@@ -3,16 +3,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
-using PhpbbInDotnet.Forum.Pages.CustomPartials.Email;
+using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Domain;
+using Serilog;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Mail;
 using System.Threading.Tasks;
-using Serilog;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -142,14 +140,14 @@ namespace PhpbbInDotnet.Forum.Pages
         public void OnGetNewPassword()
         {
             var lang = GetLanguage();
-            Message = $"<span class=\"success\">{TranslationProvider.BasicText[lang, "NEW_PASSWORD_MESSAGE"]}</span>";
+            Message = $"<span class=\"message success\">{TranslationProvider.BasicText[lang, "NEW_PASSWORD_MESSAGE"]}</span>";
             Title = TranslationProvider.BasicText[lang, "NEW_PASSWORD_TITLE"];
         }
 
         public void OnGetPasswordChanged()
         {
             var lang = GetLanguage();
-            Message = $"<span class=\"success\">{TranslationProvider.BasicText[lang, "NEW_PASSWORD_COMPLETE"]}</span>";
+            Message = $"<span class=\"message success\">{TranslationProvider.BasicText[lang, "NEW_PASSWORD_COMPLETE"]}</span>";
             Title = TranslationProvider.BasicText[lang, "NEW_PASSWORD_TITLE"];
         }
 
@@ -174,13 +172,13 @@ namespace PhpbbInDotnet.Forum.Pages
         public void OnGetDestinationConfirmation()
         {
             IsDestinationConfirmation = true;
-            Message = $"<span class=\"success\">{TranslationProvider.BasicText[GetLanguage(), "GENERIC_SUCCESS"]}</span>";
+            Message = $"<span class=\"message success\">{TranslationProvider.BasicText[GetLanguage(), "GENERIC_SUCCESS"]}</span>";
         }
 
         public async Task OnGetDestinationPicker()
         {
             IsDestinationPicker = true;
-            Message = $"<span class=\"success\">{TranslationProvider.BasicText[GetLanguage(), "GENERIC_SUCCESS"]}</span>";
+            Message = $"<span class=\"message success\">{TranslationProvider.BasicText[GetLanguage(), "GENERIC_SUCCESS"]}</span>";
             await SetFrontendData();
         }
 
