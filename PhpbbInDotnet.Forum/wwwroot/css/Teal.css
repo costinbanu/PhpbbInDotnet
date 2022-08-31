@@ -160,7 +160,8 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
 }
 
 .ReportedPost {
-    background-color: #882039;
+    border: solid 3px #BC2A4D;
+    background-color: #F3BFCC;
 }
 
 .MiddleBox {
