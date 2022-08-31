@@ -13,6 +13,7 @@
         padding: 14px 16px;
         transition: 0.3s;
         font-size: 17px;
+        height: unset !important;
     }
 
         .tab button:hover {
