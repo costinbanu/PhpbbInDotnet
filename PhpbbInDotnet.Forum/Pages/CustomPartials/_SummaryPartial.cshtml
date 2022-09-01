@@ -18,7 +18,7 @@
                 _cache.Add(CacheUtility.GetAvatarCacheKey(Model.AuthorId, Model.CorrelationId ?? Guid.Empty), Model.AuthorAvatar, TimeSpan.FromSeconds(30));
             }
             <li>
-                <img src="./File?userId=@Model.AuthorId&correlationId=@Model.CorrelationId&handler=avatar" />
+                <img src="./File?userId=@Model.AuthorId&correlationId=@Model.CorrelationId&handler=avatar" style="border-radius:8px" />
             </li>
         }
         <li>
@@ -33,15 +33,11 @@
                     @Html.Raw(_translationProvider.BasicText[Model.Language, "LAST_POST_TEXT"])
                 }
             }
-            else
+            else if (!string.IsNullOrWhiteSpace(Model.AuthorTag))
             {
-                var tag = Model.AuthorTag;
-                if (string.IsNullOrWhiteSpace(tag))
-                {
-                    tag = _translationProvider.BasicText[Model.Language, "AUTHOR"];
-                }
-                @Html.Raw(tag)
+                @Html.Raw(Model.AuthorTag)
             }
+
             @if (Model.AuthorOnFoeList)
             {
                 <span>@Html.Raw($"[{_translationProvider.BasicText[Model.Language, "HIDDEN"]}]")</span>

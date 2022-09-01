@@ -32,7 +32,7 @@
     "CONTACT": "contact",
     "STARTING_ON": "Începând cu",
     "FORUM_STATS_FORMAT": "cei {0} utilizatori ai forumului au scris {1} mesaje în {2} subiecte și {3} sub-forumuri.",
-    "FORUM_STATS_CAPTION_FORMAT": "Interval de actualizare: {0} minute.",
+    "FORUM_STATS_24H_FORMAT": "În ultimele 24 de ore au fost {0} utilizatori online care au scris {1} mesaje.",
     "SEARCH": "Căutare",
     "DO_SEARCH": "Caută",
     "STATS": "Statistici",

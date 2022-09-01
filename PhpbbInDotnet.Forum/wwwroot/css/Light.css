@@ -209,7 +209,9 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
     background-color: #f1f1f1;
 }
 
-.Summary {
-    border: solid 1px black;
-    background-color: white;
+@media (max-width: 768px) {
+    .Summary {
+        border: solid 1px black;
+        background-color: white;
+    }
 }

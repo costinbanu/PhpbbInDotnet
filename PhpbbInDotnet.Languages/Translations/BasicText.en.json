@@ -32,7 +32,7 @@
     "CONTACT": "contact",
     "STARTING_ON": "Since",
     "FORUM_STATS_FORMAT": "our {0} forum members have written {1} posts in {2} topics and {3} subforums.",
-    "FORUM_STATS_CAPTION_FORMAT": "Refresh interval: {0} minutes.",
+    "FORUM_STATS_24H_FORMAT": "Within the past 24 hours there were {0} users online who wrote {1} posts.",
     "SEARCH": "Search",
     "DO_SEARCH": "Search",
     "STATS": "Stats",
