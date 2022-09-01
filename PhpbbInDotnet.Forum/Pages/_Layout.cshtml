@@ -53,8 +53,8 @@
         <script src="~/js/dateFormatter.js"></script>
     </environment>
     <environment exclude="Development">
-        <link rel="stylesheet" href="~/css/@(css).min.css?v=3.1" />
-        <script src="~/js/site.min.js?v=3.1"></script>
+        <link rel="stylesheet" href="~/css/@(css).min.css?v=3.2" />
+        <script src="~/js/site.min.js?v=3.2"></script>
     </environment>
 
     <!-- Global site tag (gtag.js) - Google Analytics -->
@@ -222,12 +222,12 @@
     </div>
     <p></p>
     <div class="ThemeLayoutAndColor">
-    <div class="container body-content size1300">
-        @Html.Raw(_translationProvider.BasicText[lang, "STARTING_ON"])
-        <formatted-date date="@((statistics.FirstMessageDate ?? DateTime.UtcNow).ToString("o"))" format="@dateFormat" />
-        @Html.Raw(string.Format(_translationProvider.BasicText[lang, "FORUM_STATS_FORMAT"], statistics.UserCount, statistics.PostCount, statistics.TopicCount, statistics.ForumCount))<br />
-        <span class="Caption">@Html.Raw(string.Format(_translationProvider.BasicText[lang, "FORUM_STATS_CAPTION_FORMAT"], _statisticsService.RefreshIntervalMinutes))</span>
-    </div>
+        <div class="container body-content size1300 ParentLayoutAndColor">
+            @Html.Raw(_translationProvider.BasicText[lang, "STARTING_ON"])
+            <formatted-date date="@((statistics.FirstMessageDate ?? DateTime.UtcNow).ToString("o"))" format="@dateFormat" />
+            @Html.Raw(string.Format(_translationProvider.BasicText[lang, "FORUM_STATS_FORMAT"], statistics.UserCount, statistics.PostCount, statistics.TopicCount, statistics.ForumCount))<br />
+            @Html.Raw(string.Format(_translationProvider.BasicText[lang, "FORUM_STATS_24H_FORMAT"], statistics.LatestUsersCount, statistics.LatestPostsCount))
+        </div>
         <center style="color:white;">
             <p>&nbsp;</p>
             <p>

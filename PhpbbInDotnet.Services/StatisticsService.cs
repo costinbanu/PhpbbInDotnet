@@ -1,9 +1,7 @@
-﻿using Dapper;
-using LazyCache;
+﻿using LazyCache;
 using PhpbbInDotnet.Database;
-using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Objects;
 using System;
 using System.Threading.Tasks;
 
@@ -11,12 +9,8 @@ namespace PhpbbInDotnet.Services
 {
     class StatisticsService : IStatisticsService
     {
-        const string CACHE_KEY = "ForumStatistics";
-
         private readonly IAppCache _cache;
         private readonly IForumDbContext _dbContext;
-
-        public int RefreshIntervalMinutes => 30;
 
         public StatisticsService(IAppCache cache, IForumDbContext dbContext)
         {
@@ -25,28 +19,34 @@ namespace PhpbbInDotnet.Services
         }
 
         public async Task<Statistics> GetStatistics()
-            => await _cache.GetOrAddAsync(
-                CACHE_KEY,
-                async () =>
-                {
-                    var sqlExecuter = _dbContext.GetSqlExecuter();
-                    var timeTask = sqlExecuter.ExecuteScalarAsync<long>("SELECT min(post_time) FROM phpbb_posts");
-                    var userTask = sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_users");
-                    var postTask = sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_posts");
-                    var topicTask = sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_topics");
-                    var forumTask = sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_forums");
-                    await Task.WhenAll(timeTask, userTask, postTask, topicTask, forumTask);
+            => await _cache.GetOrAddAsync("ForumStatistics", GetStatisticsImpl, DateTimeOffset.UtcNow.AddMinutes(30));
 
-                    return new Statistics
-                    {
-                        FirstMessageDate = (await timeTask) == 0 ? null : (await timeTask).ToUtcTime(),
-                        UserCount = await userTask,
-                        PostCount = await postTask,
-                        TopicCount = await topicTask,
-                        ForumCount = await forumTask
-                    };
-                },
-                DateTimeOffset.UtcNow.AddMinutes(RefreshIntervalMinutes)
-            );
+        async Task<Statistics> GetStatisticsImpl()
+        {
+            var sqlExecuter = _dbContext.GetSqlExecuter();
+            var twentyFourHoursAgo = DateTime.UtcNow.AddHours(-24).ToUnixTimestamp();
+
+            var timeTask = sqlExecuter.ExecuteScalarAsync<long>("SELECT min(post_time) FROM phpbb_posts");
+            var userTask = sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_users");
+            var postTask = sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_posts");
+            var topicTask = sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_topics");
+            var forumTask = sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_forums");
+            var latestUsersTask = sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_users WHERE user_lastvisit >= @twentyFourHoursAgo", new { twentyFourHoursAgo });
+            var latestPostsTask = sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_posts WHERE post_time >= @twentyFourHoursAgo", new { twentyFourHoursAgo });
+            
+            await Task.WhenAll(timeTask, userTask, postTask, topicTask, forumTask, latestUsersTask, latestPostsTask);
+
+            var time = await timeTask;
+            return new Statistics
+            {
+                FirstMessageDate = time == 0 ? null : time.ToUtcTime(),
+                UserCount = await userTask,
+                PostCount = await postTask,
+                TopicCount = await topicTask,
+                ForumCount = await forumTask,
+                LatestPostsCount = await latestPostsTask,
+                LatestUsersCount = await latestUsersTask,
+            };
+        }
     }
 }
