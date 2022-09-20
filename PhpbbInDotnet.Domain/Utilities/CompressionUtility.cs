@@ -1,11 +1,10 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using Microsoft.AspNetCore.WebUtilities;
+using Newtonsoft.Json;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Web;
 
 namespace PhpbbInDotnet.Domain.Utilities
 {
@@ -37,9 +36,9 @@ namespace PhpbbInDotnet.Domain.Utilities
         }
 
         public static async Task<string> CompressAndEncode(string input)
-            => HttpUtility.UrlEncode(Convert.ToBase64String(await CompressObject(input)));
+            => WebEncoders.Base64UrlEncode(await CompressObject(input));
 
         public static async Task<string?> DecodeAndDecompress(string input)
-            => await DecompressObject<string>(Convert.FromBase64String(HttpUtility.UrlDecode(input)));
+            => await DecompressObject<string>(WebEncoders.Base64UrlDecode(input));
     }
 }
