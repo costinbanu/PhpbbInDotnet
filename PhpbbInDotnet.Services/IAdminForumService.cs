@@ -11,7 +11,7 @@ namespace PhpbbInDotnet.Services
         Task<(string Message, bool? IsSuccess)> DeleteForum(int forumId, int adminUserId);
         Task<List<SelectListItem>> FlatForumTreeAsListItem(int parentId, AuthenticatedUserExpanded? user);
         Task<IEnumerable<ForumPermissions>> GetPermissions(int forumId);
-        Task<(string Message, bool? IsSuccess)> ManageForumsAsync(UpsertForumDto dto, int adminUserId, bool isRoot);
+        Task<UpsertForumResult> ManageForumsAsync(UpsertForumDto dto, int adminUserId, bool isRoot);
         Task<(PhpbbForums Forum, List<PhpbbForums> Children)> ShowForum(int forumId);
     }
 }

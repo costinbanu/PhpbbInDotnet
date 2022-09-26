@@ -57,6 +57,10 @@
 
     $(window).on('load', function () {
         vt.onLoad();
+        if (@Json.Serialize(!string.IsNullOrWhiteSpace(Model.ModeratorActionResult.Message))) {
+            $('#TopicAction').val('@EnumUtility.DefaultValue');
+            $('#PostAction').val('@EnumUtility.DefaultValue');
+        }
     });
 
     //forum tree callback
@@ -281,7 +285,7 @@ else if (!isCurrentForumReadOnly)
                 selectedItem: Model.PostAction, 
                 textTransform: item => Model.TranslationProvider.Enums[lang, item], 
                 defaultText: Model.TranslationProvider.BasicText[lang, "SELECT_AN_OPTION"],
-                valueFilter: action => action != ModeratorPostActions.RestorePosts
+                valueFilter: action => action != ModeratorPostActions.RestorePosts && action != ModeratorPostActions.DuplicateSelectedPost
             ),
             new { onchange = "mod.showPostExtraInput(this)", id = "PostAction", style = "max-width:70%; height: 30px; padding-top: 0px" }
         )

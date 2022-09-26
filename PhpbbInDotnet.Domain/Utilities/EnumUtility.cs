@@ -7,6 +7,8 @@ namespace PhpbbInDotnet.Domain.Utilities
 {
     public static class EnumUtility
     {
+        public const string DefaultValue = "dummyValue";
+
         public static string ExpandEnum(Enum @enum)
             => $"{@enum.GetType().Name}.{@enum}";
 
@@ -21,7 +23,7 @@ namespace PhpbbInDotnet.Domain.Utilities
             ).ToList();
             if (!selectedItem.HasValue && !string.IsNullOrWhiteSpace(defaultText))
             {
-                toReturn.Insert(0, new SelectListItem(defaultText, "dummyValue", true, true));
+                toReturn.Insert(0, new SelectListItem(defaultText, DefaultValue, true, true));
             }
             return toReturn;
         }

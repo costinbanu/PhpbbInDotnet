@@ -40,7 +40,7 @@ namespace PhpbbInDotnet.Services
             _logger = logger;
         }
 
-        public async Task<(string Message, bool? IsSuccess)> ManageForumsAsync(UpsertForumDto dto, int adminUserId, bool isRoot)
+        public async Task<UpsertForumResult> ManageForumsAsync(UpsertForumDto dto, int adminUserId, bool isRoot)
         {
             var lang = _translationProvider.GetLanguage();
             try
@@ -49,18 +49,24 @@ namespace PhpbbInDotnet.Services
                 {
                     await ReorderChildren(0);
                     await _context.SaveChangesAsync();
-                    return (string.Format(_translationProvider.Admin[lang, "FORUM_UPDATED_SUCCESSFULLY_FORMAT"], _config.GetObject<string>("ForumName")), true);
+                    return new(
+                        isSuccess: true, 
+                        message: string.Format(_translationProvider.Admin[lang, "FORUM_UPDATED_SUCCESSFULLY_FORMAT"], _config.GetObject<string>("ForumName")));
                 }
 
                 var actual = await _context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == dto.ForumId);
                 var isNewForum = false;
                 if (string.IsNullOrWhiteSpace(dto.ForumName))
                 {
-                    return (_translationProvider.Admin[lang, "INVALID_FORUM_NAME"], false);
+                    return new(
+                        isSuccess: false, 
+                        message: _translationProvider.Admin[lang, "INVALID_FORUM_NAME"]);
                 }
                 if ((dto.ForumId ?? 0) > 0 && actual == null)
                 {
-                    return (string.Format(_translationProvider.Admin[lang, "FORUM_DOESNT_EXIST_FORMAT"], dto.ForumId), false);
+                    return new(
+                        isSuccess: false,
+                        message: string.Format(_translationProvider.Admin[lang, "FORUM_DOESNT_EXIST_FORMAT"], dto.ForumId));
                 }
                 else if ((dto.ForumId ?? 0) == 0)
                 {
@@ -133,12 +139,19 @@ namespace PhpbbInDotnet.Services
 
                 await _operationLogService.LogAdminForumAction(isNewForum ? AdminForumActions.Add : AdminForumActions.Update, adminUserId, actual);
 
-                return (string.Format(_translationProvider.Admin[lang, "FORUM_UPDATED_SUCCESSFULLY_FORMAT"], actual.ForumName), true);
+                return new(
+                    isSuccess: true,
+                    message: string.Format(_translationProvider.Admin[lang, "FORUM_UPDATED_SUCCESSFULLY_FORMAT"], actual.ForumName))
+                {
+                    Forum = actual
+                };
             }
             catch (Exception ex)
             {
                 var id = _logger.ErrorWithId(ex);
-                return (string.Format(_translationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+                return new (
+                    isSuccess: false,
+                    message: string.Format(_translationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id));
             }
 
             (int entityId, int roleId) translatePermission(string? permission)

@@ -217,8 +217,11 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostForumManagement(UpsertForumDto dto)
             => await WithAdmin(async () =>
             {
-                (Message, IsSuccess) = await _adminForumService.ManageForumsAsync(dto, GetCurrentUser().UserId, dto.IsRoot);
+                var result = await _adminForumService.ManageForumsAsync(dto, GetCurrentUser().UserId, dto.IsRoot);
 
+                Message = result.Message;
+                IsSuccess = result.IsSuccess;
+                Forum = result.Forum;
                 ShowForum = false;
                 Category = AdminCategories.Forums;
                 return await OnGet();
