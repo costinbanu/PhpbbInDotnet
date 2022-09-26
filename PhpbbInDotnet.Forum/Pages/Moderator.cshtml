@@ -69,6 +69,10 @@
         if (@Json.Serialize(Model.ScrollToAction)) {
             document.getElementById('SubmitTopics').scrollIntoView();
         }
+        if (@Json.Serialize(!string.IsNullOrWhiteSpace(Model.Message))) {
+            $('#TopicAction').val('@EnumUtility.DefaultValue');
+            $('#DestinationForumId').val('');
+        }
     });
 
     //image resize constant
