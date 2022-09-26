@@ -2,7 +2,8 @@
 @using Microsoft.Extensions.Configuration
 @using Newtonsoft.Json
 @using Domain
-@using Objects;
+@using Domain.Utilities
+@using Objects
 
 @inject IConfiguration _config
 @inject Services.IUserService  _userService
@@ -226,7 +227,7 @@
             @Html.Raw(_translationProvider.BasicText[lang, "STARTING_ON"])
             <formatted-date date="@((statistics.FirstMessageDate ?? DateTime.UtcNow).ToString("o"))" format="@dateFormat" />
             @Html.Raw(string.Format(_translationProvider.BasicText[lang, "FORUM_STATS_FORMAT"], statistics.UserCount, statistics.PostCount, statistics.TopicCount, statistics.ForumCount))<br />
-            @Html.Raw(string.Format(_translationProvider.BasicText[lang, "FORUM_STATS_24H_FORMAT"], statistics.LatestUsersCount, statistics.LatestPostsCount))
+            @Html.Raw(string.Format(_translationProvider.BasicText[lang, "FORUM_STATS_24H_FORMAT"], statistics.LatestUsersCount, statistics.LatestPostsCount, StringUtility.ReadableFileSize(statistics.LatestFileSizeSum)))
         </div>
         <center style="color:white;">
             <p>&nbsp;</p>

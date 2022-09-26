@@ -17,5 +17,7 @@ namespace PhpbbInDotnet.Objects
         public int LatestUsersCount { get; set; }
 
         public int LatestPostsCount { get; set; }
+
+        public long LatestFileSizeSum { get; set; }
     }
 }

@@ -33,8 +33,9 @@ namespace PhpbbInDotnet.Services
             var forumTask = sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_forums");
             var latestUsersTask = sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_users WHERE user_lastvisit >= @twentyFourHoursAgo", new { twentyFourHoursAgo });
             var latestPostsTask = sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_posts WHERE post_time >= @twentyFourHoursAgo", new { twentyFourHoursAgo });
+            var latestFilesTask = sqlExecuter.ExecuteScalarAsync<long>("SELECT sum(filesize) FROM phpbb_attachments WHERE filetime >= @twentyFourHoursAgo", new { twentyFourHoursAgo });
             
-            await Task.WhenAll(timeTask, userTask, postTask, topicTask, forumTask, latestUsersTask, latestPostsTask);
+            await Task.WhenAll(timeTask, userTask, postTask, topicTask, forumTask, latestUsersTask, latestPostsTask, latestFilesTask);
 
             var time = await timeTask;
             return new Statistics
@@ -46,6 +47,7 @@ namespace PhpbbInDotnet.Services
                 ForumCount = await forumTask,
                 LatestPostsCount = await latestPostsTask,
                 LatestUsersCount = await latestUsersTask,
+                LatestFileSizeSum = await latestFilesTask
             };
         }
     }
