@@ -228,10 +228,13 @@
             @Html.Raw(_translationProvider.BasicText[lang, "STARTING_ON"])
             <formatted-date date="@((statistics.FirstMessageDate ?? DateTime.UtcNow).ToString("o"))" format="@dateFormat" />
             @Html.Raw(string.Format(_translationProvider.BasicText[lang, "FORUM_STATS_FORMAT"], statistics.UserCount, statistics.PostCount, statistics.TopicCount, statistics.ForumCount))
-            &bull;
-            <a asp-page="Statistics">
-                @Html.Raw(_translationProvider.BasicText[lang, "FORUM_STATS_SEE_MORE"])
-            </a>
+            @if (currentUser?.IsAnonymous == false)
+            {
+                <span>&nbsp;&bull;&nbsp;</span>
+                <a asp-page="Statistics">
+                    @Html.Raw(_translationProvider.BasicText[lang, "FORUM_STATS_SEE_MORE"])
+                </a>
+            }
         </div>
         <center style="color:white;">
             <p>&nbsp;</p>
