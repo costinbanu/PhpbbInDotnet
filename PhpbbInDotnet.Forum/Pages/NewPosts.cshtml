@@ -23,17 +23,7 @@
     @Html.AntiForgeryToken()
 </form>
 
-<a href="/" style="padding-bottom: 10px">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "HOME", Casing.FirstUpper])</a>
-
-@if (!currentUser.IsAnonymous)
-{
-    <span>&nbsp;&bull;&nbsp;</span>
-    @await Html.PartialAsync(
-        "_HeaderLinksPartial",
-        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(Lang),
-        ViewData
-    )
-}
+@await Html.PartialAsync("_HeaderLinksPartial", new _HeaderLinksPartialModel(Lang, currentUser.IsAnonymous), ViewData)
 
 <p>&nbsp;</p>
 <h2>@Html.Raw(DocumentTitle)</h2>

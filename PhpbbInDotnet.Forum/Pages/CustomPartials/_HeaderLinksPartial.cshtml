@@ -1,67 +1,80 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel
 
 @using Domain
+@using Domain.Extensions
 @using Objects
 
 @inject Services.IUserService  _userService
 @inject Languages.ITranslationProvider _translationProvider
 
 @{
-    var isIndex = ViewContext.RouteData.Values["page"]?.ToString()?.Equals("/index", StringComparison.OrdinalIgnoreCase) == true;
-    var breadCrumbs = ViewData.TryGetValue("BreadCrumbs", out var bcRaw) && bcRaw is BreadCrumbs bcVal ? bcVal : null;
-    var showBreadCrumbs = 
-        breadCrumbs is not null && 
+    var isIndex = ViewContext.IsPage("/index");
+    var breadCrumbs = ViewData.ValueOrDefault<BreadCrumbs>(Constants.ViewDataKeys.BREADCRUMBS);
+    var showBreadCrumbs =
+        breadCrumbs is not null &&
         !isIndex && (
-            ViewContext.RouteData.Values["page"]?.ToString()?.Equals("/viewforum", StringComparison.OrdinalIgnoreCase) == true ||
-            ViewContext.RouteData.Values["page"]?.ToString()?.Equals("/viewtopic", StringComparison.OrdinalIgnoreCase) == true);
-
+            ViewContext.IsPage("/viewforum") ||
+            ViewContext.IsPage("/viewtopic") ||
+            ViewContext.IsPage("/posting"));
 }
 
 @if (showBreadCrumbs)
 {
     @Html.Raw(breadCrumbs!.ForumPathText)
-    <span>&nbsp;&bull;&nbsp;</span>
 }
-
-@if (isIndex)
+else if (!isIndex)
 {
-    <a asp-page="NewPosts" class="nowrap">@Html.Raw(_translationProvider.BasicText[Model.Language, "NEW_POSTS", Casing.Title])</a>
-    <span>&nbsp;&bull;&nbsp;</span>
-    <a asp-page="OwnPosts" class="nowrap">@Html.Raw(_translationProvider.BasicText[Model.Language, "OWN_TOPICS", Casing.Title])</a>
-    <span class="Hide768">&nbsp;&bull;&nbsp;</span>
-    <br class="Show768" />
-    <span class="Show768" style="width:2.5px; display:inline-block; height: 20px"></span>
+    <a href="/" style="padding-bottom: 10px">
+        @Html.Raw(_translationProvider.BasicText[Model.Language, "HOME", Casing.FirstUpper])
+    </a>
 }
 
-<span onclick="toggleHeaderLinks('headerLinks', 'customLinks');" id="headerLinksButton" class="MyButton MyMiniButton" style="line-height:1.1em">
-    &#X1F6E0;&nbsp;@Html.Raw(_translationProvider.BasicText[Model.Language, "MENU", Casing.Title])
-</span>
-<ul class="Shortcuts" style="display:none" id="headerLinks">
-    @if (!isIndex)
+@if (!Model.IsAnonymous)
+{
+    @if (isIndex)
     {
-        <li>
-            <span> &nbsp;</span>
-            <a asp-page="NewPosts" class="nowrap">@Html.Raw(_translationProvider.BasicText[Model.Language, "NEW_POSTS", Casing.Title])</a>
-        </li>
-        <li>
-            <span> &nbsp;</span>
-            <a asp-page="OwnPosts" class="nowrap">@Html.Raw(_translationProvider.BasicText[Model.Language, "OWN_TOPICS", Casing.Title])</a>
-        </li>
+        <a asp-page="NewPosts" class="nowrap">@Html.Raw(_translationProvider.BasicText[Model.Language, "NEW_POSTS", Casing.Title])</a>
+        <span>&nbsp;&bull;&nbsp;</span>
+        <a asp-page="OwnPosts" class="nowrap">@Html.Raw(_translationProvider.BasicText[Model.Language, "OWN_TOPICS", Casing.Title])</a>
+        <span class="Hide768">&nbsp;&bull;&nbsp;</span>
+        <br class="Show768" />
+        <span class="Show768" style="width:2.5px; display:inline-block; height: 20px"></span>
     }
-    <li>
-        <span> &nbsp;</span>
-        <a asp-page="Drafts" class="nowrap">@Html.Raw(_translationProvider.BasicText[Model.Language, "DRAFTS", Casing.Title])</a>
-    </li>
-    <li>
-        <span> &nbsp;</span>
-        <a asp-page="/MemberList">@Html.Raw(_translationProvider.BasicText[Model.Language, "FORUM_MEMBERS", Casing.Title])</a>
-    </li>
+    else
+    {
+        <span>&nbsp;&bull;&nbsp;</span>
+    }
 
-    @foreach (var elem in Model.ExtraElements.Where(elem => !string.IsNullOrWhiteSpace(elem)))
-    {
+    <span onclick="toggleHeaderLinks('headerLinks', 'customLinks');" id="headerLinksButton" class="MyButton MyMiniButton" style="line-height:1.1em; margin-top:10px">
+        &#X1F6E0;&nbsp;@Html.Raw(_translationProvider.BasicText[Model.Language, "MENU", Casing.Title])
+    </span>
+    <ul class="Shortcuts" style="display:none" id="headerLinks">
+        @if (!isIndex)
+        {
+            <li>
+                <span> &nbsp;</span>
+                <a asp-page="NewPosts" class="nowrap">@Html.Raw(_translationProvider.BasicText[Model.Language, "NEW_POSTS", Casing.Title])</a>
+            </li>
+            <li>
+                <span> &nbsp;</span>
+                <a asp-page="OwnPosts" class="nowrap">@Html.Raw(_translationProvider.BasicText[Model.Language, "OWN_TOPICS", Casing.Title])</a>
+            </li>
+        }
         <li>
             <span> &nbsp;</span>
-            @Html.Raw(elem)
+            <a asp-page="Drafts" class="nowrap">@Html.Raw(_translationProvider.BasicText[Model.Language, "DRAFTS", Casing.Title])</a>
         </li>
-    }
-</ul>
+        <li>
+            <span> &nbsp;</span>
+            <a asp-page="/MemberList">@Html.Raw(_translationProvider.BasicText[Model.Language, "FORUM_MEMBERS", Casing.Title])</a>
+        </li>
+
+        @foreach (var elem in Model.ExtraElements.Where(elem => !string.IsNullOrWhiteSpace(elem)))
+        {
+            <li>
+                <span> &nbsp;</span>
+                @Html.Raw(elem)
+            </li>
+        }
+    </ul>
+}

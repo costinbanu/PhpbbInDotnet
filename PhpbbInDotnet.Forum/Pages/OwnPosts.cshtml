@@ -20,17 +20,8 @@
     <link rel="stylesheet" href="~/css/pagination.css" />
 </environment>
 
-<a href="/" style="padding-bottom: 10px">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "HOME", Casing.FirstUpper])</a>
+@await Html.PartialAsync("_HeaderLinksPartial", new _HeaderLinksPartialModel(Lang, currentUser.IsAnonymous), ViewData)
 
-@if (!currentUser.IsAnonymous)
-{
-    <span>&nbsp;&bull;&nbsp;</span>
-    @await Html.PartialAsync(
-        "_HeaderLinksPartial",
-        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(Lang),
-        ViewData
-    )
-}
 <p>&nbsp;</p>
 <h2>@Html.Raw(DocumentTitle)</h2>
 @Html.Raw(Model.TranslationProvider.BasicText[Lang, "OWN_TOPICS_CAPTION", Casing.FirstUpper])

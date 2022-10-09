@@ -39,5 +39,10 @@ namespace PhpbbInDotnet.Domain
 
         public const int ONE_MB = 1048576;
 
+        public static class ViewDataKeys
+        {
+            public const string BREADCRUMBS = "BreadCrumbs";
+            public const string FORUM_ID = "ForumId";
+        }
     }
 }
