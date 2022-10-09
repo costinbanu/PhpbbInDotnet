@@ -24,7 +24,7 @@
     var dateFormat = currentUser?.UserDateFormat ?? _translationProvider.GetDefaultDateFormat(lang);
     var statistics = await _statisticsService.GetStatisticsSummary();
     var forumId = ViewData.TryGetValue("ForumId", out var fidRaw) && fidRaw is int fidVal ? fidVal : 0;
-    var breadCrumbs = ViewData.TryGetValue("BreadCrumbs", out var bcRaw) && bcRaw is BreadCrumbJSLD bcVal ? bcVal : null;
+    var breadCrumbs = ViewData.TryGetValue("BreadCrumbs", out var bcRaw) && bcRaw is BreadCrumbs bcVal ? bcVal.RawBreadCrumbs : null;
 }
 
 <!DOCTYPE html>

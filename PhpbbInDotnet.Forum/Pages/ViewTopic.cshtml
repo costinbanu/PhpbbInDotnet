@@ -71,13 +71,8 @@
         }
     }
 </script>
-<span style="padding-top: 10px; padding-bottom: 10px">
-    @Html.Raw(Model.TranslationProvider.BasicText[lang, "PARENT_FORUM", Casing.FirstUpper]):
-    <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@Html.Raw(Model.ForumTitle)</a>
-</span>
 @if (!currentUser.IsAnonymous)
 {
-    <span>&nbsp;&bull;&nbsp;</span>
     @await Html.PartialAsync(
         "_HeaderLinksPartial",
         new _HeaderLinksPartialModel(lang),

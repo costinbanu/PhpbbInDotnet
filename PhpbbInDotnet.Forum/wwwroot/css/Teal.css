@@ -245,6 +245,7 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
 
 .PollTable tr {
     border-bottom: solid 1px lightgray;
+    border-top: solid 1px lightgray;
 }
 
 .Error {

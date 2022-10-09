@@ -59,12 +59,6 @@
     </script>
 }
 
-<span style="padding-bottom: 10px">
-    @Html.Raw(Model.TranslationProvider.BasicText[Lang, "PARENT_FORUM", Casing.FirstUpper]):
-    <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@Html.Raw(Model.ParentForumTitle)</a>
-</span>
-
-
 @if (!currentUser.IsAnonymous)
 {
     var additionalLinks = new List<string>();
@@ -76,7 +70,6 @@
     {
         additionalLinks.Add($"<a href=\"javascript:MarkTopicsRead.submit()\">{Model.TranslationProvider.BasicText[Lang, "MARK_TOPICS_READ", Casing.FirstUpper]}</a>");
     }
-    <span>&nbsp;&bull;&nbsp;</span>
     @await Html.PartialAsync(
         "_HeaderLinksPartial",
         new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(Lang, additionalLinks),
