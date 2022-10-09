@@ -12,7 +12,7 @@
     var Lang = Model.GetLanguage();
     var UserDateFormat = CurrentUser?.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
     ViewData["Title"] = Model.TranslationProvider.BasicText[Lang, "HOME", Casing.Title];
-    ViewData["BreadCrumbs"] = _forumService.GetJSLDBreadCrumbsObject((await Model.GetForumTree(false, false)).Tree, 0);
+    ViewData["BreadCrumbs"] = _forumService.GetBreadCrumbs((await Model.GetForumTree(false, false)).Tree, 0);
 }
 
 @if (!CurrentUser!.IsAnonymous)
@@ -22,7 +22,7 @@
     </form>
     @await Html.PartialAsync(
         "_HeaderLinksPartial",
-        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(Lang, true, $"<a href=\"javascript:MarkForumsRead.submit()\">{Model.TranslationProvider.BasicText[Lang, "MARK_FORUMS_READ", Casing.Title]}</a>"),
+        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(Lang, $"<a href=\"javascript:MarkForumsRead.submit()\">{Model.TranslationProvider.BasicText[Lang, "MARK_FORUMS_READ", Casing.Title]}</a>"),
         ViewData
     )
 }

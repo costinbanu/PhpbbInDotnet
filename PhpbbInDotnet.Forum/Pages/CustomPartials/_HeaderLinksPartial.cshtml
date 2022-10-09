@@ -5,7 +5,13 @@
 @inject Services.IUserService  _userService
 @inject Languages.ITranslationProvider _translationProvider
 
-@if (Model.IsIndex)
+@{
+    var isIndex = ViewContext.RouteData.Values["page"]?.ToString()?.Equals("/index", StringComparison.OrdinalIgnoreCase) == true;
+    var showBreadCrumbs = ViewContext.RouteData.Values["page"]?.ToString()?.Equals("/viewforum", StringComparison.OrdinalIgnoreCase) == true ||
+                          ViewContext.RouteData.Values["page"]?.ToString()?.Equals("/viewtopic", StringComparison.OrdinalIgnoreCase) == true;
+}
+
+@if (isIndex)
 {
     <a asp-page="NewPosts" class="nowrap">@Html.Raw(_translationProvider.BasicText[Model.Language, "NEW_POSTS", Casing.Title])</a>
     <span>&nbsp;&bull;&nbsp;</span>
@@ -18,7 +24,7 @@
     &#X1F6E0;&nbsp;@Html.Raw(_translationProvider.BasicText[Model.Language, "MENU", Casing.Title])
 </span>
 <ul class="Shortcuts" style="display:none" id="headerLinks">
-    @if (!Model.IsIndex)
+    @if (!isIndex)
     {
         <li>
             <span> &nbsp;</span>
@@ -38,7 +44,7 @@
         <a asp-page="/MemberList">@Html.Raw(_translationProvider.BasicText[Model.Language, "FORUM_MEMBERS", Casing.Title])</a>
     </li>
 
-    @foreach (var elem in (Model.ExtraElements ?? Enumerable.Empty<string>()).Where(elem => !string.IsNullOrWhiteSpace(elem)))
+    @foreach (var elem in Model.ExtraElements.Where(elem => !string.IsNullOrWhiteSpace(elem)))
     {
         <li>
             <span> &nbsp;</span>
@@ -46,3 +52,8 @@
         </li>
     }
 </ul>
+
+@if (showBreadCrumbs)
+{
+
+}

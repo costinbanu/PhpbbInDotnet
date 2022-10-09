@@ -669,7 +669,7 @@ else
                         }
                         else
                         {
-                            <a asp-page="./ViewTopic" asp-route-topicId="@Model.PreferredTopic.Id" asp-route-pageNum="1">@Html.Raw(Model.PreferredTopic.Title)</a>
+                            <a href="@ForumLinkUtility.GetRelativeUrlToTopic(Model.PreferredTopic.Id.Value, 1)">@Html.Raw(Model.PreferredTopic.Title)</a>
                         }
                     </div>
                 </div>

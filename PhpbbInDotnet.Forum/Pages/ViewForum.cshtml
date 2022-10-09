@@ -20,7 +20,7 @@
     if (Model.ForumId > 0)
     {
         ViewData["ForumId"] = Model.ForumId;
-        ViewData["BreadCrumbs"] = _forumService.GetJSLDBreadCrumbsObject(forumTree, Model.ForumId);
+        ViewData["BreadCrumbs"] = _forumService.GetBreadCrumbs(forumTree, Model.ForumId);
     }
 }
 
@@ -79,7 +79,7 @@
     <span>&nbsp;&bull;&nbsp;</span>
     @await Html.PartialAsync(
         "_HeaderLinksPartial",
-        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(Lang, false, additionalLinks.ToArray()),
+        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(Lang, additionalLinks),
         ViewData
     )
 }

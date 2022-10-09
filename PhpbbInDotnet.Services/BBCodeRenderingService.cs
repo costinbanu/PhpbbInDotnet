@@ -386,12 +386,12 @@ namespace PhpbbInDotnet.Services
                                             return string.Empty;
                                         }
                                         var toReturn = match.Groups[1].Success ? string.Format(_translationProvider.BasicText[lang, "WROTE_FORMAT"], match.Groups[1].Value.Trim('"')) : string.Empty;
-                                        var postId = match.Groups[2].Success ? match.Groups[2].Value : string.Empty;
+                                        var stringPostId = match.Groups[2].Success ? match.Groups[2].Value : string.Empty;
                                         if (!string.IsNullOrWhiteSpace(toReturn))
                                         {
-                                            if (!string.IsNullOrWhiteSpace(postId))
+                                            if (int.TryParse(stringPostId, out var postId))
                                             {
-                                                toReturn += $" <a href=\"./ViewTopic?postId={postId}&handler=byPostId\" target=\"_blank\">{_translationProvider.BasicText[lang, "HERE"]}</a>:<br />";
+                                                toReturn += $" <a href=\"{ForumLinkUtility.GetRelativeUrlToPost(postId)}\" target=\"_blank\">{_translationProvider.BasicText[lang, "HERE"]}</a>:<br />";
                                             }
                                             else
                                             {
