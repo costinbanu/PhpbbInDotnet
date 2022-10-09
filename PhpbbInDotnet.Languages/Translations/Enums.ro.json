@@ -48,5 +48,12 @@
     "UserInactiveReason.TemporarilyBanned": "Interzis temporar",
     "UserInactiveReason.NewlyRegisteredConfirmed": "Recent înregistrat, email verificat",
     "UserInactiveReason.ChangedEmailNotConfirmed": "Email schimbat și neverificat",
-    "UserInactiveReason.ChangedEmailConfirmed": "Email schimbat și verificat"
+    "UserInactiveReason.ChangedEmailConfirmed": "Email schimbat și verificat",
+
+    "StatisticsPeriod.TwentyFourHours": "24 de ore",
+    "StatisticsPeriod.SevenDays": "7 zile",
+    "StatisticsPeriod.ThirtyDays": "30 de zile",
+    "StatisticsPeriod.SixMonths": "6 luni",
+    "StatisticsPeriod.OneYear": "1 an",
+    "StatisticsPeriod.AllTime": "Tot timpul"
 }

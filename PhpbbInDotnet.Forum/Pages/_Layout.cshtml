@@ -22,7 +22,7 @@
     }
     var lang = _translationProvider.GetLanguage(currentUser);
     var dateFormat = currentUser?.UserDateFormat ?? _translationProvider.GetDefaultDateFormat(lang);
-    var statistics = await _statisticsService.GetStatistics();
+    var statistics = await _statisticsService.GetStatisticsSummary();
     var forumId = ViewData.TryGetValue("ForumId", out var fidRaw) && fidRaw is int fidVal ? fidVal : 0;
     var breadCrumbs = ViewData.TryGetValue("BreadCrumbs", out var bcRaw) && bcRaw is BreadCrumbJSLD bcVal ? bcVal : null;
 }
@@ -226,8 +226,11 @@
         <div class="container body-content size1300 ParentLayoutAndColor">
             @Html.Raw(_translationProvider.BasicText[lang, "STARTING_ON"])
             <formatted-date date="@((statistics.FirstMessageDate ?? DateTime.UtcNow).ToString("o"))" format="@dateFormat" />
-            @Html.Raw(string.Format(_translationProvider.BasicText[lang, "FORUM_STATS_FORMAT"], statistics.UserCount, statistics.PostCount, statistics.TopicCount, statistics.ForumCount))<br />
-            @Html.Raw(string.Format(_translationProvider.BasicText[lang, "FORUM_STATS_24H_FORMAT"], statistics.LatestUsersCount, statistics.LatestPostsCount, StringUtility.ReadableFileSize(statistics.LatestFileSizeSum)))
+            @Html.Raw(string.Format(_translationProvider.BasicText[lang, "FORUM_STATS_FORMAT"], statistics.UserCount, statistics.PostCount, statistics.TopicCount, statistics.ForumCount))
+            &bull;
+            <a asp-page="Statistics">
+                @Html.Raw(_translationProvider.BasicText[lang, "FORUM_STATS_SEE_MORE"])
+            </a>
         </div>
         <center style="color:white;">
             <p>&nbsp;</p>
