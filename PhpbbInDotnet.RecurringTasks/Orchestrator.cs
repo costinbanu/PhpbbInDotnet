@@ -1,6 +1,13 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using PhpbbInDotnet.RecurringTasks.Tasks;
+using PhpbbInDotnet.Services;
 using Serilog;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.RecurringTasks
 {
@@ -9,11 +16,13 @@ namespace PhpbbInDotnet.RecurringTasks
 		readonly IServiceProvider _serviceProvider;
 		readonly ISchedulingService _schedulingService;
 		readonly Type[] _taskTypes;
+
+		internal const string ControlFileName = "RecurringTasks.ok";
 		
-		public Orchestrator(IServiceProvider serviceProvider, ISchedulingService schedulingService, params Type[] taskTypes)
+		public Orchestrator(IServiceProvider serviceProvider, params Type[] taskTypes)
 		{
 			_serviceProvider = serviceProvider;
-			_schedulingService = schedulingService;
+			_schedulingService = serviceProvider.GetRequiredService<ISchedulingService>();
 			_taskTypes = taskTypes;
 		}
 
@@ -24,6 +33,7 @@ namespace PhpbbInDotnet.RecurringTasks
 
             using var scope = _serviceProvider.CreateScope();
 			var logger = scope.ServiceProvider.GetRequiredService<ILogger>();
+			var storageService = scope.ServiceProvider.GetRequiredService<IStorageService>();
 
             try
 			{
@@ -34,27 +44,31 @@ namespace PhpbbInDotnet.RecurringTasks
                     stoppingToken.WaitHandle.WaitOne(timeToWait);
                 }
 
-                var taskInstances = new List<BaseRecurringTask>();
+                stoppingToken.ThrowIfCancellationRequested();
+
+                var recurringTasks = new List<IRecurringTask>();
 				foreach (var taskType in _taskTypes)
 				{
 					var instance = ActivatorUtilities.CreateInstance(scope.ServiceProvider, taskType);
-					if (instance is BaseRecurringTask recurringTask)
+					if (instance is IRecurringTask recurringTask)
 					{
-						taskInstances.Add(recurringTask);
+						recurringTasks.Add(recurringTask);
 					}
 					else
 					{
-						throw new ArgumentException($"{taskType.FullName} does not implement {nameof(BaseRecurringTask)}.");
+						throw new ArgumentException($"{taskType.FullName} does not implement {nameof(IRecurringTask)}.");
 					}
 				}
 
 				stoppingToken.ThrowIfCancellationRequested();
 
-				await Task.WhenAll(taskInstances.Select(t => t.ExecuteAsync(stoppingToken)));
-			}
+				await Task.WhenAll(recurringTasks.Select(t => t.ExecuteAsync(stoppingToken)));
+
+                storageService.WriteAllTextToFile(ControlFileName, string.Empty);
+            }
 			catch (Exception ex)
 			{
-				logger.Error("An error occurred while running recurring tasks; rest of the application will continue.", ex);
+				logger.Error(ex, "An error occurred while running recurring tasks; rest of the application will continue.");
 			}
 		}
 

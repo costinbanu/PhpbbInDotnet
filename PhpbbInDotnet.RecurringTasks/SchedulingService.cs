@@ -1,14 +1,14 @@
 ﻿using Microsoft.Extensions.Configuration;
+using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
+using System;
 
 namespace PhpbbInDotnet.RecurringTasks
 {
     class SchedulingService : ISchedulingService
     {
-        public const string OK_FILE_NAME = $"{nameof(SchedulingService)}.ok";
-
         readonly ITimeService _timeService;
         readonly IFileInfoService _fileInfoService;
         readonly CleanupServiceOptions _options;
@@ -54,7 +54,7 @@ namespace PhpbbInDotnet.RecurringTasks
 
             TimeSpan? GetElapsedTimeSinceLastRunIfAny()
             {
-                var lastRun = _fileInfoService.GetLastWriteTime(OK_FILE_NAME);
+                var lastRun = _fileInfoService.GetLastWriteTime(Orchestrator.ControlFileName);
                 return lastRun.HasValue ? now.DateTime.ToUniversalTime() - lastRun.Value : null;
             }
 

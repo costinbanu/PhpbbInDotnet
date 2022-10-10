@@ -21,6 +21,7 @@
     <ProjectReference Include="..\PhpbbInDotnet.Database\PhpbbInDotnet.Database.csproj" />
     <ProjectReference Include="..\PhpbbInDotnet.Languages\PhpbbInDotnet.Languages.csproj" />
     <ProjectReference Include="..\PhpbbInDotnet.Objects\PhpbbInDotnet.Objects.csproj" />
+    <ProjectReference Include="..\PhpbbInDotnet.RecurringTasks\PhpbbInDotnet.RecurringTasks.csproj" />
     <ProjectReference Include="..\PhpbbInDotnet.Services\PhpbbInDotnet.Services.csproj" />
     <ProjectReference Include="..\PhpbbInDotnet.Domain\PhpbbInDotnet.Domain.csproj" />
   </ItemGroup>

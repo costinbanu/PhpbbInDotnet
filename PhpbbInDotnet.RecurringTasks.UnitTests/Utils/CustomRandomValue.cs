@@ -2,7 +2,7 @@
 using RandomTestValues;
 using System;
 
-namespace PhpbbInDotnet.Services.UnitTests.Utils
+namespace PhpbbInDotnet.RecurringTasks.UnitTests.Utils
 {
     internal static class CustomRandomValue
     {

@@ -1,4 +1,6 @@
-﻿namespace PhpbbInDotnet.RecurringTasks
+﻿using System;
+
+namespace PhpbbInDotnet.RecurringTasks
 {
 	public interface ISchedulingService
 	{

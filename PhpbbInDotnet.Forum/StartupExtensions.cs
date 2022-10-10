@@ -4,16 +4,16 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Forum.Middlewares;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects.Configuration;
-using PhpbbInDotnet.Domain;
-using PhpbbInDotnet.Domain.Extensions;
 using Serilog;
 using Serilog.Events;
 using System;
@@ -22,7 +22,6 @@ using System.IO;
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
 
 namespace PhpbbInDotnet.Forum
 {
@@ -105,7 +104,7 @@ namespace PhpbbInDotnet.Forum
 
             services.AddLanguageSupport();
             services.AddApplicationServices();
-
+            services.AddRecurringTasks();
             
             services.AddSingleton<FileExtensionContentTypeProvider>();
 

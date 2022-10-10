@@ -1,6 +1,6 @@
 ﻿using PhpbbInDotnet.Objects.Configuration;
 
-namespace PhpbbInDotnet.Services.UnitTests.Utils
+namespace PhpbbInDotnet.RecurringTasks.UnitTests.Utils
 {
     public class AppSettingsObject
     {

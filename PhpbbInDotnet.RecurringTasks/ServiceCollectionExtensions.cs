@@ -1,13 +1,20 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using PhpbbInDotnet.RecurringTasks;
+using PhpbbInDotnet.RecurringTasks.Tasks;
 
-namespace PhpbbInDotnet.RecurringTasks
+namespace Microsoft.Extensions.DependencyInjection
 {
 	public static class ServiceCollectionExtensions
 	{
-		public static IServiceCollection AddRecurringTasks(this IServiceCollection services, params Type[] taskTypes)
+		public static IServiceCollection AddRecurringTasks(this IServiceCollection services)
 		{
 			services.AddSingleton<ISchedulingService, SchedulingService>();
-			services.AddHostedService(sp => new Orchestrator(sp, sp.GetRequiredService<ISchedulingService>(), taskTypes));
+			services.AddHostedService(serviceProvider => new Orchestrator(
+				serviceProvider, 
+				typeof(ForumsAndTopicsSynchronizer), 
+				typeof(LogCleaner), 
+				typeof(OrphanFilesCleaner), 
+				typeof(RecycleBinCleaner), 
+				typeof(SiteMapGenerator)));
 			return services;
 		}
 	}
