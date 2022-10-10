@@ -210,6 +210,21 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
     background-color: #f1f1f1;
 }
 
+.ParentLayoutAndColor a {
+    color: #337ab7 !important;
+    text-decoration: unset !important;
+}
+
+    .ParentLayoutAndColor a:focus, a:hover {
+        color: #23527c !important;
+        text-decoration: unset !important;
+    }
+
+.ThemeLayoutAndColor a {
+    color: white;
+    text-decoration: underline;
+}
+
 @media (max-width: 768px) {
     .Summary {
         border: solid 1px black;

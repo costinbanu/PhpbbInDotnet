@@ -228,6 +228,11 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
     flex-flow: column;
 }
 
+    .ThemeLayoutAndColor a {
+        color:white; 
+        text-decoration:underline;
+    }
+
 .ParentLayoutAndColor {
     background-color: unset !important;
     color: unset !important;

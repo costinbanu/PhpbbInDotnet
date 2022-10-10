@@ -55,8 +55,8 @@
         <script src="~/js/dateFormatter.js"></script>
     </environment>
     <environment exclude="Development">
-        <link rel="stylesheet" href="~/css/@(css).min.css?v=3.2" />
-        <script src="~/js/site.min.js?v=3.2"></script>
+        <link rel="stylesheet" href="~/css/@(css).min.css?v=3.4" />
+        <script src="~/js/site.min.js?v=3.4"></script>
     </environment>
 
     <!-- Global site tag (gtag.js) - Google Analytics -->
@@ -241,25 +241,25 @@
             @*specific metrouusor*@
             <p>
                 &copy; 2009 - @DateTime.UtcNow.Year
-                <a href="https://metrouusor.com" style="color:white; text-decoration:underline">
+                <a href="https://metrouusor.com">
                     Asociația „Metrou Ușor”
                 </a>
             </p>
             <p>
                 Powered by
-                <a href="https://github.com/costinbanu/PhpbbInDotnet" target="_blank" style="color:white; text-decoration:underline">
+                <a href="https://github.com/costinbanu/PhpbbInDotnet" target="_blank">
                     PhpBB In DotNet
                 </a>
             </p>
             <p>
-                <a asp-page="/TermsAndConditions" style="color:white; text-decoration:underline">
+                <a asp-page="/TermsAndConditions">
                     @_translationProvider.BasicText[lang, "TERMS", Casing.Title]
                 </a>
             </p>
             @if (await _userService.IsUserModeratorInForum(currentUser, forumId))
             {
                 <p>
-                    <a href="./Moderator@(forumId > 0 ? $"?forumId={forumId}" : "")" style="color:white; text-decoration:underline">
+                    <a href="./Moderator@(forumId > 0 ? $"?forumId={forumId}" : "")">
                         @Html.Raw(_translationProvider.Moderator[lang, "MOD_PANEL", Casing.Title])
                     </a>
                 </p>
@@ -267,7 +267,7 @@
             @if (await _userService.IsUserAdminInForum(currentUser, forumId))
             {
                 <p>
-                    <a asp-page="./Admin" style="color:white; text-decoration:underline">
+                    <a asp-page="./Admin">
                         @Html.Raw(_translationProvider.Admin[lang, "ADMIN_PANEL", Casing.Title])
                     </a>
                 </p>
