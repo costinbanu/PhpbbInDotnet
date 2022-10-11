@@ -9,7 +9,7 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
 {
     public class SchedulingServiceTests
     {
-        ISchedulingService GetSchedulingService(DateTime? lastRun, DateTimeOffset now, Action<AppSettingsObject>? setupOptions = null)
+        static ISchedulingService GetSchedulingService(DateTime? lastRun, DateTimeOffset now, Action<AppSettingsObject>? setupOptions = null)
         {
             var mockTimeService = new Mock<ITimeService>();
             mockTimeService.Setup(t => t.DateTimeOffsetNow()).Returns(now);
@@ -22,7 +22,7 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
 
         public class When_It_Should_Not_Run : SchedulingServiceTests
         {
-            protected void RunTest(CleanupServiceOptions options, DateTime? lastRun, DateTimeOffset now, TimeSpan expected)
+            static void RunTest(CleanupServiceOptions options, DateTime? lastRun, DateTimeOffset now, TimeSpan expected)
             {
                 var schedulingService = GetSchedulingService(lastRun, now, opts => opts.CleanupService = options);
 

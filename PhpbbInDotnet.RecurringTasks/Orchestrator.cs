@@ -14,7 +14,6 @@ namespace PhpbbInDotnet.RecurringTasks
 	sealed class Orchestrator : BackgroundService
 	{
 		readonly IServiceProvider _serviceProvider;
-		readonly ISchedulingService _schedulingService;
 		readonly Type[] _taskTypes;
 
 		internal const string ControlFileName = "RecurringTasks.ok";
@@ -22,7 +21,6 @@ namespace PhpbbInDotnet.RecurringTasks
 		public Orchestrator(IServiceProvider serviceProvider, params Type[] taskTypes)
 		{
 			_serviceProvider = serviceProvider;
-			_schedulingService = serviceProvider.GetRequiredService<ISchedulingService>();
 			_taskTypes = taskTypes;
 		}
 
@@ -34,13 +32,14 @@ namespace PhpbbInDotnet.RecurringTasks
             using var scope = _serviceProvider.CreateScope();
 			var logger = scope.ServiceProvider.GetRequiredService<ILogger>();
 			var storageService = scope.ServiceProvider.GetRequiredService<IStorageService>();
+            var schedulingService = scope.ServiceProvider.GetRequiredService<ISchedulingService>();
 
             try
-			{
-				var timeToWait = _schedulingService.GetTimeToWaitUntilRunIsAllowed();
+            {
+				var timeToWait = schedulingService.GetTimeToWaitUntilRunIsAllowed();
 				if (timeToWait > TimeSpan.Zero)
 				{
-                    logger.Warning("Waiting for {time} before executing cleanup task...", timeToWait);
+                    logger.Warning("Waiting for {time} before executing recurring tasks...", timeToWait);
                     stoppingToken.WaitHandle.WaitOne(timeToWait);
                 }
 
