@@ -6,6 +6,7 @@
 
 @using Domain
 @using Domain.Extensions;
+@using Domain.Utilities;
 @using CustomPartials
 
 <environment include="Development">
@@ -76,7 +77,7 @@
                     language: Model.Language,
                     authorOnFoeList: Model.AuthenticatedUser?.Foes?.Contains(forum.ForumLastPosterId ?? 0) == true)
                 {
-                    LinkHref = forum.ForumLastPostId == 0 ? null : $"./ViewTopic?postId={forum.ForumLastPostId}&handler=ByPostId",
+                    LinkHref = forum.ForumLastPostId == 0 ? null : ForumLinkUtility.GetRelativeUrlToPost(forum.ForumLastPostId ?? 0),
                     AlignLeft = false,
                     IsLastPostSummary = true,
                     Forums = forum.TotalSubforumCount,
@@ -136,7 +137,7 @@
                     language: Model.Language,
                     authorOnFoeList: Model.AuthenticatedUser?.Foes?.Contains(forum.ForumLastPosterId ?? 0) == true)
                 {
-                    LinkHref = forum.ForumLastPostId == 0 ? null : $"./ViewTopic?postId={forum.ForumLastPostId}&handler=ByPostId",
+                    LinkHref = forum.ForumLastPostId == 0 ? null : ForumLinkUtility.GetRelativeUrlToPost(forum.ForumLastPostId ?? 0),
                     AlignLeft = false,
                     IsLastPostSummary = true,
                     Forums = forum.TotalSubforumCount,

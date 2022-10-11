@@ -1,16 +1,16 @@
-﻿using Dapper;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
-using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
+using PhpbbInDotnet.Objects;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
-using Serilog;
 
 namespace PhpbbInDotnet.Services
 {
@@ -339,12 +339,12 @@ namespace PhpbbInDotnet.Services
         }
 
         public string GetAbsoluteUrlToForum(int forumId)
-            => new Uri(new Uri(_config.GetValue<string>("BaseUrl")), $"ViewForum?forumId={forumId}").ToString();
+            => ForumLinkUtility.GetAbsoluteUrlToForum(_config.GetValue<string>("BaseUrl"), forumId);
 
         public string GetAbsoluteUrlToTopic(int topicId, int pageNum)
-            => new Uri(new Uri(_config.GetValue<string>("BaseUrl")), $"ViewTopic?topicId={topicId}&pageNum={pageNum}").ToString();
+            => ForumLinkUtility.GetAbsoluteUrlToTopic(_config.GetValue<string>("BaseUrl"), topicId, pageNum);
 
-        public BreadCrumbJSLD GetJSLDBreadCrumbsObject(HashSet<ForumTree> tree, int forumId, int? topicId = null, string? topicName = null, int? pageNum = null)
+        public BreadCrumbs GetBreadCrumbs(HashSet<ForumTree> tree, int forumId, int? topicId = null, string? topicName = null, int? pageNum = null)
         {
             var elements = new List<ListItemJSLD>
             {
@@ -356,15 +356,24 @@ namespace PhpbbInDotnet.Services
                 }
             };
 
-            elements.AddRange(
-                GetBreadCrumbs(tree, forumId)
-                .Indexed(startIndex: 2)
-                .Select(indexedItem => new ListItemJSLD
+            var sb = new StringBuilder();
+            var isFirst = true;
+            foreach (var breadCrumb in GetBreadCrumbs(tree, forumId).Indexed(startIndex: 2))
+            {
+                if (!isFirst)
                 {
-                    Position = indexedItem.Index,
-                    Name = indexedItem.Item.ForumName,
-                    Item = GetAbsoluteUrlToForum(indexedItem.Item.ForumId)
-                }));
+                    sb = sb.Append(" → ");
+                }
+                isFirst = false;
+                sb = sb.Append($"<a href=\"{ForumLinkUtility.GetRelativeUrlToForum(breadCrumb.Item.ForumId)}\">{breadCrumb.Item.ForumName}</a>");
+
+                elements.Add(new ListItemJSLD
+                {
+                    Position = breadCrumb.Index,
+                    Name = breadCrumb.Item.ForumName,
+                    Item = GetAbsoluteUrlToForum(breadCrumb.Item.ForumId)
+                });
+            }
 
             if (topicId is not null && topicName is not null && pageNum is not null)
             {
@@ -377,9 +386,13 @@ namespace PhpbbInDotnet.Services
                 });
             }
 
-            return new BreadCrumbJSLD
+            return new BreadCrumbs
             {
-                ItemListElement = elements
+                RawBreadCrumbs = new BreadCrumbJSLD
+                {
+                    ItemListElement = elements
+                },
+                ForumPathText = sb.ToString()
             };
         }
 

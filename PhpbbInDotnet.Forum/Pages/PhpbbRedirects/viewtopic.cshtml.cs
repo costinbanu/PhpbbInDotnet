@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Domain.Utilities;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
@@ -33,7 +34,8 @@ namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
 
                     if (post != null)
                     {
-                        return RedirectToPage("../ViewTopic", "ByPostId", new { post.PostId });
+                        var redirect = ForumLinkUtility.GetRedirectObjectToPost(post.PostId);
+                        return RedirectToPage(redirect.Url, redirect.RouteValues);
                     }
                     else
                     {
@@ -42,12 +44,14 @@ namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
                 }
                 else
                 {
-                    return RedirectToPage("../ViewTopic", new { TopicId = t.Value, PageNum = 1 });
+                    var redirect = ForumLinkUtility.GetRedirectObjectToTopic(topicId: t.Value, pageNum: 1);
+                    return RedirectToPage(redirect.Url, redirect.RouteValues);
                 }
             }
             else if (p.HasValue)
             {
-                return RedirectToPage("../ViewTopic", "ByPostId", new { PostId = p.Value });
+                var redirect = ForumLinkUtility.GetRedirectObjectToPost(postId: p.Value);
+                return RedirectToPage(redirect.Url, redirect.RouteValues);
             }
             else
             {

@@ -48,5 +48,12 @@
     "UserInactiveReason.TemporarilyBanned": "Temporary banned",
     "UserInactiveReason.NewlyRegisteredConfirmed": "Newly registered, email confirmed",
     "UserInactiveReason.ChangedEmailNotConfirmed": "Email changed, not confirmed",
-    "UserInactiveReason.ChangedEmailConfirmed": "Email changed and confirmed"
+    "UserInactiveReason.ChangedEmailConfirmed": "Email changed and confirmed",
+
+    "StatisticsPeriod.TwentyFourHours": "24 hours",
+    "StatisticsPeriod.SevenDays": "7 days",
+    "StatisticsPeriod.ThirtyDays": "30 days",
+    "StatisticsPeriod.SixMonths": "6 months",
+    "StatisticsPeriod.OneYear": "1 year",
+    "StatisticsPeriod.AllTime": "All time"
 }

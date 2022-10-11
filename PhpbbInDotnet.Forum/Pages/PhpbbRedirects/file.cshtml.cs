@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using PhpbbInDotnet.Domain.Utilities;
 
 namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
 {
@@ -9,12 +10,14 @@ namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
         {
             if (id.HasValue)
             {
-                return RedirectToPage("../File", new { Id = id.Value });
+                var redirect = ForumLinkUtility.GetRedirectObjectToFile(fileId: id.Value);
+                return RedirectToPage(redirect.Url, redirect.RouteValues);
             }
 
             if (!string.IsNullOrWhiteSpace(avatar) && int.TryParse(avatar.Split('_')[0], out var userId))
             {
-                return RedirectToPage("../File", "avatar",  new { userId });
+                var redirect = ForumLinkUtility.GetRedirectObjectToAvatar(userId);
+                return RedirectToPage(redirect.Url, redirect.RouteValues);
             }
 
             return BadRequest();

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using PhpbbInDotnet.Domain.Utilities;
 
 namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
 {
@@ -7,7 +8,8 @@ namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
     {
         public IActionResult OnGet(int f)
         {
-            return RedirectToPage("../ViewForum", new { forumId = f });
+            var redirect = ForumLinkUtility.GetRedirectObjectToForum(forumId: f);
+            return RedirectToPage(redirect.Url, redirect.RouteValues);
         }
     }
 }

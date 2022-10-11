@@ -436,7 +436,7 @@ namespace PhpbbInDotnet.Forum.Pages
             await Context.SaveChangesAsync();
             await _postService.CascadePostAdd(toAdd, false);
 
-            await _operationLogService.LogModeratorPostAction(ModeratorPostActions.RestorePosts, GetCurrentUser().UserId, toAdd, $"<a href=\"./ViewTopic?postId={toAdd.PostId}&handler=ByPostId\" target=\"_blank\">LINK</a>");
+            await _operationLogService.LogModeratorPostAction(ModeratorPostActions.RestorePosts, GetCurrentUser().UserId, toAdd, $"<a href=\"{ForumLinkUtility.GetRelativeUrlToPost(toAdd.PostId)}\" target=\"_blank\">LINK</a>");
 
             return true;
         }

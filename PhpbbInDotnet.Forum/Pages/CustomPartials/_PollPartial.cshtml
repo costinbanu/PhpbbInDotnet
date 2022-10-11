@@ -11,8 +11,9 @@
     var displayResultsMenu = !Model.IsPreview && (Model.Poll.PollEnded || !Model.Poll.PollEnd.HasValue || Model.IsCurrentUserMod);
     var displayVoteMenu = Model.CanVoteNow || !displayResultsMenu;
 
+    <p>&nbsp;</p>
     <h3>@Html.Raw(string.Format(_translationProvider.BasicText[Model.Language, "POLL_TITLE_FORMAT"], HttpUtility.HtmlDecode(Model.Poll.PollTitle)))</h3>
-    <div>
+    <div style="margin-bottom:10px">
         @Html.Raw(Model.Poll.PollEnded ? _translationProvider.BasicText[Model.Language, "POLL_WAS_CLOSED"] : _translationProvider.BasicText[Model.Language, "POLL_WILL_BE_CLOSED"])
         @if (Model.Poll.PollEnd.HasValue)
         {
@@ -49,6 +50,17 @@
                 @if (Model.CanVoteNow)
                 {
                     <input type="submit" value="@_translationProvider.BasicText[Model.Language, "SEND_VOTE"]" class="MyButton" style="margin-top: 5px" @(Model.IsPreview ? "disabled" : "") />
+                }
+                @if (displayResultsMenu && Model.CanVoteNow && Model.IsCurrentUserAdmin)
+                {
+                    if (Model.CanVoteNow)
+                    {
+                        <span>&nbsp;&bull;&nbsp;</span>
+                    }
+                    <input type="button" value="@_translationProvider.BasicText[Model.Language, "SHOW_RESULTS"]" onclick="vt.switchPollPanels('results', 'votes', this)" class="MyButton" style="margin-top: 5px" />
+                }
+                @if (Model.CanVoteNow)
+                {
                     <span asp-validation-for="Poll" class="validation"></span>
                 }
                 @Html.AntiForgeryToken()
@@ -81,10 +93,6 @@
                 }
             </table>
         </div>
-        @if (Model.CanVoteNow && Model.IsCurrentUserAdmin)
-        {
-            <input type="button" value="@_translationProvider.BasicText[Model.Language, "SHOW_RESULTS"]" onclick="vt.switchPollPanels('results', 'votes', this)" class="MyButton" style="margin-top: 5px" />
-        }
     }
     @if (Model.Poll?.PollOptions?.Any(o => o.PollOptionVoters?.Any(v => v.UserId == Model.CurrentUser?.UserId) == true) == true)
     {
@@ -93,4 +101,5 @@
             @Html.Raw(_translationProvider.BasicText[Model.Language, "VOTE_REGISTERED"])
         </div>
     }
+    <p>&nbsp;</p>
 }

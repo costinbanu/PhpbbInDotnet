@@ -19,9 +19,10 @@
     var isCurrentForumReadOnly = await _forumService.IsForumReadOnlyForUser(currentUser, Model.ForumId);
     if (Model.ForumId > 0)
     {
-        ViewData["ForumId"] = Model.ForumId;
-        ViewData["BreadCrumbs"] = _forumService.GetJSLDBreadCrumbsObject(forumTree, Model.ForumId);
+        ViewData[Constants.ViewDataKeys.FORUM_ID] = Model.ForumId;
+        ViewData[Constants.ViewDataKeys.BREADCRUMBS] = _forumService.GetBreadCrumbs(forumTree, Model.ForumId);
     }
+    var additionalLinks = new List<string>();
 }
 
 <environment include="Development">
@@ -59,15 +60,8 @@
     </script>
 }
 
-<span style="padding-bottom: 10px">
-    @Html.Raw(Model.TranslationProvider.BasicText[Lang, "PARENT_FORUM", Casing.FirstUpper]):
-    <a asp-page="/ViewForum" asp-route-forumId="@Model.ParentForumId">@Html.Raw(Model.ParentForumTitle)</a>
-</span>
-
-
 @if (!currentUser.IsAnonymous)
 {
-    var additionalLinks = new List<string>();
     @if (hasSubForums)
     {
         additionalLinks.Add($"<a href=\"javascript:MarkForumsRead.submit()\">{Model.TranslationProvider.BasicText[Lang, "MARK_FORUMS_READ", Casing.FirstUpper]}</a>");
@@ -76,15 +70,11 @@
     {
         additionalLinks.Add($"<a href=\"javascript:MarkTopicsRead.submit()\">{Model.TranslationProvider.BasicText[Lang, "MARK_TOPICS_READ", Casing.FirstUpper]}</a>");
     }
-    <span>&nbsp;&bull;&nbsp;</span>
-    @await Html.PartialAsync(
-        "_HeaderLinksPartial",
-        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(Lang, false, additionalLinks.ToArray()),
-        ViewData
-    )
 }
-<p>&nbsp;</p>
 
+@await Html.PartialAsync("_HeaderLinksPartial", new _HeaderLinksPartialModel(Lang, currentUser.IsAnonymous, additionalLinks), ViewData)
+
+<p>&nbsp;</p>
 <h2>@Html.Raw(DocumentTitle)</h2>
 @Html.Raw(Model.ForumDesc)
 @await Html.PartialAsync("_RulesPartial", new CustomPartials._RulesPartialModel
