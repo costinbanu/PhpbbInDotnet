@@ -254,8 +254,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 else if ((TopicAction == ModeratorTopicActions.MoveTopic || TopicAction == ModeratorTopicActions.CreateShortcut) && ModeratorActionResult.IsSuccess == true)
                 {
                     var destinations = await Task.WhenAll(
-                        CompressionUtility.CompressAndEncode($"<a href=\"./ViewForum?forumId={DestinationForumId ?? 0}\">{TranslationProvider.BasicText[lang, "GO_TO_NEW_FORUM"]}</a>"),
-                        CompressionUtility.CompressAndEncode($"<a href=\"./ViewTopic?topicId={TopicId}&pageNum={PageNum}\">{TranslationProvider.BasicText[lang, "GO_TO_LAST_TOPIC"]}</a>")
+                        CompressionUtility.CompressAndEncode($"<a href=\"{ForumLinkUtility.GetRelativeUrlToForum(DestinationForumId ?? 0)}\">{TranslationProvider.BasicText[lang, "GO_TO_NEW_FORUM"]}</a>"),
+                        CompressionUtility.CompressAndEncode($"<a href=\"{ForumLinkUtility.GetRelativeUrlToTopic(TopicId ?? 0, PageNum ?? 0)}\">{TranslationProvider.BasicText[lang, "GO_TO_LAST_TOPIC"]}</a>")
                     );
                     return RedirectToPage("Confirm", "DestinationConfirmation", new { destinations });
                 }
@@ -439,16 +439,16 @@ namespace PhpbbInDotnet.Forum.Pages
                 var destinations = new List<string>();
                 if (LatestSelected != null)
                 {
-                    destinations.Add(await CompressionUtility.CompressAndEncode($"<a href=\"./ViewTopic?postId={LatestSelected}&handler=byPostId\">{TranslationProvider.BasicText[lang, "GO_TO_NEW_TOPIC"]}</a>"));
+                    destinations.Add(await CompressionUtility.CompressAndEncode($"<a href=\"{ForumLinkUtility.GetRelativeUrlToPost(LatestSelected ?? 0)}\">{TranslationProvider.BasicText[lang, "GO_TO_NEW_TOPIC"]}</a>"));
                 };
 
                 if (NextRemaining != null)
                 {
-                    destinations.Add(await CompressionUtility.CompressAndEncode($"<a href=\"./ViewTopic?postId={NextRemaining}&handler=byPostId\">{TranslationProvider.BasicText[lang, "GO_TO_LAST_TOPIC"]}</a>"));
+                    destinations.Add(await CompressionUtility.CompressAndEncode($"<a href=\"{ForumLinkUtility.GetRelativeUrlToPost(NextRemaining ?? 0)}\">{TranslationProvider.BasicText[lang, "GO_TO_LAST_TOPIC"]}</a>"));
                 }
                 else
                 {
-                    destinations.Add(await CompressionUtility.CompressAndEncode($"<a href=\"./ViewForum?forumId={ForumId}\">{TranslationProvider.BasicText[lang, "GO_TO_LAST_FORUM"]}</a>"));
+                    destinations.Add(await CompressionUtility.CompressAndEncode($"<a href=\"{ForumLinkUtility.GetRelativeUrlToForum(ForumId ?? 0)}\">{TranslationProvider.BasicText[lang, "GO_TO_LAST_FORUM"]}</a>"));
                 }
 
                 return RedirectToPage("Confirm", "DestinationConfirmation", new { destinations });

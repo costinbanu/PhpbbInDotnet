@@ -29,8 +29,8 @@
     var forumTree = (await Model.GetForumTree(false, false)).Tree;
     if (Model.ForumId > 0)
     {
-        ViewData["ForumId"] = Model.ForumId;
-        ViewData["BreadCrumbs"] = _forumService.GetJSLDBreadCrumbsObject(forumTree, Model.ForumId.Value, Model.TopicId, Model.TopicTitle, Model.PageNum);
+        ViewData[Constants.ViewDataKeys.FORUM_ID] = Model.ForumId;
+        ViewData[Constants.ViewDataKeys.BREADCRUMBS] = _forumService.GetBreadCrumbs(forumTree, Model.ForumId.Value, Model.TopicId, Model.TopicTitle, Model.PageNum);
     }
 }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/he/1.2.0/he.min.js" integrity="sha512-PEsccDx9jqX6Dh4wZDCnWMaIO3gAaU0j46W//sSqQhUQxky6/eHZyeB3NrXD2xsyugAKd4KPiDANkcuoEa2JuA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -71,19 +71,9 @@
         }
     }
 </script>
-<span style="padding-top: 10px; padding-bottom: 10px">
-    @Html.Raw(Model.TranslationProvider.BasicText[lang, "PARENT_FORUM", Casing.FirstUpper]):
-    <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@Html.Raw(Model.ForumTitle)</a>
-</span>
-@if (!currentUser.IsAnonymous)
-{
-    <span>&nbsp;&bull;&nbsp;</span>
-    @await Html.PartialAsync(
-        "_HeaderLinksPartial",
-        new _HeaderLinksPartialModel(lang),
-        ViewData
-    )
-}
+
+@await Html.PartialAsync("_HeaderLinksPartial", new _HeaderLinksPartialModel(lang, currentUser.IsAnonymous), ViewData)
+
 <p>&nbsp;</p>
 <h3>@Html.Raw(Model.TranslationProvider.BasicText[lang, "TOPIC", Casing.FirstUpper]): @Html.Raw(Model.TopicTitle)</h3>
 <span class="Caption">

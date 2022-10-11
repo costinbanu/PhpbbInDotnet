@@ -245,4 +245,14 @@ namespace PhpbbInDotnet.Domain
         Topic,
         Post
     }
+
+    public enum StatisticsPeriod
+    {
+        TwentyFourHours,
+        SevenDays,
+        ThirtyDays,
+        SixMonths,
+        OneYear,
+        AllTime
+    }
 }

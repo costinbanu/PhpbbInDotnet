@@ -2,6 +2,7 @@
 @model IndexModel
 
 @using Domain
+@using CustomPartials
 @using Microsoft.Extensions.Configuration
 
 @inject IConfiguration _config
@@ -10,22 +11,21 @@
 @{
     var CurrentUser = Model.GetCurrentUser();
     var Lang = Model.GetLanguage();
-    var UserDateFormat = CurrentUser?.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
+    var UserDateFormat = CurrentUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
     ViewData["Title"] = Model.TranslationProvider.BasicText[Lang, "HOME", Casing.Title];
-    ViewData["BreadCrumbs"] = _forumService.GetJSLDBreadCrumbsObject((await Model.GetForumTree(false, false)).Tree, 0);
+    ViewData["BreadCrumbs"] = _forumService.GetBreadCrumbs((await Model.GetForumTree(false, false)).Tree, 0);
+    var additionalHeaderLinks = new List<string>();
 }
 
-@if (!CurrentUser!.IsAnonymous)
+@if (!CurrentUser.IsAnonymous)
 {
     <form asp-page-handler="MarkForumsRead" method="post" name="MarkForumsRead">
         @Html.AntiForgeryToken()
     </form>
-    @await Html.PartialAsync(
-        "_HeaderLinksPartial",
-        new PhpbbInDotnet.Forum.Pages.CustomPartials._HeaderLinksPartialModel(Lang, true, $"<a href=\"javascript:MarkForumsRead.submit()\">{Model.TranslationProvider.BasicText[Lang, "MARK_FORUMS_READ", Casing.Title]}</a>"),
-        ViewData
-    )
+    additionalHeaderLinks.Add($"<a href=\"javascript:MarkForumsRead.submit()\">{Model.TranslationProvider.BasicText[Lang, "MARK_FORUMS_READ", Casing.Title]}</a>");
 }
+
+@await Html.PartialAsync("_HeaderLinksPartial", new _HeaderLinksPartialModel(Lang, CurrentUser.IsAnonymous, additionalHeaderLinks), ViewData)
 
 @if (_config.GetValue<bool?>("DisplayExternalLinksMenu") ?? false)
 {
@@ -48,8 +48,4 @@
     });
 </script>
 
-@await Html.PartialAsync(
-    "_ForumDisplayPartial",
-    new PhpbbInDotnet.Forum.Pages.CustomPartials._ForumDisplayPartialModel(0, Model.Tree!, UserDateFormat, false, CurrentUser!, false, Lang),
-    ViewData
-)
+@await Html.PartialAsync("_ForumDisplayPartial", new _ForumDisplayPartialModel(0, Model.Tree!, UserDateFormat, false, CurrentUser!, false, Lang), ViewData)
