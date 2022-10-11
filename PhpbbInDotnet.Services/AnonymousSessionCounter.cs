@@ -43,7 +43,7 @@ namespace PhpbbInDotnet.Services
         }
 
         public IEnumerable<BotData> GetBots()
-            => _ipCache.Select(x => JsonConvert.DeserializeObject<BotData>(x.Value.Value));
+            => _ipCache.Select(x => JsonConvert.DeserializeObject<BotData>(x.Value.Value!)!);
 
         public int GetActiveBotCount()
             => _ipCache.Count;
