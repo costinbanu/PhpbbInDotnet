@@ -19,5 +19,6 @@ namespace PhpbbInDotnet.Services
         string? GetFileUrl(string name, FileType fileType);
         Task<bool> UploadAvatar(int userId, Stream contents, string fileName);
         Task<bool> UpsertEmoji(string name, Stream file);
+        void WriteAllTextToFile(string path, string contents);
     }
 }

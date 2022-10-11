@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<ItemGroup>
+		<PackageReference Include="XSitemaps" Version="1.2.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\PhpbbInDotnet.Services\PhpbbInDotnet.Services.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+			<_Parameter1>PhpbbInDotnet.RecurringTasks.UnitTests</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
+
+</Project>

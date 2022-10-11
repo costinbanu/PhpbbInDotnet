@@ -25,8 +25,6 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddSingleton<IRazorViewService, RazorViewService>();
             services.AddSingleton<IAnonymousSessionCounter, AnonymousSessionCounter>();
 
-            services.AddHostedService<ScheduledTasksService>();
-
             return services;
         }
     }
