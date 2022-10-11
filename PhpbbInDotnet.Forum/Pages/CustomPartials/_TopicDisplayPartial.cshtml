@@ -3,6 +3,7 @@
 @using Languages
 @using Services
 @using Domain
+@using Domain.Utilities
 @using Objects
 @using CustomPartials
 
@@ -143,7 +144,7 @@
                     language: Model.Language,
                     authorOnFoeList: Model.CurrentUser.Foes?.Contains(topic.TopicLastPosterId ?? 0) == true)
                 {
-                    LinkHref = topic.TopicLastPostId == null ? null : $"./ViewTopic?postId={topic.TopicLastPostId}&handler=ByPostId",
+                    LinkHref = topic.TopicLastPostId == null ? null : ForumLinkUtility.GetRelativeUrlToPost(topic.TopicLastPostId ?? 0),
                     IsLastPostSummary = true,
                     Posts = topic.PostCount,
                     Views = topic.ViewCount,

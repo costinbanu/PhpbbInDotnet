@@ -12,7 +12,7 @@ namespace PhpbbInDotnet.Services
         string GetPathText(HashSet<ForumTree> tree, int forumId);
         string GetAbsoluteUrlToForum(int forumId);
         string GetAbsoluteUrlToTopic(int topicId, int pageNum);
-        BreadCrumbJSLD GetJSLDBreadCrumbsObject(HashSet<ForumTree> tree, int forumId, int? topicId = null, string? topicName = null, int? pageNum = null);
+        BreadCrumbs GetBreadCrumbs(HashSet<ForumTree> tree, int forumId, int? topicId = null, string? topicName = null, int? pageNum = null);
         Task<IEnumerable<(int forumId, bool hasPassword)>> GetRestrictedForumList(AuthenticatedUserExpanded user, bool includePasswordProtected = false);
         Task<IEnumerable<int>> GetUnrestrictedForums(AuthenticatedUserExpanded user, int? forumId = null);
         Task<List<TopicGroup>> GetTopicGroups(int forumId);

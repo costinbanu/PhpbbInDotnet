@@ -15,6 +15,7 @@
 @inject IBBCodeRenderingService _renderingService
 @inject IStorageService _storageService
 @inject IUserService _userService
+@inject IForumTreeService _forumService;
 @inject IConfiguration _config
 
 @{
@@ -27,6 +28,12 @@
     var CanCreatePoll = Model.Action == PostingActions.NewTopic || (Model.Action == PostingActions.EditForumPost && (Model.CurrentTopic?.TopicFirstPostId ?? 0) == Model.PostId);
     var UserDateFormat = CurrentUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
     var IsAdmin = await Model.IsCurrentUserAdminHere();
+
+    if (Model.ForumId > 0)
+    {
+        var (forumTree, _) = await Model.GetForumTree(false, false);
+        ViewData[Constants.ViewDataKeys.BREADCRUMBS] = _forumService.GetBreadCrumbs(forumTree, Model.ForumId);
+    }
 }
 
 <environment include="Development">
@@ -67,10 +74,8 @@
 
 @if (Model.Action == PostingActions.EditForumPost || Model.Action == PostingActions.NewForumPost)
 {
-    <span>
-        @Html.Raw(Model.TranslationProvider.BasicText[Lang, "PARENT_FORUM", Casing.Title]):
-        <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(Model.CurrentForum?.ForumName ?? string.Empty)</a>
-    </span>
+    @await Html.PartialAsync("_HeaderLinksPartial", new _HeaderLinksPartialModel(Lang, CurrentUser.IsAnonymous), ViewData)
+    <p>&nbsp;</p>
     <h3>
         @Html.Raw(Model.TranslationProvider.BasicText[Lang, "DO_REPLY", Casing.Title]):
         @if (Model.PostId.HasValue)
@@ -238,85 +243,85 @@ else if (Model.Action == PostingActions.NewTopic)
         var countLimit = _config.GetObject<AttachmentLimits>("UploadLimitsCount");
         var resizeTool = _config.GetObject<ExternalImageProcessor>();
 
-        <div id="attachPanel" style="display:@(Model.ShowAttach ? "block" : "none")">
-            <br />
-            <h3>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "ATTACHED_FILES"])</h3>
+            <div id="attachPanel" style="display:@(Model.ShowAttach ? "block" : "none")">
+                <br />
+                <h3>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "ATTACHED_FILES"])</h3>
 
-            @if (resizeTool.Enabled)
+                @if (resizeTool.Enabled)
             {
-                @Html.Raw(string.Format(Model.TranslationProvider.AttachmentGuide[Lang]!, sizeLimit.Images, resizeTool.Url, resizeTool.Name, resizeTool.Api?.Enabled == true ? "display:auto" : "display:none"))
+                    @Html.Raw(string.Format(Model.TranslationProvider.AttachmentGuide[Lang]!, sizeLimit.Images, resizeTool.Url, resizeTool.Name, resizeTool.Api?.Enabled == true ? "display:auto" : "display:none"))
             }
 
-            @if (resizeTool.Api?.Enabled == true)
+                @if (resizeTool.Api?.Enabled == true)
             {
-                <p></p>
-                <label>
-                    @if (IsAdmin)
+                    <p></p>
+                    <label>
+                        @if (IsAdmin)
                     {
-                        @Html.CheckBoxFor(m => m.ShouldResize)
+                            @Html.CheckBoxFor(m => m.ShouldResize)
                     }
                     else
                     {
-                        <input type="checkbox" checked disabled />
+                            <input type="checkbox" checked disabled />
                     }
-                    @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SHOULD_RESIZE_IMAGES"])
-                </label>
+                        @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SHOULD_RESIZE_IMAGES"])
+                    </label>
+                    <p></p>
+                    <label>
+                        @Html.CheckBoxFor(m => m.ShouldHideLicensePlates)
+                        @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SHOULD_HIDE_LICENSE_PLATES_IN_IMAGES"])
+                    </label>
+            }
                 <p></p>
-                <label>
-                    @Html.CheckBoxFor(m => m.ShouldHideLicensePlates)
-                    @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SHOULD_HIDE_LICENSE_PLATES_IN_IMAGES"])
-                </label>
-            }
-            <p></p>
-            <input asp-for="Files" onchange="posting.submitAttachments()" multiple class="HiddenFileInput" />
-            <label for="Files" class="MyButton">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CHOOSE_FILES"])</label><br />
-            @if (!IsAdmin)
+                <input asp-for="Files" onchange="posting.submitAttachments()" multiple class="HiddenFileInput" />
+                <label for="Files" class="MyButton">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CHOOSE_FILES"])</label><br />
+                @if (!IsAdmin)
             {
-                <span class="Caption">
-                    @Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "CHOOSE_FILES_CAPTION_FORMAT"], countLimit.Images, sizeLimit.Images, countLimit.OtherFiles, sizeLimit.OtherFiles))
-                </span>
+                    <span class="Caption">
+                        @Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "CHOOSE_FILES_CAPTION_FORMAT"], countLimit.Images, sizeLimit.Images, countLimit.OtherFiles, sizeLimit.OtherFiles))
+                    </span>
             }
-            <span asp-validation-for="Files" class="validation"></span>
-            <div id="fileUploadStatus"></div>
-            <input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "LOAD_FILES"])" asp-page-handler="AddAttachment" style="display:none" id="submitAttachmentsButton" formnovalidate />
-            @if (Model.Attachments?.Any() ?? false)
+                <span asp-validation-for="Files" class="validation"></span>
+                <div id="fileUploadStatus"></div>
+                <input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "LOAD_FILES"])" asp-page-handler="AddAttachment" style="display:none" id="submitAttachmentsButton" formnovalidate />
+                @if (Model.Attachments?.Any() ?? false)
             {
-                <hr class="SubtypeSeparator" />
-                <h4 style="float:left;margin-bottom:0px; margin-top:3px;">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "ALREADY_ATTACHED"])</h4>
-                <span>
-                    &nbsp;
-                    <input 
+                    <hr class="SubtypeSeparator" />
+                    <h4 style="float:left;margin-bottom:0px; margin-top:3px;">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "ALREADY_ATTACHED"])</h4>
+                    <span>
+                        &nbsp;
+                        <input 
                         type="submit" 
                         value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_ALL_FILES"])" 
                         asp-page-handler="DeleteAllAttachments" 
                         class="MyButton" 
                         style="height:26px; padding-top:1px; padding-bottom: 1px" 
-                        formnovalidate
+                            formnovalidate
                         onclick="confirm('@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CONFIRM_DELETE_ALL_ATTACHMENTS"])')"/>
-                </span>
-                <p>&nbsp;</p>
-                @for (var i = 0; i < Model.Attachments.Count; i++)
+                    </span>
+                    <p>&nbsp;</p>
+                    @for (var i = 0; i < Model.Attachments.Count; i++)
                 {
-                    <div style="margin-bottom:20px; padding-bottom:20px">
-                        <b>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "FILE_NAME"]):</b> @Model.Attachments[i].RealFilename <br />
-                        <b>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "FILE_COMMENT"]):</b>
-                        <br />
-                        <textarea type="text" asp-for="Attachments![i].AttachComment" rows="4" cols="100" style="display:inline-block; color:black" class="InputBox"></textarea>
-                        <p style="clear:both"></p>
-                        <input type="button" value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "MAKE_INLINE"])" onclick="posting.attach_inline(@i, '@Model.Attachments[i].RealFilename')" class="MyButton" /> &nbsp;
-                        <input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_FILE"])" asp-page-handler="DeleteAttachment" onclick="$('#idToDelete').val(@i); return true;" class="MyButton" formnovalidate />
-                        <br />
-                        <span asp-validation-for="DeleteFileDummyForValidation[i]" class="validation"></span>
-                    </div>
-                    <input type="hidden" asp-for="Attachments![i].AttachId" />
-                    <input type="hidden" asp-for="Attachments![i].RealFilename" />
-                    <input type="hidden" asp-for="Attachments![i].PhysicalFilename" />
-                    <input type="hidden" asp-for="Attachments![i].Mimetype" />
-                    <input type="hidden" asp-for="Attachments![i].Filesize" />
+                        <div style="margin-bottom:20px; padding-bottom:20px">
+                            <b>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "FILE_NAME"]):</b> @Model.Attachments[i].RealFilename <br />
+                            <b>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "FILE_COMMENT"]):</b>
+                            <br />
+                            <textarea type="text" asp-for="Attachments![i].AttachComment" rows="4" cols="100" style="display:inline-block; color:black" class="InputBox"></textarea>
+                            <p style="clear:both"></p>
+                            <input type="button" value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "MAKE_INLINE"])" onclick="posting.attach_inline(@i, '@Model.Attachments[i].RealFilename')" class="MyButton" /> &nbsp;
+                            <input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_FILE"])" asp-page-handler="DeleteAttachment" onclick="$('#idToDelete').val(@i); return true;" class="MyButton" formnovalidate />
+                            <br />
+                            <span asp-validation-for="DeleteFileDummyForValidation[i]" class="validation"></span>
+                        </div>
+                        <input type="hidden" asp-for="Attachments![i].AttachId" />
+                        <input type="hidden" asp-for="Attachments![i].RealFilename" />
+                        <input type="hidden" asp-for="Attachments![i].PhysicalFilename" />
+                        <input type="hidden" asp-for="Attachments![i].Mimetype" />
+                        <input type="hidden" asp-for="Attachments![i].Filesize" />
                 }
-                <input type="hidden" name="index" id="idToDelete" value="" />
+                    <input type="hidden" name="index" id="idToDelete" value="" />
             }
-        </div>
+            </div>
     }
     <div id="emojiPanel" style="display:none; clear:both;">
         @foreach (var smiley in (await _writingService.GetLazySmilies()).GroupBy(s => s.SmileyUrl).Select(g => g.FirstOrDefault()))
@@ -343,18 +348,18 @@ else if (Model.Action == PostingActions.NewTopic)
     var (posts, attachments, previousPostsCorrelationId) = await Model.GetPreviousPosts();
     if (posts.Any())
     {
-        <script>
-            var texts = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(posts.ToDictionary(k => k.PostId, v => _writingService.CleanBbTextForDisplay(v.PostText, v.BbcodeUid))));
-            $('#lastPostTime').val(@Math.Max(posts.First().PostTime, posts.First().PostEditTime));
-        </script>
-        <br />
-        <h3>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "PREVIOUS_POSTS"])</h3>
+    <script>
+                var texts = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(posts.ToDictionary(k => k.PostId, v => _writingService.CleanBbTextForDisplay(v.PostText, v.BbcodeUid))));
+                $('#lastPostTime').val(@Math.Max(posts.First().PostTime, posts.First().PostEditTime));
+    </script>
+    <br />
+    <h3>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "PREVIOUS_POSTS"])</h3>
 
         foreach (var post in posts)
         {
             post.Attachments = attachments.TryGetValue(post.PostId, out var val) ? val : new List<Objects.AttachmentDto>();
 
-            @await Html.PartialAsync("_PostPartial", new _PostPartialModel
+    @await Html.PartialAsync("_PostPartial", new _PostPartialModel
             {
                 CurrentUser = CurrentUser,
                 Post = post,

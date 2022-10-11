@@ -1,0 +1,73 @@
+﻿@page
+@model PhpbbInDotnet.Forum.Pages.StatisticsModel
+
+@using Languages
+@using Domain
+@using Domain.Utilities
+
+@inject ITranslationProvider _translationProvider
+
+@{
+	var lang = _translationProvider.GetLanguage();
+	var title = _translationProvider.BasicText[lang, "FORUM_STATS"];
+	ViewData["Title"] = title;
+    Layout = "~/Pages/_Layout.cshtml";
+}
+
+<style>
+    .FlexCaption {
+        font-weight: bold;
+        text-align: left;
+        margin-bottom: auto;
+    }
+</style>
+
+<h2>
+	@Html.Raw(title)
+</h2>
+<p>&nbsp;</p>
+<form method="post">
+	@Html.DropDownListFor(
+		expression: m => m.Period,
+		selectList: EnumUtility.EnumToDropDownList<StatisticsPeriod>(
+			selectedItem: null,
+			textTransform: item => _translationProvider.Enums[lang, item],
+			defaultText: _translationProvider.BasicText[lang, "FORUM_STATS_PLACEHOLDER"]),
+		htmlAttributes: new 
+		{
+			style = "max-width:400px; height: 30px; padding-top: 0px"
+		})
+	<input type="submit" value="@Html.Raw(_translationProvider.BasicText[lang, "SUBMIT", Casing.Title])" class="MyButton" />
+</form>
+
+<p>&nbsp;</p>
+
+@if (Model.Result is not null)
+{
+	<div class="FlexCenter">
+		<div class="FlexCaption">
+			@Html.Raw(_translationProvider.BasicText[lang, "FORUM_STATS_ONLINE_USERS"])
+		</div>
+		<div class="FlexRight PostInputWidth">
+			@Model.Result.UsersCount
+		</div>
+	</div>
+	<p></p>
+	<div class="FlexCenter">
+		<div class="FlexCaption">
+			@Html.Raw(_translationProvider.BasicText[lang, "FORUM_STATS_POSTS"])
+		</div>
+		<div class="FlexRight PostInputWidth">
+			@Model.Result.PostsCount
+		</div>
+	</div>
+	<p></p>
+	<div class="FlexCenter">
+		<div class="FlexCaption">
+			@Html.Raw(_translationProvider.BasicText[lang, "FORUM_STATS_ATTACHMENTS"])
+		</div>
+		<div class="FlexRight PostInputWidth">
+			@Html.Raw(string.Format(_translationProvider.BasicText[lang, "FORUM_STATS_ATTACHMENTS_VALUE"], Model.Result.FileCount, StringUtility.ReadableFileSize(Model.Result.FileSizeSum)))
+		</div>
+	</div>
+}

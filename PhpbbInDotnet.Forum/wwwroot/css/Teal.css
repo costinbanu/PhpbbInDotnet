@@ -228,6 +228,11 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
     flex-flow: column;
 }
 
+    .ThemeLayoutAndColor a {
+        color:white; 
+        text-decoration:underline;
+    }
+
 .ParentLayoutAndColor {
     background-color: unset !important;
     color: unset !important;
@@ -245,6 +250,7 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
 
 .PollTable tr {
     border-bottom: solid 1px lightgray;
+    border-top: solid 1px lightgray;
 }
 
 .Error {
