@@ -206,5 +206,10 @@ namespace PhpbbInDotnet.Services
                 return Array.Empty<byte>();
             }
         }
+
+        public void WriteAllTextToFile(string path, string contents)
+        {
+            File.WriteAllText(path, contents);
+        }
     }
 }

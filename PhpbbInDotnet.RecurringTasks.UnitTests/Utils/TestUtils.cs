@@ -5,7 +5,7 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace PhpbbInDotnet.Services.UnitTests.Utils
+namespace PhpbbInDotnet.RecurringTasks.UnitTests.Utils
 {
     internal static class TestUtils
     {
