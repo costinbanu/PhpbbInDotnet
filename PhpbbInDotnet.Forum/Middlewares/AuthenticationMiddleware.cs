@@ -94,7 +94,7 @@ namespace PhpbbInDotnet.Forum.Middlewares
             {
                 var tppTask = GetTopicPostsPage(baseUser.UserId);
                 var foesTask = _userService.GetFoes(baseUser.UserId);
-                var groupPropertiesTask = sqlExecuter.QueryFirstOrDefaultAsync(
+                var groupPropertiesTask = sqlExecuter.QueryFirstOrDefaultAsync<(int GroupEditTime, int GroupUserUploadSize)>(
                     @"SELECT g.group_edit_time, g.group_user_upload_size
                         FROM phpbb_groups g
                         JOIN phpbb_users u ON g.group_id = u.group_id
@@ -112,13 +112,12 @@ namespace PhpbbInDotnet.Forum.Middlewares
                 await Task.WhenAll(styleTask, groupPropertiesTask, permissionsTask, tppTask, foesTask, updateLastVisitTask);
 
                 var groupProperties = await groupPropertiesTask;
-                var editTime = unchecked((int)groupProperties.group_edit_time);
                 var style = await styleTask;
 
                 user.TopicPostsPerPage = await tppTask;
                 user.Foes = await foesTask;
-                user.UploadLimit = unchecked((int)groupProperties.group_user_upload_size);
-                user.PostEditTime = (editTime == 0 || dbUser.UserEditTime == 0) ? 0 : Math.Min(Math.Abs(editTime), Math.Abs(dbUser.UserEditTime));
+                user.UploadLimit = groupProperties.GroupUserUploadSize;
+                user.PostEditTime = (groupProperties.GroupEditTime == 0 || dbUser.UserEditTime == 0) ? 0 : Math.Min(Math.Abs(groupProperties.GroupEditTime), Math.Abs(dbUser.UserEditTime));
                 user.Style = style ?? string.Empty;
             }
             user.AllPermissions = await permissionsTask;

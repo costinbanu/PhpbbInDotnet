@@ -6,7 +6,7 @@
 @using Domain.Extensions
 
 @inject Services.IForumTreeService _forumService
-@inject Database.IForumDbContext _dbContext
+@inject Services.IUserService _userService
 
 @{
     ViewData["Title"] = "Confirm";
@@ -32,7 +32,7 @@
             //forum tree callback
             function topicSelectCallback(topics) {
                 let topicDisplay = $('#DestinationTopicId');
-                const canReplyInTopic = (topic) => @Json.Serialize(await Model.IsCurrentUserModeratorHere(Model.ForumId ?? 0)) || !topic.isLocked;
+                const canReplyInTopic = (topic) => @Json.Serialize(await _userService.IsUserModeratorInForum(Model.ForumUser, Model.ForumId ?? 0)) || !topic.isLocked;
                 if (topicDisplay) {
                     topicDisplay.empty();
                     let option = new Option(@Json.Serialize(Model.TranslationProvider.BasicText[lang, "CHOOSE_DESTINATION_TOPIC"]), 0);

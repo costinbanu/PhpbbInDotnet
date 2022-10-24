@@ -41,7 +41,9 @@ namespace PhpbbInDotnet.Forum.Pages
                 var dto = await Cache.GetAsync<AttachmentDto>(CacheUtility.GetAttachmentCacheKey(id, correlationId.Value));
                 if (dto != null)
                 {
-                    return SendToClient(dto.PhysicalFileName!, dto.DisplayName!, dto.MimeType, FileType.Attachment);
+                    return await WithValidForum(
+                        dto.ForumId,
+                        _ => Task.FromResult(SendToClient(dto.PhysicalFileName!, dto.DisplayName!, dto.MimeType, FileType.Attachment)));
                 }
             }
 
@@ -72,8 +74,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             return await WithValidForum(
                 file.ForumId ?? 0,
-                _ => Task.FromResult(SendToClient(file.PhysicalFilename!, file.RealFilename!, file.Mimetype, FileType.Attachment))
-            );
+                _ => Task.FromResult(SendToClient(file.PhysicalFilename!, file.RealFilename!, file.Mimetype, FileType.Attachment)));
         }
 
         public async Task<IActionResult> OnGetAvatar(int userId, Guid? correlationId = null)

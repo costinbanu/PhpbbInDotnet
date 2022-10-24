@@ -106,7 +106,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnGetEditPost()
             => WithRegisteredUserAndCorrectPermissions(user => WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
             {
-                if (!(await IsCurrentUserModeratorHere() || (curPost.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime))))
+                if (!(await UserService.IsUserModeratorInForum(ForumUser, ForumId) || (curPost.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime))))
                 {
                     return RedirectToPage("ViewTopic", "byPostId", new { PostId });
                 }
@@ -155,7 +155,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var lang = Language;
                 CurrentForum = curForum;
                 ShowAttach = true;
-                var isAdmin = await IsCurrentUserAdminHere();
+                var isAdmin = await UserService.IsUserGlobalAdmin(ForumUser);
 
                 if (!(Files?.Any() ?? false))
                 {
@@ -319,7 +319,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var uid = string.Empty;
                 newPostText = HttpUtility.HtmlEncode(newPostText);
 
-                var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(Attachments!, lang, 1, true);
+                var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(Attachments!, ForumId, lang, 1, true);
                 PreviewCorrelationId = cacheResult.CorrelationId;
                 PreviewablePost = new PostDto
                 {
@@ -373,7 +373,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnPostEditForumPost()
             => WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidPost(PostId ?? 0, (curForum, curTopic, curPost) => WithValidInput(curForum, async() =>
             {
-                if (!(await IsCurrentUserModeratorHere() || (curPost.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime))))
+                if (!(await UserService.IsUserModeratorInForum(ForumUser, ForumId) || (curPost.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime))))
                 {
                     return RedirectToPage("ViewTopic", "byPostId", new { PostId });
                 }
@@ -435,7 +435,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostDeletePoll()
             => await WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
             {
-                if (!(await IsCurrentUserModeratorHere() || (curPost.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime))))
+                if (!(await UserService.IsUserModeratorInForum(ForumUser, ForumId) || (curPost.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime))))
                 {
                     return RedirectToPage("ViewTopic", "byPostId", new { PostId });
                 }

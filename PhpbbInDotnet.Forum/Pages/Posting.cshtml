@@ -15,7 +15,7 @@
 @inject IBBCodeRenderingService _renderingService
 @inject IStorageService _storageService
 @inject IUserService _userService
-@inject IForumTreeService _forumService;
+@inject IForumTreeService _forumService
 @inject IConfiguration _config
 
 @{
@@ -27,7 +27,7 @@
     var CurrentUser = Model.ForumUser;
     var CanCreatePoll = Model.Action == PostingActions.NewTopic || (Model.Action == PostingActions.EditForumPost && (Model.CurrentTopic?.TopicFirstPostId ?? 0) == Model.PostId);
     var UserDateFormat = CurrentUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
-    var IsAdmin = await Model.IsCurrentUserAdminHere();
+    var IsAdmin = await _userService.IsUserGlobalAdmin(Model.ForumUser);
 
     if (Model.ForumId > 0)
     {

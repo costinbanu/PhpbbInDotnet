@@ -36,26 +36,26 @@ namespace PhpbbInDotnet.Services
             _logger = logger;
         }
 
-        public async Task<(Guid CorrelationId, Dictionary<int, List<AttachmentDto>> Attachments)> CacheAttachmentsAndPrepareForDisplay(List<PhpbbAttachments> dbAttachments, string language, int postCount, bool isPreview)
+        public async Task<(Guid CorrelationId, Dictionary<int, List<AttachmentDto>> Attachments)> CacheAttachmentsAndPrepareForDisplay(IEnumerable<PhpbbAttachmentExpanded> dbAttachments, string language, int postCount, bool isPreview)
         {
             var correlationId = Guid.NewGuid();
             var attachments = new Dictionary<int, List<AttachmentDto>>(postCount);
-            var ids = new List<int>(dbAttachments.Count);
-            foreach (var attach in dbAttachments)
+            var ids = new List<int>();
+            foreach (var attachment in dbAttachments)
             {
-                var dto = new AttachmentDto(attach, isPreview, language, correlationId);
-                if (!attachments.ContainsKey(attach.PostMsgId))
+                var dto = new AttachmentDto(attachment, attachment.ForumId, isPreview, language, correlationId);
+                if (!attachments.ContainsKey(attachment.PostMsgId))
                 {
-                    attachments.Add(attach.PostMsgId, new List<AttachmentDto>(_maxAttachmentCount) { dto });
+                    attachments.Add(attachment.PostMsgId, new List<AttachmentDto>(_maxAttachmentCount) { dto });
                 }
                 else
                 {
-                    attachments[attach.PostMsgId].Add(dto);
+                    attachments[attachment.PostMsgId].Add(dto);
                 }
-                if (StringUtility.IsMimeTypeInline(attach.Mimetype))
+                if (StringUtility.IsMimeTypeInline(attachment.Mimetype))
                 {
-                    _cache.Add(CacheUtility.GetAttachmentCacheKey(attach.AttachId, correlationId), dto, TimeSpan.FromSeconds(60));
-                    ids.Add(attach.AttachId);
+                    _cache.Add(CacheUtility.GetAttachmentCacheKey(attachment.AttachId, correlationId), dto, TimeSpan.FromSeconds(60));
+                    ids.Add(attachment.AttachId);
                 }
             }
 
@@ -77,6 +77,14 @@ namespace PhpbbInDotnet.Services
 
             return (correlationId, attachments);
         }
+
+        public Task<(Guid CorrelationId, Dictionary<int, List<AttachmentDto>> Attachments)> CacheAttachmentsAndPrepareForDisplay(IEnumerable<PhpbbAttachments> dbAttachments, int forumId, string language, int postCount, bool isPreview)
+            => CacheAttachmentsAndPrepareForDisplay(dbAttachments.Select(attachment =>
+            {
+                var newAttachment = attachment as PhpbbAttachmentExpanded;asta nu merge
+                newAttachment!.ForumId = forumId;
+                return newAttachment;
+            }), language, postCount, isPreview);
 
         public async Task<PostListDto> GetPosts(int topicId, int pageNum, int pageSize, bool isPostingView, string language)
         {
@@ -163,7 +171,7 @@ namespace PhpbbInDotnet.Services
 
             await Task.WhenAll(countTask, dbAttachmentsTask, reportsTask);
 
-            var (CorrelationId, Attachments) = await CacheAttachmentsAndPrepareForDisplay((await dbAttachmentsTask).AsList(), language, currentPostIds.Count, false);
+            var (CorrelationId, Attachments) = await CacheAttachmentsAndPrepareForDisplay(await dbAttachmentsTask, posts.FirstOrDefault()?.ForumId ?? 0, language, currentPostIds.Count, false);
 
             return new PostListDto
             {

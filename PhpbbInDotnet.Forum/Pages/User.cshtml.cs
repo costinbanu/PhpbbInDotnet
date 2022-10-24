@@ -161,7 +161,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var newCleanUsername = StringUtility.CleanString(CurrentUser.Username);
             var usernameChanged = false;
             var oldUsername = dbUser.Username;
-            if (await IsCurrentUserAdminHere() && dbUser.UsernameClean != newCleanUsername && !string.IsNullOrWhiteSpace(CurrentUser.Username))
+            if (await UserService.IsUserGlobalAdmin(ForumUser) && dbUser.UsernameClean != newCleanUsername && !string.IsNullOrWhiteSpace(CurrentUser.Username))
             {
                 if (!validator.ValidateUsername(nameof(CurrentUser), CurrentUser.Username))
                 {
@@ -447,7 +447,6 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (affectedEntries > 0 && isSelf && !EmailChanged)
             {
-                ReloadCurrentUser();
                 Mode = UserPageMode.Edit;
                 return await OnGet();
             }
@@ -496,7 +495,6 @@ namespace PhpbbInDotnet.Forum.Pages
                     "INSERT INTO phpbb_zebra (user_id, zebra_id, friend, foe) VALUES (@userId, @otherId, 0, 1)",
                     new { user.UserId, otherId = cur!.UserId }
                 );
-                ReloadCurrentUser();
                 Mode = UserPageMode.AddFoe;
                 return await OnGet();
             });
@@ -517,7 +515,6 @@ namespace PhpbbInDotnet.Forum.Pages
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;",
                     new { user.UserId, otherId = cur!.UserId }
                 );
-                ReloadCurrentUser();
                 Mode = UserPageMode.RemoveFoe;
                 return await OnGet();
             });
@@ -534,13 +531,12 @@ namespace PhpbbInDotnet.Forum.Pages
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id IN @otherIds;",
                     new { user.UserId, otherIds = SelectedFoes!.DefaultIfEmpty() }
                 );
-                ReloadCurrentUser();
                 Mode = UserPageMode.RemoveMultipleFoes;
                 return await OnGet();
             });
 
         public async Task<bool> CanEdit() 
-            => !(ViewAsAnother ?? false) && (ForumUser.UserId == CurrentUser!.UserId || await IsCurrentUserAdminHere());
+            => !(ViewAsAnother ?? false) && (ForumUser.UserId == CurrentUser!.UserId || await UserService.IsUserGlobalAdmin(ForumUser));
 
         public async Task<bool> CanAddFoe()
         {

@@ -153,8 +153,6 @@ namespace PhpbbInDotnet.Forum.Pages
                      new { user.UserId, topicId, userPostsPerPage }
                 );
 
-                ReloadCurrentUser();
-
                 if (postId.HasValue)
                 {
                     return RedirectToPage("ViewTopic", "ByPostId", new { postId = postId.Value, highlight = false });
@@ -273,7 +271,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (user) =>
             {
                 var lang = Language;
-                if (await IsCurrentUserModeratorHere())
+                if (await UserService.IsUserModeratorInForum(ForumUser, ForumId ?? 0))
                 {
                     return await ModeratePosts();
                 }
@@ -530,7 +528,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             async Task MarkAsRead()
             {
-                if (await IsTopicUnread(ForumId ?? 0, TopicId ?? 0))
+                if (await ForumService.IsTopicUnread(ForumId ?? 0, TopicId ?? 0, ForumUser))
                 {
                     await MarkTopicRead(ForumId ?? 0, TopicId ?? 0, Paginator.IsLastPage, Posts?.DefaultIfEmpty().Max(p => p?.PostTime ?? 0L) ?? 0);
                 }

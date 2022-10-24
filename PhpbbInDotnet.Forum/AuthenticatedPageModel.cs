@@ -44,70 +44,11 @@ namespace PhpbbInDotnet.Forum
             TranslationProvider = translationProvider;
         }
 
-        #region User
-
         public AuthenticatedUserExpanded ForumUser
             => AuthenticatedUserExpanded.GetValue(HttpContext);
 
-        public void ReloadCurrentUser()
-        {
-            var user = ForumUser;
-            Cache.Add($"ReloadUser_{user.UsernameClean}", true);
-        }
-
-        public async Task<bool> IsCurrentUserAdminHere(int forumId = 0)
-            => await UserService.IsUserAdminInForum(ForumUser, forumId);
-
-        public async Task<bool> IsCurrentUserModeratorHere(int forumId = 0)
-            => await UserService.IsUserModeratorInForum(ForumUser, forumId);
-
         public string Language
             => _language ??= TranslationProvider.GetLanguage(ForumUser);
-
-        public Task<IEnumerable<int>> GetUnrestrictedForums(int? forumId = null)
-            => ForumService.GetUnrestrictedForums(ForumUser, forumId);
-
-        #endregion User
-
-        #region Forum for user
-
-        public async Task<bool> IsForumUnread(int forumId, bool forceRefresh = false)
-        {
-            var usr = ForumUser;
-            return !usr.IsAnonymous && await ForumService.IsForumUnread(forumId, usr, forceRefresh);
-        }
-
-        public async Task<bool> IsTopicUnread(int forumId, int topicId, bool forceRefresh = false)
-        {
-            var usr = ForumUser;
-            return !usr.IsAnonymous && await ForumService.IsTopicUnread(forumId, topicId, usr, forceRefresh);
-        }
-
-        public async Task<bool> IsPostUnread(int forumId, int topicId, int postId)
-        {
-            var usr = ForumUser;
-            return !usr.IsAnonymous && await ForumService.IsPostUnread(forumId, topicId, postId, usr);
-        }
-
-        public async Task<int> GetFirstUnreadPost(int forumId, int topicId)
-        {
-            if (ForumUser.IsAnonymous)
-            {
-                return 0;
-            }
-            Tracking? item = null;
-            var found = (await GetForumTree(false, true)).Tracking!.TryGetValue(forumId, out var tt) && tt.TryGetValue(new Tracking { TopicId = topicId }, out item);
-            if (!found)
-            {
-                return 0;
-            }
-
-            var sqlExecuter = Context.GetSqlExecuter();
-            return unchecked((int)((await sqlExecuter.QuerySingleOrDefaultAsync(
-                "SELECT post_id, post_time FROM phpbb_posts WHERE post_id IN @postIds HAVING post_time = MIN(post_time)",
-                new { postIds = item?.Posts.DefaultIfNullOrEmpty() }
-            ))?.post_id ?? 0u));
-        }
 
         public async Task<(HashSet<ForumTree> Tree, Dictionary<int, HashSet<Tracking>>? Tracking)> GetForumTree(bool forceRefresh, bool fetchUnreadData)
             => (Tree: await ForumService.GetForumTree(ForumUser, forceRefresh, fetchUnreadData), 
@@ -183,7 +124,7 @@ namespace PhpbbInDotnet.Forum
             }
         }
 
-        protected async Task SetLastMark()
+        private async Task SetLastMark()
         {
             var usrId = ForumUser.UserId;
             try
@@ -203,23 +144,18 @@ namespace PhpbbInDotnet.Forum
             return restrictedForums.Select(f => f.forumId).DefaultIfEmpty();
         }
 
-        #endregion Forum for user
-
-        #region Permission validation wrappers
-
         protected async Task<IActionResult> WithRegisteredUser(Func<AuthenticatedUserExpanded, Task<IActionResult>> toDo)
         {
-            var user = ForumUser;
-            if (user.IsAnonymous)
+            if (ForumUser.IsAnonymous)
             {
                 return RedirectToPage("Login", new { ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString) });
             }
-            return await toDo(user);
+            return await toDo(ForumUser);
         }
 
         protected async Task<IActionResult> WithModerator(int forumId, Func<Task<IActionResult>> toDo)
         {
-            if (!await IsCurrentUserModeratorHere(forumId))
+            if (!await UserService.IsUserModeratorInForum(ForumUser, forumId))
             {
                 return RedirectToPage("Login", new { ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString) });
             }
@@ -228,7 +164,7 @@ namespace PhpbbInDotnet.Forum
 
         protected async Task<IActionResult> WithAdmin(Func<Task<IActionResult>> toDo)
         {
-            if (!await IsCurrentUserAdminHere())
+            if (!await UserService.IsUserGlobalAdmin(ForumUser))
             {
                 return RedirectToPage("Login", new { ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString) });
             }
@@ -247,9 +183,8 @@ namespace PhpbbInDotnet.Forum
                     return NotFound();
                 }
 
-                var usr = ForumUser;
-                var restricted = await ForumService.GetRestrictedForumList(usr, true);
-                var tree = await ForumService.GetForumTree(usr, false, false);
+                var restricted = await ForumService.GetRestrictedForumList(ForumUser, true);
+                var tree = await ForumService.GetForumTree(ForumUser, false, false);
                 var path = new List<int>();
                 if (tree.TryGetValue(new ForumTree { ForumId = forumId }, out var cur))
                 {
@@ -262,13 +197,13 @@ namespace PhpbbInDotnet.Forum
                     on t equals r.forumId
                     into joined
                     from j in joined
-                    where !j.hasPassword || Cache.Get<int>(CacheUtility.GetForumLoginCacheKey(usr?.UserId ?? Constants.ANONYMOUS_USER_ID, t)) != 1
+                    where !j.hasPassword || Cache.Get<int>(CacheUtility.GetForumLoginCacheKey(ForumUser.UserId, t)) != 1
                     select t
                 ).FirstOrDefault();
 
                 if (restrictedAncestor != default)
                 {
-                    if (usr.IsForumRestricted(restrictedAncestor))
+                    if (ForumUser.IsForumRestricted(restrictedAncestor))
                     {
                         return Unauthorized();
                     }
@@ -313,6 +248,5 @@ namespace PhpbbInDotnet.Forum
             return await WithValidTopic(curPost.TopicId, (curForum, curTopic) => toDo(curForum, curTopic, curPost), forumLoginReturnUrl);
         }
 
-        #endregion Permission validation wrappers
     }
 }

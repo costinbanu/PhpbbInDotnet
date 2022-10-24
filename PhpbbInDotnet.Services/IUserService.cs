@@ -29,7 +29,11 @@ namespace PhpbbInDotnet.Services
         Task<bool> HasPrivateMessagePermissions(int userId);
         Task<(string Message, bool? IsSuccess)> HidePrivateMessages(int userId, params int[] messageIds);
         Task<bool> IsUserAdminInForum(AuthenticatedUserExpanded? user, int forumId);
+        Task<bool> IsUserGlobalAdmin(AuthenticatedUserExpanded? user) 
+            => IsUserAdminInForum(user, forumId: 0);
         Task<bool> IsUserModeratorInForum(AuthenticatedUserExpanded? user, int forumId);
+        Task<bool> IsUserGlobalModerator(AuthenticatedUserExpanded? user)
+            => IsUserModeratorInForum(user, forumId: 0);
         Task<(string Message, bool? IsSuccess)> SendPrivateMessage(int senderId, string senderName, int receiverId, string subject, string text, PageContext pageContext, HttpContext httpContext);
         Task<int> UnreadPMs(int userId);
     }

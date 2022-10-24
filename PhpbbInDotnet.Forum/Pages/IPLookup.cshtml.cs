@@ -41,7 +41,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => WithModerator(0, async () =>
             {
                 var sqlExecuterTask = Context.GetSqlExecuterAsync();
-                var searchableForumsTask = GetUnrestrictedForums();
+                var searchableForumsTask = ForumService.GetUnrestrictedForums(ForumUser);
                 await Task.WhenAll(sqlExecuterTask, searchableForumsTask);
                 var sqlExecuter = await sqlExecuterTask;
                 var searchableForums = await searchableForumsTask;
