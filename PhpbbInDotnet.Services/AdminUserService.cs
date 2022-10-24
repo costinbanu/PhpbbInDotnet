@@ -123,50 +123,6 @@ namespace PhpbbInDotnet.Services
                 return (string.Format(_translationProvider.Admin[lang, "USER_DOESNT_EXIST_FORMAT"], userId ?? 0), false);
             }
 
-            void flagUserAsChanged()
-            {
-                var key = $"UserMustLogIn_{user.UsernameClean}";
-                _cache.Add(key, true, _config.GetValue<TimeSpan?>("LoginSessionSlidingExpiration") ?? TimeSpan.FromDays(30));
-            }
-
-            async Task deleteUser()
-            {
-                _context.PhpbbAclUsers.RemoveRange(_context.PhpbbAclUsers.Where(u => u.UserId == userId));
-                _context.PhpbbBanlist.RemoveRange(_context.PhpbbBanlist.Where(u => u.BanUserid == userId));
-                _context.PhpbbBots.RemoveRange(_context.PhpbbBots.Where(u => u.UserId == userId));
-                _context.PhpbbDrafts.RemoveRange(_context.PhpbbDrafts.Where(u => u.UserId == userId));
-                (await _context.PhpbbForums.Where(f => f.ForumLastPosterId == userId).ToListAsync()).ForEach(f =>
-                {
-                    f.ForumLastPosterId = 1;
-                    f.ForumLastPosterColour = string.Empty;
-                    f.ForumLastPosterName = user.Username;
-                });
-                _context.PhpbbForumsTrack.RemoveRange(_context.PhpbbForumsTrack.Where(u => u.UserId == userId));
-                _context.PhpbbForumsWatch.RemoveRange(_context.PhpbbForumsWatch.Where(u => u.UserId == userId));
-                _context.PhpbbLog.RemoveRange(_context.PhpbbLog.Where(u => u.UserId == userId));
-                await (_context.GetSqlExecuter()).ExecuteAsync("DELETE FROM phpbb_poll_votes WHERE vote_user_id = @userId", new { userId });
-                _context.PhpbbPrivmsgsTo.RemoveRange(_context.PhpbbPrivmsgsTo.Where(u => u.UserId == userId));
-                _context.PhpbbReports.RemoveRange(_context.PhpbbReports.Where(u => u.UserId == userId));
-                (await _context.PhpbbTopics.Where(t => t.TopicLastPosterId == userId).ToListAsync()).ForEach(t =>
-                {
-                    t.TopicLastPosterId = 1;
-                    t.TopicLastPosterColour = string.Empty;
-                    t.TopicLastPosterName = user.Username;
-                });
-                (await _context.PhpbbTopics.Where(t => t.TopicFirstPosterName == user.Username).ToListAsync()).ForEach(t =>
-                {
-                    t.TopicFirstPostId = 1;
-                    t.TopicFirstPosterColour = string.Empty;
-                });
-                _context.PhpbbTopicsTrack.RemoveRange(_context.PhpbbTopicsTrack.Where(u => u.UserId == userId));
-                _context.PhpbbTopicsWatch.RemoveRange(_context.PhpbbTopicsWatch.Where(u => u.UserId == userId));
-                _context.PhpbbUserGroup.RemoveRange(_context.PhpbbUserGroup.Where(u => u.UserId == userId));
-                _context.PhpbbUsers.RemoveRange(_context.PhpbbUsers.Where(u => u.UserId == userId));
-                _context.PhpbbUserTopicPostNumber.RemoveRange(_context.PhpbbUserTopicPostNumber.Where(u => u.UserId == userId));
-                _context.PhpbbZebra.RemoveRange(_context.PhpbbZebra.Where(u => u.UserId == userId));
-                _context.PhpbbUsers.Remove(user);
-            }
-
             try
             {
                 string? message = null;
@@ -194,7 +150,7 @@ namespace PhpbbInDotnet.Services
                         {
                             user.UserInactiveReason = UserInactiveReason.InactivatedByAdmin;
                             user.UserInactiveTime = DateTime.UtcNow.ToUnixTimestamp();
-                            flagUserAsChanged();
+                            user.UserShouldSignIn = true;
                             message = string.Format(_translationProvider.Admin[lang, "USER_DEACTIVATED_FORMAT"], user.Username);
                             isSuccess = true;
                             break;
@@ -213,7 +169,7 @@ namespace PhpbbInDotnet.Services
                                 p.PosterId = Constants.ANONYMOUS_USER_ID;
                             });
 
-                            flagUserAsChanged();
+                            user.UserShouldSignIn = true;
                             await deleteUser();
                             message = string.Format(_translationProvider.Admin[lang, "USER_DELETED_POSTS_KEPT_FORMAT"], user.Username);
                             isSuccess = true;
@@ -225,8 +181,7 @@ namespace PhpbbInDotnet.Services
                             _context.PhpbbPosts.RemoveRange(toDelete);
                             await _context.SaveChangesAsync();
                             toDelete.ForEach(async p => await _postService.CascadePostDelete(p, false, false));
-
-                            flagUserAsChanged();
+                            user.UserShouldSignIn = true;
                             await deleteUser();
                             message = string.Format(_translationProvider.Admin[lang, "USER_DELETED_POSTS_DELETED_FORMAT"], user.Username);
                             isSuccess = true;
@@ -289,6 +244,44 @@ namespace PhpbbInDotnet.Services
             {
                 var id = _logger.ErrorWithId(ex);
                 return (string.Format(_translationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
+            }
+
+            async Task deleteUser()
+            {
+                _context.PhpbbAclUsers.RemoveRange(_context.PhpbbAclUsers.Where(u => u.UserId == userId));
+                _context.PhpbbBanlist.RemoveRange(_context.PhpbbBanlist.Where(u => u.BanUserid == userId));
+                _context.PhpbbBots.RemoveRange(_context.PhpbbBots.Where(u => u.UserId == userId));
+                _context.PhpbbDrafts.RemoveRange(_context.PhpbbDrafts.Where(u => u.UserId == userId));
+                (await _context.PhpbbForums.Where(f => f.ForumLastPosterId == userId).ToListAsync()).ForEach(f =>
+                {
+                    f.ForumLastPosterId = 1;
+                    f.ForumLastPosterColour = string.Empty;
+                    f.ForumLastPosterName = user.Username;
+                });
+                _context.PhpbbForumsTrack.RemoveRange(_context.PhpbbForumsTrack.Where(u => u.UserId == userId));
+                _context.PhpbbForumsWatch.RemoveRange(_context.PhpbbForumsWatch.Where(u => u.UserId == userId));
+                _context.PhpbbLog.RemoveRange(_context.PhpbbLog.Where(u => u.UserId == userId));
+                await _context.GetSqlExecuter().ExecuteAsync("DELETE FROM phpbb_poll_votes WHERE vote_user_id = @userId", new { userId });
+                _context.PhpbbPrivmsgsTo.RemoveRange(_context.PhpbbPrivmsgsTo.Where(u => u.UserId == userId));
+                _context.PhpbbReports.RemoveRange(_context.PhpbbReports.Where(u => u.UserId == userId));
+                (await _context.PhpbbTopics.Where(t => t.TopicLastPosterId == userId).ToListAsync()).ForEach(t =>
+                {
+                    t.TopicLastPosterId = 1;
+                    t.TopicLastPosterColour = string.Empty;
+                    t.TopicLastPosterName = user.Username;
+                });
+                (await _context.PhpbbTopics.Where(t => t.TopicFirstPosterName == user.Username).ToListAsync()).ForEach(t =>
+                {
+                    t.TopicFirstPostId = 1;
+                    t.TopicFirstPosterColour = string.Empty;
+                });
+                _context.PhpbbTopicsTrack.RemoveRange(_context.PhpbbTopicsTrack.Where(u => u.UserId == userId));
+                _context.PhpbbTopicsWatch.RemoveRange(_context.PhpbbTopicsWatch.Where(u => u.UserId == userId));
+                _context.PhpbbUserGroup.RemoveRange(_context.PhpbbUserGroup.Where(u => u.UserId == userId));
+                _context.PhpbbUsers.RemoveRange(_context.PhpbbUsers.Where(u => u.UserId == userId));
+                _context.PhpbbUserTopicPostNumber.RemoveRange(_context.PhpbbUserTopicPostNumber.Where(u => u.UserId == userId));
+                _context.PhpbbZebra.RemoveRange(_context.PhpbbZebra.Where(u => u.UserId == userId));
+                _context.PhpbbUsers.Remove(user);
             }
         }
 

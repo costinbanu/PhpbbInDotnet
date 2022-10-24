@@ -45,14 +45,11 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
         {
             _logger.Information("Generating a new sitemap...");
 
-            var claimsPrincipalTask = _userService.GetAnonymousClaimsPrincipal();
-            var permissionsTask = _userService.GetPermissions(Constants.ANONYMOUS_USER_ID);
-            await Task.WhenAll(claimsPrincipalTask, permissionsTask);
-            var anonymous = _userService.ClaimsPrincipalToAuthenticatedUser(await claimsPrincipalTask)!;
-            anonymous.AllPermissions = await permissionsTask;
-
+            var anonymous = new AuthenticatedUserExpanded(_userService.DbUserToAuthenticatedUserBase(await _userService.GetAnonymousDbUser()))
+            {
+                AllPermissions = await _userService.GetPermissions(Constants.ANONYMOUS_USER_ID)
+            };
             var allowedForums = await _forumTreeService.GetUnrestrictedForums(anonymous);
-
             var allSitemapUrls = GetForums(anonymous, allowedForums).Union(GetTopics(allowedForums));
             var urls = new ReadOnlyMemory<SitemapUrl>(await allSitemapUrls.ToArrayAsync(cancellationToken: stoppingToken));
             var siteMaps = Sitemap.Create(urls);

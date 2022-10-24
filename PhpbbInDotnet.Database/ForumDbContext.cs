@@ -2108,10 +2108,6 @@ namespace PhpbbInDotnet.Database
                     .HasColumnName("user_id")
                     .HasColumnType("mediumint(8) unsigned");
 
-                entity.Property(e => e.AcceptedNewTerms)
-                    .HasColumnName("accepted_new_terms")
-                    .HasColumnType("tinyint(4)");
-
                 entity.Property(e => e.GroupId)
                     .HasColumnName("group_id")
                     .HasColumnType("mediumint(8) unsigned")
@@ -2525,6 +2521,11 @@ namespace PhpbbInDotnet.Database
                     .HasColumnName("jump_to_unread")
                     .HasColumnType("tinyint(1)")
                     .HasDefaultValueSql("1");
+
+                entity.Property(e => e.UserShouldSignIn)
+                    .HasColumnName("user_should_sign_in")
+                    .HasColumnType("tinyint(1)")
+                    .HasDefaultValueSql("0");
             });
 
             modelBuilder.Entity<PhpbbWords>(entity =>

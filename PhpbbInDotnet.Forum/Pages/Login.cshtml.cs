@@ -120,7 +120,9 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             var sqlExecuter = _context.GetSqlExecuter();
 
-            var user = await sqlExecuter.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE username_clean = @username", new { username = StringUtility.CleanString(UserName) });
+            var user = await sqlExecuter.QueryAsync<PhpbbUsers>(
+                "SELECT * FROM phpbb_users WHERE username_clean = @username", 
+                new { username = StringUtility.CleanString(UserName) });
             var lang = TranslationProvider.GetLanguage();
 
             Mode = LoginMode.Normal;
@@ -145,7 +147,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
-                await _userService.DbUserToClaimsPrincipal(currentUser),
+                _userService.CreateClaimsPrincipal(currentUser.UserId),
                 new AuthenticationProperties
                 {
                     AllowRefresh = true,
@@ -153,10 +155,11 @@ namespace PhpbbInDotnet.Forum.Pages
                     IsPersistent = true,
                 });
 
-            var key = $"UserMustLogIn_{currentUser.UsernameClean}";
-            if (await _cache.GetAsync<bool?>(key) ?? false)
+            if (currentUser.UserShouldSignIn)
             {
-                _cache.Remove(key);
+                await sqlExecuter.ExecuteAsync(
+                    "UPDATE phpbb_users SET user_should_sign_in = 0 WHERE user_id = @userId",
+                    new { currentUser.UserId });
             }
 
             var returnUrl = HttpUtility.UrlDecode(ReturnUrl ?? "/");

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Configuration;
+using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Services;
 using System;
 using System.Threading.Tasks;
@@ -27,7 +28,7 @@ namespace PhpbbInDotnet.Forum.Pages
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme, 
-                await _userService.GetAnonymousClaimsPrincipal(), 
+                _userService.CreateClaimsPrincipal(Constants.ANONYMOUS_USER_ID), 
                 new AuthenticationProperties
                 {
                     AllowRefresh = true,

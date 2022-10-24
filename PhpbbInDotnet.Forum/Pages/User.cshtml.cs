@@ -154,7 +154,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             var currentUserId = GetCurrentUser().UserId;
             var isSelf = CurrentUser!.UserId == currentUserId;
-            var userMustLogIn = dbUser.UserAllowPm.ToBool() != AllowPM || dbUser.UserDateformat != CurrentUser.UserDateformat;
+            var userShouldSignIn = dbUser.UserAllowPm.ToBool() != AllowPM || dbUser.UserDateformat != CurrentUser.UserDateformat;
             var lang = GetLanguage();
             var validator = new UserProfileDataValidationService(ModelState, TranslationProvider, lang);
 
@@ -184,7 +184,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     t.TopicLastPosterName = CurrentUser.Username;
                 }
-                userMustLogIn = true;
+                userShouldSignIn = true;
                 usernameChanged = true;
             }
 
@@ -263,7 +263,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         bodyRazorViewModel: new WelcomeEmailDto(subject, registrationCode, dbUser.Username, dbUser.UserLang));
                 }
 
-                userMustLogIn = true;
+                userShouldSignIn = true;
                 EmailChanged = true;
             }
 
@@ -283,7 +283,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 dbUser.UserPassword = Crypter.Phpass.Crypt(FirstPassword, Crypter.Phpass.GenerateSalt());
                 dbUser.UserPasschg = DateTime.UtcNow.ToUnixTimestamp();
-                userMustLogIn = true;
+                userShouldSignIn = true;
                 passwordChanged = true;
             }
 
@@ -384,7 +384,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         UserId = dbUser.UserId
                     });
                 }
-                userMustLogIn = true;
+                userShouldSignIn = true;
             }
 
             var dbUserGroup = Context.PhpbbUserGroup.FirstOrDefault(g => g.UserId == dbUser.UserId);
@@ -427,8 +427,11 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 dbUser.UserColour = group!.GroupColour;
                 dbUser.GroupId = group.GroupId;
-                userMustLogIn = true;
+                userShouldSignIn = true;
             }
+
+
+            dbUser.UserShouldSignIn = userShouldSignIn;
 
             var affectedEntries = 0;
             try
@@ -448,15 +451,15 @@ namespace PhpbbInDotnet.Forum.Pages
                 Mode = UserPageMode.Edit;
                 return await OnGet();
             }
-            else if (affectedEntries > 0 && userMustLogIn)
-            {
-                var key = $"UserMustLogIn_{dbUser.UsernameClean}";
-                Cache.Add(key, true, _config.GetValue<TimeSpan?>("LoginSessionSlidingExpiration") ?? TimeSpan.FromDays(30));
-                if (EmailChanged)
-                {
-                    Mode = UserPageMode.Edit;
-                }
-            }
+            //else if (affectedEntries > 0 && userShouldSignIn)
+            //{
+            //    var key = $"UserMustLogIn_{dbUser.UsernameClean}";
+            //    Cache.Add(key, true, _config.GetValue<TimeSpan?>("LoginSessionSlidingExpiration") ?? TimeSpan.FromDays(30));
+            //    if (EmailChanged)
+            //    {
+            //        Mode = UserPageMode.Edit;
+            //    }
+            //}
 
             if (EmailChanged)
             {

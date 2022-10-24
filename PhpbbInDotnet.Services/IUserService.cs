@@ -12,10 +12,9 @@ namespace PhpbbInDotnet.Services
     {
         AuthenticatedUserExpanded? ClaimsPrincipalToAuthenticatedUser(ClaimsPrincipal claimsPrincipal);
         AuthenticatedUser DbUserToAuthenticatedUserBase(PhpbbUsers dbUser);
-        Task<ClaimsPrincipal> DbUserToClaimsPrincipal(PhpbbUsers user);
+        ClaimsPrincipal CreateClaimsPrincipal(int userId);
         Task<(string Message, bool? IsSuccess)> DeletePrivateMessage(int messageId);
         Task<(string Message, bool? IsSuccess)> EditPrivateMessage(int messageId, string subject, string text);
-        Task<ClaimsPrincipal> GetAnonymousClaimsPrincipal();
         Task<PhpbbUsers> GetAnonymousDbUser();
         Task<AuthenticatedUser> GetAuthenticatedUserById(int userId);
         Task<HashSet<int>> GetFoes(int userId);

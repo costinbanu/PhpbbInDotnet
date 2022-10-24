@@ -32,7 +32,6 @@ namespace PhpbbInDotnet.Services
         private List<KeyValuePair<string, int>>? _userMap;
 
         private static PhpbbUsers? _anonymousDbUser;
-        private static ClaimsPrincipal? _anonymousClaimsPrincipal;
 
         public UserService(IForumDbContext context, IConfiguration config, ITranslationProvider translationProvider, ILogger logger, IEmailService emailService)
         {
@@ -83,54 +82,16 @@ namespace PhpbbInDotnet.Services
                 return _anonymousDbUser;
             }
             var sqlExecuter = _context.GetSqlExecuter();
-            _anonymousDbUser = await sqlExecuter.QuerySingleOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId = Constants.ANONYMOUS_USER_ID });
+            _anonymousDbUser = await sqlExecuter.QuerySingleAsync<PhpbbUsers>(
+                "SELECT * FROM phpbb_users WHERE user_id = @ANONYMOUS_USER_ID", 
+                new { Constants.ANONYMOUS_USER_ID });
             return _anonymousDbUser;
         }
 
-        public async Task<ClaimsPrincipal> GetAnonymousClaimsPrincipal()
+        public ClaimsPrincipal CreateClaimsPrincipal(int userId)
         {
-            if (_anonymousClaimsPrincipal != null)
-            {
-                return _anonymousClaimsPrincipal;
-            }
-            _anonymousClaimsPrincipal = await DbUserToClaimsPrincipal(await GetAnonymousDbUser());
-            return _anonymousClaimsPrincipal;
-        }
-
-        public async Task<ClaimsPrincipal> DbUserToClaimsPrincipal(PhpbbUsers user)
-        {
-            var sqlExecuter = _context.GetSqlExecuter();
-            var groupPropertiesTask = sqlExecuter.QueryFirstOrDefaultAsync(
-                @"SELECT g.group_edit_time, g.group_user_upload_size
-                    FROM phpbb_groups g
-                    JOIN phpbb_users u ON g.group_id = u.group_id
-                   WHERE u.user_id = @UserId",
-                new { user.UserId }
-            );
-            var styleTask = sqlExecuter.QueryFirstOrDefaultAsync<string>(
-                @"SELECT style_name 
-                    FROM phpbb_styles 
-                   WHERE style_id = @UserStyle",
-                new { user.UserStyle }
-            );
-            await Task.WhenAll(styleTask, groupPropertiesTask);
-            var groupProperties = await groupPropertiesTask;
-            var editTime = unchecked((int)groupProperties.group_edit_time);
-            var style = await styleTask;
-
             var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
-            identity.AddClaim(new Claim(nameof(AuthenticatedUserExpanded.UserId), user.UserId.ToString()));
-            identity.AddClaim(new Claim(nameof(AuthenticatedUserExpanded.Username), user.Username ?? string.Empty));
-            identity.AddClaim(new Claim(nameof(AuthenticatedUserExpanded.UsernameClean), user.UsernameClean ?? string.Empty));
-            identity.AddClaim(new Claim(nameof(AuthenticatedUserExpanded.UserDateFormat), user.UserDateformat ?? string.Empty));
-            identity.AddClaim(new Claim(nameof(AuthenticatedUserExpanded.UserColor), user.UserColour ?? string.Empty));
-            identity.AddClaim(new Claim(nameof(AuthenticatedUserExpanded.PostEditTime), ((editTime == 0 || user.UserEditTime == 0) ? 0 : Math.Min(Math.Abs(editTime), Math.Abs(user.UserEditTime))).ToString()));
-            identity.AddClaim(new Claim(nameof(AuthenticatedUserExpanded.UploadLimit), unchecked((int)groupProperties.group_user_upload_size).ToString()));
-            identity.AddClaim(new Claim(nameof(AuthenticatedUserExpanded.AllowPM), user.UserAllowPm.ToBool().ToString()));
-            identity.AddClaim(new Claim(nameof(AuthenticatedUserExpanded.Style), style ?? string.Empty));
-            identity.AddClaim(new Claim(nameof(AuthenticatedUserExpanded.JumpToUnread), user.JumpToUnread?.ToString() ?? string.Empty));
-            identity.AddClaim(new Claim(nameof(AuthenticatedUserExpanded.Language), user.UserLang ?? string.Empty));
-            identity.AddClaim(new Claim(nameof(AuthenticatedUserExpanded.EmailAddress), user.UserEmail ?? string.Empty));
+            identity.AddClaim(new Claim(nameof(AuthenticatedUser.UserId), userId.ToString()));
             return new ClaimsPrincipal(identity);
         }
 
