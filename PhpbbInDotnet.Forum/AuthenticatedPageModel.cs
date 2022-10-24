@@ -46,26 +46,26 @@ namespace PhpbbInDotnet.Forum
 
         #region User
 
-        public AuthenticatedUserExpanded GetCurrentUser()
-            => (AuthenticatedUserExpanded)HttpContext.Items[nameof(AuthenticatedUserExpanded)]!;
+        public AuthenticatedUserExpanded ForumUser
+            => AuthenticatedUserExpanded.GetValue(HttpContext);
 
         public void ReloadCurrentUser()
         {
-            var user = GetCurrentUser();
+            var user = ForumUser;
             Cache.Add($"ReloadUser_{user.UsernameClean}", true);
         }
 
         public async Task<bool> IsCurrentUserAdminHere(int forumId = 0)
-            => await UserService.IsUserAdminInForum(GetCurrentUser(), forumId);
+            => await UserService.IsUserAdminInForum(ForumUser, forumId);
 
         public async Task<bool> IsCurrentUserModeratorHere(int forumId = 0)
-            => await UserService.IsUserModeratorInForum(GetCurrentUser(), forumId);
+            => await UserService.IsUserModeratorInForum(ForumUser, forumId);
 
         public string GetLanguage()
-            => _language ??= TranslationProvider.GetLanguage(GetCurrentUser());
+            => _language ??= TranslationProvider.GetLanguage(ForumUser);
 
         public Task<IEnumerable<int>> GetUnrestrictedForums(int? forumId = null)
-            => ForumService.GetUnrestrictedForums(GetCurrentUser(), forumId);
+            => ForumService.GetUnrestrictedForums(ForumUser, forumId);
 
         #endregion User
 
@@ -73,25 +73,25 @@ namespace PhpbbInDotnet.Forum
 
         public async Task<bool> IsForumUnread(int forumId, bool forceRefresh = false)
         {
-            var usr = GetCurrentUser();
+            var usr = ForumUser;
             return !usr.IsAnonymous && await ForumService.IsForumUnread(forumId, usr, forceRefresh);
         }
 
         public async Task<bool> IsTopicUnread(int forumId, int topicId, bool forceRefresh = false)
         {
-            var usr = GetCurrentUser();
+            var usr = ForumUser;
             return !usr.IsAnonymous && await ForumService.IsTopicUnread(forumId, topicId, usr, forceRefresh);
         }
 
         public async Task<bool> IsPostUnread(int forumId, int topicId, int postId)
         {
-            var usr = GetCurrentUser();
+            var usr = ForumUser;
             return !usr.IsAnonymous && await ForumService.IsPostUnread(forumId, topicId, postId, usr);
         }
 
         public async Task<int> GetFirstUnreadPost(int forumId, int topicId)
         {
-            if (GetCurrentUser().IsAnonymous)
+            if (ForumUser.IsAnonymous)
             {
                 return 0;
             }
@@ -110,8 +110,8 @@ namespace PhpbbInDotnet.Forum
         }
 
         public async Task<(HashSet<ForumTree> Tree, Dictionary<int, HashSet<Tracking>>? Tracking)> GetForumTree(bool forceRefresh, bool fetchUnreadData)
-            => (Tree: await ForumService.GetForumTree(GetCurrentUser(), forceRefresh, fetchUnreadData), 
-                Tracking: fetchUnreadData ? await ForumService.GetForumTracking(GetCurrentUser().UserId, forceRefresh) : null);
+            => (Tree: await ForumService.GetForumTree(ForumUser, forceRefresh, fetchUnreadData), 
+                Tracking: fetchUnreadData ? await ForumService.GetForumTracking(ForumUser.UserId, forceRefresh) : null);
 
         protected async Task MarkForumAndSubforumsRead(int forumId)
         {
@@ -136,7 +136,7 @@ namespace PhpbbInDotnet.Forum
         {
             try
             {
-                var usrId = GetCurrentUser().UserId;
+                var usrId = ForumUser.UserId;
                 var sqlExecuter = Context.GetSqlExecuter();
 
                 await sqlExecuter.ExecuteAsync(
@@ -154,7 +154,7 @@ namespace PhpbbInDotnet.Forum
         public async Task MarkTopicRead(int forumId, int topicId, bool isLastPage, long markTime)
         {
             var (_, tracking) = await GetForumTree(false, true);
-            var userId = GetCurrentUser().UserId;
+            var userId = ForumUser.UserId;
             if (tracking!.TryGetValue(forumId, out var tt) && tt.Count == 1 && isLastPage)
             {
                 //current topic was the last unread in its forum, and it is the last page of unread messages, so mark the whole forum read
@@ -185,7 +185,7 @@ namespace PhpbbInDotnet.Forum
 
         protected async Task SetLastMark()
         {
-            var usrId = GetCurrentUser().UserId;
+            var usrId = ForumUser.UserId;
             try
             {
                 var sqlExecuter = Context.GetSqlExecuter();
@@ -199,7 +199,7 @@ namespace PhpbbInDotnet.Forum
 
         protected async Task<IEnumerable<int>> GetRestrictedForums()
         {
-            var restrictedForums = await ForumService.GetRestrictedForumList(GetCurrentUser());
+            var restrictedForums = await ForumService.GetRestrictedForumList(ForumUser);
             return restrictedForums.Select(f => f.forumId).DefaultIfEmpty();
         }
 
@@ -209,7 +209,7 @@ namespace PhpbbInDotnet.Forum
 
         protected async Task<IActionResult> WithRegisteredUser(Func<AuthenticatedUserExpanded, Task<IActionResult>> toDo)
         {
-            var user = GetCurrentUser();
+            var user = ForumUser;
             if (user.IsAnonymous)
             {
                 return RedirectToPage("Login", new { ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString) });
@@ -247,7 +247,7 @@ namespace PhpbbInDotnet.Forum
                     return NotFound();
                 }
 
-                var usr = GetCurrentUser();
+                var usr = ForumUser;
                 var restricted = await ForumService.GetRestrictedForumList(usr, true);
                 var tree = await ForumService.GetForumTree(usr, false, false);
                 var path = new List<int>();

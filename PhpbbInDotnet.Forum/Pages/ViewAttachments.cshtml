@@ -40,7 +40,7 @@
         </div>
 
         <p>&nbsp;</p>
-        var tree = await _forumService.GetForumTree(Model.GetCurrentUser(), false, false);
+        var tree = await _forumService.GetForumTree(Model.ForumUser, false, false);
         @foreach (var attachment in Model.Attachments)
         {
             <p></p>
@@ -59,7 +59,7 @@
             @Html.Raw(StringUtility.ReadableFileSize(attachment.FileSize))
             <span>&nbsp;&bull;&nbsp;</span>
             @Html.Raw(Model.TranslationProvider.BasicText[Model.GetLanguage(), "SUBMITTED", Casing.FirstUpper])
-            <formatted-date date="@(attachment.FileTime.ToUtcTime().ToString("o"))" format="@(Model.GetCurrentUser().UserDateFormat)" />
+            <formatted-date date="@(attachment.FileTime.ToUtcTime().ToString("o"))" format="@(Model.ForumUser.UserDateFormat)" />
             <p></p>
             <hr class="BoxSeparator" />
         }

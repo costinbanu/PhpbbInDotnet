@@ -114,7 +114,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetByPostId()
             => await WithValidPost(PostId ?? 0, async (curForum, curTopic, _) =>
             {
-                var pageSize = GetCurrentUser().GetPageSize(curTopic.TopicId);
+                var pageSize = ForumUser.GetPageSize(curTopic.TopicId);
                 var idx = Context.GetSqlExecuter().ExecuteScalar<int>(
                     @"SET @row_num = 0;
                       WITH row_numbers AS (
@@ -230,7 +230,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var logDto = new OperationLogDto
                 {
                     Action = TopicAction.Value,
-                    UserId = GetCurrentUser().UserId
+                    UserId = ForumUser.UserId
                 };
 
                 ModeratorActionResult = TopicAction switch
@@ -347,7 +347,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var logDto = new OperationLogDto
                 {
                     Action = ModeratorPostActions.DeleteSelectedPosts,
-                    UserId = GetCurrentUser().UserId
+                    UserId = ForumUser.UserId
                 };
                 var (_, nextRemaining) = await GetSelectedAndNextRemainingPostIds(reportPostId ?? 0);
                 if (deletePost ?? false)
@@ -388,7 +388,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var logDto = new OperationLogDto
                 {
                     Action = ModeratorPostActions.DuplicateSelectedPost,
-                    UserId = GetCurrentUser().UserId
+                    UserId = ForumUser.UserId
                 };
                 ModeratorActionResult = await _moderatorService.DuplicatePost(postIdForDuplication, logDto);
                 PostId = postIdForDuplication;
@@ -408,7 +408,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var logDto = new OperationLogDto
             {
                 Action = PostAction.Value,
-                UserId = GetCurrentUser().UserId
+                UserId = ForumUser.UserId
             };
             var postIds = GetModeratorPostIds();
             ModeratorActionResult = PostAction switch
@@ -506,13 +506,13 @@ namespace PhpbbInDotnet.Forum.Pages
             ForumId = curForum.ForumId;
             ForumTitle = HttpUtility.HtmlDecode(curForum.ForumName);
 
-            var postList = await _postService.GetPosts(TopicId.Value, PageNum!.Value, GetCurrentUser().GetPageSize(TopicId.Value), isPostingView: false, GetLanguage());
+            var postList = await _postService.GetPosts(TopicId.Value, PageNum!.Value, ForumUser.GetPageSize(TopicId.Value), isPostingView: false, GetLanguage());
             
             Posts = postList.Posts;
             Attachments = postList.Attachments;
             Reports = postList.Reports;
             CorrelationId = postList.AttachmentDisplayCorrelationId;
-            Paginator = new Paginator(postList.PostCount!.Value, PageNum!.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId, GetCurrentUser());
+            Paginator = new Paginator(postList.PostCount!.Value, PageNum!.Value, $"/ViewTopic?TopicId={TopicId}&PageNum=1", TopicId, ForumUser);
             TopicTitle = HttpUtility.HtmlDecode(_currentTopic.TopicTitle ?? "untitled");
             ForumRulesLink = curForum.ForumRulesLink;
             ForumRules = curForum.ForumRules;

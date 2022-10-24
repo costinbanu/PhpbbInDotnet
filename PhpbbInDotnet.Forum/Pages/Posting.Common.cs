@@ -54,7 +54,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public string GetActualCacheKey(string key, bool isPersonalizedData)
         {
             var topicId = Action == PostingActions.NewTopic ? 0 : TopicId ?? 0;
-            return isPersonalizedData ? $"{GetCurrentUser().UserId}_{ForumId}_{topicId}_{key}" : key;
+            return isPersonalizedData ? $"{ForumUser.UserId}_{ForumId}_{topicId}_{key}" : key;
         }
 
         public async Task<(List<PostDto> posts, Dictionary<int, List<AttachmentDto>> attachments, Guid correlationId)> GetPreviousPosts()

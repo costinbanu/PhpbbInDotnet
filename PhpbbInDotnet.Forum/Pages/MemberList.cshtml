@@ -16,7 +16,7 @@
     var Lang = Model.GetLanguage();
     ViewData["Title"] = Model.TranslationProvider.BasicText[Lang, "MEMBERLIST"];
     Layout = "~/Pages/_Layout.cshtml";
-    var user = Model.GetCurrentUser();
+    var user = Model.ForumUser;
     var dateFormat = user.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
 }
 

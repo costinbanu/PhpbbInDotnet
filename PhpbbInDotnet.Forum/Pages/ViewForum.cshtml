@@ -11,7 +11,7 @@
     var DocumentTitle = Model.ForumTitle;
     ViewData["Title"] = DocumentTitle;
     Layout = "~/Pages/_Layout.cshtml";
-    var currentUser = Model.GetCurrentUser();
+    var currentUser = Model.ForumUser;
     var forumTree = (await Model.GetForumTree(false, false)).Tree;
     var hasSubForums = Model.ForumId != 0 && _forumService.HasUnrestrictedChildren(forumTree, Model.ForumId);
     var hasTopics = Model.Topics?.SelectMany(x => x.Topics ?? Enumerable.Empty<TopicDto>()).Any() ?? false;

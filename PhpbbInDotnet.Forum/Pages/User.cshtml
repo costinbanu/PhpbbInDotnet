@@ -29,7 +29,7 @@
 
     await Task.WhenAll(permissionsTask, foesTask, canEditTask, isAdminHereTask, ranksTask);
 
-    var viewingUser = Model.GetCurrentUser();
+    var viewingUser = Model.ForumUser;
     pageUser.AllPermissions = await permissionsTask;
     pageUser.Foes = await foesTask;
     var isSelf = viewingUser.UserId == Model.CurrentUser!.UserId;
@@ -611,7 +611,7 @@ else
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @{
-                            var UserDateFormat = (Model.GetCurrentUser())?.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
+                            var UserDateFormat = (Model.ForumUser)?.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
                         }
                         <formatted-date date="@Model.CurrentUser.UserRegdate.ToUtcTime().ToString("o")" format="@UserDateFormat" />
                     </div>

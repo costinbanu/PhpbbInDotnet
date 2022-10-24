@@ -48,7 +48,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 await ResiliencyUtility.RetryOnceAsync(
                     toDo: async () =>
                     {
-                        var restrictedForums = (await ForumService.GetRestrictedForumList(GetCurrentUser())).Select(f => f.forumId);
+                        var restrictedForums = (await ForumService.GetRestrictedForumList(ForumUser)).Select(f => f.forumId);
                         var attachmentsTask = (
                             from a in Context.PhpbbAttachments.AsNoTracking()
                             where a.PosterId == UserId

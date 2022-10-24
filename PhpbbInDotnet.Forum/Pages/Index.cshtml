@@ -9,7 +9,7 @@
 @inject Services.IForumTreeService _forumService
 
 @{
-    var CurrentUser = Model.GetCurrentUser();
+    var CurrentUser = Model.ForumUser;
     var Lang = Model.GetLanguage();
     var UserDateFormat = CurrentUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
     ViewData["Title"] = Model.TranslationProvider.BasicText[Lang, "HOME", Casing.Title];

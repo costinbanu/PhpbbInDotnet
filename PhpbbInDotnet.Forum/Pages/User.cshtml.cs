@@ -152,7 +152,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return NotFound();
             }
 
-            var currentUserId = GetCurrentUser().UserId;
+            var currentUserId = ForumUser.UserId;
             var isSelf = CurrentUser!.UserId == currentUserId;
             var userShouldSignIn = dbUser.UserAllowPm.ToBool() != AllowPM || dbUser.UserDateformat != CurrentUser.UserDateformat;
             var lang = GetLanguage();
@@ -540,11 +540,11 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public async Task<bool> CanEdit() 
-            => !(ViewAsAnother ?? false) && (GetCurrentUser().UserId == CurrentUser!.UserId || await IsCurrentUserAdminHere());
+            => !(ViewAsAnother ?? false) && (ForumUser.UserId == CurrentUser!.UserId || await IsCurrentUserAdminHere());
 
         public async Task<bool> CanAddFoe()
         {
-            var viewingUser = GetCurrentUser();
+            var viewingUser = ForumUser;
             var pageUser = new AuthenticatedUserExpanded(UserService.DbUserToAuthenticatedUserBase(CurrentUser!));
             pageUser.AllPermissions = await UserService.GetPermissions(pageUser.UserId);
             return !await UserService.IsUserModeratorInForum(pageUser, 0) && !await UserService.IsUserModeratorInForum(viewingUser, 0) && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false);
@@ -552,7 +552,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public bool CanRemoveFoe()
         {
-            var viewingUser = GetCurrentUser();
+            var viewingUser = ForumUser;
             var pageUser = UserService.DbUserToAuthenticatedUserBase(CurrentUser!);
             return viewingUser.Foes?.Contains(pageUser.UserId) ?? false;
         }
@@ -614,7 +614,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             async Task<(int? id, string? title)> GetPreferredTopic(HashSet<ForumTree> tree)
             {
-                var restrictedForums = (await ForumService.GetRestrictedForumList(GetCurrentUser())).Select(f => f.forumId);
+                var restrictedForums = (await ForumService.GetRestrictedForumList(ForumUser)).Select(f => f.forumId);
                 var preferredTopic = await (
                     from p in Context.PhpbbPosts.AsNoTracking()
                     where p.PosterId == cur.UserId
