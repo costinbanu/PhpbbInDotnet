@@ -123,7 +123,7 @@ namespace PhpbbInDotnet.Forum.Middlewares
             }
             user.AllPermissions = await permissionsTask;
 
-            context.Items[nameof(AuthenticatedUserExpanded)] = user;
+            user.SetValue(context);
 
             if (user.IsAnonymous && context.Request.Headers.TryGetValue(HeaderNames.UserAgent, out var header) && (context.Session.GetInt32("SessionCounted") ?? 0) == 0)
             {

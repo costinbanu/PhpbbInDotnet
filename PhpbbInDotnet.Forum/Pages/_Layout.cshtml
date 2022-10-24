@@ -15,7 +15,7 @@
 
 @{
     #nullable enable
-    var currentUser = (AuthenticatedUserExpanded?)Context.Items[nameof(AuthenticatedUserExpanded)];
+    var currentUser = AuthenticatedUserExpanded.TryGetValue(Context, out var val) ? val : null;
     var css = currentUser?.Style;
     if (string.IsNullOrWhiteSpace(css))
     {

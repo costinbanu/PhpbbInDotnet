@@ -1,7 +1,6 @@
 ﻿using Newtonsoft.Json;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
-using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using System;
 

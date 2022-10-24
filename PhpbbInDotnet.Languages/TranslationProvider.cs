@@ -114,7 +114,7 @@ namespace PhpbbInDotnet.Languages
                     _httpContextAccessor.HttpContext.Request.Headers.TryGetValue("Accept-Language", out StringValues lang)? lang.ToString() : Constants.DEFAULT_LANGUAGE,
                     Constants.DEFAULT_LANGUAGE
                 );
-                user ??= (AuthenticatedUserExpanded?)(_httpContextAccessor.HttpContext.Items.TryGetValue(nameof(AuthenticatedUserExpanded), out var aue) ? aue : null);
+                user ??= AuthenticatedUserExpanded.TryGetValue(_httpContextAccessor.HttpContext, out var aue) ? aue : null;
             }
 
             if (user?.IsAnonymous ?? true)
