@@ -1,5 +1,6 @@
 ﻿using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
 using System;
 using System.Collections.Generic;
 
@@ -50,7 +51,7 @@ namespace PhpbbInDotnet.Objects
             set
             {
                 _children = value;
-                ChildrenList = _children?.ToIntHashSet();
+                ChildrenList = StringUtility.ToIntHashSet(_children);
             }
         }
 

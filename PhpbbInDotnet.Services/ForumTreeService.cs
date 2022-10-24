@@ -232,7 +232,7 @@ namespace PhpbbInDotnet.Services
             {
                 var track = new Tracking
                 {
-                    Posts = result.PostIds?.ToIntHashSet(),
+                    Posts = StringUtility.ToIntHashSet(result.PostIds),
                     TopicId = result.TopicId
                 };
 

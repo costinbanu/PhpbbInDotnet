@@ -127,7 +127,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var cd = new ContentDisposition
                 {
                     FileName = HttpUtility.UrlEncode(realFileName),
-                    Inline = mimeType.IsMimeTypeInline()
+                    Inline = StringUtility.IsMimeTypeInline(mimeType)
                 };
                 Response.Headers.Add("Content-Disposition", cd.ToString());
                 Response.Headers.Add("X-Content-Type-Options", "nosniff");

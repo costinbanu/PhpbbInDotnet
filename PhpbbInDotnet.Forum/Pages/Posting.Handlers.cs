@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
 using System;
@@ -168,8 +169,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 var sizeLimit = _config.GetObject<AttachmentLimits>("UploadLimitsMB");
                 var countLimit = _config.GetObject<AttachmentLimits>("UploadLimitsCount");
-                var images = Files.Where(f => f.ContentType.IsImageMimeType());
-                var nonImages = Files.Where(f => !f.ContentType.IsImageMimeType());
+                var images = Files.Where(f => StringUtility.IsImageMimeType(f.ContentType));
+                var nonImages = Files.Where(f => !StringUtility.IsImageMimeType(f.ContentType));
 
                 if (_imageProcessorOptions.Api?.Enabled == true && (ShouldResize || ShouldHideLicensePlates))
                 {
@@ -227,8 +228,8 @@ namespace PhpbbInDotnet.Forum.Pages
                     return PageWithError(curForum, nameof(Files), string.Format(TranslationProvider.Errors[lang, "FILES_TOO_BIG_FORMAT"], string.Join(",", tooLargeFiles.Select(f => f.FileName))));
                 }
 
-                var existingImages = Attachments?.Count(a => a.Mimetype.IsImageMimeType()) ?? 0;
-                var existingNonImages = Attachments?.Count(a => !a.Mimetype.IsImageMimeType()) ?? 0;
+                var existingImages = Attachments?.Count(a => StringUtility.IsImageMimeType(a.Mimetype)) ?? 0;
+                var existingNonImages = Attachments?.Count(a => !StringUtility.IsImageMimeType(a.Mimetype)) ?? 0;
                 if (!isAdmin && (existingImages + images.Count() > countLimit.Images || existingNonImages + nonImages.Count() > countLimit.OtherFiles))
                 {
                     return PageWithError(curForum, nameof(Files), TranslationProvider.Errors[lang, "TOO_MANY_FILES"]);

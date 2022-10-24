@@ -52,7 +52,7 @@ namespace PhpbbInDotnet.Services
                 {
                     attachments[attach.PostMsgId].Add(dto);
                 }
-                if (attach.Mimetype.IsMimeTypeInline())
+                if (StringUtility.IsMimeTypeInline(attach.Mimetype))
                 {
                     _cache.Add(CacheUtility.GetAttachmentCacheKey(attach.AttachId, correlationId), dto, TimeSpan.FromSeconds(60));
                     ids.Add(attach.AttachId);

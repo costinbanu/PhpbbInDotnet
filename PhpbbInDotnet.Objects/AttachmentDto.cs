@@ -2,6 +2,7 @@
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
 using System;
 
 namespace PhpbbInDotnet.Objects
@@ -50,7 +51,7 @@ namespace PhpbbInDotnet.Objects
             else
             {
                 var url = $"/File?id={Id}&preview={IsPreview}";
-                if (CorrelationId.HasValue && MimeType?.IsMimeTypeInline() == true)
+                if (CorrelationId.HasValue && StringUtility.IsMimeTypeInline(MimeType))
                 {
                     url += $"&correlationId={CorrelationId.Value}";
                 }
