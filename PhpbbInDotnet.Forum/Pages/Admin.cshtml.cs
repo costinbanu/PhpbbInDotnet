@@ -132,7 +132,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 Category = AdminCategories.Users;
                 WasSearchPerformed = true;
-                var lang = GetLanguage();
+                var lang = Language;
                 if (new[] { SearchParameters?.Username, SearchParameters?.Email, SearchParameters?.RegisteredFrom, SearchParameters?.RegisteredTo, SearchParameters?.LastActiveFrom, SearchParameters?.LastActiveTo }.All(string.IsNullOrWhiteSpace) 
                     && ((SearchParameters?.UserId ?? 0) == 0) 
                     && !(SearchParameters?.NeverActive ?? false))

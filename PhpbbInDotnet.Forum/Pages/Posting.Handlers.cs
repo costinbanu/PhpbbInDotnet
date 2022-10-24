@@ -152,7 +152,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnPostAddAttachment()
             => WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async (curForum) =>
             {
-                var lang = GetLanguage();
+                var lang = Language;
                 CurrentForum = curForum;
                 ShowAttach = true;
                 var isAdmin = await IsCurrentUserAdminHere();
@@ -261,7 +261,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (await DeleteAttachment(index, true) is null)
                 {
-                    return PageWithError(curForum, $"{nameof(DeleteFileDummyForValidation)}[{index}]", TranslationProvider.Errors[GetLanguage(), "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
+                    return PageWithError(curForum, $"{nameof(DeleteFileDummyForValidation)}[{index}]", TranslationProvider.Errors[Language, "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
                 }
 
                 ShowAttach = Attachments?.Any() == true;
@@ -283,7 +283,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     if (deletedAttachment is null)
                     {
                         error = true;
-                        ModelState.AddModelError($"{nameof(DeleteFileDummyForValidation)}[{index}]", TranslationProvider.Errors[GetLanguage(), "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
+                        ModelState.AddModelError($"{nameof(DeleteFileDummyForValidation)}[{index}]", TranslationProvider.Errors[Language, "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
                     }
                     else
                     {
@@ -309,7 +309,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnPostPreview()
             => WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, () => WithValidInput(curForum, async() =>
             {
-                var lang = GetLanguage();
+                var lang = Language;
                 var sqlExecuter = Context.GetSqlExecuter();
                 var currentPost = Action == PostingActions.EditForumPost ? await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @PostId", new { PostId }) : null;
                 var userId = Action == PostingActions.EditForumPost ? currentPost!.PosterId : user.UserId;
@@ -365,7 +365,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var addedPostId = await UpsertPost(null, user);
                 if (addedPostId == null)
                 {
-                    return PageWithError(curForum, nameof(PostText), TranslationProvider.Errors[GetLanguage(), "GENERIC_POSTING_ERROR"]);
+                    return PageWithError(curForum, nameof(PostText), TranslationProvider.Errors[Language, "GENERIC_POSTING_ERROR"]);
                 }
                 return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
             })), ReturnUrl)));
@@ -395,7 +395,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnPostSaveDraft()
             => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, () => WithValidInput(curForum, async() =>
             {
-                var lang = GetLanguage();
+                var lang = Language;
                 var sqlExecuter = Context.GetSqlExecuter();
                 var topicId = Action == PostingActions.NewTopic ? 0 : TopicId ?? 0;
                 var draft = sqlExecuter.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId });

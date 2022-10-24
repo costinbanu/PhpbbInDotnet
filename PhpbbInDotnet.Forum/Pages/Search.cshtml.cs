@@ -122,7 +122,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 DoSearch = true;
                 if (AuthorId == 0)
                 {
-                    ModelState.AddModelError(nameof(SearchText), TranslationProvider.BasicText[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN"]);
+                    ModelState.AddModelError(nameof(SearchText), TranslationProvider.BasicText[Language, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
                     return await OnGet();
                 }
                 return await OnGet();
@@ -151,7 +151,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             if (string.IsNullOrWhiteSpace(SearchText) && !IsAuthorSearch)
             {
-                ModelState.AddModelError(nameof(SearchText), TranslationProvider.Errors[GetLanguage(), "MISSING_REQUIRED_FIELD"]);
+                ModelState.AddModelError(nameof(SearchText), TranslationProvider.Errors[Language, "MISSING_REQUIRED_FIELD"]);
                 return;
             }
 

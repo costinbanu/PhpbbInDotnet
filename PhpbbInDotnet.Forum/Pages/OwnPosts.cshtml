@@ -8,7 +8,7 @@
 
 @{
 
-    var Lang = Model.GetLanguage();
+    var Lang = Model.Language;
     var DocumentTitle = Model.TranslationProvider.BasicText[Lang, "OWN_TOPICS", Casing.FirstUpper];
     ViewData["Title"] = DocumentTitle;
     Layout = "~/Pages/_Layout.cshtml";

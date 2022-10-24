@@ -13,7 +13,7 @@
 @inject IAnonymousSessionCounter _sessionCounter
 
 @{
-    var Lang = Model.GetLanguage();
+    var Lang = Model.Language;
     ViewData["Title"] = Model.TranslationProvider.BasicText[Lang, "MEMBERLIST"];
     Layout = "~/Pages/_Layout.cshtml";
     var user = Model.ForumUser;

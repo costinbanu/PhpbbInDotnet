@@ -61,7 +61,7 @@ namespace PhpbbInDotnet.Forum
         public async Task<bool> IsCurrentUserModeratorHere(int forumId = 0)
             => await UserService.IsUserModeratorInForum(ForumUser, forumId);
 
-        public string GetLanguage()
+        public string Language
             => _language ??= TranslationProvider.GetLanguage(ForumUser);
 
         public Task<IEnumerable<int>> GetUnrestrictedForums(int? forumId = null)

@@ -11,7 +11,7 @@
 @inject IForumTreeService _forumService
 
 @{
-	var Lang = Model.GetLanguage();
+	var Lang = Model.Language;
 	ViewData["Title"] = Model.TranslationProvider.Moderator[Lang, "MOD_PANEL"];
 	Layout = "~/Pages/_Layout.cshtml";
 	var UserDateFormat = Model.ForumUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);

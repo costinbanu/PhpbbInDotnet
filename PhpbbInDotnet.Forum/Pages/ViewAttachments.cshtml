@@ -9,7 +9,7 @@
 @inject Services.IForumTreeService _forumService
 
 @{
-    var title = string.Format(Model.TranslationProvider.BasicText[Model.GetLanguage(), "ATTACHMENTS_BY_FORMAT", Casing.Title], Model.PageUsername);
+    var title = string.Format(Model.TranslationProvider.BasicText[Model.Language, "ATTACHMENTS_BY_FORMAT", Casing.Title], Model.PageUsername);
     ViewData["Title"] = title;
     Layout = "~/Pages/_Layout.cshtml";
 }
@@ -31,7 +31,7 @@
                     paginator: Model.Paginator!,
                     allowPaginationChange: false,
                     includeEasyNavigation: false,
-                    language: Model.GetLanguage(),
+                    language: Model.Language,
                     back: $"ViewAttachments?userId={Model.UserId}&pageNum={Model.PageNum - 1}",
                     forward: $"ViewAttachments?userId={Model.UserId}&pageNum={Model.PageNum + 1}"
 
@@ -58,7 +58,7 @@
             <br />
             @Html.Raw(StringUtility.ReadableFileSize(attachment.FileSize))
             <span>&nbsp;&bull;&nbsp;</span>
-            @Html.Raw(Model.TranslationProvider.BasicText[Model.GetLanguage(), "SUBMITTED", Casing.FirstUpper])
+            @Html.Raw(Model.TranslationProvider.BasicText[Model.Language, "SUBMITTED", Casing.FirstUpper])
             <formatted-date date="@(attachment.FileTime.ToUtcTime().ToString("o"))" format="@(Model.ForumUser.UserDateFormat)" />
             <p></p>
             <hr class="BoxSeparator" />
@@ -72,7 +72,7 @@
                     paginator: Model.Paginator!,
                     allowPaginationChange: false,
                     includeEasyNavigation: true,
-                    language: Model.GetLanguage(),
+                    language: Model.Language,
                     back: $"ViewAttachments?userId={Model.UserId}&pageNum={Model.PageNum - 1}",
                     forward: $"ViewAttachments?userId={Model.UserId}&pageNum={Model.PageNum + 1}"
 
@@ -82,7 +82,7 @@
     }
     else
     {
-        @Html.Raw(Model.TranslationProvider.BasicText[Model.GetLanguage(), "NO_ATTACHMENTS", Casing.FirstUpper])
+        @Html.Raw(Model.TranslationProvider.BasicText[Model.Language, "NO_ATTACHMENTS", Casing.FirstUpper])
     }
 }
 else

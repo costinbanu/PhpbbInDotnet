@@ -80,7 +80,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public void OnGetRegistrationComplete()
         {
-            var lang = GetLanguage();
+            var lang = Language;
             Message = string.Format(TranslationProvider.BasicText[lang, "REGISTRATION_CONFIRM_MESSAGE_FORMAT"], _config.GetValue<string>("AdminEmail"));
             Title = TranslationProvider.BasicText[lang, "REGISTRATION_CONFIRM_TITLE"];
         }
@@ -93,7 +93,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 (u.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed || u.UserInactiveReason == UserInactiveReason.ChangedEmailNotConfirmed)
             );
 
-            var lang = GetLanguage();
+            var lang = Language;
 
             if (user == null)
             {
@@ -139,14 +139,14 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public void OnGetNewPassword()
         {
-            var lang = GetLanguage();
+            var lang = Language;
             Message = $"<span class=\"message success\">{TranslationProvider.BasicText[lang, "NEW_PASSWORD_MESSAGE"]}</span>";
             Title = TranslationProvider.BasicText[lang, "NEW_PASSWORD_TITLE"];
         }
 
         public void OnGetPasswordChanged()
         {
-            var lang = GetLanguage();
+            var lang = Language;
             Message = $"<span class=\"message success\">{TranslationProvider.BasicText[lang, "NEW_PASSWORD_COMPLETE"]}</span>";
             Title = TranslationProvider.BasicText[lang, "NEW_PASSWORD_TITLE"];
         }
@@ -154,7 +154,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnGetModeratorConfirmation()
             => WithModerator(0, async () =>
             {
-                var lang = GetLanguage();
+                var lang = Language;
                 IsModeratorConfirmation = true;
                 if (ShowTopicSelector)
                 {
@@ -172,13 +172,13 @@ namespace PhpbbInDotnet.Forum.Pages
         public void OnGetDestinationConfirmation()
         {
             IsDestinationConfirmation = true;
-            Message = $"<span class=\"message success\">{TranslationProvider.BasicText[GetLanguage(), "GENERIC_SUCCESS"]}</span>";
+            Message = $"<span class=\"message success\">{TranslationProvider.BasicText[Language, "GENERIC_SUCCESS"]}</span>";
         }
 
         public async Task OnGetDestinationPicker()
         {
             IsDestinationPicker = true;
-            Message = $"<span class=\"message success\">{TranslationProvider.BasicText[GetLanguage(), "GENERIC_SUCCESS"]}</span>";
+            Message = $"<span class=\"message success\">{TranslationProvider.BasicText[Language, "GENERIC_SUCCESS"]}</span>";
             await SetFrontendData();
         }
 

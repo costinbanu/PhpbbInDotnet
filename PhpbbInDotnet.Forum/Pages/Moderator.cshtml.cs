@@ -90,7 +90,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 async Task SetDeletedItems()
                 {
-                    var anonymous = TranslationProvider.BasicText[GetLanguage(), "ANONYMOUS", Casing.None];
+                    var anonymous = TranslationProvider.BasicText[Language, "ANONYMOUS", Casing.None];
                     var allItems = await (
                         from rb in Context.PhpbbRecycleBin.AsNoTracking()
 
@@ -134,7 +134,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostCloseReports()
             => await WithModerator(ForumId, async () =>
             {
-                var lang = GetLanguage();
+                var lang = Language;
                 if (SelectedReports?.Any() != true)
                 {
                     MessageClass = "message warning";
@@ -165,7 +165,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostManageTopics()
             => await WithModerator(ForumId, async () =>
             {
-                var lang = GetLanguage();
+                var lang = Language;
                 var logDto = new OperationLogDto
                 {
                     Action = TopicAction,
@@ -224,7 +224,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostRestoreDeletedItems()
             => await WithModerator(0, async () =>
             {
-                var lang = GetLanguage();
+                var lang = Language;
                 try
                 {
                     var itemGroups = from i in SelectedDeletedItems!

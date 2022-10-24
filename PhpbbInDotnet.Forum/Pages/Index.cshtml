@@ -10,7 +10,7 @@
 
 @{
     var CurrentUser = Model.ForumUser;
-    var Lang = Model.GetLanguage();
+    var Lang = Model.Language;
     var UserDateFormat = CurrentUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
     ViewData["Title"] = Model.TranslationProvider.BasicText[Lang, "HOME", Casing.Title];
     ViewData["BreadCrumbs"] = _forumService.GetBreadCrumbs((await Model.GetForumTree(false, false)).Tree, 0);

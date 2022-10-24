@@ -173,7 +173,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var existingVotes = (await sqlExecuter.QueryAsync<PhpbbPollVotes>("SELECT * FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @UserId", new { topicId, user.UserId })).AsList();
                 if (existingVotes.Count > 0 && topic.PollVoteChange == 0)
                 {
-                    ModelState.AddModelError(nameof(Poll), TranslationProvider.Errors[GetLanguage(), "CANT_CHANGE_VOTE"]);
+                    ModelState.AddModelError(nameof(Poll), TranslationProvider.Errors[Language, "CANT_CHANGE_VOTE"]);
                     return Page();
                 }
 
@@ -219,7 +219,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostTopicModerator()
             => await WithModerator(ForumId ?? 0, async () =>
             {
-                var lang = GetLanguage();
+                var lang = Language;
 
                 if (TopicAction == null)
                 {
@@ -272,7 +272,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostDeleteMyMessage()
             => await WithRegisteredUser(async (user) =>
             {
-                var lang = GetLanguage();
+                var lang = Language;
                 if (await IsCurrentUserModeratorHere())
                 {
                     return await ModeratePosts();
@@ -397,7 +397,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task<IActionResult> ModeratePosts()
         {
-            var lang = GetLanguage();
+            var lang = Language;
 
             if (PostAction == null)
             {
@@ -506,7 +506,7 @@ namespace PhpbbInDotnet.Forum.Pages
             ForumId = curForum.ForumId;
             ForumTitle = HttpUtility.HtmlDecode(curForum.ForumName);
 
-            var postList = await _postService.GetPosts(TopicId.Value, PageNum!.Value, ForumUser.GetPageSize(TopicId.Value), isPostingView: false, GetLanguage());
+            var postList = await _postService.GetPosts(TopicId.Value, PageNum!.Value, ForumUser.GetPageSize(TopicId.Value), isPostingView: false, Language);
             
             Posts = postList.Posts;
             Attachments = postList.Attachments;

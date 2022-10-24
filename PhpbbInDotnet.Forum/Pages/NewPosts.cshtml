@@ -7,7 +7,7 @@
 @inject Services.IForumTreeService _forumService
 
 @{
-    var Lang = Model.GetLanguage();
+    var Lang = Model.Language;
     var DocumentTitle = Model.TranslationProvider.BasicText[Lang, "NEW_POSTS", Casing.FirstUpper];
     ViewData["Title"] = DocumentTitle;
     Layout = "~/Pages/_Layout.cshtml";

@@ -14,7 +14,7 @@
 
 @model PhpbbInDotnet.Forum.Pages.ModeratorModel
 @{
-    var Lang = Model.GetLanguage();
+    var Lang = Model.Language;
     ViewData["Title"] = Model.TranslationProvider.Moderator[Lang, "MOD_PANEL"];
     Layout = "~/Pages/_Layout.cshtml";
     var CurrentUser = Model.ForumUser;

@@ -1,7 +1,7 @@
 ﻿@page
 @model PhpbbInDotnet.Forum.Pages.PrivateMessagesModel
 @{
-    var Lang = Model.GetLanguage();
+    var Lang = Model.Language;
     ViewData["Title"] = Model.TranslationProvider.BasicText[Lang, "PRIVATE_MESSAGING", Casing.Title];
     Layout = "~/Pages/_Layout.cshtml";
     var CurrentUser = Model.ForumUser;

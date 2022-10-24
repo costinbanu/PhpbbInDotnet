@@ -155,7 +155,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var currentUserId = ForumUser.UserId;
             var isSelf = CurrentUser!.UserId == currentUserId;
             var userShouldSignIn = dbUser.UserAllowPm.ToBool() != AllowPM || dbUser.UserDateformat != CurrentUser.UserDateformat;
-            var lang = GetLanguage();
+            var lang = Language;
             var validator = new UserProfileDataValidationService(ModelState, TranslationProvider, lang);
 
             var newCleanUsername = StringUtility.CleanString(CurrentUser.Username);
@@ -484,7 +484,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 if (!await CanAddFoe())
                 {
-                    ModelState.AddModelError(nameof(CurrentUser), TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED"]);
+                    ModelState.AddModelError(nameof(CurrentUser), TranslationProvider.Errors[Language, "AN_ERROR_OCCURRED"]);
                     Logger.Error("Potential cross site forgery attempt in {name}", nameof(OnPostAddFoe));
                     Mode = UserPageMode.AddFoe;
                     return await OnGet();
@@ -506,7 +506,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 if (!CanRemoveFoe())
                 {
-                    ModelState.AddModelError(nameof(CurrentUser), TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED"]);
+                    ModelState.AddModelError(nameof(CurrentUser), TranslationProvider.Errors[Language, "AN_ERROR_OCCURRED"]);
                     Logger.Error("Potential cross site forgery attempt in {name}", nameof(OnPostRemoveFoe));
                     Mode = UserPageMode.AddFoe;
                     return await OnGet();

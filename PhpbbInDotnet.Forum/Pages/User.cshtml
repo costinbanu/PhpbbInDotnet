@@ -15,7 +15,7 @@
 
 @{
     var pageUser = new AuthenticatedUserExpanded(_userService.DbUserToAuthenticatedUserBase(Model.CurrentUser!));
-    var Lang = Model.GetLanguage();
+    var Lang = Model.Language;
 
     ViewData["Title"] = $"{Model.TranslationProvider.BasicText[Lang, "USER", Casing.Title]}: {pageUser.Username}";
     Layout = "~/Pages/_Layout.cshtml";

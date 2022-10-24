@@ -23,7 +23,7 @@
     var hasPM = currentUser.HasPrivateMessagePermissions;
     var editTime = currentUser.PostEditTime;
     var sqlExecuter = _context.GetSqlExecuter();
-    var lang = Model.GetLanguage();
+    var lang = Model.Language;
     var userDateFormat = currentUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(lang);
     var isCurrentForumReadOnly = await _forumService.IsForumReadOnlyForUser(currentUser, Model.ForumId ?? 0);
     var forumTree = (await Model.GetForumTree(false, false)).Tree;
