@@ -14,13 +14,12 @@ namespace PhpbbInDotnet.Services
         string GetAbsoluteUrlToTopic(int topicId, int pageNum);
         BreadCrumbs GetBreadCrumbs(HashSet<ForumTree> tree, int forumId, int? topicId = null, string? topicName = null, int? pageNum = null);
         Task<IEnumerable<(int forumId, bool hasPassword)>> GetRestrictedForumList(AuthenticatedUserExpanded user, bool includePasswordProtected = false);
-        Task<IEnumerable<int>> GetUnrestrictedForums(AuthenticatedUserExpanded user, int? forumId = null);
+        Task<IEnumerable<int>> GetUnrestrictedForums(AuthenticatedUserExpanded user, int? forumId = null, bool ignoreForumPassword = false);
         Task<List<TopicGroup>> GetTopicGroups(int forumId);
         ForumTree? GetTreeNode(HashSet<ForumTree> tree, int forumId);
         bool HasUnrestrictedChildren(HashSet<ForumTree> tree, int forumId);
         Task<bool> IsForumReadOnlyForUser(AuthenticatedUserExpanded user, int forumId);
         Task<bool> IsForumUnread(int forumId, AuthenticatedUserExpanded user, bool forceRefresh = false);
-        bool IsNodeRestricted(ForumTree tree, bool includePasswordProtected = false);
         Task<bool> IsPostUnread(int forumId, int topicId, int postId, AuthenticatedUserExpanded user);
         Task<bool> IsTopicUnread(int forumId, int topicId, AuthenticatedUserExpanded user, bool forceRefresh = false);
     }

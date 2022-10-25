@@ -13,17 +13,18 @@
 @inject Database.IForumDbContext _context
 @inject Services.IBBCodeRenderingService _renderingService
 @inject Services.IForumTreeService _forumService
+@inject Services.IUserService _userService
 
 @{
     ViewData["Title"] = $"{Model.ForumTitle} - {Model.TopicTitle}";
     Layout = "~/Pages/_Layout.cshtml";
-    var currentUser = Model.GetCurrentUser();
-    var isAdmin = await Model.IsCurrentUserAdminHere();
-    var isMod = await Model.IsCurrentUserModeratorHere();
+    var currentUser = Model.ForumUser;
+    var isAdmin = await _userService.IsAdmin(Model.ForumUser);
+    var isMod = await _userService.IsUserModeratorInForum(Model.ForumUser, Model.ForumId ?? 0);
     var hasPM = currentUser.HasPrivateMessagePermissions;
     var editTime = currentUser.PostEditTime;
     var sqlExecuter = _context.GetSqlExecuter();
-    var lang = Model.GetLanguage();
+    var lang = Model.Language;
     var userDateFormat = currentUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(lang);
     var isCurrentForumReadOnly = await _forumService.IsForumReadOnlyForUser(currentUser, Model.ForumId ?? 0);
     var forumTree = (await Model.GetForumTree(false, false)).Tree;
@@ -116,7 +117,7 @@
     @foreach (var (post, index) in Model.Posts!.Indexed())
     {
         post.Reports = Model.Reports?.Where(r => r.PostId == post.PostId);
-        post.Unread = reachedAnUnreadPost || (reachedAnUnreadPost = await Model.IsPostUnread(post.ForumId, post.TopicId, post.PostId));
+        post.Unread = reachedAnUnreadPost || (reachedAnUnreadPost = await _forumService.IsPostUnread(post.ForumId, post.TopicId, post.PostId, Model.ForumUser));
         post.Attachments = Model.Attachments!.TryGetValue(post.PostId, out var val) ? val : new List<AttachmentDto>();
 
         var closestPostId = 0;

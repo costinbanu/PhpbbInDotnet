@@ -50,7 +50,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnGet()
             => WithRegisteredUser(async (usr) =>
             {
-                var lang = GetLanguage();
+                var lang = Language;
                 var sqlExec = Context.GetSqlExecuter();
 
                 if ((PostId ?? 0) > 0)
@@ -129,7 +129,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnPostSubmit()
             => WithRegisteredUser(user => WithValidInput(async () =>
             {
-                var lang = GetLanguage();
+                var lang = Language;
 
                 if ((ReceiverId ?? 1) == 1)
                 {
@@ -153,7 +153,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnPostPreview()
             => WithRegisteredUser(user => WithValidInput(async () =>
             {
-                var lang = GetLanguage();
+                var lang = Language;
                 var sqlExec = Context.GetSqlExecuter();
                 var newPostText = PostText;
                 newPostText = HttpUtility.HtmlEncode(newPostText);

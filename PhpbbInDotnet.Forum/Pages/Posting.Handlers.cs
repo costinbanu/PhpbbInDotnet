@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
 using System;
@@ -105,7 +106,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnGetEditPost()
             => WithRegisteredUserAndCorrectPermissions(user => WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
             {
-                if (!(await IsCurrentUserModeratorHere() || (curPost.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime))))
+                if (!(await UserService.IsUserModeratorInForum(ForumUser, ForumId) || (curPost.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime))))
                 {
                     return RedirectToPage("ViewTopic", "byPostId", new { PostId });
                 }
@@ -151,10 +152,10 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnPostAddAttachment()
             => WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, async (curForum) =>
             {
-                var lang = GetLanguage();
+                var lang = Language;
                 CurrentForum = curForum;
                 ShowAttach = true;
-                var isAdmin = await IsCurrentUserAdminHere();
+                var isAdmin = await UserService.IsAdmin(ForumUser);
 
                 if (!(Files?.Any() ?? false))
                 {
@@ -168,8 +169,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 var sizeLimit = _config.GetObject<AttachmentLimits>("UploadLimitsMB");
                 var countLimit = _config.GetObject<AttachmentLimits>("UploadLimitsCount");
-                var images = Files.Where(f => f.ContentType.IsImageMimeType());
-                var nonImages = Files.Where(f => !f.ContentType.IsImageMimeType());
+                var images = Files.Where(f => StringUtility.IsImageMimeType(f.ContentType));
+                var nonImages = Files.Where(f => !StringUtility.IsImageMimeType(f.ContentType));
 
                 if (_imageProcessorOptions.Api?.Enabled == true && (ShouldResize || ShouldHideLicensePlates))
                 {
@@ -227,8 +228,8 @@ namespace PhpbbInDotnet.Forum.Pages
                     return PageWithError(curForum, nameof(Files), string.Format(TranslationProvider.Errors[lang, "FILES_TOO_BIG_FORMAT"], string.Join(",", tooLargeFiles.Select(f => f.FileName))));
                 }
 
-                var existingImages = Attachments?.Count(a => a.Mimetype.IsImageMimeType()) ?? 0;
-                var existingNonImages = Attachments?.Count(a => !a.Mimetype.IsImageMimeType()) ?? 0;
+                var existingImages = Attachments?.Count(a => StringUtility.IsImageMimeType(a.Mimetype)) ?? 0;
+                var existingNonImages = Attachments?.Count(a => !StringUtility.IsImageMimeType(a.Mimetype)) ?? 0;
                 if (!isAdmin && (existingImages + images.Count() > countLimit.Images || existingNonImages + nonImages.Count() > countLimit.OtherFiles))
                 {
                     return PageWithError(curForum, nameof(Files), TranslationProvider.Errors[lang, "TOO_MANY_FILES"]);
@@ -260,7 +261,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (await DeleteAttachment(index, true) is null)
                 {
-                    return PageWithError(curForum, $"{nameof(DeleteFileDummyForValidation)}[{index}]", TranslationProvider.Errors[GetLanguage(), "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
+                    return PageWithError(curForum, $"{nameof(DeleteFileDummyForValidation)}[{index}]", TranslationProvider.Errors[Language, "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
                 }
 
                 ShowAttach = Attachments?.Any() == true;
@@ -282,7 +283,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     if (deletedAttachment is null)
                     {
                         error = true;
-                        ModelState.AddModelError($"{nameof(DeleteFileDummyForValidation)}[{index}]", TranslationProvider.Errors[GetLanguage(), "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
+                        ModelState.AddModelError($"{nameof(DeleteFileDummyForValidation)}[{index}]", TranslationProvider.Errors[Language, "CANT_DELETE_ATTACHMENT_TRY_AGAIN"]);
                     }
                     else
                     {
@@ -308,7 +309,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnPostPreview()
             => WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, () => WithValidInput(curForum, async() =>
             {
-                var lang = GetLanguage();
+                var lang = Language;
                 var sqlExecuter = Context.GetSqlExecuter();
                 var currentPost = Action == PostingActions.EditForumPost ? await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @PostId", new { PostId }) : null;
                 var userId = Action == PostingActions.EditForumPost ? currentPost!.PosterId : user.UserId;
@@ -318,7 +319,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var uid = string.Empty;
                 newPostText = HttpUtility.HtmlEncode(newPostText);
 
-                var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(Attachments!, lang, 1, true);
+                var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(Attachments!, ForumId, lang, 1, true);
                 PreviewCorrelationId = cacheResult.CorrelationId;
                 PreviewablePost = new PostDto
                 {
@@ -364,7 +365,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var addedPostId = await UpsertPost(null, user);
                 if (addedPostId == null)
                 {
-                    return PageWithError(curForum, nameof(PostText), TranslationProvider.Errors[GetLanguage(), "GENERIC_POSTING_ERROR"]);
+                    return PageWithError(curForum, nameof(PostText), TranslationProvider.Errors[Language, "GENERIC_POSTING_ERROR"]);
                 }
                 return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
             })), ReturnUrl)));
@@ -372,7 +373,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnPostEditForumPost()
             => WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidPost(PostId ?? 0, (curForum, curTopic, curPost) => WithValidInput(curForum, async() =>
             {
-                if (!(await IsCurrentUserModeratorHere() || (curPost.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime))))
+                if (!(await UserService.IsUserModeratorInForum(ForumUser, ForumId) || (curPost.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime))))
                 {
                     return RedirectToPage("ViewTopic", "byPostId", new { PostId });
                 }
@@ -394,7 +395,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnPostSaveDraft()
             => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, () => WithValidInput(curForum, async() =>
             {
-                var lang = GetLanguage();
+                var lang = Language;
                 var sqlExecuter = Context.GetSqlExecuter();
                 var topicId = Action == PostingActions.NewTopic ? 0 : TopicId ?? 0;
                 var draft = sqlExecuter.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId });
@@ -434,7 +435,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostDeletePoll()
             => await WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidPost(PostId ?? 0, async (curForum, curTopic, curPost) =>
             {
-                if (!(await IsCurrentUserModeratorHere() || (curPost.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime))))
+                if (!(await UserService.IsUserModeratorInForum(ForumUser, ForumId) || (curPost.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(curPost.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime))))
                 {
                     return RedirectToPage("ViewTopic", "byPostId", new { PostId });
                 }

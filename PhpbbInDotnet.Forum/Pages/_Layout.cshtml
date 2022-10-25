@@ -15,7 +15,7 @@
 
 @{
     #nullable enable
-    var currentUser = (AuthenticatedUserExpanded?)Context.Items[nameof(AuthenticatedUserExpanded)];
+    var currentUser = AuthenticatedUserExpanded.GetValueOrDefault(Context);
     var css = currentUser?.Style;
     if (string.IsNullOrWhiteSpace(css))
     {
@@ -186,7 +186,7 @@
                 var displayedBox = false;
                 if (currentUser?.IsAnonymous == false)
                 {
-                    pmCount = await _userService.UnreadPMs(currentUser!.UserId);
+                    pmCount = await _userService.GetUnreadPMCount(currentUser!.UserId);
                 }
 
                 if (pmCount > 0)
@@ -199,9 +199,9 @@
                     displayedBox = true;
                 }
 
-                if (await _userService.IsUserModeratorInForum(currentUser, 0))
+                if (currentUser is not null && await _userService.IsUserModeratorInForum(currentUser, forumId))
                 {
-                    var reports = await _moderatorService.GetReportedMessages(0);
+                    var reports = await _moderatorService.GetReportedMessages(forumId);
                     if (reports.Any())
                     {
                         if (!displayedBox)
@@ -256,7 +256,7 @@
                     @_translationProvider.BasicText[lang, "TERMS", Casing.Title]
                 </a>
             </p>
-            @if (await _userService.IsUserModeratorInForum(currentUser, forumId))
+            @if (currentUser is not null && await _userService.IsUserModeratorInForum(currentUser, forumId))
             {
                 <p>
                     <a href="./Moderator@(forumId > 0 ? $"?forumId={forumId}" : "")">
@@ -264,7 +264,7 @@
                     </a>
                 </p>
             }
-            @if (await _userService.IsUserAdminInForum(currentUser, forumId))
+            @if (currentUser is not null &&  await _userService.IsAdmin(currentUser))
             {
                 <p>
                     <a asp-page="./Admin">

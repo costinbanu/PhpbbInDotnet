@@ -11,12 +11,13 @@
 @inject IBBCodeRenderingService _renderingService
 @inject IConfiguration _config
 @inject IAnonymousSessionCounter _sessionCounter
+@inject IUserService _userService
 
 @{
-    var Lang = Model.GetLanguage();
+    var Lang = Model.Language;
     ViewData["Title"] = Model.TranslationProvider.BasicText[Lang, "MEMBERLIST"];
     Layout = "~/Pages/_Layout.cshtml";
-    var user = Model.GetCurrentUser();
+    var user = Model.ForumUser;
     var dateFormat = user.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
 }
 
@@ -122,7 +123,7 @@
 <div id="Groups" class="tabcontent" style="@(Model.Mode == MemberListPages.Groups ? "display:inherit" : "display:none")">
     <h3>@Model.TranslationProvider.BasicText[Lang, "FORUM_GROUPS", Casing.Title]</h3>
     @{
-        if (await Model.IsCurrentUserAdminHere())
+        if (await _userService.IsAdmin(Model.ForumUser))
         {
             <span asp-validation-for="ValidationDummy" class="validation"></span>
         }
@@ -182,7 +183,7 @@
 <h4>
     @string.Format(Model.TranslationProvider.BasicText[Lang, registered == 1 ? "REGISTERED_COUNT_SINGLE_FORMAT" : "REGISTERED_COUNT_MULTIPLE_FORMAT", Casing.Title], registered),
     @string.Format(Model.TranslationProvider.BasicText[Lang, anonymous == 1 ? "GUEST_COUNT_SINGLE_FORMAT" : "GUEST_COUNT_MULTIPLE_FORMAT", Casing.Title], anonymous)
-    @if (await Model.IsCurrentUserAdminHere())
+    @if (await _userService.IsAdmin(Model.ForumUser))
     {
         <span>
             @Model.TranslationProvider.BasicText[Lang, "AND"]
@@ -241,7 +242,7 @@
                         @Html.Raw(bot.IP)
                     </div>
                     <div class="FlexRight PostInputWidth">
-                        @if (await Model.IsCurrentUserAdminHere())
+                        @if (await _userService.IsAdmin(Model.ForumUser))
                         {
                             <a href="https://whatismyipaddress.com/ip/@bot.IP" target="_blank">[IP Lookup]</a><br />
                         }

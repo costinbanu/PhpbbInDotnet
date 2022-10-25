@@ -9,8 +9,8 @@
 @inject Services.IForumTreeService _forumService
 
 @{
-    var CurrentUser = Model.GetCurrentUser();
-    var Lang = Model.GetLanguage();
+    var CurrentUser = Model.ForumUser;
+    var Lang = Model.Language;
     var UserDateFormat = CurrentUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
     ViewData["Title"] = Model.TranslationProvider.BasicText[Lang, "HOME", Casing.Title];
     ViewData["BreadCrumbs"] = _forumService.GetBreadCrumbs((await Model.GetForumTree(false, false)).Tree, 0);

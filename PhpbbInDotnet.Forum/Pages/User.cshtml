@@ -15,7 +15,7 @@
 
 @{
     var pageUser = new AuthenticatedUserExpanded(_userService.DbUserToAuthenticatedUserBase(Model.CurrentUser!));
-    var Lang = Model.GetLanguage();
+    var Lang = Model.Language;
 
     ViewData["Title"] = $"{Model.TranslationProvider.BasicText[Lang, "USER", Casing.Title]}: {pageUser.Username}";
     Layout = "~/Pages/_Layout.cshtml";
@@ -24,17 +24,18 @@
     var permissionsTask = _userService.GetPermissions(pageUser.UserId);
     var foesTask = _userService.GetFoes(pageUser.UserId);
     var canEditTask = Model.CanEdit();
-    var isAdminHereTask = Model.IsCurrentUserAdminHere();
-    var ranksTask = _userService.GetRankList();
+    var isGlobalAdminTask = _userService.IsAdmin(Model.ForumUser);
+    var ranksTask = _userService.GetAllRanks();
 
-    await Task.WhenAll(permissionsTask, foesTask, canEditTask, isAdminHereTask, ranksTask);
+    await Task.WhenAll(permissionsTask, foesTask, canEditTask, isGlobalAdminTask, ranksTask);
 
-    var viewingUser = Model.GetCurrentUser();
+    var viewingUser = Model.ForumUser;
     pageUser.AllPermissions = await permissionsTask;
     pageUser.Foes = await foesTask;
     var isSelf = viewingUser.UserId == Model.CurrentUser!.UserId;
     var canEdit = await canEditTask;
-    var hasTabs = isSelf || await isAdminHereTask;
+    var isGlobalAdmin = await isGlobalAdminTask;
+    var hasTabs = isSelf || isGlobalAdmin;
     var showFlexAvatar = !string.IsNullOrWhiteSpace(Model.CurrentUser.UserAvatar) && !canEdit;
     var rankList = await ranksTask;
 }
@@ -200,7 +201,7 @@ else
                             @Html.Raw(Model.TranslationProvider.BasicText[Lang, "USERNAME", Casing.Title])
                         </div>
                         <div class="FlexRight PostInputWidth">
-                            @if (!(Model.ViewAsAnother ?? false) && await Model.IsCurrentUserAdminHere())
+                            @if (!(Model.ViewAsAnother ?? false) && isGlobalAdmin)
                             {
                                 <input asp-for="CurrentUser!.Username" />
                             }
@@ -435,7 +436,7 @@ else
                     </div>
                 </div>
             }
-            @if (!(Model.ViewAsAnother ?? false) && await Model.IsCurrentUserAdminHere())
+            @if (!(Model.ViewAsAnother ?? false) && isGlobalAdmin)
             {
                 var permissions = new List<SelectListItem>(
                     (await _userService.GetUserRolesLazy()).Select(
@@ -452,7 +453,7 @@ else
                 ranks.Add(new SelectListItem(Model.TranslationProvider.BasicText[Lang, "NO_ASSIGNED_RANK"], "0", !ranks.Any(p => p.Selected)));
 
                 var groups = new List<SelectListItem>(
-                    (await _userService.GetGroupList()).Select(
+                    (await _userService.GetAllGroups()).Select(
                         g => new SelectListItem(g.GroupName, g.GroupId.ToString(), g.GroupId == Model.GroupId)
                     )
                 );
@@ -539,14 +540,14 @@ else
                 }
                 else
                 {
-                    var showMail = (Model.CurrentUser.UserAllowViewemail.ToBool() && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false) && !(pageUser.Foes?.Contains(viewingUser.UserId) ?? false)) || await Model.IsCurrentUserAdminHere();
+                    var showMail = (Model.CurrentUser.UserAllowViewemail.ToBool() && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false) && !(pageUser.Foes?.Contains(viewingUser.UserId) ?? false)) || isGlobalAdmin;
                     if (showMail)
                     {
                         <button class="MyButton" onclick="location.href='mailto:@Html.Raw(Model.CurrentUser.UserEmail)'" type="button" @(isSelf ? "disabled" : "")>
                             &#x2709;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Lang, "SEND_EMAIL"])
                         </button>
                     }
-                    var showPMs = (viewingUser.HasPrivateMessagePermissions && pageUser.HasPrivateMessages && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false) && !(pageUser.Foes?.Contains(viewingUser.UserId) ?? false)) || (await Model.IsCurrentUserAdminHere() && pageUser.HasPrivateMessagePermissions);
+                    var showPMs = (viewingUser.HasPrivateMessagePermissions && pageUser.HasPrivateMessages && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false) && !(pageUser.Foes?.Contains(viewingUser.UserId) ?? false)) || (isGlobalAdmin && pageUser.HasPrivateMessagePermissions);
                     if (showPMs)
                     {
                         if (showMail)
@@ -611,7 +612,7 @@ else
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @{
-                            var UserDateFormat = (Model.GetCurrentUser())?.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
+                            var UserDateFormat = (Model.ForumUser)?.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
                         }
                         <formatted-date date="@Model.CurrentUser.UserRegdate.ToUtcTime().ToString("o")" format="@UserDateFormat" />
                     </div>
@@ -680,7 +681,7 @@ else
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "ATTACHED_FILES_COUNT_FORMAT"], Model.AttachCount))
-                        @if (isSelf || await Model.IsCurrentUserAdminHere())
+                        @if (isSelf || await _userService.IsAdmin(Model.ForumUser!))
                         {
                             <span>- @Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "USED_SPACE_FORMAT"], StringUtility.ReadableFileSize(Model.AttachTotalSize)))</span>
                             var limit = _context.PhpbbGroups.AsNoTracking().FirstOrDefault(g => g.GroupId == Model.CurrentUser.GroupId)?.GroupUserUploadSize ?? 0;

@@ -39,7 +39,7 @@ namespace PhpbbInDotnet.Forum
 
         private async Task<IActionResult> WithValidInputCore(Func<Task<IActionResult>> success, Func<string, string, IActionResult> fail)
         {
-            var lang = GetLanguage();
+            var lang = Language;
             if ((PostTitle?.Trim()?.Length ?? 0) < 3)
             {
                 return fail(nameof(PostTitle), TranslationProvider.Errors[lang, "TITLE_TOO_SHORT"]);

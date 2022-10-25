@@ -7,15 +7,15 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Net.Http.Headers;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
-using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
+using PhpbbInDotnet.Objects;
+using PhpbbInDotnet.Services;
 using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Middlewares
@@ -36,8 +36,7 @@ namespace PhpbbInDotnet.Forum.Middlewares
         {
             EXCLUDED_PAGES = new HashSet<string>(
                 new[] { "/Login", "/Logout", "/Register" },
-                StringComparer.InvariantCultureIgnoreCase
-            );
+                StringComparer.OrdinalIgnoreCase);
         }
 
         public AuthenticationMiddleware(ILogger logger, IConfiguration config, IAppCache cache, IForumDbContext context,
@@ -60,70 +59,70 @@ namespace PhpbbInDotnet.Forum.Middlewares
                 return;
             }
 
-            AuthenticatedUserExpanded? user;
-            try
+            var sqlExecuter = _context.GetSqlExecuter();
+            AuthenticatedUser baseUser;
+            PhpbbUsers dbUser;
+            if (IdentityUtility.TryGetUserId(context.User, out var userId))
             {
-                if (context.User?.Identity?.IsAuthenticated != true)
+                dbUser = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
+                    "SELECT * FROM phpbb_users WHERE user_id = @userId",
+                    new { userId });
+
+                if (dbUser is null || dbUser.UserShouldSignIn || dbUser.UserInactiveReason != UserInactiveReason.NotInactive)
                 {
-                    user = _userService.ClaimsPrincipalToAuthenticatedUser(await SignInAnonymousUser(context));
+                    await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    await SignInAnonymousUser(context);
+                    dbUser = await _userService.GetAnonymousDbUser();
+                    baseUser = _userService.DbUserToAuthenticatedUserBase(dbUser);
                 }
                 else
                 {
-                    user = _userService.ClaimsPrincipalToAuthenticatedUser(context.User);
-                }
-                if (user is null)
-                {
-                    _logger.Warning("Failed to log in neither a proper user nor the anonymous idendity.");
-                    await next(context);
-                    return;
+                    baseUser = _userService.DbUserToAuthenticatedUserBase(dbUser);
                 }
             }
-            catch (Exception ex)
+            else
             {
-                _logger.Warning(ex, "Failed to parse claims");
-                await next(context);
-                return;
-            }
-
-            var (isAllowed, dbUser) = await GetDbUserOrAnonymousIfNotAllowed(user);
-            if (!isAllowed)
-            {
-                await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                user = _userService.ClaimsPrincipalToAuthenticatedUser(await SignInAnonymousUser(context));
-            }
-
-            var permissionsTask = _userService.GetPermissions(user!.UserId);
-            var tppTask = GetTopicPostsPage(user.UserId);
-            var foesTask = _userService.GetFoes(user.UserId);
-            await Task.WhenAll(permissionsTask, tppTask, foesTask);
-
-            if (dbUser is null)
-            {
-                var anonymousClaimsPrincipal = await SignInAnonymousUser(context);
-                user = _userService.ClaimsPrincipalToAuthenticatedUser(anonymousClaimsPrincipal);
+                await SignInAnonymousUser(context);
+                dbUser = await _userService.GetAnonymousDbUser();
+                baseUser = _userService.DbUserToAuthenticatedUserBase(dbUser);
             }
 
             var sessionTrackingTimeout = _config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1);
-            if (dbUser is not null && !user!.IsAnonymous && (
-                    await _cache.GetAsync<bool?>($"ReloadUser_{user.UsernameClean}") == true ||
-                    DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > sessionTrackingTimeout))
+            var permissionsTask = _userService.GetPermissions(baseUser.UserId);
+            var user = new AuthenticatedUserExpanded(baseUser);
+            if (!baseUser.IsAnonymous)
             {
-                var claimsPrincipal = await _userService.DbUserToClaimsPrincipal(dbUser);
-                await Task.WhenAll(
-                    SignIn(context, claimsPrincipal),
-                    _context.GetSqlExecuter().ExecuteAsync(
+                var tppTask = GetTopicPostsPage(baseUser.UserId);
+                var foesTask = _userService.GetFoes(baseUser.UserId);
+                var groupPropertiesTask = sqlExecuter.QueryFirstOrDefaultAsync<(int GroupEditTime, int GroupUserUploadSize)>(
+                    @"SELECT g.group_edit_time, g.group_user_upload_size
+                        FROM phpbb_groups g
+                        JOIN phpbb_users u ON g.group_id = u.group_id
+                       WHERE u.user_id = @UserId",
+                    new { baseUser.UserId });
+                var styleTask = sqlExecuter.QueryFirstOrDefaultAsync<string>(
+                    "SELECT style_name FROM phpbb_styles WHERE style_id = @UserStyle",
+                    new { dbUser.UserStyle });
+                var updateLastVisitTask = DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > sessionTrackingTimeout
+                    ? Task.CompletedTask
+                    : sqlExecuter.ExecuteAsync(
                         "UPDATE phpbb_users SET user_lastvisit = @now WHERE user_id = @userId",
-                        new { now = DateTime.UtcNow.ToUnixTimestamp(), user.UserId }
-                    )
-                );
-                user = _userService.ClaimsPrincipalToAuthenticatedUser(claimsPrincipal);
+                        new { now = DateTime.UtcNow.ToUnixTimestamp(), baseUser.UserId });
+
+                await Task.WhenAll(styleTask, groupPropertiesTask, permissionsTask, tppTask, foesTask, updateLastVisitTask);
+
+                var groupProperties = await groupPropertiesTask;
+                var style = await styleTask;
+
+                user.TopicPostsPerPage = await tppTask;
+                user.Foes = await foesTask;
+                user.UploadLimit = groupProperties.GroupUserUploadSize;
+                user.PostEditTime = (groupProperties.GroupEditTime == 0 || dbUser.UserEditTime == 0) ? 0 : Math.Min(Math.Abs(groupProperties.GroupEditTime), Math.Abs(dbUser.UserEditTime));
+                user.Style = style ?? string.Empty;
             }
+            user.AllPermissions = await permissionsTask;
 
-            user!.AllPermissions = await permissionsTask;
-            user.TopicPostsPerPage = await tppTask;
-            user.Foes = await foesTask;
-
-            context.Items[nameof(AuthenticatedUserExpanded)] = user;
+            user.SetValue(context);
 
             if (user.IsAnonymous && context.Request.Headers.TryGetValue(HeaderNames.UserAgent, out var header) && (context.Session.GetInt32("SessionCounted") ?? 0) == 0)
             {
@@ -132,8 +131,7 @@ namespace PhpbbInDotnet.Forum.Middlewares
                     var userAgent = header.ToString();
                     var dd = new DeviceDetector(userAgent);
                     dd.Parse();
-                    var IsBot = dd.IsBot();
-                    if (IsBot)
+                    if (dd.IsBot())
                     {
                         if (context.Connection.RemoteIpAddress is not null)
                         {
@@ -155,26 +153,18 @@ namespace PhpbbInDotnet.Forum.Middlewares
             await next(context);
         }
 
-        private async Task<ClaimsPrincipal> SignInAnonymousUser(HttpContext context)
-        {
-            var anonymousClaimsPrincipal = await _userService.GetAnonymousClaimsPrincipal();
-            await SignIn(context, anonymousClaimsPrincipal);
-            return anonymousClaimsPrincipal;
-        }
-
-        private async Task SignIn(HttpContext context, ClaimsPrincipal claimsPrincipal)
+        private async Task SignInAnonymousUser(HttpContext context)
         {
             var authenticationExpiration = _config.GetValue<TimeSpan?>("LoginSessionSlidingExpiration") ?? TimeSpan.FromDays(30);
             await context.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
-                claimsPrincipal,
+                IdentityUtility.CreateClaimsPrincipal(Constants.ANONYMOUS_USER_ID),
                 new AuthenticationProperties
                 {
                     AllowRefresh = true,
                     ExpiresUtc = DateTimeOffset.UtcNow.Add(authenticationExpiration),
                     IsPersistent = true,
-                }
-            );
+                }); 
         }
 
         async Task<Dictionary<int, int>> GetTopicPostsPage(int userId)
@@ -186,22 +176,6 @@ namespace PhpbbInDotnet.Forum.Middlewares
 	               GROUP BY topic_id;",
                 new { userId });
             return results.ToDictionary(x => checked((int)x.topic_id), y => checked((int)y.post_no));
-        }
-
-        async Task<(bool isAllowed, PhpbbUsers dbUser)> GetDbUserOrAnonymousIfNotAllowed(AuthenticatedUser user)
-        {
-            if (await _cache.GetAsync<bool>($"UserMustLogIn_{user.UsernameClean}"))
-            {
-                return (false, await _userService.GetAnonymousDbUser());
-            }
-
-            var dbUser = _context.GetSqlExecuter().QueryFirstOrDefault<PhpbbUsers>("SELECT * FROM phpbb_users where user_id = @userId", new { user.UserId });
-            if (dbUser is not null && dbUser.UserInactiveReason == UserInactiveReason.NotInactive)
-            {
-                return (true, dbUser);
-            }
-
-            return (false, await _userService.GetAnonymousDbUser());
         }
     }
 }

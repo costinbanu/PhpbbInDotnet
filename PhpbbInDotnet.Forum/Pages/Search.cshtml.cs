@@ -49,7 +49,7 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public bool? DoSearch { get; set; }
 
-        public List<PhpbbAttachments>? Attachments { get; private set; }
+        public IEnumerable<PhpbbAttachmentExpanded>? Attachments { get; private set; }
 
         public bool IsAttachmentSearch { get; private set; }
 
@@ -122,7 +122,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 DoSearch = true;
                 if (AuthorId == 0)
                 {
-                    ModelState.AddModelError(nameof(SearchText), TranslationProvider.BasicText[GetLanguage(), "AN_ERROR_OCCURRED_TRY_AGAIN"]);
+                    ModelState.AddModelError(nameof(SearchText), TranslationProvider.BasicText[Language, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
                     return await OnGet();
                 }
                 return await OnGet();
@@ -151,12 +151,12 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             if (string.IsNullOrWhiteSpace(SearchText) && !IsAuthorSearch)
             {
-                ModelState.AddModelError(nameof(SearchText), TranslationProvider.Errors[GetLanguage(), "MISSING_REQUIRED_FIELD"]);
+                ModelState.AddModelError(nameof(SearchText), TranslationProvider.Errors[Language, "MISSING_REQUIRED_FIELD"]);
                 return;
             }
 
             var sqlExecuterTask = Context.GetSqlExecuterAsync();
-            var searchableForumsTask = GetUnrestrictedForums(ForumId);
+            var searchableForumsTask = ForumService.GetUnrestrictedForums(ForumUser, ForumId);
             await Task.WhenAll(sqlExecuterTask, searchableForumsTask);
             var sqlExecuter = await sqlExecuterTask;
             var searchableForums = await searchableForumsTask;
@@ -273,10 +273,12 @@ namespace PhpbbInDotnet.Forum.Pages
 
             Posts = (await searchTask).AsList();
             TotalResults = await countTask;
-            Attachments = await (
-                from a in Context.PhpbbAttachments.AsNoTracking()
-                where Posts.Select(p => p.PostId).Contains(a.PostMsgId)
-                select a).ToListAsync();
+            Attachments = await sqlExecuter.QueryAsync<PhpbbAttachmentExpanded>(
+                @"SELECT p.forum_id, a.*
+                    FROM phpbb_attachments a
+                    JOIN phpbb_posts p ON a.post_msg_id = p.post_id
+                    WHERE p.post_id IN @posts",
+                new { posts = Posts.Select(p => p.PostId) });
             Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum, link: GetSearchLinkForPage(PageNum + 1), topicId: null);
         }
     }

@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Configuration;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Services;
 using System;
 using System.Threading.Tasks;
@@ -13,12 +15,10 @@ namespace PhpbbInDotnet.Forum.Pages
 {
     public class LogoutModel : PageModel
     {
-        private readonly IUserService _userService;
         private readonly IConfiguration _config;
 
-        public LogoutModel(IUserService userService, IConfiguration config)
+        public LogoutModel(IConfiguration config)
         {
-            _userService = userService;
             _config = config;
         }
 
@@ -27,7 +27,7 @@ namespace PhpbbInDotnet.Forum.Pages
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme, 
-                await _userService.GetAnonymousClaimsPrincipal(), 
+                IdentityUtility.CreateClaimsPrincipal(Constants.ANONYMOUS_USER_ID), 
                 new AuthenticationProperties
                 {
                     AllowRefresh = true,

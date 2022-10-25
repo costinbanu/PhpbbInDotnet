@@ -47,6 +47,9 @@ namespace PhpbbInDotnet.Database
         public Task<T> QuerySingleOrDefaultAsync<T>(string sql, object? param)
             => _connection.QuerySingleOrDefaultAsync<T>(sql, param);
 
+        public Task<T> QuerySingleAsync<T>(string sql, object? param)
+            => _connection.QuerySingleAsync<T>(sql, param);
+
         public Task<dynamic> QuerySingleOrDefaultAsync(string sql, object? param)
             => _connection.QuerySingleOrDefaultAsync(sql, param);
     }
