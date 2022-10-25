@@ -504,7 +504,7 @@ namespace PhpbbInDotnet.Forum.Pages
             ForumId = curForum.ForumId;
             ForumTitle = HttpUtility.HtmlDecode(curForum.ForumName);
 
-            var postList = await _postService.GetPosts(TopicId.Value, PageNum!.Value, ForumUser.GetPageSize(TopicId.Value), isPostingView: false, Language, ForumUser.UserId);
+            var postList = await _postService.GetPosts(TopicId.Value, PageNum!.Value, ForumUser.GetPageSize(TopicId.Value), isPostingView: false, Language);
             
             Posts = postList.Posts;
             Attachments = postList.Attachments;

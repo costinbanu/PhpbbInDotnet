@@ -336,7 +336,7 @@
                         <br />
                         foreach (var attach in post.Attachments!)
                         {
-                            attach.SetCorrelation(correlationId, CurrentUser.UserId);
+                            attach.CorrelationId = correlationId;
                             _cache.Add(CacheUtility.GetAttachmentCacheKey(attach.Id, correlationId), attach, TimeSpan.FromMinutes(1));
                         }
                         @await Html.PartialAsync("_PostPartial", new _PostPartialModel

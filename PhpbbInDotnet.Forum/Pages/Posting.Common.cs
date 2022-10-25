@@ -61,7 +61,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             if (((TopicId.HasValue && PageNum.HasValue) || PostId.HasValue) && (Action == PostingActions.EditForumPost || Action == PostingActions.NewForumPost))
             {
-                var postList = await _postService.GetPosts(TopicId ?? 0, pageNum: 1, Constants.DEFAULT_PAGE_SIZE, isPostingView: true, Language, ForumUser.UserId);
+                var postList = await _postService.GetPosts(TopicId ?? 0, pageNum: 1, Constants.DEFAULT_PAGE_SIZE, isPostingView: true, Language);
                 return (postList.Posts, postList.Attachments, postList.AttachmentDisplayCorrelationId);
             }
             return (new List<PostDto>(), new Dictionary<int, List<AttachmentDto>>(), Guid.Empty);
