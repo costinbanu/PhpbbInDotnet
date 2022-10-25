@@ -14,7 +14,7 @@ namespace PhpbbInDotnet.Services
         string GetAbsoluteUrlToTopic(int topicId, int pageNum);
         BreadCrumbs GetBreadCrumbs(HashSet<ForumTree> tree, int forumId, int? topicId = null, string? topicName = null, int? pageNum = null);
         Task<IEnumerable<(int forumId, bool hasPassword)>> GetRestrictedForumList(AuthenticatedUserExpanded user, bool includePasswordProtected = false);
-        Task<IEnumerable<int>> GetUnrestrictedForums(AuthenticatedUserExpanded user, int? forumId = null, bool excludePasswordProtected = true);
+        Task<IEnumerable<int>> GetUnrestrictedForums(AuthenticatedUserExpanded user, int? forumId = null, bool ignoreForumPassword = false);
         Task<List<TopicGroup>> GetTopicGroups(int forumId);
         ForumTree? GetTreeNode(HashSet<ForumTree> tree, int forumId);
         bool HasUnrestrictedChildren(HashSet<ForumTree> tree, int forumId);

@@ -156,7 +156,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }
 
             var sqlExecuterTask = Context.GetSqlExecuterAsync();
-            var searchableForumsTask = ForumService.GetUnrestrictedForums(ForumUser, ForumId, excludePasswordProtected: await UserService.IsAdmin(ForumUser));
+            var searchableForumsTask = ForumService.GetUnrestrictedForums(ForumUser, ForumId);
             await Task.WhenAll(sqlExecuterTask, searchableForumsTask);
             var sqlExecuter = await sqlExecuterTask;
             var searchableForums = await searchableForumsTask;
