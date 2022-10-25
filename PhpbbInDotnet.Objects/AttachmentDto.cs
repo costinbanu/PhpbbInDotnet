@@ -19,8 +19,9 @@ namespace PhpbbInDotnet.Objects
         public long FileSize { get; }
         public string Language { get; } = Constants.DEFAULT_LANGUAGE;
         public bool IsPreview { get; }
-        public Guid? CorrelationId { get; set; }
+        public Guid? CorrelationId { get; private set; }
         public bool DeletedFile { get; }
+        public int? CorrelationUser { get; private set; }
 
         [JsonIgnore]
         public string FileUrl
@@ -44,7 +45,7 @@ namespace PhpbbInDotnet.Objects
         }
 
 
-        public AttachmentDto(PhpbbAttachments dbRecord, int forumId, bool isPreview, string language, Guid? correlationId = null, bool deletedFile = false)
+        public AttachmentDto(PhpbbAttachments dbRecord, int forumId, bool isPreview, string language)
         {
             DisplayName = dbRecord.RealFilename;
             Comment = dbRecord.AttachComment;
@@ -56,8 +57,25 @@ namespace PhpbbInDotnet.Objects
             ForumId = forumId;
             Language = language;
             IsPreview = isPreview;
-            CorrelationId = correlationId;
+        }
+
+        public AttachmentDto(PhpbbAttachments dbRecord, int forumId, bool isPreview, string language, bool deletedFile)
+            : this(dbRecord, forumId, isPreview, language)
+        {
             DeletedFile = deletedFile;
+        }
+
+        public AttachmentDto(PhpbbAttachments dbRecord, int forumId, bool isPreview, string language, Guid correlationId, int correlationUser)
+            : this(dbRecord, forumId, isPreview, language)
+        {
+            CorrelationId = correlationId;
+            CorrelationUser = correlationUser;
+        }
+
+        public void SetCorrelation(Guid correlationId, int correlationUser)
+        {
+            CorrelationId = correlationId;
+            CorrelationUser = correlationUser;
         }
     }
 }

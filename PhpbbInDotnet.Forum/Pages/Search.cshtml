@@ -17,9 +17,8 @@
     var Lang = Model.Language;
     ViewData["Title"] = Model.TranslationProvider.BasicText[Lang, "SEARCH"];
     Layout = "~/Pages/_Layout.cshtml";
-    var CurrentUser = Model.ForumUser;
     var sqlExecuter = _context.GetSqlExecuter();
-    var dateFormat = CurrentUser?.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
+    var dateFormat = Model.ForumUser?.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
 }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/he/1.2.0/he.min.js" integrity="sha512-PEsccDx9jqX6Dh4wZDCnWMaIO3gAaU0j46W//sSqQhUQxky6/eHZyeB3NrXD2xsyugAKd4KPiDANkcuoEa2JuA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <environment include="Development">
@@ -147,7 +146,7 @@ else
         ViewData
     )
     <hr class="BoxSeparator" />
-    var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(Model.Attachments!, Lang, Model.Posts!.Count, false);
+    var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(Model.Attachments!, Lang, Model.Posts!.Count, isPreview: false, Model.ForumUser!.UserId);
     foreach (var post in Model.Posts)
     {
         if (post.PostId == 0)
@@ -159,7 +158,7 @@ else
 
         @await Html.PartialAsync("_PostPartial", new _PostPartialModel
         {
-            CurrentUser = CurrentUser,
+            CurrentUser = Model.ForumUser,
             Post = post,
             IsPostFirstInPage = post == Model.Posts.First(),
             IsPostLastInPage = post == Model.Posts.Last(),
@@ -167,7 +166,7 @@ else
             ToHighlight = Model.SearchText,
             Language = Lang,
             CorrelationId = cacheResult.CorrelationId,
-            Path = _forumService.GetPathText((await _forumService.GetForumTree(CurrentUser, false, false)), post.ForumId)
+            Path = _forumService.GetPathText((await _forumService.GetForumTree(Model.ForumUser, false, false)), post.ForumId)
         }, ViewData)
     }
 

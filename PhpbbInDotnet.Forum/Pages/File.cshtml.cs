@@ -42,8 +42,9 @@ namespace PhpbbInDotnet.Forum.Pages
                 if (dto != null)
                 {
                     return await WithValidForum(
-                        dto.ForumId,
-                        _ => Task.FromResult(SendToClient(dto.PhysicalFileName!, dto.DisplayName!, dto.MimeType, FileType.Attachment)));
+                        forumId: dto.ForumId,
+                        overrideCheck: dto.CorrelationId == correlationId.Value && dto.CorrelationUser == ForumUser.UserId,
+                        toDo: _ => Task.FromResult(SendToClient(dto.PhysicalFileName!, dto.DisplayName!, dto.MimeType, FileType.Attachment)));
                 }
             }
 

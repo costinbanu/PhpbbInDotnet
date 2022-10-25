@@ -319,7 +319,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var uid = string.Empty;
                 newPostText = HttpUtility.HtmlEncode(newPostText);
 
-                var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(Attachments!, ForumId, lang, 1, true);
+                var cacheResult = await _postService.CacheAttachmentsAndPrepareForDisplay(Attachments!, ForumId, lang, postCount: 1, isPreview: true, ForumUser.UserId);
                 PreviewCorrelationId = cacheResult.CorrelationId;
                 PreviewablePost = new PostDto
                 {

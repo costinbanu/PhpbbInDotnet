@@ -36,14 +36,14 @@ namespace PhpbbInDotnet.Services
             _logger = logger;
         }
 
-        public async Task<(Guid CorrelationId, Dictionary<int, List<AttachmentDto>> Attachments)> CacheAttachmentsAndPrepareForDisplay(IEnumerable<PhpbbAttachmentExpanded> dbAttachments, string language, int postCount, bool isPreview)
+        public async Task<(Guid CorrelationId, Dictionary<int, List<AttachmentDto>> Attachments)> CacheAttachmentsAndPrepareForDisplay(IEnumerable<PhpbbAttachmentExpanded> dbAttachments, string language, int postCount, bool isPreview, int userId)
         {
             var correlationId = Guid.NewGuid();
             var attachments = new Dictionary<int, List<AttachmentDto>>(postCount);
             var ids = new List<int>();
             foreach (var attachment in dbAttachments)
             {
-                var dto = new AttachmentDto(attachment, attachment.ForumId, isPreview, language, correlationId);
+                var dto = new AttachmentDto(attachment, attachment.ForumId, isPreview, language, correlationId, userId);
                 if (!attachments.ContainsKey(attachment.PostMsgId))
                 {
                     attachments.Add(attachment.PostMsgId, new List<AttachmentDto>(_maxAttachmentCount) { dto });
@@ -78,10 +78,10 @@ namespace PhpbbInDotnet.Services
             return (correlationId, attachments);
         }
 
-        public Task<(Guid CorrelationId, Dictionary<int, List<AttachmentDto>> Attachments)> CacheAttachmentsAndPrepareForDisplay(IEnumerable<PhpbbAttachments> dbAttachments, int forumId, string language, int postCount, bool isPreview)
-            => CacheAttachmentsAndPrepareForDisplay(dbAttachments.Select(attachment => new PhpbbAttachmentExpanded(attachment, forumId)), language, postCount, isPreview);
+        public Task<(Guid CorrelationId, Dictionary<int, List<AttachmentDto>> Attachments)> CacheAttachmentsAndPrepareForDisplay(IEnumerable<PhpbbAttachments> dbAttachments, int forumId, string language, int postCount, bool isPreview, int userId)
+            => CacheAttachmentsAndPrepareForDisplay(dbAttachments.Select(attachment => new PhpbbAttachmentExpanded(attachment, forumId)), language, postCount, isPreview, userId);
 
-        public async Task<PostListDto> GetPosts(int topicId, int pageNum, int pageSize, bool isPostingView, string language)
+        public async Task<PostListDto> GetPosts(int topicId, int pageNum, int pageSize, bool isPostingView, string language, int userId)
         {
             var posts = await _context.GetSqlExecuter().QueryAsync<PostDto>(
                      @"WITH ranks AS (
@@ -166,7 +166,7 @@ namespace PhpbbInDotnet.Services
 
             await Task.WhenAll(countTask, dbAttachmentsTask, reportsTask);
 
-            var (CorrelationId, Attachments) = await CacheAttachmentsAndPrepareForDisplay(await dbAttachmentsTask, posts.FirstOrDefault()?.ForumId ?? 0, language, currentPostIds.Count, false);
+            var (CorrelationId, Attachments) = await CacheAttachmentsAndPrepareForDisplay(await dbAttachmentsTask, posts.FirstOrDefault()?.ForumId ?? 0, language, currentPostIds.Count, isPreview: false, userId);
 
             return new PostListDto
             {
