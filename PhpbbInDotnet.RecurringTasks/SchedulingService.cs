@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
@@ -12,6 +11,8 @@ namespace PhpbbInDotnet.RecurringTasks
         readonly ITimeService _timeService;
         readonly IFileInfoService _fileInfoService;
         readonly CleanupServiceOptions _options;
+
+        static readonly TimeSpan AllowedDiff = TimeSpan.FromMinutes(5);
 
         public SchedulingService(ITimeService timeService, IFileInfoService fileInfoService, IConfiguration configuration)
         {
@@ -36,9 +37,9 @@ namespace PhpbbInDotnet.RecurringTasks
                     message: $"The {nameof(_options.MinimumAllowedRunTime)} and {nameof(_options.MaximumAllowedRunTime)} properties of {nameof(CleanupServiceOptions)} should be correctly ordered.");
             }
 
-            var timeUntilAllowedTimeFrame = GetTimeUntilAllowedRunTimeFrame();
-            var timeSinceLastRun = GetElapsedTimeSinceLastRunIfAny();
-            if (!timeSinceLastRun.HasValue || (timeSinceLastRun.Value + timeUntilAllowedTimeFrame >= _options.Interval))
+            var timeUntilAllowedTimeFrame = GetTimeUntilAllowedRunTimeFrame(now);
+            var timeSinceLastRun = GetElapsedTimeSinceLastRunIfAny(now);
+            if (!timeSinceLastRun.HasValue || ((timeSinceLastRun.Value + timeUntilAllowedTimeFrame - _options.Interval).Duration() <= AllowedDiff))
             {
                 return timeUntilAllowedTimeFrame;
             }
@@ -51,26 +52,25 @@ namespace PhpbbInDotnet.RecurringTasks
                 }
                 return toReturn;
             }
-
-            TimeSpan? GetElapsedTimeSinceLastRunIfAny()
-            {
-                var lastRun = _fileInfoService.GetLastWriteTime(Orchestrator.ControlFileName);
-                return lastRun.HasValue ? now.DateTime.ToUniversalTime() - lastRun.Value : null;
-            }
-
-            TimeSpan GetTimeUntilAllowedRunTimeFrame()
-            {
-                if (now < _options.MinimumAllowedRunTime)
-                {
-                    return _options.MinimumAllowedRunTime - now;
-                }
-                else if (now > _options.MaximumAllowedRunTime)
-                {
-                    return _options.MinimumAllowedRunTime + TimeSpan.FromDays(1) - now;
-                }
-                return TimeSpan.Zero;
-            }
         }
 
+        TimeSpan? GetElapsedTimeSinceLastRunIfAny(DateTimeOffset now)
+        {
+            var lastRun = _fileInfoService.GetLastWriteTime(Orchestrator.ControlFileName);
+            return lastRun.HasValue ? now.DateTime.ToUniversalTime() - lastRun.Value : null;
+        }
+
+        TimeSpan GetTimeUntilAllowedRunTimeFrame(DateTimeOffset now)
+        {
+            if (now < _options.MinimumAllowedRunTime)
+            {
+                return _options.MinimumAllowedRunTime - now;
+            }
+            else if (now > _options.MaximumAllowedRunTime)
+            {
+                return _options.MinimumAllowedRunTime + TimeSpan.FromDays(1) - now;
+            }
+            return TimeSpan.Zero;
+        }
     }
 }
