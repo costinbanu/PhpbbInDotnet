@@ -32,29 +32,20 @@ namespace PhpbbInDotnet.Services
         }
 
         public async Task<IEnumerable<(int forumId, bool hasPassword)>> GetRestrictedForumList(AuthenticatedUserExpanded user, bool includePasswordProtected = false)
-        {
-            if (_restrictedForums == null)
-            {
-                _restrictedForums = (await GetForumTree(user, false, false)).Where(t => IsNodeRestricted(t, includePasswordProtected)).Select(t => (t.ForumId, t.HasPassword));
-            }
-            return _restrictedForums;
-        }
+            => _restrictedForums ??= (await GetForumTree(user, false, false)).Where(t => IsNodeRestricted(t, includePasswordProtected)).Select(t => (t.ForumId, t.HasPassword));
 
-        public bool IsNodeRestricted(ForumTree tree, bool includePasswordProtected = false)
-            => tree.IsRestricted || (includePasswordProtected && tree.HasPassword);
-
-        public async Task<IEnumerable<int>> GetUnrestrictedForums(AuthenticatedUserExpanded user, int? forumId = null)
+        public async Task<IEnumerable<int>> GetUnrestrictedForums(AuthenticatedUserExpanded user, int? forumId, bool ignoreForumPassword)
         {
             var tree = await GetForumTree(user, false, false);
             var toReturn = new List<int>(tree.Count);
 
-            if ((forumId ?? 0) > 0)
+            if (forumId > 0)
             {
-                traverse(forumId!.Value);
+                traverse(forumId.Value);
             }
             else
             {
-                toReturn.AddRange(tree.Where(t => !IsNodeRestricted(t)).Select(t => t.ForumId));
+                toReturn.AddRange(tree.Where(t => !IsNodeRestricted(t, includePasswordProtected: !ignoreForumPassword)).Select(t => t.ForumId));
             }
 
             return toReturn.DefaultIfEmpty();
@@ -64,7 +55,7 @@ namespace PhpbbInDotnet.Services
                 var node = GetTreeNode(tree, fid);
                 if (node != null)
                 {
-                    if (!IsNodeRestricted(node))
+                    if (!IsNodeRestricted(node, includePasswordProtected: !ignoreForumPassword))
                     {
                         toReturn.Add(fid);
                     }
@@ -75,6 +66,9 @@ namespace PhpbbInDotnet.Services
                 }
             }
         }
+
+        static bool IsNodeRestricted(ForumTree tree, bool includePasswordProtected = false)
+            => tree.IsRestricted || (includePasswordProtected && tree.HasPassword);
 
         public async Task<bool> IsForumReadOnlyForUser(AuthenticatedUserExpanded user, int forumId)
         {
@@ -128,11 +122,9 @@ namespace PhpbbInDotnet.Services
                     var childForum = GetTreeNode(_tree, childForumId);
                     if (childForum != null)
                     {
-                        childForum.IsRestricted = node.IsRestricted;
-                        if (childForum.PathList == null)
-                        {
-                            childForum.PathList = new List<int>(node.PathList ?? new List<int>());
-                        }
+                        childForum.IsRestricted |= node.IsRestricted;
+                        childForum.HasPassword |= node.HasPassword;
+                        childForum.PathList ??= new List<int>(node.PathList ?? new List<int>());
                         childForum.PathList.Add(childForumId);
                         childForum.Level = node.Level + 1;
 
@@ -232,7 +224,7 @@ namespace PhpbbInDotnet.Services
             {
                 var track = new Tracking
                 {
-                    Posts = result.PostIds?.ToIntHashSet(),
+                    Posts = StringUtility.ToIntHashSet(result.PostIds),
                     TopicId = result.TopicId
                 };
 

@@ -152,16 +152,16 @@ namespace PhpbbInDotnet.Forum.Pages
                 return NotFound();
             }
 
-            var currentUserId = GetCurrentUser().UserId;
+            var currentUserId = ForumUser.UserId;
             var isSelf = CurrentUser!.UserId == currentUserId;
-            var userMustLogIn = dbUser.UserAllowPm.ToBool() != AllowPM || dbUser.UserDateformat != CurrentUser.UserDateformat;
-            var lang = GetLanguage();
+            var userShouldSignIn = dbUser.UserAllowPm.ToBool() != AllowPM || dbUser.UserDateformat != CurrentUser.UserDateformat;
+            var lang = Language;
             var validator = new UserProfileDataValidationService(ModelState, TranslationProvider, lang);
 
             var newCleanUsername = StringUtility.CleanString(CurrentUser.Username);
             var usernameChanged = false;
             var oldUsername = dbUser.Username;
-            if (await IsCurrentUserAdminHere() && dbUser.UsernameClean != newCleanUsername && !string.IsNullOrWhiteSpace(CurrentUser.Username))
+            if (await UserService.IsAdmin(ForumUser) && dbUser.UsernameClean != newCleanUsername && !string.IsNullOrWhiteSpace(CurrentUser.Username))
             {
                 if (!validator.ValidateUsername(nameof(CurrentUser), CurrentUser.Username))
                 {
@@ -184,7 +184,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     t.TopicLastPosterName = CurrentUser.Username;
                 }
-                userMustLogIn = true;
+                userShouldSignIn = true;
                 usernameChanged = true;
             }
 
@@ -263,7 +263,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         bodyRazorViewModel: new WelcomeEmailDto(subject, registrationCode, dbUser.Username, dbUser.UserLang));
                 }
 
-                userMustLogIn = true;
+                userShouldSignIn = true;
                 EmailChanged = true;
             }
 
@@ -283,7 +283,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 dbUser.UserPassword = Crypter.Phpass.Crypt(FirstPassword, Crypter.Phpass.GenerateSalt());
                 dbUser.UserPasschg = DateTime.UtcNow.ToUnixTimestamp();
-                userMustLogIn = true;
+                userShouldSignIn = true;
                 passwordChanged = true;
             }
 
@@ -384,7 +384,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         UserId = dbUser.UserId
                     });
                 }
-                userMustLogIn = true;
+                userShouldSignIn = true;
             }
 
             var dbUserGroup = Context.PhpbbUserGroup.FirstOrDefault(g => g.UserId == dbUser.UserId);
@@ -427,8 +427,11 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 dbUser.UserColour = group!.GroupColour;
                 dbUser.GroupId = group.GroupId;
-                userMustLogIn = true;
+                userShouldSignIn = true;
             }
+
+
+            dbUser.UserShouldSignIn = userShouldSignIn;
 
             var affectedEntries = 0;
             try
@@ -444,19 +447,18 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (affectedEntries > 0 && isSelf && !EmailChanged)
             {
-                ReloadCurrentUser();
                 Mode = UserPageMode.Edit;
                 return await OnGet();
             }
-            else if (affectedEntries > 0 && userMustLogIn)
-            {
-                var key = $"UserMustLogIn_{dbUser.UsernameClean}";
-                Cache.Add(key, true, _config.GetValue<TimeSpan?>("LoginSessionSlidingExpiration") ?? TimeSpan.FromDays(30));
-                if (EmailChanged)
-                {
-                    Mode = UserPageMode.Edit;
-                }
-            }
+            //else if (affectedEntries > 0 && userShouldSignIn)
+            //{
+            //    var key = $"UserMustLogIn_{dbUser.UsernameClean}";
+            //    Cache.Add(key, true, _config.GetValue<TimeSpan?>("LoginSessionSlidingExpiration") ?? TimeSpan.FromDays(30));
+            //    if (EmailChanged)
+            //    {
+            //        Mode = UserPageMode.Edit;
+            //    }
+            //}
 
             if (EmailChanged)
             {
@@ -481,7 +483,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 if (!await CanAddFoe())
                 {
-                    ModelState.AddModelError(nameof(CurrentUser), TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED"]);
+                    ModelState.AddModelError(nameof(CurrentUser), TranslationProvider.Errors[Language, "AN_ERROR_OCCURRED"]);
                     Logger.Error("Potential cross site forgery attempt in {name}", nameof(OnPostAddFoe));
                     Mode = UserPageMode.AddFoe;
                     return await OnGet();
@@ -493,7 +495,6 @@ namespace PhpbbInDotnet.Forum.Pages
                     "INSERT INTO phpbb_zebra (user_id, zebra_id, friend, foe) VALUES (@userId, @otherId, 0, 1)",
                     new { user.UserId, otherId = cur!.UserId }
                 );
-                ReloadCurrentUser();
                 Mode = UserPageMode.AddFoe;
                 return await OnGet();
             });
@@ -503,7 +504,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 if (!CanRemoveFoe())
                 {
-                    ModelState.AddModelError(nameof(CurrentUser), TranslationProvider.Errors[GetLanguage(), "AN_ERROR_OCCURRED"]);
+                    ModelState.AddModelError(nameof(CurrentUser), TranslationProvider.Errors[Language, "AN_ERROR_OCCURRED"]);
                     Logger.Error("Potential cross site forgery attempt in {name}", nameof(OnPostRemoveFoe));
                     Mode = UserPageMode.AddFoe;
                     return await OnGet();
@@ -514,7 +515,6 @@ namespace PhpbbInDotnet.Forum.Pages
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;",
                     new { user.UserId, otherId = cur!.UserId }
                 );
-                ReloadCurrentUser();
                 Mode = UserPageMode.RemoveFoe;
                 return await OnGet();
             });
@@ -531,17 +531,16 @@ namespace PhpbbInDotnet.Forum.Pages
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id IN @otherIds;",
                     new { user.UserId, otherIds = SelectedFoes!.DefaultIfEmpty() }
                 );
-                ReloadCurrentUser();
                 Mode = UserPageMode.RemoveMultipleFoes;
                 return await OnGet();
             });
 
         public async Task<bool> CanEdit() 
-            => !(ViewAsAnother ?? false) && (GetCurrentUser().UserId == CurrentUser!.UserId || await IsCurrentUserAdminHere());
+            => !(ViewAsAnother ?? false) && (ForumUser.UserId == CurrentUser!.UserId || await UserService.IsAdmin(ForumUser));
 
         public async Task<bool> CanAddFoe()
         {
-            var viewingUser = GetCurrentUser();
+            var viewingUser = ForumUser;
             var pageUser = new AuthenticatedUserExpanded(UserService.DbUserToAuthenticatedUserBase(CurrentUser!));
             pageUser.AllPermissions = await UserService.GetPermissions(pageUser.UserId);
             return !await UserService.IsUserModeratorInForum(pageUser, 0) && !await UserService.IsUserModeratorInForum(viewingUser, 0) && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false);
@@ -549,7 +548,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public bool CanRemoveFoe()
         {
-            var viewingUser = GetCurrentUser();
+            var viewingUser = ForumUser;
             var pageUser = UserService.DbUserToAuthenticatedUserBase(CurrentUser!);
             return viewingUser.Foes?.Contains(pageUser.UserId) ?? false;
         }
@@ -611,7 +610,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             async Task<(int? id, string? title)> GetPreferredTopic(HashSet<ForumTree> tree)
             {
-                var restrictedForums = (await ForumService.GetRestrictedForumList(GetCurrentUser())).Select(f => f.forumId);
+                var restrictedForums = (await ForumService.GetRestrictedForumList(ForumUser)).Select(f => f.forumId);
                 var preferredTopic = await (
                     from p in Context.PhpbbPosts.AsNoTracking()
                     where p.PosterId == cur.UserId

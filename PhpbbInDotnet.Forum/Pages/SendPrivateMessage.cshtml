@@ -16,14 +16,14 @@
 @inject IConfiguration _config
 
 @{
-    var Lang = Model.GetLanguage();
+    var Lang = Model.Language;
 
     ViewData["Title"] = Model.TranslationProvider.BasicText[Lang, "WRITE_NEW_POST"];
     Layout = "~/Pages/_Layout.cshtml";
 
-    var CurrentUser = Model.GetCurrentUser();
+    var CurrentUser = Model.ForumUser;
     var UserDateFormat = CurrentUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
-    var IsAdmin = await Model.IsCurrentUserAdminHere();
+    var IsAdmin = await _userService.IsAdmin(Model.ForumUser);
 }
 
 <environment include="Development">

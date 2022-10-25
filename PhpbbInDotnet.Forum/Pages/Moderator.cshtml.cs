@@ -90,7 +90,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 async Task SetDeletedItems()
                 {
-                    var anonymous = TranslationProvider.BasicText[GetLanguage(), "ANONYMOUS", Casing.None];
+                    var anonymous = TranslationProvider.BasicText[Language, "ANONYMOUS", Casing.None];
                     var allItems = await (
                         from rb in Context.PhpbbRecycleBin.AsNoTracking()
 
@@ -134,7 +134,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostCloseReports()
             => await WithModerator(ForumId, async () =>
             {
-                var lang = GetLanguage();
+                var lang = Language;
                 if (SelectedReports?.Any() != true)
                 {
                     MessageClass = "message warning";
@@ -165,11 +165,11 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostManageTopics()
             => await WithModerator(ForumId, async () =>
             {
-                var lang = GetLanguage();
+                var lang = Language;
                 var logDto = new OperationLogDto
                 {
                     Action = TopicAction,
-                    UserId = GetCurrentUser().UserId
+                    UserId = ForumUser.UserId
                 };
 
                 try
@@ -224,7 +224,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostRestoreDeletedItems()
             => await WithModerator(0, async () =>
             {
-                var lang = GetLanguage();
+                var lang = Language;
                 try
                 {
                     var itemGroups = from i in SelectedDeletedItems!
@@ -238,7 +238,7 @@ namespace PhpbbInDotnet.Forum.Pages
                                      
                                      select groups;
 
-                    if (!await IsCurrentUserAdminHere() && itemGroups.Any(item => item.Key == RecycleBinItemType.Forum))
+                    if (!await UserService.IsAdmin(ForumUser) && itemGroups.Any(item => item.Key == RecycleBinItemType.Forum))
                     {
                         MessageClass = "message fail";
                         Message = string.Format(TranslationProvider.Errors[lang, "MISSING_REQUIRED_PERMISSIONS"]);
@@ -315,7 +315,7 @@ namespace PhpbbInDotnet.Forum.Pages
             Context.PhpbbRecycleBin.Remove(deletedItem);
             await Context.SaveChangesAsync();
 
-            await _operationLogService.LogAdminForumAction(AdminForumActions.Restore, GetCurrentUser().UserId, toAdd);
+            await _operationLogService.LogAdminForumAction(AdminForumActions.Restore, ForumUser.UserId, toAdd);
 
             return true;
         }
@@ -378,7 +378,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 await RestorePost(post!.PostId);
             }
 
-            await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.RestoreTopic, GetCurrentUser().UserId, toAdd.TopicId);
+            await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.RestoreTopic, ForumUser.UserId, toAdd.TopicId);
 
             return true;
         }
@@ -436,7 +436,7 @@ namespace PhpbbInDotnet.Forum.Pages
             await Context.SaveChangesAsync();
             await _postService.CascadePostAdd(toAdd, false);
 
-            await _operationLogService.LogModeratorPostAction(ModeratorPostActions.RestorePosts, GetCurrentUser().UserId, toAdd, $"<a href=\"{ForumLinkUtility.GetRelativeUrlToPost(toAdd.PostId)}\" target=\"_blank\">LINK</a>");
+            await _operationLogService.LogModeratorPostAction(ModeratorPostActions.RestorePosts, ForumUser.UserId, toAdd, $"<a href=\"{ForumLinkUtility.GetRelativeUrlToPost(toAdd.PostId)}\" target=\"_blank\">LINK</a>");
 
             return true;
         }

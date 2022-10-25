@@ -14,10 +14,10 @@
 @inject Services.IPostService _postService
 
 @{
-    var Lang = Model.GetLanguage();
+    var Lang = Model.Language;
     ViewData["Title"] = Model.TranslationProvider.BasicText[Lang, "SEARCH"];
     Layout = "~/Pages/_Layout.cshtml";
-    var CurrentUser = Model.GetCurrentUser();
+    var CurrentUser = Model.ForumUser;
     var sqlExecuter = _context.GetSqlExecuter();
     var dateFormat = CurrentUser?.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
 }

@@ -1,5 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
+using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using Serilog;
 using System;
@@ -9,12 +13,12 @@ namespace PhpbbInDotnet.Forum.Middlewares
 {
     public class ErrorHandlingMiddleware : IMiddleware
     {
-        private readonly IUserService _userService;
+        private readonly IForumDbContext _dbContext;
         private readonly ILogger _logger;
 
-        public ErrorHandlingMiddleware(IUserService userService, ILogger logger)
+        public ErrorHandlingMiddleware(IForumDbContext dbContext, ILogger logger)
         {
-            _userService = userService;
+            _dbContext = dbContext;
             _logger = logger;
         }
 
@@ -26,7 +30,13 @@ namespace PhpbbInDotnet.Forum.Middlewares
             }
             catch (Exception ex)
             {
-                var user = _userService?.ClaimsPrincipalToAuthenticatedUser(context.User);
+                PhpbbUsers? user = null;
+                if (IdentityUtility.TryGetUserId(context.User, out var userId))
+                {
+                    user = await _dbContext.GetSqlExecuter().QueryFirstOrDefaultAsync<PhpbbUsers>(
+                        "SELECT * FROM phpbb_users WHERE user_id = @userId",
+                        new { userId });
+                }
                 var path = context.Request?.Path.Value ?? "N/A";
                 var id = _logger.ErrorWithId(ex, "URL: {path}{query}. UserId: {id}, UserName: {name}", path, context.Request?.QueryString.ToString() ?? string.Empty, user?.UserId.ToString() ?? "N/A", user?.Username ?? "N/A");
 

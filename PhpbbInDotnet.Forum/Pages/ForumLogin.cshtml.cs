@@ -7,6 +7,7 @@ using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using System;
 using System.Linq;
@@ -19,7 +20,6 @@ namespace PhpbbInDotnet.Forum.Pages
     public class ForumLoginModel : PageModel
     {
         private readonly IForumDbContext _context;
-        private readonly IUserService _userService;
         private readonly IAppCache _cache;
 
         [BindProperty(SupportsGet = true)]
@@ -37,17 +37,16 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public ITranslationProvider TranslationProvider { get; }
 
-        public ForumLoginModel(IForumDbContext context, IUserService userService, ITranslationProvider translationProvider, IAppCache cache)
+        public ForumLoginModel(IForumDbContext context, ITranslationProvider translationProvider, IAppCache cache)
         {
             _context = context;
-            _userService = userService;
             TranslationProvider = translationProvider;
             _cache = cache;
         }
 
         public async Task<IActionResult> OnGet()
         {
-            Language = TranslationProvider.GetLanguage(_userService.ClaimsPrincipalToAuthenticatedUser(User));
+            Language = TranslationProvider.GetLanguage();
             var forum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(filter => filter.ForumId == ForumId);
 
             if (forum == null)
@@ -72,7 +71,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
-            Language = TranslationProvider.GetLanguage(_userService.ClaimsPrincipalToAuthenticatedUser(User));
+            Language = TranslationProvider.GetLanguage();
             var forum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(filter => filter.ForumId == ForumId);
 
             if (forum == null)
@@ -110,7 +109,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }
             else
             {
-                var userId = _userService.ClaimsPrincipalToAuthenticatedUser(User)?.UserId ?? Constants.ANONYMOUS_USER_ID;
+                var userId = AuthenticatedUserExpanded.GetValue(HttpContext).UserId;
                 _cache.Add(CacheUtility.GetForumLoginCacheKey(userId, ForumId), 1, TimeSpan.FromMinutes(30));
                 if (string.IsNullOrWhiteSpace(ReturnUrl))
                 {

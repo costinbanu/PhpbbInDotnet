@@ -54,14 +54,14 @@ namespace PhpbbInDotnet.Forum.Pages
         public string GetActualCacheKey(string key, bool isPersonalizedData)
         {
             var topicId = Action == PostingActions.NewTopic ? 0 : TopicId ?? 0;
-            return isPersonalizedData ? $"{GetCurrentUser().UserId}_{ForumId}_{topicId}_{key}" : key;
+            return isPersonalizedData ? $"{ForumUser.UserId}_{ForumId}_{topicId}_{key}" : key;
         }
 
         public async Task<(List<PostDto> posts, Dictionary<int, List<AttachmentDto>> attachments, Guid correlationId)> GetPreviousPosts()
         {
             if (((TopicId.HasValue && PageNum.HasValue) || PostId.HasValue) && (Action == PostingActions.EditForumPost || Action == PostingActions.NewForumPost))
             {
-                var postList = await _postService.GetPosts(TopicId ?? 0, pageNum: 1, Constants.DEFAULT_PAGE_SIZE, isPostingView: true, GetLanguage());
+                var postList = await _postService.GetPosts(TopicId ?? 0, pageNum: 1, Constants.DEFAULT_PAGE_SIZE, isPostingView: true, Language);
                 return (postList.Posts, postList.Attachments, postList.AttachmentDisplayCorrelationId);
             }
             return (new List<PostDto>(), new Dictionary<int, List<AttachmentDto>>(), Guid.Empty);
@@ -102,12 +102,12 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task<int?> UpsertPost(PhpbbPosts? post, AuthenticatedUserExpanded usr)
         {
-            var lang = GetLanguage();
+            var lang = Language;
             var sqlExecuter = Context.GetSqlExecuter();
             var curTopic = Action != PostingActions.NewTopic ? await sqlExecuter.QuerySingleOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { TopicId }) : null;
             var canCreatePoll = Action == PostingActions.NewTopic || (Action == PostingActions.EditForumPost && curTopic?.TopicFirstPostId == PostId);
 
-            if (curTopic?.TopicStatus == 1 && !await IsCurrentUserModeratorHere(ForumId))
+            if (curTopic?.TopicStatus == 1 && !await UserService.IsUserModeratorInForum(ForumUser, ForumId))
             {
                 var key = Action == PostingActions.EditForumPost ? "CANT_EDIT_POST_TOPIC_CLOSED" : "CANT_SUBMIT_POST_TOPIC_CLOSED";
                 ModelState.AddModelError(nameof(PostText), TranslationProvider.Errors[lang, key, Casing.FirstUpper]);
@@ -245,7 +245,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task<IActionResult> WithNewestPostSincePageLoad(PhpbbForums curForum, Func<Task<IActionResult>> toDo)
         {
-            var lang = GetLanguage();
+            var lang = Language;
 
             if (TopicId > 0 && LastPostTime > 0 && Action != PostingActions.EditForumPost)
             {

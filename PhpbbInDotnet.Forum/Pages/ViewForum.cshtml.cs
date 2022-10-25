@@ -75,19 +75,19 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public IActionResult OnGetNewPosts()
         {
-            Logger.Warning("Deprecated route requested for user '{user}' - ViewForum/{name}.", GetCurrentUser().Username, nameof(OnGetNewPosts));
+            Logger.Warning("Deprecated route requested for user '{user}' - ViewForum/{name}.", ForumUser.Username, nameof(OnGetNewPosts));
             return RedirectToPage("NewPosts");
         }
 
         public IActionResult OnGetOwnPosts()
         {
-            Logger.Warning("Deprecated route requested for user '{user}' - ViewForum/{name}.", GetCurrentUser().Username, nameof(OnGetOwnPosts));
+            Logger.Warning("Deprecated route requested for user '{user}' - ViewForum/{name}.", ForumUser.Username, nameof(OnGetOwnPosts));
             return RedirectToPage("OwnPosts");
         }
 
         public IActionResult OnGetDrafts()
         {
-            Logger.Warning("Deprecated route requested for user '{user}' - ViewForum/{name}.", GetCurrentUser().Username, nameof(OnGetDrafts));
+            Logger.Warning("Deprecated route requested for user '{user}' - ViewForum/{name}.", ForumUser.Username, nameof(OnGetDrafts));
             return RedirectToPage("Drafts");
         }
 

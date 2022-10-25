@@ -9,7 +9,7 @@
 @if (Model != null)
 {
     <div style="margin: 20px 0px 20px 0px">
-        @if (Model.MimeType?.IsMimeTypeInline() == true)
+        @if (StringUtility.IsMimeTypeInline(Model.MimeType))
         {
             //if (Model.MimeType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase))
             //{

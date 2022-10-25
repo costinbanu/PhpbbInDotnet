@@ -14,6 +14,7 @@ using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Pages.CustomPartials.Email;
 using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using System;
 using System.ComponentModel;
@@ -28,8 +29,6 @@ namespace PhpbbInDotnet.Forum.Pages
     public class LoginModel : PageModel
     {
         private readonly IForumDbContext _context;
-        private readonly IAppCache _cache;
-        private readonly IUserService _userService;
         private readonly IConfiguration _config;
         private readonly IEncryptionService _encryptionService;
         private readonly IEmailService _emailService;
@@ -75,12 +74,9 @@ namespace PhpbbInDotnet.Forum.Pages
         public LoginMode Mode { get; private set; }
         public ITranslationProvider TranslationProvider { get; }
 
-        public LoginModel(IForumDbContext context, IAppCache cache, IUserService userService, IConfiguration config, ITranslationProvider translationProvider,
-            IEncryptionService encryptionService, IEmailService emailService)
+        public LoginModel(IForumDbContext context, IConfiguration config, ITranslationProvider translationProvider, IEncryptionService encryptionService, IEmailService emailService)
         {
             _context = context;
-            _cache = cache;
-            _userService = userService;
             _config = config;
             TranslationProvider = translationProvider;
             _encryptionService = encryptionService;
@@ -89,8 +85,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public IActionResult OnGet()
         {
-            var currentUser = _userService.ClaimsPrincipalToAuthenticatedUser(User);
-            if (currentUser?.IsAnonymous == false)
+            if (AuthenticatedUserExpanded.TryGetValue(HttpContext, out var user) && !user.IsAnonymous)
             {
                 return RedirectToPage("Index");
             }
@@ -100,7 +95,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnGetNewPassword()
         {
-            if (User?.Identity?.IsAuthenticated == true && _userService.ClaimsPrincipalToAuthenticatedUser(User)?.IsAnonymous != true)
+            if (AuthenticatedUserExpanded.TryGetValue(HttpContext, out var loggedUser) && !loggedUser.IsAnonymous)
             {
                 return RedirectToPage("Logout", new { returnUrl = ReturnUrl ?? "/" });
             }
@@ -120,7 +115,9 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             var sqlExecuter = _context.GetSqlExecuter();
 
-            var user = await sqlExecuter.QueryAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE username_clean = @username", new { username = StringUtility.CleanString(UserName) });
+            var user = await sqlExecuter.QueryAsync<PhpbbUsers>(
+                "SELECT * FROM phpbb_users WHERE username_clean = @username", 
+                new { username = StringUtility.CleanString(UserName) });
             var lang = TranslationProvider.GetLanguage();
 
             Mode = LoginMode.Normal;
@@ -145,7 +142,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
-                await _userService.DbUserToClaimsPrincipal(currentUser),
+                IdentityUtility.CreateClaimsPrincipal(currentUser.UserId),
                 new AuthenticationProperties
                 {
                     AllowRefresh = true,
@@ -153,10 +150,11 @@ namespace PhpbbInDotnet.Forum.Pages
                     IsPersistent = true,
                 });
 
-            var key = $"UserMustLogIn_{currentUser.UsernameClean}";
-            if (await _cache.GetAsync<bool?>(key) ?? false)
+            if (currentUser.UserShouldSignIn)
             {
-                _cache.Remove(key);
+                await sqlExecuter.ExecuteAsync(
+                    "UPDATE phpbb_users SET user_should_sign_in = 0 WHERE user_id = @userId",
+                    new { currentUser.UserId });
             }
 
             var returnUrl = HttpUtility.UrlDecode(ReturnUrl ?? "/");

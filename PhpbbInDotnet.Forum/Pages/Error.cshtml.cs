@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using Serilog;
 using System.Net;
@@ -41,7 +42,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     path = feature.OriginalPath + feature.OriginalQueryString;
                 }
-                var userName = _userService.ClaimsPrincipalToAuthenticatedUser(User)?.Username ?? "N/A";
+                var userName = AuthenticatedUserExpanded.GetValueOrDefault(HttpContext)?.Username ?? "N/A";
                 _logger.Warning("Serving response code {code} to user {user} for path {path}.", ResponseStatusCode, userName, path);
             }
         }

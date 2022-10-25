@@ -228,7 +228,7 @@ namespace PhpbbInDotnet.Services
 
             if (shouldProcess)
             {
-                input = input!.ReplaceHtmlDiacritics();
+                input = StringUtility.ReplaceHtmlDiacritics(input!);
                 cleanedInput = input.RemoveDiacritics();
                 shouldProcess = cleanedInput.Length == input.Length;
             }
