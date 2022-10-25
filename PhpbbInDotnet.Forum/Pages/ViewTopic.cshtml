@@ -19,7 +19,7 @@
     ViewData["Title"] = $"{Model.ForumTitle} - {Model.TopicTitle}";
     Layout = "~/Pages/_Layout.cshtml";
     var currentUser = Model.ForumUser;
-    var isAdmin = await _userService.IsUserGlobalAdmin(Model.ForumUser);
+    var isAdmin = await _userService.IsAdmin(Model.ForumUser);
     var isMod = await _userService.IsUserModeratorInForum(Model.ForumUser, Model.ForumId ?? 0);
     var hasPM = currentUser.HasPrivateMessagePermissions;
     var editTime = currentUser.PostEditTime;

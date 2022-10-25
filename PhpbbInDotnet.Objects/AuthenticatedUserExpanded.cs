@@ -23,25 +23,6 @@ namespace PhpbbInDotnet.Objects
 
         public AuthenticatedUserExpanded() { }
 
-        public static bool TryGetValue(HttpContext httpContext, [NotNullWhen(true)] out AuthenticatedUserExpanded? user)
-        {
-            if (httpContext.Items.TryGetValue(nameof(AuthenticatedUserExpanded), out var raw) && raw is AuthenticatedUserExpanded aue)
-            {
-                user = aue;
-                return true;
-            }
-            user = null;
-            return false;
-        }
-
-        public static AuthenticatedUserExpanded GetValue(HttpContext httpContext)
-            => TryGetValue(httpContext, out var val) ? val : throw new InvalidOperationException($"No instance of {nameof(AuthenticatedUserExpanded)} found in the current {nameof(HttpContext)}.");
-
-        public void SetValue(HttpContext httpContext)
-        {
-            httpContext.Items[nameof(AuthenticatedUserExpanded)] = this;
-        }
-
         public HashSet<Permissions>? AllPermissions { get; set; } = null;
 
         public Dictionary<int, int>? TopicPostsPerPage { get; set; } = null;
@@ -62,6 +43,28 @@ namespace PhpbbInDotnet.Objects
 
         public bool IsForumReadOnly(int forumId)
             => IsAnonymous || AllPermissions?.Contains(new Permissions { ForumId = forumId, AuthRoleId = Constants.FORUM_READONLY_ROLE }) == true;
+
+        public static bool TryGetValue(HttpContext httpContext, [NotNullWhen(true)] out AuthenticatedUserExpanded? user)
+        {
+            if (httpContext.Items.TryGetValue(nameof(AuthenticatedUserExpanded), out var raw) && raw is AuthenticatedUserExpanded aue)
+            {
+                user = aue;
+                return true;
+            }
+            user = null;
+            return false;
+        }
+
+        public static AuthenticatedUserExpanded GetValue(HttpContext httpContext)
+            => TryGetValue(httpContext, out var val) ? val : throw new InvalidOperationException($"No instance of {nameof(AuthenticatedUserExpanded)} found in the current {nameof(HttpContext)}.");
+
+        public static AuthenticatedUserExpanded? GetValueOrDefault(HttpContext httpContext)
+            => TryGetValue(httpContext, out var val) ? val : null;
+
+        public void SetValue(HttpContext httpContext)
+        {
+            httpContext.Items[nameof(AuthenticatedUserExpanded)] = this;
+        }
 
         public bool HasPrivateMessagePermissions
             => !IsAnonymous && AllPermissions?.Contains(new Permissions { ForumId = 0, AuthRoleId = Constants.NO_PM_ROLE }) != true;

@@ -161,7 +161,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var newCleanUsername = StringUtility.CleanString(CurrentUser.Username);
             var usernameChanged = false;
             var oldUsername = dbUser.Username;
-            if (await UserService.IsUserGlobalAdmin(ForumUser) && dbUser.UsernameClean != newCleanUsername && !string.IsNullOrWhiteSpace(CurrentUser.Username))
+            if (await UserService.IsAdmin(ForumUser) && dbUser.UsernameClean != newCleanUsername && !string.IsNullOrWhiteSpace(CurrentUser.Username))
             {
                 if (!validator.ValidateUsername(nameof(CurrentUser), CurrentUser.Username))
                 {
@@ -536,7 +536,7 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public async Task<bool> CanEdit() 
-            => !(ViewAsAnother ?? false) && (ForumUser.UserId == CurrentUser!.UserId || await UserService.IsUserGlobalAdmin(ForumUser));
+            => !(ViewAsAnother ?? false) && (ForumUser.UserId == CurrentUser!.UserId || await UserService.IsAdmin(ForumUser));
 
         public async Task<bool> CanAddFoe()
         {

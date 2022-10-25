@@ -24,8 +24,8 @@
     var permissionsTask = _userService.GetPermissions(pageUser.UserId);
     var foesTask = _userService.GetFoes(pageUser.UserId);
     var canEditTask = Model.CanEdit();
-    var isGlobalAdminTask = _userService.IsUserGlobalAdmin(Model.ForumUser);
-    var ranksTask = _userService.GetRankList();
+    var isGlobalAdminTask = _userService.IsAdmin(Model.ForumUser);
+    var ranksTask = _userService.GetAllRanks();
 
     await Task.WhenAll(permissionsTask, foesTask, canEditTask, isGlobalAdminTask, ranksTask);
 
@@ -453,7 +453,7 @@ else
                 ranks.Add(new SelectListItem(Model.TranslationProvider.BasicText[Lang, "NO_ASSIGNED_RANK"], "0", !ranks.Any(p => p.Selected)));
 
                 var groups = new List<SelectListItem>(
-                    (await _userService.GetGroupList()).Select(
+                    (await _userService.GetAllGroups()).Select(
                         g => new SelectListItem(g.GroupName, g.GroupId.ToString(), g.GroupId == Model.GroupId)
                     )
                 );
@@ -681,7 +681,7 @@ else
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "ATTACHED_FILES_COUNT_FORMAT"], Model.AttachCount))
-                        @if (isSelf || await _userService.IsUserGlobalAdmin(Model.ForumUser))
+                        @if (isSelf || await _userService.IsAdmin(Model.ForumUser!))
                         {
                             <span>- @Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "USED_SPACE_FORMAT"], StringUtility.ReadableFileSize(Model.AttachTotalSize)))</span>
                             var limit = _context.PhpbbGroups.AsNoTracking().FirstOrDefault(g => g.GroupId == Model.CurrentUser.GroupId)?.GroupUserUploadSize ?? 0;

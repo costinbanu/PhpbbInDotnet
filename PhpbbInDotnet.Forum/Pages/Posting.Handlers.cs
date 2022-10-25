@@ -155,7 +155,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var lang = Language;
                 CurrentForum = curForum;
                 ShowAttach = true;
-                var isAdmin = await UserService.IsUserGlobalAdmin(ForumUser);
+                var isAdmin = await UserService.IsAdmin(ForumUser);
 
                 if (!(Files?.Any() ?? false))
                 {

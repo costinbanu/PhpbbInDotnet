@@ -164,7 +164,7 @@ namespace PhpbbInDotnet.Forum
 
         protected async Task<IActionResult> WithAdmin(Func<Task<IActionResult>> toDo)
         {
-            if (!await UserService.IsUserGlobalAdmin(ForumUser))
+            if (!await UserService.IsAdmin(ForumUser))
             {
                 return RedirectToPage("Login", new { ReturnUrl = HttpUtility.UrlEncode(HttpContext.Request.Path + HttpContext.Request.QueryString) });
             }

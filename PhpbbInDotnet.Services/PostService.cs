@@ -79,12 +79,7 @@ namespace PhpbbInDotnet.Services
         }
 
         public Task<(Guid CorrelationId, Dictionary<int, List<AttachmentDto>> Attachments)> CacheAttachmentsAndPrepareForDisplay(IEnumerable<PhpbbAttachments> dbAttachments, int forumId, string language, int postCount, bool isPreview)
-            => CacheAttachmentsAndPrepareForDisplay(dbAttachments.Select(attachment =>
-            {
-                var newAttachment = attachment as PhpbbAttachmentExpanded;asta nu merge
-                newAttachment!.ForumId = forumId;
-                return newAttachment;
-            }), language, postCount, isPreview);
+            => CacheAttachmentsAndPrepareForDisplay(dbAttachments.Select(attachment => new PhpbbAttachmentExpanded(attachment, forumId)), language, postCount, isPreview);
 
         public async Task<PostListDto> GetPosts(int topicId, int pageNum, int pageSize, bool isPostingView, string language)
         {

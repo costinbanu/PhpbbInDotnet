@@ -9,6 +9,7 @@ using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using Serilog;
@@ -61,8 +62,7 @@ namespace PhpbbInDotnet.Forum.Middlewares
             var sqlExecuter = _context.GetSqlExecuter();
             AuthenticatedUser baseUser;
             PhpbbUsers dbUser;
-            var allClaims = context.User.FindAll(nameof(AuthenticatedUser.UserId)).ToList();
-            if (allClaims.Count == 1 && int.TryParse(allClaims[0].Value, out var userId) && userId > 0)
+            if (IdentityUtility.TryGetUserId(context.User, out var userId))
             {
                 dbUser = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
                     "SELECT * FROM phpbb_users WHERE user_id = @userId",
@@ -158,7 +158,7 @@ namespace PhpbbInDotnet.Forum.Middlewares
             var authenticationExpiration = _config.GetValue<TimeSpan?>("LoginSessionSlidingExpiration") ?? TimeSpan.FromDays(30);
             await context.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
-                _userService.CreateClaimsPrincipal(Constants.ANONYMOUS_USER_ID),
+                IdentityUtility.CreateClaimsPrincipal(Constants.ANONYMOUS_USER_ID),
                 new AuthenticationProperties
                 {
                     AllowRefresh = true,

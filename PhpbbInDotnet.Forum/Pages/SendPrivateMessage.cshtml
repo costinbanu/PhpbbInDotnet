@@ -23,7 +23,7 @@
 
     var CurrentUser = Model.ForumUser;
     var UserDateFormat = CurrentUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
-    var IsAdmin = await _userService.IsUserGlobalAdmin(Model.ForumUser);
+    var IsAdmin = await _userService.IsAdmin(Model.ForumUser);
 }
 
 <environment include="Development">

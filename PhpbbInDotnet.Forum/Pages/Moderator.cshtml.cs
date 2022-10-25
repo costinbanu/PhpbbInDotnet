@@ -238,7 +238,7 @@ namespace PhpbbInDotnet.Forum.Pages
                                      
                                      select groups;
 
-                    if (!await UserService.IsUserGlobalAdmin(ForumUser) && itemGroups.Any(item => item.Key == RecycleBinItemType.Forum))
+                    if (!await UserService.IsAdmin(ForumUser) && itemGroups.Any(item => item.Key == RecycleBinItemType.Forum))
                     {
                         MessageClass = "message fail";
                         Message = string.Format(TranslationProvider.Errors[lang, "MISSING_REQUIRED_PERMISSIONS"]);

@@ -6,11 +6,10 @@
 @using Microsoft.Extensions.Configuration
 
 @inject Languages.ITranslationProvider _translationProvider
-@inject Services.IUserService _userService
 @inject IConfiguration _config
 
 @{
-    var lang = _translationProvider.GetLanguage(_userService.ClaimsPrincipalToAuthenticatedUser(User));
+    var lang = _translationProvider.GetLanguage();
     ViewData["Title"] = _translationProvider.Errors[lang, "ERROR", Casing.Title];
     var adminEmail = _config.GetValue<string>("AdminEmail");
     var displayContact = !Model.IsUnauthorized && !Model.IsNotFound;
