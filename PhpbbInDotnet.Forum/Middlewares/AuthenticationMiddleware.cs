@@ -103,7 +103,7 @@ namespace PhpbbInDotnet.Forum.Middlewares
                 var styleTask = sqlExecuter.QueryFirstOrDefaultAsync<string>(
                     "SELECT style_name FROM phpbb_styles WHERE style_id = @UserStyle",
                     new { dbUser.UserStyle });
-                var updateLastVisitTask = DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > sessionTrackingTimeout
+                var updateLastVisitTask = DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) <= sessionTrackingTimeout
                     ? Task.CompletedTask
                     : sqlExecuter.ExecuteAsync(
                         "UPDATE phpbb_users SET user_lastvisit = @now WHERE user_id = @userId",
