@@ -3,7 +3,6 @@ using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Utilities;
 using System;
-using System.Threading.Tasks.Dataflow;
 
 namespace PhpbbInDotnet.Objects
 {
@@ -54,6 +53,23 @@ namespace PhpbbInDotnet.Objects
             FileSize = dbRecord.Filesize;
             PhysicalFileName = dbRecord.PhysicalFilename;
             ForumId = forumId;
+            Language = language;
+            IsPreview = isPreview;
+            CorrelationId = correlationId;
+            DeletedFile = deletedFile;
+        }
+
+        [JsonConstructor]
+        public AttachmentDto(int id, string? displayName, string? physicalFileName, int forumId, string? mimeType, int downloadCount, string? comment, long fileSize, string language, bool isPreview, Guid? correlationId, bool deletedFile)
+        {
+            Id = id;
+            DisplayName = displayName;
+            PhysicalFileName = physicalFileName;
+            ForumId = forumId;
+            MimeType = mimeType;
+            DownloadCount = downloadCount;
+            Comment = comment;
+            FileSize = fileSize;
             Language = language;
             IsPreview = isPreview;
             CorrelationId = correlationId;

@@ -278,7 +278,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     FROM phpbb_attachments a
                     JOIN phpbb_posts p ON a.post_msg_id = p.post_id
                     WHERE p.post_id IN @posts",
-                new { posts = Posts.Select(p => p.PostId) });
+                new { posts = Posts.Select(p => p.PostId).DefaultIfEmpty() });
             Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum, link: GetSearchLinkForPage(PageNum + 1), topicId: null);
         }
     }
