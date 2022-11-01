@@ -88,17 +88,10 @@
     Language = lang
 }, ViewData)
 
-@await Html.PartialAsync("_PollPartial", new _PollPartialModel
+@if (Model.Poll is not null)
 {
-    CurrentUser = currentUser,
-    Poll = Model.Poll,
-    TopicId = Model.TopicId ?? 0,
-    PageNum = Model.PageNum ?? 1,
-    QueryString = Request.QueryString.ToString(),
-    IsCurrentUserMod = isMod,
-    IsCurrentUserAdmin = isAdmin,
-    Language = lang
-}, ViewData)
+    @await Html.PartialAsync("_PollPartial", new _PollPartialModel(currentUser, Model.Poll, isPreview: false, Model.TopicId ?? 0, Model.PageNum ?? 0, Request.QueryString.ToString(), isMod, isAdmin, Model.IsLocked), ViewData)
+}
 
 @await Html.PartialAsync("_PaginationControlsPartial", new _PaginationControlsPartialModel(
     paginator: Model.Paginator!,

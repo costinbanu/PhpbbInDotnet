@@ -109,13 +109,7 @@ else if (Model.Action == PostingActions.NewTopic)
     if (Model.PreviewablePoll != null)
     {
         <hr class="BoxSeparator" />
-        @await Html.PartialAsync("_PollPartial", new _PollPartialModel
-        {
-            CurrentUser = CurrentUser,
-            Poll = Model.PreviewablePoll,
-            IsPreview = true,
-            Language = Lang
-        }, ViewData)
+        @await Html.PartialAsync("_PollPartial", new _PollPartialModel(CurrentUser, Model.PreviewablePoll, isPreview: true), ViewData)
         <p></p>
     }
 

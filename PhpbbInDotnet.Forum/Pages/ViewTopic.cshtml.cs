@@ -166,6 +166,11 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostVote(int topicId, int[] votes, string queryString)
             => await WithRegisteredUser(user => WithValidTopic(topicId, async (_, topic) =>
             {
+                if (topic.TopicStatus == 1 && !await UserService.IsUserModeratorInForum(ForumUser, topic.ForumId))
+                {
+                    return Unauthorized();
+                }
+
                 var sqlExecuter = Context.GetSqlExecuter();
                 
                 var existingVotes = (await sqlExecuter.QueryAsync<PhpbbPollVotes>("SELECT * FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @UserId", new { topicId, user.UserId })).AsList();
