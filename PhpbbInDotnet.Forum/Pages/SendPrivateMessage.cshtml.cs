@@ -131,14 +131,14 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 var lang = Language;
 
-                if ((ReceiverId ?? 1) == 1)
+                if ((ReceiverId ?? Constants.ANONYMOUS_USER_ID) == Constants.ANONYMOUS_USER_ID)
                 {
                     return PageWithError(nameof(ReceiverName), TranslationProvider.Errors[lang, "ENTER_VALID_RECEIVER"]);
                 }
 
                 var (Message, IsSuccess) = Action switch
                 {
-                    PostingActions.NewPrivateMessage => await UserService.SendPrivateMessage(user.UserId, user.Username!, ReceiverId!.Value, HttpUtility.HtmlEncode(PostTitle)!, await _writingService.PrepareTextForSaving(PostText), PageContext, HttpContext),
+                    PostingActions.NewPrivateMessage => await UserService.SendPrivateMessage(user, ReceiverId!.Value, HttpUtility.HtmlEncode(PostTitle)!, await _writingService.PrepareTextForSaving(PostText), PageContext, HttpContext),
                     PostingActions.EditPrivateMessage => await UserService.EditPrivateMessage(PrivateMessageId!.Value, HttpUtility.HtmlEncode(PostTitle)!, await _writingService.PrepareTextForSaving(PostText)),
                     _ => ("Unknown action", false)
                 };

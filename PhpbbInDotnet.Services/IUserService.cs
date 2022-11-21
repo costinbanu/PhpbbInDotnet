@@ -26,7 +26,7 @@ namespace PhpbbInDotnet.Services
         Task<(string Message, bool? IsSuccess)> HidePrivateMessages(int userId, params int[] messageIds);
         Task<bool> IsAdmin(AuthenticatedUserExpanded user);
         Task<bool> IsUserModeratorInForum(AuthenticatedUserExpanded user, int forumId);
-        Task<(string Message, bool? IsSuccess)> SendPrivateMessage(int senderId, string senderName, int receiverId, string subject, string text, PageContext pageContext, HttpContext httpContext);
+        Task<(string Message, bool? IsSuccess)> SendPrivateMessage(AuthenticatedUserExpanded sender, int receiverId, string subject, string text, PageContext pageContext, HttpContext httpContext);
         Task<int> GetUnreadPMCount(int userId);
     }
 }

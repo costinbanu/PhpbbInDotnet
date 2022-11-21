@@ -19,81 +19,81 @@
 @inject IConfiguration _config
 
 @{
-    var Lang = Model.Language;
+	var Lang = Model.Language;
 
-    ViewData["Title"] = Model.TranslationProvider.BasicText[Lang, "WRITE_NEW_POST"];
-    Layout = "~/Pages/_Layout.cshtml";
+	ViewData["Title"] = Model.TranslationProvider.BasicText[Lang, "WRITE_NEW_POST"];
+	Layout = "~/Pages/_Layout.cshtml";
 
-    var CurrentUser = Model.ForumUser;
-    var CanCreatePoll = Model.Action == PostingActions.NewTopic || (Model.Action == PostingActions.EditForumPost && (Model.CurrentTopic?.TopicFirstPostId ?? 0) == Model.PostId);
-    var UserDateFormat = CurrentUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
-    var IsAdmin = await _userService.IsAdmin(Model.ForumUser);
+	var CurrentUser = Model.ForumUser;
+	var CanCreatePoll = Model.Action == PostingActions.NewTopic || (Model.Action == PostingActions.EditForumPost && (Model.CurrentTopic?.TopicFirstPostId ?? 0) == Model.PostId);
+	var UserDateFormat = CurrentUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
+	var IsMod = await _userService.IsUserModeratorInForum(Model.ForumUser, Model.ForumId);
 
-    if (Model.ForumId > 0)
-    {
-        var (forumTree, _) = await Model.GetForumTree(false, false);
-        ViewData[Constants.ViewDataKeys.BREADCRUMBS] = _forumService.GetBreadCrumbs(forumTree, Model.ForumId);
-    }
+	if (Model.ForumId > 0)
+	{
+		var (forumTree, _) = await Model.GetForumTree(false, false);
+		ViewData[Constants.ViewDataKeys.BREADCRUMBS] = _forumService.GetBreadCrumbs(forumTree, Model.ForumId);
+	}
 }
 
 <environment include="Development">
-    <script src="~/js/posting.js"></script>
-    <link rel="stylesheet" href="~/css/posting.css" />
+	<script src="~/js/posting.js"></script>
+	<link rel="stylesheet" href="~/css/posting.css" />
 </environment>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tributejs/5.1.3/tribute.min.css" integrity="sha512-x3tME/kvJ3wzZ664qyANYueTLeJmRsoEbcIONhCei3DZJgNou8YwHos3ONthiwfzDvLE/H91ByIhSHVM10vS8g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tributejs/5.1.3/tribute.min.js" integrity="sha512-KJYWC7RKz/Abtsu1QXd7VJ1IJua7P7GTpl3IKUqfa21Otg2opvRYmkui/CXBC6qeDYCNlQZ7c+7JfDXnKdILUA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 <script type="text/javascript">
-    var posting = new Posting(
-        @Json.Serialize(_renderingService.TagMap),
-        @(_config.GetValue<int>("UploadLimitsMB:Images")),
-        @(_config.GetValue<int>("UploadLimitsCount:Images")),
-        @(IsAdmin.ToString().ToLower()),
-        @((Model.Action == PostingActions.EditForumPost).ToString().ToLower()),
-        '@UserDateFormat',
-        '@(_config.GetValue<string>("BaseUrl"))'
-    );
+	var posting = new Posting(
+	@Json.Serialize(_renderingService.TagMap),
+	@(_config.GetValue<int>("UploadLimitsMB:Images")),
+	@(_config.GetValue<int>("UploadLimitsCount:Images")),
+	@(IsMod.ToString().ToLower()),
+	@((Model.Action == PostingActions.EditForumPost).ToString().ToLower()),
+		'@UserDateFormat',
+		'@(_config.GetValue<string>("BaseUrl"))'
+	);
 
-    $(window).on('load', function () {
-        if ($('#attachPanel').is(':visible')) {
-            $('#attachButton').text(posting.hideAttachText);
-        }
-        else {
-            $('#attachButton').text(posting.showAttachText);
-        }
-        if ($('#pollPanel').is(':visible')) {
-            $('#pollButton').text(posting.hidePollText);
-        }
-        else {
-            $('#pollButton').text(posting.showPollText);
-        }
-        $('#message').focus();
-    });
+	$(window).on('load', function () {
+		if ($('#attachPanel').is(':visible')) {
+			$('#attachButton').text(posting.hideAttachText);
+		}
+		else {
+			$('#attachButton').text(posting.showAttachText);
+		}
+		if ($('#pollPanel').is(':visible')) {
+			$('#pollButton').text(posting.hidePollText);
+		}
+		else {
+			$('#pollButton').text(posting.showPollText);
+		}
+		$('#message').focus();
+	});
 </script>
 
 
 @if (Model.Action == PostingActions.EditForumPost || Model.Action == PostingActions.NewForumPost)
 {
-    @await Html.PartialAsync("_HeaderLinksPartial", new _HeaderLinksPartialModel(Lang, CurrentUser.IsAnonymous), ViewData)
-    <p>&nbsp;</p>
-    <h3>
-        @Html.Raw(Model.TranslationProvider.BasicText[Lang, "DO_REPLY", Casing.Title]):
-        @if (Model.PostId.HasValue)
-        {
-            <a asp-page="/ViewTopic" asp-route-postId="@Model.PostId.Value" asp-page-handler="ByPostId">@HttpUtility.HtmlDecode(Model.CurrentTopic!.TopicTitle)</a>
-        }
-        else
-        {
-            <a asp-page="/ViewTopic" asp-route-topicId="@Model.TopicId!.Value" asp-route-pageNum="1">@HttpUtility.HtmlDecode(Model.CurrentTopic!.TopicTitle)</a>
-        }
-    </h3>
+	@await Html.PartialAsync("_HeaderLinksPartial", new _HeaderLinksPartialModel(Lang, CurrentUser.IsAnonymous), ViewData)
+	<p>&nbsp;</p>
+	<h3>
+		@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DO_REPLY", Casing.Title]):
+		@if (Model.PostId.HasValue)
+		{
+			<a asp-page="/ViewTopic" asp-route-postId="@Model.PostId.Value" asp-page-handler="ByPostId">@HttpUtility.HtmlDecode(Model.CurrentTopic!.TopicTitle)</a>
+		}
+		else
+		{
+			<a asp-page="/ViewTopic" asp-route-topicId="@Model.TopicId!.Value" asp-route-pageNum="1">@HttpUtility.HtmlDecode(Model.CurrentTopic!.TopicTitle)</a>
+		}
+	</h3>
 }
 else if (Model.Action == PostingActions.NewTopic)
 {
-    <h3>
-        @Html.Raw(Model.TranslationProvider.BasicText[Lang, "OPEN_NEW_TOPIC"]):
-        <a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(Model.CurrentForum?.ForumName ?? string.Empty)</a>
-    </h3>
+	<h3>
+		@Html.Raw(Model.TranslationProvider.BasicText[Lang, "OPEN_NEW_TOPIC"]):
+		<a asp-page="/ViewForum" asp-route-forumId="@Model.ForumId">@HttpUtility.HtmlDecode(Model.CurrentForum?.ForumName ?? string.Empty)</a>
+	</h3>
 }
 
 @await Html.PartialAsync("_RulesPartial", new _RulesPartialModel
@@ -105,15 +105,15 @@ else if (Model.Action == PostingActions.NewTopic)
 
 @if (Model.PreviewablePost != null)
 {
-    <p></p>
-    if (Model.PreviewablePoll != null)
-    {
-        <hr class="BoxSeparator" />
-        @await Html.PartialAsync("_PollPartial", new _PollPartialModel(CurrentUser, Model.PreviewablePoll, isPreview: true), ViewData)
-        <p></p>
-    }
+	<p></p>
+	if (Model.PreviewablePoll != null)
+	{
+		<hr class="BoxSeparator" />
+		@await Html.PartialAsync("_PollPartial", new _PollPartialModel(CurrentUser, Model.PreviewablePoll, isPreview: true), ViewData)
+		<p></p>
+	}
 
-    @await Html.PartialAsync("_PostPartial", new _PostPartialModel
+	@await Html.PartialAsync("_PostPartial", new _PostPartialModel
     {
         CurrentUser = CurrentUser,
         Post = Model.PreviewablePost,
@@ -121,239 +121,238 @@ else if (Model.Action == PostingActions.NewTopic)
         CorrelationId = Model.PreviewCorrelationId
     }, ViewData)
 
-    <hr class="BoxSeparator" />
-    <p></p>
+	<hr class="BoxSeparator" />
+	<p></p>
 }
 
 <form name="postform" method="post" enctype="multipart/form-data">
-    @await Html.PartialAsync("_TextInputPartial", new _TextInputPartialModel(Lang, Model.PostTitle, Model.PostText))
+	@await Html.PartialAsync("_TextInputPartial", new _TextInputPartialModel(Lang, Model.PostTitle, Model.PostText))
 
-    @if (Model.Action == PostingActions.EditForumPost)
-    {
-        <div style="clear:both">&nbsp;</div>
-        <input asp-for="EditReason" type="text" style="width:100%" placeholder="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "EDIT_REASON"])" />
-    }
+	@if (Model.Action == PostingActions.EditForumPost)
+	{
+		<div style="clear:both">&nbsp;</div>
+		<input asp-for="EditReason" type="text" style="width:100%" placeholder="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "EDIT_REASON"])" />
+	}
 
-    <button onclick="posting.toggleAttach()" type="button" class="PostingButton MyButton SpacedButton">
-        &#128206; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "ATTACHED_FILES"])
-    </button>
+	<button onclick="posting.toggleAttach()" type="button" class="PostingButton MyButton SpacedButton">
+		&#128206; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "ATTACHED_FILES"])
+	</button>
 
-    <button onclick="posting.toggleEmoji()" type="button" class="Hide960 PostingButton MyButton SpacedButton">
-        &#x1F642; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "EMOJI"])
-    </button>
+	<button onclick="posting.toggleEmoji()" type="button" class="Hide960 PostingButton MyButton SpacedButton">
+		&#x1F642; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "EMOJI"])
+	</button>
 
-    @if (CanCreatePoll)
-    {
-        <button onclick="posting.togglePoll()" type="button" class="PostingButton MyButton SpacedButton">
-            &#x2714; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "POLL", Casing.Title])
-        </button>
-    }
+	@if (CanCreatePoll)
+	{
+		<button onclick="posting.togglePoll()" type="button" class="PostingButton MyButton SpacedButton">
+			&#x2714; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "POLL", Casing.Title])
+		</button>
+	}
 
-    <input type="submit" value="&#x1F440; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "DO_PREVIEW", Casing.Title])" onclick="return posting.censor()" asp-page-handler="Preview" class="PostingButton MyButton SpacedButton" formnovalidate />
+	<input type="submit" value="&#x1F440; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "DO_PREVIEW", Casing.Title])" onclick="return posting.censor()" asp-page-handler="Preview" class="PostingButton MyButton SpacedButton" formnovalidate />
 
-    @switch (Model.Action)
-    {
-        case PostingActions.NewTopic:
-        case PostingActions.NewForumPost:
-            <input type="submit" value="&#x1F4BE; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SAVE_DRAFT"])" onclick="return posting.censor()" asp-page-handler="SaveDraft" class="PostingButton MyButton SpacedButton" formnovalidate />
-            <input type="submit" value="&#x27A1; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="NewForumPost" class="PostingButton MyButton SpacedButton MyMainButton" formnovalidate />
-            break;
-        case PostingActions.EditForumPost:
-            <input type="submit" value="&#x27A1; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="EditForumPost" class="PostingButton MyButton SpacedButton MyMainButton" formnovalidate />
-            break;
-        default:
-            <span class="validation">@Html.Raw(Model.TranslationProvider.Errors[Lang, "AN_ERROR_OCCURRED"])</span>
-            break;
-    }
-    <b>
-        <span asp-validation-for="PostTitle" class="validation"></span>
-        <span asp-validation-for="PostText" class="validation"></span>
-        <span asp-validation-for="LastPostTime" class="validation"></span>
-        @if (Model.DraftSavedSuccessfully)
-        {
-            <span class="success">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DRAFT_SAVED_SUCCESSFULLY"])</span>
-        }
-    </b>
-    @if (CanCreatePoll)
-    {
-        <div id="pollPanel" style="display:@(Model.ShowPoll ? "block" : "none")" class="PostInputWidth">
-            <br />
-            <h3 style="float:left">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "POLL", Casing.Title])</h3>
-            @if (Model.Action == PostingActions.EditForumPost)
-            {
-                <span style="margin-bottom:10px">
-                    &nbsp;&bull;&nbsp;
-                    <input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_POLL"])" asp-page-handler="DeletePoll" onclick="return confirm('@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CONFIRM_DELETE_POLL"])')" class="MyButton" formnovalidate />
-                </span>
-            }
-            <p style="clear:both"></p>
-            <hr class="BoxSeparator" />
-            <div class="FlexCenter">
-                <div>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "POLL_QUESTION"])</div>
-                <div class="FlexRight PollInput">
-                    <input asp-for="PollQuestion" class="InputBox" style="width:100%" /> <br />
-                    <span asp-validation-for="PollQuestion" class="validation"></span>
-                </div>
-            </div>
-            <hr class="BoxSeparator" />
-            <div class="FlexCenter">
-                <div>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "POLL_OPTIONS"])</div>
-                <div class="FlexRight PollInput">
-                    <textarea asp-for="PollOptions" rows="4" class="InputBox" style="width:100%" onkeydown="return posting.confirmPollChange(this)"></textarea>
-                    <span asp-validation-for="PollOptions" class="validation"></span>
-                </div>
-            </div>
-            <hr class="BoxSeparator" />
-            <div class="FlexCenter">
-                <div>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "VOTING_TIME"])</div>
-                <div class="FlexRight PollInput">
-                    <input asp-for="PollExpirationDaysString" onchange="posting.showExpirationDate(this.value)" id="pollExpiration" class="InputBox" style="width:100%" /><br />
-                    <div class="Caption">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "POLL_TIME_CAPTION"])</div>
-                    <span id="pollExpirationHelper"></span>
-                    <span asp-validation-for="PollExpirationDaysString" class="validation"></span>
-                </div>
-            </div>
-            <hr class="BoxSeparator" />
-            <div class="FlexCenter">
-                <div>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "OPTIONS_PER_USER"])</div>
-                <div class="FlexRight PollInput">
-                    <input asp-for="PollMaxOptions" class="InputBox" style="width:100%" />
-                    <span asp-validation-for="PollMaxOptions" class="validation"></span>
-                </div>
-            </div>
-            <hr class="BoxSeparator" />
-            <div class="FlexCenter">
-                <div>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CAN_CHANGE_VOTE"])</div>
-                <div class="FlexRight PollInput">
-                    <input asp-for="PollCanChangeVote" class="InputBox" />
-                    <span>&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CHANGE_VOTE_CAPTION"])</span>
-                    <span asp-validation-for="PollCanChangeVote" class="validation"></span>
-                </div>
-            </div>
-        </div>
-    }
-    @{
-        var sizeLimit = _config.GetObject<AttachmentLimits>("UploadLimitsMB");
-        var countLimit = _config.GetObject<AttachmentLimits>("UploadLimitsCount");
-        var resizeTool = _config.GetObject<ExternalImageProcessor>();
+	@switch (Model.Action)
+	{
+		case PostingActions.NewTopic:
+		case PostingActions.NewForumPost:
+			<input type="submit" value="&#x1F4BE; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SAVE_DRAFT"])" onclick="return posting.censor()" asp-page-handler="SaveDraft" class="PostingButton MyButton SpacedButton" formnovalidate />
+			<input type="submit" value="&#x27A1; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="NewForumPost" class="PostingButton MyButton SpacedButton MyMainButton" formnovalidate />
+			break;
+		case PostingActions.EditForumPost:
+			<input type="submit" value="&#x27A1; @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SUBMIT_POST"])" onclick="return posting.censor()" asp-page-handler="EditForumPost" class="PostingButton MyButton SpacedButton MyMainButton" formnovalidate />
+			break;
+		default:
+			<span class="validation">@Html.Raw(Model.TranslationProvider.Errors[Lang, "AN_ERROR_OCCURRED"])</span>
+			break;
+	}
+	<b>
+		<span asp-validation-for="PostTitle" class="validation"></span>
+		<span asp-validation-for="PostText" class="validation"></span>
+		<span asp-validation-for="LastPostTime" class="validation"></span>
+		@if (Model.DraftSavedSuccessfully)
+		{
+			<span class="success">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DRAFT_SAVED_SUCCESSFULLY"])</span>
+		}
+	</b>
+	@if (CanCreatePoll)
+	{
+		<div id="pollPanel" style="display:@(Model.ShowPoll ? "block" : "none")" class="PostInputWidth">
+			<br />
+			<h3 style="float:left">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "POLL", Casing.Title])</h3>
+			@if (Model.Action == PostingActions.EditForumPost)
+			{
+				<span style="margin-bottom:10px">
+					&nbsp;&bull;&nbsp;
+					<input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_POLL"])" asp-page-handler="DeletePoll" onclick="return confirm('@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CONFIRM_DELETE_POLL"])')" class="MyButton" formnovalidate />
+				</span>
+			}
+			<p style="clear:both"></p>
+			<hr class="BoxSeparator" />
+			<div class="FlexCenter">
+				<div>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "POLL_QUESTION"])</div>
+				<div class="FlexRight PollInput">
+					<input asp-for="PollQuestion" class="InputBox" style="width:100%" /> <br />
+					<span asp-validation-for="PollQuestion" class="validation"></span>
+				</div>
+			</div>
+			<hr class="BoxSeparator" />
+			<div class="FlexCenter">
+				<div>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "POLL_OPTIONS"])</div>
+				<div class="FlexRight PollInput">
+					<textarea asp-for="PollOptions" rows="4" class="InputBox" style="width:100%" onkeydown="return posting.confirmPollChange(this)"></textarea>
+					<span asp-validation-for="PollOptions" class="validation"></span>
+				</div>
+			</div>
+			<hr class="BoxSeparator" />
+			<div class="FlexCenter">
+				<div>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "VOTING_TIME"])</div>
+				<div class="FlexRight PollInput">
+					<input asp-for="PollExpirationDaysString" onchange="posting.showExpirationDate(this.value)" id="pollExpiration" class="InputBox" style="width:100%" /><br />
+					<div class="Caption">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "POLL_TIME_CAPTION"])</div>
+					<span id="pollExpirationHelper"></span>
+					<span asp-validation-for="PollExpirationDaysString" class="validation"></span>
+				</div>
+			</div>
+			<hr class="BoxSeparator" />
+			<div class="FlexCenter">
+				<div>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "OPTIONS_PER_USER"])</div>
+				<div class="FlexRight PollInput">
+					<input asp-for="PollMaxOptions" class="InputBox" style="width:100%" />
+					<span asp-validation-for="PollMaxOptions" class="validation"></span>
+				</div>
+			</div>
+			<hr class="BoxSeparator" />
+			<div class="FlexCenter">
+				<div>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CAN_CHANGE_VOTE"])</div>
+				<div class="FlexRight PollInput">
+					<input asp-for="PollCanChangeVote" class="InputBox" />
+					<span>&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CHANGE_VOTE_CAPTION"])</span>
+					<span asp-validation-for="PollCanChangeVote" class="validation"></span>
+				</div>
+			</div>
+		</div>
+	}
+	@{
+		var sizeLimit = _config.GetObject<AttachmentLimits>("UploadLimitsMB");
+		var countLimit = _config.GetObject<AttachmentLimits>("UploadLimitsCount");
+		var resizeTool = _config.GetObject<ExternalImageProcessor>();
 
-            <div id="attachPanel" style="display:@(Model.ShowAttach ? "block" : "none")">
-                <br />
-                <h3>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "ATTACHED_FILES"])</h3>
+		<div id="attachPanel" style="display:@(Model.ShowAttach ? "block" : "none")">
+			<br />
+			<h3>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "ATTACHED_FILES"])</h3>
 
-                @if (resizeTool.Enabled)
-            {
-                    @Html.Raw(string.Format(Model.TranslationProvider.AttachmentGuide[Lang]!, sizeLimit.Images, resizeTool.Url, resizeTool.Name, resizeTool.Api?.Enabled == true ? "display:auto" : "display:none"))
-            }
+			@if (resizeTool.Enabled)
+			{
+				@Html.Raw(string.Format(Model.TranslationProvider.AttachmentGuide[Lang]!, sizeLimit.Images, resizeTool.Url, resizeTool.Name, resizeTool.Api?.Enabled == true ? "display:auto" : "display:none"))
+			}
 
-                @if (resizeTool.Api?.Enabled == true)
-            {
-                    <p></p>
-                    <label>
-                        @if (IsAdmin)
-                    {
-                            @Html.CheckBoxFor(m => m.ShouldResize)
-                    }
-                    else
-                    {
-                            <input type="checkbox" checked disabled />
-                    }
-                        @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SHOULD_RESIZE_IMAGES"])
-                    </label>
-                    <p></p>
-                    <label>
-                        @Html.CheckBoxFor(m => m.ShouldHideLicensePlates)
-                        @Html.Raw(Model.TranslationProvider.BasicText[Lang, "SHOULD_HIDE_LICENSE_PLATES_IN_IMAGES"])
-                    </label>
-            }
-                <p></p>
-                <input asp-for="Files" onchange="posting.submitAttachments()" multiple class="HiddenFileInput" />
-                <label for="Files" class="MyButton">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CHOOSE_FILES"])</label><br />
-                @if (!IsAdmin)
-            {
-                    <span class="Caption">
-                        @Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "CHOOSE_FILES_CAPTION_FORMAT"], countLimit.Images, sizeLimit.Images, countLimit.OtherFiles, sizeLimit.OtherFiles))
-                    </span>
-            }
-                <span asp-validation-for="Files" class="validation"></span>
-                <div id="fileUploadStatus"></div>
-                <input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "LOAD_FILES"])" asp-page-handler="AddAttachment" style="display:none" id="submitAttachmentsButton" formnovalidate />
-                @if (Model.Attachments?.Any() ?? false)
-            {
-                    <hr class="SubtypeSeparator" />
-                    <h4 style="float:left;margin-bottom:0px; margin-top:3px;">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "ALREADY_ATTACHED"])</h4>
-                    <span>
-                        &nbsp;
-                        <input 
-                        type="submit" 
-                        value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_ALL_FILES"])" 
-                        asp-page-handler="DeleteAllAttachments" 
-                        class="MyButton" 
-                        style="height:26px; padding-top:1px; padding-bottom: 1px" 
-                            formnovalidate
-                        onclick="confirm('@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CONFIRM_DELETE_ALL_ATTACHMENTS"])')"/>
-                    </span>
-                    <p>&nbsp;</p>
-                    @for (var i = 0; i < Model.Attachments.Count; i++)
-                {
-                        <div style="margin-bottom:20px; padding-bottom:20px">
-                            <b>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "FILE_NAME"]):</b> @Model.Attachments[i].RealFilename <br />
-                            <b>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "FILE_COMMENT"]):</b>
-                            <br />
-                            <textarea type="text" asp-for="Attachments![i].AttachComment" rows="4" cols="100" style="display:inline-block; color:black" class="InputBox"></textarea>
-                            <p style="clear:both"></p>
-                            <input type="button" value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "MAKE_INLINE"])" onclick="posting.attach_inline(@i, '@Model.Attachments[i].RealFilename')" class="MyButton" /> &nbsp;
-                            <input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_FILE"])" asp-page-handler="DeleteAttachment" onclick="$('#idToDelete').val(@i); return true;" class="MyButton" formnovalidate />
-                            <br />
-                            <span asp-validation-for="DeleteFileDummyForValidation[i]" class="validation"></span>
-                        </div>
-                        <input type="hidden" asp-for="Attachments![i].AttachId" />
-                        <input type="hidden" asp-for="Attachments![i].RealFilename" />
-                        <input type="hidden" asp-for="Attachments![i].PhysicalFilename" />
-                        <input type="hidden" asp-for="Attachments![i].Mimetype" />
-                        <input type="hidden" asp-for="Attachments![i].Filesize" />
-                }
-                    <input type="hidden" name="index" id="idToDelete" value="" />
-            }
-            </div>
-    }
-    <div id="emojiPanel" style="display:none; clear:both;">
-        @foreach (var smiley in (await _writingService.GetLazySmilies()).GroupBy(s => s.SmileyUrl).Select(g => g.FirstOrDefault()))
-        {
-            <a href="javascript:posting.insert_text('@smiley!.Code', true);">
-                <img src="@_storageService.GetFileUrl(smiley.SmileyUrl, FileType.Emoji)" alt="@smiley.Code" title="@smiley.Emotion" style="margin:2px" />
-            </a>
-        }
-    </div>
+			@if (resizeTool.Api?.Enabled == true)
+			{
+				<p></p>
+				<label>
+					@if (IsMod)
+					{
+						@Html.CheckBoxFor(m => m.ShouldResize)
+					}
+					else
+					{
+						<input type="checkbox" checked disabled />
+					}
+					@Html.Raw(Model.TranslationProvider.BasicText[Lang, "SHOULD_RESIZE_IMAGES"])
+				</label>
+				<p></p>
+				<label>
+					@Html.CheckBoxFor(m => m.ShouldHideLicensePlates)
+					@Html.Raw(Model.TranslationProvider.BasicText[Lang, "SHOULD_HIDE_LICENSE_PLATES_IN_IMAGES"])
+				</label>
+			}
+			<p></p>
+			<input asp-for="Files" onchange="posting.submitAttachments()" multiple class="HiddenFileInput" />
+			<label for="Files" class="MyButton">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CHOOSE_FILES"])</label><br />
+			@if (!IsMod)
+			{
+				<span class="Caption">
+					@Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "CHOOSE_FILES_CAPTION_FORMAT"], countLimit.Images, sizeLimit.Images, countLimit.OtherFiles, sizeLimit.OtherFiles))
+				</span>
+			}
+			<span asp-validation-for="Files" class="validation"></span>
+			<div id="fileUploadStatus"></div>
+			<input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "LOAD_FILES"])" asp-page-handler="AddAttachment" style="display:none" id="submitAttachmentsButton" formnovalidate />
+			@if (Model.Attachments?.Any() ?? false)
+			{
+				<hr class="SubtypeSeparator" />
+				<h4 style="float:left;margin-bottom:0px; margin-top:3px;">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "ALREADY_ATTACHED"])</h4>
+				<span>
+					&nbsp;
+					<input type="submit"
+				   value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_ALL_FILES"])"
+				   asp-page-handler="DeleteAllAttachments"
+				   class="MyButton"
+				   style="height:26px; padding-top:1px; padding-bottom: 1px"
+				   	formnovalidate
+				   onclick="confirm('@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CONFIRM_DELETE_ALL_ATTACHMENTS"])')" />
+				</span>
+				<p>&nbsp;</p>
+				@for (var i = 0; i < Model.Attachments.Count; i++)
+				{
+					<div style="margin-bottom:20px; padding-bottom:20px">
+						<b>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "FILE_NAME"]):</b> @Model.Attachments[i].RealFilename <br />
+						<b>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "FILE_COMMENT"]):</b>
+						<br />
+						<textarea type="text" asp-for="Attachments![i].AttachComment" rows="4" cols="100" style="display:inline-block; color:black" class="InputBox"></textarea>
+						<p style="clear:both"></p>
+						<input type="button" value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "MAKE_INLINE"])" onclick="posting.attach_inline(@i, '@Model.Attachments[i].RealFilename')" class="MyButton" /> &nbsp;
+						<input type="submit" value="@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DELETE_FILE"])" asp-page-handler="DeleteAttachment" onclick="$('#idToDelete').val(@i); return true;" class="MyButton" formnovalidate />
+						<br />
+						<span asp-validation-for="DeleteFileDummyForValidation[i]" class="validation"></span>
+					</div>
+					<input type="hidden" asp-for="Attachments![i].AttachId" />
+					<input type="hidden" asp-for="Attachments![i].RealFilename" />
+					<input type="hidden" asp-for="Attachments![i].PhysicalFilename" />
+					<input type="hidden" asp-for="Attachments![i].Mimetype" />
+					<input type="hidden" asp-for="Attachments![i].Filesize" />
+				}
+				<input type="hidden" name="index" id="idToDelete" value="" />
+			}
+		</div>
+	}
+	<div id="emojiPanel" style="display:none; clear:both;">
+		@foreach (var smiley in (await _writingService.GetLazySmilies()).GroupBy(s => s.SmileyUrl).Select(g => g.FirstOrDefault()))
+		{
+			<a href="javascript:posting.insert_text('@smiley!.Code', true);">
+				<img src="@_storageService.GetFileUrl(smiley.SmileyUrl, FileType.Emoji)" alt="@smiley.Code" title="@smiley.Emotion" style="margin:2px" />
+			</a>
+		}
+	</div>
 
-    <input asp-for="ForumId" type="hidden" />
-    <input asp-for="TopicId" type="hidden" />
-    <input asp-for="PostId" type="hidden" />
-    <input asp-for="PageNum" type="hidden" />
-    <input asp-for="Action" type="hidden" />
-    <input asp-for="CurrentTopic!.TopicFirstPostId" type="hidden" />
-    <input asp-for="CurrentTopic!.TopicTitle" type="hidden" />
-    <input asp-for="LastPostTime" type="hidden" id="lastPostTime" />
-    <input asp-for="PostTime" type="hidden" />
-    <input asp-for="ReturnUrl" type="hidden" />
+	<input asp-for="ForumId" type="hidden" />
+	<input asp-for="TopicId" type="hidden" />
+	<input asp-for="PostId" type="hidden" />
+	<input asp-for="PageNum" type="hidden" />
+	<input asp-for="Action" type="hidden" />
+	<input asp-for="CurrentTopic!.TopicFirstPostId" type="hidden" />
+	<input asp-for="CurrentTopic!.TopicTitle" type="hidden" />
+	<input asp-for="LastPostTime" type="hidden" id="lastPostTime" />
+	<input asp-for="PostTime" type="hidden" />
+	<input asp-for="ReturnUrl" type="hidden" />
 </form>
 
 @{
-    var (posts, attachments, previousPostsCorrelationId) = await Model.GetPreviousPosts();
-    if (posts.Any())
-    {
-    <script>
-                var texts = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(posts.ToDictionary(k => k.PostId, v => _writingService.CleanBbTextForDisplay(v.PostText, v.BbcodeUid))));
-                $('#lastPostTime').val(@Math.Max(posts.First().PostTime, posts.First().PostEditTime));
-    </script>
-    <br />
-    <h3>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "PREVIOUS_POSTS"])</h3>
+	var (posts, attachments, previousPostsCorrelationId) = await Model.GetPreviousPosts();
+	if (posts.Any())
+	{
+		<script>
+			var texts = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(posts.ToDictionary(k => k.PostId, v => _writingService.CleanBbTextForDisplay(v.PostText, v.BbcodeUid))));
+			$('#lastPostTime').val(@Math.Max(posts.First().PostTime, posts.First().PostEditTime));
+		</script>
+		<br />
+		<h3>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "PREVIOUS_POSTS"])</h3>
 
-        foreach (var post in posts)
-        {
-            post.Attachments = attachments.TryGetValue(post.PostId, out var val) ? val : new List<Objects.AttachmentDto>();
+		foreach (var post in posts)
+		{
+			post.Attachments = attachments.TryGetValue(post.PostId, out var val) ? val : new List<Objects.AttachmentDto>();
 
-    @await Html.PartialAsync("_PostPartial", new _PostPartialModel
+			@await Html.PartialAsync("_PostPartial", new _PostPartialModel
             {
                 CurrentUser = CurrentUser,
                 Post = post,
@@ -361,24 +360,24 @@ else if (Model.Action == PostingActions.NewTopic)
                 Language = Lang,
                 CorrelationId = previousPostsCorrelationId
             }, ViewData)
-        }
-    }
+		}
+	}
 }
 
 <script>
-    var tribute = new Tribute({
-        values: @Html.Raw(SerializationUtility.ToCamelCaseJson(await _userService.GetUsers())),
-        trigger: "@@",
-        allowSpaces: true,
-        noMatchTemplate: ''
-    });
+	var tribute = new Tribute({
+		values: @Html.Raw(SerializationUtility.ToCamelCaseJson(await _userService.GetUsers())),
+		trigger: "@@",
+		allowSpaces: true,
+		noMatchTemplate: ''
+	});
 
-    tribute.attach(document.getElementById("message"));
+	tribute.attach(document.getElementById("message"));
 
-    var pollExpiration = document.getElementById("pollExpiration");
-    if (pollExpiration) {
-        posting.showExpirationDate(pollExpiration.value);
-    }
+	var pollExpiration = document.getElementById("pollExpiration");
+	if (pollExpiration) {
+		posting.showExpirationDate(pollExpiration.value);
+	}
 </script>
 
 <div id="imgcheckstatus" class="Popup"></div>
