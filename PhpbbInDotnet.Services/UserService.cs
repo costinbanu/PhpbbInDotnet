@@ -118,15 +118,16 @@ namespace PhpbbInDotnet.Services
             return DbUserToAuthenticatedUserBase(usr);
         }
 
-        public async Task<(string Message, bool? IsSuccess)> SendPrivateMessage(int senderId, string senderName, int receiverId, string subject, string text, PageContext pageContext, HttpContext httpContext)
+        public async Task<(string Message, bool? IsSuccess)> SendPrivateMessage(AuthenticatedUserExpanded sender, int receiverId, string subject, string text, PageContext pageContext, HttpContext httpContext)
         {
             var language = _translationProvider.GetLanguage();
             try
             {
-                var sender = new AuthenticatedUserExpanded(await GetAuthenticatedUserById(senderId))
+                if (sender.UserId == receiverId)
                 {
-                    AllPermissions = await GetPermissions(senderId),
-                };
+                    return (_translationProvider.Errors[language, "NOT_ALLOWED"], false);
+                }
+
                 if (!sender.HasPrivateMessagePermissions)
                 {
                     return (_translationProvider.Errors[language, "SENDER_CANT_SEND_PMS"], false);
@@ -141,7 +142,7 @@ namespace PhpbbInDotnet.Services
                 {
                     return (_translationProvider.Errors[language, "RECEIVER_CANT_RECEIVE_PMS"], false);
                 }
-                if (receiver.Foes?.Contains(senderId) ?? false)
+                if (receiver.Foes?.Contains(sender.UserId) == true)
                 {
                     return (_translationProvider.Errors[language, "ON_RECEIVERS_FOE_LIST"], false);
                 }
@@ -149,18 +150,28 @@ namespace PhpbbInDotnet.Services
                 var sqlExecuter = _context.GetSqlExecuter();
 
                 await sqlExecuter.ExecuteAsync(
-                    @"INSERT INTO phpbb_privmsgs (author_id, to_address, bcc_address, message_subject, message_text, message_time) VALUES (@senderId, @to, '', @subject, @text, @time); 
+                    @"START TRANSACTION;
+                      INSERT INTO phpbb_privmsgs (author_id, to_address, bcc_address, message_subject, message_text, message_time) VALUES (@senderId, @to, '', @subject, @text, @time); 
                       SELECT LAST_INSERT_ID() INTO @inserted_id;
                       INSERT INTO phpbb_privmsgs_to (author_id, msg_id, user_id, folder_id, pm_unread) VALUES (@senderId, @inserted_id, @receiverId, 0, 1); 
-                      INSERT INTO phpbb_privmsgs_to (author_id, msg_id, user_id, folder_id, pm_unread) VALUES (@senderId, @inserted_id, @senderId, -1, 0); ",
-                    new { senderId, receiverId, to = $"u_{receiverId}", subject, text, time = DateTime.UtcNow.ToUnixTimestamp() });
+                      INSERT INTO phpbb_privmsgs_to (author_id, msg_id, user_id, folder_id, pm_unread) VALUES (@senderId, @inserted_id, @senderId, -1, 0);
+                      COMMIT;",
+                    new 
+                    { 
+                        senderId = sender.UserId, 
+                        receiverId, 
+                        to = $"u_{receiverId}", 
+                        subject, 
+                        text, 
+                        time = DateTime.UtcNow.ToUnixTimestamp() 
+                    });
 
                 var emailSubject = string.Format(_translationProvider.Email[receiver.Language!, "NEWPM_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
                 await _emailService.SendEmail(
                     to: receiver.EmailAddress!,
                     subject: emailSubject,
                     bodyRazorViewName: "_NewPMEmailPartial",
-                    bodyRazorViewModel: new NewPMEmailDto(senderName, receiver.Language));
+                    bodyRazorViewModel: new NewPMEmailDto(sender.Username!, receiver.Language));
 
                 return ("OK", true);
             }
@@ -211,10 +222,11 @@ namespace PhpbbInDotnet.Services
                 var sqlExecuter = _context.GetSqlExecuter();
 
                 var rows = await sqlExecuter.ExecuteAsync(
-                    "DELETE m FROM phpbb_privmsgs m JOIN phpbb_privmsgs_to tt ON m.msg_id = tt.msg_id AND tt.pm_unread = 1 WHERE m.msg_id = @messageId; " +
-                    "DELETE t FROM phpbb_privmsgs_to t JOIN phpbb_privmsgs_to tt ON t.msg_id = tt.msg_id AND tt.pm_unread = 1 WHERE t.msg_id = @messageId;",
-                    new { messageId }
-                );
+                    @"START TRANSACTION;
+                      DELETE m FROM phpbb_privmsgs m JOIN phpbb_privmsgs_to tt ON m.msg_id = tt.msg_id AND tt.pm_unread = 1 WHERE m.msg_id = @messageId; 
+                      DELETE t FROM phpbb_privmsgs_to t JOIN phpbb_privmsgs_to tt ON t.msg_id = tt.msg_id AND tt.pm_unread = 1 WHERE t.msg_id = @messageId;
+                      COMMIT;",
+                    new { messageId });
 
                 if (rows == 0)
                 {

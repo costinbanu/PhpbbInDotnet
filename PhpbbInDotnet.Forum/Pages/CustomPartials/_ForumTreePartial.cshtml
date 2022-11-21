@@ -1,6 +1,7 @@
 ﻿@model PhpbbInDotnet.Forum.Pages.CustomPartials._ForumTreePartialModel
 
 @using Objects
+@using Domain
 @using Domain.Extensions
 @using Microsoft.Extensions.Configuration 
 @using System.Web
@@ -61,14 +62,15 @@
                                     ?? Enumerable.Empty<MiniTopicDto>();
 
         var thisForum = _forumService.GetTreeNode(Model.Tree, cur ?? 0);
+        var userId = AuthenticatedUserExpanded.GetValueOrDefault(Context)?.UserId ?? Constants.ANONYMOUS_USER_ID;
 
-        if (thisForum?.IsRestricted ?? false)
+        if (thisForum is null || _forumService.IsNodeRestricted(thisForum, userId, includePasswordProtected: true))
         {
             return;
         }
 
         #nullable enable
-        var children = thisForum?.ChildrenList?.Select(x => _forumService.GetTreeNode(Model.Tree, x)) ?? Enumerable.Empty<PhpbbInDotnet.Objects.ForumTree?>();
+        var children = thisForum.ChildrenList?.Select(x => _forumService.GetTreeNode(Model.Tree, x)) ?? Enumerable.Empty<PhpbbInDotnet.Objects.ForumTree?>();
 
         if (children.Any())
         {

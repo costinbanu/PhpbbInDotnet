@@ -10,6 +10,7 @@
   "REPORT_ERROR_FORMAT": "If the error persists, write to <a href=\"mailto:{0}\">{0}</a>.",
   "MISSING_REQUIRED_FIELD": "This field is mandatory.",
   "MISSING_REQUIRED_PERMISSIONS": "You do not have the required permissions to perform this action.",
+  "NOT_ALLOWED": "This action is not allowed.",
 
   //authentication
   "CONFIRM_ERROR": "An error occurred - the user doesn't exist or the password reset code is wrong.",

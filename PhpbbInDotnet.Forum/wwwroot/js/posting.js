@@ -1,5 +1,5 @@
 ﻿class Posting {
-    constructor(bbtags, imgSizeLimit, imgCountLimit, isAdmin, isEditAction, userDateFormat, baseUrl) {
+    constructor(bbtags, imgSizeLimit, imgCountLimit, isMod, isEditAction, userDateFormat, baseUrl) {
         this.form_name = 'postform';
         this.text_name = 'message';
 
@@ -13,7 +13,7 @@
         this.baseHeight = 0;
 
         this.hasConfirmation = false;
-        this.isAdmin = isAdmin;
+        this.isMod = isMod;
         this.isEditAction = isEditAction;
 
         this.userDateFormat = userDateFormat;
@@ -285,7 +285,7 @@
             textinput.value = textinput.value.replace(/photobucket/gi, "*****");
             textinput.value = textinput.value.replace(/imageshack/gi, "*****");
             var imgNo = textinput.value.split("[img]").length - 1;
-            if (imgNo > this.imgCountLimit && !this.isAdmin) {
+            if (imgNo > this.imgCountLimit && !this.isMod) {
                 alert(formatString(dictionary.Posting['TOO_MANY_IMAGES_ERROR_FORMAT'], imgNo, this.imgCountLimit));
                 return false;
             }
@@ -310,7 +310,7 @@
                         async: false,
                         url: imgs[i],
                         success: (msg) => {
-                            if (msg.length / 1024 / 1024 > this.imgSizeLimit && !this.isAdmin) {
+                            if (msg.length / 1024 / 1024 > this.imgSizeLimit && !this.isMod) {
                                 isok = false;
                                 badimgs.push(imgs[i]);
                             }
@@ -320,7 +320,7 @@
                         }
                     });
                 }
-                if (!isok && !this.isAdmin) {
+                if (!isok && !this.isMod) {
                     $('#imgcheckstatus').toggle();
                     alert(formatString(dictionary.Posting['IMAGES_TOO_BIG_ERROR_FORMAT'], this.imgSizeLimit, badimgs.join('\n')));
                     return false;

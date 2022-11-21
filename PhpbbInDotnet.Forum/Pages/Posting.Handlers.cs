@@ -155,14 +155,14 @@ namespace PhpbbInDotnet.Forum.Pages
                 var lang = Language;
                 CurrentForum = curForum;
                 ShowAttach = true;
-                var isAdmin = await UserService.IsAdmin(ForumUser);
+                var isMod = await UserService.IsUserModeratorInForum(ForumUser, ForumId);
 
                 if (!(Files?.Any() ?? false))
                 {
                     return Page();
                 }
 
-                if (!ShouldResize && !isAdmin)
+                if (!ShouldResize && !isMod)
                 {
                     return PageWithError(curForum, nameof(Files), TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
                 }
@@ -223,14 +223,14 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
 
                 var tooLargeFiles = images.Where(f => f.Length > Constants.ONE_MB * sizeLimit.Images).Union(nonImages.Where(f => f.Length > Constants.ONE_MB * sizeLimit.OtherFiles));
-                if (tooLargeFiles.Any() && !isAdmin)
+                if (tooLargeFiles.Any() && !isMod)
                 {
                     return PageWithError(curForum, nameof(Files), string.Format(TranslationProvider.Errors[lang, "FILES_TOO_BIG_FORMAT"], string.Join(",", tooLargeFiles.Select(f => f.FileName))));
                 }
 
                 var existingImages = Attachments?.Count(a => StringUtility.IsImageMimeType(a.Mimetype)) ?? 0;
                 var existingNonImages = Attachments?.Count(a => !StringUtility.IsImageMimeType(a.Mimetype)) ?? 0;
-                if (!isAdmin && (existingImages + images.Count() > countLimit.Images || existingNonImages + nonImages.Count() > countLimit.OtherFiles))
+                if (!isMod && (existingImages + images.Count() > countLimit.Images || existingNonImages + nonImages.Count() > countLimit.OtherFiles))
                 {
                     return PageWithError(curForum, nameof(Files), TranslationProvider.Errors[lang, "TOO_MANY_FILES"]);
                 }
