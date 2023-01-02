@@ -2,24 +2,23 @@
 using Dapper;
 using Diacritics.Extensions;
 using LazyCache;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Domain;
-using PhpbbInDotnet.Domain.Utilities;
-using PhpbbInDotnet.Domain.Extensions;
+using Serilog;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
-using Serilog;
 
 namespace PhpbbInDotnet.Services
 {
@@ -346,8 +345,7 @@ namespace PhpbbInDotnet.Services
                         ),
 
                         ["color"] = (
-                            Tag: new BBTag("color", "<span style=\"color:${code}\">", "</span>", maxId + 4, "", true,
-                                new BBAttribute("code", "")),
+                            Tag: new BBTag("color", "<span style=\"color:${code}\">", "</span>", maxId + 4, attributes: new[] { new BBAttribute("code", "") }),
                             Summary: new BBTagSummary
                             {
                                 OpenTag = "[color]",
@@ -358,8 +356,10 @@ namespace PhpbbInDotnet.Services
                         ),
 
                         ["size"] = (
-                            Tag: new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>", maxId + 5, "", true,
-                                new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")),
+                            Tag: new BBTag("size", "<span style=\"font-size:${fsize}\">", "</span>", maxId + 5, attributes: new[]
+                            {
+                                new BBAttribute("fsize", "", a => decimal.TryParse(a?.AttributeValue, out var val) ? FormattableString.Invariant($"{val / 100m:#.##}em") : "1em")
+                            }),
                             Summary: new BBTagSummary
                             {
                                 OpenTag = "[size]",
@@ -370,7 +370,8 @@ namespace PhpbbInDotnet.Services
                         ),
 
                         ["quote"] = (
-                            Tag: new BBTag("quote", "<blockquote class=\"PostQuote\">${name}", "</blockquote>", maxId + 6, "", true,
+                            Tag: new BBTag("quote", "<blockquote class=\"PostQuote\">${name}", "</blockquote>", maxId + 6, attributes: new[]
+                            {
                                 new BBAttribute(
                                     id: "name",
                                     name: "",
@@ -400,9 +401,8 @@ namespace PhpbbInDotnet.Services
                                         }
                                         return toReturn;
                                     },
-                                    htmlEncodingMode: HtmlEncodingMode.UnsafeDontEncode
-                                )
-                            )
+                                    htmlEncodingMode: HtmlEncodingMode.UnsafeDontEncode) 
+                            })
                             {
                                 GreedyAttributeProcessing = true
                             },
@@ -416,19 +416,29 @@ namespace PhpbbInDotnet.Services
                         ),
 
                         ["img"] = (
-                            Tag: new BBTag("img", "<br/><img src=\"${content}\" onload=\"resizeImage(this)\" style=\"width: 100px; height: 100px\" /><br/>", string.Empty, false, BBTagClosingStyle.RequiresClosingTag, content => UrlTransformer(content), false, maxId + 7, allowUrlProcessingAsText: false),
+                            Tag: new BBTag(
+                                name: "img",
+                                openTagTemplate: "<br/><img src=\"${content}\" onload=\"resizeImage(this)\" style=\"width: 100px; height: 100px\" /><br/>",
+                                closeTagTemplate: string.Empty, 
+                                id: maxId + 7, 
+                                autoRenderContent: false,
+                                contentTransformer: content => UrlTransformer(content),
+                                enableIterationElementBehavior: false,
+                                allowUrlProcessingAsText: false,
+                                allowChildren: false),
                             Summary: new BBTagSummary
                             {
                                 OpenTag = "[img]",
                                 CloseTag = "[/img]",
                                 ShowOnPage = true,
                                 ShowWhenCollapsed = true
-                            }
-                        ),
+                            }),
 
                         ["url"] = (
-                            Tag: new BBTag("url", "<a href=\"${href}\" target=\"_blank\">", "</a>", maxId + 8, "", false,
-                                new BBAttribute("href", "", context => UrlTransformer(string.IsNullOrWhiteSpace(context.AttributeValue) ? context.TagContent : context.AttributeValue), HtmlEncodingMode.UnsafeDontEncode)),
+                            Tag: new BBTag("url", "<a href=\"${href}\" target=\"_blank\">", "</a>", maxId + 8, attributes: new[]
+                            {
+                                new BBAttribute("href", "", context => UrlTransformer(string.IsNullOrWhiteSpace(context.AttributeValue) ? context.TagContent : context.AttributeValue), HtmlEncodingMode.UnsafeDontEncode)
+                            }),
                             Summary: new BBTagSummary
                             {
                                 OpenTag = "[url]",
@@ -450,8 +460,10 @@ namespace PhpbbInDotnet.Services
                         ),
 
                         ["list"] = (
-                            Tag: new BBTag("list", "<${attr}>", "</${attr}>", true, true, maxId + 10, "", true,
-                                new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul style='list-style-type: circle'" : $"ol type=\"{a.AttributeValue}\"")),
+                            Tag: new BBTag("list", "<${attr}>", "</${attr}>", maxId + 10, enableIterationElementBehavior: true, attributes: new[]
+                            {
+                                new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul style='list-style-type: circle'" : $"ol type=\"{a.AttributeValue}\"")
+                            }),
                             Summary: new BBTagSummary
                             {
                                 OpenTag = "[list]",
@@ -462,7 +474,7 @@ namespace PhpbbInDotnet.Services
                         ),
 
                         ["*"] = (
-                            Tag: new BBTag("*", "<li>", "</li>", true, BBTagClosingStyle.AutoCloseElement, x => x, true, maxId + 11),
+                            Tag: new BBTag("*", "<li>", "</li>", maxId + 11, tagClosingClosingStyle: BBTagClosingStyle.AutoCloseElement, enableIterationElementBehavior: true),
                             Summary: new BBTagSummary
                             {
                                 OpenTag = "[*]",
@@ -473,8 +485,17 @@ namespace PhpbbInDotnet.Services
                         ),
 
                         ["attachment"] = (
-                            Tag: new BBTag("attachment", "#{AttachmentFileName=${content}/AttachmentIndex=${num}}#", "", false, BBTagClosingStyle.AutoCloseElement, x => StringUtility.HtmlCommentRegex.Replace(HttpUtility.HtmlDecode(x), string.Empty), maxId + 12, "", true,
-                                new BBAttribute("num", "")),
+                            Tag: new BBTag(
+                                name: "attachment",
+                                openTagTemplate: "#{AttachmentFileName=${content}/AttachmentIndex=${num}}#",
+                                closeTagTemplate: "",
+                                id: maxId + 12, 
+                                autoRenderContent: false, 
+                                tagClosingClosingStyle: BBTagClosingStyle.AutoCloseElement, 
+                                contentTransformer: FileNameTransformer, 
+                                enableIterationElementBehavior: true, 
+                                allowChildren: false,
+                                attributes: new[] { new BBAttribute("num", "") }),
                             Summary: new BBTagSummary
                             {
                                 ShowOnPage = false
@@ -482,7 +503,12 @@ namespace PhpbbInDotnet.Services
                         ),
 
                         ["youtube"] = (
-                            Tag: new BBTag("youtube", "<br /><iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/${content}?html5=1\" frameborder=\"0\" allowfullscreen onload=\"resizeIFrame(this)\"></iframe><br />", string.Empty, false, false, maxId + 13, ""),
+                            Tag: new BBTag(
+                                name: "youtube", 
+                                openTagTemplate: "<br /><iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/${content}?html5=1\" frameborder=\"0\" allowfullscreen onload=\"resizeIFrame(this)\"></iframe><br />",
+                                closeTagTemplate: string.Empty,
+                                id: maxId + 13,
+                                autoRenderContent: false),
                             Summary: new BBTagSummary
                             {
                                 OpenTag = "[youtube]",
@@ -505,8 +531,8 @@ namespace PhpbbInDotnet.Services
                     }
                     foreach (var code in dbCodes)
                     {
-                        var attributes = _attrRegex.Matches(code.BbcodeTpl).Where(m => m.Success && !m.Value.Equals("${content}", StringComparison.InvariantCultureIgnoreCase)).Select(m => new BBAttribute(m.Value.Trim("${}".ToCharArray()), "", ctx => ctx.AttributeValue)).ToArray();
-                        tags.Add(new BBTag(code.BbcodeTag, code.BbcodeTpl, string.Empty, false, false, code.BbcodeId, "", true, attributes));
+                        var attributes = _attrRegex.Matches(code.BbcodeTpl).Where(m => m.Success && !m.Value.Equals("${content}", StringComparison.InvariantCultureIgnoreCase)).Select(m => new BBAttribute(m.Value.Trim("${}".ToCharArray()), "", ctx => ctx.AttributeValue));
+                        tags.Add(new BBTag(code.BbcodeTag, code.BbcodeTpl, string.Empty, code.BbcodeId, autoRenderContent: false, bbcodeUid: "", allowUrlProcessingAsText: true, attributes: attributes));
 
                         if (code.DisplayOnPosting.ToBool())
                         {
@@ -525,7 +551,7 @@ namespace PhpbbInDotnet.Services
             );
         }
 
-        private string UrlTransformer(string url)
+        static string UrlTransformer(string url)
         {
             if (!url.StartsWith("www", StringComparison.InvariantCultureIgnoreCase) && !url.StartsWith("http", StringComparison.InvariantCultureIgnoreCase))
             {
@@ -537,5 +563,18 @@ namespace PhpbbInDotnet.Services
             }
             return url;
         }
+
+        static string FileNameTransformer(string fileName)
+        {
+            var newFileName = StringUtility.HtmlCommentRegex.Replace(HttpUtility.HtmlDecode(fileName), string.Empty);
+            var result = new StringBuilder();
+            for (var i = 0; i < newFileName.Length; i++)
+            {
+                result.Append(IllegalChars.Contains(newFileName[i]) ? '-' : newFileName[i]);
+            }
+            return result.ToString();
+        }
+
+        static readonly HashSet<char> IllegalChars = new(Path.GetInvalidFileNameChars().Union(Path.GetInvalidPathChars()));
     }
 }
