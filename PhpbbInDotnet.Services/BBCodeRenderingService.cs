@@ -370,7 +370,7 @@ namespace PhpbbInDotnet.Services
                         ),
 
                         ["quote"] = (
-                            Tag: new BBTag("quote", "<blockquote class=\"PostQuote\">${name}", "</blockquote>", maxId + 6, attributes: new[]
+                            Tag: new BBTag("quote", "<blockquote class=\"PostQuote\">${name}", "</blockquote>", maxId + 6, greedyAttributeProcessing: true, attributes: new[]
                             {
                                 new BBAttribute(
                                     id: "name",
@@ -402,10 +402,7 @@ namespace PhpbbInDotnet.Services
                                         return toReturn;
                                     },
                                     htmlEncodingMode: HtmlEncodingMode.UnsafeDontEncode) 
-                            })
-                            {
-                                GreedyAttributeProcessing = true
-                            },
+                            }),
                             Summary: new BBTagSummary
                             {
                                 OpenTag = "[quote]",
@@ -423,7 +420,6 @@ namespace PhpbbInDotnet.Services
                                 id: maxId + 7, 
                                 autoRenderContent: false,
                                 contentTransformer: content => UrlTransformer(content),
-                                enableIterationElementBehavior: false,
                                 allowUrlProcessingAsText: false,
                                 allowChildren: false),
                             Summary: new BBTagSummary
@@ -460,7 +456,7 @@ namespace PhpbbInDotnet.Services
                         ),
 
                         ["list"] = (
-                            Tag: new BBTag("list", "<${attr}>", "</${attr}>", maxId + 10, enableIterationElementBehavior: true, attributes: new[]
+                            Tag: new BBTag("list", "<${attr}>", "</${attr}>", maxId + 10, attributes: new[]
                             {
                                 new BBAttribute("attr", "", a => string.IsNullOrWhiteSpace(a.AttributeValue) ? "ul style='list-style-type: circle'" : $"ol type=\"{a.AttributeValue}\"")
                             }),
@@ -474,7 +470,7 @@ namespace PhpbbInDotnet.Services
                         ),
 
                         ["*"] = (
-                            Tag: new BBTag("*", "<li>", "</li>", maxId + 11, tagClosingClosingStyle: BBTagClosingStyle.AutoCloseElement, enableIterationElementBehavior: true),
+                            Tag: new BBTag("*", "<li>", "</li>", maxId + 11, tagClosingStyle: BBTagClosingStyle.AutoCloseElement, enableIterationElementBehavior: true),
                             Summary: new BBTagSummary
                             {
                                 OpenTag = "[*]",
@@ -491,9 +487,8 @@ namespace PhpbbInDotnet.Services
                                 closeTagTemplate: "",
                                 id: maxId + 12, 
                                 autoRenderContent: false, 
-                                tagClosingClosingStyle: BBTagClosingStyle.AutoCloseElement, 
+                                tagClosingStyle: BBTagClosingStyle.AutoCloseElement, 
                                 contentTransformer: FileNameTransformer, 
-                                enableIterationElementBehavior: true, 
                                 allowChildren: false,
                                 attributes: new[] { new BBAttribute("num", "") }),
                             Summary: new BBTagSummary
@@ -508,7 +503,8 @@ namespace PhpbbInDotnet.Services
                                 openTagTemplate: "<br /><iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/${content}?html5=1\" frameborder=\"0\" allowfullscreen onload=\"resizeIFrame(this)\"></iframe><br />",
                                 closeTagTemplate: string.Empty,
                                 id: maxId + 13,
-                                autoRenderContent: false),
+                                autoRenderContent: false,
+                                tagClosingStyle: BBTagClosingStyle.AutoCloseElement),
                             Summary: new BBTagSummary
                             {
                                 OpenTag = "[youtube]",
@@ -532,7 +528,7 @@ namespace PhpbbInDotnet.Services
                     foreach (var code in dbCodes)
                     {
                         var attributes = _attrRegex.Matches(code.BbcodeTpl).Where(m => m.Success && !m.Value.Equals("${content}", StringComparison.InvariantCultureIgnoreCase)).Select(m => new BBAttribute(m.Value.Trim("${}".ToCharArray()), "", ctx => ctx.AttributeValue));
-                        tags.Add(new BBTag(code.BbcodeTag, code.BbcodeTpl, string.Empty, code.BbcodeId, autoRenderContent: false, bbcodeUid: "", allowUrlProcessingAsText: true, attributes: attributes));
+                        tags.Add(new BBTag(code.BbcodeTag, code.BbcodeTpl, string.Empty, code.BbcodeId, autoRenderContent: false, bbcodeUid: "", tagClosingStyle: BBTagClosingStyle.AutoCloseElement, attributes: attributes));
 
                         if (code.DisplayOnPosting.ToBool())
                         {
@@ -551,28 +547,43 @@ namespace PhpbbInDotnet.Services
             );
         }
 
-        static string UrlTransformer(string url)
+        string UrlTransformer(string url)
         {
-            if (!url.StartsWith("www", StringComparison.InvariantCultureIgnoreCase) && !url.StartsWith("http", StringComparison.InvariantCultureIgnoreCase))
+            try
             {
-                throw new ArgumentException("Bad URL formatting");
+                if (!url.StartsWith("www", StringComparison.InvariantCultureIgnoreCase) && !url.StartsWith("http", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    throw new ArgumentException("Bad URL formatting");
+                }
+                else if (url.StartsWith("www", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    url = $"//{url}";
+                }
             }
-            else if (url.StartsWith("www", StringComparison.InvariantCultureIgnoreCase))
+            catch (Exception ex)
             {
-                url = $"//{url}";
+                _logger.Warning(ex);
             }
             return url;
         }
 
-        static string FileNameTransformer(string fileName)
+        string FileNameTransformer(string fileName)
         {
-            var newFileName = StringUtility.HtmlCommentRegex.Replace(HttpUtility.HtmlDecode(fileName), string.Empty);
-            var result = new StringBuilder();
-            for (var i = 0; i < newFileName.Length; i++)
+            try
             {
-                result.Append(IllegalChars.Contains(newFileName[i]) ? '-' : newFileName[i]);
+                var newFileName = StringUtility.HtmlCommentRegex.Replace(HttpUtility.HtmlDecode(fileName), string.Empty);
+                var result = new StringBuilder();
+                for (var i = 0; i < newFileName.Length; i++)
+                {
+                    result.Append(IllegalChars.Contains(newFileName[i]) ? '-' : newFileName[i]);
+                }
+                return result.ToString();
             }
-            return result.ToString();
+            catch (Exception ex)
+            {
+                _logger.Warning(ex);
+                return fileName;
+            }
         }
 
         static readonly HashSet<char> IllegalChars = new(Path.GetInvalidFileNameChars().Union(Path.GetInvalidPathChars()));
