@@ -4,7 +4,6 @@ using PhpbbInDotnet.RecurringTasks.Tasks;
 using PhpbbInDotnet.Services;
 using Serilog;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,14 +13,12 @@ namespace PhpbbInDotnet.RecurringTasks
 	sealed class Orchestrator : BackgroundService
 	{
 		readonly IServiceProvider _serviceProvider;
-		readonly Type[] _taskTypes;
 
 		internal const string ControlFileName = "RecurringTasks.ok";
 		
-		public Orchestrator(IServiceProvider serviceProvider, params Type[] taskTypes)
+		public Orchestrator(IServiceProvider serviceProvider)
 		{
 			_serviceProvider = serviceProvider;
-			_taskTypes = taskTypes;
 		}
 
 		protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -45,23 +42,7 @@ namespace PhpbbInDotnet.RecurringTasks
 
                 stoppingToken.ThrowIfCancellationRequested();
 
-                var recurringTasks = new List<IRecurringTask>();
-				foreach (var taskType in _taskTypes)
-				{
-					var instance = ActivatorUtilities.CreateInstance(scope.ServiceProvider, taskType);
-					if (instance is IRecurringTask recurringTask)
-					{
-						recurringTasks.Add(recurringTask);
-					}
-					else
-					{
-						throw new ArgumentException($"{taskType.FullName} does not implement {nameof(IRecurringTask)}.");
-					}
-				}
-
-				stoppingToken.ThrowIfCancellationRequested();
-
-				await Task.WhenAll(recurringTasks.Select(t => t.ExecuteAsync(stoppingToken)));
+				await Task.WhenAll(scope.ServiceProvider.GetServices<IRecurringTask>().Select(t => t.ExecuteAsync(stoppingToken)));
 
                 storageService.WriteAllTextToFile(ControlFileName, string.Empty);
             }
