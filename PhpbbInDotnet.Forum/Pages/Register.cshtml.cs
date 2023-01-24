@@ -1,6 +1,5 @@
 ﻿using CryptSharp.Core;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
@@ -27,6 +26,7 @@ namespace PhpbbInDotnet.Forum.Pages
     public class RegisterModel : BaseModel
     {
         private readonly IForumDbContext _context;
+        private readonly ISqlExecuter _sqlExecuter;
         private readonly IConfiguration _config;
         private readonly HttpClient _gClient;
         private readonly Recaptcha _recaptchaOptions;
@@ -55,10 +55,11 @@ namespace PhpbbInDotnet.Forum.Pages
         public ITranslationProvider TranslationProvider { get; }
 
 
-        public RegisterModel(IForumDbContext context, IConfiguration config, IHttpClientFactory httpClientFactory, ITranslationProvider translationProvider,
-            IUserService userService, ILogger logger, IEmailService emailService)
+        public RegisterModel(IForumDbContext context, ISqlExecuter sqlExecuter, IConfiguration config, IHttpClientFactory httpClientFactory,
+            ITranslationProvider translationProvider, IUserService userService, ILogger logger, IEmailService emailService)
         {
             _context = context;
+            _sqlExecuter = sqlExecuter;
             _config = config;
             _recaptchaOptions = _config.GetObject<Recaptcha>();
             _gClient = httpClientFactory.CreateClient(_recaptchaOptions.ClientName);
@@ -124,9 +125,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return PageWithError(nameof(RecaptchaResponse), TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
             }
 
-            var sqlExecuter = _context.GetSqlExecuter();
-
-            var checkBanlist = await sqlExecuter.QueryAsync(
+            var checkBanlist = await _sqlExecuter.QueryAsync(
                 @"SELECT @email LIKE LOWER(REPLACE(REPLACE(ban_email, '*', '%'), '?', '_')) AS Email,
                          @ip LIKE LOWER(REPLACE(REPLACE(ban_ip, '*', '%'), '?', '_')) AS IP
                     FROM phpbb_banlist

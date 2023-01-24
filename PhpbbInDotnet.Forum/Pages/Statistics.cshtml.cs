@@ -1,12 +1,9 @@
-using LazyCache;
 using Microsoft.AspNetCore.Mvc;
-using PhpbbInDotnet.Database;
+using Microsoft.Extensions.DependencyInjection;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Forum.Models;
-using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using Serilog;
 using System;
 using System.Threading.Tasks;
 
@@ -21,11 +18,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private readonly IStatisticsService _statisticsService;
 
-        public StatisticsModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger, 
-            ITranslationProvider translationProvider, IStatisticsService statisticsService)
-            : base(context, forumService, userService, cache, logger, translationProvider)
+        public StatisticsModel(IServiceProvider serviceProvider) : base(serviceProvider)
         {
-            _statisticsService = statisticsService;
+            _statisticsService = serviceProvider.GetRequiredService<IStatisticsService>(); ;
         }
 
         public Task<IActionResult> OnGet()

@@ -1,13 +1,12 @@
-﻿using LazyCache;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using PhpbbInDotnet.Database;
+using Microsoft.Extensions.DependencyInjection;
 using PhpbbInDotnet.Database.Entities;
-using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Domain;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -16,8 +15,6 @@ using System.Net.Mime;
 using System.Threading.Tasks;
 using System.Web;
 using IOFile = System.IO.File;
-using Serilog;
-using PhpbbInDotnet.Forum.Models;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -77,14 +74,12 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IWritingToolsService _adminWritingService;
         private readonly IOperationLogService _logService;
 
-        public AdminModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger, IAdminUserService adminUserService, 
-            IAdminForumService adminForumService, IWritingToolsService adminWritingService, ITranslationProvider translationProvider, IOperationLogService logService) 
-            : base(context, forumService, userService, cache, logger, translationProvider)
+        public AdminModel(IServiceProvider serviceProvider) : base(serviceProvider)
         {
-            _adminUserService = adminUserService;
-            _adminForumService = adminForumService;
-            _adminWritingService = adminWritingService;
-            _logService = logService;
+            _adminUserService = serviceProvider.GetRequiredService<IAdminUserService>();
+            _adminForumService = serviceProvider.GetRequiredService<IAdminForumService>();
+            _adminWritingService = serviceProvider.GetRequiredService<IWritingToolsService>();
+            _logService = serviceProvider.GetRequiredService<IOperationLogService>();
             UserSearchResults = new List<PhpbbUsers>();
             ForumChildren = new List<PhpbbForums>();
             ForumSelectedParent = new List<SelectListItem>();

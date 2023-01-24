@@ -1,17 +1,11 @@
-﻿using LazyCache;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using NuGet.Protocol.Core.Types;
-using PhpbbInDotnet.Database;
+using Microsoft.Extensions.DependencyInjection;
 using PhpbbInDotnet.Domain;
-using PhpbbInDotnet.Domain.Extensions;
-using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
-using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -75,12 +69,10 @@ namespace PhpbbInDotnet.Forum.Pages
         public HashSet<ForumTree>? ForumTree { get; private set; }
         public List<MiniTopicDto>? TopicData { get; private set; }
 
-        public ConfirmModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger, 
-            IConfiguration config, ITranslationProvider translationProvider, IEmailService emailService)
-            : base(context, forumService, userService, cache, logger, translationProvider) 
+        public ConfirmModel(IServiceProvider serviceProvider) : base(serviceProvider) 
         {
-            _config = config;
-            _emailService = emailService;
+            _config = serviceProvider.GetRequiredService<IConfiguration>();
+            _emailService = serviceProvider.GetRequiredService<IEmailService>();
         }
 
         public void OnGetRegistrationComplete()

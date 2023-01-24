@@ -1,10 +1,5 @@
-﻿using LazyCache;
-using Microsoft.AspNetCore.Mvc;
-using PhpbbInDotnet.Database;
+﻿using Microsoft.AspNetCore.Mvc;
 using PhpbbInDotnet.Database.Entities;
-using PhpbbInDotnet.Languages;
-using PhpbbInDotnet.Services;
-using Serilog;
 using System;
 using System.Threading.Tasks;
 
@@ -12,8 +7,7 @@ namespace PhpbbInDotnet.Forum.Models
 {
     public abstract class BasePostingModel : AuthenticatedPageModel
     {
-        public BasePostingModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cacheService, ILogger logger, ITranslationProvider translationProvider)
-            : base(context, forumService, userService, cacheService, logger, translationProvider)
+        public BasePostingModel(IServiceProvider serviceProvider) : base(serviceProvider)
         { }
 
         [BindProperty]

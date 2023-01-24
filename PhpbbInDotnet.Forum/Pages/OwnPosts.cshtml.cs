@@ -1,14 +1,10 @@
 using Dapper;
-using LazyCache;
 using Microsoft.AspNetCore.Mvc;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
-using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Services;
-using Serilog;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -22,8 +18,7 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public int PageNum { get; set; } = 1;
 
-        public OwnPostsModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger, ITranslationProvider translationProvider)
-            : base(context, forumService, userService, cache, logger, translationProvider)
+        public OwnPostsModel(IServiceProvider serviceProvider) : base(serviceProvider)
         {
         }
 
@@ -35,7 +30,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     {
                         PageNum = Paginator.NormalizePageNumberLowerBound(PageNum);
                         var restrictedForumList = await GetRestrictedForums();
-                        var topicsTask = Context.GetSqlExecuter().QueryAsync<TopicDto>(
+                        var topicsTask = SqlExecuter.QueryAsync<TopicDto>(
                             @"WITH own_topics AS (
 			                    SELECT DISTINCT p.topic_id
 			                      FROM phpbb_posts p
@@ -72,7 +67,7 @@ namespace PhpbbInDotnet.Forum.Pages
                                 restrictedForumList
                             }
                         );
-                        var countTask = Context.GetSqlExecuter().ExecuteScalarAsync<int>(
+                        var countTask = SqlExecuter.ExecuteScalarAsync<int>(
                             @"SELECT COUNT(DISTINCT topic_id) AS total_count 
 	                            FROM phpbb_posts 
 	                           WHERE poster_id = @user_id

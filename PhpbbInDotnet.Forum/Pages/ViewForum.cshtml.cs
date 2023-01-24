@@ -1,13 +1,11 @@
-﻿using LazyCache;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
+using Microsoft.Extensions.DependencyInjection;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Forum.Models;
-using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using Serilog;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Web;
@@ -34,12 +32,10 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public int ForumId { get; set; }
 
-        public ViewForumModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, IBBCodeRenderingService renderingService,
-            IConfiguration config, ILogger logger, ITranslationProvider translationProvider)
-            : base(context, forumService, userService, cache, logger, translationProvider) 
+        public ViewForumModel(IServiceProvider serviceProvider) : base(serviceProvider) 
         {
-            _config = config;
-            _renderingService = renderingService;
+            _config = serviceProvider.GetRequiredService<IConfiguration>();
+            _renderingService = serviceProvider.GetRequiredService<IBBCodeRenderingService>();
         }
 
         public async Task<IActionResult> OnGet()
@@ -56,7 +52,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumRulesUid = thisForum.ForumRulesUid;
                 ForumDesc = _renderingService.BbCodeToHtml(thisForum.ForumDesc, thisForum.ForumDescUid ?? string.Empty);
                
-                var parentTask = Context.GetSqlExecuter().QuerySingleOrDefaultAsync<PhpbbForums>(
+                var parentTask = SqlExecuter.QuerySingleOrDefaultAsync<PhpbbForums>(
                     "SELECT * FROM phpbb_forums WHERE forum_id = @ParentId", 
                     new { thisForum.ParentId }
                 );
@@ -114,7 +110,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         async Task MarkShortcutsRead()
         {
-            var shortcuts = Context.GetSqlExecuter().Query(
+            var shortcuts = await SqlExecuter.QueryAsync(
                 @"SELECT t.forum_id AS actual_forum_id, t.topic_id, t.topic_last_post_time
                     FROM phpbb_shortcuts s
                     JOIN phpbb_topics t on s.topic_id = t.topic_id

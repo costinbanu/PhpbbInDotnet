@@ -1,7 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database.Entities;
-using System.Data;
-using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Database
 {
@@ -2619,26 +2617,6 @@ namespace PhpbbInDotnet.Database
                     .HasColumnName("forum_id")
                     .HasColumnType("int(8) unsigned");
             });
-        }
-
-        public async Task<ISqlExecuter> GetSqlExecuterAsync()
-        {
-            var conn = Database.GetDbConnection();
-            if (conn.State == ConnectionState.Closed)
-            {
-                await conn.OpenAsync();
-            }
-            return new SqlExecuter(conn);
-        }
-
-        public ISqlExecuter GetSqlExecuter()
-        {
-            var conn = Database.GetDbConnection();
-            if (conn.State == ConnectionState.Closed)
-            {
-                conn.Open();
-            }
-            return new SqlExecuter(conn);
         }
     }
 }

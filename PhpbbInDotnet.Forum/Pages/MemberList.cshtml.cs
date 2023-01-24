@@ -1,17 +1,14 @@
-﻿using LazyCache;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
+using Microsoft.Extensions.DependencyInjection;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
-using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -53,12 +50,10 @@ namespace PhpbbInDotnet.Forum.Pages
         public IEnumerable<BotData>? BotList { get; private set; }
         public Paginator? BotPaginator { get; private set; }
 
-        public MemberListModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger,
-            IConfiguration config, ITranslationProvider translationProvider, IAnonymousSessionCounter sessionCounter)
-            : base(context, forumService, userService, cache, logger, translationProvider)
+        public MemberListModel(IServiceProvider serviceProvider) : base(serviceProvider)
         {
-            _config = config;
-            _sessionCounter = sessionCounter;
+            _config = serviceProvider.GetRequiredService<IConfiguration>();
+            _sessionCounter = serviceProvider.GetRequiredService<IAnonymousSessionCounter>();
         }
 
         public async Task<IActionResult> OnGet()

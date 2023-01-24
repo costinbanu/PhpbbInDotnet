@@ -28,6 +28,7 @@ namespace PhpbbInDotnet.Forum.Pages
     public class LoginModel : BaseModel
     {
         private readonly IForumDbContext _context;
+        private readonly ISqlExecuter _sqlExecuter;
         private readonly IConfiguration _config;
         private readonly IEncryptionService _encryptionService;
         private readonly IEmailService _emailService;
@@ -73,9 +74,10 @@ namespace PhpbbInDotnet.Forum.Pages
         public LoginMode Mode { get; private set; }
         public ITranslationProvider TranslationProvider { get; }
 
-        public LoginModel(IForumDbContext context, IConfiguration config, ITranslationProvider translationProvider, IEncryptionService encryptionService, IEmailService emailService)
+        public LoginModel(IForumDbContext context, ISqlExecuter sqlExecuter, IConfiguration config, ITranslationProvider translationProvider, IEncryptionService encryptionService, IEmailService emailService)
         {
             _context = context;
+            _sqlExecuter = sqlExecuter;
             _config = config;
             TranslationProvider = translationProvider;
             _encryptionService = encryptionService;
@@ -111,9 +113,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
-            var sqlExecuter = _context.GetSqlExecuter();
-
-            var user = await sqlExecuter.QueryAsync<PhpbbUsers>(
+            var user = await _sqlExecuter.QueryAsync<PhpbbUsers>(
                 "SELECT * FROM phpbb_users WHERE username_clean = @username", 
                 new { username = StringUtility.CleanString(UserName) });
             var lang = TranslationProvider.GetLanguage();
@@ -147,7 +147,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (currentUser.UserShouldSignIn)
             {
-                await sqlExecuter.ExecuteAsync(
+                await _sqlExecuter.ExecuteAsync(
                     "UPDATE phpbb_users SET user_should_sign_in = 0 WHERE user_id = @userId",
                     new { currentUser.UserId });
             }

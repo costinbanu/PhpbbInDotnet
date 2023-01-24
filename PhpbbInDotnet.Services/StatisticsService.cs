@@ -10,12 +10,12 @@ namespace PhpbbInDotnet.Services
     class StatisticsService : IStatisticsService
     {
         private readonly IAppCache _cache;
-        private readonly IForumDbContext _dbContext;
+        private readonly ISqlExecuter _sqlExecuter;
 
-        public StatisticsService(IAppCache cache, IForumDbContext dbContext)
+        public StatisticsService(IAppCache cache, ISqlExecuter sqlExecuter)
         {
             _cache = cache;
-            _dbContext = dbContext;
+            _sqlExecuter = sqlExecuter;
         }
 
         public async Task<Statistics> GetStatisticsSummary()
@@ -23,14 +23,13 @@ namespace PhpbbInDotnet.Services
 
         async Task<Statistics> GetStatisticsImpl()
         {
-            var sqlExecuter = _dbContext.GetSqlExecuter();
             var since = DateTime.UtcNow.AddHours(-24).ToUnixTimestamp();
 
-            var timeTask = sqlExecuter.ExecuteScalarAsync<long>("SELECT min(post_time) FROM phpbb_posts");
-            var userTask = sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_users");
-            var postTask = sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_posts");
-            var topicTask = sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_topics");
-            var forumTask = sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_forums");
+            var timeTask = _sqlExecuter.ExecuteScalarAsync<long>("SELECT min(post_time) FROM phpbb_posts");
+            var userTask = _sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_users");
+            var postTask = _sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_posts");
+            var topicTask = _sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_topics");
+            var forumTask = _sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_forums");
             
             await Task.WhenAll(timeTask, userTask, postTask, topicTask, forumTask);
 
@@ -48,19 +47,18 @@ namespace PhpbbInDotnet.Services
 
         public async Task<TimedStatistics> GetTimedStatistics(DateTime? startTime)
         {
-            var sqlExecuter = _dbContext.GetSqlExecuter();
             var since = startTime?.ToUnixTimestamp();
 
-            var usersTask = sqlExecuter.ExecuteScalarAsync<int>(
+            var usersTask = _sqlExecuter.ExecuteScalarAsync<int>(
                 "SELECT count(1) FROM phpbb_users WHERE @since IS NULL OR user_lastvisit >= @since", 
                 new { since });
-            var postsTask = sqlExecuter.ExecuteScalarAsync<int>(
+            var postsTask = _sqlExecuter.ExecuteScalarAsync<int>(
                 "SELECT count(1) FROM phpbb_posts WHERE @since IS NULL OR post_time >= @since", 
                 new { since });
-            var fileSizeTask = sqlExecuter.ExecuteScalarAsync<long>(
+            var fileSizeTask = _sqlExecuter.ExecuteScalarAsync<long>(
                 "SELECT sum(filesize) FROM phpbb_attachments WHERE @since IS NULL OR filetime >= @since", 
                 new { since });
-            var fileCountTask = sqlExecuter.ExecuteScalarAsync<long>(
+            var fileCountTask = _sqlExecuter.ExecuteScalarAsync<long>(
                 "SELECT count(1) FROM phpbb_attachments WHERE @since IS NULL OR filetime >= @since",
                 new { since });
 

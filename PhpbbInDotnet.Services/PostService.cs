@@ -20,15 +20,17 @@ namespace PhpbbInDotnet.Services
 {
     class PostService : IPostService
     {
-        private readonly IForumDbContext _context;
+        private readonly ISqlExecuter _sqlExecuter;
+        private readonly IForumDbContext _dbContext;
         private readonly IUserService _userService;
         private readonly IAppCache _cache;
         private readonly int _maxAttachmentCount;
         private readonly ILogger _logger;
 
-        public PostService(IForumDbContext context, IUserService userService, IAppCache cache, IConfiguration config, ILogger logger)
+        public PostService(ISqlExecuter sqlExecuter, IForumDbContext dbContext, IUserService userService, IAppCache cache, IConfiguration config, ILogger logger)
         {
-            _context = context;
+            _sqlExecuter = sqlExecuter;
+            _dbContext = dbContext;
             _userService = userService;
             _cache = cache;
             var countLimit = config.GetObject<AttachmentLimits>("UploadLimitsCount");
@@ -63,8 +65,7 @@ namespace PhpbbInDotnet.Services
             {
                 try
                 {
-                    var sqlExecuter = _context.GetSqlExecuter();
-                    await sqlExecuter.ExecuteAsync(
+                    await _sqlExecuter.ExecuteAsync(
                         "UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE attach_id IN @ids",
                         new { ids }
                     );
@@ -83,7 +84,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<PostListDto> GetPosts(int topicId, int pageNum, int pageSize, bool isPostingView, string language)
         {
-            var posts = await _context.GetSqlExecuter().QueryAsync<PostDto>(
+            var posts = await _sqlExecuter.QueryAsync<PostDto>(
                      @"WITH ranks AS (
 					    SELECT DISTINCT u.user_id, 
 						       COALESCE(r1.rank_id, r2.rank_id) AS rank_id, 
@@ -140,15 +141,15 @@ namespace PhpbbInDotnet.Services
 
             var countTask = isPostingView 
                 ? Task.FromResult<int?>(null) 
-                : _context.GetSqlExecuter().ExecuteScalarAsync<int?>(
+                : _sqlExecuter.ExecuteScalarAsync<int?>(
                     "SELECT COUNT(post_id) FROM phpbb_posts WHERE topic_id = @topicId",
                     new { topicId });
-            var dbAttachmentsTask = _context.GetSqlExecuter().QueryAsync<PhpbbAttachments>(
+            var dbAttachmentsTask = _sqlExecuter.QueryAsync<PhpbbAttachments>(
                 "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @currentPostIds",
                 new { currentPostIds });
             var reportsTask = isPostingView
                 ? Task.FromResult(Enumerable.Empty<ReportDto>())
-                : _context.GetSqlExecuter().QueryAsync<ReportDto>(
+                : _sqlExecuter.QueryAsync<ReportDto>(
                     @"SELECT r.report_id AS id, 
 		                     rr.reason_title, 
                              rr.reason_description, 
@@ -183,12 +184,10 @@ namespace PhpbbInDotnet.Services
             var options = Enumerable.Empty<PhpbbPollOptions>();
             var voters = Enumerable.Empty<PollOptionVoter>();
 
-            var sqlExecuter = _context.GetSqlExecuter();
-
-            options = await sqlExecuter.QueryAsync<PhpbbPollOptions>("SELECT * FROM phpbb_poll_options WHERE topic_id = @TopicId ORDER BY poll_option_id", new { _currentTopic.TopicId });
+            options = await _sqlExecuter.QueryAsync<PhpbbPollOptions>("SELECT * FROM phpbb_poll_options WHERE topic_id = @TopicId ORDER BY poll_option_id", new { _currentTopic.TopicId });
             if (options.Any())
             {
-                voters = await sqlExecuter.QueryAsync<PollOptionVoter>(
+                voters = await _sqlExecuter.QueryAsync<PollOptionVoter>(
                     @"SELECT u.user_id, u.username, v.poll_option_id
                         FROM phpbb_users u
                         JOIN phpbb_poll_votes v ON u.user_id = v.vote_user_id
@@ -223,10 +222,8 @@ namespace PhpbbInDotnet.Services
 
         public async Task CascadePostEdit(PhpbbPosts added)
         {
-            var sqlExecuter = _context.GetSqlExecuter();
-
-            var curTopic = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { added.TopicId });
-            var curForum = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { curTopic.ForumId });
+            var curTopic = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { added.TopicId });
+            var curForum = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { curTopic.ForumId });
             var usr = await _userService.GetAuthenticatedUserById(added.PosterId);
 
             if (curTopic.TopicFirstPostId == added.PostId)
@@ -247,10 +244,8 @@ namespace PhpbbInDotnet.Services
 
         public async Task CascadePostAdd(PhpbbPosts added, bool ignoreTopic)
         {
-            var sqlExecuter = _context.GetSqlExecuter();
-
-            var curTopic = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { added.TopicId });
-            var curForum = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { curTopic.ForumId });
+            var curTopic = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { added.TopicId });
+            var curForum = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { curTopic.ForumId });
             var usr = await _userService.GetAuthenticatedUserById(added.PosterId);
 
             await SetForumLastPost(curForum, added, usr);
@@ -261,7 +256,7 @@ namespace PhpbbInDotnet.Services
                 await SetTopicFirstPost(curTopic, added, usr, false);
             }
 
-            await sqlExecuter.ExecuteAsync(
+            await _sqlExecuter.ExecuteAsync(
                 "UPDATE phpbb_topics SET topic_replies = topic_replies + 1, topic_replies_real = topic_replies_real + 1 WHERE topic_id = @topicId; " +
                 "UPDATE phpbb_users SET user_posts = user_posts + 1 WHERE user_id = @userId",
                 new { curTopic.TopicId, usr.UserId }
@@ -270,15 +265,14 @@ namespace PhpbbInDotnet.Services
 
         public async Task CascadePostDelete(PhpbbPosts deleted, bool ignoreTopic, bool ignoreAttachmentsAndReports)
         {
-            var sqlExecuter = _context.GetSqlExecuter();
-            var curTopic = await _context.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == deleted.TopicId);
+            var curTopic = await _dbContext.PhpbbTopics.AsNoTracking().FirstOrDefaultAsync(t => t.TopicId == deleted.TopicId);
 
-            if (curTopic != null && await _context.PhpbbPosts.AsNoTracking().AnyAsync(p => p.TopicId == deleted.TopicId))
+            if (curTopic != null && await _dbContext.PhpbbPosts.AsNoTracking().AnyAsync(p => p.TopicId == deleted.TopicId))
             {
                 if (curTopic.TopicLastPostId == deleted.PostId && !ignoreTopic)
                 {
                     var lastTopicPost = await (
-                        from p in _context.PhpbbPosts.AsNoTracking()
+                        from p in _dbContext.PhpbbPosts.AsNoTracking()
                         where p.TopicId == curTopic.TopicId && p.PostId != deleted.PostId
                         orderby p.PostTime descending
                         select p
@@ -293,7 +287,7 @@ namespace PhpbbInDotnet.Services
                 if (curTopic.TopicFirstPostId == deleted.PostId && !ignoreTopic)
                 {
                     var firstTopicPost = await (
-                        from p in _context.PhpbbPosts.AsNoTracking()
+                        from p in _dbContext.PhpbbPosts.AsNoTracking()
                         where p.TopicId == curTopic.TopicId && p.PostId != deleted.PostId
                         orderby p.PostTime ascending
                         select p
@@ -307,7 +301,7 @@ namespace PhpbbInDotnet.Services
 
                 if (!ignoreTopic)
                 {
-                    await sqlExecuter.ExecuteAsync(
+                    await _sqlExecuter.ExecuteAsync(
                         "UPDATE phpbb_topics SET topic_replies = GREATEST(topic_replies - 1, 0), topic_replies_real = GREATEST(topic_replies_real - 1, 0) WHERE topic_id = @topicId",
                         new { curTopic.TopicId }
                     );
@@ -315,12 +309,12 @@ namespace PhpbbInDotnet.Services
             }
             else
             {
-                await sqlExecuter.ExecuteAsync("DELETE FROM phpbb_topics WHERE topic_id = @topicId", new { deleted.TopicId });
+                await _sqlExecuter.ExecuteAsync("DELETE FROM phpbb_topics WHERE topic_id = @topicId", new { deleted.TopicId });
             }
 
             if (!ignoreAttachmentsAndReports)
             {
-                await sqlExecuter.ExecuteAsync(
+                await _sqlExecuter.ExecuteAsync(
                     "DELETE FROM phpbb_reports WHERE post_id = @postId; " +
                     "DELETE FROM phpbb_attachments WHERE post_msg_id = @postId",
                     new { deleted.PostId }
@@ -329,11 +323,11 @@ namespace PhpbbInDotnet.Services
 
             if (curTopic != null)
             {
-                var curForum = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { forumId = curTopic?.ForumId ?? deleted.ForumId });
+                var curForum = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { forumId = curTopic?.ForumId ?? deleted.ForumId });
                 if (curForum != null && curForum.ForumLastPostId == deleted.PostId)
                 {
                     var lastForumPost = await (
-                        from p in _context.PhpbbPosts.AsNoTracking()
+                        from p in _dbContext.PhpbbPosts.AsNoTracking()
                         where p.ForumId == curForum.ForumId && p.PostId != deleted.PostId
                         orderby p.PostTime descending
                         select p
@@ -346,7 +340,7 @@ namespace PhpbbInDotnet.Services
                 }
             }
 
-            await sqlExecuter.ExecuteAsync(
+            await _sqlExecuter.ExecuteAsync(
                 "UPDATE phpbb_users SET user_posts = user_posts - 1 WHERE user_id = @posterId",
                 new { deleted.PosterId }
             );
@@ -363,8 +357,7 @@ namespace PhpbbInDotnet.Services
                 topic.TopicLastPosterId = post.PosterId;
                 topic.TopicLastPosterName = author.UserId == Constants.ANONYMOUS_USER_ID ? post.PostUsername : author.Username!;
 
-                var sqlExecuter = _context.GetSqlExecuter();
-                await sqlExecuter.ExecuteAsync(
+                await _sqlExecuter.ExecuteAsync(
                     @"UPDATE phpbb_topics 
                          SET topic_last_post_id = @TopicLastPostId, 
                              topic_last_post_subject = @TopicLastPostSubject, 
@@ -389,9 +382,7 @@ namespace PhpbbInDotnet.Services
                 forum.ForumLastPosterId = post.PosterId;
                 forum.ForumLastPosterName = author.UserId == Constants.ANONYMOUS_USER_ID ? post.PostUsername : author.Username!;
 
-                var sqlExecuter = _context.GetSqlExecuter();
-
-                await sqlExecuter.ExecuteAsync(
+                await _sqlExecuter.ExecuteAsync(
                     @"UPDATE phpbb_forums 
                          SET forum_last_post_id = @ForumLastPostId, 
                              forum_last_post_subject = @ForumLastPostSubject, 
@@ -407,9 +398,7 @@ namespace PhpbbInDotnet.Services
 
         private async Task SetTopicFirstPost(PhpbbTopics topic, PhpbbPosts post, AuthenticatedUser author, bool setTopicTitle, bool goForward = false)
         {
-            var sqlExecuter = _context.GetSqlExecuter();
-
-            var curFirstPost = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @TopicFirstPostId", new { topic.TopicFirstPostId });
+            var curFirstPost = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @TopicFirstPostId", new { topic.TopicFirstPostId });
             if (topic.TopicFirstPostId == 0 || goForward || (curFirstPost != null && curFirstPost.PostTime >= post.PostTime))
             {
                 if (setTopicTitle)
@@ -420,7 +409,7 @@ namespace PhpbbInDotnet.Services
                 topic.TopicFirstPosterColour = author.UserColor!;
                 topic.TopicFirstPosterName = author.Username!;
 
-                await sqlExecuter.ExecuteAsync(
+                await _sqlExecuter.ExecuteAsync(
                     @"UPDATE phpbb_topics 
                          SET topic_title = @TopicTitle, 
                              topic_first_post_id = @TopicFirstPostId, 

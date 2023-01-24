@@ -1,17 +1,14 @@
 ﻿using Dapper;
-using LazyCache;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using PhpbbInDotnet.Database;
+using Microsoft.Extensions.DependencyInjection;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
-using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -103,20 +100,18 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IModeratorService _moderatorService;
         private readonly IWritingToolsService _writingToolsService;
 
-        public ViewTopicModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger, IPostService postService, 
-            IModeratorService moderatorService, IWritingToolsService writingToolsService, ITranslationProvider translationProvider)
-            : base(context, forumService, userService, cache, logger, translationProvider)
+        public ViewTopicModel(IServiceProvider serviceProvider) : base(serviceProvider)
         {
-            _postService = postService;
-            _moderatorService = moderatorService;
-            _writingToolsService = writingToolsService;
+            _postService = serviceProvider.GetRequiredService<IPostService>();
+            _moderatorService = serviceProvider.GetRequiredService<IModeratorService>();
+            _writingToolsService = serviceProvider.GetRequiredService<IWritingToolsService>();
         }
 
         public async Task<IActionResult> OnGetByPostId()
             => await WithValidPost(PostId ?? 0, async (curForum, curTopic, _) =>
             {
                 var pageSize = ForumUser.GetPageSize(curTopic.TopicId);
-                var idx = Context.GetSqlExecuter().ExecuteScalar<int>(
+                var idx = SqlExecuter.ExecuteScalar<int>(
                     @"SET @row_num = 0;
                       WITH row_numbers AS (
 	                      SELECT @row_num := @row_num + 1 AS row_num,
@@ -147,7 +142,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostPagination(int topicId, int userPostsPerPage, int? postId)
             => await WithRegisteredUser(async (user) =>
             {
-                await Context.GetSqlExecuter().ExecuteAsync(
+                await SqlExecuter.ExecuteAsync(
                     @"INSERT INTO phpbb_user_topic_post_number (user_id, topic_id, post_no) 
                            VALUES (@userId, @topicId, @userPostsPerPage)
                       ON DUPLICATE KEY UPDATE post_no = @userPostsPerPage",
@@ -172,7 +167,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return Unauthorized();
                 }
 
-                var sqlExecuter = Context.GetSqlExecuter();
+                var sqlExecuter = SqlExecuter;
                 
                 var existingVotes = (await sqlExecuter.QueryAsync<PhpbbPollVotes>("SELECT * FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @UserId", new { topicId, user.UserId })).AsList();
                 if (existingVotes.Count > 0 && topic.PollVoteChange == 0)
@@ -287,7 +282,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return Unauthorized();
                 }
 
-                var sqlExecuter = Context.GetSqlExecuter();
+                var sqlExecuter = SqlExecuter;
 
                 var toDelete = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId = postIds[0] });
                 if (toDelete == null)
@@ -326,7 +321,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostReportMessage(int? reportPostId, short? reportReasonId, string reportDetails)
             => await WithRegisteredUser((user) => WithValidPost(reportPostId ?? 0, async (_, _, _) =>
             {
-                var sqlExecuter = Context.GetSqlExecuter();
+                var sqlExecuter = SqlExecuter;
                 await sqlExecuter.ExecuteAsync(
                     "INSERT INTO phpbb_reports (post_id, user_id, reason_id, report_text, report_time, report_closed) " +
                     "VALUES (@PostId, @UserId, @ReasonId, @ReportText, @ReportTime, 0)",
@@ -363,7 +358,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     PostId = reportPostId;
                 }
 
-                var sqlExecuter = Context.GetSqlExecuter();
+                var sqlExecuter = SqlExecuter;
                 await sqlExecuter.ExecuteAsync(
                     "UPDATE phpbb_reports SET report_closed = 1 WHERE report_id = @reportId;",
                     new { reportId }
@@ -522,7 +517,7 @@ namespace PhpbbInDotnet.Forum.Pages
             ForumRulesUid = curForum.ForumRulesUid;
 
             var markAsReadTask = MarkAsRead();
-            var updateViewCountTask = Context.GetSqlExecuter().ExecuteAsync(
+            var updateViewCountTask = SqlExecuter.ExecuteAsync(
                 "UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId",
                 new { topicId = TopicId!.Value }
             );
@@ -542,7 +537,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task<(int? LatestSelected, int? NextRemaining)> GetSelectedAndNextRemainingPostIds(params int[] idsToInclude)
         {
-            var sqlExecuter = Context.GetSqlExecuter();
+            var sqlExecuter = SqlExecuter;
 
             var latestSelectedPost = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
                 "SELECT * FROM phpbb_posts WHERE post_id IN @ids ORDER BY post_time DESC", 

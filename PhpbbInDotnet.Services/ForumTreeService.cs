@@ -17,7 +17,7 @@ namespace PhpbbInDotnet.Services
 {
     class ForumTreeService : IForumTreeService
     {
-        private readonly IForumDbContext _context;
+        private readonly ISqlExecuter _sqlExecuter;
         private readonly IConfiguration _config;
         private readonly ILogger _logger;
         private readonly IAppCache _cache;
@@ -26,9 +26,9 @@ namespace PhpbbInDotnet.Services
         private Dictionary<int, HashSet<Tracking>>? _tracking;
         private IEnumerable<(int forumId, bool hasPassword)>? _restrictedForums;
 
-        public ForumTreeService(IForumDbContext context, IAppCache cache, IConfiguration config, ILogger logger)
+        public ForumTreeService(ISqlExecuter sqlExecuter, IAppCache cache, IConfiguration config, ILogger logger)
         {
-            _context = context;
+            _sqlExecuter = sqlExecuter;
             _config = config;
             _logger = logger;
             _cache = cache;
@@ -149,21 +149,21 @@ namespace PhpbbInDotnet.Services
 
             async Task<HashSet<ForumTree>> GetForumTree()
             {
-                var tree = await _context.GetSqlExecuter().QueryAsync<ForumTree>(
+                var tree = await _sqlExecuter.QueryAsync<ForumTree>(
                     "CALL get_forum_tree()");
                 return tree.ToHashSet();
             }
 
             async Task<HashSet<ForumTopicCount>> GetForumTopicCount()
             {
-                var count = await _context.GetSqlExecuter().QueryAsync<ForumTopicCount>(
+                var count = await _sqlExecuter.QueryAsync<ForumTopicCount>(
                     "SELECT forum_id, count(topic_id) as topic_count FROM phpbb_topics GROUP BY forum_id");
                 return count.ToHashSet();
             }
 
             async Task<Dictionary<int, List<(int ActualForumId, int TopicId)>>> GetShortcutParentForums()
             {
-                var rawData = await _context.GetSqlExecuter().QueryAsync(
+                var rawData = await _sqlExecuter.QueryAsync(
                     @"SELECT s.forum_id AS shortcut_forum_id, 
                              s.topic_id,
                              t.forum_id AS actual_forum_id
@@ -208,7 +208,7 @@ namespace PhpbbInDotnet.Services
             }
 
             var dbResults = Enumerable.Empty<ExtendedTracking>();
-            var sqlExecuter = _context.GetSqlExecuter();
+            var sqlExecuter = _sqlExecuter;
             try
             {
                 dbResults = await sqlExecuter.QueryAsync<ExtendedTracking>("CALL `forum`.`get_post_tracking`(@userId);", new { userId });
@@ -242,7 +242,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<List<TopicGroup>> GetTopicGroups(int forumId)
         {
-            var topics = await _context.GetSqlExecuter().QueryAsync<TopicDto>(
+            var topics = await _sqlExecuter.QueryAsync<TopicDto>(
                 @"SELECT t.topic_id, 
 		                 t.forum_id,
 		                 t.topic_title, 
@@ -429,7 +429,7 @@ namespace PhpbbInDotnet.Services
                 return 0;
             }
 
-            return unchecked((int)((await _context.GetSqlExecuter().QuerySingleOrDefaultAsync(
+            return unchecked((int)((await _sqlExecuter.QuerySingleOrDefaultAsync(
                 "SELECT post_id, post_time FROM phpbb_posts WHERE post_id IN @postIds HAVING post_time = MIN(post_time)",
                 new { postIds = item?.Posts.DefaultIfNullOrEmpty() }
             ))?.post_id ?? 0u));

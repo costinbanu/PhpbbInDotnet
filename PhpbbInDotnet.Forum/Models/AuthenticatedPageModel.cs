@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.DependencyInjection;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain.Extensions;
@@ -26,20 +27,22 @@ namespace PhpbbInDotnet.Forum.Models
         protected readonly IAppCache Cache;
         protected readonly IUserService UserService;
         protected readonly IForumDbContext Context;
+        protected readonly ISqlExecuter SqlExecuter;
         protected readonly ILogger Logger;
 
         public ITranslationProvider TranslationProvider { get; }
 
         private string? _language;
 
-        public AuthenticatedPageModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cacheService, ILogger logger, ITranslationProvider translationProvider)
+        public AuthenticatedPageModel(IServiceProvider serviceProvider)
         {
-            ForumService = forumService;
-            Cache = cacheService;
-            UserService = userService;
-            Context = context;
-            Logger = logger;
-            TranslationProvider = translationProvider;
+            ForumService = serviceProvider.GetRequiredService<IForumTreeService>();
+            Cache = serviceProvider.GetRequiredService<IAppCache>();
+            UserService = serviceProvider.GetRequiredService<IUserService>();
+            Context = serviceProvider.GetRequiredService<IForumDbContext>();
+            SqlExecuter = serviceProvider.GetRequiredService<ISqlExecuter>();
+            Logger = serviceProvider.GetRequiredService<ILogger>();
+            TranslationProvider = serviceProvider.GetRequiredService<ITranslationProvider>();
         }
 
         public AuthenticatedUserExpanded ForumUser
@@ -76,9 +79,7 @@ namespace PhpbbInDotnet.Forum.Models
             try
             {
                 var usrId = ForumUser.UserId;
-                var sqlExecuter = Context.GetSqlExecuter();
-
-                await sqlExecuter.ExecuteAsync(
+                await SqlExecuter.ExecuteAsync(
                     "DELETE FROM phpbb_topics_track WHERE forum_id = @forumId AND user_id = @usrId; " +
                     "REPLACE INTO phpbb_forums_track (forum_id, user_id, mark_time) VALUES (@forumId, @usrId, @markTime);",
                     new { forumId, usrId, markTime = DateTime.UtcNow.ToUnixTimestamp() }
@@ -110,7 +111,7 @@ namespace PhpbbInDotnet.Forum.Models
                 //there are other unread topics in this forum, or unread pages in this topic, so just mark the current page as read
                 try
                 {
-                    await Context.GetSqlExecuter().ExecuteAsync(
+                    await SqlExecuter.ExecuteAsync(
                         sql: "CALL mark_topic_read(@forumId, @topicId, @userId, @markTime)",
                         param: new { forumId, topicId, userId, markTime }
                     );
@@ -127,7 +128,7 @@ namespace PhpbbInDotnet.Forum.Models
             var usrId = ForumUser.UserId;
             try
             {
-                var sqlExecuter = Context.GetSqlExecuter();
+                var sqlExecuter = SqlExecuter;
                 await sqlExecuter.ExecuteAsync("UPDATE phpbb_users SET user_lastmark = @markTime WHERE user_id = @usrId", new { markTime = DateTime.UtcNow.ToUnixTimestamp(), usrId });
             }
             catch (Exception ex)
@@ -171,7 +172,7 @@ namespace PhpbbInDotnet.Forum.Models
 
         protected async Task<IActionResult> WithValidForum(int forumId, bool overrideCheck, Func<PhpbbForums, Task<IActionResult>> toDo, string? forumLoginReturnUrl = null)
         {
-            var sqlExecuter = Context.GetSqlExecuter();
+            var sqlExecuter = SqlExecuter;
             var curForum = await sqlExecuter.QuerySingleOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { forumId });
 
             if (!overrideCheck)
@@ -223,7 +224,7 @@ namespace PhpbbInDotnet.Forum.Models
 
         protected async Task<IActionResult> WithValidTopic(int topicId, Func<PhpbbForums, PhpbbTopics, Task<IActionResult>> toDo, string? forumLoginReturnUrl = null)
         {
-            var sqlExecuter = Context.GetSqlExecuter();
+            var sqlExecuter = SqlExecuter;
 
             var curTopic = await sqlExecuter.QuerySingleOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
 
@@ -236,7 +237,7 @@ namespace PhpbbInDotnet.Forum.Models
 
         protected async Task<IActionResult> WithValidPost(int postId, Func<PhpbbForums, PhpbbTopics, PhpbbPosts, Task<IActionResult>> toDo, string? forumLoginReturnUrl = null)
         {
-            var sqlExecuter = Context.GetSqlExecuter();
+            var sqlExecuter = SqlExecuter;
 
             var curPost = await sqlExecuter.QuerySingleOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId });
             if (curPost == null)

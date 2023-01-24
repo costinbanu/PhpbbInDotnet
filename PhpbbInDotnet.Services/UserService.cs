@@ -18,7 +18,7 @@ namespace PhpbbInDotnet.Services
 {
     class UserService : IUserService
     {
-        private readonly IForumDbContext _context;
+        private readonly ISqlExecuter _sqlExecuter;
         private readonly IConfiguration _config;
         private readonly ILogger _logger;
         private readonly IEmailService _emailService;
@@ -31,10 +31,10 @@ namespace PhpbbInDotnet.Services
 
         private static PhpbbUsers? _anonymousDbUser;
 
-        public UserService(IForumDbContext context, IConfiguration config, ITranslationProvider translationProvider, ILogger logger, IEmailService emailService)
+        public UserService(ISqlExecuter sqlExecuter, IConfiguration config, ITranslationProvider translationProvider, ILogger logger, IEmailService emailService)
         {
             _translationProvider = translationProvider;
-            _context = context;
+            _sqlExecuter = sqlExecuter;
             _config = config;
             _logger = logger;
             _emailService = emailService;
@@ -67,8 +67,8 @@ namespace PhpbbInDotnet.Services
             {
                 return _anonymousDbUser;
             }
-            var sqlExecuter = _context.GetSqlExecuter();
-            _anonymousDbUser = await sqlExecuter.QuerySingleAsync<PhpbbUsers>(
+            
+            _anonymousDbUser = await _sqlExecuter.QuerySingleAsync<PhpbbUsers>(
                 "SELECT * FROM phpbb_users WHERE user_id = @ANONYMOUS_USER_ID", 
                 new { Constants.ANONYMOUS_USER_ID });
             return _anonymousDbUser;
@@ -91,20 +91,19 @@ namespace PhpbbInDotnet.Services
 
         public async Task<IEnumerable<PhpbbRanks>> GetAllRanks()
         {
-            var sqlExecuter = _context.GetSqlExecuter();
-            return await sqlExecuter.QueryAsync<PhpbbRanks>("SELECT * FROM phpbb_ranks ORDER BY rank_title");
+            
+            return await _sqlExecuter.QueryAsync<PhpbbRanks>("SELECT * FROM phpbb_ranks ORDER BY rank_title");
         }
 
         public async Task<IEnumerable<PhpbbGroups>> GetAllGroups()
         {
-            var sqlExecuter = _context.GetSqlExecuter();
-            return await sqlExecuter.QueryAsync<PhpbbGroups>("SELECT * FROM phpbb_groups ORDER BY group_name");
+            
+            return await _sqlExecuter.QueryAsync<PhpbbGroups>("SELECT * FROM phpbb_groups ORDER BY group_name");
         }
 
         public async Task<PhpbbGroups> GetUserGroup(int userId)
         {
-            var sqlExecuter = _context.GetSqlExecuter();
-            return await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbGroups>(
+            return await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbGroups>(
                 @"SELECT g.* FROM phpbb_groups g 
                     JOIN phpbb_user_group ug ON g.group_id = ug.group_id 
                    WHERE ug.user_id = @userId",
@@ -114,8 +113,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<AuthenticatedUser> GetAuthenticatedUserById(int userId)
         {
-            var sqlExecuter = _context.GetSqlExecuter();
-            var usr = await sqlExecuter.QuerySingleOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
+            var usr = await _sqlExecuter.QuerySingleOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
             return DbUserToAuthenticatedUserBase(usr);
         }
 
@@ -148,9 +146,7 @@ namespace PhpbbInDotnet.Services
                     return (_translationProvider.Errors[language, "ON_RECEIVERS_FOE_LIST"], false);
                 }
 
-                var sqlExecuter = _context.GetSqlExecuter();
-
-                await sqlExecuter.ExecuteAsync(
+                await _sqlExecuter.ExecuteAsync(
                     @"START TRANSACTION;
                       INSERT INTO phpbb_privmsgs (author_id, to_address, bcc_address, message_subject, message_text, message_time) VALUES (@senderId, @to, '', @subject, @text, @time); 
                       SELECT LAST_INSERT_ID() INTO @inserted_id;
@@ -188,9 +184,7 @@ namespace PhpbbInDotnet.Services
             var language = _translationProvider.GetLanguage();
             try
             {
-                var sqlExecuter = _context.GetSqlExecuter();
-
-                var rows = await sqlExecuter.ExecuteAsync(
+                var rows = await _sqlExecuter.ExecuteAsync(
                     @"UPDATE phpbb_privmsgs SET message_subject = @subject, message_text = @text 
                        WHERE msg_id = @messageId 
                          AND EXISTS(
@@ -220,9 +214,7 @@ namespace PhpbbInDotnet.Services
             var language = _translationProvider.GetLanguage();
             try
             {
-                var sqlExecuter = _context.GetSqlExecuter();
-
-                var rows = await sqlExecuter.ExecuteAsync(
+                var rows = await _sqlExecuter.ExecuteAsync(
                     @"START TRANSACTION;
                       DELETE m FROM phpbb_privmsgs m JOIN phpbb_privmsgs_to tt ON m.msg_id = tt.msg_id AND tt.pm_unread = 1 WHERE m.msg_id = @messageId; 
                       DELETE t FROM phpbb_privmsgs_to t JOIN phpbb_privmsgs_to tt ON t.msg_id = tt.msg_id AND tt.pm_unread = 1 WHERE t.msg_id = @messageId;
@@ -248,8 +240,8 @@ namespace PhpbbInDotnet.Services
             var language = _translationProvider.GetLanguage();
             try
             {
-                var sqlExecuter = _context.GetSqlExecuter();
-                var rows = await sqlExecuter.ExecuteAsync(
+                
+                var rows = await _sqlExecuter.ExecuteAsync(
                     @"UPDATE phpbb_privmsgs_to
                          SET folder_id = -10
                        WHERE msg_id IN @messageIds AND user_id = @userId",
@@ -268,32 +260,23 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<int> GetUnreadPMCount(int userId)
-        {
-            var sqlExecuter = _context.GetSqlExecuter();
-            return await sqlExecuter.QueryFirstOrDefaultAsync<int>(
-                "SELECT count(1) FROM phpbb_privmsgs_to WHERE user_id = @userId AND folder_id >= 0 AND pm_unread = 1", 
-                new { userId });
-        }
+        public Task<int> GetUnreadPMCount(int userId)
+            => _sqlExecuter.QueryFirstOrDefaultAsync<int>(
+                    "SELECT count(1) FROM phpbb_privmsgs_to WHERE user_id = @userId AND folder_id >= 0 AND pm_unread = 1", 
+                    new { userId });
 
         public async Task<HashSet<AuthenticatedUserExpanded.Permissions>> GetPermissions(int userId)
-        {
-            var sqlExecuter = _context.GetSqlExecuter();
-            return new HashSet<AuthenticatedUserExpanded.Permissions>(
-                await sqlExecuter.QueryAsync<AuthenticatedUserExpanded.Permissions>("CALL get_user_permissions(@userId)", new { userId }));
-        }
+            => new HashSet<AuthenticatedUserExpanded.Permissions>(
+                    await _sqlExecuter.QueryAsync<AuthenticatedUserExpanded.Permissions>("CALL get_user_permissions(@userId)", new { userId }));
 
         public async Task<HashSet<int>> GetFoes(int userId)
-        {
-            var sqlExecuter = _context.GetSqlExecuter();
-            return new HashSet<int>(await sqlExecuter.QueryAsync<int>(
-                @"SELECT zebra_id
-                    FROM phpbb_zebra
-                   WHERE user_id = @user_id 
-                     AND foe = 1;",
-                new { userId }
-            ));
-        }
+            => new HashSet<int>(await _sqlExecuter.QueryAsync<int>(
+                    @"SELECT zebra_id
+                        FROM phpbb_zebra
+                       WHERE user_id = @user_id 
+                         AND foe = 1;",
+                    new { userId }
+                ));
 
         public async Task<IEnumerable<PhpbbAclRoles>> GetUserRolesLazy()
         {
@@ -302,9 +285,7 @@ namespace PhpbbInDotnet.Services
                 return _userRoles;
             }
 
-            var sqlExecuter = _context.GetSqlExecuter();
-
-            _userRoles = await sqlExecuter.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'u_'");
+            _userRoles = await _sqlExecuter.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'u_'");
 
             return _userRoles;
         }
@@ -316,7 +297,7 @@ namespace PhpbbInDotnet.Services
                 return _userMap;
             }
             _userMap = (
-                await _context.GetSqlExecuter().QueryAsync("SELECT username, user_id FROM phpbb_users WHERE user_id <> @id AND user_type <> 2 ORDER BY username", new { id = Constants.ANONYMOUS_USER_ID })
+                await _sqlExecuter.QueryAsync("SELECT username, user_id FROM phpbb_users WHERE user_id <> @id AND user_type <> 2 ORDER BY username", new { id = Constants.ANONYMOUS_USER_ID })
             ).Select(u => KeyValuePair.Create((string)u.username, (int)u.user_id)).ToList();
             return _userMap;
         }
@@ -331,9 +312,7 @@ namespace PhpbbInDotnet.Services
                 return _modRoles;
             }
 
-            var sqlExecuter = _context.GetSqlExecuter();
-
-            _modRoles = await sqlExecuter.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'm_'");
+            _modRoles = await _sqlExecuter.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'm_'");
 
             return _modRoles;
         }
@@ -345,9 +324,7 @@ namespace PhpbbInDotnet.Services
                 return _adminRoles;
             }
 
-            var sqlExecuter = _context.GetSqlExecuter();
-
-            _adminRoles = await sqlExecuter.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'a_'");
+            _adminRoles = await _sqlExecuter.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'a_'");
 
             return _adminRoles;
         }

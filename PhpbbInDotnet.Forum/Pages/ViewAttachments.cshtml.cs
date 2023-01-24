@@ -1,15 +1,11 @@
-using LazyCache;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
-using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Services;
-using Serilog;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -35,8 +31,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         const int PAGE_SIZE = 20;
 
-        public ViewAttachmentsModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache,  ILogger logger, ITranslationProvider translationProvider)
-            : base(context, forumService, userService, cache, logger, translationProvider)
+        public ViewAttachmentsModel(IServiceProvider serviceProvider) : base(serviceProvider)
         {
 
         }

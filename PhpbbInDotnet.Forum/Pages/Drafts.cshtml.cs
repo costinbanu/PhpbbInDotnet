@@ -1,15 +1,11 @@
 using Dapper;
-using LazyCache;
 using Microsoft.AspNetCore.Mvc;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
-using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Services;
-using Serilog;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -26,8 +22,7 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public int[]? SelectedDrafts { get; set; }
 
-        public DraftsModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger, ITranslationProvider translationProvider)
-            : base(context, forumService, userService, cache, logger, translationProvider)
+        public DraftsModel(IServiceProvider serviceProvider) : base(serviceProvider)
         {
         }
 
@@ -39,7 +34,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     {
                         var restrictedForumList = await GetRestrictedForums();
                         PageNum = Paginator.NormalizePageNumberLowerBound(PageNum);
-                        var draftsTask = Context.GetSqlExecuter().QueryAsync<TopicDto>(
+                        var draftsTask = SqlExecuter.QueryAsync<TopicDto>(
                             @"SELECT d.draft_id,
 				                     d.topic_id, 
 				                     d.forum_id,
@@ -63,7 +58,7 @@ namespace PhpbbInDotnet.Forum.Pages
                                 restrictedForumList
                             }
                         );
-                        var countTask = Context.GetSqlExecuter().ExecuteScalarAsync<int>(
+                        var countTask = SqlExecuter.ExecuteScalarAsync<int>(
                             @"SELECT COUNT(*) as total_count
                                 FROM forum.phpbb_drafts d
 	                            LEFT JOIN forum.phpbb_topics t
@@ -92,8 +87,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostDeleteDrafts()
             => await WithRegisteredUser(async (_) =>
             {
-                var sqlExecuter = Context.GetSqlExecuter();
-                await sqlExecuter.ExecuteAsync(
+                await SqlExecuter.ExecuteAsync(
                     "DELETE FROM phpbb_drafts WHERE draft_id IN @ids", 
                     new { ids = SelectedDrafts.DefaultIfNullOrEmpty() });
                 return await OnGet();

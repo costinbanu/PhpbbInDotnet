@@ -21,19 +21,19 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
     {
         readonly IConfiguration _config;
         readonly ITimeService _timeService;
-        readonly IForumDbContext _dbContext;
+        readonly ISqlExecuter _sqlExecuter;
         readonly IStorageService _storageService;
         readonly IUserService _userService;
         readonly IForumTreeService _forumTreeService;
         readonly IWebHostEnvironment _webHostEnvironment;
         readonly ILogger _logger;
 
-        public SiteMapGenerator(IConfiguration config, ITimeService timeService, IForumDbContext dbContext, IStorageService storageService, 
+        public SiteMapGenerator(IConfiguration config, ITimeService timeService, ISqlExecuter sqlExecuter, IStorageService storageService, 
             IUserService userService, IForumTreeService forumTreeService, IWebHostEnvironment webHostEnvironment, ILogger logger)
         {
             _config = config;
             _timeService = timeService;
-            _dbContext = dbContext;
+            _sqlExecuter = sqlExecuter;
             _storageService = storageService;
             _userService = userService;
             _forumTreeService = forumTreeService;
@@ -117,9 +117,7 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
 
         async IAsyncEnumerable<SitemapUrl> GetTopics(IEnumerable<int>? allowedForums)
         {
-            var sqlExecuter = _dbContext.GetSqlExecuter();
-
-            var topics = await sqlExecuter.QueryAsync(
+            var topics = await _sqlExecuter.QueryAsync(
                 @"WITH counts AS (
 	                SELECT count(1) as post_count, 
 		                    topic_id
@@ -143,7 +141,7 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
                 var pager = new Pager(totalItems: (int)topic.post_count, pageSize: Constants.DEFAULT_PAGE_SIZE);
                 for (var currentPage = 1; currentPage <= pager.TotalPages; currentPage++)
                 {
-                    var time = await sqlExecuter.ExecuteScalarAsync<long>(
+                    var time = await _sqlExecuter.ExecuteScalarAsync<long>(
                         @"WITH times AS (
 	                        SELECT post_time, post_edit_time
 	                            FROM phpbb_posts

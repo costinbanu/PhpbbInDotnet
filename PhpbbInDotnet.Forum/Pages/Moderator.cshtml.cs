@@ -1,16 +1,13 @@
-using LazyCache;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using PhpbbInDotnet.Database;
+using Microsoft.Extensions.DependencyInjection;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
-using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -56,13 +53,11 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool ScrollToAction => TopicAction.HasValue && DestinationForumId.HasValue;
         public IEnumerable<DeletedItemGroup>? DeletedItems { get; private set; }
 
-        public ModeratorModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger, 
-            ITranslationProvider translationProvider, IModeratorService moderatorService, IPostService postService, IOperationLogService operationLogService)
-            : base(context, forumService, userService, cache, logger, translationProvider)
+        public ModeratorModel(IServiceProvider serviceProvider) : base(serviceProvider)
         {
-            _moderatorService = moderatorService;
-            _postService = postService;
-            _operationLogService = operationLogService;
+            _moderatorService = serviceProvider.GetRequiredService<IModeratorService>();
+            _postService = serviceProvider.GetRequiredService<IPostService>();
+            _operationLogService = serviceProvider.GetRequiredService<IOperationLogService>();
         }
 
         public int[] GetTopicIds()
@@ -145,8 +140,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     try
                     {
-                        var sqlExecuter = Context.GetSqlExecuter();
-                        await sqlExecuter.ExecuteAsync(
+                        await SqlExecuter.ExecuteAsync(
                             "UPDATE phpbb_reports SET report_closed = 1 WHERE report_id IN @SelectedReports",
                             new { SelectedReports }
                         );
@@ -361,12 +355,10 @@ namespace PhpbbInDotnet.Forum.Pages
                 toAdd.PollMaxOptions = (byte)dto.Poll.PollMaxOptions;
                 toAdd.PollVoteChange = dto.Poll.VoteCanBeChanged.ToByte();
 
-                var sqlExecuter = Context.GetSqlExecuter();
-                await sqlExecuter.ExecuteAsync(
+                await SqlExecuter.ExecuteAsync(
                     "INSERT INTO phpbb_poll_options (poll_option_id, poll_option_text, topic_id) " +
                     "VALUES (@pollOptionId, @pollOptionText, @topicId)", 
-                    dto.Poll.PollOptions
-                );
+                    dto.Poll.PollOptions);
             }
             Context.PhpbbTopics.Add(toAdd);
             Context.PhpbbRecycleBin.Remove(deletedItem);

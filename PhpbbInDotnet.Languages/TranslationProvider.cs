@@ -23,6 +23,7 @@ namespace PhpbbInDotnet.Languages
 
         private readonly ILogger _logger;
         private readonly IForumDbContext _context;
+        private readonly ISqlExecuter _sqlExecuter;
         private readonly IAppCache _cache;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -73,10 +74,11 @@ namespace PhpbbInDotnet.Languages
 
         #endregion Translation declarations
 
-        public TranslationProvider(ILogger logger, IAppCache cache, IForumDbContext context, IHttpContextAccessor httpContextAccessor)
+        public TranslationProvider(ILogger logger, IAppCache cache, IForumDbContext context, ISqlExecuter sqlExecuter, IHttpContextAccessor httpContextAccessor)
         {
             _logger = logger;
             _context = context;
+            _sqlExecuter = sqlExecuter;
             _cache = cache;
             _httpContextAccessor = httpContextAccessor;
 
@@ -135,7 +137,7 @@ namespace PhpbbInDotnet.Languages
                       {
                           var parsed = new CultureInfo(language).TwoLetterISOLanguageName;
                           
-                          if (_context.GetSqlExecuter().ExecuteScalar<bool>("SELECT count(1) FROM phpbb_lang WHERE lang_iso = @parsed", new { parsed }) &&
+                          if (_sqlExecuter.ExecuteScalar<bool>("SELECT count(1) FROM phpbb_lang WHERE lang_iso = @parsed", new { parsed }) &&
                               new Translation[] { BasicText, AboutCookies, Email, Enums, JSText, Errors, PostingGuide, TermsAndConditions, Moderator, Admin, CustomBBCodeGuide, AttachmentGuide, BBCodes }
                               .All(x => x.Exists(parsed)))
                           {

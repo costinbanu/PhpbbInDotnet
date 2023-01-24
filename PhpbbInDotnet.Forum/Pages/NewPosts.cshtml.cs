@@ -1,14 +1,9 @@
 using Dapper;
-using LazyCache;
 using Microsoft.AspNetCore.Mvc;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Forum.Models;
-using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Services;
-using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -31,8 +26,7 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public string[]? SelectedNewPosts { get; set; }
 
-        public NewPostsModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger, ITranslationProvider translationProvider)
-            : base(context, forumService, userService, cache, logger, translationProvider)
+        public NewPostsModel(IServiceProvider serviceProvider) : base(serviceProvider)
         {
         }
 
@@ -45,7 +39,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 Paginator = new Paginator(count: topicList.Count(), pageNum: PageNum, link: "/NewPosts?pageNum=1", topicId: null);
                 PageNum = Paginator.CurrentPage;
 
-                Topics = (await Context.GetSqlExecuter().QueryAsync<TopicDto>(
+                Topics = (await SqlExecuter.QueryAsync<TopicDto>(
                     @"SELECT t.topic_id, 
 	                         t.forum_id,
 	                         t.topic_title, 

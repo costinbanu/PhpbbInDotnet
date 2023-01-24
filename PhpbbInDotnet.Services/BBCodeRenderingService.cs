@@ -30,6 +30,7 @@ namespace PhpbbInDotnet.Services
         private static readonly Regex _quoteAttributeRegex = new("(\".+\")[, ]{0,2}([0-9]+)?", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
 
         private readonly IForumDbContext _context;
+        private readonly ISqlExecuter _sqlExecuter;
         private readonly IWritingToolsService _writingService;
         private readonly BBCodeParser _parser;
         private readonly Lazy<Dictionary<string, string>> _bannedWords;
@@ -44,10 +45,11 @@ namespace PhpbbInDotnet.Services
 
         public Dictionary<string, BBTagSummary> TagMap { get; }
 
-        public BBCodeRenderingService(IForumDbContext context, IWritingToolsService writingService, IAppCache cache, 
+        public BBCodeRenderingService(IForumDbContext context, ISqlExecuter sqlExecuter, IWritingToolsService writingService, IAppCache cache, 
             ITranslationProvider translationProvider, ILogger logger, IRazorViewService razorViewService)
         {
             _context = context;
+            _sqlExecuter = sqlExecuter;
             _writingService = writingService;
             _bannedWords = new Lazy<Dictionary<string, string>>(() => 
                 _writingService.GetBannedWords()
@@ -59,7 +61,7 @@ namespace PhpbbInDotnet.Services
             _logger = logger;
             _razorViewService = razorViewService;
 
-            var tagList = _context.GetSqlExecuter().Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes").AsList();
+            var tagList = _sqlExecuter.Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes").AsList();
 
             _attrRegex = new Regex(@"\$\{[a-z0-9]+\}", RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant);
             var (bbTags, tagMap) = GenerateCompleteTagListAndMap(tagList);
@@ -145,7 +147,7 @@ namespace PhpbbInDotnet.Services
             return bbCodeText;
         }
 
-        private List<string> SplitHighlightWords(string? search)
+        private static List<string> SplitHighlightWords(string? search)
         {
             var highlightWords = new List<string>();
             if (string.IsNullOrWhiteSpace(search))
@@ -196,7 +198,7 @@ namespace PhpbbInDotnet.Services
 
         private string CensorWords(string? text, Dictionary<string, string> wordMap)
         {
-            Regex getRegex(string wildcard)
+            static Regex getRegex(string wildcard)
                 => new(@"\b" + Regex.Escape(wildcard).Replace(@"\*", @"\w*").Replace(@"\?", @"\w") + @"\b", RegexOptions.None, Constants.REGEX_TIMEOUT);
 
             return ProcessAllWords(
@@ -291,7 +293,7 @@ namespace PhpbbInDotnet.Services
             return input!;
         }
 
-        private int GetIgnoreOffset(int index, params Match[] matches)
+        private static int GetIgnoreOffset(int index, params Match[] matches)
         {
             var match = matches?.Where(m => m.Success && index >= m.Index && index < m.Index + m.Length)?.OrderBy(m => m.Length)?.LastOrDefault();
             if (match != null)
@@ -308,7 +310,7 @@ namespace PhpbbInDotnet.Services
                 _writingService.GetBbCodesCacheKey(lang),
                 () =>
                 {
-                    var maxId = _context.GetSqlExecuter().ExecuteScalar<int>("SELECT max(bbcode_id) FROM phpbb_bbcodes");
+                    var maxId = _sqlExecuter.ExecuteScalar<int>("SELECT max(bbcode_id) FROM phpbb_bbcodes");
                     var tagsCache = new Dictionary<string, (BBTag Tag, BBTagSummary Summary)>
                     {
                         ["b"] = (

@@ -6,17 +6,15 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
+using Microsoft.Extensions.DependencyInjection;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
-using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
-using Serilog;
 using SixLabors.ImageSharp;
 using System;
 using System.Collections.Generic;
@@ -105,17 +103,15 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private const int DB_CACHE_EXPIRATION_MINUTES = 20;
 
-        public UserModel(ILogger logger, IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, IStorageService storageService, IWritingToolsService writingService, 
-            IConfiguration config, ITranslationProvider translationProvider, IOperationLogService operationLogService, IEmailService emailService, IHttpClientFactory httpClientFactory)
-            : base(context, forumService, userService, cache, logger, translationProvider)
+        public UserModel(IServiceProvider serviceProvider) : base(serviceProvider)
         {
-            _storageService = storageService;
-            _writingService = writingService;
-            _operationLogService = operationLogService;
-            _config = config;
-            _emailService = emailService;
+            _storageService = serviceProvider.GetRequiredService<IStorageService>();
+            _writingService = serviceProvider.GetRequiredService<IWritingToolsService>();
+            _operationLogService = serviceProvider.GetRequiredService<IOperationLogService>();
+            _config = serviceProvider.GetRequiredService<IConfiguration>();
+            _emailService = serviceProvider.GetRequiredService<IEmailService>();
             _imageProcessorOptions = _config.GetObject<ExternalImageProcessor>();
-            _imageProcessorClient = _imageProcessorOptions.Api?.Enabled == true ? httpClientFactory.CreateClient(_imageProcessorOptions.Api.ClientName) : null;
+            _imageProcessorClient = _imageProcessorOptions.Api?.Enabled == true ? serviceProvider.GetRequiredService<IHttpClientFactory>().CreateClient(_imageProcessorOptions.Api.ClientName) : null;
         }
 
         public async Task<IActionResult> OnGet()
@@ -476,8 +472,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return await PageWithErrorAsync(nameof(CurrentUser), TranslationProvider.Errors[Language, "AN_ERROR_OCCURRED"], toDoBeforeReturn: () => Mode = UserPageMode.AddFoe, resultFactory: OnGet);
                 }
                 var cur = await Context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
-                var sqlExecuter = Context.GetSqlExecuter();
-                await sqlExecuter.ExecuteAsync(
+                await SqlExecuter.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;" +
                     "INSERT INTO phpbb_zebra (user_id, zebra_id, friend, foe) VALUES (@userId, @otherId, 0, 1)",
                     new { user.UserId, otherId = cur!.UserId }
@@ -495,8 +490,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return await PageWithErrorAsync(nameof(CurrentUser), TranslationProvider.Errors[Language, "AN_ERROR_OCCURRED"], toDoBeforeReturn: () => Mode = UserPageMode.AddFoe, resultFactory: OnGet);
                 }
                 var cur = await Context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
-                var sqlExecuter = Context.GetSqlExecuter();
-                await sqlExecuter.ExecuteAsync(
+                await SqlExecuter.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;",
                     new { user.UserId, otherId = cur!.UserId }
                 );
@@ -511,8 +505,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     return Unauthorized();
                 }
-                var sqlExecuter = Context.GetSqlExecuter();
-                await sqlExecuter.ExecuteAsync(
+                await SqlExecuter.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id IN @otherIds;",
                     new { user.UserId, otherIds = SelectedFoes!.DefaultIfEmpty() }
                 );
@@ -541,7 +534,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<List<PhpbbLang>> GetLanguages()
             => await Cache.GetOrAddAsync(
                 key: nameof(PhpbbLang),
-                addItemFactory: async () => (await (Context.GetSqlExecuter()).QueryAsync<PhpbbLang>("SELECT * FROM phpbb_lang")).AsList(),
+                addItemFactory: async () => (await SqlExecuter.QueryAsync<PhpbbLang>("SELECT * FROM phpbb_lang")).AsList(),
                 expires: DateTimeOffset.UtcNow.AddMinutes(DB_CACHE_EXPIRATION_MINUTES)
             );
 
@@ -562,7 +555,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 from j in joined
                 select j
             ).ToListAsync();
-            var attachTask = (Context.GetSqlExecuter()).QueryFirstOrDefaultAsync(
+            var attachTask = SqlExecuter.QueryFirstOrDefaultAsync(
                 "SELECT sum(a.filesize) as size, count(a.attach_id) as cnt " +
                 "FROM phpbb_attachments a " +
                 "JOIN phpbb_posts p ON a.post_msg_id = p.post_id " +
