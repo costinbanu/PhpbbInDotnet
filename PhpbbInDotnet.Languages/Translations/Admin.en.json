@@ -47,6 +47,7 @@
 
     //users
     "INACTIVE_USERS": "Inactive users",
+    "ACTIVE_USERS_WITH_UNCONFIRMED_EMAIL": "Active users with unconfirmed e-mail",
     "SELECT_ALL_INACTIVE_USERS": "Select all inactive users",
     "DELETE_SELECTED_INACTIVE_USERS": "Delete selected inactive users",
     "DELETE_INACTIVE_USERS_CONFIRMATION": "The selected inactive users will be deleted. Are you sure you want to continue?",
@@ -96,6 +97,7 @@
     "USER_REMINDED_FORMAT": "We have sent an email reminder to '{0}'.",
     "CANT_REMIND_INVALID_USER_STATE_FORMAT": "The user '{0}' can't receive a reminder because their current status ('{1}') doesn't allow it.",
     "ONE_OR_MORE_INVALID_INPUT_DATES": "One or more dates is invalid.",
+    "OPEN_IN_ADMIN_PANEL": "Open in admin panel",
 
     "INVALID_RANK_NAME": "Invalid rank name",
     "RANK_DOESNT_EXIST_FORMAT": "The rank '{0}' doesn't exist.",

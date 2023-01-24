@@ -13,6 +13,7 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials.Admin
 
         public List<PhpbbUsers>? SearchResults { get; set; }
         public List<PhpbbUsers>? InactiveUsers { get; set; }
+        public List<PhpbbUsers>? ActiveUsersWithUnconfirmedEmail { get; set; }
         public List<UpsertGroupDto>? Groups { get; set; }
         public List<PhpbbRanks>? Ranks { get; set; }
         public List<UpsertBanListDto>? BanList { get; set; }

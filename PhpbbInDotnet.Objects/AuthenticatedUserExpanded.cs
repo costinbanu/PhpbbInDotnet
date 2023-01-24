@@ -19,6 +19,7 @@ namespace PhpbbInDotnet.Objects
             JumpToUnread = @base.JumpToUnread;
             Language = @base.Language;
             EmailAddress = @base.EmailAddress;
+            ShouldConfirmEmail= @base.ShouldConfirmEmail;
         }
 
         public AuthenticatedUserExpanded() { }

@@ -2,12 +2,16 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using NuGet.Protocol.Core.Types;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using Serilog;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -85,13 +89,35 @@ namespace PhpbbInDotnet.Forum.Pages
             Title = TranslationProvider.BasicText[lang, "REGISTRATION_CONFIRM_TITLE"];
         }
 
+        public Task<IActionResult> OnGetSendConfirmationEmail()
+         => WithRegisteredUser(async user =>
+         {
+             var subject = string.Format(TranslationProvider.BasicText[Language, "VERIFY_EMAIL_ADDRESS_FORMAT"], _config.GetValue<string>("ForumName"));
+             var registrationCode = Guid.NewGuid().ToString("n");
+             var emailAddress = user.EmailAddress!;
+             var dbUser = await Context.PhpbbUsers.FirstAsync(u => u.UserId == user.UserId);
+             dbUser.UserActkey = registrationCode;
+
+             await _emailService.SendEmail(
+                to: emailAddress,
+                subject: subject,
+                bodyRazorViewName: "_WelcomeEmailPartial",
+                bodyRazorViewModel: new WelcomeEmailDto(subject, registrationCode, dbUser.Username, dbUser.UserLang));
+
+             await Context.SaveChangesAsync();
+
+             Message = $"<span class=\"message success\">{string.Format(TranslationProvider.BasicText[Language, "VERIFICATION_EMAIL_SENT_FORMAT"], emailAddress)}</span>";
+             return Page();
+         });
+
         public async Task OnGetConfirmEmail(string code, string username)
         {
             var user = Context.PhpbbUsers.FirstOrDefault(u =>
                 u.UsernameClean == username &&
-                u.UserActkey == code &&
-                (u.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed || u.UserInactiveReason == UserInactiveReason.ChangedEmailNotConfirmed)
-            );
+                u.UserActkey == code && (
+                    u.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed || 
+                    u.UserInactiveReason == UserInactiveReason.ChangedEmailNotConfirmed ||
+                    u.UserInactiveReason == UserInactiveReason.Active_NotConfirmed));
 
             var lang = Language;
 
@@ -101,38 +127,47 @@ namespace PhpbbInDotnet.Forum.Pages
             }
             else
             {
-                Message = string.Format(TranslationProvider.BasicText[lang, "EMAIL_CONFIRM_MESSAGE_FORMAT"], _config.GetValue<string>("AdminEmail"));
+                if (user.UserInactiveReason == UserInactiveReason.Active_NotConfirmed)
+                {
+                    Message = $"<span class=\"message success\">{TranslationProvider.BasicText[lang, "EMAIL_VERIFICATION_SUCCESSFUL"]}</span>";
 
-                if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed)
-                {
-                    user.UserInactiveReason = UserInactiveReason.NewlyRegisteredConfirmed;
+                    user.UserInactiveReason = UserInactiveReason.NotInactive;
                 }
-                else if (user.UserInactiveReason == UserInactiveReason.ChangedEmailNotConfirmed)
+                else
                 {
-                    user.UserInactiveReason = UserInactiveReason.ChangedEmailConfirmed;
+                    Message = string.Format(TranslationProvider.BasicText[lang, "EMAIL_CONFIRM_MESSAGE_FORMAT"], _config.GetValue<string>("AdminEmail"));
+
+                    if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed)
+                    {
+                        user.UserInactiveReason = UserInactiveReason.NewlyRegisteredConfirmed;
+                    }
+                    else if (user.UserInactiveReason == UserInactiveReason.ChangedEmailNotConfirmed)
+                    {
+                        user.UserInactiveReason = UserInactiveReason.ChangedEmailConfirmed;
+                    }
+
+                    var admins = await (
+                        from u in Context.PhpbbUsers.AsNoTracking()
+                        join ug in Context.PhpbbUserGroup.AsNoTracking()
+                        on u.UserId equals ug.UserId
+                        into joined
+                        from j in joined
+                        where j.GroupId == Constants.ADMIN_GROUP_ID
+                        select u
+                    ).ToListAsync();
+
+                    await Task.WhenAll(admins.Select(admin =>
+                    {
+                        var subject = TranslationProvider.Email[admin.UserLang, "NEWUSER_SUBJECT"];
+                        return _emailService.SendEmail(
+                            to: admin.UserEmail,
+                            subject: subject,
+                            bodyRazorViewName: "_NewUserNotification",
+                            bodyRazorViewModel: new SimpleEmailBody(user.Username, admin.UserLang));
+                    }));
                 }
                 user.UserActkey = string.Empty;
                 await Context.SaveChangesAsync();
-
-                var admins = await (
-                    from u in Context.PhpbbUsers.AsNoTracking()
-                    join ug in Context.PhpbbUserGroup.AsNoTracking()
-                    on u.UserId equals ug.UserId
-                    into joined
-                    from j in joined
-                    where j.GroupId == Constants.ADMIN_GROUP_ID
-                    select u
-                ).ToListAsync();
-
-                await Task.WhenAll(admins.Select(admin =>
-                {
-                    var subject = TranslationProvider.Email[admin.UserLang, "NEWUSER_SUBJECT"];
-                    return _emailService.SendEmail(
-                        to: admin.UserEmail,
-                        subject: subject,
-                        bodyRazorViewName: "_NewUserNotification",
-                        bodyRazorViewModel: new SimpleEmailBody(user.Username, admin.UserLang));
-                }));
             }
             Title = TranslationProvider.BasicText[lang, "EMAIL_CONFIRM_TITLE"];
         }

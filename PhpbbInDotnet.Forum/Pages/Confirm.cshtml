@@ -108,7 +108,10 @@ else
 {
     <span style="font-size:1.1em">@Html.Raw(Model.Message)</span>
     <p>&nbsp;</p>
-    <a asp-page="./Login">@Html.Raw(Model.TranslationProvider.BasicText[lang, "LOGIN", Domain.Casing.FirstUpper])</a>
-    <br />
+    if (Model.ForumUser.IsAnonymous)
+    {
+        <a asp-page="./Login">@Html.Raw(Model.TranslationProvider.BasicText[lang, "LOGIN", Domain.Casing.FirstUpper])</a>
+        <br />
+    }
     <a asp-page="./">@Html.Raw(Model.TranslationProvider.BasicText[lang, "HOME", Domain.Casing.FirstUpper])</a>
 }

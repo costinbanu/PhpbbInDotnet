@@ -128,7 +128,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }
 
             var currentUser = user.First();
-            if (currentUser.UserInactiveReason != UserInactiveReason.NotInactive || currentUser.UserInactiveTime != 0)
+            if ((currentUser.UserInactiveReason != UserInactiveReason.NotInactive && currentUser.UserInactiveReason != UserInactiveReason.Active_NotConfirmed) || currentUser.UserInactiveTime != 0)
             {
                 ModelState.AddModelError(nameof(LoginErrorMessage), TranslationProvider.Errors[lang, "INACTIVE_USER"]);
                 return Page();

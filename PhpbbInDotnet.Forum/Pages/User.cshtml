@@ -729,4 +729,12 @@ else
         </form>
         <p></p>
     </div>
+
+    @if (isGlobalAdmin)
+    {
+        <p></p>
+        <a asp-page="Admin" asp-route-userId="@pageUser.UserId" asp-page-handler="UserSearch">
+            @Html.Raw(Model.TranslationProvider.Admin[Lang, "OPEN_IN_ADMIN_PANEL"])
+        </a>
+    }
 }

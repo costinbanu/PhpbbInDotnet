@@ -332,5 +332,15 @@
     "REMOVED_FROM_FOES_CONFIRMATION_FORMAT": "'{0}' a fost eliminat din lista ta de persoane neagreate.",
     "CHANGES_SAVED": "Modificările au fost salvate.",
     "CHANGES_SAVED_MUST_LOGIN": "Modificările au fost salvate. Vei fi deconectat și vei primi instrucțiuni pe noua adresă de email pentru a te putea reconecta la forum.",
-    "LANGUAGE": "Limbă"
+    "LANGUAGE": "Limbă",
+
+    //email not confirmed warning
+    "EMAIL_NOT_CONFIRMED_WARNING_FORMAT": "Am constatat că adresa de email asociată contului ({0}) trebuie verificată. Te rugăm să o verifici sau să o schimbi.",
+    "SEND_VERIFICATION_EMAIL": "Trimite un mesaj e-mail de verificare",
+    "CHANGE_EMAIL_ADDRESS": "Schimbă adresa de e-mail",
+    "VERIFICATION_EMAIL_SENT_FORMAT": "Un mesaj e-mail de verificare a fost trimis la {0}.",
+    "VERIFICATION_REQUEST_SUBMITTED": "Solicitarea de verificare a adresei de e-mail a fost trimisă.",
+    "REQUEST_EMAIL_VERIFICATION": "Solicită verificarea  adresei de e-mail",
+    "VERIFY_EMAIL_ADDRESS_FORMAT": "Verifică adresa de e-mail pe {0}",
+    "EMAIL_VERIFICATION_SUCCESSFUL": "Adresa ta de e-mail a fost verificată."
 }

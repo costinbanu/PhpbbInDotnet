@@ -332,5 +332,15 @@
     "REMOVED_FROM_FOES_CONFIRMATION_FORMAT": "'{0}' was removed from your foe list.",
     "CHANGES_SAVED": "The changes have been saved.",
     "CHANGES_SAVED_MUST_LOGIN": "The changes have been saved. You will be logged off and will receive instructions about logging back in on your new e-mail address.",
-    "LANGUAGE": "Language"
+    "LANGUAGE": "Language",
+
+    //email not confirmed warning
+    "EMAIL_NOT_CONFIRMED_WARNING_FORMAT": "We noticed the e-mail address associated to this account ({0}) should be verified. Please verify it now.",
+    "SEND_VERIFICATION_EMAIL": "Send a verification e-mail",
+    "CHANGE_EMAIL_ADDRESS": "Change your e-mail address",
+    "VERIFICATION_EMAIL_SENT_FORMAT": "A verification email has been sent to {0}.",
+    "VERIFICATION_REQUEST_SUBMITTED": "The e-mail verification request has been submitted",
+    "REQUEST_EMAIL_VERIFICATION": "Request e-mail verification",
+    "VERIFY_EMAIL_ADDRESS_FORMAT": "Verify e-mail address on {0}",
+    "EMAIL_VERIFICATION_SUCCESSFUL": "Your e-mail has been verified."
 }

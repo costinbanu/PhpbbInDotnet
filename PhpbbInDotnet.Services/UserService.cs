@@ -85,7 +85,8 @@ namespace PhpbbInDotnet.Services
                 AllowPM = dbUser.UserAllowPm.ToBool(),
                 JumpToUnread = dbUser.JumpToUnread,
                 UserColor = dbUser.UserColour,
-                UserDateFormat = dbUser.UserDateformat
+                UserDateFormat = dbUser.UserDateformat,
+                ShouldConfirmEmail = dbUser.UserInactiveReason == UserInactiveReason.Active_NotConfirmed
             };
 
         public async Task<IEnumerable<PhpbbRanks>> GetAllRanks()

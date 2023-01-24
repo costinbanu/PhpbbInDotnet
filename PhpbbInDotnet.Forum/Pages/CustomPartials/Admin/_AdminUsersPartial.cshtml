@@ -167,6 +167,27 @@
     </div>
 </div>
 <hr class="BoxSeparator" />
+<h4 onclick="expandSection('activeUsersWithUnconfirmedEmailSection', 'activeUsersWithUnconfirmedEmailChar')" style="cursor:pointer" id="activeUsersWithUnconfirmedEmailTitle">
+    @Html.Raw(_translationProvider.Admin[Model.Language, "ACTIVE_USERS_WITH_UNCONFIRMED_EMAIL"])
+    <span id="activeUsersWithUnconfirmedEmailChar">&#x1F53D;</span>
+</h4>
+<div id="activeUsersWithUnconfirmedEmailSection" style="display:none">
+
+    @await Html.PartialAsync(
+        "_AdminUsersSummaryPartial",
+        new _AdminUsersSummaryPartialModel
+        {
+            DateFormat = Model.DateFormat,
+            Users = Model.ActiveUsersWithUnconfirmedEmail,
+            Language = Model.Language
+        },
+        ViewData)
+
+    <div style="width:100%; text-align:right; font-size:1.5em">
+        <a href="#activeUsersWithUnconfirmedEmailTitle">&#x23EB;</a>
+    </div>
+</div>
+<hr class="BoxSeparator" />
 <h4 onclick="expandSection('groupsSection', 'groupsChar')" style="cursor:pointer" id="groupsTitle">
     @Html.Raw(_translationProvider.BasicText[Model.Language, "GROUPS", Casing.FirstUpper])
     <span id="groupsChar">&#x1F53D;</span>

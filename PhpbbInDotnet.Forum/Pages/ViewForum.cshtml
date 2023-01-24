@@ -48,7 +48,7 @@
     }
 </script>
 
-@if (currentUser.JumpToUnread == true)
+@if (currentUser.JumpToUnread == true && !currentUser.ShouldConfirmEmail)
 {
     <script>
         $(window).on('load', function () {
