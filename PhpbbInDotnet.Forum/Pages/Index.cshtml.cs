@@ -1,6 +1,7 @@
 using LazyCache;
 using Microsoft.AspNetCore.Mvc;
 using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;

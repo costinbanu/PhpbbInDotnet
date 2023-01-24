@@ -6,6 +6,7 @@ using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
+using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
@@ -236,9 +237,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 else
                 {
-                    ModelState.AddModelError(nameof(MessageId), Message);
-                    Show = PrivateMessagesPages.Message;
-                    return await OnGet();
+                    return await PageWithErrorAsync(nameof(MessageId), Message, toDoBeforeReturn: () => Show = PrivateMessagesPages.Message, resultFactory: OnGet);
                 }
             });
 
@@ -254,9 +253,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 else
                 {
-                    ModelState.AddModelError(nameof(MessageId), Message);
-                    Show = PrivateMessagesPages.Message;
-                    return await OnGet();
+                    return await PageWithErrorAsync(nameof(MessageId), Message, toDoBeforeReturn: () => Show = PrivateMessagesPages.Message, resultFactory: OnGet);
                 }
             });
 
@@ -276,9 +273,9 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 var (Message, IsSuccess) = await UserService.HidePrivateMessages(user.UserId, SelectedMessages!);
 
-                if (!(IsSuccess ?? false))
+                if (!IsSuccess != true)
                 {
-                    ModelState.AddModelError(nameof(MessageId), Message);
+                    return PageWithError(nameof(MessageId), Message);
                 }
                 return await OnGet();
             });

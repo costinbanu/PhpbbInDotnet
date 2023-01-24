@@ -8,6 +8,7 @@ using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
+using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
@@ -285,10 +286,7 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         protected override IActionResult PageWithError(PhpbbForums curForum, string errorKey, string errorMessage)
-        {
-            CurrentForum = curForum;
-            return PageWithError(errorKey, errorMessage);
-        }
+            => PageWithError(errorKey, errorMessage, () => CurrentForum = curForum);
 
         private Task<IActionResult> WithBackup(Func<Task<IActionResult>> toDo)
         {

@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Utilities;
+using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
@@ -17,7 +18,7 @@ using System.Web;
 namespace PhpbbInDotnet.Forum.Pages
 {
     [ValidateAntiForgeryToken]
-    public class ForumLoginModel : PageModel
+    public class ForumLoginModel : BaseModel
     {
         private readonly IForumDbContext _context;
         private readonly IAppCache _cache;
@@ -81,8 +82,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (string.IsNullOrWhiteSpace(Password))
             {
-                ModelState.AddModelError(nameof(Password), TranslationProvider.Errors[Language, "MISSING_REQUIRED_FIELD"]);
-                return Page();
+                return PageWithError(nameof(Password), TranslationProvider.Errors[Language, "MISSING_REQUIRED_FIELD"]);
             }
                        
             if (forum == null)
@@ -104,8 +104,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (forum.ForumPassword != Crypter.Phpass.Crypt(Password, forum.ForumPassword))
             {
-                ModelState.AddModelError(nameof(Password), TranslationProvider.Errors[Language, "WRONG_PASS"]);
-                return await OnGet();
+                return await PageWithErrorAsync(nameof(Password), TranslationProvider.Errors[Language, "WRONG_PASS"], OnGet);
             }
             else
             {

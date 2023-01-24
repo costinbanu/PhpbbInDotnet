@@ -17,6 +17,7 @@ using System.Threading.Tasks;
 using System.Web;
 using IOFile = System.IO.File;
 using Serilog;
+using PhpbbInDotnet.Forum.Models;
 
 namespace PhpbbInDotnet.Forum.Pages
 {

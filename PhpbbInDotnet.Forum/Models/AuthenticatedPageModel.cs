@@ -3,10 +3,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
-using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
@@ -20,9 +18,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
 
-namespace PhpbbInDotnet.Forum
+namespace PhpbbInDotnet.Forum.Models
 {
-    public abstract class AuthenticatedPageModel : PageModel
+    public abstract class AuthenticatedPageModel : BaseModel
     {
         protected readonly IForumTreeService ForumService;
         protected readonly IAppCache Cache;
@@ -51,7 +49,7 @@ namespace PhpbbInDotnet.Forum
             => _language ??= TranslationProvider.GetLanguage(ForumUser);
 
         public async Task<(HashSet<ForumTree> Tree, Dictionary<int, HashSet<Tracking>>? Tracking)> GetForumTree(bool forceRefresh, bool fetchUnreadData)
-            => (Tree: await ForumService.GetForumTree(ForumUser, forceRefresh, fetchUnreadData), 
+            => (Tree: await ForumService.GetForumTree(ForumUser, forceRefresh, fetchUnreadData),
                 Tracking: fetchUnreadData ? await ForumService.GetForumTracking(ForumUser.UserId, forceRefresh) : null);
 
         protected async Task MarkForumAndSubforumsRead(int forumId)
@@ -112,7 +110,7 @@ namespace PhpbbInDotnet.Forum
                 //there are other unread topics in this forum, or unread pages in this topic, so just mark the current page as read
                 try
                 {
-                    await (Context.GetSqlExecuter()).ExecuteAsync(
+                    await Context.GetSqlExecuter().ExecuteAsync(
                         sql: "CALL mark_topic_read(@forumId, @topicId, @userId, @markTime)",
                         param: new { forumId, topicId, userId, markTime }
                     );
@@ -189,7 +187,7 @@ namespace PhpbbInDotnet.Forum
                 if (tree.TryGetValue(new ForumTree { ForumId = forumId }, out var cur))
                 {
                     path = cur?.PathList ?? new List<int>();
-                }    
+                }
 
                 var restrictedAncestor = (
                     from t in path
@@ -226,9 +224,9 @@ namespace PhpbbInDotnet.Forum
         protected async Task<IActionResult> WithValidTopic(int topicId, Func<PhpbbForums, PhpbbTopics, Task<IActionResult>> toDo, string? forumLoginReturnUrl = null)
         {
             var sqlExecuter = Context.GetSqlExecuter();
-            
+
             var curTopic = await sqlExecuter.QuerySingleOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
-            
+
             if (curTopic == null)
             {
                 return NotFound();

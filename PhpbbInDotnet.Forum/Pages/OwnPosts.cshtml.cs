@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Utilities;
+using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;

@@ -7,6 +7,7 @@ using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
+using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
@@ -176,8 +177,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var existingVotes = (await sqlExecuter.QueryAsync<PhpbbPollVotes>("SELECT * FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @UserId", new { topicId, user.UserId })).AsList();
                 if (existingVotes.Count > 0 && topic.PollVoteChange == 0)
                 {
-                    ModelState.AddModelError(nameof(Poll), TranslationProvider.Errors[Language, "CANT_CHANGE_VOTE"]);
-                    return Page();
+                    return PageWithError(nameof(Poll), TranslationProvider.Errors[Language, "CANT_CHANGE_VOTE"]);
                 }
 
                 var noLongerVoted = from prev in existingVotes

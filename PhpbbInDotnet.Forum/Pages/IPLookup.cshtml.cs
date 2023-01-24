@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;

@@ -8,7 +8,7 @@ using Serilog;
 using System;
 using System.Threading.Tasks;
 
-namespace PhpbbInDotnet.Forum
+namespace PhpbbInDotnet.Forum.Models
 {
     public abstract class BasePostingModel : AuthenticatedPageModel
     {
@@ -27,12 +27,6 @@ namespace PhpbbInDotnet.Forum
 
         protected Task<IActionResult> WithValidInput(PhpbbForums curForum, Func<Task<IActionResult>> toDo)
             => WithValidInputCore(toDo, (errorKey, errorMessage) => PageWithError(curForum, errorKey, errorMessage));
-
-        protected IActionResult PageWithError(string errorKey, string errorMessage)
-        {
-            ModelState.AddModelError(errorKey, errorMessage);
-            return Page();
-        }
 
         protected virtual IActionResult PageWithError(PhpbbForums phpbbForums, string errorKey, string errorMessage)
             => PageWithError(errorKey, errorMessage);

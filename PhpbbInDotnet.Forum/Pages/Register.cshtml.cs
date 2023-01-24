@@ -9,6 +9,7 @@ using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
+using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
@@ -23,7 +24,7 @@ using System.Threading.Tasks;
 namespace PhpbbInDotnet.Forum.Pages
 {
     [ValidateAntiForgeryToken]
-    public class RegisterModel : PageModel
+    public class RegisterModel : BaseModel
     {
         private readonly IForumDbContext _context;
         private readonly IConfiguration _config;
@@ -193,12 +194,6 @@ namespace PhpbbInDotnet.Forum.Pages
             await Task.WhenAll(dbChangesTask, emailTask);
 
             return RedirectToPage("Confirm", "RegistrationComplete");
-        }
-
-        private IActionResult PageWithError(string errorKey, string errorMessage)
-        {
-            ModelState.AddModelError(errorKey, errorMessage);
-            return Page();
         }
     }
 }

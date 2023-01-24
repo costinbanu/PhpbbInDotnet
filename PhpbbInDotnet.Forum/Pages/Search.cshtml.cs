@@ -6,6 +6,7 @@ using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Utilities;
+using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
@@ -122,8 +123,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 DoSearch = true;
                 if (AuthorId == 0)
                 {
-                    ModelState.AddModelError(nameof(SearchText), TranslationProvider.BasicText[Language, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
-                    return await OnGet();
+                    return await PageWithErrorAsync(nameof(SearchText), TranslationProvider.BasicText[Language, "AN_ERROR_OCCURRED_TRY_AGAIN"], resultFactory: OnGet);
                 }
                 return await OnGet();
             });
