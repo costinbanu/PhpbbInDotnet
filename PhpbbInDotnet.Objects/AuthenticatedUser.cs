@@ -23,5 +23,7 @@ namespace PhpbbInDotnet.Objects
         public string Language { get; set; } = Constants.DEFAULT_LANGUAGE;
 
         public string? EmailAddress { get; set; }
+
+        public bool ShouldConfirmEmail { get; set; }
     }
 }

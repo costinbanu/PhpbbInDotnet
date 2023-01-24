@@ -35,6 +35,7 @@
     "ForumType.SubForum": "Subforum",
 
     "AdminUserActions.Activate": "Activează",
+    "AdminUserActions.Activate_WithUnregisteredEmail": "Activează (cu email-ul neverificat)",
     "AdminUserActions.Deactivate": "Dezactivează",
     "AdminUserActions.Delete_KeepMessages": "Șterge (păstrează mesajele)",
     "AdminUserActions.Delete_DeleteMessages": "Șterge (șterge mesajele)",

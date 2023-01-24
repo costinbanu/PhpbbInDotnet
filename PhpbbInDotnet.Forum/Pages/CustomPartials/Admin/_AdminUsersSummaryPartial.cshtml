@@ -128,13 +128,25 @@
             </div>
             <ul class="FlexRight PostInputWidth">
                 <li>
-                    @if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed || user.UserInactiveReason == UserInactiveReason.ChangedEmailNotConfirmed)
+                    @if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed)
                     {
                         <s>
                             <a href="#" title="@Html.Raw(_translationProvider.Admin[Model.Language, "CANT_ACTIVATE_EMAIL_NOT_CONFIRMED_TOOLTIP"])">
                                 @Html.Raw(_translationProvider.Enums[Model.Language, AdminUserActions.Activate])
                             </a>
                         </s>
+                    }
+                    else if (user.UserInactiveReason == UserInactiveReason.ChangedEmailNotConfirmed)
+                    {
+                        <s>
+                            <a href="#" title="@Html.Raw(_translationProvider.Admin[Model.Language, "CANT_ACTIVATE_EMAIL_NOT_CONFIRMED_TOOLTIP"])">
+                                @Html.Raw(_translationProvider.Enums[Model.Language, AdminUserActions.Activate])
+                            </a>
+                        </s>
+                        <br />
+                        <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Activate_WithUnregisteredEmail', '@Html.Raw(_translationProvider.Enums[Model.Language, AdminUserActions.Activate_WithUnregisteredEmail])')">
+                            @Html.Raw(_translationProvider.Enums[Model.Language, AdminUserActions.Activate_WithUnregisteredEmail])
+                        </a>
                     }
                     else if (user.UserInactiveReason == UserInactiveReason.NotInactive)
                     {
@@ -143,6 +155,10 @@
                                 @Html.Raw(_translationProvider.Enums[Model.Language, AdminUserActions.Activate])
                             </a>
                         </s>
+                        <br />
+                        <a href="#" onclick="submitUserForm(@user.UserId, '@user.Username', '@AdminUserActions.Activate_WithUnregisteredEmail', '@Html.Raw(_translationProvider.BasicText[Model.Language, "REQUEST_EMAIL_VERIFICATION"])')">
+                            @Html.Raw(_translationProvider.BasicText[Model.Language, "REQUEST_EMAIL_VERIFICATION"])
+                        </a>
                     }
                     else
                     {

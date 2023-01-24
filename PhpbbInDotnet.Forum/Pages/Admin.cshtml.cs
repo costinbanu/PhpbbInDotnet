@@ -27,6 +27,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public AdminUserSearch? SearchParameters { get; set; }
         public List<PhpbbUsers> UserSearchResults { get; private set; }
         public List<PhpbbUsers>? InactiveUsers { get; private set; }
+        public List<PhpbbUsers>? ActiveUsersWithUnconfirmedEmail { get; private set; }
         public List<UpsertGroupDto>? Groups { get; private set; }
         public List<PhpbbRanks>? Ranks { get; private set; }
         public List<UpsertBanListDto>? BanList { get; private set; }
@@ -92,6 +93,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithAdmin(async () =>
             {
                 var inactiveUsersTask = _adminUserService.GetInactiveUsers();
+                var activeUsersWithUnconfirmedEmailTask = _adminUserService.GetActiveUsersWithUnconfirmedEmail();
                 var groupsTask = _adminUserService.GetGroups();
                 var ranksTask = Context.PhpbbRanks.AsNoTracking().ToListAsync();
                 var banListTask = _adminUserService.GetBanList();
@@ -103,12 +105,11 @@ namespace PhpbbInDotnet.Forum.Pages
                 var logsTask = _logService.GetOperationLogs(LogType, AuthorName, LogPage);
                 var systemLogsTask = Task.Run(() => _logService.GetSystemLogs() ?? new List<(DateTime LogDate, string? LogPath)>());
                 
-                await Task.WhenAll(
-                    inactiveUsersTask, groupsTask, ranksTask, banListTask,
-                    bannedWordsTask, customBbCodesTask, smiliesTask,
-                    logsTask, systemLogsTask);
+                await Task.WhenAll(inactiveUsersTask, activeUsersWithUnconfirmedEmailTask, groupsTask, ranksTask, banListTask, 
+                    bannedWordsTask, customBbCodesTask, smiliesTask, logsTask, systemLogsTask);
                 
                 InactiveUsers = await inactiveUsersTask;
+                ActiveUsersWithUnconfirmedEmail = await activeUsersWithUnconfirmedEmailTask;
                 Groups = await groupsTask;
                 Ranks = await ranksTask;
                 BanList = await banListTask;
@@ -127,8 +128,14 @@ namespace PhpbbInDotnet.Forum.Pages
 
         #region Admin user
 
-        public async Task<IActionResult> OnPostUserSearch()
-            => await WithAdmin(async () =>
+        public Task<IActionResult> OnGetUserSearch(int userId)
+        {
+            SearchParameters = new AdminUserSearch { UserId= userId };
+            return OnPostUserSearch();
+        }
+
+        public Task<IActionResult> OnPostUserSearch()
+            => WithAdmin(async () =>
             {
                 Category = AdminCategories.Users;
                 WasSearchPerformed = true;
@@ -151,40 +158,40 @@ namespace PhpbbInDotnet.Forum.Pages
                 return await OnGet();
             });
 
-        public async Task<IActionResult> OnPostUserManagement(AdminUserActions? userAction, int? userId)
-            => await WithAdmin(async () =>
+        public Task<IActionResult> OnPostUserManagement(AdminUserActions? userAction, int? userId)
+            => WithAdmin(async () =>
             {
                 (Message, IsSuccess) = await _adminUserService.ManageUser(userAction, userId, ForumUser.UserId);
                 Category = AdminCategories.Users;
                 return await OnGet();
             });
 
-        public async Task<IActionResult> OnPostBatchUserManagement(int[] userIds)
-            => await WithAdmin(async () =>
+        public Task<IActionResult> OnPostBatchUserManagement(int[] userIds)
+            => WithAdmin(async () =>
             {
                 (Message, IsSuccess) = await _adminUserService.DeleteUsersWithEmailNotConfirmed(userIds, ForumUser.UserId);
                 Category = AdminCategories.Users;
                 return await OnGet();
             });
 
-        public async Task<IActionResult> OnPostGroupManagement(UpsertGroupDto dto)
-            => await WithAdmin(async () =>
+        public Task<IActionResult> OnPostGroupManagement(UpsertGroupDto dto)
+            => WithAdmin(async () =>
             {
                 (Message, IsSuccess) = await _adminUserService.ManageGroup(dto, ForumUser.UserId);
                 Category = AdminCategories.Users;
                 return await OnGet();
             });
 
-        public async Task<IActionResult> OnPostRankManagement(int? rankId, string rankName, bool? deleteRank)
-            => await WithAdmin(async () =>
+        public Task<IActionResult> OnPostRankManagement(int? rankId, string rankName, bool? deleteRank)
+            => WithAdmin(async () =>
             {
                 (Message, IsSuccess) = await _adminUserService.ManageRank(rankId, rankName, deleteRank, ForumUser.UserId);
                 Category = AdminCategories.Users;
                 return await OnGet();
             });
 
-        public async Task<IActionResult> OnPostBanUser(List<UpsertBanListDto> banlist, List<int> toRemove)
-            => await WithAdmin(async () =>
+        public Task<IActionResult> OnPostBanUser(List<UpsertBanListDto> banlist, List<int> toRemove)
+            => WithAdmin(async () =>
             {
                 (Message, IsSuccess) = await _adminUserService.BanUser(banlist, toRemove, ForumUser.UserId);
                 Category = AdminCategories.Users;
@@ -195,8 +202,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
         #region Admin forum
 
-        public async Task<IActionResult> OnPostShowForum(int? forumId)
-            => await WithAdmin(async () =>
+        public Task<IActionResult> OnPostShowForum(int? forumId)
+            => WithAdmin(async () =>
             {
                 IsRootForum = forumId == 0;
 
@@ -214,8 +221,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 return await OnGet();
             });
 
-        public async Task<IActionResult> OnPostForumManagement(UpsertForumDto dto)
-            => await WithAdmin(async () =>
+        public Task<IActionResult> OnPostForumManagement(UpsertForumDto dto)
+            => WithAdmin(async () =>
             {
                 var result = await _adminForumService.ManageForumsAsync(dto, ForumUser.UserId, dto.IsRoot);
 
@@ -227,8 +234,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 return await OnGet();
             });
 
-        public async Task<IActionResult> OnPostDeleteForum(int forumId)
-            => await WithAdmin(async () =>
+        public Task<IActionResult> OnPostDeleteForum(int forumId)
+            => WithAdmin(async () =>
             {
                 (Message, IsSuccess) = await _adminForumService.DeleteForum(forumId, ForumUser.UserId);
 
@@ -241,24 +248,24 @@ namespace PhpbbInDotnet.Forum.Pages
 
         #region Admin writing
 
-        public async Task<IActionResult> OnPostBanWords(List<PhpbbWords> words, List<int> toRemove)
-            => await WithAdmin(async () =>
+        public Task<IActionResult> OnPostBanWords(List<PhpbbWords> words, List<int> toRemove)
+            => WithAdmin(async () =>
             {
                 (Message, IsSuccess) = await _adminWritingService.ManageBannedWords(words, toRemove);
                 Category = AdminCategories.WritingTools;
                 return await OnGet();
             });
 
-        public async Task<IActionResult> OnPostBBCodes(List<PhpbbBbcodes> codes, List<int> toRemove, List<int> toDisplay)
-            => await WithAdmin(async () =>
+        public Task<IActionResult> OnPostBBCodes(List<PhpbbBbcodes> codes, List<int> toRemove, List<int> toDisplay)
+            => WithAdmin(async () =>
             {
                 (Message, IsSuccess) = await _adminWritingService.ManageBBCodes(codes, toRemove, toDisplay);
                 Category = AdminCategories.WritingTools;
                 return await OnGet();
             });
 
-        public async Task<IActionResult> OnPostSmilies(List<UpsertSmiliesDto> dto, List<string> newOrder, List<int> codesToDelete, List<string> smileyGroupsToDelete)
-            => await WithAdmin(async () =>
+        public Task<IActionResult> OnPostSmilies(List<UpsertSmiliesDto> dto, List<string> newOrder, List<int> codesToDelete, List<string> smileyGroupsToDelete)
+            => WithAdmin(async () =>
             {
                 (Message, IsSuccess) = await _adminWritingService.ManageSmilies(dto, newOrder, codesToDelete, smileyGroupsToDelete);
                 var x = dto;

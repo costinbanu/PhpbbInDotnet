@@ -68,7 +68,7 @@ namespace PhpbbInDotnet.Forum.Middlewares
                     "SELECT * FROM phpbb_users WHERE user_id = @userId",
                     new { userId });
 
-                if (dbUser is null || dbUser.UserShouldSignIn || dbUser.UserInactiveReason != UserInactiveReason.NotInactive)
+                if (dbUser is null || dbUser.UserShouldSignIn || (dbUser.UserInactiveReason != UserInactiveReason.NotInactive && dbUser.UserInactiveReason != UserInactiveReason.Active_NotConfirmed))
                 {
                     await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                     await SignInAnonymousUser(context);

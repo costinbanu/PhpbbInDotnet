@@ -218,6 +218,27 @@
                         displayedBox = true;
                     }
                 }
+
+                if (currentUser?.ShouldConfirmEmail == true)
+                {
+                    if (!displayedBox)
+                    {
+                        <p style="clear:both"></p>
+                    }
+                    <div class="ReportedPost" style="margin:5px; padding:5px; width: max-content; max-width: 100%">
+                        <h4>
+                            @Html.Raw(string.Format(_translationProvider.BasicText[lang, "EMAIL_NOT_CONFIRMED_WARNING_FORMAT"], currentUser.EmailAddress!))
+                        </h4>
+                        <a asp-page="Confirm" asp-page-handler="sendConfirmationEmail">
+                            @Html.Raw(_translationProvider.BasicText[lang, "SEND_VERIFICATION_EMAIL"])
+                        </a> 
+                        <br />
+                        <a asp-page="User" asp-route-userId="@currentUser.UserId" asp-route-viewAsAnother="false" asp-route-manageFoes="false">
+                            @Html.Raw(_translationProvider.BasicText[lang, "CHANGE_EMAIL_ADDRESS"])
+                        </a>
+                    </div>
+                    displayedBox = true;
+                }
             }
         </center>
         @RenderBody()

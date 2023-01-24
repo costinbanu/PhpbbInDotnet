@@ -557,7 +557,7 @@ namespace PhpbbInDotnet.Services
                 }
                 else if (url.StartsWith("www", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    url = $"//{url}";
+                    url = $"http://{url}";
                 }
             }
             catch (Exception ex)

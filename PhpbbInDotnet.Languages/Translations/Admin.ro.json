@@ -47,6 +47,7 @@
 
     //users
     "INACTIVE_USERS": "Utilizatori inactivi",
+    "ACTIVE_USERS_WITH_UNCONFIRMED_EMAIL": "Utilizatori activi cu adresa de e-mail neconfirmată",
     "SELECT_ALL_INACTIVE_USERS": "Selectează toți utilizatorii inactivi",
     "DELETE_SELECTED_INACTIVE_USERS": "Șterge utilizatorii inactivi selectați",
     "DELETE_INACTIVE_USERS_CONFIRMATION": "Utilizatorii inactivi selectați vor fi șterși. Continui?",
@@ -96,6 +97,7 @@
     "USER_REMINDED_FORMAT": "I-am trimis o reamintire pe e-mail utilizatorului '{0}'.",
     "CANT_REMIND_INVALID_USER_STATE_FORMAT": "Utilizatorului '{0}' nu i se poate trimite o reamintire deoarece statusul său curent ('{1}') nu necesită reamintiri.",
     "ONE_OR_MORE_INVALID_INPUT_DATES": "Una sau mai multe date este invalidă.",
+    "OPEN_IN_ADMIN_PANEL": "Deschide în panoul administratorului",
 
     "INVALID_RANK_NAME": "Numele rangului este invalid",
     "RANK_DOESNT_EXIST_FORMAT": "Rangul {0} nu există.",

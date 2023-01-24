@@ -45,14 +45,19 @@ namespace PhpbbInDotnet.Services
 
         #region User
 
-        public async Task<List<PhpbbUsers>> GetInactiveUsers()
-            => await (
-                from u in _context.PhpbbUsers.AsNoTracking()
+        public Task<List<PhpbbUsers>> GetInactiveUsers()
+            => (from u in _context.PhpbbUsers.AsNoTracking()
                 where u.UserInactiveTime > 0
                     && u.UserInactiveReason != UserInactiveReason.NotInactive
+                    && u.UserInactiveReason != UserInactiveReason.Active_NotConfirmed
                 orderby u.UserInactiveTime descending
-                select u
-            ).ToListAsync();
+                select u).ToListAsync();
+
+        public Task<List<PhpbbUsers>> GetActiveUsersWithUnconfirmedEmail()
+            => (from u in _context.PhpbbUsers.AsNoTracking()
+                where u.UserInactiveReason == UserInactiveReason.Active_NotConfirmed
+                orderby u.Username
+                select u).ToListAsync();
 
         public async Task<(string Message, bool? IsSuccess)> DeleteUsersWithEmailNotConfirmed(int[] userIds, int adminUserId)
         {
@@ -143,6 +148,22 @@ namespace PhpbbInDotnet.Services
                             user.UserReminded = 0;
                             user.UserRemindedTime = 0L;
                             message = string.Format(_translationProvider.Admin[lang, "USER_ACTIVATED_FORMAT"], user.Username);
+                            isSuccess = true;
+                            break;
+                        }
+                    case AdminUserActions.Activate_WithUnregisteredEmail:
+                        {
+                            message = user.UserInactiveReason switch
+                            {
+                                UserInactiveReason.ChangedEmailNotConfirmed => string.Format(_translationProvider.Admin[lang, "USER_ACTIVATED_FORMAT"], user.Username),
+                                UserInactiveReason.NotInactive => string.Format(_translationProvider.BasicText[lang, "VERIFICATION_REQUEST_SUBMITTED"], user.UserEmail),
+                                _ => throw new ArgumentException($"'{action}' can not be applied to a user having status '{user.UserInactiveReason}'.")
+                            };
+
+                            user.UserInactiveReason = UserInactiveReason.Active_NotConfirmed;
+                            user.UserInactiveTime = 0L;
+                            user.UserReminded = 0;
+                            user.UserRemindedTime = 0L;
                             isSuccess = true;
                             break;
                         }

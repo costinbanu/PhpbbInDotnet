@@ -47,7 +47,12 @@ namespace PhpbbInDotnet.Domain
         /// <summary>
         /// User changed their email and have confirmed it
         /// </summary>
-        ChangedEmailConfirmed = 8
+        ChangedEmailConfirmed = 8,
+
+        /// <summary>
+        /// User changed their email and an admin has force-activated them
+        /// </summary>
+        Active_NotConfirmed = 9,
     }
 
     public enum ForumType
@@ -67,6 +72,7 @@ namespace PhpbbInDotnet.Domain
     public enum AdminUserActions
     {
         Activate,
+        Activate_WithUnregisteredEmail,
         Deactivate,
         Delete_KeepMessages,
         Delete_DeleteMessages,
