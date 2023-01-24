@@ -230,6 +230,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }
 
             var newEmailHash = HashUtility.ComputeCrc64Hash(Email!);
+            var oldEmailAddress = string.Empty;
             if (newEmailHash != dbUser.UserEmailHash)
             {
                 if (!validator.ValidateEmail(nameof(Email), Email))
@@ -243,6 +244,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return Page();
                 }
 
+                oldEmailAddress = dbUser.UserEmail;
 
                 dbUser.UserEmail = Email!;
                 dbUser.UserEmailHash = newEmailHash;
@@ -448,24 +450,9 @@ namespace PhpbbInDotnet.Forum.Pages
                 return Page();
             }
 
-            if (affectedEntries > 0 && isSelf && !EmailChanged)
-            {
-                Mode = UserPageMode.Edit;
-                return await OnGet();
-            }
-            //else if (affectedEntries > 0 && userShouldSignIn)
-            //{
-            //    var key = $"UserMustLogIn_{dbUser.UsernameClean}";
-            //    Cache.Add(key, true, _config.GetValue<TimeSpan?>("LoginSessionSlidingExpiration") ?? TimeSpan.FromDays(30));
-            //    if (EmailChanged)
-            //    {
-            //        Mode = UserPageMode.Edit;
-            //    }
-            //}
-
             if (EmailChanged)
             {
-                await _operationLogService.LogUserProfileAction(UserProfileActions.ChangeEmail, currentUserId, dbUser);
+                await _operationLogService.LogUserProfileAction(UserProfileActions.ChangeEmail, currentUserId, dbUser, $"Old e-mail address: '{oldEmailAddress}'.");
             }
             if (passwordChanged)
             {
@@ -474,6 +461,12 @@ namespace PhpbbInDotnet.Forum.Pages
             if (usernameChanged)
             {
                 await _operationLogService.LogUserProfileAction(UserProfileActions.ChangeUsername, currentUserId, dbUser, $"Old username: '{oldUsername}'");
+            }
+
+            if (affectedEntries > 0 && isSelf)
+            {
+                Mode = UserPageMode.Edit;
+                return await OnGet();
             }
 
             await Render(dbUser);
