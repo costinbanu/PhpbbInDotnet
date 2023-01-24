@@ -112,15 +112,11 @@
     <span class="success @(Model.Mode == UserPageMode.View ? "" : "message")">
         @switch (Model.Mode)
         {
+            case UserPageMode.Edit when (Model.EmailChanged && isSelf):
+                @Html.Raw(Model.TranslationProvider.BasicText[Lang, "CHANGES_SAVED_MUST_LOGIN"]);
+                break;
             case UserPageMode.Edit:
-                if (Model.EmailChanged && isSelf)
-                {
-                    @Html.Raw(Model.TranslationProvider.BasicText[Lang, "CHANGES_SAVED_MUST_LOGIN"]);
-                }
-                else
-                {
-                    @Html.Raw(Model.TranslationProvider.BasicText[Lang, "CHANGES_SAVED"]);
-                }
+                @Html.Raw(Model.TranslationProvider.BasicText[Lang, "CHANGES_SAVED"]);
                 break;
             case UserPageMode.AddFoe:
                 @Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "ADDED_TO_FOES_CONFIRMATION_FORMAT"], Model.CurrentUser.Username));
