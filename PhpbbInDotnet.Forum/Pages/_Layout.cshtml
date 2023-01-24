@@ -55,8 +55,8 @@
         <script src="~/js/dateFormatter.js"></script>
     </environment>
     <environment exclude="Development">
-        <link rel="stylesheet" href="~/css/@(css).min.css?v=3.4" />
-        <script src="~/js/site.min.js?v=3.4"></script>
+        <link rel="stylesheet" href="~/css/@(css).min.css" asp-append-version="true" />
+        <script src="~/js/site.min.js" asp-append-version="true"></script>
     </environment>
 
     <!-- Global site tag (gtag.js) - Google Analytics -->
