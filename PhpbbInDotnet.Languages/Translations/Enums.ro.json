@@ -50,6 +50,7 @@
     "UserInactiveReason.NewlyRegisteredConfirmed": "Recent înregistrat, email verificat",
     "UserInactiveReason.ChangedEmailNotConfirmed": "Email schimbat și neverificat",
     "UserInactiveReason.ChangedEmailConfirmed": "Email schimbat și verificat",
+    "UserInactiveReason.Active_NotConfirmed": "Activ, cu adresa de e-mail neconfirmată",
 
     "StatisticsPeriod.TwentyFourHours": "24 de ore",
     "StatisticsPeriod.SevenDays": "7 zile",
