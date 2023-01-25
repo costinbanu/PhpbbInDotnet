@@ -97,7 +97,7 @@ namespace PhpbbInDotnet.Database.SetupApp
                             new 
                             { 
                                 clean = StringUtility.CleanString(user.username), 
-                                hash = HashUtility.ComputeCrc64Hash(user.user_email),
+                                hash = HashUtility.ComputeCrc64Hash((string)user.user_email),
                                 id = user.user_id 
                             })));
                     }

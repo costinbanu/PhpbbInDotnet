@@ -12,8 +12,5 @@ namespace PhpbbInDotnet.Domain.Utilities
 
         public static string GetAvatarCacheKey(int userId, Guid correlationId)
             => $"Avatar_{userId}_{correlationId}";
-
-        public static string GetForumLoginCacheKey(int userId, int forumId)
-            => $"ForumLogin_{userId}_{forumId}";
     }
 }

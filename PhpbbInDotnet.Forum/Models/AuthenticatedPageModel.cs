@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
@@ -58,8 +60,9 @@ namespace PhpbbInDotnet.Forum.Models
 
         protected async Task<IActionResult> WithValidForum(int forumId, bool overrideCheck, Func<PhpbbForums, Task<IActionResult>> toDo, string? forumLoginReturnUrl = null)
         {
-            var sqlExecuter = SqlExecuter;
-            var curForum = await sqlExecuter.QuerySingleOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { forumId });
+            var curForum = await SqlExecuter.QuerySingleOrDefaultAsync<PhpbbForums>(
+                "SELECT * FROM phpbb_forums WHERE forum_id = @forumId", 
+                new { forumId });
 
             if (!overrideCheck)
             {
@@ -68,22 +71,24 @@ namespace PhpbbInDotnet.Forum.Models
                     return NotFound();
                 }
 
-                var restricted = await ForumService.GetRestrictedForumList(ForumUser, true);
+                var restrictedForums = await ForumService.GetRestrictedForumList(ForumUser, true);
                 var tree = await ForumService.GetForumTree(ForumUser, false, false);
-                var path = new List<int>();
-                if (tree.TryGetValue(new ForumTree { ForumId = forumId }, out var cur))
+                var forumPath = new List<int>();
+                if (tree.TryGetValue(new ForumTree { ForumId = forumId }, out var currentTreeNode))
                 {
-                    path = cur?.PathList ?? new List<int>();
+                    forumPath = currentTreeNode?.PathList ?? new List<int>();
                 }
-
+                
                 var restrictedAncestor = (
-                    from t in path
-                    join r in restricted
-                    on t equals r.forumId
-                    into joined
-                    from j in joined
-                    where !j.hasPassword /*|| Cache.Get<int>(CacheUtility.GetForumLoginCacheKey(ForumUser.UserId, t)) != 1*/
-                    select t
+                    from currentForumId in forumPath
+
+                    join restrictedForum in restrictedForums
+                    on currentForumId equals restrictedForum.forumId
+                    into joinedForums
+
+                    from joinedForum in joinedForums
+                    where !joinedForum.hasPassword || !Request.Cookies.IsUserLoggedIntoForum(ForumUser.UserId, currentForumId)
+                    select currentForumId
                 ).FirstOrDefault();
 
                 if (restrictedAncestor != default)
@@ -110,9 +115,9 @@ namespace PhpbbInDotnet.Forum.Models
 
         protected async Task<IActionResult> WithValidTopic(int topicId, Func<PhpbbForums, PhpbbTopics, Task<IActionResult>> toDo, string? forumLoginReturnUrl = null)
         {
-            var sqlExecuter = SqlExecuter;
-
-            var curTopic = await sqlExecuter.QuerySingleOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
+            var curTopic = await SqlExecuter.QuerySingleOrDefaultAsync<PhpbbTopics>(
+                "SELECT * FROM phpbb_topics WHERE topic_id = @topicId", 
+                new { topicId });
 
             if (curTopic == null)
             {
@@ -123,9 +128,10 @@ namespace PhpbbInDotnet.Forum.Models
 
         protected async Task<IActionResult> WithValidPost(int postId, Func<PhpbbForums, PhpbbTopics, PhpbbPosts, Task<IActionResult>> toDo, string? forumLoginReturnUrl = null)
         {
-            var sqlExecuter = SqlExecuter;
+            var curPost = await SqlExecuter.QuerySingleOrDefaultAsync<PhpbbPosts>(
+                "SELECT * FROM phpbb_posts WHERE post_id = @postId", 
+                new { postId });
 
-            var curPost = await sqlExecuter.QuerySingleOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId });
             if (curPost == null)
             {
                 return NotFound();

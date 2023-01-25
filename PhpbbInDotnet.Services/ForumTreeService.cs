@@ -1,5 +1,7 @@
 ﻿using LazyCache;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Org.BouncyCastle.Asn1.Ocsp;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
@@ -21,17 +23,19 @@ namespace PhpbbInDotnet.Services
         private readonly IConfiguration _config;
         private readonly ILogger _logger;
         private readonly IAppCache _cache;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private HashSet<ForumTree>? _tree;
         private HashSet<ForumTopicCount>? _forumTopicCount;
         private Dictionary<int, HashSet<Tracking>>? _tracking;
         private IEnumerable<(int forumId, bool hasPassword)>? _restrictedForums;
 
-        public ForumTreeService(ISqlExecuter sqlExecuter, IAppCache cache, IConfiguration config, ILogger logger)
+        public ForumTreeService(ISqlExecuter sqlExecuter, IAppCache cache, IConfiguration config, ILogger logger, IHttpContextAccessor httpContextAccessor)
         {
             _sqlExecuter = sqlExecuter;
             _config = config;
             _logger = logger;
             _cache = cache;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<IEnumerable<(int forumId, bool hasPassword)>> GetRestrictedForumList(AuthenticatedUserExpanded user, bool includePasswordProtected = false)
@@ -69,8 +73,8 @@ namespace PhpbbInDotnet.Services
         }
 
         public bool IsNodeRestricted(ForumTree tree, int userId, bool includePasswordProtected)
-            => tree.IsRestricted || (includePasswordProtected && tree.HasPassword && _cache.Get<int>(CacheUtility.GetForumLoginCacheKey(userId, tree.ForumId)) != 1);
-
+            => tree.IsRestricted || (includePasswordProtected && tree.HasPassword && _httpContextAccessor.HttpContext?.Request.Cookies.IsUserLoggedIntoForum(userId, tree.ForumId) != true);
+        
         public async Task<bool> IsForumReadOnlyForUser(AuthenticatedUserExpanded user, int forumId)
         {
             var tree = await GetForumTree(user, false, false);
@@ -208,10 +212,9 @@ namespace PhpbbInDotnet.Services
             }
 
             var dbResults = Enumerable.Empty<ExtendedTracking>();
-            var sqlExecuter = _sqlExecuter;
             try
             {
-                dbResults = await sqlExecuter.QueryAsync<ExtendedTracking>("CALL `forum`.`get_post_tracking`(@userId);", new { userId });
+                dbResults = await _sqlExecuter.QueryAsync<ExtendedTracking>("CALL `forum`.`get_post_tracking`(@userId);", new { userId });
             }
             catch (Exception ex)
             {

@@ -1,8 +1,10 @@
 ﻿using CryptSharp.Core;
 using LazyCache;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
@@ -99,12 +101,13 @@ namespace PhpbbInDotnet.Forum.Pages
             }
             else
             {
-                var userId = AuthenticatedUserExpanded.GetValue(HttpContext).UserId;
-                _cache.Add(CacheUtility.GetForumLoginCacheKey(userId, ForumId), 1, TimeSpan.FromMinutes(30));
+                Response.Cookies.SaveForumLogin(ForumUser.UserId, ForumId);
+
                 if (string.IsNullOrWhiteSpace(ReturnUrl))
                 {
                     return RedirectToPage("ViewForum", new { ForumId });
                 }
+
                 return Redirect(HttpUtility.UrlDecode(ReturnUrl));
             }
         }
