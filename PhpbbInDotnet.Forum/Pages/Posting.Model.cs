@@ -1,12 +1,17 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using PhpbbInDotnet.Database.Entities;
-using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Objects;
+using PhpbbInDotnet.Objects.Configuration;
+using PhpbbInDotnet.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using PhpbbInDotnet.Domain.Extensions;
+using System.Net.Http;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -87,6 +92,35 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool DraftSavedSuccessfully { get; private set; } = false;
         public Guid? PreviewCorrelationId { get; private set; }
         private IEnumerable<string> PollOptionsEnumerable 
-            => (PollOptions?.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()).Where(x => !string.IsNullOrWhiteSpace(x))).EmptyIfNull();
+            => (PollOptions?
+                    .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(x => x.Trim())
+                    .Where(x => !string.IsNullOrWhiteSpace(x))).EmptyIfNull();
+
+        private readonly IPostService _postService;
+        private readonly IStorageService _storageService;
+        private readonly IWritingToolsService _writingService;
+        private readonly IBBCodeRenderingService _renderingService;
+        private readonly IConfiguration _config;
+        private readonly ExternalImageProcessor _imageProcessorOptions;
+        private readonly HttpClient? _imageProcessorClient;
+
+        static readonly DateTimeOffset CACHE_EXPIRATION = DateTimeOffset.UtcNow.AddHours(4);
+
+        public PostingModel(IServiceProvider serviceProvider) : base(serviceProvider)
+        {
+            PollExpirationDaysString = "1";
+            PollMaxOptions = 1;
+            DeleteFileDummyForValidation = new List<string>();
+            _postService = serviceProvider.GetRequiredService<IPostService>();
+            _storageService = serviceProvider.GetRequiredService<IStorageService>();
+            _writingService = serviceProvider.GetRequiredService<IWritingToolsService>();
+            _renderingService = serviceProvider.GetRequiredService<IBBCodeRenderingService>();
+            _config = serviceProvider.GetRequiredService<IConfiguration>();
+            _imageProcessorOptions = _config.GetObject<ExternalImageProcessor>();
+            _imageProcessorClient = _imageProcessorOptions.Api?.Enabled == true 
+                ? serviceProvider.GetRequiredService<IHttpClientFactory>().CreateClient(_imageProcessorOptions.Api.ClientName) 
+                : null;
+        }
     }
 }

@@ -67,8 +67,7 @@ namespace PhpbbInDotnet.Services
                 {
                     await _sqlExecuter.ExecuteAsync(
                         "UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE attach_id IN @ids",
-                        new { ids }
-                    );
+                        new { ids });
                 }
                 catch (Exception ex)
                 {
