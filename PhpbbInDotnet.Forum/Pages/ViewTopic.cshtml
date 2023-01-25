@@ -26,7 +26,7 @@
     var lang = Model.Language;
     var userDateFormat = currentUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(lang);
     var isCurrentForumReadOnly = await _forumService.IsForumReadOnlyForUser(currentUser, Model.ForumId ?? 0);
-    var forumTree = (await Model.GetForumTree(false, false)).Tree;
+    var forumTree = await _forumService.GetForumTree(currentUser, false, false);
     if (Model.ForumId > 0)
     {
         ViewData[Constants.ViewDataKeys.FORUM_ID] = Model.ForumId;

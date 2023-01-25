@@ -118,7 +118,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 Attachments = (await SqlExecuter.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id = @postId ORDER BY attach_id", new { PostId })).AsList();
 
-                Cache.Add(GetCacheKey("PostTime", true), curPost.PostTime, CACHE_EXPIRATION);
+                _cache.Add(GetCacheKey("PostTime", true), curPost.PostTime, CACHE_EXPIRATION);
 
                 if (canCreatePoll && curTopic.PollStart > 0)
                 {
@@ -204,7 +204,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     }
                     catch (Exception ex)
                     {
-                        Logger.Warning(ex);
+                        _logger.Warning(ex);
                     }
                 }
 
@@ -407,7 +407,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         new { message = HttpUtility.HtmlEncode(PostText), subject = HttpUtility.HtmlEncode(PostTitle), now = DateTime.UtcNow.ToUnixTimestamp(), draft.DraftId }
                     );
                 }
-                Cache.Remove(GetCacheKey("Text", true));
+                _cache.Remove(GetCacheKey("Text", true));
                 DraftSavedSuccessfully = true;
 
                 if (Action == PostingActions.NewForumPost)

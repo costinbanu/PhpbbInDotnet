@@ -1,11 +1,14 @@
 using Dapper;
 using Microsoft.AspNetCore.Mvc;
+using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
+using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
-using System;
+using PhpbbInDotnet.Services;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
@@ -18,9 +21,9 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public int PageNum { get; set; } = 1;
 
-        public OwnPostsModel(IServiceProvider serviceProvider) : base(serviceProvider)
-        {
-        }
+        public OwnPostsModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider)
+            : base(forumService, userService, sqlExecuter, translationProvider)
+        { }
 
         public async Task<IActionResult> OnGet()
             => await WithRegisteredUser(async (user) =>
@@ -29,7 +32,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     toDo: async () =>
                     {
                         PageNum = Paginator.NormalizePageNumberLowerBound(PageNum);
-                        var restrictedForumList = await GetRestrictedForums();
+                        var restrictedForumList = (await ForumService.GetRestrictedForumList(ForumUser)).Select(f => f.forumId);
                         var topicsTask = SqlExecuter.QueryAsync<TopicDto>(
                             @"WITH own_topics AS (
 			                    SELECT DISTINCT p.topic_id

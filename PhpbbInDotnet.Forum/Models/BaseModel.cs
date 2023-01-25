@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Objects;
 using System;
 using System.Threading.Tasks;
 
@@ -7,6 +9,24 @@ namespace PhpbbInDotnet.Forum.Models
 {
     public abstract class BaseModel : PageModel
     {
+        private string? _language;
+
+        private AuthenticatedUserExpanded? _user;
+
+        public ITranslationProvider TranslationProvider { get; }
+
+        public AuthenticatedUserExpanded ForumUser
+            => _user ??= AuthenticatedUserExpanded.GetValue(HttpContext);
+
+        public string Language
+            => _language ??= TranslationProvider.GetLanguage(ForumUser);
+
+        public BaseModel(ITranslationProvider translationProvider)
+        {
+            TranslationProvider = translationProvider;
+        }
+
+
         protected IActionResult PageWithError(string errorKey, string errorMessage)
             => PageWithErrorImpl(errorKey, errorMessage);
 

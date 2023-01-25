@@ -1,11 +1,12 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
+using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using System;
@@ -51,10 +52,14 @@ namespace PhpbbInDotnet.Forum.Pages
         public Paginator? SentPaginator { get; private set; }
 
         private readonly IBBCodeRenderingService _renderingService;
+        private readonly IForumDbContext _dbContext;
 
-        public PrivateMessagesModel(IServiceProvider serviceProvider) : base(serviceProvider)
+        public PrivateMessagesModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, 
+            ITranslationProvider translationProvider, IBBCodeRenderingService renderingService, IForumDbContext dbContext)
+            : base(forumService, userService, sqlExecuter, translationProvider)
         {
-            _renderingService = serviceProvider.GetRequiredService<IBBCodeRenderingService>();
+            _renderingService = renderingService;
+            _dbContext = dbContext;
         }
 
         public async Task<IActionResult> OnGet()
@@ -172,18 +177,18 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     SelectedMessageIsMine = Source == PrivateMessagesPages.Sent;
                     var messagesTask = (
-                        from pm in Context.PhpbbPrivmsgs.AsNoTracking()
+                        from pm in _dbContext.PhpbbPrivmsgs.AsNoTracking()
                         where pm.MsgId == MessageId
                         select pm).FirstOrDefaultAsync();
                     var msgToTask = (
-                        from mt in Context.PhpbbPrivmsgsTo.AsNoTracking()
+                        from mt in _dbContext.PhpbbPrivmsgsTo.AsNoTracking()
                         where mt.MsgId == MessageId && mt.FolderId >= 0
                         select mt).FirstOrDefaultAsync();
                     var otherUserTask = (
-                        from mt in Context.PhpbbPrivmsgsTo.AsNoTracking()
+                        from mt in _dbContext.PhpbbPrivmsgsTo.AsNoTracking()
                         where mt.MsgId == MessageId && mt.UserId != mt.AuthorId
                         let userId = mt.AuthorId != user.UserId ? mt.AuthorId : mt.UserId
-                        join u in Context.PhpbbUsers.AsNoTracking()
+                        join u in _dbContext.PhpbbUsers.AsNoTracking()
                         on userId equals u.UserId
                         select u).FirstOrDefaultAsync();
                    

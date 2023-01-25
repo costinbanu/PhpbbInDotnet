@@ -1,11 +1,13 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Mvc;
+using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
+using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
-using System;
+using PhpbbInDotnet.Services;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Data;
@@ -57,10 +59,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public bool IsAuthorSearch { get; private set; }
 
-        public SearchModel(IServiceProvider serviceProvider) : base(serviceProvider)
-        {
-
-        }
+        public SearchModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider)
+            : base(forumService, userService, sqlExecuter, translationProvider)
+        { }
 
         public async Task<IActionResult> OnGet()
         {

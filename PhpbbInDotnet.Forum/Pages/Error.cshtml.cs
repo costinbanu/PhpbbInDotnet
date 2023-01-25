@@ -1,17 +1,16 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
+using PhpbbInDotnet.Forum.Models;
+using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Services;
 using Serilog;
 using System.Net;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    public class ErrorModel : PageModel
+    public class ErrorModel : BaseModel
     {
         private readonly ILogger _logger;
-        private readonly IUserService _userService;
 
         [BindProperty(SupportsGet = true)]
         public string? ErrorId { get; set; }
@@ -26,10 +25,10 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public bool IsNotFound => ResponseStatusCode == (int)HttpStatusCode.NotFound;
 
-        public ErrorModel(ILogger logger, IUserService userService)
+        public ErrorModel(ILogger logger, ITranslationProvider translationProvider)
+            : base(translationProvider)
         {
             _logger = logger;
-            _userService = userService;
         }
 
         public void OnGet()

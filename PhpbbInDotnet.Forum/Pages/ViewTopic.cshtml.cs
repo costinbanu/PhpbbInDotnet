@@ -1,12 +1,13 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.DependencyInjection;
+using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
+using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using System;
@@ -100,11 +101,13 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IModeratorService _moderatorService;
         private readonly IWritingToolsService _writingToolsService;
 
-        public ViewTopicModel(IServiceProvider serviceProvider) : base(serviceProvider)
+        public ViewTopicModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider,
+            IPostService postService, IModeratorService moderatorService, IWritingToolsService writingToolsService)
+            : base(forumService, userService, sqlExecuter, translationProvider)
         {
-            _postService = serviceProvider.GetRequiredService<IPostService>();
-            _moderatorService = serviceProvider.GetRequiredService<IModeratorService>();
-            _writingToolsService = serviceProvider.GetRequiredService<IWritingToolsService>();
+            _postService = postService; 
+            _moderatorService = moderatorService; 
+            _writingToolsService = writingToolsService;
         }
 
         public async Task<IActionResult> OnGetByPostId()
@@ -528,9 +531,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
             async Task MarkAsRead()
             {
-                if (await ForumService.IsTopicUnread(ForumId ?? 0, TopicId ?? 0, ForumUser))
+                if (ForumId > 0 && TopicId > 0 && await ForumService.IsTopicUnread(ForumId.Value, TopicId.Value, ForumUser))
                 {
-                    await MarkTopicRead(ForumId ?? 0, TopicId ?? 0, Paginator.IsLastPage, Posts?.DefaultIfEmpty().Max(p => p?.PostTime ?? 0L) ?? 0);
+                    await ForumService.MarkTopicRead(ForumUser.UserId, ForumId.Value, TopicId.Value, Paginator.IsLastPage, Posts?.DefaultIfEmpty().Max(p => p?.PostTime ?? 0L) ?? 0);
                 }
             }
         }

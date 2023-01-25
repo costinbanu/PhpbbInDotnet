@@ -72,14 +72,14 @@ namespace PhpbbInDotnet.Forum.Pages
         public Guid Init { get; set; }
 
         public LoginMode Mode { get; private set; }
-        public ITranslationProvider TranslationProvider { get; }
 
-        public LoginModel(IForumDbContext context, ISqlExecuter sqlExecuter, IConfiguration config, ITranslationProvider translationProvider, IEncryptionService encryptionService, IEmailService emailService)
+        public LoginModel(IForumDbContext context, ISqlExecuter sqlExecuter, IConfiguration config, ITranslationProvider translationProvider, 
+            IEncryptionService encryptionService, IEmailService emailService)
+            : base(translationProvider)
         {
             _context = context;
             _sqlExecuter = sqlExecuter;
             _config = config;
-            TranslationProvider = translationProvider;
             _encryptionService = encryptionService;
             _emailService = emailService;
         }
@@ -105,7 +105,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (user == null || ResetPasswordCode != await _encryptionService.DecryptAES(user.UserNewpasswd, Init))
             {
-                return PageWithError(nameof(PwdResetErrorMessage), TranslationProvider.Errors[TranslationProvider.GetLanguage(), "CONFIRM_ERROR"]);
+                return PageWithError(nameof(PwdResetErrorMessage), TranslationProvider.Errors[Language, "CONFIRM_ERROR"]);
             }
             Mode = LoginMode.PasswordReset;
             return Page();
@@ -116,23 +116,22 @@ namespace PhpbbInDotnet.Forum.Pages
             var user = await _sqlExecuter.QueryAsync<PhpbbUsers>(
                 "SELECT * FROM phpbb_users WHERE username_clean = @username", 
                 new { username = StringUtility.CleanString(UserName) });
-            var lang = TranslationProvider.GetLanguage();
 
             Mode = LoginMode.Normal;
             if (user.Count() != 1)
             {
-                return PageWithError(nameof(LoginErrorMessage), TranslationProvider.Errors[lang, "WRONG_USER_PASS"]);
+                return PageWithError(nameof(LoginErrorMessage), TranslationProvider.Errors[Language, "WRONG_USER_PASS"]);
             }
 
             var currentUser = user.First();
             if ((currentUser.UserInactiveReason != UserInactiveReason.NotInactive && currentUser.UserInactiveReason != UserInactiveReason.Active_NotConfirmed) || currentUser.UserInactiveTime != 0)
             {
-                return PageWithError(nameof(LoginErrorMessage), TranslationProvider.Errors[lang, "INACTIVE_USER"]);
+                return PageWithError(nameof(LoginErrorMessage), TranslationProvider.Errors[Language, "INACTIVE_USER"]);
             }
 
             if (currentUser.UserPassword != Crypter.Phpass.Crypt(Password!, currentUser.UserPassword))
             {
-                return PageWithError(nameof(LoginErrorMessage), TranslationProvider.Errors[lang, "WRONG_USER_PASS"]);
+                return PageWithError(nameof(LoginErrorMessage), TranslationProvider.Errors[Language, "WRONG_USER_PASS"]);
             }
 
             await HttpContext.SignInAsync(
@@ -164,7 +163,6 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPostResetPassword()
         {
-            var lang = TranslationProvider.GetLanguage();
             try
             {
                 var user = _context.PhpbbUsers.FirstOrDefault(
@@ -174,7 +172,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (user == null)
                 {
-                    return PageWithError(nameof(PwdResetErrorMessage), TranslationProvider.Errors[lang, "WRONG_EMAIL_USER"], toDoBeforeReturn: () =>
+                    return PageWithError(nameof(PwdResetErrorMessage), TranslationProvider.Errors[Language, "WRONG_EMAIL_USER"], toDoBeforeReturn: () =>
                     {
                         ShowPwdResetOptions = true;
                         Mode = LoginMode.PasswordReset;
@@ -189,15 +187,15 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 var emailTask = _emailService.SendEmail(
                     to: EmailForPwdReset!,
-                    subject: string.Format(TranslationProvider.Email[lang, "RESETPASS_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName")),
+                    subject: string.Format(TranslationProvider.Email[Language, "RESETPASS_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName")),
                     bodyRazorViewName: "_ResetPasswordPartial",
-                    bodyRazorViewModel: new _ResetPasswordPartialModel(resetKey, user.UserId, user.Username, iv, lang));
+                    bodyRazorViewModel: new _ResetPasswordPartialModel(resetKey, user.UserId, user.Username, iv, Language));
 
                 await Task.WhenAll(dbChangesTask, emailTask);
             }
             catch
             {
-                return PageWithError(nameof(PwdResetErrorMessage), TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"], toDoBeforeReturn: () =>
+                return PageWithError(nameof(PwdResetErrorMessage), TranslationProvider.Errors[Language, "AN_ERROR_OCCURRED_TRY_AGAIN"], toDoBeforeReturn: () =>
                 {
                     ShowPwdResetOptions = true;
                     Mode = LoginMode.PasswordReset;
@@ -209,8 +207,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPostSaveNewPassword()
         {
-            var lang = TranslationProvider.GetLanguage();
-            var validator = new UserProfileDataValidationService(ModelState, TranslationProvider, lang);
+            var validator = new UserProfileDataValidationService(ModelState, TranslationProvider, Language);
             var validations = new[]
             {
                 validator.ValidatePassword(nameof(PwdResetErrorMessage), PwdResetFirstPassword),
@@ -226,7 +223,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var user = _context.PhpbbUsers.FirstOrDefault(u => u.UserId == UserId);
             if (user == null || ResetPasswordCode != await _encryptionService.DecryptAES(user.UserNewpasswd, Init))
             {
-                return PageWithError(nameof(PwdResetErrorMessage), TranslationProvider.Errors[lang, "CONFIRM_ERROR"], toDoBeforeReturn: () => Mode = LoginMode.PasswordReset);                
+                return PageWithError(nameof(PwdResetErrorMessage), TranslationProvider.Errors[Language, "CONFIRM_ERROR"], toDoBeforeReturn: () => Mode = LoginMode.PasswordReset);                
             }
 
             user.UserNewpasswd = string.Empty;

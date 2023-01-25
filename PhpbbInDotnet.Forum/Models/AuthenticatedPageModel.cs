@@ -1,17 +1,11 @@
-﻿using LazyCache;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Extensions.DependencyInjection;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
-using PhpbbInDotnet.Domain.Extensions;
-using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -24,123 +18,15 @@ namespace PhpbbInDotnet.Forum.Models
     public abstract class AuthenticatedPageModel : BaseModel
     {
         protected readonly IForumTreeService ForumService;
-        protected readonly IAppCache Cache;
         protected readonly IUserService UserService;
-        protected readonly IForumDbContext Context;
         protected readonly ISqlExecuter SqlExecuter;
-        protected readonly ILogger Logger;
 
-        public ITranslationProvider TranslationProvider { get; }
-
-        private string? _language;
-
-        public AuthenticatedPageModel(IServiceProvider serviceProvider)
+        public AuthenticatedPageModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider)
+            : base(translationProvider)
         {
-            ForumService = serviceProvider.GetRequiredService<IForumTreeService>();
-            Cache = serviceProvider.GetRequiredService<IAppCache>();
-            UserService = serviceProvider.GetRequiredService<IUserService>();
-            Context = serviceProvider.GetRequiredService<IForumDbContext>();
-            SqlExecuter = serviceProvider.GetRequiredService<ISqlExecuter>();
-            Logger = serviceProvider.GetRequiredService<ILogger>();
-            TranslationProvider = serviceProvider.GetRequiredService<ITranslationProvider>();
-        }
-
-        public AuthenticatedUserExpanded ForumUser
-            => AuthenticatedUserExpanded.GetValue(HttpContext);
-
-        public string Language
-            => _language ??= TranslationProvider.GetLanguage(ForumUser);
-
-        public async Task<(HashSet<ForumTree> Tree, Dictionary<int, HashSet<Tracking>>? Tracking)> GetForumTree(bool forceRefresh, bool fetchUnreadData)
-            => (Tree: await ForumService.GetForumTree(ForumUser, forceRefresh, fetchUnreadData),
-                Tracking: fetchUnreadData ? await ForumService.GetForumTracking(ForumUser.UserId, forceRefresh) : null);
-
-        protected async Task MarkForumAndSubforumsRead(int forumId)
-        {
-            var node = ForumService.GetTreeNode((await GetForumTree(false, false)).Tree, forumId);
-            if (node == null)
-            {
-                if (forumId == 0)
-                {
-                    await SetLastMark();
-                }
-                return;
-            }
-
-            await MarkForumRead(forumId);
-            foreach (var child in node.ChildrenList ?? new HashSet<int>())
-            {
-                await MarkForumAndSubforumsRead(child);
-            }
-        }
-
-        protected async Task MarkForumRead(int forumId)
-        {
-            try
-            {
-                var usrId = ForumUser.UserId;
-                await SqlExecuter.ExecuteAsync(
-                    "DELETE FROM phpbb_topics_track WHERE forum_id = @forumId AND user_id = @usrId; " +
-                    "REPLACE INTO phpbb_forums_track (forum_id, user_id, mark_time) VALUES (@forumId, @usrId, @markTime);",
-                    new { forumId, usrId, markTime = DateTime.UtcNow.ToUnixTimestamp() }
-                );
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "Error marking forums as read.");
-            }
-        }
-
-        public async Task MarkTopicRead(int forumId, int topicId, bool isLastPage, long markTime)
-        {
-            var (_, tracking) = await GetForumTree(false, true);
-            var userId = ForumUser.UserId;
-            if (tracking!.TryGetValue(forumId, out var tt) && tt.Count == 1 && isLastPage)
-            {
-                //current topic was the last unread in its forum, and it is the last page of unread messages, so mark the whole forum read
-                await MarkForumRead(forumId);
-
-                //current forum is the user's last unread forum, and it has just been read; set the mark time.
-                if (tracking.Count == 1)
-                {
-                    await SetLastMark();
-                }
-            }
-            else
-            {
-                //there are other unread topics in this forum, or unread pages in this topic, so just mark the current page as read
-                try
-                {
-                    await SqlExecuter.ExecuteAsync(
-                        sql: "CALL mark_topic_read(@forumId, @topicId, @userId, @markTime)",
-                        param: new { forumId, topicId, userId, markTime }
-                    );
-                }
-                catch (Exception ex)
-                {
-                    Logger.Warning(ex, "Error marking topics as read (forumId={forumId}, topicId={topicId}, userId={userId}).", forumId, topicId, userId);
-                }
-            }
-        }
-
-        private async Task SetLastMark()
-        {
-            var usrId = ForumUser.UserId;
-            try
-            {
-                var sqlExecuter = SqlExecuter;
-                await sqlExecuter.ExecuteAsync("UPDATE phpbb_users SET user_lastmark = @markTime WHERE user_id = @usrId", new { markTime = DateTime.UtcNow.ToUnixTimestamp(), usrId });
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "Error setting user last mark.");
-            }
-        }
-
-        protected async Task<IEnumerable<int>> GetRestrictedForums()
-        {
-            var restrictedForums = await ForumService.GetRestrictedForumList(ForumUser);
-            return restrictedForums.Select(f => f.forumId).DefaultIfEmpty();
+            ForumService = forumService;
+            UserService = userService;
+            SqlExecuter = sqlExecuter;
         }
 
         protected async Task<IActionResult> WithRegisteredUser(Func<AuthenticatedUserExpanded, Task<IActionResult>> toDo)
@@ -196,7 +82,7 @@ namespace PhpbbInDotnet.Forum.Models
                     on t equals r.forumId
                     into joined
                     from j in joined
-                    where !j.hasPassword || Cache.Get<int>(CacheUtility.GetForumLoginCacheKey(ForumUser.UserId, t)) != 1
+                    where !j.hasPassword /*|| Cache.Get<int>(CacheUtility.GetForumLoginCacheKey(ForumUser.UserId, t)) != 1*/
                     select t
                 ).FirstOrDefault();
 

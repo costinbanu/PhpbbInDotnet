@@ -31,8 +31,7 @@
 
 	if (Model.ForumId > 0)
 	{
-		var (forumTree, _) = await Model.GetForumTree(false, false);
-		ViewData[Constants.ViewDataKeys.BREADCRUMBS] = _forumService.GetBreadCrumbs(forumTree, Model.ForumId);
+		ViewData[Constants.ViewDataKeys.BREADCRUMBS] = _forumService.GetBreadCrumbs(await _forumService.GetForumTree(CurrentUser, false, false), Model.ForumId);
 	}
 }
 

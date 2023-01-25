@@ -1,11 +1,12 @@
 using Dapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Forum.Models;
+using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
-using System;
+using PhpbbInDotnet.Services;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
@@ -16,10 +17,9 @@ namespace PhpbbInDotnet.Forum.Pages
 {
     public class IPLookupModel : AuthenticatedPageModel
     {
-        public IPLookupModel(IServiceProvider serviceProvider) : base(serviceProvider)
-        {
-
-        }
+        public IPLookupModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider)
+            : base(forumService, userService, sqlExecuter, translationProvider)
+        { }
 
         [BindProperty(SupportsGet = true)]
         [Required]
@@ -101,10 +101,14 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 Posts = (await searchTask).AsList();
                 TotalCount = await countTask;
-                Attachments = await (
-                    from a in Context.PhpbbAttachments.AsNoTracking()
-                    where Posts.Select(p => p.PostId).Contains(a.PostMsgId)
-                    select a).ToListAsync();
+                Attachments = (await SqlExecuter.QueryAsync<PhpbbAttachments>(
+                    @"SELECT *
+                        FROM phpbb_attachments
+                       WHERE post_msg_id IN @postIds",
+                    new 
+                    { 
+                        postIds = Posts.Select(p => p.PostId).DefaultIfEmpty() 
+                    })).AsList();
                 Paginator = new Paginator(count: TotalCount, pageNum: PageNum, link: $"/IPLookup?ip={IP}&pageNum={PageNum + 1}", topicId: null);
 
                 return Page();

@@ -10,13 +10,10 @@ using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Objects.Configuration;
-using PhpbbInDotnet.Services;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -220,11 +217,11 @@ namespace PhpbbInDotnet.Forum.Pages
                     new { usr.UserId, forumId = ForumId, topicId = Action == PostingActions.NewTopic ? 0 : TopicId });
             }
 
-            Cache.Remove(GetCacheKey("Text", true));
-            Cache.Remove(GetCacheKey("ForumId", true));
-            Cache.Remove(GetCacheKey("TopicId", true));
-            Cache.Remove(GetCacheKey("PostId", true));
-            Cache.Remove(GetCacheKey("Attachments", true));
+            _cache.Remove(GetCacheKey("Text", true));
+            _cache.Remove(GetCacheKey("ForumId", true));
+            _cache.Remove(GetCacheKey("TopicId", true));
+            _cache.Remove(GetCacheKey("PostId", true));
+            _cache.Remove(GetCacheKey("Attachments", true));
 
             return post.PostId;
         }
@@ -273,24 +270,24 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private Task<IActionResult> WithBackup(Func<Task<IActionResult>> toDo)
         {
-            Cache.Add(GetCacheKey("Text", true), (text: PostText, cacheTime: DateTime.UtcNow), CACHE_EXPIRATION);
-            Cache.Add(GetCacheKey("ForumId", true), ForumId, CACHE_EXPIRATION);
-            Cache.Add(GetCacheKey("TopicId", true), TopicId ?? 0, CACHE_EXPIRATION);
-            Cache.Add(GetCacheKey("PostId", true), PostId ?? 0, CACHE_EXPIRATION);
+            _cache.Add(GetCacheKey("Text", true), (text: PostText, cacheTime: DateTime.UtcNow), CACHE_EXPIRATION);
+            _cache.Add(GetCacheKey("ForumId", true), ForumId, CACHE_EXPIRATION);
+            _cache.Add(GetCacheKey("TopicId", true), TopicId ?? 0, CACHE_EXPIRATION);
+            _cache.Add(GetCacheKey("PostId", true), PostId ?? 0, CACHE_EXPIRATION);
             if (Attachments?.Any() == true)
             {
-                Cache.Add(GetCacheKey("Attachments", true), Attachments?.Select(a => a.AttachId).ToList(), CACHE_EXPIRATION);
+                _cache.Add(GetCacheKey("Attachments", true), Attachments?.Select(a => a.AttachId).ToList(), CACHE_EXPIRATION);
             }
             return toDo();
         }
 
         private async Task RestoreBackupIfAny(DateTime? minCacheAge = null)
         {
-            var textTask = Cache.GetAndRemoveAsync<(string text, DateTime cacheTime)>(GetCacheKey("Text", true));
-            var forumIdTask = Cache.GetAndRemoveAsync<int>(GetCacheKey("ForumId", true));
-            var topicIdTask = Cache.GetAndRemoveAsync<int?>(GetCacheKey("TopicId", true));
-            var postIdTask = Cache.GetAndRemoveAsync<int?>(GetCacheKey("PostId", true));
-            var attachmentsTask = Cache.GetAndRemoveAsync<List<int>>(GetCacheKey("Attachments", true));
+            var textTask = _cache.GetAndRemoveAsync<(string text, DateTime cacheTime)>(GetCacheKey("Text", true));
+            var forumIdTask = _cache.GetAndRemoveAsync<int>(GetCacheKey("ForumId", true));
+            var topicIdTask = _cache.GetAndRemoveAsync<int?>(GetCacheKey("TopicId", true));
+            var postIdTask = _cache.GetAndRemoveAsync<int?>(GetCacheKey("PostId", true));
+            var attachmentsTask = _cache.GetAndRemoveAsync<List<int>>(GetCacheKey("Attachments", true));
             await Task.WhenAll(textTask, forumIdTask, topicIdTask, postIdTask, attachmentsTask);
 
             var cachedText = await textTask;

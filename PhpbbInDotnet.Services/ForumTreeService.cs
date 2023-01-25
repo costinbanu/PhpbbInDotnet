@@ -437,5 +437,85 @@ namespace PhpbbInDotnet.Services
 
         private int GetTopicCount(int forumId)
             => _forumTopicCount is not null && _forumTopicCount.TryGetValue(new ForumTopicCount { ForumId = forumId }, out var val) ? (val?.TopicCount ?? 0) : 0;
+
+        public async Task MarkForumAndSubforumsRead(AuthenticatedUserExpanded user, int forumId)
+        {
+            var node = GetTreeNode(await GetForumTree(user, false, false), forumId);
+            if (node == null)
+            {
+                if (forumId == 0)
+                {
+                    await SetLastMark(user.UserId);
+                }
+                return;
+            }
+
+            await MarkForumRead(user.UserId, forumId);
+            foreach (var child in node.ChildrenList ?? new HashSet<int>())
+            {
+                await MarkForumAndSubforumsRead(user, child);
+            }
+        }
+
+        public async Task MarkForumRead(int userId, int forumId)
+        {
+            try
+            {
+                await _sqlExecuter.ExecuteAsync(
+                    "DELETE FROM phpbb_topics_track WHERE forum_id = @forumId AND user_id = @userId; " +
+                    "REPLACE INTO phpbb_forums_track (forum_id, user_id, mark_time) VALUES (@forumId, @userId, @markTime);",
+                    new { forumId, userId, markTime = DateTime.UtcNow.ToUnixTimestamp() }
+                );
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Error marking forums as read.");
+            }
+        }
+
+        public async Task MarkTopicRead(int userId, int forumId, int topicId, bool isLastPage, long markTime)
+        {
+            var tracking = await GetForumTracking(userId, false);
+            if (tracking!.TryGetValue(forumId, out var tt) && tt.Count == 1 && isLastPage)
+            {
+                //current topic was the last unread in its forum, and it is the last page of unread messages, so mark the whole forum read
+                await MarkForumRead(userId, forumId);
+
+                //current forum is the user's last unread forum, and it has just been read; set the mark time.
+                if (tracking.Count == 1)
+                {
+                    await SetLastMark(userId);
+                }
+            }
+            else
+            {
+                //there are other unread topics in this forum, or unread pages in this topic, so just mark the current page as read
+                try
+                {
+                    await _sqlExecuter.ExecuteAsync(
+                        sql: "CALL mark_topic_read(@forumId, @topicId, @userId, @markTime)",
+                        param: new { forumId, topicId, userId, markTime }
+                    );
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warning(ex, "Error marking topics as read (forumId={forumId}, topicId={topicId}, userId={userId}).", forumId, topicId, userId);
+                }
+            }
+        }
+
+        private async Task SetLastMark(int userId)
+        {
+            try
+            {
+                await _sqlExecuter.ExecuteAsync(
+                    "UPDATE phpbb_users SET user_lastmark = @markTime WHERE user_id = @userId", 
+                    new { markTime = DateTime.UtcNow.ToUnixTimestamp(), userId });
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Error setting user last mark.");
+            }
+        }
     }
 }

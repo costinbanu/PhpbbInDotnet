@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.DependencyInjection;
+using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Forum.Models;
+using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using System;
@@ -18,9 +19,11 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private readonly IStatisticsService _statisticsService;
 
-        public StatisticsModel(IServiceProvider serviceProvider) : base(serviceProvider)
+        public StatisticsModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, 
+            ITranslationProvider translationProvider, IStatisticsService statisticsService)
+            : base(forumService, userService, sqlExecuter, translationProvider)
         {
-            _statisticsService = serviceProvider.GetRequiredService<IStatisticsService>(); ;
+            _statisticsService = statisticsService;
         }
 
         public Task<IActionResult> OnGet()

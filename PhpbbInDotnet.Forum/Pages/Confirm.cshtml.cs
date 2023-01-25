@@ -2,8 +2,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Forum.Models;
+using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using System;
@@ -17,6 +19,7 @@ namespace PhpbbInDotnet.Forum.Pages
     {
         private readonly IConfiguration _config;
         private readonly IEmailService _emailService;
+        private readonly IForumDbContext _dbContext;
 
         public string? Message { get; private set; }
         
@@ -69,10 +72,13 @@ namespace PhpbbInDotnet.Forum.Pages
         public HashSet<ForumTree>? ForumTree { get; private set; }
         public List<MiniTopicDto>? TopicData { get; private set; }
 
-        public ConfirmModel(IServiceProvider serviceProvider) : base(serviceProvider) 
+        public ConfirmModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, 
+            ITranslationProvider translationProvider, IConfiguration config, IEmailService emailService, IForumDbContext dbContext)
+            : base(forumService, userService, sqlExecuter, translationProvider)
         {
-            _config = serviceProvider.GetRequiredService<IConfiguration>();
-            _emailService = serviceProvider.GetRequiredService<IEmailService>();
+            _config = config;
+            _emailService = emailService;
+            _dbContext = dbContext;
         }
 
         public void OnGetRegistrationComplete()
@@ -88,7 +94,7 @@ namespace PhpbbInDotnet.Forum.Pages
              var subject = string.Format(TranslationProvider.BasicText[Language, "VERIFY_EMAIL_ADDRESS_FORMAT"], _config.GetValue<string>("ForumName"));
              var registrationCode = Guid.NewGuid().ToString("n");
              var emailAddress = user.EmailAddress!;
-             var dbUser = await Context.PhpbbUsers.FirstAsync(u => u.UserId == user.UserId);
+             var dbUser = await _dbContext.PhpbbUsers.FirstAsync(u => u.UserId == user.UserId);
              dbUser.UserActkey = registrationCode;
 
              await _emailService.SendEmail(
@@ -97,7 +103,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 bodyRazorViewName: "_WelcomeEmailPartial",
                 bodyRazorViewModel: new WelcomeEmailDto(subject, registrationCode, dbUser.Username, dbUser.UserLang));
 
-             await Context.SaveChangesAsync();
+             await _dbContext.SaveChangesAsync();
 
              Message = $"<span class=\"message success\">{string.Format(TranslationProvider.BasicText[Language, "VERIFICATION_EMAIL_SENT_FORMAT"], emailAddress)}</span>";
              return Page();
@@ -105,7 +111,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task OnGetConfirmEmail(string code, string username)
         {
-            var user = Context.PhpbbUsers.FirstOrDefault(u =>
+            var user = _dbContext.PhpbbUsers.FirstOrDefault(u =>
                 u.UsernameClean == username &&
                 u.UserActkey == code && (
                     u.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed || 
@@ -140,8 +146,8 @@ namespace PhpbbInDotnet.Forum.Pages
                     }
 
                     var admins = await (
-                        from u in Context.PhpbbUsers.AsNoTracking()
-                        join ug in Context.PhpbbUserGroup.AsNoTracking()
+                        from u in _dbContext.PhpbbUsers.AsNoTracking()
+                        join ug in _dbContext.PhpbbUserGroup.AsNoTracking()
                         on u.UserId equals ug.UserId
                         into joined
                         from j in joined
@@ -160,7 +166,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     }));
                 }
                 user.UserActkey = string.Empty;
-                await Context.SaveChangesAsync();
+                await _dbContext.SaveChangesAsync();
             }
             Title = TranslationProvider.BasicText[lang, "EMAIL_CONFIRM_TITLE"];
         }
@@ -212,9 +218,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task SetFrontendData()
         {
-            var treeTask = GetForumTree(false, false);
+            var treeTask = ForumService.GetForumTree(ForumUser, false, false);
             var topicDataTask = ShowTopicSelector ? (
-                from t in Context.PhpbbTopics.AsNoTracking()
+                from t in _dbContext.PhpbbTopics.AsNoTracking()
                 select new MiniTopicDto
                 {
                     ForumId = t.ForumId,
@@ -224,7 +230,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }).ToListAsync() : Task.FromResult(new List<MiniTopicDto>());
             await Task.WhenAll(treeTask, topicDataTask);
 
-            ForumTree = (await treeTask).Tree;
+            ForumTree = await treeTask;
             TopicData = await topicDataTask;
         }
     }

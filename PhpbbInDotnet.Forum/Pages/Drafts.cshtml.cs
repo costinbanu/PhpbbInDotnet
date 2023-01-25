@@ -1,12 +1,15 @@
 using Dapper;
 using Microsoft.AspNetCore.Mvc;
+using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
+using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
-using System;
+using PhpbbInDotnet.Services;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
@@ -22,9 +25,9 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public int[]? SelectedDrafts { get; set; }
 
-        public DraftsModel(IServiceProvider serviceProvider) : base(serviceProvider)
-        {
-        }
+        public DraftsModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider)
+            : base(forumService, userService, sqlExecuter, translationProvider)
+        { }
 
         public async Task<IActionResult> OnGet()
             => await WithRegisteredUser(async (user) =>
@@ -32,7 +35,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 await ResiliencyUtility.RetryOnceAsync(
                     toDo: async () =>
                     {
-                        var restrictedForumList = await GetRestrictedForums();
+                        var restrictedForumList = (await ForumService.GetRestrictedForumList(ForumUser)).Select(f => f.forumId).DefaultIfEmpty();
                         PageNum = Paginator.NormalizePageNumberLowerBound(PageNum);
                         var draftsTask = SqlExecuter.QueryAsync<TopicDto>(
                             @"SELECT d.draft_id,

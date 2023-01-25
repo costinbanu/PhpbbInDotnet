@@ -1,10 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Forum.Models;
+using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using System;
@@ -73,13 +74,17 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IAdminForumService _adminForumService;
         private readonly IWritingToolsService _adminWritingService;
         private readonly IOperationLogService _logService;
+        private readonly IForumDbContext _dbContext;
 
-        public AdminModel(IServiceProvider serviceProvider) : base(serviceProvider)
+        public AdminModel(IAdminUserService adminUserService, IAdminForumService adminForumService, IWritingToolsService adminWritingService, IOperationLogService logService, 
+            IForumDbContext dbContext, IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider)
+            : base(forumService, userService, sqlExecuter, translationProvider)
         {
-            _adminUserService = serviceProvider.GetRequiredService<IAdminUserService>();
-            _adminForumService = serviceProvider.GetRequiredService<IAdminForumService>();
-            _adminWritingService = serviceProvider.GetRequiredService<IWritingToolsService>();
-            _logService = serviceProvider.GetRequiredService<IOperationLogService>();
+            _adminUserService = adminUserService;
+            _adminForumService = adminForumService;
+            _adminWritingService = adminWritingService;
+            _logService = logService;
+            _dbContext = dbContext;
             UserSearchResults = new List<PhpbbUsers>();
             ForumChildren = new List<PhpbbForums>();
             ForumSelectedParent = new List<SelectListItem>();
@@ -91,11 +96,11 @@ namespace PhpbbInDotnet.Forum.Pages
                 var inactiveUsersTask = _adminUserService.GetInactiveUsers();
                 var activeUsersWithUnconfirmedEmailTask = _adminUserService.GetActiveUsersWithUnconfirmedEmail();
                 var groupsTask = _adminUserService.GetGroups();
-                var ranksTask = Context.PhpbbRanks.AsNoTracking().ToListAsync();
+                var ranksTask = _dbContext.PhpbbRanks.AsNoTracking().ToListAsync();
                 var banListTask = _adminUserService.GetBanList();
 
-                var bannedWordsTask = Context.PhpbbWords.AsNoTracking().ToListAsync();
-                var customBbCodesTask = Context.PhpbbBbcodes.AsNoTracking().ToListAsync();
+                var bannedWordsTask = _dbContext.PhpbbWords.AsNoTracking().ToListAsync();
+                var customBbCodesTask = _dbContext.PhpbbBbcodes.AsNoTracking().ToListAsync();
                 var smiliesTask = _adminWritingService.GetSmilies();
 
                 var logsTask = _logService.GetOperationLogs(LogType, AuthorName, LogPage);

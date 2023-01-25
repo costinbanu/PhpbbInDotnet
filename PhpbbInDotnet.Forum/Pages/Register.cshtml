@@ -8,7 +8,7 @@
 @inject Microsoft.Extensions.Configuration.IConfiguration _config;
 
 @{
-    var lang = Model.TranslationProvider.GetLanguage();
+    var lang = Model.Language;
     ViewData["Title"] = Model.TranslationProvider.BasicText[lang, "REGISTER", Casing.Title];
     Layout = "~/Pages/_Layout.cshtml";
     var opts = _config.GetObject<Recaptcha>();

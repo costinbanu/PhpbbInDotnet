@@ -1,12 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using LazyCache;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
+using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
+using Serilog;
 using System;
 using System.IO;
 using System.Net.Mime;
@@ -21,19 +24,25 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IStorageService _storageService;
         private readonly FileExtensionContentTypeProvider _contentTypeProvider;
         private readonly IConfiguration _config;
+        private readonly IAppCache _cache;
+        private readonly ILogger _logger;
 
-        public FileModel(IServiceProvider serviceProvider) : base(serviceProvider)
+        public FileModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, 
+            IStorageService storageService, FileExtensionContentTypeProvider contentTypeProvider, IConfiguration config, IAppCache cache, ILogger logger)
+            : base(forumService, userService, sqlExecuter, translationProvider)
         {
-            _storageService = serviceProvider.GetRequiredService<IStorageService>();
-            _contentTypeProvider = serviceProvider.GetRequiredService<FileExtensionContentTypeProvider>();
-            _config = serviceProvider.GetRequiredService<IConfiguration>();
+            _storageService = storageService;
+            _contentTypeProvider = contentTypeProvider;
+            _config = config;
+            _cache = cache;
+            _logger = logger;
         }
 
         public async Task<IActionResult> OnGet(int id, bool preview = false, Guid? correlationId = null)
         {
             if (correlationId.HasValue && !preview)
             {
-                var dto = await Cache.GetAsync<AttachmentDto>(CacheUtility.GetAttachmentCacheKey(id, correlationId.Value));
+                var dto = await _cache.GetAsync<AttachmentDto>(CacheUtility.GetAttachmentCacheKey(id, correlationId.Value));
                 if (dto != null)
                 {
                     return await WithValidForum(
@@ -78,7 +87,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (correlationId.HasValue)
             {
-                file = await Cache.GetAsync<string>(CacheUtility.GetAvatarCacheKey(userId, correlationId.Value));
+                file = await _cache.GetAsync<string>(CacheUtility.GetAvatarCacheKey(userId, correlationId.Value));
                 if (file != null)
                 {
                     file = getActualFileName(file);
@@ -100,12 +109,12 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             try
             {
-                var file = (await Cache.GetAsync<AttachmentDto>(CacheUtility.GetAttachmentCacheKey(id, correlationId))) ?? throw new InvalidOperationException($"File '{id}' does not exist.");
+                var file = (await _cache.GetAsync<AttachmentDto>(CacheUtility.GetAttachmentCacheKey(id, correlationId))) ?? throw new InvalidOperationException($"File '{id}' does not exist.");
                 return SendToClient(file.PhysicalFileName!, file.DisplayName!, file.MimeType, FileType.Attachment);
             }
             catch (Exception ex)
             {
-                Logger.Warning(ex, "Error displaying a deleted attachment");
+                _logger.Warning(ex, "Error displaying a deleted attachment");
                 return NotFound();
             }
         }

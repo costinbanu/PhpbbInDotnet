@@ -13,7 +13,7 @@
     var Lang = Model.Language;
     var UserDateFormat = CurrentUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
     ViewData["Title"] = Model.TranslationProvider.BasicText[Lang, "HOME", Casing.Title];
-    ViewData["BreadCrumbs"] = _forumService.GetBreadCrumbs((await Model.GetForumTree(false, false)).Tree, 0);
+    ViewData["BreadCrumbs"] = _forumService.GetBreadCrumbs(await _forumService.GetForumTree(CurrentUser, false, false), 0);
     var additionalHeaderLinks = new List<string>();
 }
 

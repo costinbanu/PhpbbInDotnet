@@ -1,15 +1,12 @@
 ﻿using CryptSharp.Core;
 using LazyCache;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database;
-using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Services;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -34,20 +31,15 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public string? ForumName { get; private set; }
 
-        public string Language { get; private set; } = Constants.DEFAULT_LANGUAGE;
-
-        public ITranslationProvider TranslationProvider { get; }
-
         public ForumLoginModel(IForumDbContext context, ITranslationProvider translationProvider, IAppCache cache)
+            : base(translationProvider)
         {
             _context = context;
-            TranslationProvider = translationProvider;
             _cache = cache;
         }
 
         public async Task<IActionResult> OnGet()
         {
-            Language = TranslationProvider.GetLanguage();
             var forum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(filter => filter.ForumId == ForumId);
 
             if (forum == null)
@@ -72,7 +64,6 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
-            Language = TranslationProvider.GetLanguage();
             var forum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(filter => filter.ForumId == ForumId);
 
             if (forum == null)

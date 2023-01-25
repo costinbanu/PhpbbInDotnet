@@ -6,15 +6,17 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
+using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
+using Serilog;
 using SixLabors.ImageSharp;
 using System;
 using System.Collections.Generic;
@@ -100,18 +102,27 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IEmailService _emailService;
         private readonly ExternalImageProcessor _imageProcessorOptions;
         private readonly HttpClient? _imageProcessorClient;
+        private readonly IForumDbContext _dbContext;
+        private readonly ILogger _logger;
+        private readonly IAppCache _cache;
 
         private const int DB_CACHE_EXPIRATION_MINUTES = 20;
 
-        public UserModel(IServiceProvider serviceProvider) : base(serviceProvider)
+        public UserModel(IStorageService storageService, IWritingToolsService writingService, IOperationLogService operationLogService, IConfiguration config, 
+            IEmailService emailService, IHttpClientFactory httpClientFactory, IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter,
+            ITranslationProvider translationProvider, IForumDbContext dbContext, ILogger logger, IAppCache cache)
+            : base(forumService, userService, sqlExecuter, translationProvider)
         {
-            _storageService = serviceProvider.GetRequiredService<IStorageService>();
-            _writingService = serviceProvider.GetRequiredService<IWritingToolsService>();
-            _operationLogService = serviceProvider.GetRequiredService<IOperationLogService>();
-            _config = serviceProvider.GetRequiredService<IConfiguration>();
-            _emailService = serviceProvider.GetRequiredService<IEmailService>();
+            _storageService = storageService;
+            _writingService = writingService;
+            _operationLogService = operationLogService;
+            _config = config;
+            _emailService = emailService;
             _imageProcessorOptions = _config.GetObject<ExternalImageProcessor>();
-            _imageProcessorClient = _imageProcessorOptions.Api?.Enabled == true ? serviceProvider.GetRequiredService<IHttpClientFactory>().CreateClient(_imageProcessorOptions.Api.ClientName) : null;
+            _imageProcessorClient = _imageProcessorOptions.Api?.Enabled == true ? httpClientFactory.CreateClient(_imageProcessorOptions.Api.ClientName) : null;
+            _dbContext = dbContext;
+            _logger = logger;
+            _cache = cache;
         }
 
         public async Task<IActionResult> OnGet()
@@ -122,7 +133,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return NotFound();
                 }
               
-                var cur = await Context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == UserId);
+                var cur = await _dbContext.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == UserId);
                 if (cur == null)
                 {
                     return NotFound();
@@ -143,7 +154,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return Unauthorized();
             }
 
-            var dbUser = Context.PhpbbUsers.FirstOrDefault(u => u.UserId == CurrentUser!.UserId);
+            var dbUser = _dbContext.PhpbbUsers.FirstOrDefault(u => u.UserId == CurrentUser!.UserId);
             if (dbUser == null)
             {
                 return NotFound();
@@ -165,18 +176,18 @@ namespace PhpbbInDotnet.Forum.Pages
                     return Page();
                 }
 
-                if (await Context.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UsernameClean == newCleanUsername))
+                if (await _dbContext.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UsernameClean == newCleanUsername))
                 {
                     return PageWithError(nameof(CurrentUser), TranslationProvider.Errors[lang, "EXISTING_USERNAME"]);
                 }
 
                 dbUser.Username = CurrentUser.Username;
                 dbUser.UsernameClean = newCleanUsername;
-                foreach (var f in Context.PhpbbForums.Where(f => f.ForumLastPosterId == dbUser.UserId))
+                foreach (var f in _dbContext.PhpbbForums.Where(f => f.ForumLastPosterId == dbUser.UserId))
                 {
                     f.ForumLastPosterName = CurrentUser.Username;
                 }
-                foreach (var t in Context.PhpbbTopics.Where(t => t.TopicLastPosterId == dbUser.UserId))
+                foreach (var t in _dbContext.PhpbbTopics.Where(t => t.TopicLastPosterId == dbUser.UserId))
                 {
                     t.TopicLastPosterName = CurrentUser.Username;
                 }
@@ -214,11 +225,11 @@ namespace PhpbbInDotnet.Forum.Pages
             if (!string.IsNullOrWhiteSpace(newColour) && dbUser.UserColour != newColour)
             {
                 dbUser.UserColour = newColour;
-                foreach (var f in Context.PhpbbForums.Where(f => f.ForumLastPosterId == dbUser.UserId))
+                foreach (var f in _dbContext.PhpbbForums.Where(f => f.ForumLastPosterId == dbUser.UserId))
                 {
                     f.ForumLastPosterColour = newColour;
                 }
-                foreach (var t in Context.PhpbbTopics.Where(t => t.TopicLastPosterId == dbUser.UserId))
+                foreach (var t in _dbContext.PhpbbTopics.Where(t => t.TopicLastPosterId == dbUser.UserId))
                 {
                     t.TopicLastPosterColour = newColour;
                 }
@@ -233,7 +244,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return Page();
                 }
 
-                if (await Context.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UserEmailHash == newEmailHash))
+                if (await _dbContext.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UserEmailHash == newEmailHash))
                 {
                     return PageWithError(nameof(Email), TranslationProvider.Errors[lang, "EXISTING_EMAIL"]);
                 }
@@ -354,7 +365,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(ex, "Failed to upload avatar for {user}", CurrentUser?.Username ?? dbUser?.Username ?? "N/A");
+                    _logger.Error(ex, "Failed to upload avatar for {user}", CurrentUser?.Username ?? dbUser?.Username ?? "N/A");
                     return PageWithError(nameof(Avatar), TranslationProvider.Errors[lang, "AVATAR_UPLOAD_ERROR"]);
                 }
                 finally
@@ -364,13 +375,13 @@ namespace PhpbbInDotnet.Forum.Pages
             }
 
             var userRoles = (await UserService.GetUserRolesLazy()).Select(r => r.RoleId);
-            var dbAclRole = Context.PhpbbAclUsers.FirstOrDefault(r => r.UserId == dbUser.UserId && userRoles.Contains(r.AuthRoleId));
+            var dbAclRole = _dbContext.PhpbbAclUsers.FirstOrDefault(r => r.UserId == dbUser.UserId && userRoles.Contains(r.AuthRoleId));
             if (dbAclRole != null && dbAclRole.AuthRoleId != (AclRole ?? -1))
             {
-                Context.PhpbbAclUsers.Remove(dbAclRole);
+                _dbContext.PhpbbAclUsers.Remove(dbAclRole);
                 if ((AclRole ?? -1) != -1)
                 {
-                    await Context.PhpbbAclUsers.AddAsync(new PhpbbAclUsers
+                    await _dbContext.PhpbbAclUsers.AddAsync(new PhpbbAclUsers
                     {
                         AuthOptionId = 0,
                         AuthRoleId = AclRole!.Value,
@@ -382,19 +393,19 @@ namespace PhpbbInDotnet.Forum.Pages
                 userShouldSignIn = true;
             }
 
-            var dbUserGroup = Context.PhpbbUserGroup.FirstOrDefault(g => g.UserId == dbUser.UserId);
+            var dbUserGroup = _dbContext.PhpbbUserGroup.FirstOrDefault(g => g.UserId == dbUser.UserId);
             if (dbUserGroup == null)
             {
                 if (dbUser.GroupId == 0)
                 {
                     throw new InvalidOperationException($"User {dbUser.UserId} has no group associated neither in phpbb_users, nor in phpbb_user_group.");
                 }
-                await Context.PhpbbUserGroup.AddAsync(new PhpbbUserGroup
+                await _dbContext.PhpbbUserGroup.AddAsync(new PhpbbUserGroup
                 {
                     GroupId = dbUser.GroupId,
                     UserId = dbUser.UserId
                 });
-                await Context.SaveChangesAsync();
+                await _dbContext.SaveChangesAsync();
             }
             else if (GroupId.HasValue && GroupId != dbUserGroup.GroupId)
             {
@@ -406,17 +417,17 @@ namespace PhpbbInDotnet.Forum.Pages
                     UserPending = dbUserGroup.UserPending
                 };
 
-                Context.PhpbbUserGroup.Remove(dbUserGroup);
-                await Context.SaveChangesAsync();
+                _dbContext.PhpbbUserGroup.Remove(dbUserGroup);
+                await _dbContext.SaveChangesAsync();
 
-                await Context.PhpbbUserGroup.AddAsync(newGroup);
+                await _dbContext.PhpbbUserGroup.AddAsync(newGroup);
 
-                var group = await Context.PhpbbGroups.AsNoTracking().FirstOrDefaultAsync(g => g.GroupId == GroupId.Value);
-                foreach (var f in Context.PhpbbForums.Where(f => f.ForumLastPosterId == dbUser.UserId))
+                var group = await _dbContext.PhpbbGroups.AsNoTracking().FirstOrDefaultAsync(g => g.GroupId == GroupId.Value);
+                foreach (var f in _dbContext.PhpbbForums.Where(f => f.ForumLastPosterId == dbUser.UserId))
                 {
                     f.ForumLastPosterColour = group!.GroupColour;
                 }
-                foreach (var t in Context.PhpbbTopics.Where(t => t.TopicLastPosterId == dbUser.UserId))
+                foreach (var t in _dbContext.PhpbbTopics.Where(t => t.TopicLastPosterId == dbUser.UserId))
                 {
                     t.TopicLastPosterColour = group!.GroupColour;
                 }
@@ -431,11 +442,11 @@ namespace PhpbbInDotnet.Forum.Pages
             var affectedEntries = 0;
             try
             {
-                affectedEntries = await Context.SaveChangesAsync();
+                affectedEntries = await _dbContext.SaveChangesAsync();
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "Error updating user profile for {user}", CurrentUser?.Username ?? dbUser?.Username ?? "N/A");
+                _logger.Error(ex, "Error updating user profile for {user}", CurrentUser?.Username ?? dbUser?.Username ?? "N/A");
                 return PageWithError(nameof(CurrentUser), TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
             }
 
@@ -468,10 +479,10 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 if (!await CanAddFoe())
                 {
-                    Logger.Error("Potential cross site forgery attempt in {name}", nameof(OnPostAddFoe));
+                    _logger.Error("Potential cross site forgery attempt in {name}", nameof(OnPostAddFoe));
                     return await PageWithErrorAsync(nameof(CurrentUser), TranslationProvider.Errors[Language, "AN_ERROR_OCCURRED"], toDoBeforeReturn: () => Mode = UserPageMode.AddFoe, resultFactory: OnGet);
                 }
-                var cur = await Context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
+                var cur = await _dbContext.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
                 await SqlExecuter.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;" +
                     "INSERT INTO phpbb_zebra (user_id, zebra_id, friend, foe) VALUES (@userId, @otherId, 0, 1)",
@@ -486,10 +497,10 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 if (!CanRemoveFoe())
                 {
-                    Logger.Error("Potential cross site forgery attempt in {name}", nameof(OnPostRemoveFoe));
+                    _logger.Error("Potential cross site forgery attempt in {name}", nameof(OnPostRemoveFoe));
                     return await PageWithErrorAsync(nameof(CurrentUser), TranslationProvider.Errors[Language, "AN_ERROR_OCCURRED"], toDoBeforeReturn: () => Mode = UserPageMode.AddFoe, resultFactory: OnGet);
                 }
-                var cur = await Context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
+                var cur = await _dbContext.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
                 await SqlExecuter.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;",
                     new { user.UserId, otherId = cur!.UserId }
@@ -532,7 +543,7 @@ namespace PhpbbInDotnet.Forum.Pages
         }
 
         public async Task<List<PhpbbLang>> GetLanguages()
-            => await Cache.GetOrAddAsync(
+            => await _cache.GetOrAddAsync(
                 key: nameof(PhpbbLang),
                 addItemFactory: async () => (await SqlExecuter.QueryAsync<PhpbbLang>("SELECT * FROM phpbb_lang")).AsList(),
                 expires: DateTimeOffset.UtcNow.AddMinutes(DB_CACHE_EXPIRATION_MINUTES)
@@ -540,15 +551,15 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task Render(PhpbbUsers cur)
         {
-            var tree = (await GetForumTree(false, false)).Tree;
+            var tree = await ForumService.GetForumTree(ForumUser, false, false);
             var preferredTopicTask = GetPreferredTopic(tree);
             var roleTask = GetRole();
             var groupTask = UserService.GetUserGroup(cur.UserId);
             var foesTask = (
-                from z in Context.PhpbbZebra.AsNoTracking()
+                from z in _dbContext.PhpbbZebra.AsNoTracking()
                 where z.UserId == cur.UserId && z.Foe == 1
 
-                join u in Context.PhpbbUsers.AsNoTracking()
+                join u in _dbContext.PhpbbUsers.AsNoTracking()
                 on z.ZebraId equals u.UserId
                 into joined
 
@@ -590,10 +601,10 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 var restrictedForums = (await ForumService.GetRestrictedForumList(ForumUser)).Select(f => f.forumId);
                 var preferredTopic = await (
-                    from p in Context.PhpbbPosts.AsNoTracking()
+                    from p in _dbContext.PhpbbPosts.AsNoTracking()
                     where p.PosterId == cur.UserId
 
-                    join t in Context.PhpbbTopics.AsNoTracking()
+                    join t in _dbContext.PhpbbTopics.AsNoTracking()
                     on p.TopicId equals t.TopicId
 
                     where !restrictedForums.Contains(t.ForumId)

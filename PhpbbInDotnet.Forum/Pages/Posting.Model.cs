@@ -1,13 +1,16 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using LazyCache;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -104,23 +107,27 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IConfiguration _config;
         private readonly ExternalImageProcessor _imageProcessorOptions;
         private readonly HttpClient? _imageProcessorClient;
+        private readonly IAppCache _cache;
+        private readonly ILogger _logger;
 
         static readonly DateTimeOffset CACHE_EXPIRATION = DateTimeOffset.UtcNow.AddHours(4);
 
-        public PostingModel(IServiceProvider serviceProvider) : base(serviceProvider)
+        public PostingModel(IPostService postService, IStorageService storageService, IWritingToolsService writingService, IBBCodeRenderingService renderingService, IConfiguration config, ILogger logger,
+            IHttpClientFactory httpClientFactory, IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, IAppCache cache)
+            : base(forumService, userService, sqlExecuter, translationProvider)
         {
             PollExpirationDaysString = "1";
             PollMaxOptions = 1;
             DeleteFileDummyForValidation = new List<string>();
-            _postService = serviceProvider.GetRequiredService<IPostService>();
-            _storageService = serviceProvider.GetRequiredService<IStorageService>();
-            _writingService = serviceProvider.GetRequiredService<IWritingToolsService>();
-            _renderingService = serviceProvider.GetRequiredService<IBBCodeRenderingService>();
-            _config = serviceProvider.GetRequiredService<IConfiguration>();
+            _postService = postService;
+            _storageService = storageService;
+            _writingService = writingService;
+            _renderingService = renderingService;
+            _config = config;
             _imageProcessorOptions = _config.GetObject<ExternalImageProcessor>();
-            _imageProcessorClient = _imageProcessorOptions.Api?.Enabled == true 
-                ? serviceProvider.GetRequiredService<IHttpClientFactory>().CreateClient(_imageProcessorOptions.Api.ClientName) 
-                : null;
+            _imageProcessorClient = _imageProcessorOptions.Api?.Enabled == true ? httpClientFactory.CreateClient(_imageProcessorOptions.Api.ClientName) : null;
+            _cache = cache;
+            _logger = logger;
         }
     }
 }

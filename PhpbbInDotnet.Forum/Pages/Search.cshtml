@@ -103,7 +103,7 @@ else
             @await Html.PartialAsync(
                  "_ForumTreePartial",
                   new _ForumTreePartialModel(
-                      tree: (await Model.GetForumTree(false, false)).Tree,
+                      tree: await _forumService.GetForumTree(CurrentUser, false, false),
                       topicData: (await _sqlExecuter.QueryAsync<Objects.MiniTopicDto>("SELECT * FROM phpbb_topics")).AsList(),
                       forumId: Model.ForumId,
                       topicId: Model.TopicId,

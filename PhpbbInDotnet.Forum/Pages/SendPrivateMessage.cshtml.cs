@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
+using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using System;
@@ -19,6 +20,14 @@ namespace PhpbbInDotnet.Forum.Pages
     {
         private readonly IWritingToolsService _writingService;
         private readonly IConfiguration _config;
+
+        public SendPrivateMessageModel(IWritingToolsService writingService, IConfiguration config, IForumTreeService forumService, 
+            IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider)
+            : base(forumService, userService, sqlExecuter, translationProvider)
+        {
+            _writingService = writingService;
+            _config = config;
+        }
 
         [BindProperty(SupportsGet = true)]
         public int? PostId { get; set; }
@@ -37,11 +46,6 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public PostDto? PreviewablePost { get; set; }
 
-        public SendPrivateMessageModel(IServiceProvider serviceProvider) : base(serviceProvider)
-        {
-            _writingService = serviceProvider.GetRequiredService<IWritingToolsService>(); 
-            _config = serviceProvider.GetRequiredService<IConfiguration>();
-        }
 
         public Task<IActionResult> OnGet()
             => WithRegisteredUser(async (usr) =>
