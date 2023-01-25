@@ -1,12 +1,20 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using LazyCache;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
-using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Objects;
+using PhpbbInDotnet.Objects.Configuration;
+using PhpbbInDotnet.Services;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using PhpbbInDotnet.Domain.Extensions;
+using System.Net.Http;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -87,6 +95,39 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool DraftSavedSuccessfully { get; private set; } = false;
         public Guid? PreviewCorrelationId { get; private set; }
         private IEnumerable<string> PollOptionsEnumerable 
-            => (PollOptions?.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()).Where(x => !string.IsNullOrWhiteSpace(x))).EmptyIfNull();
+            => (PollOptions?
+                    .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(x => x.Trim())
+                    .Where(x => !string.IsNullOrWhiteSpace(x))).EmptyIfNull();
+
+        private readonly IPostService _postService;
+        private readonly IStorageService _storageService;
+        private readonly IWritingToolsService _writingService;
+        private readonly IBBCodeRenderingService _renderingService;
+        private readonly IConfiguration _config;
+        private readonly ExternalImageProcessor _imageProcessorOptions;
+        private readonly HttpClient? _imageProcessorClient;
+        private readonly IAppCache _cache;
+        private readonly ILogger _logger;
+
+        static readonly DateTimeOffset CACHE_EXPIRATION = DateTimeOffset.UtcNow.AddHours(4);
+
+        public PostingModel(IPostService postService, IStorageService storageService, IWritingToolsService writingService, IBBCodeRenderingService renderingService, IConfiguration config, ILogger logger,
+            IHttpClientFactory httpClientFactory, IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, IAppCache cache)
+            : base(forumService, userService, sqlExecuter, translationProvider)
+        {
+            PollExpirationDaysString = "1";
+            PollMaxOptions = 1;
+            DeleteFileDummyForValidation = new List<string>();
+            _postService = postService;
+            _storageService = storageService;
+            _writingService = writingService;
+            _renderingService = renderingService;
+            _config = config;
+            _imageProcessorOptions = _config.GetObject<ExternalImageProcessor>();
+            _imageProcessorClient = _imageProcessorOptions.Api?.Enabled == true ? httpClientFactory.CreateClient(_imageProcessorOptions.Api.ClientName) : null;
+            _cache = cache;
+            _logger = logger;
+        }
     }
 }

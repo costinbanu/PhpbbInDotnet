@@ -2,22 +2,23 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Utilities;
-using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Forum.Models;
+using PhpbbInDotnet.Languages;
 using System;
 using System.Threading.Tasks;
 using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    public class LogoutModel : PageModel
+    public class LogoutModel : BaseModel
     {
         private readonly IConfiguration _config;
 
-        public LogoutModel(IConfiguration config)
+        public LogoutModel(IConfiguration config, ITranslationProvider translationProvider)
+            : base(translationProvider)
         {
             _config = config;
         }

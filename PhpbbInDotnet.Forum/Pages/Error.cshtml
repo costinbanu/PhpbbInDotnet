@@ -5,25 +5,23 @@
 @using Domain.Utilities
 @using Microsoft.Extensions.Configuration
 
-@inject Languages.ITranslationProvider _translationProvider
 @inject IConfiguration _config
 
 @{
-    var lang = _translationProvider.GetLanguage();
-    ViewData["Title"] = _translationProvider.Errors[lang, "ERROR", Casing.Title];
+    ViewData["Title"] = Model.TranslationProvider.Errors[Model.Language, "ERROR", Casing.Title];
     var adminEmail = _config.GetValue<string>("AdminEmail");
     var displayContact = !Model.IsUnauthorized && !Model.IsNotFound;
 }
 
-<h3 class="Error">@Html.Raw(_translationProvider.Errors[lang, "AN_ERROR_OCCURRED", Casing.Title])</h3>
+<h3 class="Error">@Html.Raw(Model.TranslationProvider.Errors[Model.Language, "AN_ERROR_OCCURRED", Casing.Title])</h3>
 
 @if (Model.IsUnauthorized)
 {
-    <p>@Html.Raw(_translationProvider.Errors[lang, "ERROR_UNAUTHORIZED"])</p>
+    <p>@Html.Raw(Model.TranslationProvider.Errors[Model.Language, "ERROR_UNAUTHORIZED"])</p>
 }
 else if (Model.IsNotFound)
 {
-    <p>@Html.Raw(_translationProvider.Errors[lang, "ERROR_NOT_FOUND"])</p>
+    <p>@Html.Raw(Model.TranslationProvider.Errors[Model.Language, "ERROR_NOT_FOUND"])</p>
 }
 else if (!string.IsNullOrWhiteSpace(Model.CustomErrorMessage))
 {
@@ -42,8 +40,8 @@ else if (!string.IsNullOrWhiteSpace(Model.CustomErrorMessage))
     <p>
         @Html.Raw(
             string.IsNullOrWhiteSpace(Model.ErrorId) 
-                ? string.Format(_translationProvider.Errors[lang, "REPORT_ERROR_FORMAT"], adminEmail) 
-                : string.Format(_translationProvider.Errors[lang, "REPORT_ERROR_WITH_ID_FORMAT"], adminEmail)
+                ? string.Format(Model.TranslationProvider.Errors[Model.Language, "REPORT_ERROR_FORMAT"], adminEmail) 
+                : string.Format(Model.TranslationProvider.Errors[Model.Language, "REPORT_ERROR_WITH_ID_FORMAT"], adminEmail)
         )
     </p>
 }

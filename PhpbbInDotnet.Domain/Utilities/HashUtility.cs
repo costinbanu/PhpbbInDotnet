@@ -1,14 +1,20 @@
-﻿using System.Security.Cryptography;
+﻿using System;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace PhpbbInDotnet.Domain.Utilities
 {
     public static class HashUtility
     {
+        public static long ComputeCrc64Hash(int input)
+            => ComputeCrc64Hash(BitConverter.GetBytes(input));
+
         public static long ComputeCrc64Hash(string input)
+            => ComputeCrc64Hash(Encoding.UTF8.GetBytes(input.ToLowerInvariant()));
+
+        static long ComputeCrc64Hash(byte[] bytes)
         {
             var crc = 0UL;
-            var bytes = Encoding.UTF8.GetBytes(input.ToLowerInvariant());
             for (var j = 0; j < bytes.Length; j++)
             {
                 crc = _crc64table[(byte)(crc ^ bytes[j])] ^ (crc >> 8);
@@ -29,7 +35,7 @@ namespace PhpbbInDotnet.Domain.Utilities
             return sb.ToString();
         }
 
-        private static readonly ulong[] _crc64table =
+        static readonly ulong[] _crc64table =
         {
             0x0000000000000000, 0x7ad870c830358979,
             0xf5b0e190606b12f2, 0x8f689158505e9b8b,

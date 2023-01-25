@@ -1,15 +1,13 @@
 ﻿using Dapper;
-using LazyCache;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Utilities;
+using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using Serilog;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Data;
@@ -61,11 +59,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public bool IsAuthorSearch { get; private set; }
 
-        public SearchModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger, ITranslationProvider translationProvider)
-            : base(context, forumService, userService, cache, logger, translationProvider)
-        {
-
-        }
+        public SearchModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider)
+            : base(forumService, userService, sqlExecuter, translationProvider)
+        { }
 
         public async Task<IActionResult> OnGet()
         {
@@ -86,19 +82,17 @@ namespace PhpbbInDotnet.Forum.Pages
                 TopicId = int.TryParse(query["topicid"], out var i) ? i as int? : null;
             }
 
-            var sqlExecuter = Context.GetSqlExecuter();
-
             Users = await UserService.GetUserMap();
 
             if (ForumId == null && TopicId != null)
             {
-                ForumId = (await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { TopicId }))?.ForumId;
+                ForumId = (await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { TopicId }))?.ForumId;
             }
 
             if (ForumId == null && TopicId == null && query != null)
             {
                 var postId = int.TryParse(query["postid"], out var i) ? i as int? : null;
-                var post = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId });
+                var post = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId });
                 TopicId = post?.TopicId;
                 ForumId = post?.ForumId;
             }
@@ -122,8 +116,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 DoSearch = true;
                 if (AuthorId == 0)
                 {
-                    ModelState.AddModelError(nameof(SearchText), TranslationProvider.BasicText[Language, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
-                    return await OnGet();
+                    return await PageWithErrorAsync(nameof(SearchText), TranslationProvider.BasicText[Language, "AN_ERROR_OCCURRED_TRY_AGAIN"], resultFactory: OnGet);
                 }
                 return await OnGet();
             });
@@ -155,13 +148,9 @@ namespace PhpbbInDotnet.Forum.Pages
                 return;
             }
 
-            var sqlExecuterTask = Context.GetSqlExecuterAsync();
-            var searchableForumsTask = ForumService.GetUnrestrictedForums(ForumUser, ForumId ?? 0);
-            await Task.WhenAll(sqlExecuterTask, searchableForumsTask);
-            var sqlExecuter = await sqlExecuterTask;
-            var searchableForums = await searchableForumsTask;
+            var searchableForums = await ForumService.GetUnrestrictedForums(ForumUser, ForumId ?? 0);
 
-            var searchTask = sqlExecuter.QueryAsync<PostDto>(
+            var searchTask = SqlExecuter.QueryAsync<PostDto>(
                 @"WITH ranks AS (
 	                SELECT DISTINCT u.user_id, 
 		                   COALESCE(r1.rank_id, r2.rank_id) AS rank_id, 
@@ -242,7 +231,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     skip = (PageNum - 1) * Constants.DEFAULT_PAGE_SIZE,
                     searchableForums
                 });
-            var countTask = sqlExecuter.ExecuteScalarAsync<int>(
+            var countTask = SqlExecuter.ExecuteScalarAsync<int>(
                 @"WITH search_stmt AS (
 		            SELECT p.post_id
 		              FROM phpbb_posts p
@@ -273,7 +262,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             Posts = (await searchTask).AsList();
             TotalResults = await countTask;
-            Attachments = await sqlExecuter.QueryAsync<PhpbbAttachmentExpanded>(
+            Attachments = await SqlExecuter.QueryAsync<PhpbbAttachmentExpanded>(
                 @"SELECT p.forum_id, a.*
                     FROM phpbb_attachments a
                     JOIN phpbb_posts p ON a.post_msg_id = p.post_id

@@ -4,8 +4,8 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
-using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
+using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
@@ -24,21 +24,25 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IStorageService _storageService;
         private readonly FileExtensionContentTypeProvider _contentTypeProvider;
         private readonly IConfiguration _config;
+        private readonly IAppCache _cache;
+        private readonly ILogger _logger;
 
-        public FileModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, IStorageService storageService,
-            IConfiguration config, ILogger logger, FileExtensionContentTypeProvider contentTypeProvider, ITranslationProvider translationProvider)
-            : base(context, forumService, userService, cache, logger, translationProvider)
+        public FileModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, 
+            IStorageService storageService, FileExtensionContentTypeProvider contentTypeProvider, IConfiguration config, IAppCache cache, ILogger logger)
+            : base(forumService, userService, sqlExecuter, translationProvider)
         {
             _storageService = storageService;
             _contentTypeProvider = contentTypeProvider;
             _config = config;
+            _cache = cache;
+            _logger = logger;
         }
 
         public async Task<IActionResult> OnGet(int id, bool preview = false, Guid? correlationId = null)
         {
             if (correlationId.HasValue && !preview)
             {
-                var dto = await Cache.GetAsync<AttachmentDto>(CacheUtility.GetAttachmentCacheKey(id, correlationId.Value));
+                var dto = await _cache.GetAsync<AttachmentDto>(CacheUtility.GetAttachmentCacheKey(id, correlationId.Value));
                 if (dto != null)
                 {
                     return await WithValidForum(
@@ -47,9 +51,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             }
 
-            var sqlExecuter = Context.GetSqlExecuter();
-
-            var file = await sqlExecuter.QuerySingleOrDefaultAsync<AttachmentPreviewDto>(
+            var file = await SqlExecuter.QuerySingleOrDefaultAsync<AttachmentPreviewDto>(
                 @"SELECT a.physical_filename, a.real_filename, a.mimetype, p.forum_id, p.post_id 
                     FROM phpbb_attachments a 
                     LEFT JOIN phpbb_posts p ON a.post_msg_id = p.post_id 
@@ -69,7 +71,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (!correlationId.HasValue)
             {
-                await sqlExecuter.ExecuteAsync("UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE attach_id = @id", new { id });
+                await SqlExecuter.ExecuteAsync("UPDATE phpbb_attachments SET download_count = download_count + 1 WHERE attach_id = @id", new { id });
             }
 
             return await WithValidForum(
@@ -85,7 +87,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (correlationId.HasValue)
             {
-                file = await Cache.GetAsync<string>(CacheUtility.GetAvatarCacheKey(userId, correlationId.Value));
+                file = await _cache.GetAsync<string>(CacheUtility.GetAvatarCacheKey(userId, correlationId.Value));
                 if (file != null)
                 {
                     file = getActualFileName(file);
@@ -93,8 +95,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
             }
 
-            var sqlExecuter = Context.GetSqlExecuter();
-            file = await sqlExecuter.QueryFirstOrDefaultAsync<string>("SELECT user_avatar FROM phpbb_users WHERE user_id = @userId", new { userId });
+            file = await SqlExecuter.QueryFirstOrDefaultAsync<string>("SELECT user_avatar FROM phpbb_users WHERE user_id = @userId", new { userId });
             if (file == null)
             {
                 return NotFound();
@@ -108,12 +109,12 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             try
             {
-                var file = (await Cache.GetAsync<AttachmentDto>(CacheUtility.GetAttachmentCacheKey(id, correlationId))) ?? throw new InvalidOperationException($"File '{id}' does not exist.");
+                var file = (await _cache.GetAsync<AttachmentDto>(CacheUtility.GetAttachmentCacheKey(id, correlationId))) ?? throw new InvalidOperationException($"File '{id}' does not exist.");
                 return SendToClient(file.PhysicalFileName!, file.DisplayName!, file.MimeType, FileType.Attachment);
             }
             catch (Exception ex)
             {
-                Logger.Warning(ex, "Error displaying a deleted attachment");
+                _logger.Warning(ex, "Error displaying a deleted attachment");
                 return NotFound();
             }
         }

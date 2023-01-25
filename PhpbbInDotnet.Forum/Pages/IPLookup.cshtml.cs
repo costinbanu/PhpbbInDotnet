@@ -1,14 +1,12 @@
 using Dapper;
-using LazyCache;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using Serilog;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
@@ -19,11 +17,9 @@ namespace PhpbbInDotnet.Forum.Pages
 {
     public class IPLookupModel : AuthenticatedPageModel
     {
-        public IPLookupModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger, ITranslationProvider translationProvider)
-            : base(context, forumService, userService, cache, logger, translationProvider)
-        {
-
-        }
+        public IPLookupModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider)
+            : base(forumService, userService, sqlExecuter, translationProvider)
+        { }
 
         [BindProperty(SupportsGet = true)]
         [Required]
@@ -40,13 +36,9 @@ namespace PhpbbInDotnet.Forum.Pages
         public Task<IActionResult> OnGet()
             => WithModerator(0, async () =>
             {
-                var sqlExecuterTask = Context.GetSqlExecuterAsync();
-                var searchableForumsTask = ForumService.GetUnrestrictedForums(ForumUser, ignoreForumPassword: await UserService.IsAdmin(ForumUser));
-                await Task.WhenAll(sqlExecuterTask, searchableForumsTask);
-                var sqlExecuter = await sqlExecuterTask;
-                var searchableForums = await searchableForumsTask;
+                var searchableForums = await ForumService.GetUnrestrictedForums(ForumUser, ignoreForumPassword: await UserService.IsAdmin(ForumUser));
 
-                var searchTask = sqlExecuter.QueryAsync<PostDto>(
+                var searchTask = SqlExecuter.QueryAsync<PostDto>(
                     @"WITH ranks AS (
 	                SELECT DISTINCT u.user_id, 
 		                   COALESCE(r1.rank_id, r2.rank_id) AS rank_id, 
@@ -91,7 +83,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         skip = (PageNum - 1) * Constants.DEFAULT_PAGE_SIZE,
                         searchableForums
                     });
-                var countTask = sqlExecuter.ExecuteScalarAsync<int>(
+                var countTask = SqlExecuter.ExecuteScalarAsync<int>(
                     @"WITH search_stmt AS (
 		                SELECT p.post_id
 		                  FROM phpbb_posts p
@@ -109,10 +101,14 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 Posts = (await searchTask).AsList();
                 TotalCount = await countTask;
-                Attachments = await (
-                    from a in Context.PhpbbAttachments.AsNoTracking()
-                    where Posts.Select(p => p.PostId).Contains(a.PostMsgId)
-                    select a).ToListAsync();
+                Attachments = (await SqlExecuter.QueryAsync<PhpbbAttachments>(
+                    @"SELECT *
+                        FROM phpbb_attachments
+                       WHERE post_msg_id IN @postIds",
+                    new 
+                    { 
+                        postIds = Posts.Select(p => p.PostId).DefaultIfEmpty() 
+                    })).AsList();
                 Paginator = new Paginator(count: TotalCount, pageNum: PageNum, link: $"/IPLookup?ip={IP}&pageNum={PageNum + 1}", topicId: null);
 
                 return Page();

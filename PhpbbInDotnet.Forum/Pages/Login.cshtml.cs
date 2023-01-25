@@ -1,10 +1,8 @@
 ﻿using CryptSharp.Core;
-using LazyCache;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
@@ -12,6 +10,7 @@ using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
+using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Forum.Pages.CustomPartials.Email;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
@@ -26,9 +25,10 @@ using System.Web;
 namespace PhpbbInDotnet.Forum.Pages
 {
     [ValidateAntiForgeryToken]
-    public class LoginModel : PageModel
+    public class LoginModel : BaseModel
     {
         private readonly IForumDbContext _context;
+        private readonly ISqlExecuter _sqlExecuter;
         private readonly IConfiguration _config;
         private readonly IEncryptionService _encryptionService;
         private readonly IEmailService _emailService;
@@ -72,13 +72,14 @@ namespace PhpbbInDotnet.Forum.Pages
         public Guid Init { get; set; }
 
         public LoginMode Mode { get; private set; }
-        public ITranslationProvider TranslationProvider { get; }
 
-        public LoginModel(IForumDbContext context, IConfiguration config, ITranslationProvider translationProvider, IEncryptionService encryptionService, IEmailService emailService)
+        public LoginModel(IForumDbContext context, ISqlExecuter sqlExecuter, IConfiguration config, ITranslationProvider translationProvider, 
+            IEncryptionService encryptionService, IEmailService emailService)
+            : base(translationProvider)
         {
             _context = context;
+            _sqlExecuter = sqlExecuter;
             _config = config;
-            TranslationProvider = translationProvider;
             _encryptionService = encryptionService;
             _emailService = emailService;
         }
@@ -104,8 +105,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (user == null || ResetPasswordCode != await _encryptionService.DecryptAES(user.UserNewpasswd, Init))
             {
-                ModelState.AddModelError(nameof(PwdResetErrorMessage), TranslationProvider.Errors[TranslationProvider.GetLanguage(), "CONFIRM_ERROR"]);
-                return Page();
+                return PageWithError(nameof(PwdResetErrorMessage), TranslationProvider.Errors[Language, "CONFIRM_ERROR"]);
             }
             Mode = LoginMode.PasswordReset;
             return Page();
@@ -113,31 +113,25 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
-            var sqlExecuter = _context.GetSqlExecuter();
-
-            var user = await sqlExecuter.QueryAsync<PhpbbUsers>(
+            var user = await _sqlExecuter.QueryAsync<PhpbbUsers>(
                 "SELECT * FROM phpbb_users WHERE username_clean = @username", 
                 new { username = StringUtility.CleanString(UserName) });
-            var lang = TranslationProvider.GetLanguage();
 
             Mode = LoginMode.Normal;
             if (user.Count() != 1)
             {
-                ModelState.AddModelError(nameof(LoginErrorMessage), TranslationProvider.Errors[lang, "WRONG_USER_PASS"]);
-                return Page();
+                return PageWithError(nameof(LoginErrorMessage), TranslationProvider.Errors[Language, "WRONG_USER_PASS"]);
             }
 
             var currentUser = user.First();
             if ((currentUser.UserInactiveReason != UserInactiveReason.NotInactive && currentUser.UserInactiveReason != UserInactiveReason.Active_NotConfirmed) || currentUser.UserInactiveTime != 0)
             {
-                ModelState.AddModelError(nameof(LoginErrorMessage), TranslationProvider.Errors[lang, "INACTIVE_USER"]);
-                return Page();
+                return PageWithError(nameof(LoginErrorMessage), TranslationProvider.Errors[Language, "INACTIVE_USER"]);
             }
 
             if (currentUser.UserPassword != Crypter.Phpass.Crypt(Password!, currentUser.UserPassword))
             {
-                ModelState.AddModelError(nameof(LoginErrorMessage), TranslationProvider.Errors[lang, "WRONG_USER_PASS"]);
-                return Page();
+                return PageWithError(nameof(LoginErrorMessage), TranslationProvider.Errors[Language, "WRONG_USER_PASS"]);
             }
 
             await HttpContext.SignInAsync(
@@ -152,7 +146,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (currentUser.UserShouldSignIn)
             {
-                await sqlExecuter.ExecuteAsync(
+                await _sqlExecuter.ExecuteAsync(
                     "UPDATE phpbb_users SET user_should_sign_in = 0 WHERE user_id = @userId",
                     new { currentUser.UserId });
             }
@@ -169,7 +163,6 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPostResetPassword()
         {
-            var lang = TranslationProvider.GetLanguage();
             try
             {
                 var user = _context.PhpbbUsers.FirstOrDefault(
@@ -179,10 +172,11 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (user == null)
                 {
-                    ModelState.AddModelError(nameof(PwdResetErrorMessage), TranslationProvider.Errors[lang, "WRONG_EMAIL_USER"]);
-                    ShowPwdResetOptions = true;
-                    Mode = LoginMode.PasswordReset;
-                    return Page();
+                    return PageWithError(nameof(PwdResetErrorMessage), TranslationProvider.Errors[Language, "WRONG_EMAIL_USER"], toDoBeforeReturn: () =>
+                    {
+                        ShowPwdResetOptions = true;
+                        Mode = LoginMode.PasswordReset;
+                    });
                 }
 
                 var resetKey = Guid.NewGuid().ToString("n");
@@ -193,18 +187,19 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 var emailTask = _emailService.SendEmail(
                     to: EmailForPwdReset!,
-                    subject: string.Format(TranslationProvider.Email[lang, "RESETPASS_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName")),
+                    subject: string.Format(TranslationProvider.Email[Language, "RESETPASS_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName")),
                     bodyRazorViewName: "_ResetPasswordPartial",
-                    bodyRazorViewModel: new _ResetPasswordPartialModel(resetKey, user.UserId, user.Username, iv, lang));
+                    bodyRazorViewModel: new _ResetPasswordPartialModel(resetKey, user.UserId, user.Username, iv, Language));
 
                 await Task.WhenAll(dbChangesTask, emailTask);
             }
             catch
             {
-                ModelState.AddModelError(nameof(PwdResetErrorMessage), TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
-                ShowPwdResetOptions = true;
-                Mode = LoginMode.PasswordReset;
-                return Page();
+                return PageWithError(nameof(PwdResetErrorMessage), TranslationProvider.Errors[Language, "AN_ERROR_OCCURRED_TRY_AGAIN"], toDoBeforeReturn: () =>
+                {
+                    ShowPwdResetOptions = true;
+                    Mode = LoginMode.PasswordReset;
+                });
             }
 
             return RedirectToPage("Confirm", "NewPassword");
@@ -212,8 +207,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPostSaveNewPassword()
         {
-            var lang = TranslationProvider.GetLanguage();
-            var validator = new UserProfileDataValidationService(ModelState, TranslationProvider, lang);
+            var validator = new UserProfileDataValidationService(ModelState, TranslationProvider, Language);
             var validations = new[]
             {
                 validator.ValidatePassword(nameof(PwdResetErrorMessage), PwdResetFirstPassword),
@@ -229,9 +223,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var user = _context.PhpbbUsers.FirstOrDefault(u => u.UserId == UserId);
             if (user == null || ResetPasswordCode != await _encryptionService.DecryptAES(user.UserNewpasswd, Init))
             {
-                ModelState.AddModelError(nameof(PwdResetErrorMessage), TranslationProvider.Errors[lang, "CONFIRM_ERROR"]);
-                Mode = LoginMode.PasswordReset;
-                return Page();
+                return PageWithError(nameof(PwdResetErrorMessage), TranslationProvider.Errors[Language, "CONFIRM_ERROR"], toDoBeforeReturn: () => Mode = LoginMode.PasswordReset);                
             }
 
             user.UserNewpasswd = string.Empty;

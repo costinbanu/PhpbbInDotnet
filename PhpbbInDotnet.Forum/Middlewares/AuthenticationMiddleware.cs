@@ -26,7 +26,7 @@ namespace PhpbbInDotnet.Forum.Middlewares
 
         private readonly ILogger _logger;
         private readonly IForumTreeService _forumTreeService;
-        private readonly IForumDbContext _context;
+        private readonly ISqlExecuter _sqlExecuter;
         private readonly IUserService _userService;
         private readonly IConfiguration _config;
         private readonly IAppCache _cache;
@@ -39,12 +39,12 @@ namespace PhpbbInDotnet.Forum.Middlewares
                 StringComparer.OrdinalIgnoreCase);
         }
 
-        public AuthenticationMiddleware(ILogger logger, IConfiguration config, IAppCache cache, IForumDbContext context,
+        public AuthenticationMiddleware(ILogger logger, IConfiguration config, IAppCache cache, ISqlExecuter sqlExecuter,
             IForumTreeService forumTreeService, IUserService userService, IAnonymousSessionCounter sessionCounter)
         {
             _logger = logger;
             _forumTreeService = forumTreeService;
-            _context = context;
+            _sqlExecuter = sqlExecuter;
             _userService = userService;
             _config = config;
             _cache = cache;
@@ -59,12 +59,11 @@ namespace PhpbbInDotnet.Forum.Middlewares
                 return;
             }
 
-            var sqlExecuter = _context.GetSqlExecuter();
             AuthenticatedUser baseUser;
             PhpbbUsers dbUser;
             if (IdentityUtility.TryGetUserId(context.User, out var userId))
             {
-                dbUser = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
+                dbUser = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
                     "SELECT * FROM phpbb_users WHERE user_id = @userId",
                     new { userId });
 
@@ -94,18 +93,18 @@ namespace PhpbbInDotnet.Forum.Middlewares
             {
                 var tppTask = GetTopicPostsPage(baseUser.UserId);
                 var foesTask = _userService.GetFoes(baseUser.UserId);
-                var groupPropertiesTask = sqlExecuter.QueryFirstOrDefaultAsync<(int GroupEditTime, int GroupUserUploadSize)>(
+                var groupPropertiesTask = _sqlExecuter.QueryFirstOrDefaultAsync<(int GroupEditTime, int GroupUserUploadSize)>(
                     @"SELECT g.group_edit_time, g.group_user_upload_size
                         FROM phpbb_groups g
                         JOIN phpbb_users u ON g.group_id = u.group_id
                        WHERE u.user_id = @UserId",
                     new { baseUser.UserId });
-                var styleTask = sqlExecuter.QueryFirstOrDefaultAsync<string>(
+                var styleTask = _sqlExecuter.QueryFirstOrDefaultAsync<string>(
                     "SELECT style_name FROM phpbb_styles WHERE style_id = @UserStyle",
                     new { dbUser.UserStyle });
                 var updateLastVisitTask = DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) <= sessionTrackingTimeout
                     ? Task.CompletedTask
-                    : sqlExecuter.ExecuteAsync(
+                    : _sqlExecuter.ExecuteAsync(
                         "UPDATE phpbb_users SET user_lastvisit = @now WHERE user_id = @userId",
                         new { now = DateTime.UtcNow.ToUnixTimestamp(), baseUser.UserId });
 
@@ -169,7 +168,7 @@ namespace PhpbbInDotnet.Forum.Middlewares
 
         async Task<Dictionary<int, int>> GetTopicPostsPage(int userId)
         {
-            var results = await _context.GetSqlExecuter().QueryAsync(
+            var results = await _sqlExecuter.QueryAsync(
                 @"SELECT topic_id, post_no
 	                FROM phpbb_user_topic_post_number
 	               WHERE user_id = @user_id

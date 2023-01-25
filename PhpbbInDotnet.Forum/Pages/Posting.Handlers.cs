@@ -31,8 +31,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumId = curForum.ForumId;
                 Action = PostingActions.NewForumPost;
                 ReturnUrl = Request.GetEncodedPathAndQuery();
-                var sqlExecuter = Context.GetSqlExecuter();
-                var draft = sqlExecuter.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = TopicId ?? 0 });
+                var draft = SqlExecuter.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = TopicId ?? 0 });
                 if (draft != null)
                 {
                     PostTitle = HttpUtility.HtmlDecode(draft.DraftSubject);
@@ -64,8 +63,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var curAuthor = curPost.PostUsername;
                 if (string.IsNullOrWhiteSpace(curAuthor))
                 {
-                    var sqlExecuter = Context.GetSqlExecuter();
-                    curAuthor = await sqlExecuter.QueryFirstOrDefaultAsync<string>("SELECT username FROM phpbb_users WHERE user_id = @posterId", new { curPost.PosterId }) ?? Constants.ANONYMOUS_USER_NAME;
+                    curAuthor = await SqlExecuter.QueryFirstOrDefaultAsync<string>("SELECT username FROM phpbb_users WHERE user_id = @posterId", new { curPost.PosterId }) ?? Constants.ANONYMOUS_USER_NAME;
                 }
 
                 CurrentForum = curForum;
@@ -91,8 +89,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 Action = PostingActions.NewTopic;
                 ReturnUrl = Request.GetEncodedPathAndQuery();
 
-                var sqlExecuter = Context.GetSqlExecuter();
-                var draft = sqlExecuter.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = 0 }); 
+                var draft = SqlExecuter.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId = 0 }); 
                 if (draft != null)
                 {
                     PostTitle = HttpUtility.HtmlDecode(draft.DraftSubject);
@@ -119,15 +116,13 @@ namespace PhpbbInDotnet.Forum.Pages
                 Action = PostingActions.EditForumPost;
                 ReturnUrl = Request.GetEncodedPathAndQuery();
 
-                var sqlExecuter = Context.GetSqlExecuter();
-                
-                Attachments = (await sqlExecuter.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id = @postId ORDER BY attach_id", new { PostId })).AsList();
+                Attachments = (await SqlExecuter.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id = @postId ORDER BY attach_id", new { PostId })).AsList();
 
-                Cache.Add(GetActualCacheKey("PostTime", true), curPost.PostTime, CACHE_EXPIRATION);
+                _cache.Add(GetCacheKey("PostTime", true), curPost.PostTime, CACHE_EXPIRATION);
 
                 if (canCreatePoll && curTopic.PollStart > 0)
                 {
-                    var pollOptionsText = (await sqlExecuter.QueryAsync<string>("SELECT poll_option_text FROM phpbb_poll_options WHERE topic_id = @topicId", new { curTopic.TopicId })).AsList();
+                    var pollOptionsText = (await SqlExecuter.QueryAsync<string>("SELECT poll_option_text FROM phpbb_poll_options WHERE topic_id = @topicId", new { curTopic.TopicId })).AsList();
                     PollQuestion = curTopic.PollTitle;
                     PollOptions = string.Join(Environment.NewLine, pollOptionsText);
                     PollCanChangeVote = curTopic.PollVoteChange.ToBool();
@@ -209,13 +204,13 @@ namespace PhpbbInDotnet.Forum.Pages
                     }
                     catch (Exception ex)
                     {
-                        Logger.Warning(ex);
+                        _logger.Warning(ex);
                     }
                 }
 
                 if (user.UploadLimit > 0)
                 {
-                    var existingUploadSize = await Context.GetSqlExecuter().ExecuteScalarAsync<long>("SELECT sum(filesize) FROM phpbb_attachments WHERE poster_id = @userId", new { user.UserId });
+                    var existingUploadSize = await SqlExecuter.ExecuteScalarAsync<long>("SELECT sum(filesize) FROM phpbb_attachments WHERE poster_id = @userId", new { user.UserId });
                     if (existingUploadSize + images.Sum(f => f.Length) + nonImages.Sum(f => f.Length) > user.UploadLimit)
                     {
                         return PageWithError(curForum, nameof(Files), TranslationProvider.Errors[lang, "ATTACH_QUOTA_EXCEEDED"]);
@@ -310,10 +305,9 @@ namespace PhpbbInDotnet.Forum.Pages
             => WithBackup(() => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, () => WithValidInput(curForum, async() =>
             {
                 var lang = Language;
-                var sqlExecuter = Context.GetSqlExecuter();
-                var currentPost = Action == PostingActions.EditForumPost ? await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @PostId", new { PostId }) : null;
+                var currentPost = Action == PostingActions.EditForumPost ? await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @PostId", new { PostId }) : null;
                 var userId = Action == PostingActions.EditForumPost ? currentPost!.PosterId : user.UserId;
-                var postAuthor = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
+                var postAuthor = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
                 var rankId = postAuthor?.UserRank ?? 0;
                 var newPostText = PostText;
                 var uid = string.Empty;
@@ -327,7 +321,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     AuthorColor = postAuthor?.UserColour,
                     AuthorId = postAuthor?.UserId ?? Constants.ANONYMOUS_USER_ID,
                     AuthorName = postAuthor?.Username ?? Constants.ANONYMOUS_USER_NAME,
-                    AuthorRank = (await sqlExecuter.QueryFirstOrDefaultAsync("SELECT * FROM phpbb_ranks WHERE rank_id = @rankId", new { rankId }))?.RankTitle,
+                    AuthorRank = (await SqlExecuter.QueryFirstOrDefaultAsync("SELECT * FROM phpbb_ranks WHERE rank_id = @rankId", new { rankId }))?.RankTitle,
                     BbcodeUid = uid,
                     PostEditCount = (short)(Action == PostingActions.EditForumPost ? (currentPost?.PostEditCount ?? 0) + 1 : 0),
                     PostEditReason = Action == PostingActions.EditForumPost ? currentPost?.PostEditReason : string.Empty,
@@ -342,7 +336,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 if (!string.IsNullOrWhiteSpace(PollOptions))
                 {
                     var topicId = currentPost?.TopicId ?? 0;
-                    var curTopic = await Context.GetSqlExecuter().QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
+                    var curTopic = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
                     var pollStart = ((curTopic?.PollStart ?? 0) == 0 ? DateTime.UtcNow.ToUnixTimestamp() : curTopic!.PollStart).ToUtcTime();
                     PreviewablePoll = new PollDto
                     {
@@ -378,7 +372,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     return RedirectToPage("ViewTopic", "byPostId", new { PostId });
                 }
 
-                var post = await Context.GetSqlExecuter().QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @PostId", new { PostId });
+                var post = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @PostId", new { PostId });
                 var addedPostId = await UpsertPost(post, user);
                 if (addedPostId == null)
                 {
@@ -396,25 +390,24 @@ namespace PhpbbInDotnet.Forum.Pages
             => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, () => WithValidInput(curForum, async() =>
             {
                 var lang = Language;
-                var sqlExecuter = Context.GetSqlExecuter();
                 var topicId = Action == PostingActions.NewTopic ? 0 : TopicId ?? 0;
-                var draft = sqlExecuter.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId });
+                var draft = SqlExecuter.QueryFirstOrDefault<PhpbbDrafts>("SELECT * FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId", new { user.UserId, ForumId, topicId });
 
                 if (draft == null)
                 {
-                    await sqlExecuter.ExecuteAsync(
+                    await SqlExecuter.ExecuteAsync(
                         "INSERT INTO phpbb_drafts (draft_message, draft_subject, forum_id, topic_id, user_id, save_time) VALUES (@message, @subject, @forumId, @topicId, @userId, @now)",
                         new { message = HttpUtility.HtmlEncode(PostText), subject = HttpUtility.HtmlEncode(PostTitle), ForumId, topicId = TopicId ?? 0, user.UserId, now = DateTime.UtcNow.ToUnixTimestamp() }
                     );
                 }
                 else
                 {
-                    await sqlExecuter.ExecuteAsync(
+                    await SqlExecuter.ExecuteAsync(
                         "UPDATE phpbb_drafts SET draft_message = @message, draft_subject = @subject, save_time = @now WHERE draft_id = @draftId",
                         new { message = HttpUtility.HtmlEncode(PostText), subject = HttpUtility.HtmlEncode(PostTitle), now = DateTime.UtcNow.ToUnixTimestamp(), draft.DraftId }
                     );
                 }
-                Cache.Remove(GetActualCacheKey("Text", true));
+                _cache.Remove(GetCacheKey("Text", true));
                 DraftSavedSuccessfully = true;
 
                 if (Action == PostingActions.NewForumPost)
@@ -439,9 +432,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     return RedirectToPage("ViewTopic", "byPostId", new { PostId });
                 }
-                var sqlExecuter = Context.GetSqlExecuter();
 
-                await sqlExecuter.ExecuteAsync("UPDATE phpbb_topics SET poll_start = 0, poll_length = 0, poll_max_options = 1, poll_title = '', poll_vote_change = 0 WHERE topic_id = @topicId", new { curTopic.TopicId });
+                await SqlExecuter.ExecuteAsync("UPDATE phpbb_topics SET poll_start = 0, poll_length = 0, poll_max_options = 1, poll_title = '', poll_vote_change = 0 WHERE topic_id = @topicId", new { curTopic.TopicId });
 
                 PollQuestion = PollOptions = null;
                 PollCanChangeVote = false;
@@ -453,7 +445,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 ModelState.Remove(nameof(PollCanChangeVote));
                 ModelState.Remove(nameof(PollMaxOptions));
 
-                await sqlExecuter.ExecuteAsync(
+                await SqlExecuter.ExecuteAsync(
                     "DELETE FROM phpbb_poll_options WHERE topic_id = @topicId;" +
                     "DELETE FROM phpbb_poll_votes WHERE topic_id = @topicId",
                     new { TopicId }

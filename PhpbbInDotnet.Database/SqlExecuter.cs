@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
@@ -9,9 +10,9 @@ namespace PhpbbInDotnet.Database
     {
         private readonly IDbConnection _connection;
 
-        internal SqlExecuter(IDbConnection connection)
+        public SqlExecuter(IForumDbContext forumDbContext)
         {
-            _connection = connection;
+            _connection = forumDbContext.Database.GetDbConnection();
         }
 
         public Task<int> ExecuteAsync(string sql, object? param)

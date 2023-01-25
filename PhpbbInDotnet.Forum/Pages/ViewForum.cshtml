@@ -12,7 +12,7 @@
     ViewData["Title"] = DocumentTitle;
     Layout = "~/Pages/_Layout.cshtml";
     var currentUser = Model.ForumUser;
-    var forumTree = (await Model.GetForumTree(false, false)).Tree;
+    var forumTree = await _forumService.GetForumTree(currentUser, false, false);
     var hasSubForums = Model.ForumId != 0 && _forumService.HasUnrestrictedChildren(forumTree, Model.ForumId);
     var hasTopics = Model.Topics?.SelectMany(x => x.Topics ?? Enumerable.Empty<TopicDto>()).Any() ?? false;
     var userDateFormat = currentUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);

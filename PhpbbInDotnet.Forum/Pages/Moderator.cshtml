@@ -21,6 +21,7 @@
     var UserDateFormat = CurrentUser.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
     var isForumSelected = Model.ForumId > 0 && !string.IsNullOrWhiteSpace(Model.ForumName);
     var hasTopics = Model.Topics?.SelectMany(t => t.Topics ?? Enumerable.Empty<TopicDto>())?.Any() == true;
+    var forumTree = await _forumService.GetForumTree(CurrentUser, false, false);
 }
 
 <style>
@@ -110,7 +111,7 @@
         @await Html.PartialAsync(
          "_ForumTreePartial",
          new _ForumTreePartialModel(
-             tree: (await Model.GetForumTree(false, false)).Tree,
+             tree: forumTree,
              forumId: Model.ForumId == 0 ? null : Model.ForumId
          ),
          ViewData)
@@ -213,7 +214,7 @@
                 </div>
                 <div class="FlexBox">
                     <span class="Caption">
-                        @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, report.ForumId))
+                        @Html.Raw(_forumService.GetPathText(forumTree, report.ForumId))
                     </span>
                     <br />
                     <a asp-page="ViewTopic" asp-page-handler="byPostId" asp-route-postId="@report.PostId">
@@ -302,7 +303,7 @@
                     case RecycleBinItemType.Forum:
                         var forum = item.Value as ForumDto;
                         <span class="Caption">
-                            @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, forum!.ParentId ?? 0))
+                            @Html.Raw(_forumService.GetPathText(forumTree, forum!.ParentId ?? 0))
                         </span>
                         <br />
                         <strong>
@@ -320,7 +321,7 @@
                     case RecycleBinItemType.Topic:
                         var topic = item.Value as TopicDto;
                         <span class="Caption">
-                            @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, topic!.ForumId ?? 0))
+                            @Html.Raw(_forumService.GetPathText(forumTree, topic!.ForumId ?? 0))
                         </span>
                         <br />
                         <strong>
@@ -331,7 +332,7 @@
                     case RecycleBinItemType.Post:
                         var post = item.Value as PostDto;
                         <span class="Caption">
-                            @Html.Raw(_forumService.GetPathText((await Model.GetForumTree(false, false)).Tree, post!.ForumId))
+                            @Html.Raw(_forumService.GetPathText(forumTree, post!.ForumId))
                         </span>
                         <br />
                         foreach (var attach in post.Attachments!)

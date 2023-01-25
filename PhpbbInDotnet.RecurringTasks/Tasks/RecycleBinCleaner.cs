@@ -18,15 +18,15 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
     {
         readonly IConfiguration _config;
         readonly ITimeService _timeService;
-        readonly IForumDbContext _dbContext;
+        readonly ISqlExecuter _sqlExecuter;
         readonly IStorageService _storageService;
         readonly ILogger _logger;
 
-        public RecycleBinCleaner(IConfiguration config, ITimeService timeService, IForumDbContext dbContext, IStorageService storageService, ILogger logger)
+        public RecycleBinCleaner(IConfiguration config, ITimeService timeService, ISqlExecuter sqlExecuter, IStorageService storageService, ILogger logger)
         {
             _config = config;
             _timeService = timeService;
-            _dbContext = dbContext;
+            _sqlExecuter = sqlExecuter;
             _storageService = storageService;
             _logger = logger;
         }
@@ -34,14 +34,13 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
         public async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             var retention = _config.GetObject<TimeSpan?>("RecycleBinRetentionTime") ?? TimeSpan.FromDays(7);
-            var sqlExecuter = _dbContext.GetSqlExecuter();
 
             if (retention < TimeSpan.FromDays(1))
             {
                 throw new ArgumentOutOfRangeException("RecycleBinRetentionTime", "Invalid app setting value.");
             }
 
-            var toDelete = await sqlExecuter.QueryAsync<PhpbbRecycleBin>(
+            var toDelete = await _sqlExecuter.QueryAsync<PhpbbRecycleBin>(
                 "SELECT * FROM phpbb_recycle_bin WHERE @now - delete_time > @retention",
                 new
                 {
@@ -61,7 +60,7 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
 
             stoppingToken.ThrowIfCancellationRequested();
 
-            await sqlExecuter.ExecuteAsync(
+            await _sqlExecuter.ExecuteAsync(
                 "DELETE FROM phpbb_recycle_bin WHERE type = @type AND id = @id",
                 toDelete);
 
