@@ -1,11 +1,10 @@
-using LazyCache;
 using Microsoft.AspNetCore.Mvc;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using Serilog;
 using System;
 using System.Threading.Tasks;
 
@@ -20,9 +19,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private readonly IStatisticsService _statisticsService;
 
-        public StatisticsModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger, 
+        public StatisticsModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, 
             ITranslationProvider translationProvider, IStatisticsService statisticsService)
-            : base(context, forumService, userService, cache, logger, translationProvider)
+            : base(forumService, userService, sqlExecuter, translationProvider)
         {
             _statisticsService = statisticsService;
         }

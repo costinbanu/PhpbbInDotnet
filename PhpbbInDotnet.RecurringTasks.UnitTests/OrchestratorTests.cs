@@ -14,27 +14,36 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
     {
         readonly Mock<ILogger> _mockLogger;
         readonly Mock<IStorageService> _mockStorageService;
-        readonly IServiceCollection _services;
 
         public OrchestratorTests()
         {
             _mockLogger = new Mock<ILogger>();
             _mockStorageService = new Mock<IStorageService>();
+        }
+
+        IServiceCollection GetServices()
+        {
             var mockSchedulingService = new Mock<ISchedulingService>();
             mockSchedulingService.Setup(s => s.GetTimeToWaitUntilRunIsAllowed()).Returns(TimeSpan.Zero);
 
-            _services = new ServiceCollection();
-            _services.AddSingleton(_mockLogger.Object);
-            _services.AddScoped(_ => _mockStorageService.Object);
-            _services.AddSingleton(mockSchedulingService.Object);
+            var services = new ServiceCollection();
+            services.AddSingleton(_mockLogger.Object);
+            services.AddScoped(_ => _mockStorageService.Object);
+            services.AddSingleton(mockSchedulingService.Object);
+
+            return services;
         }
 
         [Fact]
         public async Task On_Task_Cancellation_It_Gracefully_Stops()
         {
+            var services = GetServices();
+            services.AddSingleton<CallCounter>();
+            services.AddScoped<IRecurringTask, FakeForumsAndTopicsSynchronizer>();
+
             using var cts = new CancellationTokenSource();
             cts.Cancel();
-            var orchestrator = new Orchestrator(_services.BuildServiceProvider(), typeof(FakeForumsAndTopicsSynchronizer));
+            var orchestrator = new Orchestrator(services.BuildServiceProvider());
             await orchestrator.StartAsync(cts.Token);
             await Task.Delay(TimeSpan.FromSeconds(1));
 
@@ -46,31 +55,17 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
         }
 
         [Fact]
-        public async Task On_Wrong_Task_Types_It_Gracefully_Stops()
-        {
-            var orchestrator = new Orchestrator(_services.BuildServiceProvider(), typeof(object));
-            await orchestrator.StartAsync(CancellationToken.None);
-            await Task.Delay(TimeSpan.FromSeconds(1));
-
-            _mockLogger.Verify(
-                l => l.Error(
-                    It.Is<ArgumentException>(e => e.Message == $"System.Object does not implement {nameof(IRecurringTask)}."), 
-                    "An error occurred while running recurring tasks; rest of the application will continue."), 
-                Times.Once());
-        }
-
-        [Fact]
         public async Task Happy_Day_It_Runs_Successfully()
         {
+            var services = GetServices();
             var counter = new CallCounter();
-            _services.AddSingleton(counter);
-            var orchestrator = new Orchestrator(
-                _services.BuildServiceProvider(),
-                typeof(FakeForumsAndTopicsSynchronizer),
-                typeof(FakeLogCleaner),
-                typeof(FakeOrphanFilesCleaner),
-                typeof(FakeRecycleBinCleaner),
-                typeof(FakeSiteMapGenerator));
+            services.AddSingleton(counter);
+            services.AddScoped<IRecurringTask, FakeForumsAndTopicsSynchronizer>();
+            services.AddScoped<IRecurringTask, FakeLogCleaner>();
+            services.AddScoped<IRecurringTask, FakeOrphanFilesCleaner>();
+            services.AddScoped<IRecurringTask, FakeRecycleBinCleaner>();
+            services.AddScoped<IRecurringTask, FakeSiteMapGenerator>();
+            var orchestrator = new Orchestrator(services.BuildServiceProvider());
 
             await orchestrator.StartAsync(CancellationToken.None);
             await Task.Delay(TimeSpan.FromSeconds(1));

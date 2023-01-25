@@ -23,5 +23,8 @@ namespace PhpbbInDotnet.Services
         Task<bool> IsForumUnread(int forumId, AuthenticatedUserExpanded user, bool forceRefresh = false);
         Task<bool> IsPostUnread(int forumId, int topicId, int postId, AuthenticatedUserExpanded user);
         Task<bool> IsTopicUnread(int forumId, int topicId, AuthenticatedUserExpanded user, bool forceRefresh = false);
+        Task MarkForumAndSubforumsRead(AuthenticatedUserExpanded user, int forumId);
+        Task MarkForumRead(int userId, int forumId);
+        Task MarkTopicRead(int userId, int forumId, int topicId, bool isLastPage, long markTime);
     }
 }

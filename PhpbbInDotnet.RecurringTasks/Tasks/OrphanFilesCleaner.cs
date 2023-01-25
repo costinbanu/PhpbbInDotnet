@@ -14,15 +14,15 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
 
         readonly IConfiguration _config;
         readonly ITimeService _timeService;
-        readonly IForumDbContext _dbContext;
+        readonly ISqlExecuter _sqlExecuter;
         readonly IWritingToolsService _writingToolsService;
         readonly ILogger _logger;
 
-        public OrphanFilesCleaner(IConfiguration config, ITimeService timeService, IForumDbContext dbContext, IWritingToolsService writingToolsService, ILogger logger)
+        public OrphanFilesCleaner(IConfiguration config, ITimeService timeService, ISqlExecuter sqlExecuter, IWritingToolsService writingToolsService, ILogger logger)
         {
             _config = config;
             _timeService = timeService;
-            _dbContext = dbContext;
+            _sqlExecuter = sqlExecuter;
             _writingToolsService = writingToolsService;
             _logger = logger;
         }
@@ -30,11 +30,10 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
         public async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             var retention = _config.GetObject<TimeSpan?>("RecycleBinRetentionTime") ?? TimeSpan.FromDays(7);
-            var sqlExecuter = _dbContext.GetSqlExecuter();
 
             stoppingToken.ThrowIfCancellationRequested();
 
-            await sqlExecuter.ExecuteAsync(
+            await _sqlExecuter.ExecuteAsync(
                 @"UPDATE phpbb_attachments a
                     LEFT JOIN phpbb_posts p ON a.post_msg_id = p.post_id
                      SET a.is_orphan = 1

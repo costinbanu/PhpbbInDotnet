@@ -1,12 +1,14 @@
-﻿using LazyCache;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using Serilog;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Web;
@@ -19,6 +21,7 @@ namespace PhpbbInDotnet.Forum.Pages
         private bool _forceTreeRefresh;
         private readonly IConfiguration _config;
         private readonly IBBCodeRenderingService _renderingService;
+        private readonly ILogger _logger;
 
         public HashSet<ForumTree>? Forums { get; private set; }
         public List<TopicGroup>? Topics { get; private set; }
@@ -33,12 +36,13 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public int ForumId { get; set; }
 
-        public ViewForumModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, IBBCodeRenderingService renderingService,
-            IConfiguration config, ILogger logger, ITranslationProvider translationProvider)
-            : base(context, forumService, userService, cache, logger, translationProvider) 
+        public ViewForumModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, 
+            ITranslationProvider translationProvider, ILogger logger, IConfiguration config, IBBCodeRenderingService renderingService)
+            : base(forumService, userService, sqlExecuter, translationProvider)
         {
-            _config = config;
+            _config = config; 
             _renderingService = renderingService;
+            _logger = logger;
         }
 
         public async Task<IActionResult> OnGet()
@@ -55,12 +59,12 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumRulesUid = thisForum.ForumRulesUid;
                 ForumDesc = _renderingService.BbCodeToHtml(thisForum.ForumDesc, thisForum.ForumDescUid ?? string.Empty);
                
-                var parentTask = Context.GetSqlExecuter().QuerySingleOrDefaultAsync<PhpbbForums>(
+                var parentTask = SqlExecuter.QuerySingleOrDefaultAsync<PhpbbForums>(
                     "SELECT * FROM phpbb_forums WHERE forum_id = @ParentId", 
                     new { thisForum.ParentId }
                 );
                 var topicsTask = ForumService.GetTopicGroups(ForumId);
-                var treeTask = GetForumTree(_forceTreeRefresh, true);
+                var treeTask = ForumService.GetForumTree(ForumUser, _forceTreeRefresh, true);
 
                 await Task.WhenAll(parentTask, topicsTask, treeTask);
 
@@ -68,33 +72,33 @@ namespace PhpbbInDotnet.Forum.Pages
                 var parent = await parentTask;
                 ParentForumId = parent?.ForumId;
                 ParentForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? _config.GetValue<string>("ForumName"));
-                (Forums, _) = await treeTask;
+                Forums = await treeTask;
 
                 return Page();
             });
 
         public IActionResult OnGetNewPosts()
         {
-            Logger.Warning("Deprecated route requested for user '{user}' - ViewForum/{name}.", ForumUser.Username, nameof(OnGetNewPosts));
+            _logger.Warning("Deprecated route requested for user '{user}' - ViewForum/{name}.", ForumUser.Username, nameof(OnGetNewPosts));
             return RedirectToPage("NewPosts");
         }
 
         public IActionResult OnGetOwnPosts()
         {
-            Logger.Warning("Deprecated route requested for user '{user}' - ViewForum/{name}.", ForumUser.Username, nameof(OnGetOwnPosts));
+            _logger.Warning("Deprecated route requested for user '{user}' - ViewForum/{name}.", ForumUser.Username, nameof(OnGetOwnPosts));
             return RedirectToPage("OwnPosts");
         }
 
         public IActionResult OnGetDrafts()
         {
-            Logger.Warning("Deprecated route requested for user '{user}' - ViewForum/{name}.", ForumUser.Username, nameof(OnGetDrafts));
+            _logger.Warning("Deprecated route requested for user '{user}' - ViewForum/{name}.", ForumUser.Username, nameof(OnGetDrafts));
             return RedirectToPage("Drafts");
         }
 
         public async Task<IActionResult> OnPostMarkForumsRead()
             => await WithRegisteredUser((_) => WithValidForum(ForumId, ForumId == 0, async (_) =>
             {
-                await MarkForumAndSubforumsRead(ForumId);
+                await ForumService.MarkForumAndSubforumsRead(ForumUser, ForumId);
                 _forceTreeRefresh = true;
                 return await OnGet();
             }));
@@ -104,7 +108,7 @@ namespace PhpbbInDotnet.Forum.Pages
              {
                  await Task.WhenAll(
                      MarkShortcutsRead(),
-                     MarkForumRead(ForumId));
+                     ForumService.MarkForumRead(ForumUser.UserId, ForumId));
 
                  _forceTreeRefresh = true;
 
@@ -113,20 +117,16 @@ namespace PhpbbInDotnet.Forum.Pages
 
         async Task MarkShortcutsRead()
         {
-            var shortcuts = Context.GetSqlExecuter().Query(
+            var shortcuts = await SqlExecuter.QueryAsync<(int actualForumId, int topicId, long topicLastPostTime)>(
                 @"SELECT t.forum_id AS actual_forum_id, t.topic_id, t.topic_last_post_time
                     FROM phpbb_shortcuts s
                     JOIN phpbb_topics t on s.topic_id = t.topic_id
                    WHERE s.forum_id = @forumId",
                 new { ForumId });
 
-            foreach (var shortcut in shortcuts)
+            foreach ((int actualForumId, int topicId, long topicLastPostTime) in shortcuts)
             {
-                await MarkTopicRead(
-                    forumId: (int)shortcut.actual_forum_id, 
-                    topicId: (int)shortcut.topic_id, 
-                    isLastPage: true, 
-                    markTime: (long)shortcut.topic_last_post_time);
+                await ForumService.MarkTopicRead(ForumUser.UserId, actualForumId, topicId, isLastPage: true, topicLastPostTime);
             }
         }
     }

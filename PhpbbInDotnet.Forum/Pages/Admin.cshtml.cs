@@ -1,13 +1,13 @@
-﻿using LazyCache;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using PhpbbInDotnet.Domain;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -16,7 +16,6 @@ using System.Net.Mime;
 using System.Threading.Tasks;
 using System.Web;
 using IOFile = System.IO.File;
-using Serilog;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
@@ -75,15 +74,17 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IAdminForumService _adminForumService;
         private readonly IWritingToolsService _adminWritingService;
         private readonly IOperationLogService _logService;
+        private readonly IForumDbContext _dbContext;
 
-        public AdminModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger, IAdminUserService adminUserService, 
-            IAdminForumService adminForumService, IWritingToolsService adminWritingService, ITranslationProvider translationProvider, IOperationLogService logService) 
-            : base(context, forumService, userService, cache, logger, translationProvider)
+        public AdminModel(IAdminUserService adminUserService, IAdminForumService adminForumService, IWritingToolsService adminWritingService, IOperationLogService logService, 
+            IForumDbContext dbContext, IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider)
+            : base(forumService, userService, sqlExecuter, translationProvider)
         {
             _adminUserService = adminUserService;
             _adminForumService = adminForumService;
             _adminWritingService = adminWritingService;
             _logService = logService;
+            _dbContext = dbContext;
             UserSearchResults = new List<PhpbbUsers>();
             ForumChildren = new List<PhpbbForums>();
             ForumSelectedParent = new List<SelectListItem>();
@@ -95,11 +96,11 @@ namespace PhpbbInDotnet.Forum.Pages
                 var inactiveUsersTask = _adminUserService.GetInactiveUsers();
                 var activeUsersWithUnconfirmedEmailTask = _adminUserService.GetActiveUsersWithUnconfirmedEmail();
                 var groupsTask = _adminUserService.GetGroups();
-                var ranksTask = Context.PhpbbRanks.AsNoTracking().ToListAsync();
+                var ranksTask = _dbContext.PhpbbRanks.AsNoTracking().ToListAsync();
                 var banListTask = _adminUserService.GetBanList();
 
-                var bannedWordsTask = Context.PhpbbWords.AsNoTracking().ToListAsync();
-                var customBbCodesTask = Context.PhpbbBbcodes.AsNoTracking().ToListAsync();
+                var bannedWordsTask = _dbContext.PhpbbWords.AsNoTracking().ToListAsync();
+                var customBbCodesTask = _dbContext.PhpbbBbcodes.AsNoTracking().ToListAsync();
                 var smiliesTask = _adminWritingService.GetSmilies();
 
                 var logsTask = _logService.GetOperationLogs(LogType, AuthorName, LogPage);

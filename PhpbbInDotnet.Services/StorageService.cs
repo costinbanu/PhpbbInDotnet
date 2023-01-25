@@ -3,14 +3,14 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
-using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Objects.Configuration;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using Serilog;
 
 namespace PhpbbInDotnet.Services
 {
@@ -18,16 +18,16 @@ namespace PhpbbInDotnet.Services
     {
         private readonly IConfiguration _config;
         private readonly Storage _storageOptions;
-        private readonly IForumDbContext _context;
+        private readonly ISqlExecuter _sqlExecuter;
         private readonly ILogger _logger;
         private readonly string _attachmentsPath;
         private readonly string _avatarsPath;
         private readonly string _emojiPath;
 
-        public StorageService(IConfiguration config, IWebHostEnvironment environment, IForumDbContext context, ILogger logger)
+        public StorageService(IConfiguration config, IWebHostEnvironment environment, ISqlExecuter sqlExecuter, ILogger logger)
         {
             _config = config;
-            _context = context;
+            _sqlExecuter = sqlExecuter;
             _logger = logger;
 
             _storageOptions = _config.GetObject<Storage>();
@@ -59,8 +59,6 @@ namespace PhpbbInDotnet.Services
             var succeeded = new List<PhpbbAttachments>();
             var failed = new List<string>();
 
-            var sqlExecuter = _context.GetSqlExecuter();
-
             foreach (var file in attachedFiles)
             {
                 try
@@ -73,7 +71,7 @@ namespace PhpbbInDotnet.Services
                     }
 
                     succeeded.Add(
-                        await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbAttachments>(
+                        await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbAttachments>(
                             "INSERT INTO phpbb_attachments (attach_comment, extension, filetime, filesize, mimetype, physical_filename, real_filename, poster_id) " +
                             "VALUES ('', @Extension, @Filetime, @Filesize, @Mimetype, @PhysicalFilename, @RealFilename, @PosterId); " +
                             "SELECT * FROM phpbb_attachments WHERE attach_id = LAST_INSERT_ID()",

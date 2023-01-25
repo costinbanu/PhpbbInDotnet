@@ -1,4 +1,3 @@
-using LazyCache;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
@@ -6,10 +5,10 @@ using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
+using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using Serilog;
 using System;
 using System.Threading.Tasks;
 using System.Web;
@@ -21,6 +20,14 @@ namespace PhpbbInDotnet.Forum.Pages
     {
         private readonly IWritingToolsService _writingService;
         private readonly IConfiguration _config;
+
+        public SendPrivateMessageModel(IWritingToolsService writingService, IConfiguration config, IForumTreeService forumService, 
+            IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider)
+            : base(forumService, userService, sqlExecuter, translationProvider)
+        {
+            _writingService = writingService;
+            _config = config;
+        }
 
         [BindProperty(SupportsGet = true)]
         public int? PostId { get; set; }
@@ -39,26 +46,16 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public PostDto? PreviewablePost { get; set; }
 
-        public SendPrivateMessageModel(ILogger logger, IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cacheService, 
-            ITranslationProvider translationProvider, IWritingToolsService writingService, IConfiguration config)
-            : base(context, forumService, userService, cacheService, logger, translationProvider)
-        {
-            _writingService = writingService;
-            _config = config;
-        }
 
         public Task<IActionResult> OnGet()
             => WithRegisteredUser(async (usr) =>
             {
-                var lang = Language;
-                var sqlExec = Context.GetSqlExecuter();
-
                 if ((PostId ?? 0) > 0)
                 {
-                    var post = await sqlExec.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { PostId });
+                    var post = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { PostId });
                     if (post != null)
                     {
-                        var author = await sqlExec.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @posterId", new { post.PosterId });
+                        var author = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @posterId", new { post.PosterId });
                         if ((author?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
                         {
                             PostTitle = HttpUtility.HtmlDecode(post.PostSubject);
@@ -68,20 +65,20 @@ namespace PhpbbInDotnet.Forum.Pages
                         }
                         else
                         {
-                            return RedirectToPage("Error", new { CustomErrorMessage = await CompressionUtility.CompressAndEncode(TranslationProvider.Errors[lang, "RECEIVER_DOESNT_EXIST"]) });
+                            return RedirectToPage("Error", new { CustomErrorMessage = await CompressionUtility.CompressAndEncode(TranslationProvider.Errors[Language, "RECEIVER_DOESNT_EXIST"]) });
                         }
                     }
                     else
                     {
-                        return RedirectToPage("Error", new { CustomErrorMessage = await CompressionUtility.CompressAndEncode(TranslationProvider.Errors[lang, "POST_DOESNT_EXIST"]) });
+                        return RedirectToPage("Error", new { CustomErrorMessage = await CompressionUtility.CompressAndEncode(TranslationProvider.Errors[Language, "POST_DOESNT_EXIST"]) });
                     }
                 }
                 else if ((PrivateMessageId ?? 0) > 0 && (ReceiverId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
                 {
-                    var msg = await sqlExec.QueryFirstOrDefaultAsync<PhpbbPrivmsgs>("SELECT * FROM phpbb_privmsgs WHERE msg_id = @privateMessageId", new { PrivateMessageId });
+                    var msg = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPrivmsgs>("SELECT * FROM phpbb_privmsgs WHERE msg_id = @privateMessageId", new { PrivateMessageId });
                     if (msg != null && ReceiverId == msg.AuthorId)
                     {
-                        var author = await sqlExec.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @receiverId", new { ReceiverId });
+                        var author = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @receiverId", new { ReceiverId });
                         if ((author?.UserId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
                         {
                             var title = HttpUtility.HtmlDecode(msg.MessageSubject);
@@ -91,17 +88,17 @@ namespace PhpbbInDotnet.Forum.Pages
                         }
                         else
                         {
-                            return RedirectToPage("Error", new { CustomErrorMessage = await CompressionUtility.CompressAndEncode(TranslationProvider.Errors[lang, "RECEIVER_DOESNT_EXIST"]) });
+                            return RedirectToPage("Error", new { CustomErrorMessage = await CompressionUtility.CompressAndEncode(TranslationProvider.Errors[Language, "RECEIVER_DOESNT_EXIST"]) });
                         }
                     }
                     else
                     {
-                        return RedirectToPage("Error", new { CustomErrorMessage = await CompressionUtility.CompressAndEncode(TranslationProvider.Errors[lang, "PM_DOESNT_EXIST"]) });
+                        return RedirectToPage("Error", new { CustomErrorMessage = await CompressionUtility.CompressAndEncode(TranslationProvider.Errors[Language, "PM_DOESNT_EXIST"]) });
                     }
                 }
                 else if ((ReceiverId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
                 {
-                    ReceiverName = (await sqlExec.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @receiverId", new { ReceiverId }))?.Username;
+                    ReceiverName = (await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @receiverId", new { ReceiverId }))?.Username;
                 }
 
                 Action = PostingActions.NewPrivateMessage;
@@ -112,14 +109,12 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetEdit()
             => await WithRegisteredUser(async (user) =>
             {
-                var sqlExec = Context.GetSqlExecuter();
-
-                var pm = await sqlExec.QueryFirstOrDefaultAsync<PhpbbPrivmsgs>("SELECT * FROM phpbb_privmsgs WHERE msg_id = @privateMessageId", new { PrivateMessageId });
+                var pm = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPrivmsgs>("SELECT * FROM phpbb_privmsgs WHERE msg_id = @privateMessageId", new { PrivateMessageId });
                 PostText = _writingService.CleanBbTextForDisplay(pm.MessageText, pm.BbcodeUid);
                 PostTitle = HttpUtility.HtmlDecode(pm.MessageSubject);
                 if ((ReceiverId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
                 {
-                    ReceiverName = (await sqlExec.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @receiverId", new { ReceiverId }))?.Username;
+                    ReceiverName = (await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @receiverId", new { ReceiverId }))?.Username;
                 }
                 Action = PostingActions.EditPrivateMessage;
 
@@ -154,7 +149,6 @@ namespace PhpbbInDotnet.Forum.Pages
             => WithRegisteredUser(user => WithValidInput(async () =>
             {
                 var lang = Language;
-                var sqlExec = Context.GetSqlExecuter();
                 var newPostText = PostText;
                 newPostText = HttpUtility.HtmlEncode(newPostText);
 

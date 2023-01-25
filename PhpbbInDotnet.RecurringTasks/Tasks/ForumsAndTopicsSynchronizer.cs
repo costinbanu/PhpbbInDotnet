@@ -7,24 +7,22 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
 {
     class ForumsAndTopicsSynchronizer : IRecurringTask
     {
-        readonly IForumDbContext _forumDbContext;
+        readonly ISqlExecuter _sqlExecuter;
 
-        public ForumsAndTopicsSynchronizer(IForumDbContext forumDbContext)
+        public ForumsAndTopicsSynchronizer(ISqlExecuter sqlExecuter)
         {
-            _forumDbContext = forumDbContext;
+            _sqlExecuter = sqlExecuter;
         }
 
         public async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var sqlExecuter = _forumDbContext.GetSqlExecuter();
-
-            var postsHavingWrongForumIdTask = sqlExecuter.ExecuteAsync(
+            var postsHavingWrongForumIdTask = _sqlExecuter.ExecuteAsync(
                 @"UPDATE phpbb_posts p
                     JOIN phpbb_topics t ON p.topic_id = t.topic_id
                      SET p.forum_id = t.forum_id
                    WHERE p.forum_id <> t.forum_id");
 
-            var forumsHavingWrongLastPostTask = sqlExecuter.ExecuteAsync(
+            var forumsHavingWrongLastPostTask = _sqlExecuter.ExecuteAsync(
                 @"UPDATE phpbb_forums f
                     JOIN (
                         WITH maxes AS (
@@ -51,7 +49,7 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
                     Constants.DEFAULT_USER_COLOR
                 });
 
-            var topicsHavingWrongLastOrFirstPostTask = sqlExecuter.ExecuteAsync(
+            var topicsHavingWrongLastOrFirstPostTask = _sqlExecuter.ExecuteAsync(
                 @"UPDATE phpbb_topics t
                     JOIN (
                         WITH maxes AS (

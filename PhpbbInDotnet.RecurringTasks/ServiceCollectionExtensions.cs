@@ -7,14 +7,13 @@ namespace Microsoft.Extensions.DependencyInjection
 	{
 		public static IServiceCollection AddRecurringTasks(this IServiceCollection services)
 		{
+			services.AddScoped<IRecurringTask, ForumsAndTopicsSynchronizer>();
+			services.AddScoped<IRecurringTask, LogCleaner>();
+			services.AddScoped<IRecurringTask, OrphanFilesCleaner>();
+			services.AddScoped<IRecurringTask, RecycleBinCleaner>();
+			services.AddScoped<IRecurringTask, SiteMapGenerator>();
 			services.AddSingleton<ISchedulingService, SchedulingService>();
-			services.AddHostedService(serviceProvider => new Orchestrator(
-				serviceProvider, 
-				typeof(ForumsAndTopicsSynchronizer), 
-				typeof(LogCleaner), 
-				typeof(OrphanFilesCleaner), 
-				typeof(RecycleBinCleaner), 
-				typeof(SiteMapGenerator)));
+			services.AddHostedService<Orchestrator>();
 			return services;
 		}
 	}

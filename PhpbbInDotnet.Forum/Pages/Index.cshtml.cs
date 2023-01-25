@@ -1,10 +1,9 @@
-using LazyCache;
 using Microsoft.AspNetCore.Mvc;
 using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using Serilog;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -16,21 +15,21 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public HashSet<ForumTree>? Tree { get; private set; }
 
-        public IndexModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger, ITranslationProvider translationProvider)
-            : base(context, forumService, userService, cache, logger, translationProvider)
+        public IndexModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider)
+            : base(forumService, userService, sqlExecuter, translationProvider)
         {
         }
 
         public async Task<IActionResult> OnGet()
         {
-            (Tree, _) = await GetForumTree(_forceTreeRefresh, true);
+            Tree = await ForumService.GetForumTree(ForumUser, _forceTreeRefresh, true);
             return Page();
         }
 
         public async Task<IActionResult> OnPostMarkForumsRead()
             => await WithRegisteredUser(async (_) => 
             {
-                await MarkForumAndSubforumsRead(0);
+                await ForumService.MarkForumAndSubforumsRead(ForumUser, 0);
                 _forceTreeRefresh = true;
                 return await OnGet();
             });

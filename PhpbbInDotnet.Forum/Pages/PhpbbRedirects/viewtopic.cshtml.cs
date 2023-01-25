@@ -9,11 +9,11 @@ namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
 {
     public class viewtopicModel : PageModel
     {
-        private readonly IForumDbContext _context;
+        private readonly ISqlExecuter _sqlExecuter;
 
-        public viewtopicModel(IForumDbContext context)
+        public viewtopicModel(ISqlExecuter sqlExecuter)
         {
-            _context = context;
+            _sqlExecuter = sqlExecuter;
         }
 
         public async Task<IActionResult> OnGet(int? f, int? t, int? p, int? start)
@@ -22,8 +22,7 @@ namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
             {
                 if (start.HasValue)
                 {
-                    var sqlExecuter = _context.GetSqlExecuter();
-                    var post = await sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
+                    var post = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
                         "SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time LIMIT @skip, 1",
                         new
                         {

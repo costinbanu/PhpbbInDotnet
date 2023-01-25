@@ -13,12 +13,12 @@ namespace PhpbbInDotnet.Forum.Middlewares
 {
     public class ErrorHandlingMiddleware : IMiddleware
     {
-        private readonly IForumDbContext _dbContext;
+        private readonly ISqlExecuter _sqlExecuter;
         private readonly ILogger _logger;
 
-        public ErrorHandlingMiddleware(IForumDbContext dbContext, ILogger logger)
+        public ErrorHandlingMiddleware(ISqlExecuter sqlExecuter, ILogger logger)
         {
-            _dbContext = dbContext;
+            _sqlExecuter = sqlExecuter;
             _logger = logger;
         }
 
@@ -33,7 +33,7 @@ namespace PhpbbInDotnet.Forum.Middlewares
                 PhpbbUsers? user = null;
                 if (IdentityUtility.TryGetUserId(context.User, out var userId))
                 {
-                    user = await _dbContext.GetSqlExecuter().QueryFirstOrDefaultAsync<PhpbbUsers>(
+                    user = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
                         "SELECT * FROM phpbb_users WHERE user_id = @userId",
                         new { userId });
                 }

@@ -1,14 +1,14 @@
-using LazyCache;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Utilities;
+using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using Serilog;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -33,11 +33,13 @@ namespace PhpbbInDotnet.Forum.Pages
         public Paginator? Paginator { get; private set; }
 
         const int PAGE_SIZE = 20;
+        private readonly IForumDbContext _dbContext;
 
-        public ViewAttachmentsModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache,  ILogger logger, ITranslationProvider translationProvider)
-            : base(context, forumService, userService, cache, logger, translationProvider)
+        public ViewAttachmentsModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, 
+            ITranslationProvider translationProvider, IForumDbContext dbContext)
+            : base(forumService, userService, sqlExecuter, translationProvider)
         {
-
+            _dbContext = dbContext;
         }
 
         public Task<IActionResult> OnGet()
@@ -48,18 +50,18 @@ namespace PhpbbInDotnet.Forum.Pages
                 await ResiliencyUtility.RetryOnceAsync(
                     toDo: async () =>
                     {
-                        var restrictedForums = (await ForumService.GetRestrictedForumList(ForumUser)).Select(f => f.forumId);
+                        var restrictedForums = (await ForumService.GetRestrictedForumList(ForumUser)).Select(f => f.forumId).DefaultIfEmpty();
                         var attachmentsTask = (
-                            from a in Context.PhpbbAttachments.AsNoTracking()
+                            from a in _dbContext.PhpbbAttachments.AsNoTracking()
                             where a.PosterId == UserId
 
-                            join p in Context.PhpbbPosts.AsNoTracking()
+                            join p in _dbContext.PhpbbPosts.AsNoTracking()
                             on a.PostMsgId equals p.PostId
                             into joinedPosts
 
                             from jp in joinedPosts.DefaultIfEmpty()
 
-                            join t in Context.PhpbbTopics.AsNoTracking()
+                            join t in _dbContext.PhpbbTopics.AsNoTracking()
                             on jp.TopicId equals t.TopicId
                             into joinedTopics
 
@@ -78,8 +80,8 @@ namespace PhpbbInDotnet.Forum.Pages
                                 PostId = jp == null ? null : jp.PostId,
                                 TopicTitle = jt == null ? null : jt.TopicTitle
                             }).Skip((PageNum - 1) * PAGE_SIZE).Take(PAGE_SIZE).ToListAsync();
-                        var countTask = Context.PhpbbAttachments.AsNoTracking().Where(a => a.PosterId == UserId).CountAsync(_ => true);
-                        var userTask = Context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == UserId);
+                        var countTask = _dbContext.PhpbbAttachments.AsNoTracking().Where(a => a.PosterId == UserId).CountAsync(_ => true);
+                        var userTask = _dbContext.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == UserId);
 
                         await Task.WhenAll(attachmentsTask, countTask, userTask);
 

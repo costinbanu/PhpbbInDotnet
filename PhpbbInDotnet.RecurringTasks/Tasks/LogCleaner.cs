@@ -15,21 +15,20 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
     {
         readonly IConfiguration _config;
         readonly ITimeService _timeService;
-        readonly IForumDbContext _dbContext;
+        readonly ISqlExecuter _sqlExecuter;
         readonly ILogger _logger;
 
-        public LogCleaner(IConfiguration config, ITimeService timeService, IForumDbContext dbContext, ILogger logger)
+        public LogCleaner(IConfiguration config, ITimeService timeService, ISqlExecuter sqlExecuter, ILogger logger)
         {
             _config = config;
             _timeService = timeService;
-            _dbContext = dbContext;
+            _sqlExecuter = sqlExecuter;
             _logger = logger;
         }
 
         public async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             var retention = _config.GetObject<TimeSpan?>("OperationLogsRetentionTime") ?? TimeSpan.FromDays(365);
-            var sqlExecuter = _dbContext.GetSqlExecuter();
 
             if (retention == TimeSpan.Zero)
             {
@@ -42,7 +41,7 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
                 throw new ArgumentOutOfRangeException("OperationLogsRetentionTime", "Invalid app setting value.");
             }
 
-            var toDelete = await sqlExecuter.QueryAsync<PhpbbLog>(
+            var toDelete = await _sqlExecuter.QueryAsync<PhpbbLog>(
                 "SELECT * FROM phpbb_log WHERE @now - log_time > @retention",
                 new
                 {
@@ -62,7 +61,7 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
 
             stoppingToken.ThrowIfCancellationRequested();
 
-            await sqlExecuter.ExecuteAsync(
+            await _sqlExecuter.ExecuteAsync(
                 "DELETE FROM phpbb_log WHERE log_id IN @ids",
                 new
                 {

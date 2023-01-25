@@ -1,15 +1,14 @@
 ﻿using Dapper;
-using LazyCache;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
+using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -53,18 +52,19 @@ namespace PhpbbInDotnet.Forum.Pages
         public Paginator? SentPaginator { get; private set; }
 
         private readonly IBBCodeRenderingService _renderingService;
+        private readonly IForumDbContext _dbContext;
 
-        public PrivateMessagesModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache,
-            IBBCodeRenderingService renderingService, ILogger logger, ITranslationProvider translationProvider)
-            : base(context, forumService, userService, cache, logger, translationProvider)
+        public PrivateMessagesModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, 
+            ITranslationProvider translationProvider, IBBCodeRenderingService renderingService, IForumDbContext dbContext)
+            : base(forumService, userService, sqlExecuter, translationProvider)
         {
             _renderingService = renderingService;
+            _dbContext = dbContext;
         }
 
         public async Task<IActionResult> OnGet()
             => await WithUserHavingPM(async (user) =>
             {
-                var sqlExecuter = Context.GetSqlExecuter();
                 if (Show != PrivateMessagesPages.Message)
                 {
                     var pageNum = Show switch
@@ -76,7 +76,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     await ResiliencyUtility.RetryOnceAsync(
                         toDo: async () =>
                         {
-                            var messageTask = sqlExecuter.QueryAsync<PrivateMessageDto>(
+                            var messageTask = SqlExecuter.QueryAsync<PrivateMessageDto>(
                                 @"WITH other AS (
 	                                SELECT t.msg_id, 
 		                                   CASE WHEN t.user_id = @userId THEN t.author_id
@@ -111,7 +111,7 @@ namespace PhpbbInDotnet.Forum.Pages
                                     take = Constants.DEFAULT_PAGE_SIZE
                                 });
 
-                            var countTask = sqlExecuter.ExecuteScalarAsync<int>(
+                            var countTask = SqlExecuter.ExecuteScalarAsync<int>(
                                 @"SELECT COUNT(*) AS cnt
                                     FROM phpbb_privmsgs m
                                     JOIN phpbb_privmsgs_to t ON m.msg_id = t.msg_id AND t.user_id <> t.author_id AND (t.user_id <> @userId OR t.author_id <> @userId)
@@ -177,18 +177,18 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     SelectedMessageIsMine = Source == PrivateMessagesPages.Sent;
                     var messagesTask = (
-                        from pm in Context.PhpbbPrivmsgs.AsNoTracking()
+                        from pm in _dbContext.PhpbbPrivmsgs.AsNoTracking()
                         where pm.MsgId == MessageId
                         select pm).FirstOrDefaultAsync();
                     var msgToTask = (
-                        from mt in Context.PhpbbPrivmsgsTo.AsNoTracking()
+                        from mt in _dbContext.PhpbbPrivmsgsTo.AsNoTracking()
                         where mt.MsgId == MessageId && mt.FolderId >= 0
                         select mt).FirstOrDefaultAsync();
                     var otherUserTask = (
-                        from mt in Context.PhpbbPrivmsgsTo.AsNoTracking()
+                        from mt in _dbContext.PhpbbPrivmsgsTo.AsNoTracking()
                         where mt.MsgId == MessageId && mt.UserId != mt.AuthorId
                         let userId = mt.AuthorId != user.UserId ? mt.AuthorId : mt.UserId
-                        join u in Context.PhpbbUsers.AsNoTracking()
+                        join u in _dbContext.PhpbbUsers.AsNoTracking()
                         on userId equals u.UserId
                         select u).FirstOrDefaultAsync();
                    
@@ -218,7 +218,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                     if (SelectedMessageIsUnread && !SelectedMessageIsMine)
                     {
-                        await sqlExecuter.ExecuteAsync("UPDATE phpbb_privmsgs_to SET pm_unread = 0 WHERE id = @id", new { id = inboxEntry?.Id ?? 0 });
+                        await SqlExecuter.ExecuteAsync("UPDATE phpbb_privmsgs_to SET pm_unread = 0 WHERE id = @id", new { id = inboxEntry?.Id ?? 0 });
                     }
                 }
                 return Page();
@@ -236,9 +236,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 else
                 {
-                    ModelState.AddModelError(nameof(MessageId), Message);
-                    Show = PrivateMessagesPages.Message;
-                    return await OnGet();
+                    return await PageWithErrorAsync(nameof(MessageId), Message, toDoBeforeReturn: () => Show = PrivateMessagesPages.Message, resultFactory: OnGet);
                 }
             });
 
@@ -254,17 +252,14 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 else
                 {
-                    ModelState.AddModelError(nameof(MessageId), Message);
-                    Show = PrivateMessagesPages.Message;
-                    return await OnGet();
+                    return await PageWithErrorAsync(nameof(MessageId), Message, toDoBeforeReturn: () => Show = PrivateMessagesPages.Message, resultFactory: OnGet);
                 }
             });
 
         public async Task<IActionResult> OnPostMarkAsRead()
             => await WithUserHavingPM(async (user) =>
             {
-                var sqlExecuter = Context.GetSqlExecuter();
-                await sqlExecuter.ExecuteAsync(
+                await SqlExecuter.ExecuteAsync(
                     "UPDATE phpbb_privmsgs_to SET pm_unread = 0 WHERE msg_id IN @ids AND author_id <> user_id", 
                     new { ids = SelectedMessages.DefaultIfNullOrEmpty() });
 
@@ -276,9 +271,9 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 var (Message, IsSuccess) = await UserService.HidePrivateMessages(user.UserId, SelectedMessages!);
 
-                if (!(IsSuccess ?? false))
+                if (!IsSuccess != true)
                 {
-                    ModelState.AddModelError(nameof(MessageId), Message);
+                    return PageWithError(nameof(MessageId), Message);
                 }
                 return await OnGet();
             });

@@ -1,19 +1,17 @@
-﻿using LazyCache;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Services;
-using Serilog;
 using System;
 using System.Threading.Tasks;
 
-namespace PhpbbInDotnet.Forum
+namespace PhpbbInDotnet.Forum.Models
 {
     public abstract class BasePostingModel : AuthenticatedPageModel
     {
-        public BasePostingModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cacheService, ILogger logger, ITranslationProvider translationProvider)
-            : base(context, forumService, userService, cacheService, logger, translationProvider)
+        public BasePostingModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider)
+            : base(forumService, userService, sqlExecuter, translationProvider)
         { }
 
         [BindProperty]
@@ -27,12 +25,6 @@ namespace PhpbbInDotnet.Forum
 
         protected Task<IActionResult> WithValidInput(PhpbbForums curForum, Func<Task<IActionResult>> toDo)
             => WithValidInputCore(toDo, (errorKey, errorMessage) => PageWithError(curForum, errorKey, errorMessage));
-
-        protected IActionResult PageWithError(string errorKey, string errorMessage)
-        {
-            ModelState.AddModelError(errorKey, errorMessage);
-            return Page();
-        }
 
         protected virtual IActionResult PageWithError(PhpbbForums phpbbForums, string errorKey, string errorMessage)
             => PageWithError(errorKey, errorMessage);

@@ -20,13 +20,13 @@ namespace PhpbbInDotnet.Services
     {
         public int LogPageSize => 100;
 
-        private readonly IForumDbContext _context;
+        private readonly ISqlExecuter _sqlExecuter;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger _logger;
 
-        public OperationLogService(IForumDbContext context, IHttpContextAccessor httpContextAccessor, ILogger logger)
+        public OperationLogService(ISqlExecuter sqlExecuter, IHttpContextAccessor httpContextAccessor, ILogger logger)
         {
-            _context = context;
+            _sqlExecuter = sqlExecuter;
             _httpContextAccessor = httpContextAccessor;
             _logger = logger;
         }
@@ -34,7 +34,7 @@ namespace PhpbbInDotnet.Services
         public async Task<(List<OperationLogSummary> PageItems, int Count)> GetOperationLogs(OperationLogType? logType, string? authorName = null, int page = 1)
             => await WithErrorHandling(async () =>
             {
-                var logTask = _context.GetSqlExecuter().QueryAsync<OperationLogSummary>(
+                var logTask = _sqlExecuter.QueryAsync<OperationLogSummary>(
                     @"SELECT l.user_id, u.username, l.forum_id, f.forum_name, l.topic_id, t.topic_title, l.log_type, l.log_operation, l.log_data, l.log_time
                         FROM phpbb_log l
                         LEFT JOIN phpbb_users u ON l.user_id = u.user_id
@@ -51,7 +51,7 @@ namespace PhpbbInDotnet.Services
                         take = LogPageSize,
                         authorName = StringUtility.CleanString(authorName)
                     });
-                var countTask = _context.GetSqlExecuter().ExecuteScalarAsync<int>(
+                var countTask = _sqlExecuter.ExecuteScalarAsync<int>(
                     @"SELECT count(*)
                         FROM phpbb_log l
                         LEFT JOIN phpbb_users u ON l.user_id = u.user_id
@@ -115,7 +115,7 @@ namespace PhpbbInDotnet.Services
         public async Task LogModeratorTopicAction(ModeratorTopicActions action, int modUserId, int topicId, string? additionalData = null)
             => await WithErrorHandling(async () =>
             {
-                var topic = await (_context.GetSqlExecuter()).QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
+                var topic = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { topicId });
                 if (topic != null)
                 {
                     await Log(EnumUtility.ExpandEnum(action), $"Topic Id: {topicId}, Topic title: {topic.TopicTitle}, Additional data: {additionalData}", modUserId, OperationLogType.Moderator, topic.ForumId, topicId);
@@ -125,7 +125,7 @@ namespace PhpbbInDotnet.Services
         public async Task LogModeratorPostAction(ModeratorPostActions action, int modUserId, int postId, string? additionalData = null)
             => await WithErrorHandling(async () =>
             {
-                var post = await (_context.GetSqlExecuter()).QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId });
+                var post = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @postId", new { postId });
                 if (post != null)
                 {
                     await LogModeratorPostAction(action, modUserId, post, additionalData);
@@ -142,7 +142,7 @@ namespace PhpbbInDotnet.Services
 
         private async Task Log(string action, string logData, int userId, OperationLogType operationType, int forumId = 0, int topicId = 0)
         {
-            await (_context.GetSqlExecuter()).ExecuteAsync(
+            await _sqlExecuter.ExecuteAsync(
                 "INSERT INTO phpbb_log (user_id, forum_id, topic_id, log_data, log_ip, log_operation, log_time, log_type) " +
                 "VALUES (@userId, @forumId, @topicId, @logData, @logIp, @logOperation, @logTime, @logType)",
                 new

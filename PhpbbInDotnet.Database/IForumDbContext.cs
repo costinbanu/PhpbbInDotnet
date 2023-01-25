@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using PhpbbInDotnet.Database.Entities;
 using System.Data;
 using System.Threading;
@@ -45,8 +46,7 @@ namespace PhpbbInDotnet.Database
         DbSet<PhpbbWords> PhpbbWords { get; set; }
         DbSet<PhpbbZebra> PhpbbZebra { get; set; }
 
-        ISqlExecuter GetSqlExecuter();
-        Task<ISqlExecuter> GetSqlExecuterAsync();
+        DatabaseFacade Database { get; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
         Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default);

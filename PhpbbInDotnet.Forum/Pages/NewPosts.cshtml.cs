@@ -1,13 +1,12 @@
 using Dapper;
-using LazyCache;
 using Microsoft.AspNetCore.Mvc;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -30,21 +29,20 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public string[]? SelectedNewPosts { get; set; }
 
-        public NewPostsModel(IForumDbContext context, IForumTreeService forumService, IUserService userService, IAppCache cache, ILogger logger, ITranslationProvider translationProvider)
-            : base(context, forumService, userService, cache, logger, translationProvider)
-        {
-        }
+        public NewPostsModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider)
+            : base(forumService, userService, sqlExecuter, translationProvider)
+        { }
 
         public async Task<IActionResult> OnGet()
             => await WithRegisteredUser(async (user) =>
             {
-                var tree = await GetForumTree(_forceTreeRefresh, true);
-                var restrictedForumList = await GetRestrictedForums();
-                var topicList = tree.Tracking!.Where(ft => !restrictedForumList.Contains(ft.Key)).SelectMany(t => t.Value).Select(t => t.TopicId).Distinct();
+                var tracking = await ForumService.GetForumTracking(ForumUser.UserId, _forceTreeRefresh);
+                var restrictedForumList = (await ForumService.GetRestrictedForumList(ForumUser)).Select(f => f.forumId).DefaultIfEmpty();
+                var topicList = tracking.Where(ft => !restrictedForumList.Contains(ft.Key)).SelectMany(t => t.Value).Select(t => t.TopicId).Distinct();
                 Paginator = new Paginator(count: topicList.Count(), pageNum: PageNum, link: "/NewPosts?pageNum=1", topicId: null);
                 PageNum = Paginator.CurrentPage;
 
-                Topics = (await Context.GetSqlExecuter().QueryAsync<TopicDto>(
+                Topics = (await SqlExecuter.QueryAsync<TopicDto>(
                     @"SELECT t.topic_id, 
 	                         t.forum_id,
 	                         t.topic_title, 
@@ -86,7 +84,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     }
                     var forumId = int.TryParse(values![0], out var val) ? val : 0;
                     var topicId = int.TryParse(values[1], out val) ? val : 0;
-                    await MarkTopicRead(forumId, topicId, true, DateTime.UtcNow.ToUnixTimestamp());
+                    await ForumService.MarkTopicRead(ForumUser.UserId, forumId, topicId, true, DateTime.UtcNow.ToUnixTimestamp());
                 }
                 _forceTreeRefresh = true;
                 return await OnGet();

@@ -1,5 +1,7 @@
 ﻿using LazyCache;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Org.BouncyCastle.Asn1.Ocsp;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
@@ -17,21 +19,23 @@ namespace PhpbbInDotnet.Services
 {
     class ForumTreeService : IForumTreeService
     {
-        private readonly IForumDbContext _context;
+        private readonly ISqlExecuter _sqlExecuter;
         private readonly IConfiguration _config;
         private readonly ILogger _logger;
         private readonly IAppCache _cache;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private HashSet<ForumTree>? _tree;
         private HashSet<ForumTopicCount>? _forumTopicCount;
         private Dictionary<int, HashSet<Tracking>>? _tracking;
         private IEnumerable<(int forumId, bool hasPassword)>? _restrictedForums;
 
-        public ForumTreeService(IForumDbContext context, IAppCache cache, IConfiguration config, ILogger logger)
+        public ForumTreeService(ISqlExecuter sqlExecuter, IAppCache cache, IConfiguration config, ILogger logger, IHttpContextAccessor httpContextAccessor)
         {
-            _context = context;
+            _sqlExecuter = sqlExecuter;
             _config = config;
             _logger = logger;
             _cache = cache;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<IEnumerable<(int forumId, bool hasPassword)>> GetRestrictedForumList(AuthenticatedUserExpanded user, bool includePasswordProtected = false)
@@ -69,8 +73,8 @@ namespace PhpbbInDotnet.Services
         }
 
         public bool IsNodeRestricted(ForumTree tree, int userId, bool includePasswordProtected)
-            => tree.IsRestricted || (includePasswordProtected && tree.HasPassword && _cache.Get<int>(CacheUtility.GetForumLoginCacheKey(userId, tree.ForumId)) != 1);
-
+            => tree.IsRestricted || (includePasswordProtected && tree.HasPassword && _httpContextAccessor.HttpContext?.Request.Cookies.IsUserLoggedIntoForum(userId, tree.ForumId) != true);
+        
         public async Task<bool> IsForumReadOnlyForUser(AuthenticatedUserExpanded user, int forumId)
         {
             var tree = await GetForumTree(user, false, false);
@@ -149,21 +153,21 @@ namespace PhpbbInDotnet.Services
 
             async Task<HashSet<ForumTree>> GetForumTree()
             {
-                var tree = await _context.GetSqlExecuter().QueryAsync<ForumTree>(
+                var tree = await _sqlExecuter.QueryAsync<ForumTree>(
                     "CALL get_forum_tree()");
                 return tree.ToHashSet();
             }
 
             async Task<HashSet<ForumTopicCount>> GetForumTopicCount()
             {
-                var count = await _context.GetSqlExecuter().QueryAsync<ForumTopicCount>(
+                var count = await _sqlExecuter.QueryAsync<ForumTopicCount>(
                     "SELECT forum_id, count(topic_id) as topic_count FROM phpbb_topics GROUP BY forum_id");
                 return count.ToHashSet();
             }
 
             async Task<Dictionary<int, List<(int ActualForumId, int TopicId)>>> GetShortcutParentForums()
             {
-                var rawData = await _context.GetSqlExecuter().QueryAsync(
+                var rawData = await _sqlExecuter.QueryAsync(
                     @"SELECT s.forum_id AS shortcut_forum_id, 
                              s.topic_id,
                              t.forum_id AS actual_forum_id
@@ -208,10 +212,9 @@ namespace PhpbbInDotnet.Services
             }
 
             var dbResults = Enumerable.Empty<ExtendedTracking>();
-            var sqlExecuter = _context.GetSqlExecuter();
             try
             {
-                dbResults = await sqlExecuter.QueryAsync<ExtendedTracking>("CALL `forum`.`get_post_tracking`(@userId);", new { userId });
+                dbResults = await _sqlExecuter.QueryAsync<ExtendedTracking>("CALL `forum`.`get_post_tracking`(@userId);", new { userId });
             }
             catch (Exception ex)
             {
@@ -242,7 +245,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<List<TopicGroup>> GetTopicGroups(int forumId)
         {
-            var topics = await _context.GetSqlExecuter().QueryAsync<TopicDto>(
+            var topics = await _sqlExecuter.QueryAsync<TopicDto>(
                 @"SELECT t.topic_id, 
 		                 t.forum_id,
 		                 t.topic_title, 
@@ -429,7 +432,7 @@ namespace PhpbbInDotnet.Services
                 return 0;
             }
 
-            return unchecked((int)((await _context.GetSqlExecuter().QuerySingleOrDefaultAsync(
+            return unchecked((int)((await _sqlExecuter.QuerySingleOrDefaultAsync(
                 "SELECT post_id, post_time FROM phpbb_posts WHERE post_id IN @postIds HAVING post_time = MIN(post_time)",
                 new { postIds = item?.Posts.DefaultIfNullOrEmpty() }
             ))?.post_id ?? 0u));
@@ -437,5 +440,85 @@ namespace PhpbbInDotnet.Services
 
         private int GetTopicCount(int forumId)
             => _forumTopicCount is not null && _forumTopicCount.TryGetValue(new ForumTopicCount { ForumId = forumId }, out var val) ? (val?.TopicCount ?? 0) : 0;
+
+        public async Task MarkForumAndSubforumsRead(AuthenticatedUserExpanded user, int forumId)
+        {
+            var node = GetTreeNode(await GetForumTree(user, false, false), forumId);
+            if (node == null)
+            {
+                if (forumId == 0)
+                {
+                    await SetLastMark(user.UserId);
+                }
+                return;
+            }
+
+            await MarkForumRead(user.UserId, forumId);
+            foreach (var child in node.ChildrenList ?? new HashSet<int>())
+            {
+                await MarkForumAndSubforumsRead(user, child);
+            }
+        }
+
+        public async Task MarkForumRead(int userId, int forumId)
+        {
+            try
+            {
+                await _sqlExecuter.ExecuteAsync(
+                    "DELETE FROM phpbb_topics_track WHERE forum_id = @forumId AND user_id = @userId; " +
+                    "REPLACE INTO phpbb_forums_track (forum_id, user_id, mark_time) VALUES (@forumId, @userId, @markTime);",
+                    new { forumId, userId, markTime = DateTime.UtcNow.ToUnixTimestamp() }
+                );
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Error marking forums as read.");
+            }
+        }
+
+        public async Task MarkTopicRead(int userId, int forumId, int topicId, bool isLastPage, long markTime)
+        {
+            var tracking = await GetForumTracking(userId, false);
+            if (tracking!.TryGetValue(forumId, out var tt) && tt.Count == 1 && isLastPage)
+            {
+                //current topic was the last unread in its forum, and it is the last page of unread messages, so mark the whole forum read
+                await MarkForumRead(userId, forumId);
+
+                //current forum is the user's last unread forum, and it has just been read; set the mark time.
+                if (tracking.Count == 1)
+                {
+                    await SetLastMark(userId);
+                }
+            }
+            else
+            {
+                //there are other unread topics in this forum, or unread pages in this topic, so just mark the current page as read
+                try
+                {
+                    await _sqlExecuter.ExecuteAsync(
+                        sql: "CALL mark_topic_read(@forumId, @topicId, @userId, @markTime)",
+                        param: new { forumId, topicId, userId, markTime }
+                    );
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warning(ex, "Error marking topics as read (forumId={forumId}, topicId={topicId}, userId={userId}).", forumId, topicId, userId);
+                }
+            }
+        }
+
+        private async Task SetLastMark(int userId)
+        {
+            try
+            {
+                await _sqlExecuter.ExecuteAsync(
+                    "UPDATE phpbb_users SET user_lastmark = @markTime WHERE user_id = @userId", 
+                    new { markTime = DateTime.UtcNow.ToUnixTimestamp(), userId });
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Error setting user last mark.");
+            }
+        }
     }
 }
