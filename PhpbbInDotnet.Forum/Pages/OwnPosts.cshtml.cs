@@ -32,7 +32,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     toDo: async () =>
                     {
                         PageNum = Paginator.NormalizePageNumberLowerBound(PageNum);
-                        var restrictedForumList = (await ForumService.GetRestrictedForumList(ForumUser)).Select(f => f.forumId);
+                        var restrictedForumList = (await ForumService.GetRestrictedForumList(ForumUser)).Select(f => f.forumId).DefaultIfEmpty();
                         var topicsTask = SqlExecuter.QueryAsync<TopicDto>(
                             @"WITH own_topics AS (
 			                    SELECT DISTINCT p.topic_id

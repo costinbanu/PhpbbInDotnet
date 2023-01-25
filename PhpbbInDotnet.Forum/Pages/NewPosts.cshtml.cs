@@ -37,7 +37,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (user) =>
             {
                 var tracking = await ForumService.GetForumTracking(ForumUser.UserId, _forceTreeRefresh);
-                var restrictedForumList = (await ForumService.GetRestrictedForumList(ForumUser)).Select(f => f.forumId);
+                var restrictedForumList = (await ForumService.GetRestrictedForumList(ForumUser)).Select(f => f.forumId).DefaultIfEmpty();
                 var topicList = tracking.Where(ft => !restrictedForumList.Contains(ft.Key)).SelectMany(t => t.Value).Select(t => t.TopicId).Distinct();
                 Paginator = new Paginator(count: topicList.Count(), pageNum: PageNum, link: "/NewPosts?pageNum=1", topicId: null);
                 PageNum = Paginator.CurrentPage;

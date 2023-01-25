@@ -599,7 +599,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             async Task<(int? id, string? title)> GetPreferredTopic(HashSet<ForumTree> tree)
             {
-                var restrictedForums = (await ForumService.GetRestrictedForumList(ForumUser)).Select(f => f.forumId);
+                var restrictedForums = (await ForumService.GetRestrictedForumList(ForumUser)).Select(f => f.forumId).DefaultIfEmpty();
                 var preferredTopic = await (
                     from p in _dbContext.PhpbbPosts.AsNoTracking()
                     where p.PosterId == cur.UserId
