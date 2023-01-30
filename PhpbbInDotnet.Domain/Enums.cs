@@ -261,4 +261,15 @@ namespace PhpbbInDotnet.Domain
         OneYear,
         AllTime
     }
+
+    [Flags]
+    public enum ForumUserExpansionType
+    {
+        Permissions = 1 << 0,
+        TopicPostsPerPage = 1 << 1,
+        UploadLimit = 1 << 2,
+        PostEditTime = 1 << 3,
+        Foes = 1 << 4,
+        Style = 1 << 5,
+    }
 }

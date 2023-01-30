@@ -7,6 +7,7 @@ using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Services;
 using System;
 using System.Threading.Tasks;
 using System.Web;
@@ -17,8 +18,8 @@ namespace PhpbbInDotnet.Forum.Pages
     {
         private readonly IConfiguration _config;
 
-        public LogoutModel(IConfiguration config, ITranslationProvider translationProvider)
-            : base(translationProvider)
+        public LogoutModel(IConfiguration config, ITranslationProvider translationProvider, IUserService userService)
+            : base(translationProvider, userService)
         {
             _config = config;
         }

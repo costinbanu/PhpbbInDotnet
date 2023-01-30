@@ -278,7 +278,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return await OnGet();
             });
 
-        private async Task<IActionResult> WithUserHavingPM(Func<AuthenticatedUserExpanded, Task<IActionResult>> toDo)
+        private async Task<IActionResult> WithUserHavingPM(Func<ForumUserExpanded, Task<IActionResult>> toDo)
             => await WithRegisteredUser(async (user) =>
             {
                 if (!user.HasPrivateMessagePermissions)

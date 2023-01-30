@@ -17,12 +17,13 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddScoped<IBBCodeRenderingService, BBCodeRenderingService>();
             services.AddScoped<IStatisticsService, StatisticsService>();
             services.AddScoped<IOperationLogService, OperationLogService>();
+            services.AddScoped<IEmailService, EmailService>();
+            services.AddScoped<IRazorViewService, RazorViewService>();
+            services.AddScoped<IUserProfileDataValidationService, UserProfileDataValidationService>();
 
             services.AddSingleton<ITimeService, TimeService>();
             services.AddSingleton<IFileInfoService, FileInfoService>();
-            services.AddSingleton<IEmailService, EmailService>();
             services.AddSingleton<IEncryptionService, EncryptionService>();
-            services.AddSingleton<IRazorViewService, RazorViewService>();
             services.AddSingleton<IAnonymousSessionCounter, AnonymousSessionCounter>();
 
             return services;

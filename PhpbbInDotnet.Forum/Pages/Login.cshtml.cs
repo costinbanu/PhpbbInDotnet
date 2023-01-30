@@ -32,6 +32,7 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IConfiguration _config;
         private readonly IEncryptionService _encryptionService;
         private readonly IEmailService _emailService;
+        private readonly IUserProfileDataValidationService _validationService;
 
         [BindProperty, Required]
         public string? UserName { get; set; }
@@ -74,19 +75,20 @@ namespace PhpbbInDotnet.Forum.Pages
         public LoginMode Mode { get; private set; }
 
         public LoginModel(IForumDbContext context, ISqlExecuter sqlExecuter, IConfiguration config, ITranslationProvider translationProvider, 
-            IEncryptionService encryptionService, IEmailService emailService)
-            : base(translationProvider)
+            IEncryptionService encryptionService, IEmailService emailService, IUserService userService, IUserProfileDataValidationService validationService)
+            : base(translationProvider, userService)
         {
             _context = context;
             _sqlExecuter = sqlExecuter;
             _config = config;
             _encryptionService = encryptionService;
             _emailService = emailService;
+            _validationService = validationService;
         }
 
         public IActionResult OnGet()
         {
-            if (AuthenticatedUserExpanded.TryGetValue(HttpContext, out var user) && !user.IsAnonymous)
+            if (!ForumUser.IsAnonymous)
             {
                 return RedirectToPage("Index");
             }
@@ -96,7 +98,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnGetNewPassword()
         {
-            if (AuthenticatedUserExpanded.TryGetValue(HttpContext, out var loggedUser) && !loggedUser.IsAnonymous)
+            if (!ForumUser.IsAnonymous)
             {
                 return RedirectToPage("Logout", new { returnUrl = ReturnUrl ?? "/" });
             }
@@ -207,11 +209,10 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPostSaveNewPassword()
         {
-            var validator = new UserProfileDataValidationService(ModelState, TranslationProvider, Language);
             var validations = new[]
             {
-                validator.ValidatePassword(nameof(PwdResetErrorMessage), PwdResetFirstPassword),
-                validator.ValidateSecondPassword(nameof(PwdResetErrorMessage), PwdResetSecondPassword, PwdResetFirstPassword),
+                _validationService.ValidatePassword(nameof(PwdResetErrorMessage), PwdResetFirstPassword),
+                _validationService.ValidateSecondPassword(nameof(PwdResetErrorMessage), PwdResetSecondPassword, PwdResetFirstPassword),
             };
 
             if (!validations.All(x => x))

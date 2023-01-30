@@ -30,9 +30,9 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IConfiguration _config;
         private readonly HttpClient _gClient;
         private readonly Recaptcha _recaptchaOptions;
-        private readonly IUserService _userService;
         private readonly ILogger _logger;
         private readonly IEmailService _emailService;
+        private readonly IUserProfileDataValidationService _validationService;
 
         [BindProperty]
         public string? Email { get; set; }
@@ -53,22 +53,22 @@ namespace PhpbbInDotnet.Forum.Pages
         public string? RecaptchaResponse { get; set; }
 
         public RegisterModel(IForumDbContext context, ISqlExecuter sqlExecuter, IConfiguration config, IHttpClientFactory httpClientFactory,
-            ITranslationProvider translationProvider, IUserService userService, ILogger logger, IEmailService emailService)
-            : base(translationProvider)
+            ITranslationProvider translationProvider, IUserService userService, ILogger logger, IEmailService emailService, IUserProfileDataValidationService validationService)
+            : base(translationProvider, userService)
         {
             _context = context;
             _sqlExecuter = sqlExecuter;
             _config = config;
             _recaptchaOptions = _config.GetObject<Recaptcha>();
             _gClient = httpClientFactory.CreateClient(_recaptchaOptions.ClientName);
-            _userService = userService;
             _logger = logger;
             _emailService = emailService;
+            _validationService = validationService;
         }
 
         public IActionResult OnGet()
         {
-            if (AuthenticatedUserExpanded.TryGetValue(HttpContext, out var user) && !user.IsAnonymous)
+            if (!ForumUser.IsAnonymous)
             {
                 return RedirectToPage("Index");
             }
@@ -77,15 +77,14 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
-            var validator = new UserProfileDataValidationService(ModelState, TranslationProvider, Language);
             Email = Email?.Trim();
             var validations = new[]
             {
-                validator.ValidateUsername(nameof(UserName), UserName),
-                validator.ValidateEmail(nameof(Email), Email),
-                validator.ValidatePassword(nameof(Password), Password),
-                validator.ValidateSecondPassword(nameof(SecondPassword), SecondPassword, Password),
-                validator.ValidateTermsAgreement(nameof(Agree), Agree)
+                _validationService.ValidateUsername(nameof(UserName), UserName),
+                _validationService.ValidateEmail(nameof(Email), Email),
+                _validationService.ValidatePassword(nameof(Password), Password),
+                _validationService.ValidateSecondPassword(nameof(SecondPassword), SecondPassword, Password),
+                _validationService.ValidateTermsAgreement(nameof(Agree), Agree)
             };
 
             if (!validations.All(x => x))

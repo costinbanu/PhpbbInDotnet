@@ -45,10 +45,7 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
         {
             _logger.Information("Generating a new sitemap...");
 
-            var anonymous = new AuthenticatedUserExpanded(_userService.DbUserToAuthenticatedUserBase(await _userService.GetAnonymousDbUser()))
-            {
-                AllPermissions = await _userService.GetPermissions(Constants.ANONYMOUS_USER_ID)
-            };
+            var anonymous = await _userService.GetAnonymousForumUserExpandedAsync();
             var allowedForums = await _forumTreeService.GetUnrestrictedForums(anonymous);
             var allSitemapUrls = GetForums(anonymous, allowedForums).Union(GetTopics(allowedForums));
             var urls = new ReadOnlyMemory<SitemapUrl>(await allSitemapUrls.ToArrayAsync(cancellationToken: stoppingToken));
@@ -82,7 +79,7 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
             _logger.Information("Sitemap generated successfully!");
         }
 
-        async IAsyncEnumerable<SitemapUrl> GetForums(AuthenticatedUserExpanded anonymous, IEnumerable<int>? allowedForums)
+        async IAsyncEnumerable<SitemapUrl> GetForums(ForumUserExpanded anonymous, IEnumerable<int>? allowedForums)
         {
             var tree = await _forumTreeService.GetForumTree(anonymous, forceRefresh: false, fetchUnreadData: false);
             var maxTime = DateTime.MinValue;

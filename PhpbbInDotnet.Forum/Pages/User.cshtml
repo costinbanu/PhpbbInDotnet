@@ -14,24 +14,20 @@
 @inject Microsoft.Extensions.Configuration.IConfiguration _config
 
 @{
-    var pageUser = new AuthenticatedUserExpanded(_userService.DbUserToAuthenticatedUserBase(Model.CurrentUser!));
     var Lang = Model.Language;
-
-    ViewData["Title"] = $"{Model.TranslationProvider.BasicText[Lang, "USER", Casing.Title]}: {pageUser.Username}";
-    Layout = "~/Pages/_Layout.cshtml";
-
-
-    var permissionsTask = _userService.GetPermissions(pageUser.UserId);
-    var foesTask = _userService.GetFoes(pageUser.UserId);
+    var pageUserTask = _userService.ExpandForumUser(_userService.DbUserToForumUser(Model.CurrentUser!), ForumUserExpansionType.Permissions | ForumUserExpansionType.Foes);
     var canEditTask = Model.CanEdit();
     var isGlobalAdminTask = _userService.IsAdmin(Model.ForumUser);
     var ranksTask = _userService.GetAllRanks();
 
-    await Task.WhenAll(permissionsTask, foesTask, canEditTask, isGlobalAdminTask, ranksTask);
+    await Task.WhenAll(pageUserTask, canEditTask, isGlobalAdminTask, ranksTask);
+
+    var pageUser = await pageUserTask;
+
+    ViewData["Title"] = $"{Model.TranslationProvider.BasicText[Lang, "USER", Casing.Title]}: {pageUser.Username}";
+    Layout = "~/Pages/_Layout.cshtml";
 
     var viewingUser = Model.ForumUser;
-    pageUser.AllPermissions = await permissionsTask;
-    pageUser.Foes = await foesTask;
     var isSelf = viewingUser.UserId == Model.CurrentUser!.UserId;
     var canEdit = await canEditTask;
     var isGlobalAdmin = await isGlobalAdminTask;

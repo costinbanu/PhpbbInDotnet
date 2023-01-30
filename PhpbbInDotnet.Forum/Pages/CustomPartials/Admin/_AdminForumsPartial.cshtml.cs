@@ -13,7 +13,7 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials.Admin
         public IEnumerable<PhpbbForums>? ForumChildren { get; set; }
         public IEnumerable<ForumPermissions>? Permissions { get; set; }
         public bool Show { get; set; }
-        public AuthenticatedUserExpanded? CurrentUser { get; set; }
+        public ForumUserExpanded? CurrentUser { get; set; }
         public string Language { get; set; } = Constants.DEFAULT_LANGUAGE;
         public bool IsRoot { get; set; }
     }

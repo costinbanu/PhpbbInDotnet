@@ -22,8 +22,6 @@ namespace PhpbbInDotnet.Forum.Middlewares
 {
     public class AuthenticationMiddleware : IMiddleware
     {
-        static readonly HashSet<string> EXCLUDED_PAGES;
-
         private readonly ILogger _logger;
         private readonly IForumTreeService _forumTreeService;
         private readonly ISqlExecuter _sqlExecuter;
@@ -31,13 +29,6 @@ namespace PhpbbInDotnet.Forum.Middlewares
         private readonly IConfiguration _config;
         private readonly IAppCache _cache;
         private readonly IAnonymousSessionCounter _sessionCounter;
-
-        static AuthenticationMiddleware()
-        {
-            EXCLUDED_PAGES = new HashSet<string>(
-                new[] { "/Login", "/Logout", "/Register" },
-                StringComparer.OrdinalIgnoreCase);
-        }
 
         public AuthenticationMiddleware(ILogger logger, IConfiguration config, IAppCache cache, ISqlExecuter sqlExecuter,
             IForumTreeService forumTreeService, IUserService userService, IAnonymousSessionCounter sessionCounter)
@@ -53,13 +44,7 @@ namespace PhpbbInDotnet.Forum.Middlewares
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
-            if (EXCLUDED_PAGES.Contains(context.Request.Path))
-            {
-                await next(context);
-                return;
-            }
-
-            AuthenticatedUser baseUser;
+            ForumUser baseUser;
             PhpbbUsers dbUser;
             if (IdentityUtility.TryGetUserId(context.User, out var userId))
             {
@@ -71,56 +56,29 @@ namespace PhpbbInDotnet.Forum.Middlewares
                 {
                     await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
                     await SignInAnonymousUser(context);
-                    dbUser = await _userService.GetAnonymousDbUser();
-                    baseUser = _userService.DbUserToAuthenticatedUserBase(dbUser);
+                    dbUser = await _userService.GetAnonymousDbUserAsync();
+                    baseUser = _userService.DbUserToForumUser(dbUser);
                 }
                 else
                 {
-                    baseUser = _userService.DbUserToAuthenticatedUserBase(dbUser);
+                    baseUser = _userService.DbUserToForumUser(dbUser);
                 }
             }
             else
             {
                 await SignInAnonymousUser(context);
-                dbUser = await _userService.GetAnonymousDbUser();
-                baseUser = _userService.DbUserToAuthenticatedUserBase(dbUser);
+                dbUser = await _userService.GetAnonymousDbUserAsync();
+                baseUser = _userService.DbUserToForumUser(dbUser);
             }
 
             var sessionTrackingTimeout = _config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1);
-            var permissionsTask = _userService.GetPermissions(baseUser.UserId);
-            var user = new AuthenticatedUserExpanded(baseUser);
+            var expansions = ForumUserExpansionType.Permissions;
             if (!baseUser.IsAnonymous)
             {
-                var tppTask = GetTopicPostsPage(baseUser.UserId);
-                var foesTask = _userService.GetFoes(baseUser.UserId);
-                var groupPropertiesTask = _sqlExecuter.QueryFirstOrDefaultAsync<(int GroupEditTime, int GroupUserUploadSize)>(
-                    @"SELECT g.group_edit_time, g.group_user_upload_size
-                        FROM phpbb_groups g
-                        JOIN phpbb_users u ON g.group_id = u.group_id
-                       WHERE u.user_id = @UserId",
-                    new { baseUser.UserId });
-                var styleTask = _sqlExecuter.QueryFirstOrDefaultAsync<string>(
-                    "SELECT style_name FROM phpbb_styles WHERE style_id = @UserStyle",
-                    new { dbUser.UserStyle });
-                var updateLastVisitTask = DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) <= sessionTrackingTimeout
-                    ? Task.CompletedTask
-                    : _sqlExecuter.ExecuteAsync(
-                        "UPDATE phpbb_users SET user_lastvisit = @now WHERE user_id = @userId",
-                        new { now = DateTime.UtcNow.ToUnixTimestamp(), baseUser.UserId });
-
-                await Task.WhenAll(styleTask, groupPropertiesTask, permissionsTask, tppTask, foesTask, updateLastVisitTask);
-
-                var groupProperties = await groupPropertiesTask;
-                var style = await styleTask;
-
-                user.TopicPostsPerPage = await tppTask;
-                user.Foes = await foesTask;
-                user.UploadLimit = groupProperties.GroupUserUploadSize;
-                user.PostEditTime = (groupProperties.GroupEditTime == 0 || dbUser.UserEditTime == 0) ? 0 : Math.Min(Math.Abs(groupProperties.GroupEditTime), Math.Abs(dbUser.UserEditTime));
-                user.Style = style ?? string.Empty;
+                expansions |= ForumUserExpansionType.TopicPostsPerPage | ForumUserExpansionType.Foes | ForumUserExpansionType.UploadLimit | ForumUserExpansionType.PostEditTime | ForumUserExpansionType.Style;
             }
-            user.AllPermissions = await permissionsTask;
 
+            var user = await _userService.ExpandForumUser(baseUser, expansions);
             user.SetValue(context);
 
             if (user.IsAnonymous && context.Request.Headers.TryGetValue(HeaderNames.UserAgent, out var header) && (context.Session.GetInt32("SessionCounted") ?? 0) == 0)
@@ -168,13 +126,13 @@ namespace PhpbbInDotnet.Forum.Middlewares
 
         async Task<Dictionary<int, int>> GetTopicPostsPage(int userId)
         {
-            var results = await _sqlExecuter.QueryAsync(
+            var results = await _sqlExecuter.QueryAsync<(int topicId, int postNo)>(
                 @"SELECT topic_id, post_no
 	                FROM phpbb_user_topic_post_number
 	               WHERE user_id = @user_id
 	               GROUP BY topic_id;",
                 new { userId });
-            return results.ToDictionary(x => checked((int)x.topic_id), y => checked((int)y.post_no));
+            return results.ToDictionary(x => x.topicId, y => y.postNo);
         }
     }
 }

@@ -20,18 +20,16 @@ namespace PhpbbInDotnet.Forum.Models
     public abstract class AuthenticatedPageModel : BaseModel
     {
         protected readonly IForumTreeService ForumService;
-        protected readonly IUserService UserService;
         protected readonly ISqlExecuter SqlExecuter;
 
         public AuthenticatedPageModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider)
-            : base(translationProvider)
+            : base(translationProvider, userService)
         {
             ForumService = forumService;
-            UserService = userService;
             SqlExecuter = sqlExecuter;
         }
 
-        protected async Task<IActionResult> WithRegisteredUser(Func<AuthenticatedUserExpanded, Task<IActionResult>> toDo)
+        protected async Task<IActionResult> WithRegisteredUser(Func<ForumUserExpanded, Task<IActionResult>> toDo)
         {
             if (ForumUser.IsAnonymous)
             {

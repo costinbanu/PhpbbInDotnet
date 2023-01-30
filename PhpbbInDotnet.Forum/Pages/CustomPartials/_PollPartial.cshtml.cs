@@ -7,7 +7,7 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
 {
     public class _PollPartialModel : PageModel
     {
-        public AuthenticatedUserExpanded CurrentUser { get; }
+        public ForumUserExpanded CurrentUser { get; }
 
         public PollDto Poll { get; }
 
@@ -27,7 +27,7 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
 
         public string Language => CurrentUser?.Language ?? Constants.DEFAULT_LANGUAGE;
 
-        public _PollPartialModel(AuthenticatedUserExpanded currentUser, PollDto poll, bool isPreview, int topicId = 0, int pageNum = 0, string? queryString = null, bool isCurrentUserMod = false, bool isCurrentUserAdmin = false, bool isTopicLocked = false)
+        public _PollPartialModel(ForumUserExpanded currentUser, PollDto poll, bool isPreview, int topicId = 0, int pageNum = 0, string? queryString = null, bool isCurrentUserMod = false, bool isCurrentUserAdmin = false, bool isTopicLocked = false)
         {
             CurrentUser = currentUser;
             Poll = poll;

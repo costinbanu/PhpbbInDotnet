@@ -223,7 +223,7 @@ namespace PhpbbInDotnet.Services
         {
             var curTopic = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { added.TopicId });
             var curForum = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { curTopic.ForumId });
-            var usr = await _userService.GetAuthenticatedUserById(added.PosterId);
+            var usr = await _userService.GetForumUserById(added.PosterId);
 
             if (curTopic.TopicFirstPostId == added.PostId)
             {
@@ -245,7 +245,7 @@ namespace PhpbbInDotnet.Services
         {
             var curTopic = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { added.TopicId });
             var curForum = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { curTopic.ForumId });
-            var usr = await _userService.GetAuthenticatedUserById(added.PosterId);
+            var usr = await _userService.GetForumUserById(added.PosterId);
 
             await SetForumLastPost(curForum, added, usr);
 
@@ -278,7 +278,7 @@ namespace PhpbbInDotnet.Services
                     ).FirstOrDefaultAsync();
                     if (lastTopicPost != null)
                     {
-                        var lastTopicPostUser = await _userService.GetAuthenticatedUserById(lastTopicPost.PosterId);
+                        var lastTopicPostUser = await _userService.GetForumUserById(lastTopicPost.PosterId);
                         await SetTopicLastPost(curTopic, lastTopicPost, lastTopicPostUser, true);
                     }
                 }
@@ -293,7 +293,7 @@ namespace PhpbbInDotnet.Services
                     ).FirstOrDefaultAsync();
                     if (firstTopicPost != null)
                     {
-                        var firstPostUser = await _userService.GetAuthenticatedUserById(firstTopicPost.PosterId);
+                        var firstPostUser = await _userService.GetForumUserById(firstTopicPost.PosterId);
                         await SetTopicFirstPost(curTopic, firstTopicPost, firstPostUser, false, true);
                     }
                 }
@@ -333,7 +333,7 @@ namespace PhpbbInDotnet.Services
                     ).FirstOrDefaultAsync();
                     if (lastForumPost != null)
                     {
-                        var lastForumPostUser = await _userService.GetAuthenticatedUserById(lastForumPost.PosterId);
+                        var lastForumPostUser = await _userService.GetForumUserById(lastForumPost.PosterId);
                         await SetForumLastPost(curForum, lastForumPost, lastForumPostUser, true);
                     }
                 }
@@ -345,7 +345,7 @@ namespace PhpbbInDotnet.Services
             );
         }
 
-        private async Task SetTopicLastPost(PhpbbTopics topic, PhpbbPosts post, AuthenticatedUser author, bool hardReset = false)
+        private async Task SetTopicLastPost(PhpbbTopics topic, PhpbbPosts post, ForumUser author, bool hardReset = false)
         {
             if (hardReset || topic.TopicLastPostTime < post.PostTime)
             {
@@ -370,7 +370,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        private async Task SetForumLastPost(PhpbbForums forum, PhpbbPosts post, AuthenticatedUser author, bool hardReset = false)
+        private async Task SetForumLastPost(PhpbbForums forum, PhpbbPosts post, ForumUser author, bool hardReset = false)
         {
             if (hardReset || forum.ForumLastPostTime < post.PostTime)
             {
@@ -395,7 +395,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        private async Task SetTopicFirstPost(PhpbbTopics topic, PhpbbPosts post, AuthenticatedUser author, bool setTopicTitle, bool goForward = false)
+        private async Task SetTopicFirstPost(PhpbbTopics topic, PhpbbPosts post, ForumUser author, bool setTopicTitle, bool goForward = false)
         {
             var curFirstPost = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @TopicFirstPostId", new { topic.TopicFirstPostId });
             if (topic.TopicFirstPostId == 0 || goForward || (curFirstPost != null && curFirstPost.PostTime >= post.PostTime))

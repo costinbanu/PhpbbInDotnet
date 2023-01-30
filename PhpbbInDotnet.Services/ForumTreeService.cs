@@ -38,10 +38,10 @@ namespace PhpbbInDotnet.Services
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task<IEnumerable<(int forumId, bool hasPassword)>> GetRestrictedForumList(AuthenticatedUserExpanded user, bool includePasswordProtected = false)
+        public async Task<IEnumerable<(int forumId, bool hasPassword)>> GetRestrictedForumList(ForumUserExpanded user, bool includePasswordProtected = false)
             => _restrictedForums ??= (await GetForumTree(user, false, false)).Where(t => IsNodeRestricted(t, user.UserId, includePasswordProtected)).Select(t => (t.ForumId, t.HasPassword));
 
-        public async Task<IEnumerable<int>> GetUnrestrictedForums(AuthenticatedUserExpanded user, int forumId, bool ignoreForumPassword)
+        public async Task<IEnumerable<int>> GetUnrestrictedForums(ForumUserExpanded user, int forumId, bool ignoreForumPassword)
         {
             var tree = await GetForumTree(user, false, false);
             var toReturn = new List<int>(tree.Count);
@@ -75,7 +75,7 @@ namespace PhpbbInDotnet.Services
         public bool IsNodeRestricted(ForumTree tree, int userId, bool includePasswordProtected)
             => tree.IsRestricted || (includePasswordProtected && tree.HasPassword && _httpContextAccessor.HttpContext?.Request.Cookies.IsUserLoggedIntoForum(userId, tree.ForumId) != true);
         
-        public async Task<bool> IsForumReadOnlyForUser(AuthenticatedUserExpanded user, int forumId)
+        public async Task<bool> IsForumReadOnlyForUser(ForumUserExpanded user, int forumId)
         {
             var tree = await GetForumTree(user, false, false);
             var path = new List<int>();
@@ -87,7 +87,7 @@ namespace PhpbbInDotnet.Services
             return path.Any(fid => user.IsForumReadOnly(fid));
         }
 
-        public async Task<HashSet<ForumTree>> GetForumTree(AuthenticatedUserExpanded? user, bool forceRefresh, bool fetchUnreadData)
+        public async Task<HashSet<ForumTree>> GetForumTree(ForumUserExpanded? user, bool forceRefresh, bool fetchUnreadData)
         {
             if (_tree != null && !forceRefresh && !(_tracking == null && fetchUnreadData))
             {
@@ -296,16 +296,16 @@ namespace PhpbbInDotnet.Services
                     }).ToList();
         }
 
-        public async Task<bool> IsForumUnread(int forumId, AuthenticatedUserExpanded user, bool forceRefresh = false)
+        public async Task<bool> IsForumUnread(int forumId, ForumUserExpanded user, bool forceRefresh = false)
             => GetTreeNode(await GetForumTree(user, forceRefresh, true), forumId)?.IsUnread ?? false;
 
-        public async Task<bool> IsTopicUnread(int forumId, int topicId, AuthenticatedUserExpanded user, bool forceRefresh = false)
+        public async Task<bool> IsTopicUnread(int forumId, int topicId, ForumUserExpanded user, bool forceRefresh = false)
         {
             var ft = await GetForumTracking(user?.UserId ?? Constants.ANONYMOUS_USER_ID, forceRefresh);
             return ft.TryGetValue(forumId, out var tt) && tt.Contains(new Tracking { TopicId = topicId });
         }
 
-        public async Task<bool> IsPostUnread(int forumId, int topicId, int postId, AuthenticatedUserExpanded user)
+        public async Task<bool> IsPostUnread(int forumId, int topicId, int postId, ForumUserExpanded user)
         {
             var ft = await GetForumTracking(user?.UserId ?? Constants.ANONYMOUS_USER_ID, false);
             Tracking? item = null;
@@ -419,7 +419,7 @@ namespace PhpbbInDotnet.Services
             return node.ChildrenList?.Select(x => GetTreeNode(tree, x))?.Any(x => x?.IsRestricted == false) ?? false;
         }
 
-        public async Task<int> GetFirstUnreadPost(int forumId, int topicId, AuthenticatedUserExpanded user)
+        public async Task<int> GetFirstUnreadPost(int forumId, int topicId, ForumUserExpanded user)
         {
             if (user.IsAnonymous)
             {
@@ -441,7 +441,7 @@ namespace PhpbbInDotnet.Services
         private int GetTopicCount(int forumId)
             => _forumTopicCount is not null && _forumTopicCount.TryGetValue(new ForumTopicCount { ForumId = forumId }, out var val) ? (val?.TopicCount ?? 0) : 0;
 
-        public async Task MarkForumAndSubforumsRead(AuthenticatedUserExpanded user, int forumId)
+        public async Task MarkForumAndSubforumsRead(ForumUserExpanded user, int forumId)
         {
             var node = GetTreeNode(await GetForumTree(user, false, false), forumId);
             if (node == null)
