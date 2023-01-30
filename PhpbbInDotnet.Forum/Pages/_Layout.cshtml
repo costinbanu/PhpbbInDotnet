@@ -15,7 +15,7 @@
 
 @{
     #nullable enable
-    var currentUser = AuthenticatedUserExpanded.GetValueOrDefault(Context);
+    var currentUser = ForumUserExpanded.GetValueOrDefault(Context);
     var css = currentUser?.Style;
     if (string.IsNullOrWhiteSpace(css))
     {

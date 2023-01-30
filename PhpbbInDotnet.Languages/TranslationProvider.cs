@@ -102,7 +102,7 @@ namespace PhpbbInDotnet.Languages
             #endregion Translation init
         }
 
-        public string GetLanguage(AuthenticatedUserExpanded? user = null)
+        public string GetLanguage(ForumUserExpanded? user = null)
         {
             if (_language is not null)
             {
@@ -114,12 +114,11 @@ namespace PhpbbInDotnet.Languages
             {
                 fromHeadersOrDefault = ValidatedOrDefault(
                     _httpContextAccessor.HttpContext.Request.Headers.TryGetValue("Accept-Language", out StringValues lang)? lang.ToString() : Constants.DEFAULT_LANGUAGE,
-                    Constants.DEFAULT_LANGUAGE
-                );
-                user ??= AuthenticatedUserExpanded.TryGetValue(_httpContextAccessor.HttpContext, out var aue) ? aue : null;
+                    Constants.DEFAULT_LANGUAGE);
+                user ??= ForumUserExpanded.GetValueOrDefault(_httpContextAccessor.HttpContext);
             }
 
-            if (user?.IsAnonymous ?? true)
+            if (user?.IsAnonymous != false)
             {
                 return _language = fromHeadersOrDefault;
             }

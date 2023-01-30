@@ -2,6 +2,7 @@
 
 @using Objects
 @using Domain
+@using Domain.Utilities
 @using Domain.Extensions
 @using Microsoft.Extensions.Configuration 
 @using System.Web
@@ -62,7 +63,10 @@
                                     ?? Enumerable.Empty<MiniTopicDto>();
 
         var thisForum = _forumService.GetTreeNode(Model.Tree, cur ?? 0);
-        var userId = AuthenticatedUserExpanded.GetValueOrDefault(Context)?.UserId ?? Constants.ANONYMOUS_USER_ID;
+        if (!IdentityUtility.TryGetUserId(User, out var userId))
+        {
+            userId = Constants.ANONYMOUS_USER_ID;
+        }
 
         if (thisForum is null || _forumService.IsNodeRestricted(thisForum, userId, includePasswordProtected: true))
         {

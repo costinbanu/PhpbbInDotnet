@@ -72,7 +72,7 @@ namespace PhpbbInDotnet.Forum.Pages
             return attachment;
         }
 
-        private async Task<int?> UpsertPost(PhpbbPosts? post, AuthenticatedUserExpanded usr)
+        private async Task<int?> UpsertPost(PhpbbPosts? post, ForumUserExpanded usr)
         {
             var lang = Language;
             var curTopic = Action != PostingActions.NewTopic ? await SqlExecuter.QuerySingleOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { TopicId }) : null;
@@ -255,7 +255,7 @@ namespace PhpbbInDotnet.Forum.Pages
             return await toDo();
         }
 
-        private Task<IActionResult> WithRegisteredUserAndCorrectPermissions(Func<AuthenticatedUserExpanded, Task<IActionResult>> toDo)
+        private Task<IActionResult> WithRegisteredUserAndCorrectPermissions(Func<ForumUserExpanded, Task<IActionResult>> toDo)
             => WithRegisteredUser(async user =>
             {
                 if (await ForumService.IsForumReadOnlyForUser(user, ForumId))

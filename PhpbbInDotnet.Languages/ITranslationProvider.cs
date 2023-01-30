@@ -26,6 +26,6 @@ namespace PhpbbInDotnet.Languages
         List<string> GetDateFormats(string lang);
         Task<Dictionary<string, List<string>>> GetDateFormatsInAllLanguages();
         string GetDefaultDateFormat(string lang);
-        string GetLanguage(AuthenticatedUserExpanded? user = null);
+        string GetLanguage(ForumUserExpanded? user = null);
     }
 }

@@ -6,9 +6,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace PhpbbInDotnet.Objects
 {
-    public class AuthenticatedUserExpanded : AuthenticatedUser
+    public class ForumUserExpanded : ForumUser
     {
-        public AuthenticatedUserExpanded(AuthenticatedUser @base)
+        public ForumUserExpanded(ForumUser @base)
         {
             UserId = @base.UserId;
             Username = @base.Username;
@@ -22,11 +22,11 @@ namespace PhpbbInDotnet.Objects
             ShouldConfirmEmail= @base.ShouldConfirmEmail;
         }
 
-        public AuthenticatedUserExpanded() { }
+        public ForumUserExpanded() { }
 
-        public HashSet<Permissions>? AllPermissions { get; set; } = null;
+        public HashSet<Permissions> AllPermissions { get; set; } = new();
 
-        public Dictionary<int, int>? TopicPostsPerPage { get; set; } = null;
+        public Dictionary<int, int> TopicPostsPerPage { get; set; } = new();
 
         public int PostEditTime { get; set; } = 60;
 
@@ -37,34 +37,20 @@ namespace PhpbbInDotnet.Objects
         public string? Style { get; set; }
 
         public int GetPageSize(int topicId)
-            => TopicPostsPerPage?.TryGetValue(topicId, out var pageSize) == true ? pageSize : Constants.DEFAULT_PAGE_SIZE;
+            => TopicPostsPerPage.TryGetValue(topicId, out var pageSize) ? pageSize : Constants.DEFAULT_PAGE_SIZE;
 
         public bool IsForumRestricted(int forumId)
-            => AllPermissions?.Contains(new Permissions { ForumId = forumId, AuthRoleId = Constants.FORUM_RESTRICTED_ROLE }) == true;
+            => AllPermissions.Contains(new Permissions { ForumId = forumId, AuthRoleId = Constants.FORUM_RESTRICTED_ROLE });
 
         public bool IsForumReadOnly(int forumId)
-            => IsAnonymous || AllPermissions?.Contains(new Permissions { ForumId = forumId, AuthRoleId = Constants.FORUM_READONLY_ROLE }) == true;
+            => IsAnonymous || AllPermissions.Contains(new Permissions { ForumId = forumId, AuthRoleId = Constants.FORUM_READONLY_ROLE });
 
-        public static bool TryGetValue(HttpContext httpContext, [NotNullWhen(true)] out AuthenticatedUserExpanded? user)
-        {
-            if (httpContext.Items.TryGetValue(nameof(AuthenticatedUserExpanded), out var raw) && raw is AuthenticatedUserExpanded aue)
-            {
-                user = aue;
-                return true;
-            }
-            user = null;
-            return false;
-        }
-
-        public static AuthenticatedUserExpanded GetValue(HttpContext httpContext)
-            => TryGetValue(httpContext, out var val) ? val : throw new InvalidOperationException($"No instance of {nameof(AuthenticatedUserExpanded)} found in the current {nameof(HttpContext)}.");
-
-        public static AuthenticatedUserExpanded? GetValueOrDefault(HttpContext httpContext)
-            => TryGetValue(httpContext, out var val) ? val : null;
+        public static ForumUserExpanded? GetValueOrDefault(HttpContext httpContext)
+            => httpContext.Items.TryGetValue(nameof(ForumUserExpanded), out var raw) && raw is ForumUserExpanded aue ? aue : null;
 
         public void SetValue(HttpContext httpContext)
         {
-            httpContext.Items[nameof(AuthenticatedUserExpanded)] = this;
+            httpContext.Items[nameof(ForumUserExpanded)] = this;
         }
 
         public bool HasPrivateMessagePermissions

@@ -2,7 +2,7 @@
 
 namespace PhpbbInDotnet.Objects
 {
-    public class AuthenticatedUser
+    public class ForumUser
     {
         public int UserId { get; set; }
 

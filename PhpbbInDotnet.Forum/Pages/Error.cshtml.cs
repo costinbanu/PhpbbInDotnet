@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
+using PhpbbInDotnet.Services;
 using Serilog;
 using System.Net;
 
@@ -25,8 +26,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public bool IsNotFound => ResponseStatusCode == (int)HttpStatusCode.NotFound;
 
-        public ErrorModel(ILogger logger, ITranslationProvider translationProvider)
-            : base(translationProvider)
+        public ErrorModel(ILogger logger, ITranslationProvider translationProvider, IUserService userService)
+            : base(translationProvider, userService)
         {
             _logger = logger;
         }
@@ -41,7 +42,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     path = feature.OriginalPath + feature.OriginalQueryString;
                 }
-                var userName = AuthenticatedUserExpanded.GetValueOrDefault(HttpContext)?.Username ?? "N/A";
+                var userName = ForumUser.Username ?? "N/A";
                 _logger.Warning("Serving response code {code} to user {user} for path {path}.", ResponseStatusCode, userName, path);
             }
         }

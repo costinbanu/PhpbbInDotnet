@@ -14,6 +14,7 @@ namespace PhpbbInDotnet.Database
         Task<dynamic> QueryFirstOrDefaultAsync(string sql, object? param = null);
         Task<T> QuerySingleOrDefaultAsync<T>(string sql, object? param = null);
         Task<T> QuerySingleAsync<T>(string sql, object? param);
+        T QuerySingle<T>(string sql, object? param);
         Task<dynamic> QuerySingleOrDefaultAsync(string sql, object? param = null);
         Task<T> ExecuteScalarAsync<T>(string sql, object? param = null);
         T ExecuteScalar<T>(string sql, object? param = null);

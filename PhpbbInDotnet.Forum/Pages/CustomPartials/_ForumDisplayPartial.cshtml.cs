@@ -10,14 +10,14 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
     {
         public string DateFormat { get; }
         public bool ShowTitle { get; }
-        public AuthenticatedUserExpanded AuthenticatedUser { get; }
+        public ForumUserExpanded AuthenticatedUser { get; }
         public HashSet<ForumTree> Tree { get; }
         public IEnumerable<ForumTree> Categories { get; }
         public IEnumerable<ForumTree> SubForums { get; }
         public bool ShowLastSeparator { get; }
         public string Language { get; set; } = Constants.DEFAULT_LANGUAGE;
 
-        public _ForumDisplayPartialModel(int forumId, HashSet<ForumTree> tree, string dateFormat, bool showTitle, AuthenticatedUserExpanded authenticatedUser, bool showLastSeparator, string language)
+        public _ForumDisplayPartialModel(int forumId, HashSet<ForumTree> tree, string dateFormat, bool showTitle, ForumUserExpanded authenticatedUser, bool showLastSeparator, string language)
         {
             DateFormat = dateFormat;
             ShowTitle = showTitle;

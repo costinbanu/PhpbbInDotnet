@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Org.BouncyCastle.Asn1.X509;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
@@ -9,9 +11,11 @@ using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using Serilog;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
@@ -23,13 +27,14 @@ namespace PhpbbInDotnet.Services
         private readonly ILogger _logger;
         private readonly IEmailService _emailService;
         private readonly ITranslationProvider _translationProvider;
-        
+
         private IEnumerable<PhpbbAclRoles>? _adminRoles;
         private IEnumerable<PhpbbAclRoles>? _modRoles;
         private IEnumerable<PhpbbAclRoles>? _userRoles;
         private List<KeyValuePair<string, int>>? _userMap;
 
-        private static PhpbbUsers? _anonymousDbUser;
+        private PhpbbUsers? _anonymousDbUser;
+        private ConcurrentDictionary<int, HashSet<ForumUserExpanded.Permissions>> _permissionsMap = new();
 
         public UserService(ISqlExecuter sqlExecuter, IConfiguration config, ITranslationProvider translationProvider, ILogger logger, IEmailService emailService)
         {
@@ -40,41 +45,70 @@ namespace PhpbbInDotnet.Services
             _emailService = emailService;
         }
 
-        public async Task<bool> IsAdmin(AuthenticatedUserExpanded user)
-            => (from up in user.AllPermissions ?? new HashSet<AuthenticatedUserExpanded.Permissions>()
+        public async Task<bool> IsAdmin(ForumUserExpanded user)
+            => (from up in user.AllPermissions
                 where up.ForumId == 0
                 join a in await GetAdminRolesLazy()
                 on up.AuthRoleId equals a.RoleId
                 select up).Any();
 
-        public async Task<bool> IsUserModeratorInForum(AuthenticatedUserExpanded user, int forumId)
+        public async Task<bool> IsUserModeratorInForum(ForumUserExpanded user, int forumId)
             => await IsAdmin(user) ||
-                (from up in user.AllPermissions ?? new HashSet<AuthenticatedUserExpanded.Permissions>()
+                (from up in user.AllPermissions
                  where up.ForumId == forumId || up.ForumId == 0
                  join a in await GetModRolesLazy()
                  on up.AuthRoleId equals a.RoleId
                  select up).Any();
 
-        public async Task<int?> GetUserRole(AuthenticatedUserExpanded user)
-            => (from up in user.AllPermissions ?? new HashSet<AuthenticatedUserExpanded.Permissions>()
+        public async Task<int?> GetUserRole(ForumUserExpanded user)
+            => (from up in user.AllPermissions
                 join a in await GetUserRolesLazy()
                 on up.AuthRoleId equals a.RoleId
                 select up.AuthRoleId as int?).FirstOrDefault();
 
-        public async Task<PhpbbUsers> GetAnonymousDbUser()
+        public async Task<PhpbbUsers> GetAnonymousDbUserAsync()
         {
             if (_anonymousDbUser != null)
             {
                 return _anonymousDbUser;
             }
-            
+
             _anonymousDbUser = await _sqlExecuter.QuerySingleAsync<PhpbbUsers>(
-                "SELECT * FROM phpbb_users WHERE user_id = @ANONYMOUS_USER_ID", 
+                "SELECT * FROM phpbb_users WHERE user_id = @ANONYMOUS_USER_ID",
                 new { Constants.ANONYMOUS_USER_ID });
             return _anonymousDbUser;
         }
 
-        public AuthenticatedUser DbUserToAuthenticatedUserBase(PhpbbUsers dbUser)
+        PhpbbUsers GetAnonymousDbUser()
+        {
+            if (_anonymousDbUser != null)
+            {
+                return _anonymousDbUser;
+            }
+
+            _anonymousDbUser = _sqlExecuter.QuerySingle<PhpbbUsers>(
+                "SELECT * FROM phpbb_users WHERE user_id = @ANONYMOUS_USER_ID",
+                new { Constants.ANONYMOUS_USER_ID });
+            return _anonymousDbUser;
+        }
+
+        public ForumUserExpanded GetAnonymousForumUserExpanded()
+        {
+            var dbUser = GetAnonymousDbUser();
+            var expanded = new ForumUserExpanded(DbUserToForumUser(dbUser));
+            expanded.AllPermissions = GetPermissions(expanded.UserId);
+            return expanded;
+        }
+
+        public async Task<ForumUserExpanded> GetAnonymousForumUserExpandedAsync()
+        {
+            var dbUser = await GetAnonymousDbUserAsync();
+            var expanded = new ForumUserExpanded(DbUserToForumUser(dbUser));
+            expanded.AllPermissions = await GetPermissionsAsync(expanded.UserId);
+            return expanded;
+        }
+
+        public ForumUser DbUserToForumUser(PhpbbUsers dbUser)
             => new()
             {
                 UserId = dbUser.UserId,
@@ -89,15 +123,78 @@ namespace PhpbbInDotnet.Services
                 ShouldConfirmEmail = dbUser.UserInactiveReason == UserInactiveReason.Active_NotConfirmed
             };
 
-        public async Task<IEnumerable<PhpbbRanks>> GetAllRanks()
+        public async Task<ForumUserExpanded> ExpandForumUser(ForumUser user, ForumUserExpansionType expansionType)
         {
-            
-            return await _sqlExecuter.QueryAsync<PhpbbRanks>("SELECT * FROM phpbb_ranks ORDER BY rank_title");
+            var expanded = new ForumUserExpanded(user);
+            var permissionsTask = ValueIfTrue(expansionType.HasFlag(ForumUserExpansionType.Permissions), GetPermissionsAsync(user.UserId));
+            var tppTask = ValueIfTrue(expansionType.HasFlag(ForumUserExpansionType.TopicPostsPerPage), GetTopicPostsPage(user.UserId));
+            var foesTask = ValueIfTrue(expansionType.HasFlag(ForumUserExpansionType.Foes), GetFoes(user.UserId));
+            var uploadLimitTask = ValueIfTrue(expansionType.HasFlag(ForumUserExpansionType.UploadLimit), GetUploadLimit(user.UserId));
+            var postEditTimeTask = ValueIfTrue(expansionType.HasFlag(ForumUserExpansionType.PostEditTime), GetPostEditTime(user.UserId));
+            var styleTask = ValueIfTrue(expansionType.HasFlag(ForumUserExpansionType.Style), GetStyle(user.UserId), string.Empty);
+
+            await Task.WhenAll(permissionsTask, tppTask, foesTask, uploadLimitTask, postEditTimeTask, styleTask);
+
+            expanded.AllPermissions = await permissionsTask;
+            expanded.TopicPostsPerPage = await tppTask;
+            expanded.Foes = await foesTask;
+            expanded.UploadLimit = await uploadLimitTask;
+            expanded.PostEditTime = await postEditTimeTask;
+            expanded.Style = await styleTask;
+
+            return expanded;
         }
+
+        static Task<T> ValueIfTrue<T>(bool condition, Task<T> factory, T defaultValue)
+            => condition ? factory : Task.FromResult(defaultValue);
+
+        static Task<T> ValueIfTrue<T>(bool condition, Task<T> factory) where T : new()
+            => ValueIfTrue(condition, factory, new());
+
+        Task<string> GetStyle(int userId)
+            => _sqlExecuter.QueryFirstOrDefaultAsync<string>(
+                @"SELECT s.style_name 
+                    FROM phpbb_styles s
+                    JOIN phpbb_users u ON u.user_style = s.style_id
+                   WHERE u.user_id = @userId",
+                new { userId });
+
+        async Task<int> GetPostEditTime(int userId)
+        {
+            var (groupEditTime, userEditTime) = await _sqlExecuter.QueryFirstOrDefaultAsync<(int groupEditTime, int userEditTime)>(
+                @"SELECT g.group_edit_time, u.user_edit_time
+                    FROM phpbb_groups g
+                    JOIN phpbb_users u ON g.group_id = u.group_id
+                   WHERE u.user_id = @userId",
+                new { userId });
+            return (groupEditTime == 0 || userEditTime == 0) ? 0 : Math.Min(Math.Abs(groupEditTime), Math.Abs(userEditTime));
+        }
+
+        Task<int> GetUploadLimit(int userId)
+            => _sqlExecuter.QueryFirstOrDefaultAsync<int>(
+                    @"SELECT g.group_user_upload_size
+                        FROM phpbb_groups g
+                        JOIN phpbb_users u ON g.group_id = u.group_id
+                       WHERE u.user_id = @userId",
+                    new { userId });
+
+        async Task<Dictionary<int, int>> GetTopicPostsPage(int userId)
+        {
+            var results = await _sqlExecuter.QueryAsync<(int topicId, int postNo)>(
+                @"SELECT topic_id, post_no
+	                FROM phpbb_user_topic_post_number
+	               WHERE user_id = @user_id
+	               GROUP BY topic_id;",
+                new { userId });
+            return results.ToDictionary(x => x.topicId, y => y.postNo);
+        }
+
+        public async Task<IEnumerable<PhpbbRanks>> GetAllRanks()
+            => await _sqlExecuter.QueryAsync<PhpbbRanks>("SELECT * FROM phpbb_ranks ORDER BY rank_title");
 
         public async Task<IEnumerable<PhpbbGroups>> GetAllGroups()
         {
-            
+
             return await _sqlExecuter.QueryAsync<PhpbbGroups>("SELECT * FROM phpbb_groups ORDER BY group_name");
         }
 
@@ -111,13 +208,13 @@ namespace PhpbbInDotnet.Services
             );
         }
 
-        public async Task<AuthenticatedUser> GetAuthenticatedUserById(int userId)
+        public async Task<ForumUser> GetForumUserById(int userId)
         {
             var usr = await _sqlExecuter.QuerySingleOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
-            return DbUserToAuthenticatedUserBase(usr);
+            return DbUserToForumUser(usr);
         }
 
-        public async Task<(string Message, bool? IsSuccess)> SendPrivateMessage(AuthenticatedUserExpanded sender, int receiverId, string subject, string text, PageContext pageContext, HttpContext httpContext)
+        public async Task<(string Message, bool? IsSuccess)> SendPrivateMessage(ForumUserExpanded sender, int receiverId, string subject, string text, PageContext pageContext, HttpContext httpContext)
         {
             var language = _translationProvider.GetLanguage();
             try
@@ -132,11 +229,7 @@ namespace PhpbbInDotnet.Services
                     return (_translationProvider.Errors[language, "SENDER_CANT_SEND_PMS"], false);
                 }
 
-                var receiver = new AuthenticatedUserExpanded(await GetAuthenticatedUserById(receiverId))
-                {
-                    AllPermissions = await GetPermissions(receiverId),
-                    Foes = await GetFoes(receiverId)
-                };
+                var receiver = await ExpandForumUser(await GetForumUserById(receiverId), ForumUserExpansionType.Permissions | ForumUserExpansionType.Foes);
                 if (!receiver.HasPrivateMessages)
                 {
                     return (_translationProvider.Errors[language, "RECEIVER_CANT_RECEIVE_PMS"], false);
@@ -153,14 +246,14 @@ namespace PhpbbInDotnet.Services
                       INSERT INTO phpbb_privmsgs_to (author_id, msg_id, user_id, folder_id, pm_unread) VALUES (@senderId, @inserted_id, @receiverId, 0, 1); 
                       INSERT INTO phpbb_privmsgs_to (author_id, msg_id, user_id, folder_id, pm_unread) VALUES (@senderId, @inserted_id, @senderId, -1, 0);
                       COMMIT;",
-                    new 
-                    { 
-                        senderId = sender.UserId, 
-                        receiverId, 
-                        to = $"u_{receiverId}", 
-                        subject, 
-                        text, 
-                        time = DateTime.UtcNow.ToUnixTimestamp() 
+                    new
+                    {
+                        senderId = sender.UserId,
+                        receiverId,
+                        to = $"u_{receiverId}",
+                        subject,
+                        text,
+                        time = DateTime.UtcNow.ToUnixTimestamp()
                     });
 
                 var emailSubject = string.Format(_translationProvider.Email[receiver.Language!, "NEWPM_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
@@ -240,7 +333,7 @@ namespace PhpbbInDotnet.Services
             var language = _translationProvider.GetLanguage();
             try
             {
-                
+
                 var rows = await _sqlExecuter.ExecuteAsync(
                     @"UPDATE phpbb_privmsgs_to
                          SET folder_id = -10
@@ -262,14 +355,16 @@ namespace PhpbbInDotnet.Services
 
         public Task<int> GetUnreadPMCount(int userId)
             => _sqlExecuter.QueryFirstOrDefaultAsync<int>(
-                    "SELECT count(1) FROM phpbb_privmsgs_to WHERE user_id = @userId AND folder_id >= 0 AND pm_unread = 1", 
+                    "SELECT count(1) FROM phpbb_privmsgs_to WHERE user_id = @userId AND folder_id >= 0 AND pm_unread = 1",
                     new { userId });
 
-        public async Task<HashSet<AuthenticatedUserExpanded.Permissions>> GetPermissions(int userId)
-            => new HashSet<AuthenticatedUserExpanded.Permissions>(
-                    await _sqlExecuter.QueryAsync<AuthenticatedUserExpanded.Permissions>("CALL get_user_permissions(@userId)", new { userId }));
+        HashSet<ForumUserExpanded.Permissions> GetPermissions(int userId)
+            => _permissionsMap.GetOrAdd(userId, id => new(_sqlExecuter.Query<ForumUserExpanded.Permissions>("CALL get_user_permissions(@id)", new { id })));
 
-        public async Task<HashSet<int>> GetFoes(int userId)
+        Task<HashSet<ForumUserExpanded.Permissions>> GetPermissionsAsync(int userId)
+            => Task.FromResult(GetPermissions(userId));
+
+        async Task<HashSet<int>> GetFoes(int userId)
             => new HashSet<int>(await _sqlExecuter.QueryAsync<int>(
                     @"SELECT zebra_id
                         FROM phpbb_zebra

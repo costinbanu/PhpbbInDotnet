@@ -105,12 +105,12 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IForumDbContext _dbContext;
         private readonly ILogger _logger;
         private readonly IAppCache _cache;
-
+        private readonly IUserProfileDataValidationService _validationService;
         private const int DB_CACHE_EXPIRATION_MINUTES = 20;
 
         public UserModel(IStorageService storageService, IWritingToolsService writingService, IOperationLogService operationLogService, IConfiguration config, 
             IEmailService emailService, IHttpClientFactory httpClientFactory, IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter,
-            ITranslationProvider translationProvider, IForumDbContext dbContext, ILogger logger, IAppCache cache)
+            ITranslationProvider translationProvider, IForumDbContext dbContext, ILogger logger, IAppCache cache, IUserProfileDataValidationService validationService)
             : base(forumService, userService, sqlExecuter, translationProvider)
         {
             _storageService = storageService;
@@ -123,6 +123,7 @@ namespace PhpbbInDotnet.Forum.Pages
             _dbContext = dbContext;
             _logger = logger;
             _cache = cache;
+            _validationService = validationService;
         }
 
         public async Task<IActionResult> OnGet()
@@ -164,14 +165,13 @@ namespace PhpbbInDotnet.Forum.Pages
             var isSelf = CurrentUser!.UserId == currentUserId;
             var userShouldSignIn = dbUser.UserAllowPm.ToBool() != AllowPM || dbUser.UserDateformat != CurrentUser.UserDateformat;
             var lang = Language;
-            var validator = new UserProfileDataValidationService(ModelState, TranslationProvider, lang);
 
             var newCleanUsername = StringUtility.CleanString(CurrentUser.Username);
             var usernameChanged = false;
             var oldUsername = dbUser.Username;
             if (await UserService.IsAdmin(ForumUser) && dbUser.UsernameClean != newCleanUsername && !string.IsNullOrWhiteSpace(CurrentUser.Username))
             {
-                if (!validator.ValidateUsername(nameof(CurrentUser), CurrentUser.Username))
+                if (!_validationService.ValidateUsername(nameof(CurrentUser), CurrentUser.Username))
                 {
                     return Page();
                 }
@@ -239,7 +239,7 @@ namespace PhpbbInDotnet.Forum.Pages
             var oldEmailAddress = string.Empty;
             if (newEmailHash != dbUser.UserEmailHash)
             {
-                if (!validator.ValidateEmail(nameof(Email), Email))
+                if (!_validationService.ValidateEmail(nameof(Email), Email))
                 {
                     return Page();
                 }
@@ -282,8 +282,8 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 var validations = new[]
                 {
-                    validator.ValidatePassword(nameof(FirstPassword), FirstPassword),
-                    validator.ValidateSecondPassword(nameof(SecondPassword), SecondPassword, FirstPassword)
+                    _validationService.ValidatePassword(nameof(FirstPassword), FirstPassword),
+                    _validationService.ValidateSecondPassword(nameof(SecondPassword), SecondPassword, FirstPassword)
                 };
 
                 if (!validations.All(x => x))
@@ -530,15 +530,14 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<bool> CanAddFoe()
         {
             var viewingUser = ForumUser;
-            var pageUser = new AuthenticatedUserExpanded(UserService.DbUserToAuthenticatedUserBase(CurrentUser!));
-            pageUser.AllPermissions = await UserService.GetPermissions(pageUser.UserId);
+            var pageUser = await UserService.ExpandForumUser(UserService.DbUserToForumUser(CurrentUser!), ForumUserExpansionType.Permissions);
             return !await UserService.IsUserModeratorInForum(pageUser, 0) && !await UserService.IsUserModeratorInForum(viewingUser, 0) && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false);
         }
 
         public bool CanRemoveFoe()
         {
             var viewingUser = ForumUser;
-            var pageUser = UserService.DbUserToAuthenticatedUserBase(CurrentUser!);
+            var pageUser = UserService.DbUserToForumUser(CurrentUser!);
             return viewingUser.Foes?.Contains(pageUser.UserId) ?? false;
         }
 
@@ -573,7 +572,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 "WHERE p.poster_id = @userId",
                 new { cur.UserId }
             );
-            await Task.WhenAll(preferredTopicTask, roleTask, groupTask, foesTask, attachTask);
+            var currentAuthenticatedUserTask = UserService.ExpandForumUser(UserService.DbUserToForumUser(cur), ForumUserExpansionType.Permissions);
+            await Task.WhenAll(preferredTopicTask, roleTask, groupTask, foesTask, attachTask, currentAuthenticatedUserTask);
 
             CurrentUser = cur;
             CurrentUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : _writingService.CleanBbTextForDisplay(CurrentUser.UserSig, CurrentUser.UserSigBbcodeUid);
@@ -582,10 +582,7 @@ namespace PhpbbInDotnet.Forum.Pages
             PostsPerDay = TotalPosts / DateTime.UtcNow.Subtract(cur.UserRegdate.ToUtcTime()).TotalDays;
             Email = cur.UserEmail;
             Birthday = cur.UserBirthday;
-            var currentAuthenticatedUser = new AuthenticatedUserExpanded(UserService.DbUserToAuthenticatedUserBase(cur))
-            {
-                AllPermissions = await UserService.GetPermissions(cur.UserId)
-            };
+            var currentAuthenticatedUser = await currentAuthenticatedUserTask;
             AclRole = await roleTask;
             var group = await groupTask;
             GroupId = group!.GroupId;
@@ -624,10 +621,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             async Task<int?> GetRole()
             {
-                var currentAuthenticatedUser = new AuthenticatedUserExpanded(UserService.DbUserToAuthenticatedUserBase(cur))
-                {
-                    AllPermissions = await UserService.GetPermissions(cur.UserId)
-                };
+                var currentAuthenticatedUser = await UserService.ExpandForumUser(UserService.DbUserToForumUser(cur), ForumUserExpansionType.Permissions);
                 return await UserService.GetUserRole(currentAuthenticatedUser);
             }
         }

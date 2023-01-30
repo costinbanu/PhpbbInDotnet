@@ -1,12 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
+﻿using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Languages;
+using PhpbbInDotnet.Objects;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 
 namespace PhpbbInDotnet.Services
 {
-    public class UserProfileDataValidationService
+    class UserProfileDataValidationService : IUserProfileDataValidationService
     {
         private readonly Regex USERNAME_REGEX = new(@"^[a-zA-Z0-9 \._-]+$", RegexOptions.Compiled);
         private readonly Regex PASSWORD_REGEX = new(@"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$", RegexOptions.Compiled);
@@ -16,11 +19,11 @@ namespace PhpbbInDotnet.Services
         private readonly ITranslationProvider _translationProvider;
         private readonly string _language;
 
-        public UserProfileDataValidationService(ModelStateDictionary modelState, ITranslationProvider translationProvider, string language)
+        public UserProfileDataValidationService(IActionContextAccessor actionContextAccessor, ITranslationProvider translationProvider)
         {
-            _modelState = modelState;
+            _modelState = actionContextAccessor.ActionContext?.ModelState ?? throw new ArgumentNullException(nameof(actionContextAccessor.ActionContext));
             _translationProvider = translationProvider;
-            _language = language;
+            _language = translationProvider.GetLanguage(ForumUserExpanded.GetValueOrDefault(actionContextAccessor.ActionContext.HttpContext));
             _emailValidator = new EmailAddressAttribute();
         }
 

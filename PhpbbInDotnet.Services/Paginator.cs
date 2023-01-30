@@ -29,7 +29,7 @@ namespace PhpbbInDotnet.Domain
             Init(count, pageNum, link, pageNumKey);
         }
 
-        public Paginator(int count, int pageNum, string link, int? topicId = null, AuthenticatedUserExpanded? usr = null, string pageNumKey = "PageNum")
+        public Paginator(int count, int pageNum, string link, int? topicId = null, ForumUserExpanded? usr = null, string pageNumKey = "PageNum")
         {
             PageSize = Constants.DEFAULT_PAGE_SIZE;
 

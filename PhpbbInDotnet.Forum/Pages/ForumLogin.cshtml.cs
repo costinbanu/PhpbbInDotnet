@@ -9,6 +9,7 @@ using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
+using PhpbbInDotnet.Services;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -33,8 +34,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public string? ForumName { get; private set; }
 
-        public ForumLoginModel(IForumDbContext context, ITranslationProvider translationProvider, IAppCache cache)
-            : base(translationProvider)
+        public ForumLoginModel(IForumDbContext context, ITranslationProvider translationProvider, IAppCache cache, IUserService userService)
+            : base(translationProvider, userService)
         {
             _context = context;
             _cache = cache;

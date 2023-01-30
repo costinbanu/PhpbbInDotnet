@@ -243,7 +243,7 @@ namespace PhpbbInDotnet.Services
             return (await forumTask, await childrenTask);
         }
 
-        public async Task<List<SelectListItem>> FlatForumTreeAsListItem(int parentId, AuthenticatedUserExpanded? user)
+        public async Task<List<SelectListItem>> FlatForumTreeAsListItem(int parentId, ForumUserExpanded? user)
         {
             var tree = await _forumService.GetForumTree(user, false, false);
             var list = new List<SelectListItem>();

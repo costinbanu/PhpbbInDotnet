@@ -2,6 +2,8 @@
 using Dapper;
 using Diacritics.Extensions;
 using LazyCache;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
@@ -29,7 +31,6 @@ namespace PhpbbInDotnet.Services
         private static readonly Regex _attachRegex = new("#{AttachmentFileName=[^/]+/AttachmentIndex=[0-9]+}#", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
         private static readonly Regex _quoteAttributeRegex = new("(\".+\")[, ]{0,2}([0-9]+)?", RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
 
-        private readonly IForumDbContext _context;
         private readonly ISqlExecuter _sqlExecuter;
         private readonly IWritingToolsService _writingService;
         private readonly BBCodeParser _parser;
@@ -38,6 +39,7 @@ namespace PhpbbInDotnet.Services
         private readonly ITranslationProvider _translationProvider;
         private readonly ILogger _logger;
         private readonly IRazorViewService _razorViewService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly Regex _attrRegex;
 
         private delegate (int index, string match) FirstIndexOf(string haystack, string needle, int startIndex);
@@ -45,10 +47,9 @@ namespace PhpbbInDotnet.Services
 
         public Dictionary<string, BBTagSummary> TagMap { get; }
 
-        public BBCodeRenderingService(IForumDbContext context, ISqlExecuter sqlExecuter, IWritingToolsService writingService, IAppCache cache, 
+        public BBCodeRenderingService(ISqlExecuter sqlExecuter, IWritingToolsService writingService, IAppCache cache, IHttpContextAccessor httpContextAccessor,
             ITranslationProvider translationProvider, ILogger logger, IRazorViewService razorViewService)
         {
-            _context = context;
             _sqlExecuter = sqlExecuter;
             _writingService = writingService;
             _bannedWords = new Lazy<Dictionary<string, string>>(() => 
@@ -60,6 +61,7 @@ namespace PhpbbInDotnet.Services
             _translationProvider = translationProvider;
             _logger = logger;
             _razorViewService = razorViewService;
+            _httpContextAccessor = httpContextAccessor;
 
             var tagList = _sqlExecuter.Query<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes").AsList();
 
@@ -130,7 +132,7 @@ namespace PhpbbInDotnet.Services
                 {
                     html = html.Replace($":{bbCodeUid}", string.Empty);
                 }
-                _logger.Error(ex, "Error parsing bbcode text '{text}'", bbCodeText);
+                _logger.Error(ex, "Error parsing bbcode text '{text}' at URL {url}", bbCodeText, _httpContextAccessor.HttpContext?.Request.GetDisplayUrl());
             }
             bbCodeText = HttpUtility.HtmlDecode(html);
             bbCodeText = StringUtility.HtmlCommentRegex.Replace(bbCodeText, string.Empty);
@@ -564,7 +566,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                _logger.Warning(ex);
+                _logger.Warning(ex, "Error at {url}", _httpContextAccessor.HttpContext?.Request.GetDisplayUrl());
             }
             return url;
         }
@@ -583,7 +585,7 @@ namespace PhpbbInDotnet.Services
             }
             catch (Exception ex)
             {
-                _logger.Warning(ex);
+                _logger.Warning(ex, "Error at {url}", _httpContextAccessor.HttpContext?.Request.GetDisplayUrl());
                 return fileName;
             }
         }

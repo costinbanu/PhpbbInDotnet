@@ -9,7 +9,7 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
     {
         public PostDto? Post { get; set; }
 
-        public AuthenticatedUserExpanded? CurrentUser { get; set; }
+        public ForumUserExpanded? CurrentUser { get; set; }
 
         public int? ClosestPostId { get; set; }
 
