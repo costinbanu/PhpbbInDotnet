@@ -1,5 +1,4 @@
-﻿using LazyCache;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
@@ -107,13 +106,14 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IConfiguration _config;
         private readonly ExternalImageProcessor _imageProcessorOptions;
         private readonly HttpClient? _imageProcessorClient;
-        private readonly IAppCache _cache;
         private readonly ILogger _logger;
 
-        static readonly DateTimeOffset CACHE_EXPIRATION = DateTimeOffset.UtcNow.AddHours(4);
+        static readonly TimeSpan _cookieBackupExpiration = TimeSpan.FromHours(4);
+
+        private string _cookieBackupKey => $"{nameof(PostingBackup)}_{ForumId}_{TopicId ?? 0}_{PostId ?? 0}";
 
         public PostingModel(IPostService postService, IStorageService storageService, IWritingToolsService writingService, IBBCodeRenderingService renderingService, IConfiguration config, ILogger logger,
-            IHttpClientFactory httpClientFactory, IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, IAppCache cache)
+            IHttpClientFactory httpClientFactory, IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider)
             : base(forumService, userService, sqlExecuter, translationProvider)
         {
             PollExpirationDaysString = "1";
@@ -126,7 +126,6 @@ namespace PhpbbInDotnet.Forum.Pages
             _config = config;
             _imageProcessorOptions = _config.GetObject<ExternalImageProcessor>();
             _imageProcessorClient = _imageProcessorOptions.Api?.Enabled == true ? httpClientFactory.CreateClient(_imageProcessorOptions.Api.ClientName) : null;
-            _cache = cache;
             _logger = logger;
         }
     }

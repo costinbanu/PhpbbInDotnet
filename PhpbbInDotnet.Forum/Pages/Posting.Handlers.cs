@@ -1,9 +1,7 @@
 ﻿using Dapper;
-using LazyCache;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
@@ -117,8 +115,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 ReturnUrl = Request.GetEncodedPathAndQuery();
 
                 Attachments = (await SqlExecuter.QueryAsync<PhpbbAttachments>("SELECT * FROM phpbb_attachments WHERE post_msg_id = @postId ORDER BY attach_id", new { PostId })).AsList();
-
-                _cache.Add(GetCacheKey("PostTime", true), curPost.PostTime, CACHE_EXPIRATION);
 
                 if (canCreatePoll && curTopic.PollStart > 0)
                 {
@@ -385,7 +381,6 @@ namespace PhpbbInDotnet.Forum.Pages
                 return RedirectToPage("ViewTopic", "byPostId", new { postId = addedPostId });
             }), ReturnUrl)));
 
-
         public Task<IActionResult> OnPostSaveDraft()
             => WithRegisteredUserAndCorrectPermissions(user => WithValidForum(ForumId, curForum => WithNewestPostSincePageLoad(curForum, () => WithValidInput(curForum, async() =>
             {
@@ -407,8 +402,9 @@ namespace PhpbbInDotnet.Forum.Pages
                         new { message = HttpUtility.HtmlEncode(PostText), subject = HttpUtility.HtmlEncode(PostTitle), now = DateTime.UtcNow.ToUnixTimestamp(), draft.DraftId }
                     );
                 }
-                _cache.Remove(GetCacheKey("Text", true));
+                
                 DraftSavedSuccessfully = true;
+                Response.Cookies.Delete(_cookieBackupKey);
 
                 if (Action == PostingActions.NewForumPost)
                 {

@@ -23,22 +23,17 @@ namespace PhpbbInDotnet.Forum.Middlewares
     public class AuthenticationMiddleware : IMiddleware
     {
         private readonly ILogger _logger;
-        private readonly IForumTreeService _forumTreeService;
         private readonly ISqlExecuter _sqlExecuter;
         private readonly IUserService _userService;
         private readonly IConfiguration _config;
-        private readonly IAppCache _cache;
         private readonly IAnonymousSessionCounter _sessionCounter;
 
-        public AuthenticationMiddleware(ILogger logger, IConfiguration config, IAppCache cache, ISqlExecuter sqlExecuter,
-            IForumTreeService forumTreeService, IUserService userService, IAnonymousSessionCounter sessionCounter)
+        public AuthenticationMiddleware(ILogger logger, IConfiguration config, ISqlExecuter sqlExecuter, IUserService userService, IAnonymousSessionCounter sessionCounter)
         {
             _logger = logger;
-            _forumTreeService = forumTreeService;
             _sqlExecuter = sqlExecuter;
             _userService = userService;
             _config = config;
-            _cache = cache;
             _sessionCounter = sessionCounter;
         }
 
