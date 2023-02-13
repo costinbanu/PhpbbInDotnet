@@ -1,9 +1,6 @@
 ﻿using Dapper;
-using LazyCache;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
@@ -21,12 +18,6 @@ namespace PhpbbInDotnet.Forum.Pages
 {
     public partial class PostingModel : BasePostingModel
     {
-        public string GetCacheKey(string key, bool isPersonalizedData)
-        {
-            var topicId = Action == PostingActions.NewTopic ? 0 : TopicId ?? 0;
-            return isPersonalizedData ? $"{ForumUser.UserId}_{ForumId}_{topicId}_{key}" : key;
-        }
-
         public async Task<(List<PostDto> posts, Dictionary<int, List<AttachmentDto>> attachments, Guid correlationId)> GetPreviousPosts()
         {
             if (((TopicId.HasValue && PageNum.HasValue) || PostId.HasValue) && (Action == PostingActions.EditForumPost || Action == PostingActions.NewForumPost))
@@ -217,11 +208,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     new { usr.UserId, forumId = ForumId, topicId = Action == PostingActions.NewTopic ? 0 : TopicId });
             }
 
-            _cache.Remove(GetCacheKey("Text", true));
-            _cache.Remove(GetCacheKey("ForumId", true));
-            _cache.Remove(GetCacheKey("TopicId", true));
-            _cache.Remove(GetCacheKey("PostId", true));
-            _cache.Remove(GetCacheKey("Attachments", true));
+            Response.Cookies.Delete(_cookieBackupKey);
 
             return post.PostId;
         }
@@ -270,43 +257,31 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private Task<IActionResult> WithBackup(Func<Task<IActionResult>> toDo)
         {
-            _cache.Add(GetCacheKey("Text", true), (text: PostText, cacheTime: DateTime.UtcNow), CACHE_EXPIRATION);
-            _cache.Add(GetCacheKey("ForumId", true), ForumId, CACHE_EXPIRATION);
-            _cache.Add(GetCacheKey("TopicId", true), TopicId ?? 0, CACHE_EXPIRATION);
-            _cache.Add(GetCacheKey("PostId", true), PostId ?? 0, CACHE_EXPIRATION);
-            if (Attachments?.Any() == true)
-            {
-                _cache.Add(GetCacheKey("Attachments", true), Attachments?.Select(a => a.AttachId).ToList(), CACHE_EXPIRATION);
-            }
+            Response.Cookies.AddObject(
+                key: _cookieBackupKey,
+                value: new PostingBackup(PostText, DateTime.UtcNow, ForumId, TopicId ?? 0, PostId ?? 0, Attachments?.Select(a => a.AttachId).ToList()),
+                maxAge: _cookieBackupExpiration);
             return toDo();
         }
 
         private async Task RestoreBackupIfAny(DateTime? minCacheAge = null)
         {
-            var textTask = _cache.GetAndRemoveAsync<(string text, DateTime cacheTime)>(GetCacheKey("Text", true));
-            var forumIdTask = _cache.GetAndRemoveAsync<int>(GetCacheKey("ForumId", true));
-            var topicIdTask = _cache.GetAndRemoveAsync<int?>(GetCacheKey("TopicId", true));
-            var postIdTask = _cache.GetAndRemoveAsync<int?>(GetCacheKey("PostId", true));
-            var attachmentsTask = _cache.GetAndRemoveAsync<List<int>>(GetCacheKey("Attachments", true));
-            await Task.WhenAll(textTask, forumIdTask, topicIdTask, postIdTask, attachmentsTask);
-
-            var cachedText = await textTask;
-            if ((!string.IsNullOrWhiteSpace(cachedText.text) && string.IsNullOrWhiteSpace(PostText)) || 
-                (!string.IsNullOrWhiteSpace(cachedText.text) && cachedText.cacheTime > (minCacheAge ?? DateTime.UtcNow)))
+            if (Request.Cookies.TryGetObject<PostingBackup>(_cookieBackupKey, out var cookie))
             {
-                PostText = cachedText.text;
-            }
-            var cachedForumId = await forumIdTask;
-            ForumId = cachedForumId != 0 ? cachedForumId : ForumId;
-            TopicId ??= await topicIdTask;
-            PostId ??= await postIdTask;
-
-            var cachedAttachmentIds = await attachmentsTask;
-            if (Attachments?.Any() != true && cachedAttachmentIds?.Any() == true)
-            {
-                Attachments = (await SqlExecuter.QueryAsync<PhpbbAttachments>(
-                    "SELECT * FROM phpbb_attachments WHERE attach_id IN @cachedAttachmentIds", 
-                    new { cachedAttachmentIds })).AsList();
+                if ((!string.IsNullOrWhiteSpace(cookie.Text) && string.IsNullOrWhiteSpace(PostText)) ||
+                    (!string.IsNullOrWhiteSpace(cookie.Text) && cookie.TextTime > minCacheAge))
+                {
+                    PostText = cookie.Text;
+                }
+                ForumId = cookie.ForumId != 0 ? cookie.ForumId : ForumId;
+                TopicId ??= cookie.TopicId;
+                PostId ??= cookie.PostId;
+                if (Attachments?.Any() != true && cookie.AttachmentIds?.Any() == true)
+                {
+                    Attachments = (await SqlExecuter.QueryAsync<PhpbbAttachments>(
+                        "SELECT * FROM phpbb_attachments WHERE attach_id IN @attachmentIds",
+                        new { cookie.AttachmentIds })).AsList();
+                }
             }
         }
     }

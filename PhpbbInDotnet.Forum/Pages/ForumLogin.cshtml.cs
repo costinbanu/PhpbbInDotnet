@@ -21,7 +21,6 @@ namespace PhpbbInDotnet.Forum.Pages
     public class ForumLoginModel : BaseModel
     {
         private readonly IForumDbContext _context;
-        private readonly IAppCache _cache;
 
         [BindProperty(SupportsGet = true)]
         public string? ReturnUrl { get; set; }
@@ -34,11 +33,10 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public string? ForumName { get; private set; }
 
-        public ForumLoginModel(IForumDbContext context, ITranslationProvider translationProvider, IAppCache cache, IUserService userService)
+        public ForumLoginModel(IForumDbContext context, ITranslationProvider translationProvider, IUserService userService)
             : base(translationProvider, userService)
         {
             _context = context;
-            _cache = cache;
         }
 
         public async Task<IActionResult> OnGet()

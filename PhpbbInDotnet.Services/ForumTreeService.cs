@@ -22,19 +22,17 @@ namespace PhpbbInDotnet.Services
         private readonly ISqlExecuter _sqlExecuter;
         private readonly IConfiguration _config;
         private readonly ILogger _logger;
-        private readonly IAppCache _cache;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private HashSet<ForumTree>? _tree;
         private HashSet<ForumTopicCount>? _forumTopicCount;
         private Dictionary<int, HashSet<Tracking>>? _tracking;
         private IEnumerable<(int forumId, bool hasPassword)>? _restrictedForums;
 
-        public ForumTreeService(ISqlExecuter sqlExecuter, IAppCache cache, IConfiguration config, ILogger logger, IHttpContextAccessor httpContextAccessor)
+        public ForumTreeService(ISqlExecuter sqlExecuter, IConfiguration config, ILogger logger, IHttpContextAccessor httpContextAccessor)
         {
             _sqlExecuter = sqlExecuter;
             _config = config;
             _logger = logger;
-            _cache = cache;
             _httpContextAccessor = httpContextAccessor;
         }
 
