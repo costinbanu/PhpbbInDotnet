@@ -404,7 +404,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 
                 DraftSavedSuccessfully = true;
-                Response.Cookies.Delete(_cookieBackupKey);
+                Response.Cookies.DeleteObject(CookieBackupKey);
 
                 if (Action == PostingActions.NewForumPost)
                 {

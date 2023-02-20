@@ -8,7 +8,10 @@ namespace PhpbbInDotnet.Domain.Extensions
 {
     public static class CookieCollectionExtensions
     {
-        public static void AddObject<T>(this IResponseCookies cookies, string key, T value, TimeSpan maxAge)
+        public static void DeleteObject(this IResponseCookies cookies, string key)
+            => cookies.Delete(key, new CookieOptions { Secure = true, SameSite = SameSiteMode.Strict});
+
+		public static void AddObject<T>(this IResponseCookies cookies, string key, T value, TimeSpan maxAge)
             => cookies.Append(
                 key: key,
                 value: JsonConvert.SerializeObject(value),

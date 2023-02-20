@@ -93,7 +93,8 @@ namespace PhpbbInDotnet.Forum.Pages
         public PhpbbForums? CurrentForum { get; private set; }
         public bool DraftSavedSuccessfully { get; private set; } = false;
         public Guid? PreviewCorrelationId { get; private set; }
-        private IEnumerable<string> PollOptionsEnumerable 
+		private string CookieBackupKey => $"{nameof(PostingBackup)}_{ForumUser.UserId}_{ForumId}_{TopicId ?? 0}_{PostId ?? 0}";
+		private IEnumerable<string> PollOptionsEnumerable 
             => (PollOptions?
                     .Split('\n', StringSplitOptions.RemoveEmptyEntries)
                     .Select(x => x.Trim())
@@ -108,9 +109,8 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly HttpClient? _imageProcessorClient;
         private readonly ILogger _logger;
 
-        static readonly TimeSpan _cookieBackupExpiration = TimeSpan.FromHours(4);
+		static readonly TimeSpan _cookieBackupExpiration = TimeSpan.FromHours(4);
 
-        private string _cookieBackupKey => $"{nameof(PostingBackup)}_{ForumId}_{TopicId ?? 0}_{PostId ?? 0}";
 
         public PostingModel(IPostService postService, IStorageService storageService, IWritingToolsService writingService, IBBCodeRenderingService renderingService, IConfiguration config, ILogger logger,
             IHttpClientFactory httpClientFactory, IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider)

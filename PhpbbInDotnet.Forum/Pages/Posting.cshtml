@@ -337,28 +337,29 @@ else if (Model.Action == PostingActions.NewTopic)
 </form>
 
 @{
-	var (posts, attachments, previousPostsCorrelationId) = await Model.GetPreviousPosts();
-	if (posts.Any())
+	var previousPosts = await Model.GetPreviousPosts();
+	if (previousPosts?.Posts.Any() == true)
 	{
 		<script>
-			var texts = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(posts.ToDictionary(k => k.PostId, v => _writingService.CleanBbTextForDisplay(v.PostText, v.BbcodeUid))));
-			$('#lastPostTime').val(@Math.Max(posts.First().PostTime, posts.First().PostEditTime));
+			var texts = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(previousPosts.Posts.ToDictionary(k => k.PostId, v => _writingService.CleanBbTextForDisplay(v.PostText, v.BbcodeUid))));
+			$('#lastPostTime').val(@Math.Max(previousPosts.Posts.First().PostTime, previousPosts.Posts.First().PostEditTime));
 		</script>
+
 		<br />
 		<h3>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "PREVIOUS_POSTS"])</h3>
 
-		foreach (var post in posts)
+		foreach (var post in previousPosts.Posts)
 		{
-			post.Attachments = attachments.TryGetValue(post.PostId, out var val) ? val : new List<Objects.AttachmentDto>();
+			post.Attachments = previousPosts.Attachments.TryGetValue(post.PostId, out var val) ? val : new List<Objects.AttachmentDto>();
 
 			@await Html.PartialAsync("_PostPartial", new _PostPartialModel
-            {
-                CurrentUser = CurrentUser,
-                Post = post,
-                ShowQuoteButton = !(CurrentUser.Foes?.Contains(post.AuthorId) ?? false),
-                Language = Lang,
-                CorrelationId = previousPostsCorrelationId
-            }, ViewData)
+			{
+				CurrentUser = CurrentUser,
+				Post = post,
+				ShowQuoteButton = !(CurrentUser.Foes?.Contains(post.AuthorId) ?? false),
+				Language = Lang,
+				CorrelationId = previousPosts.AttachmentDisplayCorrelationId
+			}, ViewData)
 		}
 	}
 }
