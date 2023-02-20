@@ -8,7 +8,6 @@ using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Objects;
 using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,14 +17,13 @@ namespace PhpbbInDotnet.Forum.Pages
 {
     public partial class PostingModel : BasePostingModel
     {
-        public async Task<(List<PostDto> posts, Dictionary<int, List<AttachmentDto>> attachments, Guid correlationId)> GetPreviousPosts()
+        public async Task<PostListDto?> GetPreviousPosts()
         {
-            if (((TopicId.HasValue && PageNum.HasValue) || PostId.HasValue) && (Action == PostingActions.EditForumPost || Action == PostingActions.NewForumPost))
+            if (TopicId > 0 && (Action == PostingActions.EditForumPost || Action == PostingActions.NewForumPost))
             {
-                var postList = await _postService.GetPosts(TopicId ?? 0, pageNum: 1, Constants.DEFAULT_PAGE_SIZE, isPostingView: true, Language);
-                return (postList.Posts, postList.Attachments, postList.AttachmentDisplayCorrelationId);
+                return await _postService.GetPosts(TopicId ?? 0, pageNum: 1, Constants.DEFAULT_PAGE_SIZE, isPostingView: true, Language);
             }
-            return (new List<PostDto>(), new Dictionary<int, List<AttachmentDto>>(), Guid.Empty);
+            return null;
         }
 
         private async Task<PhpbbAttachments?> DeleteAttachment(int index, bool removeFromList)
@@ -208,7 +206,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     new { usr.UserId, forumId = ForumId, topicId = Action == PostingActions.NewTopic ? 0 : TopicId });
             }
 
-            Response.Cookies.Delete(_cookieBackupKey);
+            Response.Cookies.DeleteObject(CookieBackupKey);
 
             return post.PostId;
         }
@@ -258,7 +256,7 @@ namespace PhpbbInDotnet.Forum.Pages
         private Task<IActionResult> WithBackup(Func<Task<IActionResult>> toDo)
         {
             Response.Cookies.AddObject(
-                key: _cookieBackupKey,
+                key: CookieBackupKey,
                 value: new PostingBackup(PostText, DateTime.UtcNow, ForumId, TopicId ?? 0, PostId ?? 0, Attachments?.Select(a => a.AttachId).ToList()),
                 maxAge: _cookieBackupExpiration);
             return toDo();
@@ -266,7 +264,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task RestoreBackupIfAny(DateTime? minCacheAge = null)
         {
-            if (Request.Cookies.TryGetObject<PostingBackup>(_cookieBackupKey, out var cookie))
+            if (Request.Cookies.TryGetObject<PostingBackup>(CookieBackupKey, out var cookie))
             {
                 if ((!string.IsNullOrWhiteSpace(cookie.Text) && string.IsNullOrWhiteSpace(PostText)) ||
                     (!string.IsNullOrWhiteSpace(cookie.Text) && cookie.TextTime > minCacheAge))
