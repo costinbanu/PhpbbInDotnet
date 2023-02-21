@@ -93,7 +93,8 @@ namespace PhpbbInDotnet.Forum.Pages
         public PhpbbForums? CurrentForum { get; private set; }
         public bool DraftSavedSuccessfully { get; private set; } = false;
         public Guid? PreviewCorrelationId { get; private set; }
-		private string CookieBackupKey => $"{nameof(PostingBackup)}_{ForumUser.UserId}_{ForumId}_{TopicId ?? 0}_{PostId ?? 0}";
+		private string CookieBackupKey 
+            => $"{nameof(PostingBackup)}_{ForumUser.UserId}_{ForumId}_{(Action == PostingActions.NewTopic ? 0 : (TopicId ?? 0))}_{PostId ?? 0}";
 		private IEnumerable<string> PollOptionsEnumerable 
             => (PollOptions?
                     .Split('\n', StringSplitOptions.RemoveEmptyEntries)
