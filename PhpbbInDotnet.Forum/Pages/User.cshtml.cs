@@ -300,7 +300,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (DeleteAvatar && !string.IsNullOrWhiteSpace(dbUser.UserAvatar))
             {
-                if (!_storageService.DeleteAvatar(dbUser.UserId, Path.GetExtension(dbUser.UserAvatar)))
+                if (!await _storageService.DeleteAvatar(dbUser.UserId, dbUser.UserAvatar))
                 {
                     return PageWithError(nameof(Avatar), TranslationProvider.Errors[lang, "DELETE_AVATAR_ERROR"]);
                 }
@@ -350,7 +350,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                     if (!string.IsNullOrWhiteSpace(dbUser.UserAvatar))
                     {
-                        _storageService.DeleteAvatar(dbUser.UserId, Path.GetExtension(dbUser.UserAvatar));
+                        await _storageService.DeleteAvatar(dbUser.UserId, dbUser.UserAvatar);
                     }
                     if (!await _storageService.UploadAvatar(dbUser.UserId, output ?? input, Avatar.FileName))
                     {

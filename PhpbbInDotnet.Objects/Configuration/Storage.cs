@@ -13,5 +13,6 @@ namespace PhpbbInDotnet.Objects.Configuration
         public StorageType StorageType { get; set; }
 
         public string? ConnectionString { get; set; }
-    }
+		public string? ContainerName { get; set; }
+	}
 }

@@ -48,7 +48,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     return await WithValidForum(
                         dto.ForumId,
-                        _ => Task.FromResult(SendToClient(dto.PhysicalFileName!, dto.DisplayName!, dto.MimeType, FileType.Attachment)));
+                        _ => SendToClient(dto.PhysicalFileName!, dto.DisplayName!, dto.MimeType, FileType.Attachment));
                 }
             }
 
@@ -67,7 +67,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (preview && file.PostId == null && file.ForumId == null)
             {
-                return SendToClient(file.PhysicalFilename!, file.RealFilename!, file.Mimetype, FileType.Attachment);
+                return await SendToClient(file.PhysicalFilename!, file.RealFilename!, file.Mimetype, FileType.Attachment);
             }
 
             if (!correlationId.HasValue)
@@ -77,7 +77,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             return await WithValidForum(
                 file.ForumId ?? 0,
-                _ => Task.FromResult(SendToClient(file.PhysicalFilename!, file.RealFilename!, file.Mimetype, FileType.Attachment)));
+                _ => SendToClient(file.PhysicalFilename!, file.RealFilename!, file.Mimetype, FileType.Attachment));
         }
 
         public async Task<IActionResult> OnGetAvatar(int userId, Guid? correlationId = null)
@@ -92,7 +92,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 if (file != null)
                 {
                     file = getActualFileName(file);
-                    return SendToClient(file, file, null, FileType.Avatar);
+                    return await SendToClient(file, file, null, FileType.Avatar);
                 }
             }
 
@@ -103,7 +103,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }
             file = getActualFileName(file);
 
-            return SendToClient(file, file, null, FileType.Avatar);
+            return await SendToClient(file, file, null, FileType.Avatar);
         }
 
         public async Task<IActionResult> OnGetDeletedFile(int id, Guid correlationId)
@@ -111,7 +111,7 @@ namespace PhpbbInDotnet.Forum.Pages
             try
             {
                 var file = (await _cache.GetAsync<AttachmentDto>(CacheUtility.GetAttachmentCacheKey(id, correlationId))) ?? throw new InvalidOperationException($"File '{id}' does not exist.");
-                return SendToClient(file.PhysicalFileName!, file.DisplayName!, file.MimeType, FileType.Attachment);
+                return await SendToClient(file.PhysicalFileName!, file.DisplayName!, file.MimeType, FileType.Attachment);
             }
             catch (Exception ex)
             {
@@ -120,12 +120,12 @@ namespace PhpbbInDotnet.Forum.Pages
             }
         }
 
-        private IActionResult SendToClient(string physicalFileName, string realFileName, string? mimeType, FileType fileType)
+        private async Task<IActionResult> SendToClient(string physicalFileName, string realFileName, string? mimeType, FileType fileType)
         {
             mimeType ??= (_contentTypeProvider.Mappings.TryGetValue(Path.GetExtension(realFileName), out var val) ? val : null) ?? "application/octet-stream";
 
-            var path = _storageService.GetFilePath(physicalFileName, fileType);
-            if (IOFile.Exists(path))
+            var stream = await _storageService.GetFileStream(physicalFileName, fileType);
+            if (stream is not null)
             {
                 var cd = new ContentDisposition
                 {
@@ -134,7 +134,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 };
                 Response.Headers.Add("Content-Disposition", cd.ToString());
                 Response.Headers.Add("X-Content-Type-Options", "nosniff");
-                return File(IOFile.OpenRead(path!), mimeType);
+                return File(stream, mimeType);
             }
             else
             {

@@ -235,7 +235,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (Attachments == null)
                 {
-                    Attachments = succeeded;
+                    Attachments = succeeded.AsList();
                 }
                 else
                 {

@@ -8,6 +8,7 @@ using PhpbbInDotnet.Domain.Extensions;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using StorageOptions = PhpbbInDotnet.Objects.Configuration.Storage;
 
@@ -15,48 +16,35 @@ namespace PhpbbInDotnet.Services.Storage
 {
 	abstract class BaseStorageService : IStorageService
 	{
-		protected readonly ISqlExecuter _sqlExecuter;
-		protected readonly StorageOptions StorageOptions;
-		protected readonly string AttachmentsPath;
-		protected readonly string AvatarsPath;
-		protected readonly string EmojiPath;
+		private readonly ISqlExecuter _sqlExecuter;
 
-		public BaseStorageService(IConfiguration config, IWebHostEnvironment environment, ISqlExecuter sqlExecuter)
+		protected readonly StorageOptions StorageOptions;
+		protected readonly IConfiguration Configuration;
+
+		protected abstract string AttachmentsPath { get; }
+		protected abstract string AvatarsPath { get; }
+		protected abstract string EmojiPath { get; }
+
+		public BaseStorageService(IConfiguration config, ISqlExecuter sqlExecuter)
 		{
 			_sqlExecuter = sqlExecuter;
 			StorageOptions = config.GetObject<StorageOptions>();
-			AttachmentsPath = Path.Combine(environment.WebRootPath, StorageOptions.Files!);
-			AvatarsPath = Path.Combine(environment.WebRootPath, StorageOptions.Avatars!);
-			EmojiPath = Path.Combine(environment.WebRootPath, StorageOptions.Emojis!);
+			Configuration = config;
 		}
 
-		public string? GetFileUrl(string name, FileType fileType)
-			=> fileType switch
-			{
-				FileType.Attachment => $"./{StorageOptions.Files!.Trim('/')}/{name.TrimStart('/')}",
-				FileType.Avatar => $"./{StorageOptions.Avatars!.Trim('/')}/{name.TrimStart('/')}",
-				FileType.Emoji => $"./{StorageOptions.Emojis!.Trim('/')}/{name.TrimStart('/')}",
-				_ => null
-			};
+		public string? GetEmojiRelativeUrl(string name)
+			=> CombineToRelativePath(".", StorageOptions.Emojis!, name);
 
-		public string? GetFilePath(string name, FileType fileType)
-			=> fileType switch
-			{
-				FileType.Attachment => Path.Combine(AttachmentsPath, name),
-				FileType.Avatar => Path.Combine(AvatarsPath, name),
-				FileType.Emoji => Path.Combine(EmojiPath, name),
-				_ => null
-			};
-
-		public abstract Task<(List<PhpbbAttachments> SucceededUploads, List<string> FailedUploads)> BulkAddAttachments(IEnumerable<IFormFile> attachedFiles, int userId);
-		public abstract (IEnumerable<string> Succeeded, IEnumerable<string> Failed) BulkDeleteAttachments(IEnumerable<string> files);
-		public abstract bool DeleteAvatar(int userId, string extension);
-		public abstract bool DeleteFile(string? name, bool isAvatar);
-		public abstract string? DuplicateFile(PhpbbAttachments attachment, int userId);
-		public abstract Task<byte[]> GetAttachmentContents(string name);
+		public abstract Task<(IEnumerable<PhpbbAttachments> SucceededUploads, IEnumerable<string> FailedUploads)> BulkAddAttachments(IEnumerable<IFormFile> attachedFiles, int userId);
+		public abstract Task<(IEnumerable<string> Succeeded, IEnumerable<string> Failed)> BulkDeleteAttachments(IEnumerable<string> files);
+		public abstract Task<bool> DeleteAvatar(int userId, string fileName);
+		public abstract Task<bool> DeleteAttachment(string name);
+		public abstract Task<string?> DuplicateAttachment(PhpbbAttachments attachment, int userId);
+		public abstract Task<Stream?> GetFileStream(string name, FileType fileType);
+		public abstract Task<DateTime?> GetLastWriteTime(string path);
 		public abstract Task<bool> UploadAvatar(int userId, Stream contents, string fileName);
 		public abstract Task<bool> UpsertEmoji(string name, Stream file);
-		public abstract void WriteAllTextToFile(string path, string contents);
+		public abstract Task WriteAllTextToFile(string path, string contents);
 
 		protected Task<PhpbbAttachments> AddToDatabase(string uploadedFileName, string physicalFileName, long fileSize, string mimeType, int posterId)
 			=> _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbAttachments>(
@@ -73,5 +61,25 @@ namespace PhpbbInDotnet.Services.Storage
 					RealFilename = Path.GetFileName(uploadedFileName),
 					posterId,
 				});
+
+		protected static string GenerateNewAttachmentFileName(int userId)
+			=> $"{userId}_{Guid.NewGuid():n}";
+
+		protected string GetAvatarPhysicalFileName(int userId, string originalFileName)
+			=> $"{Configuration.GetValue<string>("AvatarSalt")}_{userId}.{Path.GetExtension(originalFileName).TrimStart('.')}";
+
+		protected static string CombineToRelativePath(params string[] parts)
+		{
+			if (parts.Length == 0)
+			{
+				return string.Empty;
+			}
+			var sb = new StringBuilder();
+			foreach (var part in parts )
+			{
+				sb.Append(part.Trim().Trim('/').Trim('\\')).Append('/');
+			}
+			return sb.ToString();
+		}
 	}
 }

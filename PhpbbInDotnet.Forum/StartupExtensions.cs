@@ -103,7 +103,7 @@ namespace PhpbbInDotnet.Forum
             }
 
             services.AddLanguageSupport();
-            services.AddApplicationServices();
+            services.AddApplicationServices(config);
             services.AddRecurringTasks();
             
             services.AddSingleton<FileExtensionContentTypeProvider>();

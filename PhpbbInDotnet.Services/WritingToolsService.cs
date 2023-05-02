@@ -124,7 +124,7 @@ namespace PhpbbInDotnet.Services
             foreach (var sr in await GetLazySmilies())
             {
                 var regex = new Regex(@$"(?<=(^|\s)){Regex.Escape(sr.Code)}(?=($|\s))", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, Constants.REGEX_TIMEOUT);
-                var replacement = $"<!-- s{sr.Code} --><img src=\"{_storageService.GetFileUrl(sr.SmileyUrl, FileType.Emoji)}\" alt=\"{sr.Code}\" title=\"{sr.Emotion}\" /><!-- s{sr.Code} -->";
+                var replacement = $"<!-- s{sr.Code} --><img src=\"{_storageService.GetEmojiRelativeUrl(sr.SmileyUrl)}\" alt=\"{sr.Code}\" title=\"{sr.Emotion}\" /><!-- s{sr.Code} -->";
                 text = regex.Replace(text, replacement);
             }
             return text;
@@ -187,7 +187,7 @@ namespace PhpbbInDotnet.Services
                 return (_translationProvider.Admin[language, "NO_ORPHANED_FILES_DELETED"], true);
             }
 
-            var (Succeeded, Failed) = _storageService.BulkDeleteAttachments(files.Select(f => f.PhysicalFilename));
+            var (Succeeded, Failed) = await _storageService.BulkDeleteAttachments(files.Select(f => f.PhysicalFilename));
 
             if (Succeeded?.Any() == true)
             {

@@ -35,7 +35,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return null;
             }
 
-            if (!_storageService.DeleteFile(attachment.PhysicalFilename, false))
+            if (!await _storageService.DeleteAttachment(attachment.PhysicalFilename))
             {
                 return null;
             }

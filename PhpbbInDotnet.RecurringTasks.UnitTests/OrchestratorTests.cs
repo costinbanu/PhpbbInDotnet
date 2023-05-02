@@ -24,7 +24,7 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
         IServiceCollection GetServices()
         {
             var mockSchedulingService = new Mock<ISchedulingService>();
-            mockSchedulingService.Setup(s => s.GetTimeToWaitUntilRunIsAllowed()).Returns(TimeSpan.Zero);
+            mockSchedulingService.Setup(s => s.GetTimeToWaitUntilRunIsAllowed()).Returns(Task.FromResult(TimeSpan.Zero));
 
             var services = new ServiceCollection();
             services.AddSingleton(_mockLogger.Object);
