@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PhpbbInDotnet.RecurringTasks.Tasks;
-using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Services.Storage;
 using Serilog;
 using System;
 using System.Linq;
@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.RecurringTasks
 {
-	sealed class Orchestrator : BackgroundService
+    sealed class Orchestrator : BackgroundService
 	{
 		readonly IServiceProvider _serviceProvider;
 

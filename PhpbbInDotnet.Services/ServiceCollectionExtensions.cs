@@ -1,4 +1,5 @@
 ﻿using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Services.Storage;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -12,7 +13,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddScoped<IForumTreeService, ForumTreeService>();
             services.AddScoped<IPostService, PostService>();
             services.AddScoped<IUserService, UserService>();
-            services.AddScoped<IStorageService, StorageService>();
+            services.AddScoped<IStorageService, DiskStorageService>();
             services.AddScoped<IModeratorService, ModeratorService>();
             services.AddScoped<IBBCodeRenderingService, BBCodeRenderingService>();
             services.AddScoped<IStatisticsService, StatisticsService>();

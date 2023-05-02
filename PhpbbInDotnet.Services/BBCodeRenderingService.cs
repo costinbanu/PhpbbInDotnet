@@ -551,10 +551,11 @@ namespace PhpbbInDotnet.Services
             );
         }
 
-        string UrlTransformer(string url)
+        string UrlTransformer(string? url)
         {
-            try
-            {
+			url ??= string.Empty;
+			try
+			{
                 if (!url.StartsWith("www", StringComparison.InvariantCultureIgnoreCase) && !url.StartsWith("http", StringComparison.InvariantCultureIgnoreCase))
                 {
                     throw new ArgumentException("Bad URL formatting");

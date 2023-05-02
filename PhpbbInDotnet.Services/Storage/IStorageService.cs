@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace PhpbbInDotnet.Services
+namespace PhpbbInDotnet.Services.Storage
 {
     public interface IStorageService
     {

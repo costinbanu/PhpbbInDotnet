@@ -9,6 +9,7 @@ using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Objects.Configuration;
+using PhpbbInDotnet.Services.Storage;
 using Serilog;
 using SixLabors.ImageSharp;
 using System;
