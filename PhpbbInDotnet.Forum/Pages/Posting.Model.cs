@@ -61,9 +61,6 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool ShouldResize { get; set; } = true;
 
         [BindProperty]
-        public bool ShouldHideLicensePlates { get; set; } = true;
-
-        [BindProperty]
         public List<string> DeleteFileDummyForValidation { get; set; }
 
         [BindProperty]
@@ -107,15 +104,13 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IWritingToolsService _writingService;
         private readonly IBBCodeRenderingService _renderingService;
         private readonly IConfiguration _config;
-        private readonly ExternalImageProcessor _imageProcessorOptions;
-        private readonly HttpClient? _imageProcessorClient;
         private readonly ILogger _logger;
+		private readonly IImageResizeService _imageResizeService;
 
 		static readonly TimeSpan _cookieBackupExpiration = TimeSpan.FromHours(4);
 
-
         public PostingModel(IPostService postService, IStorageService storageService, IWritingToolsService writingService, IBBCodeRenderingService renderingService, IConfiguration config, ILogger logger,
-            IHttpClientFactory httpClientFactory, IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider)
+            IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, IImageResizeService imageResizeService)
             : base(forumService, userService, sqlExecuter, translationProvider)
         {
             PollExpirationDaysString = "1";
@@ -126,9 +121,8 @@ namespace PhpbbInDotnet.Forum.Pages
             _writingService = writingService;
             _renderingService = renderingService;
             _config = config;
-            _imageProcessorOptions = _config.GetObject<ExternalImageProcessor>();
-            _imageProcessorClient = _imageProcessorOptions.Api?.Enabled == true ? httpClientFactory.CreateClient(_imageProcessorOptions.Api.ClientName) : null;
             _logger = logger;
+            _imageResizeService = imageResizeService;
         }
     }
 }

@@ -60,8 +60,16 @@ namespace PhpbbInDotnet.Services.Storage
 			var succeededUploadsToReturn = new List<PhpbbAttachments>();
 			foreach(var (uploadedFileName, physicalFileName, fileSize, mimeType) in succeededUploads)
 			{
-				var attachment = await AddToDatabase(uploadedFileName, physicalFileName, fileSize, mimeType, userId);
-				succeededUploadsToReturn.Add(attachment);
+				try
+				{
+					var attachment = await AddToDatabase(uploadedFileName, physicalFileName, fileSize, mimeType, userId);
+					succeededUploadsToReturn.Add(attachment);
+				}
+				catch (Exception ex)
+				{
+					failedUploads.Add(uploadedFileName);
+					_logger.Error(ex, "Error uploading attachment by user {id}.", userId);
+				}
 			}
 
 			return (succeededUploadsToReturn, failedUploads);

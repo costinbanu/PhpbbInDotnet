@@ -44,8 +44,8 @@ namespace PhpbbInDotnet.Forum.Pages
 				                     d.draft_subject as topic_title,
 				                     d.save_time as topic_last_post_time,
 				                     t.topic_last_post_id
-			                    FROM forum.phpbb_drafts d
-			                    LEFT JOIN forum.phpbb_topics t
+			                    FROM phpbb_drafts d
+			                    LEFT JOIN phpbb_topics t
 			                      ON d.topic_id = t.topic_id
 		                       WHERE d.forum_id NOT IN @restrictedForumList
                                  AND d.user_id = @userId
@@ -63,8 +63,8 @@ namespace PhpbbInDotnet.Forum.Pages
                         );
                         var countTask = SqlExecuter.ExecuteScalarAsync<int>(
                             @"SELECT COUNT(*) as total_count
-                                FROM forum.phpbb_drafts d
-	                            LEFT JOIN forum.phpbb_topics t
+                                FROM phpbb_drafts d
+	                            LEFT JOIN phpbb_topics t
 	                              ON d.topic_id = t.topic_id
 	                           WHERE d.forum_id NOT IN @restrictedForumList
                                  AND d.user_id = @user_id

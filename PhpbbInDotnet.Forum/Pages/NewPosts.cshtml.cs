@@ -53,8 +53,8 @@ namespace PhpbbInDotnet.Forum.Pages
                              t.topic_last_post_time,
                              t.topic_last_poster_colour,
                              t.topic_last_post_id
-                        FROM forum.phpbb_topics t
-                        JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
+                        FROM phpbb_topics t
+                        JOIN phpbb_posts p ON t.topic_id = p.topic_id
                        WHERE t.topic_id IN @topicList
                          AND t.forum_id NOT IN @restrictedForumList
                        GROUP BY t.topic_id

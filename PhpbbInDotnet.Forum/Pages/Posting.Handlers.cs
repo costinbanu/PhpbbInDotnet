@@ -163,33 +163,17 @@ namespace PhpbbInDotnet.Forum.Pages
                 var images = Files.Where(f => StringUtility.IsImageMimeType(f.ContentType));
                 var nonImages = Files.Where(f => !StringUtility.IsImageMimeType(f.ContentType));
 
-                if (_imageProcessorOptions.Api?.Enabled == true && (ShouldResize || ShouldHideLicensePlates))
+                if (ShouldResize)
                 {
                     try
                     {
                         images = await Task.WhenAll(images.Select(async image =>
                         {
-                            using var streamContent = new StreamContent(image.OpenReadStream());
-                            streamContent.Headers.Add("Content-Type", image.ContentType);
-                            using var formContent = new MultipartFormDataContent
+                            var resultStream = await _imageResizeService.ResizeImageByFileSize(image.OpenReadStream(), image.FileName, Constants.ONE_MB * sizeLimit.Images);
+                            if (resultStream is null)
                             {
-                                { streamContent, "File", image.FileName },
-                                { new StringContent(ShouldHideLicensePlates.ToString()), "HideLicensePlates" },
-                            };
-                            if (ShouldResize)
-                            {
-                                formContent.Add(new StringContent((Constants.ONE_MB * sizeLimit.Images).ToString()), "SizeLimit");
+                                return image;
                             }
-
-                            var result = await _imageProcessorClient!.PostAsync(_imageProcessorOptions.Api.RelativeUri, formContent);
-
-                            if (!result.IsSuccessStatusCode)
-                            {
-                                var errorMessage = await result.Content.ReadAsStringAsync();
-                                throw new HttpRequestException($"The image processor API threw an exception: {errorMessage}");
-                            }
-
-                            var resultStream = await result.Content.ReadAsStreamAsync();
                             return new FormFile(resultStream, 0, resultStream.Length, image.Name, image.FileName)
                             {
                                 Headers = image.Headers,

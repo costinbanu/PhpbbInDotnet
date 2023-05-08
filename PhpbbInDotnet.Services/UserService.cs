@@ -183,7 +183,7 @@ namespace PhpbbInDotnet.Services
             var results = await _sqlExecuter.QueryAsync<(int topicId, int postNo)>(
                 @"SELECT topic_id, post_no
 	                FROM phpbb_user_topic_post_number
-	               WHERE user_id = @user_id
+	               WHERE user_id = @userId
 	               GROUP BY topic_id;",
                 new { userId });
             return results.ToDictionary(x => x.topicId, y => y.postNo);
@@ -368,7 +368,7 @@ namespace PhpbbInDotnet.Services
             => new HashSet<int>(await _sqlExecuter.QueryAsync<int>(
                     @"SELECT zebra_id
                         FROM phpbb_zebra
-                       WHERE user_id = @user_id 
+                       WHERE user_id = @userId 
                          AND foe = 1;",
                     new { userId }
                 ));

@@ -53,6 +53,9 @@ Either way,  ensure that its structure and contents follow the sample below. All
   "UserActivityTrackingInterval": "00.01:00:00", 
   "AdminEmail": "...",
   "Storage": { 
+    "StorageType": "...", 
+    "ConnectionString": "...",
+    "ContainerName": "...",
     "Files": "forumfiles",
     "Avatars": "forumfiles/avatars",
     "Emojis": "images/smilies"
@@ -69,18 +72,6 @@ Either way,  ensure that its structure and contents follow the sample below. All
   "UseHeaderImage": false,
   "RecycleBinRetentionTime": "7.00:00:00",
   "OperationLogsRetentionTime": "365.00:00:00",
-  "ExternalImageProcessor": {
-    "Enabled": false,
-    "Name": "...",
-    "Url": "...",
-    "Api": {
-      "Enabled": false,
-      "ClientName": "ExternalImageProcessor",
-      "BaseAddress": "...",
-      "RelativeUri": "api/process-image",
-      "ApiKey": "..."
-    }
-  },
   "InternetSearchUrlFormat": "https://www.google.com/search?q={0}",
   "IpWhoIsUrlFormat": "https://whatismyipaddress.com/ip/{0}",
   "CleanupService": {
@@ -119,9 +110,12 @@ UploadLimitsCount.Images | int | 10 |  applies for both internally and externall
 UploadLimitsCount.OtherFiles | int | 10 | applies only for internally hosted attachments
 UserActivityTrackingInterval | TimeSpan | 00.01:00:00 | time interval for tracking same user's activity. Is read as `TimeSpan` (format `dd.HH:mm:ss`), default value is one hour
 AdminEmail | string | ... | sender email address for forum generated emails 
-Storage.Files | string | forumfiles | path relative to `wwwroot` 
-Storage.Avatars | string | forumfiles/avatars | path relative to `wwwroot` 
-Storage.Emojis | string | images/smilies | path relative to `wwwroot` 
+Storage.Type | PhpbbInDotnet.Domain.StorageType | HardDisk | storage type (string representation of the enum)
+Storage.Container | string | ... | container name
+Storage.ConnectionString | string |... | connection string matching the storage type 
+Storage.Files | string | forumfiles | path relative to `wwwroot` if storage type is `HardDisk`, or to the container root otherwise
+Storage.Avatars | string | forumfiles/avatars | path relative to `wwwroot` if storage type is `HardDisk`, or to the container root otherwise
+Storage.Emojis | string | images/smilies | path relative to `wwwroot` if storage type is `HardDisk`, or to the container root otherwise
 AvatarMaxSize.Width | int | 200 | pixels
 AvatarMaxSize.Height | int | 200 | pixels
 EmojiMaxSize.Width | int | 100 | pixels
@@ -130,14 +124,6 @@ DisplayExternalLinksMenu | bool | false | whether a menu with external links is 
 UseHeaderImage | bool | false | whether a custom image is displayed in the header, instead of the forum name
 RecycleBinRetentionTime | TimeSpan | 7.00:00:00 | for how long are deleted items kept in the recycle bin. Is read as `TimeSpan` (format `dd.HH:mm:ss`), default value is 7 days. A value less than one day will trigger an error and will not delete anything at all.
 OperationLogsRetentionTime | TimeSpan | 365.00:00:00 | Anything that alters post, topic, forum or user state is saved as an operation log and can be viewed in the forum's admin panel. This value controls for how long are the operation log items kept in the database. Is read as `TimeSpan` (format `dd.HH:mm:ss`), default value is 365 days. An explicit zero value (`0.00:00:00`) can be used for retaining logs indefinitely. A value less than one day will trigger an error and will not delete anything at all.
-ExternalImageProcessor.Enabled | bool | ... | Whether a link to an external image processing tool is displayed in the posting page or not
-ExternalImageProcessor.Name | string | ... | Name of the external image processing tool that is displayed in the posting page
-ExternalImageProcessor.Url | string | ... | Link to the external image processing tool that is displayed in the posting page
-ExternalImageProcessor.Api.Enabled | bool | ... | Whether the attached files upload logic integrates with the [Simple Image Processor Project](https://github.com/costinbanu/SimpleImageProcessor) or not
-ExternalImageProcessor.Api.ClientName | string | ExternalImageProcessor | Image Processor API `HttpClient` name
-ExternalImageProcessor.Api.BaseAddress | string | ... | Image Processor API base address
-ExternalImageProcessor.Api.RelativeUri | string | api/process-image | Image Processor API image processing route
-ExternalImageProcessor.Api.ApiKey | string | ... | Image Processor API Api Key
 InternetSearchUrlFormat | string | https://www.google.com/search?q={0} | Internet search link; query parameter should be URL-escaped
 IpWhoIsUrlFormat | string | https://whatismyipaddress.com/ip/{0} | IP WHOIS link
 CleanupService.Interval | TimeSpan | 1.00:00:00 | How often is the cleanup service running (database is cleaned up and tables are resynchronized)

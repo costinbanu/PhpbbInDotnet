@@ -117,16 +117,6 @@ namespace PhpbbInDotnet.Forum
             var recaptchaOptions = config.GetObject<Recaptcha>();
             services.AddHttpClient(recaptchaOptions.ClientName, client => client.BaseAddress = new Uri(recaptchaOptions.BaseAddress!));
 
-            var imageProcessorOptions = config.GetObject<ExternalImageProcessor>();
-            if (imageProcessorOptions.Api?.Enabled == true)
-            {
-                services.AddHttpClient(imageProcessorOptions.Api.ClientName, client =>
-                {
-                    client.BaseAddress = new Uri(imageProcessorOptions.Api.BaseAddress!);
-                    client.DefaultRequestHeaders.Add("X-API-Key", imageProcessorOptions.Api.ApiKey);
-                });
-            }
-
             services.AddForumDbContext(config);
 
             services.AddLazyCache();

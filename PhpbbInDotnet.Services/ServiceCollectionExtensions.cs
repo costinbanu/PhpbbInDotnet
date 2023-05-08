@@ -10,7 +10,7 @@ using StorageOptions = PhpbbInDotnet.Objects.Configuration.Storage;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    public static class ServiceCollectionExtensions
+	public static class ServiceCollectionExtensions
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
         {
@@ -57,6 +57,7 @@ namespace Microsoft.Extensions.DependencyInjection
 			services.AddSingleton<ITimeService, TimeService>();
             services.AddSingleton<IEncryptionService, EncryptionService>();
             services.AddSingleton<IAnonymousSessionCounter, AnonymousSessionCounter>();
+            services.AddSingleton<IImageResizeService, ImageResizeService>();
 
             return services;
         }
