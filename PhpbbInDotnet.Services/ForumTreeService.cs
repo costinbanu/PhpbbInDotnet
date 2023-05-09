@@ -1,7 +1,5 @@
-﻿using LazyCache;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
-using Org.BouncyCastle.Asn1.Ocsp;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
@@ -17,7 +15,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Services
 {
-    class ForumTreeService : IForumTreeService
+	class ForumTreeService : IForumTreeService
     {
         private readonly ISqlExecuter _sqlExecuter;
         private readonly IConfiguration _config;
@@ -75,6 +73,11 @@ namespace PhpbbInDotnet.Services
         
         public async Task<bool> IsForumReadOnlyForUser(ForumUserExpanded user, int forumId)
         {
+            if (_config.GetValue<bool>("ForumIsReadOnly"))
+            {
+                return true;
+            }
+
             var tree = await GetForumTree(user, false, false);
             var path = new List<int>();
             if (tree.TryGetValue(new ForumTree { ForumId = forumId }, out var cur))

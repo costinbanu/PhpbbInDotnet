@@ -7,316 +7,330 @@
 @using Objects
 
 @inject IConfiguration _config
-@inject Services.IUserService  _userService
+@inject Services.IUserService _userService
 @inject Services.IModeratorService _moderatorService
 @inject Services.IStatisticsService _statisticsService
 @inject Services.IForumTreeService _forumService
 @inject Languages.ITranslationProvider _translationProvider
 
 @{
-    #nullable enable
-    var currentUser = ForumUserExpanded.GetValueOrDefault(Context);
-    var css = currentUser?.Style;
-    if (string.IsNullOrWhiteSpace(css))
-    {
-        css = "Light";
-    }
-    var lang = _translationProvider.GetLanguage(currentUser);
-    var dateFormat = currentUser?.UserDateFormat ?? _translationProvider.GetDefaultDateFormat(lang);
-    var statistics = await _statisticsService.GetStatisticsSummary();
-    var forumId = ViewData.ValueOrDefault<int>(Constants.ViewDataKeys.FORUM_ID);
-    var breadCrumbs = ViewData.ValueOrDefault<BreadCrumbs>(Constants.ViewDataKeys.BREADCRUMBS);
+#nullable enable
+	var currentUser = ForumUserExpanded.GetValueOrDefault(Context);
+	var css = currentUser?.Style;
+	if (string.IsNullOrWhiteSpace(css))
+	{
+		css = "Light";
+	}
+	var lang = _translationProvider.GetLanguage(currentUser);
+	var dateFormat = currentUser?.UserDateFormat ?? _translationProvider.GetDefaultDateFormat(lang);
+	var statistics = await _statisticsService.GetStatisticsSummary();
+	var forumId = ViewData.ValueOrDefault<int>(Constants.ViewDataKeys.FORUM_ID);
+	var breadCrumbs = ViewData.ValueOrDefault<BreadCrumbs>(Constants.ViewDataKeys.BREADCRUMBS);
 }
 
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1" />
-    <title>@Html.Raw(_config.GetValue<string>("ForumName")) - @ViewData["Title"]</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1" />
+	<title>@Html.Raw(_config.GetValue<string>("ForumName")) - @ViewData["Title"]</title>
 
-    @if (breadCrumbs is not null)
-    {
-        <script type="application/ld+json">
-            @Html.Raw(JsonConvert.SerializeObject(breadCrumbs.RawBreadCrumbs, Formatting.Indented))
-        </script>
-    }
+	@if (breadCrumbs is not null)
+	{
+		<script type="application/ld+json">
+			@Html.Raw(JsonConvert.SerializeObject(breadCrumbs.RawBreadCrumbs, Formatting.Indented))
+		</script>
+	}
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.3/jquery.validate.min.js" integrity="sha512-37T7leoNS06R80c8Ulq7cdCDU5MNQBwlYoy1TX/WUsLFC2eYNqtKlV0QjH7r8JpG/S0GUMZwebnVFLPd6SU5yg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js" integrity="sha512-o6XqxgrUsKmchwy9G5VRNWSSxTS4Urr4loO6/0hYdpWmFUfHqGzawGxeQGMDqYzxjY9sbktPbNlkIQJWagVZQg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha512-iztkobsvnjKfAtTNdHkGVjAYTrrtlC7mGp/54c40wowO7LhURYl3gVzzcEqGl/qKXQltJ2HwMrdLcNUdo+N/RQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha512-6MXa8B6uaO18Hid6blRMetEIoPqHf7Ux1tnyIQdpt9qI5OACx7C+O3IVTr98vwGnlcg0LOLa02i9Y1HpVhlfiw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.3/jquery.validate.min.js" integrity="sha512-37T7leoNS06R80c8Ulq7cdCDU5MNQBwlYoy1TX/WUsLFC2eYNqtKlV0QjH7r8JpG/S0GUMZwebnVFLPd6SU5yg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js" integrity="sha512-o6XqxgrUsKmchwy9G5VRNWSSxTS4Urr4loO6/0hYdpWmFUfHqGzawGxeQGMDqYzxjY9sbktPbNlkIQJWagVZQg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha512-iztkobsvnjKfAtTNdHkGVjAYTrrtlC7mGp/54c40wowO7LhURYl3gVzzcEqGl/qKXQltJ2HwMrdLcNUdo+N/RQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha512-6MXa8B6uaO18Hid6blRMetEIoPqHf7Ux1tnyIQdpt9qI5OACx7C+O3IVTr98vwGnlcg0LOLa02i9Y1HpVhlfiw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-    <environment include="Development">
-        <link rel="stylesheet" href="~/css/Common.css" />
-        <link rel="stylesheet" href="~/css/@(css).css" />
-        <script src="~/js/site.js"></script>
-        <script src="~/js/dateFormatter.js"></script>
-    </environment>
-    <environment exclude="Development">
-        <link rel="stylesheet" href="~/css/@(css).min.css" asp-append-version="true" />
-        <script src="~/js/site.min.js" asp-append-version="true"></script>
-    </environment>
+	<environment include="Development">
+		<link rel="stylesheet" href="~/css/Common.css" />
+		<link rel="stylesheet" href="~/css/@(css).css" />
+		<script src="~/js/site.js"></script>
+		<script src="~/js/dateFormatter.js"></script>
+	</environment>
+	<environment exclude="Development">
+		<link rel="stylesheet" href="~/css/@(css).min.css" asp-append-version="true" />
+		<script src="~/js/site.min.js" asp-append-version="true"></script>
+	</environment>
 
-    <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-64BJ3Z0TSH"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-64BJ3Z0TSH"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag() { dataLayer.push(arguments); }
+		gtag('js', new Date());
 
-      gtag('config', 'G-64BJ3Z0TSH');
-    </script>
+		gtag('config', 'G-64BJ3Z0TSH');
+	</script>
 
-    <!-- global JS translation magic -->
-    @if (ViewContext.RouteData.Values["page"]?.ToString() == "/ViewTopic"
-        || ViewContext.RouteData.Values["page"]?.ToString() == "/Posting"
-        || ViewContext.RouteData.Values["page"]?.ToString() == "/Admin"
-        || ViewContext.RouteData.Values["page"]?.ToString() == "/Moderator")
-    {
-        <script>
-            var dictionary = @(Html.Raw(_translationProvider.JSText[lang]));
-            var clickToEnlarge = '@Html.Raw(_translationProvider.BasicText[lang, "CLICK_TO_ENLARGE"])';
-        </script>
-    }
-    <script>
-        var monthNames = getMonthNames('@lang');
-        var dayNames = getDayNames('@lang');
-        var defaultDateFormat = '@dateFormat';
-    </script>
+	<!-- global JS translation magic -->
+	@if (ViewContext.RouteData.Values["page"]?.ToString() == "/ViewTopic"
+			|| ViewContext.RouteData.Values["page"]?.ToString() == "/Posting"
+			|| ViewContext.RouteData.Values["page"]?.ToString() == "/Admin"
+			|| ViewContext.RouteData.Values["page"]?.ToString() == "/Moderator")
+	{
+		<script>
+			var dictionary = @(Html.Raw(_translationProvider.JSText[lang]));
+			var clickToEnlarge = '@Html.Raw(_translationProvider.BasicText[lang, "CLICK_TO_ENLARGE"])';
+		</script>
+	}
+	<script>
+		var monthNames = getMonthNames('@lang');
+		var dayNames = getDayNames('@lang');
+		var defaultDateFormat = '@dateFormat';
+	</script>
 
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.css" />
-    <script src='https://www.google.com/recaptcha/api.js'></script>
+	<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.css" />
+	<script src='https://www.google.com/recaptcha/api.js'></script>
 </head>
 <body>
-    <nav class="navbar navbar-inverse navbar-fixed-top" id="topBanner">
-        <div class="container size1300">
-            <div class="navbar-header">
-                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <a asp-page="/Index">
-                    @if (_config.GetValue<bool>("UseHeaderImage"))
-                    {
-                        <div class="headerImg"></div>
-                    }
-                    else
-                    {
-                        <h2 style="color:white; font-weight:bold">
-                            @Html.Raw(_config.GetValue<string>("ForumName"))
-                        </h2>
-                    }
-                </a>
+	<nav class="navbar navbar-inverse navbar-fixed-top" id="topBanner">
+		<div class="container size1300">
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+					<span class="sr-only">Toggle navigation</span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+				<a asp-page="/Index">
+					@if (_config.GetValue<bool>("UseHeaderImage"))
+					{
+						<div class="headerImg"></div>
+					}
+					else
+					{
+						<h2 style="color:white; font-weight:bold">
+							@Html.Raw(_config.GetValue<string>("ForumName"))
+						</h2>
+					}
+				</a>
 
-            </div>
-            <div class="navbar-collapse collapse">
-                <form action="/Login" method="get" name="loginForm">
-                    <input name="ReturnUrl" type="hidden" value="@HttpUtility.UrlEncode(Context.Request.Path + Context.Request.QueryString)" />
-                </form>
-                <form action="/Logout" method="get" name="logoutForm">
-                    <input name="ReturnUrl" type="hidden" value="@HttpUtility.UrlEncode(Context.Request.Path + Context.Request.QueryString)" />
-                </form>
-                <ul style="float:right; padding-top:10px; list-style:none; line-height:1.5em;">
-                    @{
-                        var isTopic = ViewContext.RouteData.Values["page"]?.ToString() == "/ViewTopic";
-                        if (string.IsNullOrWhiteSpace(currentUser?.Username) || (currentUser?.IsAnonymous ?? true))
-                        {
-                            <li>
-                                <a href="javascript:loginForm.submit()">
-                                    <span style="width:25px; display:inline-block">&#x2705;</span>
-                                    @Html.Raw(_translationProvider.BasicText[lang, "LOGIN", Casing.FirstUpper])
-                                </a>
-                            </li>
-                            <li>
-                                <a asp-page="/Register">
-                                    <span style="width:25px; display:inline-block">&#x1F4C3;</span>
-                                    @Html.Raw(_translationProvider.BasicText[lang, "REGISTER", Casing.FirstUpper])
-                                </a>
-                            </li>
-                        }
-                        else
-                        {
-                            <li>
-                                <a asp-page="/User" asp-route-UserId="@currentUser.UserId">
-                                    <span style="text-shadow: 0 0 4px white; width:25px; display:inline-block">&#x1F464;</span>
-                                    @Html.Raw($"{_translationProvider.BasicText[lang, "MY_ACCOUNT", Casing.FirstUpper]} [{currentUser.Username}]")
-                                </a>
-                            </li>
-                            if (currentUser.HasPrivateMessagePermissions)
-                            {
-                                <li>
-                                    <a asp-page="/PrivateMessages">
-                                        <span style="width:25px; display:inline-block">&#x1F5E8;</span>
-                                        @Html.Raw(_translationProvider.BasicText[lang, "PRIVATE_MESSAGING", Casing.FirstUpper])
-                                    </a>
-                                </li>
-                            }
+			</div>
+			<div class="navbar-collapse collapse">
+				<form action="/Login" method="get" name="loginForm">
+					<input name="ReturnUrl" type="hidden" value="@HttpUtility.UrlEncode(Context.Request.Path + Context.Request.QueryString)" />
+				</form>
+				<form action="/Logout" method="get" name="logoutForm">
+					<input name="ReturnUrl" type="hidden" value="@HttpUtility.UrlEncode(Context.Request.Path + Context.Request.QueryString)" />
+				</form>
+				<ul style="float:right; padding-top:10px; list-style:none; line-height:1.5em;">
+					@{
+						var isTopic = ViewContext.RouteData.Values["page"]?.ToString() == "/ViewTopic";
+						if (string.IsNullOrWhiteSpace(currentUser?.Username) || (currentUser?.IsAnonymous ?? true))
+						{
+							<li>
+								<a href="javascript:loginForm.submit()">
+									<span style="width:25px; display:inline-block">&#x2705;</span>
+									@Html.Raw(_translationProvider.BasicText[lang, "LOGIN", Casing.FirstUpper])
+								</a>
+							</li>
+							<li>
+								<a asp-page="/Register">
+									<span style="width:25px; display:inline-block">&#x1F4C3;</span>
+									@Html.Raw(_translationProvider.BasicText[lang, "REGISTER", Casing.FirstUpper])
+								</a>
+							</li>
+						}
+						else
+						{
+							<li>
+								<a asp-page="/User" asp-route-UserId="@currentUser.UserId">
+									<span style="text-shadow: 0 0 4px white; width:25px; display:inline-block">&#x1F464;</span>
+									@Html.Raw($"{_translationProvider.BasicText[lang, "MY_ACCOUNT", Casing.FirstUpper]} [{currentUser.Username}]")
+								</a>
+							</li>
+							if (currentUser.HasPrivateMessagePermissions)
+							{
+								<li>
+									<a asp-page="/PrivateMessages">
+										<span style="width:25px; display:inline-block">&#x1F5E8;</span>
+										@Html.Raw(_translationProvider.BasicText[lang, "PRIVATE_MESSAGING", Casing.FirstUpper])
+									</a>
+								</li>
+							}
 
-                        }
+						}
 
-                        <li>
-                            <a asp-page="/Search" asp-route-QueryString="@HttpUtility.UrlEncode(Context.Request.QueryString.ToString())">
-                                <span style="width:25px; display:inline-block">&#x1F50E;</span>
-                                @Html.Raw(string.Format(_translationProvider.BasicText[lang, "SEARCH_IN_FORMAT"], isTopic ? _translationProvider.BasicText[lang, "TOPIC", Casing.AllLower] : _translationProvider.BasicText[lang, "FORUM", Casing.AllLower]))
-                            </a>
-                        </li>
+						<li>
+							<a asp-page="/Search" asp-route-QueryString="@HttpUtility.UrlEncode(Context.Request.QueryString.ToString())">
+								<span style="width:25px; display:inline-block">&#x1F50E;</span>
+								@Html.Raw(string.Format(_translationProvider.BasicText[lang, "SEARCH_IN_FORMAT"], isTopic ? _translationProvider.BasicText[lang, "TOPIC", Casing.AllLower] : _translationProvider.BasicText[lang, "FORUM", Casing.AllLower]))
+							</a>
+						</li>
 
-                        if (!(string.IsNullOrWhiteSpace(currentUser?.Username) || (currentUser?.IsAnonymous ?? true)))
-                        {
-                            <li>
-                                <a href="javascript:logoutForm.submit()">
-                                    <span style="width:25px; display:inline-block">&#x274C;</span>
-                                    @Html.Raw(_translationProvider.BasicText[lang, "LOGOUT", Casing.FirstUpper])
-                                </a>
-                            </li>
-                        }
-                    }
-                </ul><br /> <br />
-            </div>
-        </div>
-    </nav>
-    <div class="container body-content size1300" id="mainContainer">
-        <center>
-            @{
-                var pmCount = 0;
-                var displayedBox = false;
-                if (currentUser?.IsAnonymous == false)
-                {
-                    pmCount = await _userService.GetUnreadPMCount(currentUser!.UserId);
-                }
+						if (!(string.IsNullOrWhiteSpace(currentUser?.Username) || (currentUser?.IsAnonymous ?? true)))
+						{
+							<li>
+								<a href="javascript:logoutForm.submit()">
+									<span style="width:25px; display:inline-block">&#x274C;</span>
+									@Html.Raw(_translationProvider.BasicText[lang, "LOGOUT", Casing.FirstUpper])
+								</a>
+							</li>
+						}
+					}
+				</ul><br /> <br />
+			</div>
+		</div>
+	</nav>
+	<div class="container body-content size1300" id="mainContainer">
+		<center>
+			@{
+				var pmCount = 0;
+				var displayedBox = false;
+				if (currentUser?.IsAnonymous == false)
+				{
+					pmCount = await _userService.GetUnreadPMCount(currentUser!.UserId);
+				}
 
-                if (pmCount > 0)
-                {
-                    <p style="clear:both"></p>
-                    <span class="Unread" style="padding:5px; font-size:1.2em">
-                        <a asp-page="/PrivateMessages" asp-route-Show="Inbox">@pmCount @Html.Raw(pmCount > 1 ? _translationProvider.BasicText[lang, "UNREAD_MESSAGES", Casing.AllLower] : _translationProvider.BasicText[lang, "UNREAD_MESSAGE", Casing.AllLower])</a>
-                    </span>
-                    <p style="clear:both"></p>
-                    displayedBox = true;
-                }
+				if (pmCount > 0)
+				{
+					<p style="clear:both"></p>
+					<span class="Unread" style="padding:5px; font-size:1.2em">
+						<a asp-page="/PrivateMessages" asp-route-Show="Inbox">@pmCount @Html.Raw(pmCount > 1 ? _translationProvider.BasicText[lang, "UNREAD_MESSAGES", Casing.AllLower] : _translationProvider.BasicText[lang, "UNREAD_MESSAGE", Casing.AllLower])</a>
+					</span>
+					<p style="clear:both"></p>
+					displayedBox = true;
+				}
 
-                if (currentUser is not null && await _userService.IsUserModeratorInForum(currentUser, forumId))
-                {
-                    var reports = await _moderatorService.GetReportedMessages(forumId);
-                    if (reports.Any())
-                    {
-                        if (!displayedBox)
-                        {
-                            <p style="clear:both"></p>
-                        }
-                        <div class="ReportedPost" style="margin:5px; padding:5px; width: max-content; max-width: 100%">
-                            <h4>@Html.Raw(reports.Count() > 1 ? _translationProvider.Moderator[lang, "OPEN_REPORTS", Casing.Title] : _translationProvider.Moderator[lang, "OPEN_REPORT", Casing.Title])</h4>
-                            @foreach (var r in reports)
-                            {
-                                <a asp-page="ViewTopic" asp-page-handler="byPostId" asp-route-postId="@r.PostId">@Html.Raw(r.ReasonTitle)</a> <br />
-                            }
-                        </div>
-                        displayedBox = true;
-                    }
-                }
+				if (currentUser is not null && await _userService.IsUserModeratorInForum(currentUser, forumId))
+				{
+					var reports = await _moderatorService.GetReportedMessages(forumId);
+					if (reports.Any())
+					{
+						if (!displayedBox)
+						{
+							<p style="clear:both"></p>
+						}
+						<div class="ReportedPost" style="margin:5px; padding:5px; width: max-content; max-width: 100%">
+							<h4>@Html.Raw(reports.Count() > 1 ? _translationProvider.Moderator[lang, "OPEN_REPORTS", Casing.Title] : _translationProvider.Moderator[lang, "OPEN_REPORT", Casing.Title])</h4>
+							@foreach (var r in reports)
+							{
+								<a asp-page="ViewTopic" asp-page-handler="byPostId" asp-route-postId="@r.PostId">@Html.Raw(r.ReasonTitle)</a> <br />
+							}
+						</div>
+						displayedBox = true;
+					}
+				}
 
-                if (currentUser?.ShouldConfirmEmail == true)
-                {
-                    if (!displayedBox)
-                    {
-                        <p style="clear:both"></p>
-                    }
-                    <div class="ReportedPost" style="margin:5px; padding:5px; width: max-content; max-width: 100%">
-                        <h4>
-                            @Html.Raw(string.Format(_translationProvider.BasicText[lang, "EMAIL_NOT_CONFIRMED_WARNING_FORMAT"], currentUser.EmailAddress!))
-                        </h4>
-                        <a asp-page="Confirm" asp-page-handler="sendConfirmationEmail">
-                            @Html.Raw(_translationProvider.BasicText[lang, "SEND_VERIFICATION_EMAIL"])
-                        </a> 
-                        <br />
-                        <a asp-page="User" asp-route-userId="@currentUser.UserId" asp-route-viewAsAnother="false" asp-route-manageFoes="false">
-                            @Html.Raw(_translationProvider.BasicText[lang, "CHANGE_EMAIL_ADDRESS"])
-                        </a>
-                    </div>
-                    displayedBox = true;
-                }
-            }
-        </center>
-        @RenderBody()
-    </div>
-    <p></p>
-    <div class="ThemeLayoutAndColor">
-        <div class="container body-content size1300 ParentLayoutAndColor">
-            @Html.Raw(_translationProvider.BasicText[lang, "STARTING_ON"])
-            <formatted-date date="@((statistics.FirstMessageDate ?? DateTime.UtcNow).ToString("o"))" format="@dateFormat" />
-            @Html.Raw(string.Format(_translationProvider.BasicText[lang, "FORUM_STATS_FORMAT"], statistics.UserCount, statistics.PostCount, statistics.TopicCount, statistics.ForumCount))
-            @if (currentUser?.IsAnonymous == false)
-            {
-                <span>&nbsp;&bull;&nbsp;</span>
-                <a asp-page="Statistics">
-                    @Html.Raw(_translationProvider.BasicText[lang, "FORUM_STATS_SEE_MORE"])
-                </a>
-            }
-        </div>
-        <center style="color:white;">
-            <p>&nbsp;</p>
-            @*specific metrouusor*@
-            <p>
-                &copy; 2009 - @DateTime.UtcNow.Year
-                <a href="https://metrouusor.com">
-                    Asociația „Metrou Ușor”
-                </a>
-            </p>
-            <p>
-                Powered by
-                <a href="https://github.com/costinbanu/PhpbbInDotnet" target="_blank">
-                    PhpBB In DotNet
-                </a>
-            </p>
-            <p>
-                <a asp-page="/TermsAndConditions">
-                    @_translationProvider.BasicText[lang, "TERMS", Casing.Title]
-                </a>
-            </p>
-            @if (currentUser is not null && await _userService.IsUserModeratorInForum(currentUser, forumId))
-            {
-                <p>
-                    <a href="./Moderator@(forumId > 0 ? $"?forumId={forumId}" : "")">
-                        @Html.Raw(_translationProvider.Moderator[lang, "MOD_PANEL", Casing.Title])
-                    </a>
-                </p>
-            }
-            @if (currentUser is not null &&  await _userService.IsAdmin(currentUser))
-            {
-                <p>
-                    <a asp-page="./Admin">
-                        @Html.Raw(_translationProvider.Admin[lang, "ADMIN_PANEL", Casing.Title])
-                    </a>
-                </p>
-            }
-        </center>
-        <p></p>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.js" data-cfasync="false"></script>
-    <script>
-        window.cookieconsent.initialise({
-            "palette": {
-                "popup": {
-                    "background": "#edeff5",
-                    "text": "#838391"
-                },
-                "button": {
-                    "background": "#4b81e8"
-                }
-            },
-            "showLink": true,
-            "theme": "edgeless",
-            "content": {
-                "message": "@Html.Raw(_translationProvider.BasicText[lang, "COOKIES_BOX_MESSAGE"])",
-                "dismiss": "@Html.Raw(_translationProvider.BasicText[lang, "COOKIES_BOX_DISMISS"])",
-                "link": "@Html.Raw(_translationProvider.BasicText[lang, "COOKIES_BOX_LINK_TEXT"])",
-                "href": "./AboutCookies"
-            }
-        });
-    </script>
+				if (currentUser?.ShouldConfirmEmail == true)
+				{
+					if (!displayedBox)
+					{
+						<p style="clear:both"></p>
+					}
+					<div class="ReportedPost" style="margin:5px; padding:5px; width: max-content; max-width: 100%">
+						<h4>
+							@Html.Raw(string.Format(_translationProvider.BasicText[lang, "EMAIL_NOT_CONFIRMED_WARNING_FORMAT"], currentUser.EmailAddress!))
+						</h4>
+						<a asp-page="Confirm" asp-page-handler="sendConfirmationEmail">
+							@Html.Raw(_translationProvider.BasicText[lang, "SEND_VERIFICATION_EMAIL"])
+						</a>
+						<br />
+						<a asp-page="User" asp-route-userId="@currentUser.UserId" asp-route-viewAsAnother="false" asp-route-manageFoes="false">
+							@Html.Raw(_translationProvider.BasicText[lang, "CHANGE_EMAIL_ADDRESS"])
+						</a>
+					</div>
+					displayedBox = true;
+				}
+
+				if (_config.GetValue<bool>("ForumIsReadOnly"))
+				{
+					if (!displayedBox)
+					{
+						<p style="clear:both"></p>
+					}
+					<div class="ReportedPost" style="margin:5px; padding:5px; width: max-content; max-width: 100%">
+						<h4>
+							@Html.Raw(_translationProvider.Errors[lang, "FORUM_IS_READ_ONLY"])
+						</h4>
+					</div>
+					displayedBox = true;
+				}
+			}
+		</center>
+		@RenderBody()
+	</div>
+	<p></p>
+	<div class="ThemeLayoutAndColor">
+		<div class="container body-content size1300 ParentLayoutAndColor">
+			@Html.Raw(_translationProvider.BasicText[lang, "STARTING_ON"])
+			<formatted-date date="@((statistics.FirstMessageDate ?? DateTime.UtcNow).ToString("o"))" format="@dateFormat" />
+			@Html.Raw(string.Format(_translationProvider.BasicText[lang, "FORUM_STATS_FORMAT"], statistics.UserCount, statistics.PostCount, statistics.TopicCount, statistics.ForumCount))
+			@if (currentUser?.IsAnonymous == false)
+			{
+				<span>&nbsp;&bull;&nbsp;</span>
+				<a asp-page="Statistics">
+					@Html.Raw(_translationProvider.BasicText[lang, "FORUM_STATS_SEE_MORE"])
+				</a>
+			}
+		</div>
+		<center style="color:white;">
+			<p>&nbsp;</p>
+			@*specific metrouusor*@
+			<p>
+				&copy; 2009 - @DateTime.UtcNow.Year
+				<a href="https://metrouusor.com">
+					Asociația „Metrou Ușor”
+				</a>
+			</p>
+			<p>
+				Powered by
+				<a href="https://github.com/costinbanu/PhpbbInDotnet" target="_blank">
+					PhpBB In DotNet
+				</a>
+			</p>
+			<p>
+				<a asp-page="/TermsAndConditions">
+					@_translationProvider.BasicText[lang, "TERMS", Casing.Title]
+				</a>
+			</p>
+			@if (currentUser is not null && await _userService.IsUserModeratorInForum(currentUser, forumId))
+			{
+				<p>
+					<a href="./Moderator@(forumId > 0 ? $"?forumId={forumId}" : "")">
+						@Html.Raw(_translationProvider.Moderator[lang, "MOD_PANEL", Casing.Title])
+					</a>
+				</p>
+			}
+			@if (currentUser is not null && await _userService.IsAdmin(currentUser))
+			{
+				<p>
+					<a asp-page="./Admin">
+						@Html.Raw(_translationProvider.Admin[lang, "ADMIN_PANEL", Casing.Title])
+					</a>
+				</p>
+			}
+		</center>
+		<p></p>
+	</div>
+	<script src="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.js" data-cfasync="false"></script>
+	<script>
+		window.cookieconsent.initialise({
+			"palette": {
+				"popup": {
+					"background": "#edeff5",
+					"text": "#838391"
+				},
+				"button": {
+					"background": "#4b81e8"
+				}
+			},
+			"showLink": true,
+			"theme": "edgeless",
+			"content": {
+				"message": "@Html.Raw(_translationProvider.BasicText[lang, "COOKIES_BOX_MESSAGE"])",
+				"dismiss": "@Html.Raw(_translationProvider.BasicText[lang, "COOKIES_BOX_DISMISS"])",
+				"link": "@Html.Raw(_translationProvider.BasicText[lang, "COOKIES_BOX_LINK_TEXT"])",
+				"href": "./AboutCookies"
+			}
+		});
+	</script>
 </body>
 </html>

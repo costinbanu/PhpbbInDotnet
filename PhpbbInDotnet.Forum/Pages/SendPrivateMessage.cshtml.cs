@@ -122,7 +122,7 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public Task<IActionResult> OnPostSubmit()
-            => WithRegisteredUser(user => WithValidInput(async () =>
+            => WithRegisteredUserAndCorrectSettings(user => WithValidInput(async () =>
             {
                 var lang = Language;
 
@@ -146,7 +146,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }));
 
         public Task<IActionResult> OnPostPreview()
-            => WithRegisteredUser(user => WithValidInput(async () =>
+            => WithRegisteredUserAndCorrectSettings(user => WithValidInput(async () =>
             {
                 var lang = Language;
                 var newPostText = PostText;
@@ -163,5 +163,15 @@ namespace PhpbbInDotnet.Forum.Pages
                 };
                 return Page();
             }));
-    }
+
+		private Task<IActionResult> WithRegisteredUserAndCorrectSettings(Func<ForumUserExpanded, Task<IActionResult>> toDo)
+	        => WithRegisteredUser(async user =>
+	        {
+		        if (_config.GetValue<bool>("ForumIsReadOnly"))
+		        {
+			        return Unauthorized();
+		        }
+		        return await toDo(user);
+	        });
+	}
 }
