@@ -273,3 +273,6 @@ __pycache__/
 /PhpbbInDotnet.Forum/appsettings.Production.json
 /PhpbbInDotnet.Forum/appsettings.json
 /PhpbbInDotnet.Forum/appsettings.Development.json
+/PhpbbInDotnet.Forum/Properties/ServiceDependencies/metrouusor-forum-as - Zip Deploy/profile.arm.json
+/PhpbbInDotnet.Forum/Properties/PublishProfiles/metrouusor-forum-as - Zip Deploy.pubxml
+/PhpbbInDotnet.Forum/Properties/PublishProfiles/FolderProfile.pubxml

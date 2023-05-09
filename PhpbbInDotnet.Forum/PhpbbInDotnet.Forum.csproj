@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
-    <UserSecretsId>d3c5a46f-f000-450d-b479-599c78119804</UserSecretsId>
     <TypeScriptToolsVersion>3.1</TypeScriptToolsVersion>
   </PropertyGroup>
   <PropertyGroup>
@@ -9,10 +8,8 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="BuildBundlerMinifier" Version="3.2.449" />
-    <PackageReference Include="DeviceDetector.NET" Version="4.3.2" />
+    <PackageReference Include="DeviceDetector.NET" Version="6.1.0" />
     <PackageReference Include="LazyCache.AspNetCore" Version="2.4.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="6.0.10" Condition="'$(Configuration)' == 'Debug'" />
-    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="6.0.10" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\PhpbbInDotnet.Database\PhpbbInDotnet.Database.csproj" />
@@ -26,6 +23,9 @@
     <Content Update="web.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Update="wwwroot\favicon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Update="wwwroot\robots.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -34,12 +34,7 @@
     <Content Update="wwwroot\logs\**" CopyToPublishDirectory="Never" />
     <Content Update="logs\**" CopyToPublishDirectory="Never" />
   </ItemGroup>
-  <!-- https://github.com/grpc/grpc-dotnet/issues/329#issuecomment-502309756 IAsyncEnumerable fix -->
-  <Target Name="ChangeAliasesOfReactiveExtensions" BeforeTargets="FindReferenceAssembliesForReferences;ResolveReferences">
-    <ItemGroup>
-      <ReferencePath Condition="'%(FileName)' == 'System.Interactive.Async'">
-        <Aliases>ix</Aliases>
-      </ReferencePath>
-    </ItemGroup>
-  </Target>
+  <ItemGroup>
+    <Folder Include="wwwroot\forumfiles\" />
+  </ItemGroup>
 </Project>
