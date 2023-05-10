@@ -183,6 +183,7 @@
     "INVALID_EMOJI_CODE_FORMAT": "Fișierul {0} nu are coduri / scurtături valide.",
     "MISSING_EMOJI_FILE_FORMAT": "Codul {0} nu este asociat cu un fișier valid.",
     "EMOJI_NOT_UPLOADED_FORMAT": "Fișierul {0} nu a putut fi încărcat. Încearcă mai târziu.",
+    "EMOJI_NOT_DELETED_FORMAT": "Emoji-ul {0} nu a putut fi șters. Încearcă mai târziu.",
 
     //LOGS
     "SYSTEM_LOGS": "Loguri sistem",

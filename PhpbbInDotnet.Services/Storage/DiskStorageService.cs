@@ -16,20 +16,15 @@ namespace PhpbbInDotnet.Services.Storage
 	class DiskStorageService : BaseStorageService
 	{
 		private readonly IConfiguration _config;
-		private readonly IWebHostEnvironment _environment;
-		private readonly ILogger _logger;
 
 		public DiskStorageService(IConfiguration config, IWebHostEnvironment environment, ISqlExecuter sqlExecuter, ILogger logger)
-			: base(config, sqlExecuter)
+			: base(config, sqlExecuter, environment, logger)
 		{
 			_config = config;
-			_environment = environment;
-			_logger = logger;
 		}
 
-		protected override string AttachmentsPath => Path.Combine(_environment.WebRootPath, StorageOptions.Files!);
-		protected override string AvatarsPath => Path.Combine(_environment.WebRootPath, StorageOptions.Avatars!);
-		protected override string EmojiPath => Path.Combine(_environment.WebRootPath, StorageOptions.Emojis!);
+		protected override string AttachmentsPath => Path.Combine(Environment.WebRootPath, StorageOptions.Files!);
+		protected override string AvatarsPath => Path.Combine(Environment.WebRootPath, StorageOptions.Avatars!);
 
 		public override async Task<(IEnumerable<PhpbbAttachments> SucceededUploads, IEnumerable<string> FailedUploads)> BulkAddAttachments(IEnumerable<IFormFile> attachedFiles, int userId)
 		{
@@ -51,7 +46,7 @@ namespace PhpbbInDotnet.Services.Storage
 				}
 				catch (Exception ex)
 				{
-					_logger.Error(ex, "Error uploading attachment by user {id}.", userId);
+					Logger.Error(ex, "Error uploading attachment by user {id}.", userId);
 					failed.Add(file.FileName);
 				}
 			}
@@ -80,7 +75,7 @@ namespace PhpbbInDotnet.Services.Storage
 			}
 			catch (Exception ex)
 			{
-				_logger.Error(ex);
+				Logger.Error(ex);
 				return null;
 			}
 		}
@@ -97,7 +92,7 @@ namespace PhpbbInDotnet.Services.Storage
 			}
 			catch (Exception ex)
 			{
-				_logger.Error(ex, "Error uploading avatar.");
+				Logger.Error(ex, "Error uploading avatar.");
 				return false;
 			}
 		}
@@ -121,27 +116,11 @@ namespace PhpbbInDotnet.Services.Storage
 				}
 				catch (Exception ex)
 				{
-					_logger.Error(ex, "Error deleting file '{file}'.", file);
+					Logger.Error(ex, "Error deleting file '{file}'.", file);
 					failed.Add(file);
 				}
 			}
 			return (succeeded, failed);
-		}
-
-		public override async Task<bool> UpsertEmoji(string name, Stream file)
-		{
-			try
-			{
-				using var fs = File.OpenWrite(Path.Combine(EmojiPath, name));
-				await file.CopyToAsync(fs);
-				await fs.FlushAsync();
-				return true;
-			}
-			catch (Exception ex)
-			{
-				_logger.Error(ex, "Error uploading emoji '{name}'", name);
-				return false;
-			}
 		}
 
 		public override Task WriteAllTextToFile(string path, string contents)
@@ -164,7 +143,6 @@ namespace PhpbbInDotnet.Services.Storage
 			{
 				FileType.Attachment => Path.Combine(AttachmentsPath, name),
 				FileType.Avatar => Path.Combine(AvatarsPath, name),
-				FileType.Emoji => Path.Combine(EmojiPath, name),
 				_ => throw new ArgumentException($"Unknown value '{fileType}'.", nameof(fileType))
 			};
 
@@ -181,7 +159,7 @@ namespace PhpbbInDotnet.Services.Storage
 			}
 			catch (Exception ex)
 			{
-				_logger.Error(ex, "Error deleting file '{name}'.", name);
+				Logger.Error(ex, "Error deleting file '{name}'.", name);
 			}
 			return false;
 		}

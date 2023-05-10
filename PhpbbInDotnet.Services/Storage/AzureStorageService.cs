@@ -1,5 +1,6 @@
 ﻿using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
@@ -19,20 +20,17 @@ namespace PhpbbInDotnet.Services.Storage
 	class AzureStorageService : BaseStorageService
 	{
 		private readonly IConfiguration _config;
-		private readonly ILogger _logger;
 		private readonly BlobContainerClient _blobContainerClient;
 
-		public AzureStorageService(IConfiguration config, ISqlExecuter sqlExecuter, ILogger logger, BlobContainerClient blobContainerClient)
-			: base(config, sqlExecuter)
+		public AzureStorageService(IConfiguration config, ISqlExecuter sqlExecuter, IWebHostEnvironment environment, ILogger logger, BlobContainerClient blobContainerClient)
+			: base(config, sqlExecuter, environment, logger)
 		{
 			_config = config;
-			_logger = logger;
 			_blobContainerClient = blobContainerClient;
 		}
 
 		protected override string AttachmentsPath => StorageOptions.Files!;
 		protected override string AvatarsPath =>  StorageOptions.Avatars!;
-		protected override string EmojiPath => StorageOptions.Emojis!;
 
 		public override async Task<(IEnumerable<PhpbbAttachments> SucceededUploads, IEnumerable<string> FailedUploads)> BulkAddAttachments(IEnumerable<IFormFile> attachedFiles, int userId)
 		{
@@ -52,7 +50,7 @@ namespace PhpbbInDotnet.Services.Storage
 				}
 				catch (Exception ex)
 				{
-					_logger.Error(ex, "Error uploading attachment by user {id}.", userId);
+					Logger.Error(ex, "Error uploading attachment by user {id}.", userId);
 					failedUploads.Add(file.FileName);
 				}
 			}));
@@ -68,7 +66,7 @@ namespace PhpbbInDotnet.Services.Storage
 				catch (Exception ex)
 				{
 					failedUploads.Add(uploadedFileName);
-					_logger.Error(ex, "Error uploading attachment by user {id}.", userId);
+					Logger.Error(ex, "Error uploading attachment by user {id}.", userId);
 				}
 			}
 
@@ -113,7 +111,7 @@ namespace PhpbbInDotnet.Services.Storage
 			}
 			catch (Exception ex)
 			{
-				_logger.Error(ex);
+				Logger.Error(ex);
 				return null;
 			}
 		}
@@ -152,22 +150,7 @@ namespace PhpbbInDotnet.Services.Storage
 			}
 			catch (Exception ex)
 			{
-				_logger.Error(ex, "Error uploading avatar.");
-				return false;
-			}
-		}
-
-		public override async Task<bool> UpsertEmoji(string name, Stream contents)
-		{
-			try
-			{
-				using var destination = await _blobContainerClient.GetBlobClient(CombineToRelativePath(EmojiPath, name)).OpenWriteAsync(overwrite: true);
-				await contents.CopyToAsync(destination);
-				return true;
-			}
-			catch (Exception ex)
-			{
-				_logger.Error(ex, "Error uploading emoji '{name}'", name);
+				Logger.Error(ex, "Error uploading avatar.");
 				return false;
 			}
 		}
@@ -190,7 +173,6 @@ namespace PhpbbInDotnet.Services.Storage
 			{
 				FileType.Attachment => CombineToRelativePath(AttachmentsPath, name),
 				FileType.Avatar => CombineToRelativePath(AvatarsPath, name),
-				FileType.Emoji => CombineToRelativePath(EmojiPath, name),
 				_ => throw new ArgumentException($"Unknown value '{fileType}'.", nameof(fileType))
 			};
 
@@ -203,7 +185,7 @@ namespace PhpbbInDotnet.Services.Storage
 			}
 			catch (Exception ex)
 			{
-				_logger.Error(ex, "Error deleting file '{name}'.", name);
+				Logger.Error(ex, "Error deleting file '{name}'.", name);
 				return false;
 			}
 		}

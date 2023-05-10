@@ -231,16 +231,17 @@ namespace PhpbbInDotnet.Services
                     await _sqlExecuter.ExecuteAsync("DELETE FROM phpbb_smilies WHERE smiley_url IN @smileyGroupsToDelete", new { smileyGroupsToDelete });
                 }
 
-                var maxOrder = await _context.PhpbbSmilies.AsNoTracking().DefaultIfEmpty().MaxAsync(s => s == null ? 0 : s.SmileyOrder);
+                var maxOrder = await _sqlExecuter.ExecuteScalarAsync<int>("SELECT MAX(smiley_order) FROM phpbb_smilies");
 
                 Dictionary<string, int>? orders = null;
                 HashSet<int>? codesToDeleteHashSet = null;
                 HashSet<string>? smileyGroupsToDeleteHashSet = null;
                 await Task.WhenAll(
-                    Task.Run(() => dto.Where(d => !smileyGroupsToDelete.Contains(d.Url!)).ToDictionary(k => k.Url!, v => v.Codes!.Count(c => !codesToDelete.Contains(c.Id)))).ContinueWith(async countsTask =>
+                    Task.Run(() =>
                     {
-                        var counts = await countsTask;
-                        var increment = 1;
+                        var counts = dto.Where(d => (!string.IsNullOrWhiteSpace(d.Url) || !string.IsNullOrWhiteSpace(d.File?.FileName)) && !smileyGroupsToDelete.Contains(d.Url!))
+                                        .ToDictionary(k => (k.Url ?? k.File?.FileName)!, v => v.Codes!.Count(c => !codesToDelete.Contains(c.Id)));
+						var increment = 1;
                         orders = new Dictionary<string, int>(newOrder.Count);
                         for (var i = 0; i < newOrder.Count; i++)
                         {
@@ -313,16 +314,35 @@ namespace PhpbbInDotnet.Services
                     }
                 }
 
-                if (flatSource.Count == 0)
+                if (errors.Count == 0)
                 {
-                    return (string.Join(Environment.NewLine, errors), false);
+                    if (flatSource.Count != 0)
+                    {
+                        await _context.PhpbbSmilies.AddRangeAsync(flatSource.Where(s => s.SmileyId == 0));
+                        _context.PhpbbSmilies.UpdateRange(flatSource.Where(s => s.SmileyId != 0));
+                    }
+
+                    foreach (var code in codesToDelete)
+                    {
+                        var toRemove = await _context.PhpbbSmilies.FirstOrDefaultAsync(s => s.SmileyId == code);
+                        if (toRemove is not null)
+                        {
+                            _context.PhpbbSmilies.Remove(toRemove);
+                        }
+                    }
+
+                    foreach (var smileyUrl in smileyGroupsToDelete)
+                    {
+                        _context.PhpbbSmilies.RemoveRange(_context.PhpbbSmilies.Where(s => s.SmileyUrl == smileyUrl));
+                        if (!await _storageService.DeleteEmoji(smileyUrl))
+                        {
+                            errors.Add(string.Format(_translationProvider.Admin[language, "EMOJI_NOT_DELETED_FORMAT"], smileyUrl));
+                        }
+                    }
+
+                    await _context.SaveChangesAsync();
                 }
-
-                await _context.PhpbbSmilies.AddRangeAsync(flatSource.Where(s => s.SmileyId == 0));
-                _context.PhpbbSmilies.UpdateRange(flatSource.Where(s => s.SmileyId != 0));
-                await _context.SaveChangesAsync();
-
-                if (errors.Count > 0)
+                else
                 {
                     _logger.Warning(new AggregateException(errors.Select(e => new Exception(e))), "Error managing emojis");
                     return (string.Join(Environment.NewLine, errors), null);

@@ -272,3 +272,5 @@ __pycache__/
 /PhpbbInDotnet.Forum/Properties/ServiceDependencies/metrouusor-forum-as - Zip Deploy/profile.arm.json
 /PhpbbInDotnet.Forum/Properties/PublishProfiles/metrouusor-forum-as - Zip Deploy.pubxml
 /PhpbbInDotnet.Forum/Properties/PublishProfiles/FolderProfile.pubxml
+/PhpbbInDotnet.Forum/wwwroot/images/smilies/
+/PhpbbInDotnet.Forum/wwwroot/images/smilies/loco/

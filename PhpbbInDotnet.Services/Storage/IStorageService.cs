@@ -19,7 +19,8 @@ namespace PhpbbInDotnet.Services.Storage
 		string? GetEmojiRelativeUrl(string name);
         Task<bool> UploadAvatar(int userId, Stream contents, string fileName);
         Task<bool> UpsertEmoji(string name, Stream contents);
-        Task WriteAllTextToFile(string path, string contents);
+        Task<bool> DeleteEmoji(string name);
+		Task WriteAllTextToFile(string path, string contents);
         Task<DateTime?> GetLastWriteTime(string path);
     }
 }
