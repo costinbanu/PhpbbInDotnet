@@ -5,6 +5,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <ServerGarbageCollection>false</ServerGarbageCollection>
+    <UserSecretsId>ce503996-6db2-42df-9120-e8cf931a5445</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="BuildBundlerMinifier" Version="3.2.449" />
