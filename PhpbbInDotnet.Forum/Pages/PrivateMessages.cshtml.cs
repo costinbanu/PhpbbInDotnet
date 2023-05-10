@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
@@ -17,7 +18,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    public class PrivateMessagesModel : AuthenticatedPageModel
+	public class PrivateMessagesModel : AuthenticatedPageModel
     {
         [BindProperty(SupportsGet = true)]
         public PrivateMessagesPages? Show { get; set; } = PrivateMessagesPages.Inbox;
@@ -55,8 +56,8 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IForumDbContext _dbContext;
 
         public PrivateMessagesModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, 
-            ITranslationProvider translationProvider, IBBCodeRenderingService renderingService, IForumDbContext dbContext)
-            : base(forumService, userService, sqlExecuter, translationProvider)
+            ITranslationProvider translationProvider, IBBCodeRenderingService renderingService, IForumDbContext dbContext, IConfiguration configuration)
+            : base(forumService, userService, sqlExecuter, translationProvider, configuration)
         {
             _renderingService = renderingService;
             _dbContext = dbContext;

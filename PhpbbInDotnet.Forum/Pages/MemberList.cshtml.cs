@@ -18,11 +18,10 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    public class MemberListModel : AuthenticatedPageModel
+	public class MemberListModel : AuthenticatedPageModel
     {
         public const int PAGE_SIZE = 20;
 
-        private readonly IConfiguration _config;
         private readonly IAnonymousSessionCounter _sessionCounter;
         private readonly IForumDbContext _dbContext;
 
@@ -54,9 +53,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public MemberListModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, IForumDbContext dbContext,
             ITranslationProvider translationProvider, IConfiguration config, IAnonymousSessionCounter sessionCounter)
-            : base(forumService, userService, sqlExecuter, translationProvider)
+            : base(forumService, userService, sqlExecuter, translationProvider, config)
         {
-            _config = config; 
             _sessionCounter = sessionCounter;
             _dbContext = dbContext;
         }
@@ -149,7 +147,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         await ResiliencyUtility.RetryOnceAsync(
                             toDo: async () =>
                             {
-                                var lastVisit = DateTime.UtcNow.Subtract(_config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1)).ToUnixTimestamp();
+                                var lastVisit = DateTime.UtcNow.Subtract(Configuration.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1)).ToUnixTimestamp();
                                 var userQuery = from u in _dbContext.PhpbbUsers.AsNoTracking()
                                                 where u.UserLastvisit >= lastVisit
                                                    && u.UserId != Constants.ANONYMOUS_USER_ID

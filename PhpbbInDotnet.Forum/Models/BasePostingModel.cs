@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Languages;
@@ -10,8 +11,9 @@ namespace PhpbbInDotnet.Forum.Models
 {
     public abstract class BasePostingModel : AuthenticatedPageModel
     {
-        public BasePostingModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider)
-            : base(forumService, userService, sqlExecuter, translationProvider)
+        public BasePostingModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, 
+            ITranslationProvider translationProvider, IConfiguration configuration)
+            : base(forumService, userService, sqlExecuter, translationProvider, configuration)
         { }
 
         [BindProperty]

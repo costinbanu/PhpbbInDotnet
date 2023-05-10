@@ -3,7 +3,6 @@ using Dapper;
 using LazyCache;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
@@ -24,12 +23,11 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [IgnoreAntiforgeryToken(Order = 1001), ResponseCache(NoStore = true, Duration = 0)]
+	[IgnoreAntiforgeryToken(Order = 1001), ResponseCache(NoStore = true, Duration = 0)]
     public class UserModel : AuthenticatedPageModel
     {
         [BindProperty]
@@ -98,7 +96,6 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IStorageService _storageService;
         private readonly IWritingToolsService _writingService;
         private readonly IOperationLogService _operationLogService;
-        private readonly IConfiguration _config;
         private readonly IEmailService _emailService;
         private readonly IForumDbContext _dbContext;
         private readonly ILogger _logger;
@@ -111,12 +108,11 @@ namespace PhpbbInDotnet.Forum.Pages
         public UserModel(IStorageService storageService, IWritingToolsService writingService, IOperationLogService operationLogService, IConfiguration config, 
             IEmailService emailService, IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, IImageResizeService imageResizeService,
             ITranslationProvider translationProvider, IForumDbContext dbContext, ILogger logger, IAppCache cache, IUserProfileDataValidationService validationService)
-            : base(forumService, userService, sqlExecuter, translationProvider)
+            : base(forumService, userService, sqlExecuter, translationProvider, config)
         {
             _storageService = storageService;
             _writingService = writingService;
             _operationLogService = operationLogService;
-            _config = config;
             _emailService = emailService;
             _dbContext = dbContext;
             _logger = logger;
@@ -149,6 +145,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
+            ThrowIfEntireForumIsReadOnly();
+
             if (!await CanEdit())
             {
                 return Unauthorized();
@@ -264,7 +262,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     var registrationCode = Guid.NewGuid().ToString("n");
                     dbUser.UserActkey = registrationCode;
 
-                    var subject = string.Format(TranslationProvider.Email[dbUser.UserLang, "EMAIL_CHANGED_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
+                    var subject = string.Format(TranslationProvider.Email[dbUser.UserLang, "EMAIL_CHANGED_SUBJECT_FORMAT"], Configuration.GetValue<string>("ForumName"));
                     await _emailService.SendEmail(
                         to: Email!,
                         subject: subject,
@@ -314,7 +312,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 Stream? output = null;
                 try
                 {
-                    var maxSize = _config.GetObject<ImageSize>("AvatarMaxSize");
+                    var maxSize = Configuration.GetObject<ImageSize>("AvatarMaxSize");
 					using var input = Avatar.OpenReadStream();
                     using var image = await Image.LoadAsync(input);
                     output = await _imageResizeService.ResizeImageByResolution(image, Avatar.FileName, Math.Max(maxSize.Width, maxSize.Height));

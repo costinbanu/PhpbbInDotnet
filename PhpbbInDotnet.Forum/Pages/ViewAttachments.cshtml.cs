@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
@@ -15,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [ValidateAntiForgeryToken]
+	[ValidateAntiForgeryToken]
     public class ViewAttachmentsModel : AuthenticatedPageModel
     {
         [BindProperty(SupportsGet = true)]
@@ -36,8 +37,8 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IForumDbContext _dbContext;
 
         public ViewAttachmentsModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, 
-            ITranslationProvider translationProvider, IForumDbContext dbContext)
-            : base(forumService, userService, sqlExecuter, translationProvider)
+            ITranslationProvider translationProvider, IForumDbContext dbContext, IConfiguration configuration)
+            : base(forumService, userService, sqlExecuter, translationProvider, configuration)
         {
             _dbContext = dbContext;
         }

@@ -74,9 +74,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public LoginMode Mode { get; private set; }
 
-        public LoginModel(IForumDbContext context, ISqlExecuter sqlExecuter, IConfiguration config, ITranslationProvider translationProvider, 
+        public LoginModel(IForumDbContext context, ISqlExecuter sqlExecuter, IConfiguration config, ITranslationProvider translationProvider, IConfiguration configuration,
             IEncryptionService encryptionService, IEmailService emailService, IUserService userService, IUserProfileDataValidationService validationService)
-            : base(translationProvider, userService)
+            : base(translationProvider, userService, configuration)
         {
             _context = context;
             _sqlExecuter = sqlExecuter;
@@ -165,6 +165,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPostResetPassword()
         {
+            ThrowIfEntireForumIsReadOnly();
             try
             {
                 var user = _context.PhpbbUsers.FirstOrDefault(
@@ -209,6 +210,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPostSaveNewPassword()
         {
+            ThrowIfEntireForumIsReadOnly();
             var validations = new[]
             {
                 _validationService.ValidatePassword(nameof(PwdResetErrorMessage), PwdResetFirstPassword),

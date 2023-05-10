@@ -22,8 +22,8 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IConfiguration _config;
 
         public SendPrivateMessageModel(IWritingToolsService writingService, IConfiguration config, IForumTreeService forumService, 
-            IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider)
-            : base(forumService, userService, sqlExecuter, translationProvider)
+            IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, IConfiguration configuration)
+            : base(forumService, userService, sqlExecuter, translationProvider, configuration)
         {
             _writingService = writingService;
             _config = config;
@@ -109,12 +109,18 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGetEdit()
             => await WithRegisteredUser(async (user) =>
             {
-                var pm = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPrivmsgs>("SELECT * FROM phpbb_privmsgs WHERE msg_id = @privateMessageId", new { PrivateMessageId });
+                ThrowIfEntireForumIsReadOnly();
+
+                var pm = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPrivmsgs>(
+                    "SELECT * FROM phpbb_privmsgs WHERE msg_id = @privateMessageId", 
+                    new { PrivateMessageId });
                 PostText = _writingService.CleanBbTextForDisplay(pm.MessageText, pm.BbcodeUid);
                 PostTitle = HttpUtility.HtmlDecode(pm.MessageSubject);
                 if ((ReceiverId ?? Constants.ANONYMOUS_USER_ID) != Constants.ANONYMOUS_USER_ID)
                 {
-                    ReceiverName = (await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @receiverId", new { ReceiverId }))?.Username;
+                    ReceiverName = (await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
+                        "SELECT * FROM phpbb_users WHERE user_id = @receiverId", 
+                        new { ReceiverId }))?.Username;
                 }
                 Action = PostingActions.EditPrivateMessage;
 
@@ -122,7 +128,7 @@ namespace PhpbbInDotnet.Forum.Pages
             });
 
         public Task<IActionResult> OnPostSubmit()
-            => WithRegisteredUserAndCorrectSettings(user => WithValidInput(async () =>
+            => WithRegisteredUser(user => WithValidInput(async () =>
             {
                 var lang = Language;
 
@@ -146,7 +152,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }));
 
         public Task<IActionResult> OnPostPreview()
-            => WithRegisteredUserAndCorrectSettings(user => WithValidInput(async () =>
+            => WithRegisteredUser(user => WithValidInput(async () =>
             {
                 var lang = Language;
                 var newPostText = PostText;
@@ -163,15 +169,5 @@ namespace PhpbbInDotnet.Forum.Pages
                 };
                 return Page();
             }));
-
-		private Task<IActionResult> WithRegisteredUserAndCorrectSettings(Func<ForumUserExpanded, Task<IActionResult>> toDo)
-	        => WithRegisteredUser(async user =>
-	        {
-		        if (_config.GetValue<bool>("ForumIsReadOnly"))
-		        {
-			        return Unauthorized();
-		        }
-		        return await toDo(user);
-	        });
 	}
 }

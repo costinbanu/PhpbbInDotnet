@@ -16,25 +16,22 @@ using System.IO;
 using System.Net.Mime;
 using System.Threading.Tasks;
 using System.Web;
-using IOFile = System.IO.File;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    public class FileModel : AuthenticatedPageModel
+	public class FileModel : AuthenticatedPageModel
     {
         private readonly IStorageService _storageService;
         private readonly FileExtensionContentTypeProvider _contentTypeProvider;
-        private readonly IConfiguration _config;
         private readonly IAppCache _cache;
         private readonly ILogger _logger;
 
         public FileModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, 
             IStorageService storageService, FileExtensionContentTypeProvider contentTypeProvider, IConfiguration config, IAppCache cache, ILogger logger)
-            : base(forumService, userService, sqlExecuter, translationProvider)
+            : base(forumService, userService, sqlExecuter, translationProvider, config)
         {
             _storageService = storageService;
             _contentTypeProvider = contentTypeProvider;
-            _config = config;
             _cache = cache;
             _logger = logger;
         }
@@ -84,7 +81,7 @@ namespace PhpbbInDotnet.Forum.Pages
         {
             string file;
             string getActualFileName(string fileName)
-                => $"{_config.GetValue<string>("AvatarSalt")}_{userId}{Path.GetExtension(fileName)}";
+                => $"{Configuration.GetValue<string>("AvatarSalt")}_{userId}{Path.GetExtension(fileName)}";
 
             if (correlationId.HasValue)
             {

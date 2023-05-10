@@ -243,6 +243,7 @@ namespace PhpbbInDotnet.Forum.Pages
         private Task<IActionResult> WithRegisteredUserAndCorrectPermissions(Func<ForumUserExpanded, Task<IActionResult>> toDo)
             => WithRegisteredUser(async user =>
             {
+                ThrowIfEntireForumIsReadOnly();
                 if (await ForumService.IsForumReadOnlyForUser(user, ForumId))
                 {
                     return Unauthorized();

@@ -7,18 +7,16 @@ using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Services.Storage;
 using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [ValidateAntiForgeryToken]
+	[ValidateAntiForgeryToken]
     public partial class PostingModel
     {
         [BindProperty(SupportsGet = true)]
@@ -103,7 +101,6 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IStorageService _storageService;
         private readonly IWritingToolsService _writingService;
         private readonly IBBCodeRenderingService _renderingService;
-        private readonly IConfiguration _config;
         private readonly ILogger _logger;
 		private readonly IImageResizeService _imageResizeService;
 
@@ -111,7 +108,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public PostingModel(IPostService postService, IStorageService storageService, IWritingToolsService writingService, IBBCodeRenderingService renderingService, IConfiguration config, ILogger logger,
             IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, IImageResizeService imageResizeService)
-            : base(forumService, userService, sqlExecuter, translationProvider)
+            : base(forumService, userService, sqlExecuter, translationProvider, config)
         {
             PollExpirationDaysString = "1";
             PollMaxOptions = 1;
@@ -120,7 +117,6 @@ namespace PhpbbInDotnet.Forum.Pages
             _storageService = storageService;
             _writingService = writingService;
             _renderingService = renderingService;
-            _config = config;
             _logger = logger;
             _imageResizeService = imageResizeService;
         }

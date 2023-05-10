@@ -73,11 +73,6 @@ namespace PhpbbInDotnet.Services
         
         public async Task<bool> IsForumReadOnlyForUser(ForumUserExpanded user, int forumId)
         {
-            if (_config.GetValue<bool>("ForumIsReadOnly"))
-            {
-                return true;
-            }
-
             var tree = await GetForumTree(user, false, false);
             var path = new List<int>();
             if (tree.TryGetValue(new ForumTree { ForumId = forumId }, out var cur))

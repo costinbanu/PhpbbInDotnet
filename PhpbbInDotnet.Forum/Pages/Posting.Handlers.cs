@@ -11,13 +11,12 @@ using PhpbbInDotnet.Objects.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    public partial class PostingModel
+	public partial class PostingModel
     {
         #region GET
 
@@ -158,8 +157,8 @@ namespace PhpbbInDotnet.Forum.Pages
                     return PageWithError(curForum, nameof(Files), TranslationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN"]);
                 }
 
-                var sizeLimit = _config.GetObject<AttachmentLimits>("UploadLimitsMB");
-                var countLimit = _config.GetObject<AttachmentLimits>("UploadLimitsCount");
+                var sizeLimit = Configuration.GetObject<AttachmentLimits>("UploadLimitsMB");
+                var countLimit = Configuration.GetObject<AttachmentLimits>("UploadLimitsCount");
                 var images = Files.Where(f => StringUtility.IsImageMimeType(f.ContentType));
                 var nonImages = Files.Where(f => !StringUtility.IsImageMimeType(f.ContentType));
 

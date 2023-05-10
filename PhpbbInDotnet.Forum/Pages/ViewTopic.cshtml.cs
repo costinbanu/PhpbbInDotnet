@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
@@ -19,7 +20,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [ValidateAntiForgeryToken]
+	[ValidateAntiForgeryToken]
     public class ViewTopicModel : AuthenticatedPageModel
     {
         [BindProperty]
@@ -102,8 +103,8 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IWritingToolsService _writingToolsService;
 
         public ViewTopicModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider,
-            IPostService postService, IModeratorService moderatorService, IWritingToolsService writingToolsService)
-            : base(forumService, userService, sqlExecuter, translationProvider)
+            IPostService postService, IModeratorService moderatorService, IWritingToolsService writingToolsService, IConfiguration configuration)
+            : base(forumService, userService, sqlExecuter, translationProvider, configuration)
         {
             _postService = postService; 
             _moderatorService = moderatorService; 

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
@@ -19,7 +20,7 @@ using IOFile = System.IO.File;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [RequestSizeLimit(10 * 1024 * 1024)]
+	[RequestSizeLimit(10 * 1024 * 1024)]
     public partial class AdminModel : AuthenticatedPageModel
     {
         [BindProperty]
@@ -76,9 +77,10 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IOperationLogService _logService;
         private readonly IForumDbContext _dbContext;
 
-        public AdminModel(IAdminUserService adminUserService, IAdminForumService adminForumService, IWritingToolsService adminWritingService, IOperationLogService logService, 
-            IForumDbContext dbContext, IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider)
-            : base(forumService, userService, sqlExecuter, translationProvider)
+        public AdminModel(IAdminUserService adminUserService, IAdminForumService adminForumService, IWritingToolsService adminWritingService, 
+            IOperationLogService logService, IForumDbContext dbContext, IForumTreeService forumService, IUserService userService,
+            ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, IConfiguration configuration)
+            : base(forumService, userService, sqlExecuter, translationProvider, configuration)
         {
             _adminUserService = adminUserService;
             _adminForumService = adminForumService;
