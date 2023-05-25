@@ -35,7 +35,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return null;
             }
 
-            if (!_storageService.DeleteFile(attachment.PhysicalFilename, false))
+            if (!await _storageService.DeleteAttachment(attachment.PhysicalFilename))
             {
                 return null;
             }
@@ -202,7 +202,7 @@ namespace PhpbbInDotnet.Forum.Pages
             if (Action == PostingActions.NewTopic || Action == PostingActions.NewForumPost)
             {
                 await SqlExecuter.ExecuteAsync(
-                    "DELETE FROM forum.phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId",
+                    "DELETE FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId",
                     new { usr.UserId, forumId = ForumId, topicId = Action == PostingActions.NewTopic ? 0 : TopicId });
             }
 
@@ -243,6 +243,7 @@ namespace PhpbbInDotnet.Forum.Pages
         private Task<IActionResult> WithRegisteredUserAndCorrectPermissions(Func<ForumUserExpanded, Task<IActionResult>> toDo)
             => WithRegisteredUser(async user =>
             {
+                ThrowIfEntireForumIsReadOnly();
                 if (await ForumService.IsForumReadOnlyForUser(user, ForumId))
                 {
                     return Unauthorized();

@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PhpbbInDotnet.RecurringTasks.Tasks;
-using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Services.Storage;
 using Serilog;
 using System;
 using System.Linq;
@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.RecurringTasks
 {
-	sealed class Orchestrator : BackgroundService
+    sealed class Orchestrator : BackgroundService
 	{
 		readonly IServiceProvider _serviceProvider;
 
@@ -33,7 +33,7 @@ namespace PhpbbInDotnet.RecurringTasks
 
             try
             {
-				var timeToWait = schedulingService.GetTimeToWaitUntilRunIsAllowed();
+				var timeToWait = await schedulingService.GetTimeToWaitUntilRunIsAllowed();
 				if (timeToWait > TimeSpan.Zero)
 				{
                     logger.Warning("Waiting for {time} before executing recurring tasks...", timeToWait);
@@ -44,7 +44,7 @@ namespace PhpbbInDotnet.RecurringTasks
 
 				await Task.WhenAll(scope.ServiceProvider.GetServices<IRecurringTask>().Select(t => t.ExecuteAsync(stoppingToken)));
 
-                storageService.WriteAllTextToFile(ControlFileName, string.Empty);
+                await storageService.WriteAllTextToFile(ControlFileName, DateTime.UtcNow.ToString("u"));
             }
 			catch (Exception ex)
 			{

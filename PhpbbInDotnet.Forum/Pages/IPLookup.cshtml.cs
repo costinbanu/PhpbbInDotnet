@@ -1,5 +1,6 @@
 using Dapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
@@ -15,10 +16,11 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    public class IPLookupModel : AuthenticatedPageModel
+	public class IPLookupModel : AuthenticatedPageModel
     {
-        public IPLookupModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider)
-            : base(forumService, userService, sqlExecuter, translationProvider)
+        public IPLookupModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, 
+            ITranslationProvider translationProvider, IConfiguration configuration)
+            : base(forumService, userService, sqlExecuter, translationProvider, configuration)
         { }
 
         [BindProperty(SupportsGet = true)]

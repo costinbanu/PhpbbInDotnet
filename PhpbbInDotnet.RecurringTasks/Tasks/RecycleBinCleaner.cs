@@ -6,6 +6,7 @@ using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Services.Storage;
 using Serilog;
 using System;
 using System.Linq;
@@ -72,14 +73,15 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
 
             stoppingToken.ThrowIfCancellationRequested();
 
-            var deleteResults = from p in posts
-                                where p?.Attachments?.Any() == true
+            var deleteTasks = from p in posts
+                              where p?.Attachments?.Any() == true
 
-                                from a in p.Attachments!
-                                where !string.IsNullOrWhiteSpace(a?.PhysicalFileName)
+                              from a in p.Attachments!
+                              where !string.IsNullOrWhiteSpace(a?.PhysicalFileName)
 
-                                select _storageService.DeleteFile(a!.PhysicalFileName, false);
+                              select _storageService.DeleteAttachment(a!.PhysicalFileName!);
 
+            var deleteResults = await Task.WhenAll(deleteTasks);
             if (deleteResults.Any(r => !r))
             {
                 _logger.Warning("Not all attachments have been permanently deleted successfully. This could have happened due to them being already deleted.");

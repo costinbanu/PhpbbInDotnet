@@ -7,6 +7,7 @@ using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
+using PhpbbInDotnet.Services.Storage;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -448,24 +449,20 @@ namespace PhpbbInDotnet.Services
                 entity.Entity.PostId = 0;
                 await _context.SaveChangesAsync();
 
-                if (attachments.Any())
+                foreach (var a in attachments)
                 {
-                    await _context.PhpbbAttachments.AddRangeAsync(
-                        attachments.Select(a =>
-                        {
-                            var name = _storageService.DuplicateFile(a, post.PosterId);
-                            if (string.IsNullOrWhiteSpace(name))
-                            {
-                                return null;
-                            }
-                            a.AttachId = 0;
-                            a.PostMsgId = entity.Entity.PostId;
-                            a.PhysicalFilename = name;
-                            return a;
-                        }).Where(a => a != null)!);
+					var name = await _storageService.DuplicateAttachment(a, post.PosterId);
+					if (string.IsNullOrWhiteSpace(name))
+					{
+                        continue;
+					}
+					a.AttachId = 0;
+					a.PostMsgId = entity.Entity.PostId;
+					a.PhysicalFilename = name;
+                    await _context.PhpbbAttachments.AddAsync(a);
+				}
 
-                    await _context.SaveChangesAsync();
-                }
+                await _context.SaveChangesAsync();
 
                 await _postService.CascadePostAdd(entity.Entity, false);
 

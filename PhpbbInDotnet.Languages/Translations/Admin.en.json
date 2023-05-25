@@ -183,6 +183,7 @@
     "INVALID_EMOJI_CODE_FORMAT": "File {0} does not have valid codes / shortcuts associated.",
     "MISSING_EMOJI_FILE_FORMAT": "Code {0} is not associated to a valid file.",
     "EMOJI_NOT_UPLOADED_FORMAT": "File {0} could not be uploaded. Try again later.",
+    "EMOJI_NOT_DELETED_FORMAT": "Emoji {0} could not be deleted. Try again later.",
 
     //LOGS
     "SYSTEM_LOGS": "System logs",

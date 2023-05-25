@@ -22,12 +22,11 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [ValidateAntiForgeryToken]
+	[ValidateAntiForgeryToken]
     public class RegisterModel : BaseModel
     {
         private readonly IForumDbContext _context;
         private readonly ISqlExecuter _sqlExecuter;
-        private readonly IConfiguration _config;
         private readonly HttpClient _gClient;
         private readonly Recaptcha _recaptchaOptions;
         private readonly ILogger _logger;
@@ -54,12 +53,11 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public RegisterModel(IForumDbContext context, ISqlExecuter sqlExecuter, IConfiguration config, IHttpClientFactory httpClientFactory,
             ITranslationProvider translationProvider, IUserService userService, ILogger logger, IEmailService emailService, IUserProfileDataValidationService validationService)
-            : base(translationProvider, userService)
+            : base(translationProvider, userService, config)
         {
             _context = context;
             _sqlExecuter = sqlExecuter;
-            _config = config;
-            _recaptchaOptions = _config.GetObject<Recaptcha>();
+            _recaptchaOptions = Configuration.GetObject<Recaptcha>();
             _gClient = httpClientFactory.CreateClient(_recaptchaOptions.ClientName);
             _logger = logger;
             _emailService = emailService;
@@ -77,6 +75,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
+            ThrowIfEntireForumIsReadOnly();
+
             Email = Email?.Trim();
             var validations = new[]
             {
@@ -111,7 +111,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 if ((decimal)result.score < _recaptchaOptions.MinScore)
                 {
-                    return PageWithError(nameof(RecaptchaResponse), string.Format(TranslationProvider.Errors[Language, "YOURE_A_BOT_FORMAT"], _config.GetValue<string>("AdminEmail").Replace("@", " at ").Replace(".", " dot ")));
+                    return PageWithError(nameof(RecaptchaResponse), string.Format(TranslationProvider.Errors[Language, "YOURE_A_BOT_FORMAT"], Configuration.GetValue<string>("AdminEmail").Replace("@", " at ").Replace(".", " dot ")));
                 }
             }
             catch (Exception ex)
@@ -177,7 +177,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 GroupId = 2,
                 UserId = newUser.Entity.UserId
             });
-            var subject = string.Format(TranslationProvider.Email[Language, "WELCOME_SUBJECT_FORMAT"], _config.GetValue<string>("ForumName"));
+            var subject = string.Format(TranslationProvider.Email[Language, "WELCOME_SUBJECT_FORMAT"], Configuration.GetValue<string>("ForumName"));
 
             var dbChangesTask = _context.SaveChangesAsync();
             var emailTask = _emailService.SendEmail(

@@ -3,7 +3,7 @@
 
 @using Domain
 @using Domain.Extensions;
-@using Services
+@using Services.Storage
 
 @inject IStorageService _storageService
 @inject Languages.ITranslationProvider _translationProvider
@@ -152,7 +152,7 @@
         {
             <div>
                 <button type="button" class="collapsible">
-                    <img src="@_storageService.GetFileUrl(smilies[smileyIndex].Key.SmileyUrl, FileType.Emoji)" />
+                    <img src="@_storageService.GetEmojiRelativeUrl(smilies[smileyIndex].Key.SmileyUrl)" />
                     @Html.Raw(smilies[smileyIndex].Key.SmileyUrl)
                 </button>
                 <div class="content">

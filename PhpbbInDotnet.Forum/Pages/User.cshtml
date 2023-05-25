@@ -356,10 +356,6 @@ else
                         <div style="display:none" id="loadingConfirmation">
                             @Html.Raw(Model.TranslationProvider.BasicText[Lang, "AVATAR_LOADED_CONFIRMATION"])
                         </div>
-                        @if (Model.ShowAvatarCaption)
-                        {
-                            <span class="Caption">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "AVATAR_CAPTION"])</span><br />
-                        }
                         <span asp-validation-for="Avatar" class="validation"></span>
                     </div>
                 </div>

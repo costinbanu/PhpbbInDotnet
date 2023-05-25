@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Models
 {
-    public abstract class BaseModel : PageModel
+	public abstract class BaseModel : PageModel
     {
         private string? _language;
         private ForumUserExpanded? _user;
@@ -16,19 +17,28 @@ namespace PhpbbInDotnet.Forum.Models
         public ITranslationProvider TranslationProvider { get; }
 
         protected IUserService UserService { get; }
+		protected IConfiguration Configuration { get; }
 
-        public ForumUserExpanded ForumUser
+		public ForumUserExpanded ForumUser
             => _user ??= ForumUserExpanded.GetValueOrDefault(HttpContext) ?? UserService.GetAnonymousForumUserExpanded();
 
         public string Language
             => _language ??= TranslationProvider.GetLanguage(ForumUser);
 
-        public BaseModel(ITranslationProvider translationProvider, IUserService userService)
+        public BaseModel(ITranslationProvider translationProvider, IUserService userService, IConfiguration configuration)
         {
             TranslationProvider = translationProvider;
             UserService = userService;
+            Configuration = configuration;
         }
 
+        protected void ThrowIfEntireForumIsReadOnly()
+        {
+			if (Configuration.GetValue<bool>("ForumIsReadOnly"))
+			{
+                throw new NotSupportedException("The attempted action is not permitted while the forum is in read-only mode.");
+			}
+		}
 
         protected IActionResult PageWithError(string errorKey, string errorMessage)
             => PageWithErrorImpl(errorKey, errorMessage);

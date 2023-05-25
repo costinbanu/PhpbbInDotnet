@@ -7,6 +7,7 @@
 @using CustomPartials
 @using Objects.Configuration
 @using Services
+@using Services.Storage
 @using Microsoft.Extensions.Configuration
 
 @inject IWritingToolsService _writingService
@@ -93,7 +94,7 @@
         @foreach (var smiley in (await _writingService.GetLazySmilies()).GroupBy(s => s.SmileyUrl).Select(g => g.FirstOrDefault()))
         {
             <a href="javascript:posting.insert_text('@smiley!.Code', true);">
-                <img src="@_storageService.GetFileUrl(smiley.SmileyUrl, FileType.Emoji)" alt="@smiley.Code" title="@smiley.Emotion" style="margin:2px" />
+                <img src="@_storageService.GetEmojiRelativeUrl(smiley.SmileyUrl)" alt="@smiley.Code" title="@smiley.Emotion" style="margin:2px" />
             </a>
         }
     </div>

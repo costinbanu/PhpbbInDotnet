@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain;
@@ -57,9 +58,10 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool ScrollToAction => TopicAction.HasValue && DestinationForumId.HasValue;
         public IEnumerable<DeletedItemGroup>? DeletedItems { get; private set; }
 
-        public ModeratorModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, 
-            IForumDbContext dbContext, IModeratorService moderatorService, IPostService postService, IOperationLogService operationLogService, ILogger logger)
-            : base(forumService, userService, sqlExecuter, translationProvider)
+        public ModeratorModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, 
+            ITranslationProvider translationProvider, IForumDbContext dbContext, IModeratorService moderatorService, IPostService postService, 
+            IOperationLogService operationLogService, ILogger logger, IConfiguration configuration)
+            : base(forumService, userService, sqlExecuter, translationProvider, configuration)
         {
             _moderatorService = moderatorService; 
             _postService = postService; 

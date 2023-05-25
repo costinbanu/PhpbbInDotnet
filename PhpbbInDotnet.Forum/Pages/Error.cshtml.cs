@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
@@ -26,8 +27,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public bool IsNotFound => ResponseStatusCode == (int)HttpStatusCode.NotFound;
 
-        public ErrorModel(ILogger logger, ITranslationProvider translationProvider, IUserService userService)
-            : base(translationProvider, userService)
+        public ErrorModel(ILogger logger, ITranslationProvider translationProvider, IUserService userService, IConfiguration configuration)
+            : base(translationProvider, userService, configuration)
         {
             _logger = logger;
         }

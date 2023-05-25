@@ -6,6 +6,7 @@ using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Services.Storage;
 using Serilog;
 using System;
 using System.Collections.Generic;

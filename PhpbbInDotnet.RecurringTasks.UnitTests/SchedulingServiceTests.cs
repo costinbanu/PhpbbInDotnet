@@ -1,8 +1,11 @@
-﻿using Moq;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using PhpbbInDotnet.Objects.Configuration;
 using PhpbbInDotnet.RecurringTasks.UnitTests.Utils;
 using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Services.Storage;
 using System;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace PhpbbInDotnet.RecurringTasks.UnitTests
@@ -13,19 +16,22 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
         {
             var mockTimeService = new Mock<ITimeService>();
             mockTimeService.Setup(t => t.DateTimeOffsetNow()).Returns(now);
-            var mockFileInfoService = new Mock<IFileInfoService>();
-            mockFileInfoService.Setup(f => f.GetLastWriteTime(Orchestrator.ControlFileName)).Returns(lastRun);
+            var mockStorageService = new Mock<IStorageService>();
+            mockStorageService.Setup(f => f.GetLastWriteTime(Orchestrator.ControlFileName)).Returns(Task.FromResult(lastRun));
             var testConfig = TestUtils.GetAppConfiguration(setupOptions);
+            var dummyServices = new ServiceCollection();
+            dummyServices.AddScoped(_ => mockStorageService.Object);
+            var dummyServiceProvider = dummyServices.BuildServiceProvider();
 
-            return new SchedulingService(mockTimeService.Object, mockFileInfoService.Object, testConfig);
+            return new SchedulingService(mockTimeService.Object, testConfig, dummyServiceProvider);
         }
 
-        static void RunTest(CleanupServiceOptions? options, DateTime? lastRun, DateTimeOffset now, TimeSpan expected)
+        static async Task RunTest(CleanupServiceOptions? options, DateTime? lastRun, DateTimeOffset now, TimeSpan expected)
         {
             Action<AppSettingsObject>? setup = options is null ? null : opts => opts.CleanupService = options;
             var schedulingService = GetSchedulingService(lastRun, now, setup);
 
-            var actual = schedulingService.GetTimeToWaitUntilRunIsAllowed();
+            var actual = await schedulingService.GetTimeToWaitUntilRunIsAllowed();
 
             Assert.Equal(expected, actual);
         }
@@ -107,7 +113,7 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
 
                 [Theory]
                 [MemberData(nameof(ScheduleTestData))]
-                public void Then_Schedule_Is_Correct(CleanupServiceOptions options, DateTime? lastRun, DateTimeOffset now, TimeSpan waitTime)
+                public Task Then_Schedule_Is_Correct(CleanupServiceOptions options, DateTime? lastRun, DateTimeOffset now, TimeSpan waitTime)
                     => RunTest(options, lastRun, now, waitTime);
             }
 
@@ -164,7 +170,7 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
 
                 [Theory]
                 [MemberData(nameof(ScheduleTestData))]
-                public void Then_Schedule_Is_Correct(CleanupServiceOptions options, DateTime? lastRun, DateTimeOffset now, TimeSpan waitTime)
+                public Task Then_Schedule_Is_Correct(CleanupServiceOptions options, DateTime? lastRun, DateTimeOffset now, TimeSpan waitTime)
                     => RunTest(options, lastRun, now, waitTime);
             }
         }
@@ -193,7 +199,7 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
 
             [Theory]
             [MemberData(nameof(ScheduleTestData))]
-            public void Then_Wait_Time_Is_Zero(CleanupServiceOptions? options, DateTime? lastRun, DateTimeOffset now)
+            public Task Then_Wait_Time_Is_Zero(CleanupServiceOptions? options, DateTime? lastRun, DateTimeOffset now)
                 => RunTest(options, lastRun, now, TimeSpan.Zero);
         }
     }

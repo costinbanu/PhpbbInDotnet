@@ -1,23 +1,19 @@
 ﻿using CryptSharp.Core;
-using LazyCache;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain.Extensions;
-using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
-using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
-using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [ValidateAntiForgeryToken]
+	[ValidateAntiForgeryToken]
     public class ForumLoginModel : BaseModel
     {
         private readonly IForumDbContext _context;
@@ -33,8 +29,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public string? ForumName { get; private set; }
 
-        public ForumLoginModel(IForumDbContext context, ITranslationProvider translationProvider, IUserService userService)
-            : base(translationProvider, userService)
+        public ForumLoginModel(IForumDbContext context, ITranslationProvider translationProvider, IUserService userService, IConfiguration configuration)
+            : base(translationProvider, userService, configuration)
         {
             _context = context;
         }

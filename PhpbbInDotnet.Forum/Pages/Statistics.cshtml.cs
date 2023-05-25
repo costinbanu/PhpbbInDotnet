@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Forum.Models;
@@ -10,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    public class StatisticsModel : AuthenticatedPageModel
+	public class StatisticsModel : AuthenticatedPageModel
     {
         [BindProperty]
         public StatisticsPeriod? Period { get; set; }
@@ -20,8 +21,8 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IStatisticsService _statisticsService;
 
         public StatisticsModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, 
-            ITranslationProvider translationProvider, IStatisticsService statisticsService)
-            : base(forumService, userService, sqlExecuter, translationProvider)
+            ITranslationProvider translationProvider, IStatisticsService statisticsService, IConfiguration configuration)
+            : base(forumService, userService, sqlExecuter, translationProvider, configuration)
         {
             _statisticsService = statisticsService;
         }

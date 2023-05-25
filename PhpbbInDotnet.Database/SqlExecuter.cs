@@ -13,6 +13,10 @@ namespace PhpbbInDotnet.Database
         public SqlExecuter(IForumDbContext forumDbContext)
         {
             _connection = forumDbContext.Database.GetDbConnection();
+            if (_connection.State == ConnectionState.Closed)
+            {
+                _connection.Open();
+            }
         }
 
         public Task<int> ExecuteAsync(string sql, object? param)
