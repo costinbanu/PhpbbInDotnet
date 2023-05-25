@@ -241,8 +241,7 @@ namespace PhpbbInDotnet.Domain
     public enum FileType
     {
         Attachment,
-        Avatar,
-        Emoji
+        Avatar
     }
 
     public enum RecycleBinItemType
@@ -271,5 +270,11 @@ namespace PhpbbInDotnet.Domain
         PostEditTime = 1 << 3,
         Foes = 1 << 4,
         Style = 1 << 5,
+    }
+
+    public enum StorageType
+    {
+        HardDisk = 0,
+        AzureStorage = 1
     }
 }

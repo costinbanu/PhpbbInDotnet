@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Forum.Models;
@@ -15,9 +14,8 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    public class ConfirmModel : AuthenticatedPageModel
+	public class ConfirmModel : AuthenticatedPageModel
     {
-        private readonly IConfiguration _config;
         private readonly IEmailService _emailService;
         private readonly IForumDbContext _dbContext;
 
@@ -74,9 +72,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public ConfirmModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, 
             ITranslationProvider translationProvider, IConfiguration config, IEmailService emailService, IForumDbContext dbContext)
-            : base(forumService, userService, sqlExecuter, translationProvider)
+            : base(forumService, userService, sqlExecuter, translationProvider, config)
         {
-            _config = config;
             _emailService = emailService;
             _dbContext = dbContext;
         }
@@ -84,14 +81,14 @@ namespace PhpbbInDotnet.Forum.Pages
         public void OnGetRegistrationComplete()
         {
             var lang = Language;
-            Message = string.Format(TranslationProvider.BasicText[lang, "REGISTRATION_CONFIRM_MESSAGE_FORMAT"], _config.GetValue<string>("AdminEmail"));
+            Message = string.Format(TranslationProvider.BasicText[lang, "REGISTRATION_CONFIRM_MESSAGE_FORMAT"], Configuration.GetValue<string>("AdminEmail"));
             Title = TranslationProvider.BasicText[lang, "REGISTRATION_CONFIRM_TITLE"];
         }
 
         public Task<IActionResult> OnGetSendConfirmationEmail()
          => WithRegisteredUser(async user =>
          {
-             var subject = string.Format(TranslationProvider.BasicText[Language, "VERIFY_EMAIL_ADDRESS_FORMAT"], _config.GetValue<string>("ForumName"));
+             var subject = string.Format(TranslationProvider.BasicText[Language, "VERIFY_EMAIL_ADDRESS_FORMAT"], Configuration.GetValue<string>("ForumName"));
              var registrationCode = Guid.NewGuid().ToString("n");
              var emailAddress = user.EmailAddress!;
              var dbUser = await _dbContext.PhpbbUsers.FirstAsync(u => u.UserId == user.UserId);
@@ -122,7 +119,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (user == null)
             {
-                Message = $"<span class=\"message fail\">{string.Format(TranslationProvider.Errors[lang, "REGISTRATION_ERROR_FORMAT"], _config.GetValue<string>("AdminEmail"))}</span>";
+                Message = $"<span class=\"message fail\">{string.Format(TranslationProvider.Errors[lang, "REGISTRATION_ERROR_FORMAT"], Configuration.GetValue<string>("AdminEmail"))}</span>";
             }
             else
             {
@@ -134,7 +131,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
                 else
                 {
-                    Message = string.Format(TranslationProvider.BasicText[lang, "EMAIL_CONFIRM_MESSAGE_FORMAT"], _config.GetValue<string>("AdminEmail"));
+                    Message = string.Format(TranslationProvider.BasicText[lang, "EMAIL_CONFIRM_MESSAGE_FORMAT"], Configuration.GetValue<string>("AdminEmail"));
 
                     if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed)
                     {

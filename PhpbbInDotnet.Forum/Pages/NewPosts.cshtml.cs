@@ -1,5 +1,6 @@
 using Dapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
@@ -15,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [ValidateAntiForgeryToken]
+	[ValidateAntiForgeryToken]
     public class NewPostsModel : AuthenticatedPageModel
     {
         private bool _forceTreeRefresh;
@@ -29,8 +30,9 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public string[]? SelectedNewPosts { get; set; }
 
-        public NewPostsModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider)
-            : base(forumService, userService, sqlExecuter, translationProvider)
+        public NewPostsModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, 
+            ITranslationProvider translationProvider, IConfiguration configuration)
+            : base(forumService, userService, sqlExecuter, translationProvider, configuration)
         { }
 
         public async Task<IActionResult> OnGet()
@@ -53,8 +55,8 @@ namespace PhpbbInDotnet.Forum.Pages
                              t.topic_last_post_time,
                              t.topic_last_poster_colour,
                              t.topic_last_post_id
-                        FROM forum.phpbb_topics t
-                        JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
+                        FROM phpbb_topics t
+                        JOIN phpbb_posts p ON t.topic_id = p.topic_id
                        WHERE t.topic_id IN @topicList
                          AND t.forum_id NOT IN @restrictedForumList
                        GROUP BY t.topic_id

@@ -11,6 +11,7 @@
     "MISSING_REQUIRED_FIELD": "Acest câmp este obligatoriu.",
     "MISSING_REQUIRED_PERMISSIONS": "Nu ești autorizat să execuți acțiunea dorită.",
     "NOT_ALLOWED": "Acțiunea dorită nu este permisă.",
+    "FORUM_IS_READ_ONLY": "Forumul este disponibil exclusiv pentru citire.",
 
     //authentication
     "CONFIRM_ERROR": "A intervenit o eroare - utilizatorul nu există sau codul de resetare a parolei este greșit.",
@@ -35,7 +36,6 @@
 
     //user profile
     "DELETE_AVATAR_ERROR": "Imaginea de profil nu a putut fi ștearsă",
-    "AVATAR_FORMAT_ERROR_FORMAT": "Fișierul trebuie să fie o imagine de dimensiuni maxime {0}px x {1}px",
     "AVATAR_UPLOAD_ERROR": "Imaginea nu a putut fi încărcată",
     "INVALID_DATE": "Data introdusă nu este validă",
 

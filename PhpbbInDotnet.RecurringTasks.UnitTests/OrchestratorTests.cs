@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using PhpbbInDotnet.RecurringTasks.Tasks;
-using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Services.Storage;
 using Serilog;
 using System;
 using System.Threading;
@@ -24,7 +24,7 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
         IServiceCollection GetServices()
         {
             var mockSchedulingService = new Mock<ISchedulingService>();
-            mockSchedulingService.Setup(s => s.GetTimeToWaitUntilRunIsAllowed()).Returns(TimeSpan.Zero);
+            mockSchedulingService.Setup(s => s.GetTimeToWaitUntilRunIsAllowed()).Returns(Task.FromResult(TimeSpan.Zero));
 
             var services = new ServiceCollection();
             services.AddSingleton(_mockLogger.Object);

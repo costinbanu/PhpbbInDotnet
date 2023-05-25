@@ -17,7 +17,6 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests.Utils
         public AttachmentLimits? UploadLimitsCount { get; set; }
         public string? UserActivityTrackingInterval { get; set; }
         public string? AdminEmail { get; set; }
-        public ExternalImageProcessor? ExternalImageProcessor { get; set; }
         public ImageSize? AvatarMaxSize { get; set; }
         public ImageSize? EmojiMaxSize { get; set; }
         public bool DisplayExternalLinksMenu { get; set; }

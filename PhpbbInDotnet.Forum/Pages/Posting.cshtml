@@ -7,6 +7,7 @@
 @using CustomPartials
 @using Objects.Configuration
 @using Services
+@using Services.Storage
 @using Microsoft.Extensions.Configuration
 
 @model PhpbbInDotnet.Forum.Pages.PostingModel
@@ -234,37 +235,22 @@ else if (Model.Action == PostingActions.NewTopic)
 	@{
 		var sizeLimit = _config.GetObject<AttachmentLimits>("UploadLimitsMB");
 		var countLimit = _config.GetObject<AttachmentLimits>("UploadLimitsCount");
-		var resizeTool = _config.GetObject<ExternalImageProcessor>();
 
 		<div id="attachPanel" style="display:@(Model.ShowAttach ? "block" : "none")">
 			<br />
 			<h3>@Html.Raw(Model.TranslationProvider.BasicText[Lang, "ATTACHED_FILES"])</h3>
-
-			@if (resizeTool.Enabled)
-			{
-				@Html.Raw(string.Format(Model.TranslationProvider.AttachmentGuide[Lang]!, sizeLimit.Images, resizeTool.Url, resizeTool.Name, resizeTool.Api?.Enabled == true ? "display:auto" : "display:none"))
-			}
-
-			@if (resizeTool.Api?.Enabled == true)
-			{
-				<p></p>
-				<label>
-					@if (IsMod)
-					{
-						@Html.CheckBoxFor(m => m.ShouldResize)
-					}
-					else
-					{
-						<input type="checkbox" checked disabled />
-					}
-					@Html.Raw(Model.TranslationProvider.BasicText[Lang, "SHOULD_RESIZE_IMAGES"])
-				</label>
-				<p></p>
-				<label>
-					@Html.CheckBoxFor(m => m.ShouldHideLicensePlates)
-					@Html.Raw(Model.TranslationProvider.BasicText[Lang, "SHOULD_HIDE_LICENSE_PLATES_IN_IMAGES"])
-				</label>
-			}
+			<p></p>
+			<label>
+				@if (IsMod)
+				{
+					@Html.CheckBoxFor(m => m.ShouldResize)
+				}
+				else
+				{
+					<input type="checkbox" checked disabled />
+				}
+				@Html.Raw(Model.TranslationProvider.BasicText[Lang, "SHOULD_RESIZE_IMAGES"])
+			</label>
 			<p></p>
 			<input asp-for="Files" onchange="posting.submitAttachments()" multiple class="HiddenFileInput" />
 			<label for="Files" class="MyButton">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "CHOOSE_FILES"])</label><br />
@@ -319,7 +305,7 @@ else if (Model.Action == PostingActions.NewTopic)
 		@foreach (var smiley in (await _writingService.GetLazySmilies()).GroupBy(s => s.SmileyUrl).Select(g => g.FirstOrDefault()))
 		{
 			<a href="javascript:posting.insert_text('@smiley!.Code', true);">
-				<img src="@_storageService.GetFileUrl(smiley.SmileyUrl, FileType.Emoji)" alt="@smiley.Code" title="@smiley.Emotion" style="margin:2px" />
+				<img src="@_storageService.GetEmojiRelativeUrl(smiley.SmileyUrl)" alt="@smiley.Code" title="@smiley.Emotion" style="margin:2px" />
 			</a>
 		}
 	</div>

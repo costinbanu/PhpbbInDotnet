@@ -19,7 +19,6 @@ namespace PhpbbInDotnet.Forum.Pages
     public class ViewForumModel : AuthenticatedPageModel
     {
         private bool _forceTreeRefresh;
-        private readonly IConfiguration _config;
         private readonly IBBCodeRenderingService _renderingService;
         private readonly ILogger _logger;
 
@@ -38,9 +37,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public ViewForumModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, 
             ITranslationProvider translationProvider, ILogger logger, IConfiguration config, IBBCodeRenderingService renderingService)
-            : base(forumService, userService, sqlExecuter, translationProvider)
+            : base(forumService, userService, sqlExecuter, translationProvider, config)
         {
-            _config = config; 
             _renderingService = renderingService;
             _logger = logger;
         }
@@ -71,7 +69,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 Topics = await topicsTask;
                 var parent = await parentTask;
                 ParentForumId = parent?.ForumId;
-                ParentForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? _config.GetValue<string>("ForumName"));
+                ParentForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? Configuration.GetValue<string>("ForumName"));
                 Forums = await treeTask;
 
                 return Page();

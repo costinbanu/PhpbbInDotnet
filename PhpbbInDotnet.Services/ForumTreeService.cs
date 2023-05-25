@@ -1,7 +1,5 @@
-﻿using LazyCache;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
-using Org.BouncyCastle.Asn1.Ocsp;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
@@ -17,7 +15,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Services
 {
-    class ForumTreeService : IForumTreeService
+	class ForumTreeService : IForumTreeService
     {
         private readonly ISqlExecuter _sqlExecuter;
         private readonly IConfiguration _config;
@@ -212,7 +210,7 @@ namespace PhpbbInDotnet.Services
             var dbResults = Enumerable.Empty<ExtendedTracking>();
             try
             {
-                dbResults = await _sqlExecuter.QueryAsync<ExtendedTracking>("CALL `forum`.`get_post_tracking`(@userId);", new { userId });
+                dbResults = await _sqlExecuter.QueryAsync<ExtendedTracking>("CALL get_post_tracking(@userId);", new { userId });
             }
             catch (Exception ex)
             {
@@ -256,8 +254,8 @@ namespace PhpbbInDotnet.Services
 		                 t.topic_last_poster_colour,
 		                 t.topic_last_post_id,
 		                 t.topic_status
-	                FROM forum.phpbb_topics t
-	                JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
+	                FROM phpbb_topics t
+	                JOIN phpbb_posts p ON t.topic_id = p.topic_id
                    WHERE t.forum_id = @forumId OR topic_type = @global
                    GROUP BY t.topic_id
 
@@ -275,9 +273,9 @@ namespace PhpbbInDotnet.Services
 		                 t.topic_last_poster_colour,
 		                 t.topic_last_post_id,
 		                 t.topic_status
-	                FROM forum.phpbb_topics t
-	                JOIN forum.phpbb_shortcuts s ON t.topic_id = s.topic_id
-                    JOIN forum.phpbb_posts p ON t.topic_id = p.topic_id
+	                FROM phpbb_topics t
+	                JOIN phpbb_shortcuts s ON t.topic_id = s.topic_id
+                    JOIN phpbb_posts p ON t.topic_id = p.topic_id
                    WHERE s.forum_id = @forumId
                    GROUP BY t.topic_id
                            

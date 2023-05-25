@@ -14,14 +14,11 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    public class LogoutModel : BaseModel
+	public class LogoutModel : BaseModel
     {
-        private readonly IConfiguration _config;
-
         public LogoutModel(IConfiguration config, ITranslationProvider translationProvider, IUserService userService)
-            : base(translationProvider, userService)
+            : base(translationProvider, userService, config)
         {
-            _config = config;
         }
 
         public async Task<IActionResult> OnGet(string returnUrl)
@@ -33,7 +30,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 new AuthenticationProperties
                 {
                     AllowRefresh = true,
-                    ExpiresUtc = DateTimeOffset.Now.Add(_config.GetValue<TimeSpan?>("LoginSessionSlidingExpiration") ?? TimeSpan.FromDays(30)),
+                    ExpiresUtc = DateTimeOffset.Now.Add(Configuration.GetValue<TimeSpan?>("LoginSessionSlidingExpiration") ?? TimeSpan.FromDays(30)),
                     IsPersistent = true,
                 });
 

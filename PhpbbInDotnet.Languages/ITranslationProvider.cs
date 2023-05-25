@@ -10,7 +10,6 @@ namespace PhpbbInDotnet.Languages
         HtmlTranslation AboutCookies { get; }
         TextTranslation Admin { get; }
         IEnumerable<string> AllLanguages { get; }
-        HtmlTranslation AttachmentGuide { get; }
         TextTranslation BasicText { get; }
         TextTranslation BBCodes { get; }
         HtmlTranslation CustomBBCodeGuide { get; }

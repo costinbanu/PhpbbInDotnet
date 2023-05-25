@@ -1,5 +1,6 @@
 using Dapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
@@ -14,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    public class DraftsModel : AuthenticatedPageModel
+	public class DraftsModel : AuthenticatedPageModel
     {
         public List<TopicDto> Topics { get; private set; } = new List<TopicDto>();
         public Paginator? Paginator { get; private set; }
@@ -25,8 +26,9 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public int[]? SelectedDrafts { get; set; }
 
-        public DraftsModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider)
-            : base(forumService, userService, sqlExecuter, translationProvider)
+        public DraftsModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, 
+            ITranslationProvider translationProvider, IConfiguration configuration)
+            : base(forumService, userService, sqlExecuter, translationProvider, configuration)
         { }
 
         public async Task<IActionResult> OnGet()
@@ -44,8 +46,8 @@ namespace PhpbbInDotnet.Forum.Pages
 				                     d.draft_subject as topic_title,
 				                     d.save_time as topic_last_post_time,
 				                     t.topic_last_post_id
-			                    FROM forum.phpbb_drafts d
-			                    LEFT JOIN forum.phpbb_topics t
+			                    FROM phpbb_drafts d
+			                    LEFT JOIN phpbb_topics t
 			                      ON d.topic_id = t.topic_id
 		                       WHERE d.forum_id NOT IN @restrictedForumList
                                  AND d.user_id = @userId
@@ -63,8 +65,8 @@ namespace PhpbbInDotnet.Forum.Pages
                         );
                         var countTask = SqlExecuter.ExecuteScalarAsync<int>(
                             @"SELECT COUNT(*) as total_count
-                                FROM forum.phpbb_drafts d
-	                            LEFT JOIN forum.phpbb_topics t
+                                FROM phpbb_drafts d
+	                            LEFT JOIN phpbb_topics t
 	                              ON d.topic_id = t.topic_id
 	                           WHERE d.forum_id NOT IN @restrictedForumList
                                  AND d.user_id = @user_id
