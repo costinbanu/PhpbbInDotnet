@@ -42,7 +42,7 @@ namespace PhpbbInDotnet.Database
         public async Task<int> ExecuteAsync(string sql, object? param)
         {
             var result = await _asyncRetryPolicy.ExecuteAndCaptureAsync(() => _connection.Value.ExecuteAsync(sql, param));
-            return result.Result;
+            return result.FinalHandledResult;
         }
 
         public T ExecuteScalar<T>(string sql, object? param)
@@ -51,7 +51,7 @@ namespace PhpbbInDotnet.Database
         public async Task<T> ExecuteScalarAsync<T>(string sql, object? param)
         {
             var result = await _asyncRetryPolicy.ExecuteAndCaptureAsync(() => _connection.Value.ExecuteScalarAsync<T>(sql, param));
-            return result.Result;
+            return result.FinalHandledResult;
         }
 
         public IEnumerable<T> Query<T>(string sql, object? param)
@@ -63,13 +63,13 @@ namespace PhpbbInDotnet.Database
         public async Task<IEnumerable<T>> QueryAsync<T>(string sql, object? param)
         {
             var result = await _asyncRetryPolicy.ExecuteAndCaptureAsync(() => _connection.Value.QueryAsync<T>(sql, param));
-            return result.Result;
+            return result.FinalHandledResult;
         }
 
         public async Task<IEnumerable<dynamic>> QueryAsync(string sql, object? param)
         {
             var result = await _asyncRetryPolicy.ExecuteAndCaptureAsync(() => _connection.Value.QueryAsync(sql, param));
-            return result.Result;
+            return result.FinalHandledResult;
         }
 
         public T QueryFirstOrDefault<T>(string sql, object? param)
@@ -78,19 +78,19 @@ namespace PhpbbInDotnet.Database
         public async Task<T> QueryFirstOrDefaultAsync<T>(string sql, object? param)
         {
             var result = await _asyncRetryPolicy.ExecuteAndCaptureAsync(() => _connection.Value.QueryFirstOrDefaultAsync<T>(sql, param));
-            return result.Result;
+            return result.FinalHandledResult;
         }
 
         public async Task<dynamic> QueryFirstOrDefaultAsync(string sql, object? param)
         {
             var result = await _asyncRetryPolicy.ExecuteAndCaptureAsync(() => _connection.Value.QueryFirstOrDefaultAsync(sql, param));
-            return result.Result;
+            return result.FinalHandledResult;
         }
 
         public async Task<T> QuerySingleOrDefaultAsync<T>(string sql, object? param)
         {
             var result = await _asyncRetryPolicy.ExecuteAndCaptureAsync(() => _connection.Value.QuerySingleOrDefaultAsync<T>(sql, param));
-            return result.Result;
+            return result.FinalHandledResult;
         }
 
         public T QuerySingle<T>(string sql, object? param)
@@ -99,13 +99,13 @@ namespace PhpbbInDotnet.Database
         public async Task<T> QuerySingleAsync<T>(string sql, object? param)
         {
             var result = await _asyncRetryPolicy.ExecuteAndCaptureAsync(() => _connection.Value.QuerySingleAsync<T>(sql, param));
-            return result.Result;
+            return result.FinalHandledResult;
         }
 
         public async Task<dynamic> QuerySingleOrDefaultAsync(string sql, object? param)
         {
             var result = await _asyncRetryPolicy.ExecuteAndCaptureAsync(() => _connection.Value.QuerySingleOrDefaultAsync(sql, param));
-            return result.Result;
+            return result.FinalHandledResult;
         }
 
 		private TimeSpan DurationProvider(int retryCount)
