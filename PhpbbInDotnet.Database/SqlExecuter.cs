@@ -42,70 +42,141 @@ namespace PhpbbInDotnet.Database
         public async Task<int> ExecuteAsync(string sql, object? param)
         {
             var result = await _asyncRetryPolicy.ExecuteAndCaptureAsync(() => _connection.Value.ExecuteAsync(sql, param));
-            return result.FinalHandledResult;
+            if (result.FinalException is not null)
+            {
+                throw result.FinalException;
+            }
+            return result.Result;
         }
 
         public T ExecuteScalar<T>(string sql, object? param)
-            => _retryPolicy.ExecuteAndCapture(() => _connection.Value.ExecuteScalar<T>(sql, param)).Result;
+        {
+            var result = _retryPolicy.ExecuteAndCapture(() => _connection.Value.ExecuteScalar<T>(sql, param));
+            if (result.FinalException is not null)
+            {
+                throw result.FinalException;
+            }
+            return result.Result;
+        }
 
-        public async Task<T> ExecuteScalarAsync<T>(string sql, object? param)
+		public async Task<T> ExecuteScalarAsync<T>(string sql, object? param)
         {
             var result = await _asyncRetryPolicy.ExecuteAndCaptureAsync(() => _connection.Value.ExecuteScalarAsync<T>(sql, param));
-            return result.FinalHandledResult;
+			if (result.FinalException is not null)
+			{
+				throw result.FinalException;
+			}
+			return result.Result;
         }
 
         public IEnumerable<T> Query<T>(string sql, object? param)
-            => _retryPolicy.ExecuteAndCapture(() => _connection.Value.Query<T>(sql, param)).Result;
+        {
+            var result = _retryPolicy.ExecuteAndCapture(() => _connection.Value.Query<T>(sql, param));
+            if (result.FinalException is not null)
+            {
+                throw result.FinalException;
+            }
+            return result.Result;
+        }
 
         public IEnumerable<dynamic> Query(string sql, object? param)
-            => _retryPolicy.ExecuteAndCapture(() => _connection.Value.Query(sql, param)).Result;
+        {
+            var result = _retryPolicy.ExecuteAndCapture(() => _connection.Value.Query(sql, param));
+            if (result.FinalException is not null)
+            {
+                throw result.FinalException;
+            }
+            return result.Result;
+        }
 
-        public async Task<IEnumerable<T>> QueryAsync<T>(string sql, object? param)
+		public async Task<IEnumerable<T>> QueryAsync<T>(string sql, object? param)
         {
             var result = await _asyncRetryPolicy.ExecuteAndCaptureAsync(() => _connection.Value.QueryAsync<T>(sql, param));
-            return result.FinalHandledResult;
+			if (result.FinalException is not null)
+			{
+				throw result.FinalException;
+			}
+			return result.Result;
         }
 
         public async Task<IEnumerable<dynamic>> QueryAsync(string sql, object? param)
         {
             var result = await _asyncRetryPolicy.ExecuteAndCaptureAsync(() => _connection.Value.QueryAsync(sql, param));
-            return result.FinalHandledResult;
+			if (result.FinalException is not null)
+			{
+				throw result.FinalException;
+			}
+			return result.Result;
         }
 
         public T QueryFirstOrDefault<T>(string sql, object? param)
-            => _retryPolicy.ExecuteAndCapture(() => _connection.Value.QueryFirstOrDefault<T>(sql, param)).Result;
+        {
+            var result = _retryPolicy.ExecuteAndCapture(() => _connection.Value.QueryFirstOrDefault<T>(sql, param));
+            if (result.FinalException is not null)
+            {
+                throw result.FinalException;
+            }
+            return result.Result;
+        }
 
-        public async Task<T> QueryFirstOrDefaultAsync<T>(string sql, object? param)
+		public async Task<T> QueryFirstOrDefaultAsync<T>(string sql, object? param)
         {
             var result = await _asyncRetryPolicy.ExecuteAndCaptureAsync(() => _connection.Value.QueryFirstOrDefaultAsync<T>(sql, param));
-            return result.FinalHandledResult;
+			if (result.FinalException is not null)
+			{
+				throw result.FinalException;
+			}
+			return result.Result;
         }
 
         public async Task<dynamic> QueryFirstOrDefaultAsync(string sql, object? param)
         {
             var result = await _asyncRetryPolicy.ExecuteAndCaptureAsync(() => _connection.Value.QueryFirstOrDefaultAsync(sql, param));
-            return result.FinalHandledResult;
+			if (result.FinalException is not null)
+			{
+				throw result.FinalException;
+			}
+			return result.Result;
         }
 
         public async Task<T> QuerySingleOrDefaultAsync<T>(string sql, object? param)
         {
             var result = await _asyncRetryPolicy.ExecuteAndCaptureAsync(() => _connection.Value.QuerySingleOrDefaultAsync<T>(sql, param));
-            return result.FinalHandledResult;
+			if (result.FinalException is not null)
+			{
+				throw result.FinalException;
+			}
+			return result.Result;
         }
 
         public T QuerySingle<T>(string sql, object? param)
-            => _retryPolicy.ExecuteAndCapture(() => _connection.Value.QuerySingle<T>(sql, param)).Result;
+        {
+            var result = _retryPolicy.ExecuteAndCapture(() => _connection.Value.QuerySingle<T>(sql, param));
+            if (result.FinalException is not null)
+            {
+                throw result.FinalException;
+            }
+            return result.Result;
+        }
 
-        public async Task<T> QuerySingleAsync<T>(string sql, object? param)
+	    public async Task<T> QuerySingleAsync<T>(string sql, object? param)
         {
             var result = await _asyncRetryPolicy.ExecuteAndCaptureAsync(() => _connection.Value.QuerySingleAsync<T>(sql, param));
-            return result.FinalHandledResult;
+			if (result.FinalException is not null)
+			{
+				throw result.FinalException;
+			}
+			return result.Result;
         }
 
         public async Task<dynamic> QuerySingleOrDefaultAsync(string sql, object? param)
         {
             var result = await _asyncRetryPolicy.ExecuteAndCaptureAsync(() => _connection.Value.QuerySingleOrDefaultAsync(sql, param));
-            return result.FinalHandledResult;
+			if (result.FinalException is not null)
+			{
+				throw result.FinalException;
+			}
+			return result.Result;
         }
 
 		private TimeSpan DurationProvider(int retryCount)
