@@ -305,7 +305,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var toReturn = new MemoryStream();
                 foreach (var file in Directory.EnumerateFiles(directory, filePattern))
                 {
-                    using var fileStream = IOFile.OpenRead(file);
+                    using var fileStream = IOFile.Open(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                     await fileStream.CopyToAsync(toReturn);
                 }
                 await toReturn.FlushAsync();

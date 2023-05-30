@@ -71,7 +71,7 @@ namespace PhpbbInDotnet.Services
                 return (
                     from f in Directory.EnumerateFiles("logs", "log*.txt")
                     let parsed = Parse(f)
-                    where parsed.LogDate != default && parsed.LogPath != default && parsed.LogDate < DateTime.Today
+                    where parsed.LogDate != default && parsed.LogPath != default
                     orderby parsed.LogDate descending
                     select parsed
                 ).ToList();
