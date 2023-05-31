@@ -8,9 +8,7 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public static IServiceCollection AddForumDbContext(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddDbContext<IForumDbContext, ForumDbContext>(
-                options => options.UseMySQL(configuration["ForumDbConnectionString"], o => o.CommandTimeout(60)),
-                ServiceLifetime.Scoped);
+            services.AddDbContext<IForumDbContext, ForumDbContext>(options => options.UseMySQL(configuration.GetValue<string>("ForumDbConnectionString")));
             services.AddScoped<ISqlExecuter, SqlExecuter>();
             return services;
         }

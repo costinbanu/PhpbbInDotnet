@@ -3,15 +3,13 @@ using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
-using PhpbbInDotnet.Objects;
-using PhpbbInDotnet.Services;
 using Serilog;
 using System;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Middlewares
 {
-    public class ErrorHandlingMiddleware : IMiddleware
+	public class ErrorHandlingMiddleware : IMiddleware
     {
         private readonly ISqlExecuter _sqlExecuter;
         private readonly ILogger _logger;
@@ -33,9 +31,16 @@ namespace PhpbbInDotnet.Forum.Middlewares
                 PhpbbUsers? user = null;
                 if (IdentityUtility.TryGetUserId(context.User, out var userId))
                 {
-                    user = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
-                        "SELECT * FROM phpbb_users WHERE user_id = @userId",
-                        new { userId });
+                    try
+                    {
+                        user = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
+                            "SELECT * FROM phpbb_users WHERE user_id = @userId",
+                            new { userId });
+                    }
+                    catch (Exception ex1)
+                    {
+                        _logger.Error(ex1);
+                    }
                 }
                 var path = context.Request?.Path.Value ?? "N/A";
                 var id = _logger.ErrorWithId(ex, "URL: {path}{query}. UserId: {id}, UserName: {name}", path, context.Request?.QueryString.ToString() ?? string.Empty, user?.UserId.ToString() ?? "N/A", user?.Username ?? "N/A");
