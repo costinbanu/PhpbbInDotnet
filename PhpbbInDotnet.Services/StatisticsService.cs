@@ -1,5 +1,5 @@
 ﻿using LazyCache;
-using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Objects;
 using System;

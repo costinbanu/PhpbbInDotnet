@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Org.BouncyCastle.Asn1.X509;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Languages;
@@ -181,10 +181,10 @@ namespace PhpbbInDotnet.Services
         async Task<Dictionary<int, int>> GetTopicPostsPage(int userId)
         {
             var results = await _sqlExecuter.QueryAsync<(int topicId, int postNo)>(
-                @"SELECT topic_id, post_no
+                @"SELECT DISTINCT topic_id, post_no
 	                FROM phpbb_user_topic_post_number
 	               WHERE user_id = @userId
-	               GROUP BY topic_id;",
+                   ORDER BY topic_id;",
                 new { userId });
             return results.ToDictionary(x => x.topicId, y => y.postNo);
         }
@@ -359,7 +359,7 @@ namespace PhpbbInDotnet.Services
                     new { userId });
 
         HashSet<ForumUserExpanded.Permissions> GetPermissions(int userId)
-            => _permissionsMap.GetOrAdd(userId, id => new(_sqlExecuter.Query<ForumUserExpanded.Permissions>("CALL get_user_permissions(@id)", new { id })));
+            => _permissionsMap.GetOrAdd(userId, id => new(_sqlExecuter.CallStoredProcedure<ForumUserExpanded.Permissions>("get_user_permissions", new { id })));
 
         Task<HashSet<ForumUserExpanded.Permissions>> GetPermissionsAsync(int userId)
             => Task.FromResult(GetPermissions(userId));

@@ -1,8 +1,8 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
@@ -18,7 +18,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-	[ValidateAntiForgeryToken]
+    [ValidateAntiForgeryToken]
     public class SearchModel : AuthenticatedPageModel
     {
         [BindProperty(SupportsGet = true)]
@@ -152,7 +152,7 @@ namespace PhpbbInDotnet.Forum.Pages
 
             var searchableForums = await ForumService.GetUnrestrictedForums(ForumUser, ForumId ?? 0);
 
-            var searchTask = SqlExecuter.QueryAsync<PostDto>(
+            var searchTask = SqlExecuter.WithPagination((PageNum - 1) * Constants.DEFAULT_PAGE_SIZE, Constants.DEFAULT_PAGE_SIZE).QueryAsync<PostDto>(
                 @"WITH ranks AS (
 	                SELECT DISTINCT u.user_id, 
 		                   COALESCE(r1.rank_id, r2.rank_id) AS rank_id, 
@@ -161,6 +161,7 @@ namespace PhpbbInDotnet.Forum.Pages
 	                  JOIN phpbb_groups g ON u.group_id = g.group_id
 	                  LEFT JOIN phpbb_ranks r1 ON u.user_rank = r1.rank_id
 	                  LEFT JOIN phpbb_ranks r2 ON g.group_rank = r2.rank_id
+                      ORDER BY u.user_id
                 )
                 SELECT p.forum_id,
 	                   p.topic_id,
@@ -222,15 +223,13 @@ namespace PhpbbInDotnet.Forum.Pages
                    AND (@authorId = 0 OR @authorId = p.poster_id)
                    AND (@searchText IS NULL OR MATCH(p.post_subject) AGAINST(@searchText IN BOOLEAN MODE))
    
-                 ORDER BY post_time DESC
-                 LIMIT @skip, 14;",
+                 ORDER BY post_time DESC",
                 new
                 {
                     Constants.ANONYMOUS_USER_ID,
                     topicId = TopicId ?? 0,
                     AuthorId,
                     searchText = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText),
-                    skip = (PageNum - 1) * Constants.DEFAULT_PAGE_SIZE,
                     searchableForums
                 });
             var countTask = SqlExecuter.ExecuteScalarAsync<int>(

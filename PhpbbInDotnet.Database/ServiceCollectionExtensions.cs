@@ -1,6 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.DbContexts;
+using PhpbbInDotnet.Database.SqlExecuter;
+using PhpbbInDotnet.Domain;
+using System;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -8,8 +11,22 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public static IServiceCollection AddForumDbContext(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddDbContext<IForumDbContext, ForumDbContext>(options => options.UseMySQL(configuration.GetValue<string>("ForumDbConnectionString")));
-            services.AddScoped<ISqlExecuter, SqlExecuter>();
+            var dbType = configuration.GetValue<DatabaseType>("Database:DatabaseType");
+            var connStr = configuration.GetValue<string>("Database:ConnectionString");
+            switch (dbType)
+            {
+                case DatabaseType.SqlServer:
+                    services.AddDbContext<IForumDbContext, SqlServerDbContext>(options => options.UseSqlServer(connStr));
+                    break;
+
+                case DatabaseType.MySql:
+					services.AddDbContext<IForumDbContext, MySqlDbContext>(options => options.UseMySQL(connStr));
+                    break;
+
+                default:
+                    throw new ArgumentException("Unknown Database type in configuration.");
+			}
+			services.AddScoped<ISqlExecuter, SqlExecuter>();
             return services;
         }
     }

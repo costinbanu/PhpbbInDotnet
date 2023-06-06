@@ -1,4 +1,5 @@
 ﻿@page
+@using Database.DbContexts
 @using Domain
 @using Domain.Extensions
 @using Domain.Utilities
@@ -10,7 +11,7 @@
 @model PhpbbInDotnet.Forum.Pages.UserModel
 
 @inject Services.IUserService _userService
-@inject Database.IForumDbContext _context
+@inject IForumDbContext _context
 @inject Microsoft.Extensions.Configuration.IConfiguration _config
 
 @{

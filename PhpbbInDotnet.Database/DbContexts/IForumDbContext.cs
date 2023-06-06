@@ -5,7 +5,7 @@ using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace PhpbbInDotnet.Database
+namespace PhpbbInDotnet.Database.DbContexts
 {
     public interface IForumDbContext
     {

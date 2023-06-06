@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Http;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Domain;
@@ -13,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Serilog;
+using PhpbbInDotnet.Database.SqlExecuter;
 
 namespace PhpbbInDotnet.Services
 {
@@ -34,7 +34,7 @@ namespace PhpbbInDotnet.Services
         public async Task<(List<OperationLogSummary> PageItems, int Count)> GetOperationLogs(OperationLogType? logType, string? authorName = null, int page = 1)
             => await WithErrorHandling(async () =>
             {
-                var logTask = _sqlExecuter.QueryAsync<OperationLogSummary>(
+                var logTask = _sqlExecuter.WithPagination(LogPageSize * (page - 1), LogPageSize).QueryAsync<OperationLogSummary>(
                     @"SELECT l.user_id, u.username, l.forum_id, f.forum_name, l.topic_id, t.topic_title, l.log_type, l.log_operation, l.log_data, l.log_time
                         FROM phpbb_log l
                         LEFT JOIN phpbb_users u ON l.user_id = u.user_id
@@ -42,13 +42,10 @@ namespace PhpbbInDotnet.Services
                         LEFT JOIN phpbb_topics t ON l.topic_id = t.topic_id
                        WHERE (@logType IS NULL OR l.log_type = @logType) 
                          AND (@authorName = '' OR u.username_clean = @authorName)
-                       ORDER BY l.log_time DESC
-                       LIMIT @skip, @take;",
+                       ORDER BY l.log_time DESC",
                     new
                     {
                         logType,
-                        skip = LogPageSize * (page - 1),
-                        take = LogPageSize,
                         authorName = StringUtility.CleanString(authorName)
                     });
                 var countTask = _sqlExecuter.ExecuteScalarAsync<int>(

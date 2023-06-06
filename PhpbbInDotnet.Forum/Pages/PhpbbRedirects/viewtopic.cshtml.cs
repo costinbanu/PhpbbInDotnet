@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain.Utilities;
 using System.Threading.Tasks;
 
@@ -22,12 +22,11 @@ namespace PhpbbInDotnet.Forum.Pages.PhpbbRedirects
             {
                 if (start.HasValue)
                 {
-                    var post = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
-                        "SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time LIMIT @skip, 1",
+                    var post = await _sqlExecuter.WithPagination(start >= 1 ? start.Value - 1 : 0, 1).QueryFirstOrDefaultAsync<PhpbbPosts>(
+                        "SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time",
                         new
                         {
                             topicId = t.Value,
-                            skip = start >= 1 ? start - 1 : 0
                         }
                     );
 

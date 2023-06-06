@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using Serilog;
@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services.Storage
 {
-	class DiskStorageService : BaseStorageService
+    class DiskStorageService : BaseStorageService
 	{
 		private readonly IConfiguration _config;
 

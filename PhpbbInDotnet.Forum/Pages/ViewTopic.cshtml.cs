@@ -2,8 +2,8 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
@@ -20,7 +20,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-	[ValidateAntiForgeryToken]
+    [ValidateAntiForgeryToken]
     public class ViewTopicModel : AuthenticatedPageModel
     {
         [BindProperty]

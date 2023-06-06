@@ -1,4 +1,4 @@
-﻿using PhpbbInDotnet.Database;
+﻿using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using System.Threading;
 using System.Threading.Tasks;

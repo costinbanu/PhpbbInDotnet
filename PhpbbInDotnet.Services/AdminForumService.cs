@@ -3,8 +3,9 @@ using Dapper;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.DbContexts;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
@@ -284,11 +285,8 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public async Task<IEnumerable<ForumPermissions>> GetPermissions(int forumId)
-            => await _sqlExecuter.QueryAsync<ForumPermissions>(
-                sql: "CALL get_forum_permissions(@forumId);",
-                param: new { forumId }
-            );
+        public Task<IEnumerable<ForumPermissions>> GetPermissions(int forumId)
+            => _sqlExecuter.CallStoredProcedureAsync<ForumPermissions>("get_forum_permissions", new { forumId });
 
         public async Task<(string Message, bool? IsSuccess)> DeleteForum(int forumId, int adminUserId)
         {

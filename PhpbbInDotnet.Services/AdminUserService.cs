@@ -2,8 +2,9 @@
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.DbContexts;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
@@ -454,7 +455,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<List<UpsertGroupDto>> GetGroups()
             => (
-                await _sqlExecuter.QueryAsync<UpsertGroupDto>(
+                await _sqlExecuter.WithPagination(0, 1).QueryAsync<UpsertGroupDto>(
                     @"SELECT g.group_id AS id, 
                              g.group_name AS `name`,
                              g.group_desc AS `desc`,
@@ -466,7 +467,7 @@ namespace PhpbbInDotnet.Services
 		                         (SELECT r.auth_role_id 
 		                            FROM phpbb_acl_groups r  
 		                           WHERE g.group_id = r.group_id AND r.forum_id = 0
-		                           LIMIT 1)
+		                           ##paginate)
                                  , 0
                              ) as role
                         FROM phpbb_groups g"

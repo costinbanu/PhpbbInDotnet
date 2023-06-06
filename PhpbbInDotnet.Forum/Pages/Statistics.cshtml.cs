@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-	public class StatisticsModel : AuthenticatedPageModel
+    public class StatisticsModel : AuthenticatedPageModel
     {
         [BindProperty]
         public StatisticsPeriod? Period { get; set; }

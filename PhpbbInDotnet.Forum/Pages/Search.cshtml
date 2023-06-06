@@ -4,10 +4,11 @@
 @using CustomPartials
 @using Dapper
 @using Database.Entities
+@using Database.SqlExecuter
 @using Domain
 @using Domain.Utilities
 
-@inject Database.ISqlExecuter _sqlExecuter
+@inject ISqlExecuter _sqlExecuter
 @inject Services.IBBCodeRenderingService _renderingService
 @inject Services.IUserService _userService
 @inject Services.IForumTreeService _forumService

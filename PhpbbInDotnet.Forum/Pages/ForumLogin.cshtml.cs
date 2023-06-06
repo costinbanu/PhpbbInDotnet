@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.DbContexts;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
@@ -13,7 +13,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-	[ValidateAntiForgeryToken]
+    [ValidateAntiForgeryToken]
     public class ForumLoginModel : BaseModel
     {
         private readonly IForumDbContext _context;

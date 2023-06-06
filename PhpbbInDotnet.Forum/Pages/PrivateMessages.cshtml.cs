@@ -2,7 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.DbContexts;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
@@ -18,7 +19,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-	public class PrivateMessagesModel : AuthenticatedPageModel
+    public class PrivateMessagesModel : AuthenticatedPageModel
     {
         [BindProperty(SupportsGet = true)]
         public PrivateMessagesPages? Show { get; set; } = PrivateMessagesPages.Inbox;
@@ -77,7 +78,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     await ResiliencyUtility.RetryOnceAsync(
                         toDo: async () =>
                         {
-                            var messageTask = SqlExecuter.QueryAsync<PrivateMessageDto>(
+                            var messageTask = SqlExecuter.WithPagination((pageNum - 1) * Constants.DEFAULT_PAGE_SIZE, Constants.DEFAULT_PAGE_SIZE).QueryAsync<PrivateMessageDto>(
                                 @"WITH other AS (
 	                                SELECT t.msg_id, 
 		                                   CASE WHEN t.user_id = @userId THEN t.author_id
@@ -102,14 +103,11 @@ namespace PhpbbInDotnet.Forum.Pages
                                  WHERE tt.user_id = @userId 
                                    AND ((@isInbox AND tt.folder_id >= 0) OR (NOT @isInbox AND tt.folder_id = -1))
                                    AND tt.folder_id <> -10
-                                 ORDER BY message_time DESC
-                                 LIMIT @skip, @take",
+                                 ORDER BY message_time DESC",
                                 new
                                 {
                                     user.UserId,
                                     isInbox = Show == PrivateMessagesPages.Inbox,
-                                    skip = (pageNum - 1) * Constants.DEFAULT_PAGE_SIZE,
-                                    take = Constants.DEFAULT_PAGE_SIZE
                                 });
 
                             var countTask = SqlExecuter.ExecuteScalarAsync<int>(

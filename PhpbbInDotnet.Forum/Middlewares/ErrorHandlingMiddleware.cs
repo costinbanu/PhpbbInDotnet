@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using Serilog;
@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Middlewares
 {
-	public class ErrorHandlingMiddleware : IMiddleware
+    public class ErrorHandlingMiddleware : IMiddleware
     {
         private readonly ISqlExecuter _sqlExecuter;
         private readonly ILogger _logger;

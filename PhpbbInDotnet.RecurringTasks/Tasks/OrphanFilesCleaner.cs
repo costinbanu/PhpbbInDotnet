@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Services;
 using Serilog;

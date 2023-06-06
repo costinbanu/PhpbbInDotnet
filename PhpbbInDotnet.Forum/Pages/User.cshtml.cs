@@ -5,8 +5,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.DbContexts;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
@@ -27,7 +28,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-	[IgnoreAntiforgeryToken(Order = 1001), ResponseCache(NoStore = true, Duration = 0)]
+    [IgnoreAntiforgeryToken(Order = 1001), ResponseCache(NoStore = true, Duration = 0)]
     public class UserModel : AuthenticatedPageModel
     {
         [BindProperty]
@@ -128,8 +129,9 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     return NotFound();
                 }
-              
-                var cur = await _dbContext.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == UserId);
+
+                var cur = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { UserId });
+                //await _dbContext.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == UserId);
                 if (cur == null)
                 {
                     return NotFound();

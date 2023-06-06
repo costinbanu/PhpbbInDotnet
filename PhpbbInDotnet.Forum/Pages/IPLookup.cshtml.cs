@@ -1,8 +1,8 @@
 using Dapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-	public class IPLookupModel : AuthenticatedPageModel
+    public class IPLookupModel : AuthenticatedPageModel
     {
         public IPLookupModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, 
             ITranslationProvider translationProvider, IConfiguration configuration)
@@ -40,7 +40,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 var searchableForums = await ForumService.GetUnrestrictedForums(ForumUser, ignoreForumPassword: await UserService.IsAdmin(ForumUser));
 
-                var searchTask = SqlExecuter.QueryAsync<PostDto>(
+                var searchTask = SqlExecuter.WithPagination((PageNum - 1) * Constants.DEFAULT_PAGE_SIZE, Constants.DEFAULT_PAGE_SIZE).QueryAsync<PostDto>(
                     @"WITH ranks AS (
 	                SELECT DISTINCT u.user_id, 
 		                   COALESCE(r1.rank_id, r2.rank_id) AS rank_id, 
@@ -49,6 +49,7 @@ namespace PhpbbInDotnet.Forum.Pages
 	                  JOIN phpbb_groups g ON u.group_id = g.group_id
 	                  LEFT JOIN phpbb_ranks r1 ON u.user_rank = r1.rank_id
 	                  LEFT JOIN phpbb_ranks r2 ON g.group_rank = r2.rank_id
+                      ORDER BY u.user_id
                     )
                     SELECT p.forum_id,
 	                       p.topic_id,
@@ -76,13 +77,11 @@ namespace PhpbbInDotnet.Forum.Pages
                       LEFT JOIN ranks r ON a.user_id = r.user_id
                      WHERE p.forum_id IN @searchableForums
                        AND p.poster_ip = @ip   
-                     ORDER BY post_time DESC
-                     LIMIT @skip, 14;",
+                     ORDER BY post_time DESC",
                     new
                     {
                         Constants.ANONYMOUS_USER_ID,
                         IP,
-                        skip = (PageNum - 1) * Constants.DEFAULT_PAGE_SIZE,
                         searchableForums
                     });
                 var countTask = SqlExecuter.ExecuteScalarAsync<int>(

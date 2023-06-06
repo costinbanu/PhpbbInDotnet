@@ -1,8 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.DbContexts;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
@@ -18,7 +19,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-	public class MemberListModel : AuthenticatedPageModel
+    public class MemberListModel : AuthenticatedPageModel
     {
         public const int PAGE_SIZE = 20;
 

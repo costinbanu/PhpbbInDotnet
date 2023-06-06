@@ -2,8 +2,9 @@
 using LazyCache;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.DbContexts;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
@@ -83,7 +84,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<PostListDto> GetPosts(int topicId, int pageNum, int pageSize, bool isPostingView, string language)
         {
-            var posts = await _sqlExecuter.QueryAsync<PostDto>(
+            var posts = await _sqlExecuter.WithPagination((pageNum - 1) * pageSize, pageSize).QueryAsync<PostDto>(
                      @"WITH ranks AS (
 					    SELECT DISTINCT u.user_id, 
 						       COALESCE(r1.rank_id, r2.rank_id) AS rank_id, 
@@ -92,6 +93,7 @@ namespace PhpbbInDotnet.Services
 					      JOIN phpbb_groups g ON u.group_id = g.group_id
 					      LEFT JOIN phpbb_ranks r1 ON u.user_rank = r1.rank_id
 					      LEFT JOIN phpbb_ranks r2 ON g.group_rank = r2.rank_id
+                          ORDER BY u.user_id
 				    )
 				    SELECT 
 					       p.forum_id,
@@ -125,14 +127,11 @@ namespace PhpbbInDotnet.Services
                         END ASC, 
                         CASE 
                             WHEN @order = 'DESC' THEN post_time 
-                        END DESC 
-				      LIMIT @skip, @take;",
+                        END DESC",
                      new
                      {
                          Constants.ANONYMOUS_USER_ID,
                          topicId,
-                         skip = (pageNum - 1) * pageSize,
-                         take = pageSize,
                          order = isPostingView ? "DESC" : "ASC"
                      });
 

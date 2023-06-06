@@ -1,7 +1,7 @@
 using Dapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-	public class DraftsModel : AuthenticatedPageModel
+    public class DraftsModel : AuthenticatedPageModel
     {
         public List<TopicDto> Topics { get; private set; } = new List<TopicDto>();
         public Paginator? Paginator { get; private set; }
@@ -39,7 +39,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     {
                         var restrictedForumList = (await ForumService.GetRestrictedForumList(ForumUser)).Select(f => f.forumId).DefaultIfEmpty();
                         PageNum = Paginator.NormalizePageNumberLowerBound(PageNum);
-                        var draftsTask = SqlExecuter.QueryAsync<TopicDto>(
+                        var draftsTask = SqlExecuter.WithPagination((PageNum - 1) * Constants.DEFAULT_PAGE_SIZE, Constants.DEFAULT_PAGE_SIZE).QueryAsync<TopicDto>(
                             @"SELECT d.draft_id,
 				                     d.topic_id, 
 				                     d.forum_id,
@@ -53,13 +53,10 @@ namespace PhpbbInDotnet.Forum.Pages
                                  AND d.user_id = @userId
                                  AND d.forum_id <> 0
                                  AND (t.topic_id IS NOT NULL OR d.topic_id = 0)
-                               ORDER BY d.save_time DESC
-                               LIMIT @skip, @take",
+                               ORDER BY d.save_time DESC",
                             new
                             {
                                 user.UserId,
-                                skip = (PageNum - 1) * Constants.DEFAULT_PAGE_SIZE,
-                                take = Constants.DEFAULT_PAGE_SIZE,
                                 restrictedForumList
                             }
                         );

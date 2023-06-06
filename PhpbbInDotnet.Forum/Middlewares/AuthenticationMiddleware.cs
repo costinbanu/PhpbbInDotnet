@@ -5,8 +5,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Net.Http.Headers;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
@@ -132,10 +132,10 @@ namespace PhpbbInDotnet.Forum.Middlewares
         async Task<Dictionary<int, int>> GetTopicPostsPage(int userId)
         {
             var results = await _sqlExecuter.QueryAsync<(int topicId, int postNo)>(
-                @"SELECT topic_id, post_no
+                @"SELECT DISTINCT topic_id, post_no
 	                FROM phpbb_user_topic_post_number
 	               WHERE user_id = @user_id
-	               GROUP BY topic_id;",
+                   ORDER BY topic_id;",
                 new { userId });
             return results.ToDictionary(x => x.topicId, y => y.postNo);
         }

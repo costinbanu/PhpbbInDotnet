@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Primitives;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Domain;
 using Serilog;
@@ -13,6 +12,8 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using PhpbbInDotnet.Database.DbContexts;
+using PhpbbInDotnet.Database.SqlExecuter;
 
 namespace PhpbbInDotnet.Languages
 {

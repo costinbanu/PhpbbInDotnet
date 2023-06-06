@@ -3,8 +3,8 @@ using Azure.Storage.Blobs.Models;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using Serilog;
@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services.Storage
 {
-	class AzureStorageService : BaseStorageService
+    class AzureStorageService : BaseStorageService
 	{
 		private readonly IConfiguration _config;
 		private readonly BlobContainerClient _blobContainerClient;

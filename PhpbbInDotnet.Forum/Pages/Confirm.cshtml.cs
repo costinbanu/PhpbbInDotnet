@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.DbContexts;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
@@ -14,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-	public class ConfirmModel : AuthenticatedPageModel
+    public class ConfirmModel : AuthenticatedPageModel
     {
         private readonly IEmailService _emailService;
         private readonly IForumDbContext _dbContext;
