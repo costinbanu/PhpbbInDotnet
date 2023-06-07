@@ -1,9 +1,7 @@
 ﻿using CryptSharp.Core;
 using Dapper;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database.DbContexts;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
@@ -21,9 +19,8 @@ using System.Web;
 
 namespace PhpbbInDotnet.Services
 {
-    class AdminForumService : IAdminForumService
+	class AdminForumService : IAdminForumService
     {
-        private readonly IForumDbContext _context;
         private readonly ISqlExecuter _sqlExecuter;
         private readonly IForumTreeService _forumService;
         private readonly IConfiguration _config;
@@ -31,10 +28,9 @@ namespace PhpbbInDotnet.Services
         private readonly ITranslationProvider _translationProvider;
         private readonly ILogger _logger;
 
-        public AdminForumService(IForumDbContext context, ISqlExecuter sqlExecuter, IForumTreeService forumService, IConfiguration config,
+        public AdminForumService(ISqlExecuter sqlExecuter, IForumTreeService forumService, IConfiguration config,
             ITranslationProvider translationProvider, IOperationLogService operationLogService, ILogger logger)
         {
-            _context = context;
             _sqlExecuter = sqlExecuter;
             _forumService = forumService;
             _config = config;
@@ -51,13 +47,17 @@ namespace PhpbbInDotnet.Services
                 if (isRoot)
                 {
                     await ReorderChildren(0);
-                    await _context.SaveChangesAsync();
                     return new(
                         isSuccess: true, 
                         message: string.Format(_translationProvider.Admin[lang, "FORUM_UPDATED_SUCCESSFULLY_FORMAT"], _config.GetObject<string>("ForumName")));
                 }
 
-                var actual = await _context.PhpbbForums.FirstOrDefaultAsync(f => f.ForumId == dto.ForumId);
+                var actual = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>(
+                    "SELECT * FROM phpbb_forums WHERE forum_id = @forumId",
+                    new
+                    {
+                        dto.ForumId
+                    });
                 var isNewForum = false;
                 if (string.IsNullOrWhiteSpace(dto.ForumName))
                 {
@@ -65,7 +65,7 @@ namespace PhpbbInDotnet.Services
                         isSuccess: false, 
                         message: _translationProvider.Admin[lang, "INVALID_FORUM_NAME"]);
                 }
-                if ((dto.ForumId ?? 0) > 0 && actual == null)
+                if (dto.ForumId > 0 && actual == null)
                 {
                     return new(
                         isSuccess: false,
@@ -92,14 +92,62 @@ namespace PhpbbInDotnet.Services
                 actual.ForumRulesLink = HttpUtility.HtmlEncode(dto.ForumRulesLink ?? actual.ForumRules ?? string.Empty);
                 if (isNewForum)
                 {
-                    var result = _context.PhpbbForums.Add(actual);
-                    result.Entity.ForumId = 0;
-                    await _context.SaveChangesAsync();
-                    actual = result.Entity;
+                    actual = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>(
+						@$"INSERT INTO phpbb_forums 
+                                 VALUES (@ParentId, @LeftId, @RightId, @ForumParents, @ForumName, @ForumDesc, @ForumDescBitfield, @ForumDescOptions, @ForumDescUid, @ForumLink, @ForumPassword, @ForumStyle, @ForumImage, @ForumRules, @ForumRulesLink, @ForumRulesBitfield, @ForumRulesOptions, @ForumRulesUid, @ForumTopicsPerPage, @ForumType, @ForumStatus, @ForumPosts, @ForumTopics, @ForumTopicsReal, @ForumLastPostId, @ForumLastPosterId, @ForumLastPostSubject, @ForumLastPostTime, @ForumLastPosterName, @ForumLastPosterColour, @ForumFlags, @ForumOptions, @DisplaySubforumList, @DisplayOnIndex, @EnableIndexing, @EnableIcons, @EnablePrune, @PruneNext, @PruneDays, @PruneViewed, @PruneFreq, @ForumEditTime);
+                          SELECT * 
+                            FROM phpbb_forums 
+                           WHERE forum_id = {_sqlExecuter.LastInsertedItemId}",
+                        actual);
                 }
                 else
                 {
-                    await _context.SaveChangesAsync();
+                    await _sqlExecuter.ExecuteAsync(
+                        @"UPDATE phpbb_forums
+                            SET parent_id  = @ParentId,
+                                ,left_id = @LeftId,
+                                ,right_id  = @RightId,
+                                ,forum_parents = @ForumParents,
+                                ,forum_name  = @ForumName,
+                                ,forum_desc  = @ForumDesc,
+                                ,forum_desc_bitfield  = @ForumDescBitfield,
+                                ,forum_desc_options  = @ForumDescOptions,
+                                ,forum_desc_uid  = @ForumDescUid,
+                                ,forum_link  = @ForumLink,
+                                ,forum_password  = @ForumPassword,
+                                ,forum_style  = @ForumStyle,
+                                ,forum_image  = @ForumImage,
+                                ,forum_rules  = @ForumRules,
+                                ,forum_rules_link  = @ForumRulesLink,
+                                ,forum_rules_bitfield  = @ForumRulesBitfield,
+                                ,forum_rules_options  = @ForumRulesOptions,
+                                ,forum_rules_uid  = @ForumRulesUid,
+                                ,forum_topics_per_page  = @ForumTopicsPerPage,
+                                ,forum_type  = @ForumType,
+                                ,forum_status  = @ForumStatus,
+                                ,forum_posts  = @ForumPosts,
+                                ,forum_topics  = @ForumTopics,
+                                ,forum_topics_real  = @ForumTopicsReal,
+                                ,forum_last_post_id  = @ForumLastPostId,
+                                ,forum_last_poster_id = @ForumLastPosterId,
+                                ,forum_last_post_subject  = @ForumLastPostSubject,
+                                ,forum_last_post_time  = @ForumLastPostTime,
+                                ,forum_last_poster_name  = @ForumLastPosterName,
+                                ,forum_last_poster_colour = @ForumLastPosterColour,
+                                ,forum_flags  = @ForumFlags,
+                                ,forum_options  = @ForumOptions,
+                                ,display_subforum_list  = @DisplaySubforumList,
+                                ,display_on_index  = @DisplayOnIndex,
+                                ,enable_indexing  = @EnableIndexing,
+                                ,enable_icons  = @EnableIcons,
+                                ,enable_prune  = @EnablePrune,
+                                ,prune_next  = @PruneNext,
+                                ,prune_days  = @PruneDays,
+                                ,prune_viewed  = @PruneViewed,
+                                ,prune_freq  = @PruneFreq,
+                                ,forum_edit_time  = @ForumEditTime
+                            WHERE forum_id = @ForumId",
+                        actual);
                 }
 
                 await ReorderChildren(actual.ForumId);
@@ -113,18 +161,30 @@ namespace PhpbbInDotnet.Services
                 foreach (var idx in dto.UserPermissionToRemove.EmptyIfNull())
                 {
                     var (entityId, roleId) = translatePermission(dto.UserForumPermissions?[idx]);
-                    _context.PhpbbAclUsers.Remove(await _context.PhpbbAclUsers.FirstAsync(x => x.UserId == entityId && x.AuthRoleId == roleId && x.ForumId == actual.ForumId));
+                    await _sqlExecuter.ExecuteAsync(
+                        "DELETE FROM phpbb_acl_users WHERE user_id == @entityId AND auth_role_id = @roleId AND forum_id = @forumId",
+                        new
+                        {
+                            entityId,
+                            roleId,
+                            actual.ForumId
+                        });
                     rolesForAclEntity[AclEntityType.User].Remove((entityId, roleId));
                 }
 
                 foreach (var idx in dto.GroupPermissionToRemove.EmptyIfNull())
                 {
                     var (entityId, roleId) = translatePermission(dto.GroupForumPermissions?[idx]);
-                    _context.PhpbbAclGroups.Remove(await _context.PhpbbAclGroups.FirstAsync(x => x.GroupId == entityId && x.AuthRoleId == roleId && x.ForumId == actual.ForumId));
+					await _sqlExecuter.ExecuteAsync(
+	                    "DELETE FROM phpbb_acl_groups WHERE group_id == @entityId AND auth_role_id = @roleId AND forum_id = @forumId",
+	                    new
+	                    {
+		                    entityId,
+		                    roleId,
+		                    actual.ForumId
+	                    });
                     rolesForAclEntity[AclEntityType.Group].Remove((entityId, roleId));
                 }
-
-                await _context.SaveChangesAsync();
 
                 var tasks = new List<Task>();
                 foreach (var byType in rolesForAclEntity)
@@ -176,17 +236,19 @@ namespace PhpbbInDotnet.Services
 
             async Task ReorderChildren(int forumId)
             {
-                var children = await (
-                    from f in _context.PhpbbForums
-                    where f.ParentId == forumId
-                    orderby f.LeftId
-                    select f
-                ).ToListAsync();
-
-                if (children.Any())
-                {
-                    children.ForEach(c => c.LeftId = ((dto.ChildrenForums?.IndexOf(c.ForumId) ?? 0) + 1) * 2);
-                }
+                var children = await _sqlExecuter.QueryAsync<PhpbbForums>(
+                    "SELECT * FROM phpbb_forums WHERE parent_id = @forumId ORDER BY left_id", 
+                    new 
+                    { 
+                        forumId 
+                    });
+                await _sqlExecuter.ExecuteAsync(
+                    "UPDATE phpbb_forums SET left_id = @newLeftId WHERE forum_id = @forumId",
+                    children.Select(c => new
+                    {
+                        newLeftId = ((dto.ChildrenForums?.IndexOf(c.ForumId) ?? 0) + 1) * 2,
+                        c.ForumId
+                    }));
             }
 
             async Task ManagePermissions(string table, string entityIdColumn, int forumId, int entityId, int roleId)
@@ -233,15 +295,14 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(PhpbbForums Forum, List<PhpbbForums> Children)> ShowForum(int forumId)
         {
-            var forumTask = _context.PhpbbForums.AsNoTracking().FirstAsync(f => f.ForumId == forumId);
-            var childrenTask = (
-                from f in _context.PhpbbForums
-                where f.ParentId == forumId
-                orderby f.LeftId
-                select f
-            ).ToListAsync();
+            var forumTask = _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>(
+                "SELECT * FROM phpbb_forums WHERE forum_id = @forumId",
+                new { forumId });
+            var childrenTask = _sqlExecuter.QueryAsync<PhpbbForums>(
+                "SELECT * FROM phpbb_forums WHERE parent_id = @forumId ORDER BY left_id",
+                new { forumId });
             await Task.WhenAll(forumTask, childrenTask);
-            return (await forumTask, await childrenTask);
+            return (await forumTask, (await childrenTask).AsList());
         }
 
         public async Task<List<SelectListItem>> FlatForumTreeAsListItem(int parentId, ForumUserExpanded? user)
@@ -293,16 +354,24 @@ namespace PhpbbInDotnet.Services
             var lang = _translationProvider.GetLanguage();
             try
             {
-                var forum = await _context.PhpbbForums.FirstOrDefaultAsync(x => x.ForumId == forumId);
+                var forum = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>(
+				    "SELECT * FROM phpbb_forums WHERE forum_id = @forumId",
+				    new { forumId });
                 if (forum == null)
                 {
                     return (string.Format(_translationProvider.Admin[lang, "FORUM_DOESNT_EXIST_FORMAT"], forumId), false);
                 }
-                if (await _context.PhpbbForums.AsNoTracking().CountAsync(x => x.ParentId == forumId) > 0)
+                var childrenCount = await _sqlExecuter.ExecuteScalarAsync<long>(
+                    "SELECT count(1) FROM phpbb_forums WHERE parent_id = @forumId",
+                    new { forumId });
+				if (childrenCount > 0)
                 {
                     return (string.Format(_translationProvider.Admin[lang, "CANT_DELETE_HAS_CHILDREN_FORMAT"], forum.ForumName), false);
                 }
-                if (await _context.PhpbbTopics.AsNoTracking().CountAsync(x => x.ForumId == forumId) > 0)
+                var topicCount = await _sqlExecuter.ExecuteScalarAsync<long>(
+					"SELECT count(1) FROM phpbb_topics WHERE forum_id = 14",
+					new { forumId });
+				if (topicCount > 0)
                 {
                     return (string.Format(_translationProvider.Admin[lang, "CANT_DELETE_HAS_TOPICS_FORMAT"], forum.ForumName), false);
                 }
@@ -325,17 +394,21 @@ namespace PhpbbInDotnet.Services
                     ForumLastPosterName = forum.ForumLastPosterName,
                     ForumLastPosterColour = forum.ForumLastPosterColour
                 };
-                await _context.PhpbbRecycleBin.AddAsync(new PhpbbRecycleBin
-                {
-                    Id = forum.ForumId,
-                    Type = RecycleBinItemType.Forum,
-                    Content = await CompressionUtility.CompressObject(dto),
-                    DeleteTime = DateTime.UtcNow.ToUnixTimestamp(),
-                    DeleteUser = adminUserId
-                });
 
-                _context.PhpbbForums.Remove(forum);
-                await _context.SaveChangesAsync();
+                await _sqlExecuter.ExecuteAsync(
+                    "INSERT INTO phpbb_recycle_bin VALUES (@id, @type, @content, @deleteTime, @deleteUser)",
+                    new
+                    {
+                        id = forum.ForumId,
+                        type = RecycleBinItemType.Forum,
+                        content = await CompressionUtility.CompressObject(dto),
+                        deleteTime = DateTime.UtcNow.ToUnixTimestamp(),
+                        deleteUser = adminUserId
+                    });
+
+                await _sqlExecuter.ExecuteAsync(
+                    "DELETE FROM phpbb_forums WHERE forum_id = @forumId",
+                    new { forum.ForumId });
 
                 await _operationLogService.LogAdminForumAction(AdminForumActions.Delete, adminUserId, forum);
 

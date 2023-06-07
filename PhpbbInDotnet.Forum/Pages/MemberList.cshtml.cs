@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database.DbContexts;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
@@ -14,6 +12,7 @@ using PhpbbInDotnet.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -24,7 +23,6 @@ namespace PhpbbInDotnet.Forum.Pages
         public const int PAGE_SIZE = 20;
 
         private readonly IAnonymousSessionCounter _sessionCounter;
-        private readonly IForumDbContext _dbContext;
 
         [BindProperty(SupportsGet = true)]
         public int PageNum { get; set; } = 1;
@@ -52,12 +50,11 @@ namespace PhpbbInDotnet.Forum.Pages
         public IEnumerable<BotData>? BotList { get; private set; }
         public Paginator? BotPaginator { get; private set; }
 
-        public MemberListModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, IForumDbContext dbContext,
+        public MemberListModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter,
             ITranslationProvider translationProvider, IConfiguration config, IAnonymousSessionCounter sessionCounter)
             : base(forumService, userService, sqlExecuter, translationProvider, config)
         {
             _sessionCounter = sessionCounter;
-            _dbContext = dbContext;
         }
 
         public async Task<IActionResult> OnGet()
@@ -76,20 +73,19 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (_) =>
             {
                 PageNum = Paginator.NormalizePageNumberLowerBound(PageNum);
-                var groupsTask = _dbContext.PhpbbGroups.AsNoTracking().ToListAsync();
+                var groupsTask = SqlExecuter.QueryAsync<PhpbbGroups>("SELECT * FROM phpbb_groups");
                 switch (Mode)
                 {
                     case MemberListPages.AllUsers:
                         await ResiliencyUtility.RetryOnceAsync(
                             toDo: async () =>
                             {
-                                var userQuery = from u in _dbContext.PhpbbUsers.AsNoTracking()
-                                                where u.GroupId != 6
-                                                   && u.UserId != Constants.ANONYMOUS_USER_ID
-                                                select u;
-                                var usersTask = userQuery.OrderUsers(Order ?? MemberListOrder.NameAsc).PaginateUsers(PageNum).ToListAsync();
-                                var countTask = userQuery.Distinct().CountAsync(_ => true);
-                                var ranksTask = _dbContext.PhpbbRanks.AsNoTracking().ToListAsync();
+                                var stmt = "FROM phpbb_users WHERE group_id <> 6 AND user_id <> 1 ";
+                                var usersTask = SqlExecuter
+                                    .WithPagination(PAGE_SIZE * (PageNum - 1), PAGE_SIZE)
+                                    .QueryAsync<PhpbbUsers>("SELECT * " + stmt + OrderColumn(Order ?? MemberListOrder.NameAsc));
+                                var countTask = SqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) " + stmt);
+                                var ranksTask = SqlExecuter.QueryAsync<PhpbbRanks>("SELECT * FROM phpbb_ranks");
                                 await Task.WhenAll(usersTask, countTask, groupsTask, ranksTask);
                                 UserList = await usersTask;
                                 Paginator = new Paginator(await countTask, PageNum, $"/MemberList?order={Order}", PAGE_SIZE, "pageNum");
@@ -107,15 +103,26 @@ namespace PhpbbInDotnet.Forum.Pages
                             {
                                 if (!string.IsNullOrWhiteSpace(Username) || GroupId.HasValue)
                                 {
-                                    var usernameToSearch = Username == null ? null : StringUtility.CleanString(Username);
-                                    var searchQuery = from u in _dbContext.PhpbbUsers.AsNoTracking()
-                                                      where (usernameToSearch == null || u.UsernameClean.Contains(usernameToSearch))
-                                                         && (GroupId == null || u.GroupId == GroupId)
-                                                         && u.UserId != Constants.ANONYMOUS_USER_ID
-                                                      select u;
-                                    var searchTask = searchQuery.OrderUsers(Order ?? MemberListOrder.NameAsc).PaginateUsers(PageNum).ToListAsync();
-                                    var countTask = searchQuery.Distinct().CountAsync(_ => true);
-                                    var ranksTask = _dbContext.PhpbbRanks.AsNoTracking().ToListAsync();
+                                    var stmt = new StringBuilder("FROM phpbb_users WHERE user_id <> @ANONYMOUS_USER_ID");
+                                    var param = new
+                                    {
+                                        Constants.ANONYMOUS_USER_ID
+                                    };
+                                    if (!string.IsNullOrWhiteSpace(Username))
+                                    {
+                                        stmt.AppendLine("AND username_clean LIKE '@username'");
+                                        param = AnonymousObjectsUtility.Merge(param, new { username = StringUtility.CleanString(Username) });
+                                    }
+                                    if (GroupId is not null)
+                                    {
+                                        stmt.AppendLine("AND group_id = @groupId");
+                                        param = AnonymousObjectsUtility.Merge(param, new { GroupId });
+                                    }
+                                    var searchTask = SqlExecuter
+                                        .WithPagination(PAGE_SIZE * (PageNum - 1), PAGE_SIZE)
+                                        .QueryAsync<PhpbbUsers>("SELECT * " + stmt.ToString());
+                                    var countTask = SqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) " + stmt.ToString());
+                                    var ranksTask = SqlExecuter.QueryAsync<PhpbbRanks>("SELECT * FROM phpbb_ranks");
                                     await Task.WhenAll(searchTask, countTask, ranksTask, groupsTask);
                                     UserList = await searchTask;
                                     Paginator = new Paginator(await countTask, PageNum, $"/MemberList?username={HttpUtility.UrlEncode(Username)}&order={Order}&groupId={GroupId}&handler=search", PAGE_SIZE, "pageNum");
@@ -149,13 +156,18 @@ namespace PhpbbInDotnet.Forum.Pages
                             toDo: async () =>
                             {
                                 var lastVisit = DateTime.UtcNow.Subtract(Configuration.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1)).ToUnixTimestamp();
-                                var userQuery = from u in _dbContext.PhpbbUsers.AsNoTracking()
-                                                where u.UserLastvisit >= lastVisit
-                                                   && u.UserId != Constants.ANONYMOUS_USER_ID
-                                                select u;
-                                var userTask = userQuery.OrderUsers(Order ?? MemberListOrder.NameAsc).PaginateUsers(PageNum).ToListAsync();
-                                var countTask = userQuery.Distinct().CountAsync(_ => true);
-                                var ranksTask = _dbContext.PhpbbRanks.AsNoTracking().ToListAsync();
+                                var stmt = "FROM phpbb_users WHERE user_lastvisit >= @lastVisit AND user_id <> @ANONYMOUS_USER_ID";
+                                var userTask = SqlExecuter
+                                    .WithPagination(PAGE_SIZE * (PageNum - 1), PAGE_SIZE)
+                                    .QueryAsync<PhpbbUsers>(
+                                        "SELECT * " + stmt,
+                                        new
+                                        {
+                                            lastVisit,
+                                            Constants.ANONYMOUS_USER_ID
+                                        });
+                                var countTask = SqlExecuter.ExecuteScalarAsync<int>("SELECT count(1)" + stmt);
+                                var ranksTask = SqlExecuter.QueryAsync<PhpbbRanks>("SELECT * FROM phpbb_ranks");
                                 await Task.WhenAll(userTask, countTask, groupsTask, ranksTask);
                                 UserList = await userTask;
                                 Paginator = new Paginator(await countTask, PageNum, $"/MemberList?handler=setMode&mode={Mode}", PAGE_SIZE, "pageNum");
@@ -172,25 +184,20 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 return Page();
             });
-    }
 
-    static class IQueryableExtensions
-    {
-        internal static IQueryable<PhpbbUsers> OrderUsers(this IQueryable<PhpbbUsers> query, MemberListOrder order)
+        string OrderColumn(MemberListOrder order)
             => order switch
             {
-                MemberListOrder.NameAsc => query.OrderBy(u => u.UsernameClean),
-                MemberListOrder.NameDesc => query.OrderByDescending(u => u.UsernameClean),
-                MemberListOrder.LastActiveDateAsc => query.OrderBy(u => u.UserLastvisit),
-                MemberListOrder.LastActiveDateDesc => query.OrderByDescending(u => u.UserLastvisit),
-                MemberListOrder.RegistrationDateAsc => query.OrderBy(u => u.UserRegdate),
-                MemberListOrder.RegistrationDateDesc => query.OrderByDescending(u => u.UserRegdate),
-                MemberListOrder.MessageCountAsc => query.OrderBy(u => u.UserPosts),
-                MemberListOrder.MessageCountDesc => query.OrderByDescending(u => u.UserPosts),
-                _ => throw new ArgumentException($"Unknown value '{order}' in {nameof(OrderUsers)}.", nameof(order))
+                MemberListOrder.NameAsc => "ORDER BY username_clean ASC",
+                MemberListOrder.NameDesc => "ORDER BY username_clean DESC",
+                MemberListOrder.LastActiveDateAsc => "ORDER BY user_lastvisit ASC",
+                MemberListOrder.LastActiveDateDesc => "ORDER BY user_lastvisit DESC",
+                MemberListOrder.RegistrationDateAsc => "ORDER BY user_regdate ASC",
+                MemberListOrder.RegistrationDateDesc => "ORDER BY user_regdate DESC",
+                MemberListOrder.MessageCountAsc => "ORDER BY user_posts ASC",
+                MemberListOrder.MessageCountDesc => "ORDER BY user_posts DESC",
+                _ => throw new ArgumentException($"Unknown value '{order}'.", nameof(order))
             };
 
-        internal static IQueryable<PhpbbUsers> PaginateUsers(this IQueryable<PhpbbUsers> query, int pageNum)
-            => query.Skip(MemberListModel.PAGE_SIZE * (pageNum - 1)).Take(MemberListModel.PAGE_SIZE);
     }
 }

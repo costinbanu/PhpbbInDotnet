@@ -1,6 +1,4 @@
 ﻿using Dapper;
-using Microsoft.EntityFrameworkCore;
-using PhpbbInDotnet.Database.DbContexts;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
@@ -17,9 +15,8 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
 {
-    class ModeratorService : IModeratorService
+	class ModeratorService : IModeratorService
     {
-        private readonly IForumDbContext _context;
         private readonly ISqlExecuter _sqlExecuter;
         private readonly IPostService _postService;
         private readonly IStorageService _storageService;
@@ -27,11 +24,10 @@ namespace PhpbbInDotnet.Services
         private readonly ILogger _logger;
         private readonly ITranslationProvider _translationProvider;
 
-        public ModeratorService(IForumDbContext context, ISqlExecuter sqlExecuter, IPostService postService, IStorageService storageService, ITranslationProvider translationProvider,
+        public ModeratorService(ISqlExecuter sqlExecuter, IPostService postService, IStorageService storageService, ITranslationProvider translationProvider,
             IOperationLogService operationLogService, ILogger logger)
         {
             _translationProvider = translationProvider;
-            _context = context;
             _sqlExecuter = sqlExecuter;
             _postService = postService;
             _storageService = storageService;
@@ -431,24 +427,29 @@ namespace PhpbbInDotnet.Services
             var language = _translationProvider.GetLanguage();
             try
             {
-                var post = await _context.PhpbbPosts.AsNoTracking().FirstOrDefaultAsync(p => p.PostId == postId);
+                var post = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
+                    "SELECT * FROM phpbb_posts WHERE post_id = @postId",
+                    new { postId });
                 if (post == null)
                 {
                     return (_translationProvider.Moderator[language, "ATLEAST_ONE_POST_REQUIRED"], false);
                 }
-                var attachments = await _context.PhpbbAttachments.AsNoTracking().Where(a => a.PostMsgId == postId).OrderBy(a => a.AttachId).ToListAsync();
+                var attachments = await _sqlExecuter.QueryAsync<PhpbbAttachments>
+                    ("SELECT * FROM phpbb_attachments WHERE post_msg_id = @postId ORDER BY attach_id",
+                    new { postId });
 
-                post.PostId = 0;
                 post.PostTime++;
                 post.PostAttachment = attachments.Any().ToByte();
                 post.PostEditCount = 0;
                 post.PostEditReason = string.Empty;
                 post.PostEditUser = 0;
                 post.PostEditTime = 0;
-                var entity = await _context.PhpbbPosts.AddAsync(post);
 
-                entity.Entity.PostId = 0;
-                await _context.SaveChangesAsync();
+                var entity = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
+                    @$"INSERT INTO phpbb_posts(topic_id, forum_id, poster_id, icon_id, poster_ip, post_time, post_approved, post_reported, enable_bbcode, enable_smilies, enable_magic_url, enable_sig, post_username, post_subject, post_text, post_checksum, post_attachment, bbcode_bitfield, bbcode_uid, post_postcount, post_edit_time, post_edit_reason, post_edit_user, post_edit_count, post_edit_locked)
+                       VALUES (@TopicId, @ForumId, @PosterId, @IconId, @PosterIp, @PostTime, @PostApproved, @PostReported, @EnableBbcode, @EnableSmilies, @EnableMagicUrl, @EnableSig, @PostUsername, @PostSubject, @PostText, @PostChecksum, @PostAttachment, @BbcodeBitfield, @BbcodeUid, @PostPostcount, @PostEditTime, @PostEditReason, @PostEditUser, @PostEditCount, @PostEditLocked);
+                       SELECT * FROM phpbb_posts WHERE post_id = {_sqlExecuter.LastInsertedItemId}",
+                    post);
 
                 foreach (var a in attachments)
                 {
@@ -457,15 +458,15 @@ namespace PhpbbInDotnet.Services
 					{
                         continue;
 					}
-					a.AttachId = 0;
-					a.PostMsgId = entity.Entity.PostId;
+					a.PostMsgId = entity.PostId;
 					a.PhysicalFilename = name;
-                    await _context.PhpbbAttachments.AddAsync(a);
+                    await _sqlExecuter.ExecuteAsync(
+                        @"INSERT INTO phpbb_attachments (post_msg_id, topic_id, in_message, poster_id, is_orphan, physical_filename, real_filename, download_count, attach_comment, extension, mimetype, filesize, filetime, thumbnail)
+                          VALUES (@PostMsgId, @TopicId, @InMessage, @PosterId, @IsOrphan, @PhysicalFilename, @RealFilename, @DownloadCount, @AttachComment, @Extension, @Mimetype, @Filesize, @Filetime, @Thumbnail);",
+                        a);
 				}
 
-                await _context.SaveChangesAsync();
-
-                await _postService.CascadePostAdd(entity.Entity, false);
+                await _postService.CascadePostAdd(entity, false);
 
                 await _operationLogService.LogModeratorPostAction(ModeratorPostActions.DuplicateSelectedPost, logDto.UserId, postId);
 

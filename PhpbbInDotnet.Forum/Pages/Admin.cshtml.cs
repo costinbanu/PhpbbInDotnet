@@ -1,8 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Dapper;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database.DbContexts;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
@@ -21,7 +20,7 @@ using IOFile = System.IO.File;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-    [RequestSizeLimit(10 * 1024 * 1024)]
+	[RequestSizeLimit(10 * 1024 * 1024)]
     public partial class AdminModel : AuthenticatedPageModel
     {
         [BindProperty]
@@ -76,10 +75,9 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IAdminForumService _adminForumService;
         private readonly IWritingToolsService _adminWritingService;
         private readonly IOperationLogService _logService;
-        private readonly IForumDbContext _dbContext;
 
         public AdminModel(IAdminUserService adminUserService, IAdminForumService adminForumService, IWritingToolsService adminWritingService, 
-            IOperationLogService logService, IForumDbContext dbContext, IForumTreeService forumService, IUserService userService,
+            IOperationLogService logService, IForumTreeService forumService, IUserService userService,
             ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, IConfiguration configuration)
             : base(forumService, userService, sqlExecuter, translationProvider, configuration)
         {
@@ -87,7 +85,6 @@ namespace PhpbbInDotnet.Forum.Pages
             _adminForumService = adminForumService;
             _adminWritingService = adminWritingService;
             _logService = logService;
-            _dbContext = dbContext;
             UserSearchResults = new List<PhpbbUsers>();
             ForumChildren = new List<PhpbbForums>();
             ForumSelectedParent = new List<SelectListItem>();
@@ -99,29 +96,31 @@ namespace PhpbbInDotnet.Forum.Pages
                 var inactiveUsersTask = _adminUserService.GetInactiveUsers();
                 var activeUsersWithUnconfirmedEmailTask = _adminUserService.GetActiveUsersWithUnconfirmedEmail();
                 var groupsTask = _adminUserService.GetGroups();
-                var ranksTask = _dbContext.PhpbbRanks.AsNoTracking().ToListAsync();
+                var ranksTask = SqlExecuter.QueryAsync<PhpbbRanks>("SELECT * FROM phpbb_ranks");
                 var banListTask = _adminUserService.GetBanList();
+                var rankListTask = _adminUserService.GetRanksSelectListItems();
+                var roleListTask = _adminUserService.GetRolesSelectListItems();
 
-                var bannedWordsTask = _dbContext.PhpbbWords.AsNoTracking().ToListAsync();
-                var customBbCodesTask = _dbContext.PhpbbBbcodes.AsNoTracking().ToListAsync();
+                var bannedWordsTask = SqlExecuter.QueryAsync<PhpbbWords>("SELECT * FROM phpbb_words");
+                var customBbCodesTask = SqlExecuter.QueryAsync<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes");
                 var smiliesTask = _adminWritingService.GetSmilies();
 
                 var logsTask = _logService.GetOperationLogs(LogType, AuthorName, LogPage);
                 var systemLogsTask = Task.Run(() => _logService.GetSystemLogs() ?? new List<(DateTime LogDate, string? LogPath)>());
                 
                 await Task.WhenAll(inactiveUsersTask, activeUsersWithUnconfirmedEmailTask, groupsTask, ranksTask, banListTask, 
-                    bannedWordsTask, customBbCodesTask, smiliesTask, logsTask, systemLogsTask);
+                    rankListTask, roleListTask, bannedWordsTask, customBbCodesTask, smiliesTask, logsTask, systemLogsTask);
                 
                 InactiveUsers = await inactiveUsersTask;
                 ActiveUsersWithUnconfirmedEmail = await activeUsersWithUnconfirmedEmailTask;
                 Groups = await groupsTask;
-                Ranks = await ranksTask;
+                Ranks = (await ranksTask).AsList();
                 BanList = await banListTask;
-                RankListItems = _adminUserService.GetRanksSelectListItems();
-                RoleListItems = _adminUserService.GetRolesSelectListItems();
+                RankListItems = await rankListTask;
+                RoleListItems = await roleListTask;
 
-                BannedWords = await bannedWordsTask;
-                CustomBbCodes = await customBbCodesTask;
+                BannedWords = (await bannedWordsTask).AsList();
+                CustomBbCodes = (await customBbCodesTask).AsList();
                 Smilies = await smiliesTask;
 
                 (CurrentLogItems, TotalLogItemCount) = await logsTask;

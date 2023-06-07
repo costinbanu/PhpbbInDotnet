@@ -4,12 +4,12 @@
 @using Objects
 @using Database
 @using Database.Entities
-@using Database.DbContexts
+@using Dapper
 @using Domain
 @using Domain.Extensions
 @using Domain.Utilities
 
-@inject IForumDbContext _context
+@inject Database.SqlExecuter.ISqlExecuter _sqlExecuter
 @inject Languages.ITranslationProvider _translationProvider
 
 @{
@@ -23,22 +23,17 @@
     var index = 0;
     if (Model.EntityType == AclEntityType.Group)
     {
-        remainingEntities = await (
-            from g in _context.PhpbbGroups.AsNoTracking()
-            where !entityIds.Contains(g.GroupId)
-            select KeyValuePair.Create(g.GroupName, g.GroupId)
-        ).ToListAsync();
+        remainingEntities = (await _sqlExecuter.QueryAsync<(string groupName, int groupId)>(
+            "SELECT group_name, groupId FROM phpbb_groups WHERE group_id NOT IN @entityIds",
+            new { entityIds })).Select(e => KeyValuePair.Create(e.groupName, e.groupId)).ToList();
     }
     else
     {
-        remainingEntities = await (
-            from u in _context.PhpbbUsers.AsNoTracking()
-            where u.UserId != 1 && !entityIds.Contains(u.UserId) && u.UserType != 2
-            orderby u.Username
-            select KeyValuePair.Create(u.Username, u.UserId)
-        ).ToListAsync();
+        remainingEntities = (await _sqlExecuter.QueryAsync<(string username, int userId)>(
+            "SELECT username, user_id FROM phpbb_users WHERE user_id NOT IN @entityIds AND user_id <> 1 AND user_type <> 2",
+            new { entityIds })).Select(e => KeyValuePair.Create(e.username, e.userId)).ToList();
     }
-    roles = await _context.PhpbbAclRoles.Where(r => r.RoleType == "f_").ToListAsync();
+    roles = (await _sqlExecuter.QueryAsync<PhpbbAclRoles>("SELECT * FROM phpbb_acl_roles WHERE role_type = 'f_'")).AsList();
 }
 
 @foreach (var permissions in groupedPermissions)

@@ -1,4 +1,5 @@
 ﻿using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
@@ -86,26 +87,11 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 			}
 
 			private object AdjustParameters(object? param)
-			{
-				if (param is null)
+				=> AnonymousObjectsUtility.Merge(param, new
 				{
-					return new
-					{
-						skip = _skip,
-						take = _take,
-					};
-				}
-
-				dynamic expando = new ExpandoObject();
-				var result = expando as IDictionary<string, object>;
-				foreach (System.Reflection.PropertyInfo fi in param.GetType().GetProperties())
-				{
-					result![fi.Name] = fi.GetValue(param, null)!;
-				}
-				result!["skip"] = _skip;
-				result["take"] = _take;
-				return result;
-			}
+					skip = _skip,
+					take = _take,
+				});
 		}
 	}
 }

@@ -25,7 +25,6 @@ namespace PhpbbInDotnet.Services
 {
     class WritingToolsService : IWritingToolsService
     {
-        private readonly IForumDbContext _context;
         private readonly ISqlExecuter _sqlExecuter;
         private readonly IStorageService _storageService;
         private readonly IConfiguration _config;
@@ -38,11 +37,10 @@ namespace PhpbbInDotnet.Services
 
         private List<PhpbbSmilies>? _smilies;
 
-        public WritingToolsService(IForumDbContext context, ISqlExecuter sqlExecuter, IStorageService storageService, ITranslationProvider translationProvider,
+        public WritingToolsService(ISqlExecuter sqlExecuter, IStorageService storageService, ITranslationProvider translationProvider,
             IConfiguration config, IAppCache cache, ILogger logger)
         {
             _translationProvider = translationProvider;
-            _context = context;
             _sqlExecuter = sqlExecuter;
             _storageService = storageService;
             _config = config;
@@ -63,10 +61,12 @@ namespace PhpbbInDotnet.Services
             var language = _translationProvider.GetLanguage();
             try
             {
-                await _context.PhpbbWords.AddRangeAsync(words.Where(w => w.WordId == 0));
-                _context.PhpbbWords.UpdateRange(words.Where(w => w.WordId != 0));
-                await _context.SaveChangesAsync();
-
+                await _sqlExecuter.ExecuteAsync(
+                    "INSERT INTO phpbb_words (word, replacement) VALUES (@word, @replacement)",
+                    words.Where(w => w.WordId == 0));
+                await _sqlExecuter.ExecuteAsync(
+                    "UPDATE phpbb_words SET word = @word, replacement = @replacement WHERE word_id = @wordId",
+                    words.Where(w => w.WordId != 0));
                 await _sqlExecuter.ExecuteAsync(
                     "DELETE FROM phpbb_words WHERE word_id IN @ids",
                     new { ids = indexesToRemove.Select(i => words[i].WordId).DefaultIfEmpty() });
@@ -93,10 +93,24 @@ namespace PhpbbInDotnet.Services
             try
             {
                 indexesToDisplay.ForEach(i => codes[i].DisplayOnPosting = 1);
-                await _context.PhpbbBbcodes.AddRangeAsync(codes.Where(c => c.BbcodeId == 0));
-                _context.PhpbbBbcodes.UpdateRange(codes.Where(c => c.BbcodeId != 0));
-                await _context.SaveChangesAsync();
 
+                await _sqlExecuter.ExecuteAsync(
+                    @"INSERT INTO phpbb_bbcodes (bbcode_id, bbcode_tag, bbcode_helpline, display_on_posting, bbcode_match, bbcode_tpl, first_pass_match, first_pass_replace, second_pass_match, second_pass_replace)
+                      VALUES (@BbcodeTag, @BbcodeHelpline, @DisplayOnPosting, @BbcodeMatch, @BbcodeTpl, @FirstPassMatch, @FirstPassReplace, @SecondPassMatch, @SecondPassReplace);",
+                    codes.Where(c => c.BbcodeId == 0));
+                await _sqlExecuter.ExecuteAsync(
+                    @"UPDATE phpbb_bbcodes
+                         SET bbcode_tag  = @BbcodeTag
+                            ,bbcode_helpline  = @BbcodeHelpline
+                            ,display_on_posting  = @DisplayOnPosting
+                            ,bbcode_match  = @BbcodeMatch
+                            ,bbcode_tpl  = @BbcodeTpl
+                            ,first_pass_match  = @FirstPassMatch
+                            ,first_pass_replace  = @FirstPassReplace
+                            ,second_pass_match  = @SecondPassMatch
+                            ,second_pass_replace = @SecondPassReplace
+                       WHERE bbcode_id  = @BbcodeId;",
+                    codes.Where(c => c.BbcodeId != 0));
                 await _sqlExecuter.ExecuteAsync(
                     "DELETE FROM phpbb_bbcodes WHERE bbcode_id IN @ids",
                     new { ids = indexesToRemove.Select(i => codes[i].BbcodeId).DefaultIfEmpty() });
@@ -319,29 +333,37 @@ namespace PhpbbInDotnet.Services
                 {
                     if (flatSource.Count != 0)
                     {
-                        await _context.PhpbbSmilies.AddRangeAsync(flatSource.Where(s => s.SmileyId == 0));
-                        _context.PhpbbSmilies.UpdateRange(flatSource.Where(s => s.SmileyId != 0));
+                        await _sqlExecuter.ExecuteAsync(
+                            @"INSERT INTO phpbb_smilies (code, emotion, smiley_url, smiley_width, smiley_height, smiley_order, display_on_posting) 
+                              VALUES (@Code, @Emotion, @SmileyUrl, @SmileyWidth, @SmileyHeight, @SmileyOrder, @DisplayOnPosting)",
+                            flatSource.Where(s => s.SmileyId == 0));
+                        await _sqlExecuter.ExecuteAsync(
+                            @"UPDATE phpbb_smilies
+                                 SET code = @Code
+                                    ,emotion = @Emotion
+                                    ,smiley_url = @SmileyUrl
+                                    ,smiley_width = @SmileyWidth
+                                    ,smiley_height = @SmileyHeight
+                                    ,smiley_order = @SmileyOrder
+                                    ,display_on_posting = @DisplayOnPosting
+                               WHERE smiley_id = @SmileyId",
+                            flatSource.Where(s => s.SmileyId != 0));
                     }
 
-                    foreach (var code in codesToDelete)
-                    {
-                        var toRemove = await _context.PhpbbSmilies.FirstOrDefaultAsync(s => s.SmileyId == code);
-                        if (toRemove is not null)
-                        {
-                            _context.PhpbbSmilies.Remove(toRemove);
-                        }
-                    }
+                    await _sqlExecuter.ExecuteAsync(
+                        "DELETE FROM phpbb_smilies WHERE smiley_id IN @ids",
+                        new { ids = codesToDelete.DefaultIfEmpty() });
 
                     foreach (var smileyUrl in smileyGroupsToDelete)
                     {
-                        _context.PhpbbSmilies.RemoveRange(_context.PhpbbSmilies.Where(s => s.SmileyUrl == smileyUrl));
+                        await _sqlExecuter.ExecuteAsync(
+                            "DELETE FROM phpbb_smilies WHERE smiley_url = @smileyUrl",
+                            new { smileyUrl });
                         if (!await _storageService.DeleteEmoji(smileyUrl))
                         {
                             errors.Add(string.Format(_translationProvider.Admin[language, "EMOJI_NOT_DELETED_FORMAT"], smileyUrl));
                         }
                     }
-
-                    await _context.SaveChangesAsync();
                 }
                 else
                 {
