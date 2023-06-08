@@ -115,19 +115,8 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithValidPost(PostId ?? 0, async (curForum, curTopic, _) =>
             {
                 var pageSize = ForumUser.GetPageSize(curTopic.TopicId);
-                var idx = SqlExecuter.ExecuteScalar<int>(
-                    @"SET @row_num = 0;
-                      WITH row_numbers AS (
-	                      SELECT @row_num := @row_num + 1 AS row_num,
-		                         post_id
-	                        FROM phpbb_posts
-	                       WHERE topic_id = @topicId
-                           ORDER BY post_time
-                      )
-                      SELECT row_num
-                        FROM row_numbers
-                       WHERE post_id = @postId;",
-                    new { curTopic.TopicId, PostId });
+                var idx = (await SqlExecuter.CallStoredProcedureAsync<int>("get_post_position_in_topic",
+                    new { curTopic.TopicId, PostId })).Single();
                 var computedPageNum = idx / pageSize + (idx % pageSize != 0 ? 1 : 0);
                 await PopulateModel(curForum, curTopic, computedPageNum);
                 return Page();
