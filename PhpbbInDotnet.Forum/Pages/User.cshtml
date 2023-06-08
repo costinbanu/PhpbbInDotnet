@@ -1,5 +1,5 @@
 ﻿@page
-@using Database.DbContexts
+@using Database.Entities
 @using Domain
 @using Domain.Extensions
 @using Domain.Utilities
@@ -11,17 +11,22 @@
 @model PhpbbInDotnet.Forum.Pages.UserModel
 
 @inject Services.IUserService _userService
-@inject IForumDbContext _context
+@inject Database.SqlExecuter.ISqlExecuter _sqlExecuter
 @inject Microsoft.Extensions.Configuration.IConfiguration _config
 
 @{
+    //_context.PhpbbGroups.AsNoTracking().FirstOrDefault(g => g.GroupId == Model.CurrentUser.GroupId)?.GroupUserUploadSize ?? 0;
     var Lang = Model.Language;
     var pageUserTask = _userService.ExpandForumUser(_userService.DbUserToForumUser(Model.CurrentUser!), ForumUserExpansionType.Permissions | ForumUserExpansionType.Foes);
     var canEditTask = Model.CanEdit();
     var isGlobalAdminTask = _userService.IsAdmin(Model.ForumUser);
     var ranksTask = _userService.GetAllRanks();
+    var allStylesTask = _sqlExecuter.QueryAsync<(string styleName, int styleId)>("SELECT style_name, style_id FROM phpbb_styles");
+    var uploadLimitTask = _sqlExecuter.QueryFirstOrDefaultAsync<long>(
+        "SELECT group_user_upload_size FROM phpbb_groups WHERE group_id = @groupId",
+        new { Model.CurrentUser?.GroupId });
 
-    await Task.WhenAll(pageUserTask, canEditTask, isGlobalAdminTask, ranksTask);
+    await Task.WhenAll(pageUserTask, canEditTask, isGlobalAdminTask, ranksTask, allStylesTask, uploadLimitTask);
 
     var pageUser = await pageUserTask;
 
@@ -35,6 +40,8 @@
     var hasTabs = isSelf || isGlobalAdmin;
     var showFlexAvatar = !string.IsNullOrWhiteSpace(Model.CurrentUser.UserAvatar) && !canEdit;
     var rankList = await ranksTask;
+    var allStyles = (await allStylesTask).Select(x => new SelectListItem(x.styleName, x.styleId.ToString(), Model.CurrentUser.UserStyle == x.styleId));
+    var uploadLimit = await uploadLimitTask;
 }
 
 <environment include="Development">
@@ -368,8 +375,7 @@ else
                     <div class="FlexRight PostInputWidth">
                         @Html.DropDownListFor(
                             m => m.CurrentUser!.UserStyle,
-                            await _context.PhpbbStyles.AsNoTracking().Select(x => new SelectListItem(x.StyleName, x.StyleId.ToString(), Model.CurrentUser.UserStyle == x.StyleId)).ToListAsync()
-                        )
+                            allStyles)
                     </div>
                 </div>
                 <p></p>
@@ -670,13 +676,12 @@ else
                     </div>
                     <div class="FlexRight PostInputWidth">
                         @Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "ATTACHED_FILES_COUNT_FORMAT"], Model.AttachCount))
-                        @if (isSelf || await _userService.IsAdmin(Model.ForumUser!))
+                        @if (isSelf || isGlobalAdmin)
                         {
                             <span>- @Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "USED_SPACE_FORMAT"], StringUtility.ReadableFileSize(Model.AttachTotalSize)))</span>
-                            var limit = _context.PhpbbGroups.AsNoTracking().FirstOrDefault(g => g.GroupId == Model.CurrentUser.GroupId)?.GroupUserUploadSize ?? 0;
-                            if (limit > 0)
+                            if (uploadLimit > 0)
                             {
-                                <span>@Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "TOTAL_SPACE_FORMAT"], StringUtility.ReadableFileSize(limit)))</span>
+                                <span>@Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "TOTAL_SPACE_FORMAT"], StringUtility.ReadableFileSize(uploadLimit)))</span>
                             }
                         }
                         @if (Model.AttachCount > 0)

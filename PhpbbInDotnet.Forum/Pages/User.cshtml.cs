@@ -3,9 +3,7 @@ using Dapper;
 using LazyCache;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database.DbContexts;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
@@ -98,7 +96,6 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IWritingToolsService _writingService;
         private readonly IOperationLogService _operationLogService;
         private readonly IEmailService _emailService;
-        private readonly IForumDbContext _dbContext;
         private readonly ILogger _logger;
         private readonly IAppCache _cache;
         private readonly IUserProfileDataValidationService _validationService;
@@ -108,14 +105,13 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public UserModel(IStorageService storageService, IWritingToolsService writingService, IOperationLogService operationLogService, IConfiguration config, 
             IEmailService emailService, IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, IImageResizeService imageResizeService,
-            ITranslationProvider translationProvider, IForumDbContext dbContext, ILogger logger, IAppCache cache, IUserProfileDataValidationService validationService)
+            ITranslationProvider translationProvider, ILogger logger, IAppCache cache, IUserProfileDataValidationService validationService)
             : base(forumService, userService, sqlExecuter, translationProvider, config)
         {
             _storageService = storageService;
             _writingService = writingService;
             _operationLogService = operationLogService;
             _emailService = emailService;
-            _dbContext = dbContext;
             _logger = logger;
             _cache = cache;
             _validationService = validationService;
@@ -130,8 +126,9 @@ namespace PhpbbInDotnet.Forum.Pages
                     return NotFound();
                 }
 
-                var cur = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { UserId });
-                //await _dbContext.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == UserId);
+                var cur = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
+                    "SELECT * FROM phpbb_users WHERE user_id = @userId", 
+                    new { UserId });
                 if (cur == null)
                 {
                     return NotFound();
@@ -154,7 +151,10 @@ namespace PhpbbInDotnet.Forum.Pages
                 return Unauthorized();
             }
 
-            var dbUser = _dbContext.PhpbbUsers.FirstOrDefault(u => u.UserId == CurrentUser!.UserId);
+            var dbUser = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
+                "SELECT * FROM phpbb_users WHERE user_id = @userId",
+                new { CurrentUser?.UserId });
+                
             if (dbUser == null)
             {
                 return NotFound();
@@ -175,21 +175,26 @@ namespace PhpbbInDotnet.Forum.Pages
                     return Page();
                 }
 
-                if (await _dbContext.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UsernameClean == newCleanUsername))
+                var usersWithSameUsername = await SqlExecuter.ExecuteScalarAsync<int>(
+                    "SELECT count(1) FROM phpbb_users WHERE username_clean = @newCleanUsername",
+                    new { newCleanUsername});
+                if (usersWithSameUsername > 0)
                 {
                     return PageWithError(nameof(CurrentUser), TranslationProvider.Errors[lang, "EXISTING_USERNAME"]);
                 }
 
                 dbUser.Username = CurrentUser.Username;
                 dbUser.UsernameClean = newCleanUsername;
-                foreach (var f in _dbContext.PhpbbForums.Where(f => f.ForumLastPosterId == dbUser.UserId))
-                {
-                    f.ForumLastPosterName = CurrentUser.Username;
-                }
-                foreach (var t in _dbContext.PhpbbTopics.Where(t => t.TopicLastPosterId == dbUser.UserId))
-                {
-                    t.TopicLastPosterName = CurrentUser.Username;
-                }
+
+                await SqlExecuter.ExecuteAsync(
+                    @"UPDATE phpbb_forums SET forum_last_poster_name = @username WHERE forum_last_poster_id = @userId;
+                      UPDATE phpbb_topics SET topic_last_poster_name = @username WHERE topic_last_poster_id = @userId",
+                    new
+                    {
+                        dbUser.UserId,
+                        dbUser.Username
+                    });
+
                 userShouldSignIn = true;
                 usernameChanged = true;
             }
@@ -224,14 +229,14 @@ namespace PhpbbInDotnet.Forum.Pages
             if (!string.IsNullOrWhiteSpace(newColour) && dbUser.UserColour != newColour)
             {
                 dbUser.UserColour = newColour;
-                foreach (var f in _dbContext.PhpbbForums.Where(f => f.ForumLastPosterId == dbUser.UserId))
-                {
-                    f.ForumLastPosterColour = newColour;
-                }
-                foreach (var t in _dbContext.PhpbbTopics.Where(t => t.TopicLastPosterId == dbUser.UserId))
-                {
-                    t.TopicLastPosterColour = newColour;
-                }
+                await SqlExecuter.ExecuteAsync(
+                    @"UPDATE phpbb_forums SET forum_last_poster_colour = @newColour WHERE forum_last_poster_id = @userId;
+                      UPDATE phpbb_topics SET topic_last_poster_colour = @newColour WHERE topic_last_poster_id = @userId",
+                    new
+                    {
+                        dbUser.UserId,
+                        newColour
+                    });
             }
 
             var newEmailHash = HashUtility.ComputeCrc64Hash(Email!);
@@ -243,7 +248,10 @@ namespace PhpbbInDotnet.Forum.Pages
                     return Page();
                 }
 
-                if (await _dbContext.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UserEmailHash == newEmailHash))
+                var usersWithSameEmail = await SqlExecuter.ExecuteScalarAsync<int>(
+                    "SELECT count(1) FROM phpbb_users WHERE user_email_hash = @newEmailHash",
+                    new { newEmailHash });
+                if (usersWithSameEmail > 0)
                 {
                     return PageWithError(nameof(Email), TranslationProvider.Errors[lang, "EXISTING_EMAIL"]);
                 }
@@ -346,62 +354,72 @@ namespace PhpbbInDotnet.Forum.Pages
             }
 
             var userRoles = (await UserService.GetUserRolesLazy()).Select(r => r.RoleId);
-            var dbAclRole = _dbContext.PhpbbAclUsers.FirstOrDefault(r => r.UserId == dbUser.UserId && userRoles.Contains(r.AuthRoleId));
+            var dbAclRole = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbAclUsers>(
+                "SELECT * FROM phpbb_acl_users WHERE user_id = @userId AND auth_role_id IN @userRoles",
+                new
+                {
+                    dbUser.UserId,
+                    userRoles = userRoles.DefaultIfNullOrEmpty()
+                });
+                
             if (dbAclRole != null && dbAclRole.AuthRoleId != (AclRole ?? -1))
             {
-                _dbContext.PhpbbAclUsers.Remove(dbAclRole);
+                await SqlExecuter.ExecuteAsync(
+                    "DELETE FROM phpbb_acl_users WHERE user_id = @userId AND forum_id = @forumId",
+                    dbAclRole);
                 if ((AclRole ?? -1) != -1)
                 {
-                    await _dbContext.PhpbbAclUsers.AddAsync(new PhpbbAclUsers
-                    {
-                        AuthOptionId = 0,
-                        AuthRoleId = AclRole!.Value,
-                        AuthSetting = 0,
-                        ForumId = 0,
-                        UserId = dbUser.UserId
-                    });
+                    await SqlExecuter.ExecuteAsync(
+                        "INSERT INTO phpbb_acl_users(auth_option_id, auth_role_id, auth_setting, forum_id, user_id) VALUES(0, @aclRole, 0, 0, @userId)",
+                        new
+                        {
+                            AclRole,
+                            dbUser.UserId,
+                        });
                 }
                 userShouldSignIn = true;
             }
 
-            var dbUserGroup = _dbContext.PhpbbUserGroup.FirstOrDefault(g => g.UserId == dbUser.UserId);
+            var dbUserGroup = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbUserGroup>(
+                "SELECT * FROM phpbb_user_group WHERE user_id = @userId",
+                new { dbUser.UserId });
             if (dbUserGroup == null)
             {
                 if (dbUser.GroupId == 0)
                 {
                     throw new InvalidOperationException($"User {dbUser.UserId} has no group associated neither in phpbb_users, nor in phpbb_user_group.");
                 }
-                await _dbContext.PhpbbUserGroup.AddAsync(new PhpbbUserGroup
-                {
-                    GroupId = dbUser.GroupId,
-                    UserId = dbUser.UserId
-                });
-                await _dbContext.SaveChangesAsync();
+                await SqlExecuter.ExecuteAsync(
+                    "INSERT INTO phpbb_user_group(group_id, user_id) VALUES(@groupId, @userId",
+                    new
+                    {
+                        dbUser.GroupId,
+                        dbUser.UserId
+                    });
             }
             else if (GroupId.HasValue && GroupId != dbUserGroup.GroupId)
             {
-                var newGroup = new PhpbbUserGroup
-                {
-                    GroupId = GroupId.Value,
-                    GroupLeader = dbUserGroup.GroupLeader,
-                    UserId = dbUserGroup.UserId,
-                    UserPending = dbUserGroup.UserPending
-                };
+                await SqlExecuter.ExecuteAsync(
+                    "UPDATE phpbb_user_group SET group_id = @newGroupId WHERE group_id = @oldGroupId AND user_id = @userId",
+                    new
+                    {
+                        newGroupId = GroupId.Value,
+                        oldGroupId = dbUserGroup.GroupId,
+                        dbUser.UserId
+                    });
 
-                _dbContext.PhpbbUserGroup.Remove(dbUserGroup);
-                await _dbContext.SaveChangesAsync();
+                var group = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbGroups>(
+                    "SELECT * FROM phpbb_groups WHERE group_id = @groupId",
+                    new { GroupId });
+                await SqlExecuter.ExecuteAsync(
+                    @"UPDATE phpbb_forums SET forum_last_poster_colour = @newColour WHERE forum_last_poster_id = @userId;
+                      UPDATE phpbb_topics SET topic_last_poster_colour = @newColour WHERE topic_last_poster_id = @userId",
+                    new
+                    {
+                        dbUser.UserId,
+                        newColour = group.GroupColour
+                    });
 
-                await _dbContext.PhpbbUserGroup.AddAsync(newGroup);
-
-                var group = await _dbContext.PhpbbGroups.AsNoTracking().FirstOrDefaultAsync(g => g.GroupId == GroupId.Value);
-                foreach (var f in _dbContext.PhpbbForums.Where(f => f.ForumLastPosterId == dbUser.UserId))
-                {
-                    f.ForumLastPosterColour = group!.GroupColour;
-                }
-                foreach (var t in _dbContext.PhpbbTopics.Where(t => t.TopicLastPosterId == dbUser.UserId))
-                {
-                    t.TopicLastPosterColour = group!.GroupColour;
-                }
                 dbUser.UserColour = group!.GroupColour;
                 dbUser.GroupId = group.GroupId;
                 userShouldSignIn = true;
@@ -413,7 +431,88 @@ namespace PhpbbInDotnet.Forum.Pages
             var affectedEntries = 0;
             try
             {
-                affectedEntries = await _dbContext.SaveChangesAsync();
+                affectedEntries = await SqlExecuter.ExecuteAsync(
+                    @"UPDATE dbo.phpbb_users
+                       SET user_type  = @UserType,
+                          ,group_id  = @GroupId,
+                          ,user_permissions  = @UserPermissions,
+                          ,user_perm_from  = @UserPermFrom,
+                          ,user_ip  = @UserIp,
+                          ,user_regdate  = @UserRegdate,
+                          ,username  = @Username,
+                          ,username_clean  = @UsernameClean,
+                          ,user_password  = @UserPassword,
+                          ,user_passchg  = @UserPasschg,
+                          ,user_pass_convert  = @UserPassConvert,
+                          ,user_email  = @UserEmail,
+                          ,user_email_hash  = @UserEmailHash,
+                          ,user_birthday  = @UserBirthday,
+                          ,user_lastvisit  = @UserLastvisit,
+                          ,user_lastmark  = @UserLastmark,
+                          ,user_lastpost_time  = @UserLastpostTime,
+                          ,user_lastpage  = @UserLastpage,
+                          ,user_last_confirm_key  = @UserLastConfirmKey,
+                          ,user_last_search  = @UserLastSearch,
+                          ,user_warnings  = @UserWarnings,
+                          ,user_last_warning  = @UserLastWarning,
+                          ,user_login_attempts  = @UserLoginAttempts,
+                          ,user_inactive_reason  = @UserInactiveReason,
+                          ,user_inactive_time  = @UserInactiveTime,
+                          ,user_posts  = @UserPosts,
+                          ,user_lang  = @UserLang,
+                          ,user_timezone  = @UserTimezone,
+                          ,user_dst  = @UserDst,
+                          ,user_dateformat  = @UserDateformat,
+                          ,user_style  = @UserStyle,
+                          ,user_rank  = @UserRank,
+                          ,user_colour  = @UserColour,
+                          ,user_new_privmsg  = @UserNewPrivmsg,
+                          ,user_unread_privmsg  = @UserUnreadPrivmsg,
+                          ,user_last_privmsg  = @UserLastPrivmsg,
+                          ,user_message_rules  = @UserMessageRules,
+                          ,user_full_folder  = @UserFullFolder,
+                          ,user_emailtime  = @UserEmailtime,
+                          ,user_topic_show_days  = @UserTopicShowDays,
+                          ,user_topic_sortby_type  = @UserTopicSortbyType,
+                          ,user_topic_sortby_dir  = @UserTopicSortbyDir,
+                          ,user_post_show_days  = @UserPostShowDays,
+                          ,user_post_sortby_type  = @UserPostSortbyType,
+                          ,user_post_sortby_dir  = @UserPostSortbyDir,
+                          ,user_notify  = @UserNotify,
+                          ,user_notify_pm  = @UserNotifyPm,
+                          ,user_notify_type  = @UserNotifyType,
+                          ,user_allow_pm  = @UserAllowPm,
+                          ,user_allow_viewonline  = @UserAllowViewonline,
+                          ,user_allow_viewemail  = @UserAllowViewemail,
+                          ,user_allow_massemail  = @UserAllowMassemail,
+                          ,user_options  = @UserOptions,
+                          ,user_avatar  = @UserAvatar,
+                          ,user_avatar_type  = @UserAvatarType,
+                          ,user_avatar_width  = @UserAvatarWidth,
+                          ,user_avatar_height  = @UserAvatarHeight,
+                          ,user_sig  = @UserSig,
+                          ,user_sig_bbcode_uid  = @UserSigBbcodeUid,
+                          ,user_sig_bbcode_bitfield  = @UserSigBbcodeBitfield,
+                          ,user_from  = @UserFrom,
+                          ,user_icq  = @UserIcq,
+                          ,user_aim  = @UserAim,
+                          ,user_yim  = @UserYim,
+                          ,user_msnm  = @UserMsnm,
+                          ,user_jabber  = @UserJabber,
+                          ,user_website  = @UserWebsite,
+                          ,user_occ  = @UserOcc,
+                          ,user_interests  = @UserInterests,
+                          ,user_actkey  = @UserActkey,
+                          ,user_newpasswd  = @UserNewpasswd,
+                          ,user_form_salt  = @UserFormSalt,
+                          ,user_new  = @UserNew,
+                          ,user_reminded  = @UserReminded,
+                          ,user_reminded_time  = @UserRemindedTime,
+                          ,user_edit_time  = @UserEditTime,
+                          ,jump_to_unread  = @JumpToUnread,
+                          ,user_should_sign_in  = @UserShouldSignIn,
+                     WHERE user_id = @UserId",
+                    dbUser);
             }
             catch (Exception ex)
             {
@@ -453,7 +552,9 @@ namespace PhpbbInDotnet.Forum.Pages
                     _logger.Error("Potential cross site forgery attempt in {name}", nameof(OnPostAddFoe));
                     return await PageWithErrorAsync(nameof(CurrentUser), TranslationProvider.Errors[Language, "AN_ERROR_OCCURRED"], toDoBeforeReturn: () => Mode = UserPageMode.AddFoe, resultFactory: OnGet);
                 }
-                var cur = await _dbContext.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
+                var cur = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
+                    "SELECT * FROM phpbb_users WHERE user_id = @userId",
+                    new { UserId });
                 await SqlExecuter.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;" +
                     "INSERT INTO phpbb_zebra (user_id, zebra_id, friend, foe) VALUES (@userId, @otherId, 0, 1)",
@@ -471,7 +572,9 @@ namespace PhpbbInDotnet.Forum.Pages
                     _logger.Error("Potential cross site forgery attempt in {name}", nameof(OnPostRemoveFoe));
                     return await PageWithErrorAsync(nameof(CurrentUser), TranslationProvider.Errors[Language, "AN_ERROR_OCCURRED"], toDoBeforeReturn: () => Mode = UserPageMode.AddFoe, resultFactory: OnGet);
                 }
-                var cur = await _dbContext.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == UserId);
+                var cur = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
+                    "SELECT * FROM phpbb_users WHERE user_id = @userId",
+                    new { UserId });
                 await SqlExecuter.ExecuteAsync(
                     "DELETE FROM phpbb_zebra WHERE user_id = @userId AND zebra_id = @otherId;",
                     new { user.UserId, otherId = cur!.UserId }
@@ -525,24 +628,18 @@ namespace PhpbbInDotnet.Forum.Pages
             var preferredTopicTask = GetPreferredTopic(tree);
             var roleTask = GetRole();
             var groupTask = UserService.GetUserGroup(cur.UserId);
-            var foesTask = (
-                from z in _dbContext.PhpbbZebra.AsNoTracking()
-                where z.UserId == cur.UserId && z.Foe == 1
-
-                join u in _dbContext.PhpbbUsers.AsNoTracking()
-                on z.ZebraId equals u.UserId
-                into joined
-
-                from j in joined
-                select j
-            ).ToListAsync();
-            var attachTask = SqlExecuter.QueryFirstOrDefaultAsync(
+            var foesTask = SqlExecuter.QueryAsync<PhpbbUsers>(
+                @"SELECT u.*
+                    FROM phpbb_users u
+                    JOIN phpbb_zebra z ON z.zebra_id = u.user_id
+                   WHERE z.user_id = @userId AND z.foe = 1",
+                new { cur.UserId });
+            var attachTask = SqlExecuter.QueryFirstOrDefaultAsync<(long size, long cnt)>(
                 "SELECT sum(a.filesize) as size, count(a.attach_id) as cnt " +
                 "FROM phpbb_attachments a " +
                 "JOIN phpbb_posts p ON a.post_msg_id = p.post_id " +
                 "WHERE p.poster_id = @userId",
-                new { cur.UserId }
-            );
+                new { cur.UserId });
             var currentAuthenticatedUserTask = UserService.ExpandForumUser(UserService.DbUserToForumUser(cur), ForumUserExpansionType.Permissions);
             await Task.WhenAll(preferredTopicTask, roleTask, groupTask, foesTask, attachTask, currentAuthenticatedUserTask);
 
@@ -560,32 +657,32 @@ namespace PhpbbInDotnet.Forum.Pages
             UserRank = cur.UserRank == 0 ? group.GroupRank : cur.UserRank;
             AllowPM = cur.UserAllowPm.ToBool();
             ShowEmail = cur.UserAllowViewemail.ToBool();
-            Foes = await foesTask;
+            Foes = (await foesTask).AsList();
             var result = await attachTask;
-            AttachCount = (long?)result?.cnt ?? 0L;
-            AttachTotalSize = (long?)result?.size ?? 0L;
+            AttachCount = result.cnt;
+            AttachTotalSize = result.size;
 
             async Task<(int? id, string? title)> GetPreferredTopic(HashSet<ForumTree> tree)
             {
                 var restrictedForums = (await ForumService.GetRestrictedForumList(ForumUser)).Select(f => f.forumId).DefaultIfEmpty();
-                var preferredTopic = await (
-                    from p in _dbContext.PhpbbPosts.AsNoTracking()
-                    where p.PosterId == cur.UserId
-
-                    join t in _dbContext.PhpbbTopics.AsNoTracking()
-                    on p.TopicId equals t.TopicId
-
-                    where !restrictedForums.Contains(t.ForumId)
-
-                    group p by new { t.ForumId, p.TopicId, t.TopicTitle } into groups
-                    orderby groups.Count() descending
-                    select groups.Key
-                ).FirstOrDefaultAsync();
+                var (forumId, topicId, topicTitle) = await SqlExecuter.QueryFirstOrDefaultAsync<(int forumId, int topicId, string topicTitle)>(
+                    @"SELECT t.forum_id, t.topic_id, t.topic_title, count(p.post_id)
+                        FROM phpbb_posts p
+                        JOIN phpbb_topics t on p.topic_id = t.topic_id
+                       WHERE p.poster_id = @userId AND t.forum_id NOT IN @restrictedForums
+                       GROUP BY t.forum_id, t.topic_id, t.topic_title
+                       ORDER BY count(p.post_id) DESC",
+                    new
+                    {
+                        cur.UserId,
+                        restrictedForums
+                    });
+                    
                 string? preferredTopicTitle = null;
-                if (preferredTopic != null)
+                if (topicId > 0)
                 {
-                    preferredTopicTitle = ForumService.GetPathText(tree, preferredTopic.ForumId);
-                    return (preferredTopic.TopicId, $"{preferredTopicTitle} → {preferredTopic.TopicTitle}");
+                    preferredTopicTitle = ForumService.GetPathText(tree, forumId);
+                    return (topicId, $"{preferredTopicTitle} → {topicTitle}");
                 }
                 return (null, null);
             }

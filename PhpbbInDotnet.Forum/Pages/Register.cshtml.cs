@@ -1,9 +1,7 @@
 ﻿using CryptSharp.Core;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
-using PhpbbInDotnet.Database.DbContexts;
 using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
@@ -26,7 +24,6 @@ namespace PhpbbInDotnet.Forum.Pages
     [ValidateAntiForgeryToken]
     public class RegisterModel : BaseModel
     {
-        private readonly IForumDbContext _context;
         private readonly ISqlExecuter _sqlExecuter;
         private readonly HttpClient _gClient;
         private readonly Recaptcha _recaptchaOptions;
@@ -52,11 +49,10 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty]
         public string? RecaptchaResponse { get; set; }
 
-        public RegisterModel(IForumDbContext context, ISqlExecuter sqlExecuter, IConfiguration config, IHttpClientFactory httpClientFactory,
-            ITranslationProvider translationProvider, IUserService userService, ILogger logger, IEmailService emailService, IUserProfileDataValidationService validationService)
+        public RegisterModel(ISqlExecuter sqlExecuter, IConfiguration config, IHttpClientFactory httpClientFactory, ITranslationProvider translationProvider, 
+            IUserService userService, ILogger logger, IEmailService emailService, IUserProfileDataValidationService validationService)
             : base(translationProvider, userService, config)
         {
-            _context = context;
             _sqlExecuter = sqlExecuter;
             _recaptchaOptions = Configuration.GetObject<Recaptcha>();
             _gClient = httpClientFactory.CreateClient(_recaptchaOptions.ClientName);
@@ -139,13 +135,18 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 return PageWithError(nameof(UserName), TranslationProvider.Errors[Language, "BANNED_IP"]);
             }
-
-            if (await _context.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UsernameClean == StringUtility.CleanString(UserName)))
+            var usersWithSameUsername = await _sqlExecuter.ExecuteScalarAsync<int>(
+                "SELECT count(1) FROM phpbb_users WHERE username_clean = @usernameClean",
+                new { usernameClean = StringUtility.CleanString(UserName) });
+            if (usersWithSameUsername > 0)
             {
                 return PageWithError(nameof(UserName), TranslationProvider.Errors[Language, "EXISTING_USERNAME"]);
             }
 
-            if (await _context.PhpbbUsers.AsNoTracking().AnyAsync(u => u.UserEmailHash == HashUtility.ComputeCrc64Hash(Email)))
+            var usersWithSameEmail = await _sqlExecuter.ExecuteScalarAsync<int>(
+                "SELECT count(1) FROM phpbb_users WHERE user_email_hash = @emailHash",
+                new { emailHash = HashUtility.ComputeCrc64Hash(Email) });
+            if (usersWithSameEmail > 0)
             {
                 return PageWithError(nameof(Email), TranslationProvider.Errors[Language, "EXISTING_EMAIL"]);
             }
@@ -153,34 +154,34 @@ namespace PhpbbInDotnet.Forum.Pages
             var registrationCode = Guid.NewGuid().ToString("n");
             var now = DateTime.UtcNow.ToUnixTimestamp();
 
-            var newUser = _context.PhpbbUsers.Add(new PhpbbUsers
-            {
-                Username = UserName!,
-                UsernameClean = StringUtility.CleanString(UserName),
-                GroupId = 2,
-                UserEmail = Email,
-                UserEmailHash = HashUtility.ComputeCrc64Hash(Email),
-                UserPassword = Crypter.Phpass.Crypt(Password!, Crypter.Phpass.GenerateSalt()),
-                UserInactiveTime = now,
-                UserInactiveReason = UserInactiveReason.NewlyRegisteredNotConfirmed,
-                UserActkey = registrationCode,
-                UserIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
-                UserRegdate = now,
-                UserLastmark = now,
-                UserDateformat = TranslationProvider.GetDefaultDateFormat(Language),
-                UserLang = Language
-            });
-            newUser.Entity.UserId = 0;
-            await _context.SaveChangesAsync();
+            var newUser = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
+                @$"INSERT INTO phpbb_users(username, username_clean, group_id, user_email, user_email_hash, user_password, user_inactive_time, user_inactive_reason, user_actkey, user_ip, user_regdate, user_lastmark, user_dateformat, user_lang)
+                   VALUES (@Username, @UsernameClean, @GroupId, @UserEmail, @UserEmailHash, @UserPassword, @UserInactiveTime, @UserInactiveReason, @UserActkey, @UserIp, @UserRegdate, @UserLastmark, @UserDateformat, @UserLang);
+                   SELECT * FROM phpbb_users WHERE user_id = {_sqlExecuter.LastInsertedItemId}",
+                new 
+                {
+                    Username = UserName!,
+                    UsernameClean = StringUtility.CleanString(UserName),
+                    GroupId = 2,
+                    UserEmail = Email,
+                    UserEmailHash = HashUtility.ComputeCrc64Hash(Email),
+                    UserPassword = Crypter.Phpass.Crypt(Password!, Crypter.Phpass.GenerateSalt()),
+                    UserInactiveTime = now,
+                    UserInactiveReason = UserInactiveReason.NewlyRegisteredNotConfirmed,
+                    UserActkey = registrationCode,
+                    UserIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
+                    UserRegdate = now,
+                    UserLastmark = now,
+                    UserDateformat = TranslationProvider.GetDefaultDateFormat(Language),
+                    UserLang = Language
+                });
 
-            _context.PhpbbUserGroup.Add(new PhpbbUserGroup
-            {
-                GroupId = 2,
-                UserId = newUser.Entity.UserId
-            });
+            var dbChangesTask = _sqlExecuter.ExecuteAsync(
+                "INSERT INTO phpbb_user_group(group_id, user_id) VALUES(2, @userId)", 
+                new { newUser.UserId });
+
             var subject = string.Format(TranslationProvider.Email[Language, "WELCOME_SUBJECT_FORMAT"], Configuration.GetValue<string>("ForumName"));
 
-            var dbChangesTask = _context.SaveChangesAsync();
             var emailTask = _emailService.SendEmail(
                 to: Email,
                 subject: subject,

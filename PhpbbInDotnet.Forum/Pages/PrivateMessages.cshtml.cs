@@ -1,8 +1,7 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database.DbContexts;
+using PhpbbInDotnet.Database.Entities;
 using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
@@ -13,7 +12,6 @@ using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -54,14 +52,12 @@ namespace PhpbbInDotnet.Forum.Pages
         public Paginator? SentPaginator { get; private set; }
 
         private readonly IBBCodeRenderingService _renderingService;
-        private readonly IForumDbContext _dbContext;
 
         public PrivateMessagesModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, 
-            ITranslationProvider translationProvider, IBBCodeRenderingService renderingService, IForumDbContext dbContext, IConfiguration configuration)
+            ITranslationProvider translationProvider, IBBCodeRenderingService renderingService, IConfiguration configuration)
             : base(forumService, userService, sqlExecuter, translationProvider, configuration)
         {
             _renderingService = renderingService;
-            _dbContext = dbContext;
         }
 
         public async Task<IActionResult> OnGet()
@@ -175,21 +171,26 @@ namespace PhpbbInDotnet.Forum.Pages
                 else if (MessageId.HasValue && Source.HasValue)
                 {
                     SelectedMessageIsMine = Source == PrivateMessagesPages.Sent;
-                    var messagesTask = (
-                        from pm in _dbContext.PhpbbPrivmsgs.AsNoTracking()
-                        where pm.MsgId == MessageId
-                        select pm).FirstOrDefaultAsync();
-                    var msgToTask = (
-                        from mt in _dbContext.PhpbbPrivmsgsTo.AsNoTracking()
-                        where mt.MsgId == MessageId && mt.FolderId >= 0
-                        select mt).FirstOrDefaultAsync();
-                    var otherUserTask = (
-                        from mt in _dbContext.PhpbbPrivmsgsTo.AsNoTracking()
-                        where mt.MsgId == MessageId && mt.UserId != mt.AuthorId
-                        let userId = mt.AuthorId != user.UserId ? mt.AuthorId : mt.UserId
-                        join u in _dbContext.PhpbbUsers.AsNoTracking()
-                        on userId equals u.UserId
-                        select u).FirstOrDefaultAsync();
+                    var messagesTask = SqlExecuter.QuerySingleOrDefaultAsync<PhpbbPrivmsgs>(
+                        "SELECT * FROM phpbb_privmsgs WHERE msg_id = @messageId",
+                        new { MessageId });
+                    
+                    var msgToTask = SqlExecuter.QuerySingleOrDefaultAsync<PhpbbPrivmsgsTo>(
+                        "SELECT * FROM phpbb_privmsgs_to WHERE msg_id = @messageId AND folder_id >= 0",
+                        new { MessageId });
+
+                    var otherUserTask = SqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
+                        @"SELECT u.* 
+                            FROM phpbb_privmsgs_to mt
+                            JOIN phpbb_users u ON 
+                                 (mt.author_id <> @currentUserId AND mt.author_id = u.user_id) OR 
+                                 (mt.author_id = @currentUserId AND mt.user_id = u.user_id)
+                           WHERE mt.msg_id = @messageId AND mt.user_id <> mt.author_id",
+                        new
+                        {
+                            MessageId,
+                            currentUserId = user.UserId
+                        });
                    
                     await Task.WhenAll(messagesTask, msgToTask, otherUserTask);
 
