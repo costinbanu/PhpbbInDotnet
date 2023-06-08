@@ -257,6 +257,10 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
         text-decoration: unset !important;
     }
 
+AhrefOverride {
+
+}
+
 @media (max-width: 768px) {
     .Summary {
         background-color: #666667 !important;

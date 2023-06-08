@@ -759,7 +759,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<List<UpsertBanListDto>> GetBanList()
             => (await _sqlExecuter.QueryAsync<UpsertBanListDto>(
-                "SELECT ban_id, ban_email, ban_email AS ban_email_old_value, ban_ip, ban_ip AS ban_ip_old_value FROM phpbb_ban_list")).AsList();
+                "SELECT ban_id, ban_email, ban_email AS ban_email_old_value, ban_ip, ban_ip AS ban_ip_old_value FROM phpbb_banlist")).AsList();
 
         #endregion Banlist
     }

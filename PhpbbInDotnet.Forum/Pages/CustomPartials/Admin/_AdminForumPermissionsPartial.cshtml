@@ -17,14 +17,14 @@
                              group p by new { p.Id, p.Name } into groups
                              select groups;
 
-    var entityIds = groupedPermissions.Select(x => x.Key.Id).Distinct();
+    var entityIds = groupedPermissions.Select(x => x.Key.Id).Distinct().DefaultIfEmpty();
     var remainingEntities = new List<KeyValuePair<string, int>>();
     var roles = new List<PhpbbAclRoles>();
     var index = 0;
     if (Model.EntityType == AclEntityType.Group)
     {
         remainingEntities = (await _sqlExecuter.QueryAsync<(string groupName, int groupId)>(
-            "SELECT group_name, groupId FROM phpbb_groups WHERE group_id NOT IN @entityIds",
+            "SELECT group_name, group_id FROM phpbb_groups WHERE group_id NOT IN @entityIds",
             new { entityIds })).Select(e => KeyValuePair.Create(e.groupName, e.groupId)).ToList();
     }
     else

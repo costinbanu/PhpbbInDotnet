@@ -47,8 +47,10 @@
     <br />
     <span asp-validation-for="SecondPassword" class="validation"></span>
     <p></p>
-    <input type="checkbox" asp-for="Agree" style="width:auto" />
-    @Html.Raw(string.Format(Model.TranslationProvider.BasicText[lang, "AGREE_WITH_TERMS_FORMAT"], Model.TranslationProvider.BasicText[lang, "TERMS"]))
+    <label>
+        <input type="checkbox" asp-for="Agree" style="width:auto" />
+        @Html.Raw(string.Format(Model.TranslationProvider.BasicText[lang, "AGREE_WITH_TERMS_FORMAT"], Model.TranslationProvider.BasicText[lang, "TERMS"]))
+	</label>
     <br />
     <span asp-validation-for="Agree" class="validation"></span>
     <p></p>

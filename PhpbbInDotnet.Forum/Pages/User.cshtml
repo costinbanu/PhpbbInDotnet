@@ -384,11 +384,11 @@ else
                         @Html.Raw(Model.TranslationProvider.BasicText[Lang, "JUMP_TO_FIRST_UNREAD_ITEM"])
                     </div>
                     <div class="FlexRight PostInputWidth">
-                        <input asp-for="JumpToUnread" style="width:auto" />
-                        <span>
+                        <label>
+                            <input asp-for="JumpToUnread" style="width:auto" />
                             @Html.Raw(Model.TranslationProvider.BasicText[Lang, "JUMP_UNREAD_CAPTION_1"])<br />
                             <span class="Caption">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "JUMP_UNREAD_CAPTION_2"])</span>
-                        </span>
+                        </label>
                     </div>
                 </div>
                 <p></p>
@@ -530,7 +530,10 @@ else
                         <input asp-for="Email" /><br />
                         <span asp-validation-for="Email" class="validation"></span>
                         <span class="Caption">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "EMAIL_CAPTION"])</span><br />
-                        <input asp-for="ShowEmail" style="width:auto" /> @Html.Raw(Model.TranslationProvider.BasicText[Lang, "ALLOW_EMAIL_CONTACT"])<br />
+                        <label>
+                            <input asp-for="ShowEmail" style="width:auto" /> @Html.Raw(Model.TranslationProvider.BasicText[Lang, "ALLOW_EMAIL_CONTACT"])
+						</label>
+                        <br />
                     </div>
                 }
                 else
@@ -590,8 +593,10 @@ else
                         @Html.Raw(Model.TranslationProvider.BasicText[Lang, "ALLOW_PM_TITLE"])
                     </div>
                     <div class="FlexRight PostInputWidth">
-                        <input asp-for="AllowPM" style="width:auto" />
-                        @Html.Raw(Model.TranslationProvider.BasicText[Lang, "ALLOW_PM_CAPTION"])
+                        <label>
+                            <input asp-for="AllowPM" style="width:auto" />
+                            @Html.Raw(Model.TranslationProvider.BasicText[Lang, "ALLOW_PM_CAPTION"])
+                        </label>
                     </div>
                 </div>
             }
