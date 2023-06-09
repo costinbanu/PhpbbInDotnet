@@ -135,12 +135,8 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostPagination(int topicId, int userPostsPerPage, int? postId)
             => await WithRegisteredUser(async (user) =>
             {
-                await SqlExecuter.ExecuteAsync(
-                    @"INSERT INTO phpbb_user_topic_post_number (user_id, topic_id, post_no) 
-                           VALUES (@userId, @topicId, @userPostsPerPage)
-                      ON DUPLICATE KEY UPDATE post_no = @userPostsPerPage",
-                     new { user.UserId, topicId, userPostsPerPage }
-                );
+                await SqlExecuter.CallStoredProcedureAsync("update_pagination_preference",
+                     new { user.UserId, topicId, userPostsPerPage });
 
                 if (postId.HasValue)
                 {

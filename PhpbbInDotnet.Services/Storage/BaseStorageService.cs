@@ -83,9 +83,9 @@ namespace PhpbbInDotnet.Services.Storage
 
 		protected Task<PhpbbAttachments> AddToDatabase(string uploadedFileName, string physicalFileName, long fileSize, string mimeType, int posterId)
 			=> _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbAttachments>(
-				"INSERT INTO phpbb_attachments (attach_comment, extension, filetime, filesize, mimetype, physical_filename, real_filename, poster_id) " +
-				"VALUES ('', @Extension, @Filetime, @Filesize, @Mimetype, @PhysicalFilename, @RealFilename, @PosterId); " +
-				"SELECT * FROM phpbb_attachments WHERE attach_id = LAST_INSERT_ID()",
+				@$"INSERT INTO phpbb_attachments (attach_comment, extension, filetime, filesize, mimetype, physical_filename, real_filename, poster_id) 
+				   VALUES ('', @Extension, @Filetime, @Filesize, @Mimetype, @PhysicalFilename, @RealFilename, @PosterId);
+				   SELECT * FROM phpbb_attachments WHERE attach_id = {_sqlExecuter.LastInsertedItemId}",
 				new
 				{
 					Extension = Path.GetExtension(uploadedFileName).Trim('.').ToLowerInvariant(),

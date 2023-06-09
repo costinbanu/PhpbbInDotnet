@@ -277,13 +277,19 @@ namespace PhpbbInDotnet.Services
                 }
 
                 var curTopic = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>(
-                    "INSERT INTO phpbb_topics (forum_id, topic_title, topic_time) VALUES (@forumId, @title, @time); " +
-                    "SELECT * FROM phpbb_topics WHERE topic_id = LAST_INSERT_ID();",
-                    new { forumId = destinationForumId!.Value, title = posts.First().PostSubject, time = posts.First().PostTime }
-                );
+                    $@"INSERT INTO phpbb_topics (forum_id, topic_title, topic_time) VALUES (@forumId, @title, @time);
+                       SELECT * FROM phpbb_topics WHERE topic_id = {_sqlExecuter.LastInsertedItemId};",
+                    new 
+                    { 
+                        forumId = destinationForumId!.Value, 
+                        title = posts.First().PostSubject, 
+                        time = posts.First().PostTime 
+                    });
                 var oldTopicId = posts.First().TopicId;
 
-                await _sqlExecuter.ExecuteAsync("UPDATE phpbb_posts SET topic_id = @topicId, forum_id = @forumId WHERE post_id IN @postIds", new { curTopic.TopicId, curTopic.ForumId, postIds });
+                await _sqlExecuter.ExecuteAsync(
+                    "UPDATE phpbb_posts SET topic_id = @topicId, forum_id = @forumId WHERE post_id IN @postIds", 
+                    new { curTopic.TopicId, curTopic.ForumId, postIds });
 
                 foreach (var post in posts)
                 {

@@ -171,7 +171,7 @@ else if (Model.Action == PostingActions.NewTopic)
 		<span asp-validation-for="LastPostTime" class="validation"></span>
 		@if (Model.DraftSavedSuccessfully)
 		{
-			<span class="success">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DRAFT_SAVED_SUCCESSFULLY"])</span>
+			<span class="message success">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "DRAFT_SAVED_SUCCESSFULLY"])</span>
 		}
 	</b>
 	@if (CanCreatePoll)

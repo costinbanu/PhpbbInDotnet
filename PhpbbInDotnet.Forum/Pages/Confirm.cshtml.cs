@@ -128,14 +128,14 @@ namespace PhpbbInDotnet.Forum.Pages
                     activeNotConfirmed = UserInactiveReason.Active_NotConfirmed
                 });
 
-            var newInactiveReason = user.UserInactiveReason;
             if (user == null)
             {
                 Message = $"<span class=\"message fail\">{string.Format(TranslationProvider.Errors[Language, "REGISTRATION_ERROR_FORMAT"], Configuration.GetValue<string>("AdminEmail"))}</span>";
             }
             else
             {
-                if (user.UserInactiveReason == UserInactiveReason.Active_NotConfirmed)
+				var newInactiveReason = user.UserInactiveReason;
+				if (user.UserInactiveReason == UserInactiveReason.Active_NotConfirmed)
                 {
                     Message = $"<span class=\"message success\">{TranslationProvider.BasicText[Language, "EMAIL_VERIFICATION_SUCCESSFUL"]}</span>";
 
@@ -163,7 +163,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         });
 
                     var admins = await SqlExecuter.QueryAsync<PhpbbUsers>(
-                        "SELECT * FROM phpbb_users WHERE group_id = ADMIN_GROUP_ID",
+                        "SELECT * FROM phpbb_users WHERE group_id = @ADMIN_GROUP_ID",
                         new { Constants.ADMIN_GROUP_ID });
 
                     await Task.WhenAll(admins.Select(admin =>

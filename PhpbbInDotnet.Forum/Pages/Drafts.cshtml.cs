@@ -66,7 +66,7 @@ namespace PhpbbInDotnet.Forum.Pages
 	                            LEFT JOIN phpbb_topics t
 	                              ON d.topic_id = t.topic_id
 	                           WHERE d.forum_id NOT IN @restrictedForumList
-                                 AND d.user_id = @user_id
+                                 AND d.user_id = @userId
 	                             AND d.forum_id <> 0
 	                             AND (t.topic_id IS NOT NULL OR d.topic_id = 0);",
                             new

@@ -1,4 +1,5 @@
-﻿using PhpbbInDotnet.Domain;
+﻿using Dapper;
+using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Utilities;
 using System;
 using System.Collections.Generic;
@@ -86,12 +87,17 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 				return $"{sql.TrimEnd().TrimEnd(';')}{Environment.NewLine}{stmt};";
 			}
 
-			private object AdjustParameters(object? param)
-				=> AnonymousObjectsUtility.Merge(param, new
+			private DynamicParameters AdjustParameters(object? param)
+			{
+				var result = new DynamicParameters();
+				if (param is not null)
 				{
-					skip = _skip,
-					take = _take,
-				});
+					result.AddDynamicParams(param);
+				}
+				result.Add("skip", _skip);
+				result.Add("take", _take);
+				return result;
+			}
 		}
 	}
 }

@@ -269,7 +269,7 @@ namespace PhpbbInDotnet.Services
             {
                 if (curTopic.TopicLastPostId == deleted.PostId && !ignoreTopic)
                 {
-                    var lastTopicPost = await _sqlExecuter.QueryFirstOrDefaultAsync(
+                    var lastTopicPost = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
                         "SELECT * FROM phpbb_posts WHERE topic_id = @curTopicId AND post_id <> @deletedPostId ORDER BY post_time DESC",
                         new
                         {
@@ -286,7 +286,7 @@ namespace PhpbbInDotnet.Services
 
                 if (curTopic.TopicFirstPostId == deleted.PostId && !ignoreTopic)
                 {
-                    var firstTopicPost = await _sqlExecuter.QueryFirstOrDefaultAsync(
+                    var firstTopicPost = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
 						"SELECT * FROM phpbb_posts WHERE topic_id = @curTopicId AND post_id <> @deletedPostId ORDER BY post_time ASC",
 						new
 						{
@@ -327,7 +327,7 @@ namespace PhpbbInDotnet.Services
                 var curForum = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { forumId = curTopic?.ForumId ?? deleted.ForumId });
                 if (curForum != null && curForum.ForumLastPostId == deleted.PostId)
                 {
-					var lastForumPost = await _sqlExecuter.QueryFirstOrDefaultAsync(
+					var lastForumPost = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
 	                    "SELECT * FROM phpbb_posts WHERE forum_id = @curForumId AND post_id <> @deletedPostId ORDER BY post_time DESC",
 	                    new
 	                    {

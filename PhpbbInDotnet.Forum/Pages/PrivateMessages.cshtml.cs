@@ -74,37 +74,39 @@ namespace PhpbbInDotnet.Forum.Pages
                     await ResiliencyUtility.RetryOnceAsync(
                         toDo: async () =>
                         {
-                            var messageTask = SqlExecuter.WithPagination((pageNum - 1) * Constants.DEFAULT_PAGE_SIZE, Constants.DEFAULT_PAGE_SIZE).QueryAsync<PrivateMessageDto>(
-                                @"WITH other AS (
-	                                SELECT t.msg_id, 
-		                                   CASE WHEN t.user_id = @userId THEN t.author_id
-			                                   ELSE t.user_id
-			                                   END AS others_id, 
-                                           COALESCE(u.username, 'Anonymous') AS others_name, 
-                                           u.user_colour AS others_color
-                                      FROM phpbb_privmsgs_to t
-                                      LEFT JOIN phpbb_users u ON ((t.user_id = @userId AND t.author_id = u.user_id) OR (t.user_id <> @userId AND t.user_id = u.user_id))
-	                                 WHERE t.user_id <> t.author_id AND (t.user_id <> @userId OR t.author_id <> @userId)
-                                )
-                                SELECT m.msg_id AS message_id, 
-	                                   t.others_id,
-                                       t.others_name,
-                                       t.others_color,
-                                       m.message_subject AS subject,
-                                       m.message_time,
-                                       tt.pm_unread
-                                  FROM phpbb_privmsgs m
-                                  JOIN other t ON m.msg_id = t.msg_id
-                                  JOIN phpbb_privmsgs_to tt ON m.msg_id = tt.msg_id
-                                 WHERE tt.user_id = @userId 
-                                   AND ((@isInbox AND tt.folder_id >= 0) OR (NOT @isInbox AND tt.folder_id = -1))
-                                   AND tt.folder_id <> -10
-                                 ORDER BY message_time DESC",
-                                new
-                                {
-                                    user.UserId,
-                                    isInbox = Show == PrivateMessagesPages.Inbox,
-                                });
+                            var messageTask = SqlExecuter
+                                .WithPagination((pageNum - 1) * Constants.DEFAULT_PAGE_SIZE, Constants.DEFAULT_PAGE_SIZE)
+                                .QueryAsync<PrivateMessageDto>(
+                                    @"WITH other AS (
+	                                    SELECT t.msg_id, 
+		                                       CASE WHEN t.user_id = @userId THEN t.author_id
+			                                       ELSE t.user_id
+			                                       END AS others_id, 
+                                               COALESCE(u.username, 'Anonymous') AS others_name, 
+                                               u.user_colour AS others_color
+                                          FROM phpbb_privmsgs_to t
+                                          LEFT JOIN phpbb_users u ON ((t.user_id = @userId AND t.author_id = u.user_id) OR (t.user_id <> @userId AND t.user_id = u.user_id))
+	                                     WHERE t.user_id <> t.author_id AND (t.user_id <> @userId OR t.author_id <> @userId)
+                                    )
+                                    SELECT m.msg_id AS message_id, 
+	                                       t.others_id,
+                                           t.others_name,
+                                           t.others_color,
+                                           m.message_subject AS subject,
+                                           m.message_time,
+                                           tt.pm_unread
+                                      FROM phpbb_privmsgs m
+                                      JOIN other t ON m.msg_id = t.msg_id
+                                      JOIN phpbb_privmsgs_to tt ON m.msg_id = tt.msg_id
+                                     WHERE tt.user_id = @userId 
+                                       AND ((@isInbox = 1 AND tt.folder_id >= 0) OR (@isInbox = 0 AND tt.folder_id = -1))
+                                       AND tt.folder_id <> -10
+                                     ORDER BY message_time DESC",
+                                    new
+                                    {
+                                        user.UserId,
+                                        isInbox = (Show == PrivateMessagesPages.Inbox).ToByte(),
+                                    });
 
                             var countTask = SqlExecuter.ExecuteScalarAsync<int>(
                                 @"SELECT COUNT(*) AS cnt
@@ -113,11 +115,11 @@ namespace PhpbbInDotnet.Forum.Pages
                                     JOIN  phpbb_privmsgs_to tt ON m.msg_id = tt.msg_id
                                    WHERE tt.user_id = @userId
                                      AND tt.folder_id <> -10
-                                     AND ((@isInbox AND tt.folder_id >= 0) OR (NOT @isInbox AND tt.folder_id = -1))",
+                                     AND ((@isInbox = 1 AND tt.folder_id >= 0) OR (@isInbox = 0 AND tt.folder_id = -1))",
                                 new
                                 {
                                     user.UserId,
-                                    isInbox = Show == PrivateMessagesPages.Inbox
+                                    isInbox = (Show == PrivateMessagesPages.Inbox).ToByte()
                                 });
 
                             await Task.WhenAll(messageTask, countTask);

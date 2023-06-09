@@ -16,12 +16,7 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
 
         public async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            await _sqlExecuter.ExecuteAsync(
-                @"UPDATE phpbb_posts p
-                    JOIN phpbb_topics t ON p.topic_id = t.topic_id
-                     SET p.forum_id = t.forum_id
-                   WHERE p.forum_id <> t.forum_id");
-
+            await _sqlExecuter.CallStoredProcedureAsync("sync_post_forum");
             await _sqlExecuter.CallStoredProcedureAsync("sync_last_posts", new
             {
                 Constants.ANONYMOUS_USER_ID,

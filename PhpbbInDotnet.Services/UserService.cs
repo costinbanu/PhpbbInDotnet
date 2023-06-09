@@ -239,18 +239,11 @@ namespace PhpbbInDotnet.Services
                     return (_translationProvider.Errors[language, "ON_RECEIVERS_FOE_LIST"], false);
                 }
 
-                await _sqlExecuter.ExecuteAsync(
-                    @"START TRANSACTION;
-                      INSERT INTO phpbb_privmsgs (author_id, to_address, bcc_address, message_subject, message_text, message_time) VALUES (@senderId, @to, '', @subject, @text, @time); 
-                      SELECT LAST_INSERT_ID() INTO @inserted_id;
-                      INSERT INTO phpbb_privmsgs_to (author_id, msg_id, user_id, folder_id, pm_unread) VALUES (@senderId, @inserted_id, @receiverId, 0, 1); 
-                      INSERT INTO phpbb_privmsgs_to (author_id, msg_id, user_id, folder_id, pm_unread) VALUES (@senderId, @inserted_id, @senderId, -1, 0);
-                      COMMIT;",
+                await _sqlExecuter.CallStoredProcedureAsync("save_new_private_message",
                     new
                     {
                         senderId = sender.UserId,
                         receiverId,
-                        to = $"u_{receiverId}",
                         subject,
                         text,
                         time = DateTime.UtcNow.ToUnixTimestamp()

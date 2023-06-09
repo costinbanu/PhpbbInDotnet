@@ -234,7 +234,8 @@ namespace PhpbbInDotnet.Services
                                 new
                                 {
                                     Constants.ANONYMOUS_USER_ID,
-                                    userId
+                                    userId,
+                                    user.Username
                                 });
 
                             await deleteUser();
@@ -320,7 +321,7 @@ namespace PhpbbInDotnet.Services
             async Task deleteUser()
             {
                 await _sqlExecuter.ExecuteAsync("DELETE FROM phpbb_acl_users WHERE user_id = @userId", new { userId });
-				await _sqlExecuter.ExecuteAsync("DELETE FROM phpbb_ban_list WHERE ban_userid = @userId", new { userId });
+				await _sqlExecuter.ExecuteAsync("DELETE FROM phpbb_banlist WHERE ban_userid = @userId", new { userId });
 				await _sqlExecuter.ExecuteAsync("DELETE FROM phpbb_bots WHERE user_id = @userId", new { userId });
 				await _sqlExecuter.ExecuteAsync("DELETE FROM phpbb_drafts WHERE user_id = @userId", new { userId });
                 await _sqlExecuter.ExecuteAsync(
@@ -379,52 +380,49 @@ namespace PhpbbInDotnet.Services
 					@"SELECT DISTINCT u.* 
                         FROM phpbb_users u
                         JOIN phpbb_user_group ug ON u.user_id = ug.user_id
-                       WHERE user_id <> @ANONYMOUS_USER_ID 
+                       WHERE u.user_id <> @ANONYMOUS_USER_ID 
                          AND user_regdate >= @rf 
                          AND user_regdate <= @rt
                          AND ug.group_id <> @BOTS_GROUP_ID
                          AND ug.group_id <> @GUESTS_GROUP_ID");
 
-                var param = new 
+                var param = new DynamicParameters(new
                 { 
                     Constants.ANONYMOUS_USER_ID, 
                     rf = ParseDate(searchParameters?.RegisteredFrom, false), 
                     rt = ParseDate(searchParameters?.RegisteredTo, true),
                     Constants.BOTS_GROUP_ID,
                     Constants.GUESTS_GROUP_ID
-                };
+                });
 
                 if (!string.IsNullOrWhiteSpace(searchParameters?.Username))
                 {
-                    sql.AppendLine("AND username_clean LIKE '%@username%'");
-                    param = AnonymousObjectsUtility.Merge(param, new { username = StringUtility.CleanString(searchParameters?.Username) });
+                    sql.AppendLine(" AND u.username_clean LIKE @username");
+                    param.Add("username", $"%{StringUtility.CleanString(searchParameters.Username)}%");
 				}
 				if (!string.IsNullOrWhiteSpace(searchParameters?.Email))
                 {
-					sql.AppendLine("AND user_email_hash = @emailHash");
-					param = AnonymousObjectsUtility.Merge(param, new { emailHash = HashUtility.ComputeCrc64Hash(searchParameters.Email.Trim()) });
+					sql.AppendLine(" AND u.user_email_hash = @emailHash");
+					param.Add("emailHash", HashUtility.ComputeCrc64Hash(searchParameters.Email.Trim()));
 				}
                 if (searchParameters?.UserId > 0)
                 {
-					sql.AppendLine("AND user_id = @userId");
-					param = AnonymousObjectsUtility.Merge(param, new { searchParameters.UserId });
+					sql.AppendLine(" AND u.user_id = @userId");
+					param.Add("userId", searchParameters.UserId);
 				}
 
                 if (searchParameters?.NeverActive != true)
                 {
-					sql.AppendLine("AND user_lastvisit >= @laf AND user_lastvisit <= @lat");
-					param = AnonymousObjectsUtility.Merge(param, new 
-                    { 
-                        laf = ParseDate(searchParameters?.LastActiveFrom, false), 
-                        lat = ParseDate(searchParameters?.LastActiveTo, true) 
-                    });
+					sql.AppendLine(" AND user_lastvisit >= @laf AND user_lastvisit <= @lat");
+					param.Add("laf", ParseDate(searchParameters?.LastActiveFrom, false));
+					param.Add("lat", ParseDate(searchParameters?.LastActiveTo, true));
                 }
                 else
                 {
-					sql.AppendLine("AND user_lastvisit = 0");
+					sql.AppendLine(" AND u.user_lastvisit = 0");
                 }
 
-                sql.AppendLine("ORDER BY username_clean ASC");
+                sql.AppendLine(" ORDER BY u.username_clean ASC");
 
                 var result = await _sqlExecuter.QueryAsync<PhpbbUsers>(sql.ToString(), param);
                 return (null, true, result.AsList());
