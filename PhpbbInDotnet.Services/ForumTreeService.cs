@@ -482,11 +482,14 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                await _sqlExecuter.ExecuteAsync(
-                    "DELETE FROM phpbb_topics_track WHERE forum_id = @forumId AND user_id = @userId; " +
-                    "REPLACE INTO phpbb_forums_track (forum_id, user_id, mark_time) VALUES (@forumId, @userId, @markTime);",
-                    new { forumId, userId, markTime = DateTime.UtcNow.ToUnixTimestamp() }
-                );
+                await _sqlExecuter.CallStoredProcedureAsync(
+                    "mark_forum_read",
+                    new 
+                    { 
+                        forumId, 
+                        userId, 
+                        markTime = DateTime.UtcNow.ToUnixTimestamp() 
+                    });
             }
             catch (Exception ex)
             {

@@ -131,7 +131,7 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 			var result = await _asyncRetryPolicy.ExecuteAndCaptureAsync(toDo);
 			if (result.FinalException is not null)
 			{
-				throw result.FinalException;
+				throw new Exception("A SQL error occurred.", result.FinalException);
 			}
 			return result.Result;
 		}

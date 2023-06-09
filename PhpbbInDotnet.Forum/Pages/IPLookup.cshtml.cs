@@ -49,7 +49,6 @@ namespace PhpbbInDotnet.Forum.Pages
 	                  JOIN phpbb_groups g ON u.group_id = g.group_id
 	                  LEFT JOIN phpbb_ranks r1 ON u.user_rank = r1.rank_id
 	                  LEFT JOIN phpbb_ranks r2 ON g.group_rank = r2.rank_id
-                      ORDER BY u.user_id
                     )
                     SELECT p.forum_id,
 	                       p.topic_id,
