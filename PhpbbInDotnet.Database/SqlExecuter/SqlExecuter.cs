@@ -15,13 +15,13 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 		public SqlExecuter(IConfiguration configuration, ILogger logger) : base(configuration, logger) { }
 
 		public IEnumerable<T> CallStoredProcedure<T>(string storedProcedureName, object? param)
-            => ResilientExecute(() => Connection.Value.Query<T>(BuildStoreProcedureCall(storedProcedureName, param), param));
+            => ResilientExecute(() => GetDbConnection().Query<T>(BuildStoreProcedureCall(storedProcedureName, param), param, commandTimeout: TIMEOUT));
 
         public Task<IEnumerable<T>> CallStoredProcedureAsync<T>(string storedProcedureName, object? param)
-            => ResilientExecuteAsync(() => Connection.Value.QueryAsync<T>(BuildStoreProcedureCall(storedProcedureName, param), param));
+            => ResilientExecuteAsync(async () => await (await GetDbConnectionAsync()).QueryAsync<T>(BuildStoreProcedureCall(storedProcedureName, param), param, commandTimeout: TIMEOUT));
 
         public Task CallStoredProcedureAsync(string storedProcedureName, object? param)
-            => ResilientExecuteAsync(() => Connection.Value.QueryAsync(BuildStoreProcedureCall(storedProcedureName, param), param));
+            => ResilientExecuteAsync(async () => await (await GetDbConnectionAsync()).QueryAsync(BuildStoreProcedureCall(storedProcedureName, param), param, commandTimeout: TIMEOUT));
 
         public IDapperProxy WithPagination(int skip, int take)
 			=> new PaginatedDapperProxy(this, DatabaseType, skip, take);

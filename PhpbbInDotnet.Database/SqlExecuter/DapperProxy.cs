@@ -10,22 +10,23 @@ using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Database.SqlExecuter
 {
 	class DapperProxy : IDapperProxy, IDisposable
 	{
-		const int DURATION_INCREMENT = 5;
+		protected const int TIMEOUT = 60;
+		const int DURATION_INCREMENT = 2;
 		const int MAX_RETRIES = 3;
 
 		private readonly AsyncRetryPolicy _asyncRetryPolicy;
-
-		protected readonly Lazy<IDbConnection> Connection;
-		protected readonly DatabaseType DatabaseType;
-
+		private readonly DbConnection _connection;
 		private readonly ILogger _logger;
 		private readonly RetryPolicy _retryPolicy;
+
+		protected readonly DatabaseType DatabaseType;
 
 		public DapperProxy(IConfiguration configuration, ILogger logger)
 		{
@@ -35,47 +36,38 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 
 			DatabaseType = configuration.GetValue<DatabaseType>("Database:DatabaseType");
 			var connStr = configuration.GetValue<string>("Database:ConnectionString");
-			Connection = new Lazy<IDbConnection>(() =>
+			_connection = DatabaseType switch
 			{
-				IDbConnection conn = DatabaseType switch
-				{
-					DatabaseType.MySql => new MySqlConnection(connStr),
-					DatabaseType.SqlServer => new SqlConnection(connStr),
-					_ => throw new ArgumentException("Unknown Database type in configuration.")
-				};
-
-				conn.Open();
-				return conn;
-			});
+				DatabaseType.MySql => new MySqlConnection(connStr),
+				DatabaseType.SqlServer => new SqlConnection(connStr),
+				_ => throw new ArgumentException("Unknown Database type in configuration.")
+			};
 		}
 
 		public void Dispose()
 		{
 			try
 			{
-				if (Connection.IsValueCreated)
-				{
-					Connection.Value.Dispose();
-				}
+				_connection.Dispose();
 			}
 			catch { }
 		}
 
 		public Task<int> ExecuteAsync(string sql, object? param)
-			=> ResilientExecuteAsync(() => Connection.Value.ExecuteAsync(sql, param));
+			=> ResilientExecuteAsync(async () => await (await GetDbConnectionAsync()).ExecuteAsync(sql, param, commandTimeout: TIMEOUT));
 
 		public T ExecuteScalar<T>(string sql, object? param)
-			=> ResilientExecute(() => Connection.Value.ExecuteScalar<T>(sql, param));
+			=> ResilientExecute(() => GetDbConnection().ExecuteScalar<T>(sql, param, commandTimeout: TIMEOUT));
 
 		public Task<T> ExecuteScalarAsync<T>(string sql, object? param)
-			=> ResilientExecuteAsync(() => Connection.Value.ExecuteScalarAsync<T>(sql, param));
+			=> ResilientExecuteAsync(async () => await (await GetDbConnectionAsync()).ExecuteScalarAsync<T>(sql, param, commandTimeout: TIMEOUT));
 
 		public IEnumerable<dynamic> Query(string sql, object? param)
-			=> ResilientExecute(() => Connection.Value.Query(sql, param));
+			=> ResilientExecute(() => GetDbConnection().Query(sql, param, commandTimeout: TIMEOUT));
 
 		public IEnumerable<T> Query<T>(string sql, object? param)
 		{
-			var result = _retryPolicy.ExecuteAndCapture(() => Connection.Value.Query<T>(sql, param));
+			var result = _retryPolicy.ExecuteAndCapture(() => GetDbConnection().Query<T>(sql, param, commandTimeout: TIMEOUT));
 			if (result.FinalException is not null)
 			{
 				throw result.FinalException;
@@ -84,37 +76,40 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 		}
 
 		public Task<IEnumerable<dynamic>> QueryAsync(string sql, object? param)
-			=> ResilientExecuteAsync(() => Connection.Value.QueryAsync(sql, param));
+			=> ResilientExecuteAsync(async () => await (await GetDbConnectionAsync()).QueryAsync(sql, param, commandTimeout: TIMEOUT));
 
 		public Task<IEnumerable<T>> QueryAsync<T>(string sql, object? param)
-			=> ResilientExecuteAsync(() => Connection.Value.QueryAsync<T>(sql, param));
+			=> ResilientExecuteAsync(async () => await (await GetDbConnectionAsync()).QueryAsync<T>(sql, param, commandTimeout: TIMEOUT));
 
 		public T QueryFirstOrDefault<T>(string sql, object? param)
-			=> ResilientExecute(() => Connection.Value.QueryFirstOrDefault<T>(sql, param));
+			=> ResilientExecute(() => GetDbConnection().QueryFirstOrDefault<T>(sql, param, commandTimeout: TIMEOUT));
 
 		public Task<dynamic> QueryFirstOrDefaultAsync(string sql, object? param)
-			=> ResilientExecuteAsync(() => Connection.Value.QueryFirstOrDefaultAsync(sql, param));
+			=> ResilientExecuteAsync(async () => await (await GetDbConnectionAsync()).QueryFirstOrDefaultAsync(sql, param, commandTimeout: TIMEOUT));
 
 		public Task<T> QueryFirstOrDefaultAsync<T>(string sql, object? param)
-			=> ResilientExecuteAsync(() => Connection.Value.QueryFirstOrDefaultAsync<T>(sql, param));
+			=> ResilientExecuteAsync(async () => await (await GetDbConnectionAsync()).QueryFirstOrDefaultAsync<T>(sql, param, commandTimeout: TIMEOUT));
 
 		public T QuerySingle<T>(string sql, object? param)
-			=> ResilientExecute(() => Connection.Value.QuerySingle<T>(sql, param));
+			=> ResilientExecute(() => GetDbConnection().QuerySingle<T>(sql, param, commandTimeout: TIMEOUT));
 
 		public Task<T> QuerySingleAsync<T>(string sql, object? param)
-			=> ResilientExecuteAsync(() => Connection.Value.QuerySingleAsync<T>(sql, param));
+			=> ResilientExecuteAsync(async () => await (await GetDbConnectionAsync()).QuerySingleAsync<T>(sql, param, commandTimeout: TIMEOUT));
 
 		public Task<dynamic> QuerySingleOrDefaultAsync(string sql, object? param)
-			=> ResilientExecuteAsync(() => Connection.Value.QuerySingleOrDefaultAsync(sql, param));
+			=> ResilientExecuteAsync(async () => await (await GetDbConnectionAsync()).QuerySingleOrDefaultAsync(sql, param, commandTimeout: TIMEOUT));
 
 		public Task<T> QuerySingleOrDefaultAsync<T>(string sql, object? param)
-			=> ResilientExecuteAsync(() => Connection.Value.QuerySingleOrDefaultAsync<T>(sql, param));
+			=> ResilientExecuteAsync(async () => await (await GetDbConnectionAsync()).QuerySingleOrDefaultAsync<T>(sql, param, commandTimeout: TIMEOUT));
 
 		private TimeSpan DurationProvider(int retryCount)
 			=> TimeSpan.FromSeconds(retryCount * DURATION_INCREMENT);
 
 		private void OnRetry(Exception ex, TimeSpan duration, int retryCount, Context context)
-			=> _logger.Warning(ex, "An error occurred, will retry after {duration} for at most {maxRetries} times, current retry count: {count}.", duration, MAX_RETRIES, retryCount);
+			=> _logger.Warning(
+					new Exception($"A SQL error occurred. Retry policy correlation id: {context.CorrelationId}.", ex), 
+					"An error occurred, will retry after {duration} for at most {maxRetries} times, current retry count: {count}.", 
+					duration, MAX_RETRIES, retryCount, context.CorrelationId);
 
 		protected T ResilientExecute<T>(Func<T> toDo)
 		{
@@ -131,9 +126,27 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 			var result = await _asyncRetryPolicy.ExecuteAndCaptureAsync(toDo);
 			if (result.FinalException is not null)
 			{
-				throw new Exception("A SQL error occurred.", result.FinalException);
+				throw new Exception($"A SQL error occurred. Retry policy correlation id: {result.Context.CorrelationId}.", result.FinalException);
 			}
 			return result.Result;
+		}
+
+		protected async Task<DbConnection> GetDbConnectionAsync()
+		{
+			if (_connection.State == ConnectionState.Closed)
+			{
+				await _connection.OpenAsync();
+			}
+			return _connection;
+		}
+
+		protected DbConnection GetDbConnection()
+		{
+			if (_connection.State == ConnectionState.Closed)
+			{
+				_connection.Open();
+			}
+			return _connection;
 		}
 	}
 }
