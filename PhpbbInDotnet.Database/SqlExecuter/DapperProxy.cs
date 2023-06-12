@@ -31,8 +31,8 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 		public DapperProxy(IConfiguration configuration, ILogger logger)
 		{
 			_logger = logger;
-			_asyncRetryPolicy = Policy.Handle<MySqlException>().Or<SqlException>().WaitAndRetryAsync(MAX_RETRIES, DurationProvider, OnRetry);
-			_retryPolicy = Policy.Handle<MySqlException>().Or<SqlException>().WaitAndRetry(MAX_RETRIES, DurationProvider, OnRetry);
+			_asyncRetryPolicy = Policy.Handle<Exception>().WaitAndRetryAsync(MAX_RETRIES, DurationProvider, OnRetry);
+			_retryPolicy = Policy.Handle<Exception>().WaitAndRetry(MAX_RETRIES, DurationProvider, OnRetry);
 
 			DatabaseType = configuration.GetValue<DatabaseType>("Database:DatabaseType");
 			var connStr = configuration.GetValue<string>("Database:ConnectionString");
@@ -103,7 +103,7 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 			=> ResilientExecuteAsync(async () => await (await GetDbConnectionAsync()).QuerySingleOrDefaultAsync<T>(sql, param, commandTimeout: TIMEOUT));
 
 		private TimeSpan DurationProvider(int retryCount)
-			=> TimeSpan.FromSeconds(retryCount * DURATION_INCREMENT);
+			=> TimeSpan.FromSeconds(/*retryCount **/ DURATION_INCREMENT);
 
 		private void OnRetry(Exception ex, TimeSpan duration, int retryCount, Context context)
 			=> _logger.Warning(

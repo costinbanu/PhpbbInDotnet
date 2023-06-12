@@ -447,13 +447,7 @@ namespace PhpbbInDotnet.Services
                 return 0;
             }
 
-            return (await _sqlExecuter.QueryFirstOrDefaultAsync<(int postId, int postTime)>(
-				@"SELECT post_id, post_time
-                    FROM phpbb_posts
-                    WHERE post_id IN @postIds
-                    ORDER BY post_time ASC",
-                new { postIds = item?.Posts.DefaultIfNullOrEmpty() }
-            )).postId;
+            return item!.Posts.DefaultIfNullOrEmpty().Min();
         }
 
         private int GetTopicCount(int forumId)

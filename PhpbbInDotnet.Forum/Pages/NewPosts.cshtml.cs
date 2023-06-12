@@ -44,28 +44,14 @@ namespace PhpbbInDotnet.Forum.Pages
                 Paginator = new Paginator(count: topicList.Count(), pageNum: PageNum, link: "/NewPosts?pageNum=1", topicId: null);
                 PageNum = Paginator.CurrentPage;
 
-                Topics = (await SqlExecuter.WithPagination((PageNum - 1) * Constants.DEFAULT_PAGE_SIZE, Constants.DEFAULT_PAGE_SIZE).QueryAsync<TopicDto>(
-					@"SELECT t.topic_id, 
-	                         t.forum_id,
-	                         t.topic_title, 
-                             count(p.post_id) AS post_count,
-                             t.topic_views AS view_count,
-                             t.topic_last_poster_id,
-                             t.topic_last_poster_name,
-                             t.topic_last_post_time,
-                             t.topic_last_poster_colour,
-                             t.topic_last_post_id
-                        FROM phpbb_topics t
-                        JOIN phpbb_posts p ON t.topic_id = p.topic_id
-                       WHERE t.topic_id IN @topicList
-                         AND t.forum_id NOT IN @restrictedForumList
-                       GROUP BY t.topic_id, t.topic_title, t.forum_id, t.topic_views, t.topic_last_poster_id, t.topic_last_poster_name, t.topic_last_post_time, t.topic_last_poster_colour, t.topic_last_post_id
-                       ORDER BY t.topic_last_post_time DESC",
+                Topics = (await SqlExecuter.CallStoredProcedureAsync<TopicDto>(
+					"get_new_posts",
                     new
                     {
-                        topicList = topicList.DefaultIfEmpty(),
-
-                        restrictedForumList
+                        topicList = string.Join(",", topicList.DefaultIfEmpty()),
+                        restrictedForumList = string.Join(",", restrictedForumList),
+                        skip = (PageNum - 1) * Constants.DEFAULT_PAGE_SIZE,
+                        take = Constants.DEFAULT_PAGE_SIZE
                     }
                 )).AsList();
 
