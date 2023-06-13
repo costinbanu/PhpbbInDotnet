@@ -15,33 +15,24 @@
 @inject Microsoft.Extensions.Configuration.IConfiguration _config
 
 @{
-    //_context.PhpbbGroups.AsNoTracking().FirstOrDefault(g => g.GroupId == Model.CurrentUser.GroupId)?.GroupUserUploadSize ?? 0;
+    var pageUser = await _userService.ExpandForumUser(_userService.DbUserToForumUser(Model.CurrentUser!), ForumUserExpansionType.Permissions | ForumUserExpansionType.Foes);
     var Lang = Model.Language;
-    var pageUserTask = _userService.ExpandForumUser(_userService.DbUserToForumUser(Model.CurrentUser!), ForumUserExpansionType.Permissions | ForumUserExpansionType.Foes);
-    var canEditTask = Model.CanEdit();
-    var isGlobalAdminTask = _userService.IsAdmin(Model.ForumUser);
-    var ranksTask = _userService.GetAllRanks();
-    var allStylesTask = _sqlExecuter.QueryAsync<(string styleName, int styleId)>("SELECT style_name, style_id FROM phpbb_styles");
-    var uploadLimitTask = _sqlExecuter.QueryFirstOrDefaultAsync<long>(
-        "SELECT group_user_upload_size FROM phpbb_groups WHERE group_id = @groupId",
-        new { Model.CurrentUser?.GroupId });
-
-    await Task.WhenAll(pageUserTask, canEditTask, isGlobalAdminTask, ranksTask, allStylesTask, uploadLimitTask);
-
-    var pageUser = await pageUserTask;
 
     ViewData["Title"] = $"{Model.TranslationProvider.BasicText[Lang, "USER", Casing.Title]}: {pageUser.Username}";
     Layout = "~/Pages/_Layout.cshtml";
 
     var viewingUser = Model.ForumUser;
     var isSelf = viewingUser.UserId == Model.CurrentUser!.UserId;
-    var canEdit = await canEditTask;
-    var isGlobalAdmin = await isGlobalAdminTask;
+    var canEdit = await Model.CanEdit();
+    var isGlobalAdmin = await _userService.IsAdmin(Model.ForumUser);
     var hasTabs = isSelf || isGlobalAdmin;
     var showFlexAvatar = !string.IsNullOrWhiteSpace(Model.CurrentUser.UserAvatar) && !canEdit;
-    var rankList = await ranksTask;
-    var allStyles = (await allStylesTask).Select(x => new SelectListItem(x.styleName, x.styleId.ToString(), Model.CurrentUser.UserStyle == x.styleId));
-    var uploadLimit = await uploadLimitTask;
+    var rankList = await _userService.GetAllRanks();
+    var allStyles = (await _sqlExecuter.QueryAsync<(string styleName, int styleId)>("SELECT style_name, style_id FROM phpbb_styles"))
+        .Select(x => new SelectListItem(x.styleName, x.styleId.ToString(), Model.CurrentUser.UserStyle == x.styleId));
+    var uploadLimit = await _sqlExecuter.QueryFirstOrDefaultAsync<long>(
+        "SELECT group_user_upload_size FROM phpbb_groups WHERE group_id = @groupId",
+        new { Model.CurrentUser?.GroupId });
 }
 
 <environment include="Development">
@@ -107,7 +98,7 @@
     @Html.Raw(Model.TranslationProvider.BasicText[Lang, "USER_PROFILE"])
     @if (!isSelf && !canEdit)
     {
-        <span> -&nbsp;@Model.CurrentUser.Username</span>
+        <span> -&nbsp;@Model.CurrentUser!.Username</span>
     }
 </h3>
 @if (canEdit || Model.Mode == UserPageMode.AddFoe || Model.Mode == UserPageMode.RemoveFoe || Model.Mode == UserPageMode.RemoveMultipleFoes)
@@ -123,10 +114,10 @@
                 @Html.Raw(Model.TranslationProvider.BasicText[Lang, "CHANGES_SAVED"]);
                 break;
             case UserPageMode.AddFoe:
-                @Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "ADDED_TO_FOES_CONFIRMATION_FORMAT"], Model.CurrentUser.Username));
+                @Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "ADDED_TO_FOES_CONFIRMATION_FORMAT"], Model.CurrentUser!.Username));
                 break;
             case UserPageMode.RemoveFoe:
-                @Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "REMOVED_FROM_FOES_CONFIRMATION_FORMAT"], Model.CurrentUser.Username));
+                @Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "REMOVED_FROM_FOES_CONFIRMATION_FORMAT"], Model.CurrentUser!.Username));
                 break;
             case UserPageMode.RemoveMultipleFoes:
                 @Html.Raw(Model.TranslationProvider.BasicText[Lang, "REMOVE_FOES_SUCCESS"]);
@@ -191,7 +182,7 @@ else
                 @if (showFlexAvatar)
                 {
                     <div>
-                        <img src="./File?userId=@Model.CurrentUser.UserId&handler=avatar" />
+                        <img src="./File?userId=@Model.CurrentUser!.UserId&handler=avatar" />
                     </div>
                 }
 
@@ -207,7 +198,7 @@ else
                             }
                             else
                             {
-                                var color = string.IsNullOrWhiteSpace(Model.CurrentUser.UserColour) || Model.CurrentUser.UserColour == Constants.DEFAULT_USER_COLOR ? "auto" : $"#{Model.CurrentUser.UserColour}";
+                                var color = string.IsNullOrWhiteSpace(Model.CurrentUser!.UserColour) || Model.CurrentUser.UserColour == Constants.DEFAULT_USER_COLOR ? "auto" : $"#{Model.CurrentUser.UserColour}";
                                 <span style="font-weight:bold; color:@color" , class="ThemeColor">
                                     @Html.Raw(Model.CurrentUser.Username)
                                 </span>
@@ -266,7 +257,7 @@ else
 
                     @{
                         var birthday = DateTime.MinValue;
-                        if (canEdit || DateTime.TryParseExact(Model.CurrentUser.UserBirthday, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out birthday))
+                        if (canEdit || DateTime.TryParseExact(Model.CurrentUser!.UserBirthday, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out birthday))
                         {
                             <p></p>
                             <div class="FlexCenter">
@@ -305,7 +296,7 @@ else
                             }
                             else
                             {
-                                @Html.Raw(Model.CurrentUser.UserOcc)
+                                @Html.Raw(Model.CurrentUser!.UserOcc)
                             }
                         </div>
                     </div>
@@ -321,7 +312,7 @@ else
                             }
                             else
                             {
-                                @Html.Raw(Model.CurrentUser.UserInterests)
+                                @Html.Raw(Model.CurrentUser!.UserInterests)
                             }
                         </div>
                     </div>
@@ -337,7 +328,7 @@ else
                             }
                             else
                             {
-                                @Html.Raw(Model.CurrentUser.UserFrom)
+                                @Html.Raw(Model.CurrentUser!.UserFrom)
                             }
                         </div>
                     </div>
@@ -351,7 +342,7 @@ else
                         @Html.Raw(Model.TranslationProvider.BasicText[Lang, "AVATAR"])
                     </div>
                     <div class="FlexRight PostInputWidth">
-                        @if (!string.IsNullOrWhiteSpace(Model.CurrentUser.UserAvatar))
+                        @if (!string.IsNullOrWhiteSpace(Model.CurrentUser!.UserAvatar))
                         {
                             <img src="./File?userId=@Model.CurrentUser.UserId&handler=avatar" /><br />
                             @Html.Raw(Model.CurrentUser.UserAvatar)<br />
@@ -442,7 +433,7 @@ else
 
                 var ranks = new List<SelectListItem>(
                     rankList.Select(
-                        r => new SelectListItem(r.RankTitle, r.RankId.ToString(), r.RankId == Model.CurrentUser.UserRank)
+                        r => new SelectListItem(r.RankTitle, r.RankId.ToString(), r.RankId == Model.CurrentUser!.UserRank)
                     )
                 );
                 ranks.Add(new SelectListItem(Model.TranslationProvider.BasicText[Lang, "NO_ASSIGNED_RANK"], "0", !ranks.Any(p => p.Selected)));
@@ -507,7 +498,7 @@ else
                     <div class="FlexRight PostInputWidth">
                         @if (canEdit)
                         {
-                            <input type="color" class="jscolor" autocomplete="new-password" id="color" onchange="$('#colorTitle').text($(this).val()); $('#backendColor').val($(this).val().substring(1))" value="#@Model.CurrentUser.UserColour" />
+                            <input type="color" class="jscolor" autocomplete="new-password" id="color" onchange="$('#colorTitle').text($(this).val()); $('#backendColor').val($(this).val().substring(1))" value="#@Model.CurrentUser!.UserColour" />
                             <span id="colorTitle" style="font-weight:bold; font-family:'Ubuntu Mono'; font-size: 1.5em">#@Model.CurrentUser.UserColour</span>
                             <br />
                             <span class="Caption">@Html.Raw(Model.TranslationProvider.BasicText[Lang, "COLOR_CAPTION"])</span>
@@ -538,7 +529,7 @@ else
                 }
                 else
                 {
-                    var showMail = (Model.CurrentUser.UserAllowViewemail.ToBool() && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false) && !(pageUser.Foes?.Contains(viewingUser.UserId) ?? false)) || isGlobalAdmin;
+                    var showMail = (Model.CurrentUser!.UserAllowViewemail.ToBool() && !(viewingUser.Foes?.Contains(pageUser.UserId) ?? false) && !(pageUser.Foes?.Contains(viewingUser.UserId) ?? false)) || isGlobalAdmin;
                     if (showMail)
                     {
                         <button class="MyButton" onclick="location.href='mailto:@Html.Raw(Model.CurrentUser.UserEmail)'" type="button" @(isSelf ? "disabled" : "")>
@@ -614,7 +605,7 @@ else
                         @{
                             var UserDateFormat = (Model.ForumUser)?.UserDateFormat ?? Model.TranslationProvider.GetDefaultDateFormat(Lang);
                         }
-                        <formatted-date date="@Model.CurrentUser.UserRegdate.ToUtcTime().ToString("o")" format="@UserDateFormat" />
+                        <formatted-date date="@Model.CurrentUser!.UserRegdate.ToUtcTime().ToString("o")" format="@UserDateFormat" />
                     </div>
                 </div>
                 <p></p>
@@ -713,12 +704,12 @@ else
                         @if (canAddFoe)
                         {
                             <input class="MyButton" type="submit" form="AddFoe" value="&#x1F6AB;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Lang, "ADD_TO_FOES"])" style="font-size: 15px; margin-top:5px; vertical-align: top"
-                                   onclick="return confirm('@Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "ADD_TO_FOES_CONFIRM_FORMAT"], Model.CurrentUser.Username))')" />
+                                   onclick="return confirm('@Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "ADD_TO_FOES_CONFIRM_FORMAT"], Model.CurrentUser!.Username))')" />
                         }
                         else if (canRemoveFoe)
                         {
                             <input class="MyButton" type="submit" form="RemoveFoe" value="&#x1F91D;&nbsp;@Html.Raw(Model.TranslationProvider.BasicText[Lang, "REMOVE_FROM_FOES"])" style="font-size: 15px; margin-top:5px; vertical-align: top"
-                                   onclick="return confirm('@Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "REMOVE_FROM_FOES_CONFIRM_FORMAT"], Model.CurrentUser.Username))')" />
+                                   onclick="return confirm('@Html.Raw(string.Format(Model.TranslationProvider.BasicText[Lang, "REMOVE_FROM_FOES_CONFIRM_FORMAT"], Model.CurrentUser!.Username))')" />
                         }
                     </div>
                 }

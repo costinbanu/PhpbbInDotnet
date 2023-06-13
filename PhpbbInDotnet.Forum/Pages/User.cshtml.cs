@@ -625,40 +625,32 @@ namespace PhpbbInDotnet.Forum.Pages
         private async Task Render(PhpbbUsers cur)
         {
             var tree = await ForumService.GetForumTree(ForumUser, false, false);
-            var preferredTopicTask = GetPreferredTopic(tree);
-            var roleTask = GetRole();
-            var groupTask = UserService.GetUserGroup(cur.UserId);
-            var foesTask = SqlExecuter.QueryAsync<PhpbbUsers>(
+            CurrentUser = cur;
+            CurrentUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : _writingService.CleanBbTextForDisplay(CurrentUser.UserSig, CurrentUser.UserSigBbcodeUid);
+            TotalPosts = cur.UserPosts;
+            PreferredTopic = await GetPreferredTopic(tree);
+            PostsPerDay = TotalPosts / DateTime.UtcNow.Subtract(cur.UserRegdate.ToUtcTime()).TotalDays;
+            Email = cur.UserEmail;
+            Birthday = cur.UserBirthday;
+            var currentAuthenticatedUser = await UserService.ExpandForumUser(UserService.DbUserToForumUser(cur), ForumUserExpansionType.Permissions);
+            AclRole = await GetRole();
+            var group = await UserService.GetUserGroup(cur.UserId);
+            GroupId = group!.GroupId;
+            UserRank = cur.UserRank == 0 ? group.GroupRank : cur.UserRank;
+            AllowPM = cur.UserAllowPm.ToBool();
+            ShowEmail = cur.UserAllowViewemail.ToBool();
+            Foes = (await SqlExecuter.QueryAsync<PhpbbUsers>(
                 @"SELECT u.*
                     FROM phpbb_users u
                     JOIN phpbb_zebra z ON z.zebra_id = u.user_id
                    WHERE z.user_id = @userId AND z.foe = 1",
-                new { cur.UserId });
-            var attachTask = SqlExecuter.QueryFirstOrDefaultAsync<(long size, long cnt)>(
+                new { cur.UserId })).AsList();
+            var result = await SqlExecuter.QueryFirstOrDefaultAsync<(long size, long cnt)>(
                 "SELECT sum(a.filesize) as size, count(a.attach_id) as cnt " +
                 "FROM phpbb_attachments a " +
                 "JOIN phpbb_posts p ON a.post_msg_id = p.post_id " +
                 "WHERE p.poster_id = @userId",
                 new { cur.UserId });
-            var currentAuthenticatedUserTask = UserService.ExpandForumUser(UserService.DbUserToForumUser(cur), ForumUserExpansionType.Permissions);
-            await Task.WhenAll(preferredTopicTask, roleTask, groupTask, foesTask, attachTask, currentAuthenticatedUserTask);
-
-            CurrentUser = cur;
-            CurrentUser.UserSig = string.IsNullOrWhiteSpace(CurrentUser.UserSig) ? string.Empty : _writingService.CleanBbTextForDisplay(CurrentUser.UserSig, CurrentUser.UserSigBbcodeUid);
-            TotalPosts = cur.UserPosts;
-            PreferredTopic = await preferredTopicTask;
-            PostsPerDay = TotalPosts / DateTime.UtcNow.Subtract(cur.UserRegdate.ToUtcTime()).TotalDays;
-            Email = cur.UserEmail;
-            Birthday = cur.UserBirthday;
-            var currentAuthenticatedUser = await currentAuthenticatedUserTask;
-            AclRole = await roleTask;
-            var group = await groupTask;
-            GroupId = group!.GroupId;
-            UserRank = cur.UserRank == 0 ? group.GroupRank : cur.UserRank;
-            AllowPM = cur.UserAllowPm.ToBool();
-            ShowEmail = cur.UserAllowViewemail.ToBool();
-            Foes = (await foesTask).AsList();
-            var result = await attachTask;
             AttachCount = result.cnt;
             AttachTotalSize = result.size;
 

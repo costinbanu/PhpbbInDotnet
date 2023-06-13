@@ -125,22 +125,15 @@ namespace PhpbbInDotnet.Services
 
         public async Task<ForumUserExpanded> ExpandForumUser(ForumUser user, ForumUserExpansionType expansionType)
         {
-            var expanded = new ForumUserExpanded(user);
-            var permissionsTask = ValueIfTrue(expansionType.HasFlag(ForumUserExpansionType.Permissions), GetPermissionsAsync(user.UserId));
-            var tppTask = ValueIfTrue(expansionType.HasFlag(ForumUserExpansionType.TopicPostsPerPage), GetTopicPostsPage(user.UserId));
-            var foesTask = ValueIfTrue(expansionType.HasFlag(ForumUserExpansionType.Foes), GetFoes(user.UserId));
-            var uploadLimitTask = ValueIfTrue(expansionType.HasFlag(ForumUserExpansionType.UploadLimit), GetUploadLimit(user.UserId));
-            var postEditTimeTask = ValueIfTrue(expansionType.HasFlag(ForumUserExpansionType.PostEditTime), GetPostEditTime(user.UserId));
-            var styleTask = ValueIfTrue(expansionType.HasFlag(ForumUserExpansionType.Style), GetStyle(user.UserId), string.Empty);
-
-            await Task.WhenAll(permissionsTask, tppTask, foesTask, uploadLimitTask, postEditTimeTask, styleTask);
-
-            expanded.AllPermissions = await permissionsTask;
-            expanded.TopicPostsPerPage = await tppTask;
-            expanded.Foes = await foesTask;
-            expanded.UploadLimit = await uploadLimitTask;
-            expanded.PostEditTime = await postEditTimeTask;
-            expanded.Style = await styleTask;
+            var expanded = new ForumUserExpanded(user)
+            {
+                AllPermissions = await ValueIfTrue(expansionType.HasFlag(ForumUserExpansionType.Permissions), GetPermissionsAsync(user.UserId)),
+                TopicPostsPerPage = await ValueIfTrue(expansionType.HasFlag(ForumUserExpansionType.TopicPostsPerPage), GetTopicPostsPage(user.UserId)),
+                Foes = await ValueIfTrue(expansionType.HasFlag(ForumUserExpansionType.Foes), GetFoes(user.UserId)),
+                UploadLimit = await ValueIfTrue(expansionType.HasFlag(ForumUserExpansionType.UploadLimit), GetUploadLimit(user.UserId)),
+                PostEditTime = await ValueIfTrue(expansionType.HasFlag(ForumUserExpansionType.PostEditTime), GetPostEditTime(user.UserId)),
+                Style = await ValueIfTrue(expansionType.HasFlag(ForumUserExpansionType.Style), GetStyle(user.UserId), string.Empty)
+            };
 
             return expanded;
         }

@@ -74,7 +74,7 @@ namespace PhpbbInDotnet.Forum.Pages
             => await WithRegisteredUser(async (_) =>
             {
                 PageNum = Paginator.NormalizePageNumberLowerBound(PageNum);
-                var groupsTask = SqlExecuter.QueryAsync<PhpbbGroups>("SELECT * FROM phpbb_groups");
+                GroupList = await SqlExecuter.QueryAsync<PhpbbGroups>("SELECT * FROM phpbb_groups");
                 switch (Mode)
                 {
                     case MemberListPages.AllUsers:
@@ -82,16 +82,11 @@ namespace PhpbbInDotnet.Forum.Pages
                             toDo: async () =>
                             {
                                 var stmt = "FROM phpbb_users WHERE group_id <> 6 AND user_id <> 1 ";
-                                var usersTask = SqlExecuter
+                                UserList = await SqlExecuter
                                     .WithPagination(PAGE_SIZE * (PageNum - 1), PAGE_SIZE)
                                     .QueryAsync<PhpbbUsers>("SELECT * " + stmt + OrderStatement(Order ?? MemberListOrder.NameAsc));
-                                var countTask = SqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) " + stmt);
-                                var ranksTask = SqlExecuter.QueryAsync<PhpbbRanks>("SELECT * FROM phpbb_ranks");
-                                await Task.WhenAll(usersTask, countTask, groupsTask, ranksTask);
-                                UserList = await usersTask;
-                                Paginator = new Paginator(await countTask, PageNum, $"/MemberList?order={Order}", PAGE_SIZE, "pageNum");
-                                GroupList = await groupsTask;
-                                RankList = await ranksTask;
+                                Paginator = new Paginator(await SqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) " + stmt), PageNum, $"/MemberList?order={Order}", PAGE_SIZE, "pageNum");
+                                RankList = await SqlExecuter.QueryAsync<PhpbbRanks>("SELECT * FROM phpbb_ranks");
                             },
                             evaluateSuccess: () => UserList!.Any() && PageNum == Paginator!.CurrentPage,
                             fix: () => PageNum = Paginator!.CurrentPage);
@@ -122,34 +117,25 @@ namespace PhpbbInDotnet.Forum.Pages
 									stmt.AppendLine($" {OrderStatement(Order ?? MemberListOrder.NameAsc)}");
                                     var searchSql = $"SELECT * {stmt}";
 
-									var searchTask = SqlExecuter.WithPagination(PAGE_SIZE * (PageNum - 1), PAGE_SIZE).QueryAsync<PhpbbUsers>(searchSql, param);
-                                    var countTask = SqlExecuter.ExecuteScalarAsync<int>(countSql, param);
-                                    var ranksTask = SqlExecuter.QueryAsync<PhpbbRanks>("SELECT * FROM phpbb_ranks");
-
-                                    await Task.WhenAll(searchTask, countTask, ranksTask, groupsTask);
-
-                                    UserList = await searchTask;
-                                    Paginator = new Paginator(await countTask, PageNum, $"/MemberList?username={HttpUtility.UrlEncode(Username)}&order={Order}&groupId={GroupId}&handler=search", PAGE_SIZE, "pageNum");
-                                    RankList = await ranksTask;
+									UserList = await SqlExecuter.WithPagination(PAGE_SIZE * (PageNum - 1), PAGE_SIZE).QueryAsync<PhpbbUsers>(searchSql, param);
+                                    Paginator = new Paginator(await SqlExecuter.ExecuteScalarAsync<int>(countSql, param), PageNum, $"/MemberList?username={HttpUtility.UrlEncode(Username)}&order={Order}&groupId={GroupId}&handler=search", PAGE_SIZE, "pageNum");
+                                    RankList = await SqlExecuter.QueryAsync<PhpbbRanks>("SELECT * FROM phpbb_ranks");
                                     SearchWasPerformed = true;
                                 }
-                                GroupList = await groupsTask;
                             },
                             evaluateSuccess: () => !SearchWasPerformed || (UserList!.Any() && PageNum == Paginator!.CurrentPage),
                             fix: () => PageNum = Paginator!.CurrentPage);
                         break;
 
                     case MemberListPages.Groups:
-                        GroupList = await groupsTask;
                         break;
 
                     case MemberListPages.ActiveBots:
-                        await ResiliencyUtility.RetryOnceAsync(
-                            toDo: async () =>
+                        ResiliencyUtility.RetryOnce(
+                            toDo: () =>
                             {
                                 BotList = _sessionCounter.GetBots().OrderByDescending(x => x.EntryTime).Skip(PAGE_SIZE * (PageNum - 1)).Take(PAGE_SIZE);
                                 BotPaginator = new Paginator(_sessionCounter.GetActiveBotCount(), PageNum, $"/MemberList?handler=setMode&mode={Mode}", PAGE_SIZE, "pageNum");
-                                GroupList = await groupsTask;
                             },
                             evaluateSuccess: () => BotList!.Any() && PageNum == BotPaginator!.CurrentPage,
                             fix: () => PageNum = BotPaginator!.CurrentPage);
@@ -167,18 +153,11 @@ namespace PhpbbInDotnet.Forum.Pages
                                     Constants.ANONYMOUS_USER_ID
                                 };
 
-                                var userTask = SqlExecuter
+                                UserList = await SqlExecuter
                                     .WithPagination(PAGE_SIZE * (PageNum - 1), PAGE_SIZE)
                                     .QueryAsync<PhpbbUsers>($"SELECT * {stmt} {OrderStatement(Order ?? MemberListOrder.NameAsc)}", parm);
-								var countTask = SqlExecuter.ExecuteScalarAsync<int>($"SELECT count(1) {stmt}", parm);
-                                var ranksTask = SqlExecuter.QueryAsync<PhpbbRanks>("SELECT * FROM phpbb_ranks");
-
-                                await Task.WhenAll(userTask, countTask, groupsTask, ranksTask);
-
-                                UserList = await userTask;
-                                Paginator = new Paginator(await countTask, PageNum, $"/MemberList?handler=setMode&mode={Mode}", PAGE_SIZE, "pageNum");
-                                GroupList = await groupsTask;
-                                RankList = await ranksTask;
+                                Paginator = new Paginator(await SqlExecuter.ExecuteScalarAsync<int>($"SELECT count(1) {stmt}", parm), PageNum, $"/MemberList?handler=setMode&mode={Mode}", PAGE_SIZE, "pageNum");
+                                RankList = await SqlExecuter.QueryAsync<PhpbbRanks>("SELECT * FROM phpbb_ranks");
                             },
                             evaluateSuccess: () => UserList!.Any() && PageNum == Paginator!.CurrentPage,
                             fix: () => PageNum = Paginator!.CurrentPage);

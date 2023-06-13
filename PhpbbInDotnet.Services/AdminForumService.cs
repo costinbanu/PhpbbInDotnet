@@ -186,7 +186,6 @@ namespace PhpbbInDotnet.Services
                     rolesForAclEntity[AclEntityType.Group].Remove((entityId, roleId));
                 }
 
-                var tasks = new List<Task>();
                 foreach (var byType in rolesForAclEntity)
                 {
                     foreach (var (entityId, roleId) in byType.Value)
@@ -195,10 +194,9 @@ namespace PhpbbInDotnet.Services
                         var table = $"phpbb_acl_{prefix}s";
                         var entityIdColumn = $"{prefix}_id";
 
-                        tasks.Add(ManagePermissions(table, entityIdColumn, actual.ForumId, entityId, roleId));
+                        await ManagePermissions(table, entityIdColumn, actual.ForumId, entityId, roleId);
                     }
                 }
-                await Task.WhenAll(tasks);
 
                 await _operationLogService.LogAdminForumAction(isNewForum ? AdminForumActions.Add : AdminForumActions.Update, adminUserId, actual);
 
@@ -295,14 +293,13 @@ namespace PhpbbInDotnet.Services
 
         public async Task<(PhpbbForums Forum, List<PhpbbForums> Children)> ShowForum(int forumId)
         {
-            var forumTask = _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>(
+            var forum = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>(
                 "SELECT * FROM phpbb_forums WHERE forum_id = @forumId",
                 new { forumId });
-            var childrenTask = _sqlExecuter.QueryAsync<PhpbbForums>(
+            var children = await _sqlExecuter.QueryAsync<PhpbbForums>(
                 "SELECT * FROM phpbb_forums WHERE parent_id = @forumId ORDER BY left_id",
                 new { forumId });
-            await Task.WhenAll(forumTask, childrenTask);
-            return (await forumTask, (await childrenTask).AsList());
+            return (forum, children.AsList());
         }
 
         public async Task<List<SelectListItem>> FlatForumTreeAsListItem(int parentId, ForumUserExpanded? user)

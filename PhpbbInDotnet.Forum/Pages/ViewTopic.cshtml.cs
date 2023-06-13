@@ -70,19 +70,19 @@ namespace PhpbbInDotnet.Forum.Pages
         public Paginator? Paginator { get; private set; }
         public Guid CorrelationId { get; private set; }
 
-        public bool ShowTopic => (TopicAction == ModeratorTopicActions.MoveTopic 
-            || TopicAction == ModeratorTopicActions.CreateShortcut) 
-            && ((ModelState[nameof(DestinationForumId)]?.Errors?.Any() ?? false) 
+        public bool ShowTopic => (TopicAction == ModeratorTopicActions.MoveTopic
+            || TopicAction == ModeratorTopicActions.CreateShortcut)
+            && ((ModelState[nameof(DestinationForumId)]?.Errors?.Any() ?? false)
                 || DestinationForumId.HasValue);
 
-        public bool ShowPostTopic => PostAction == ModeratorPostActions.MoveSelectedPosts 
-            && ((ModelState[nameof(DestinationTopicId)]?.Errors?.Any() ?? false) 
-                || (ModelState[nameof(PostIdsForModerator)]?.Errors?.Any() ?? false) 
+        public bool ShowPostTopic => PostAction == ModeratorPostActions.MoveSelectedPosts
+            && ((ModelState[nameof(DestinationTopicId)]?.Errors?.Any() ?? false)
+                || (ModelState[nameof(PostIdsForModerator)]?.Errors?.Any() ?? false)
                 || DestinationTopicId.HasValue);
 
-        public bool ShowPostForum => PostAction == ModeratorPostActions.SplitSelectedPosts 
-            && ((ModelState[nameof(DestinationForumId)]?.Errors?.Any() ?? false) 
-                || (ModelState[nameof(PostIdsForModerator)]?.Errors?.Any() ?? false) 
+        public bool ShowPostForum => PostAction == ModeratorPostActions.SplitSelectedPosts
+            && ((ModelState[nameof(DestinationForumId)]?.Errors?.Any() ?? false)
+                || (ModelState[nameof(PostIdsForModerator)]?.Errors?.Any() ?? false)
                 || DestinationForumId.HasValue);
 
         public bool ScrollToModeratorPanel => ShowTopic || ShowPostForum || ShowPostTopic || !string.IsNullOrWhiteSpace(ModeratorActionResult.Message);
@@ -92,9 +92,9 @@ namespace PhpbbInDotnet.Forum.Pages
         public int PostCount => _currentTopic?.TopicReplies ?? 0;
 
         public int ViewCount => _currentTopic?.TopicViews ?? 0;
-        
+
         public Dictionary<int, List<AttachmentDto>>? Attachments { get; private set; }
-        
+
         public List<ReportDto>? Reports { get; private set; }
 
         private PhpbbTopics? _currentTopic;
@@ -106,8 +106,8 @@ namespace PhpbbInDotnet.Forum.Pages
             IPostService postService, IModeratorService moderatorService, IWritingToolsService writingToolsService, IConfiguration configuration)
             : base(forumService, userService, sqlExecuter, translationProvider, configuration)
         {
-            _postService = postService; 
-            _moderatorService = moderatorService; 
+            _postService = postService;
+            _moderatorService = moderatorService;
             _writingToolsService = writingToolsService;
         }
 
@@ -155,7 +155,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 {
                     return Unauthorized();
                 }
-                
+
                 var existingVotes = (await SqlExecuter.QueryAsync<PhpbbPollVotes>("SELECT * FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @UserId", new { topicId, user.UserId })).AsList();
                 if (existingVotes.Count > 0 && topic.PollVoteChange == 0)
                 {
@@ -169,13 +169,12 @@ namespace PhpbbInDotnet.Forum.Pages
                                     from j in joined.DefaultIfEmpty()
                                     where j == default
                                     select prev.PollOptionId;
-                await Task.WhenAll(
-                    SqlExecuter.ExecuteAsync(
-                        "DELETE FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @UserId AND poll_option_id IN @noLongerVoted",
-                        new { topicId, user.UserId, noLongerVoted = noLongerVoted.DefaultIfEmpty() }),
-                    SqlExecuter.ExecuteAsync(
-                        "UPDATE phpbb_poll_options SET poll_option_total = poll_option_total - 1 WHERE topic_id = @topicId AND poll_option_id = @vote",
-                        noLongerVoted.Select(vote => new { topicId, vote })));
+                await SqlExecuter.ExecuteAsync(
+                    "DELETE FROM phpbb_poll_votes WHERE topic_id = @topicId AND vote_user_id = @UserId AND poll_option_id IN @noLongerVoted",
+                    new { topicId, user.UserId, noLongerVoted = noLongerVoted.DefaultIfEmpty() });
+                await SqlExecuter.ExecuteAsync(
+                     "UPDATE phpbb_poll_options SET poll_option_total = poll_option_total - 1 WHERE topic_id = @topicId AND poll_option_id = @vote",
+                     noLongerVoted.Select(vote => new { topicId, vote }));
 
                 var newVotes = from cur in votes
                                join prev in existingVotes
@@ -185,14 +184,12 @@ namespace PhpbbInDotnet.Forum.Pages
                                where j == default
                                select cur;
 
-                await Task.WhenAll(
-                    SqlExecuter.ExecuteAsync(
-                        "INSERT INTO phpbb_poll_votes (topic_id, poll_option_id, vote_user_id, vote_user_ip) VALUES (@topicId, @vote, @UserId, @usrIp)",
-                        newVotes.Select(vote => new { topicId, vote, user.UserId, usrIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty })),
-                    SqlExecuter.ExecuteAsync(
-                        "UPDATE phpbb_poll_options SET poll_option_total = poll_option_total + 1 WHERE topic_id = @topicId AND poll_option_id = @vote",
-                        newVotes.Select(vote => new { topicId, vote }))
-                );
+                await SqlExecuter.ExecuteAsync(
+                    "INSERT INTO phpbb_poll_votes (topic_id, poll_option_id, vote_user_id, vote_user_ip) VALUES (@topicId, @vote, @UserId, @usrIp)",
+                    newVotes.Select(vote => new { topicId, vote, user.UserId, usrIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty }));
+                await SqlExecuter.ExecuteAsync(
+                    "UPDATE phpbb_poll_options SET poll_option_total = poll_option_total + 1 WHERE topic_id = @topicId AND poll_option_id = @vote",
+                    newVotes.Select(vote => new { topicId, vote }));
                 return Redirect($"./ViewTopic{HttpUtility.UrlDecode(queryString)}");
             }));
 
@@ -265,16 +262,16 @@ namespace PhpbbInDotnet.Forum.Pages
                 }
 
                 var toDelete = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
-                    "SELECT * FROM phpbb_posts WHERE post_id = @postId", 
+                    "SELECT * FROM phpbb_posts WHERE post_id = @postId",
                     new { postId = postIds[0] });
 
                 if (toDelete == null)
                 {
                     return NotFound();
                 }
-                
+
                 var lastPost = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
-                    "SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC", 
+                    "SELECT * FROM phpbb_posts WHERE topic_id = @topicId ORDER BY post_time DESC",
                     new { toDelete.TopicId });
 
                 var errorMessage = "&#x274C;&nbsp;{0}";
@@ -288,18 +285,18 @@ namespace PhpbbInDotnet.Forum.Pages
                 if (!(toDelete.PosterId == user.UserId && (user.PostEditTime == 0 || DateTime.UtcNow.Subtract(toDelete.PostTime.ToUtcTime()).TotalMinutes <= user.PostEditTime)))
                 {
                     ModeratorActionResult = (string.Format(errorMessage, TranslationProvider.Errors[lang, "EDIT_TIME_EXPIRED"]), false);
-                    PostId = postIds[0]; 
+                    PostId = postIds[0];
                     return await OnGet();
                 }
 
                 var curTopic = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>(
-                    "SELECT * FROM phpbb_topics WHERE topic_id = @topicId", 
+                    "SELECT * FROM phpbb_topics WHERE topic_id = @topicId",
                     new { toDelete.TopicId });
 
                 if (curTopic?.TopicStatus.ToBool() ?? false)
                 {
                     ModeratorActionResult = (string.Format(errorMessage, TranslationProvider.Errors[lang, "CANT_DELETE_POST_TOPIC_CLOSED", Casing.FirstUpper]), false);
-                    PostId = postIds[0]; 
+                    PostId = postIds[0];
                     return await OnGet();
                 }
 
@@ -353,7 +350,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 if (!(deletePost ?? false) && (redirectToEdit ?? false))
                 {
                     var reportedPost = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
-                        "SELECT * FROM phpbb_posts WHERE post_id = @reportPostId", 
+                        "SELECT * FROM phpbb_posts WHERE post_id = @reportPostId",
                         new { reportPostId });
 
                     if (reportedPost == null)
@@ -459,8 +456,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public bool FilterModeratorTopicActions(ModeratorTopicActions action)
         {
-            var exclusionList = new List<ModeratorTopicActions> 
-            { 
+            var exclusionList = new List<ModeratorTopicActions>
+            {
                 ModeratorTopicActions.RestoreTopic,
                 ModeratorTopicActions.RemoveShortcut
             };
@@ -494,7 +491,7 @@ namespace PhpbbInDotnet.Forum.Pages
             ForumTitle = HttpUtility.HtmlDecode(curForum.ForumName);
 
             var postList = await _postService.GetPosts(TopicId.Value, PageNum!.Value, ForumUser.GetPageSize(TopicId.Value), isPostingView: false, Language);
-            
+
             Posts = postList.Posts;
             Attachments = postList.Attachments;
             Reports = postList.Reports;
@@ -505,15 +502,11 @@ namespace PhpbbInDotnet.Forum.Pages
             ForumRules = curForum.ForumRules;
             ForumRulesUid = curForum.ForumRulesUid;
 
-            var markAsReadTask = MarkAsRead();
-            var updateViewCountTask = SqlExecuter.ExecuteAsync(
+            await MarkAsRead();
+            await SqlExecuter.ExecuteAsync(
                 "UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId",
-                new { topicId = TopicId!.Value }
-            );
-            var pollTask = _postService.GetPoll(_currentTopic);
-            await Task.WhenAll(pollTask, markAsReadTask, updateViewCountTask);
-
-            Poll = await pollTask;
+                new { topicId = TopicId!.Value });
+            Poll = await _postService.GetPoll(_currentTopic);
 
             async Task MarkAsRead()
             {
@@ -527,19 +520,19 @@ namespace PhpbbInDotnet.Forum.Pages
         private async Task<(int? LatestSelected, int? NextRemaining)> GetSelectedAndNextRemainingPostIds(params int[] idsToInclude)
         {
             var latestSelectedPost = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
-                "SELECT * FROM phpbb_posts WHERE post_id IN @ids ORDER BY post_time DESC", 
+                "SELECT * FROM phpbb_posts WHERE post_id IN @ids ORDER BY post_time DESC",
                 new { ids = idsToInclude.DefaultIfEmpty() }
             );
 
             var postIds = GetModeratorPostIds();
             var nextRemainingPost = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
                 "SELECT * FROM phpbb_posts WHERE topic_id = @topicId AND post_id NOT IN @ids AND post_time >= @time ORDER BY post_time ASC",
-                new { topicId = TopicId!.Value, ids = postIds.DefaultIfEmpty(), time = latestSelectedPost?.PostTime }) 
-                
+                new { topicId = TopicId!.Value, ids = postIds.DefaultIfEmpty(), time = latestSelectedPost?.PostTime })
+
                 ?? await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
                 "SELECT * FROM phpbb_posts WHERE topic_id = @topicId AND post_id NOT IN @ids ORDER BY post_time DESC",
                 new { topicId = TopicId.Value, ids = postIds.DefaultIfEmpty() });
-                
+
             return (latestSelectedPost?.PostId, nextRemainingPost?.PostId);
         }
     }

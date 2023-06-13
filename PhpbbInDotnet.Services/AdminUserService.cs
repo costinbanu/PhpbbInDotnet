@@ -21,19 +21,19 @@ namespace PhpbbInDotnet.Services
     class AdminUserService : IAdminUserService
     {
         private readonly ISqlExecuter _sqlExecuter;
-        private readonly IPostService _postService;
         private readonly IConfiguration _config;
+        private readonly IModeratorService _moderatorService;
         private readonly IOperationLogService _operationLogService;
         private readonly ITranslationProvider _translationProvider;
         private readonly ILogger _logger;
         private readonly IEmailService _emailService;
 
-        public AdminUserService(ISqlExecuter sqlExecuter, IPostService postService, IConfiguration config, 
+        public AdminUserService(ISqlExecuter sqlExecuter, IConfiguration config, IModeratorService moderatorService,
             ITranslationProvider translationProvider, IOperationLogService operationLogService, ILogger logger, IEmailService emailService)
         {
             _sqlExecuter = sqlExecuter;
-            _postService = postService;
             _config = config;
+            _moderatorService = moderatorService;
             _operationLogService = operationLogService;
             _translationProvider = translationProvider;
             _logger = logger;
@@ -254,7 +254,7 @@ namespace PhpbbInDotnet.Services
                                 {
                                     postIds = toDelete.Select(p => p.PostId).DefaultIfEmpty()
                                 });
-                            toDelete.AsList().ForEach(async p => await _postService.CascadePostDelete(p, false, false));
+                            toDelete.AsList().ForEach(async p => await _moderatorService.CascadePostDelete(p, false, false));
                             user.UserShouldSignIn = true;
                             await deleteUser();
                             message = string.Format(_translationProvider.Admin[lang, "USER_DELETED_POSTS_DELETED_FORMAT"], user.Username);

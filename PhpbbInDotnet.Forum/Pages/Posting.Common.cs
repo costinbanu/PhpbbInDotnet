@@ -125,7 +125,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         username = HttpUtility.HtmlEncode(usr.Username)
                     });
 
-                await _postService.CascadePostAdd(post, false);
+                await _moderatorService.CascadePostAdd(post, false);
             }
             else
             {
@@ -148,7 +148,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         usr.UserId
                     });
 
-                await _postService.CascadePostEdit(post);
+                await _moderatorService.CascadePostEdit(post);
             }
 
             foreach (var attach in Attachments!)

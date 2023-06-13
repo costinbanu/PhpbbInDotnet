@@ -92,14 +92,17 @@ namespace PhpbbInDotnet.Database.SetupApp
                     var users = await connection.QueryAsync("SELECT user_id, username, user_email FROM phpbb_users");
                     foreach (var groups in users.Indexed().GroupBy(key => key.Index / 10, element => element.Item))
                     {
-                        await Task.WhenAll(groups.Select(user => connection.ExecuteAsync(
-                            "UPDATE phpbb_users SET username_clean = @clean, user_email_hash = @hash WHERE user_id = @id", 
-                            new 
-                            { 
-                                clean = StringUtility.CleanString(user.username), 
-                                hash = HashUtility.ComputeCrc64Hash((string)user.user_email),
-                                id = user.user_id 
-                            })));
+                        foreach (var user in groups)
+                        {
+                            await connection.ExecuteAsync(
+                                "UPDATE phpbb_users SET username_clean = @clean, user_email_hash = @hash WHERE user_id = @id",
+                                new
+                                {
+                                    clean = StringUtility.CleanString(user.username),
+                                    hash = HashUtility.ComputeCrc64Hash((string)user.user_email),
+                                    id = user.user_id
+                                });
+                        }
                     }
                     Console.WriteLine("Done!");
                     Console.WriteLine();

@@ -67,23 +67,19 @@ namespace PhpbbInDotnet.Forum.Middlewares
             }
 
             var sessionTrackingTimeout = _config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1);
-            var updateLastVisitTask = Task.CompletedTask;
             var expansions = ForumUserExpansionType.Permissions;
             if (!baseUser.IsAnonymous)
             {
                 expansions |= ForumUserExpansionType.TopicPostsPerPage | ForumUserExpansionType.Foes | ForumUserExpansionType.UploadLimit | ForumUserExpansionType.PostEditTime | ForumUserExpansionType.Style;
                 if (DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > sessionTrackingTimeout)
                 {
-                    updateLastVisitTask = _sqlExecuter.ExecuteAsync(
+                    await _sqlExecuter.ExecuteAsync(
                         "UPDATE phpbb_users SET user_lastvisit = @now WHERE user_id = @userId",
                         new { now = DateTime.UtcNow.ToUnixTimestamp(), baseUser.UserId });
                 }
             }
-            var userTask = _userService.ExpandForumUser(baseUser, expansions);
 
-            await Task.WhenAll(userTask, updateLastVisitTask);
-
-            var user = await userTask;
+            var user = await _userService.ExpandForumUser(baseUser, expansions);
             user.SetValue(context);
 
             if (user.IsAnonymous && context.Request.Headers.TryGetValue(HeaderNames.UserAgent, out var header) && (context.Session.GetInt32("SessionCounted") ?? 0) == 0)

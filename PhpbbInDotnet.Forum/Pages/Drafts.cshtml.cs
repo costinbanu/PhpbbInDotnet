@@ -39,13 +39,14 @@ namespace PhpbbInDotnet.Forum.Pages
                     {
                         var restrictedForumList = (await ForumService.GetRestrictedForumList(ForumUser)).Select(f => f.forumId).DefaultIfEmpty();
                         PageNum = Paginator.NormalizePageNumberLowerBound(PageNum);
-                        var draftsTask = SqlExecuter.WithPagination((PageNum - 1) * Constants.DEFAULT_PAGE_SIZE, Constants.DEFAULT_PAGE_SIZE).QueryAsync<TopicDto>(
-                            @"SELECT d.draft_id,
+                        Topics = (await SqlExecuter.WithPagination((PageNum - 1) * Constants.DEFAULT_PAGE_SIZE, Constants.DEFAULT_PAGE_SIZE).QueryAsync<TopicDto>(
+							@"SELECT d.draft_id,
 				                     d.topic_id, 
 				                     d.forum_id,
 				                     d.draft_subject as topic_title,
 				                     d.save_time as topic_last_post_time,
-				                     t.topic_last_post_id
+				                     t.topic_last_post_id,
+		                             count(1) over() as total_count
 			                    FROM phpbb_drafts d
 			                    LEFT JOIN phpbb_topics t
 			                      ON d.topic_id = t.topic_id
@@ -58,27 +59,9 @@ namespace PhpbbInDotnet.Forum.Pages
                             {
                                 user.UserId,
                                 restrictedForumList
-                            }
-                        );
-                        var countTask = SqlExecuter.ExecuteScalarAsync<int>(
-                            @"SELECT COUNT(*) as total_count
-                                FROM phpbb_drafts d
-	                            LEFT JOIN phpbb_topics t
-	                              ON d.topic_id = t.topic_id
-	                           WHERE d.forum_id NOT IN @restrictedForumList
-                                 AND d.user_id = @userId
-	                             AND d.forum_id <> 0
-	                             AND (t.topic_id IS NOT NULL OR d.topic_id = 0);",
-                            new
-                            {
-                                user.UserId,
-                                restrictedForumList
-                            });
+                            })).AsList();
 
-                        await Task.WhenAll(draftsTask, countTask);
-
-                        Topics = (await draftsTask).AsList();
-                        Paginator = new Paginator(count: await countTask, pageNum: PageNum, link: "/Drafts?pageNum=1", topicId: null);
+                        Paginator = new Paginator(count: Topics.FirstOrDefault()?.TotalCount ?? 0, pageNum: PageNum, link: "/Drafts?pageNum=1", topicId: null);
                     },
                     evaluateSuccess: () => Topics!.Count > 0 && PageNum == Paginator!.CurrentPage,
                     fix: () => PageNum = Paginator!.CurrentPage);
@@ -94,5 +77,7 @@ namespace PhpbbInDotnet.Forum.Pages
                     new { ids = SelectedDrafts.DefaultIfNullOrEmpty() });
                 return await OnGet();
             });
+
+
     }
 }

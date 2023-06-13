@@ -17,18 +17,16 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services
 {
-	class PostService : IPostService
+    class PostService : IPostService
     {
         private readonly ISqlExecuter _sqlExecuter;
-        private readonly IUserService _userService;
         private readonly IAppCache _cache;
         private readonly int _maxAttachmentCount;
         private readonly ILogger _logger;
 
-        public PostService(ISqlExecuter sqlExecuter, IUserService userService, IAppCache cache, IConfiguration config, ILogger logger)
+        public PostService(ISqlExecuter sqlExecuter, IAppCache cache, IConfiguration config, ILogger logger)
         {
             _sqlExecuter = sqlExecuter;
-            _userService = userService;
             _cache = cache;
             var countLimit = config.GetObject<AttachmentLimits>("UploadLimitsCount");
             _maxAttachmentCount = Math.Max(countLimit.Images, countLimit.OtherFiles);
@@ -80,7 +78,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<PostListDto> GetPosts(int topicId, int pageNum, int pageSize, bool isPostingView, string language)
         {
-            var posts = await _sqlExecuter.WithPagination((pageNum - 1) * pageSize, pageSize).QueryAsync<PostDto>(
+            var posts = (await _sqlExecuter.WithPagination((pageNum - 1) * pageSize, pageSize).QueryAsync<PostDto>(
                      @"WITH ranks AS (
 					    SELECT DISTINCT u.user_id, 
 						       COALESCE(r1.rank_id, r2.rank_id) AS rank_id, 
@@ -110,7 +108,8 @@ namespace PhpbbInDotnet.Services
 					       p.post_edit_time,
 					       e.username as post_edit_user,
 					       r.rank_title as author_rank,
-					       p.poster_ip as ip
+					       p.poster_ip as ip,
+		                   count(1) over() as total_count
 				      FROM phpbb_posts p
 				      LEFT JOIN phpbb_users a ON p.poster_id = a.user_id
 				      LEFT JOIN phpbb_users e ON p.post_edit_user = e.user_id
@@ -128,21 +127,18 @@ namespace PhpbbInDotnet.Services
                          Constants.ANONYMOUS_USER_ID,
                          topicId,
                          order = isPostingView ? "DESC" : "ASC"
-                     });
+                     })).AsList();
 
             var currentPostIds = posts.Select(p => p.PostId).DefaultIfEmpty().ToList();
-
-            var countTask = isPostingView 
-                ? Task.FromResult<int?>(null) 
-                : _sqlExecuter.ExecuteScalarAsync<int?>(
-                    "SELECT COUNT(post_id) FROM phpbb_posts WHERE topic_id = @topicId",
-                    new { topicId });
-            var dbAttachmentsTask = _sqlExecuter.QueryAsync<PhpbbAttachments>(
+            var dbAttachments = await _sqlExecuter.QueryAsync<PhpbbAttachments>(
                 "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @currentPostIds",
                 new { currentPostIds });
-            var reportsTask = isPostingView
-                ? Task.FromResult(Enumerable.Empty<ReportDto>())
-                : _sqlExecuter.QueryAsync<ReportDto>(
+            var reports = new List<ReportDto>();
+            var count = null as int?;
+            if (!isPostingView)
+            {
+                count = posts.FirstOrDefault()?.TotalCount ?? 0;
+                reports = (await _sqlExecuter.QueryAsync<ReportDto>(
                     @"SELECT r.report_id AS id, 
 		                     rr.reason_title, 
                              rr.reason_description, 
@@ -156,19 +152,18 @@ namespace PhpbbInDotnet.Services
                         JOIN phpbb_reports_reasons rr ON r.reason_id = rr.reason_id
                         JOIN phpbb_users u on r.user_id = u.user_id
 	                   WHERE r.post_id IN @postIds;",
-                    new { postIds = currentPostIds });
+                    new { postIds = currentPostIds })).AsList();
+            }
 
-            await Task.WhenAll(countTask, dbAttachmentsTask, reportsTask);
-
-            var (CorrelationId, Attachments) = await CacheAttachmentsAndPrepareForDisplay(await dbAttachmentsTask, posts.FirstOrDefault()?.ForumId ?? 0, language, currentPostIds.Count, false);
+            var (CorrelationId, Attachments) = await CacheAttachmentsAndPrepareForDisplay(dbAttachments, posts.FirstOrDefault()?.ForumId ?? 0, language, currentPostIds.Count, false);
 
             return new PostListDto
             {
                 Posts = posts.AsList(),
                 Attachments = Attachments,
                 AttachmentDisplayCorrelationId = CorrelationId,
-                PostCount = await countTask,
-                Reports = (await reportsTask).AsList()
+                PostCount = count,
+                Reports = reports
             };
         }
 
@@ -213,214 +208,5 @@ namespace PhpbbInDotnet.Services
             };
         }
 
-        public async Task CascadePostEdit(PhpbbPosts added)
-        {
-            var curTopic = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { added.TopicId });
-            var curForum = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { curTopic.ForumId });
-            var usr = await _userService.GetForumUserById(added.PosterId);
-
-            if (curTopic.TopicFirstPostId == added.PostId)
-            {
-                await SetTopicFirstPost(curTopic, added, usr, true);
-            }
-
-            if (curTopic.TopicLastPostId == added.PostId)
-            {
-                await SetTopicLastPost(curTopic, added, usr);
-            }
-
-            if (curForum.ForumLastPostId == added.PostId)
-            {
-                await SetForumLastPost(curForum, added, usr);
-            }
-        }
-
-        public async Task CascadePostAdd(PhpbbPosts added, bool ignoreTopic)
-        {
-            var curTopic = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>("SELECT * FROM phpbb_topics WHERE topic_id = @topicId", new { added.TopicId });
-            var curForum = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { curTopic.ForumId });
-            var usr = await _userService.GetForumUserById(added.PosterId);
-
-            await SetForumLastPost(curForum, added, usr);
-
-            if (!ignoreTopic)
-            {
-                await SetTopicLastPost(curTopic, added, usr);
-                await SetTopicFirstPost(curTopic, added, usr, false);
-            }
-
-            await _sqlExecuter.ExecuteAsync(
-                "UPDATE phpbb_topics SET topic_replies = topic_replies + 1, topic_replies_real = topic_replies_real + 1 WHERE topic_id = @topicId; " +
-                "UPDATE phpbb_users SET user_posts = user_posts + 1 WHERE user_id = @userId",
-                new { curTopic.TopicId, usr.UserId }
-            );
-        }
-
-        public async Task CascadePostDelete(PhpbbPosts deleted, bool ignoreTopic, bool ignoreAttachmentsAndReports)
-        {
-            var curTopic = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>(
-                "SELECT * FROM phpbb_topics WHERE topic_id = @topicId",
-                new { deleted.TopicId });
-
-            var postCount = await _sqlExecuter.ExecuteScalarAsync<long>(
-                "SELECT count(1) FROM phpbb_posts WHERE topic_id = @topicId",
-                new { deleted.TopicId });
-            if (curTopic != null && postCount > 0)
-            {
-                if (curTopic.TopicLastPostId == deleted.PostId && !ignoreTopic)
-                {
-                    var lastTopicPost = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
-                        "SELECT * FROM phpbb_posts WHERE topic_id = @curTopicId AND post_id <> @deletedPostId ORDER BY post_time DESC",
-                        new
-                        {
-                            curTopicId = curTopic.TopicId,
-                            deletedPostId = deleted.PostId
-                        });
-
-                    if (lastTopicPost != null)
-                    {
-                        var lastTopicPostUser = await _userService.GetForumUserById(lastTopicPost.PosterId);
-                        await SetTopicLastPost(curTopic, lastTopicPost, lastTopicPostUser, true);
-                    }
-                }
-
-                if (curTopic.TopicFirstPostId == deleted.PostId && !ignoreTopic)
-                {
-                    var firstTopicPost = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
-						"SELECT * FROM phpbb_posts WHERE topic_id = @curTopicId AND post_id <> @deletedPostId ORDER BY post_time ASC",
-						new
-						{
-							curTopicId = curTopic.TopicId,
-							deletedPostId = deleted.PostId
-						});
-					if (firstTopicPost != null)
-                    {
-                        var firstPostUser = await _userService.GetForumUserById(firstTopicPost.PosterId);
-                        await SetTopicFirstPost(curTopic, firstTopicPost, firstPostUser, false, true);
-                    }
-                }
-
-                if (!ignoreTopic)
-                {
-                    await _sqlExecuter.ExecuteAsync(
-                        "UPDATE phpbb_topics SET topic_replies = GREATEST(topic_replies - 1, 0), topic_replies_real = GREATEST(topic_replies_real - 1, 0) WHERE topic_id = @topicId",
-                        new { curTopic.TopicId }
-                    );
-                }
-            }
-            else
-            {
-                await _sqlExecuter.ExecuteAsync("DELETE FROM phpbb_topics WHERE topic_id = @topicId", new { deleted.TopicId });
-            }
-
-            if (!ignoreAttachmentsAndReports)
-            {
-                await _sqlExecuter.ExecuteAsync(
-                    "DELETE FROM phpbb_reports WHERE post_id = @postId; " +
-                    "DELETE FROM phpbb_attachments WHERE post_msg_id = @postId",
-                    new { deleted.PostId }
-                );
-            }
-
-            if (curTopic != null)
-            {
-                var curForum = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>("SELECT * FROM phpbb_forums WHERE forum_id = @forumId", new { forumId = curTopic?.ForumId ?? deleted.ForumId });
-                if (curForum != null && curForum.ForumLastPostId == deleted.PostId)
-                {
-					var lastForumPost = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
-	                    "SELECT * FROM phpbb_posts WHERE forum_id = @curForumId AND post_id <> @deletedPostId ORDER BY post_time DESC",
-	                    new
-	                    {
-		                    curForumId = curForum.ForumId,
-		                    deletedPostId = deleted.PostId
-	                    });
-                    if (lastForumPost != null)
-                    {
-                        var lastForumPostUser = await _userService.GetForumUserById(lastForumPost.PosterId);
-                        await SetForumLastPost(curForum, lastForumPost, lastForumPostUser, true);
-                    }
-                }
-            }
-
-            await _sqlExecuter.ExecuteAsync(
-                "UPDATE phpbb_users SET user_posts = user_posts - 1 WHERE user_id = @posterId",
-                new { deleted.PosterId }
-            );
-        }
-
-        private async Task SetTopicLastPost(PhpbbTopics topic, PhpbbPosts post, ForumUser author, bool hardReset = false)
-        {
-            if (hardReset || topic.TopicLastPostTime < post.PostTime)
-            {
-                topic.TopicLastPostId = post.PostId;
-                topic.TopicLastPostSubject = post.PostSubject;
-                topic.TopicLastPostTime = post.PostTime;
-                topic.TopicLastPosterColour = author.UserColor!;
-                topic.TopicLastPosterId = post.PosterId;
-                topic.TopicLastPosterName = author.UserId == Constants.ANONYMOUS_USER_ID ? post.PostUsername : author.Username!;
-
-                await _sqlExecuter.ExecuteAsync(
-                    @"UPDATE phpbb_topics 
-                         SET topic_last_post_id = @TopicLastPostId, 
-                             topic_last_post_subject = @TopicLastPostSubject, 
-                             topic_last_post_time = @TopicLastPostTime, 
-                             topic_last_poster_colour = @TopicLastPosterColour, 
-                             topic_last_poster_id = @TopicLastPosterId, 
-                             topic_last_poster_name = @TopicLastPosterName 
-                       WHERE topic_id = @TopicId",
-                    topic
-                );
-            }
-        }
-
-        private async Task SetForumLastPost(PhpbbForums forum, PhpbbPosts post, ForumUser author, bool hardReset = false)
-        {
-            if (hardReset || forum.ForumLastPostTime < post.PostTime)
-            {
-                forum.ForumLastPostId = post.PostId;
-                forum.ForumLastPostSubject = post.PostSubject;
-                forum.ForumLastPostTime = post.PostTime;
-                forum.ForumLastPosterColour = author.UserColor!;
-                forum.ForumLastPosterId = post.PosterId;
-                forum.ForumLastPosterName = author.UserId == Constants.ANONYMOUS_USER_ID ? post.PostUsername : author.Username!;
-
-                await _sqlExecuter.ExecuteAsync(
-                    @"UPDATE phpbb_forums 
-                         SET forum_last_post_id = @ForumLastPostId, 
-                             forum_last_post_subject = @ForumLastPostSubject, 
-                             forum_last_post_time = @ForumLastPostTime, 
-                             forum_last_poster_colour = @ForumLastPosterColour, 
-                             forum_last_poster_id = @ForumLastPosterId, 
-                             forum_last_poster_name = @ForumLastPosterName 
-                       WHERE forum_id = @ForumId",
-                    forum
-                );
-            }
-        }
-
-        private async Task SetTopicFirstPost(PhpbbTopics topic, PhpbbPosts post, ForumUser author, bool setTopicTitle, bool goForward = false)
-        {
-            var curFirstPost = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>("SELECT * FROM phpbb_posts WHERE post_id = @TopicFirstPostId", new { topic.TopicFirstPostId });
-            if (topic.TopicFirstPostId == 0 || goForward || (curFirstPost != null && curFirstPost.PostTime >= post.PostTime))
-            {
-                if (setTopicTitle)
-                {
-                    topic.TopicTitle = post.PostSubject.Replace(Constants.REPLY, string.Empty).Trim();
-                }
-                topic.TopicFirstPostId = post.PostId;
-                topic.TopicFirstPosterColour = author.UserColor!;
-                topic.TopicFirstPosterName = author.Username!;
-
-                await _sqlExecuter.ExecuteAsync(
-                    @"UPDATE phpbb_topics 
-                         SET topic_title = @TopicTitle, 
-                             topic_first_post_id = @TopicFirstPostId, 
-                             topic_first_poster_colour = @TopicFirstPosterColour, 
-                             topic_first_poster_name = @TopicFirstPosterName
-                    WHERE topic_id = @topicId",
-                    topic
-                );
-            }
-        }
     }
 }

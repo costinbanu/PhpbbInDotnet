@@ -228,15 +228,16 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task SetFrontendData()
         {
-            var treeTask = ForumService.GetForumTree(ForumUser, false, false);
-            var topicDataTask = ShowTopicSelector 
-                ? SqlExecuter.QueryAsync<MiniTopicDto>(
-                    "SELECT forum_id, topic_id, topic_title, CASE WHEN topic_status = 1 THEN 1 ELSE 0 END AS is_locked FROM phpbb_topics") 
-                : Task.FromResult(new List<MiniTopicDto>().AsEnumerable());
-            await Task.WhenAll(treeTask, topicDataTask);
-
-            ForumTree = await treeTask;
-            TopicData = (await topicDataTask).AsList();
+            ForumTree = await ForumService.GetForumTree(ForumUser, false, false);
+            if (ShowTopicSelector)
+            {
+                TopicData = (await SqlExecuter.QueryAsync<MiniTopicDto>(
+                    "SELECT forum_id, topic_id, topic_title, CASE WHEN topic_status = 1 THEN 1 ELSE 0 END AS is_locked FROM phpbb_topics")).AsList();
+            }
+            else
+            {
+                TopicData = new();
+            }
         }
     }
 }

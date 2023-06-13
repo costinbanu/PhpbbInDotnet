@@ -90,17 +90,15 @@ namespace PhpbbInDotnet.Services
                 return _tree;
             }
 
-            var trackingTask = fetchUnreadData ? GetForumTracking(user?.UserId ?? Constants.ANONYMOUS_USER_ID, forceRefresh) : Task.FromResult(new Dictionary<int, HashSet<Tracking>>());
-            var treeTask = GetForumTree();
-            var forumTopicCountTask = GetForumTopicCount();
-            var shortcutParentsTask = fetchUnreadData ? GetShortcutParentForums() : Task.FromResult(new Dictionary<int, List<(int ActualForumId, int TopicId)>>());
-
-            await Task.WhenAll(trackingTask, treeTask, forumTopicCountTask, shortcutParentsTask);
-
-            var tracking = await trackingTask;
-            _tree = await treeTask;
-            _forumTopicCount = await forumTopicCountTask;
-            var shortcutParents = await shortcutParentsTask;
+            var tracking = new Dictionary<int, HashSet<Tracking>>();
+            var shortcutParents = new Dictionary<int, List<(int ActualForumId, int TopicId)>>();
+            if (fetchUnreadData)
+            {
+                tracking = await GetForumTracking(user?.UserId ?? Constants.ANONYMOUS_USER_ID, forceRefresh);
+                shortcutParents = await GetShortcutParentForums();
+            }
+            _tree = await GetForumTree();
+            _forumTopicCount = await GetForumTopicCount();
 
             traverse(0);
 

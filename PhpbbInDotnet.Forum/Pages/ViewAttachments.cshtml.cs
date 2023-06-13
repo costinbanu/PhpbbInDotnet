@@ -50,8 +50,17 @@ namespace PhpbbInDotnet.Forum.Pages
                     toDo: async () =>
                     {
                         var restrictedForums = (await ForumService.GetRestrictedForumList(ForumUser)).Select(f => f.forumId).DefaultIfEmpty();
-                        var attachmentsTask = SqlExecuter.WithPagination((PageNum - 1) * PAGE_SIZE, PAGE_SIZE).QueryAsync<AttachmentPreviewDto>(
-                            @"SELECT a.attach_id, a.physical_filename, a.real_filename, a.mimetype, a.filesize, a.filetime, p.forum_id, p.post_id, t.topic_title
+                        Attachments = (await SqlExecuter.WithPagination((PageNum - 1) * PAGE_SIZE, PAGE_SIZE).QueryAsync<AttachmentPreviewDto>(
+                            @"SELECT a.attach_id, 
+                                     a.physical_filename, 
+                                     a.real_filename, 
+                                     a.mimetype, 
+                                     a.filesize, 
+                                     a.filetime, 
+                                     p.forum_id, 
+                                     p.post_id, 
+                                     t.topic_title,
+		                             count(1) over() as total_count
                                 FROM phpbb_attachments a
                                 LEFT JOIN phpbb_posts p ON a.post_msg_id = p.post_id
                                 LEFT JOIN phpbb_topics t ON p.topic_id = t.topic_id
@@ -61,20 +70,12 @@ namespace PhpbbInDotnet.Forum.Pages
                             {
                                 UserId,
                                 restrictedForums
-                            });
+                            })).AsList();
 
-                        var countTask = SqlExecuter.ExecuteScalarAsync<int>(
-                            "SELECT count(1) FROM phpbb_attachments WHERE poster_id = @userId",
-                            new { UserId });
-                        var userTask = SqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
+                        user = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
                             "SELECT * FROM phpbb_users WHERE user_id = @userId",
                             new { UserId });
-
-                        await Task.WhenAll(attachmentsTask, countTask, userTask);
-
-                        Attachments = (await attachmentsTask).AsList();
-                        user = await userTask;
-                        Paginator = new Paginator(await countTask, PageNum, $"ViewAttachments?userId={UserId}", PAGE_SIZE, "pageNum");
+                        Paginator = new Paginator(count: Attachments.FirstOrDefault()?.TotalCount ?? 0, PageNum, $"ViewAttachments?userId={UserId}", PAGE_SIZE, "pageNum");
                     },
                     evaluateSuccess: () => user is null || (Attachments!.Count > 0 && PageNum == Paginator!.CurrentPage),
                     fix: () => PageNum = Paginator!.CurrentPage);
