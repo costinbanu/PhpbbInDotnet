@@ -78,56 +78,16 @@ namespace PhpbbInDotnet.Services
 
         public async Task<PostListDto> GetPosts(int topicId, int pageNum, int pageSize, bool isPostingView, string language)
         {
-            var posts = (await _sqlExecuter.WithPagination((pageNum - 1) * pageSize, pageSize).QueryAsync<PostDto>(
-                     @"WITH ranks AS (
-					    SELECT DISTINCT u.user_id, 
-						       COALESCE(r1.rank_id, r2.rank_id) AS rank_id, 
-						       COALESCE(r1.rank_title, r2.rank_title) AS rank_title
-					      FROM phpbb_users u
-					      JOIN phpbb_groups g ON u.group_id = g.group_id
-					      LEFT JOIN phpbb_ranks r1 ON u.user_rank = r1.rank_id
-					      LEFT JOIN phpbb_ranks r2 ON g.group_rank = r2.rank_id
-				    )
-				    SELECT 
-					       p.forum_id,
-					       p.topic_id,
-					       p.post_id,
-					       p.post_subject,
-					       p.post_text,
-					       CASE WHEN p.poster_id = @ANONYMOUS_USER_ID
-							    THEN p.post_username 
-							    ELSE a.username
-					       END AS author_name,
-					       p.poster_id as author_id,
-					       p.bbcode_uid,
-					       p.post_time,
-					       a.user_colour as author_color,
-					       a.user_avatar as author_avatar,
-					       p.post_edit_count,
-					       p.post_edit_reason,
-					       p.post_edit_time,
-					       e.username as post_edit_user,
-					       r.rank_title as author_rank,
-					       p.poster_ip as ip,
-		                   count(1) over() as total_count
-				      FROM phpbb_posts p
-				      LEFT JOIN phpbb_users a ON p.poster_id = a.user_id
-				      LEFT JOIN phpbb_users e ON p.post_edit_user = e.user_id
-				      LEFT JOIN ranks r ON a.user_id = r.user_id
-				      WHERE topic_id = @topicId 
-				      ORDER BY 
-                        CASE             
-                            WHEN @order = 'ASC' THEN post_time 
-                        END ASC, 
-                        CASE 
-                            WHEN @order = 'DESC' THEN post_time 
-                        END DESC",
-                     new
-                     {
-                         Constants.ANONYMOUS_USER_ID,
-                         topicId,
-                         order = isPostingView ? "DESC" : "ASC"
-                     })).AsList();
+            var posts = (await _sqlExecuter.CallStoredProcedureAsync<PostDto>(
+                "get_posts",
+                new
+                {
+                    topicId,
+                    Constants.ANONYMOUS_USER_ID,
+                    order = isPostingView ? "DESC" : "ASC",
+                    skip = (pageNum - 1) * pageSize, 
+                    take = pageSize
+                })).AsList();
 
             var currentPostIds = posts.Select(p => p.PostId).DefaultIfEmpty().ToList();
             var dbAttachments = await _sqlExecuter.QueryAsync<PhpbbAttachments>(
