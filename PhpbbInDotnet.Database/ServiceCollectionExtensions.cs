@@ -6,7 +6,7 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public static IServiceCollection AddSqlExecuter(this IServiceCollection services)
         {
-			services.AddScoped<ISqlExecuter, SqlExecuter>();
+			services.AddTransient<ISqlExecuter, SqlExecuter>();
             return services;
         }
     }

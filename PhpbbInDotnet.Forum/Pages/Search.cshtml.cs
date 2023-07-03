@@ -150,7 +150,8 @@ namespace PhpbbInDotnet.Forum.Pages
                 return;
             }
 
-            var results = (await SqlExecuter.CallStoredProcedureAsync<PostDtoWithOverallCount>(
+            var searchableForums = string.Join(",", await ForumService.GetUnrestrictedForums(ForumUser, ForumId ?? 0));
+            var results = (await SqlExecuter.CallStoredProcedureAsync<PostDto>(
                 "search_posts",
                 new
                 {
@@ -158,13 +159,13 @@ namespace PhpbbInDotnet.Forum.Pages
                     topicId = TopicId ?? 0,
                     AuthorId,
                     searchText = string.IsNullOrWhiteSpace(SearchText) ? string.Empty : HttpUtility.UrlDecode(SearchText),
-                    searchableForums = string.Join(",", await ForumService.GetUnrestrictedForums(ForumUser, ForumId ?? 0)),
+                    searchableForums,
                     skip = (PageNum - 1) * Constants.DEFAULT_PAGE_SIZE,
                     take = Constants.DEFAULT_PAGE_SIZE
                 })).AsList();
 
             Posts = results.Cast<PostDto>().ToList();
-            TotalResults = results.Count == 0 ? 0 : results[0].OverallCount;
+            TotalResults = results.Count == 0 ? 0 : results[0].TotalCount;
             Attachments = await SqlExecuter.QueryAsync<PhpbbAttachmentExpanded>(
                 @"SELECT p.forum_id, a.*
                     FROM phpbb_attachments a
@@ -172,11 +173,6 @@ namespace PhpbbInDotnet.Forum.Pages
                     WHERE p.post_id IN @posts",
                 new { posts = Posts.Select(p => p.PostId).DefaultIfEmpty() });
             Paginator = new Paginator(count: TotalResults.Value, pageNum: PageNum, link: GetSearchLinkForPage(PageNum + 1), topicId: null);
-        }
-
-        class PostDtoWithOverallCount: PostDto
-        {
-            public int OverallCount { get; set; }
         }
     }
 }

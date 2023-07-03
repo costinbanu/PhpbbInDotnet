@@ -8,6 +8,10 @@
     <UserSecretsId>ce503996-6db2-42df-9120-e8cf931a5445</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <Content Remove="wwwroot\sitemap.xml" />
+    <Content Remove="wwwroot\sitemap_0.xml" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="BuildBundlerMinifier" Version="3.2.449" />
     <PackageReference Include="DeviceDetector.NET" Version="6.1.0" />
     <PackageReference Include="LazyCache.AspNetCore" Version="2.4.0" />
@@ -37,5 +41,10 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="wwwroot\forumfiles\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="wwwroot\sitemap.xml" />
+    <None Include="wwwroot\sitemap_0.xml" />
+	<None Include="wwwroot\forumfiles\**" />
   </ItemGroup>
 </Project>

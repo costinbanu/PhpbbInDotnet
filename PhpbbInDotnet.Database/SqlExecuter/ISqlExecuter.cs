@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Database.SqlExecuter
 {
-    public interface ISqlExecuter : IDapperProxy
+    public interface ISqlExecuter : IDapperProxy, IDisposable
     {
         string LastInsertedItemId { get; }
         IEnumerable<T> CallStoredProcedure<T>(string storedProcedureName, object? param = null);

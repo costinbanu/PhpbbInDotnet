@@ -50,6 +50,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool SearchWasPerformed { get; private set; }
         public IEnumerable<BotData>? BotList { get; private set; }
         public Paginator? BotPaginator { get; private set; }
+        public bool CurrentUserIsAdmin { get; private set; }
 
         public MemberListModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter,
             ITranslationProvider translationProvider, IConfiguration config, IAnonymousSessionCounter sessionCounter)
@@ -75,6 +76,7 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 PageNum = Paginator.NormalizePageNumberLowerBound(PageNum);
                 GroupList = await SqlExecuter.QueryAsync<PhpbbGroups>("SELECT * FROM phpbb_groups");
+                CurrentUserIsAdmin = await UserService.IsAdmin(ForumUser);
                 switch (Mode)
                 {
                     case MemberListPages.AllUsers:
@@ -131,16 +133,6 @@ namespace PhpbbInDotnet.Forum.Pages
                         break;
 
                     case MemberListPages.ActiveBots:
-                        ResiliencyUtility.RetryOnce(
-                            toDo: () =>
-                            {
-                                BotList = _sessionCounter.GetBots().OrderByDescending(x => x.EntryTime).Skip(PAGE_SIZE * (PageNum - 1)).Take(PAGE_SIZE);
-                                BotPaginator = new Paginator(_sessionCounter.GetActiveBotCount(), PageNum, $"/MemberList?handler=setMode&mode={Mode}", PAGE_SIZE, "pageNum");
-                            },
-                            evaluateSuccess: () => BotList!.Any() && PageNum == BotPaginator!.CurrentPage,
-                            fix: () => PageNum = BotPaginator!.CurrentPage);
-                        break;
-
                     case MemberListPages.ActiveUsers:
                         await ResiliencyUtility.RetryOnceAsync(
                             toDo: async () =>
@@ -161,6 +153,22 @@ namespace PhpbbInDotnet.Forum.Pages
                             },
                             evaluateSuccess: () => UserList!.Any() && PageNum == Paginator!.CurrentPage,
                             fix: () => PageNum = Paginator!.CurrentPage);
+
+                        if (Mode == MemberListPages.ActiveBots)
+                        {
+                            if (!CurrentUserIsAdmin)
+                            {
+                                return Unauthorized();
+                            }
+                            ResiliencyUtility.RetryOnce(
+                                toDo: () =>
+                                {
+                                    BotList = _sessionCounter.GetBots().OrderByDescending(x => x.EntryTime).Skip(PAGE_SIZE * (PageNum - 1)).Take(PAGE_SIZE);
+                                    BotPaginator = new Paginator(_sessionCounter.GetActiveBotCount(), PageNum, $"/MemberList?handler=setMode&mode={Mode}", PAGE_SIZE, "pageNum");
+                                },
+                                evaluateSuccess: () => BotList!.Any() && PageNum == BotPaginator!.CurrentPage,
+                                fix: () => PageNum = BotPaginator!.CurrentPage);
+                        }
                         break;
 
                     default:
