@@ -17,7 +17,6 @@ namespace PhpbbInDotnet.Database.SqlExecuter
     class DapperProxy : IDapperProxy, IDisposable
 	{
 		protected const int TIMEOUT = 60;
-		const int DURATION_INCREMENT = 2;
 		static readonly TimeSpan[] DURATIONS = new[]
 		{
 			TimeSpan.FromSeconds(1),
@@ -59,113 +58,53 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 			catch { }
 		}
 
-		public Task<int> ExecuteAsync(string sql, object? param)
-			=> ResilientExecuteAsync(() => 
-			{ 
-				OpenConnection(); 
-				return Connection.ExecuteAsync(sql, param, commandTimeout: TIMEOUT); 
-			});
+        public Task<int> ExecuteAsync(string sql, object? param)
+            => ResilientExecuteAsync(() => Connection.ExecuteAsync(sql, param, commandTimeout: TIMEOUT));
 
-		public T ExecuteScalar<T>(string sql, object? param)
-			=> ResilientExecute(() => 
-			{ 
-				OpenConnection(); 
-				return Connection.ExecuteScalar<T>(sql, param, commandTimeout: TIMEOUT);
-			});
+        public T ExecuteScalar<T>(string sql, object? param)
+            => ResilientExecute(() => Connection.ExecuteScalar<T>(sql, param, commandTimeout: TIMEOUT));
 
-		public Task<T> ExecuteScalarAsync<T>(string sql, object? param)
-			=> ResilientExecuteAsync(() => 
-			{ 
-				OpenConnection(); 
-				return Connection.ExecuteScalarAsync<T>(sql, param, commandTimeout: TIMEOUT); 
-			});
+        public Task<T> ExecuteScalarAsync<T>(string sql, object? param)
+            => ResilientExecuteAsync(() => Connection.ExecuteScalarAsync<T>(sql, param, commandTimeout: TIMEOUT));
 
-		public IEnumerable<dynamic> Query(string sql, object? param)
-			=> ResilientExecute(() => 
-			{ 
-				OpenConnection(); 
-				return Connection.Query(sql, param, commandTimeout: TIMEOUT); 
-			});
+        public IEnumerable<dynamic> Query(string sql, object? param)
+            => ResilientExecute(() => Connection.Query(sql, param, commandTimeout: TIMEOUT));
 
-		public IEnumerable<T> Query<T>(string sql, object? param)
-			=> ResilientExecute(() => 
-			{ 
-				OpenConnection(); 
-				return Connection.Query<T>(sql, param, commandTimeout: TIMEOUT); 
-			});
+        public IEnumerable<T> Query<T>(string sql, object? param)
+            => ResilientExecute(() => Connection.Query<T>(sql, param, commandTimeout: TIMEOUT));
 
-		public Task<IEnumerable<dynamic>> QueryAsync(string sql, object? param)
-			=> ResilientExecuteAsync(() => 
-			{ 
-				OpenConnection(); 
-				return Connection.QueryAsync(sql, param, commandTimeout: TIMEOUT); 
-			});
+        public Task<IEnumerable<dynamic>> QueryAsync(string sql, object? param)
+            => ResilientExecuteAsync(() => Connection.QueryAsync(sql, param, commandTimeout: TIMEOUT));
 
-		public Task<IEnumerable<T>> QueryAsync<T>(string sql, object? param)
-			=> ResilientExecuteAsync(() => 
-			{ 
-				OpenConnection(); 
-				return Connection.QueryAsync<T>(sql, param, commandTimeout: TIMEOUT); 
-			});
+        public Task<IEnumerable<T>> QueryAsync<T>(string sql, object? param)
+            => ResilientExecuteAsync(() => Connection.QueryAsync<T>(sql, param, commandTimeout: TIMEOUT));
 
-		public T QueryFirstOrDefault<T>(string sql, object? param)
-			=> ResilientExecute(() => 
-			{ 
-				OpenConnection(); 
-				return Connection.QueryFirstOrDefault<T>(sql, param, commandTimeout: TIMEOUT); 
-			});
+        public T QueryFirstOrDefault<T>(string sql, object? param)
+            => ResilientExecute(() => Connection.QueryFirstOrDefault<T>(sql, param, commandTimeout: TIMEOUT));
 
-		public Task<dynamic> QueryFirstOrDefaultAsync(string sql, object? param)
-			=> ResilientExecuteAsync(() => 
-			{ 
-				OpenConnection(); 
-				return Connection.QueryFirstOrDefaultAsync(sql, param, commandTimeout: TIMEOUT); 
-			});
+        public Task<dynamic> QueryFirstOrDefaultAsync(string sql, object? param)
+            => ResilientExecuteAsync(() => Connection.QueryFirstOrDefaultAsync(sql, param, commandTimeout: TIMEOUT));
 
-		public Task<T> QueryFirstOrDefaultAsync<T>(string sql, object? param)
-			=> ResilientExecuteAsync(() => 
-			{ 
-				OpenConnection(); 
-				return Connection.QueryFirstOrDefaultAsync<T>(sql, param, commandTimeout: TIMEOUT); 
-			});
+        public Task<T> QueryFirstOrDefaultAsync<T>(string sql, object? param)
+            => ResilientExecuteAsync(() => Connection.QueryFirstOrDefaultAsync<T>(sql, param, commandTimeout: TIMEOUT));
 
-		public T QuerySingle<T>(string sql, object? param)
-			=> ResilientExecute(() => 
-			{ 
-				OpenConnection(); 
-				return Connection.QuerySingle<T>(sql, param, commandTimeout: TIMEOUT); 
-			});
+        public T QuerySingle<T>(string sql, object? param)
+            => ResilientExecute(() => Connection.QuerySingle<T>(sql, param, commandTimeout: TIMEOUT));
 
-		public Task<T> QuerySingleAsync<T>(string sql, object? param)
-			=> ResilientExecuteAsync(() => 
-			{ 
-				OpenConnection(); 
-				return Connection.QuerySingleAsync<T>(sql, param, commandTimeout: TIMEOUT); 
-			});
+        public Task<T> QuerySingleAsync<T>(string sql, object? param)
+            => ResilientExecuteAsync(() => Connection.QuerySingleAsync<T>(sql, param, commandTimeout: TIMEOUT));
 
-		public Task<dynamic> QuerySingleOrDefaultAsync(string sql, object? param)
-			=> ResilientExecuteAsync(() => 
-			{ 
-				OpenConnection(); 
-				return Connection.QuerySingleOrDefaultAsync(sql, param, commandTimeout: TIMEOUT); 
-			});
+        public Task<dynamic> QuerySingleOrDefaultAsync(string sql, object? param)
+            => ResilientExecuteAsync(() => Connection.QuerySingleOrDefaultAsync(sql, param, commandTimeout: TIMEOUT));
 
-		public Task<T> QuerySingleOrDefaultAsync<T>(string sql, object? param)
-			=> ResilientExecuteAsync(() => 
-			{ 
-				OpenConnection(); 
-				return Connection.QuerySingleOrDefaultAsync<T>(sql, param, commandTimeout: TIMEOUT); 
-			});
+        public Task<T> QuerySingleOrDefaultAsync<T>(string sql, object? param)
+            => ResilientExecuteAsync(() => Connection.QuerySingleOrDefaultAsync<T>(sql, param, commandTimeout: TIMEOUT));
 
-		private void OnRetry(Exception ex, TimeSpan duration, int retryCount, Context context)
-		{
-            _logger.Warning(
+        private void OnRetry(Exception ex, TimeSpan duration, int retryCount, Context context)
+			=> _logger.Warning(
 				new Exception($"A SQL error occurred. Retry policy correlation id: {context.CorrelationId}.", ex),
 				"An error occurred, will retry after {duration} for at most {maxRetries} times, current retry count: {count}, current connection state: {state}.",
 				duration, DURATIONS.Length, retryCount, Connection.State);
-
-			OpenConnection();
-		}
 
 		private void OpenConnection()
 		{
@@ -173,24 +112,21 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 			{
 				Connection.Close();
 			}
+
             if (Connection.State == ConnectionState.Closed)
             {
                 Connection.Open();
             }
         }
-		
-		protected void ResilientExecute(Action toDo)
-		{
-			var result = _retryPolicy.ExecuteAndCapture(toDo);
-			if (result.FinalException is not null)
-			{
-				throw result.FinalException;
-			}
-		}
 
-		protected T ResilientExecute<T>(Func<T> toDo)
+        protected T ResilientExecute<T>(Func<T> toDo)
 		{
-			var result = _retryPolicy.ExecuteAndCapture(toDo);
+			var result = _retryPolicy.ExecuteAndCapture(() =>
+			{
+				OpenConnection();
+				return toDo();
+			});
+
 			if (result.FinalException is not null)
 			{
 				throw result.FinalException;
@@ -200,7 +136,12 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 
 		protected async Task<T> ResilientExecuteAsync<T>(Func<Task<T>> toDo)
 		{
-			var result = await _asyncRetryPolicy.ExecuteAndCaptureAsync(toDo);
+			var result = await _asyncRetryPolicy.ExecuteAndCaptureAsync(() =>
+			{
+				OpenConnection();
+				return toDo();
+			});
+
             if (result.FinalException is not null)
 			{
 				throw new Exception($"A SQL error occurred. Retry policy correlation id: {result.Context.CorrelationId}.", result.FinalException);
