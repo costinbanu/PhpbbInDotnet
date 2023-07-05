@@ -70,7 +70,11 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 			public Task<dynamic> QuerySingleOrDefaultAsync(string sql, object? param = null)
 				=> _implementation.QuerySingleOrDefaultAsync(AdjustSql(sql), AdjustParameters(param));
 
-			private string AdjustSql(string sql)
+			public Task<SqlMapper.GridReader> QueryMultipleAsync(string sql, object? param)
+				=> _implementation.QueryMultipleAsync(AdjustSql(sql), AdjustParameters(param));
+
+
+            private string AdjustSql(string sql)
 			{
 				var stmt = _databaseType switch
 				{

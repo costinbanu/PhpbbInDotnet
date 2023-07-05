@@ -85,6 +85,9 @@ namespace PhpbbInDotnet.Database.SqlExecuter
         public Task<T> QuerySingleOrDefaultAsync<T>(string sql, object? param)
             => ResilientExecuteAsync(() => Connection.QuerySingleOrDefaultAsync<T>(sql, param, commandTimeout: TIMEOUT));
 
+		public Task<SqlMapper.GridReader> QueryMultipleAsync(string sql, object? param)
+			=> ResilientExecuteAsync(() => Connection.QueryMultipleAsync(sql, param, commandTimeout: TIMEOUT));
+
 		private void OnRetry(Exception ex, TimeSpan duration, int retryCount, Context context)
 		{ 
 			var originalStackTrace = context.TryGetValue(nameof(Environment.StackTrace), out var stackTrace) ? stackTrace.ToString() : null;
