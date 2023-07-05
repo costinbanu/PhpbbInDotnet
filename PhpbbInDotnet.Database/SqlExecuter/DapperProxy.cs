@@ -1,20 +1,20 @@
 ﻿using Dapper;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using MySql.Data.MySqlClient;
 using PhpbbInDotnet.Domain;
+using PhpbbInDotnet.Domain.Extensions;
 using Polly;
 using Polly.Retry;
 using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Database.SqlExecuter
 {
-    class DapperProxy : IDapperProxy, IDisposable
+    class DapperProxy : IDapperProxy
 	{
 		protected const int TIMEOUT = 60;
 		static readonly TimeSpan[] DURATIONS = new[]
@@ -33,29 +33,14 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 		protected readonly DatabaseType DatabaseType;
 		protected readonly IDbConnection Connection;
 
-		public DapperProxy(IConfiguration configuration, ILogger logger)
+		public DapperProxy(IConfiguration configuration, IDbConnection dbConnection, ILogger logger)
 		{
 			_logger = logger;
 			_asyncRetryPolicy = Policy.Handle<Exception>().WaitAndRetryAsync(DURATIONS, OnRetry);
 			_retryPolicy = Policy.Handle<Exception>().WaitAndRetry(DURATIONS, OnRetry);
 
 			DatabaseType = configuration.GetValue<DatabaseType>("Database:DatabaseType");
-			var connStr = configuration.GetValue<string>("Database:ConnectionString");
-			Connection = DatabaseType switch
-			{
-				DatabaseType.MySql => new MySqlConnection(connStr),
-				DatabaseType.SqlServer => new SqlConnection(connStr),
-				_ => throw new ArgumentException("Unknown Database type in configuration.")
-			};
-		}
-
-		public void Dispose()
-		{
-			try
-			{
-				Connection.Dispose();
-			}
-			catch { }
+			Connection = dbConnection;
 		}
 
         public Task<int> ExecuteAsync(string sql, object? param)
@@ -100,53 +85,38 @@ namespace PhpbbInDotnet.Database.SqlExecuter
         public Task<T> QuerySingleOrDefaultAsync<T>(string sql, object? param)
             => ResilientExecuteAsync(() => Connection.QuerySingleOrDefaultAsync<T>(sql, param, commandTimeout: TIMEOUT));
 
-        private void OnRetry(Exception ex, TimeSpan duration, int retryCount, Context context)
-			=> _logger.Warning(
-				new Exception($"A SQL error occurred. Retry policy correlation id: {context.CorrelationId}.", ex),
-				"An error occurred, will retry after {duration} for at most {maxRetries} times, current retry count: {count}, current connection state: {state}.",
-				duration, DURATIONS.Length, retryCount, Connection.State);
+		private void OnRetry(Exception ex, TimeSpan duration, int retryCount, Context context)
+		{ 
+			var originalStackTrace = context.TryGetValue(nameof(Environment.StackTrace), out var stackTrace) ? stackTrace.ToString() : null;
+			var myStackTrace = string.Join(Environment.NewLine, originalStackTrace?
+				.Split(Environment.NewLine.ToCharArray(), StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+				.Where(x => x.StartsWith("at PhpbbInDotnet"))
+				.EmptyIfNull()!);
 
-		private void OpenConnection()
-		{
-			if (Connection.State == ConnectionState.Broken)
-			{
-				Connection.Close();
-			}
-
-            if (Connection.State == ConnectionState.Closed)
-            {
-                Connection.Open();
-            }
-        }
-
-        protected T ResilientExecute<T>(Func<T> toDo)
-		{
-			var result = _retryPolicy.ExecuteAndCapture(() =>
-			{
-				OpenConnection();
-				return toDo();
-			});
-
-			if (result.FinalException is not null)
-			{
-				throw result.FinalException;
-			}
-			return result.Result;
+			_logger.Warning(
+				new DatabaseException(ex.Message, myStackTrace),
+				"An error occurred, will retry after {duration} for at most {maxRetries} times, current retry count: {count}, current connection state: {state}, retry correlation id: {correlationId}.",
+				duration, DURATIONS.Length, retryCount, Connection.State, context.CorrelationId);
 		}
+		protected T ResilientExecute<T>(Func<T> toDo)
+			=> ReturnResultOrThrowExceptionIfAny(_retryPolicy.ExecuteAndCapture(_ => toDo(), ContextData));
 
 		protected async Task<T> ResilientExecuteAsync<T>(Func<Task<T>> toDo)
-		{
-			var result = await _asyncRetryPolicy.ExecuteAndCaptureAsync(() =>
-			{
-				OpenConnection();
-				return toDo();
-			});
+			=> ReturnResultOrThrowExceptionIfAny(await _asyncRetryPolicy.ExecuteAndCaptureAsync(_ => toDo(), ContextData));
 
+		private static T ReturnResultOrThrowExceptionIfAny<T>(PolicyResult<T> result)
+		{
             if (result.FinalException is not null)
+            {
+                throw new DatabaseException($"A SQL error occurred. Retry policy correlation id: {result.Context.CorrelationId}.", result.FinalException);
+            }
+            return result.Result;
+        }
+
+		private static IDictionary<string, object> ContextData
+			=> new Dictionary<string, object>
 			{
-				throw new Exception($"A SQL error occurred. Retry policy correlation id: {result.Context.CorrelationId}.", result.FinalException);
-			}
-			return result.Result;
-		}
+				[nameof(Environment.StackTrace)] = Environment.StackTrace
+			};
 	}
 }

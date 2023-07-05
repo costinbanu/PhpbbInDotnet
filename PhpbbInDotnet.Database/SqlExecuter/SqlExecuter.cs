@@ -12,7 +12,7 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 {
 	partial class SqlExecuter : DapperProxy, ISqlExecuter
     {
-		public SqlExecuter(IConfiguration configuration, ILogger logger) : base(configuration, logger) { }
+		public SqlExecuter(IConfiguration configuration, IDbConnection dbConnection, ILogger logger) : base(configuration, dbConnection, logger) { }
 
 		public IEnumerable<T> CallStoredProcedure<T>(string storedProcedureName, object? param)
             => ResilientExecute(() => Connection.Query<T>(BuildStoreProcedureCall(storedProcedureName, param), param, commandTimeout: TIMEOUT));
