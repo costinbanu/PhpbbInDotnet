@@ -1,6 +1,6 @@
 ﻿USE [forum]
 GO
-/****** Object:  StoredProcedure [dbo].[search_posts]    Script Date: 06.07.2023 17:21:12 ******/
+/****** Object:  StoredProcedure [dbo].[search_posts]    Script Date: 06.07.2023 21:54:03 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -25,21 +25,6 @@ BEGIN
 
 	CREATE TABLE #filtered_posts (post_id int INDEX ix_post_id CLUSTERED);
 
-	SET @search_text = ltrim(rtrim(@search_text));
-	IF (coalesce(@search_text, '') <> '')
-	BEGIN
-		WHILE CHARINDEX('  ', @search_text) > 0 
-			SET @search_text = REPLACE(@search_text, '  ', ' ');
-			
-		IF (@search_text NOT LIKE '"%"')
-			SET @search_text = REPLACE(@search_text, ' ', ' OR ');
-
-		INSERT INTO #filtered_posts
-		SELECT p.post_id
-		  FROM phpbb_posts p
-		 WHERE CONTAINS(*, @search_text);
-	END;
-
 	CREATE TABLE #posts (forum_id int not null, 
 						 topic_id int not null, 
 						 post_id int UNIQUE not null, 
@@ -55,6 +40,20 @@ BEGIN
 						 post_username nvarchar(255) not null,
 						 post_edit_user int not null,
 						 total_count int not null);
+
+	SET @search_text = ltrim(rtrim(@search_text));
+	IF (coalesce(@search_text, '') <> '')
+	BEGIN
+		WHILE CHARINDEX('  ', @search_text) > 0 
+			SET @search_text = REPLACE(@search_text, '  ', ' ');
+			
+		IF (@search_text NOT LIKE '"%"')
+			SET @search_text = REPLACE(@search_text, ' ', ' OR ');
+
+		INSERT INTO #filtered_posts
+		SELECT p.post_id
+		  FROM phpbb_posts p
+		 WHERE CONTAINS(*, @search_text);
 
 		INSERT INTO #posts
 		SELECT p.forum_id,
@@ -79,6 +78,32 @@ BEGIN
 		   AND (@author_id = 0 OR @author_id = p.poster_id)
 		 ORDER BY p.post_time DESC
 		OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
+	END;
+	ELSE
+	BEGIN
+		INSERT INTO #posts
+		SELECT p.forum_id,
+			   p.topic_id,
+			   p.post_id,
+			   p.post_subject,
+			   p.post_text,
+			   p.poster_id as author_id,
+			   p.bbcode_uid,
+			   p.post_time,
+			   p.post_edit_count,
+			   p.post_edit_reason,
+			   p.post_edit_time,
+			   p.poster_ip as ip,
+			   p.post_username,
+			   p.post_edit_user,
+			   count(1) over() as total_count
+		  FROM phpbb_posts p
+		  JOIN #searchable_forums_table sft ON sft.forum_id = p.forum_id
+		 WHERE (@topic_id = 0 OR @topic_id = p.topic_id)
+		   AND (@author_id = 0 OR @author_id = p.poster_id)
+		 ORDER BY p.post_time DESC
+		OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
+	END;
 
 	SELECT DISTINCT u.user_id, 
 			COALESCE(r1.rank_id, r2.rank_id) AS rank_id, 
