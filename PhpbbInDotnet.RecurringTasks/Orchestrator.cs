@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PhpbbInDotnet.RecurringTasks.Tasks;
+using PhpbbInDotnet.Services.Locks;
 using PhpbbInDotnet.Services.Storage;
 using Serilog;
 using System;
@@ -30,27 +31,53 @@ namespace PhpbbInDotnet.RecurringTasks
 			var logger = scope.ServiceProvider.GetRequiredService<ILogger>();
 			var storageService = scope.ServiceProvider.GetRequiredService<IStorageService>();
             var schedulingService = scope.ServiceProvider.GetRequiredService<ISchedulingService>();
+			var lockingService = scope.ServiceProvider.GetRequiredService<ILockingService>();
 
-            try
-            {
+			bool lockAcquiredSuccessfully = false;
+			bool shouldUpdateControlFile = false;
+			string? lockId = null;
+
+			try
+			{
 				var timeToWait = await schedulingService.GetTimeToWaitUntilRunIsAllowed();
 				if (timeToWait > TimeSpan.Zero)
 				{
-                    logger.Warning("Waiting for {time} before executing recurring tasks...", timeToWait);
-                    stoppingToken.WaitHandle.WaitOne(timeToWait);
-                }
+					logger.Warning("Waiting for {time} before executing recurring tasks...", timeToWait);
+					stoppingToken.WaitHandle.WaitOne(timeToWait);
+				}
 
-                stoppingToken.ThrowIfCancellationRequested();
+				stoppingToken.ThrowIfCancellationRequested();
 
-				await Task.WhenAll(scope.ServiceProvider.GetServices<IRecurringTask>().Select(t => t.ExecuteAsync(stoppingToken)));
+				(lockAcquiredSuccessfully, lockId) = await lockingService.AcquireNamedLock(ControlFileName);
+				if (lockAcquiredSuccessfully)
+				{
+					logger.Warning("Running recurring tasks on instance {name}.", Environment.MachineName);
 
-                await storageService.WriteAllTextToFile(ControlFileName, DateTime.UtcNow.ToString("u"));
+                    await Task.WhenAll(scope.ServiceProvider.GetServices<IRecurringTask>().Select(t => t.ExecuteAsync(stoppingToken)));
 
-				logger.Information("All recurring tasks executed successfully.");
-            }
+					logger.Warning("All recurring tasks executed successfully on instance {name}.", Environment.MachineName);
+					shouldUpdateControlFile = true;
+				}
+				else
+				{
+					logger.Warning("Will not execute recurring tasks on instance {name}. Another instance will handle this.", Environment.MachineName);
+					return;
+				}
+			}
 			catch (Exception ex)
 			{
 				logger.Error(ex, "An error occurred while running recurring tasks; rest of the application will continue.");
+			}
+			finally
+			{
+				if (lockAcquiredSuccessfully)
+				{
+					await lockingService.ReleaseNamedLock(ControlFileName, lockId!);
+					if (shouldUpdateControlFile)
+					{
+						await storageService.WriteAllTextToFile(ControlFileName, $"Completed at {DateTime.UtcNow:u}.");
+					}
+                }
 			}
 		}
 

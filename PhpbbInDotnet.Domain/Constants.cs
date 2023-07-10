@@ -39,6 +39,8 @@ namespace PhpbbInDotnet.Domain
 
         public const int ONE_MB = 1048576;
 
+        public const string LOG_FOLDER = "logs";
+
         public static class ViewDataKeys
         {
             public const string BREADCRUMBS = "BreadCrumbs";

@@ -1,7 +1,6 @@
 ﻿using PhpbbInDotnet.Database.Entities;
-using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Domain;
-using System;
+using PhpbbInDotnet.Objects;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -12,7 +11,6 @@ namespace PhpbbInDotnet.Services
         int LogPageSize { get; }
 
         Task<(List<OperationLogSummary> PageItems, int Count)> GetOperationLogs(OperationLogType? logType, string? authorName = null, int page = 1);
-        List<(DateTime LogDate, string? LogPath)>? GetSystemLogs();
         Task LogAdminBanListAction(AdminBanListActions action, int adminUserId, UpsertBanListDto banList);
         Task LogAdminForumAction(AdminForumActions action, int adminUserId, PhpbbForums forum);
         Task LogAdminGroupAction(AdminGroupActions action, int adminUserId, PhpbbGroups group);

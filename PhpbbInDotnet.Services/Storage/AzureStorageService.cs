@@ -168,11 +168,29 @@ namespace PhpbbInDotnet.Services.Storage
 			await source.CopyToAsync(destination);
 		}
 
-		private string GetFilePath(string name, FileType fileType)
+        public override async Task<List<(DateTime LogDate, string? LogPath)>?> GetSystemLogs()
+        {
+            try
+            {
+				return await _blobContainerClient.GetBlobsAsync(prefix: "logs/")
+					.Where(b => b is not null)
+					.Select(b => ParseLogName(b.Name))
+					.OrderByDescending(p => p.LogDate)
+					.ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning(ex);
+                return default;
+            }
+        }
+
+        private string GetFilePath(string name, FileType fileType)
 			=> fileType switch
 			{
 				FileType.Attachment => CombineToRelativePath(AttachmentsPath, name),
 				FileType.Avatar => CombineToRelativePath(AvatarsPath, name),
+				FileType.Log => name,
 				_ => throw new ArgumentException($"Unknown value '{fileType}'.", nameof(fileType))
 			};
 

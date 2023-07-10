@@ -9,6 +9,7 @@ using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Services.Storage;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -75,9 +76,10 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IAdminForumService _adminForumService;
         private readonly IWritingToolsService _adminWritingService;
         private readonly IOperationLogService _logService;
+        private readonly IStorageService _storageService;
 
         public AdminModel(IAdminUserService adminUserService, IAdminForumService adminForumService, IWritingToolsService adminWritingService, 
-            IOperationLogService logService, IForumTreeService forumService, IUserService userService,
+            IOperationLogService logService, IForumTreeService forumService, IUserService userService, IStorageService storageService,
             ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, IConfiguration configuration)
             : base(forumService, userService, sqlExecuter, translationProvider, configuration)
         {
@@ -85,6 +87,7 @@ namespace PhpbbInDotnet.Forum.Pages
             _adminForumService = adminForumService;
             _adminWritingService = adminWritingService;
             _logService = logService;
+            _storageService = storageService;
             UserSearchResults = new List<PhpbbUsers>();
             ForumChildren = new List<PhpbbForums>();
             ForumSelectedParent = new List<SelectListItem>();
@@ -106,7 +109,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 Smilies = await _adminWritingService.GetSmilies();
 
                 (CurrentLogItems, TotalLogItemCount) = await _logService.GetOperationLogs(LogType, AuthorName, LogPage);
-                SystemLogs = _logService.GetSystemLogs() ?? new List<(DateTime LogDate, string? LogPath)>();
+                SystemLogs = (await _storageService.GetSystemLogs()) ?? new List<(DateTime LogDate, string? LogPath)>();
 
                 return Page();
             });
@@ -278,17 +281,23 @@ namespace PhpbbInDotnet.Forum.Pages
             return await WithAdmin(async () =>
             {
                 var originalFileName = Path.GetFileName(SystemLogPath)!;
-                var filePattern = $"{Path.GetFileNameWithoutExtension(originalFileName)}*";
-                var directory = Path.GetDirectoryName(SystemLogPath)!;
+                //var filePattern = $"{Path.GetFileNameWithoutExtension(originalFileName)}*";
+                //var directory = Path.GetDirectoryName(SystemLogPath)!;
 
-                var toReturn = new MemoryStream();
-                foreach (var file in Directory.EnumerateFiles(directory, filePattern))
+                //var toReturn = new MemoryStream();
+                //foreach (var file in Directory.EnumerateFiles(directory, filePattern))
+                //{
+                //    using var fileStream = IOFile.Open(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                //    await fileStream.CopyToAsync(toReturn);
+                //}
+                //await toReturn.FlushAsync();
+                //toReturn.Seek(0, SeekOrigin.Begin);
+
+                var toReturn = await _storageService.GetFileStream(SystemLogPath, FileType.Log);
+                if (toReturn is null)
                 {
-                    using var fileStream = IOFile.Open(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    await fileStream.CopyToAsync(toReturn);
+                    return NotFound();
                 }
-                await toReturn.FlushAsync();
-                toReturn.Seek(0, SeekOrigin.Begin);
 
                 var cd = new ContentDisposition
                 {

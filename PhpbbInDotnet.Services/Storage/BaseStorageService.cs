@@ -8,6 +8,7 @@ using PhpbbInDotnet.Domain.Extensions;
 using Serilog;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -80,8 +81,9 @@ namespace PhpbbInDotnet.Services.Storage
 		public abstract Task<DateTime?> GetLastWriteTime(string path);
 		public abstract Task<bool> UploadAvatar(int userId, Stream contents, string fileName);
 		public abstract Task WriteAllTextToFile(string path, string contents);
+        public abstract Task<List<(DateTime LogDate, string? LogPath)>?> GetSystemLogs();
 
-		protected Task<PhpbbAttachments> AddToDatabase(string uploadedFileName, string physicalFileName, long fileSize, string mimeType, int posterId)
+        protected Task<PhpbbAttachments> AddToDatabase(string uploadedFileName, string physicalFileName, long fileSize, string mimeType, int posterId)
 			=> _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbAttachments>(
 				@$"INSERT INTO phpbb_attachments (attach_comment, extension, filetime, filesize, mimetype, physical_filename, real_filename, poster_id) 
 				   VALUES ('', @Extension, @Filetime, @Filesize, @Mimetype, @PhysicalFilename, @RealFilename, @PosterId);
@@ -120,5 +122,14 @@ namespace PhpbbInDotnet.Services.Storage
 			}
 			return sb.ToString();
 		}
-	}
+
+        protected (DateTime LogDate, string? LogPath) ParseLogName(string path)
+        {
+            if (DateTime.TryParseExact(Path.GetFileNameWithoutExtension(path)[3..], "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+            {
+                return (date, path);
+            }
+            return (default, default);
+        }
+    }
 }

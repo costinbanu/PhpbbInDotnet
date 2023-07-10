@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Services.Locks;
 using PhpbbInDotnet.Services.Storage;
 using System;
 using StorageOptions = PhpbbInDotnet.Objects.Configuration.Storage;
@@ -33,6 +34,7 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 case StorageType.HardDisk:
                     services.AddScoped<IStorageService, DiskStorageService>();
+                    services.AddScoped<ILockingService, InMemoryLockingService>();
                     break;
 
                 case StorageType.AzureStorage:
@@ -47,6 +49,7 @@ namespace Microsoft.Extensions.DependencyInjection
 					services.AddAzureClients(builder => builder.AddBlobServiceClient(storageOptions.ConnectionString));
                     services.AddSingleton(sp => sp.GetRequiredService<BlobServiceClient>().GetBlobContainerClient(storageOptions.ContainerName));
                     services.AddScoped<IStorageService, AzureStorageService>();
+                    services.AddScoped<ILockingService, AzureLockingService>();
                     break;
 
                 default:

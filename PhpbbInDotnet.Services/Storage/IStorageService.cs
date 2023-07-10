@@ -22,5 +22,6 @@ namespace PhpbbInDotnet.Services.Storage
         Task<bool> DeleteEmoji(string name);
 		Task WriteAllTextToFile(string path, string contents);
         Task<DateTime?> GetLastWriteTime(string path);
+        Task<List<(DateTime LogDate, string? LogPath)>?> GetSystemLogs();
     }
 }

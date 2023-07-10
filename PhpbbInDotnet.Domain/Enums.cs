@@ -241,7 +241,8 @@ namespace PhpbbInDotnet.Domain
     public enum FileType
     {
         Attachment,
-        Avatar
+        Avatar,
+        Log
     }
 
     public enum RecycleBinItemType
