@@ -1,8 +1,8 @@
 using Dapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-	public class IPLookupModel : AuthenticatedPageModel
+    public class IPLookupModel : AuthenticatedPageModel
     {
         public IPLookupModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, 
             ITranslationProvider translationProvider, IConfiguration configuration)
@@ -40,8 +40,8 @@ namespace PhpbbInDotnet.Forum.Pages
             {
                 var searchableForums = await ForumService.GetUnrestrictedForums(ForumUser, ignoreForumPassword: await UserService.IsAdmin(ForumUser));
 
-                var searchTask = SqlExecuter.QueryAsync<PostDto>(
-                    @"WITH ranks AS (
+                Posts = (await SqlExecuter.WithPagination((PageNum - 1) * Constants.DEFAULT_PAGE_SIZE, Constants.DEFAULT_PAGE_SIZE).QueryAsync<PostDto>(
+					@"WITH ranks AS (
 	                SELECT DISTINCT u.user_id, 
 		                   COALESCE(r1.rank_id, r2.rank_id) AS rank_id, 
 		                   COALESCE(r1.rank_title, r2.rank_title) AS rank_title
@@ -69,40 +69,23 @@ namespace PhpbbInDotnet.Forum.Pages
 	                       p.post_edit_time,
 	                       e.username as post_edit_user,
 	                       r.rank_title as author_rank,
-	                       p.poster_ip as ip
+	                       p.poster_ip as ip,
+		                   count(1) over() as total_count
                       FROM phpbb_posts p
                       JOIN phpbb_users a ON p.poster_id = a.user_id
                       LEFT JOIN phpbb_users e ON p.post_edit_user = e.user_id
                       LEFT JOIN ranks r ON a.user_id = r.user_id
                      WHERE p.forum_id IN @searchableForums
                        AND p.poster_ip = @ip   
-                     ORDER BY post_time DESC
-                     LIMIT @skip, 14;",
+                     ORDER BY post_time DESC",
                     new
                     {
                         Constants.ANONYMOUS_USER_ID,
                         IP,
-                        skip = (PageNum - 1) * Constants.DEFAULT_PAGE_SIZE,
                         searchableForums
-                    });
-                var countTask = SqlExecuter.ExecuteScalarAsync<int>(
-                    @"WITH search_stmt AS (
-		                SELECT p.post_id
-		                  FROM phpbb_posts p
-                         WHERE p.forum_id IN @searchableForums
-                           AND p.poster_ip = @ip 
-                    )
-	                SELECT count(1) as total_count
-                      FROM search_stmt;",
-                    new
-                    {
-                        IP,
-                        searchableForums
-                    });
-                await Task.WhenAll(searchTask, countTask);
+                    })).AsList();
 
-                Posts = (await searchTask).AsList();
-                TotalCount = await countTask;
+                TotalCount = Posts.FirstOrDefault()?.TotalCount ?? 0;
                 Attachments = (await SqlExecuter.QueryAsync<PhpbbAttachments>(
                     @"SELECT *
                         FROM phpbb_attachments

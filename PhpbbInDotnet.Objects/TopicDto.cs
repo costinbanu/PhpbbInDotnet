@@ -1,10 +1,11 @@
-﻿using PhpbbInDotnet.Domain;
+﻿using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using System;
 
 namespace PhpbbInDotnet.Objects
 {
-    public class TopicDto
+    public class TopicDto : PaginatedResultSet
     {
         public int? DraftId { get; set; } = null;
 

@@ -216,14 +216,23 @@ button:disabled.MyButton, input:disabled.MyButton, button:disabled.MyButton:hove
 }
 
     .ParentLayoutAndColor a:focus, a:hover {
-        color: #23527c !important;
-        text-decoration: unset !important;
+        color: #23527c;
+        text-decoration: unset;
     }
 
 .ThemeLayoutAndColor a {
     color: white;
     text-decoration: underline;
 }
+
+.AhrefOverride {
+
+}
+
+    /*.AhrefOverride a:focus, a:hover {
+        color: white;
+        text-decoration: none;
+    }*/
 
 @media (max-width: 768px) {
     .Summary {

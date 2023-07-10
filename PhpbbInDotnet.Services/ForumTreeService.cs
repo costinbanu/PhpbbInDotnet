@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
@@ -15,7 +15,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Services
 {
-	class ForumTreeService : IForumTreeService
+    class ForumTreeService : IForumTreeService
     {
         private readonly ISqlExecuter _sqlExecuter;
         private readonly IConfiguration _config;
@@ -90,17 +90,15 @@ namespace PhpbbInDotnet.Services
                 return _tree;
             }
 
-            var trackingTask = fetchUnreadData ? GetForumTracking(user?.UserId ?? Constants.ANONYMOUS_USER_ID, forceRefresh) : Task.FromResult(new Dictionary<int, HashSet<Tracking>>());
-            var treeTask = GetForumTree();
-            var forumTopicCountTask = GetForumTopicCount();
-            var shortcutParentsTask = fetchUnreadData ? GetShortcutParentForums() : Task.FromResult(new Dictionary<int, List<(int ActualForumId, int TopicId)>>());
-
-            await Task.WhenAll(trackingTask, treeTask, forumTopicCountTask, shortcutParentsTask);
-
-            var tracking = await trackingTask;
-            _tree = await treeTask;
-            _forumTopicCount = await forumTopicCountTask;
-            var shortcutParents = await shortcutParentsTask;
+            var tracking = new Dictionary<int, HashSet<Tracking>>();
+            var shortcutParents = new Dictionary<int, List<(int ActualForumId, int TopicId)>>();
+            if (fetchUnreadData)
+            {
+                tracking = await GetForumTracking(user?.UserId ?? Constants.ANONYMOUS_USER_ID, forceRefresh);
+                shortcutParents = await GetShortcutParentForums();
+            }
+            _tree = await GetForumTree();
+            _forumTopicCount = await GetForumTopicCount();
 
             traverse(0);
 
@@ -149,8 +147,7 @@ namespace PhpbbInDotnet.Services
 
             async Task<HashSet<ForumTree>> GetForumTree()
             {
-                var tree = await _sqlExecuter.QueryAsync<ForumTree>(
-                    "CALL get_forum_tree()");
+                var tree = await _sqlExecuter.CallStoredProcedureAsync<ForumTree>("get_forum_tree");
                 return tree.ToHashSet();
             }
 
@@ -210,7 +207,7 @@ namespace PhpbbInDotnet.Services
             var dbResults = Enumerable.Empty<ExtendedTracking>();
             try
             {
-                dbResults = await _sqlExecuter.QueryAsync<ExtendedTracking>("CALL get_post_tracking(@userId);", new { userId });
+                dbResults = await _sqlExecuter.CallStoredProcedureAsync<ExtendedTracking>("get_post_tracking", new { userId });
             }
             catch (Exception ex)
             {
@@ -242,7 +239,7 @@ namespace PhpbbInDotnet.Services
         public async Task<List<TopicGroup>> GetTopicGroups(int forumId)
         {
             var topics = await _sqlExecuter.QueryAsync<TopicDto>(
-                @"SELECT t.topic_id, 
+				@"SELECT t.topic_id, 
 		                 t.forum_id,
 		                 t.topic_title, 
 		                 count(p.post_id) AS post_count,
@@ -257,7 +254,17 @@ namespace PhpbbInDotnet.Services
 	                FROM phpbb_topics t
 	                JOIN phpbb_posts p ON t.topic_id = p.topic_id
                    WHERE t.forum_id = @forumId OR topic_type = @global
-                   GROUP BY t.topic_id
+                   GROUP BY t.topic_id, 
+                            t.forum_id,
+                            t.topic_title, 
+                            t.topic_views,
+                            t.topic_type,
+                            t.topic_last_poster_id,
+                            t.topic_last_poster_name,
+                            t.topic_last_post_time,
+                            t.topic_last_poster_colour,
+                            t.topic_last_post_id,
+                            t.topic_status
 
                   UNION ALL
 
@@ -277,7 +284,17 @@ namespace PhpbbInDotnet.Services
 	                JOIN phpbb_shortcuts s ON t.topic_id = s.topic_id
                     JOIN phpbb_posts p ON t.topic_id = p.topic_id
                    WHERE s.forum_id = @forumId
-                   GROUP BY t.topic_id
+                   GROUP BY t.topic_id, 
+                            t.forum_id,
+                            t.topic_title, 
+                            t.topic_views,
+                            t.topic_type,
+                            t.topic_last_poster_id,
+                            t.topic_last_poster_name,
+                            t.topic_last_post_time,
+                            t.topic_last_poster_colour,
+                            t.topic_last_post_id,
+                            t.topic_status
                            
                    ORDER BY topic_last_post_time DESC",
                 new { forumId, global = TopicType.Global });
@@ -428,10 +445,7 @@ namespace PhpbbInDotnet.Services
                 return 0;
             }
 
-            return unchecked((int)((await _sqlExecuter.QuerySingleOrDefaultAsync(
-                "SELECT post_id, post_time FROM phpbb_posts WHERE post_id IN @postIds HAVING post_time = MIN(post_time)",
-                new { postIds = item?.Posts.DefaultIfNullOrEmpty() }
-            ))?.post_id ?? 0u));
+            return item!.Posts.DefaultIfNullOrEmpty().Min();
         }
 
         private int GetTopicCount(int forumId)
@@ -460,11 +474,14 @@ namespace PhpbbInDotnet.Services
         {
             try
             {
-                await _sqlExecuter.ExecuteAsync(
-                    "DELETE FROM phpbb_topics_track WHERE forum_id = @forumId AND user_id = @userId; " +
-                    "REPLACE INTO phpbb_forums_track (forum_id, user_id, mark_time) VALUES (@forumId, @userId, @markTime);",
-                    new { forumId, userId, markTime = DateTime.UtcNow.ToUnixTimestamp() }
-                );
+                await _sqlExecuter.CallStoredProcedureAsync(
+                    "mark_forum_read",
+                    new 
+                    { 
+                        forumId, 
+                        userId, 
+                        markTime = DateTime.UtcNow.ToUnixTimestamp() 
+                    });
             }
             catch (Exception ex)
             {
@@ -491,10 +508,7 @@ namespace PhpbbInDotnet.Services
                 //there are other unread topics in this forum, or unread pages in this topic, so just mark the current page as read
                 try
                 {
-                    await _sqlExecuter.ExecuteAsync(
-                        sql: "CALL mark_topic_read(@forumId, @topicId, @userId, @markTime)",
-                        param: new { forumId, topicId, userId, markTime }
-                    );
+                    await _sqlExecuter.CallStoredProcedureAsync("mark_topic_read", new { forumId, topicId, userId, markTime });
                 }
                 catch (Exception ex)
                 {

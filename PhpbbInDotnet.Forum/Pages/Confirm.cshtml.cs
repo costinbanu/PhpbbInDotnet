@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using Dapper;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
@@ -17,7 +18,6 @@ namespace PhpbbInDotnet.Forum.Pages
 	public class ConfirmModel : AuthenticatedPageModel
     {
         private readonly IEmailService _emailService;
-        private readonly IForumDbContext _dbContext;
 
         public string? Message { get; private set; }
         
@@ -71,11 +71,10 @@ namespace PhpbbInDotnet.Forum.Pages
         public List<MiniTopicDto>? TopicData { get; private set; }
 
         public ConfirmModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, 
-            ITranslationProvider translationProvider, IConfiguration config, IEmailService emailService, IForumDbContext dbContext)
+            ITranslationProvider translationProvider, IConfiguration config, IEmailService emailService)
             : base(forumService, userService, sqlExecuter, translationProvider, config)
         {
             _emailService = emailService;
-            _dbContext = dbContext;
         }
 
         public void OnGetRegistrationComplete()
@@ -91,8 +90,9 @@ namespace PhpbbInDotnet.Forum.Pages
              var subject = string.Format(TranslationProvider.BasicText[Language, "VERIFY_EMAIL_ADDRESS_FORMAT"], Configuration.GetValue<string>("ForumName"));
              var registrationCode = Guid.NewGuid().ToString("n");
              var emailAddress = user.EmailAddress!;
-             var dbUser = await _dbContext.PhpbbUsers.FirstAsync(u => u.UserId == user.UserId);
-             dbUser.UserActkey = registrationCode;
+             var dbUser = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
+                 "SELECT * FROM phpbb_users WHERE user_id = @userId",
+                 new { user.UserId });
 
              await _emailService.SendEmail(
                 to: emailAddress,
@@ -100,7 +100,9 @@ namespace PhpbbInDotnet.Forum.Pages
                 bodyRazorViewName: "_WelcomeEmailPartial",
                 bodyRazorViewModel: new WelcomeEmailDto(subject, registrationCode, dbUser.Username, dbUser.UserLang));
 
-             await _dbContext.SaveChangesAsync();
+             await SqlExecuter.ExecuteAsync(
+                 "UPDATE phpbb_users SET user_actkey = @registrationCode",
+                 new { registrationCode });
 
              Message = $"<span class=\"message success\">{string.Format(TranslationProvider.BasicText[Language, "VERIFICATION_EMAIL_SENT_FORMAT"], emailAddress)}</span>";
              return Page();
@@ -108,49 +110,61 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task OnGetConfirmEmail(string code, string username)
         {
-            var user = _dbContext.PhpbbUsers.FirstOrDefault(u =>
-                u.UsernameClean == username &&
-                u.UserActkey == code && (
-                    u.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed || 
-                    u.UserInactiveReason == UserInactiveReason.ChangedEmailNotConfirmed ||
-                    u.UserInactiveReason == UserInactiveReason.Active_NotConfirmed));
-
-            var lang = Language;
+            var user = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
+                @"SELECT * 
+                    FROM phpbb_users
+                   WHERE username_clean = @username
+                     AND user_actkey = @code
+                     AND (
+                            user_inactive_reason = @newlyRegisteredNotConfirmed
+                         OR user_inactive_reason = @changedEmailNotConfirmed
+                         OR user_inactive_reason = @activeNotConfirmed);",
+                new
+                {
+                    username,
+                    code,
+                    newlyRegisteredNotConfirmed = UserInactiveReason.NewlyRegisteredNotConfirmed,
+                    changedEmailNotConfirmed = UserInactiveReason.ChangedEmailNotConfirmed,
+                    activeNotConfirmed = UserInactiveReason.Active_NotConfirmed
+                });
 
             if (user == null)
             {
-                Message = $"<span class=\"message fail\">{string.Format(TranslationProvider.Errors[lang, "REGISTRATION_ERROR_FORMAT"], Configuration.GetValue<string>("AdminEmail"))}</span>";
+                Message = $"<span class=\"message fail\">{string.Format(TranslationProvider.Errors[Language, "REGISTRATION_ERROR_FORMAT"], Configuration.GetValue<string>("AdminEmail"))}</span>";
             }
             else
             {
-                if (user.UserInactiveReason == UserInactiveReason.Active_NotConfirmed)
+				var newInactiveReason = user.UserInactiveReason;
+				if (user.UserInactiveReason == UserInactiveReason.Active_NotConfirmed)
                 {
-                    Message = $"<span class=\"message success\">{TranslationProvider.BasicText[lang, "EMAIL_VERIFICATION_SUCCESSFUL"]}</span>";
+                    Message = $"<span class=\"message success\">{TranslationProvider.BasicText[Language, "EMAIL_VERIFICATION_SUCCESSFUL"]}</span>";
 
-                    user.UserInactiveReason = UserInactiveReason.NotInactive;
+                    newInactiveReason = UserInactiveReason.NotInactive;
                 }
                 else
                 {
-                    Message = string.Format(TranslationProvider.BasicText[lang, "EMAIL_CONFIRM_MESSAGE_FORMAT"], Configuration.GetValue<string>("AdminEmail"));
+                    Message = string.Format(TranslationProvider.BasicText[Language, "EMAIL_CONFIRM_MESSAGE_FORMAT"], Configuration.GetValue<string>("AdminEmail"));
 
                     if (user.UserInactiveReason == UserInactiveReason.NewlyRegisteredNotConfirmed)
                     {
-                        user.UserInactiveReason = UserInactiveReason.NewlyRegisteredConfirmed;
+                        newInactiveReason = UserInactiveReason.NewlyRegisteredConfirmed;
                     }
                     else if (user.UserInactiveReason == UserInactiveReason.ChangedEmailNotConfirmed)
                     {
-                        user.UserInactiveReason = UserInactiveReason.ChangedEmailConfirmed;
+                        newInactiveReason = UserInactiveReason.ChangedEmailConfirmed;
                     }
 
-                    var admins = await (
-                        from u in _dbContext.PhpbbUsers.AsNoTracking()
-                        join ug in _dbContext.PhpbbUserGroup.AsNoTracking()
-                        on u.UserId equals ug.UserId
-                        into joined
-                        from j in joined
-                        where j.GroupId == Constants.ADMIN_GROUP_ID
-                        select u
-                    ).ToListAsync();
+                    await SqlExecuter.ExecuteAsync(
+                        "UPDATE phpbb_users SET user_inactive_reason = @newInactiveReason WHERE user_id = @userId",
+                        new
+                        {
+                            newInactiveReason,
+                            user.UserId
+                        });
+
+                    var admins = await SqlExecuter.QueryAsync<PhpbbUsers>(
+                        "SELECT * FROM phpbb_users WHERE group_id = @ADMIN_GROUP_ID",
+                        new { Constants.ADMIN_GROUP_ID });
 
                     await Task.WhenAll(admins.Select(admin =>
                     {
@@ -163,9 +177,8 @@ namespace PhpbbInDotnet.Forum.Pages
                     }));
                 }
                 user.UserActkey = string.Empty;
-                await _dbContext.SaveChangesAsync();
             }
-            Title = TranslationProvider.BasicText[lang, "EMAIL_CONFIRM_TITLE"];
+            Title = TranslationProvider.BasicText[Language, "EMAIL_CONFIRM_TITLE"];
         }
 
         public void OnGetNewPassword()
@@ -215,20 +228,16 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task SetFrontendData()
         {
-            var treeTask = ForumService.GetForumTree(ForumUser, false, false);
-            var topicDataTask = ShowTopicSelector ? (
-                from t in _dbContext.PhpbbTopics.AsNoTracking()
-                select new MiniTopicDto
-                {
-                    ForumId = t.ForumId,
-                    TopicId = t.TopicId,
-                    TopicTitle = t.TopicTitle,
-                    IsLocked = t.TopicStatus == 1
-                }).ToListAsync() : Task.FromResult(new List<MiniTopicDto>());
-            await Task.WhenAll(treeTask, topicDataTask);
-
-            ForumTree = await treeTask;
-            TopicData = await topicDataTask;
+            ForumTree = await ForumService.GetForumTree(ForumUser, false, false);
+            if (ShowTopicSelector)
+            {
+                TopicData = (await SqlExecuter.QueryAsync<MiniTopicDto>(
+                    "SELECT forum_id, topic_id, topic_title, CASE WHEN topic_status = 1 THEN 1 ELSE 0 END AS is_locked FROM phpbb_topics")).AsList();
+            }
+            else
+            {
+                TopicData = new();
+            }
         }
     }
 }

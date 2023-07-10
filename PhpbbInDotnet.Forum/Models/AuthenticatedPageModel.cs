@@ -2,8 +2,8 @@
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
@@ -17,7 +17,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Models
 {
-	public abstract class AuthenticatedPageModel : BaseModel
+    public abstract class AuthenticatedPageModel : BaseModel
     {
         protected readonly IForumTreeService ForumService;
         protected readonly ISqlExecuter SqlExecuter;

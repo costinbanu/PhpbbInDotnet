@@ -1,10 +1,11 @@
-﻿using PhpbbInDotnet.Domain.Extensions;
+﻿using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Domain.Extensions;
 using System;
 using System.Collections.Generic;
 
 namespace PhpbbInDotnet.Objects
 {
-    public class PostDto
+    public class PostDto : PaginatedResultSet
     {
         public int ForumId { get; set; }
 

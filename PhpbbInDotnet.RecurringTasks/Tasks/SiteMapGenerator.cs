@@ -1,7 +1,7 @@
 ﻿using JW;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Objects;
@@ -139,21 +139,19 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
                 var pager = new Pager(totalItems: (int)topic.post_count, pageSize: Constants.DEFAULT_PAGE_SIZE);
                 for (var currentPage = 1; currentPage <= pager.TotalPages; currentPage++)
                 {
-                    var time = await _sqlExecuter.ExecuteScalarAsync<long>(
+                    var time = await _sqlExecuter.WithPagination((currentPage - 1) * Constants.DEFAULT_PAGE_SIZE, Constants.DEFAULT_PAGE_SIZE).ExecuteScalarAsync<long>(
                         @"WITH times AS (
 	                        SELECT post_time, post_edit_time
 	                            FROM phpbb_posts
 	                            WHERE topic_id = @topicId
 	                            ORDER BY post_time
-	                            LIMIT @skip, @take
+	                            ##paginate
                         )
                         SELECT greatest(max(post_time), max(post_edit_time)) AS max_time
                         FROM times",
                         new
                         {
                             topicId = topic.topic_id,
-                            skip = (currentPage - 1) * Constants.DEFAULT_PAGE_SIZE,
-                            take = Constants.DEFAULT_PAGE_SIZE
                         });
 
                     var lastChange = time.ToUtcTime();

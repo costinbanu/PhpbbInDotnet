@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Dapper;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
@@ -75,10 +75,9 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IAdminForumService _adminForumService;
         private readonly IWritingToolsService _adminWritingService;
         private readonly IOperationLogService _logService;
-        private readonly IForumDbContext _dbContext;
 
         public AdminModel(IAdminUserService adminUserService, IAdminForumService adminForumService, IWritingToolsService adminWritingService, 
-            IOperationLogService logService, IForumDbContext dbContext, IForumTreeService forumService, IUserService userService,
+            IOperationLogService logService, IForumTreeService forumService, IUserService userService,
             ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, IConfiguration configuration)
             : base(forumService, userService, sqlExecuter, translationProvider, configuration)
         {
@@ -86,7 +85,6 @@ namespace PhpbbInDotnet.Forum.Pages
             _adminForumService = adminForumService;
             _adminWritingService = adminWritingService;
             _logService = logService;
-            _dbContext = dbContext;
             UserSearchResults = new List<PhpbbUsers>();
             ForumChildren = new List<PhpbbForums>();
             ForumSelectedParent = new List<SelectListItem>();
@@ -94,37 +92,21 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnGet()
             => await WithAdmin(async () =>
-            {
-                var inactiveUsersTask = _adminUserService.GetInactiveUsers();
-                var activeUsersWithUnconfirmedEmailTask = _adminUserService.GetActiveUsersWithUnconfirmedEmail();
-                var groupsTask = _adminUserService.GetGroups();
-                var ranksTask = _dbContext.PhpbbRanks.AsNoTracking().ToListAsync();
-                var banListTask = _adminUserService.GetBanList();
+            {               
+                InactiveUsers = await _adminUserService.GetInactiveUsers();
+                ActiveUsersWithUnconfirmedEmail = await _adminUserService.GetActiveUsersWithUnconfirmedEmail();
+                Groups = await _adminUserService.GetGroups();
+                Ranks = (await SqlExecuter.QueryAsync<PhpbbRanks>("SELECT * FROM phpbb_ranks")).AsList();
+                BanList = await _adminUserService.GetBanList();
+                RankListItems = await _adminUserService.GetRanksSelectListItems();
+                RoleListItems = await _adminUserService.GetRolesSelectListItems();
 
-                var bannedWordsTask = _dbContext.PhpbbWords.AsNoTracking().ToListAsync();
-                var customBbCodesTask = _dbContext.PhpbbBbcodes.AsNoTracking().ToListAsync();
-                var smiliesTask = _adminWritingService.GetSmilies();
+                BannedWords = (await SqlExecuter.QueryAsync<PhpbbWords>("SELECT * FROM phpbb_words")).AsList();
+                CustomBbCodes = (await SqlExecuter.QueryAsync<PhpbbBbcodes>("SELECT * FROM phpbb_bbcodes")).AsList();
+                Smilies = await _adminWritingService.GetSmilies();
 
-                var logsTask = _logService.GetOperationLogs(LogType, AuthorName, LogPage);
-                var systemLogsTask = Task.Run(() => _logService.GetSystemLogs() ?? new List<(DateTime LogDate, string? LogPath)>());
-                
-                await Task.WhenAll(inactiveUsersTask, activeUsersWithUnconfirmedEmailTask, groupsTask, ranksTask, banListTask, 
-                    bannedWordsTask, customBbCodesTask, smiliesTask, logsTask, systemLogsTask);
-                
-                InactiveUsers = await inactiveUsersTask;
-                ActiveUsersWithUnconfirmedEmail = await activeUsersWithUnconfirmedEmailTask;
-                Groups = await groupsTask;
-                Ranks = await ranksTask;
-                BanList = await banListTask;
-                RankListItems = _adminUserService.GetRanksSelectListItems();
-                RoleListItems = _adminUserService.GetRolesSelectListItems();
-
-                BannedWords = await bannedWordsTask;
-                CustomBbCodes = await customBbCodesTask;
-                Smilies = await smiliesTask;
-
-                (CurrentLogItems, TotalLogItemCount) = await logsTask;
-                SystemLogs = await systemLogsTask;
+                (CurrentLogItems, TotalLogItemCount) = await _logService.GetOperationLogs(LogType, AuthorName, LogPage);
+                SystemLogs = _logService.GetSystemLogs() ?? new List<(DateTime LogDate, string? LogPath)>();
 
                 return Page();
             });
@@ -212,11 +194,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 if (forumId != null)
                 {
-                    var permissionsTask = _adminForumService.GetPermissions(forumId.Value);
-                    var showForumTask = _adminForumService.ShowForum(forumId.Value);
-                    await Task.WhenAll(permissionsTask, showForumTask);
-                    Permissions = await permissionsTask;
-                    (Forum, ForumChildren) = await showForumTask;
+                    Permissions = await _adminForumService.GetPermissions(forumId.Value);
+                    (Forum, ForumChildren) = await _adminForumService.ShowForum(forumId.Value);
                 }
 
                 ShowForum = true;

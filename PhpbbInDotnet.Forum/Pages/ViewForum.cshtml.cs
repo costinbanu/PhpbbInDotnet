@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
@@ -35,7 +35,7 @@ namespace PhpbbInDotnet.Forum.Pages
         [BindProperty(SupportsGet = true)]
         public int ForumId { get; set; }
 
-        public ViewForumModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, 
+        public ViewForumModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter,
             ITranslationProvider translationProvider, ILogger logger, IConfiguration config, IBBCodeRenderingService renderingService)
             : base(forumService, userService, sqlExecuter, translationProvider, config)
         {
@@ -56,21 +56,13 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumRules = thisForum.ForumRules;
                 ForumRulesUid = thisForum.ForumRulesUid;
                 ForumDesc = _renderingService.BbCodeToHtml(thisForum.ForumDesc, thisForum.ForumDescUid ?? string.Empty);
-               
-                var parentTask = SqlExecuter.QuerySingleOrDefaultAsync<PhpbbForums>(
-                    "SELECT * FROM phpbb_forums WHERE forum_id = @ParentId", 
-                    new { thisForum.ParentId }
-                );
-                var topicsTask = ForumService.GetTopicGroups(ForumId);
-                var treeTask = ForumService.GetForumTree(ForumUser, _forceTreeRefresh, true);
-
-                await Task.WhenAll(parentTask, topicsTask, treeTask);
-
-                Topics = await topicsTask;
-                var parent = await parentTask;
-                ParentForumId = parent?.ForumId;
-                ParentForumTitle = HttpUtility.HtmlDecode(parent?.ForumName ?? Configuration.GetValue<string>("ForumName"));
-                Forums = await treeTask;
+                Topics = await ForumService.GetTopicGroups(ForumId);
+                var parent = await SqlExecuter.QuerySingleOrDefaultAsync<(int ForumId, string ForumName)>(
+                    "SELECT * FROM phpbb_forums WHERE forum_id = @ParentId",
+                    new { thisForum.ParentId });
+                ParentForumId = parent.ForumId;
+                ParentForumTitle = HttpUtility.HtmlDecode(string.IsNullOrWhiteSpace(parent.ForumName) ? Configuration.GetValue<string>("ForumName") : parent.ForumName);
+                Forums = await ForumService.GetForumTree(ForumUser, _forceTreeRefresh, true);
 
                 return Page();
             });
@@ -104,9 +96,8 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnPostMarkTopicsRead()
             => await WithRegisteredUser((_) => WithValidForum(ForumId, async (_) =>
              {
-                 await Task.WhenAll(
-                     MarkShortcutsRead(),
-                     ForumService.MarkForumRead(ForumUser.UserId, ForumId));
+                 await MarkShortcutsRead();
+                 await ForumService.MarkForumRead(ForumUser.UserId, ForumId);
 
                  _forceTreeRefresh = true;
 

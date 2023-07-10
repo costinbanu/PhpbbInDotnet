@@ -1,8 +1,10 @@
+using Dapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
@@ -23,7 +25,6 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IModeratorService _moderatorService;
         private readonly IPostService _postService;
         private readonly IOperationLogService _operationLogService;
-        private readonly IForumDbContext _dbContext;
         private readonly ILogger _logger;
 
         [BindProperty(SupportsGet = true)]
@@ -58,15 +59,14 @@ namespace PhpbbInDotnet.Forum.Pages
         public bool ScrollToAction => TopicAction.HasValue && DestinationForumId.HasValue;
         public IEnumerable<DeletedItemGroup>? DeletedItems { get; private set; }
 
-        public ModeratorModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, 
-            ITranslationProvider translationProvider, IForumDbContext dbContext, IModeratorService moderatorService, IPostService postService, 
+        public ModeratorModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter,
+            ITranslationProvider translationProvider, IModeratorService moderatorService, IPostService postService,
             IOperationLogService operationLogService, ILogger logger, IConfiguration configuration)
             : base(forumService, userService, sqlExecuter, translationProvider, configuration)
         {
-            _moderatorService = moderatorService; 
-            _postService = postService; 
+            _moderatorService = moderatorService;
+            _postService = postService;
             _operationLogService = operationLogService;
-            _dbContext = dbContext;
             _logger = logger;
         }
 
@@ -82,59 +82,36 @@ namespace PhpbbInDotnet.Forum.Pages
         public async Task<IActionResult> OnGet()
             => await WithModerator(ForumId, async () =>
             {
-                await Task.WhenAll(SetForumName(), SetTopics(), SetReports(), SetDeletedItems());
+                ForumName = await SqlExecuter.QueryFirstOrDefaultAsync<string?>("SELECT forum_name FROM phpbb_forums WHERE forum_id = @forumId", new { ForumId });
+                Topics = await ForumService.GetTopicGroups(ForumId);
+                Reports = await _moderatorService.GetReportedMessages(0);
+
+                var allItems = await SqlExecuter.QueryAsync<DeletedItemDto>(
+                    @"SELECT rb.id, rb.delete_user, coalesce(u.username, @anonymous) AS delete_user_name, delete_time, content AS raw_content, type
+                        FROM phpbb_recycle_bin rb
+                        LEFT JOIN phpbb_users u ON rb.delete_user = u.user_id
+                        ORDER BY rb.delete_time DESC",
+                    new { anonymous = TranslationProvider.BasicText[Language, "ANONYMOUS", Casing.None] });
+
+                await Task.WhenAll(allItems.Select(async i => i.Type switch
+                {
+                    RecycleBinItemType.Forum => i.Value = await CompressionUtility.DecompressObject<ForumDto>(i.RawContent),
+                    RecycleBinItemType.Topic => i.Value = await CompressionUtility.DecompressObject<TopicDto>(i.RawContent),
+                    RecycleBinItemType.Post => i.Value = await CompressionUtility.DecompressObject<PostDto>(i.RawContent),
+                    _ => i.Value = Task.FromResult<object?>(null)
+                }));
+
+                DeletedItems = from i in allItems
+                               orderby i.Type
+                               group i by i.Type into groups
+                               select new DeletedItemGroup
+                               {
+                                   Type = groups.Key,
+                                   Items = groups
+                               };
+
                 return Page();
 
-                async Task SetForumName()
-                    => ForumName = (await _dbContext.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(f => f.ForumId == ForumId))?.ForumName;
-
-                async Task SetTopics()
-                    => Topics = await ForumService.GetTopicGroups(ForumId);
-
-                async Task SetReports()
-                    => Reports = await _moderatorService.GetReportedMessages(0);
-
-                async Task SetDeletedItems()
-                {
-                    var anonymous = TranslationProvider.BasicText[Language, "ANONYMOUS", Casing.None];
-                    var allItems = await (
-                        from rb in _dbContext.PhpbbRecycleBin.AsNoTracking()
-
-                        join u in _dbContext.PhpbbUsers.AsNoTracking()
-                        on rb.DeleteUser equals u.UserId
-                        into joinedUsers
-
-                        from ju in joinedUsers.DefaultIfEmpty()
-
-                        orderby rb.DeleteTime descending
-                        select new DeletedItemDto
-                        {
-                            Id = rb.Id,
-                            DeleteUser = rb.DeleteUser,
-                            DeleteUserName = ju == null ? anonymous : ju.Username,
-                            DeleteTime = rb.DeleteTime,
-                            RawContent = rb.Content,
-                            Type = rb.Type
-                        }
-                    ).ToListAsync();
-
-                    await Task.WhenAll(allItems.Select(async i => i.Type switch
-                    {
-                        RecycleBinItemType.Forum => i.Value = await CompressionUtility.DecompressObject<ForumDto>(i.RawContent),
-                        RecycleBinItemType.Topic => i.Value = await CompressionUtility.DecompressObject<TopicDto>(i.RawContent),
-                        RecycleBinItemType.Post => i.Value = await CompressionUtility.DecompressObject<PostDto>(i.RawContent),
-                        _ => i.Value = Task.FromResult<object?>(null)
-                    }));
-
-                    DeletedItems = from i in allItems
-                                   orderby i.Type
-                                   group i by i.Type into groups
-                                   select new DeletedItemGroup
-                                   {
-                                       Type = groups.Key,
-                                       Items = groups
-                                   };
-                }
             });
 
         public async Task<IActionResult> OnPostCloseReports()
@@ -179,23 +156,23 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 try
                 {
-                    var results = await Task.WhenAll(
-                        GetTopicIds().Select(
-                            topicId => TopicAction switch
-                            {
-                                ModeratorTopicActions.MakeTopicNormal => _moderatorService.ChangeTopicType(topicId, TopicType.Normal, logDto),
-                                ModeratorTopicActions.MakeTopicImportant => _moderatorService.ChangeTopicType(topicId, TopicType.Important, logDto),
-                                ModeratorTopicActions.MakeTopicAnnouncement => _moderatorService.ChangeTopicType(topicId, TopicType.Announcement, logDto),
-                                ModeratorTopicActions.MakeTopicGlobal => _moderatorService.ChangeTopicType(topicId, TopicType.Global, logDto),
-                                ModeratorTopicActions.MoveTopic => _moderatorService.MoveTopic(topicId, DestinationForumId ?? 0, logDto),
-                                ModeratorTopicActions.LockTopic => _moderatorService.LockUnlockTopic(topicId, true, logDto),
-                                ModeratorTopicActions.UnlockTopic => _moderatorService.LockUnlockTopic(topicId, false, logDto),
-                                ModeratorTopicActions.CreateShortcut => _moderatorService.CreateShortcut(topicId, DestinationForumId ?? 0, logDto),
-                                ModeratorTopicActions.RemoveShortcut => _moderatorService.RemoveShortcut(topicId, ForumId, logDto),
-                                _ => throw new NotSupportedException($"Can't perform action '{TopicAction}'")
-                            }
-                        )
-                    );
+                    var results = new List<(string Message, bool? IsSuccess)>();
+                    foreach(var topicId in GetTopicIds())
+                    {
+                        results.Add(TopicAction switch
+                        {
+                            ModeratorTopicActions.MakeTopicNormal => await _moderatorService.ChangeTopicType(topicId, TopicType.Normal, logDto),
+                            ModeratorTopicActions.MakeTopicImportant => await _moderatorService.ChangeTopicType(topicId, TopicType.Important, logDto),
+                            ModeratorTopicActions.MakeTopicAnnouncement => await _moderatorService.ChangeTopicType(topicId, TopicType.Announcement, logDto),
+                            ModeratorTopicActions.MakeTopicGlobal => await _moderatorService.ChangeTopicType(topicId, TopicType.Global, logDto),
+                            ModeratorTopicActions.MoveTopic => await _moderatorService.MoveTopic(topicId, DestinationForumId ?? 0, logDto),
+                            ModeratorTopicActions.LockTopic => await _moderatorService.LockUnlockTopic(topicId, true, logDto),
+                            ModeratorTopicActions.UnlockTopic => await _moderatorService.LockUnlockTopic(topicId, false, logDto),
+                            ModeratorTopicActions.CreateShortcut => await _moderatorService.CreateShortcut(topicId, DestinationForumId ?? 0, logDto),
+                            ModeratorTopicActions.RemoveShortcut => await _moderatorService.RemoveShortcut(topicId, ForumId, logDto),
+                            _ => throw new NotSupportedException($"Can't perform action '{TopicAction}'")
+                        });
+                    }
 
                     if (results.All(r => r.IsSuccess ?? false))
                     {
@@ -292,7 +269,13 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task<bool> RestoreForum(int forumId)
         {
-            var deletedItem = await _dbContext.PhpbbRecycleBin.FirstOrDefaultAsync(r => r.Type == RecycleBinItemType.Forum && r.Id == forumId);
+            var deletedItem = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbRecycleBin>(
+                "SELECT * from phpbb_recycle_bin WHERE type = @forumType AND id = @forumId",
+                new
+                {
+                    forumType = RecycleBinItemType.Forum,
+                    ForumId
+                });
             if (deletedItem == null)
             {
                 return false;
@@ -316,9 +299,19 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumLastPosterName = dto.ForumLastPosterName,
                 ForumLastPosterColour = dto.ForumLastPosterColour
             };
-            _dbContext.PhpbbForums.Add(toAdd);
-            _dbContext.PhpbbRecycleBin.Remove(deletedItem);
-            await _dbContext.SaveChangesAsync();
+
+            var param = new DynamicParameters(toAdd);
+            param.AddDynamicParams(new
+            {
+                deleteForumType = RecycleBinItemType.Forum,
+                deleteForumId = ForumId
+            });
+            await SqlExecuter.ExecuteAsync(
+                    @$"INSERT INTO phpbb_forums 
+                       VALUES (@ForumId, @ParentId, @LeftId, @RightId, @ForumParents, @ForumName, @ForumDesc, @ForumDescBitfield, @ForumDescOptions, @ForumDescUid, @ForumLink, @ForumPassword, @ForumStyle, @ForumImage, @ForumRules, @ForumRulesLink, @ForumRulesBitfield, @ForumRulesOptions, @ForumRulesUid, @ForumTopicsPerPage, @ForumType, @ForumStatus, @ForumPosts, @ForumTopics, @ForumTopicsReal, @ForumLastPostId, @ForumLastPosterId, @ForumLastPostSubject, @ForumLastPostTime, @ForumLastPosterName, @ForumLastPosterColour, @ForumFlags, @ForumOptions, @DisplaySubforumList, @DisplayOnIndex, @EnableIndexing, @EnableIcons, @EnablePrune, @PruneNext, @PruneDays, @PruneViewed, @PruneFreq, @ForumEditTime);
+                       DELETE FROM phpbb_recycle_bin WHERE type = @deleteForumType AND id = @deleteForumId;",
+                    param);
+
 
             await _operationLogService.LogAdminForumAction(AdminForumActions.Restore, ForumUser.UserId, toAdd);
 
@@ -327,19 +320,26 @@ namespace PhpbbInDotnet.Forum.Pages
 
         private async Task<bool> RestoreTopic(int topicId)
         {
-            var deletedItem = await _dbContext.PhpbbRecycleBin.FirstOrDefaultAsync(r => r.Type == RecycleBinItemType.Topic && r.Id == topicId);
+            var deletedItem = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbRecycleBin>(
+                "SELECT * from phpbb_recycle_bin WHERE type = @topicType AND id = @topicId",
+                new
+                {
+                    topicType = RecycleBinItemType.Topic,
+                    topicId
+                });
             if (deletedItem == null)
             {
                 return false;
             }
             var dto = await CompressionUtility.DecompressObject<TopicDto>(deletedItem.Content);
-            if (!_dbContext.PhpbbForums.AsNoTracking().Any(f => f.ForumId == dto!.ForumId))
+
+            if (!await ParentForumExists())
             {
                 if (!await RestoreForum(dto!.ForumId!.Value))
                 {
                     return false;
                 }
-                if (!_dbContext.PhpbbForums.AsNoTracking().Any(f => f.ForumId == dto.ForumId))
+                if (!await ParentForumExists())
                 {
                     return false;
                 }
@@ -370,60 +370,92 @@ namespace PhpbbInDotnet.Forum.Pages
                     "VALUES (@pollOptionId, @pollOptionText, @topicId)", 
                     dto.Poll.PollOptions);
             }
-            _dbContext.PhpbbTopics.Add(toAdd);
-            _dbContext.PhpbbRecycleBin.Remove(deletedItem);
-            await _dbContext.SaveChangesAsync();
 
-            var deletedPosts = await _dbContext.PhpbbRecycleBin.Where(rb => rb.Type == RecycleBinItemType.Post).ToListAsync();
+			var param = new DynamicParameters(toAdd);
+			param.AddDynamicParams(new
+			{
+				deleteTopicType = RecycleBinItemType.Topic,
+				deleteTopicId = topicId
+			});
+			var newTopicId = await SqlExecuter.ExecuteScalarAsync<int>(
+                    @$"INSERT INTO phpbb_topics(forum_id, icon_id, topic_attachment, topic_approved, topic_reported, topic_title, topic_poster, topic_time, topic_time_limit, topic_views, topic_replies, topic_replies_real, topic_status, topic_type, topic_first_post_id, topic_first_poster_name, topic_first_poster_colour, topic_last_post_id, topic_last_poster_id, topic_last_poster_name, topic_last_poster_colour, topic_last_post_subject, topic_last_post_time, topic_last_view_time, topic_moved_id, topic_bumped, topic_bumper, poll_title, poll_start, poll_length, poll_max_options, poll_last_vote, poll_vote_change)
+                       VALUES (@ForumId, @IconId, @TopicAttachment, @TopicApproved, @TopicReported, @TopicTitle, @TopicPoster, @TopicTime, @TopicTimeLimit, @TopicViews, @TopicReplies, @TopicRepliesReal, @TopicStatus, @TopicType, @TopicFirstPostId, @TopicFirstPosterName, @TopicFirstPosterColour, @TopicLastPostId, @TopicLastPosterId, @TopicLastPosterName, @TopicLastPosterColour, @TopicLastPostSubject, @TopicLastPostTime, @TopicLastViewTime, @TopicMovedId, @TopicBumped, @TopicBumper, @PollTitle, @PollStart, @PollLength, @PollMaxOptions, @PollLastVote, @PollVoteChange);
+                       SELECT {SqlExecuter.LastInsertedItemId};
+                       DELETE FROM phpbb_recycle_bin WHERE type = @deleteTopicType AND id = @deleteTopicId",
+                    param);
+
+            var deletedPosts = await SqlExecuter.QueryAsync<PhpbbRecycleBin>(
+                "SELECT * FROM phpbb_recycle_bin WHERE type = @postType",
+                new { postType = RecycleBinItemType.Post });               
             var posts = await Task.WhenAll(deletedPosts.Select(dp => CompressionUtility.DecompressObject<PostDto>(dp.Content)));
             foreach (var post in posts.Where(p => p!.TopicId == topicId))
             {
-                await RestorePost(post!.PostId);
+                await RestorePost(post!.PostId, newTopicId);
             }
 
-            await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.RestoreTopic, ForumUser.UserId, toAdd.TopicId);
+            await _operationLogService.LogModeratorTopicAction(ModeratorTopicActions.RestoreTopic, ForumUser.UserId, toAdd.TopicId, $"Old topic id: {newTopicId}");
 
             return true;
+
+            async Task<bool> ParentForumExists()
+            {
+                var result = await SqlExecuter.ExecuteScalarAsync<int>(
+                    "SELECT count(1) FROM phpbb_forums WHERE forum_id = @forumId",
+                    new { forumId = dto?.ForumId ?? 0 });
+                return result == 1;
+            }
         }
 
-        private async Task<bool> RestorePost(int postId)
+        private async Task<bool> RestorePost(int postId, int? newTopicId = null)
         {
-            var deletedItem = await _dbContext.PhpbbRecycleBin.FirstOrDefaultAsync(r => r.Type == RecycleBinItemType.Post && r.Id == postId);
+            var deletedItem = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbRecycleBin>(
+                "SELECT * from phpbb_recycle_bin WHERE type = @postType AND id = @postId",
+                new
+                {
+                    postType = RecycleBinItemType.Post,
+                    postId
+                });
             if (deletedItem == null)
             {
                 return false;
             }
             var dto = await CompressionUtility.DecompressObject<PostDto>(deletedItem.Content);
-            if (!_dbContext.PhpbbTopics.AsNoTracking().Any(t => t.TopicId == dto!.TopicId))
+            if (!await ParentTopicExists())
             {
                 if (!await RestoreTopic(dto!.TopicId))
                 {
                     return false;
                 }
 
-                if (!_dbContext.PhpbbTopics.AsNoTracking().Any(t => t.TopicId == dto.TopicId))
+                if (!await ParentTopicExists())
                 {
                     return false;
                 }
             }
-            var toAdd = new PhpbbPosts
-            {
-                PosterId = dto!.AuthorId,
-                PostUsername = dto.AuthorName!,
-                BbcodeUid = dto.BbcodeUid!,
-                ForumId = dto.ForumId,
-                TopicId = dto.TopicId,
-                PostId = dto.PostId,
-                PostTime = dto.PostTime,
-                PostSubject = dto.PostSubject!,
-                PostText = dto.PostText!
-            };
-            _dbContext.PhpbbPosts.Add(toAdd);
+
+            var toAdd = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
+				$@"INSERT INTO phpbb_posts(topic_id, forum_id, poster_id, icon_id, poster_ip, post_time, post_approved, post_reported, enable_bbcode, enable_smilies, enable_magic_url, enable_sig, post_username, post_subject, post_text, post_checksum, post_attachment, bbcode_bitfield, bbcode_uid, post_postcount, post_edit_time, post_edit_reason, post_edit_user, post_edit_count, post_edit_locked)
+                   VALUES (@TopicId, @ForumId, @PosterId, @IconId, @PosterIp, @PostTime, @PostApproved, @PostReported, @EnableBbcode, @EnableSmilies, @EnableMagicUrl, @EnableSig, @PostUsername, @PostSubject, @PostText, @PostChecksum, @PostAttachment, @BbcodeBitfield, @BbcodeUid, @PostPostcount, @PostEditTime, @PostEditReason, @PostEditUser, @PostEditCount, @PostEditLocked);
+                   SELECT * FROM phpbb_posts WHERE post_id = {SqlExecuter.LastInsertedItemId};",
+				new PhpbbPosts
+				{
+					PosterId = dto!.AuthorId,
+					PostUsername = dto.AuthorName!,
+					BbcodeUid = dto.BbcodeUid!,
+					ForumId = dto.ForumId,
+					TopicId = newTopicId ?? dto.TopicId,
+					PostId = dto.PostId,
+					PostTime = dto.PostTime,
+					PostSubject = dto.PostSubject!,
+					PostText = dto.PostText!
+				});
+
+
             if (dto.Attachments?.Any() ?? false)
             {
-                _dbContext.PhpbbAttachments.AddRange(dto.Attachments.Select(a => new PhpbbAttachments
+                foreach(var a in dto.Attachments.Select(a => new PhpbbAttachments
                 {
-                    PostMsgId = dto.PostId,
+                    PostMsgId = toAdd.PostId,
                     PosterId = dto.AuthorId,
                     RealFilename = a.DisplayName!,
                     AttachComment = a.Comment!,
@@ -433,15 +465,36 @@ namespace PhpbbInDotnet.Forum.Pages
                     Filesize = a.FileSize,
                     PhysicalFilename = a.PhysicalFileName!,
                     IsOrphan = 0
-                }));
+                }))
+                {
+                    await SqlExecuter.ExecuteAsync(
+						@"INSERT INTO phpbb_attachments(post_msg_id, topic_id, in_message, poster_id, is_orphan, physical_filename, real_filename, download_count, attach_comment, extension, mimetype, filesize, filetime, thumbnail)
+                          VALUES (@PostMsgId, @TopicId, @InMessage, @PosterId, @IsOrphan, @PhysicalFilename, @RealFilename, @DownloadCount, @AttachComment, @Extension, @Mimetype, @Filesize, @Filetime, @Thumbnail);",
+                        a);
+                }
             }
-            _dbContext.PhpbbRecycleBin.Remove(deletedItem);
-            await _dbContext.SaveChangesAsync();
-            await _postService.CascadePostAdd(toAdd, false);
 
-            await _operationLogService.LogModeratorPostAction(ModeratorPostActions.RestorePosts, ForumUser.UserId, toAdd, $"<a href=\"{ForumLinkUtility.GetRelativeUrlToPost(toAdd.PostId)}\" target=\"_blank\">LINK</a>");
+            await _moderatorService.CascadePostAdd(toAdd, false);
 
-            return true;
+            await _operationLogService.LogModeratorPostAction(ModeratorPostActions.RestorePosts, ForumUser.UserId, toAdd, $"<a href=\"{ForumLinkUtility.GetRelativeUrlToPost(toAdd.PostId)}\" target=\"_blank\">LINK</a><br/>Old post id: {dto.PostId}");
+
+            await SqlExecuter.ExecuteAsync(
+				"DELETE FROM phpbb_recycle_bin WHERE type = @postType AND id = @postId",
+				new
+				{
+					postType = RecycleBinItemType.Post,
+					postId
+				});
+
+			return true;
+
+            async Task<bool> ParentTopicExists()
+            {
+                var result = await SqlExecuter.ExecuteScalarAsync<int>(
+                    "SELECT count(1) FROM phpbb_topics WHERE topic_id = @topicId",
+                    new { topicId = dto?.TopicId ?? 0 });
+                return result == 1;
+            }
         }
 
         Task<bool> RestoreAny(int itemId, RecycleBinItemType itemType) => itemType switch

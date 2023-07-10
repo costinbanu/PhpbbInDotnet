@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Languages;
@@ -16,7 +16,7 @@ using System.Linq;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-	[ValidateAntiForgeryToken]
+    [ValidateAntiForgeryToken]
     public partial class PostingModel
     {
         [BindProperty(SupportsGet = true)]
@@ -103,11 +103,12 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IBBCodeRenderingService _renderingService;
         private readonly ILogger _logger;
 		private readonly IImageResizeService _imageResizeService;
+        private readonly IModeratorService _moderatorService;
 
-		static readonly TimeSpan _cookieBackupExpiration = TimeSpan.FromHours(4);
+        static readonly TimeSpan _cookieBackupExpiration = TimeSpan.FromHours(4);
 
         public PostingModel(IPostService postService, IStorageService storageService, IWritingToolsService writingService, IBBCodeRenderingService renderingService, IConfiguration config, ILogger logger,
-            IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, IImageResizeService imageResizeService)
+            IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, IImageResizeService imageResizeService, IModeratorService moderatorService)
             : base(forumService, userService, sqlExecuter, translationProvider, config)
         {
             PollExpirationDaysString = "1";
@@ -119,6 +120,7 @@ namespace PhpbbInDotnet.Forum.Pages
             _renderingService = renderingService;
             _logger = logger;
             _imageResizeService = imageResizeService;
+            _moderatorService = moderatorService;
         }
     }
 }

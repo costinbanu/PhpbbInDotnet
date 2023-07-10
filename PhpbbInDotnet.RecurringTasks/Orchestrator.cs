@@ -45,6 +45,8 @@ namespace PhpbbInDotnet.RecurringTasks
 				await Task.WhenAll(scope.ServiceProvider.GetServices<IRecurringTask>().Select(t => t.ExecuteAsync(stoppingToken)));
 
                 await storageService.WriteAllTextToFile(ControlFileName, DateTime.UtcNow.ToString("u"));
+
+				logger.Information("All recurring tasks executed successfully.");
             }
 			catch (Exception ex)
 			{

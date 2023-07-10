@@ -2,6 +2,7 @@
 using PhpbbInDotnet.Domain;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using PhpbbInDotnet.Database.Entities;
 
 namespace PhpbbInDotnet.Services
 {
@@ -18,5 +19,9 @@ namespace PhpbbInDotnet.Services
         Task<(string Message, bool? IsSuccess)> MoveTopic(int topicId, int destinationForumId, OperationLogDto logDto);
         Task<(string Message, bool? IsSuccess)> RemoveShortcut(int topicId, int forumId, OperationLogDto logDto);
         Task<(string Message, bool? IsSuccess)> SplitPosts(int[] postIds, int? destinationForumId, OperationLogDto logDto);
+        Task CascadePostAdd(PhpbbPosts added, bool ignoreTopic);
+        Task CascadePostDelete(PhpbbPosts deleted, bool ignoreTopic, bool ignoreAttachmentsAndReports);
+        Task CascadePostEdit(PhpbbPosts added);
+
     }
 }

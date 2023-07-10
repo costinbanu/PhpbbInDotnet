@@ -3,17 +3,15 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Forum.Pages.CustomPartials.Email;
 using PhpbbInDotnet.Languages;
-using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using System;
 using System.ComponentModel;
@@ -27,7 +25,6 @@ namespace PhpbbInDotnet.Forum.Pages
     [ValidateAntiForgeryToken]
     public class LoginModel : BaseModel
     {
-        private readonly IForumDbContext _context;
         private readonly ISqlExecuter _sqlExecuter;
         private readonly IConfiguration _config;
         private readonly IEncryptionService _encryptionService;
@@ -74,11 +71,10 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public LoginMode Mode { get; private set; }
 
-        public LoginModel(IForumDbContext context, ISqlExecuter sqlExecuter, IConfiguration config, ITranslationProvider translationProvider, IConfiguration configuration,
+        public LoginModel(ISqlExecuter sqlExecuter, IConfiguration config, ITranslationProvider translationProvider, IConfiguration configuration,
             IEncryptionService encryptionService, IEmailService emailService, IUserService userService, IUserProfileDataValidationService validationService)
             : base(translationProvider, userService, configuration)
         {
-            _context = context;
             _sqlExecuter = sqlExecuter;
             _config = config;
             _encryptionService = encryptionService;
@@ -103,7 +99,9 @@ namespace PhpbbInDotnet.Forum.Pages
                 return RedirectToPage("Logout", new { returnUrl = ReturnUrl ?? "/" });
             }
 
-            var user = await _context.PhpbbUsers.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == UserId);
+            var user = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
+                "SELECT * FROM phpbb_users WHERE user_id = @userId",
+                new { UserId });
 
             if (user == null || ResetPasswordCode != await _encryptionService.DecryptAES(user.UserNewpasswd, Init))
             {
@@ -168,10 +166,13 @@ namespace PhpbbInDotnet.Forum.Pages
             ThrowIfEntireForumIsReadOnly();
             try
             {
-                var user = _context.PhpbbUsers.FirstOrDefault(
-                    x => x.UsernameClean == StringUtility.CleanString(UserNameForPwdReset) &&
-                    x.UserEmailHash == HashUtility.ComputeCrc64Hash(EmailForPwdReset!)
-                );
+                var user = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
+                    "SELECT * FROM phpbb_users WHERE username_clean = @username AND user_email_hash = @emailHash",
+                    new 
+                    {
+                        username = StringUtility.CleanString(UserNameForPwdReset),
+                        emailHash = HashUtility.ComputeCrc64Hash(EmailForPwdReset!)
+                    });
 
                 if (user == null)
                 {
@@ -184,9 +185,13 @@ namespace PhpbbInDotnet.Forum.Pages
 
                 var resetKey = Guid.NewGuid().ToString("n");
                 var (encrypted, iv) = await _encryptionService.EncryptAES(resetKey);
-                user.UserNewpasswd = encrypted;
-
-                var dbChangesTask = _context.SaveChangesAsync();
+                var dbChangesTask = _sqlExecuter.ExecuteAsync(
+                    "UPDATE phpbb_users SET user_newpasswd = @encrypted WHERE user_id = @userId",
+                    new
+                    {
+                        user.UserId,
+                        encrypted
+                    });
 
                 var emailTask = _emailService.SendEmail(
                     to: EmailForPwdReset!,
@@ -223,16 +228,23 @@ namespace PhpbbInDotnet.Forum.Pages
                 return Page();
             }
 
-            var user = _context.PhpbbUsers.FirstOrDefault(u => u.UserId == UserId);
+            var user = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>(
+                "SELECT * FROM phpbb_users WHERE user_id = @userId",
+                new { UserId });
+
             if (user == null || ResetPasswordCode != await _encryptionService.DecryptAES(user.UserNewpasswd, Init))
             {
                 return PageWithError(nameof(PwdResetErrorMessage), TranslationProvider.Errors[Language, "CONFIRM_ERROR"], toDoBeforeReturn: () => Mode = LoginMode.PasswordReset);                
             }
 
-            user.UserNewpasswd = string.Empty;
-            user.UserPassword = Crypter.Phpass.Crypt(PwdResetFirstPassword!, Crypter.Phpass.GenerateSalt());
-            user.UserPasschg = DateTime.UtcNow.ToUnixTimestamp();
-            await _context.SaveChangesAsync();
+            await _sqlExecuter.ExecuteAsync(
+                    "UPDATE phpbb_users SET user_newpasswd = '', user_password = @newPassword, user_passchg = @now WHERE user_id = @userId",
+                    new
+                    {
+                        newPassword = Crypter.Phpass.Crypt(PwdResetFirstPassword!, Crypter.Phpass.GenerateSalt()),
+                        now = DateTime.UtcNow.ToUnixTimestamp(),
+                        user.UserId,
+                    });
 
             return RedirectToPage("Confirm", "PasswordChanged");
         }
