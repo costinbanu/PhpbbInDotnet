@@ -1,7 +1,7 @@
 using Dapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Forum.Models;
@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-	[ValidateAntiForgeryToken]
+    [ValidateAntiForgeryToken]
     public class NewPostsModel : AuthenticatedPageModel
     {
         private bool _forceTreeRefresh;
@@ -44,30 +44,14 @@ namespace PhpbbInDotnet.Forum.Pages
                 Paginator = new Paginator(count: topicList.Count(), pageNum: PageNum, link: "/NewPosts?pageNum=1", topicId: null);
                 PageNum = Paginator.CurrentPage;
 
-                Topics = (await SqlExecuter.QueryAsync<TopicDto>(
-                    @"SELECT t.topic_id, 
-	                         t.forum_id,
-	                         t.topic_title, 
-                             count(p.post_id) AS post_count,
-                             t.topic_views AS view_count,
-                             t.topic_last_poster_id,
-                             t.topic_last_poster_name,
-                             t.topic_last_post_time,
-                             t.topic_last_poster_colour,
-                             t.topic_last_post_id
-                        FROM phpbb_topics t
-                        JOIN phpbb_posts p ON t.topic_id = p.topic_id
-                       WHERE t.topic_id IN @topicList
-                         AND t.forum_id NOT IN @restrictedForumList
-                       GROUP BY t.topic_id
-                       ORDER BY t.topic_last_post_time DESC
-                       LIMIT @skip, @take",
+                Topics = (await SqlExecuter.CallStoredProcedureAsync<TopicDto>(
+					"get_new_posts",
                     new
                     {
-                        topicList = topicList.DefaultIfEmpty(),
+                        topicList = string.Join(",", topicList.DefaultIfEmpty()),
+                        restrictedForumList = string.Join(",", restrictedForumList),
                         skip = (PageNum - 1) * Constants.DEFAULT_PAGE_SIZE,
-                        take = Constants.DEFAULT_PAGE_SIZE,
-                        restrictedForumList
+                        take = Constants.DEFAULT_PAGE_SIZE
                     }
                 )).AsList();
 

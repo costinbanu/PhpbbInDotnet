@@ -1,9 +1,10 @@
-﻿using PhpbbInDotnet.Domain.Extensions;
+﻿using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Domain.Extensions;
 using System;
 
 namespace PhpbbInDotnet.Objects
 {
-    public class PrivateMessageDto
+    public class PrivateMessageDto : PaginatedResultSet
     {
         public int OthersId { get; set; }
         public string? OthersName { get; set; }

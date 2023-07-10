@@ -1,22 +1,21 @@
 ﻿using CryptSharp.Core;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Services;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-	[ValidateAntiForgeryToken]
+    [ValidateAntiForgeryToken]
     public class ForumLoginModel : BaseModel
     {
-        private readonly IForumDbContext _context;
+        private readonly ISqlExecuter _sqlExecuter;
 
         [BindProperty(SupportsGet = true)]
         public string? ReturnUrl { get; set; }
@@ -29,15 +28,17 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public string? ForumName { get; private set; }
 
-        public ForumLoginModel(IForumDbContext context, ITranslationProvider translationProvider, IUserService userService, IConfiguration configuration)
+        public ForumLoginModel(ISqlExecuter sqlExecuter, ITranslationProvider translationProvider, IUserService userService, IConfiguration configuration)
             : base(translationProvider, userService, configuration)
         {
-            _context = context;
+            _sqlExecuter = sqlExecuter;
         }
 
         public async Task<IActionResult> OnGet()
         {
-            var forum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(filter => filter.ForumId == ForumId);
+            var forum = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>(
+                "SELECT * FROM phpbb_forums WHERE forum_id = @forumId",
+                new { ForumId });
 
             if (forum == null)
             {
@@ -61,7 +62,9 @@ namespace PhpbbInDotnet.Forum.Pages
 
         public async Task<IActionResult> OnPost()
         {
-            var forum = await _context.PhpbbForums.AsNoTracking().FirstOrDefaultAsync(filter => filter.ForumId == ForumId);
+            var forum = await _sqlExecuter.QueryFirstOrDefaultAsync<PhpbbForums>(
+                "SELECT * FROM phpbb_forums WHERE forum_id = @forumId",
+                new { ForumId });
 
             if (forum == null)
             {

@@ -15,8 +15,8 @@ namespace PhpbbInDotnet.Services
         Task<List<UpsertGroupDto>> GetGroups();
         Task<List<PhpbbUsers>> GetInactiveUsers();
         Task<List<PhpbbUsers>> GetActiveUsersWithUnconfirmedEmail();
-        List<SelectListItem> GetRanksSelectListItems();
-        List<SelectListItem> GetRolesSelectListItems();
+        Task<List<SelectListItem>> GetRanksSelectListItems();
+        Task<List<SelectListItem>> GetRolesSelectListItems();
         Task<(string Message, bool? IsSuccess)> ManageGroup(UpsertGroupDto dto, int adminUserId);
         Task<(string Message, bool? IsSuccess)> ManageRank(int? rankId, string rankName, bool? deleteRank, int adminUserId);
         Task<(string Message, bool? IsSuccess)> ManageUser(AdminUserActions? action, int? userId, int adminUserId);

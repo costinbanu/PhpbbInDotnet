@@ -1,8 +1,8 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Database.Entities;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
@@ -18,7 +18,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-	[ValidateAntiForgeryToken]
+    [ValidateAntiForgeryToken]
     public class SearchModel : AuthenticatedPageModel
     {
         [BindProperty(SupportsGet = true)]
@@ -150,120 +150,22 @@ namespace PhpbbInDotnet.Forum.Pages
                 return;
             }
 
-            var searchableForums = await ForumService.GetUnrestrictedForums(ForumUser, ForumId ?? 0);
-
-            var searchTask = SqlExecuter.QueryAsync<PostDto>(
-                @"WITH ranks AS (
-	                SELECT DISTINCT u.user_id, 
-		                   COALESCE(r1.rank_id, r2.rank_id) AS rank_id, 
-		                   COALESCE(r1.rank_title, r2.rank_title) AS rank_title
-	                  FROM phpbb_users u
-	                  JOIN phpbb_groups g ON u.group_id = g.group_id
-	                  LEFT JOIN phpbb_ranks r1 ON u.user_rank = r1.rank_id
-	                  LEFT JOIN phpbb_ranks r2 ON g.group_rank = r2.rank_id
-                )
-                SELECT p.forum_id,
-	                   p.topic_id,
-	                   p.post_id,
-	                   p.post_subject,
-	                   p.post_text,
-	                   case when p.poster_id = @ANONYMOUS_USER_ID
-			                then p.post_username 
-			                else a.username
-	                   end as author_name,
-	                   p.poster_id as author_id,
-	                   p.bbcode_uid,
-	                   p.post_time,
-	                   a.user_colour as author_color,
-	                   a.user_avatar as author_avatar,
-	                   p.post_edit_count,
-	                   p.post_edit_reason,
-	                   p.post_edit_time,
-	                   e.username as post_edit_user,
-	                   r.rank_title as author_rank,
-	                   p.poster_ip as ip
-                  FROM phpbb_posts p
-                  JOIN phpbb_users a ON p.poster_id = a.user_id
-                  LEFT JOIN phpbb_users e ON p.post_edit_user = e.user_id
-                  LEFT JOIN ranks r ON a.user_id = r.user_id
-                 WHERE p.forum_id IN @searchableForums
-                   AND (@topicId = 0 OR @topicId = p.topic_id)
-                   AND (@authorId = 0 OR @authorId = p.poster_id)
-                   AND (@searchText IS NULL OR MATCH(p.post_text) AGAINST(@searchText IN BOOLEAN MODE))
-  
-                 UNION
-  
-                SELECT p.forum_id,
-	                   p.topic_id,
-	                   p.post_id,
-	                   p.post_subject,
-	                   p.post_text,
-	                   case when p.poster_id = @ANONYMOUS_USER_ID
-			                then p.post_username 
-			                else a.username
-	                   end as author_name,
-	                   p.poster_id as author_id,
-	                   p.bbcode_uid,
-	                   p.post_time,
-	                   a.user_colour as author_color,
-	                   a.user_avatar as author_avatar,
-	                   p.post_edit_count,
-	                   p.post_edit_reason,
-	                   p.post_edit_time,
-	                   e.username as post_edit_user,
-	                   r.rank_title as author_rank,
-	                   p.poster_ip as ip
-                  FROM phpbb_posts p
-                  JOIN phpbb_users a ON p.poster_id = a.user_id
-                  LEFT JOIN phpbb_users e ON p.post_edit_user = e.user_id
-                  LEFT JOIN ranks r ON a.user_id = r.user_id
-                 WHERE p.forum_id IN @searchableForums
-                   AND (@topicId = 0 OR @topicId = p.topic_id)
-                   AND (@authorId = 0 OR @authorId = p.poster_id)
-                   AND (@searchText IS NULL OR MATCH(p.post_subject) AGAINST(@searchText IN BOOLEAN MODE))
-   
-                 ORDER BY post_time DESC
-                 LIMIT @skip, 14;",
+            var searchableForums = string.Join(",", await ForumService.GetUnrestrictedForums(ForumUser, ForumId ?? 0));
+            var results = (await SqlExecuter.CallStoredProcedureAsync<PostDto>(
+                "search_posts",
                 new
                 {
                     Constants.ANONYMOUS_USER_ID,
                     topicId = TopicId ?? 0,
                     AuthorId,
-                    searchText = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText),
+                    searchText = string.IsNullOrWhiteSpace(SearchText) ? string.Empty : HttpUtility.UrlDecode(SearchText),
+                    searchableForums,
                     skip = (PageNum - 1) * Constants.DEFAULT_PAGE_SIZE,
-                    searchableForums
-                });
-            var countTask = SqlExecuter.ExecuteScalarAsync<int>(
-                @"WITH search_stmt AS (
-		            SELECT p.post_id
-		              FROM phpbb_posts p
-                     WHERE p.forum_id IN @searchableForums
-                       AND (@topicId = 0 OR @topicId = p.topic_id)
-                       AND (@authorId = 0 OR @authorId = p.poster_id)
-                       AND (@searchText IS NULL OR MATCH(p.post_text) AGAINST(@searchText IN BOOLEAN MODE))
-		 
-                     UNION            
-		
-		            SELECT p.post_id
-		              FROM phpbb_posts p
-                     WHERE p.forum_id IN @searchableForums
-                       AND (@topicId = 0 OR @topicId = p.topic_id)
-                       AND (@authorId = 0 OR @authorId = p.poster_id)
-                       AND (@searchText IS NULL OR MATCH(p.post_subject) AGAINST(@searchText IN BOOLEAN MODE))
-                )
-	            SELECT count(1) as total_count
-                  FROM search_stmt;",
-                new
-                {
-                    topicId = TopicId ?? 0,
-                    AuthorId,
-                    searchText = string.IsNullOrWhiteSpace(SearchText) ? null : HttpUtility.UrlDecode(SearchText),
-                    searchableForums
-                });
-            await Task.WhenAll(searchTask, countTask);
+                    take = Constants.DEFAULT_PAGE_SIZE
+                })).AsList();
 
-            Posts = (await searchTask).AsList();
-            TotalResults = await countTask;
+            Posts = results.Cast<PostDto>().ToList();
+            TotalResults = results.Count == 0 ? 0 : results[0].TotalCount;
             Attachments = await SqlExecuter.QueryAsync<PhpbbAttachmentExpanded>(
                 @"SELECT p.forum_id, a.*
                     FROM phpbb_attachments a

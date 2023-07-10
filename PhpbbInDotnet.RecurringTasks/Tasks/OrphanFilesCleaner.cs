@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Services;
 using Serilog;
@@ -33,11 +33,7 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
 
             stoppingToken.ThrowIfCancellationRequested();
 
-            await _sqlExecuter.ExecuteAsync(
-                @"UPDATE phpbb_attachments a
-                    LEFT JOIN phpbb_posts p ON a.post_msg_id = p.post_id
-                     SET a.is_orphan = 1
-                   WHERE p.post_id IS NULL AND @now - a.filetime > @retention AND a.is_orphan = 0",
+            await _sqlExecuter.CallStoredProcedureAsync("sync_orphan_files",
                 new
                 {
                     now = _timeService.DateTimeUtcNow().ToUnixTimestamp(),

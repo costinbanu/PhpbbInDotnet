@@ -2,7 +2,7 @@
 @model PhpbbInDotnet.Forum.Pages.ViewTopicModel
 
 @using System.Web
-@using Dapper
+@using Database.SqlExecuter
 @using Domain
 @using Domain.Utilities
 @using Domain.Extensions
@@ -10,7 +10,7 @@
 @using CustomPartials
 @using Microsoft.EntityFrameworkCore
 
-@inject Database.ISqlExecuter _sqlExecuter
+@inject ISqlExecuter _sqlExecuter
 @inject Services.IBBCodeRenderingService _renderingService
 @inject Services.IForumTreeService _forumService
 @inject Services.IUserService _userService

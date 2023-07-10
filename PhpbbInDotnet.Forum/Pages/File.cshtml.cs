@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Configuration;
-using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Forum.Models;
@@ -19,7 +19,7 @@ using System.Web;
 
 namespace PhpbbInDotnet.Forum.Pages
 {
-	public class FileModel : AuthenticatedPageModel
+    public class FileModel : AuthenticatedPageModel
     {
         private readonly IStorageService _storageService;
         private readonly FileExtensionContentTypeProvider _contentTypeProvider;

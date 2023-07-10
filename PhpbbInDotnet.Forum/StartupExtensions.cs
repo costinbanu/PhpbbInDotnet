@@ -117,7 +117,7 @@ namespace PhpbbInDotnet.Forum
             var recaptchaOptions = config.GetObject<Recaptcha>();
             services.AddHttpClient(recaptchaOptions.ClientName, client => client.BaseAddress = new Uri(recaptchaOptions.BaseAddress!));
 
-            services.AddForumDbContext(config);
+            services.AddSqlExecuter();
 
             services.AddLazyCache();
 

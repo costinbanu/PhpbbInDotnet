@@ -1,6 +1,8 @@
-﻿namespace PhpbbInDotnet.Objects
+﻿using PhpbbInDotnet.Database;
+
+namespace PhpbbInDotnet.Objects
 {
-    public class AttachmentPreviewDto
+    public class AttachmentPreviewDto : PaginatedResultSet
     {
         public int Id { get; set; }
         public string? PhysicalFilename { get; set; }

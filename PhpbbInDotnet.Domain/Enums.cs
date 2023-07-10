@@ -277,4 +277,10 @@ namespace PhpbbInDotnet.Domain
         HardDisk = 0,
         AzureStorage = 1
     }
+
+    public enum DatabaseType
+    {
+        MySql = 0,
+        SqlServer = 1
+    }
 }

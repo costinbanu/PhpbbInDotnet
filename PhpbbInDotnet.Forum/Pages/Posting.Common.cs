@@ -92,11 +92,11 @@ namespace PhpbbInDotnet.Forum.Pages
             if (Action == PostingActions.NewTopic)
             {
                 curTopic = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>(
-                    @"INSERT INTO phpbb_topics (forum_id, topic_title, topic_time) 
-                      VALUES (@forumId, @postTitle, @now); 
-                      SELECT * 
-                        FROM phpbb_topics 
-                       WHERE topic_id = LAST_INSERT_ID();", 
+                    @$"INSERT INTO phpbb_topics (forum_id, topic_title, topic_time) 
+                       VALUES (@forumId, @postTitle, @now); 
+                       SELECT * 
+                         FROM phpbb_topics 
+                        WHERE topic_id = {SqlExecuter.LastInsertedItemId};", 
                     new { ForumId, PostTitle, now = DateTime.UtcNow.ToUnixTimestamp() });
                 TopicId = curTopic.TopicId;
             }
@@ -106,11 +106,11 @@ namespace PhpbbInDotnet.Forum.Pages
             if (post == null)
             {
                 post = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(
-                    @"INSERT INTO phpbb_posts (forum_id, topic_id, poster_id, post_subject, post_text, post_time, post_attachment, post_checksum, poster_ip, post_username) 
-                      VALUES (@forumId, @topicId, @userId, @subject, @textForSaving, @now, @attachment, @checksum, @ip, @username); 
-                      SELECT * 
-                        FROM phpbb_posts 
-                       WHERE post_id = LAST_INSERT_ID();",
+                    @$"INSERT INTO phpbb_posts (forum_id, topic_id, poster_id, post_subject, post_text, post_time, post_attachment, post_checksum, poster_ip, post_username) 
+                       VALUES (@forumId, @topicId, @userId, @subject, @textForSaving, @now, @attachment, @checksum, @ip, @username); 
+                       SELECT * 
+                         FROM phpbb_posts 
+                        WHERE post_id = {SqlExecuter.LastInsertedItemId};",
                     new
                     {
                         ForumId,
@@ -125,7 +125,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         username = HttpUtility.HtmlEncode(usr.Username)
                     });
 
-                await _postService.CascadePostAdd(post, false);
+                await _moderatorService.CascadePostAdd(post, false);
             }
             else
             {
@@ -148,7 +148,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         usr.UserId
                     });
 
-                await _postService.CascadePostEdit(post);
+                await _moderatorService.CascadePostEdit(post);
             }
 
             foreach (var attach in Attachments!)

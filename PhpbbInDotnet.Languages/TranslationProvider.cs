@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Primitives;
-using PhpbbInDotnet.Database;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Domain;
 using Serilog;
@@ -13,6 +12,8 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using PhpbbInDotnet.Database.SqlExecuter;
+using PhpbbInDotnet.Database.Entities;
 
 namespace PhpbbInDotnet.Languages
 {
@@ -22,7 +23,6 @@ namespace PhpbbInDotnet.Languages
         private IEnumerable<string>? _allLanguages;
 
         private readonly ILogger _logger;
-        private readonly IForumDbContext _context;
         private readonly ISqlExecuter _sqlExecuter;
         private readonly IAppCache _cache;
         private readonly IHttpContextAccessor _httpContextAccessor;
@@ -71,10 +71,9 @@ namespace PhpbbInDotnet.Languages
 
         #endregion Translation declarations
 
-        public TranslationProvider(ILogger logger, IAppCache cache, IForumDbContext context, ISqlExecuter sqlExecuter, IHttpContextAccessor httpContextAccessor)
+        public TranslationProvider(ILogger logger, IAppCache cache, ISqlExecuter sqlExecuter, IHttpContextAccessor httpContextAccessor)
         {
             _logger = logger;
-            _context = context;
             _sqlExecuter = sqlExecuter;
             _cache = cache;
             _httpContextAccessor = httpContextAccessor;
@@ -172,7 +171,7 @@ namespace PhpbbInDotnet.Languages
         private static readonly char[] DATE_FORMATS = new[] { 'f', 'g' };
 
         public async Task<Dictionary<string, List<string>>> GetDateFormatsInAllLanguages()
-            => (await _context.PhpbbLang.AsNoTracking().ToListAsync()).ToDictionary(lang => lang.LangIso, lang => GetDateFormats(lang.LangIso));
+            => (await _sqlExecuter.QueryAsync<PhpbbLang>("SELECT * FROM phpbb_lang")).ToDictionary(lang => lang.LangIso, lang => GetDateFormats(lang.LangIso));
 
         public string GetDefaultDateFormat(string lang)
             => GetDateFormats(lang).FirstOrDefault() ?? "dddd, dd MMM yyyy, HH:mm";

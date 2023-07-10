@@ -1,5 +1,5 @@
 ﻿using LazyCache;
-using PhpbbInDotnet.Database;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Objects;
 using System;
@@ -23,24 +23,14 @@ namespace PhpbbInDotnet.Services
 
         async Task<Statistics> GetStatisticsImpl()
         {
-            var since = DateTime.UtcNow.AddHours(-24).ToUnixTimestamp();
-
-            var timeTask = _sqlExecuter.ExecuteScalarAsync<long>("SELECT min(post_time) FROM phpbb_posts");
-            var userTask = _sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_users");
-            var postTask = _sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_posts");
-            var topicTask = _sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_topics");
-            var forumTask = _sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_forums");
-            
-            await Task.WhenAll(timeTask, userTask, postTask, topicTask, forumTask);
-
-            var time = await timeTask;
+            var time = await _sqlExecuter.ExecuteScalarAsync<long>("SELECT min(post_time) FROM phpbb_posts");
             return new Statistics
             {
                 FirstMessageDate = time == 0 ? null : time.ToUtcTime(),
-                UserCount = await userTask,
-                PostCount = await postTask,
-                TopicCount = await topicTask,
-                ForumCount = await forumTask,
+                UserCount = await _sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_users"),
+                PostCount = await _sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_posts"),
+                TopicCount = await _sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_topics"),
+                ForumCount = await _sqlExecuter.ExecuteScalarAsync<int>("SELECT count(1) FROM phpbb_forums"),
 
             };
         }
@@ -48,28 +38,20 @@ namespace PhpbbInDotnet.Services
         public async Task<TimedStatistics> GetTimedStatistics(DateTime? startTime)
         {
             var since = startTime?.ToUnixTimestamp();
-
-            var usersTask = _sqlExecuter.ExecuteScalarAsync<int>(
-                "SELECT count(1) FROM phpbb_users WHERE @since IS NULL OR user_lastvisit >= @since", 
-                new { since });
-            var postsTask = _sqlExecuter.ExecuteScalarAsync<int>(
-                "SELECT count(1) FROM phpbb_posts WHERE @since IS NULL OR post_time >= @since", 
-                new { since });
-            var fileSizeTask = _sqlExecuter.ExecuteScalarAsync<long>(
-                "SELECT sum(filesize) FROM phpbb_attachments WHERE @since IS NULL OR filetime >= @since", 
-                new { since });
-            var fileCountTask = _sqlExecuter.ExecuteScalarAsync<long>(
-                "SELECT count(1) FROM phpbb_attachments WHERE @since IS NULL OR filetime >= @since",
-                new { since });
-
-            await Task.WhenAll(usersTask, postsTask, fileSizeTask, fileCountTask);
-
             return new TimedStatistics
             {
-                PostsCount = await postsTask,
-                UsersCount = await usersTask,
-                FileSizeSum = await fileSizeTask,
-                FileCount = await fileCountTask
+                PostsCount = await _sqlExecuter.ExecuteScalarAsync<int>(
+                    "SELECT count(1) FROM phpbb_posts WHERE @since IS NULL OR post_time >= @since",
+                    new { since }),
+                UsersCount = await _sqlExecuter.ExecuteScalarAsync<int>(
+                    "SELECT count(1) FROM phpbb_users WHERE @since IS NULL OR user_lastvisit >= @since",
+                    new { since }),
+                FileSizeSum = await _sqlExecuter.ExecuteScalarAsync<long>(
+                    "SELECT sum(filesize) FROM phpbb_attachments WHERE @since IS NULL OR filetime >= @since",
+                    new { since }),
+                FileCount = await _sqlExecuter.ExecuteScalarAsync<long>(
+                    "SELECT count(1) FROM phpbb_attachments WHERE @since IS NULL OR filetime >= @since",
+                    new { since })
             };
         }
     }
