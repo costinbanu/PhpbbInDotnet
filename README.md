@@ -18,7 +18,10 @@ Either way,  ensure that its structure and contents follow the sample below. All
 
 ```json
 {
-  "ForumDbConnectionString": "...",
+   "Database": {
+    "DatabaseType": "...",
+    "ConnectionString": "..."
+  },
   "Recaptcha": {
     "SiteKey": "...",
     "SecretKey": "...",
@@ -87,7 +90,8 @@ Either way,  ensure that its structure and contents follow the sample below. All
 
 Field name | Data type | Value | Notes
 --- | --- | --- | ---
-ForumDbConnectionString | string | ... |  your DB connection string (root access, no implicit database selected)
+Database.DatabaseType | PhpbbInDotnet.Domain.DatabaseType | MySql |  database type (string representation of the enum)
+Database.ConnectionString | string | ... |  your DB connection string (root access required for MySql, an implicit database should be selected)
 Recaptcha.SiteKey | string | ... | site key 
 Recaptcha.SecretKey | string | ... | secret key 
 Recaptcha.BaseAddress | string | https://www.google.com | Base URL for captcha verification 
