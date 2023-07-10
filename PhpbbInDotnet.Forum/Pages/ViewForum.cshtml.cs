@@ -58,7 +58,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 ForumDesc = _renderingService.BbCodeToHtml(thisForum.ForumDesc, thisForum.ForumDescUid ?? string.Empty);
                 Topics = await ForumService.GetTopicGroups(ForumId);
                 var parent = await SqlExecuter.QuerySingleOrDefaultAsync<(int ForumId, string ForumName)>(
-                    "SELECT * FROM phpbb_forums WHERE forum_id = @ParentId",
+                    "SELECT forum_id, forum_name FROM phpbb_forums WHERE forum_id = @ParentId",
                     new { thisForum.ParentId });
                 ParentForumId = parent.ForumId;
                 ParentForumTitle = HttpUtility.HtmlDecode(string.IsNullOrWhiteSpace(parent.ForumName) ? Configuration.GetValue<string>("ForumName") : parent.ForumName);
