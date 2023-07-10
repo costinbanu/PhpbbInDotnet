@@ -163,7 +163,7 @@ namespace PhpbbInDotnet.Services
                     @"SELECT g.group_edit_time, u.user_edit_time
                         FROM phpbb_groups g
                         JOIN phpbb_users u ON g.group_id = u.group_id
-                       WHERE u.user_id = @userId");
+                       WHERE u.user_id = @userId;");
             }
             if (expansionType.HasFlag(ForumUserExpansionType.Style))
             {
@@ -172,7 +172,7 @@ namespace PhpbbInDotnet.Services
                     @"SELECT s.style_name 
                         FROM phpbb_styles s
                         JOIN phpbb_users u ON u.user_style = s.style_id
-                       WHERE u.user_id = @userId");
+                       WHERE u.user_id = @userId;");
             }
 
             var expanded = new ForumUserExpanded(user);

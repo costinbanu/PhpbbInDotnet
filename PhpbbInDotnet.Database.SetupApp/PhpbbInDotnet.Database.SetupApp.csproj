@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="InstallScripts\CreateTables.sql">
+    <None Update="InstallScripts\MySql\CreateTables.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="InstallScripts\InsertInitialData.sql">
@@ -28,19 +28,19 @@
     <None Update="InstallScripts\UpdateTables.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="StoredProcedures\get_forum_permissions.sql">
+    <None Update="StoredProcedures\MySql\get_forum_permissions.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="StoredProcedures\get_forum_tree.sql">
+    <None Update="StoredProcedures\MySql\get_forum_tree.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="StoredProcedures\get_post_tracking.sql">
+    <None Update="StoredProcedures\MySql\get_post_tracking.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="StoredProcedures\get_user_permissions.sql">
+    <None Update="StoredProcedures\MySql\get_user_permissions.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="StoredProcedures\mark_topic_read.sql">
+    <None Update="StoredProcedures\MySql\mark_topic_read.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

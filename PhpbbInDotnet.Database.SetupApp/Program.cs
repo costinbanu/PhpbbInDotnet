@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using PhpbbInDotnet.Domain;
 
 namespace PhpbbInDotnet.Database.SetupApp
 {
@@ -34,6 +35,7 @@ namespace PhpbbInDotnet.Database.SetupApp
                 {
                     throw new InvalidOperationException("Missing DB connection string. Check appsettings.json!");
                 }
+                var dbType = Enum.TryParse<DatabaseType>(config["DatabaseType"], out var val) ? val : throw new InvalidOperationException("Wrong DatabaseType value. Check appsettings.json!");
 
                 var newInstall = StringComparer.InvariantCultureIgnoreCase.Equals(ReadInput(message: "Create database (new installation), or update existing?", allowedValues: new[] { "create", "update" }), "create");
                 Console.WriteLine();
@@ -57,7 +59,12 @@ namespace PhpbbInDotnet.Database.SetupApp
                 {
                     Console.WriteLine();
                     Console.WriteLine("Creating database...");
-                    await connection.ExecuteAsync($"CREATE DATABASE IF NOT EXISTS {dbName}");
+                    await connection.ExecuteAsync(dbType switch
+                    {
+                        DatabaseType.SqlServer => $"IF NOT EXISTS(SELECT * FROM sys.databases WHERE name = 'DataBase) CREATE DATABASE [{dbName}];",
+                        DatabaseType.MySql => $"CREATE DATABASE IF NOT EXISTS {dbName};",
+                        _ => throw new ArgumentException("Invalid database type in configuration.")
+                    });
                     Console.WriteLine("Done!");
                     Console.WriteLine();
                 }
@@ -65,13 +72,22 @@ namespace PhpbbInDotnet.Database.SetupApp
                 await connection.ChangeDataBaseAsync(dbName);
 
                 Console.WriteLine($"{(newInstall ? "Creating" : "Updating")} tables...");
-                var upsertTables = await File.ReadAllTextAsync(Path.Combine("InstallScripts", newInstall ? "CreateTables.sql" : "UpdateTables.sql"));
+                string path;
+                if (newInstall)
+                {
+                    path = Path.Combine("InstallScripts", dbType.ToString(), "CreateTables.sql");
+                }
+                else
+                {
+                    path = Path.Combine("InstallScripts", "UpdateTables.sql");
+                }
+                var upsertTables = await File.ReadAllTextAsync(path);
                 await connection.ExecuteAsync(upsertTables);
                 Console.WriteLine("Done!");
                 Console.WriteLine();
 
                 Console.WriteLine("Creating stored procedures... ");
-                foreach (var spFile in Directory.GetFiles("StoredProcedures"))
+                foreach (var spFile in Directory.GetFiles(Path.Combine("StoredProcedures", dbType.ToString())))
                 {
                     var sp = await File.ReadAllTextAsync(spFile);
                     await connection.ExecuteAsync(sp);
