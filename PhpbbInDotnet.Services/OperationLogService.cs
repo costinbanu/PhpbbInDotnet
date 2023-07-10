@@ -1,18 +1,15 @@
 ﻿using Dapper;
 using Microsoft.AspNetCore.Http;
 using PhpbbInDotnet.Database.Entities;
-using PhpbbInDotnet.Objects;
+using PhpbbInDotnet.Database.SqlExecuter;
 using PhpbbInDotnet.Domain;
-using PhpbbInDotnet.Domain.Utilities;
 using PhpbbInDotnet.Domain.Extensions;
+using PhpbbInDotnet.Domain.Utilities;
+using PhpbbInDotnet.Objects;
+using Serilog;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
-using Serilog;
-using PhpbbInDotnet.Database.SqlExecuter;
 
 namespace PhpbbInDotnet.Services
 {
@@ -61,28 +58,6 @@ namespace PhpbbInDotnet.Services
                     });
                 return ((await logTask).AsList(), await countTask);
             });
-
-        public List<(DateTime LogDate, string? LogPath)>? GetSystemLogs()
-            => WithErrorHandling(() =>
-            {
-                return (
-                    from f in Directory.EnumerateFiles("logs", "log*.txt")
-                    let parsed = Parse(f)
-                    where parsed.LogDate != default && parsed.LogPath != default
-                    orderby parsed.LogDate descending
-                    select parsed
-                ).ToList();
-
-                static (DateTime LogDate, string? LogPath) Parse(string path)
-                {
-                    if (DateTime.TryParseExact(Path.GetFileNameWithoutExtension(path)[3..], "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
-                    {
-                        return (date, path);
-                    }
-                    return (default, default);
-                }
-            });
-
 
         public async Task LogAdminUserAction(AdminUserActions action, int adminUserId, PhpbbUsers user, string? additionalData = null)
             => await WithErrorHandling(async () =>
@@ -173,19 +148,6 @@ namespace PhpbbInDotnet.Services
             try
             {
                 return await toDo();
-            }
-            catch (Exception ex)
-            {
-                _logger.WarningWithId(ex);
-                return default;
-            }
-        }
-
-        private T? WithErrorHandling<T>(Func<T> toDo)
-        {
-            try
-            {
-                return toDo();
             }
             catch (Exception ex)
             {

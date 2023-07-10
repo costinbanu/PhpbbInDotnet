@@ -1,4 +1,5 @@
-﻿using Dapper;
+﻿using Azure.Storage.Blobs;
+using Dapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -10,6 +11,7 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using PhpbbInDotnet.Domain;
 using PhpbbInDotnet.Domain.Extensions;
 using PhpbbInDotnet.Forum.Middlewares;
 using PhpbbInDotnet.Languages;
@@ -22,6 +24,7 @@ using System.IO;
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using StorageOptions = PhpbbInDotnet.Objects.Configuration.Storage;
 
 namespace PhpbbInDotnet.Forum
 {
@@ -136,12 +139,33 @@ namespace PhpbbInDotnet.Forum
                     }
                     else
                     {
-                        config.WriteTo.File(
-                            path: Path.Combine("logs", "log.txt"),
-                            restrictedToMinimumLevel: LogEventLevel.Warning,
-                            rollingInterval: RollingInterval.Day,
-                            outputTemplate: format
-                        );
+                        var storage = context.Configuration.GetObject<StorageOptions>();
+                        switch (storage.StorageType)
+                        {
+                            case Domain.StorageType.HardDisk:
+                                config.WriteTo.File(
+                                    path: Path.Combine(Constants.LOG_FOLDER, "log.txt"),
+                                    restrictedToMinimumLevel: LogEventLevel.Warning,
+                                    rollingInterval: RollingInterval.Day,
+                                    outputTemplate: format);
+                                break;
+
+                            case Domain.StorageType.AzureStorage:
+                                var client = new BlobServiceClient(storage.ConnectionString);
+                                config.WriteTo.AzureBlobStorage(
+                                    blobServiceClient: client,
+                                    restrictedToMinimumLevel: LogEventLevel.Warning,
+                                    storageContainerName: storage.ContainerName,
+                                    storageFileName: $"{Constants.LOG_FOLDER}/log{{yyyy}}{{MM}}{{dd}}.txt",
+                                    outputTemplate: format,
+                                    writeInBatches: true,
+                                    period: TimeSpan.FromMinutes(1));
+                                break;
+
+                            default:
+                                throw new InvalidOperationException("Unknown StorageType in configuration.");
+                        }
+
                     }
                 });
 

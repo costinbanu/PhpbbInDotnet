@@ -9,6 +9,7 @@ using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Services.Storage
@@ -138,11 +139,30 @@ namespace PhpbbInDotnet.Services.Storage
 			return Task.FromResult(lastRun);
 		}
 
-		private string GetFilePath(string name, FileType fileType)
+        public override Task<List<(DateTime LogDate, string? LogPath)>?> GetSystemLogs()
+		{
+			try
+			{
+				return Task.FromResult<List<(DateTime LogDate, string? LogPath)>?>(
+					(from f in Directory.EnumerateFiles("logs", "log*.txt")
+					 let parsed = ParseLogName(f)
+					 where parsed.LogDate != default && parsed.LogPath != default
+					 orderby parsed.LogDate descending
+					 select parsed).ToList());
+			}
+			catch (Exception ex)
+			{
+				Logger.Warning(ex);
+				return Task.FromResult((List<(DateTime LogDate, string? LogPath)> ?)null);
+			}
+		}
+
+        private string GetFilePath(string name, FileType fileType)
 			=> fileType switch
 			{
 				FileType.Attachment => Path.Combine(AttachmentsPath, name),
 				FileType.Avatar => Path.Combine(AvatarsPath, name),
+				FileType.Log => name,
 				_ => throw new ArgumentException($"Unknown value '{fileType}'.", nameof(fileType))
 			};
 
