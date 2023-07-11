@@ -1,6 +1,6 @@
-﻿CREATE DEFINER=`root`@`localhost` PROCEDURE `get_posts`(topic_id int, anonymous_user_id int, `order` nvarchar(20), `skip` int, take int)
+﻿CREATE DEFINER=`root`@`localhost` PROCEDURE `get_posts`(topic_id_parm int, anonymous_user_id int, `order` nvarchar(20), `skip` int, take int)
 BEGIN
-    SET @topic_id = topic_id;
+    SET @topic_id = topic_id_parm;
 	SET @total_count = (SELECT COUNT(1) FROM phpbb_posts WHERE topic_id = @topic_id);
 
 	SET @sql = concat(
