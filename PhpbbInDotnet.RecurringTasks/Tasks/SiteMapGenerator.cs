@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using XSitemaps;
@@ -48,7 +49,7 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
 
             var anonymous = await _userService.GetAnonymousForumUserExpandedAsync();
             var allowedForums = await _forumTreeService.GetUnrestrictedForums(anonymous);
-            var allSitemapUrls = GetForums(anonymous, allowedForums).Union(GetTopics(allowedForums));
+            var allSitemapUrls = GetForums(anonymous, allowedForums, stoppingToken).Union(GetTopics(allowedForums, stoppingToken));
             var urls = new ReadOnlyMemory<SitemapUrl>(await allSitemapUrls.ToArrayAsync(cancellationToken: stoppingToken));
             var siteMaps = Sitemap.Create(urls);
 
@@ -80,12 +81,14 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
             _logger.Information("Sitemap generated successfully!");
         }
 
-        async IAsyncEnumerable<SitemapUrl> GetForums(ForumUserExpanded anonymous, IEnumerable<int>? allowedForums)
+        async IAsyncEnumerable<SitemapUrl> GetForums(ForumUserExpanded anonymous, IEnumerable<int>? allowedForums, [EnumeratorCancellation] CancellationToken stoppingToken)
         {
             var tree = await _forumTreeService.GetForumTree(anonymous, forceRefresh: false, fetchUnreadData: false);
             var maxTime = DateTime.MinValue;
             foreach (var forumId in allowedForums.EmptyIfNull())
             {
+                stoppingToken.ThrowIfCancellationRequested();
+
                 var item = _forumTreeService.GetTreeNode(tree, forumId);
 
                 if (item is null || item.ForumId < 1)
@@ -113,7 +116,7 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
                 priority: GetForumPriority(0));
         }
 
-        async IAsyncEnumerable<SitemapUrl> GetTopics(IEnumerable<int>? allowedForums)
+        async IAsyncEnumerable<SitemapUrl> GetTopics(IEnumerable<int>? allowedForums, [EnumeratorCancellation] CancellationToken stoppingToken)
         {
             var topics = await _sqlExecuter.QueryAsync(
                 @"WITH counts AS (
@@ -139,6 +142,8 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
                 var pager = new Pager(totalItems: (int)topic.post_count, pageSize: Constants.DEFAULT_PAGE_SIZE);
                 for (var currentPage = 1; currentPage <= pager.TotalPages; currentPage++)
                 {
+                    stoppingToken.ThrowIfCancellationRequested();
+
                     var time = await _sqlExecuter.WithPagination((currentPage - 1) * Constants.DEFAULT_PAGE_SIZE, Constants.DEFAULT_PAGE_SIZE).ExecuteScalarAsync<long>(
                         @"WITH times AS (
 	                        SELECT post_time, post_edit_time

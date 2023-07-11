@@ -17,6 +17,9 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
         public async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             await _sqlExecuter.CallStoredProcedureAsync("sync_post_forum");
+
+            stoppingToken.ThrowIfCancellationRequested();
+
             await _sqlExecuter.CallStoredProcedureAsync("sync_last_posts", new
             {
                 Constants.ANONYMOUS_USER_ID,

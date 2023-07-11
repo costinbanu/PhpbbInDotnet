@@ -77,11 +77,7 @@ Either way,  ensure that its structure and contents follow the sample below. All
   "OperationLogsRetentionTime": "365.00:00:00",
   "InternetSearchUrlFormat": "https://www.google.com/search?q={0}",
   "IpWhoIsUrlFormat": "https://whatismyipaddress.com/ip/{0}",
-  "CleanupService": {
-    "Interval": "1.00:00:00",
-    "MinimumAllowedRunTime": "02:00:00",
-    "MaximumAllowedRunTime": "04:00:00"
-  },
+  "RecurringTasksTimeToRun": "02:00",
   "ForumIsReadOnly": false
 }
 ```
@@ -131,9 +127,7 @@ RecycleBinRetentionTime | TimeSpan | 7.00:00:00 | for how long are deleted items
 OperationLogsRetentionTime | TimeSpan | 365.00:00:00 | Anything that alters post, topic, forum or user state is saved as an operation log and can be viewed in the forum's admin panel. This value controls for how long are the operation log items kept in the database. Is read as `TimeSpan` (format `dd.HH:mm:ss`), default value is 365 days. An explicit zero value (`0.00:00:00`) can be used for retaining logs indefinitely. A value less than one day will trigger an error and will not delete anything at all.
 InternetSearchUrlFormat | string | https://www.google.com/search?q={0} | Internet search link; query parameter should be URL-escaped
 IpWhoIsUrlFormat | string | https://whatismyipaddress.com/ip/{0} | IP WHOIS link
-CleanupService.Interval | TimeSpan | 1.00:00:00 | How often is the cleanup service running (database is cleaned up and tables are resynchronized)
-CleanupService.MinimumAllowedRunTime | DateTimeOffset | 02:00:00 | The soonest time of the day when the cleanup service can run. Must not have a date component.
-CleanupService.MaximumAllowedRunTime | DateTimeOffset | 04:00:00 | The latest time of the day when the cleanup service can run. Must not have a date component.
+RecurringTasksTimeToRun | string | 02:00 | Required recurring tasks (DB table sync etc) will run daily at this specified hour (UTC). Must be in the HH:mm format.
 ForumIsReadOnly | bool | false | Whether the entire forum is in read-only mode. This means that the forum can be read, but no posts or private messages can be submitted.
 ### Branding
 #### Forum header

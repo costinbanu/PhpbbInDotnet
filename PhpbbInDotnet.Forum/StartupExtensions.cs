@@ -1,4 +1,5 @@
 ﻿using Azure.Storage.Blobs;
+using Coravel;
 using Dapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
@@ -200,6 +201,8 @@ namespace PhpbbInDotnet.Forum
                 endpoints.MapControllers();
                 endpoints.MapRazorPages();
             });
+
+            webApplication.AddRecurringTasksScheduler();
 
             return webApplication;
         }

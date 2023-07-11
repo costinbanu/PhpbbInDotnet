@@ -1,4 +1,5 @@
-﻿using PhpbbInDotnet.RecurringTasks;
+﻿using Coravel;
+using PhpbbInDotnet.RecurringTasks;
 using PhpbbInDotnet.RecurringTasks.Tasks;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -12,9 +13,12 @@ namespace Microsoft.Extensions.DependencyInjection
 			services.AddScoped<IRecurringTask, OrphanFilesCleaner>();
 			services.AddScoped<IRecurringTask, RecycleBinCleaner>();
 			services.AddScoped<IRecurringTask, SiteMapGenerator>();
-			services.AddSingleton<ISchedulingService, SchedulingService>();
-			services.AddHostedService<Orchestrator>();
-			return services;
+
+			services.AddScoped<Orchestrator>();
+
+            services.AddScheduler();
+
+            return services;
 		}
 	}
 }
