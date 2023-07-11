@@ -1,37 +1,42 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+﻿using Coravel.Invocable;
 using PhpbbInDotnet.RecurringTasks.Tasks;
+using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Services.Locks;
 using PhpbbInDotnet.Services.Storage;
 using Serilog;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.RecurringTasks
 {
-    sealed class Orchestrator : BackgroundService
-	{
-		readonly IServiceProvider _serviceProvider;
+    sealed class Orchestrator : IInvocable, ICancellableInvocable
+    {
+		readonly IEnumerable<IRecurringTask> _tasks;
+		readonly ILogger _logger;
+		readonly IStorageService _storageService;
+		readonly ILockingService _lockingService;
+        readonly ITimeService _timeService;
 
-		internal const string ControlFileName = "RecurringTasks.ok";
-		
-		public Orchestrator(IServiceProvider serviceProvider)
+        internal const string ControlFileName = "RecurringTasks.ok";
+
+        public CancellationToken CancellationToken { get; set; }
+
+        public Orchestrator(IEnumerable<IRecurringTask> tasks, ILogger logger, IStorageService storageService, ILockingService lockingService, ITimeService timeService)
 		{
-			_serviceProvider = serviceProvider;
-		}
+			_tasks = tasks;
+			_logger = logger;
+			_storageService = storageService;
+            _lockingService = lockingService;
+			_timeService = timeService;
+        }
 
-		protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        public async Task Invoke()
 		{
             //hacky hack https://github.com/dotnet/runtime/issues/36063
             await Task.Yield();
-
-            using var scope = _serviceProvider.CreateScope();
-			var logger = scope.ServiceProvider.GetRequiredService<ILogger>();
-			var storageService = scope.ServiceProvider.GetRequiredService<IStorageService>();
-            var schedulingService = scope.ServiceProvider.GetRequiredService<ISchedulingService>();
-			var lockingService = scope.ServiceProvider.GetRequiredService<ILockingService>();
 
 			bool lockAcquiredSuccessfully = false;
 			bool shouldUpdateControlFile = false;
@@ -39,52 +44,37 @@ namespace PhpbbInDotnet.RecurringTasks
 
 			try
 			{
-				var timeToWait = await schedulingService.GetTimeToWaitUntilRunIsAllowed();
-				if (timeToWait > TimeSpan.Zero)
-				{
-					logger.Warning("Waiting for {time} before executing recurring tasks...", timeToWait);
-					stoppingToken.WaitHandle.WaitOne(timeToWait);
-				}
-
-				stoppingToken.ThrowIfCancellationRequested();
-
-				(lockAcquiredSuccessfully, lockId) = await lockingService.AcquireNamedLock(ControlFileName);
+				(lockAcquiredSuccessfully, lockId) = await _lockingService.AcquireNamedLock(ControlFileName);
 				if (lockAcquiredSuccessfully)
 				{
-					logger.Warning("Running recurring tasks on instance {name}.", Environment.MachineName);
+					_logger.Warning("Running recurring tasks on instance {name}.", Environment.MachineName);
 
-                    await Task.WhenAll(scope.ServiceProvider.GetServices<IRecurringTask>().Select(t => t.ExecuteAsync(stoppingToken)));
+                    await Task.WhenAll(_tasks.Select(t => t.ExecuteAsync(CancellationToken)));
 
-					logger.Warning("All recurring tasks executed successfully on instance {name}.", Environment.MachineName);
+					_logger.Warning("All recurring tasks executed successfully on instance {name}.", Environment.MachineName);
 					shouldUpdateControlFile = true;
 				}
 				else
 				{
-					logger.Warning("Will not execute recurring tasks on instance {name}. Another instance will handle this.", Environment.MachineName);
+					_logger.Warning("Will not execute recurring tasks on instance {name}. Another instance will handle this.", Environment.MachineName);
 					return;
 				}
 			}
 			catch (Exception ex)
 			{
-				logger.Error(ex, "An error occurred while running recurring tasks; rest of the application will continue.");
+				_logger.Error(ex, "An error occurred while running recurring tasks; rest of the application will continue.");
 			}
 			finally
 			{
 				if (lockAcquiredSuccessfully)
 				{
-					await lockingService.ReleaseNamedLock(ControlFileName, lockId!);
+					await _lockingService.ReleaseNamedLock(ControlFileName, lockId!);
 					if (shouldUpdateControlFile)
 					{
-						await storageService.WriteAllTextToFile(ControlFileName, $"Completed at {DateTime.UtcNow:u}.");
+						await _storageService.WriteAllTextToFile(ControlFileName, $"Completed at {_timeService.DateTimeUtcNow():u} on instance {Environment.MachineName}.");
 					}
                 }
 			}
-		}
-
-		public override async Task StopAsync(CancellationToken cancellationToken)
-		{
-			await base.StopAsync(cancellationToken);
-			await base.StartAsync(cancellationToken);
 		}
 	}
 }

@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using PhpbbInDotnet.RecurringTasks.Tasks;
+using PhpbbInDotnet.Services;
+using PhpbbInDotnet.Services.Locks;
 using PhpbbInDotnet.Services.Storage;
 using Serilog;
 using System;
@@ -14,37 +16,69 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
     {
         readonly Mock<ILogger> _mockLogger;
         readonly Mock<IStorageService> _mockStorageService;
+        readonly Mock<ILockingService> _mockLockingService;
+        readonly Mock<ITimeService> _mockTimeService;
 
         public OrchestratorTests()
         {
             _mockLogger = new Mock<ILogger>();
             _mockStorageService = new Mock<IStorageService>();
+            _mockLockingService = new Mock<ILockingService>();
+            _mockTimeService = new Mock<ITimeService>();
         }
 
         IServiceCollection GetServices()
         {
-            var mockSchedulingService = new Mock<ISchedulingService>();
-            mockSchedulingService.Setup(s => s.GetTimeToWaitUntilRunIsAllowed()).Returns(Task.FromResult(TimeSpan.Zero));
-
             var services = new ServiceCollection();
             services.AddSingleton(_mockLogger.Object);
             services.AddScoped(_ => _mockStorageService.Object);
-            services.AddSingleton(mockSchedulingService.Object);
-
+            services.AddScoped(_ => _mockLockingService.Object);
+            services.AddScoped(_ => _mockTimeService.Object);
+            services.AddScoped<Orchestrator>();
             return services;
         }
 
         [Fact]
-        public async Task On_Task_Cancellation_It_Gracefully_Stops()
+        public async Task On_Parallel_Run_It_Gracefully_Stops()
         {
+            _mockLockingService.Setup(l => l.AcquireNamedLock(It.IsAny<string>())).ReturnsAsync((false, null));
+            _mockLockingService.Setup(l => l.ReleaseNamedLock(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+
             var services = GetServices();
             services.AddSingleton<CallCounter>();
             services.AddScoped<IRecurringTask, FakeForumsAndTopicsSynchronizer>();
 
             using var cts = new CancellationTokenSource();
             cts.Cancel();
-            var orchestrator = new Orchestrator(services.BuildServiceProvider());
-            await orchestrator.StartAsync(cts.Token);
+
+            var orchestrator = services.BuildServiceProvider().GetRequiredService<Orchestrator>();
+            orchestrator.CancellationToken = cts.Token;
+            await orchestrator.Invoke();
+            await Task.Delay(TimeSpan.FromSeconds(1));
+
+            _mockLogger.Verify(
+                l => l.Warning(
+                    It.Is<string>(m => m == "Will not execute recurring tasks on instance {name}. Another instance will handle this."),
+                    It.Is<string>(parm => parm == Environment.MachineName)),
+                Times.Once());
+        }
+
+        [Fact]
+        public async Task On_Task_Cancellation_It_Gracefully_Stops()
+        {
+            _mockLockingService.Setup(l => l.AcquireNamedLock(It.IsAny<string>())).ReturnsAsync((true, Guid.NewGuid().ToString()));
+            _mockLockingService.Setup(l => l.ReleaseNamedLock(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+
+            var services = GetServices();
+            services.AddSingleton<CallCounter>();
+            services.AddScoped<IRecurringTask, FakeForumsAndTopicsSynchronizer>();
+
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            var orchestrator = services.BuildServiceProvider().GetRequiredService<Orchestrator>();
+            orchestrator.CancellationToken = cts.Token;
+            await orchestrator.Invoke();
             await Task.Delay(TimeSpan.FromSeconds(1));
 
             _mockLogger.Verify(
@@ -57,6 +91,11 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
         [Fact]
         public async Task Happy_Day_It_Runs_Successfully()
         {
+            var now = DateTime.UtcNow;
+            _mockTimeService.Setup(t => t.DateTimeUtcNow()).Returns(now);
+            _mockLockingService.Setup(l => l.AcquireNamedLock(It.IsAny<string>())).ReturnsAsync((true, Guid.NewGuid().ToString()));
+            _mockLockingService.Setup(l => l.ReleaseNamedLock(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+
             var services = GetServices();
             var counter = new CallCounter();
             services.AddSingleton(counter);
@@ -65,9 +104,10 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
             services.AddScoped<IRecurringTask, FakeOrphanFilesCleaner>();
             services.AddScoped<IRecurringTask, FakeRecycleBinCleaner>();
             services.AddScoped<IRecurringTask, FakeSiteMapGenerator>();
-            var orchestrator = new Orchestrator(services.BuildServiceProvider());
-
-            await orchestrator.StartAsync(CancellationToken.None);
+            
+            var orchestrator = services.BuildServiceProvider().GetRequiredService<Orchestrator>();
+            orchestrator.CancellationToken = CancellationToken.None;
+            await orchestrator.Invoke();
             await Task.Delay(TimeSpan.FromSeconds(1));
 
             Assert.Equal(1, Volatile.Read(ref counter.ForumsAndTopicsSynchronizerCalls));
@@ -75,7 +115,7 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
             Assert.Equal(1, Volatile.Read(ref counter.OrphanFileCleanerCalls));
             Assert.Equal(1, Volatile.Read(ref counter.RecycleBinCleanerCalls));
             Assert.Equal(1, Volatile.Read(ref counter.SiteMapGeneratorCalls));
-            _mockStorageService.Verify(s => s.WriteAllTextToFile(Orchestrator.ControlFileName, string.Empty), Times.Once());
+            _mockStorageService.Verify(s => s.WriteAllTextToFile(Orchestrator.ControlFileName, $"Completed at {now:u} on instance {Environment.MachineName}."), Times.Once());
         }
 
         class CallCounter 
@@ -98,6 +138,7 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
 
             public Task ExecuteAsync(CancellationToken stoppingToken)
             {
+                stoppingToken.ThrowIfCancellationRequested();
                 Interlocked.Increment(ref _callCounter.ForumsAndTopicsSynchronizerCalls);
                 return Task.CompletedTask;
             }
@@ -114,6 +155,7 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
 
             public Task ExecuteAsync(CancellationToken stoppingToken)
             {
+                stoppingToken.ThrowIfCancellationRequested();
                 Interlocked.Increment(ref _callCounter.LogCleanerCalls);
                 return Task.CompletedTask;
             }
@@ -130,6 +172,7 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
 
             public Task ExecuteAsync(CancellationToken stoppingToken)
             {
+                stoppingToken.ThrowIfCancellationRequested();
                 Interlocked.Increment(ref _callCounter.OrphanFileCleanerCalls);
                 return Task.CompletedTask;
             }
@@ -146,6 +189,7 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
 
             public Task ExecuteAsync(CancellationToken stoppingToken)
             {
+                stoppingToken.ThrowIfCancellationRequested();
                 Interlocked.Increment(ref _callCounter.RecycleBinCleanerCalls);
                 return Task.CompletedTask;
             }
@@ -162,6 +206,7 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
 
             public Task ExecuteAsync(CancellationToken stoppingToken)
             {
+                stoppingToken.ThrowIfCancellationRequested();
                 Interlocked.Increment(ref _callCounter.SiteMapGeneratorCalls);
                 return Task.CompletedTask;
             }
