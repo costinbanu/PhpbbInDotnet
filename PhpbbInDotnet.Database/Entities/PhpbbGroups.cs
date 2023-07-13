@@ -27,7 +27,7 @@ namespace PhpbbInDotnet.Database.Entities
         public int GroupMessageLimit { get; set; } = 0;
         public int GroupMaxRecipients { get; set; } = 0;
         public byte GroupLegend { get; set; } = 1;
-        public int GroupUserUploadSize { get; set; } = 0;
+        public long GroupUserUploadSize { get; set; } = 0;
         public int GroupEditTime { get; set; } = 60;
     }
 }
