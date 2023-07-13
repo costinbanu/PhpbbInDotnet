@@ -12,9 +12,13 @@ AS
     SET  XACT_ABORT  ON;
     SET  NOCOUNT  ON;
 
+	CREATE TABLE #child_forums(
+					forum_id int NOT NULL INDEX ix_forum_id CLUSTERED,
+					children nvarchar(max));
+
+	INSERT INTO #child_forums
     SELECT parent.forum_id, 
 		   string_agg(cast(child.forum_id as nvarchar(max)), ',') WITHIN GROUP (ORDER BY child.left_id) AS children
-	  INTO #child_forums
       FROM phpbb_forums parent 
       LEFT JOIN phpbb_forums child ON parent.forum_id = child.parent_id
      GROUP BY parent.forum_id;

@@ -143,7 +143,7 @@ namespace PhpbbInDotnet.Forum
                         var storage = context.Configuration.GetObject<StorageOptions>();
                         switch (storage.StorageType)
                         {
-                            case Domain.StorageType.HardDisk:
+                            case StorageType.HardDisk:
                                 config.WriteTo.File(
                                     path: Path.Combine(Constants.LOG_FOLDER, "log.txt"),
                                     restrictedToMinimumLevel: LogEventLevel.Warning,
@@ -151,7 +151,7 @@ namespace PhpbbInDotnet.Forum
                                     outputTemplate: format);
                                 break;
 
-                            case Domain.StorageType.AzureStorage:
+                            case StorageType.AzureStorage:
                                 var client = new BlobServiceClient(storage.ConnectionString);
                                 config.WriteTo.AzureBlobStorage(
                                     blobServiceClient: client,
@@ -160,7 +160,8 @@ namespace PhpbbInDotnet.Forum
                                     storageFileName: $"{Constants.LOG_FOLDER}/log{{yyyy}}{{MM}}{{dd}}.txt",
                                     outputTemplate: format,
                                     writeInBatches: true,
-                                    period: TimeSpan.FromMinutes(1));
+                                    period: TimeSpan.FromMinutes(1),
+                                    retainedBlobCountLimit: 30);
                                 break;
 
                             default:

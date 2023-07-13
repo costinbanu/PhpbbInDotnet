@@ -255,7 +255,9 @@ namespace PhpbbInDotnet.Services
                                     postIds = toDelete.Select(p => p.PostId).DefaultIfEmpty()
                                 });
                             toDelete.AsList().ForEach(async p => await _moderatorService.CascadePostDelete(p, false, false));
-                            user.UserShouldSignIn = true;
+                            await _sqlExecuter.ExecuteAsync(
+                                @"UPDATE phpbb_users SET user_should_sign_in = 1 WHERE user_id = @userId",
+                                new { userId });
                             await deleteUser();
                             message = string.Format(_translationProvider.Admin[lang, "USER_DELETED_POSTS_DELETED_FORMAT"], user.Username);
                             isSuccess = true;
@@ -298,6 +300,15 @@ namespace PhpbbInDotnet.Services
 
                             user.UserReminded = 1;
                             user.UserRemindedTime = DateTime.UtcNow.ToUnixTimestamp();
+                            await _sqlExecuter.ExecuteAsync(
+                                @"UPDATE phpbb_users
+                                     SET user_reminded = 1
+                                        ,user_reminded_time = @userRemindedTime",
+                                new
+                                {
+                                    userRemindedTime = DateTime.UtcNow.ToUnixTimestamp(),
+                                    userId
+                                });
                             message = string.Format(_translationProvider.Admin[lang, "USER_REMINDED_FORMAT"], user.Username);
                             isSuccess = true;
                             break;
