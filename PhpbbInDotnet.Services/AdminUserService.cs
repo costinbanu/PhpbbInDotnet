@@ -568,10 +568,10 @@ namespace PhpbbInDotnet.Services
                            SELECT * FROM phpbb_groups where group_id = {_sqlExecuter.LastInsertedItemId}",
                         new
                         {
-                            dto.Name,
-                            dto.Desc,
+                            name = dto.Name ?? string.Empty,
+                            desc = dto.Desc ?? string.Empty,
                             dto.Rank,
-                            dto.DbColor,
+                            dbColor = dto.DbColor ?? string.Empty,
                             uploadLimit = dto.UploadLimit * 1024 * 1024,
                             dto.EditTime
                         });
@@ -610,16 +610,18 @@ namespace PhpbbInDotnet.Services
                                     ,group_rank = @rank
                                     ,group_colour = @dbColor
                                     ,group_user_upload_size = @uploadLimit
-                                    ,group_edit_time = @editTime",
+                                    ,group_edit_time = @editTime
+                               WHERE group_id = @id;",
 						    new
 						    {
-							    dto.Name,
-							    dto.Desc,
-							    dto.Rank,
-							    dto.DbColor,
-							    uploadLimit = dto.UploadLimit * 1024 * 1024,
-							    dto.EditTime
-						    });
+                                name = dto.Name ?? string.Empty,
+                                desc = dto.Desc ?? string.Empty,
+                                dto.Rank,
+                                dbColor = dto.DbColor ?? string.Empty,
+                                uploadLimit = dto.UploadLimit * 1024 * 1024,
+                                dto.EditTime,
+                                dto.Id
+                            });
 						action = AdminGroupActions.Update;
                     }
                 }
@@ -660,13 +662,13 @@ namespace PhpbbInDotnet.Services
                         new { dto.Id });
 
                     await _sqlExecuter.ExecuteAsync(
-						@"UPDATE phpbb_users SET user_colour = @dbColor WHERE user_id IN @userIds;
+                        @"UPDATE phpbb_users SET user_colour = @dbColor WHERE user_id IN @userIds;
                           UPDATE phpbb_topics SET topic_last_poster_colour = @dbColor WHERE topic_last_poster_id IN @userIds;
                           UPDATE phpbb_forums SET forum_last_poster_colour = @dbColor WHERE forum_last_poster_id IN @userIds;",
                         new
                         {
                             userIds = userIds.DefaultIfEmpty(),
-                            dto.DbColor
+                            dbColor = dto.DbColor ?? string.Empty
                         });
                 }
 

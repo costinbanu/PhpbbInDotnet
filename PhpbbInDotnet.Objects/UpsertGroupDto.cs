@@ -14,7 +14,7 @@
 
         public string? DbColor => Color?.TrimStart('#');
 
-        public int UploadLimit { get; set; }
+        public long UploadLimit { get; set; }
 
         public int EditTime { get; set; }
 

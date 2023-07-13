@@ -1,4 +1,4 @@
-﻿INSERT INTO `phpbb_acl_options` (`auth_option_id`, `auth_option`, `is_global`, `is_local`, `founder_only`) VALUES
+﻿INSERT INTO phpbb_acl_options (auth_option_id, auth_option, is_global, is_local, founder_only) VALUES
 	(1, 'f_', 0, 1, 0),
 	(2, 'f_announce', 0, 1, 0),
 	(3, 'f_attach', 0, 1, 0),
@@ -120,7 +120,7 @@
 	(119, 'u_post_edit_allow', 1, 0, 0);
 
 
-INSERT INTO `phpbb_acl_roles` (`role_id`, `role_name`, `role_description`, `role_type`, `role_order`) VALUES
+INSERT INTO phpbb_acl_roles (role_id, role_name, role_description, role_type, role_order) VALUES
 	(1, 'ROLE_ADMIN_STANDARD', 'ROLE_DESCRIPTION_ADMIN_STANDARD', 'a_', 1),
 	(2, 'ROLE_ADMIN_FORUM', 'ROLE_DESCRIPTION_ADMIN_FORUM', 'a_', 3),
 	(3, 'ROLE_ADMIN_USERGROUP', 'ROLE_DESCRIPTION_ADMIN_USERGROUP', 'a_', 4),
@@ -147,7 +147,7 @@ INSERT INTO `phpbb_acl_roles` (`role_id`, `role_name`, `role_description`, `role
 	(24, 'ROLE_FORUM_NEW_MEMBER', 'ROLE_DESCRIPTION_FORUM_NEW_MEMBER', 'f_', 10);
 
 
-INSERT INTO `phpbb_acl_roles_data` (`role_id`, `auth_option_id`, `auth_setting`) VALUES
+INSERT INTO phpbb_acl_roles_data (role_id, auth_option_id, auth_setting) VALUES
 	(1, 44, 1),
 	(1, 46, 1),
 	(1, 47, 1),
@@ -541,7 +541,7 @@ INSERT INTO `phpbb_acl_roles_data` (`role_id`, `auth_option_id`, `auth_setting`)
 	(23, 114, 0),
 	(24, 15, 0);
 
-INSERT INTO `phpbb_bots` (`bot_id`, `bot_active`, `bot_name`, `user_id`, `bot_agent`, `bot_ip`) VALUES
+INSERT INTO phpbb_bots (bot_id, bot_active, bot_name, user_id, bot_agent, bot_ip) VALUES
 	(1, 1, 'AdsBot [Google]', 3, 'AdsBot-Google', ''),
 	(2, 1, 'Alexa [Bot]', 4, 'ia_archiver', ''),
 	(3, 1, 'Alta Vista [Bot]', 5, 'Scooter/', ''),
@@ -595,7 +595,7 @@ INSERT INTO `phpbb_bots` (`bot_id`, `bot_active`, `bot_name`, `user_id`, `bot_ag
 	(51, 1, 'Bing [Bot]', 2359, 'bingbot/', '');
 
 
-INSERT INTO `phpbb_groups` (`group_id`, `group_type`, `group_founder_manage`, `group_skip_auth`, `group_name`, `group_desc`, `group_desc_bitfield`, `group_desc_options`, `group_desc_uid`, `group_display`, `group_avatar`, `group_avatar_type`, `group_avatar_width`, `group_avatar_height`, `group_rank`, `group_colour`, `group_sig_chars`, `group_receive_pm`, `group_message_limit`, `group_max_recipients`, `group_legend`, `group_user_upload_size`, `group_edit_time`) VALUES
+INSERT INTO phpbb_groups (group_id, group_type, group_founder_manage, group_skip_auth, group_name, group_desc, group_desc_bitfield, group_desc_options, group_desc_uid, group_display, group_avatar, group_avatar_type, group_avatar_width, group_avatar_height, group_rank, group_colour, group_sig_chars, group_receive_pm, group_message_limit, group_max_recipients, group_legend, group_user_upload_size, group_edit_time) VALUES
 	(1, 3, 0, 0, 'Guests', '', '', 7, '', 0, '', 0, 0, 0, 0, '', 0, 0, 0, 5, 0, 0, 60),
 	(2, 3, 0, 0, 'Registered members', '', '', 7, '', 0, '', 0, 0, 0, 0, '000000', 0, 0, 0, 5, 0, 52428800, 60),
 	(3, 3, 0, 0, 'COPPA Registered Members', '', '', 7, '', 0, '', 0, 0, 0, 0, '', 0, 0, 0, 5, 0, 0, 60),
@@ -605,24 +605,24 @@ INSERT INTO `phpbb_groups` (`group_id`, `group_type`, `group_founder_manage`, `g
 	(7, 3, 0, 0, 'Recently registered members', '', '', 7, '', 0, '', 0, 0, 0, 0, '000000', 0, 0, 0, 5, 0, 52428800, 60);
 
 
-INSERT INTO `phpbb_lang` (`lang_id`, `lang_iso`, `lang_dir`, `lang_english_name`, `lang_local_name`, `lang_author`) VALUES
+INSERT INTO phpbb_lang (lang_id, lang_iso, lang_dir, lang_english_name, lang_local_name, lang_author) VALUES
 	(1, 'en', '', 'English', ' English', 'PhpbbInDotnet'),
 	(2, 'ro', '', 'Romanian', 'Română', 'PhpbbInDotnet');
 
 
-INSERT INTO `phpbb_ranks` (`rank_id`, `rank_title`, `rank_min`, `rank_special`, `rank_image`) VALUES
+INSERT INTO phpbb_ranks (rank_id, rank_title, rank_min, rank_special, rank_image) VALUES
 	(1, 'Site Admin', 0, 1, ''),
 	(5, 'Forum Moderator', 0, 1, ''),
 	(6, 'Technical Administrator', 0, 1, '');
 
-INSERT INTO `phpbb_reports_reasons` (`reason_id`, `reason_title`, `reason_description`, `reason_order`) VALUES
+INSERT INTO phpbb_reports_reasons (reason_id, reason_title, reason_description, reason_order) VALUES
 	(1, 'warez', 'The post contains links to illegal or pirated software.', 1),
 	(2, 'spam', 'The reported post has the only purpose to advertise for a website or another product.', 2),
 	(3, 'off_topic', 'The reported post is off topic.', 3),
 	(4, 'other', 'The reported post does not fit into any other category, please use the further information field.', 4);
 
 
-INSERT INTO `phpbb_smilies` (`smiley_id`, `code`, `emotion`, `smiley_url`, `smiley_width`, `smiley_height`, `smiley_order`, `display_on_posting`) VALUES
+INSERT INTO phpbb_smilies (smiley_id, code, emotion, smiley_url, smiley_width, smiley_height, smiley_order, display_on_posting) VALUES
 	(1, ':D', 'Very Happy', 'icon_e_biggrin.gif', 15, 17, 1, 1),
 	(2, ':-D', 'Very Happy', 'icon_e_biggrin.gif', 15, 17, 3, 1),
 	(3, ':grin:', 'Very Happy', 'icon_e_biggrin.gif', 15, 17, 4, 1),
@@ -666,9 +666,9 @@ INSERT INTO `phpbb_smilies` (`smiley_id`, `code`, `emotion`, `smiley_url`, `smil
 	(41, ':geek:', 'Geek', 'icon_e_geek.gif', 17, 17, 54, 0),
 	(42, ':ugeek:', 'Uber Geek', 'icon_e_ugeek.gif', 17, 18, 53, 0);
 
-INSERT INTO `phpbb_styles` (`style_id`, `style_name`, `style_copyright`, `style_active`, `template_id`, `theme_id`, `imageset_id`) VALUES
+INSERT INTO phpbb_styles (style_id, style_name, style_copyright, style_active, template_id, theme_id, imageset_id) VALUES
 	(7, 'Light', '', 1, 0, 0, 0),
 	(8, 'Dark', '', 1, 0, 0, 0);
 	
-INSERT INTO `phpbb_users` (`user_id`, `user_type`, `group_id`, `user_permissions`, `user_perm_from`, `user_ip`, `user_regdate`, `username`, `username_clean`, `user_password`, `user_passchg`, `user_pass_convert`, `user_email`, `user_email_hash`, `user_birthday`, `user_lastvisit`, `user_lastmark`, `user_lastpost_time`, `user_lastpage`, `user_last_confirm_key`, `user_last_search`, `user_warnings`, `user_last_warning`, `user_login_attempts`, `user_inactive_reason`, `user_inactive_time`, `user_posts`, `user_lang`, `user_timezone`, `user_dst`, `user_dateformat`, `user_style`, `user_rank`, `user_colour`, `user_new_privmsg`, `user_unread_privmsg`, `user_last_privmsg`, `user_message_rules`, `user_full_folder`, `user_emailtime`, `user_topic_show_days`, `user_topic_sortby_type`, `user_topic_sortby_dir`, `user_post_show_days`, `user_post_sortby_type`, `user_post_sortby_dir`, `user_notify`, `user_notify_pm`, `user_notify_type`, `user_allow_pm`, `user_allow_viewonline`, `user_allow_viewemail`, `user_allow_massemail`, `user_options`, `user_avatar`, `user_avatar_type`, `user_avatar_width`, `user_avatar_height`, `user_sig`, `user_sig_bbcode_uid`, `user_sig_bbcode_bitfield`, `user_from`, `user_icq`, `user_aim`, `user_yim`, `user_msnm`, `user_jabber`, `user_website`, `user_occ`, `user_interests`, `user_actkey`, `user_newpasswd`, `user_form_salt`, `user_new`, `user_reminded`, `user_reminded_time`, `accepted_new_terms`, `user_edit_time`, `jump_to_unread`) VALUES
+INSERT INTO phpbb_users (user_id, user_type, group_id, user_permissions, user_perm_from, user_ip, user_regdate, username, username_clean, user_password, user_passchg, user_pass_convert, user_email, user_email_hash, user_birthday, user_lastvisit, user_lastmark, user_lastpost_time, user_lastpage, user_last_confirm_key, user_last_search, user_warnings, user_last_warning, user_login_attempts, user_inactive_reason, user_inactive_time, user_posts, user_lang, user_timezone, user_dst, user_dateformat, user_style, user_rank, user_colour, user_new_privmsg, user_unread_privmsg, user_last_privmsg, user_message_rules, user_full_folder, user_emailtime, user_topic_show_days, user_topic_sortby_type, user_topic_sortby_dir, user_post_show_days, user_post_sortby_type, user_post_sortby_dir, user_notify, user_notify_pm, user_notify_type, user_allow_pm, user_allow_viewonline, user_allow_viewemail, user_allow_massemail, user_options, user_avatar, user_avatar_type, user_avatar_width, user_avatar_height, user_sig, user_sig_bbcode_uid, user_sig_bbcode_bitfield, user_from, user_icq, user_aim, user_yim, user_msnm, user_jabber, user_website, user_occ, user_interests, user_actkey, user_newpasswd, user_form_salt, user_new, user_reminded, user_reminded_time, accepted_new_terms, user_edit_time, jump_to_unread) VALUES
 	('1', '2', '1', '', '0', '', '1261759042', 'Anonymous', 'anonymous', '', '0', '0', '', '-9223372036854775808', '', '1631042027', '0', '0', '', '13FZRQSR3C', '1565028274', '0', '0', '0', '0', '0', '14214', 'ro', '0.00', '0', 'ddd, dd.MM.yyyy, HH:mm', '6', '0', '', '0', '0', '0', '0', '-3', '0', '0', 't', 'd', '0', 't', 'a', '0', '1', '0', '1', '1', '1', '0', '230271', '', '0', '0', '0', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'c2a1b1c018f7f1f0', '1', '0', '0', NULL, '60', '1') 
