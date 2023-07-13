@@ -1,9 +1,9 @@
 # A phpBB revamp in .Net
 
-This is a .Net version of the popular phpBB forums platform, targeting MySql. It currently does not offer 100% of all features, but it is fully compatible with the database and can be just "plugged in" to the DB (after running an automated DB update process).
+This is a .Net version of the popular phpBB forums platform, targeting MySql and Sql Server. It is fully compatible with the database and can be just "plugged in" to an existing DB (after running an automated DB update process).
 
 ## Prerequisites
-This installation requires a MySQL type of server (and it is fully compatible with MariaDB and AuroraDB as well).
+This installation requires either a MySQL type of server (and it is fully compatible with MariaDB and AuroraDB as well), or a Sql Server.
 
 This application requires stored procedures, so you must have the proper setup for creating them (for example, MariaDB requires root access for this).
 
@@ -164,12 +164,19 @@ The platform also **supports some new features**:
 - Attachment upload quota (per group)
 - Personalized edit time of own posts (per group or user, with the latter taking precedence if both defined)
 - Post soft delete and "recycle bin" functionality for moderators and admins (deleted posts are kept for a configurable period of time and can be restored during this period)
+- Recurring tasks that run daily and perform
+    - Automatic synchronization between tables (ensures the post, topic and forum links are intact)
+    - Automatic cleanup of
+        - orphan files
+        - forum logs (forum actions, not to be confused with the application log files)
+        - recycle bin
+    - Automatic sitemap generation
 
 ## Further reading
 ### Technical considerations
 This application targets .Net 6.0 and is platform agnostic.
 
-However, it has not yet been researched if the database support can be extended further than the MySQL-compatible languages. Given that the code leverages both stored procedures and inline SQL (through [Dapper](https://github.com/DapperLib/Dapper)), as well as LINQ-to-SQL statements (through [Entity Framework Core](https://docs.microsoft.com/en-us/ef/core/)), it is expected that multiple database support might not be trivial and might take more time to set up.
+However, it has not yet been researched if the database support can be extended further than the MySQL-compatible languages and Sql Server.
 
 ### phpBB backwards compatibility
 - Authentication is backwards compatible with the hashed passwords from an existing database. The [CryptSharp.Core](https://github.com/costinbanu/CryptSharp.Core) library is used to achieve this.
@@ -178,10 +185,9 @@ the new platform can render 100% of bb code written on a phpBB platform, while a
 However, our BB code rendering library DOES support this field and provides some methods for backwards compatibility (see its documentation, you will have to get your hands dirty for this).
 The [CodeKicker.BBCode.Core](https://github.com/costinbanu/CodeKicker.BBCode.Core) library is used for rendering bb code.
 
-### "Bonus" features
-- This platform can be connected to an image resize and license plate hiding API and can perform these tasks automatically, for each uploaded image attachment. I have chosen to isolate the image resize and license plate detection and hiding logic in a distinct API because this functionality is built exclusively for Windows, while I intend PhpbbInDotnet to be platform-agnostic. So if you have a Windows host at hand, and wish to offer automatic image resize and license plate hiding functionality for all attached images within your forum installation, look up the [SimpleImageProcessor](https://github.com/costinbanu/SimpleImageProcessor) repo.
-
 ### Maintenance and future work
 This platform is currently live at https://forum.metrouusor.com/ (which has served as basis for feature implementation, as well as a beta-testing site by running the old phpBB installation and the new platform in parallel for several months). As long as this forum is up, PhpbbInDotnet is expected to be maintained regularily. Established in 2009 and with a member base of over 1800 people as of march 2022, this forum is one of the largest communities for urban mobility, infrastructure and public transportation fans in Romania, so it is expected to be up and running for a long time (:
+
+This forum is currently hosted in Azure (as a Linux App Service) and targets SqlServer.
 
 Although unplanned as of now, future work will include more themes and more languages, as well as other features brought up by active users.
