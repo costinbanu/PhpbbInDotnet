@@ -10,6 +10,9 @@ AS
 BEGIN
 	SET NOCOUNT ON;
 
+	DECLARE @total_count int;
+	SET @total_count = (SELECT count(1) FROM phpbb_posts WHERE topic_id = @topic_id);
+
     SELECT p.forum_id,
 		   p.topic_id,
 		   p.post_id,
@@ -23,8 +26,7 @@ BEGIN
 		   p.post_edit_time,
 		   p.poster_ip as ip,
 		   p.post_username,
-		   p.post_edit_user,
-		   count(1) over() as total_count
+		   p.post_edit_user
 	  INTO #posts
 	  FROM phpbb_posts p
 	 WHERE topic_id = @topic_id 
@@ -48,7 +50,8 @@ BEGIN
 		   a.user_colour as author_color,
 		   a.user_avatar as author_avatar,
 		   e.username as post_edit_user,
-		   r.rank_title
+		   r.rank_title,
+		   @total_count as total_count
 	  FROM #posts p
 	  LEFT JOIN #ranks r ON p.author_id = r.user_id
 	  LEFT JOIN phpbb_users a ON p.author_id = a.user_id
