@@ -198,7 +198,7 @@ namespace PhpbbInDotnet.Services
                     }
                     if (expansionType.HasFlag(ForumUserExpansionType.UploadLimit))
                     {
-                        expanded.UploadLimit = await result.ReadFirstOrDefaultAsync<int>();
+                        expanded.UploadLimit = await result.ReadFirstOrDefaultAsync<long?>();
                     }
                     if (expansionType.HasFlag(ForumUserExpansionType.PostEditTime))
                     {

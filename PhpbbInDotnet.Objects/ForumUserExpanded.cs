@@ -30,7 +30,7 @@ namespace PhpbbInDotnet.Objects
 
         public int PostEditTime { get; set; } = 60;
 
-        public int? UploadLimit { get; set; }
+        public long? UploadLimit { get; set; }
 
         public HashSet<int>? Foes { get; set; }
 
