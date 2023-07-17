@@ -1,5 +1,4 @@
 ﻿using DeviceDetectorNET;
-using LazyCache;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
@@ -14,8 +13,6 @@ using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
 using Serilog;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Forum.Middlewares
@@ -66,25 +63,21 @@ namespace PhpbbInDotnet.Forum.Middlewares
                 baseUser = _userService.DbUserToForumUser(dbUser);
             }
 
-            var sessionTrackingTimeout = _config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1);
             var expansions = ForumUserExpansionType.Permissions;
             if (!baseUser.IsAnonymous)
             {
                 expansions |= ForumUserExpansionType.TopicPostsPerPage | ForumUserExpansionType.Foes | ForumUserExpansionType.UploadLimit | ForumUserExpansionType.PostEditTime | ForumUserExpansionType.Style;
-                if (DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > sessionTrackingTimeout)
-                {
-                    await _sqlExecuter.ExecuteAsync(
-                        "UPDATE phpbb_users SET user_lastvisit = @now WHERE user_id = @userId",
-                        new { now = DateTime.UtcNow.ToUnixTimestamp(), baseUser.UserId });
-                }
             }
 
             var user = await _userService.ExpandForumUser(baseUser, expansions);
             user.SetValue(context);
 
-            if (user.IsAnonymous && context.Request.Headers.TryGetValue(HeaderNames.UserAgent, out var header) && (context.Session.GetInt32("SessionCounted") ?? 0) == 0)
+            await next(context);
+
+            var sessionTrackingTimeout = _config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1);
+            try
             {
-                try
+                if (user.IsAnonymous && context.Request.Headers.TryGetValue(HeaderNames.UserAgent, out var header) && context.Session.GetInt32("SessionCounted") != 1)
                 {
                     var userAgent = header.ToString();
                     var dd = new DeviceDetector(userAgent);
@@ -102,13 +95,25 @@ namespace PhpbbInDotnet.Forum.Middlewares
                         _sessionCounter.UpsertSession(context.Session.Id, sessionTrackingTimeout);
                     }
                 }
-                catch (Exception ex)
-                {
-                    _logger.Warning(ex, "Failed to detect anonymous session type.");
-                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning(ex, "Failed to detect anonymous session type.");
             }
 
-            await next(context);
+            try
+            {
+                if (!user.IsAnonymous && DateTime.UtcNow.Subtract(dbUser.UserLastvisit.ToUtcTime()) > sessionTrackingTimeout)
+                {
+                    await _sqlExecuter.ExecuteAsync(
+                        "UPDATE phpbb_users SET user_lastvisit = @now WHERE user_id = @userId",
+                        new { now = DateTime.UtcNow.ToUnixTimestamp(), user.UserId });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning(ex, "Failed to update user last visit for {username}.", user.Username);
+            }
         }
 
         private async Task SignInAnonymousUser(HttpContext context)
@@ -122,18 +127,7 @@ namespace PhpbbInDotnet.Forum.Middlewares
                     AllowRefresh = true,
                     ExpiresUtc = DateTimeOffset.UtcNow.Add(authenticationExpiration),
                     IsPersistent = true,
-                }); 
-        }
-
-        async Task<Dictionary<int, int>> GetTopicPostsPage(int userId)
-        {
-            var results = await _sqlExecuter.QueryAsync<(int topicId, int postNo)>(
-                @"SELECT DISTINCT topic_id, post_no
-	                FROM phpbb_user_topic_post_number
-	               WHERE user_id = @user_id
-                   ORDER BY topic_id;",
-                new { userId });
-            return results.ToDictionary(x => x.topicId, y => y.postNo);
+                });
         }
     }
 }
