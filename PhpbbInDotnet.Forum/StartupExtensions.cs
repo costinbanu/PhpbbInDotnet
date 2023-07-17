@@ -1,5 +1,4 @@
 ﻿using Azure.Storage.Blobs;
-using Coravel;
 using Dapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
@@ -31,6 +30,8 @@ namespace PhpbbInDotnet.Forum
 {
     public static class StartupExtensions
     {
+        const int ONE_GB = 1073741824;
+
         public static WebApplicationBuilder ConfigureServices(this WebApplicationBuilder webApplicationBuilder)
         {
             var services = webApplicationBuilder.Services;
@@ -40,12 +41,9 @@ namespace PhpbbInDotnet.Forum
             services.Configure<CookiePolicyOptions>(options =>
             {
                 // This lambda determines whether user consent for non-essential cookies is needed for a given request.
-                options.CheckConsentNeeded = context => true;
+                options.CheckConsentNeeded = context => false;
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
-
-
-            services.AddDistributedMemoryCache();
 
             services.AddSession(options =>
             {
@@ -53,17 +51,10 @@ namespace PhpbbInDotnet.Forum
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
             });
-            services.Configure<CookiePolicyOptions>(options =>
-            {
-                // This lambda determines whether user consent for non-essential cookies 
-                // is needed for a given request.
-                options.CheckConsentNeeded = context => false;
-                options.MinimumSameSitePolicy = SameSiteMode.None;
-            });
 
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie();
 
-            var builder = services.AddMvc(o => o.EnableEndpointRouting = false)
+            services.AddMvc(o => o.EnableEndpointRouting = false)
                 .AddRazorOptions(o =>
                 {
                     o.PageViewLocationFormats.Add("~/Pages/CustomPartials/{0}.cshtml");
@@ -76,35 +67,24 @@ namespace PhpbbInDotnet.Forum
                     o.JsonSerializerOptions.Converters.Add(new DateTimeConverter());
                     o.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
                 });
-
-            services.Configure<IISServerOptions>(options =>
-            {
-                options.AutomaticAuthentication = false;
-            });
-
             services.AddDataProtection();
             services.AddAntiforgery(o => o.HeaderName = "XSRF-TOKEN");
 
+            services.Configure<HostOptions>(opts => opts.ShutdownTimeout = TimeSpan.FromMinutes(5));
+            services.Configure<FormOptions>(x =>
+            {
+                x.ValueLengthLimit = ONE_GB;
+                x.MultipartBodyLengthLimit = ONE_GB; // if not set default value is: 128 MB
+            });
+            services.Configure<KestrelServerOptions>(options =>
+            {
+                options.Limits.MaxRequestBodySize = ONE_GB; // if not set default value is: 30 MB
+            });
             services.Configure<IISServerOptions>(options =>
             {
-                options.MaxRequestBodySize = 1073741824;
+                options.MaxRequestBodySize = ONE_GB;
+                options.AutomaticAuthentication = false;
             });
-            if (environment.IsDevelopment())
-            {
-                services.Configure<KestrelServerOptions>(options =>
-                {
-                    options.Limits.MaxRequestBodySize = 1073741824; // if not set default value is: 30 MB
-                });
-            }
-            else
-            {
-                services.Configure<FormOptions>(x =>
-                {
-                    x.ValueLengthLimit = 1073741824;
-                    x.MultipartBodyLengthLimit = 1073741824; // if not set default value is: 128 MB
-                    x.MultipartHeadersLengthLimit = 1073741824;
-                });
-            }
 
             services.AddLanguageSupport();
             services.AddApplicationServices(config);
@@ -125,10 +105,9 @@ namespace PhpbbInDotnet.Forum
 
             services.AddLazyCache();
 
-            services.Configure<HostOptions>(opts => opts.ShutdownTimeout = TimeSpan.FromMinutes(5));
 
             DefaultTypeMap.MatchNamesWithUnderscores = true;
-            ServicePointManager.DefaultConnectionLimit = 10;
+            ServicePointManager.DefaultConnectionLimit = 100;
 
             webApplicationBuilder.Host
                 .UseSerilog((context, config) =>
