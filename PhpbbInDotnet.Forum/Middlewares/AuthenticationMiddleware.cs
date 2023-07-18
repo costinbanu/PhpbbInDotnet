@@ -72,8 +72,6 @@ namespace PhpbbInDotnet.Forum.Middlewares
             var user = await _userService.ExpandForumUser(baseUser, expansions);
             user.SetValue(context);
 
-            await next(context);
-
             var sessionTrackingTimeout = _config.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1);
             try
             {
@@ -100,6 +98,8 @@ namespace PhpbbInDotnet.Forum.Middlewares
             {
                 _logger.Warning(ex, "Failed to detect anonymous session type.");
             }
+
+            await next(context);
 
             try
             {
