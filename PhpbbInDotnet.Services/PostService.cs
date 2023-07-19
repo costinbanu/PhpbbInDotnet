@@ -78,7 +78,7 @@ namespace PhpbbInDotnet.Services
 
         public async Task<PostListDto> GetPosts(int topicId, int pageNum, int pageSize, bool isPostingView, string language)
         {
-            var posts = (await _sqlExecuter.CallStoredProcedureAsync<PostDto>(
+            using var results = await _sqlExecuter.CallMultipleResultsStoredProcedureAsync(
                 "get_posts",
                 new
                 {
@@ -86,40 +86,25 @@ namespace PhpbbInDotnet.Services
                     Constants.ANONYMOUS_USER_ID,
                     order = isPostingView ? "DESC" : "ASC",
                     skip = (pageNum - 1) * pageSize, 
-                    take = pageSize
-                })).AsList();
+                    take = pageSize,
+                    includeReports = !isPostingView
+                });
 
-            var currentPostIds = posts.Select(p => p.PostId).DefaultIfEmpty().ToList();
-            var dbAttachments = await _sqlExecuter.QueryAsync<PhpbbAttachments>(
-                "SELECT * FROM phpbb_attachments WHERE post_msg_id IN @currentPostIds",
-                new { currentPostIds });
+            var posts = (await results.ReadAsync<PostDto>()).AsList();
+            var dbAttachments = await results.ReadAsync<PhpbbAttachments>();
             var reports = new List<ReportDto>();
             var count = null as int?;
             if (!isPostingView)
             {
                 count = posts.FirstOrDefault()?.TotalCount ?? 0;
-                reports = (await _sqlExecuter.QueryAsync<ReportDto>(
-                    @"SELECT r.report_id AS id, 
-		                     rr.reason_title, 
-                             rr.reason_description, 
-                             r.report_text AS details, 
-                             r.user_id AS reporter_id, 
-                             u.username AS reporter_username, 
-                             r.post_id,
-                             r.report_time,
-                             r.report_closed
-	                    FROM phpbb_reports r
-                        JOIN phpbb_reports_reasons rr ON r.reason_id = rr.reason_id
-                        JOIN phpbb_users u on r.user_id = u.user_id
-	                   WHERE r.post_id IN @postIds;",
-                    new { postIds = currentPostIds })).AsList();
+                reports = (await results.ReadAsync<ReportDto>()).AsList();
             }
 
-            var (CorrelationId, Attachments) = await CacheAttachmentsAndPrepareForDisplay(dbAttachments, posts.FirstOrDefault()?.ForumId ?? 0, language, currentPostIds.Count, false);
+            var (CorrelationId, Attachments) = await CacheAttachmentsAndPrepareForDisplay(dbAttachments, posts.FirstOrDefault()?.ForumId ?? 0, language, posts.Count, false);
 
             return new PostListDto
             {
-                Posts = posts.AsList(),
+                Posts = posts,
                 Attachments = Attachments,
                 AttachmentDisplayCorrelationId = CorrelationId,
                 PostCount = count,

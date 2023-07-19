@@ -11,9 +11,9 @@ CREATE PROCEDURE [dbo].[get_user_permissions]
 AS 
    BEGIN
 
-      SET  XACT_ABORT  ON
-
-      SET  NOCOUNT  ON
+		SET  XACT_ABORT  ON;
+		SET  NOCOUNT  ON;
+		SET TRANSACTION ISOLATION LEVEL SNAPSHOT;
 
 		DECLARE @user_id INT;
 		SET @user_id = COALESCE(@user_id_parm, 1);
@@ -38,6 +38,6 @@ AS
 		FROM group_permissions gp
 		LEFT JOIN user_permissions up ON gp.forum_id = up.forum_id AND gp.auth_role_id = 16 AND up.auth_role_id in (14, 15, 17)
 		WHERE up.forum_id IS NULL;
-	   END
+	END
 GO
 

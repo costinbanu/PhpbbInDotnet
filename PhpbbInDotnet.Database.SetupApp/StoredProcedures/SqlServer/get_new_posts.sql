@@ -19,6 +19,8 @@ BEGIN
 	INSERT INTO #restricted_forums
 	SELECT value FROM string_split(@restricted_forum_list, ',');	
 
+	SET TRANSACTION ISOLATION LEVEL SNAPSHOT;
+
     SELECT t.topic_id, 
 		   t.forum_id,
 		   t.topic_title, 

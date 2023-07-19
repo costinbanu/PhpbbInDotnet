@@ -14,6 +14,8 @@ BEGIN
 	INSERT INTO @restricted_forums
 	SELECT value FROM string_split(@restricted_forum_list, ',');
 
+	SET TRANSACTION ISOLATION LEVEL SNAPSHOT;
+
 	DECLARE @total_count int;
 	SELECT @total_count = count(DISTINCT p.topic_id)
 	  FROM phpbb_posts p
