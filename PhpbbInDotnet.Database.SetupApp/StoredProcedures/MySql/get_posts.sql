@@ -1,10 +1,13 @@
-﻿CREATE DEFINER=`root`@`localhost` PROCEDURE `get_posts`(topic_id_parm int, anonymous_user_id int, `order` nvarchar(20), `skip` int, take int)
+﻿CREATE DEFINER=`root`@`localhost` PROCEDURE `get_posts`(topic_id_parm int, anonymous_user_id int, `order` nvarchar(20), `skip` int, take int, include_reports bool)
 BEGIN
     SET @topic_id = topic_id_parm;
 	SET @total_count = (SELECT COUNT(1) FROM phpbb_posts WHERE topic_id = @topic_id);
-
+	
+    START TRANSACTION;
+    
 	SET @sql = concat(
-		"WITH ranks AS (
+		"CREATE TEMPORARY TABLE tmp_posts
+         WITH ranks AS (
 				SELECT DISTINCT u.user_id, 
 					   COALESCE(r1.rank_id, r2.rank_id) AS rank_id, 
 					   COALESCE(r1.rank_title, r2.rank_title) AS rank_title
@@ -56,4 +59,32 @@ BEGIN
 	PREPARE stmt FROM @sql;
 	EXECUTE stmt USING @anonymous_user_id, @total_count, @topic_id, @order, @order, @skip, @take;
 	DEALLOCATE PREPARE stmt;
+    
+    SELECT *
+      FROM tmp_posts;
+      
+	SELECT a.*
+      FROM phpbb_attachments a
+      JOIN tmp_posts p ON a.post_msg_id = p.post_id;
+      
+	IF include_reports = 1
+    THEN
+		SELECT r.report_id AS id, 
+			   rr.reason_title, 
+               rr.reason_description, 
+               r.report_text AS details, 
+               r.user_id AS reporter_id, 
+               u.username AS reporter_username, 
+               r.post_id,
+               r.report_time,
+               r.report_closed
+		  FROM phpbb_reports r
+		  JOIN phpbb_reports_reasons rr ON r.reason_id = rr.reason_id
+		  JOIN phpbb_users u ON r.user_id = u.user_id
+		  JOIN tmp_posts p ON r.post_id = p.post_id;
+	END IF;
+    
+    DROP TABLE tmp_posts;
+    
+    COMMIT;
 END

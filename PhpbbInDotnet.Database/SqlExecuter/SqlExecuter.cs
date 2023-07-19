@@ -20,6 +20,9 @@ namespace PhpbbInDotnet.Database.SqlExecuter
         public Task<IEnumerable<T>> CallStoredProcedureAsync<T>(string storedProcedureName, object? param)
             => ResilientExecuteAsync(() => Connection.QueryAsync<T>(BuildStoreProcedureCall(storedProcedureName, param), param, commandTimeout: TIMEOUT));
 
+        public Task<SqlMapper.GridReader> CallMultipleResultsStoredProcedureAsync(string storedProcedureName, object? param)
+            => QueryMultipleAsync(BuildStoreProcedureCall(storedProcedureName, param), param);
+
         public Task CallStoredProcedureAsync(string storedProcedureName, object? param)
             => ResilientExecuteAsync(() => Connection.QueryAsync(BuildStoreProcedureCall(storedProcedureName, param), param, commandTimeout: TIMEOUT));
 

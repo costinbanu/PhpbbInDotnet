@@ -16,8 +16,9 @@ AS
 	*   		https://www.phpbb.com/community/viewtopic.php?p=2987015
 	*/
 
-	SET  XACT_ABORT  ON
-	SET  NOCOUNT  ON
+	SET  XACT_ABORT  ON;
+	SET  NOCOUNT  ON;
+	SET TRANSACTION ISOLATION LEVEL SNAPSHOT;
 
 	IF (@user_id <> 1)
 	BEGIN
@@ -26,13 +27,13 @@ AS
 		  FROM phpbb_users
 		 WHERE user_id = @user_id;
 
-		 CREATE TABLE #mark_times (topic_id int INDEX ix_topic_id CLUSTERED,
+		 DECLARE @mark_times TABLE(topic_id int INDEX ix_topic_id CLUSTERED,
 								   forum_id int INDEX ix_forum_id,
 								   topic_last_post_time bigint,
 								   topic_mark_time bigint,
 								   forum_mark_time bigint);
 
-		INSERT INTO #mark_times
+		INSERT INTO @mark_times
 		SELECT t.topic_id, 
 			   t.forum_id,
 			   t.topic_last_post_time,
@@ -46,7 +47,7 @@ AS
 		SELECT m.forum_id, 
 			   m.topic_id, 
 			   string_agg(cast(p.post_id as nvarchar(max)), ',') AS post_ids
-		  FROM #mark_times m
+		  FROM @mark_times m
 		  JOIN phpbb_posts p ON m.topic_id = p.topic_id
 		 WHERE p.poster_id <> @user_id
 		   AND post_time > @user_lastmark

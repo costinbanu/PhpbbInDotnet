@@ -18,6 +18,7 @@ CREATE PROCEDURE [dbo].[search_posts]
 AS
 BEGIN
     SET NOCOUNT ON;
+	SET TRANSACTION ISOLATION LEVEL SNAPSHOT;
 
 	CREATE TABLE #searchable_forums_table (forum_id int INDEX ix_forum_id CLUSTERED);
 	INSERT INTO #searchable_forums_table
