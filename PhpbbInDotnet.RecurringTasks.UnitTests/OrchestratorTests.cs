@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using PhpbbInDotnet.RecurringTasks.Tasks;
 using PhpbbInDotnet.Services;
@@ -6,6 +7,7 @@ using PhpbbInDotnet.Services.Locks;
 using PhpbbInDotnet.Services.Storage;
 using Serilog;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -18,6 +20,7 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
         readonly Mock<IStorageService> _mockStorageService;
         readonly Mock<ILockingService> _mockLockingService;
         readonly Mock<ITimeService> _mockTimeService;
+        readonly string _computerName;
 
         public OrchestratorTests()
         {
@@ -25,6 +28,7 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
             _mockStorageService = new Mock<IStorageService>();
             _mockLockingService = new Mock<ILockingService>();
             _mockTimeService = new Mock<ITimeService>();
+            _computerName = Guid.NewGuid().ToString();
         }
 
         IServiceCollection GetServices()
@@ -35,6 +39,10 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
             services.AddScoped(_ => _mockLockingService.Object);
             services.AddScoped(_ => _mockTimeService.Object);
             services.AddScoped<Orchestrator>();
+
+            var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string> { ["COMPUTERNAME"] = _computerName }).Build();
+            services.AddSingleton<IConfiguration>(_ => config);
+
             return services;
         }
 
@@ -59,7 +67,7 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
             _mockLogger.Verify(
                 l => l.Warning(
                     It.Is<string>(m => m == "Will not execute recurring tasks on instance {name}. Another instance will handle this."),
-                    It.Is<string>(parm => parm == Environment.MachineName)),
+                    It.Is<string>(parm => parm == _computerName)),
                 Times.Once());
         }
 
@@ -115,7 +123,7 @@ namespace PhpbbInDotnet.RecurringTasks.UnitTests
             Assert.Equal(1, Volatile.Read(ref counter.OrphanFileCleanerCalls));
             Assert.Equal(1, Volatile.Read(ref counter.RecycleBinCleanerCalls));
             Assert.Equal(1, Volatile.Read(ref counter.SiteMapGeneratorCalls));
-            _mockStorageService.Verify(s => s.WriteAllTextToFile(Orchestrator.ControlFileName, $"Completed at {now:u} on instance {Environment.MachineName}."), Times.Once());
+            _mockStorageService.Verify(s => s.WriteAllTextToFile(Orchestrator.ControlFileName, $"Completed at {now:u} on instance {_computerName}."), Times.Once());
         }
 
         class CallCounter 

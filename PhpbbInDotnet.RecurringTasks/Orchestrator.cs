@@ -1,4 +1,5 @@
 ﻿using Coravel.Invocable;
+using Microsoft.Extensions.Configuration;
 using PhpbbInDotnet.RecurringTasks.Tasks;
 using PhpbbInDotnet.Services;
 using PhpbbInDotnet.Services.Locks;
@@ -19,18 +20,19 @@ namespace PhpbbInDotnet.RecurringTasks
 		readonly IStorageService _storageService;
 		readonly ILockingService _lockingService;
         readonly ITimeService _timeService;
-
+        private readonly IConfiguration _configuration;
         internal const string ControlFileName = "RecurringTasks.ok";
 
         public CancellationToken CancellationToken { get; set; }
 
-        public Orchestrator(IEnumerable<IRecurringTask> tasks, ILogger logger, IStorageService storageService, ILockingService lockingService, ITimeService timeService)
+        public Orchestrator(IEnumerable<IRecurringTask> tasks, ILogger logger, IStorageService storageService, ILockingService lockingService, ITimeService timeService, IConfiguration configuration)
 		{
 			_tasks = tasks;
 			_logger = logger;
 			_storageService = storageService;
             _lockingService = lockingService;
 			_timeService = timeService;
+			_configuration = configuration;
         }
 
         public async Task Invoke()
@@ -42,21 +44,24 @@ namespace PhpbbInDotnet.RecurringTasks
 			bool shouldUpdateControlFile = false;
 			string? lockId = null;
 
+			var configComputerName = _configuration.GetValue<string?>("COMPUTERNAME");
+			var computerName =  string.IsNullOrWhiteSpace(configComputerName) ? Environment.MachineName : configComputerName;
+
 			try
 			{
 				(lockAcquiredSuccessfully, lockId) = await _lockingService.AcquireNamedLock(ControlFileName);
 				if (lockAcquiredSuccessfully)
 				{
-					_logger.Warning("Running recurring tasks on instance {name}.", Environment.MachineName);
+					_logger.Warning("Running recurring tasks on instance {name}.", computerName);
 
                     await Task.WhenAll(_tasks.Select(t => t.ExecuteAsync(CancellationToken)));
 
-					_logger.Warning("All recurring tasks executed successfully on instance {name}.", Environment.MachineName);
+					_logger.Warning("All recurring tasks executed successfully on instance {name}.", computerName);
 					shouldUpdateControlFile = true;
 				}
 				else
 				{
-					_logger.Warning("Will not execute recurring tasks on instance {name}. Another instance will handle this.", Environment.MachineName);
+					_logger.Warning("Will not execute recurring tasks on instance {name}. Another instance will handle this.", computerName);
 					return;
 				}
 			}
@@ -71,7 +76,7 @@ namespace PhpbbInDotnet.RecurringTasks
 					await _lockingService.ReleaseNamedLock(ControlFileName, lockId!);
 					if (shouldUpdateControlFile)
 					{
-						await _storageService.WriteAllTextToFile(ControlFileName, $"Completed at {_timeService.DateTimeUtcNow():u} on instance {Environment.MachineName}.");
+						await _storageService.WriteAllTextToFile(ControlFileName, $"Completed at {_timeService.DateTimeUtcNow():u} on instance {computerName}.");
 					}
                 }
 			}
