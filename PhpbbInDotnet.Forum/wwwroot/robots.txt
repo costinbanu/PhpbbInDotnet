@@ -11,3 +11,4 @@ Disallow: /search
 Disallow: /Search
 Disallow: /error
 Disallow: /Error
+Sitemap: https://forum.metrouusor.com/sitemap.xml
