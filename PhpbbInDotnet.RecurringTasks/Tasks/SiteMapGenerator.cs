@@ -145,12 +145,12 @@ namespace PhpbbInDotnet.RecurringTasks.Tasks
                     stoppingToken.ThrowIfCancellationRequested();
 
                     var time = await _sqlExecuter.WithPagination((currentPage - 1) * Constants.DEFAULT_PAGE_SIZE, Constants.DEFAULT_PAGE_SIZE).ExecuteScalarAsync<long>(
-                        @"WITH times AS (
+                        $@"WITH times AS (
 	                        SELECT post_time, post_edit_time
 	                            FROM phpbb_posts
 	                            WHERE topic_id = @topicId
 	                            ORDER BY post_time
-	                            ##paginate
+	                            {_sqlExecuter.PaginationWildcard}
                         )
                         SELECT greatest(max(post_time), max(post_edit_time)) AS max_time
                         FROM times",

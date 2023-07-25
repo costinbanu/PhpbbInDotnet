@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Database.SqlExecuter
 {
-	partial class SqlExecuter : DapperProxy, ISqlExecuter
+    class SqlExecuter : DapperProxy, ISqlExecuter
     {
 		public SqlExecuter(IConfiguration configuration, IDbConnection dbConnection, ILogger logger) : base(configuration, dbConnection, logger) { }
 
@@ -36,7 +36,9 @@ namespace PhpbbInDotnet.Database.SqlExecuter
             _ => throw new ArgumentException("Unknown Database type in configuration.")
         };
 
-		private string BuildStoreProcedureCall(string storedProcedureName, object? param)
+        public string PaginationWildcard => PaginatedDapperProxy.PAGINATION_WILDCARD;
+
+        private string BuildStoreProcedureCall(string storedProcedureName, object? param)
         {
             var format = DatabaseType switch
             {
