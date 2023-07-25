@@ -10214,11 +10214,6 @@ ALTER TABLE  [dbo].[phpbb_zebra]
  ADD DEFAULT 0 FOR [foe]
 GO
 
-CREATE NONCLUSTERED INDEX [nci_wi_phpbb_forums_4D525CE8A7CD61D00C80A9A3FE22200B] 
-    ON [dbo].[phpbb_forums] ([parent_id]) 
-  WITH (ONLINE = ON)
-GO
-
  CREATE NONCLUSTERED INDEX [nci_wi_phpbb_posts_012E87FC86249FDDC79867444CA862D9] 
      ON [dbo].[phpbb_posts] ([topic_id], [poster_id]) 
 INCLUDE ([bbcode_bitfield], [bbcode_uid], [enable_bbcode], [enable_magic_url], [enable_sig], [enable_smilies], [forum_id], [icon_id], [post_approved], [post_attachment], [post_checksum], [post_edit_count], [post_edit_locked], [post_edit_reason], [post_edit_time], [post_edit_user], [post_postcount], [post_reported], [post_subject], [post_text], [post_time], [post_username], [poster_ip]) 
