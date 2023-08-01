@@ -34,6 +34,13 @@ BEGIN
 		post_edit_user int);
 
 	IF (@order = 'DESC')
+		WITH post_ids AS (
+			SELECT post_id
+			  FROM phpbb_posts
+			 WHERE topic_id = @topic_id 
+			 ORDER BY post_time DESC
+			OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY
+		)
 		INSERT INTO @posts
 		SELECT p.forum_id,
 			   p.topic_id,
@@ -50,10 +57,15 @@ BEGIN
 			   p.post_username,
 			   p.post_edit_user
 		  FROM phpbb_posts p
-		 WHERE topic_id = @topic_id 
-		 ORDER BY post_time DESC
-		OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
+		  JOIN post_ids pid ON p.post_id = pid.post_id;
 	ELSE
+		WITH post_ids AS (
+			SELECT post_id
+			  FROM phpbb_posts
+			 WHERE topic_id = @topic_id 
+			 ORDER BY post_time ASC
+			OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY
+		)
 		INSERT INTO @posts
 		SELECT p.forum_id,
 			   p.topic_id,
@@ -70,9 +82,7 @@ BEGIN
 			   p.post_username,
 			   p.post_edit_user
 		  FROM phpbb_posts p
-		 WHERE topic_id = @topic_id 
-		 ORDER BY post_time ASC
-		OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;
+		  JOIN post_ids pid ON p.post_id = pid.post_id;
 
 	DECLARE @ranks TABLE(
 		user_id int index ix_ranks_user_id,

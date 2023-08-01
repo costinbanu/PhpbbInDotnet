@@ -288,7 +288,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 var userId = Action == PostingActions.EditForumPost ? currentPost!.PosterId : user.UserId;
                 var postAuthor = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
                 var rankId = postAuthor?.UserRank ?? 0;
-                var newPostText = PostText;
+                var newPostText = PostText?.Trim();
                 var uid = string.Empty;
                 newPostText = HttpUtility.HtmlEncode(newPostText);
 

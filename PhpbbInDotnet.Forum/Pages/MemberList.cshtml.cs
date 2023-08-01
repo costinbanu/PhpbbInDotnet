@@ -51,6 +51,7 @@ namespace PhpbbInDotnet.Forum.Pages
         public IEnumerable<BotData>? BotList { get; private set; }
         public Paginator? BotPaginator { get; private set; }
         public bool CurrentUserIsAdmin { get; private set; }
+        public int RegisteredUserCount { get; private set; }
 
         public MemberListModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter,
             ITranslationProvider translationProvider, IConfiguration config, IAnonymousSessionCounter sessionCounter)
@@ -134,27 +135,31 @@ namespace PhpbbInDotnet.Forum.Pages
 
                     case MemberListPages.ActiveBots:
                     case MemberListPages.ActiveUsers:
-                        await ResiliencyUtility.RetryOnceAsync(
-                            toDo: async () =>
-                            {
-                                var lastVisit = DateTime.UtcNow.Subtract(Configuration.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1)).ToUnixTimestamp();
-                                var stmt = "FROM phpbb_users WHERE user_lastvisit >= @lastVisit AND user_id <> @ANONYMOUS_USER_ID";
-                                var parm = new
+                        var lastVisit = DateTime.UtcNow.Subtract(Configuration.GetValue<TimeSpan?>("UserActivityTrackingInterval") ?? TimeSpan.FromHours(1)).ToUnixTimestamp();
+                        var stmt = "FROM phpbb_users WHERE user_lastvisit >= @lastVisit AND user_id <> @ANONYMOUS_USER_ID";
+                        var parm = new
+                        {
+                            lastVisit,
+                            Constants.ANONYMOUS_USER_ID
+                        };
+                        RegisteredUserCount = await SqlExecuter.ExecuteScalarAsync<int>($"SELECT count(1) {stmt}", parm);
+
+                        if (Mode == MemberListPages.ActiveUsers)
+                        {
+                            await ResiliencyUtility.RetryOnceAsync(
+                                toDo: async () =>
                                 {
-                                    lastVisit,
-                                    Constants.ANONYMOUS_USER_ID
-                                };
 
-                                UserList = await SqlExecuter
-                                    .WithPagination(PAGE_SIZE * (PageNum - 1), PAGE_SIZE)
-                                    .QueryAsync<PhpbbUsers>($"SELECT * {stmt} {OrderStatement(Order ?? MemberListOrder.NameAsc)}", parm);
-                                Paginator = new Paginator(await SqlExecuter.ExecuteScalarAsync<int>($"SELECT count(1) {stmt}", parm), PageNum, $"/MemberList?handler=setMode&mode={Mode}", PAGE_SIZE, "pageNum");
-                                RankList = await SqlExecuter.QueryAsync<PhpbbRanks>("SELECT * FROM phpbb_ranks");
-                            },
-                            evaluateSuccess: () => UserList!.Any() && PageNum == Paginator!.CurrentPage,
-                            fix: () => PageNum = Paginator!.CurrentPage);
-
-                        if (Mode == MemberListPages.ActiveBots)
+                                    UserList = await SqlExecuter
+                                        .WithPagination(PAGE_SIZE * (PageNum - 1), PAGE_SIZE)
+                                        .QueryAsync<PhpbbUsers>($"SELECT * {stmt} {OrderStatement(Order ?? MemberListOrder.NameAsc)}", parm);
+                                    Paginator = new Paginator(RegisteredUserCount, PageNum, $"/MemberList?handler=setMode&mode={Mode}", PAGE_SIZE, "pageNum");
+                                    RankList = await SqlExecuter.QueryAsync<PhpbbRanks>("SELECT * FROM phpbb_ranks");
+                                },
+                                evaluateSuccess: () => UserList!.Any() && PageNum == Paginator!.CurrentPage,
+                                fix: () => PageNum = Paginator!.CurrentPage);
+                        }
+                        else if (Mode == MemberListPages.ActiveBots)
                         {
                             if (!CurrentUserIsAdmin)
                             {
