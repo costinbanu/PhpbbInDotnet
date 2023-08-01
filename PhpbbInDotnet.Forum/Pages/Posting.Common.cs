@@ -102,7 +102,7 @@ namespace PhpbbInDotnet.Forum.Pages
             }
 
             var hasAttachments = Attachments?.Any() == true;
-            var textForSaving = await _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText));
+            var textForSaving = await _writingService.PrepareTextForSaving(HttpUtility.HtmlEncode(PostText?.Trim()));
             if (post == null)
             {
                 post = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbPosts>(

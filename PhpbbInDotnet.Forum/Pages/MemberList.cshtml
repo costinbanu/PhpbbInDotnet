@@ -173,28 +173,27 @@
         </form>
     }
     @{
-        var registered = @Model.Paginator?.Pagination?.Pager?.TotalItems ?? 0;
-        var anonymous = _sessionCounter.GetActiveSessionCount();
-        var bots = _sessionCounter.GetActiveBotCount();
+        var anonymousUserCount = _sessionCounter.GetActiveSessionCount();
+        var botCount = _sessionCounter.GetActiveBotCount();
         var displayUsers = Model.Mode == MemberListPages.ActiveBots ? "display:none" : "display:initial";
         var displayBots = Model.Mode == MemberListPages.ActiveBots ? "display:initial" : "display:none";
     }
 <h4>
-    @string.Format(Model.TranslationProvider.BasicText[Lang, registered == 1 ? "REGISTERED_COUNT_SINGLE_FORMAT" : "REGISTERED_COUNT_MULTIPLE_FORMAT", Casing.Title], registered),
-    @string.Format(Model.TranslationProvider.BasicText[Lang, anonymous == 1 ? "GUEST_COUNT_SINGLE_FORMAT" : "GUEST_COUNT_MULTIPLE_FORMAT", Casing.Title], anonymous)
+    @string.Format(Model.TranslationProvider.BasicText[Lang, Model.RegisteredUserCount == 1 ? "REGISTERED_COUNT_SINGLE_FORMAT" : "REGISTERED_COUNT_MULTIPLE_FORMAT", Casing.Title], Model.RegisteredUserCount),
+    @string.Format(Model.TranslationProvider.BasicText[Lang, anonymousUserCount == 1 ? "GUEST_COUNT_SINGLE_FORMAT" : "GUEST_COUNT_MULTIPLE_FORMAT", Casing.Title], anonymousUserCount)
     @if (Model.CurrentUserIsAdmin)
     {
         <span>
             @Model.TranslationProvider.BasicText[Lang, "AND"]
-            @if (bots > 0)
+            @if (botCount > 0)
             {
                 <a href="@($"MemberList?handler=setMode&pageNum={Model.PageNum}&order={Model.Order}&mode={MemberListPages.ActiveBots}")">
-                    @string.Format(Model.TranslationProvider.BasicText[Lang, bots == 1 ? "BOT_COUNT_SINGLE_FORMAT" : "BOT_COUNT_MULTIPLE_FORMAT", Casing.Title], bots)
+                    @string.Format(Model.TranslationProvider.BasicText[Lang, botCount == 1 ? "BOT_COUNT_SINGLE_FORMAT" : "BOT_COUNT_MULTIPLE_FORMAT", Casing.Title], botCount)
                 </a>
             }
             else
             {
-                @string.Format(Model.TranslationProvider.BasicText[Lang, "BOT_COUNT_MULTIPLE_FORMAT", Casing.Title], bots)
+                @string.Format(Model.TranslationProvider.BasicText[Lang, "BOT_COUNT_MULTIPLE_FORMAT", Casing.Title], botCount)
             }
         </span>
     }
