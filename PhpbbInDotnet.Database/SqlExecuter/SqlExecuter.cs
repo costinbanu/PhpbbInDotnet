@@ -14,17 +14,17 @@ namespace PhpbbInDotnet.Database.SqlExecuter
     {
 		public SqlExecuter(IConfiguration configuration, IDbConnection dbConnection, ILogger logger) : base(configuration, dbConnection, logger) { }
 
-		public IEnumerable<T> CallStoredProcedure<T>(string storedProcedureName, object? param)
-            => ResilientExecute(() => Connection.Query<T>(BuildStoreProcedureCall(storedProcedureName, param), param, commandTimeout: TIMEOUT));
+		public IEnumerable<T> CallStoredProcedure<T>(string storedProcedureName, object? param, IDbTransaction? dbTransaction)
+            => ResilientExecute(() => Connection.Query<T>(BuildStoreProcedureCall(storedProcedureName, param), param, transaction: dbTransaction, commandTimeout: TIMEOUT));
 
-        public Task<IEnumerable<T>> CallStoredProcedureAsync<T>(string storedProcedureName, object? param)
-            => ResilientExecuteAsync(() => Connection.QueryAsync<T>(BuildStoreProcedureCall(storedProcedureName, param), param, commandTimeout: TIMEOUT));
+        public Task<IEnumerable<T>> CallStoredProcedureAsync<T>(string storedProcedureName, object? param, IDbTransaction? dbTransaction)
+            => ResilientExecuteAsync(() => Connection.QueryAsync<T>(BuildStoreProcedureCall(storedProcedureName, param), param, transaction: dbTransaction, commandTimeout: TIMEOUT));
 
-        public Task<SqlMapper.GridReader> CallMultipleResultsStoredProcedureAsync(string storedProcedureName, object? param)
-            => QueryMultipleAsync(BuildStoreProcedureCall(storedProcedureName, param), param);
+        public Task<SqlMapper.GridReader> CallMultipleResultsStoredProcedureAsync(string storedProcedureName, object? param, IDbTransaction? dbTransaction)
+            => QueryMultipleAsync(BuildStoreProcedureCall(storedProcedureName, param), param, dbTransaction);
 
-        public Task CallStoredProcedureAsync(string storedProcedureName, object? param)
-            => ResilientExecuteAsync(() => Connection.QueryAsync(BuildStoreProcedureCall(storedProcedureName, param), param, commandTimeout: TIMEOUT));
+        public Task CallStoredProcedureAsync(string storedProcedureName, object? param, IDbTransaction? dbTransaction)
+            => ResilientExecuteAsync(() => Connection.QueryAsync(BuildStoreProcedureCall(storedProcedureName, param), param, transaction: dbTransaction, commandTimeout: TIMEOUT));
 
         public IDapperProxy WithPagination(int skip, int take)
 			=> new PaginatedDapperProxy(this, DatabaseType, skip, take);

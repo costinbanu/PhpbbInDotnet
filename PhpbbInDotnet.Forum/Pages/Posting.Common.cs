@@ -89,6 +89,7 @@ namespace PhpbbInDotnet.Forum.Pages
                 return null;
             }
 
+            using var transaction = SqlExecuter.BeginTransaction();
             if (Action == PostingActions.NewTopic)
             {
                 curTopic = await SqlExecuter.QueryFirstOrDefaultAsync<PhpbbTopics>(
@@ -97,7 +98,8 @@ namespace PhpbbInDotnet.Forum.Pages
                        SELECT * 
                          FROM phpbb_topics 
                         WHERE topic_id = {SqlExecuter.LastInsertedItemId};", 
-                    new { ForumId, PostTitle, now = DateTime.UtcNow.ToUnixTimestamp() });
+                    new { ForumId, PostTitle, now = DateTime.UtcNow.ToUnixTimestamp() },
+                    transaction);
                 TopicId = curTopic.TopicId;
             }
 
@@ -123,7 +125,8 @@ namespace PhpbbInDotnet.Forum.Pages
                         checksum = HashUtility.ComputeMD5Hash(textForSaving),
                         ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
                         username = HttpUtility.HtmlEncode(usr.Username)
-                    });
+                    },
+                    transaction);
 
                 await _moderatorService.CascadePostAdd(post, false);
             }
@@ -146,7 +149,7 @@ namespace PhpbbInDotnet.Forum.Pages
                         now = DateTime.UtcNow.ToUnixTimestamp(),
                         reason = HttpUtility.HtmlEncode(EditReason ?? string.Empty),
                         usr.UserId
-                    });
+                    }, transaction);
 
                 await _moderatorService.CascadePostEdit(post);
             }
@@ -163,25 +166,31 @@ namespace PhpbbInDotnet.Forum.Pages
                         post.TopicId,
                         comment = await _writingService.PrepareTextForSaving(attach.AttachComment),
                         attach.AttachId
-                    });
+                    }, 
+                    transaction);
             }
 
             if (canCreatePoll && !string.IsNullOrWhiteSpace(PollOptions))
             {
-                var existing = await SqlExecuter.QueryAsync<string>("SELECT LTRIM(RTRIM(poll_option_text)) FROM phpbb_poll_options WHERE topic_id = @topicId", new { TopicId });
+                var existing = await SqlExecuter.QueryAsync<string>(
+                    "SELECT LTRIM(RTRIM(poll_option_text)) FROM phpbb_poll_options WHERE topic_id = @topicId", 
+                    new { TopicId }, 
+                    transaction);
                 if (!existing.SequenceEqual(PollOptionsEnumerable, StringComparer.InvariantCultureIgnoreCase))
                 {
                     await SqlExecuter.ExecuteAsync(
                         @"DELETE FROM phpbb_poll_options WHERE topic_id = @topicId;
                           DELETE FROM phpbb_poll_votes WHERE topic_id = @topicId",
-                        new { TopicId });
+                        new { TopicId }, 
+                        transaction);
 
                     foreach (var (option, id) in PollOptionsEnumerable.Indexed(startIndex: 1))
                     {
                         await SqlExecuter.ExecuteAsync(
                             @"INSERT INTO phpbb_poll_options (poll_option_id, topic_id, poll_option_text, poll_option_total) 
                               VALUES (@id, @topicId, @text, 0)",
-                            new { id, TopicId, text = HttpUtility.HtmlEncode(option) });
+                            new { id, TopicId, text = HttpUtility.HtmlEncode(option) }, 
+                            transaction);
                     }
                 }
                 await SqlExecuter.ExecuteAsync(
@@ -196,15 +205,19 @@ namespace PhpbbInDotnet.Forum.Pages
                         title = HttpUtility.HtmlEncode(PollQuestion),
                         change = PollCanChangeVote.ToByte(),
                         TopicId
-                    });
+                    }, 
+                    transaction);
             }
 
             if (Action == PostingActions.NewTopic || Action == PostingActions.NewForumPost)
             {
                 await SqlExecuter.ExecuteAsync(
                     "DELETE FROM phpbb_drafts WHERE user_id = @userId AND forum_id = @forumId AND topic_id = @topicId",
-                    new { usr.UserId, forumId = ForumId, topicId = Action == PostingActions.NewTopic ? 0 : TopicId });
+                    new { usr.UserId, forumId = ForumId, topicId = Action == PostingActions.NewTopic ? 0 : TopicId }, 
+                    transaction);
             }
+
+            transaction.Commit();
 
             Response.Cookies.DeleteObject(CookieBackupKey);
 

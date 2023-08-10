@@ -11,6 +11,7 @@ using PhpbbInDotnet.Objects;
 using Serilog;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -226,6 +227,7 @@ namespace PhpbbInDotnet.Services
                         }
                     case AdminUserActions.Delete_KeepMessages:
                         {
+                            using var transaction = _sqlExecuter.BeginTransaction();
                             await _sqlExecuter.ExecuteAsync(
                                 @"UPDATE phpbb_posts
                                      SET post_username = @username
@@ -236,29 +238,36 @@ namespace PhpbbInDotnet.Services
                                     Constants.ANONYMOUS_USER_ID,
                                     userId,
                                     user.Username
-                                });
+                                },
+                                transaction);
 
-                            await deleteUser();
+                            await deleteUser(transaction);
+                            transaction.Commit();
                             message = string.Format(_translationProvider.Admin[lang, "USER_DELETED_POSTS_KEPT_FORMAT"], user.Username);
                             isSuccess = true;
                             break;
                         }
                     case AdminUserActions.Delete_DeleteMessages:
                         {
+                            using var transaction = _sqlExecuter.BeginTransaction();
                             var toDelete = await _sqlExecuter.QueryAsync<PhpbbPosts>(
                                 "SELECT * FROM phpbb_posts WHERE poster_id = @userId",
-                                new { userId });
+                                new { userId },
+                                transaction);
                             await _sqlExecuter.ExecuteAsync(
                                 "DELETE FROM phpbb_posts WHERE post_id IN @postIds",
                                 new
                                 {
                                     postIds = toDelete.Select(p => p.PostId).DefaultIfEmpty()
-                                });
+                                },
+                                transaction);
                             toDelete.AsList().ForEach(async p => await _moderatorService.CascadePostDelete(p, false, false));
                             await _sqlExecuter.ExecuteAsync(
                                 @"UPDATE phpbb_users SET user_should_sign_in = 1 WHERE user_id = @userId",
-                                new { userId });
-                            await deleteUser();
+                                new { userId },
+                                transaction);
+                            await deleteUser(transaction);
+                            transaction.Commit();
                             message = string.Format(_translationProvider.Admin[lang, "USER_DELETED_POSTS_DELETED_FORMAT"], user.Username);
                             isSuccess = true;
                             break;
@@ -329,56 +338,45 @@ namespace PhpbbInDotnet.Services
                 return (string.Format(_translationProvider.Errors[lang, "AN_ERROR_OCCURRED_TRY_AGAIN_ID_FORMAT"], id), false);
             }
 
-            async Task deleteUser()
+            async Task deleteUser(IDbTransaction transaction)
             {
-                await _sqlExecuter.ExecuteAsync("DELETE FROM phpbb_acl_users WHERE user_id = @userId", new { userId });
-				await _sqlExecuter.ExecuteAsync("DELETE FROM phpbb_banlist WHERE ban_userid = @userId", new { userId });
-				await _sqlExecuter.ExecuteAsync("DELETE FROM phpbb_bots WHERE user_id = @userId", new { userId });
-				await _sqlExecuter.ExecuteAsync("DELETE FROM phpbb_drafts WHERE user_id = @userId", new { userId });
                 await _sqlExecuter.ExecuteAsync(
-                    @"UPDATE phpbb_forums
+                    @"DELETE FROM phpbb_acl_users WHERE user_id = @userId;
+                    DELETE FROM phpbb_banlist WHERE ban_userid = @userId;
+                    DELETE FROM phpbb_bots WHERE user_id = @userId;
+                    DELETE FROM phpbb_drafts WHERE user_id = @userId;
+                    UPDATE phpbb_forums
                          SET forum_last_poster_id = @ANONYMOUS_USER_ID
                             ,forum_last_poster_colour = ''
                             ,forum_last_poster_name = @username
-                       WHERE forum_last_poster_id = @userId",
+                       WHERE forum_last_poster_id = @userId;
+                    DELETE FROM phpbb_forums_track WHERE user_id = @userId;
+                    DELETE FROM phpbb_forums_watch WHERE user_id = @userId;
+                    DELETE FROM phpbb_log WHERE user_id = @userId;
+                    DELETE FROM phpbb_poll_votes WHERE vote_user_id = @userId;
+                    DELETE FROM phpbb_privmsgs_to WHERE user_id = @userId;
+                    DELETE FROM phpbb_reports WHERE user_id = @userId;
+                    UPDATE phpbb_topics
+                         SET topic_last_poster_id = @ANONYMOUS_USER_ID
+                            ,topic_last_poster_colour = ''
+                            ,topic_last_poster_name = @username
+                       WHERE topic_last_poster_id = @userId;
+                    UPDATE phpbb_topics
+                         SET topic_first_poster_colour = ''
+                       WHERE topic_first_poster_name = @username;
+                    DELETE FROM phpbb_topics_track WHERE user_id = @userId;
+                    DELETE FROM phpbb_topics_watch WHERE user_id = @userId;
+                    DELETE FROM phpbb_user_group WHERE user_id = @userId;
+                    DELETE FROM phpbb_user_topic_post_number WHERE user_id = @userId;
+                    DELETE FROM phpbb_zebra WHERE user_id = @userId;
+                    DELETE FROM phpbb_users WHERE user_id = @userId;", 
                     new
                     {
                         Constants.ANONYMOUS_USER_ID,
                         user.Username,
                         userId
-                    });
-				await _sqlExecuter.ExecuteAsync("DELETE FROM phpbb_forums_track WHERE user_id = @userId", new { userId });
-				await _sqlExecuter.ExecuteAsync("DELETE FROM phpbb_forums_watch WHERE user_id = @userId", new { userId });
-				await _sqlExecuter.ExecuteAsync("DELETE FROM phpbb_log WHERE user_id = @userId", new { userId });
-                await _sqlExecuter.ExecuteAsync("DELETE FROM phpbb_poll_votes WHERE vote_user_id = @userId", new { userId });
-				await _sqlExecuter.ExecuteAsync("DELETE FROM phpbb_privmsgs_to WHERE user_id = @userId", new { userId });
-				await _sqlExecuter.ExecuteAsync("DELETE FROM phpbb_reports WHERE user_id = @userId", new { userId });
-				await _sqlExecuter.ExecuteAsync(
-	                @"UPDATE phpbb_topics
-                         SET topic_last_poster_id = @ANONYMOUS_USER_ID
-                            ,topic_last_poster_colour = ''
-                            ,topic_last_poster_name = @username
-                       WHERE topic_last_poster_id = @userId",
-	                new
-	                {
-		                Constants.ANONYMOUS_USER_ID,
-		                user.Username,
-		                userId
-	                });
-				await _sqlExecuter.ExecuteAsync(
-	                @"UPDATE phpbb_topics
-                         SET topic_first_poster_colour = ''
-                       WHERE topic_first_poster_name = @username",
-	                new
-	                {
-		                user.Username,
-	                });
-				await _sqlExecuter.ExecuteAsync("DELETE FROM phpbb_topics_track WHERE user_id = @userId", new { userId });
-				await _sqlExecuter.ExecuteAsync("DELETE FROM phpbb_topics_watch WHERE user_id = @userId", new { userId });
-				await _sqlExecuter.ExecuteAsync("DELETE FROM phpbb_user_group WHERE user_id = @userId", new { userId });
-				await _sqlExecuter.ExecuteAsync("DELETE FROM phpbb_user_topic_post_number WHERE user_id = @userId", new { userId });
-				await _sqlExecuter.ExecuteAsync("DELETE FROM phpbb_zebra WHERE user_id = @userId", new { userId });
-				await _sqlExecuter.ExecuteAsync("DELETE FROM phpbb_users WHERE user_id = @userId", new { userId });
+                    },
+                    transaction);
 			}
         }
 

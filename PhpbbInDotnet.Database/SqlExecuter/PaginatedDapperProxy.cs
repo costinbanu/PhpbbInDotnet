@@ -2,6 +2,7 @@
 using PhpbbInDotnet.Domain;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -26,51 +27,53 @@ namespace PhpbbInDotnet.Database.SqlExecuter
             _take = take;
         }
 
-        public Task<int> ExecuteAsync(string sql, object? param = null)
-            => _implementation.ExecuteAsync(AdjustSql(sql), AdjustParameters(param));
+        public Task<int> ExecuteAsync(string sql, object? param, IDbTransaction? dbTransaction)
+            => _implementation.ExecuteAsync(AdjustSql(sql), AdjustParameters(param), dbTransaction);
 
-        public T ExecuteScalar<T>(string sql, object? param = null)
-            => _implementation.ExecuteScalar<T>(AdjustSql(sql), AdjustParameters(param));
+        public T ExecuteScalar<T>(string sql, object? param, IDbTransaction? dbTransaction)
+            => _implementation.ExecuteScalar<T>(AdjustSql(sql), AdjustParameters(param), dbTransaction);
 
-        public Task<T> ExecuteScalarAsync<T>(string sql, object? param = null)
-            => _implementation.ExecuteScalarAsync<T>(AdjustSql(sql), AdjustParameters(param));
+        public Task<T> ExecuteScalarAsync<T>(string sql, object? param, IDbTransaction? dbTransaction)
+            => _implementation.ExecuteScalarAsync<T>(AdjustSql(sql), AdjustParameters(param), dbTransaction);
 
-        public IEnumerable<T> Query<T>(string sql, object? param = null)
-            => _implementation.Query<T>(AdjustSql(sql), AdjustParameters(param));
+        public IEnumerable<T> Query<T>(string sql, object? param, IDbTransaction? dbTransaction)
+            => _implementation.Query<T>(AdjustSql(sql), AdjustParameters(param), dbTransaction);
 
-        public IEnumerable<dynamic> Query(string sql, object? param = null)
-            => _implementation.Query(AdjustSql(sql), AdjustParameters(param));
+        public IEnumerable<dynamic> Query(string sql, object? param, IDbTransaction? dbTransaction)
+            => _implementation.Query(AdjustSql(sql), AdjustParameters(param), dbTransaction);
 
-        public Task<IEnumerable<T>> QueryAsync<T>(string sql, object? param = null)
-            => _implementation.QueryAsync<T>(AdjustSql(sql), AdjustParameters(param));
+        public Task<IEnumerable<T>> QueryAsync<T>(string sql, object? param, IDbTransaction? dbTransaction)
+            => _implementation.QueryAsync<T>(AdjustSql(sql), AdjustParameters(param), dbTransaction);
 
-        public Task<IEnumerable<dynamic>> QueryAsync(string sql, object? param = null)
-            => _implementation.QueryAsync(AdjustSql(sql), AdjustParameters(param));
+        public Task<IEnumerable<dynamic>> QueryAsync(string sql, object? param, IDbTransaction? dbTransaction)
+            => _implementation.QueryAsync(AdjustSql(sql), AdjustParameters(param), dbTransaction);
 
-        public T QueryFirstOrDefault<T>(string sql, object? param = null)
-            => _implementation.QueryFirstOrDefault<T>(AdjustSql(sql), AdjustParameters(param));
+        public T QueryFirstOrDefault<T>(string sql, object? param, IDbTransaction? dbTransaction)
+            => _implementation.QueryFirstOrDefault<T>(AdjustSql(sql), AdjustParameters(param), dbTransaction);
 
-        public Task<T> QueryFirstOrDefaultAsync<T>(string sql, object? param = null)
-            => _implementation.QueryFirstOrDefaultAsync<T>(AdjustSql(sql), AdjustParameters(param));
+        public Task<T> QueryFirstOrDefaultAsync<T>(string sql, object? param, IDbTransaction? dbTransaction)
+            => _implementation.QueryFirstOrDefaultAsync<T>(AdjustSql(sql), AdjustParameters(param), dbTransaction);
 
-        public Task<dynamic> QueryFirstOrDefaultAsync(string sql, object? param = null)
-            => _implementation.QueryFirstOrDefaultAsync(AdjustSql(sql), AdjustParameters(param));
+        public Task<dynamic> QueryFirstOrDefaultAsync(string sql, object? param, IDbTransaction? dbTransaction)
+            => _implementation.QueryFirstOrDefaultAsync(AdjustSql(sql), AdjustParameters(param), dbTransaction);
 
-        public T QuerySingle<T>(string sql, object? param)
-            => _implementation.QuerySingle<T>(AdjustSql(sql), AdjustParameters(param));
+        public T QuerySingle<T>(string sql, object? param, IDbTransaction? dbTransaction)
+            => _implementation.QuerySingle<T>(AdjustSql(sql), AdjustParameters(param), dbTransaction);
 
-        public Task<T> QuerySingleAsync<T>(string sql, object? param)
-            => _implementation.QuerySingleAsync<T>(AdjustSql(sql), AdjustParameters(param));
+        public Task<T> QuerySingleAsync<T>(string sql, object? param, IDbTransaction? dbTransaction)
+            => _implementation.QuerySingleAsync<T>(AdjustSql(sql), AdjustParameters(param), dbTransaction);
 
-        public Task<T> QuerySingleOrDefaultAsync<T>(string sql, object? param = null)
-            => _implementation.QuerySingleOrDefaultAsync<T>(AdjustSql(sql), AdjustParameters(param));
+        public Task<T> QuerySingleOrDefaultAsync<T>(string sql, object? param, IDbTransaction? dbTransaction)
+            => _implementation.QuerySingleOrDefaultAsync<T>(AdjustSql(sql), AdjustParameters(param), dbTransaction);
 
-        public Task<dynamic> QuerySingleOrDefaultAsync(string sql, object? param = null)
-            => _implementation.QuerySingleOrDefaultAsync(AdjustSql(sql), AdjustParameters(param));
+        public Task<dynamic> QuerySingleOrDefaultAsync(string sql, object? param, IDbTransaction? dbTransaction)
+            => _implementation.QuerySingleOrDefaultAsync(AdjustSql(sql), AdjustParameters(param), dbTransaction);
 
-        public Task<SqlMapper.GridReader> QueryMultipleAsync(string sql, object? param)
-            => _implementation.QueryMultipleAsync(AdjustSql(sql), AdjustParameters(param));
+        public Task<SqlMapper.GridReader> QueryMultipleAsync(string sql, object? param, IDbTransaction? dbTransaction)
+            => _implementation.QueryMultipleAsync(AdjustSql(sql), AdjustParameters(param), dbTransaction);
 
+        public IDbTransaction BeginTransaction() 
+            => _implementation.BeginTransaction();
 
         private string AdjustSql(string sql)
         {
