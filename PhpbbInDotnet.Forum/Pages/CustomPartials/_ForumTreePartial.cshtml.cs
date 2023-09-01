@@ -11,14 +11,16 @@ namespace PhpbbInDotnet.Forum.Pages.CustomPartials
         public int? TopicId { get; }
         public bool ConstrainSize { get; }
         public IEnumerable<MiniTopicDto>? TopicData { get; }
+        public bool ForceShowAllForums { get; }
 
-        public _ForumTreePartialModel(HashSet<ForumTree> tree, IEnumerable<MiniTopicDto>? topicData = null, int? forumId = null, int? topicId = null, bool constrainSize = false)
+        public _ForumTreePartialModel(HashSet<ForumTree> tree, IEnumerable<MiniTopicDto>? topicData = null, int? forumId = null, int? topicId = null, bool constrainSize = false, bool forceShowAllForums = false)
         {
             Tree = tree;
             ForumId = forumId;
             TopicId = topicId;
             ConstrainSize = constrainSize;
             TopicData = topicData;
+            ForceShowAllForums = forceShowAllForums;
         }
     }
 }
