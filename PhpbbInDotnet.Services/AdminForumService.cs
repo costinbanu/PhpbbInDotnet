@@ -162,7 +162,7 @@ namespace PhpbbInDotnet.Services
                 {
                     var (entityId, roleId) = translatePermission(dto.UserForumPermissions?[idx]);
                     await _sqlExecuter.ExecuteAsync(
-                        "DELETE FROM phpbb_acl_users WHERE user_id == @entityId AND auth_role_id = @roleId AND forum_id = @forumId",
+                        "DELETE FROM phpbb_acl_users WHERE user_id = @entityId AND auth_role_id = @roleId AND forum_id = @forumId",
                         new
                         {
                             entityId,
@@ -176,7 +176,7 @@ namespace PhpbbInDotnet.Services
                 {
                     var (entityId, roleId) = translatePermission(dto.GroupForumPermissions?[idx]);
 					await _sqlExecuter.ExecuteAsync(
-	                    "DELETE FROM phpbb_acl_groups WHERE group_id == @entityId AND auth_role_id = @roleId AND forum_id = @forumId",
+	                    "DELETE FROM phpbb_acl_groups WHERE group_id = @entityId AND auth_role_id = @roleId AND forum_id = @forumId",
 	                    new
 	                    {
 		                    entityId,

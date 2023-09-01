@@ -19,10 +19,9 @@
     new CustomPartials._ForumTreePartialModel(
         tree: await _forumTreeService.GetForumTree(Model.CurrentUser, false, false),
         forumId: Model.Forum?.ForumId ?? 0,
-        topicId: null
-    ),
-    ViewData
-)
+        topicId: null,
+        forceShowAllForums: true),
+    ViewData)
 <form method="post" asp-page-handler="ShowForum">
     <input type="submit" value="@Html.Raw(_translationProvider.Admin[Model.Language, "EDIT_SELECTED_FORUM"])" class="MyButton SpacedButton" />
     <input type="submit" value="@Html.Raw(_translationProvider.Admin[Model.Language, "DELETE_SELECTED_FORUM"])" form="deleteForumForm" class="MyButton SpacedButton" />
