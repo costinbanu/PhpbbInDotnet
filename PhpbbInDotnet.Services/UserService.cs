@@ -244,9 +244,9 @@ namespace PhpbbInDotnet.Services
             );
         }
 
-        public async Task<ForumUser> GetForumUserById(int userId)
+        public async Task<ForumUser> GetForumUserById(int userId, ITransactionalSqlExecuter? transaction = null)
         {
-            var usr = await _sqlExecuter.QuerySingleOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
+            var usr = await (transaction ?? _sqlExecuter).QuerySingleOrDefaultAsync<PhpbbUsers>("SELECT * FROM phpbb_users WHERE user_id = @userId", new { userId });
             return DbUserToForumUser(usr);
         }
 

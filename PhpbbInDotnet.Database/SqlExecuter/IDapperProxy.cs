@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using System.Collections.Generic;
+using System.Data;
 using System.Threading.Tasks;
 
 namespace PhpbbInDotnet.Database.SqlExecuter
@@ -20,6 +21,7 @@ namespace PhpbbInDotnet.Database.SqlExecuter
 		Task<T> ExecuteScalarAsync<T>(string sql, object? param = null);
 		T ExecuteScalar<T>(string sql, object? param = null);
 		Task<int> ExecuteAsync(string sql, object? param = null);
-		public Task<SqlMapper.GridReader> QueryMultipleAsync(string sql, object? param);
+		Task<SqlMapper.GridReader> QueryMultipleAsync(string sql, object? param);
+		Task<int> ExecuteAsyncWithoutResiliency(string sql, object? param = null, int commandTimeout = DapperProxy.TIMEOUT);
     }
 }

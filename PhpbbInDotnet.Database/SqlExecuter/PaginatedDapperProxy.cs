@@ -2,6 +2,7 @@
 using PhpbbInDotnet.Domain;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -13,64 +14,68 @@ namespace PhpbbInDotnet.Database.SqlExecuter
         private readonly DatabaseType _databaseType;
         private readonly int _skip;
         private readonly int _take;
+        private readonly IDbTransaction? _transaction;
 
         internal const string PAGINATION_WILDCARD = "##paginate";
 
         private static readonly Regex WILDCARD = new(PAGINATION_WILDCARD, RegexOptions.Compiled, Constants.REGEX_TIMEOUT);
 
-        internal PaginatedDapperProxy(DapperProxy implementation, DatabaseType databaseType, int skip, int take)
+        internal PaginatedDapperProxy(DapperProxy implementation, DatabaseType databaseType, int skip, int take, IDbTransaction? transaction)
         {
             _implementation = implementation;
             _databaseType = databaseType;
             _skip = skip;
             _take = take;
+            _transaction = transaction;
         }
 
-        public Task<int> ExecuteAsync(string sql, object? param = null)
-            => _implementation.ExecuteAsync(AdjustSql(sql), AdjustParameters(param));
+        public Task<int> ExecuteAsync(string sql, object? param)
+            => _implementation.ExecuteAsyncImpl(AdjustSql(sql), AdjustParameters(param), _transaction);
 
-        public T ExecuteScalar<T>(string sql, object? param = null)
-            => _implementation.ExecuteScalar<T>(AdjustSql(sql), AdjustParameters(param));
+        public T ExecuteScalar<T>(string sql, object? param)
+            => _implementation.ExecuteScalarImpl<T>(AdjustSql(sql), AdjustParameters(param), _transaction);
 
-        public Task<T> ExecuteScalarAsync<T>(string sql, object? param = null)
-            => _implementation.ExecuteScalarAsync<T>(AdjustSql(sql), AdjustParameters(param));
+        public Task<T> ExecuteScalarAsync<T>(string sql, object? param)
+            => _implementation.ExecuteScalarAsyncImpl<T>(AdjustSql(sql), AdjustParameters(param), _transaction);
 
-        public IEnumerable<T> Query<T>(string sql, object? param = null)
-            => _implementation.Query<T>(AdjustSql(sql), AdjustParameters(param));
+        public IEnumerable<T> Query<T>(string sql, object? param)
+            => _implementation.QueryImpl<T>(AdjustSql(sql), AdjustParameters(param), _transaction);
 
-        public IEnumerable<dynamic> Query(string sql, object? param = null)
-            => _implementation.Query(AdjustSql(sql), AdjustParameters(param));
+        public IEnumerable<dynamic> Query(string sql, object? param)
+            => _implementation.QueryImpl(AdjustSql(sql), AdjustParameters(param), _transaction);
 
-        public Task<IEnumerable<T>> QueryAsync<T>(string sql, object? param = null)
-            => _implementation.QueryAsync<T>(AdjustSql(sql), AdjustParameters(param));
+        public Task<IEnumerable<T>> QueryAsync<T>(string sql, object? param)
+            => _implementation.QueryAsyncImpl<T>(AdjustSql(sql), AdjustParameters(param), _transaction);
 
-        public Task<IEnumerable<dynamic>> QueryAsync(string sql, object? param = null)
-            => _implementation.QueryAsync(AdjustSql(sql), AdjustParameters(param));
+        public Task<IEnumerable<dynamic>> QueryAsync(string sql, object? param)
+            => _implementation.QueryAsyncImpl(AdjustSql(sql), AdjustParameters(param), _transaction);
 
-        public T QueryFirstOrDefault<T>(string sql, object? param = null)
-            => _implementation.QueryFirstOrDefault<T>(AdjustSql(sql), AdjustParameters(param));
+        public T QueryFirstOrDefault<T>(string sql, object? param)
+            => _implementation.QueryFirstOrDefaultImpl<T>(AdjustSql(sql), AdjustParameters(param), _transaction);
 
-        public Task<T> QueryFirstOrDefaultAsync<T>(string sql, object? param = null)
-            => _implementation.QueryFirstOrDefaultAsync<T>(AdjustSql(sql), AdjustParameters(param));
+        public Task<T> QueryFirstOrDefaultAsync<T>(string sql, object? param)
+            => _implementation.QueryFirstOrDefaultAsyncImpl<T>(AdjustSql(sql), AdjustParameters(param), _transaction);
 
-        public Task<dynamic> QueryFirstOrDefaultAsync(string sql, object? param = null)
-            => _implementation.QueryFirstOrDefaultAsync(AdjustSql(sql), AdjustParameters(param));
+        public Task<dynamic> QueryFirstOrDefaultAsync(string sql, object? param)
+            => _implementation.QueryFirstOrDefaultAsyncImpl(AdjustSql(sql), AdjustParameters(param), _transaction);
 
         public T QuerySingle<T>(string sql, object? param)
-            => _implementation.QuerySingle<T>(AdjustSql(sql), AdjustParameters(param));
+            => _implementation.QuerySingleImpl<T>(AdjustSql(sql), AdjustParameters(param), _transaction);
 
         public Task<T> QuerySingleAsync<T>(string sql, object? param)
-            => _implementation.QuerySingleAsync<T>(AdjustSql(sql), AdjustParameters(param));
+            => _implementation.QuerySingleAsyncImpl<T>(AdjustSql(sql), AdjustParameters(param), _transaction);
 
-        public Task<T> QuerySingleOrDefaultAsync<T>(string sql, object? param = null)
-            => _implementation.QuerySingleOrDefaultAsync<T>(AdjustSql(sql), AdjustParameters(param));
+        public Task<T> QuerySingleOrDefaultAsync<T>(string sql, object? param)
+            => _implementation.QuerySingleOrDefaultAsyncImpl<T>(AdjustSql(sql), AdjustParameters(param), _transaction);
 
-        public Task<dynamic> QuerySingleOrDefaultAsync(string sql, object? param = null)
-            => _implementation.QuerySingleOrDefaultAsync(AdjustSql(sql), AdjustParameters(param));
+        public Task<dynamic> QuerySingleOrDefaultAsync(string sql, object? param)
+            => _implementation.QuerySingleOrDefaultAsyncImpl(AdjustSql(sql), AdjustParameters(param), _transaction);
 
         public Task<SqlMapper.GridReader> QueryMultipleAsync(string sql, object? param)
-            => _implementation.QueryMultipleAsync(AdjustSql(sql), AdjustParameters(param));
+            => _implementation.QueryMultipleAsyncImpl(AdjustSql(sql), AdjustParameters(param), _transaction);
 
+        public Task<int> ExecuteAsyncWithoutResiliency(string sql, object? param = null, int commandTimeout = DapperProxy.TIMEOUT)
+            => _implementation.ExecuteAsyncWithoutResiliency(sql, param, commandTimeout);
 
         private string AdjustSql(string sql)
         {

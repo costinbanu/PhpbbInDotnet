@@ -11,6 +11,7 @@ using PhpbbInDotnet.Forum.Models;
 using PhpbbInDotnet.Languages;
 using PhpbbInDotnet.Objects;
 using PhpbbInDotnet.Services;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -101,14 +102,16 @@ namespace PhpbbInDotnet.Forum.Pages
         private readonly IPostService _postService;
         private readonly IModeratorService _moderatorService;
         private readonly IWritingToolsService _writingToolsService;
+        private readonly ILogger _logger;
 
         public ViewTopicModel(IForumTreeService forumService, IUserService userService, ISqlExecuter sqlExecuter, ITranslationProvider translationProvider,
-            IPostService postService, IModeratorService moderatorService, IWritingToolsService writingToolsService, IConfiguration configuration)
+            IPostService postService, IModeratorService moderatorService, IWritingToolsService writingToolsService, IConfiguration configuration, ILogger logger)
             : base(forumService, userService, sqlExecuter, translationProvider, configuration)
         {
             _postService = postService;
             _moderatorService = moderatorService;
             _writingToolsService = writingToolsService;
+            _logger = logger;
         }
 
         public async Task<IActionResult> OnGetByPostId()
@@ -501,19 +504,22 @@ namespace PhpbbInDotnet.Forum.Pages
             ForumRulesLink = curForum.ForumRulesLink;
             ForumRules = curForum.ForumRules;
             ForumRulesUid = curForum.ForumRulesUid;
-
-            await MarkAsRead();
-            await SqlExecuter.ExecuteAsync(
-                "UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId",
-                new { topicId = TopicId!.Value });
             Poll = await _postService.GetPoll(_currentTopic);
 
-            async Task MarkAsRead()
+            if (ForumId > 0 && TopicId > 0 && await ForumService.IsTopicUnread(ForumId.Value, TopicId.Value, ForumUser))
             {
-                if (ForumId > 0 && TopicId > 0 && await ForumService.IsTopicUnread(ForumId.Value, TopicId.Value, ForumUser))
-                {
-                    await ForumService.MarkTopicRead(ForumUser.UserId, ForumId.Value, TopicId.Value, Paginator.IsLastPage, Posts?.DefaultIfEmpty().Max(p => p?.PostTime ?? 0L) ?? 0);
-                }
+                await ForumService.MarkTopicRead(ForumUser.UserId, ForumId.Value, TopicId.Value, Paginator.IsLastPage, Posts?.DefaultIfEmpty().Max(p => p?.PostTime ?? 0L) ?? 0);
+            }
+            try
+            {
+                await SqlExecuter.ExecuteAsyncWithoutResiliency(
+                    "UPDATE phpbb_topics SET topic_views = topic_views + 1 WHERE topic_id = @topicId",
+                    new { topicId = TopicId!.Value },
+                    commandTimeout: 10);
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning(ex, "Failed to increment topic views for topic {id} ({name}).", TopicId, TopicTitle);
             }
         }
 
