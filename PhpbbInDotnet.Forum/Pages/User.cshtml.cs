@@ -201,7 +201,8 @@ namespace PhpbbInDotnet.Forum.Pages
 
             if (!string.IsNullOrWhiteSpace(Birthday) && Birthday != dbUser.UserBirthday)
             {
-                if (!DateTime.TryParseExact(Birthday, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out _))
+                if (!DateTime.TryParseExact(Birthday, "dd.MM.yyyy", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var birthday) ||
+                    DateTime.UtcNow.Subtract(birthday).TotalDays / 365.25 < (Configuration.GetValue<int?>("MinimumAge") ?? 16))
                 {
                     return PageWithError(nameof(Birthday), TranslationProvider.Errors[lang, "INVALID_DATE"]);
                 }
