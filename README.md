@@ -78,7 +78,8 @@ Either way,  ensure that its structure and contents follow the sample below. All
   "InternetSearchUrlFormat": "https://www.google.com/search?q={0}",
   "IpWhoIsUrlFormat": "https://whatismyipaddress.com/ip/{0}",
   "RecurringTasksTimeToRun": "02:00",
-  "ForumIsReadOnly": false
+  "ForumIsReadOnly": false,
+  "MinimumAge": 16
 }
 ```
 
@@ -129,6 +130,7 @@ InternetSearchUrlFormat | string | https://www.google.com/search?q={0} | Interne
 IpWhoIsUrlFormat | string | https://whatismyipaddress.com/ip/{0} | IP WHOIS link
 RecurringTasksTimeToRun | string | 02:00 | Required recurring tasks (DB table sync etc) will run daily at this specified hour (UTC). Must be in the HH:mm format.
 ForumIsReadOnly | bool | false | Whether the entire forum is in read-only mode. This means that the forum can be read, but no posts or private messages can be submitted.
+MinimumAge | int | 16 | Minimum age for users to register
 ### Branding
 #### Forum header
 The application will display the `ForumName` app setting value in the upper left corner of the screen (as a header that links to the forum's first page).

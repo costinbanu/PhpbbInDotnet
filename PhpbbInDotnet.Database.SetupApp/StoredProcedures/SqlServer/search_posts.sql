@@ -114,7 +114,7 @@ BEGIN
 	   JOIN phpbb_groups g ON u.group_id = g.group_id
 	   JOIN #posts p on p.author_id = u.user_id
 	   LEFT JOIN phpbb_ranks r1 ON u.user_rank = r1.rank_id
-	   LEFT JOIN phpbb_ranks r2 ON g.group_rank = r2.rank_id
+	   LEFT JOIN phpbb_ranks r2 ON g.group_rank = r2.rank_id;
 
 	SELECT p.*, 
 		   CASE WHEN p.author_id = @anonymous_user_id THEN p.post_username ELSE a.username END AS author_name,
@@ -125,6 +125,7 @@ BEGIN
 	  FROM #posts p
 	  LEFT JOIN #ranks r ON p.author_id = r.user_id
 	  LEFT JOIN phpbb_users a ON p.author_id = a.user_id
-	  LEFT JOIN phpbb_users e ON p.post_edit_user = e.user_id;
+	  LEFT JOIN phpbb_users e ON p.post_edit_user = e.user_id
+	  ORDER BY p.post_time DESC;
 
 END

@@ -68,7 +68,7 @@
             userId = Constants.ANONYMOUS_USER_ID;
         }
 
-        if (thisForum is null || _forumService.IsNodeRestricted(thisForum, userId, includePasswordProtected: true))
+        if (thisForum is null || (!Model.ForceShowAllForums && _forumService.IsNodeRestricted(thisForum, userId, includePasswordProtected: true)))
         {
             return;
         }
