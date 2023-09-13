@@ -523,10 +523,7 @@ namespace PhpbbInDotnet.Services
             }
         }
 
-        public Task CascadePostEdit(PhpbbPosts edited, ITransactionalSqlExecuter transaction)
-            => CascadePostEditCore(edited, transaction);
-
-        private async Task CascadePostEditCore(PhpbbPosts edited, ITransactionalSqlExecuter transaction)
+        public async Task CascadePostEdit(PhpbbPosts edited, ITransactionalSqlExecuter transaction)
         {
             using var multiple = await transaction.QueryMultipleAsync(
                 "SELECT * FROM phpbb_topics WHERE topic_id = @topicId;" +
